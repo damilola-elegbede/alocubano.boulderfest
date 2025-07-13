@@ -30,9 +30,14 @@ class Navigation {
         // Close mobile menu on click outside
         document.addEventListener('click', (e) => {
             const mobileMenu = document.querySelector('.mobile-menu');
+            const navList = document.querySelector('.nav-list');
             const menuToggle = document.querySelector('.menu-toggle');
-            if (mobileMenu && !mobileMenu.contains(e.target) && !menuToggle.contains(e.target) && this.mobileMenuOpen) {
-                this.closeMobileMenu();
+            
+            if (this.mobileMenuOpen && menuToggle && !menuToggle.contains(e.target)) {
+                // Check if click is outside nav list (mobile menu)
+                if (navList && !navList.contains(e.target)) {
+                    this.closeMobileMenu();
+                }
             }
         });
 
@@ -50,41 +55,45 @@ class Navigation {
 
     createMobileMenu() {
         const nav = document.querySelector('.main-nav');
-        if (!nav) {
+        const menuToggle = document.querySelector('.menu-toggle');
+        
+        if (!nav || !menuToggle) {
             return;
         }
 
-        // Create mobile menu button
-        const menuToggle = document.createElement('button');
-        menuToggle.className = 'menu-toggle';
-        menuToggle.setAttribute('aria-label', 'Toggle menu');
-        menuToggle.innerHTML = `
-      <span class="menu-icon">
-        <span></span>
-        <span></span>
-        <span></span>
-      </span>
-    `;
+        // Enhance existing menu toggle with proper structure
+        if (!menuToggle.querySelector('.menu-icon')) {
+            menuToggle.innerHTML = `
+                <span class="menu-icon">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+            `;
+        }
 
-        // Insert before nav
-        nav.parentNode.insertBefore(menuToggle, nav);
-
-        // Add mobile menu class to nav
-        nav.classList.add('mobile-menu');
+        // Add mobile menu class to nav list for overlay behavior
+        const navList = document.querySelector('.nav-list');
+        if (navList) {
+            navList.classList.add('mobile-menu');
+        }
     }
 
     toggleMobileMenu() {
         this.mobileMenuOpen = !this.mobileMenuOpen;
         const mobileMenu = document.querySelector('.mobile-menu');
         const menuToggle = document.querySelector('.menu-toggle');
+        const navList = document.querySelector('.nav-list');
 
         if (this.mobileMenuOpen) {
-            mobileMenu.classList.add('is-open');
-            menuToggle.classList.add('is-active');
+            if (mobileMenu) mobileMenu.classList.add('is-open');
+            if (navList) navList.classList.add('is-open');
+            if (menuToggle) menuToggle.classList.add('is-active');
             document.body.style.overflow = 'hidden';
         } else {
-            mobileMenu.classList.remove('is-open');
-            menuToggle.classList.remove('is-active');
+            if (mobileMenu) mobileMenu.classList.remove('is-open');
+            if (navList) navList.classList.remove('is-open');
+            if (menuToggle) menuToggle.classList.remove('is-active');
             document.body.style.overflow = '';
         }
     }
@@ -93,9 +102,11 @@ class Navigation {
         this.mobileMenuOpen = false;
         const mobileMenu = document.querySelector('.mobile-menu');
         const menuToggle = document.querySelector('.menu-toggle');
+        const navList = document.querySelector('.nav-list');
 
-        mobileMenu.classList.remove('is-open');
-        menuToggle.classList.remove('is-active');
+        if (mobileMenu) mobileMenu.classList.remove('is-open');
+        if (navList) navList.classList.remove('is-open');
+        if (menuToggle) menuToggle.classList.remove('is-active');
         document.body.style.overflow = '';
     }
 
