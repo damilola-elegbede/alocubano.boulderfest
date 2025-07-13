@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pure circular favicon with no square elements -->
+  <defs>
+    <!-- Cuban flag pattern with circular clipping -->
+    <clipPath id="flagClip">
+      <circle cx="256" cy="256" r="120"/>
+    </clipPath>
+  </defs>
+  
+  <!-- Outer circle (black border) -->
+  <circle cx="256" cy="256" r="256" fill="#000000"/>
+  
+  <!-- Inner white background -->
+  <circle cx="256" cy="256" r="240" fill="#FFFFFF"/>
+  
+  <!-- Inner black ring -->
+  <circle cx="256" cy="256" r="140" fill="none" stroke="#000000" stroke-width="6"/>
+  
+  <!-- Cuban flag elements in circular pattern -->
+  <g clip-path="url(#flagClip)">
+    <!-- Blue stripes -->
+    <rect x="136" y="196" width="240" height="24" fill="#5B6BB5"/>
+    <rect x="136" y="244" width="240" height="24" fill="#5B6BB5"/>
+    <rect x="136" y="292" width="240" height="24" fill="#5B6BB5"/>
+    <!-- White stripes -->
+    <rect x="136" y="220" width="240" height="24" fill="#FFFFFF"/>
+    <rect x="136" y="268" width="240" height="24" fill="#FFFFFF"/>
+    <!-- Red triangle with star -->
+    <path d="M136 196 L256 256 L136 316 Z" fill="#CC2936"/>
+    <polygon points="190,256 198,234 206,256 184,244 208,244" fill="#FFFFFF"/>
+  </g>
+  
+  <!-- Circular text around the badge -->
+  <g transform="translate(256, 256)">
+    <!-- A LO CUBANO text on top arc -->
+    <path id="topArc" d="M 0,-200 A 200,200 0 0,1 141.42,-141.42" fill="none"/>
+    <text font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#000000">
+      <textPath href="#topArc" startOffset="0%">A LO CUBANO</textPath>
+    </text>
+    
+    <!-- BOULDER FEST text on bottom arc -->
+    <path id="bottomArc" d="M -141.42,141.42 A 200,200 0 0,1 0,200" fill="none"/>
+    <text font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#000000">
+      <textPath href="#bottomArc" startOffset="0%">BOULDER FEST</textPath>
+    </text>
+  </g>
+  
+  <!-- Year markers -->
+  <text x="180" y="400" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#000000" text-anchor="middle">EST</text>
+  <text x="332" y="400" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#000000" text-anchor="middle">2023</text>
+</svg>
