@@ -29,10 +29,9 @@ class Navigation {
 
         // Close mobile menu on click outside
         document.addEventListener('click', (e) => {
-            const mobileMenu = document.querySelector('.mobile-menu');
             const navList = document.querySelector('.nav-list');
             const menuToggle = document.querySelector('.menu-toggle');
-            
+
             if (this.mobileMenuOpen && menuToggle && !menuToggle.contains(e.target)) {
                 // Check if click is outside nav list (mobile menu)
                 if (navList && !navList.contains(e.target)) {
@@ -56,7 +55,7 @@ class Navigation {
     createMobileMenu() {
         const nav = document.querySelector('.main-nav');
         const menuToggle = document.querySelector('.menu-toggle');
-        
+
         if (!nav || !menuToggle) {
             return;
         }
@@ -86,14 +85,26 @@ class Navigation {
         const navList = document.querySelector('.nav-list');
 
         if (this.mobileMenuOpen) {
-            if (mobileMenu) mobileMenu.classList.add('is-open');
-            if (navList) navList.classList.add('is-open');
-            if (menuToggle) menuToggle.classList.add('is-active');
+            if (mobileMenu) {
+                mobileMenu.classList.add('is-open');
+            }
+            if (navList) {
+                navList.classList.add('is-open');
+            }
+            if (menuToggle) {
+                menuToggle.classList.add('is-active');
+            }
             document.body.style.overflow = 'hidden';
         } else {
-            if (mobileMenu) mobileMenu.classList.remove('is-open');
-            if (navList) navList.classList.remove('is-open');
-            if (menuToggle) menuToggle.classList.remove('is-active');
+            if (mobileMenu) {
+                mobileMenu.classList.remove('is-open');
+            }
+            if (navList) {
+                navList.classList.remove('is-open');
+            }
+            if (menuToggle) {
+                menuToggle.classList.remove('is-active');
+            }
             document.body.style.overflow = '';
         }
     }
@@ -104,9 +115,15 @@ class Navigation {
         const menuToggle = document.querySelector('.menu-toggle');
         const navList = document.querySelector('.nav-list');
 
-        if (mobileMenu) mobileMenu.classList.remove('is-open');
-        if (navList) navList.classList.remove('is-open');
-        if (menuToggle) menuToggle.classList.remove('is-active');
+        if (mobileMenu) {
+            mobileMenu.classList.remove('is-open');
+        }
+        if (navList) {
+            navList.classList.remove('is-open');
+        }
+        if (menuToggle) {
+            menuToggle.classList.remove('is-active');
+        }
         document.body.style.overflow = '';
     }
 
@@ -194,7 +211,7 @@ class PageTransition {
                 document.body.classList.remove('page-entering');
             }, 300);
 
-        } catch (error) {
+        } catch {
             // Page transition error, fallback to normal navigation
             window.location.href = url;
         }
