@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Mobile menu toggle
     const menuToggle = document.querySelector('.menu-toggle');
     const navMenu = document.querySelector('.main-nav');
-    
+
     if (menuToggle) {
         menuToggle.addEventListener('click', function() {
             navMenu.classList.toggle('is-open');
@@ -14,12 +14,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Typewriter effect
     const typewriterElements = document.querySelectorAll('.typewriter');
-    
+
     typewriterElements.forEach(element => {
         const text = element.textContent;
         element.textContent = '';
         element.style.visibility = 'visible';
-        
+
         let index = 0;
         const typeWriter = setInterval(() => {
             if (index < text.length) {
@@ -33,12 +33,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Split text for letter animations
     const animatedTextElements = document.querySelectorAll('.hero-title-massive');
-    
+
     animatedTextElements.forEach(element => {
         const words = element.querySelectorAll('.word');
         words.forEach((word, wordIndex) => {
             const text = word.textContent;
-            word.innerHTML = text.split('').map((letter, index) => 
+            word.innerHTML = text.split('').map((letter, index) =>
                 `<span class="letter" style="animation-delay: ${wordIndex * 0.1 + index * 0.02}s">${letter}</span>`
             ).join('');
         });
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Parallax effect for vertical text
     const verticalTexts = document.querySelectorAll('.text-block-vertical');
-    
+
     window.addEventListener('scroll', () => {
         const scrolled = window.pageYOffset;
         verticalTexts.forEach(text => {
@@ -57,12 +57,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Hover effects for gallery items
     const galleryItems = document.querySelectorAll('.gallery-item-type');
-    
+
     galleryItems.forEach(item => {
         item.addEventListener('mouseenter', function() {
             this.querySelector('.text-glitch').classList.add('active');
         });
-        
+
         item.addEventListener('mouseleave', function() {
             this.querySelector('.text-glitch').classList.remove('active');
         });
@@ -70,24 +70,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Text reveal on scroll
     const revealElements = document.querySelectorAll('.text-block-large, .text-block-serif');
-    
+
     const revealOnScroll = () => {
         revealElements.forEach(element => {
             const elementTop = element.getBoundingClientRect().top;
             const elementVisible = 150;
-            
+
             if (elementTop < window.innerHeight - elementVisible) {
                 element.classList.add('revealed');
             }
         });
     };
-    
+
     window.addEventListener('scroll', revealOnScroll);
     revealOnScroll(); // Check on load
 
     // Random text effects for glitch elements
     const glitchElements = document.querySelectorAll('.text-glitch');
-    
+
     glitchElements.forEach(element => {
         setInterval(() => {
             element.style.animation = 'none';
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Circular text animation
     const circularTexts = document.querySelectorAll('.circular-text');
-    
+
     circularTexts.forEach(text => {
         const textPath = text.querySelector('textPath');
         if (textPath) {
@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Navigation link hover effect
     const navLinks = document.querySelectorAll('.nav-link');
-    
+
     navLinks.forEach(link => {
         link.addEventListener('mouseenter', function() {
             const text = this.textContent;
@@ -120,12 +120,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Form input animations
     const formInputs = document.querySelectorAll('.form-input-type, .form-textarea-type');
-    
+
     formInputs.forEach(input => {
         input.addEventListener('focus', function() {
             this.parentElement.classList.add('focused');
         });
-        
+
         input.addEventListener('blur', function() {
             if (!this.value) {
                 this.parentElement.classList.remove('focused');
@@ -135,13 +135,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Number counter animation
     const counters = document.querySelectorAll('[data-count]');
-    
+
     counters.forEach(counter => {
         const target = parseInt(counter.dataset.count);
         const duration = 2000;
         const increment = target / (duration / 16);
         let current = 0;
-        
+
         const updateCounter = () => {
             current += increment;
             if (current < target) {
@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 counter.textContent = target;
             }
         };
-        
+
         // Start animation when element is visible
         const observer = new IntersectionObserver(entries => {
             entries.forEach(entry => {
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
-        
+
         observer.observe(counter);
     });
 });

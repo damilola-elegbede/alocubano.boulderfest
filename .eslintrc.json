@@ -1,0 +1,36 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "extends": "eslint:recommended",
+  "parserOptions": {
+    "ecmaVersion": 12,
+    "sourceType": "module"
+  },
+  "rules": {
+    "indent": ["error", 4],
+    "linebreak-style": ["error", "unix"],
+    "quotes": ["error", "single"],
+    "semi": ["error", "always"],
+    "no-console": "warn",
+    "no-unused-vars": "warn",
+    "no-var": "error",
+    "prefer-const": "error",
+    "eqeqeq": "error",
+    "curly": "error",
+    "brace-style": ["error", "1tbs"],
+    "comma-dangle": ["error", "never"],
+    "no-trailing-spaces": "error",
+    "space-before-function-paren": ["error", "never"],
+    "keyword-spacing": "error",
+    "space-infix-ops": "error",
+    "no-multiple-empty-lines": ["error", { "max": 1 }]
+  },
+  "globals": {
+    "module": "readonly",
+    "require": "readonly",
+    "process": "readonly",
+    "__dirname": "readonly"
+  }
+}
