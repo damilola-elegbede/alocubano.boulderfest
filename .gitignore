@@ -1,0 +1,51 @@
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Editor Files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependencies
+node_modules/
+yarn.lock
+
+# Test artifacts
+coverage/
+test-results/
+.nyc_output/
+*.lcov
+jest-results.json
+lighthouse-report.html
+
+# Build outputs
+dist/
+build/
+.vercel/
+
+# Local settings
+.claude/settings.local.json
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Git hooks
+.husky/
