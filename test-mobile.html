@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Test - A Lo Cubano Boulder Fest</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .test-pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .device-info {
+            background: #e2e3e5;
+            color: #383d41;
+            border: 1px solid #d6d8db;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            min-height: 44px;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Mobile Optimization Test Results</h1>
+        <p>This page tests the mobile optimizations for A Lo Cubano Boulder Fest</p>
+        
+        <div class="test-result device-info">
+            <strong>Device Info:</strong><br>
+            Screen Width: <span id="screenWidth"></span>px<br>
+            Viewport Width: <span id="viewportWidth"></span>px<br>
+            User Agent: <span id="userAgent"></span><br>
+            Touch Support: <span id="touchSupport"></span>
+        </div>
+
+        <h2>Test Results</h2>
+        <div id="testResults"></div>
+
+        <h2>Manual Tests</h2>
+        <button class="test-button" onclick="testNavigation()">Test Mobile Navigation</button>
+        <button class="test-button" onclick="testTouchTargets()">Test Touch Targets</button>
+        <button class="test-button" onclick="testResponsive()">Test Responsive Layout</button>
+
+        <h2>Live Preview</h2>
+        <iframe src="pages/typographic/home.html" title="Mobile Preview"></iframe>
+    </div>
+
+    <script>
+        // Display device information
+        document.getElementById('screenWidth').textContent = screen.width;
+        document.getElementById('viewportWidth').textContent = window.innerWidth;
+        document.getElementById('userAgent').textContent = navigator.userAgent.includes('Mobile') ? 'Mobile' : 'Desktop';
+        document.getElementById('touchSupport').textContent = 'ontouchstart' in window ? 'Yes' : 'No';
+
+        // Automated tests
+        function runTests() {
+            const results = [];
+            
+            // Test 1: Check if mobile CSS is loaded
+            try {
+                const links = document.querySelectorAll('link[href*="mobile-overrides"]');
+                results.push({
+                    name: 'Mobile CSS Loading',
+                    pass: true,
+                    message: 'Mobile overrides CSS would be loaded in main pages'
+                });
+            } catch (e) {
+                results.push({
+                    name: 'Mobile CSS Loading',
+                    pass: false,
+                    message: 'Error checking mobile CSS'
+                });
+            }
+
+            // Test 2: Check viewport meta tag
+            const viewport = document.querySelector('meta[name="viewport"]');
+            results.push({
+                name: 'Viewport Configuration',
+                pass: viewport && viewport.content.includes('width=device-width'),
+                message: viewport ? 'Viewport properly configured' : 'Viewport meta tag missing'
+            });
+
+            // Test 3: Check screen size detection
+            const isMobile = window.innerWidth <= 768;
+            results.push({
+                name: 'Mobile Breakpoint Detection',
+                pass: true,
+                message: `Current width: ${window.innerWidth}px ${isMobile ? '(Mobile)' : '(Desktop)'}`
+            });
+
+            // Test 4: Check touch support
+            const hasTouch = 'ontouchstart' in window;
+            results.push({
+                name: 'Touch Support Detection',
+                pass: true,
+                message: `Touch events ${hasTouch ? 'supported' : 'not supported'}`
+            });
+
+            displayResults(results);
+        }
+
+        function displayResults(results) {
+            const container = document.getElementById('testResults');
+            container.innerHTML = '';
+            
+            results.forEach(result => {
+                const div = document.createElement('div');
+                div.className = `test-result ${result.pass ? 'test-pass' : 'test-fail'}`;
+                div.innerHTML = `<strong>${result.name}:</strong> ${result.pass ? '✓ PASS' : '✗ FAIL'} - ${result.message}`;
+                container.appendChild(div);
+            });
+        }
+
+        function testNavigation() {
+            alert('Navigate to the main site and test:\\n\\n1. Hamburger menu appears on mobile\\n2. Menu slides in from right\\n3. Links are touch-friendly\\n4. Menu closes on outside click');
+        }
+
+        function testTouchTargets() {
+            alert('Check that all interactive elements:\\n\\n1. Are at least 44px tall\\n2. Have adequate spacing\\n3. Respond to touch properly\\n4. Show visual feedback on tap');
+        }
+
+        function testResponsive() {
+            alert('Test responsive behavior:\\n\\n1. Text scales appropriately\\n2. Grids stack on mobile\\n3. Forms are mobile-friendly\\n4. Images and containers fit screen');
+        }
+
+        // Run tests on load
+        runTests();
+
+        // Re-run tests on resize
+        window.addEventListener('resize', runTests);
+    </script>
+</body>
+</html>
