@@ -1,0 +1,31 @@
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Editor Files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Dependencies (if any added later)
+node_modules/
+
+# Build outputs (if any added later)
+dist/
+build/
+
+# Local settings
+.claude/settings.local.json
+
+# Temporary files
+*.tmp
+*.temp
+
+# Python cache
+__pycache__/
+*.pyc
