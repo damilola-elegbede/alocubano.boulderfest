@@ -29,9 +29,9 @@ class Navigation {
 
         // Close mobile menu on click outside
         document.addEventListener('click', (e) => {
-            const mobileMenu = document.querySelector('.mobile-menu');
+            const navList = document.querySelector('.nav-list');
             const menuToggle = document.querySelector('.menu-toggle');
-            if (mobileMenu && !mobileMenu.contains(e.target) && !menuToggle.contains(e.target) && this.mobileMenuOpen) {
+            if (navList && !navList.contains(e.target) && !menuToggle.contains(e.target) && this.mobileMenuOpen) {
                 this.closeMobileMenu();
             }
         });
@@ -50,52 +50,51 @@ class Navigation {
 
     createMobileMenu() {
         const nav = document.querySelector('.main-nav');
-        if (!nav) {
+        const menuToggle = document.querySelector('.menu-toggle');
+
+        if (!nav || !menuToggle) {
             return;
         }
 
-        // Create mobile menu button
-        const menuToggle = document.createElement('button');
-        menuToggle.className = 'menu-toggle';
-        menuToggle.setAttribute('aria-label', 'Toggle menu');
-        menuToggle.innerHTML = `
-      <span class="menu-icon">
-        <span></span>
-        <span></span>
-        <span></span>
-      </span>
-    `;
-
-        // Insert before nav
-        nav.parentNode.insertBefore(menuToggle, nav);
-
-        // Add mobile menu class to nav
-        nav.classList.add('mobile-menu');
+        // Menu toggle already exists, just enhance functionality
+        // The mobile menu structure is already in the HTML
     }
 
     toggleMobileMenu() {
         this.mobileMenuOpen = !this.mobileMenuOpen;
-        const mobileMenu = document.querySelector('.mobile-menu');
+        const navList = document.querySelector('.nav-list');
         const menuToggle = document.querySelector('.menu-toggle');
 
         if (this.mobileMenuOpen) {
-            mobileMenu.classList.add('is-open');
-            menuToggle.classList.add('is-active');
+            if (navList) {
+                navList.classList.add('is-open');
+            }
+            if (menuToggle) {
+                menuToggle.classList.add('is-active');
+            }
             document.body.style.overflow = 'hidden';
         } else {
-            mobileMenu.classList.remove('is-open');
-            menuToggle.classList.remove('is-active');
+            if (navList) {
+                navList.classList.remove('is-open');
+            }
+            if (menuToggle) {
+                menuToggle.classList.remove('is-active');
+            }
             document.body.style.overflow = '';
         }
     }
 
     closeMobileMenu() {
         this.mobileMenuOpen = false;
-        const mobileMenu = document.querySelector('.mobile-menu');
+        const navList = document.querySelector('.nav-list');
         const menuToggle = document.querySelector('.menu-toggle');
 
-        mobileMenu.classList.remove('is-open');
-        menuToggle.classList.remove('is-active');
+        if (navList) {
+            navList.classList.remove('is-open');
+        }
+        if (menuToggle) {
+            menuToggle.classList.remove('is-active');
+        }
         document.body.style.overflow = '';
     }
 
@@ -183,7 +182,7 @@ class PageTransition {
                 document.body.classList.remove('page-entering');
             }, 300);
 
-        } catch (error) {
+        } catch {
             // Page transition error, fallback to normal navigation
             window.location.href = url;
         }
