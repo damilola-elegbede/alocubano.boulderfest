@@ -122,3 +122,15 @@ jobs:
         vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
         vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
         github-comment: true
+      continue-on-error: true
+    
+    - name: Deployment Status
+      if: failure()
+      run: |
+        echo "::warning::Vercel deployment was skipped or failed."
+        echo "To enable Vercel preview deployments, add these secrets to your GitHub repository:"
+        echo "  1. Go to Settings > Secrets and variables > Actions"
+        echo "  2. Add the following repository secrets:"
+        echo "     - VERCEL_TOKEN (from https://vercel.com/account/tokens)"
+        echo "     - VERCEL_ORG_ID (from your Vercel project settings)"
+        echo "     - VERCEL_PROJECT_ID (from your Vercel project settings)"
