@@ -436,14 +436,13 @@ class ImageCacheManager {
         return await this.initializeSessionBackground();
     }
 }
-}
 
-// Create global instance
+// Create global instance (this runs inside the guard clause, so ImageCacheManager is defined here)
 console.log('🏗️ ImageCacheManager instantiation check:');
 console.log('  - typeof window.ImageCacheManager:', typeof window.ImageCacheManager);
 console.log('  - typeof ImageCacheManager:', typeof ImageCacheManager);
 
-if (typeof window.ImageCacheManager === 'undefined' && typeof ImageCacheManager !== 'undefined') {
+if (typeof window.ImageCacheManager === 'undefined') {
     console.log('✅ Creating new ImageCacheManager instance...');
     window.ImageCacheManager = new ImageCacheManager();
     console.log('✅ ImageCacheManager instance created successfully');
@@ -454,11 +453,7 @@ if (typeof window.ImageCacheManager === 'undefined' && typeof ImageCacheManager 
       document.dispatchEvent(event);
     };
 } else {
-    console.log('❌ ImageCacheManager not instantiated');
-    if (typeof window.ImageCacheManager !== 'undefined') {
-        console.log('  - window.ImageCacheManager already exists');
-    }
-    if (typeof ImageCacheManager === 'undefined') {
-        console.log('  - ImageCacheManager class not defined');
-    }
+    console.log('❌ ImageCacheManager not instantiated - already exists');
+}
+
 }
