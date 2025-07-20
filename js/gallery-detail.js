@@ -53,12 +53,16 @@
 
     // Since we know the API doesn't exist yet, show fallback quickly for better UX
     // TODO: Remove this when API is implemented
-    console.log('Gallery API not implemented yet, showing fallback content immediately');
+    console.log('🚨 EARLY RETURN: Gallery API not implemented yet, showing fallback content immediately');
     
     // Show fallback immediately for better UX since API doesn't exist
     if (loadingEl) loadingEl.style.display = 'none';
     if (staticEl) staticEl.style.display = 'block';
     state.isLoading = false;
+    
+    // EXPLICIT EARLY RETURN TO PREVENT ANY API CALLS
+    console.log('🚨 EARLY RETURN: Exiting function to prevent API calls');
+    return;
     
     // Comment out API code to prevent 404 errors in console
     // Uncomment when API is implemented
