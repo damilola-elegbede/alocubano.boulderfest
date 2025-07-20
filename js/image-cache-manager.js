@@ -1,6 +1,7 @@
 // Image Cache Manager - Session-scoped caching for Captured Moments gallery
 console.log('📦 ImageCacheManager module loading... DOM state:', document.readyState);
 
+if (typeof ImageCacheManager === 'undefined') {
 class ImageCacheManager {
     constructor() {
         this.cacheKey = 'alocubano_image_cache_v1';
@@ -435,9 +436,12 @@ class ImageCacheManager {
         return await this.initializeSessionBackground();
     }
 }
+}
 
 // Create global instance
-window.ImageCacheManager = new ImageCacheManager();
+if (typeof window.ImageCacheManager === 'undefined') {
+    window.ImageCacheManager = new ImageCacheManager();
+}
 
 // Add method to notify when cache is ready
 window.ImageCacheManager.notifyReady = function() {

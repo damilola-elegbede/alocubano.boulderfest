@@ -1,5 +1,6 @@
 // Navigation module for A Lo Cubano Boulder Fest
 
+if (typeof Navigation === 'undefined') {
 class Navigation {
     constructor() {
         this.currentDesign = localStorage.getItem('selectedDesign') || 'design1';
@@ -148,8 +149,10 @@ class Navigation {
         return this.currentDesign;
     }
 }
+}
 
 // Page transition effects
+if (typeof PageTransition === 'undefined') {
 class PageTransition {
     constructor() {
         this.init();
@@ -203,8 +206,13 @@ class PageTransition {
             // Re-execute scripts to restore functionality
             this.reExecuteScripts(newDoc);
 
-            // Re-initialize navigation
-            new Navigation();
+            // Re-initialize navigation only if it doesn't exist or is broken
+            if (!window.navigation || typeof window.navigation.init !== 'function') {
+                window.navigation = new Navigation();
+            } else {
+                // Just reinitialize the existing navigation
+                window.navigation.init();
+            }
 
             // Remove exit class and add enter class
             document.body.classList.remove('page-exiting');
@@ -226,27 +234,47 @@ class PageTransition {
         
         scripts.forEach(script => {
             if (script.src) {
-                // External script - create new script element
-                const newScript = document.createElement('script');
-                newScript.src = script.src;
-                newScript.async = false; // Maintain execution order
-                document.head.appendChild(newScript);
+                // Check if this script is already loaded to avoid redeclaring classes
+                const scriptSrc = script.src;
+                const existingScript = document.querySelector(`script[src="${scriptSrc}"]`);
+                
+                if (!existingScript) {
+                    // External script - create new script element only if not already loaded
+                    const newScript = document.createElement('script');
+                    newScript.src = scriptSrc;
+                    newScript.async = false; // Maintain execution order
+                    document.head.appendChild(newScript);
+                }
             } else if (script.textContent) {
-                // Inline script - execute directly
-                try {
-                    eval(script.textContent);
-                } catch (error) {
-                    console.warn('Error executing inline script:', error);
+                // For inline scripts, check if it contains class declarations that might already exist
+                const scriptContent = script.textContent;
+                const hasClassDeclaration = /class\s+\w+/.test(scriptContent);
+                
+                if (!hasClassDeclaration) {
+                    // Inline script without class declarations - safe to execute
+                    try {
+                        eval(scriptContent);
+                    } catch (error) {
+                        console.warn('Error executing inline script:', error);
+                    }
+                } else {
+                    // Skip inline scripts with class declarations to avoid redeclaration errors
+                    console.log('Skipping inline script with class declaration to avoid redeclaration');
                 }
             }
         });
     }
 }
+}
 
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', () => {
-    window.navigation = new Navigation();
-    window.pageTransition = new PageTransition();
+    if (typeof Navigation !== 'undefined' && typeof window.navigation === 'undefined') {
+        window.navigation = new Navigation();
+    }
+    if (typeof PageTransition !== 'undefined' && typeof window.pageTransition === 'undefined') {
+        window.pageTransition = new PageTransition();
+    }
 });
 
 // Export for use in other modules
