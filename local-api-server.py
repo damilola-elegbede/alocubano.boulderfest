@@ -77,8 +77,6 @@ class APIRequestHandler(SimpleHTTPRequestHandler):
             self.handle_gallery_api()
         elif parsed_path.path == '/api/featured-photos':
             self.handle_featured_photos_api()
-        elif parsed_path.path.startswith('/api/image-proxy'):
-            self.handle_image_proxy()
         else:
             # Serve static files
             super().do_GET()
@@ -171,8 +169,8 @@ class APIRequestHandler(SimpleHTTPRequestHandler):
                             'name': file['name'],
                             'type': item_type,
                             'mimeType': mime_type,
-                            'thumbnailUrl': f"https://drive.google.com/thumbnail?id={file_id}&sz=w400",
-                            'viewUrl': f"https://drive.google.com/thumbnail?id={file_id}&sz=w1600",
+                            'thumbnailUrl': f"https://lh3.googleusercontent.com/d/{file_id}=w400",
+                            'viewUrl': f"https://lh3.googleusercontent.com/d/{file_id}=w1600",
                             'downloadUrl': f"https://drive.google.com/uc?export=download&id={file_id}",
                             'size': int(file.get('size', 0)),
                             'createdAt': file.get('createdTime', ''),
@@ -288,8 +286,8 @@ class APIRequestHandler(SimpleHTTPRequestHandler):
                     'name': file['name'],
                     'type': 'image',
                     'mimeType': file.get('mimeType', ''),
-                    'thumbnailUrl': f"https://drive.google.com/thumbnail?id={file_id}&sz=w800",
-                    'viewUrl': f"https://drive.google.com/thumbnail?id={file_id}&sz=w1600",
+                    'thumbnailUrl': f"https://lh3.googleusercontent.com/d/{file_id}=w800",
+                    'viewUrl': f"https://lh3.googleusercontent.com/d/{file_id}=w1600",
                     'downloadUrl': f"https://drive.google.com/uc?export=download&id={file_id}",
                     'size': int(file.get('size', 0)),
                     'createdAt': file.get('createdTime', '')
@@ -327,63 +325,6 @@ class APIRequestHandler(SimpleHTTPRequestHandler):
             import traceback
             traceback.print_exc()
             self.send_error_response(500, {'error': 'Internal server error', 'details': str(error)})
-    
-    def handle_image_proxy(self):
-        """Proxy Google Drive images with fallback URLs"""
-        try:
-            # Parse query parameters
-            parsed_url = urlparse(self.path)
-            query_params = parse_qs(parsed_url.query)
-            
-            file_id = query_params.get('id', [''])[0]
-            size = query_params.get('size', ['w1600'])[0]
-            
-            if not file_id:
-                self.send_error_response(400, {'error': 'Image ID is required'})
-                return
-            
-            # Try multiple URL formats
-            urls = [
-                f"https://lh3.googleusercontent.com/d/{file_id}={size}",
-                f"https://drive.google.com/thumbnail?id={file_id}&sz={size}",
-                f"https://lh3.googleusercontent.com/u/0/d/{file_id}={size}",
-                f"https://drive.google.com/uc?export=view&id={file_id}"
-            ]
-            
-            import urllib.request
-            
-            for url in urls:
-                try:
-                    req = urllib.request.Request(url, headers={
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                    })
-                    response = urllib.request.urlopen(req, timeout=5)
-                    
-                    if response.status == 200:
-                        # Success - proxy the image
-                        content = response.read()
-                        content_type = response.headers.get('Content-Type', 'image/jpeg')
-                        
-                        self.send_response(200)
-                        self.send_header('Content-Type', content_type)
-                        # Disable caching in development to avoid stale Google Drive URLs
-                        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
-                        self.send_header('Pragma', 'no-cache')
-                        self.send_header('Expires', '0')
-                        self.send_header('Content-Length', str(len(content)))
-                        self.end_headers()
-                        self.wfile.write(content)
-                        return
-                except Exception as e:
-                    print(f"Failed to fetch from {url}: {e}")
-                    continue
-            
-            # If all URLs fail, send error
-            self.send_error_response(404, {'error': 'Image not found or inaccessible'})
-            
-        except Exception as error:
-            print(f"Image proxy error: {error}")
-            self.send_error_response(500, {'error': 'Failed to proxy image'})
     
     def send_error_response(self, status_code, error_data):
         """Send JSON error response"""
