@@ -439,12 +439,26 @@ class ImageCacheManager {
 }
 
 // Create global instance
+console.log('🏗️ ImageCacheManager instantiation check:');
+console.log('  - typeof window.ImageCacheManager:', typeof window.ImageCacheManager);
+console.log('  - typeof ImageCacheManager:', typeof ImageCacheManager);
+
 if (typeof window.ImageCacheManager === 'undefined' && typeof ImageCacheManager !== 'undefined') {
+    console.log('✅ Creating new ImageCacheManager instance...');
     window.ImageCacheManager = new ImageCacheManager();
+    console.log('✅ ImageCacheManager instance created successfully');
     
     // Add method to notify when cache is ready
     window.ImageCacheManager.notifyReady = function() {
       const event = new CustomEvent('imageCacheReady');
       document.dispatchEvent(event);
     };
+} else {
+    console.log('❌ ImageCacheManager not instantiated');
+    if (typeof window.ImageCacheManager !== 'undefined') {
+        console.log('  - window.ImageCacheManager already exists');
+    }
+    if (typeof ImageCacheManager === 'undefined') {
+        console.log('  - ImageCacheManager class not defined');
+    }
 }

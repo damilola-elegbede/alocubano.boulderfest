@@ -70,6 +70,10 @@
     }
 
     // Check if ImageCacheManager is available
+    console.log('🔍 Checking ImageCacheManager availability...');
+    console.log('  - typeof window.ImageCacheManager:', typeof window.ImageCacheManager);
+    console.log('  - window.ImageCacheManager exists:', !!window.ImageCacheManager);
+    
     if (typeof window.ImageCacheManager === 'undefined') {
       console.error('ImageCacheManager not loaded, using default image');
       heroImg.src = '/images/hero-default.jpg';
