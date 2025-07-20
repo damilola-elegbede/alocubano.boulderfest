@@ -142,37 +142,53 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             
             print(f"📸 Gallery API request - year: {year}, category: {category}")
             
-            # Return empty structure until Google Drive folders are set up with real photos
-            empty_data = {
-                "year": year,
-                "categories": {
-                    "workshops": [],
-                    "socials": [],
-                    "performances": []
-                },
-                "items": [],
-                "totalCount": 0,
-                "limit": limit,
-                "offset": offset,
-                "hasMore": False,
-                "cacheTimestamp": "2025-07-20T05:30:00Z"
-            }
+            # Get photos from Google Drive folder structure
+            try:
+                gallery_data = get_gallery_photos_from_drive(year, category)
+                
+                response_data = {
+                    "year": year,
+                    "categories": gallery_data["categories"],
+                    "items": [],
+                    "totalCount": gallery_data["totalCount"],
+                    "limit": limit,
+                    "offset": offset,
+                    "hasMore": False,
+                    "cacheTimestamp": "2025-07-20T05:30:00Z"
+                }
+                
+            except Exception as e:
+                print(f"❌ Error fetching gallery photos: {e}")
+                # Fallback to empty structure
+                response_data = {
+                    "year": year,
+                    "categories": {
+                        "workshops": [],
+                        "socials": []
+                    },
+                    "items": [],
+                    "totalCount": 0,
+                    "limit": limit,
+                    "offset": offset,
+                    "hasMore": False,
+                    "cacheTimestamp": "2025-07-20T05:30:00Z"
+                }
             
             # Filter by category if specified
             if category:
-                if category.lower() in empty_data["categories"]:
-                    filtered_categories = {category.lower(): empty_data["categories"][category.lower()]}
-                    empty_data["categories"] = filtered_categories
-                    empty_data["totalCount"] = len(empty_data["categories"][category.lower()])
+                if category.lower() in response_data["categories"]:
+                    filtered_categories = {category.lower(): response_data["categories"][category.lower()]}
+                    response_data["categories"] = filtered_categories
+                    response_data["totalCount"] = len(response_data["categories"][category.lower()])
                 else:
-                    empty_data["categories"] = {}
-                    empty_data["totalCount"] = 0
+                    response_data["categories"] = {}
+                    response_data["totalCount"] = 0
             
             # Flatten items for backwards compatibility
             all_items = []
-            for items in empty_data["categories"].values():
+            for items in response_data["categories"].values():
                 all_items.extend(items)
-            empty_data["items"] = all_items[offset:offset + limit]
+            response_data["items"] = all_items[offset:offset + limit]
             
             # Send JSON response
             self.send_response(200)
@@ -183,8 +199,8 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Cache-Control', 's-maxage=3600, stale-while-revalidate')
             self.end_headers()
             
-            self.wfile.write(json.dumps(empty_data).encode('utf-8'))
-            print(f"✅ Gallery API response sent - {empty_data['totalCount']} items")
+            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            print(f"✅ Gallery API response sent - {response_data['totalCount']} items")
             
         except Exception as e:
             print(f"❌ Gallery API Error: {e}")
@@ -400,6 +416,105 @@ def get_image_from_drive(file_id):
     except Exception as e:
         print(f"❌ Error fetching image from Drive: {e}")
         return None, None
+
+def get_gallery_photos_from_drive(year, category_filter=None):
+    """
+    Get gallery photos from Google Drive organized by year and category
+    Structure: Media/ALoCubano_BolderFest_2025/workshops/ and /socials/
+    """
+    try:
+        # Use the same credentials as other Google Drive functions
+        credentials = service_account.Credentials.from_service_account_info(
+            json.loads(os.environ.get('GOOGLE_CREDENTIALS', '{}')),
+            scopes=['https://www.googleapis.com/auth/drive.readonly']
+        )
+        service = build('drive', 'v3', credentials=credentials)
+        
+        print(f"🔍 Searching for gallery photos - year: {year}, category: {category_filter}")
+        
+        # First, find the Media folder
+        media_query = "name = 'Media' and mimeType = 'application/vnd.google-apps.folder'"
+        media_results = service.files().list(q=media_query, fields="files(id, name)").execute()
+        media_folders = media_results.get('files', [])
+        
+        if not media_folders:
+            print("❌ Media folder not found!")
+            raise Exception('Media folder not found')
+        
+        media_folder_id = media_folders[0]['id']
+        print(f"✅ Found Media folder ID: {media_folder_id}")
+        
+        # Find the year folder (e.g., ALoCubano_BolderFest_2025)
+        year_folder_name = f"ALoCubano_BolderFest_{year}"
+        year_query = f"'{media_folder_id}' in parents and name = '{year_folder_name}' and mimeType = 'application/vnd.google-apps.folder'"
+        year_results = service.files().list(q=year_query, fields="files(id, name)").execute()
+        year_folders = year_results.get('files', [])
+        
+        if not year_folders:
+            print(f"❌ Year folder {year_folder_name} not found!")
+            raise Exception(f'Year folder {year_folder_name} not found')
+        
+        year_folder_id = year_folders[0]['id']
+        print(f"✅ Found year folder ID: {year_folder_id}")
+        
+        # Get category folders (workshops, socials)
+        category_query = f"'{year_folder_id}' in parents and mimeType = 'application/vnd.google-apps.folder'"
+        category_results = service.files().list(q=category_query, fields="files(id, name)").execute()
+        category_folders = category_results.get('files', [])
+        
+        print(f"📂 Found {len(category_folders)} category folders: {[f['name'] for f in category_folders]}")
+        
+        categories = {}
+        total_count = 0
+        
+        for folder in category_folders:
+            category_name = folder['name'].lower()
+            
+            # Skip if specific category requested and this isn't it
+            if category_filter and category_name != category_filter.lower():
+                continue
+            
+            print(f"📸 Processing {category_name} folder...")
+            
+            # Get photos from this category folder
+            photos_query = f"'{folder['id']}' in parents and (mimeType contains 'image/' or mimeType contains 'video/')"
+            photos_results = service.files().list(
+                q=photos_query,
+                fields="files(id, name, mimeType, size, createdTime)",
+                orderBy='createdTime desc'
+            ).execute()
+            
+            photos = photos_results.get('files', [])
+            print(f"📸 Found {len(photos)} photos in {category_name}")
+            
+            # Convert to gallery format
+            gallery_items = []
+            for photo in photos:
+                gallery_items.append({
+                    "id": photo['id'],
+                    "name": photo['name'],
+                    "type": "image" if photo['mimeType'].startswith('image/') else "video",
+                    "category": category_name,
+                    "thumbnailUrl": f"/api/image-proxy/{photo['id']}",
+                    "viewUrl": f"/api/image-proxy/{photo['id']}",
+                    "mimeType": photo['mimeType'],
+                    "size": int(photo.get('size', 0)),
+                    "createdAt": photo['createdTime']
+                })
+            
+            categories[category_name] = gallery_items
+            total_count += len(gallery_items)
+        
+        print(f"✅ Gallery data processed - {total_count} total photos across {len(categories)} categories")
+        
+        return {
+            "categories": categories,
+            "totalCount": total_count
+        }
+        
+    except Exception as e:
+        print(f"❌ Error in get_gallery_photos_from_drive: {e}")
+        raise e
 
 def run_server():
     """Start the development server"""
