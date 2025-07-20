@@ -200,6 +200,9 @@ class PageTransition {
                 window.history.pushState({}, '', url);
             }
 
+            // Re-execute scripts to restore functionality
+            this.reExecuteScripts(newDoc);
+
             // Re-initialize navigation
             new Navigation();
 
@@ -215,6 +218,28 @@ class PageTransition {
             // Page transition error, fallback to normal navigation
             window.location.href = url;
         }
+    }
+
+    reExecuteScripts(newDoc) {
+        // Get all script tags from the new document
+        const scripts = newDoc.querySelectorAll('script');
+        
+        scripts.forEach(script => {
+            if (script.src) {
+                // External script - create new script element
+                const newScript = document.createElement('script');
+                newScript.src = script.src;
+                newScript.async = false; // Maintain execution order
+                document.head.appendChild(newScript);
+            } else if (script.textContent) {
+                // Inline script - execute directly
+                try {
+                    eval(script.textContent);
+                } catch (error) {
+                    console.warn('Error executing inline script:', error);
+                }
+            }
+        });
     }
 }
 
