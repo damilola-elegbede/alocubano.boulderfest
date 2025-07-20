@@ -1,5 +1,5 @@
 // Gallery Detail Module - Handles individual gallery page functionality
-// Cache Buster: v2024-07-20-fix
+// Cache Buster: v2025-07-20-DEBUG-ENHANCED
 (function() {
   'use strict';
 
@@ -19,10 +19,12 @@
     galleryData: null,
     currentLightboxIndex: -1,
     lightboxItems: [],
+    lightboxCategories: [], // Track category for each item
     loadedPages: 0,
     hasMorePages: true,
     lazyObserver: null,
-    allCategories: {}
+    allCategories: {},
+    categoryCounts: {} // Store counts per category
   };
 
   // Initialize gallery on page load
@@ -72,33 +74,103 @@
       
       // Calculate offset
       const offset = state.loadedPages * CONFIG.PAGINATION_SIZE;
+      let apiUrl;
+      let isStaticFetch = false;
+      let data;
+
+      // For the first page, load the static JSON file.
+      if (offset === 0) {
+        isStaticFetch = true;
+        // Use absolute path to ensure it works from any page location
+        apiUrl = `/gallery-data/${year}.json?timestamp=${Date.now()}`;
+        console.log('🔥 Loading initial data from static cache:', apiUrl);
+      } else {
+        // For subsequent pages (infinite scroll), hit the API.
+        apiUrl = `${CONFIG.API_ENDPOINT}?year=${year}&limit=${CONFIG.PAGINATION_SIZE}&offset=${offset}&timestamp=${Date.now()}`;
+        console.log('🔥 Making paginated API call to:', apiUrl);
+      }
       
-      // Fetch from API with pagination
-      const apiUrl = `${CONFIG.API_ENDPOINT}?year=${year}&limit=${CONFIG.PAGINATION_SIZE}&offset=${offset}&timestamp=${Date.now()}`;
-      console.log('🔥 Making paginated API call to:', apiUrl);
-      
+      console.log('Fetching from URL:', apiUrl);
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json'
+          'Accept': 'application/json'
         }
       });
       
+      console.log('Response received:', {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers.get('content-type')
+      });
+      
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json();
-      console.log(`📦 Received page ${state.loadedPages + 1}: ${data.items.length} items, hasMore: ${data.hasMore}`);
+      data = await response.json();
+      console.log('Data parsed successfully:', {
+        totalCount: data.totalCount,
+        hasCategories: !!data.categories,
+        categoryNames: data.categories ? Object.keys(data.categories) : []
+      });
       
-      // Update state
-      state.hasMorePages = data.hasMore || false;
-      state.loadedPages++;
-      
-      // Merge categories for first page, append for subsequent pages
-      if (state.loadedPages === 1) {
+      // If we fetched the static file, it contains ALL items.
+      // We need to manually slice the first page.
+      if (isStaticFetch) {
+        console.log('📊 Static data loaded:', data);
+        const allItems = [];
+        Object.values(data.categories || {}).forEach(categoryItems => {
+          allItems.push(...categoryItems);
+        });
+        console.log(`📊 Total items in static data: ${allItems.length}`);
+        
+        state.hasMorePages = allItems.length > CONFIG.PAGINATION_SIZE;
+        
+        // Manually paginate the data from the static file for the first display
+        const paginatedCategories = {};
+        const workshopsPage = (data.categories.workshops || []).slice(0, 20);
+        const socialsPage = (data.categories.socials || []).slice(0, 20);
+        
+        if (workshopsPage.length > 0) {
+          paginatedCategories.workshops = workshopsPage;
+        }
+        if (socialsPage.length > 0) {
+          paginatedCategories.socials = socialsPage;
+        }
+        const itemCount = workshopsPage.length + socialsPage.length;
+        
+        // Store all categories for future pagination
         state.allCategories = data.categories || {};
+        
+        // Store category counts
+        for (const [categoryName, items] of Object.entries(data.categories || {})) {
+          state.categoryCounts[categoryName] = items.length;
+        }
+        
+        state.loadedPages++;
+        
+        console.log(`📦 Loaded static data, displaying first ${itemCount} items.`);
+        
+        // Display paginated data
+        displayGalleryData({
+          categories: paginatedCategories,
+          totalCount: data.totalCount,
+          hasMore: state.hasMorePages
+        }, contentEl, staticEl, loadingEl, false);
+        
       } else {
+        // This is the existing logic for paginated API calls
+        console.log(`📦 Received page ${state.loadedPages + 1}: ${data.items ? data.items.length : 0} items, hasMore: ${data.hasMore}`);
+        state.hasMorePages = data.hasMore || false;
+        state.loadedPages++;
+        
+        // Merge categories for subsequent pages
+        if (!state.allCategories) {
+          state.allCategories = {};
+        }
+        
         // Append new items to existing categories
         for (const [categoryName, items] of Object.entries(data.categories || {})) {
           if (!state.allCategories[categoryName]) {
@@ -106,14 +178,14 @@
           }
           state.allCategories[categoryName].push(...items);
         }
+        
+        // Display the gallery (append mode for subsequent pages)
+        displayGalleryData({
+          categories: state.allCategories,
+          totalCount: data.totalCount,
+          hasMore: data.hasMore
+        }, contentEl, staticEl, loadingEl, true);
       }
-      
-      // Display the gallery (append mode for subsequent pages)
-      displayGalleryData({
-        categories: state.allCategories,
-        totalCount: data.totalCount,
-        hasMore: data.hasMore
-      }, contentEl, staticEl, loadingEl, state.loadedPages > 1);
       
       // Set up infinite scroll for more pages
       if (state.hasMorePages) {
@@ -121,7 +193,12 @@
       }
       
     } catch (error) {
-      console.error('Gallery API request failed:', error.message);
+      console.error('Gallery API request failed:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        url: apiUrl
+      });
       
       // Show static fallback only on first page
       if (state.loadedPages === 0) {
@@ -136,7 +213,14 @@
 
   // Display gallery data with lazy loading and append mode
   function displayGalleryData(data, contentEl, staticEl, loadingEl, appendMode = false) {
-    console.log('displayGalleryData called with:', data, 'appendMode:', appendMode);
+    console.log('displayGalleryData called with:', {
+      hasData: !!data,
+      categories: data?.categories ? Object.keys(data.categories) : [],
+      appendMode: appendMode,
+      contentEl: !!contentEl,
+      staticEl: !!staticEl,
+      loadingEl: !!loadingEl
+    });
     
     // Check if we have any categories with items
     let hasItems = false;
@@ -164,22 +248,18 @@
     const socialItems = data.categories.socials || [];
 
     // Function to build gallery HTML for a category with lazy loading
-    function buildGalleryHTML(items, categoryOffset = 0, isAppend = false) {
+    function buildGalleryHTML(items, categoryName, categoryOffset = 0, isAppend = false) {
       return items.map((item, index) => {
-        const isVideo = item.type === 'video';
         const title = item.name.replace(/\.[^/.]+$/, ''); // Remove file extension
         const globalIndex = index + categoryOffset;
         
         return `
-          <div class="gallery-item lazy-item" data-index="${globalIndex}" data-loaded="false">
+          <div class="gallery-item lazy-item" data-index="${globalIndex}" data-category="${categoryName}" data-loaded="false">
             <div class="gallery-item-media">
-              ${isVideo ? 
-                `<video data-src="${item.viewUrl}" poster="${item.thumbnailUrl}" controls preload="none" class="lazy-video"></video>` :
-                `<div class="lazy-placeholder">
-                   <img data-src="${item.thumbnailUrl}" alt="${title}" class="lazy-image" style="display: none;">
-                   <div class="loading-spinner">📸</div>
-                 </div>`
-              }
+              <div class="lazy-placeholder">
+                <div class="loading-spinner">📸</div>
+              </div>
+              <img data-src="${item.thumbnailUrl}" alt="${title}" class="lazy-image" style="display: none;">
             </div>
           </div>
         `;
@@ -197,10 +277,10 @@
         workshopsSection.style.display = 'block';
         if (appendMode) {
           // Append new items
-          workshopsGallery.insertAdjacentHTML('beforeend', buildGalleryHTML(workshopItems, 0, true));
+          workshopsGallery.insertAdjacentHTML('beforeend', buildGalleryHTML(workshopItems, 'workshops', 0, true));
         } else {
           // Replace all items
-          workshopsGallery.innerHTML = buildGalleryHTML(workshopItems, 0);
+          workshopsGallery.innerHTML = buildGalleryHTML(workshopItems, 'workshops', 0);
         }
       }
       
@@ -211,10 +291,10 @@
         socialsSection.style.display = 'block';
         if (appendMode) {
           // Append new items
-          socialsGallery.insertAdjacentHTML('beforeend', buildGalleryHTML(socialItems, workshopItems.length, true));
+          socialsGallery.insertAdjacentHTML('beforeend', buildGalleryHTML(socialItems, 'socials', workshopItems.length, true));
         } else {
           // Replace all items
-          socialsGallery.innerHTML = buildGalleryHTML(socialItems, workshopItems.length);
+          socialsGallery.innerHTML = buildGalleryHTML(socialItems, 'socials', workshopItems.length);
         }
       }
       
@@ -232,45 +312,32 @@
 
     // Store all items for lightbox (flatten categories)
     const allItems = [];
-    Object.values(data.categories).forEach(items => allItems.push(...items));
+    const allCategories = [];
+    
+    for (const [categoryName, items] of Object.entries(data.categories)) {
+      items.forEach(item => {
+        allItems.push(item);
+        allCategories.push(categoryName);
+      });
+    }
+    
     if (appendMode) {
       state.lightboxItems.push(...allItems);
+      state.lightboxCategories.push(...allCategories);
     } else {
       state.lightboxItems = allItems;
+      state.lightboxCategories = allCategories;
     }
   }
 
   // Setup click handlers for gallery items
   function setupGalleryItemHandlers(item, data) {
     const index = parseInt(item.dataset.index);
-    const mediaElement = item.querySelector('img, video');
-    
-    // For images, add click handler to the whole item
-    if (mediaElement && (mediaElement.tagName === 'IMG' || mediaElement.classList.contains('lazy-image'))) {
-      item.addEventListener('click', () => {
-        openLightbox(state.lightboxItems, index);
-      });
-      item.style.cursor = 'pointer';
-    } else if (mediaElement && mediaElement.tagName === 'VIDEO') {
-      // For videos, add click handler only to non-control areas
-      const mediaContainer = item.querySelector('.gallery-item-media');
-      if (mediaContainer) {
-        mediaContainer.style.cursor = 'pointer';
-        mediaContainer.addEventListener('click', (e) => {
-          // Only open lightbox if not clicking on video controls
-          if (e.target === mediaContainer || e.target === mediaElement) {
-            const rect = mediaElement.getBoundingClientRect();
-            const relativeY = e.clientY - rect.top;
-            const controlsHeight = 40; // Approximate height of video controls
-            
-            // Only open if not clicking in the controls area
-            if (relativeY < rect.height - controlsHeight) {
-              openLightbox(state.lightboxItems, index);
-            }
-          }
-        });
-      }
-    }
+    // Add click handler to gallery items
+    item.addEventListener('click', () => {
+      openLightbox(state.lightboxItems, index);
+    });
+    item.style.cursor = 'pointer';
   }
 
   // Initialize lazy loading observer
@@ -307,7 +374,6 @@
   // Load lazy item
   function loadLazyItem(item) {
     const lazyImage = item.querySelector('.lazy-image');
-    const lazyVideo = item.querySelector('.lazy-video');
     const placeholder = item.querySelector('.lazy-placeholder');
     const spinner = item.querySelector('.loading-spinner');
 
@@ -321,17 +387,9 @@
         };
         lazyImage.onerror = () => {
           if (spinner) spinner.textContent = '❌';
+          if (placeholder) placeholder.style.display = 'block'; // Keep placeholder visible on error
         };
         lazyImage.src = src;
-      }
-    }
-
-    if (lazyVideo) {
-      const src = lazyVideo.getAttribute('data-src');
-      if (src) {
-        lazyVideo.src = src;
-        lazyVideo.preload = 'metadata';
-        item.classList.add('loaded');
       }
     }
   }
@@ -389,7 +447,6 @@
             <button class="lightbox-next" aria-label="Next">›</button>
             <div class="lightbox-media-container">
               <img class="lightbox-image" src="" alt="">
-              <video class="lightbox-video" controls style="display: none;"></video>
             </div>
             <div class="lightbox-caption">
               <h3 class="lightbox-title font-display"></h3>
@@ -458,28 +515,31 @@
 
   function updateLightboxContent() {
     const item = state.lightboxItems[state.currentLightboxIndex];
+    const category = state.lightboxCategories[state.currentLightboxIndex];
     const lightbox = document.getElementById('gallery-lightbox');
     
     const img = lightbox.querySelector('.lightbox-image');
-    const video = lightbox.querySelector('.lightbox-video');
     const title = lightbox.querySelector('.lightbox-title');
     const counter = lightbox.querySelector('.lightbox-counter');
     
-    // Update media
-    if (item.type === 'video') {
-      img.style.display = 'none';
-      video.style.display = 'block';
-      video.src = item.viewUrl;
-    } else {
-      video.style.display = 'none';
-      img.style.display = 'block';
-      img.src = item.viewUrl;
-      img.alt = item.name;
+    // Update image
+    img.style.display = 'block';
+    img.src = item.viewUrl;
+    img.alt = item.name;
+    
+    // Calculate position within category
+    let categoryIndex = 0;
+    for (let i = 0; i < state.currentLightboxIndex; i++) {
+      if (state.lightboxCategories[i] === category) {
+        categoryIndex++;
+      }
     }
     
-    // Update caption
-    title.textContent = item.name.replace(/\.[^/.]+$/, '');
-    counter.textContent = `${state.currentLightboxIndex + 1} / ${state.lightboxItems.length}`;
+    // Update caption - Remove filename, only show counter
+    title.style.display = 'none'; // Hide title element completely
+    const categoryCount = state.categoryCounts[category] || state.lightboxItems.length;
+    const categoryLabel = category.charAt(0).toUpperCase() + category.slice(1);
+    counter.textContent = `${categoryLabel}: ${categoryIndex + 1} / ${categoryCount}`;
     
     // Update navigation buttons
     const prevBtn = lightbox.querySelector('.lightbox-prev');

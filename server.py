@@ -12,6 +12,8 @@ import json
 import re
 import gzip
 import io
+import time
+from collections import defaultdict
 from urllib.parse import urlparse, parse_qs
 from dotenv import load_dotenv
 from google.oauth2 import service_account
@@ -24,6 +26,45 @@ load_dotenv('.env.local')
 PORT = 8000
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
+# Rate limiting configuration
+class RateLimiter:
+    """Simple rate limiter for API endpoints"""
+    def __init__(self):
+        self.requests = defaultdict(list)
+        self.limits = {
+            'api': {'requests': 60, 'window': 300},  # 60 requests per 5 minutes for API endpoints
+            'static': {'requests': 200, 'window': 300}  # 200 requests per 5 minutes for static files
+        }
+    
+    def is_allowed(self, client_ip, endpoint_type='api'):
+        """Check if request is allowed based on rate limits"""
+        now = time.time()
+        limit_config = self.limits.get(endpoint_type, self.limits['api'])
+        
+        # Clean old requests outside the time window
+        window_start = now - limit_config['window']
+        self.requests[client_ip] = [req_time for req_time in self.requests[client_ip] if req_time > window_start]
+        
+        # Check if limit exceeded
+        if len(self.requests[client_ip]) >= limit_config['requests']:
+            return False
+        
+        # Add current request
+        self.requests[client_ip].append(now)
+        return True
+    
+    def get_reset_time(self, client_ip, endpoint_type='api'):
+        """Get time until rate limit resets"""
+        if not self.requests[client_ip]:
+            return 0
+        
+        limit_config = self.limits.get(endpoint_type, self.limits['api'])
+        oldest_request = min(self.requests[client_ip])
+        return max(0, oldest_request + limit_config['window'] - time.time())
+
+# Global rate limiter instance
+rate_limiter = RateLimiter()
+
 class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     """Custom HTTP request handler with proper MIME types and routing"""
     
@@ -31,10 +72,25 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
     
     def end_headers(self):
-        # Add CORS headers for local development
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        # Add secure CORS headers with domain restrictions
+        origin = self.headers.get('Origin')
+        allowed_origins = [
+            'https://alocubano.boulderfest.com',
+            'https://www.alocubano.boulderfest.com',
+            'http://localhost:8000',
+            'http://127.0.0.1:8000',
+            'http://localhost:3000',  # Common dev port
+            'http://127.0.0.1:3000'   # Common dev port
+        ]
+        
+        if origin and origin in allowed_origins:
+            self.send_header('Access-Control-Allow-Origin', origin)
+        elif not origin:  # Local file access
+            self.send_header('Access-Control-Allow-Origin', 'http://localhost:8000')
+        
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Access-Control-Max-Age', '3600')  # Cache preflight for 1 hour
         super().end_headers()
     
     def send_compressed_response(self, data, content_type='application/json'):
@@ -81,9 +137,27 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(data)
     
     def do_GET(self):
+        # Get client IP for rate limiting
+        client_ip = self.client_address[0]
+        
         # Parse the URL
         parsed_path = urlparse(self.path)
         path = parsed_path.path
+        
+        # Check rate limits for API endpoints
+        if path.startswith('/api/'):
+            if not rate_limiter.is_allowed(client_ip, 'api'):
+                self.send_error(429, "Too Many Requests")
+                self.send_header('Retry-After', str(int(rate_limiter.get_reset_time(client_ip, 'api'))))
+                self.end_headers()
+                return
+        else:
+            # Check rate limits for static files (more lenient)
+            if not rate_limiter.is_allowed(client_ip, 'static'):
+                self.send_error(429, "Too Many Requests")
+                self.send_header('Retry-After', str(int(rate_limiter.get_reset_time(client_ip, 'static'))))
+                self.end_headers()
+                return
         
         # Handle API endpoints
         if path == '/api/featured-photos':
@@ -102,12 +176,18 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_image_proxy_api(path)
             return
         
+        # Handle static gallery-data JSON files
+        elif path.startswith('/gallery-data/') and path.endswith('.json'):
+            # Let the default handler serve the static JSON file
+            # The parent class will handle it correctly
+            pass
+        
         # Handle root path
         if path == '/':
             self.path = '/index.html'
         
         # Handle paths without .html extension
-        elif not path.endswith(('.html', '.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf')):
+        elif not path.endswith(('.html', '.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.json')):
             # Check if it's a directory
             full_path = os.path.join(DIRECTORY, path.lstrip('/'))
             if os.path.isdir(full_path):
@@ -247,7 +327,6 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             # Send error response
             self.send_response(500)
             self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             
             error_response = {
@@ -269,7 +348,6 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             # Send JSON response
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             
             response_data = {
@@ -284,7 +362,6 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             # Send error response
             self.send_response(500)
             self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             
             error_response = {
@@ -302,7 +379,6 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             
             self.wfile.write(json.dumps(debug_info, indent=2).encode('utf-8'))
@@ -310,7 +386,6 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             self.send_response(500)
             self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             
             error_response = {'error': str(e)}

@@ -37,16 +37,8 @@
     if (heroElement) {
       console.log('Current hero src:', heroElement.src);
       
-      // Get appropriate image immediately (cache check or default)
-      setupImmediateImage();
-      
-      // Backup: Ensure image is set after a short delay if still empty
-      setTimeout(() => {
-        if (!heroElement.src || heroElement.src.endsWith('/')) {
-          console.log('Backup: Hero image still empty, setting default');
-          heroElement.src = '/images/hero-default.jpg';
-        }
-      }, 100);
+      // Load hero image asynchronously
+      loadHeroImage(heroElement);
     }
     
     // Setup error handlers
@@ -61,44 +53,25 @@
     initializeHero();
   }
 
-  // Setup immediate image display (cache check first, then default)
-  function setupImmediateImage() {
-    const heroImg = document.getElementById('hero-splash-image');
-    if (!heroImg) {
-      console.warn('Hero image element not found');
-      return;
-    }
-
-    // Check if ImageCacheManager is available
-    console.log('🔍 Checking ImageCacheManager availability...');
-    console.log('  - typeof window.ImageCacheManager:', typeof window.ImageCacheManager);
-    console.log('  - window.ImageCacheManager exists:', !!window.ImageCacheManager);
-    
-    if (typeof window.ImageCacheManager === 'undefined') {
+  // Load hero image asynchronously
+  async function loadHeroImage(heroElement) {
+    if (!window.ImageCacheManager) {
       console.error('ImageCacheManager not loaded, using default image');
-      heroImg.src = '/images/hero-default.jpg';
+      heroElement.src = '/images/hero-default.jpg';
       return;
     }
 
-    // Get immediate image (cache check first, default on miss)
-    const imageData = window.ImageCacheManager.getImageForPageImmediate();
-    
-    console.log('📸 Image data received:', imageData);
+    console.log('Fetching assigned hero image...');
+    const imageData = await window.ImageCacheManager.getImageForPage();
     
     if (imageData && imageData.url) {
-      console.log('🔄 Setting hero image src to:', imageData.url);
-      heroImg.src = imageData.url;
-      heroImg.classList.remove('loading');
-      heroImg.classList.add('loaded');
-      
-      if (imageData.isDefault) {
-        console.log('✅ Displaying default image for current page');
-      } else {
-        console.log('🎯 Displaying assigned image:', imageData.name);
-      }
+      console.log('Setting hero image src to:', imageData.url);
+      heroElement.src = imageData.url;
+      heroElement.classList.remove('loading');
+      heroElement.classList.add('loaded');
     } else {
-      console.error('❌ No image data returned, using fallback');
-      heroImg.src = '/images/hero-default.jpg';
+      console.error('No image data returned, using fallback');
+      heroElement.src = '/images/hero-default.jpg';
     }
   }
 
@@ -167,18 +140,6 @@
     }
   }
 
-  // DISABLED: Listen for image upgrade events from cache manager
-  // NO LONGER UPGRADING IMAGES MID-PAGE VIEW - only show assigned on initial load
-  // document.addEventListener('imageReadyForPage', (event) => {
-  //   const { pageId, imageData } = event.detail;
-  //   const currentPageId = window.ImageCacheManager ? window.ImageCacheManager.getCurrentPageId() : null;
-  //   
-  //   // Only upgrade if this event is for the current page
-  //   if (pageId === currentPageId) {
-  //     console.log('Image ready for current page upgrade:', pageId, imageData.name);
-  //     upgradeToAssignedImage(imageData);
-  //   }
-  // });
 
   // Listen for cache manager ready events (for legacy compatibility)
   document.addEventListener('imageCacheReady', () => {

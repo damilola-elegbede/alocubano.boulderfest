@@ -31,18 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 50);
     });
 
-    // Split text for letter animations
-    const animatedTextElements = document.querySelectorAll('.hero-title-massive');
-
-    animatedTextElements.forEach(element => {
-        const words = element.querySelectorAll('.word');
-        words.forEach((word, wordIndex) => {
-            const text = word.textContent;
-            word.innerHTML = text.split('').map((letter, index) =>
-                `<span class="letter" style="animation-delay: ${wordIndex * 0.1 + index * 0.02}s">${letter}</span>`
-            ).join('');
-        });
-    });
 
     // Parallax effect for vertical text
     const verticalTexts = document.querySelectorAll('.text-block-vertical');
@@ -133,37 +121,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Number counter animation
-    const counters = document.querySelectorAll('[data-count]');
-
-    counters.forEach(counter => {
-        const target = parseInt(counter.dataset.count);
-        const duration = 2000;
-        const increment = target / (duration / 16);
-        let current = 0;
-
-        const updateCounter = () => {
-            current += increment;
-            if (current < target) {
-                counter.textContent = Math.floor(current);
-                requestAnimationFrame(updateCounter);
-            } else {
-                counter.textContent = target;
-            }
-        };
-
-        // Start animation when element is visible
-        const observer = new IntersectionObserver(entries => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    updateCounter();
-                    observer.unobserve(entry.target);
-                }
-            });
-        });
-
-        observer.observe(counter);
-    });
 });
 
 // Add CSS classes dynamically for text animations
