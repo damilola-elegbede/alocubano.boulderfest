@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A Lo Cubano Boulder Fest - Typographic Design</title>
+    <meta name="description" content="Experience authentic Cuban salsa culture at A Lo Cubano Boulder Fest, May 15-17, 2026. Join workshops, social dancing, and celebrate Cuban music traditions in Boulder, Colorado.">
     
     <!-- Favicons -->
     <link rel="icon" type="image/svg+xml" href="../../images/favicon-circle.svg">
@@ -19,7 +20,11 @@
     <link rel="stylesheet" href="../../css/mobile-overrides.css">
 </head>
 <body class="typographic">
-    <header class="header">
+    <!-- Skip Links for Accessibility -->
+    <a href="#main-content" class="skip-link" style="position: absolute; top: -40px; left: 0; background: var(--color-black); color: var(--color-white); padding: 8px; text-decoration: none; z-index: 1000; transition: top 0.3s;">Skip to main content</a>
+    <a href="#navigation" class="skip-link" style="position: absolute; top: -40px; left: 0; background: var(--color-black); color: var(--color-white); padding: 8px; text-decoration: none; z-index: 1000; transition: top 0.3s;">Skip to navigation</a>
+    
+    <header class="header" id="navigation">
         <div class="container">
             <div class="grid">
                 <div class="header-left">
@@ -50,12 +55,12 @@
         </div>
     </header>
 
-    <main>
+    <main id="main-content">
 
         <!-- Hero Splash Image -->
         <section class="gallery-hero-splash">
             <div class="hero-image-container">
-                <img id="hero-splash-image" src="" alt="A Lo Cubano Festival Moment" class="hero-splash-img" style="object-position: top center !important;">
+                <img id="hero-splash-image" src="" alt="Dynamic festival photo showcasing A Lo Cubano Boulder Fest celebration with dancers, musicians, and Cuban culture" class="hero-splash-img" style="object-position: top center !important;">
             </div>
         </section>
 
@@ -204,6 +209,8 @@
         </div>
     </footer>
     <script src="../../js/navigation.js"></script>
+    <script src="../../js/components/lightbox.js"></script>
+    <script src="../../js/components/lazy-loading.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/typography.js"></script>
     <script src="../../js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING"></script>

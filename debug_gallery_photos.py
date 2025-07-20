@@ -6,7 +6,7 @@ import os
 
 def check_static_file():
     """Check if static JSON file exists and is valid"""
-    file_path = "gallery-data/2025.json"
+    file_path = "public/gallery-data/2025.json"
     
     print(f"Checking {file_path}...")
     

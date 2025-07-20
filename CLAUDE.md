@@ -146,10 +146,8 @@ As of the latest design iteration, **ALL hero titles have been removed** from th
 # Quick start
 ./start.sh
 
-# Alternative methods
+# Alternative method
 python3 server.py
-python3 run_server.py
-python3 simple_server.py
 
 # Open browser
 http://localhost:8000
