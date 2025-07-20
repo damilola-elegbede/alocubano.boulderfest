@@ -7,7 +7,7 @@
     API_ENDPOINT: window.GALLERY_API_ENDPOINT || '/api/gallery',
     CACHE_KEY: 'gallery_cache',
     CACHE_DURATION: 3600000, // 1 hour in milliseconds
-    LOADING_TIMEOUT: 10000 // 10 seconds
+    LOADING_TIMEOUT: 3000 // 3 seconds - shorter timeout for better UX
   };
 
   // Gallery state
@@ -50,6 +50,15 @@
     if (loadingEl) loadingEl.style.display = 'block';
     if (staticEl) staticEl.style.display = 'none';
 
+    // Since we know the API doesn't exist yet, show fallback quickly for better UX
+    // TODO: Remove this when API is implemented
+    console.log('Gallery API not implemented yet, showing fallback content');
+    setTimeout(() => {
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (staticEl) staticEl.style.display = 'block';
+    }, 1000); // Show fallback after 1 second instead of waiting for API failure
+    
+    // Keep the original API code for when it's implemented
     try {
       state.isLoading = true;
       
@@ -81,11 +90,13 @@
       displayGalleryData(data, contentEl, staticEl, loadingEl);
       
     } catch (error) {
-      console.error('Failed to load gallery data:', error);
+      console.log('Gallery API request failed (expected):', error.message);
       
-      // Show static fallback
-      if (loadingEl) loadingEl.style.display = 'none';
-      if (staticEl) staticEl.style.display = 'block';
+      // Don't show fallback again if already shown by timeout above
+      if (loadingEl && loadingEl.style.display !== 'none') {
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (staticEl) staticEl.style.display = 'block';
+      }
       
     } finally {
       state.isLoading = false;
