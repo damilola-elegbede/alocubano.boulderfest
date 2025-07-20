@@ -10,7 +10,7 @@ import os
 import mimetypes
 import json
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 from dotenv import load_dotenv
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -43,6 +43,9 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         # Handle API endpoints
         if path == '/api/featured-photos':
             self.handle_featured_photos_api()
+            return
+        elif path == '/api/gallery':
+            self.handle_gallery_api()
             return
         elif path.startswith('/api/image-proxy/'):
             self.handle_image_proxy_api(path)
@@ -121,6 +124,102 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 'error': str(e),
                 'items': [],
                 'total': 0
+            }
+            
+            self.wfile.write(json.dumps(error_response).encode('utf-8'))
+
+    def handle_gallery_api(self):
+        """Handle /api/gallery endpoint for festival photo galleries"""
+        try:
+            # Parse query parameters
+            parsed_path = urlparse(self.path)
+            query_params = parse_qs(parsed_path.query)
+            
+            year = query_params.get('year', ['2025'])[0]
+            category = query_params.get('category', [None])[0]
+            limit = int(query_params.get('limit', ['50'])[0])
+            offset = int(query_params.get('offset', ['0'])[0])
+            
+            print(f"📸 Gallery API request - year: {year}, category: {category}")
+            
+            # For now, return mock data structure until Google Drive folders are set up
+            mock_data = {
+                "year": year,
+                "categories": {
+                    "workshops": [
+                        {
+                            "id": "sample_workshop_1",
+                            "name": "Workshop_Photo_001.jpg",
+                            "type": "image",
+                            "category": "workshops", 
+                            "thumbnailUrl": "/api/image-proxy/sample_workshop_1",
+                            "viewUrl": "/api/image-proxy/sample_workshop_1",
+                            "createdAt": "2025-05-15T10:30:00Z"
+                        }
+                    ],
+                    "socials": [
+                        {
+                            "id": "sample_social_1",
+                            "name": "Social_Photo_001.jpg", 
+                            "type": "image",
+                            "category": "socials",
+                            "thumbnailUrl": "/api/image-proxy/sample_social_1",
+                            "viewUrl": "/api/image-proxy/sample_social_1",
+                            "createdAt": "2025-05-16T20:15:00Z"
+                        }
+                    ],
+                    "performances": []
+                },
+                "items": [],
+                "totalCount": 2,
+                "limit": limit,
+                "offset": offset,
+                "hasMore": False,
+                "cacheTimestamp": "2025-07-20T05:30:00Z"
+            }
+            
+            # Filter by category if specified
+            if category:
+                if category.lower() in mock_data["categories"]:
+                    filtered_categories = {category.lower(): mock_data["categories"][category.lower()]}
+                    mock_data["categories"] = filtered_categories
+                    mock_data["totalCount"] = len(mock_data["categories"][category.lower()])
+                else:
+                    mock_data["categories"] = {}
+                    mock_data["totalCount"] = 0
+            
+            # Flatten items for backwards compatibility
+            all_items = []
+            for items in mock_data["categories"].values():
+                all_items.extend(items)
+            mock_data["items"] = all_items[offset:offset + limit]
+            
+            # Send JSON response
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+            self.send_header('Cache-Control', 's-maxage=3600, stale-while-revalidate')
+            self.end_headers()
+            
+            self.wfile.write(json.dumps(mock_data).encode('utf-8'))
+            print(f"✅ Gallery API response sent - {mock_data['totalCount']} items")
+            
+        except Exception as e:
+            print(f"❌ Gallery API Error: {e}")
+            # Send error response
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            
+            error_response = {
+                'error': str(e),
+                'year': year if 'year' in locals() else '2025',
+                'categories': {},
+                'items': [],
+                'totalCount': 0
             }
             
             self.wfile.write(json.dumps(error_response).encode('utf-8'))

@@ -51,22 +51,10 @@
     if (loadingEl) loadingEl.style.display = 'block';
     if (staticEl) staticEl.style.display = 'none';
 
-    // Since we know the API doesn't exist yet, show fallback quickly for better UX
-    // TODO: Remove this when API is implemented
-    console.log('🚨 EARLY RETURN: Gallery API not implemented yet, showing fallback content immediately');
+    // API is now implemented! Let's use it
+    console.log('📸 Gallery API is now available, fetching real data...');
     
-    // Show fallback immediately for better UX since API doesn't exist
-    if (loadingEl) loadingEl.style.display = 'none';
-    if (staticEl) staticEl.style.display = 'block';
-    state.isLoading = false;
-    
-    // EXPLICIT EARLY RETURN TO PREVENT ANY API CALLS
-    console.log('🚨 EARLY RETURN: Exiting function to prevent API calls');
-    return;
-    
-    // Comment out API code to prevent 404 errors in console
-    // Uncomment when API is implemented
-    /*
+    // API code is now active
     try {
       state.isLoading = true;
       
@@ -107,13 +95,21 @@
     } finally {
       state.isLoading = false;
     }
-    */
   }
 
   // Display gallery data
   function displayGalleryData(data, contentEl, staticEl, loadingEl) {
     console.log('displayGalleryData called with:', data);
-    if (!data || !data.items || data.items.length === 0) {
+    
+    // Check if we have any categories with items
+    let hasItems = false;
+    if (data && data.categories) {
+      Object.values(data.categories).forEach(items => {
+        if (items && items.length > 0) hasItems = true;
+      });
+    }
+    
+    if (!hasItems) {
       // Show static content if no items
       if (loadingEl) loadingEl.style.display = 'none';
       if (staticEl) staticEl.style.display = 'block';
@@ -124,9 +120,10 @@
     if (loadingEl) loadingEl.style.display = 'none';
     if (staticEl) staticEl.style.display = 'none';
 
-    // Separate items by category
-    const workshopItems = data.items.filter(item => item.category === 'Workshops');
-    const socialItems = data.items.filter(item => item.category === 'Socials');
+    // Get items from categories (new API format)
+    const workshopItems = data.categories.workshops || [];
+    const socialItems = data.categories.socials || [];
+    const performanceItems = data.categories.performances || [];
 
     // Function to build gallery HTML for a category
     function buildGalleryHTML(items, categoryOffset = 0) {
