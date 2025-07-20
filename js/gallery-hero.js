@@ -81,14 +81,16 @@
     if (!heroImg) return;
 
     heroImg.onerror = function() {
-      console.error('Hero image failed to load:', this.src);
-      
-      // If it's not the default image that failed, fall back to default
-      if (!this.src.includes('hero-default.jpg')) {
-        console.log('Falling back to default image');
+      const currentSrc = this.src;
+      if (currentSrc.includes('/api/image-proxy/')) {
+        console.info('🔄 Google Drive image failed (likely rate limit or credentials) - falling back to default hero image');
+        console.info('💡 This is normal in local development without API credentials');
+        this.src = '/images/hero-default.jpg';
+      } else if (!currentSrc.includes('hero-default.jpg')) {
+        console.warn('🔄 Falling back to default hero image');
         this.src = '/images/hero-default.jpg';
       } else {
-        // Default image failed, hide entirely
+        console.error('❌ Default hero image also failed to load');
         this.style.display = 'none';
       }
     };

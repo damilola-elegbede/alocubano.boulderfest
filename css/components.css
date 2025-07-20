@@ -167,12 +167,27 @@
 }
 
 /* Hero Image Transitions */
+.gallery-hero-splash {
+  position: relative;
+  width: 100%;
+  height: 60vh;
+  min-height: 400px;
+  overflow: hidden;
+  margin-bottom: var(--space-3xl);
+}
+
 .hero-image-container {
   position: relative;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
 }
 
 .hero-splash-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
   transition: opacity 0.5s ease-in-out;
 }
 
@@ -182,6 +197,14 @@
 
 .hero-splash-img.loaded {
   opacity: 1;
+}
+
+/* Mobile hero image optimization */
+@media (max-width: 768px) {
+  .gallery-hero-splash {
+    height: 50vh;
+    min-height: 300px;
+  }
 }
 
 /* Mobile Loading States */

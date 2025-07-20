@@ -48,11 +48,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     galleryItems.forEach(item => {
         item.addEventListener('mouseenter', function() {
-            this.querySelector('.text-glitch').classList.add('active');
+            const glitchElement = this.querySelector('.text-glitch');
+            if (glitchElement) {
+                glitchElement.classList.add('active');
+            }
         });
 
         item.addEventListener('mouseleave', function() {
-            this.querySelector('.text-glitch').classList.remove('active');
+            const glitchElement = this.querySelector('.text-glitch');
+            if (glitchElement) {
+                glitchElement.classList.remove('active');
+            }
         });
     });
 

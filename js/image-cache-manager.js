@@ -4,6 +4,7 @@ console.log('📦 ImageCacheManager v2 loading...');
 class ImageCacheManager {
     constructor() {
         this.cacheKey = 'alocubano_image_cache_v2';
+        this.imageCacheKey = 'alocubano_image_data_cache';
         this.defaultImageUrl = '/images/hero-default.jpg';
         this.pageMapping = {
             'home.html': 'home', 'about.html': 'about', 'artists.html': 'artists',
@@ -11,6 +12,53 @@ class ImageCacheManager {
             'donations.html': 'donations'
         };
         this.sessionAssignments = null;
+        this.imageDataCache = this.loadImageDataCache();
+        this.lastApiCall = 0;
+        this.minApiInterval = 2000; // Minimum 2 seconds between API calls
+    }
+    
+    loadImageDataCache() {
+        try {
+            const cached = localStorage.getItem(this.imageCacheKey);
+            return cached ? JSON.parse(cached) : {};
+        } catch (error) {
+            console.warn('Failed to load image data cache:', error);
+            return {};
+        }
+    }
+    
+    saveImageDataCache() {
+        try {
+            localStorage.setItem(this.imageCacheKey, JSON.stringify(this.imageDataCache));
+        } catch (error) {
+            console.warn('Failed to save image data cache:', error);
+        }
+    }
+    
+    isImageCached(fileId) {
+        const cached = this.imageDataCache[fileId];
+        if (!cached) return false;
+        
+        // Check if cache is less than 24 hours old
+        const now = Date.now();
+        const cacheAge = now - (cached.timestamp || 0);
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+        
+        return cacheAge < maxAge;
+    }
+    
+    async rateLimitedApiCall(fileId) {
+        const now = Date.now();
+        const timeSinceLastCall = now - this.lastApiCall;
+        
+        if (timeSinceLastCall < this.minApiInterval) {
+            const waitTime = this.minApiInterval - timeSinceLastCall;
+            console.log(`⏳ Rate limiting: waiting ${waitTime}ms before API call`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+        
+        this.lastApiCall = Date.now();
+        return `/api/image-proxy/${fileId}?size=medium&quality=85&cache=24h`;
     }
 
     getCurrentPageId() {
@@ -30,6 +78,7 @@ class ImageCacheManager {
                 const cachedAssignments = sessionStorage.getItem(this.cacheKey);
                 if (cachedAssignments) {
                     this.sessionAssignments = JSON.parse(cachedAssignments);
+                    console.log('📦 Using cached session assignments');
                 } else {
                     // 3. If no session cache, fetch static JSON and create assignments
                     console.log('No session cache. Fetching static featured photos list...');
@@ -54,11 +103,37 @@ class ImageCacheManager {
         // 4. Return the assigned image ID for the current page
         const assignedImage = this.sessionAssignments[pageId];
         if (assignedImage) {
-            // For test data, use the URL directly; in production this would use Vercel optimization
-            const url = assignedImage.thumbnailUrl || assignedImage.viewUrl || `/api/image-proxy/${assignedImage.id}`;
-            return { id: assignedImage.id, url: url };
+            const fileId = assignedImage.id;
+            
+            // Check if image data is already cached locally
+            if (this.isImageCached(fileId)) {
+                const cachedData = this.imageDataCache[fileId];
+                console.log(`📦 Using cached image for ${pageId}:`, assignedImage.name);
+                return { 
+                    id: fileId, 
+                    url: cachedData.url, 
+                    name: assignedImage.name,
+                    cached: true 
+                };
+            }
+            
+            // If not cached, prepare API call with rate limiting
+            console.log(`🔄 Image not cached for ${pageId}, will make API call:`, assignedImage.name);
+            const url = await this.rateLimitedApiCall(fileId);
+            
+            // Cache the URL for future use
+            this.imageDataCache[fileId] = {
+                url: url,
+                name: assignedImage.name,
+                timestamp: Date.now()
+            };
+            this.saveImageDataCache();
+            
+            console.log(`🖼️ New image assigned for ${pageId}:`, assignedImage.name);
+            return { id: fileId, url: url, name: assignedImage.name, cached: false };
         }
 
+        console.log(`📷 No assigned image for ${pageId}, using default`);
         return { id: null, url: this.defaultImageUrl }; // Fallback
     }
 
