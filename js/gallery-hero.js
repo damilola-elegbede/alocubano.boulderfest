@@ -4,14 +4,28 @@
 
   console.log('Gallery hero module loading...');
 
+  // Environment detection
+  const isDev = window.location.hostname === 'localhost';
+  
   // Configuration
   const CONFIG = {
     API_ENDPOINT: window.GALLERY_API_ENDPOINT || '/api/gallery',
     FEATURED_API_ENDPOINT: '/api/featured-photos',
     CACHE_KEY: 'gallery_cache',
     FEATURED_CACHE_KEY: 'featured_photos_cache',
-    DEFAULT_IMAGE: 'https://lh3.googleusercontent.com/d/1Z1BuOSET8jAwlYnA9IDwmg1bJLpRmGNI=w1600'
+    IS_DEV: isDev
   };
+
+  // Helper function to generate image proxy URL based on environment
+  function getImageProxyUrl(fileId) {
+    if (CONFIG.IS_DEV) {
+      // Development: Use Python server proxy
+      return `/api/image-proxy/${fileId}`;
+    } else {
+      // Production: Use Vercel serverless function
+      return `/api/image-proxy/${fileId}`;
+    }
+  }
 
   console.log('CONFIG:', CONFIG);
 
@@ -36,27 +50,15 @@
     const heroImg = document.getElementById('hero-splash-image');
     if (!heroImg) return;
 
-    // Add comprehensive error handling with loop prevention
-    let errorCount = 0;
     heroImg.onerror = function() {
-      errorCount++;
       console.error('Hero image failed to load:', this.src);
-      
-      // Prevent infinite loop - if default image also fails, give up
-      if (errorCount > 1 || this.src === CONFIG.DEFAULT_IMAGE) {
-        console.error('Failed to load default image, stopping retry');
-        this.style.display = 'none'; // Hide broken image
-        return;
-      }
-      
-      // Try the default image
-      console.log('Trying default image');
-      this.src = CONFIG.DEFAULT_IMAGE;
+      // Simply hide the image if it fails to load
+      this.style.display = 'none';
     };
 
     heroImg.onload = function() {
       console.log('Hero image loaded successfully:', this.src);
-      errorCount = 0; // Reset error count on success
+      this.style.display = 'block'; // Ensure image is visible
     };
   }
 
@@ -84,29 +86,17 @@
   async function fetchFeaturedPhotos() {
     const heroImg = document.getElementById('hero-splash-image');
     
-    // If image has data-src, set src directly
-    if (heroImg && heroImg.dataset.src && !heroImg.src) {
-      heroImg.src = heroImg.dataset.src;
-    }
-    
     // Setup error handlers
     setupHeroImageHandlers();
     
-    // First check cache for immediate display
-    const cachedData = getCachedData(CONFIG.FEATURED_CACHE_KEY);
-    if (cachedData && cachedData.items && cachedData.items.length > 0 && heroImg) {
-      const randomImage = cachedData.items[Math.floor(Math.random() * cachedData.items.length)];
-      console.log('Using cached featured image:', randomImage.name);
-      heroImg.src = randomImage.viewUrl;
-    }
+    // Skip cache since we want fresh random images each time
+    const cachedData = null; // Disable cache usage for true randomness
     
     try {
       console.log('Fetching featured photos from Captured_Moments...');
       const response = await fetch(CONFIG.FEATURED_API_ENDPOINT);
       if (!response.ok) {
-        console.error('Failed to fetch featured photos, falling back to regular gallery');
-        // Fall back to regular gallery images
-        if (!cachedData) fetchLatestImages();
+        console.error('Failed to fetch featured photos from Captured_Moments');
         return;
       }
       
@@ -120,56 +110,22 @@
         //   content: data
         // }));
         
-        // If we didn't already set from cache, update hero image with a random featured photo
-        if (heroImg && !cachedData) {
+        // Always update hero image with a random featured photo
+        if (heroImg) {
           const randomImage = data.items[Math.floor(Math.random() * data.items.length)];
+          const proxyUrl = getImageProxyUrl(randomImage.id);
           console.log('Updating hero with featured image:', randomImage.name);
-          heroImg.src = randomImage.viewUrl;
+          console.log('Using proxy URL:', proxyUrl);
+          heroImg.src = proxyUrl;
         }
       } else {
-        console.log('No featured photos found, falling back to regular gallery');
-        if (!cachedData) fetchLatestImages();
+        console.log('No featured photos found in Captured_Moments folder');
       }
     } catch (error) {
-      console.error('Error fetching featured photos:', error);
-      // Fall back to regular gallery images if no cache
-      if (!cachedData) fetchLatestImages();
+      console.error('Error fetching featured photos from Captured_Moments:', error);
     }
   }
 
-  // Fetch latest images from API (fallback)
-  async function fetchLatestImages() {
-    try {
-      // Fetch from 2025 gallery by default
-      const response = await fetch(`${CONFIG.API_ENDPOINT}?year=2025`);
-      if (!response.ok) {
-        console.error('Failed to fetch gallery data');
-        return;
-      }
-      
-      const data = await response.json();
-      if (data.items && data.items.length > 0) {
-        // No caching - comment out localStorage
-        // localStorage.setItem(CONFIG.CACHE_KEY, JSON.stringify({
-        //   timestamp: Date.now(),
-        //   content: data
-        // }));
-        
-        // Update hero image with a random one from the fetched data
-        const images = data.items.filter(item => item.type === 'image');
-        if (images.length > 0) {
-          const heroImg = document.getElementById('hero-splash-image');
-          if (heroImg) {
-            const randomImage = images[Math.floor(Math.random() * images.length)];
-            console.log('Updating hero with random gallery image:', randomImage.name);
-            // Use the viewUrl from the API response
-            heroImg.src = randomImage.viewUrl || randomImage.thumbnailUrl;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching gallery data:', error);
-    }
-  }
+
 
 })();
