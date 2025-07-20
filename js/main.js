@@ -319,21 +319,27 @@ class FormValidator {
 // Initialize based on page
 document.addEventListener('DOMContentLoaded', () => {
     // Landing page
-    if (document.querySelector('.design-selector')) {
+    if (document.querySelector('.design-selector') && typeof DesignSelector !== 'undefined') {
         new DesignSelector();
     }
 
     // All pages
-    new SmoothScroll();
-    new LazyLoader();
+    if (typeof SmoothScroll !== 'undefined') {
+        new SmoothScroll();
+    }
+    if (typeof LazyLoader !== 'undefined') {
+        new LazyLoader();
+    }
 
     // Gallery page
-    if (document.querySelector('.gallery-grid')) {
+    if (document.querySelector('.gallery-grid') && typeof Lightbox !== 'undefined') {
         new Lightbox();
     }
 
     // Forms
-    document.querySelectorAll('form').forEach(form => {
-        new FormValidator(form);
-    });
+    if (typeof FormValidator !== 'undefined') {
+        document.querySelectorAll('form').forEach(form => {
+            new FormValidator(form);
+        });
+    }
 });

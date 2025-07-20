@@ -439,12 +439,12 @@ class ImageCacheManager {
 }
 
 // Create global instance
-if (typeof window.ImageCacheManager === 'undefined') {
+if (typeof window.ImageCacheManager === 'undefined' && typeof ImageCacheManager !== 'undefined') {
     window.ImageCacheManager = new ImageCacheManager();
+    
+    // Add method to notify when cache is ready
+    window.ImageCacheManager.notifyReady = function() {
+      const event = new CustomEvent('imageCacheReady');
+      document.dispatchEvent(event);
+    };
 }
-
-// Add method to notify when cache is ready
-window.ImageCacheManager.notifyReady = function() {
-  const event = new CustomEvent('imageCacheReady');
-  document.dispatchEvent(event);
-};
