@@ -142,36 +142,16 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             
             print(f"📸 Gallery API request - year: {year}, category: {category}")
             
-            # For now, return mock data structure until Google Drive folders are set up
-            mock_data = {
+            # Return empty structure until Google Drive folders are set up with real photos
+            empty_data = {
                 "year": year,
                 "categories": {
-                    "workshops": [
-                        {
-                            "id": "sample_workshop_1",
-                            "name": "Workshop_Photo_001.jpg",
-                            "type": "image",
-                            "category": "workshops", 
-                            "thumbnailUrl": "/api/image-proxy/sample_workshop_1",
-                            "viewUrl": "/api/image-proxy/sample_workshop_1",
-                            "createdAt": "2025-05-15T10:30:00Z"
-                        }
-                    ],
-                    "socials": [
-                        {
-                            "id": "sample_social_1",
-                            "name": "Social_Photo_001.jpg", 
-                            "type": "image",
-                            "category": "socials",
-                            "thumbnailUrl": "/api/image-proxy/sample_social_1",
-                            "viewUrl": "/api/image-proxy/sample_social_1",
-                            "createdAt": "2025-05-16T20:15:00Z"
-                        }
-                    ],
+                    "workshops": [],
+                    "socials": [],
                     "performances": []
                 },
                 "items": [],
-                "totalCount": 2,
+                "totalCount": 0,
                 "limit": limit,
                 "offset": offset,
                 "hasMore": False,
@@ -180,19 +160,19 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             
             # Filter by category if specified
             if category:
-                if category.lower() in mock_data["categories"]:
-                    filtered_categories = {category.lower(): mock_data["categories"][category.lower()]}
-                    mock_data["categories"] = filtered_categories
-                    mock_data["totalCount"] = len(mock_data["categories"][category.lower()])
+                if category.lower() in empty_data["categories"]:
+                    filtered_categories = {category.lower(): empty_data["categories"][category.lower()]}
+                    empty_data["categories"] = filtered_categories
+                    empty_data["totalCount"] = len(empty_data["categories"][category.lower()])
                 else:
-                    mock_data["categories"] = {}
-                    mock_data["totalCount"] = 0
+                    empty_data["categories"] = {}
+                    empty_data["totalCount"] = 0
             
             # Flatten items for backwards compatibility
             all_items = []
-            for items in mock_data["categories"].values():
+            for items in empty_data["categories"].values():
                 all_items.extend(items)
-            mock_data["items"] = all_items[offset:offset + limit]
+            empty_data["items"] = all_items[offset:offset + limit]
             
             # Send JSON response
             self.send_response(200)
@@ -203,8 +183,8 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Cache-Control', 's-maxage=3600, stale-while-revalidate')
             self.end_headers()
             
-            self.wfile.write(json.dumps(mock_data).encode('utf-8'))
-            print(f"✅ Gallery API response sent - {mock_data['totalCount']} items")
+            self.wfile.write(json.dumps(empty_data).encode('utf-8'))
+            print(f"✅ Gallery API response sent - {empty_data['totalCount']} items")
             
         except Exception as e:
             print(f"❌ Gallery API Error: {e}")
