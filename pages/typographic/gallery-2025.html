@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025 Gallery - A Lo Cubano Boulder Fest</title>
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="../../images/favicon-circle.svg">
+    <link rel="icon" type="image/x-icon" href="../../images/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="../../images/favicons/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../../images/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="../../images/favicons/favicon-192x192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="../../images/favicons/favicon-192x192.png">
+    <link rel="stylesheet" href="../../css/base.css">
+    <link rel="stylesheet" href="../../css/components.css">
+    <link rel="stylesheet" href="../../css/typography-simplified.css">
+    <link rel="stylesheet" href="../../css/mobile-overrides.css">
+</head>
+<body class="typographic">
+    <header class="header">
+        <div class="container">
+            <div class="grid">
+                <div class="header-left">
+                    <img src="../../images/logo.png" alt="Logo" style="height: 78px;">
+                    <div class="logo-text">
+                        <span class="logo-main">A LO CUBANO</span>
+                        <span class="logo-separator">|</span>
+                        <span class="logo-sub">Boulder Fest</span>
+                    </div>
+                </div>
+                <nav class="main-nav">
+                    <button class="menu-toggle" aria-label="Toggle menu">
+                        <span></span>
+                    </button>
+                    <ul class="nav-list">
+                        <li><a href="home.html" class="nav-link" data-text="Home">Home</a></li>
+                        <li><a href="about.html" class="nav-link" data-text="About">About</a></li>
+                        <li><a href="artists.html" class="nav-link" data-text="Artists">Artists</a></li>
+                        <li><a href="schedule.html" class="nav-link" data-text="Schedule">Schedule</a></li>
+                        <li><a href="gallery.html" class="nav-link is-active" data-text="Gallery">Gallery</a></li>
+                        <li><a href="tickets.html" class="nav-link" data-text="Tickets">Tickets</a></li>
+                        <li><a href="donations.html" class="nav-link" data-text="Donate">Donate</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Back Navigation -->
+        <section class="gallery-back-nav">
+            <div class="container">
+                <a href="gallery.html" class="back-link">
+                    <span class="back-arrow">←</span>
+                    <span class="back-text font-mono">BACK TO GALLERIES</span>
+                </a>
+            </div>
+        </section>
+
+
+        <!-- Gallery Grid Section -->
+        <section class="section-typographic gallery-detail-section" data-gallery-year="2025">
+            <div class="container">
+                <div class="gallery-loading" id="gallery-detail-loading">
+                    <p class="font-mono">Loading festival memories...</p>
+                </div>
+                
+                <div id="gallery-detail-content" style="display: none;">
+                    <!-- Workshops Section -->
+                    <div class="gallery-section" id="workshops-section" style="display: none;">
+                        <h2 class="text-display" style="text-align: center; margin-bottom: var(--space-2xl);">WORKSHOPS</h2>
+                        <div class="gallery-grid gallery-detail-grid" id="workshops-gallery">
+                            <!-- Workshop images will be loaded here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Socials Section -->
+                    <div class="gallery-section" id="socials-section" style="display: none; margin-top: var(--space-4xl);">
+                        <h2 class="text-display" style="text-align: center; margin-bottom: var(--space-2xl);">SOCIALS</h2>
+                        <div class="gallery-grid gallery-detail-grid" id="socials-gallery">
+                            <!-- Social images will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Fallback static gallery -->
+                <div class="gallery-grid-static" id="gallery-detail-static" style="display: none;">
+                    <p class="text-center font-serif">No photos available at this time.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gallery Stats -->
+        <section class="section-typographic gallery-stats" style="background: var(--color-gray-50); padding: var(--space-3xl) 0;">
+            <div class="container">
+                <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-2xl); text-align: center;">
+                    <div class="stat-item">
+                        <h3 class="font-display" style="font-size: var(--font-size-3xl); color: var(--color-red);">500+</h3>
+                        <p class="font-mono" style="text-transform: uppercase; letter-spacing: 0.1em;">Attendees</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3 class="font-display" style="font-size: var(--font-size-3xl); color: var(--color-red);">3</h3>
+                        <p class="font-mono" style="text-transform: uppercase; letter-spacing: 0.1em;">Days of Dance</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3 class="font-display" style="font-size: var(--font-size-3xl); color: var(--color-red);">15+</h3>
+                        <p class="font-mono" style="text-transform: uppercase; letter-spacing: 0.1em;">Workshops</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3 class="font-display" style="font-size: var(--font-size-3xl); color: var(--color-red);">∞</h3>
+                        <p class="font-mono" style="text-transform: uppercase; letter-spacing: 0.1em;">Memories Made</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer-typographic">
+        <div class="container">
+            <p class="footer-credits">MAY 15-17, 2026 • alocubanoboulderfest@gmail.com</p>
+            <div class="footer-social">
+                <a href="https://instagram.com/alocubanoboulder" target="_blank" rel="noopener noreferrer" class="social-link-type" aria-label="Follow us on Instagram">
+                    <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                </a>
+                <a href="https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH" target="_blank" rel="noopener noreferrer" class="social-link-type" aria-label="Join us on WhatsApp">
+                    <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </footer>
+    <script src="../../js/navigation.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/typography.js"></script>
+    <script src="../../js/gallery-detail.js"></script>
+</body>
+</html>
