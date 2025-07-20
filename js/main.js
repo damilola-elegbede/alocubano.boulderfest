@@ -1,6 +1,7 @@
 // Main JavaScript for A Lo Cubano Boulder Fest
 
 // Design selection functionality for landing page
+if (typeof DesignSelector === 'undefined') {
 class DesignSelector {
     constructor() {
         this.designs = [
@@ -55,8 +56,10 @@ class DesignSelector {
         }, 500);
     }
 }
+}
 
 // Smooth scroll functionality
+if (typeof SmoothScroll === 'undefined') {
 class SmoothScroll {
     constructor() {
         this.init();
@@ -82,8 +85,10 @@ class SmoothScroll {
         });
     }
 }
+}
 
 // Image lazy loading
+if (typeof LazyLoader === 'undefined') {
 class LazyLoader {
     constructor() {
         this.init();
@@ -110,8 +115,10 @@ class LazyLoader {
         });
     }
 }
+}
 
 // Gallery lightbox functionality
+if (typeof Lightbox === 'undefined') {
 class Lightbox {
     constructor() {
         this.currentIndex = 0;
@@ -204,8 +211,10 @@ class Lightbox {
         }
     }
 }
+}
 
 // Form validation
+if (typeof FormValidator === 'undefined') {
 class FormValidator {
     constructor(form) {
         this.form = form;
@@ -304,6 +313,7 @@ class FormValidator {
         // Remove success message after 5 seconds
         setTimeout(() => successMsg.remove(), 5000);
     }
+}
 }
 
 // Initialize based on page
