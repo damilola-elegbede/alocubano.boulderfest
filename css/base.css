@@ -200,3 +200,8 @@ button {
   outline: 2px solid var(--color-blue);
   outline-offset: 2px;
 }
+
+/* Skip Links */
+.skip-link:focus {
+  top: 0;
+}

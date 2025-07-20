@@ -6,16 +6,9 @@
   "scripts": {
     "prebuild": "node ./scripts/generate-gallery-cache.js && node ./scripts/generate-featured-photos.js",
     "build": "echo 'Build process completed'",
-    "test": "jest",
-    "test:html": "jest --testPathPattern=html-validation",
-    "test:a11y": "jest --testPathPattern=accessibility",
-    "test:perf": "jest --testPathPattern=performance",
-    "test:links": "jest --testPathPattern=links",
-    "test:gallery": "jest --testPathPattern=gallery",
-    "test:api": "jest --testPathPattern=api",
-    "test:unit": "jest tests/unit",
-    "test:integration": "jest tests/integration",
-    "test:all": "npm test",
+    "test": "npm run test:unit",
+    "test:unit": "jest --config jest.unit.config.js",
+    "test:all": "npm run test:unit",
     "lint": "npm run lint:js && npm run lint:html",
     "lint:js": "eslint js/**/*.js",
     "lint:html": "htmlhint pages/**/*.html",
@@ -37,21 +30,5 @@
     "puppeteer": "^23.11.0",
     "stylelint": "^16.21.1",
     "stylelint-config-standard": "^36.0.1"
-  },
-  "jest": {
-    "preset": "jest-puppeteer",
-    "testMatch": [
-      "**/tests/**/*.test.js"
-    ],
-    "setupFilesAfterEnv": [
-      "./tests/setup.js"
-    ],
-    "collectCoverage": true,
-    "coverageDirectory": "coverage",
-    "coverageReporters": [
-      "text",
-      "lcov",
-      "html"
-    ]
   }
 }

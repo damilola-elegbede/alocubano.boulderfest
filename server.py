@@ -178,9 +178,13 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         
         # Handle static gallery-data JSON files
         elif path.startswith('/gallery-data/') and path.endswith('.json'):
-            # Let the default handler serve the static JSON file
-            # The parent class will handle it correctly
-            pass
+            # Redirect to public directory
+            self.path = '/public' + path
+        
+        # Handle static featured-photos.json
+        elif path == '/featured-photos.json':
+            # Redirect to public directory
+            self.path = '/public/featured-photos.json'
         
         # Handle root path
         if path == '/':
@@ -263,14 +267,60 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         """Handle /api/gallery endpoint for festival photo galleries"""
         print("🚨 GALLERY API HANDLER CALLED!")
         try:
-            # Parse query parameters
+            # Parse and validate query parameters
             parsed_path = urlparse(self.path)
             query_params = parse_qs(parsed_path.query)
             
-            year = query_params.get('year', ['2025'])[0]
-            category = query_params.get('category', [None])[0]
-            limit = int(query_params.get('limit', ['50'])[0])
-            offset = int(query_params.get('offset', ['0'])[0])
+            # Validate year parameter
+            year_param = query_params.get('year', ['2025'])[0]
+            if not re.match(r'^\d{4}$', year_param) or not (2020 <= int(year_param) <= 2030):
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                error_response = {'error': 'Invalid year. Must be 4-digit year between 2020-2030.'}
+                self.wfile.write(json.dumps(error_response).encode('utf-8'))
+                return
+            year = year_param
+            
+            # Validate category parameter
+            category_param = query_params.get('category', [None])[0]
+            allowed_categories = ['workshops', 'socials', 'performances']
+            if category_param and category_param.lower() not in allowed_categories:
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                error_response = {'error': f'Invalid category. Allowed values: {", ".join(allowed_categories)}'}
+                self.wfile.write(json.dumps(error_response).encode('utf-8'))
+                return
+            category = category_param.lower() if category_param else None
+            
+            # Validate limit parameter
+            try:
+                limit_param = int(query_params.get('limit', ['50'])[0])
+                if not (1 <= limit_param <= 100):
+                    raise ValueError()
+                limit = limit_param
+            except (ValueError, TypeError):
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                error_response = {'error': 'Invalid limit. Must be integer between 1 and 100.'}
+                self.wfile.write(json.dumps(error_response).encode('utf-8'))
+                return
+            
+            # Validate offset parameter
+            try:
+                offset_param = int(query_params.get('offset', ['0'])[0])
+                if offset_param < 0:
+                    raise ValueError()
+                offset = offset_param
+            except (ValueError, TypeError):
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                error_response = {'error': 'Invalid offset. Must be non-negative integer.'}
+                self.wfile.write(json.dumps(error_response).encode('utf-8'))
+                return
             
             print(f"📸 Gallery API request - year: {year}, category: {category}")
             
@@ -394,19 +444,35 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def handle_image_proxy_api(self, path):
         """Handle /api/image-proxy/<file_id> endpoint with thumbnail support"""
         try:
-            # Extract file_id from path
-            match = re.match(r'/api/image-proxy/([a-zA-Z0-9_-]+)', path)
+            # Extract and validate file_id from path
+            match = re.match(r'/api/image-proxy/([a-zA-Z0-9_-]{10,50})', path)
             if not match:
-                self.send_error(400, "Invalid file ID")
+                self.send_error(400, "Invalid file ID format")
                 return
             
             file_id = match.group(1)
             
-            # Parse query parameters for size
+            # Parse and validate query parameters
             parsed_path = urlparse(self.path)
             query_params = parse_qs(parsed_path.query)
-            size = query_params.get('size', [None])[0]
-            quality = int(query_params.get('quality', ['85'])[0])
+            
+            # Validate size parameter
+            size_param = query_params.get('size', [None])[0]
+            allowed_sizes = ['thumbnail', 'small', 'medium', 'large', None]
+            if size_param and size_param not in allowed_sizes:
+                self.send_error(400, f"Invalid size. Allowed values: {', '.join([s for s in allowed_sizes if s])}")
+                return
+            size = size_param
+            
+            # Validate quality parameter
+            try:
+                quality_param = query_params.get('quality', ['85'])[0]
+                quality = int(quality_param)
+                if not (1 <= quality <= 100):
+                    raise ValueError()
+            except (ValueError, TypeError):
+                self.send_error(400, "Invalid quality. Must be integer between 1 and 100")
+                return
             
             print(f"🖼️ Proxying image for file ID: {file_id}, size: {size}, quality: {quality}")
             

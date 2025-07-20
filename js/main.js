@@ -1,5 +1,7 @@
 // Main JavaScript for A Lo Cubano Boulder Fest
 
+// Import shared components
+// Note: These will be loaded via script tags in HTML
 
 // Smooth scroll functionality
 if (typeof SmoothScroll === 'undefined') {
@@ -30,131 +32,11 @@ class SmoothScroll {
 }
 }
 
-// Image lazy loading
-if (typeof LazyLoader === 'undefined') {
-class LazyLoader {
-    constructor() {
-        this.init();
-    }
+// Image lazy loading - using shared component
+// LazyLoader is now loaded from /js/components/lazy-loading.js
 
-    init() {
-        const images = document.querySelectorAll('img[data-src]');
-
-        const imageObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const img = entry.target;
-                    img.src = img.dataset.src;
-                    img.classList.add('loaded');
-                    imageObserver.unobserve(img);
-                }
-            });
-        }, {
-            rootMargin: '50px 0px'
-        });
-
-        images.forEach(img => {
-            imageObserver.observe(img);
-        });
-    }
-}
-}
-
-// Gallery lightbox functionality
-if (typeof Lightbox === 'undefined') {
-class Lightbox {
-    constructor() {
-        this.currentIndex = 0;
-        this.images = [];
-        this.init();
-    }
-
-    init() {
-        const galleryImages = document.querySelectorAll('.gallery-image');
-
-        galleryImages.forEach((img, index) => {
-            this.images.push(img.src);
-            img.addEventListener('click', () => {
-                this.open(index);
-            });
-        });
-
-        // Close on escape
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && document.querySelector('.lightbox')) {
-                this.close();
-            }
-            if (e.key === 'ArrowLeft' && document.querySelector('.lightbox')) {
-                this.previous();
-            }
-            if (e.key === 'ArrowRight' && document.querySelector('.lightbox')) {
-                this.next();
-            }
-        });
-    }
-
-    open(index) {
-        this.currentIndex = index;
-
-        const lightbox = document.createElement('div');
-        lightbox.className = 'lightbox';
-        lightbox.innerHTML = `
-      <button class="lightbox-close" aria-label="Close">&times;</button>
-      <button class="lightbox-prev" aria-label="Previous">‹</button>
-      <button class="lightbox-next" aria-label="Next">›</button>
-      <img src="${this.images[index]}" alt="Gallery image" class="lightbox-image">
-    `;
-
-        document.body.appendChild(lightbox);
-        document.body.style.overflow = 'hidden';
-
-        // Add event listeners
-        lightbox.querySelector('.lightbox-close').addEventListener('click', () => this.close());
-        lightbox.querySelector('.lightbox-prev').addEventListener('click', () => this.previous());
-        lightbox.querySelector('.lightbox-next').addEventListener('click', () => this.next());
-        lightbox.addEventListener('click', (e) => {
-            if (e.target === lightbox) {
-                this.close();
-            }
-        });
-
-        // Fade in
-        setTimeout(() => lightbox.classList.add('is-open'), 10);
-    }
-
-    close() {
-        const lightbox = document.querySelector('.lightbox');
-        if (lightbox) {
-            lightbox.classList.remove('is-open');
-            setTimeout(() => {
-                lightbox.remove();
-                document.body.style.overflow = '';
-            }, 300);
-        }
-    }
-
-    previous() {
-        this.currentIndex = (this.currentIndex - 1 + this.images.length) % this.images.length;
-        this.updateImage();
-    }
-
-    next() {
-        this.currentIndex = (this.currentIndex + 1) % this.images.length;
-        this.updateImage();
-    }
-
-    updateImage() {
-        const img = document.querySelector('.lightbox-image');
-        if (img) {
-            img.style.opacity = '0';
-            setTimeout(() => {
-                img.src = this.images[this.currentIndex];
-                img.style.opacity = '1';
-            }, 200);
-        }
-    }
-}
-}
+// Gallery lightbox functionality - using shared component
+// Lightbox is now loaded from /js/components/lightbox.js
 
 // Form validation
 if (typeof FormValidator === 'undefined') {
@@ -270,13 +152,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof SmoothScroll !== 'undefined') {
         new SmoothScroll();
     }
+    
+    // Initialize shared lazy loading component
     if (typeof LazyLoader !== 'undefined') {
-        new LazyLoader();
+        new LazyLoader.createSimple();
     }
 
-    // Gallery page
+    // Initialize shared lightbox component for simple galleries
     if (document.querySelector('.gallery-grid') && typeof Lightbox !== 'undefined') {
-        new Lightbox();
+        Lightbox.initializeFor('simple', { selector: '.gallery-image' });
     }
 
     // Forms

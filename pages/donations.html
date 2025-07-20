@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Donations - A Lo Cubano Boulder Fest</title>
+    <meta name="description" content="Support A Lo Cubano Boulder Fest and help preserve authentic Cuban culture in Boulder. Your donations help fund workshops, artist travel, venue costs, and community accessibility programs.">
     <!-- Favicons -->
     <link rel="icon" type="image/svg+xml" href="../../images/favicon-circle.svg">
     <link rel="icon" type="image/x-icon" href="../../images/favicon.ico">
@@ -53,7 +54,7 @@
         <!-- Hero Splash Image -->
         <section class="gallery-hero-splash">
             <div class="hero-image-container">
-                <img id="hero-splash-image" src="" alt="A Lo Cubano Festival Moment" class="hero-splash-img" style="object-position: top center !important;">
+                <img id="hero-splash-image" src="" alt="Community supporters and volunteers making A Lo Cubano Boulder Fest possible, showing the impact of donations" class="hero-splash-img" style="object-position: top center !important;">
             </div>
         </section>
 
@@ -69,37 +70,37 @@
 
                 <!-- Donation Form -->
                 <div class="donation-form-wrapper" style="max-width: 600px; margin: 0 auto;">
-                    <h2 class="text-display" style="text-align: center; margin-bottom: var(--space-2xl);">MAKE A DONATION</h2>
+                    <h2 id="donation-form-title" class="text-display" style="text-align: center; margin-bottom: var(--space-2xl);">MAKE A DONATION</h2>
                     
-                    <form class="donation-form" action="mailto:alocubanoboulderfest@gmail.com?subject=Donation - A Lo Cubano Boulder Fest" method="post" enctype="text/plain">
+                    <form class="donation-form" action="mailto:alocubanoboulderfest@gmail.com?subject=Donation - A Lo Cubano Boulder Fest" method="post" enctype="text/plain" novalidate role="form" aria-labelledby="donation-form-title">
                         <!-- Donation Amount Options -->
-                        <div class="form-section" style="margin-bottom: var(--space-2xl);">
-                            <label class="form-label-type font-mono" style="display: block; margin-bottom: var(--space-lg);">SELECT AMOUNT</label>
+                        <fieldset class="form-section" style="margin-bottom: var(--space-2xl); border: none; padding: 0;">
+                            <legend class="form-label-type font-mono" style="display: block; margin-bottom: var(--space-lg); padding: 0;">SELECT AMOUNT</legend>
                             
                             <div class="donation-amounts" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-lg);">
                                 <label class="donation-option" style="display: block; cursor: pointer;">
-                                    <input type="radio" name="amount" value="20" style="margin-right: var(--space-sm);">
+                                    <input type="radio" name="amount" value="20" style="margin-right: var(--space-sm);" aria-label="Donate $20">
                                     <span class="amount-box" style="display: block; padding: var(--space-xl); border: 2px solid var(--color-gray-300); text-align: center; transition: all 0.2s ease;">
                                         <span class="text-display" style="font-size: var(--font-size-2xl);">$20</span>
                                     </span>
                                 </label>
                                 
                                 <label class="donation-option" style="display: block; cursor: pointer;">
-                                    <input type="radio" name="amount" value="50" style="margin-right: var(--space-sm);">
+                                    <input type="radio" name="amount" value="50" style="margin-right: var(--space-sm);" aria-label="Donate $50">
                                     <span class="amount-box" style="display: block; padding: var(--space-xl); border: 2px solid var(--color-gray-300); text-align: center; transition: all 0.2s ease;">
                                         <span class="text-display" style="font-size: var(--font-size-2xl);">$50</span>
                                     </span>
                                 </label>
                                 
                                 <label class="donation-option" style="display: block; cursor: pointer;">
-                                    <input type="radio" name="amount" value="100" checked style="margin-right: var(--space-sm);">
+                                    <input type="radio" name="amount" value="100" checked style="margin-right: var(--space-sm);" aria-label="Donate $100">
                                     <span class="amount-box" style="display: block; padding: var(--space-xl); border: 2px solid var(--color-black); text-align: center; transition: all 0.2s ease;">
                                         <span class="text-display text-gradient" style="font-size: var(--font-size-2xl);">$100</span>
                                     </span>
                                 </label>
                                 
                                 <label class="donation-option" style="display: block; cursor: pointer;">
-                                    <input type="radio" name="amount" value="other" style="margin-right: var(--space-sm);">
+                                    <input type="radio" name="amount" value="other" style="margin-right: var(--space-sm);" aria-label="Donate custom amount">
                                     <span class="amount-box" style="display: block; padding: var(--space-xl); border: 2px solid var(--color-gray-300); text-align: center; transition: all 0.2s ease;">
                                         <span class="text-display" style="font-size: var(--font-size-xl);">OTHER</span>
                                     </span>
@@ -109,36 +110,36 @@
                             <!-- Other Amount Input -->
                             <div class="other-amount" style="margin-top: var(--space-lg); display: none;">
                                 <label class="form-label-type font-mono" for="other-amount">ENTER AMOUNT</label>
-                                <input type="number" id="other-amount" name="other-amount" class="form-input-type" placeholder="Enter amount" min="1" style="width: 100%; padding: var(--space-md); margin-top: var(--space-sm);">
+                                <input type="number" id="other-amount" name="other-amount" class="form-input-type" placeholder="Enter amount" min="1" style="width: 100%; padding: var(--space-md); margin-top: var(--space-sm);" aria-describedby="other-amount-help">
                             </div>
-                        </div>
+                        </fieldset>
 
                         <!-- Donor Information -->
-                        <div class="form-section" style="margin-bottom: var(--space-2xl);">
-                            <h3 class="font-mono" style="margin-bottom: var(--space-lg);">YOUR INFORMATION</h3>
+                        <fieldset class="form-section" style="margin-bottom: var(--space-2xl); border: none; padding: 0;">
+                            <legend class="font-mono" style="margin-bottom: var(--space-lg); padding: 0;">YOUR INFORMATION</legend>
                             
                             <div class="form-grid-type" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-lg);">
                                 <div class="form-group-type">
                                     <label class="form-label-type font-mono" for="first-name">FIRST NAME</label>
-                                    <input type="text" id="first-name" name="first-name" class="form-input-type" required style="width: 100%; padding: var(--space-md); margin-top: var(--space-sm);">
+                                    <input type="text" id="first-name" name="first-name" class="form-input-type" required autocomplete="given-name" minlength="2" maxlength="50" style="width: 100%; padding: var(--space-md); margin-top: var(--space-sm);" aria-describedby="first-name-error">
                                 </div>
                                 
                                 <div class="form-group-type">
                                     <label class="form-label-type font-mono" for="last-name">LAST NAME</label>
-                                    <input type="text" id="last-name" name="last-name" class="form-input-type" required style="width: 100%; padding: var(--space-md); margin-top: var(--space-sm);">
+                                    <input type="text" id="last-name" name="last-name" class="form-input-type" required autocomplete="family-name" minlength="2" maxlength="50" style="width: 100%; padding: var(--space-md); margin-top: var(--space-sm);" aria-describedby="last-name-error">
                                 </div>
                             </div>
                             
                             <div class="form-group-type" style="margin-bottom: var(--space-lg);">
                                 <label class="form-label-type font-mono" for="email">EMAIL</label>
-                                <input type="email" id="email" name="email" class="form-input-type" required style="width: 100%; padding: var(--space-md); margin-top: var(--space-sm);">
+                                <input type="email" id="email" name="email" class="form-input-type" required autocomplete="email" style="width: 100%; padding: var(--space-md); margin-top: var(--space-sm);" aria-describedby="email-error">
                             </div>
                             
                             <div class="form-group-type">
                                 <label class="form-label-type font-mono" for="message">MESSAGE (OPTIONAL)</label>
                                 <textarea id="message" name="message" class="form-textarea-type" rows="4" placeholder="Share why you're supporting the festival..." style="width: 100%; padding: var(--space-md); margin-top: var(--space-sm);"></textarea>
                             </div>
-                        </div>
+                        </fieldset>
 
                         <!-- Submit Button -->
                         <div style="text-align: center;">
@@ -205,6 +206,8 @@
         </div>
     </footer>
     <script src="../../js/navigation.js"></script>
+    <script src="../../js/components/lightbox.js"></script>
+    <script src="../../js/components/lazy-loading.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/typography.js"></script>
     <script src="../../js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING"></script>

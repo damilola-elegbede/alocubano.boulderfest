@@ -55,10 +55,11 @@ export default async function handler(req, res) {
     const limitParam = req.query.limit || '50';
     const offsetParam = req.query.offset || '0';
     
-    // Validate year (must be 4-digit number)
+    // Validate year (must be 4-digit number between 2020-2030)
     const year = yearParam.match(/^\d{4}$/) ? yearParam : '2025';
-    if (year !== yearParam) {
-      return res.status(400).json({ error: 'Invalid year format. Must be 4-digit year.' });
+    const yearNum = parseInt(year);
+    if (!yearParam.match(/^\d{4}$/) || yearNum < 2020 || yearNum > 2030) {
+      return res.status(400).json({ error: 'Invalid year. Must be 4-digit year between 2020-2030.' });
     }
     
     // Validate category (only allowed values)
@@ -73,16 +74,18 @@ export default async function handler(req, res) {
     }
     
     // Validate limit (must be positive integer, max 100)
-    const limit = Math.min(Math.max(parseInt(limitParam) || 50, 1), 100);
-    if (isNaN(limit) || limit.toString() !== limitParam) {
+    const parsedLimit = parseInt(limitParam);
+    if (isNaN(parsedLimit) || parsedLimit < 1 || parsedLimit > 100) {
       return res.status(400).json({ error: 'Invalid limit. Must be integer between 1 and 100.' });
     }
+    const limit = parsedLimit;
     
     // Validate offset (must be non-negative integer)
-    const offset = Math.max(parseInt(offsetParam) || 0, 0);
-    if (isNaN(offset) || offset.toString() !== offsetParam) {
+    const parsedOffset = parseInt(offsetParam);
+    if (isNaN(parsedOffset) || parsedOffset < 0) {
       return res.status(400).json({ error: 'Invalid offset. Must be non-negative integer.' });
     }
+    const offset = parsedOffset;
     
     // Try to read from pre-generated cache first
     const cacheFile = path.join(process.cwd(), 'public', 'gallery-data', `${year}.json`);

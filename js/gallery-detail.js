@@ -340,22 +340,15 @@
     item.style.cursor = 'pointer';
   }
 
-  // Initialize lazy loading observer
+  // Initialize lazy loading using shared component
   function initLazyLoading() {
-    if (!('IntersectionObserver' in window)) {
-      console.warn('IntersectionObserver not supported, falling back to immediate loading');
+    if (typeof LazyLoader === 'undefined') {
+      console.warn('LazyLoader component not available');
       return;
     }
-
-    state.lazyObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const item = entry.target;
-          loadLazyItem(item);
-          state.lazyObserver.unobserve(item);
-        }
-      });
-    }, {
+    
+    state.lazyObserver = LazyLoader.createAdvanced({
+      selector: '.lazy-item[data-loaded="false"]',
       rootMargin: CONFIG.LAZY_LOAD_THRESHOLD,
       threshold: 0.1
     });
@@ -366,32 +359,7 @@
     if (!state.lazyObserver) return;
     
     const lazyItems = document.querySelectorAll('.lazy-item[data-loaded="false"]');
-    lazyItems.forEach(item => {
-      state.lazyObserver.observe(item);
-    });
-  }
-
-  // Load lazy item
-  function loadLazyItem(item) {
-    const lazyImage = item.querySelector('.lazy-image');
-    const placeholder = item.querySelector('.lazy-placeholder');
-    const spinner = item.querySelector('.loading-spinner');
-
-    if (lazyImage) {
-      const src = lazyImage.getAttribute('data-src');
-      if (src) {
-        lazyImage.onload = () => {
-          if (placeholder) placeholder.style.display = 'none';
-          lazyImage.style.display = 'block';
-          item.classList.add('loaded');
-        };
-        lazyImage.onerror = () => {
-          if (spinner) spinner.textContent = '❌';
-          if (placeholder) placeholder.style.display = 'block'; // Keep placeholder visible on error
-        };
-        lazyImage.src = src;
-      }
-    }
+    state.lazyObserver.observeNewElements(lazyItems);
   }
 
   // Setup infinite scroll
@@ -435,117 +403,39 @@
     }
   }
 
-  // Lightbox functionality (reusing from gallery.js)
+  // Lightbox functionality using shared component
   function initLightbox() {
-    // Create lightbox HTML if it doesn't exist
-    if (!document.getElementById('gallery-lightbox')) {
-      const lightboxHTML = `
-        <div id="gallery-lightbox" class="gallery-lightbox">
-          <div class="lightbox-content">
-            <button class="lightbox-close" aria-label="Close">&times;</button>
-            <button class="lightbox-prev" aria-label="Previous">‹</button>
-            <button class="lightbox-next" aria-label="Next">›</button>
-            <div class="lightbox-media-container">
-              <img class="lightbox-image" src="" alt="">
-            </div>
-            <div class="lightbox-caption">
-              <h3 class="lightbox-title font-display"></h3>
-              <p class="lightbox-counter font-mono"></p>
-            </div>
-          </div>
-        </div>
-      `;
-      
-      document.body.insertAdjacentHTML('beforeend', lightboxHTML);
-      
-      // Add event listeners
-      const lightbox = document.getElementById('gallery-lightbox');
-      const closeBtn = lightbox.querySelector('.lightbox-close');
-      const prevBtn = lightbox.querySelector('.lightbox-prev');
-      const nextBtn = lightbox.querySelector('.lightbox-next');
-      
-      closeBtn.addEventListener('click', closeLightbox);
-      prevBtn.addEventListener('click', () => navigateLightbox(-1));
-      nextBtn.addEventListener('click', () => navigateLightbox(1));
-      
-      // Close on background click
-      lightbox.addEventListener('click', (e) => {
-        if (e.target === lightbox) closeLightbox();
-      });
-      
-      // Keyboard navigation
-      document.addEventListener('keydown', (e) => {
-        if (!lightbox.classList.contains('active')) return;
-        
-        if (e.key === 'Escape') closeLightbox();
-        if (e.key === 'ArrowLeft') navigateLightbox(-1);
-        if (e.key === 'ArrowRight') navigateLightbox(1);
-      });
+    if (typeof Lightbox === 'undefined') {
+      console.warn('Lightbox component not available');
+      return;
     }
+    
+    // Initialize shared lightbox with advanced mode
+    state.lightbox = new Lightbox({
+      lightboxId: 'gallery-lightbox',
+      showCaption: false,
+      showCounter: true,
+      advanced: true
+    });
   }
 
   function openLightbox(items, index) {
-    state.lightboxItems = items;
-    state.currentLightboxIndex = index;
-    
-    const lightbox = document.getElementById('gallery-lightbox');
-    if (!lightbox) {
-      console.error('Lightbox element not found!');
+    if (!state.lightbox) {
+      console.error('Lightbox not initialized!');
       return;
     }
-    lightbox.classList.add('active');
     
-    updateLightboxContent();
-    document.body.style.overflow = 'hidden';
+    state.lightboxItems = items;
+    state.currentLightboxIndex = index;
+    state.lightboxCategories = items.map(item => item.category || 'uncategorized');
+    
+    state.lightbox.openAdvanced(items, index, state.lightboxCategories, state.categoryCounts);
   }
 
   function closeLightbox() {
-    const lightbox = document.getElementById('gallery-lightbox');
-    lightbox.classList.remove('active');
-    document.body.style.overflow = '';
-  }
-
-  function navigateLightbox(direction) {
-    const newIndex = state.currentLightboxIndex + direction;
-    if (newIndex >= 0 && newIndex < state.lightboxItems.length) {
-      state.currentLightboxIndex = newIndex;
-      updateLightboxContent();
+    if (state.lightbox) {
+      state.lightbox.close();
     }
-  }
-
-  function updateLightboxContent() {
-    const item = state.lightboxItems[state.currentLightboxIndex];
-    const category = state.lightboxCategories[state.currentLightboxIndex];
-    const lightbox = document.getElementById('gallery-lightbox');
-    
-    const img = lightbox.querySelector('.lightbox-image');
-    const title = lightbox.querySelector('.lightbox-title');
-    const counter = lightbox.querySelector('.lightbox-counter');
-    
-    // Update image
-    img.style.display = 'block';
-    img.src = item.viewUrl;
-    img.alt = item.name;
-    
-    // Calculate position within category
-    let categoryIndex = 0;
-    for (let i = 0; i < state.currentLightboxIndex; i++) {
-      if (state.lightboxCategories[i] === category) {
-        categoryIndex++;
-      }
-    }
-    
-    // Update caption - Remove filename, only show counter
-    title.style.display = 'none'; // Hide title element completely
-    const categoryCount = state.categoryCounts[category] || state.lightboxItems.length;
-    const categoryLabel = category.charAt(0).toUpperCase() + category.slice(1);
-    counter.textContent = `${categoryLabel}: ${categoryIndex + 1} / ${categoryCount}`;
-    
-    // Update navigation buttons
-    const prevBtn = lightbox.querySelector('.lightbox-prev');
-    const nextBtn = lightbox.querySelector('.lightbox-next');
-    prevBtn.style.display = state.currentLightboxIndex > 0 ? 'block' : 'none';
-    nextBtn.style.display = state.currentLightboxIndex < state.lightboxItems.length - 1 ? 'block' : 'none';
   }
 
   // Get year from page (from URL path or data attribute)
