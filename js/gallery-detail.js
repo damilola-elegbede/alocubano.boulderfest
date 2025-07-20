@@ -8,7 +8,9 @@
     API_ENDPOINT: window.GALLERY_API_ENDPOINT || '/api/gallery',
     CACHE_KEY: 'gallery_cache',
     CACHE_DURATION: 3600000, // 1 hour in milliseconds
-    LOADING_TIMEOUT: 3000 // 3 seconds - shorter timeout for better UX
+    LOADING_TIMEOUT: 10000, // 10 seconds for initial load
+    PAGINATION_SIZE: 20, // Load 20 photos at a time
+    LAZY_LOAD_THRESHOLD: '200px' // Start loading when 200px away from viewport
   };
 
   // Gallery state
@@ -16,7 +18,11 @@
     isLoading: false,
     galleryData: null,
     currentLightboxIndex: -1,
-    lightboxItems: []
+    lightboxItems: [],
+    loadedPages: 0,
+    hasMorePages: true,
+    lazyObserver: null,
+    allCategories: {}
   };
 
   // Initialize gallery on page load
@@ -31,75 +37,106 @@
     initLightbox();
   });
 
-  // Load gallery detail data from API
+  // Load gallery detail data from API with pagination
   async function loadGalleryDetailData() {
     const loadingEl = document.getElementById('gallery-detail-loading');
     const contentEl = document.getElementById('gallery-detail-content');
     const staticEl = document.getElementById('gallery-detail-static');
 
-    // Extract year from the page (could be from URL or data attribute)
+    // Extract year from the page
     const year = getYearFromPage();
     
-    // Check cache first (include year in cache key)
-    const cachedData = getCachedData(year);
-    if (cachedData) {
-      displayGalleryData(cachedData, contentEl, staticEl, loadingEl);
+    // Initialize lazy loading observer
+    initLazyLoading();
+    
+    // Load first page
+    await loadNextPage(year, loadingEl, contentEl, staticEl);
+  }
+
+  // Load next page of photos
+  async function loadNextPage(year, loadingEl, contentEl, staticEl) {
+    if (state.isLoading || !state.hasMorePages) {
       return;
     }
 
-    // Show loading state
-    if (loadingEl) loadingEl.style.display = 'block';
-    if (staticEl) staticEl.style.display = 'none';
-
-    // API is now implemented! Let's use it
-    console.log('📸 Gallery API is now available, fetching real data...');
+    console.log(`📸 Loading page ${state.loadedPages + 1}...`);
     
-    // API code is now active
     try {
       state.isLoading = true;
       
-      // Set timeout for loading
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), CONFIG.LOADING_TIMEOUT)
-      );
-
-      // Fetch from API with year parameter
-      const fetchPromise = fetch(`${CONFIG.API_ENDPOINT}?year=${year}`, {
+      // Show loading for first page only
+      if (state.loadedPages === 0) {
+        if (loadingEl) loadingEl.style.display = 'block';
+        if (staticEl) staticEl.style.display = 'none';
+      }
+      
+      // Calculate offset
+      const offset = state.loadedPages * CONFIG.PAGINATION_SIZE;
+      
+      // Fetch from API with pagination
+      const apiUrl = `${CONFIG.API_ENDPOINT}?year=${year}&limit=${CONFIG.PAGINATION_SIZE}&offset=${offset}&timestamp=${Date.now()}`;
+      console.log('🔥 Making paginated API call to:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
         }
       });
-
-      const response = await Promise.race([fetchPromise, timeoutPromise]);
       
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log(`📦 Received page ${state.loadedPages + 1}: ${data.items.length} items, hasMore: ${data.hasMore}`);
       
-      // Cache the data with year
-      setCachedData(data, year);
+      // Update state
+      state.hasMorePages = data.hasMore || false;
+      state.loadedPages++;
       
-      // Display the gallery
-      displayGalleryData(data, contentEl, staticEl, loadingEl);
+      // Merge categories for first page, append for subsequent pages
+      if (state.loadedPages === 1) {
+        state.allCategories = data.categories || {};
+      } else {
+        // Append new items to existing categories
+        for (const [categoryName, items] of Object.entries(data.categories || {})) {
+          if (!state.allCategories[categoryName]) {
+            state.allCategories[categoryName] = [];
+          }
+          state.allCategories[categoryName].push(...items);
+        }
+      }
+      
+      // Display the gallery (append mode for subsequent pages)
+      displayGalleryData({
+        categories: state.allCategories,
+        totalCount: data.totalCount,
+        hasMore: data.hasMore
+      }, contentEl, staticEl, loadingEl, state.loadedPages > 1);
+      
+      // Set up infinite scroll for more pages
+      if (state.hasMorePages) {
+        setupInfiniteScroll(year, loadingEl, contentEl, staticEl);
+      }
       
     } catch (error) {
-      console.log('Gallery API request failed (expected):', error.message);
+      console.error('Gallery API request failed:', error.message);
       
-      // Show static fallback
-      if (loadingEl) loadingEl.style.display = 'none';
-      if (staticEl) staticEl.style.display = 'block';
+      // Show static fallback only on first page
+      if (state.loadedPages === 0) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (staticEl) staticEl.style.display = 'block';
+      }
       
     } finally {
       state.isLoading = false;
     }
   }
 
-  // Display gallery data
-  function displayGalleryData(data, contentEl, staticEl, loadingEl) {
-    console.log('displayGalleryData called with:', data);
+  // Display gallery data with lazy loading and append mode
+  function displayGalleryData(data, contentEl, staticEl, loadingEl, appendMode = false) {
+    console.log('displayGalleryData called with:', data, 'appendMode:', appendMode);
     
     // Check if we have any categories with items
     let hasItems = false;
@@ -109,35 +146,39 @@
       });
     }
     
-    if (!hasItems) {
-      // Show static content if no items
+    if (!hasItems && !appendMode) {
+      // Show static content if no items on first load
       if (loadingEl) loadingEl.style.display = 'none';
       if (staticEl) staticEl.style.display = 'block';
       return;
     }
 
-    // Hide loading and static content
-    if (loadingEl) loadingEl.style.display = 'none';
-    if (staticEl) staticEl.style.display = 'none';
+    // Hide loading and static content on first load
+    if (!appendMode) {
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (staticEl) staticEl.style.display = 'none';
+    }
 
-    // Get items from categories (new API format)
+    // Get items from categories
     const workshopItems = data.categories.workshops || [];
     const socialItems = data.categories.socials || [];
-    const performanceItems = data.categories.performances || [];
 
-    // Function to build gallery HTML for a category
-    function buildGalleryHTML(items, categoryOffset = 0) {
+    // Function to build gallery HTML for a category with lazy loading
+    function buildGalleryHTML(items, categoryOffset = 0, isAppend = false) {
       return items.map((item, index) => {
         const isVideo = item.type === 'video';
         const title = item.name.replace(/\.[^/.]+$/, ''); // Remove file extension
         const globalIndex = index + categoryOffset;
         
         return `
-          <div class="gallery-item" data-index="${globalIndex}">
+          <div class="gallery-item lazy-item" data-index="${globalIndex}" data-loaded="false">
             <div class="gallery-item-media">
               ${isVideo ? 
-                `<video src="${item.viewUrl}" poster="${item.thumbnailUrl}" controls preload="metadata"></video>` :
-                `<img src="${item.thumbnailUrl}" alt="${title}" loading="lazy">`
+                `<video data-src="${item.viewUrl}" poster="${item.thumbnailUrl}" controls preload="none" class="lazy-video"></video>` :
+                `<div class="lazy-placeholder">
+                   <img data-src="${item.thumbnailUrl}" alt="${title}" class="lazy-image" style="display: none;">
+                   <div class="loading-spinner">📸</div>
+                 </div>`
               }
             </div>
           </div>
@@ -154,7 +195,13 @@
       const workshopsGallery = document.getElementById('workshops-gallery');
       if (workshopsSection && workshopsGallery && workshopItems.length > 0) {
         workshopsSection.style.display = 'block';
-        workshopsGallery.innerHTML = buildGalleryHTML(workshopItems, 0);
+        if (appendMode) {
+          // Append new items
+          workshopsGallery.insertAdjacentHTML('beforeend', buildGalleryHTML(workshopItems, 0, true));
+        } else {
+          // Replace all items
+          workshopsGallery.innerHTML = buildGalleryHTML(workshopItems, 0);
+        }
       }
       
       // Update Socials section
@@ -162,46 +209,172 @@
       const socialsGallery = document.getElementById('socials-gallery');
       if (socialsSection && socialsGallery && socialItems.length > 0) {
         socialsSection.style.display = 'block';
-        socialsGallery.innerHTML = buildGalleryHTML(socialItems, workshopItems.length);
+        if (appendMode) {
+          // Append new items
+          socialsGallery.insertAdjacentHTML('beforeend', buildGalleryHTML(socialItems, workshopItems.length, true));
+        } else {
+          // Replace all items
+          socialsGallery.innerHTML = buildGalleryHTML(socialItems, workshopItems.length);
+        }
       }
       
-      // Add click handlers for lightbox
-      const items = contentEl.querySelectorAll('.gallery-item');
+      // Observe new lazy items
+      observeLazyItems();
+      
+      // Add click handlers for lightbox (only for new items if appending)
+      const selector = appendMode ? '.gallery-item[data-loaded="false"]' : '.gallery-item';
+      const items = contentEl.querySelectorAll(selector);
       items.forEach((item) => {
-        const index = parseInt(item.dataset.index);
-        const mediaElement = item.querySelector('img, video');
-        
-        // For images, add click handler to the whole item
-        if (mediaElement && mediaElement.tagName === 'IMG') {
-          item.addEventListener('click', () => {
-            openLightbox(data.items, index);
-          });
-          item.style.cursor = 'pointer';
-        } else if (mediaElement && mediaElement.tagName === 'VIDEO') {
-          // For videos, add click handler only to non-control areas
-          const mediaContainer = item.querySelector('.gallery-item-media');
-          if (mediaContainer) {
-            mediaContainer.style.cursor = 'pointer';
-            mediaContainer.addEventListener('click', (e) => {
-              // Only open lightbox if not clicking on video controls
-              if (e.target === mediaContainer || e.target === mediaElement) {
-                const rect = mediaElement.getBoundingClientRect();
-                const relativeY = e.clientY - rect.top;
-                const controlsHeight = 40; // Approximate height of video controls
-                
-                // Only open if not clicking in the controls area
-                if (relativeY < rect.height - controlsHeight) {
-                  openLightbox(data.items, index);
-                }
-              }
-            });
-          }
-        }
+        setupGalleryItemHandlers(item, data);
+        item.setAttribute('data-loaded', 'true');
       });
     }
 
-    // Store items for lightbox
-    state.lightboxItems = data.items;
+    // Store all items for lightbox (flatten categories)
+    const allItems = [];
+    Object.values(data.categories).forEach(items => allItems.push(...items));
+    if (appendMode) {
+      state.lightboxItems.push(...allItems);
+    } else {
+      state.lightboxItems = allItems;
+    }
+  }
+
+  // Setup click handlers for gallery items
+  function setupGalleryItemHandlers(item, data) {
+    const index = parseInt(item.dataset.index);
+    const mediaElement = item.querySelector('img, video');
+    
+    // For images, add click handler to the whole item
+    if (mediaElement && (mediaElement.tagName === 'IMG' || mediaElement.classList.contains('lazy-image'))) {
+      item.addEventListener('click', () => {
+        openLightbox(state.lightboxItems, index);
+      });
+      item.style.cursor = 'pointer';
+    } else if (mediaElement && mediaElement.tagName === 'VIDEO') {
+      // For videos, add click handler only to non-control areas
+      const mediaContainer = item.querySelector('.gallery-item-media');
+      if (mediaContainer) {
+        mediaContainer.style.cursor = 'pointer';
+        mediaContainer.addEventListener('click', (e) => {
+          // Only open lightbox if not clicking on video controls
+          if (e.target === mediaContainer || e.target === mediaElement) {
+            const rect = mediaElement.getBoundingClientRect();
+            const relativeY = e.clientY - rect.top;
+            const controlsHeight = 40; // Approximate height of video controls
+            
+            // Only open if not clicking in the controls area
+            if (relativeY < rect.height - controlsHeight) {
+              openLightbox(state.lightboxItems, index);
+            }
+          }
+        });
+      }
+    }
+  }
+
+  // Initialize lazy loading observer
+  function initLazyLoading() {
+    if (!('IntersectionObserver' in window)) {
+      console.warn('IntersectionObserver not supported, falling back to immediate loading');
+      return;
+    }
+
+    state.lazyObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const item = entry.target;
+          loadLazyItem(item);
+          state.lazyObserver.unobserve(item);
+        }
+      });
+    }, {
+      rootMargin: CONFIG.LAZY_LOAD_THRESHOLD,
+      threshold: 0.1
+    });
+  }
+
+  // Observe new lazy items
+  function observeLazyItems() {
+    if (!state.lazyObserver) return;
+    
+    const lazyItems = document.querySelectorAll('.lazy-item[data-loaded="false"]');
+    lazyItems.forEach(item => {
+      state.lazyObserver.observe(item);
+    });
+  }
+
+  // Load lazy item
+  function loadLazyItem(item) {
+    const lazyImage = item.querySelector('.lazy-image');
+    const lazyVideo = item.querySelector('.lazy-video');
+    const placeholder = item.querySelector('.lazy-placeholder');
+    const spinner = item.querySelector('.loading-spinner');
+
+    if (lazyImage) {
+      const src = lazyImage.getAttribute('data-src');
+      if (src) {
+        lazyImage.onload = () => {
+          if (placeholder) placeholder.style.display = 'none';
+          lazyImage.style.display = 'block';
+          item.classList.add('loaded');
+        };
+        lazyImage.onerror = () => {
+          if (spinner) spinner.textContent = '❌';
+        };
+        lazyImage.src = src;
+      }
+    }
+
+    if (lazyVideo) {
+      const src = lazyVideo.getAttribute('data-src');
+      if (src) {
+        lazyVideo.src = src;
+        lazyVideo.preload = 'metadata';
+        item.classList.add('loaded');
+      }
+    }
+  }
+
+  // Setup infinite scroll
+  function setupInfiniteScroll(year, loadingEl, contentEl, staticEl) {
+    // Create or update load more sentinel
+    let sentinel = document.getElementById('load-more-sentinel');
+    if (!sentinel) {
+      sentinel = document.createElement('div');
+      sentinel.id = 'load-more-sentinel';
+      sentinel.innerHTML = '<div class="loading-more">Loading more photos...</div>';
+      sentinel.style.cssText = 'height: 50px; display: flex; align-items: center; justify-content: center; margin: 2rem 0;';
+      
+      // Insert before gallery stats section
+      const galleryStats = document.querySelector('.gallery-stats');
+      if (galleryStats) {
+        galleryStats.parentNode.insertBefore(sentinel, galleryStats);
+      } else {
+        document.querySelector('main').appendChild(sentinel);
+      }
+    }
+
+    // Observe the sentinel for infinite scroll
+    const scrollObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && state.hasMorePages && !state.isLoading) {
+          console.log('📜 Infinite scroll triggered');
+          loadNextPage(year, loadingEl, contentEl, staticEl);
+        }
+      });
+    }, {
+      rootMargin: '100px',
+      threshold: 0.1
+    });
+
+    scrollObserver.observe(sentinel);
+
+    // Clean up when no more pages
+    if (!state.hasMorePages) {
+      sentinel.style.display = 'none';
+      scrollObserver.disconnect();
+    }
   }
 
   // Lightbox functionality (reusing from gallery.js)
