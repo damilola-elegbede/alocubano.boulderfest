@@ -488,8 +488,19 @@ class FestivalHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-type', content_type)
             self.send_header('Content-length', str(len(image_data)))
             
-            # Add aggressive caching headers (7 days for thumbnails, 24 hours for full size)
-            cache_duration = 604800 if size == 'thumbnail' else 86400  # 7 days vs 24 hours
+            # Check for cache parameter to set longer cache times
+            cache_param = query_params.get('cache', [None])[0]
+            
+            # Add aggressive caching headers 
+            if cache_param == '24h':
+                cache_duration = 86400  # 24 hours
+            elif cache_param == 'session':
+                cache_duration = 3600   # 1 hour for session
+            elif size == 'thumbnail':
+                cache_duration = 604800  # 7 days for thumbnails
+            else:
+                cache_duration = 86400   # 24 hours for full size
+                
             self.send_header('Cache-Control', f'public, max-age={cache_duration}, immutable')
             self.send_header('ETag', f'"{file_id}-{size or "full"}-{quality}"')
             

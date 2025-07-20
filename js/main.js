@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize shared lazy loading component
     if (typeof LazyLoader !== 'undefined') {
-        new LazyLoader.createSimple();
+        new LazyLoader();
     }
 
     // Initialize shared lightbox component for simple galleries
