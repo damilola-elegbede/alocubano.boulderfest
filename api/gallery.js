@@ -59,9 +59,9 @@ export default async function handler(req, res) {
       name: file.name,
       type: file.mimeType.startsWith('image/') ? 'image' : 'video',
       mimeType: file.mimeType,
-      thumbnailUrl: file.thumbnailLink || `https://drive.google.com/thumbnail?id=${file.id}&sz=w400`,
-      viewUrl: `https://drive.google.com/uc?export=view&id=${file.id}`,
-      downloadUrl: `https://drive.google.com/uc?export=download&id=${file.id}`,
+      thumbnailUrl: `/api/image-proxy/${file.id}`,
+      viewUrl: `/api/image-proxy/${file.id}`,
+      downloadUrl: `/api/image-proxy/${file.id}`,
       size: parseInt(file.size || '0'),
       createdAt: file.createdTime,
     }));
