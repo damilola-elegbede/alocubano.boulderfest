@@ -1,4 +1,4 @@
-// Image Cache Manager - Session-scoped caching for Captured Moments gallery
+// Image Cache Manager - Non-blocking session-scoped caching for Captured Moments gallery
 console.log('📦 ImageCacheManager module loading... DOM state:', document.readyState);
 
 if (typeof ImageCacheManager === 'undefined') {
@@ -145,10 +145,13 @@ class ImageCacheManager {
     }
 
     async initializeSessionBackground() {
-        console.log('Initializing session cache in background (silent)...');
+        console.log('🚀 BACKGROUND: Starting initializeSessionBackground...');
         this.setLoadingState(this.loadingStates.FETCHING, 10, 'Fetching gallery images...');
         
         try {
+            console.log('🌐 BACKGROUND: About to fetch /api/featured-photos...');
+            const startTime = performance.now();
+            
             // Fetch all images from the Captured_Moments folder
             const response = await fetch('/api/featured-photos', {
                 method: 'GET',
@@ -157,6 +160,9 @@ class ImageCacheManager {
                 },
                 signal: AbortSignal.timeout(10000)
             });
+            
+            const fetchTime = performance.now() - startTime;
+            console.log(`⏱️ BACKGROUND: API fetch completed in ${fetchTime.toFixed(2)}ms`);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -190,8 +196,8 @@ class ImageCacheManager {
                 console.warn('Failed to save cache, but proceeding with preloading');
             }
             
-            // Start preloading images in background
-            await this.preloadAllAssignedImages(pageAssignments);
+            // Start preloading images in background (non-blocking)
+            this.preloadAllAssignedImages(pageAssignments);
             
             this.setLoadingState(this.loadingStates.READY, 100, 'Gallery ready');
             console.log('Background session initialized with', validImages.length, 'images');
@@ -230,11 +236,14 @@ class ImageCacheManager {
         });
     }
 
-    async preloadAllAssignedImages(pageAssignments) {
+    preloadAllAssignedImages(pageAssignments) {
         const images = Object.values(pageAssignments);
         const totalImages = images.length;
         let loadedCount = 0;
 
+        console.log(`🔄 Starting non-blocking preload of ${totalImages} images...`);
+
+        // Start all preloads concurrently but don't wait for them
         const preloadPromises = images.map(async (imageData) => {
             const success = await this.preloadImage(imageData);
             loadedCount++;
@@ -249,8 +258,12 @@ class ImageCacheManager {
             return success;
         });
 
-        await Promise.all(preloadPromises);
-        console.log(`Background preloaded ${loadedCount}/${totalImages} images`);
+        // Let them complete in background without blocking
+        Promise.all(preloadPromises).then(() => {
+            console.log(`✅ Background preloaded ${loadedCount}/${totalImages} images`);
+        }).catch((error) => {
+            console.warn('Some images failed to preload:', error);
+        });
     }
 
     triggerPageUpgrade(imageData) {
@@ -322,12 +335,15 @@ class ImageCacheManager {
     }
 
     getImageForPageImmediate(pageId = null) {
+        const startTime = performance.now();
+        console.log('🔍 IMMEDIATE: getImageForPageImmediate called...');
+        
         // Use current page if no pageId provided
         if (!pageId) {
             pageId = this.getCurrentPageId();
         }
 
-        console.log('Getting immediate image for page:', pageId);
+        console.log('🔍 IMMEDIATE: Getting image for page:', pageId);
 
         // First check: Is assigned image cached?
         const cacheData = this.getCacheData();
@@ -360,13 +376,20 @@ class ImageCacheManager {
         // Cache miss: Return default image
         console.log('Cache MISS: Using default image for', pageId);
         
-        // Start background process only once per session
+        // Start background process only once per session (completely non-blocking)
         if (!this.hasBackgroundProcessStarted()) {
             console.log('Starting background process (first cache miss)');
             this.markBackgroundProcessStarted();
-            this.initializeSessionBackground();
+            
+            // Use setTimeout to ensure this runs after current execution stack completes
+            setTimeout(() => {
+                this.initializeSessionBackground();
+            }, 0);
         }
 
+        const endTime = performance.now();
+        console.log(`⏱️ IMMEDIATE: getImageForPageImmediate completed in ${(endTime - startTime).toFixed(2)}ms`);
+        
         return {
             id: 'default',
             name: 'Default Hero Image',
