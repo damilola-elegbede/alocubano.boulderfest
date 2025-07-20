@@ -10,7 +10,7 @@
     FEATURED_API_ENDPOINT: '/api/featured-photos',
     CACHE_KEY: 'gallery_cache',
     FEATURED_CACHE_KEY: 'featured_photos_cache',
-    DEFAULT_IMAGE: 'https://drive.google.com/thumbnail?id=1Z1BuOSET8jAwlYnA9IDwmg1bJLpRmGNI&sz=w1600'
+    DEFAULT_IMAGE: 'https://lh3.googleusercontent.com/d/1Z1BuOSET8jAwlYnA9IDwmg1bJLpRmGNI=w1600'
   };
 
   console.log('CONFIG:', CONFIG);
