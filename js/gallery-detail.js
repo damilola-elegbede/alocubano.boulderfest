@@ -1,4 +1,5 @@
 // Gallery Detail Module - Handles individual gallery page functionality
+// Cache Buster: v2024-07-20-fix
 (function() {
   'use strict';
 
