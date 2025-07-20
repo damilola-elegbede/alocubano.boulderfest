@@ -47,45 +47,50 @@
     </header>
 
     <main>
-        <!-- Hero Section -->
-        <section class="hero-typographic">
+
+        <!-- Hero Splash Image -->
+        <section class="gallery-hero-splash">
+            <div class="hero-image-container">
+                <img id="hero-splash-image" src="https://drive.google.com/thumbnail?id=1Z1BuOSET8jAwlYnA9IDwmg1bJLpRmGNI&sz=w1600" alt="A Lo Cubano Festival Moment" class="hero-splash-img" style="object-position: top center !important;">
+            </div>
+        </section>
+
+        <!-- Festival Years Navigation -->
+        <section class="section-typographic festival-years-nav">
             <div class="container">
-                <div class="hero-text-sculpture">
-                    <h1 class="hero-title-massive">
-                        <span class="hero-title-word">SEE THE</span>
-                        <span class="hero-title-word">MAGIC</span>
-                    </h1>
-                    <div class="hero-subtitle-container">
-                        <p class="hero-subtitle">Visual stories from our festival journey • 2023-2025</p>
+                <h2 class="text-display" style="text-align: center; margin-bottom: var(--space-3xl);">EXPLORE BY YEAR</h2>
+                
+                <div class="festival-years-grid">
+                    <a href="gallery-2025.html" class="festival-year-card" data-year="2025">
+                        <div class="year-card-content">
+                            <span class="year-number font-display">2025</span>
+                            <span class="year-subtitle font-serif">Third Edition</span>
+                            <span class="year-highlight font-mono">500+ Attendees</span>
+                        </div>
+                        <div class="year-card-hover">
+                            <span class="view-gallery-text">VIEW GALLERY →</span>
+                        </div>
+                    </a>
+                    
+                    <div class="festival-year-card coming-soon" data-year="2024">
+                        <div class="year-card-content">
+                            <span class="year-number font-display">2024</span>
+                            <span class="year-subtitle font-serif">Second Edition</span>
+                            <span class="year-highlight font-mono">Coming Soon</span>
+                        </div>
+                    </div>
+                    
+                    <div class="festival-year-card coming-soon" data-year="2023">
+                        <div class="year-card-content">
+                            <span class="year-number font-display">2023</span>
+                            <span class="year-subtitle font-serif">First Edition</span>
+                            <span class="year-highlight font-mono">Coming Soon</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Gallery Images -->
-        <section class="section-typographic">
-            <div class="container">
-                <div class="gallery-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: var(--space-2xl); margin-bottom: var(--space-2xl);">
-                    <div class="gallery-item">
-                        <img src="../../images/gallery/placeholder-1.svg" alt="Opening Night" style="width: 100%; height: auto; display: block;">
-                        <h3 class="font-display" style="font-size: var(--font-size-xl); margin-top: var(--space-lg);">OPENING NIGHT 2025</h3>
-                        <p class="font-serif" style="color: var(--color-gray-600);">The energy was electric as 500 dancers filled the floor</p>
-                    </div>
-                    
-                    <div class="gallery-item">
-                        <img src="../../images/gallery/placeholder-2.svg" alt="Live Performance" style="width: 100%; height: auto; display: block;">
-                        <h3 class="font-display" style="font-size: var(--font-size-xl); margin-top: var(--space-lg);">LIVE PERFORMANCES</h3>
-                        <p class="font-serif" style="color: var(--color-gray-600);">World-class artists bringing authentic Cuban rhythms to Boulder</p>
-                    </div>
-                    
-                    <div class="gallery-item">
-                        <img src="../../images/gallery/placeholder-3.svg" alt="Dance Workshop" style="width: 100%; height: auto; display: block;">
-                        <h3 class="font-display" style="font-size: var(--font-size-xl); margin-top: var(--space-lg);">WORKSHOP SESSIONS</h3>
-                        <p class="font-serif" style="color: var(--color-gray-600);">Learning from master instructors in intimate settings</p>
-                    </div>
-                </div>
-            </div>
-        </section>
 
         <!-- Testimonials -->
         <section class="section-typographic" style="background: var(--color-gray-50); padding-top: var(--space-3xl);">
@@ -143,5 +148,6 @@
     <script src="../../js/navigation.js"></script>
     <script src="../../js/main.js"></script>
     <script src="../../js/typography.js"></script>
+    <script src="../../js/gallery-hero.js"></script>
 </body>
 </html>
