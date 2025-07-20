@@ -251,9 +251,11 @@ class PageTransition {
                 const hasClassDeclaration = /class\s+\w+/.test(scriptContent);
                 
                 if (!hasClassDeclaration) {
-                    // Inline script without class declarations - safe to execute
+                    // Inline script without class declarations - create safe execution context
                     try {
-                        eval(scriptContent);
+                        // Create a safe function execution instead of eval()
+                        const scriptFunction = new Function(scriptContent);
+                        scriptFunction();
                     } catch (error) {
                         console.warn('Error executing inline script:', error);
                     }

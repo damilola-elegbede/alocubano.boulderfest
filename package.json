@@ -4,6 +4,8 @@
   "description": "A Lo Cubano Boulder Fest - Minimalist Dance Festival Website",
   "private": true,
   "scripts": {
+    "prebuild": "node ./scripts/generate-gallery-cache.js && node ./scripts/generate-featured-photos.js",
+    "build": "echo 'Build process completed'",
     "test": "jest",
     "test:html": "jest --testPathPattern=html-validation",
     "test:a11y": "jest --testPathPattern=accessibility",
@@ -21,7 +23,8 @@
     "pre-commit": "npm run lint && npm test"
   },
   "dependencies": {
-    "googleapis": "^128.0.0"
+    "googleapis": "^128.0.0",
+    "dotenv": "^16.0.3"
   },
   "devDependencies": {
     "@axe-core/puppeteer": "^4.8.0",
