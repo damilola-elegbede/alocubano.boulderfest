@@ -71,6 +71,19 @@ body {
   gap: var(--space-md);
 }
 
+.typographic .logo-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease-in-out;
+}
+
+.typographic .logo-link:hover {
+  transform: translateY(-1px);
+}
+
 .typographic .header-left img {
   display: block;
   height: 78px;
@@ -108,16 +121,16 @@ body {
   transition: all var(--transition-base);
 }
 
-.typographic .logo-text:hover .logo-main {
+.typographic .logo-link:hover .logo-main {
   color: var(--color-blue);
 }
 
-.typographic .logo-text:hover .logo-separator {
+.typographic .logo-link:hover .logo-separator {
   color: var(--color-blue);
   transform: scale(1.1);
 }
 
-.typographic .logo-text:hover .logo-sub {
+.typographic .logo-link:hover .logo-sub {
   color: var(--color-red);
 }
 
