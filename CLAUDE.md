@@ -33,7 +33,7 @@ alocubano.boulderfest/
 │
 ├── pages/
 │   └── typographic/              # Main site pages (typographic design)
-│       ├── home.html             # Festival overview and hero
+│       ├── home.html             # Festival overview
 │       ├── about.html            # Festival story and board
 │       ├── artists.html          # 2026 instructor lineup
 │       ├── schedule.html         # 3-day event schedule
@@ -52,6 +52,20 @@ alocubano.boulderfest/
     ├── fonts/                    # Font files (if any)
     └── images/                   # Alternative image location
 ```
+
+## Design Philosophy Update (IMPORTANT)
+
+### No Hero Titles Policy
+As of the latest design iteration, **ALL hero titles have been removed** from the site. This includes:
+- `hero-typographic` sections
+- `hero-title-massive` headings
+- `hero-text-sculpture` containers
+- `hero-title-word` spans
+- `hero-subtitle` elements
+
+**Rationale**: The design has evolved to focus on content-first presentation, allowing the festival information to speak for itself without oversized typographic elements that can overwhelm the user experience.
+
+**Implementation**: All pages should start directly with their main content sections. The typographic artistry is now expressed through the content layout and smaller design elements rather than massive hero titles.
 
 ## Design System
 
@@ -166,9 +180,11 @@ http://localhost:8000
 All pages follow consistent structure:
 1. **Head**: Favicons, meta tags, CSS imports
 2. **Header**: Logo, navigation, mobile menu
-3. **Main**: Page-specific content
+3. **Main**: Page-specific content (NO HERO TITLES)
 4. **Footer**: Credits, social links, contact
 5. **Scripts**: Navigation and typography JS
+
+**IMPORTANT**: Do not include hero titles or hero sections in pages. The design philosophy has evolved to eliminate large typographic hero titles (hero-title-massive, hero-text-sculpture) from all pages to create a cleaner, more focused experience.
 
 ## Coding Standards
 
@@ -200,14 +216,9 @@ All pages follow consistent structure:
 
 ### Typography System
 ```css
-/* Massive hero text with animations */
-.hero-title-massive {
-  font-family: var(--font-display);
-  font-size: clamp(var(--font-size-5xl), 15vw, var(--font-size-9xl));
-  line-height: var(--line-height-none);
-  letter-spacing: var(--letter-spacing-tight);
-  text-transform: uppercase;
-}
+/* DEPRECATED: Hero titles are no longer used in the design */
+/* .hero-title-massive - NO LONGER USED */
+/* All pages should start directly with content, no hero sections */
 
 /* Creative text layouts */
 .text-composition {
@@ -333,11 +344,13 @@ All pages follow consistent structure:
 ## AI Assistant Guidelines
 
 ### When Working on This Project
-1. **Respect typography**: Maintain text-as-art philosophy
-2. **Preserve design tokens**: Use CSS custom properties
-3. **Follow naming conventions**: BEM methodology
-4. **Maintain accessibility**: WCAG compliance
-5. **Test responsively**: Mobile-first approach
+1. **Respect typography**: Maintain text-as-art philosophy (but NO hero titles)
+2. **NO HERO SECTIONS**: Do not add hero-title-massive or hero-text-sculpture sections
+3. **Preserve design tokens**: Use CSS custom properties
+4. **Follow naming conventions**: BEM methodology
+5. **Maintain accessibility**: WCAG compliance
+6. **Test responsively**: Mobile-first approach
+7. **Start with content**: Pages should begin directly with meaningful content, not large hero titles
 
 ### Common Tasks
 - **Content updates**: Modify HTML in `pages/typographic/`

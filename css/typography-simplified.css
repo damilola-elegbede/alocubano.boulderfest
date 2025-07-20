@@ -268,3 +268,399 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Gallery Hero Splash Section */
+.gallery-hero-splash {
+  position: relative;
+  width: 100%;
+  height: 60vh;
+  min-height: 400px;
+  overflow: hidden;
+  margin-bottom: var(--space-3xl);
+}
+
+.hero-image-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-splash-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center !important;
+  object-position: 50% 0% !important; /* Alternative syntax */
+  transition: transform 0.6s ease;
+}
+
+.hero-image-container:hover .hero-splash-img {
+  transform: scale(1.05);
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.4) 100%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--space-3xl);
+}
+
+.hero-splash-text {
+  color: var(--color-white);
+  font-size: var(--font-size-3xl);
+  letter-spacing: 0.2em;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+  animation: fadeInUp 1s ease;
+}
+
+/* Festival Years Navigation */
+.festival-years-nav {
+  padding: var(--space-3xl) 0;
+}
+
+.festival-years-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-2xl);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.festival-year-card {
+  position: relative;
+  background: var(--color-white);
+  border: 2px solid var(--color-gray-200);
+  padding: var(--space-3xl);
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.festival-year-card:hover:not(.coming-soon) {
+  transform: translateY(-8px);
+  border-color: var(--color-blue);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+}
+
+.festival-year-card.coming-soon {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.year-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  position: relative;
+  z-index: 1;
+}
+
+.year-number {
+  font-size: var(--font-size-4xl);
+  color: var(--color-black);
+  line-height: 1;
+}
+
+.year-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-gray-700);
+}
+
+.year-highlight {
+  font-size: var(--font-size-sm);
+  color: var(--color-blue);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.year-card-hover {
+  position: absolute;
+  inset: 0;
+  background: var(--color-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(100%);
+  transition: all 0.3s ease;
+}
+
+.festival-year-card:hover:not(.coming-soon) .year-card-hover {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.view-gallery-text {
+  color: var(--color-white);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-lg);
+  letter-spacing: 0.1em;
+}
+
+/* Gallery Year Sections */
+.gallery-year-section {
+  padding: var(--space-4xl) 0;
+  scroll-margin-top: 100px;
+}
+
+.gallery-year-title {
+  text-align: center;
+  margin-bottom: var(--space-3xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.year-title-prefix {
+  font-size: var(--font-size-lg);
+  color: var(--color-gray-600);
+  letter-spacing: 0.2em;
+}
+
+.year-title-main {
+  font-size: var(--font-size-5xl);
+  color: var(--color-black);
+  font-family: var(--font-display);
+}
+
+/* Gallery Loading State */
+.gallery-loading {
+  text-align: center;
+  padding: var(--space-3xl);
+  color: var(--color-gray-600);
+}
+
+.gallery-loading p::after {
+  content: '';
+  animation: loadingDots 1.5s infinite;
+}
+
+@keyframes loadingDots {
+  0% { content: ''; }
+  25% { content: '.'; }
+  50% { content: '..'; }
+  75% { content: '...'; }
+}
+
+/* Gallery Grid Updates */
+.gallery-grid,
+.gallery-grid-static {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-xl);
+}
+
+.gallery-item {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-white);
+  transition: transform 0.3s ease;
+}
+
+.gallery-item:hover {
+  transform: translateY(-4px);
+}
+
+/* Gallery item media - simple display without aspect ratio container */
+.gallery-item-media {
+  width: 100%;
+  overflow: hidden;
+  background: #f0f0f0;
+}
+
+.gallery-item-media img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.gallery-item-media video {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .gallery-hero-splash {
+    height: 50vh;
+    min-height: 300px;
+  }
+  
+  .hero-splash-text {
+    font-size: var(--font-size-xl);
+  }
+  
+  .festival-years-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+  
+  .year-number {
+    font-size: var(--font-size-3xl);
+  }
+  
+  .gallery-grid,
+  .gallery-grid-static {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Gallery Back Navigation */
+.gallery-back-nav {
+  padding: var(--space-xl) 0 0;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+  color: var(--color-black);
+  font-size: var(--font-size-sm);
+  transition: all 0.3s ease;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid transparent;
+}
+
+.back-link:hover {
+  transform: translateX(-5px);
+  border-color: var(--color-black);
+}
+
+.back-arrow {
+  font-size: var(--font-size-lg);
+  transition: transform 0.3s ease;
+}
+
+.back-link:hover .back-arrow {
+  transform: translateX(-3px);
+}
+
+/* Gallery Detail Grid */
+.gallery-detail-grid {
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: var(--space-2xl);
+}
+
+.gallery-detail-grid .gallery-item {
+  transition: all 0.3s ease;
+}
+
+.gallery-detail-grid .gallery-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .gallery-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Gallery Lightbox Styles */
+.gallery-lightbox {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.gallery-lightbox.active {
+  display: flex;
+}
+
+.lightbox-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-media img,
+.lightbox-media video {
+  max-width: 90vw;
+  max-height: 85vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.lightbox-close,
+.lightbox-prev,
+.lightbox-next {
+  position: fixed;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  font-size: 2rem;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+  z-index: 10000;
+}
+
+.lightbox-close:hover,
+.lightbox-prev:hover,
+.lightbox-next:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.lightbox-close {
+  top: 20px;
+  right: 20px;
+}
+
+.lightbox-prev {
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.lightbox-next {
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.lightbox-caption {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  padding: 10px 20px;
+  color: white;
+  border-radius: 4px;
+  max-width: 80%;
+  text-align: center;
+}
+
+.lightbox-counter {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  color: white;
+  font-size: 1rem;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 5px 10px;
+  border-radius: 4px;
+}

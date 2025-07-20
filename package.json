@@ -9,12 +9,19 @@
     "test:a11y": "jest --testPathPattern=accessibility",
     "test:perf": "jest --testPathPattern=performance",
     "test:links": "jest --testPathPattern=links",
+    "test:gallery": "jest --testPathPattern=gallery",
+    "test:api": "jest --testPathPattern=api",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
     "test:all": "npm test",
     "lint": "npm run lint:js && npm run lint:html",
     "lint:js": "eslint js/**/*.js",
     "lint:html": "htmlhint pages/**/*.html",
     "serve": "python3 -m http.server 8000",
     "pre-commit": "npm run lint && npm test"
+  },
+  "dependencies": {
+    "googleapis": "^128.0.0"
   },
   "devDependencies": {
     "@axe-core/puppeteer": "^4.8.0",

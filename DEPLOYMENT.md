@@ -11,6 +11,8 @@ This is a static website that can be deployed to any static hosting service. The
 - [ ] Forms have correct mailto links
 - [ ] Mobile responsive design verified
 - [ ] No console errors in browser
+- [ ] Google Drive API credentials configured (for gallery feature)
+- [ ] Dependencies installed: `npm install`
 
 ## Vercel Deployment (Recommended)
 
@@ -36,8 +38,22 @@ The `vercel.json` file handles:
 - Routing to the typographic design pages
 - Security headers
 - Caching for assets
+- Serverless function configuration for gallery API
 
-### 4. Custom Domain (Optional)
+### 4. Environment Variables
+For the Google Drive gallery integration, you need to set up environment variables in Vercel:
+
+1. Go to your project settings in Vercel
+2. Navigate to "Environment Variables"
+3. Add the following variables:
+   - `GOOGLE_SERVICE_ACCOUNT_EMAIL`: Your service account email
+   - `GOOGLE_PRIVATE_KEY`: Your service account private key (include full key with line breaks)
+   - `GOOGLE_PROJECT_ID`: Your Google Cloud project ID
+   - `GOOGLE_DRIVE_FOLDER_ID`: The ID of your Google Drive folder (default: 1elqFy6HFf792_vGju8wYaEBJtLjQyOSq)
+
+See `GOOGLE_DRIVE_SETUP.md` for detailed instructions on obtaining these values.
+
+### 5. Custom Domain (Optional)
 1. Go to project settings in Vercel
 2. Navigate to "Domains"
 3. Add your custom domain
