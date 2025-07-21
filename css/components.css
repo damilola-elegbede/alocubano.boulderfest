@@ -131,6 +131,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none; /* Ensure placeholder doesn't block clicks */
+}
+
+/* Ensure gallery items are clickable */
+.gallery-item {
+  pointer-events: auto;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+}
+
+/* Make sure lazy images are clickable when loaded */
+.gallery-item .lazy-image {
+  pointer-events: auto;
 }
 
 /* Responsive lazy loading adjustments */

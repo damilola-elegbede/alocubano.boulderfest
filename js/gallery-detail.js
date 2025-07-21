@@ -39,6 +39,13 @@
     totalItemsAvailable: 0, // Total items in the dataset
     itemsDisplayed: 0, // Count of items actually displayed
     hasCompleteDataset: false, // Flag indicating we have all data
+    // New state for sequential category-aware pagination
+    workshopOffset: 0,           // Current position in workshops array
+    socialOffset: 0,             // Current position in socials array  
+    workshopTotal: 0,            // Total workshop items available
+    socialTotal: 0,              // Total social items available
+    currentCategory: 'workshops', // Which category we're currently loading
+    displayOrder: [],            // Array tracking display order for lightbox
     rateLimitTracker: {
       requests: [],
       isBlocked: false
@@ -49,6 +56,78 @@
       cacheMisses: 0
     }
   };
+
+  // Sequential loading algorithm for category-aware pagination
+  function getNextPageItems(allCategories, pageSize = 20) {
+    const items = [];
+    let remainingSpace = pageSize;
+    
+    // First, fill with workshops if any remain
+    if (state.workshopOffset < state.workshopTotal && remainingSpace > 0) {
+      const workshopItems = allCategories.workshops.slice(
+        state.workshopOffset, 
+        state.workshopOffset + remainingSpace
+      );
+      items.push(...workshopItems.map(item => ({...item, category: 'workshops'})));
+      state.workshopOffset += workshopItems.length;
+      remainingSpace -= workshopItems.length;
+    }
+    
+    // Then, fill remaining space with socials
+    if (state.socialOffset < state.socialTotal && remainingSpace > 0) {
+      const socialItems = allCategories.socials.slice(
+        state.socialOffset,
+        state.socialOffset + remainingSpace  
+      );
+      items.push(...socialItems.map(item => ({...item, category: 'socials'})));
+      state.socialOffset += socialItems.length;
+    }
+    
+    // Update completion state
+    state.hasMorePages = state.workshopOffset < state.workshopTotal || 
+                        state.socialOffset < state.socialTotal;
+    
+    return items;
+  }
+
+  // Update loading state and manage sentinel/completion message
+  function updateLoadingState() {
+    const sentinel = document.getElementById('load-more-sentinel');
+    
+    if (!state.hasMorePages) {
+      // Remove sentinel immediately
+      if (sentinel) {
+        sentinel.remove();
+        state.observedSentinels.delete('load-more-sentinel');
+      }
+      
+      // Show completion message
+      showCompletionMessage();
+    }
+  }
+
+  // Show completion message when all items are loaded
+  function showCompletionMessage() {
+    // Remove any existing completion message
+    const existing = document.getElementById('gallery-completion-message');
+    if (existing) existing.remove();
+    
+    const completionMessage = document.createElement('div');
+    completionMessage.id = 'gallery-completion-message';
+    completionMessage.innerHTML = `
+      <div class="completion-message">
+        ✅ All ${state.totalItemsAvailable} photos loaded
+      </div>
+    `;
+    completionMessage.style.cssText = 'text-align: center; padding: 2rem 0; color: #666; font-style: italic;';
+    
+    const galleryStats = document.querySelector('.gallery-stats');
+    if (galleryStats) {
+      galleryStats.parentNode.insertBefore(completionMessage, galleryStats);
+    } else {
+      document.querySelector('main').appendChild(completionMessage);
+    }
+  }
 
   // Rate limiting and request caching utilities
   class RequestManager {
@@ -240,48 +319,46 @@
       // We need to manually slice the first page.
       if (isStaticFetch) {
         console.log('📊 Static data loaded:', data);
-        const allItems = [];
-        Object.values(data.categories || {}).forEach(categoryItems => {
-          allItems.push(...categoryItems);
-        });
-        const totalAvailable = allItems.length;
-        console.log(`📊 Total items in static data: ${totalAvailable}`);
-        
-        // Store total items available
-        state.totalItemsAvailable = totalAvailable;
-        
-        // Determine if we have more pages based on total items
-        const firstPageSize = Math.min(CONFIG.PAGINATION_SIZE, totalAvailable);
-        state.hasMorePages = totalAvailable > CONFIG.PAGINATION_SIZE;
-        
-        // If we have 20 or fewer items total, we've loaded everything
-        state.hasCompleteDataset = totalAvailable <= CONFIG.PAGINATION_SIZE;
-        
-        // Manually paginate the data from the static file for the first display
-        const paginatedCategories = {};
-        const workshopsPage = (data.categories.workshops || []).slice(0, CONFIG.PAGINATION_SIZE);
-        const socialsPage = (data.categories.socials || []).slice(0, CONFIG.PAGINATION_SIZE);
-        
-        if (workshopsPage.length > 0) {
-          paginatedCategories.workshops = workshopsPage;
-        }
-        if (socialsPage.length > 0) {
-          paginatedCategories.socials = socialsPage;
-        }
-        const itemCount = workshopsPage.length + socialsPage.length;
-        state.itemsDisplayed = itemCount;
         
         // Store all categories for future pagination
         state.allCategories = data.categories || {};
         
-        // Store category counts
+        // Store category counts and totals
+        state.workshopTotal = (data.categories.workshops || []).length;
+        state.socialTotal = (data.categories.socials || []).length;
+        state.totalItemsAvailable = state.workshopTotal + state.socialTotal;
+        
         for (const [categoryName, items] of Object.entries(data.categories || {})) {
           state.categoryCounts[categoryName] = items.length;
         }
         
+        console.log(`📊 Total items in static data: workshops=${state.workshopTotal}, socials=${state.socialTotal}, total=${state.totalItemsAvailable}`);
+        
+        // Get first page using sequential algorithm
+        const pageItems = getNextPageItems(state.allCategories, CONFIG.PAGINATION_SIZE);
+        
+        // Organize items back into categories for display
+        const paginatedCategories = {
+          workshops: [],
+          socials: []
+        };
+        
+        pageItems.forEach(item => {
+          if (item.category === 'workshops') {
+            paginatedCategories.workshops.push(item);
+          } else if (item.category === 'socials') {
+            paginatedCategories.socials.push(item);
+          }
+        });
+        
+        state.itemsDisplayed = pageItems.length;
         state.loadedPages++;
         
-        console.log(`📦 Loaded static data: ${totalAvailable} total items, displaying ${itemCount}, hasMore: ${state.hasMorePages}, complete: ${state.hasCompleteDataset}`);
+        // If we have 20 or fewer items total, we've loaded everything
+        state.hasCompleteDataset = state.totalItemsAvailable <= CONFIG.PAGINATION_SIZE;
+        
+        console.log(`📦 Loaded static data: ${state.totalItemsAvailable} total items, displaying ${state.itemsDisplayed}, hasMore: ${state.hasMorePages}, complete: ${state.hasCompleteDataset}`);
+        console.log(`📍 Offsets: workshops=${state.workshopOffset}/${state.workshopTotal}, socials=${state.socialOffset}/${state.socialTotal}`);
         
         // Display paginated data
         displayGalleryData({
@@ -290,32 +367,51 @@
           hasMore: state.hasMorePages
         }, contentEl, staticEl, loadingEl, false);
         
+        // Update loading state (remove sentinel if complete)
+        updateLoadingState();
+        
       } else {
-        // This is the existing logic for paginated API calls
-        console.log(`📦 Received page ${state.loadedPages + 1}: ${data.items ? data.items.length : 0} items, hasMore: ${data.hasMore}`);
-        state.hasMorePages = data.hasMore || false;
+        // For subsequent pages, use sequential algorithm with stored categories
+        console.log(`📦 Loading page ${state.loadedPages + 1} using sequential algorithm`);
+        
+        // Get next page using sequential algorithm
+        const pageItems = getNextPageItems(state.allCategories, CONFIG.PAGINATION_SIZE);
+        
+        // Organize items back into categories for display
+        const paginatedCategories = {
+          workshops: [],
+          socials: []
+        };
+        
+        pageItems.forEach(item => {
+          if (item.category === 'workshops') {
+            paginatedCategories.workshops.push(item);
+          } else if (item.category === 'socials') {
+            paginatedCategories.socials.push(item);
+          }
+        });
+        
+        state.itemsDisplayed += pageItems.length;
         state.loadedPages++;
         
-        // Count new items received
-        let newItemsCount = 0;
-        for (const [categoryName, items] of Object.entries(data.categories || {})) {
-          newItemsCount += items.length;
-        }
-        state.itemsDisplayed += newItemsCount;
-        
         // Check if we've reached the total
-        if (state.itemsDisplayed >= state.totalItemsAvailable) {
-          state.hasMorePages = false;
+        if (state.itemsDisplayed >= state.totalItemsAvailable || !state.hasMorePages) {
           state.hasCompleteDataset = true;
           console.log('✅ All items now displayed');
         }
         
+        console.log(`📦 Loaded page ${state.loadedPages}: ${pageItems.length} items, hasMore: ${state.hasMorePages}`);
+        console.log(`📍 Offsets: workshops=${state.workshopOffset}/${state.workshopTotal}, socials=${state.socialOffset}/${state.socialTotal}`);
+        
         // Display the gallery with just the new items (append mode)
         displayGalleryData({
-          categories: data.categories, // Use only new items for append
-          totalCount: data.totalCount,
+          categories: paginatedCategories,
+          totalCount: state.totalItemsAvailable,
           hasMore: state.hasMorePages
         }, contentEl, staticEl, loadingEl, true);
+        
+        // Update loading state (remove sentinel if complete)
+        updateLoadingState();
       }
       
       // Set up infinite scroll for more pages
@@ -349,6 +445,7 @@
   async function insertItemsProgressively(items, container, categoryName, categoryOffset = 0, isAppend = false) {
     const BATCH_SIZE = 5; // Process 5 items at a time
     const uniqueItems = items.filter(item => {
+      // Create category-aware item ID to prevent duplicates within categories
       const itemId = `${categoryName}_${item.id || item.name}`;
       // Check against displayed items, not all loaded items
       if (state.displayedItemIds.has(itemId)) {
@@ -357,6 +454,14 @@
       }
       state.displayedItemIds.add(itemId);
       state.loadedItemIds.add(itemId); // Still track for debugging
+      
+      // Track display order for lightbox
+      state.displayOrder.push({
+        ...item,
+        category: categoryName,
+        displayIndex: state.displayOrder.length
+      });
+      
       return true;
     });
 
@@ -366,7 +471,11 @@
       const batch = uniqueItems.slice(i, i + BATCH_SIZE);
       const batchHTML = batch.map((item, index) => {
         const title = item.name.replace(/\.[^/.]+$/, ''); // Remove file extension
-        const globalIndex = (i + index) + categoryOffset;
+        // Use the actual display order index
+        const displayOrderItem = state.displayOrder.find(d => 
+          d.id === item.id && d.category === categoryName
+        );
+        const globalIndex = displayOrderItem ? displayOrderItem.displayIndex : state.displayOrder.length - 1;
         
         return `
           <div class="gallery-item lazy-item" data-index="${globalIndex}" data-category="${categoryName}" data-loaded="false">
@@ -487,12 +596,32 @@
 
   // Setup click handlers for gallery items
   function setupGalleryItemHandlers(item, data) {
-    const index = parseInt(item.dataset.index);
-    // Add click handler to gallery items
-    item.addEventListener('click', () => {
-      openLightbox(state.lightboxItems, index);
+    const displayIndex = parseInt(item.dataset.index);
+    
+    // Use event delegation to handle lazy-loaded content
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      console.log('🖱️ Gallery item clicked:', {
+        displayIndex,
+        totalItems: state.displayOrder.length,
+        target: e.target.tagName,
+        hasLightbox: !!state.lightbox
+      });
+      
+      // Ensure we use the correct items array
+      if (state.displayOrder.length > displayIndex) {
+        openLightbox(state.displayOrder, displayIndex);
+      } else {
+        console.error('Index out of bounds:', displayIndex, state.displayOrder.length);
+      }
     });
+    
+    // Ensure clickable styling
     item.style.cursor = 'pointer';
+    item.style.position = 'relative';
+    item.style.zIndex = '1';
   }
 
   // Initialize lazy loading using shared component
@@ -530,20 +659,6 @@
 
     // Only create sentinel if we have more pages
     if (!state.hasMorePages) {
-      // Show completion message if all items are loaded
-      if (state.hasCompleteDataset || state.itemsDisplayed >= state.totalItemsAvailable) {
-        const completionMessage = document.createElement('div');
-        completionMessage.id = 'gallery-completion-message';
-        completionMessage.innerHTML = '<div class="completion-message">✅ All photos loaded</div>';
-        completionMessage.style.cssText = 'text-align: center; padding: 2rem 0; color: #666; font-style: italic;';
-        
-        const galleryStats = document.querySelector('.gallery-stats');
-        if (galleryStats) {
-          galleryStats.parentNode.insertBefore(completionMessage, galleryStats);
-        } else {
-          document.querySelector('main').appendChild(completionMessage);
-        }
-      }
       return;
     }
 
@@ -607,6 +722,12 @@
       console.error('Lightbox not initialized!');
       return;
     }
+    
+    console.log('🏞️ Opening lightbox:', {
+      itemsCount: items.length,
+      index: index,
+      item: items[index]
+    });
     
     state.lightboxItems = items;
     state.currentLightboxIndex = index;
