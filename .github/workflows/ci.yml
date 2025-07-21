@@ -24,7 +24,6 @@ jobs:
     
     - name: Run linting
       run: npm run lint
-    
   build-test:
     runs-on: ubuntu-latest
     needs: [lint]
@@ -35,14 +34,14 @@ jobs:
     - name: Check file structure
       run: |
         # Verify all required files exist
-        test -f pages/typographic/home.html
-        test -f pages/typographic/about.html
-        test -f pages/typographic/artists.html
-        test -f pages/typographic/schedule.html
-        test -f pages/typographic/gallery.html
-        test -f pages/typographic/tickets.html
-        test -f pages/typographic/donations.html
-        test -f css/typography-simplified.css
+        test -f pages/home.html
+        test -f pages/about.html
+        test -f pages/artists.html
+        test -f pages/schedule.html
+        test -f pages/gallery.html
+        test -f pages/tickets.html
+        test -f pages/donations.html
+        test -f css/typography.css
         test -f vercel.json
         test -f README.md
     
@@ -53,15 +52,15 @@ jobs:
         sleep 5
         
         # Test if server is running
-        curl -f http://localhost:8000/pages/typographic/home.html || exit 1
+        curl -f http://localhost:8000/pages/home.html || exit 1
         
         # Test all pages
         for page in about artists schedule gallery tickets donations; do
-          curl -f http://localhost:8000/pages/typographic/$page.html || exit 1
+          curl -f http://localhost:8000/pages/$page.html || exit 1
         done
         
         # Test CSS loading
-        curl -f http://localhost:8000/css/typography-simplified.css || exit 1
+        curl -f http://localhost:8000/css/typography.css || exit 1
         
         kill $SERVER_PID
     

@@ -2,23 +2,31 @@
   "name": "alocubano-boulderfest",
   "version": "1.0.0",
   "description": "A Lo Cubano Boulder Fest - Minimalist Dance Festival Website",
+  "type": "module",
   "private": true,
   "scripts": {
-    "test": "jest",
-    "test:html": "jest --testPathPattern=html-validation",
-    "test:a11y": "jest --testPathPattern=accessibility",
-    "test:perf": "jest --testPathPattern=performance",
-    "test:links": "jest --testPathPattern=links",
-    "test:all": "npm test",
+    "prebuild": "node ./scripts/generate-gallery-cache.js && node ./scripts/generate-featured-photos.js",
+    "build": "npm run verify-structure && echo 'Build process completed'",
+    "postbuild": "node ./scripts/verify-structure.js",
+    "test": "npm run test:unit",
+    "test:unit": "jest --config jest.unit.config.cjs",
+    "test:all": "npm run test:unit",
     "lint": "npm run lint:js && npm run lint:html",
     "lint:js": "eslint js/**/*.js",
     "lint:html": "htmlhint pages/**/*.html",
     "serve": "python3 -m http.server 8000",
+    "vercel:dev": "node scripts/vercel-local-test.js",
+    "verify-structure": "node scripts/verify-structure.js",
     "pre-commit": "npm run lint && npm test"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.0",
+    "googleapis": "^153.0.0"
   },
   "devDependencies": {
     "@axe-core/puppeteer": "^4.8.0",
     "eslint": "^9.15.0",
+    "express": "^5.1.0",
     "html-validator": "^6.0.1",
     "htmlhint": "^1.6.3",
     "jest": "^29.7.0",
@@ -27,21 +35,5 @@
     "puppeteer": "^23.11.0",
     "stylelint": "^16.21.1",
     "stylelint-config-standard": "^36.0.1"
-  },
-  "jest": {
-    "preset": "jest-puppeteer",
-    "testMatch": [
-      "**/tests/**/*.test.js"
-    ],
-    "setupFilesAfterEnv": [
-      "./tests/setup.js"
-    ],
-    "collectCoverage": true,
-    "coverageDirectory": "coverage",
-    "coverageReporters": [
-      "text",
-      "lcov",
-      "html"
-    ]
   }
 }

@@ -1,50 +1,72 @@
 {
+  "buildCommand": "npm run prebuild && echo 'Static site ready'",
+  "outputDirectory": ".",
+  "framework": null,
+  "functions": {
+    "api/gallery.js": {
+      "maxDuration": 10
+    },
+    "api/debug.js": {
+      "maxDuration": 5
+    }
+  },
+  "images": {
+    "sizes": [16, 32, 48, 64, 96, 128, 256, 384],
+    "remotePatterns": [
+      {
+        "protocol": "https",
+        "hostname": "*.vercel.app"
+      }
+    ]
+  },
   "rewrites": [
     {
-      "source": "/",
-      "destination": "/pages/typographic/home.html"
+      "source": "/home",
+      "destination": "/pages/home.html"
     },
     {
-      "source": "/(.*)",
-      "destination": "/pages/typographic/$1.html"
+      "source": "/((?!api/|home)[^./]+)",
+      "destination": "/pages/$1.html"
+    },
+    {
+      "source": "/",
+      "destination": "/index.html"
     }
   ],
-  "cleanUrls": true,
+  "redirects": [],
   "trailingSlash": false,
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "SAMEORIGIN"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        }
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" }
       ]
     },
     {
       "source": "/(.*)\\.(jpg|jpeg|png|gif|svg|webp)",
       "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
       "source": "/(.*)\\.(css|js)",
       "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=86400, stale-while-revalidate=604800"
-        }
+        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(json)",
+      "headers": [
+        { "key": "Content-Type", "value": "application/json" },
+        { "key": "Cache-Control", "value": "public, max-age=3600, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "s-maxage=3600, stale-while-revalidate=86400" }
       ]
     }
   ]
