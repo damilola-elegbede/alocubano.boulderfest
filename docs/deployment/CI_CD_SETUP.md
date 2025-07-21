@@ -63,7 +63,7 @@ npm run serve
 npm run lint
 
 # Test site manually
-# Visit http://localhost:8000/pages/typographic/home.html
+# Visit http://localhost:8000/ (serves index.html as home page)
 ```
 
 ## GitHub Actions Workflow

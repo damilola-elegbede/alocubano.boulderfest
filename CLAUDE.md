@@ -31,10 +31,8 @@ alocubano.boulderfest/
 │   ├── navigation.js             # Navigation and menu handling
 │   └── typography.js             # Typography effects and animations
 │
-├── pages/
-│   └── typographic/              # Main site pages (typographic design)
-│       ├── home.html             # Festival overview
-│       ├── about.html            # Festival story and board
+├── pages/                        # Main site pages
+│   ├── about.html                # Festival story and board
 │       ├── artists.html          # 2026 instructor lineup
 │       ├── schedule.html         # 3-day event schedule
 │       ├── gallery.html          # Text-based moments
@@ -162,8 +160,8 @@ http://localhost:8000
 ## File Locations Guide
 
 ### Critical Files
-- **Main entry**: `/index.html` (auto-redirects to typographic design)
-- **Primary site**: `/pages/typographic/home.html`
+- **Main entry**: `/index.html` (home page - no redirect needed)
+- **Primary site**: Direct access via clean URLs (/about, /artists, etc.)
 - **Design system**: `/css/base.css` (CSS variables and tokens)
 - **Typography**: `/css/typography.css` (main design implementation)
 - **Core JS**: `/js/main.js` (all functionality classes)

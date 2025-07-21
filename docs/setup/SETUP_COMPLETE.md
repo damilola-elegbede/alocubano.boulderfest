@@ -113,13 +113,12 @@ alocubano.boulderfest/
 │   ├── navigation.js (Menu & transitions)
 │   └── main.js (Interactive features)
 ├── pages/
-│   └── design[1-5]/
-│       ├── home.html
-│       ├── about.html
-│       ├── artists.html
-│       ├── schedule.html
-│       ├── gallery.html
-│       └── tickets.html
+│   ├── about.html
+│   ├── artists.html
+│   ├── schedule.html
+│   ├── gallery.html
+│   ├── tickets.html
+│   └── donations.html
 └── images/
     ├── logo.png
     └── instagram.svg
