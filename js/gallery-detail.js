@@ -20,8 +20,7 @@
 
     // Gallery state with improved concurrency control and performance tracking
     const state = {
-        isLoading: false,
-        loadingMutex: false, // Prevent concurrent loading operations
+        loadingMutex: false, // Mutex to prevent concurrent loading operations
         galleryData: null,
         currentLightboxIndex: -1,
         lightboxItems: [],
@@ -46,6 +45,7 @@
         currentCategory: 'workshops', // Which category we're currently loading
         displayOrder: [],            // Array tracking display order for lightbox
         failedImages: [],            // Track failed image loads for retry
+        successfulImages: new Set(), // Track successfully loaded images to avoid re-retrying
         rateLimitTracker: {
             requests: [],
             isBlocked: false
@@ -84,6 +84,7 @@
                 loadedItemIds: Array.from(state.loadedItemIds),
                 displayedItemIds: Array.from(state.displayedItemIds),
                 failedImages: state.failedImages,
+                successfulImages: Array.from(state.successfulImages),
                 categoryItemCounts: state.categoryItemCounts
             };
 
@@ -131,6 +132,7 @@
             state.loadedItemIds = new Set(persistedState.loadedItemIds);
             state.displayedItemIds = new Set(persistedState.displayedItemIds);
             state.failedImages = persistedState.failedImages || [];
+            state.successfulImages = new Set(persistedState.successfulImages || []);
             state.categoryItemCounts = persistedState.categoryItemCounts || { workshops: 0, socials: 0 };
 
             console.log('✅ Gallery state restored from sessionStorage', {
@@ -236,8 +238,10 @@
         }
 
         // After DOM is restored, check for failed images and retry them
-        if (state.failedImages && state.failedImages.length > 0) {
-            console.log(`🔄 Found ${state.failedImages.length} failed images from previous session, retrying...`);
+        // Filter out images that were already successfully loaded
+        const imagesToRetry = state.failedImages.filter(src => !state.successfulImages.has(src));
+        if (imagesToRetry.length > 0) {
+            console.log(`🔄 Found ${imagesToRetry.length} failed images from previous session, retrying...`);
 
             // Wait a bit for LazyLoader to be fully initialized
             setTimeout(() => {
@@ -251,7 +255,7 @@
                     console.warn('LazyLoader retry functionality not available');
 
                     // Fallback: manually trigger loading for failed images
-                    state.failedImages.forEach(imageSrc => {
+                    imagesToRetry.forEach(imageSrc => {
                         const imgElements = document.querySelectorAll(`img[data-src="${imageSrc}"]`);
                         imgElements.forEach(img => {
                             // Mark as not loaded to trigger lazy loading again
@@ -503,9 +507,8 @@
     // Load next page of photos with mutex protection
     async function loadNextPage(year, loadingEl, contentEl, staticEl) {
     // Prevent concurrent loading with mutex pattern
-        if (state.isLoading || !state.hasMorePages || state.loadingMutex) {
+        if (state.loadingMutex || !state.hasMorePages) {
             console.log('⏸️ Skipping load - already loading or no more pages', {
-                isLoading: state.isLoading,
                 hasMorePages: state.hasMorePages,
                 loadingMutex: state.loadingMutex
             });
@@ -515,8 +518,7 @@
         console.log(`📸 Loading page ${state.loadedPages + 1}...`);
 
         try {
-            // Set both loading flags for maximum protection
-            state.isLoading = true;
+            // Set loading mutex
             state.loadingMutex = true;
 
             // Show loading for first page only
@@ -724,8 +726,7 @@
             }
 
         } finally {
-            // Always clear both loading flags
-            state.isLoading = false;
+            // Always clear loading mutex
             state.loadingMutex = false;
         }
     }
@@ -776,13 +777,13 @@
             state.displayOrder.push(displayOrderItem);
             
             // Enhanced debug logging for category index tracking
-            console.log(`📍 Item added to display order:`, {
-                name: item.name,
-                category: categoryName,
-                categoryIndex: categoryIndex,
-                displayIndex: state.displayOrder.length - 1,
-                categoryCount: state.categoryItemCounts[categoryName]
-            });
+            // console.log(`📍 Item added to display order:`, {
+            //     name: item.name,
+            //     category: categoryName,
+            //     categoryIndex: categoryIndex,
+            //     displayIndex: state.displayOrder.length - 1,
+            //     categoryCount: state.categoryItemCounts[categoryName]
+            // });
 
             return true;
         });
@@ -970,12 +971,37 @@
                 // Update failed images state immediately when an error occurs
                 if (info?.src && !state.failedImages.includes(info.src)) {
                     state.failedImages.push(info.src);
+                    // Remove from successful images if it was there
+                    state.successfulImages.delete(info.src);
                     console.log(`📌 Added failed image to state: ${info.src}`);
                     // Save state immediately to persist failed images
                     saveState();
                 }
             }
         });
+        
+        // Listen for successful image loads to track them
+        document.addEventListener('load', (e) => {
+            if (e.target.tagName === 'IMG' && e.target.classList.contains('lazy-image')) {
+                const src = e.target.src;
+                if (src && !src.includes('data:image')) {
+                    // Add to successful images
+                    state.successfulImages.add(src);
+                    // Remove from failed images if present
+                    const failedIndex = state.failedImages.indexOf(src);
+                    if (failedIndex > -1) {
+                        state.failedImages.splice(failedIndex, 1);
+                    }
+                    // Save state periodically (throttled)
+                    if (!state.saveStateTimeout) {
+                        state.saveStateTimeout = setTimeout(() => {
+                            saveState();
+                            state.saveStateTimeout = null;
+                        }, 1000);
+                    }
+                }
+            }
+        }, true); // Use capture phase
 
         // Store LazyLoader instance globally for retry functionality
         window.galleryLazyLoader = state.lazyObserver;
@@ -1041,7 +1067,7 @@
         // Create single-use observer to prevent duplicate triggers
         const scrollObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
-                if (entry.isIntersecting && state.hasMorePages && !state.isLoading && !state.loadingMutex) {
+                if (entry.isIntersecting && state.hasMorePages && !state.loadingMutex) {
                     console.log('📜 Infinite scroll triggered');
 
                     // Immediately disconnect observer to prevent duplicate triggers
@@ -1086,28 +1112,28 @@
         }
 
         const currentItem = items[index];
-        console.log('🏞️ Opening lightbox:', {
-            itemsCount: items.length,
-            index: index,
-            item: currentItem,
-            category: currentItem.category,
-            categoryIndex: currentItem.categoryIndex,
-            displayIndex: currentItem.displayIndex,
-            categoryCounts: state.categoryCounts
-        });
+        // console.log('🏞️ Opening lightbox:', {
+        //     itemsCount: items.length,
+        //     index: index,
+        //     item: currentItem,
+        //     category: currentItem.category,
+        //     categoryIndex: currentItem.categoryIndex,
+        //     displayIndex: currentItem.displayIndex,
+        //     categoryCounts: state.categoryCounts
+        // });
         
         // Verify category indices for debugging
-        if (currentItem.category === 'socials') {
-            console.log('🎭 Social item details:', {
-                name: currentItem.name,
-                categoryIndex: currentItem.categoryIndex,
-                expectedCategoryCount: state.categoryCounts.socials,
-                allSocialItems: items.filter(i => i.category === 'socials').map(i => ({
-                    name: i.name,
-                    categoryIndex: i.categoryIndex
-                }))
-            });
-        }
+        // if (currentItem.category === 'socials') {
+        //     console.log('🎭 Social item details:', {
+        //         name: currentItem.name,
+        //         categoryIndex: currentItem.categoryIndex,
+        //         expectedCategoryCount: state.categoryCounts.socials,
+        //         allSocialItems: items.filter(i => i.category === 'socials').map(i => ({
+        //             name: i.name,
+        //             categoryIndex: i.categoryIndex
+        //         }))
+        //     });
+        // }
 
         state.lightboxItems = items;
         state.currentLightboxIndex = index;
@@ -1227,7 +1253,6 @@
             console.log('📋 State Overview:', {
                 loadedPages: state.loadedPages,
                 hasMorePages: state.hasMorePages,
-                isLoading: state.isLoading,
                 loadingMutex: state.loadingMutex,
                 totalItemsAvailable: state.totalItemsAvailable,
                 itemsDisplayed: state.itemsDisplayed,

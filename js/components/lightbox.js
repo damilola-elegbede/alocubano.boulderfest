@@ -14,7 +14,7 @@ if (typeof Lightbox === 'undefined') {
             this.categoryCounts = {};
             this.lightboxId = options.lightboxId || 'unified-lightbox';
             this.showCaption = options.showCaption || false;
-            this.showCounter = options.showCounter || true;
+            this.showCounter = options.showCounter !== undefined ? options.showCounter : true;
             this.advanced = options.advanced || false; // Enable advanced features
 
             this.init();
@@ -117,6 +117,19 @@ if (typeof Lightbox === 'undefined') {
 
             img.src = this.images[index];
             img.alt = 'Gallery image';
+
+            // Add error handling
+            img.onerror = () => {
+                img.alt = 'Image failed to load';
+                // Try to show a placeholder or retry indicator
+                const retryBtn = document.createElement('button');
+                retryBtn.textContent = 'Retry';
+                retryBtn.className = 'lightbox-retry-btn';
+                retryBtn.onclick = () => {
+                    img.src = this.images[index] + '?t=' + Date.now();
+                };
+                img.parentElement.appendChild(retryBtn);
+            };
 
             // Hide caption elements for simple mode
             if (!this.showCaption) {
@@ -240,16 +253,33 @@ if (typeof Lightbox === 'undefined') {
             // Update image - check if the original gallery item has an updated src
             const galleryItem = document.querySelector(`[data-index="${this.currentIndex}"] .lazy-image`);
             let imageSrc = item.viewUrl || item.src;
-            
+
             // If the gallery item has a successfully loaded image, use that src
-            if (galleryItem && galleryItem.src && !galleryItem.src.includes('data:image')) {
+            if (galleryItem?.src && !galleryItem.src.includes('data:image')) {
                 imageSrc = galleryItem.src;
-                console.log('🔄 Using updated image source from gallery:', imageSrc);
+                // console.log('🔄 Using updated image source from gallery:', imageSrc);
             }
-            
             img.style.display = 'block';
             img.src = imageSrc;
             img.alt = item.name || item.alt || 'Gallery image';
+
+            // Add error handling
+            img.onerror = () => {
+                img.alt = 'Image failed to load';
+                // Try to show a placeholder or retry indicator
+                const existingBtn = img.parentElement.querySelector('.lightbox-retry-btn');
+                if (existingBtn) {
+                    existingBtn.remove();
+                }
+
+                const retryBtn = document.createElement('button');
+                retryBtn.textContent = 'Retry';
+                retryBtn.className = 'lightbox-retry-btn';
+                retryBtn.onclick = () => {
+                    img.src = imageSrc + (imageSrc.includes('?') ? '&' : '?') + 't=' + Date.now();
+                };
+                img.parentElement.appendChild(retryBtn);
+            };
 
             // Use stored categoryIndex if available, otherwise calculate it
             let categoryIndex;
