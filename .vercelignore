@@ -1,0 +1,35 @@
+# Python files and virtual environment
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+server.py
+debug_*.py
+requirements.txt
+
+# Development files
+.env
+.env.local
+.env.example
+
+# Test files
+tests/
+coverage/
+
+# Node modules
+node_modules/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db

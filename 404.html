@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - Page Not Found | A Lo Cubano Boulder Fest</title>
+  <meta name="description" content="Page not found. Return to A Lo Cubano Boulder Fest home page.">
+  
+  <!-- Favicons -->
+  <link rel="icon" type="image/svg+xml" href="/images/favicon-circle.svg">
+  <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/css/base.css">
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--color-white);
+      padding: var(--space-xl);
+      margin: 0;
+      font-family: var(--font-sans);
+      text-align: center;
+    }
+
+    .error-container {
+      max-width: 600px;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    .logo-container {
+      width: 150px;
+      height: 56px;
+      margin: 0 auto var(--space-xl);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-container img {
+      width: auto;
+      height: 56px;
+      object-fit: contain;
+    }
+
+    .error-code {
+      font-size: var(--font-size-6xl);
+      font-weight: 700;
+      color: var(--color-red);
+      margin-bottom: var(--space-md);
+      font-family: var(--font-display);
+    }
+
+    .error-message {
+      font-size: var(--font-size-xl);
+      color: var(--color-black);
+      margin-bottom: var(--space-lg);
+      line-height: 1.5;
+    }
+
+    .error-description {
+      font-size: var(--font-size-base);
+      color: var(--color-black);
+      opacity: 0.7;
+      margin-bottom: var(--space-xl);
+      line-height: 1.6;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: var(--space-md);
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: var(--space-md) var(--space-lg);
+      background-color: var(--color-blue);
+      color: var(--color-white);
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn:hover {
+      background-color: var(--color-red);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      color: var(--color-black);
+      border: 2px solid var(--color-black);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--color-black);
+      color: var(--color-white);
+    }
+
+    .debug-info {
+      margin-top: var(--space-xl);
+      padding: var(--space-md);
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      font-size: var(--font-size-xs);
+      color: #666;
+      text-align: left;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .action-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .btn {
+        width: 200px;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="error-container">
+    <div class="logo-container">
+      <img src="/images/logo.png" alt="A Lo Cubano Boulder Fest Logo">
+    </div>
+    
+    <div class="error-code">404</div>
+    <div class="error-message">Page Not Found</div>
+    <div class="error-description">
+      The page you're looking for doesn't exist or may have been moved. 
+      Let's get you back to the festival!
+    </div>
+    
+    <div class="action-buttons">
+      <a href="/" class="btn">Go Home</a>
+      <a href="/about" class="btn-secondary">About Festival</a>
+      <a href="/tickets" class="btn-secondary">Get Tickets</a>
+    </div>
+    
+    <div class="debug-info" id="debug-info">
+      <strong>Debug Information:</strong><br>
+      <span id="debug-details">Loading...</span>
+    </div>
+  </div>
+
+  <script>
+    // Debug logging for 404 troubleshooting
+    console.log('=== 404 PAGE DEBUG ===');
+    console.log('404 Page loaded at:', new Date().toISOString());
+    console.log('Current URL:', window.location.href);
+    console.log('Pathname:', window.location.pathname);
+    console.log('Search:', window.location.search);
+    console.log('Hash:', window.location.hash);
+    console.log('Referrer:', document.referrer);
+    console.log('User Agent:', navigator.userAgent);
+    
+    // Display debug information on page
+    document.addEventListener('DOMContentLoaded', () => {
+      const debugElement = document.getElementById('debug-details');
+      const debugInfo = {
+        url: window.location.href,
+        pathname: window.location.pathname,
+        timestamp: new Date().toISOString(),
+        referrer: document.referrer || 'Direct access',
+        userAgent: navigator.userAgent.substring(0, 100) + '...'
+      };
+      
+      debugElement.innerHTML = Object.entries(debugInfo)
+        .map(([key, value]) => `<strong>${key}:</strong> ${value}`)
+        .join('<br>');
+    });
+    
+    // Test API endpoint to verify if backend is working
+    fetch('/api/debug')
+      .then(response => response.json())
+      .then(data => {
+        console.log('API debug endpoint working:', data);
+      })
+      .catch(error => {
+        console.error('API debug endpoint failed:', error);
+      });
+  </script>
+</body>
+</html>

@@ -1,0 +1,384 @@
+/* Navigation Module - Consolidated from typography.css and components.css */
+
+/* Header Structure */
+.typographic .header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: var(--space-lg) 0;
+  background: linear-gradient(to bottom, var(--color-white) 0%, var(--color-white) 90%, transparent 100%);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.typographic .container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 var(--space-xl);
+}
+
+.typographic .grid {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+/* Logo Section */
+.typographic .header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.typographic .logo-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease-in-out;
+}
+
+.typographic .logo-link:hover {
+  transform: translateY(-1px);
+}
+
+.typographic .header-left img {
+  display: block;
+  height: 78px;
+}
+
+.typographic .logo-text {
+  font-family: var(--font-display);
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--color-black);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Logo Components */
+.typographic .logo-main {
+  font-weight: 700;
+  color: var(--color-black);
+  transition: all var(--transition-base);
+}
+
+.typographic .logo-separator {
+  color: var(--color-red);
+  font-weight: 400;
+  margin: 0 var(--space-xs);
+  transition: all var(--transition-base);
+}
+
+.typographic .logo-sub {
+  font-weight: 400;
+  color: var(--color-black);
+  transition: all var(--transition-base);
+}
+
+.typographic .logo-link:hover .logo-main {
+  color: var(--color-blue);
+}
+
+.typographic .logo-link:hover .logo-separator {
+  color: var(--color-blue);
+  transform: scale(1.1);
+}
+
+.typographic .logo-link:hover .logo-sub {
+  color: var(--color-red);
+}
+
+.typographic .header-text {
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-black);
+  white-space: nowrap;
+}
+
+.typographic .logo {
+  font-family: var(--font-display);
+  font-size: var(--font-size-3xl);
+  letter-spacing: var(--letter-spacing-wide);
+  line-height: var(--line-height-none);
+  text-transform: uppercase;
+  color: var(--color-black);
+  text-decoration: none;
+  position: relative;
+  transition: all var(--transition-base);
+}
+
+.typographic .logo:hover {
+  transform: scale(1.05);
+  color: var(--color-red);
+}
+
+/* Navigation Menu */
+.typographic .main-nav,
+.main-nav {
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+}
+
+.typographic .nav-list,
+.nav-list {
+  display: flex;
+  gap: var(--space-2xl);
+  align-items: baseline;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Navigation Links - Typographic Style (Primary) */
+.typographic .nav-link {
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+  color: var(--color-gray-700);
+  text-decoration: none;
+  position: relative;
+  transition: all var(--transition-base);
+  padding: var(--space-xs) 0;
+}
+
+.typographic .nav-link::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--color-black);
+  font-weight: 700;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: all var(--transition-base);
+}
+
+.typographic .nav-link:hover {
+  color: transparent;
+}
+
+.typographic .nav-link:hover::before {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.typographic .nav-link.is-active {
+  color: var(--color-red);
+  font-weight: 700;
+}
+
+.typographic .nav-link.is-active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-red);
+}
+
+/* Navigation Links - Component Style (Alternative) */
+.nav-link {
+  position: relative;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: var(--font-size-sm);
+  transition: color var(--transition-base);
+  padding: var(--space-xs) 0;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--color-red);
+  transition: width var(--transition-base);
+}
+
+.nav-link:hover::after,
+.nav-link.is-active::after {
+  width: 100%;
+}
+
+.nav-link:hover {
+  color: var(--color-red);
+}
+
+/* Mobile Menu - Typographic Style */
+.typographic .menu-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-black);
+  position: relative;
+  transition: all var(--transition-base);
+  z-index: var(--z-sticky);
+}
+
+.typographic .menu-toggle::before {
+  content: 'MENU';
+  transition: all var(--transition-base);
+}
+
+.typographic .menu-toggle.is-active::before {
+  content: 'CLOSE';
+  color: var(--color-red);
+}
+
+.typographic .menu-toggle:hover {
+  color: var(--color-red);
+  transform: scale(1.1);
+}
+
+/* Mobile Menu - Component Style */
+.menu-toggle {
+  display: none;
+  width: 40px;
+  height: 40px;
+  position: relative;
+  z-index: var(--z-sticky);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.menu-icon {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  gap: 4px;
+}
+
+.menu-icon span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background-color: var(--color-black);
+  transition: all var(--transition-base);
+}
+
+.menu-toggle.is-active .menu-icon span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.menu-toggle.is-active .menu-icon span:nth-child(2) {
+  opacity: 0;
+}
+
+.menu-toggle.is-active .menu-icon span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* Mobile Navigation Responsive */
+@media (max-width: 768px) {
+  .typographic .menu-toggle,
+  .menu-toggle {
+    display: block;
+  }
+  
+  .typographic .nav-list {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-white);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-3xl);
+    z-index: 999;
+  }
+  
+  .typographic .nav-list.is-active {
+    display: flex;
+  }
+  
+  .typographic .nav-link {
+    font-family: var(--font-display);
+    font-size: var(--font-size-4xl);
+    letter-spacing: var(--letter-spacing-tight);
+    text-transform: uppercase;
+    color: var(--color-black);
+    padding: var(--space-md) 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .typographic .nav-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: var(--color-red);
+    transition: left 0.3s ease;
+    z-index: -1;
+  }
+  
+  .typographic .nav-link:hover {
+    color: var(--color-white);
+  }
+  
+  .typographic .nav-link:hover::before {
+    left: 0;
+  }
+  
+  .typographic .nav-link.is-active {
+    color: var(--color-red);
+  }
+}
+
+/* Main content spacing */
+main, .main-content {
+  margin-top: calc(var(--space-4xl) + var(--space-lg));
+}
+
+/* Navigation Menu Type Extensions */
+.nav-menu-type a::before {
+  content: '[';
+  position: absolute;
+  left: -1em;
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.nav-menu-type a::after {
+  content: ']';
+  position: absolute;
+  right: -1em;
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.nav-menu-type a:hover::before,
+.nav-menu-type a:hover::after {
+  opacity: 1;
+}

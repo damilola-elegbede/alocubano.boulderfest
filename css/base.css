@@ -37,6 +37,25 @@
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-serif: Georgia, Cambria, 'Times New Roman', Times, serif;
   --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  --font-display: 'Bebas Neue', var(--font-sans);
+  --font-accent: 'Playfair Display', var(--font-serif);
+  --font-code: var(--font-mono);
+  
+  /* Line Heights */
+  --line-height-none: 1;
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+  --line-height-loose: 2;
+  
+  /* Letter Spacing */
+  --letter-spacing-tighter: -0.05em;
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.025em;
+  --letter-spacing-wider: 0.05em;
+  --letter-spacing-widest: 0.1em;
   
   /* Spacing Scale */
   --space-xs: 0.25rem;
@@ -136,9 +155,9 @@ button {
 /* Utility Classes */
 .container {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 0 var(--space-md);
+  padding: 0 var(--space-xl);
 }
 
 .visually-hidden {
@@ -199,4 +218,9 @@ button {
 :focus-visible {
   outline: 2px solid var(--color-blue);
   outline-offset: 2px;
+}
+
+/* Skip Links */
+.skip-link:focus {
+  top: 0;
 }

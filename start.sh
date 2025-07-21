@@ -38,5 +38,5 @@ echo "Press Ctrl+C to stop the server"
 echo "================================================"
 echo ""
 
-# Run the server
-python3 server.py
+# Run the server with Google Drive API integration
+python3 local-api-server.py

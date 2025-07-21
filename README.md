@@ -6,10 +6,15 @@ The official website for **A Lo Cubano Boulder Fest**, Boulder's premier Cuban s
 
 ## 🚀 Quick Start
 
+### Prerequisites
+1. Copy `.env.example` to `.env.local` and add your Google Drive credentials
+2. Install Python dependencies: `pip3 install -r requirements.txt`
+
+### Start the server
 ```bash
 ./start.sh
 # or
-python3 server.py
+python3 local-api-server.py
 ```
 
 Then open: **http://localhost:8000**
@@ -33,7 +38,7 @@ The website features a **typographic-forward design** that treats text as art:
 
 ```
 alocubano.boulderfest/
-├── index.html (Auto-redirect to main site)
+├── index.html (Main home page)
 ├── server.py (Python development server)
 ├── start.sh (Quick launcher)
 ├── css/
@@ -43,15 +48,17 @@ alocubano.boulderfest/
 ├── js/
 │   ├── navigation.js (Menu & transitions)
 │   ├── main.js (Core functionality)
-│   └── typography.js (Typography effects)
-├── pages/
-│   └── typographic/ (All website pages)
-│       ├── home.html
-│       ├── about.html
-│       ├── artists.html
-│       ├── schedule.html
-│       ├── gallery.html
-│       └── tickets.html
+│   ├── typography.js (Typography effects)
+│   └── gallery.js (Google Drive media integration)
+├── pages/ (All website pages)
+│   ├── about.html
+│   ├── artists.html
+│   ├── schedule.html
+│   ├── gallery.html
+│   ├── tickets.html
+│   └── donations.html
+├── api/
+│   └── gallery.js (Serverless function for Google Drive API)
 └── images/
     ├── logo.png (Main logo)
     ├── favicon-circle.svg (Circular favicon)
@@ -66,7 +73,7 @@ alocubano.boulderfest/
 - **About**: Festival story, board of directors, and growth timeline
 - **Artists**: 2026 instructor lineup and workshops
 - **Schedule**: 3-day workshop and social schedule
-- **Gallery**: Text-based moments and testimonials
+- **Gallery**: Dynamic media gallery with Google Drive integration, festival photos/videos
 - **Tickets**: Pricing tiers and registration
 
 ### Technical
@@ -76,6 +83,9 @@ alocubano.boulderfest/
 - ✅ Custom Instagram icon
 - ✅ Smooth animations and transitions
 - ✅ Fast Python development server
+- ✅ Google Drive API integration for dynamic gallery
+- ✅ Lightbox viewer for photos and videos
+- ✅ Serverless functions on Vercel
 
 ## 👥 Board of Directors
 
