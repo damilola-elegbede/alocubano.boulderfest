@@ -195,11 +195,9 @@ describe('Build Scripts and ES Module Compatibility', () => {
             expect(vercelConfig).toHaveProperty('images');
             expect(vercelConfig.images).toHaveProperty('sizes');
             
-            // Should have buildCommand for proper Vercel deployment
-            expect(vercelConfig).toHaveProperty('buildCommand');
-            expect(vercelConfig.buildCommand).toBe('npm run build');
-            expect(vercelConfig).toHaveProperty('outputDirectory');
-            expect(vercelConfig.outputDirectory).toBe('.');
+            // Should NOT have buildCommand for static site deployment
+            expect(vercelConfig).not.toHaveProperty('buildCommand');
+            expect(vercelConfig).not.toHaveProperty('outputDirectory');
             
             // Functions should be for API routes only
             if (vercelConfig.functions) {
