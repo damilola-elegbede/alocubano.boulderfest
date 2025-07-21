@@ -15,7 +15,8 @@
             WINDOW_MS: 60000, // Rate limit window in milliseconds (1 minute)
             RETRY_DELAY: 2000 // Base retry delay in milliseconds
         },
-        REQUEST_CACHE_DURATION: 300000 // Cache API requests for 5 minutes
+        REQUEST_CACHE_DURATION: 300000, // Cache API requests for 5 minutes
+        STATE_VERSION: 2 // Current state version for migrations
     };
 
     // Gallery state with improved concurrency control and performance tracking
@@ -61,6 +62,117 @@
         }
     };
 
+    // Reset gallery state to initial values
+    function resetGalleryState() {
+        state.loadingMutex = false;
+        state.galleryData = null;
+        state.currentLightboxIndex = -1;
+        state.lightboxItems = [];
+        state.lightboxCategories = [];
+        state.loadedPages = 0;
+        state.hasMorePages = true;
+        state.allCategories = {};
+        state.categoryCounts = {};
+        state.loadedItemIds = new Set();
+        state.displayedItemIds = new Set();
+        state.observedSentinels = new Set();
+        state.totalItemsAvailable = 0;
+        state.itemsDisplayed = 0;
+        state.hasCompleteDataset = false;
+        state.workshopOffset = 0;
+        state.socialOffset = 0;
+        state.workshopTotal = 0;
+        state.socialTotal = 0;
+        state.displayOrder = [];
+        state.failedImages = [];
+        state.successfulImages = new Set();
+        state.categoryItemCounts = { workshops: 0, socials: 0 };
+        state.timestamp = null;
+        state.restoredFromCache = false;
+        
+        console.log('🔄 Gallery state reset to initial values');
+    }
+
+    // Show cache indicator to user
+    function showCacheIndicator() {
+        // Check if we should show the indicator
+        if (!state.restoredFromCache) return;
+        
+        // Create cache indicator element
+        const indicator = document.createElement('div');
+        indicator.id = 'cache-indicator';
+        indicator.className = 'cache-indicator fade-in';
+        indicator.innerHTML = `
+            <span class="cache-icon">💾</span>
+            <span class="cache-text">Restored from cache</span>
+            <button class="cache-refresh" title="Refresh gallery">↻</button>
+        `;
+        
+        // Style the indicator
+        indicator.style.cssText = `
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        `;
+        
+        // Add to page
+        document.body.appendChild(indicator);
+        
+        // Fade in
+        requestAnimationFrame(() => {
+            indicator.style.opacity = '1';
+        });
+        
+        // Add refresh button handler
+        const refreshBtn = indicator.querySelector('.cache-refresh');
+        refreshBtn.style.cssText = `
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0 5px;
+            transition: transform 0.3s ease;
+        `;
+        
+        refreshBtn.addEventListener('click', () => {
+            // Clear cache and reload
+            const year = getYearFromPage();
+            const stateKey = `gallery_${year}_state`;
+            sessionStorage.removeItem(stateKey);
+            window.location.reload();
+        });
+        
+        refreshBtn.addEventListener('mouseenter', () => {
+            refreshBtn.style.transform = 'rotate(180deg)';
+        });
+        
+        refreshBtn.addEventListener('mouseleave', () => {
+            refreshBtn.style.transform = 'rotate(0deg)';
+        });
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            indicator.style.opacity = '0';
+            setTimeout(() => {
+                if (indicator.parentNode) {
+                    indicator.remove();
+                }
+            }, 300);
+        }, 5000);
+    }
+
     // State persistence functions
     function saveState() {
         try {
@@ -68,6 +180,7 @@
             const stateKey = `gallery_${year}_state`;
 
             const persistedState = {
+                version: CONFIG.STATE_VERSION, // Add version for future migrations
                 timestamp: Date.now(),
                 allCategories: state.allCategories,
                 categoryCounts: state.categoryCounts,
@@ -95,6 +208,34 @@
         }
     }
 
+    // Migrate state from older versions
+    function migrateState(state, fromVersion) {
+        // Migration from v1 to v2
+        if (fromVersion === 1) {
+            // v2 adds better duplicate tracking and cache indicators
+            // Ensure all required fields exist
+            state.version = 2;
+            state.restoredFromCache = state.restoredFromCache || false;
+            state.categoryItemCounts = state.categoryItemCounts || { workshops: 0, socials: 0 };
+            
+            // Ensure displayOrder items have categoryIndex
+            if (state.displayOrder && Array.isArray(state.displayOrder)) {
+                const categoryCounters = { workshops: 0, socials: 0 };
+                state.displayOrder.forEach(item => {
+                    if (item.categoryIndex === undefined && item.category) {
+                        item.categoryIndex = categoryCounters[item.category] || 0;
+                        categoryCounters[item.category]++;
+                    }
+                });
+            }
+            
+            console.log('✅ State migrated from v1 to v2');
+        }
+        
+        // Future migrations can be added here
+        // if (fromVersion === 2) { ... migrate to v3 ... }
+    }
+
     function restoreState() {
         try {
             const year = getYearFromPage();
@@ -108,6 +249,23 @@
 
             const persistedState = JSON.parse(savedState);
 
+            // Check version compatibility
+            const stateVersion = persistedState.version || 1; // Default to v1 for old states
+            if (stateVersion > CONFIG.STATE_VERSION) {
+                console.warn(`⚠️ State version ${stateVersion} is newer than current version ${CONFIG.STATE_VERSION}`);
+                sessionStorage.removeItem(stateKey);
+                return false;
+            }
+
+            // Migrate old state formats if needed
+            if (stateVersion < CONFIG.STATE_VERSION) {
+                console.log(`🔄 Migrating state from version ${stateVersion} to ${CONFIG.STATE_VERSION}`);
+                migrateState(persistedState, stateVersion);
+            }
+
+            // Store timestamp in state for later freshness checks
+            state.timestamp = persistedState.timestamp;
+            
             // Check if state is still valid (30 minutes expiry)
             const age = Date.now() - persistedState.timestamp;
             if (age > 30 * 60 * 1000) {
@@ -168,9 +326,21 @@
         }
         contentEl.style.display = 'block';
 
-        // Clear displayedItemIds before restoration to prevent duplicate detection
-        // We'll rebuild it as we restore the DOM
-        state.displayedItemIds.clear();
+        // Don't clear displayedItemIds - we need to check against existing items
+        // Instead, we'll verify what's actually in the DOM
+        const existingItems = new Set();
+        document.querySelectorAll('.gallery-item').forEach(item => {
+            const category = item.dataset.category;
+            const imgSrc = item.querySelector('img')?.src || item.querySelector('img')?.dataset.src;
+            if (imgSrc) {
+                // Extract ID from image source
+                const match = imgSrc.match(/\/([^\/]+)$/);
+                if (match) {
+                    const id = match[1];
+                    existingItems.add(`${category}_${id}`);
+                }
+            }
+        });
 
         // Group items by category
         const categorizedItems = {
@@ -184,7 +354,21 @@
             socials: 0
         };
 
+        // Filter out items that already exist in DOM
+        let restoredCount = 0;
+        let skippedCount = 0;
+        
         state.displayOrder.forEach(item => {
+            const itemKey = `${item.category}_${item.id}`;
+            
+            // Skip if item already exists in DOM
+            if (existingItems.has(itemKey)) {
+                skippedCount++;
+                console.log(`⏭️ Skipping already displayed item: ${itemKey}`);
+                return;
+            }
+            
+            restoredCount++;
             if (item.category === 'workshops') {
                 categorizedItems.workshops.push(item);
                 // Update counter to the highest categoryIndex + 1
@@ -199,6 +383,8 @@
                 }
             }
         });
+        
+        console.log(`📊 Restoration summary: ${restoredCount} items restored, ${skippedCount} items skipped (already displayed)`);
 
         // Restore workshops section
         const workshopsSection = document.getElementById('workshops-section');
@@ -484,24 +670,52 @@
         // Initialize lazy loading observer
         initLazyLoading();
 
-        // Try to restore from saved state
+        // Check for saved state FIRST - this is the key change
         const stateRestored = restoreState();
 
         if (stateRestored && state.displayOrder.length > 0) {
-            console.log('📚 Using restored state, recreating DOM...');
-            await restoreDOM();
+            // Check if state is fresh (less than 30 minutes old)
+            const stateAge = Date.now() - (state.timestamp || 0);
+            const STATE_FRESHNESS_THRESHOLD = 30 * 60 * 1000; // 30 minutes
 
-            // Update loading state
-            updateLoadingState();
+            if (stateAge < STATE_FRESHNESS_THRESHOLD) {
+                console.log('📚 Using fresh restored state, recreating DOM...');
+                console.log(`📊 State age: ${Math.round(stateAge / 60000)} minutes`);
+                
+                // Restore DOM from saved state WITHOUT making API calls
+                await restoreDOM();
 
-            // Set up infinite scroll if more pages exist
-            if (state.hasMorePages) {
-                setupInfiniteScroll(year, loadingEl, contentEl, staticEl);
+                // Update loading state
+                updateLoadingState();
+
+                // Set up infinite scroll if more pages exist
+                if (state.hasMorePages) {
+                    setupInfiniteScroll(year, loadingEl, contentEl, staticEl);
+                }
+
+                // Mark that we've successfully restored from cache
+                state.restoredFromCache = true;
+                
+                // Display cache indicator to user (optional)
+                showCacheIndicator();
+                
+                return; // Exit early - no need to load fresh data
+            } else {
+                console.log('⏰ Saved state is stale, clearing and loading fresh data...');
+                console.log(`📊 State age: ${Math.round(stateAge / 60000)} minutes (threshold: 30 minutes)`);
+                
+                // Clear stale state
+                const stateKey = `gallery_${year}_state`;
+                sessionStorage.removeItem(stateKey);
+                
+                // Reset state to initial values
+                resetGalleryState();
             }
-        } else {
-            // Load first page normally
-            await loadNextPage(year, loadingEl, contentEl, staticEl);
         }
+
+        // Only load fresh data if we don't have valid cached state
+        console.log('📥 Loading fresh gallery data...');
+        await loadNextPage(year, loadingEl, contentEl, staticEl);
     }
 
     // Load next page of photos with mutex protection
@@ -743,12 +957,26 @@
             };
         }
         
+        // Early exit if all items are already displayed
+        const allDuplicates = items.every(item => {
+            const itemId = `${categoryName}_${item.id || item.name}`;
+            return state.displayedItemIds.has(itemId);
+        });
+        
+        if (allDuplicates && items.length > 0) {
+            console.log(`⏭️ All ${items.length} ${categoryName} items already displayed, skipping insertion`);
+            return;
+        }
+        
         const uniqueItems = items.filter(item => {
             // Create category-aware item ID to prevent duplicates within categories
             const itemId = `${categoryName}_${item.id || item.name}`;
             // Check against displayed items, not all loaded items
             if (state.displayedItemIds.has(itemId)) {
-                console.warn(`🚫 Duplicate item prevented: ${itemId}`);
+                // Only log if we're in debug mode or this is unexpected
+                if (window.galleryDebug?.verbose) {
+                    console.log(`🚫 Duplicate item prevented: ${itemId}`);
+                }
                 return false;
             }
             state.displayedItemIds.add(itemId);
