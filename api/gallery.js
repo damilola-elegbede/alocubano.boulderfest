@@ -19,6 +19,16 @@ const getDriveClient = () => {
 const CACHE_DURATION = 3600; // 1 hour in seconds
 
 export default async function handler(req, res) {
+  // Debug logging for Vercel troubleshooting
+  console.log('=== Gallery API Debug ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Query:', JSON.stringify(req.query, null, 2));
+  console.log('Origin:', req.headers.origin);
+  console.log('User-Agent:', req.headers['user-agent']);
+  console.log('Timestamp:', new Date().toISOString());
+  
   // Set secure CORS headers with domain restrictions
   const origin = req.headers.origin;
   const allowedOrigins = [

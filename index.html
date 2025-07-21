@@ -135,18 +135,56 @@
   </div>
 
   <script>
+    // Debug logging for routing troubleshooting
+    console.log('=== INDEX.HTML DEBUG ===');
+    console.log('Current URL:', window.location.href);
+    console.log('Pathname:', window.location.pathname);
+    console.log('Host:', window.location.host);
+    console.log('User Agent:', navigator.userAgent);
+    console.log('Timestamp:', new Date().toISOString());
+    console.log('Document ready state:', document.readyState);
+    
     // Redirect to Design 4 home page after animation
     document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOMContentLoaded event fired');
+      
       // Wait for 2 seconds to show the loading animation
       setTimeout(() => {
+        console.log('Starting fade out animation');
         // Add fade out animation
         document.querySelector('.loading-container').classList.add('fade-out');
         
         // Redirect after fade out completes
         setTimeout(() => {
-          window.location.href = '/home';
+          console.log('Attempting redirect to /home');
+          console.log('Current location before redirect:', window.location.href);
+          
+          try {
+            window.location.href = '/home';
+          } catch (error) {
+            console.error('Redirect failed:', error);
+            // Fallback: try direct page path
+            console.log('Trying fallback redirect to pages/home.html');
+            window.location.href = '/pages/home.html';
+          }
         }, 500);
       }, 2000);
+    });
+    
+    // Additional error handling
+    window.addEventListener('error', (event) => {
+      console.error('Window error:', event.error);
+      console.error('Error details:', {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno
+      });
+    });
+    
+    // Log when page is fully loaded
+    window.addEventListener('load', () => {
+      console.log('Window load event completed');
     });
   </script>
 </body>
