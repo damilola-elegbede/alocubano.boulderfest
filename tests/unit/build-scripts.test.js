@@ -234,8 +234,8 @@ describe('Build Scripts and ES Module Compatibility', () => {
         test('should handle missing Google credentials gracefully', (done) => {
             // Test with missing credentials to ensure graceful failure
             const env = { ...process.env };
-            delete env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-            delete env.GOOGLE_PRIVATE_KEY;
+            env.GOOGLE_SERVICE_ACCOUNT_EMAIL = undefined;
+            env.GOOGLE_PRIVATE_KEY = undefined;
             
             const buildProcess = spawn('npm', ['run', 'prebuild'], {
                 cwd: path.join(__dirname, '..', '..'),

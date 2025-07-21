@@ -15,7 +15,7 @@
     "remotePatterns": [
       {
         "protocol": "https",
-        "hostname": "**.vercel.app"
+        "hostname": "*.vercel.app"
       }
     ]
   },
@@ -59,7 +59,7 @@
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Cache-control", "value": "s-maxage=3600, stale-while-revalidate" }
+        { "key": "Cache-Control", "value": "s-maxage=3600, stale-while-revalidate=86400" }
       ]
     }
   ]
