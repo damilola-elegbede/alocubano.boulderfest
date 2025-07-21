@@ -146,27 +146,44 @@
             transition: transform 0.3s ease;
         `;
         
-        refreshBtn.addEventListener('click', () => {
+        // Define event handlers for proper cleanup
+        const handleClick = () => {
             // Clear cache and reload
             const year = getYearFromPage();
             const stateKey = `gallery_${year}_state`;
             sessionStorage.removeItem(stateKey);
             window.location.reload();
-        });
+        };
         
-        refreshBtn.addEventListener('mouseenter', () => {
+        const handleMouseEnter = () => {
             refreshBtn.style.transform = 'rotate(180deg)';
-        });
+        };
         
-        refreshBtn.addEventListener('mouseleave', () => {
+        const handleMouseLeave = () => {
             refreshBtn.style.transform = 'rotate(0deg)';
-        });
+        };
+        
+        // Add event listeners
+        refreshBtn.addEventListener('click', handleClick);
+        refreshBtn.addEventListener('mouseenter', handleMouseEnter);
+        refreshBtn.addEventListener('mouseleave', handleMouseLeave);
+        
+        // Store cleanup function
+        indicator._cleanup = () => {
+            refreshBtn.removeEventListener('click', handleClick);
+            refreshBtn.removeEventListener('mouseenter', handleMouseEnter);
+            refreshBtn.removeEventListener('mouseleave', handleMouseLeave);
+        };
         
         // Auto-hide after 5 seconds
         setTimeout(() => {
             indicator.style.opacity = '0';
             setTimeout(() => {
                 if (indicator.parentNode) {
+                    // Clean up event listeners before removing
+                    if (indicator._cleanup) {
+                        indicator._cleanup();
+                    }
                     indicator.remove();
                 }
             }, 300);
