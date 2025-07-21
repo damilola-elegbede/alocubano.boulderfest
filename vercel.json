@@ -1,4 +1,7 @@
 {
+  "buildCommand": "npm run prebuild && echo 'Static site ready'",
+  "outputDirectory": ".",
+  "framework": null,
   "functions": {
     "api/gallery.js": {
       "maxDuration": 10
