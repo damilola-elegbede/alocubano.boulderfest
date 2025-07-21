@@ -7,11 +7,11 @@ class ImageCacheManager {
         this.imageCacheKey = 'alocubano_image_data_cache';
         this.defaultImageUrl = '/images/hero-default.jpg';
         this.pageMapping = {
-            '/': 'home', '/home': 'home', 'index.html': 'home', 'home.html': 'home', 
-            '/about': 'about', 'about.html': 'about', 
+            '/': 'home', '/home': 'home', 'index.html': 'home', 'home.html': 'home',
+            '/about': 'about', 'about.html': 'about',
             '/artists': 'artists', 'artists.html': 'artists',
-            '/schedule': 'schedule', 'schedule.html': 'schedule', 
-            '/gallery': 'gallery', 'gallery.html': 'gallery', 
+            '/schedule': 'schedule', 'schedule.html': 'schedule',
+            '/gallery': 'gallery', 'gallery.html': 'gallery',
             '/tickets': 'tickets', 'tickets.html': 'tickets',
             '/donations': 'donations', 'donations.html': 'donations'
         };
@@ -20,7 +20,7 @@ class ImageCacheManager {
         this.lastApiCall = 0;
         this.minApiInterval = 2000; // Minimum 2 seconds between API calls
     }
-    
+
     loadImageDataCache() {
         try {
             const cached = localStorage.getItem(this.imageCacheKey);
@@ -30,7 +30,7 @@ class ImageCacheManager {
             return {};
         }
     }
-    
+
     saveImageDataCache() {
         try {
             localStorage.setItem(this.imageCacheKey, JSON.stringify(this.imageDataCache));
@@ -38,29 +38,31 @@ class ImageCacheManager {
             console.warn('Failed to save image data cache:', error);
         }
     }
-    
+
     isImageCached(fileId) {
         const cached = this.imageDataCache[fileId];
-        if (!cached) return false;
-        
+        if (!cached) {
+            return false;
+        }
+
         // Check if cache is less than 24 hours old
         const now = Date.now();
         const cacheAge = now - (cached.timestamp || 0);
         const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-        
+
         return cacheAge < maxAge;
     }
-    
+
     async rateLimitedApiCall(fileId) {
         const now = Date.now();
         const timeSinceLastCall = now - this.lastApiCall;
-        
+
         if (timeSinceLastCall < this.minApiInterval) {
             const waitTime = this.minApiInterval - timeSinceLastCall;
             console.log(`⏳ Rate limiting: waiting ${waitTime}ms before API call`);
             await new Promise(resolve => setTimeout(resolve, waitTime));
         }
-        
+
         this.lastApiCall = Date.now();
         return `/api/image-proxy/${fileId}?size=medium&quality=85&cache=24h`;
     }
@@ -68,24 +70,24 @@ class ImageCacheManager {
     getCurrentPageId() {
         const pathname = window.location.pathname;
         console.log('🔍 Detecting page from pathname:', pathname);
-        
+
         // Handle root path and clean URLs
         if (pathname === '/' || pathname === '') {
             console.log('📍 Detected: home (root path)');
             return 'home';
         }
-        
+
         // Extract filename from path
         const filename = pathname.split('/').pop() || 'index.html';
         console.log('📄 Extracted filename:', filename);
-        
+
         // Check if filename contains .html
         if (filename.includes('.html')) {
             const pageId = this.pageMapping[filename] || 'default';
             console.log(`📍 Detected: ${pageId} (from ${filename})`);
             return pageId;
         }
-        
+
         // Check full pathname mapping
         const pageId = this.pageMapping[pathname] || this.pageMapping[filename] || 'default';
         console.log(`📍 Detected: ${pageId} (from pathname mapping)`);
@@ -108,13 +110,15 @@ class ImageCacheManager {
                     // 3. If no session cache, fetch static JSON and create assignments
                     console.log('No session cache. Fetching static featured photos list...');
                     const response = await fetch('/featured-photos.json');
-                    if (!response.ok) throw new Error('Failed to load featured-photos.json');
+                    if (!response.ok) {
+                        throw new Error('Failed to load featured-photos.json');
+                    }
                     const data = await response.json();
-                    
+
                     if (!data.items || data.items.length === 0) {
                         throw new Error('No images found in featured photos');
                     }
-                    
+
                     this.sessionAssignments = this.createRandomAssignments(data.items);
                     sessionStorage.setItem(this.cacheKey, JSON.stringify(this.sessionAssignments));
                     console.log('Created and cached new session assignments.');
@@ -129,23 +133,23 @@ class ImageCacheManager {
         const assignedImage = this.sessionAssignments[pageId];
         if (assignedImage) {
             const fileId = assignedImage.id;
-            
+
             // Check if image data is already cached locally
             if (this.isImageCached(fileId)) {
                 const cachedData = this.imageDataCache[fileId];
                 console.log(`📦 Using cached image for ${pageId}:`, assignedImage.name);
-                return { 
-                    id: fileId, 
-                    url: cachedData.url, 
+                return {
+                    id: fileId,
+                    url: cachedData.url,
                     name: assignedImage.name,
-                    cached: true 
+                    cached: true
                 };
             }
-            
+
             // If not cached, prepare API call with rate limiting
             console.log(`🔄 Image not cached for ${pageId}, will make API call:`, assignedImage.name);
             const url = await this.rateLimitedApiCall(fileId);
-            
+
             // Cache the URL for future use
             this.imageDataCache[fileId] = {
                 url: url,
@@ -153,7 +157,7 @@ class ImageCacheManager {
                 timestamp: Date.now()
             };
             this.saveImageDataCache();
-            
+
             console.log(`🖼️ New image assigned for ${pageId}:`, assignedImage.name);
             return { id: fileId, url: url, name: assignedImage.name, cached: false };
         }
@@ -166,7 +170,7 @@ class ImageCacheManager {
         const assignments = {};
         const pages = Object.values(this.pageMapping);
         const shuffledImages = [...imagePool].sort(() => Math.random() - 0.5);
-        
+
         pages.forEach((pageId, index) => {
             if (shuffledImages.length > 0) {
                 assignments[pageId] = shuffledImages[index % shuffledImages.length];

@@ -65,24 +65,24 @@ if (typeof LazyLoader === 'undefined') {
         loadSimpleImage(img) {
             if (img.dataset.src) {
                 const src = img.dataset.src;
-                
+
                 img.onload = () => {
                     // Success - remove from failed images if it was there
                     this.failedImages.delete(img);
-                    
+
                     img.classList.add(this.config.loadedClass);
                     // Add fade-in effect
                     img.style.transition = 'opacity 0.3s ease-in-out';
                     img.style.opacity = '1';
                 };
-                
+
                 img.onerror = () => {
                     // Handle error state for simple images
                     img.style.opacity = '1';
                     img.style.cursor = 'pointer';
                     img.title = 'Click to retry loading';
                     img.alt = '❌ Failed to load - Click to retry';
-                    
+
                     // Store failed image info
                     const retryInfo = {
                         element: img,
@@ -90,16 +90,16 @@ if (typeof LazyLoader === 'undefined') {
                         retryCount: 0
                     };
                     this.failedImages.set(img, retryInfo);
-                    
+
                     // Add click handler for retry
                     img.onclick = (e) => {
                         e.stopPropagation();
                         this.retrySimpleImage(img);
                     };
-                    
+
                     console.warn('Failed to load image:', src);
                 };
-                
+
                 // Start loading
                 img.src = src;
                 img.style.opacity = '0';
@@ -148,7 +148,7 @@ if (typeof LazyLoader === 'undefined') {
                             spinner.style.display = 'block';
                             spinner.style.cursor = 'pointer';
                             spinner.title = 'Click to retry loading';
-                            
+
                             // Store failed image info
                             const retryInfo = {
                                 element: item,
@@ -156,7 +156,7 @@ if (typeof LazyLoader === 'undefined') {
                                 retryCount: 0
                             };
                             this.failedImages.set(item, retryInfo);
-                            
+
                             // Add click handler for retry
                             spinner.onclick = (e) => {
                                 e.stopPropagation();
@@ -260,10 +260,12 @@ if (typeof LazyLoader === 'undefined') {
         // Retry a specific failed image
         retryFailedImage(item) {
             const retryInfo = this.failedImages.get(item);
-            if (!retryInfo) return;
+            if (!retryInfo) {
+                return;
+            }
 
             const { src, retryCount } = retryInfo;
-            
+
             // Check if we've exceeded max retries
             if (retryCount >= this.config.maxRetries) {
                 console.warn('Max retries exceeded for image:', src);
@@ -287,14 +289,14 @@ if (typeof LazyLoader === 'undefined') {
 
                 // Create new image element to force reload
                 const newImage = new Image();
-                
+
                 newImage.onload = () => {
                     // Success - remove from failed images
                     this.failedImages.delete(item);
-                    
+
                     // Update the actual image
                     lazyImage.src = src;
-                    
+
                     // Hide placeholder and spinner
                     if (placeholder) {
                         placeholder.style.display = 'none';
@@ -318,14 +320,14 @@ if (typeof LazyLoader === 'undefined') {
                         spinner.textContent = '❌';
                         spinner.style.cursor = 'pointer';
                         spinner.title = `Click to retry loading (${retryInfo.retryCount}/${this.config.maxRetries} attempts)`;
-                        
+
                         // Re-add click handler
                         spinner.onclick = (e) => {
                             e.stopPropagation();
                             this.retryFailedImage(item);
                         };
                     }
-                    
+
                     console.warn(`Retry ${retryInfo.retryCount} failed for image:`, src);
                 };
 
@@ -338,10 +340,12 @@ if (typeof LazyLoader === 'undefined') {
         // Retry a simple image
         retrySimpleImage(img) {
             const retryInfo = this.failedImages.get(img);
-            if (!retryInfo) return;
+            if (!retryInfo) {
+                return;
+            }
 
             const { src, retryCount } = retryInfo;
-            
+
             // Check if we've exceeded max retries
             if (retryCount >= this.config.maxRetries) {
                 console.warn('Max retries exceeded for image:', src);
@@ -364,11 +368,11 @@ if (typeof LazyLoader === 'undefined') {
 
             // Create new image element to force reload
             const newImage = new Image();
-            
+
             newImage.onload = () => {
                 // Success - remove from failed images
                 this.failedImages.delete(img);
-                
+
                 // Update the actual image
                 img.src = src + `?retry=${retryInfo.retryCount}&t=${Date.now()}`;
                 img.style.cursor = 'default';
@@ -382,13 +386,13 @@ if (typeof LazyLoader === 'undefined') {
                 img.style.cursor = 'pointer';
                 img.alt = '❌ Failed to load - Click to retry';
                 img.title = `Click to retry loading (${retryInfo.retryCount}/${this.config.maxRetries} attempts)`;
-                
+
                 // Re-add click handler
                 img.onclick = (e) => {
                     e.stopPropagation();
                     this.retrySimpleImage(img);
                 };
-                
+
                 console.warn(`Retry ${retryInfo.retryCount} failed for image:`, src);
             };
 
@@ -400,7 +404,7 @@ if (typeof LazyLoader === 'undefined') {
         retryAllFailedImages() {
             const failedItems = Array.from(this.failedImages.keys());
             console.log(`Retrying ${failedItems.length} failed images...`);
-            
+
             failedItems.forEach(item => {
                 // Check if it's a simple image or advanced item
                 if (item.tagName === 'IMG') {
@@ -409,7 +413,7 @@ if (typeof LazyLoader === 'undefined') {
                     this.retryFailedImage(item);
                 }
             });
-            
+
             return failedItems.length;
         }
 
