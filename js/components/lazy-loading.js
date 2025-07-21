@@ -79,7 +79,7 @@ if (typeof LazyLoader === 'undefined') {
                 img.onerror = () => {
                     // Check if we already have retry info for this image
                     let retryInfo = this.failedImages.get(img);
-                    
+
                     if (!retryInfo) {
                         // First failure - initialize retry info
                         retryInfo = {
@@ -89,31 +89,33 @@ if (typeof LazyLoader === 'undefined') {
                         };
                         this.failedImages.set(img, retryInfo);
                     }
-                    
+
                     // Increment retry count
                     retryInfo.retryCount++;
-                    
+
                     // Check if we should retry automatically
                     if (retryInfo.retryCount <= this.config.maxRetries) {
+                        // eslint-disable-next-line no-console
                         console.warn(`Image load failed, retrying (${retryInfo.retryCount}/${this.config.maxRetries}):`, src);
-                        
+
                         // Show loading state during retry
                         img.style.opacity = '0.5';
                         img.alt = `↻ Retrying... (${retryInfo.retryCount}/${this.config.maxRetries})`;
-                        
+
                         // Retry after a short delay with exponential backoff
                         const retryDelay = Math.min(1000 * Math.pow(2, retryInfo.retryCount - 1), 5000);
                         setTimeout(() => {
                             // Add cache buster to force reload
-                            const cacheBuster = src.includes('?') ? 
-                                `&retry=${retryInfo.retryCount}&t=${Date.now()}` : 
+                            const cacheBuster = src.includes('?') ?
+                                `&retry=${retryInfo.retryCount}&t=${Date.now()}` :
                                 `?retry=${retryInfo.retryCount}&t=${Date.now()}`;
                             img.src = src + cacheBuster;
                         }, retryDelay);
                     } else {
                         // Max retries exceeded - show error state
+                        // eslint-disable-next-line no-console
                         console.error(`Failed to load image after ${this.config.maxRetries} retries:`, src);
-                        
+
                         img.style.opacity = '1';
                         img.style.cursor = 'pointer';
                         img.title = 'Click to retry loading';
@@ -173,7 +175,7 @@ if (typeof LazyLoader === 'undefined') {
                     lazyImage.onerror = () => {
                         // Check if we already have retry info for this item
                         let retryInfo = this.failedImages.get(item);
-                        
+
                         if (!retryInfo) {
                             // First failure - initialize retry info
                             retryInfo = {
@@ -183,34 +185,36 @@ if (typeof LazyLoader === 'undefined') {
                             };
                             this.failedImages.set(item, retryInfo);
                         }
-                        
+
                         // Increment retry count
                         retryInfo.retryCount++;
-                        
+
                         // Check if we should retry automatically
                         if (retryInfo.retryCount <= this.config.maxRetries) {
+                            // eslint-disable-next-line no-console
                             console.warn(`Image load failed, retrying (${retryInfo.retryCount}/${this.config.maxRetries}):`, src);
-                            
+
                             // Show loading state during retry
                             if (spinner) {
                                 spinner.textContent = '↻';
                                 spinner.style.display = 'block';
                                 spinner.title = `Retrying... (${retryInfo.retryCount}/${this.config.maxRetries})`;
                             }
-                            
+
                             // Retry after a short delay with exponential backoff
                             const retryDelay = Math.min(1000 * Math.pow(2, retryInfo.retryCount - 1), 5000);
                             setTimeout(() => {
                                 // Add cache buster to force reload
-                                const cacheBuster = src.includes('?') ? 
-                                    `&retry=${retryInfo.retryCount}&t=${Date.now()}` : 
+                                const cacheBuster = src.includes('?') ?
+                                    `&retry=${retryInfo.retryCount}&t=${Date.now()}` :
                                     `?retry=${retryInfo.retryCount}&t=${Date.now()}`;
                                 lazyImage.src = src + cacheBuster;
                             }, retryDelay);
                         } else {
                             // Max retries exceeded - show error state
+                            // eslint-disable-next-line no-console
                             console.error(`Failed to load image after ${this.config.maxRetries} retries:`, src);
-                            
+
                             if (spinner) {
                                 spinner.textContent = '❌';
                                 spinner.style.display = 'block';
@@ -328,6 +332,7 @@ if (typeof LazyLoader === 'undefined') {
 
             // Check if we've exceeded max retries
             if (retryCount >= this.config.maxRetries) {
+                // eslint-disable-next-line no-console
                 console.warn('Max retries exceeded for image:', src);
                 return;
             }
@@ -388,6 +393,7 @@ if (typeof LazyLoader === 'undefined') {
                         };
                     }
 
+                    // eslint-disable-next-line no-console
                     console.warn(`Retry ${retryInfo.retryCount} failed for image:`, src);
                 };
 
@@ -408,6 +414,7 @@ if (typeof LazyLoader === 'undefined') {
 
             // Check if we've exceeded max retries
             if (retryCount >= this.config.maxRetries) {
+                // eslint-disable-next-line no-console
                 console.warn('Max retries exceeded for image:', src);
                 img.alt = '❌ Failed to load (max retries exceeded)';
                 img.title = 'Max retries exceeded';
@@ -453,6 +460,7 @@ if (typeof LazyLoader === 'undefined') {
                     this.retrySimpleImage(img);
                 };
 
+                // eslint-disable-next-line no-console
                 console.warn(`Retry ${retryInfo.retryCount} failed for image:`, src);
             };
 
@@ -463,6 +471,7 @@ if (typeof LazyLoader === 'undefined') {
         // Retry all failed images
         retryAllFailedImages() {
             const failedItems = Array.from(this.failedImages.keys());
+            // eslint-disable-next-line no-console
             console.log(`Retrying ${failedItems.length} failed images...`);
 
             failedItems.forEach(item => {
