@@ -21,6 +21,10 @@
   },
   "rewrites": [
     {
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
       "source": "/about",
       "destination": "/pages/about.html"
     },
