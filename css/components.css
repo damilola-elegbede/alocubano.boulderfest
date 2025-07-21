@@ -421,8 +421,11 @@
 }
 
 .lightbox-image {
-  max-width: 90%;
-  max-height: 90%;
+  max-width: 90vw;
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
   transition: opacity var(--transition-base);
 }
 
