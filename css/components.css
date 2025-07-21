@@ -478,3 +478,165 @@
     gap: var(--space-sm);
   }
 }
+
+/* ==========================================================================
+   FESTIVAL YEAR CARDS - Gallery Navigation
+   ========================================================================== */
+
+.festival-years-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-2xl);
+  margin: var(--space-3xl) 0;
+}
+
+.festival-year-card {
+  position: relative;
+  background: var(--color-white);
+  border: 2px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3xl) var(--space-2xl);
+  text-decoration: none;
+  color: inherit;
+  transition: all var(--transition-slow);
+  overflow: hidden;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.festival-year-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, var(--color-blue), var(--color-red));
+  transition: all var(--transition-slow);
+  z-index: 0;
+  opacity: 0;
+}
+
+.festival-year-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--color-blue);
+}
+
+.festival-year-card:hover::before {
+  left: 0;
+  opacity: 0.05;
+}
+
+.year-card-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.year-number {
+  font-family: var(--font-display);
+  font-size: var(--font-size-6xl);
+  font-weight: 900;
+  line-height: var(--line-height-none);
+  color: var(--color-black);
+  margin-bottom: var(--space-sm);
+}
+
+.year-subtitle {
+  font-family: var(--font-accent);
+  font-size: var(--font-size-xl);
+  font-style: italic;
+  color: var(--color-gray-700);
+  margin-bottom: var(--space-xs);
+}
+
+.year-highlight {
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wider);
+  color: var(--color-red);
+  font-weight: 700;
+}
+
+.year-card-hover {
+  position: absolute;
+  bottom: var(--space-lg);
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  opacity: 0;
+  transition: all var(--transition-base);
+  z-index: 2;
+}
+
+.festival-year-card:hover .year-card-hover {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.view-gallery-text {
+  font-family: var(--font-code);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-widest);
+  color: var(--color-blue);
+  font-weight: 700;
+}
+
+/* Coming Soon Cards */
+.festival-year-card.coming-soon {
+  opacity: 0.7;
+  cursor: default;
+  border-style: dashed;
+}
+
+.festival-year-card.coming-soon:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--color-gray-200);
+}
+
+.festival-year-card.coming-soon::before {
+  display: none;
+}
+
+.festival-year-card.coming-soon .year-number {
+  color: var(--color-gray-500);
+}
+
+.festival-year-card.coming-soon .year-highlight {
+  color: var(--color-gray-500);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .festival-years-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+    margin: var(--space-2xl) 0;
+  }
+  
+  .festival-year-card {
+    padding: var(--space-2xl) var(--space-lg);
+    min-height: 160px;
+  }
+  
+  .year-number {
+    font-size: var(--font-size-5xl);
+  }
+  
+  .year-subtitle {
+    font-size: var(--font-size-lg);
+  }
+  
+  .year-highlight {
+    font-size: var(--font-size-xs);
+  }
+}

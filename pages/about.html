@@ -333,7 +333,7 @@
                     </div>
                 </div>
                 
-                <form class="volunteer-form-typographic" action="mailto:alocubanoboulderfest@gmail.com?subject=Volunteer Application - A Lo Cubano Boulder Fest" method="post" enctype="text/plain">
+                <form class="volunteer-form-typographic" id="volunteer-form" onsubmit="handleVolunteerForm(event)" method="post">
                     <h3 class="form-title text-mask">VOLUNTEER APPLICATION</h3>
                     
                     <div class="form-grid-type">
@@ -456,5 +456,45 @@
     <script src="/js/typography.js"></script>
     <script src="/js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING"></script>
     <script src="/js/gallery-hero.js"></script>
+    <script>
+        function handleVolunteerForm(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            // Collect form data
+            const name = formData.get('name') || '';
+            const email = formData.get('email') || '';
+            const phone = formData.get('phone') || '';
+            const experience = formData.get('experience') || '';
+            const role = formData.get('role') || '';
+            const availability = formData.get('availability') || '';
+            const message = formData.get('message') || '';
+            
+            // Create email body
+            const emailBody = `Volunteer Application - A Lo Cubano Boulder Fest
+
+Name: ${name}
+Email: ${email}
+Phone: ${phone}
+Experience Level: ${experience}
+Preferred Role: ${role}
+Availability: ${availability}
+
+Additional Message:
+${message}
+
+---
+Sent from A Lo Cubano Boulder Fest website`;
+            
+            // Create mailto URL
+            const subject = encodeURIComponent('Volunteer Application - A Lo Cubano Boulder Fest');
+            const body = encodeURIComponent(emailBody);
+            const mailtoUrl = `mailto:alocubanoboulderfest@gmail.com?subject=${subject}&body=${body}`;
+            
+            // Open email client
+            window.location.href = mailtoUrl;
+        }
+    </script>
 </body>
 </html>
