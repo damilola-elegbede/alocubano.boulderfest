@@ -8,9 +8,12 @@ class ImageCacheManager {
         this.defaultImageUrl = '/images/hero-default.jpg';
         this.pageMapping = {
             '/': 'home', '/home': 'home', 'index.html': 'home', 'home.html': 'home', 
-            'about.html': 'about', 'artists.html': 'artists',
-            'schedule.html': 'schedule', 'gallery.html': 'gallery', 'tickets.html': 'tickets',
-            'donations.html': 'donations'
+            '/about': 'about', 'about.html': 'about', 
+            '/artists': 'artists', 'artists.html': 'artists',
+            '/schedule': 'schedule', 'schedule.html': 'schedule', 
+            '/gallery': 'gallery', 'gallery.html': 'gallery', 
+            '/tickets': 'tickets', 'tickets.html': 'tickets',
+            '/donations': 'donations', 'donations.html': 'donations'
         };
         this.sessionAssignments = null;
         this.imageDataCache = this.loadImageDataCache();
