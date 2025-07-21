@@ -1,0 +1,246 @@
+// UI/UX Integration Tests for A Lo Cubano Boulder Fest
+// Tests gallery functionality, form security, and visual components
+
+const fs = require('fs');
+const path = require('path');
+
+describe('UI/UX Integration Tests', () => {
+    const projectRoot = path.join(__dirname, '..', '..');
+    
+    describe('Gallery Page Festival Year Cards', () => {
+        test('should have festival year card styles defined in CSS', () => {
+            const componentsCSS = fs.readFileSync(path.join(projectRoot, 'css', 'components.css'), 'utf8');
+            
+            // Check for festival year card styles
+            expect(componentsCSS).toMatch(/\.festival-years-grid\s*{/);
+            expect(componentsCSS).toMatch(/\.festival-year-card\s*{/);
+            expect(componentsCSS).toMatch(/\.year-card-content\s*{/);
+            expect(componentsCSS).toMatch(/\.year-number\s*{/);
+            expect(componentsCSS).toMatch(/\.year-subtitle\s*{/);
+            expect(componentsCSS).toMatch(/\.year-highlight\s*{/);
+            expect(componentsCSS).toMatch(/\.year-card-hover\s*{/);
+            expect(componentsCSS).toMatch(/\.view-gallery-text\s*{/);
+        });
+
+        test('gallery.html should contain properly structured festival year cards', () => {
+            const galleryHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'gallery.html'), 'utf8');
+
+            // Check for festival years grid
+            expect(galleryHTML).toMatch(/class=["']festival-years-grid["']/);
+
+            // Check for 2025 active card
+            expect(galleryHTML).toMatch(/class=["']festival-year-card["'][^>]*data-year=["']2025["']/);
+            expect(galleryHTML).toMatch(/href=["']\/gallery-2025["']/);
+
+            // Check for year card content structure
+            expect(galleryHTML).toMatch(/class=["']year-number[^"']*["']/);
+            expect(galleryHTML).toMatch(/class=["']year-subtitle[^"']*["']/);
+            expect(galleryHTML).toMatch(/class=["']year-highlight[^"']*["']/);
+            expect(galleryHTML).toMatch(/2025/);
+
+            // Check for coming soon cards
+            expect(galleryHTML).toMatch(/class=["']festival-year-card coming-soon["']/);
+        });
+
+        test('should have mobile responsive styles for festival year cards', () => {
+            const componentsCSS = fs.readFileSync(path.join(projectRoot, 'css', 'components.css'), 'utf8');
+            
+            // Check for mobile responsive styles
+            expect(componentsCSS).toMatch(/@media\s*\(max-width:\s*768px\)/);
+            expect(componentsCSS).toMatch(/\.festival-years-grid\s*{\s*grid-template-columns:\s*1fr/);
+            expect(componentsCSS).toMatch(/\.year-number\s*{\s*font-size:\s*var\(--font-size-5xl\)/);
+        });
+    });
+
+    describe('Gallery Data File Accessibility', () => {
+        test('should have gallery data files in both public and root directories', () => {
+            // Check public directory
+            const publicGalleryData = path.join(projectRoot, 'public', 'gallery-data', '2025.json');
+            expect(fs.existsSync(publicGalleryData)).toBe(true);
+            
+            // Check root directory (for Vercel)
+            const rootGalleryData = path.join(projectRoot, 'gallery-data', '2025.json');
+            expect(fs.existsSync(rootGalleryData)).toBe(true);
+            
+            // Verify content is valid JSON
+            const galleryContent = JSON.parse(fs.readFileSync(publicGalleryData, 'utf8'));
+            expect(galleryContent).toHaveProperty('year');
+            expect(galleryContent).toHaveProperty('categories');
+            expect(galleryContent).toHaveProperty('totalCount');
+            expect(galleryContent.year).toBe('2025');
+        });
+
+        test('vercel.json should have proper JSON headers for static files', () => {
+            const vercelConfig = JSON.parse(fs.readFileSync(path.join(projectRoot, 'vercel.json'), 'utf8'));
+            
+            // Check for JSON header configuration
+            const jsonHeaders = vercelConfig.headers.find(h => h.source.includes('json'));
+            expect(jsonHeaders).toBeTruthy();
+            expect(jsonHeaders.headers).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({ key: 'Content-Type', value: 'application/json' })
+                ])
+            );
+        });
+    });
+
+    describe('JavaScript Error Prevention', () => {
+        test('gallery-detail.js should handle undefined apiUrl gracefully', () => {
+            const galleryDetailJS = fs.readFileSync(path.join(projectRoot, 'js', 'gallery-detail.js'), 'utf8');
+            
+            // Check for proper error handling of apiUrl
+            expect(galleryDetailJS).toMatch(/const\s+errorUrl\s*=\s*apiUrl\s*\|\|\s*['"`]Unknown URL['"`]/);
+            expect(galleryDetailJS).toMatch(/url:\s*errorUrl/);
+        });
+
+        test('gallery-detail.js should have proper try-catch error handling', () => {
+            const galleryDetailJS = fs.readFileSync(path.join(projectRoot, 'js', 'gallery-detail.js'), 'utf8');
+            
+            // Check for comprehensive error handling
+            expect(galleryDetailJS).toMatch(/} catch \(error\) {/);
+            expect(galleryDetailJS).toMatch(/console\.error\(['"`]Gallery API request failed:/);
+            expect(galleryDetailJS).toMatch(/staticEl\.style\.display\s*=\s*['"`]block['"`]/);
+        });
+    });
+
+    describe('Form Security - Mixed Content Prevention', () => {
+        test('about.html should not have mailto form action', () => {
+            const aboutHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'about.html'), 'utf8');
+            
+            // Should not have insecure mailto action
+            expect(aboutHTML).not.toMatch(/<form[^>]*action\s*=\s*["']mailto:/);
+            
+            // Should have secure JavaScript handler
+            expect(aboutHTML).toMatch(/onsubmit\s*=\s*["']handleVolunteerForm\(event\)["']/);
+            expect(aboutHTML).toMatch(/function handleVolunteerForm\(event\)/);
+        });
+
+        test('tickets.html should not have mailto form action', () => {
+            const ticketsHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'tickets.html'), 'utf8');
+            
+            // Should not have insecure mailto action
+            expect(ticketsHTML).not.toMatch(/<form[^>]*action\s*=\s*["']mailto:/);
+            
+            // Should have secure JavaScript handler
+            expect(ticketsHTML).toMatch(/onsubmit\s*=\s*["']handleTicketForm\(event\)["']/);
+            expect(ticketsHTML).toMatch(/function handleTicketForm\(event\)/);
+        });
+
+        test('donations.html should not have mailto form action', () => {
+            const donationsHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'donations.html'), 'utf8');
+            
+            // Should not have insecure mailto action
+            expect(donationsHTML).not.toMatch(/<form[^>]*action\s*=\s*["']mailto:/);
+            
+            // Should have secure JavaScript handler
+            expect(donationsHTML).toMatch(/onsubmit\s*=\s*["']handleDonationForm\(event\)["']/);
+            expect(donationsHTML).toMatch(/function handleDonationForm\(event\)/);
+        });
+
+        test('all form handlers should create proper mailto URLs', () => {
+            const aboutHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'about.html'), 'utf8');
+            const ticketsHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'tickets.html'), 'utf8');
+            const donationsHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'donations.html'), 'utf8');
+            
+            // All handlers should use window.location.href for mailto
+            [aboutHTML, ticketsHTML, donationsHTML].forEach(html => {
+                expect(html).toMatch(/window\.location\.href\s*=\s*mailtoUrl/);
+                expect(html).toMatch(/encodeURIComponent\(/);
+            });
+        });
+    });
+
+    describe('CSS Integration and Loading', () => {
+        test('all HTML pages should load components.css', () => {
+            const htmlFiles = [
+                'pages/gallery.html',
+                'pages/gallery-2025.html',
+                'pages/about.html',
+                'pages/tickets.html',
+                'pages/donations.html'
+            ];
+
+            htmlFiles.forEach(file => {
+                const html = fs.readFileSync(path.join(projectRoot, file), 'utf8');
+                expect(html).toMatch(/<link[^>]*href=["']\/css\/components\.css["'][^>]*>/);
+            });
+        });
+
+        test('components.css should define all required CSS variables', () => {
+            const baseCSS = fs.readFileSync(path.join(projectRoot, 'css', 'base.css'), 'utf8');
+            
+            // Check for essential CSS variables
+            const requiredVars = [
+                '--space-xs',
+                '--space-sm', 
+                '--space-md',
+                '--space-lg',
+                '--space-xl',
+                '--space-2xl',
+                '--space-3xl',
+                '--font-display',
+                '--font-accent',
+                '--font-code',
+                '--color-black',
+                '--color-white',
+                '--color-blue',
+                '--color-red',
+                '--color-gray-200',
+                '--color-gray-700',
+                '--radius-lg',
+                '--shadow-xl',
+                '--transition-slow',
+                '--transition-base'
+            ];
+
+            requiredVars.forEach(varName => {
+                expect(baseCSS).toMatch(new RegExp(`${varName.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}:`));
+            });
+        });
+    });
+
+    describe('Responsive Design Integration', () => {
+        test('gallery page should be mobile responsive', () => {
+            const galleryHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'gallery.html'), 'utf8');
+            
+            // Should have viewport meta tag
+            expect(galleryHTML).toMatch(/<meta[^>]*name=["']viewport["'][^>]*>/);
+            
+            // Should include mobile-overrides.css
+            expect(galleryHTML).toMatch(/<link[^>]*href=["']\/css\/mobile-overrides\.css["'][^>]*>/);
+        });
+
+        test('mobile-overrides.css should have gallery responsive styles', () => {
+            const mobileCSS = fs.readFileSync(path.join(projectRoot, 'css', 'mobile-overrides.css'), 'utf8');
+            
+            // Should have mobile breakpoint
+            expect(mobileCSS).toMatch(/@media\s*\(max-width:\s*768px\)/);
+        });
+    });
+
+    describe('Asset Loading and Performance', () => {
+        test('featured-photos.json should be accessible in root directory', () => {
+            const featuredPhotosPath = path.join(projectRoot, 'featured-photos.json');
+            expect(fs.existsSync(featuredPhotosPath)).toBe(true);
+            
+            // Verify content structure
+            const featuredContent = JSON.parse(fs.readFileSync(featuredPhotosPath, 'utf8'));
+            expect(featuredContent).toHaveProperty('items');
+            expect(featuredContent).toHaveProperty('totalCount');
+            expect(Array.isArray(featuredContent.items)).toBe(true);
+        });
+
+        test('vercel.json should optimize static asset caching', () => {
+            const vercelConfig = JSON.parse(fs.readFileSync(path.join(projectRoot, 'vercel.json'), 'utf8'));
+            
+            // Should have caching headers for different file types
+            const imageHeaders = vercelConfig.headers.find(h => h.source.includes('jpg|jpeg|png'));
+            const cssJSHeaders = vercelConfig.headers.find(h => h.source.includes('css|js'));
+            const jsonHeaders = vercelConfig.headers.find(h => h.source.includes('json'));
+            
+            expect(imageHeaders).toBeTruthy();
+            expect(cssJSHeaders).toBeTruthy();
+            expect(jsonHeaders).toBeTruthy();
+        });
+    });
+});

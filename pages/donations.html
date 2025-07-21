@@ -72,7 +72,7 @@
                 <div class="donation-form-wrapper" style="max-width: 600px; margin: 0 auto;">
                     <h2 id="donation-form-title" class="text-display" style="text-align: center; margin-bottom: var(--space-2xl);">MAKE A DONATION</h2>
                     
-                    <form class="donation-form" action="mailto:alocubanoboulderfest@gmail.com?subject=Donation - A Lo Cubano Boulder Fest" method="post" enctype="text/plain" novalidate role="form" aria-labelledby="donation-form-title">
+                    <form class="donation-form" id="donation-form" onsubmit="handleDonationForm(event)" method="post" novalidate role="form" aria-labelledby="donation-form-title">
                         <!-- Donation Amount Options -->
                         <fieldset class="form-section" style="margin-bottom: var(--space-2xl); border: none; padding: 0;">
                             <legend class="form-label-type font-mono" style="display: block; margin-bottom: var(--space-lg); padding: 0;">SELECT AMOUNT</legend>
@@ -213,7 +213,7 @@
     <script src="/js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING"></script>
     <script src="/js/gallery-hero.js"></script>
     
-    <!-- Add simple JS for other amount toggle -->
+    <!-- Add simple JS for other amount toggle and form handling -->
     <script>
         document.querySelectorAll('input[name="amount"]').forEach(radio => {
             radio.addEventListener('change', function() {
@@ -231,6 +231,54 @@
                 this.nextElementSibling.style.borderColor = 'var(--color-black)';
             });
         });
+        
+        function handleDonationForm(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            // Collect form data
+            const name = formData.get('name') || '';
+            const email = formData.get('email') || '';
+            const phone = formData.get('phone') || '';
+            let amount = formData.get('amount') || '';
+            
+            // Handle custom amount
+            if (amount === 'other') {
+                amount = formData.get('other-amount') || '';
+                amount = `$${amount} (Custom)`;
+            } else {
+                amount = `$${amount}`;
+            }
+            
+            const donationType = formData.get('donation-type') || '';
+            const message = formData.get('message') || '';
+            
+            // Create email body
+            const emailBody = `Donation Request - A Lo Cubano Boulder Fest
+
+Name: ${name}
+Email: ${email}
+Phone: ${phone}
+Donation Amount: ${amount}
+Donation Type: ${donationType}
+
+Message:
+${message}
+
+---
+Thank you for supporting A Lo Cubano Boulder Fest!
+Please reply with payment instructions.
+Sent from A Lo Cubano Boulder Fest website`;
+            
+            // Create mailto URL
+            const subject = encodeURIComponent('Donation - A Lo Cubano Boulder Fest');
+            const body = encodeURIComponent(emailBody);
+            const mailtoUrl = `mailto:alocubanoboulderfest@gmail.com?subject=${subject}&body=${body}`;
+            
+            // Open email client
+            window.location.href = mailtoUrl;
+        }
     </script>
 </body>
 </html>

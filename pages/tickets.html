@@ -133,7 +133,7 @@
                 <div class="purchase-section" style="max-width: 800px; margin: 0 auto var(--space-4xl); padding: var(--space-2xl); background: var(--color-gray-50);">
                     <h2 class="text-display" style="text-align: center; margin-bottom: var(--space-2xl);">SELECT YOUR TICKETS</h2>
                     
-                    <form id="ticket-form" action="mailto:alocubanoboulderfest@gmail.com?subject=Ticket Purchase - A Lo Cubano Boulder Fest" method="post" enctype="text/plain">
+                    <form id="ticket-form" onsubmit="handleTicketForm(event)" method="post">
                         <!-- Full Pass Options -->
                         <div class="ticket-group" style="margin-bottom: var(--space-2xl);">
                             <h3 class="font-mono" style="margin-bottom: var(--space-lg);">FULL FESTIVAL PASS</h3>
@@ -307,5 +307,54 @@
     <script src="/js/typography.js"></script>
     <script src="/js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING"></script>
     <script src="/js/gallery-hero.js"></script>
+    <script>
+        function handleTicketForm(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            // Collect form data
+            const name = formData.get('name') || '';
+            const email = formData.get('email') || '';
+            const phone = formData.get('phone') || '';
+            const ticketType = formData.get('ticket-type') || '';
+            const quantity = formData.get('quantity') || '1';
+            const addons = [];
+            
+            // Collect addon selections
+            for (const [key, value] of formData.entries()) {
+                if (key.startsWith('addon-') && value === 'on') {
+                    addons.push(key.replace('addon-', '').replace('-', ' '));
+                }
+            }
+            
+            const specialRequests = formData.get('special-requests') || '';
+            
+            // Create email body
+            const emailBody = `Ticket Purchase Request - A Lo Cubano Boulder Fest
+
+Name: ${name}
+Email: ${email}
+Phone: ${phone}
+Ticket Type: ${ticketType}
+Quantity: ${quantity}
+Add-ons: ${addons.length > 0 ? addons.join(', ') : 'None'}
+
+Special Requests:
+${specialRequests}
+
+---
+Please reply with payment instructions and confirmation details.
+Sent from A Lo Cubano Boulder Fest website`;
+            
+            // Create mailto URL
+            const subject = encodeURIComponent('Ticket Purchase - A Lo Cubano Boulder Fest');
+            const body = encodeURIComponent(emailBody);
+            const mailtoUrl = `mailto:alocubanoboulderfest@gmail.com?subject=${subject}&body=${body}`;
+            
+            // Open email client
+            window.location.href = mailtoUrl;
+        }
+    </script>
 </body>
 </html>

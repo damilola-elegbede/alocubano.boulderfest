@@ -194,10 +194,11 @@
       
     } catch (error) {
       console.error('Gallery API request failed:', error);
+      const errorUrl = apiUrl || 'Unknown URL';
       console.error('Error details:', {
         message: error.message,
         stack: error.stack,
-        url: apiUrl
+        url: errorUrl
       });
       
       // Show static fallback only on first page
