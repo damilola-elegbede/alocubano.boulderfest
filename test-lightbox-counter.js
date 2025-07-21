@@ -109,14 +109,19 @@
         return false;
     }
     
+    // Get actual counts from state
+    const state = window.galleryDebug.getState();
+    const workshopCount = state.categoryCounts.workshops || 0;
+    const socialCount = state.categoryCounts.socials || 0;
+    
     // Test first workshop
-    const test1 = testLightboxCounter(0, 'workshops', 0, 53);
+    const test1 = testLightboxCounter(0, 'workshops', 0, workshopCount);
     
-    // Test last workshop (assuming 53 workshops)
-    const test2 = testLightboxCounter(52, 'workshops', 52, 53);
+    // Test last workshop
+    const test2 = testLightboxCounter(workshopCount - 1, 'workshops', workshopCount - 1, workshopCount);
     
-    // Test first social (assuming it starts at index 53)
-    const test3 = testLightboxCounter(53, 'socials', 0, 93);
+    // Test first social
+    const test3 = testLightboxCounter(workshopCount, 'socials', 0, socialCount);
     
     console.log('\nCounter display tests:', (test1 && test2 && test3) ? '✅ PASS' : '❌ FAIL');
     console.groupEnd();
