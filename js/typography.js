@@ -31,7 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 50);
     });
 
-
     // Parallax effect for vertical text
     const verticalTexts = document.querySelectorAll('.text-block-vertical');
 
