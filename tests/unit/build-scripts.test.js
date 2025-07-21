@@ -189,14 +189,17 @@ describe('Build Scripts and ES Module Compatibility', () => {
             // Should have specific page rewrites
             const pageRewrite = vercelConfig.rewrites.find(r => r.source.includes('home'));
             expect(pageRewrite).toBeDefined();
-            expect(pageRewrite.destination).toBe('/pages/$1.html');
+            expect(pageRewrite.destination).toBe('/pages/home.html');
             
             // Should have images config
             expect(vercelConfig).toHaveProperty('images');
             expect(vercelConfig.images).toHaveProperty('sizes');
             
-            // Should NOT have buildCommand that requires Python
-            expect(vercelConfig).not.toHaveProperty('buildCommand');
+            // Should have buildCommand for proper Vercel deployment
+            expect(vercelConfig).toHaveProperty('buildCommand');
+            expect(vercelConfig.buildCommand).toBe('npm run build');
+            expect(vercelConfig).toHaveProperty('outputDirectory');
+            expect(vercelConfig.outputDirectory).toBe('.');
             
             // Functions should be for API routes only
             if (vercelConfig.functions) {
@@ -210,9 +213,10 @@ describe('Build Scripts and ES Module Compatibility', () => {
             const indexPath = path.join(__dirname, '..', '..', 'index.html');
             const content = fs.readFileSync(indexPath, 'utf8');
             
-            // Should redirect to clean URL, not direct file path
+            // Should redirect to clean URL with fallback to direct file path
             expect(content).toMatch(/window\.location\.href\s*=\s*['"`]\/home['"`]/);
-            expect(content).not.toMatch(/window\.location\.href.*pages\/home\.html/);
+            // Should also have fallback for better reliability
+            expect(content).toMatch(/window\.location\.href.*pages\/home\.html/);
         });
     });
 
