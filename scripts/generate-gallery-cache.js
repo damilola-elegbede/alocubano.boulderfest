@@ -1,8 +1,16 @@
 // This script runs at build time to pre-fetch Google Drive data.
-const fs = require('fs');
-const path = require('path');
-const { google } = require('googleapis');
-require('dotenv').config({ path: '.env.local' }); // Load credentials from .env.local
+import fs from 'fs';
+import path from 'path';
+import { google } from 'googleapis';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+
+// ES module compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load credentials from .env.local
+dotenv.config({ path: '.env.local' });
 
 // --- Configuration ---
 // Map year to actual folder ID

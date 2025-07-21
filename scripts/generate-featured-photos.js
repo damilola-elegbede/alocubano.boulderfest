@@ -1,8 +1,16 @@
 // This script runs at build time to pre-fetch featured photos data.
-const fs = require('fs');
-const path = require('path');
-const { google } = require('googleapis');
-require('dotenv').config({ path: '.env.local' });
+import fs from 'fs';
+import path from 'path';
+import { google } from 'googleapis';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+
+// ES module compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load credentials from .env.local
+dotenv.config({ path: '.env.local' });
 
 // --- Configuration ---
 const FEATURED_PHOTOS_FOLDER_ID = process.env.GOOGLE_DRIVE_FEATURED_PHOTOS_FOLDER_ID || process.env.GOOGLE_DRIVE_FOLDER_ID;
