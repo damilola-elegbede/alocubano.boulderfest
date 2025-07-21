@@ -20,8 +20,8 @@
     "pre-commit": "npm run lint && npm test"
   },
   "dependencies": {
-    "dotenv": "^16.0.3",
-    "googleapis": "^128.0.0"
+    "dotenv": "^17.2.0",
+    "googleapis": "^153.0.0"
   },
   "devDependencies": {
     "@axe-core/puppeteer": "^4.8.0",

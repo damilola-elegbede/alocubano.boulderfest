@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   
   if (allowedOrigins.some(allowed => {
     if (typeof allowed === 'string') return allowed === origin;
-    return allowed.test && allowed.test(origin);
+    return allowed?.test?.(origin);
   })) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
