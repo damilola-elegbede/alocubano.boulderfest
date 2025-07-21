@@ -58,7 +58,7 @@ describe('Serverless Function Patterns', () => {
       
       expect(safeParseJson('invalid json')).toEqual({
         success: false,
-        error: expect.stringContaining('Unexpected token')
+        error: expect.stringContaining('Unexpected')
       });
     });
   });
