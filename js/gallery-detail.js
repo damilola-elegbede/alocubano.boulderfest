@@ -775,10 +775,14 @@
             };
             state.displayOrder.push(displayOrderItem);
             
-            // Debug log for category index tracking
-            if (state.displayOrder.length % 10 === 0 || state.displayOrder.length <= 5) {
-                console.log(`📍 Item added: ${categoryName} #${categoryIndex + 1}, total items: ${state.displayOrder.length}`);
-            }
+            // Enhanced debug logging for category index tracking
+            console.log(`📍 Item added to display order:`, {
+                name: item.name,
+                category: categoryName,
+                categoryIndex: categoryIndex,
+                displayIndex: state.displayOrder.length - 1,
+                categoryCount: state.categoryItemCounts[categoryName]
+            });
 
             return true;
         });
@@ -1081,11 +1085,29 @@
             return;
         }
 
+        const currentItem = items[index];
         console.log('🏞️ Opening lightbox:', {
             itemsCount: items.length,
             index: index,
-            item: items[index]
+            item: currentItem,
+            category: currentItem.category,
+            categoryIndex: currentItem.categoryIndex,
+            displayIndex: currentItem.displayIndex,
+            categoryCounts: state.categoryCounts
         });
+        
+        // Verify category indices for debugging
+        if (currentItem.category === 'socials') {
+            console.log('🎭 Social item details:', {
+                name: currentItem.name,
+                categoryIndex: currentItem.categoryIndex,
+                expectedCategoryCount: state.categoryCounts.socials,
+                allSocialItems: items.filter(i => i.category === 'socials').map(i => ({
+                    name: i.name,
+                    categoryIndex: i.categoryIndex
+                }))
+            });
+        }
 
         state.lightboxItems = items;
         state.currentLightboxIndex = index;
