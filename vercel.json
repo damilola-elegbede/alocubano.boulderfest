@@ -61,13 +61,7 @@
       "destination": "/pages/tickets.html"
     }
   ],
-  "redirects": [
-    {
-      "source": "/pages/home.html",
-      "destination": "/home",
-      "permanent": false
-    }
-  ],
+  "redirects": [],
   "cleanUrls": true,
   "trailingSlash": false,
   "headers": [
