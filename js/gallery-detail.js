@@ -3,19 +3,26 @@
 (function() {
   'use strict';
 
-  // Configuration
+  // Configuration with enhanced performance settings
   const CONFIG = {
     API_ENDPOINT: window.GALLERY_API_ENDPOINT || '/api/gallery',
     CACHE_KEY: 'gallery_cache',
     CACHE_DURATION: 3600000, // 1 hour in milliseconds
     LOADING_TIMEOUT: 10000, // 10 seconds for initial load
     PAGINATION_SIZE: 20, // Load 20 photos at a time
-    LAZY_LOAD_THRESHOLD: '200px' // Start loading when 200px away from viewport
+    LAZY_LOAD_THRESHOLD: '200px', // Start loading when 200px away from viewport
+    RATE_LIMIT: {
+      MAX_REQUESTS: 10, // Maximum requests per window
+      WINDOW_MS: 60000, // Rate limit window in milliseconds (1 minute)
+      RETRY_DELAY: 2000 // Base retry delay in milliseconds
+    },
+    REQUEST_CACHE_DURATION: 300000 // Cache API requests for 5 minutes
   };
 
-  // Gallery state
+  // Gallery state with improved concurrency control and performance tracking
   const state = {
     isLoading: false,
+    loadingMutex: false, // Prevent concurrent loading operations
     galleryData: null,
     currentLightboxIndex: -1,
     lightboxItems: [],
@@ -24,8 +31,92 @@
     hasMorePages: true,
     lazyObserver: null,
     allCategories: {},
-    categoryCounts: {} // Store counts per category
+    categoryCounts: {}, // Store counts per category
+    loadedItemIds: new Set(), // Track loaded items to prevent duplicates
+    observedSentinels: new Set(), // Track intersection observer sentinels
+    requestCache: new Map(), // Cache for API requests
+    rateLimitTracker: {
+      requests: [],
+      isBlocked: false
+    },
+    performanceMetrics: {
+      loadTimes: [],
+      cacheHits: 0,
+      cacheMisses: 0
+    }
   };
+
+  // Rate limiting and request caching utilities
+  class RequestManager {
+    static isRateLimited() {
+      const now = Date.now();
+      const windowStart = now - CONFIG.RATE_LIMIT.WINDOW_MS;
+      
+      // Clean old requests
+      state.rateLimitTracker.requests = state.rateLimitTracker.requests.filter(
+        timestamp => timestamp > windowStart
+      );
+      
+      return state.rateLimitTracker.requests.length >= CONFIG.RATE_LIMIT.MAX_REQUESTS;
+    }
+
+    static recordRequest() {
+      state.rateLimitTracker.requests.push(Date.now());
+    }
+
+    static async cachedFetch(url, options = {}) {
+      const cacheKey = `${url}:${JSON.stringify(options)}`;
+      const cached = state.requestCache.get(cacheKey);
+      const now = Date.now();
+
+      // Check cache first
+      if (cached && (now - cached.timestamp) < CONFIG.REQUEST_CACHE_DURATION) {
+        console.log('🎯 Cache hit for:', url);
+        state.performanceMetrics.cacheHits++;
+        return cached.response;
+      }
+
+      // Check rate limit
+      if (this.isRateLimited()) {
+        console.warn('⚠️ Rate limited, waiting...');
+        await new Promise(resolve => setTimeout(resolve, CONFIG.RATE_LIMIT.RETRY_DELAY));
+        
+        if (this.isRateLimited()) {
+          throw new Error('Rate limit exceeded. Please wait before making more requests.');
+        }
+      }
+
+      console.log('🌐 Making fresh request to:', url);
+      state.performanceMetrics.cacheMisses++;
+      this.recordRequest();
+
+      const response = await fetch(url, options);
+      
+      // Cache successful responses
+      if (response.ok) {
+        const clonedResponse = response.clone();
+        state.requestCache.set(cacheKey, {
+          response: clonedResponse,
+          timestamp: now
+        });
+      }
+
+      return response;
+    }
+
+    static clearCache() {
+      state.requestCache.clear();
+      console.log('🧹 Request cache cleared');
+    }
+
+    static getPerformanceStats() {
+      return {
+        cacheHitRatio: state.performanceMetrics.cacheHits / (state.performanceMetrics.cacheHits + state.performanceMetrics.cacheMisses),
+        totalRequests: state.performanceMetrics.cacheHits + state.performanceMetrics.cacheMisses,
+        averageLoadTime: state.performanceMetrics.loadTimes.reduce((a, b) => a + b, 0) / state.performanceMetrics.loadTimes.length || 0
+      };
+    }
+  }
 
   // Initialize gallery on page load
   document.addEventListener('DOMContentLoaded', () => {
@@ -55,16 +146,24 @@
     await loadNextPage(year, loadingEl, contentEl, staticEl);
   }
 
-  // Load next page of photos
+  // Load next page of photos with mutex protection
   async function loadNextPage(year, loadingEl, contentEl, staticEl) {
-    if (state.isLoading || !state.hasMorePages) {
+    // Prevent concurrent loading with mutex pattern
+    if (state.isLoading || !state.hasMorePages || state.loadingMutex) {
+      console.log('⏸️ Skipping load - already loading or no more pages', {
+        isLoading: state.isLoading,
+        hasMorePages: state.hasMorePages,
+        loadingMutex: state.loadingMutex
+      });
       return;
     }
 
     console.log(`📸 Loading page ${state.loadedPages + 1}...`);
     
     try {
+      // Set both loading flags for maximum protection
       state.isLoading = true;
+      state.loadingMutex = true;
       
       // Show loading for first page only
       if (state.loadedPages === 0) {
@@ -91,12 +190,18 @@
       }
       
       console.log('Fetching from URL:', apiUrl);
-      const response = await fetch(apiUrl, {
+      const startTime = performance.now();
+      
+      const response = await RequestManager.cachedFetch(apiUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
         }
       });
+      
+      const loadTime = performance.now() - startTime;
+      state.performanceMetrics.loadTimes.push(loadTime);
+      console.log(`⏱️ Request took ${loadTime.toFixed(2)}ms`);
       
       console.log('Response received:', {
         ok: response.ok,
@@ -208,12 +313,63 @@
       }
       
     } finally {
+      // Always clear both loading flags
       state.isLoading = false;
+      state.loadingMutex = false;
+    }
+  }
+
+  // Progressive DOM insertion to prevent UI blocking
+  async function insertItemsProgressively(items, container, categoryName, categoryOffset = 0, isAppend = false) {
+    const BATCH_SIZE = 5; // Process 5 items at a time
+    const uniqueItems = items.filter(item => {
+      const itemId = `${categoryName}_${item.id || item.name}`;
+      if (state.loadedItemIds.has(itemId)) {
+        console.warn(`🚫 Duplicate item prevented: ${itemId}`);
+        return false;
+      }
+      state.loadedItemIds.add(itemId);
+      return true;
+    });
+
+    console.log(`🔄 Progressive insert: ${uniqueItems.length} items in batches of ${BATCH_SIZE}`);
+    
+    for (let i = 0; i < uniqueItems.length; i += BATCH_SIZE) {
+      const batch = uniqueItems.slice(i, i + BATCH_SIZE);
+      const batchHTML = batch.map((item, index) => {
+        const title = item.name.replace(/\.[^/.]+$/, ''); // Remove file extension
+        const globalIndex = (i + index) + categoryOffset;
+        
+        return `
+          <div class="gallery-item lazy-item" data-index="${globalIndex}" data-category="${categoryName}" data-loaded="false">
+            <div class="gallery-item-media">
+              <div class="lazy-placeholder">
+                <div class="loading-spinner">📸</div>
+              </div>
+              <img data-src="${item.thumbnailUrl}" alt="${title}" class="lazy-image" style="display: none;">
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Insert batch and yield control to prevent UI blocking
+      if (isAppend) {
+        container.insertAdjacentHTML('beforeend', batchHTML);
+      } else if (i === 0) {
+        container.innerHTML = batchHTML;
+      } else {
+        container.insertAdjacentHTML('beforeend', batchHTML);
+      }
+
+      // Yield control to browser after each batch
+      if (i + BATCH_SIZE < uniqueItems.length) {
+        await new Promise(resolve => requestAnimationFrame(resolve));
+      }
     }
   }
 
   // Display gallery data with lazy loading and append mode
-  function displayGalleryData(data, contentEl, staticEl, loadingEl, appendMode = false) {
+  async function displayGalleryData(data, contentEl, staticEl, loadingEl, appendMode = false) {
     console.log('displayGalleryData called with:', {
       hasData: !!data,
       categories: data?.categories ? Object.keys(data.categories) : [],
@@ -248,26 +404,7 @@
     const workshopItems = data.categories.workshops || [];
     const socialItems = data.categories.socials || [];
 
-    // Function to build gallery HTML for a category with lazy loading
-    function buildGalleryHTML(items, categoryName, categoryOffset = 0, isAppend = false) {
-      return items.map((item, index) => {
-        const title = item.name.replace(/\.[^/.]+$/, ''); // Remove file extension
-        const globalIndex = index + categoryOffset;
-        
-        return `
-          <div class="gallery-item lazy-item" data-index="${globalIndex}" data-category="${categoryName}" data-loaded="false">
-            <div class="gallery-item-media">
-              <div class="lazy-placeholder">
-                <div class="loading-spinner">📸</div>
-              </div>
-              <img data-src="${item.thumbnailUrl}" alt="${title}" class="lazy-image" style="display: none;">
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    // Update content sections
+    // Update content sections with progressive loading
     if (contentEl) {
       contentEl.style.display = 'block';
       
@@ -276,13 +413,7 @@
       const workshopsGallery = document.getElementById('workshops-gallery');
       if (workshopsSection && workshopsGallery && workshopItems.length > 0) {
         workshopsSection.style.display = 'block';
-        if (appendMode) {
-          // Append new items
-          workshopsGallery.insertAdjacentHTML('beforeend', buildGalleryHTML(workshopItems, 'workshops', 0, true));
-        } else {
-          // Replace all items
-          workshopsGallery.innerHTML = buildGalleryHTML(workshopItems, 'workshops', 0);
-        }
+        await insertItemsProgressively(workshopItems, workshopsGallery, 'workshops', 0, appendMode);
       }
       
       // Update Socials section
@@ -290,13 +421,7 @@
       const socialsGallery = document.getElementById('socials-gallery');
       if (socialsSection && socialsGallery && socialItems.length > 0) {
         socialsSection.style.display = 'block';
-        if (appendMode) {
-          // Append new items
-          socialsGallery.insertAdjacentHTML('beforeend', buildGalleryHTML(socialItems, 'socials', workshopItems.length, true));
-        } else {
-          // Replace all items
-          socialsGallery.innerHTML = buildGalleryHTML(socialItems, 'socials', workshopItems.length);
-        }
+        await insertItemsProgressively(socialItems, socialsGallery, 'socials', workshopItems.length, appendMode);
       }
       
       // Observe new lazy items
@@ -363,30 +488,46 @@
     state.lazyObserver.observeNewElements(lazyItems);
   }
 
-  // Setup infinite scroll
+  // Setup infinite scroll with improved sentinel management
   function setupInfiniteScroll(year, loadingEl, contentEl, staticEl) {
-    // Create or update load more sentinel
-    let sentinel = document.getElementById('load-more-sentinel');
-    if (!sentinel) {
-      sentinel = document.createElement('div');
-      sentinel.id = 'load-more-sentinel';
-      sentinel.innerHTML = '<div class="loading-more">Loading more photos...</div>';
-      sentinel.style.cssText = 'height: 50px; display: flex; align-items: center; justify-content: center; margin: 2rem 0;';
-      
-      // Insert before gallery stats section
-      const galleryStats = document.querySelector('.gallery-stats');
-      if (galleryStats) {
-        galleryStats.parentNode.insertBefore(sentinel, galleryStats);
-      } else {
-        document.querySelector('main').appendChild(sentinel);
-      }
+    const sentinelId = 'load-more-sentinel';
+    
+    // Remove old sentinel if it exists to prevent duplicates
+    const oldSentinel = document.getElementById(sentinelId);
+    if (oldSentinel) {
+      oldSentinel.remove();
+      state.observedSentinels.delete(sentinelId);
     }
 
-    // Observe the sentinel for infinite scroll
+    // Only create sentinel if we have more pages
+    if (!state.hasMorePages) {
+      return;
+    }
+
+    // Create new sentinel element
+    const sentinel = document.createElement('div');
+    sentinel.id = sentinelId;
+    sentinel.innerHTML = '<div class="loading-more">Loading more photos...</div>';
+    sentinel.style.cssText = 'height: 50px; display: flex; align-items: center; justify-content: center; margin: 2rem 0;';
+    
+    // Insert before gallery stats section
+    const galleryStats = document.querySelector('.gallery-stats');
+    if (galleryStats) {
+      galleryStats.parentNode.insertBefore(sentinel, galleryStats);
+    } else {
+      document.querySelector('main').appendChild(sentinel);
+    }
+
+    // Create single-use observer to prevent duplicate triggers
     const scrollObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
-        if (entry.isIntersecting && state.hasMorePages && !state.isLoading) {
+        if (entry.isIntersecting && state.hasMorePages && !state.isLoading && !state.loadingMutex) {
           console.log('📜 Infinite scroll triggered');
+          
+          // Immediately disconnect observer to prevent duplicate triggers
+          scrollObserver.unobserve(entry.target);
+          
+          // Load next page
           loadNextPage(year, loadingEl, contentEl, staticEl);
         }
       });
@@ -396,12 +537,10 @@
     });
 
     scrollObserver.observe(sentinel);
+    state.observedSentinels.add(sentinelId);
 
-    // Clean up when no more pages
-    if (!state.hasMorePages) {
-      sentinel.style.display = 'none';
-      scrollObserver.disconnect();
-    }
+    // Store observer reference for cleanup
+    sentinel._observer = scrollObserver;
   }
 
   // Lightbox functionality using shared component
@@ -491,5 +630,59 @@
       console.error('Cache write error:', error);
     }
   }
+
+  // Performance monitoring and debugging utilities
+  window.galleryDebug = {
+    getState: () => state,
+    getPerformanceStats: () => RequestManager.getPerformanceStats(),
+    clearRequestCache: () => RequestManager.clearCache(),
+    getLoadedItemCount: () => state.loadedItemIds.size,
+    resetPerformanceMetrics: () => {
+      state.performanceMetrics = {
+        loadTimes: [],
+        cacheHits: 0,
+        cacheMisses: 0
+      };
+      console.log('📊 Performance metrics reset');
+    },
+    logCurrentState: () => {
+      console.group('🔍 Gallery Debug Info');
+      console.log('📊 Performance Stats:', RequestManager.getPerformanceStats());
+      console.log('📋 State Overview:', {
+        loadedPages: state.loadedPages,
+        hasMorePages: state.hasMorePages,
+        isLoading: state.isLoading,
+        loadingMutex: state.loadingMutex,
+        loadedItems: state.loadedItemIds.size,
+        lightboxItems: state.lightboxItems.length
+      });
+      console.log('🎯 Cache Status:', {
+        requestCacheSize: state.requestCache.size,
+        rateLimitRequests: state.rateLimitTracker.requests.length
+      });
+      console.groupEnd();
+    }
+  };
+
+  // Cleanup function for page navigation
+  window.galleryCleanup = () => {
+    // Clean up observers
+    if (state.lazyObserver) {
+      state.lazyObserver.destroy();
+    }
+    
+    // Clean up intersection observers for sentinels
+    const sentinels = document.querySelectorAll('[id*="load-more-sentinel"]');
+    sentinels.forEach(sentinel => {
+      if (sentinel._observer) {
+        sentinel._observer.disconnect();
+      }
+    });
+    
+    // Clear caches
+    RequestManager.clearCache();
+    
+    console.log('🧹 Gallery cleanup completed');
+  };
 
 })();
