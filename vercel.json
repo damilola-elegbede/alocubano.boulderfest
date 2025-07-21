@@ -21,44 +21,15 @@
   },
   "rewrites": [
     {
+      "source": "/((?!api/)[^./]+)",
+      "destination": "/pages/$1.html"
+    },
+    {
       "source": "/",
       "destination": "/index.html"
-    },
-    {
-      "source": "/about",
-      "destination": "/pages/about.html"
-    },
-    {
-      "source": "/artists",
-      "destination": "/pages/artists.html"
-    },
-    {
-      "source": "/donations",
-      "destination": "/pages/donations.html"
-    },
-    {
-      "source": "/gallery",
-      "destination": "/pages/gallery.html"
-    },
-    {
-      "source": "/gallery-2025",
-      "destination": "/pages/gallery-2025.html"
-    },
-    {
-      "source": "/gallery-test-minimal",
-      "destination": "/pages/gallery-test-minimal.html"
-    },
-    {
-      "source": "/schedule",
-      "destination": "/pages/schedule.html"
-    },
-    {
-      "source": "/tickets",
-      "destination": "/pages/tickets.html"
     }
   ],
   "redirects": [],
-  "cleanUrls": true,
   "trailingSlash": false,
   "headers": [
     {
