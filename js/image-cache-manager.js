@@ -64,12 +64,29 @@ class ImageCacheManager {
 
     getCurrentPageId() {
         const pathname = window.location.pathname;
+        console.log('🔍 Detecting page from pathname:', pathname);
+        
         // Handle root path and clean URLs
         if (pathname === '/' || pathname === '') {
+            console.log('📍 Detected: home (root path)');
             return 'home';
         }
+        
+        // Extract filename from path
         const filename = pathname.split('/').pop() || 'index.html';
-        return this.pageMapping[filename] || this.pageMapping[pathname] || 'default';
+        console.log('📄 Extracted filename:', filename);
+        
+        // Check if filename contains .html
+        if (filename.includes('.html')) {
+            const pageId = this.pageMapping[filename] || 'default';
+            console.log(`📍 Detected: ${pageId} (from ${filename})`);
+            return pageId;
+        }
+        
+        // Check full pathname mapping
+        const pageId = this.pageMapping[pathname] || this.pageMapping[filename] || 'default';
+        console.log(`📍 Detected: ${pageId} (from pathname mapping)`);
+        return pageId;
     }
 
     // This is the main public method. It's now asynchronous.
