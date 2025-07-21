@@ -1,7 +1,6 @@
 // Gallery Detail Module - Handles individual gallery page functionality
 // Cache Buster: v2025-07-20-DEBUG-ENHANCED
 (function() {
-    'use strict';
 
     // Configuration with enhanced performance settings
     const CONFIG = {
