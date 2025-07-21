@@ -180,6 +180,16 @@ describe('Build Scripts and ES Module Compatibility', () => {
             // Should have proper rewrites for static site
             expect(vercelConfig).toHaveProperty('rewrites');
             expect(vercelConfig.rewrites).toBeInstanceOf(Array);
+            expect(vercelConfig.rewrites.length).toBeGreaterThan(0);
+            
+            // Should NOT rewrite root path to avoid conflicts with index.html
+            const rootRewrite = vercelConfig.rewrites.find(r => r.source === '/');
+            expect(rootRewrite).toBeUndefined();
+            
+            // Should have specific page rewrites
+            const pageRewrite = vercelConfig.rewrites.find(r => r.source.includes('home'));
+            expect(pageRewrite).toBeDefined();
+            expect(pageRewrite.destination).toBe('/pages/$1.html');
             
             // Should have images config
             expect(vercelConfig).toHaveProperty('images');
@@ -194,6 +204,15 @@ describe('Build Scripts and ES Module Compatibility', () => {
                     expect(func).toMatch(/^api\//);
                 });
             }
+        });
+
+        test('index.html should redirect to clean URL paths', () => {
+            const indexPath = path.join(__dirname, '..', '..', 'index.html');
+            const content = fs.readFileSync(indexPath, 'utf8');
+            
+            // Should redirect to clean URL, not direct file path
+            expect(content).toMatch(/window\.location\.href\s*=\s*['"`]\/home['"`]/);
+            expect(content).not.toMatch(/window\.location\.href.*pages\/home\.html/);
         });
     });
 

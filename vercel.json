@@ -15,11 +15,7 @@
   },
   "rewrites": [
     {
-      "source": "/",
-      "destination": "/pages/home.html"
-    },
-    {
-      "source": "/(.*)",
+      "source": "/(about|artists|donations|gallery|gallery-2025|gallery-test-minimal|home|schedule|tickets)",
       "destination": "/pages/$1.html"
     }
   ],
