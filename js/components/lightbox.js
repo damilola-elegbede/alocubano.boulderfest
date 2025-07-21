@@ -242,11 +242,17 @@ if (typeof Lightbox === 'undefined') {
             img.src = item.viewUrl || item.src;
             img.alt = item.name || item.alt || 'Gallery image';
 
-            // Calculate position within category
-            let categoryIndex = 0;
-            for (let i = 0; i < this.currentIndex; i++) {
-                if (this.categories[i] === category) {
-                    categoryIndex++;
+            // Use stored categoryIndex if available, otherwise calculate it
+            let categoryIndex;
+            if (item.categoryIndex !== undefined) {
+                categoryIndex = item.categoryIndex;
+            } else {
+                // Fallback: calculate position within category
+                categoryIndex = 0;
+                for (let i = 0; i < this.currentIndex; i++) {
+                    if (this.categories[i] === category) {
+                        categoryIndex++;
+                    }
                 }
             }
 
