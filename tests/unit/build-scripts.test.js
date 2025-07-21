@@ -182,18 +182,20 @@ describe('Build Scripts and ES Module Compatibility', () => {
             expect(vercelConfig.rewrites).toBeInstanceOf(Array);
             expect(vercelConfig.rewrites.length).toBeGreaterThan(0);
             
-            // Should NOT rewrite root path to avoid conflicts with index.html
+            // Should have root path rewrite to index.html for proper handling
             const rootRewrite = vercelConfig.rewrites.find(r => r.source === '/');
-            expect(rootRewrite).toBeUndefined();
+            expect(rootRewrite).toBeDefined();
+            expect(rootRewrite.destination).toBe('/index.html');
             
-            // Should have specific page rewrites (but NOT home since index.html handles root)
-            const aboutRewrite = vercelConfig.rewrites.find(r => r.source === '/about');
-            expect(aboutRewrite).toBeDefined();
-            expect(aboutRewrite.destination).toBe('/pages/about.html');
+            // Should have home rewrite since we use /home as main page
+            const homeRewrite = vercelConfig.rewrites.find(r => r.source === '/home');
+            expect(homeRewrite).toBeDefined();
+            expect(homeRewrite.destination).toBe('/pages/home.html');
             
-            // Should NOT have home rewrite since index.html handles root
-            const homeRewrite = vercelConfig.rewrites.find(r => r.source.includes('home'));
-            expect(homeRewrite).toBeUndefined();
+            // Should have pattern-based page rewrite that handles /about
+            const patternRewrite = vercelConfig.rewrites.find(r => r.source.includes('(?!api/|home)'));
+            expect(patternRewrite).toBeDefined();
+            expect(patternRewrite.destination).toBe('/pages/$1.html');
             
             // Should have images config
             expect(vercelConfig).toHaveProperty('images');
@@ -215,16 +217,16 @@ describe('Build Scripts and ES Module Compatibility', () => {
             }
         });
 
-        test('index.html should serve as the direct home page', () => {
+        test('index.html should redirect to /home', () => {
             const indexPath = path.join(__dirname, '..', '..', 'index.html');
             const content = fs.readFileSync(indexPath, 'utf8');
             
-            // Should contain home page content directly (no redirect)
-            expect(content).toMatch(/<title>A Lo Cubano Boulder Fest - Typographic Design<\/title>/);
-            // Should contain main home page content sections
-            expect(content).toMatch(/Experience.*3 Days.*of pure Cuban rhythm/);
-            // Should NOT contain redirect script
-            expect(content).not.toMatch(/window\.location\.href.*home/);
+            // Should be a redirect page, not the main content
+            expect(content).toMatch(/<title>A Lo Cubano Boulder Fest - Loading\.\.\.<\/title>/);
+            // Should contain redirect script
+            expect(content).toMatch(/window\.location\.href\s*=\s*['"`]\/home['"`]/);
+            // Should NOT contain main home page content
+            expect(content).not.toMatch(/Experience.*3 Days.*of pure Cuban rhythm/);
         });
     });
 

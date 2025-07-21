@@ -134,7 +134,7 @@ class Navigation {
 
         navLinks.forEach(link => {
             const linkPath = new URL(link.href).pathname;
-            if (currentPath === linkPath || (currentPath === '/' && linkPath === '/')) {
+            if (currentPath === linkPath || (currentPath === '/' && linkPath === '/home') || (currentPath === '/home' && linkPath === '/home')) {
                 link.classList.add('is-active');
             }
         });
