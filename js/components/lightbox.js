@@ -152,8 +152,10 @@ if (typeof Lightbox === 'undefined') {
 
         show() {
             const lightbox = document.getElementById(this.lightboxId);
-            if (!lightbox) return;
-            
+            if (!lightbox) {
+                return;
+            }
+
             // Remove inline display style to let CSS handle it
             lightbox.style.display = '';
             // Add the class which sets display: flex in CSS
@@ -166,10 +168,12 @@ if (typeof Lightbox === 'undefined') {
 
         close() {
             const lightbox = document.getElementById(this.lightboxId);
-            if (!lightbox) return;
-            
+            if (!lightbox) {
+                return;
+            }
+
             lightbox.classList.remove('is-open', 'active');
-            
+
             // Ensure lightbox is properly hidden
             // The CSS should handle this, but we set it explicitly for safety
             setTimeout(() => {
