@@ -55,6 +55,10 @@
             loadTimes: [],
             cacheHits: 0,
             cacheMisses: 0
+        },
+        categoryItemCounts: {
+            workshops: 0,
+            socials: 0
         }
     };
 
@@ -80,7 +84,8 @@
                 displayOrder: state.displayOrder,
                 loadedItemIds: Array.from(state.loadedItemIds),
                 displayedItemIds: Array.from(state.displayedItemIds),
-                failedImages: state.failedImages
+                failedImages: state.failedImages,
+                categoryItemCounts: state.categoryItemCounts
             };
 
             sessionStorage.setItem(stateKey, JSON.stringify(persistedState));
@@ -127,6 +132,7 @@
             state.loadedItemIds = new Set(persistedState.loadedItemIds);
             state.displayedItemIds = new Set(persistedState.displayedItemIds);
             state.failedImages = persistedState.failedImages || [];
+            state.categoryItemCounts = persistedState.categoryItemCounts || { workshops: 0, socials: 0 };
 
             console.log('✅ Gallery state restored from sessionStorage', {
                 itemsDisplayed: state.itemsDisplayed,
@@ -170,12 +176,26 @@
             workshops: [],
             socials: []
         };
+        
+        // Reset category counters based on the highest index in displayOrder
+        state.categoryItemCounts = {
+            workshops: 0,
+            socials: 0
+        };
 
         state.displayOrder.forEach(item => {
             if (item.category === 'workshops') {
                 categorizedItems.workshops.push(item);
+                // Update counter to the highest categoryIndex + 1
+                if (item.categoryIndex !== undefined) {
+                    state.categoryItemCounts.workshops = Math.max(state.categoryItemCounts.workshops, item.categoryIndex + 1);
+                }
             } else if (item.category === 'socials') {
                 categorizedItems.socials.push(item);
+                // Update counter to the highest categoryIndex + 1
+                if (item.categoryIndex !== undefined) {
+                    state.categoryItemCounts.socials = Math.max(state.categoryItemCounts.socials, item.categoryIndex + 1);
+                }
             }
         });
 
@@ -678,6 +698,15 @@
     // Progressive DOM insertion to prevent UI blocking
     async function insertItemsProgressively(items, container, categoryName, categoryOffset = 0, isAppend = false) {
         const BATCH_SIZE = 5; // Process 5 items at a time
+        
+        // Initialize category counters if not already present
+        if (!state.categoryItemCounts) {
+            state.categoryItemCounts = {
+                workshops: 0,
+                socials: 0
+            };
+        }
+        
         const uniqueItems = items.filter(item => {
             // Create category-aware item ID to prevent duplicates within categories
             const itemId = `${categoryName}_${item.id || item.name}`;
@@ -688,18 +717,39 @@
             }
             state.displayedItemIds.add(itemId);
             state.loadedItemIds.add(itemId); // Still track for debugging
+            
+            // If item already has categoryIndex (from restoration), use it
+            // Otherwise, assign a new one
+            let categoryIndex;
+            if (item.categoryIndex !== undefined) {
+                categoryIndex = item.categoryIndex;
+                // Update counter if this index is higher than current counter
+                state.categoryItemCounts[categoryName] = Math.max(state.categoryItemCounts[categoryName], categoryIndex + 1);
+            } else {
+                // Assign new index and increment counter
+                categoryIndex = state.categoryItemCounts[categoryName];
+                state.categoryItemCounts[categoryName]++;
+            }
 
-            // Track display order for lightbox
-            state.displayOrder.push({
+            // Track display order for lightbox with category-specific index
+            const displayOrderItem = {
                 ...item,
                 category: categoryName,
-                displayIndex: state.displayOrder.length
-            });
+                displayIndex: state.displayOrder.length,
+                categoryIndex: categoryIndex
+            };
+            state.displayOrder.push(displayOrderItem);
+            
+            // Debug log for category index tracking
+            if (state.displayOrder.length % 10 === 0 || state.displayOrder.length <= 5) {
+                console.log(`📍 Item added: ${categoryName} #${categoryIndex + 1}, total items: ${state.displayOrder.length}`);
+            }
 
             return true;
         });
 
         console.log(`🔄 Progressive insert: ${uniqueItems.length} items in batches of ${BATCH_SIZE}`);
+        console.log(`📊 Category counts: workshops=${state.categoryItemCounts.workshops}, socials=${state.categoryItemCounts.socials}`);
 
         for (let i = 0; i < uniqueItems.length; i += BATCH_SIZE) {
             const batch = uniqueItems.slice(i, i + BATCH_SIZE);
