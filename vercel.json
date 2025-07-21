@@ -2,6 +2,9 @@
   "functions": {
     "api/gallery.js": {
       "maxDuration": 10
+    },
+    "api/debug.js": {
+      "maxDuration": 5
     }
   },
   "images": {
@@ -15,8 +18,47 @@
   },
   "rewrites": [
     {
-      "source": "/(about|artists|donations|gallery|gallery-2025|gallery-test-minimal|home|schedule|tickets)",
-      "destination": "/pages/$1.html"
+      "source": "/home",
+      "destination": "/pages/home.html"
+    },
+    {
+      "source": "/about", 
+      "destination": "/pages/about.html"
+    },
+    {
+      "source": "/artists",
+      "destination": "/pages/artists.html"
+    },
+    {
+      "source": "/donations",
+      "destination": "/pages/donations.html"
+    },
+    {
+      "source": "/gallery",
+      "destination": "/pages/gallery.html"
+    },
+    {
+      "source": "/gallery-2025",
+      "destination": "/pages/gallery-2025.html"
+    },
+    {
+      "source": "/gallery-test-minimal",
+      "destination": "/pages/gallery-test-minimal.html"
+    },
+    {
+      "source": "/schedule",
+      "destination": "/pages/schedule.html"
+    },
+    {
+      "source": "/tickets",
+      "destination": "/pages/tickets.html"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/pages/home.html",
+      "destination": "/home",
+      "permanent": false
     }
   ],
   "cleanUrls": true,
