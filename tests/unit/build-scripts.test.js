@@ -186,10 +186,14 @@ describe('Build Scripts and ES Module Compatibility', () => {
             const rootRewrite = vercelConfig.rewrites.find(r => r.source === '/');
             expect(rootRewrite).toBeUndefined();
             
-            // Should have specific page rewrites
-            const pageRewrite = vercelConfig.rewrites.find(r => r.source.includes('home'));
-            expect(pageRewrite).toBeDefined();
-            expect(pageRewrite.destination).toBe('/pages/home.html');
+            // Should have specific page rewrites (but NOT home since index.html handles root)
+            const aboutRewrite = vercelConfig.rewrites.find(r => r.source === '/about');
+            expect(aboutRewrite).toBeDefined();
+            expect(aboutRewrite.destination).toBe('/pages/about.html');
+            
+            // Should NOT have home rewrite since index.html handles root
+            const homeRewrite = vercelConfig.rewrites.find(r => r.source.includes('home'));
+            expect(homeRewrite).toBeUndefined();
             
             // Should have images config
             expect(vercelConfig).toHaveProperty('images');
@@ -211,14 +215,16 @@ describe('Build Scripts and ES Module Compatibility', () => {
             }
         });
 
-        test('index.html should redirect to clean URL paths', () => {
+        test('index.html should serve as the direct home page', () => {
             const indexPath = path.join(__dirname, '..', '..', 'index.html');
             const content = fs.readFileSync(indexPath, 'utf8');
             
-            // Should redirect to clean URL with fallback to direct file path
-            expect(content).toMatch(/window\.location\.href\s*=\s*['"`]\/home['"`]/);
-            // Should also have fallback for better reliability
-            expect(content).toMatch(/window\.location\.href.*pages\/home\.html/);
+            // Should contain home page content directly (no redirect)
+            expect(content).toMatch(/<title>A Lo Cubano Boulder Fest - Typographic Design<\/title>/);
+            // Should contain main home page content sections
+            expect(content).toMatch(/Experience.*3 Days.*of pure Cuban rhythm/);
+            // Should NOT contain redirect script
+            expect(content).not.toMatch(/window\.location\.href.*home/);
         });
     });
 

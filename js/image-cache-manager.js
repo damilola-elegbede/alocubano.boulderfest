@@ -7,7 +7,7 @@ class ImageCacheManager {
         this.imageCacheKey = 'alocubano_image_data_cache';
         this.defaultImageUrl = '/images/hero-default.jpg';
         this.pageMapping = {
-            'home.html': 'home', 'about.html': 'about', 'artists.html': 'artists',
+            '/': 'home', 'index.html': 'home', 'about.html': 'about', 'artists.html': 'artists',
             'schedule.html': 'schedule', 'gallery.html': 'gallery', 'tickets.html': 'tickets',
             'donations.html': 'donations'
         };
@@ -63,8 +63,12 @@ class ImageCacheManager {
 
     getCurrentPageId() {
         const pathname = window.location.pathname;
-        const filename = pathname.split('/').pop() || 'home.html';
-        return this.pageMapping[filename] || 'default';
+        // Handle root path and clean URLs
+        if (pathname === '/' || pathname === '') {
+            return 'home';
+        }
+        const filename = pathname.split('/').pop() || 'index.html';
+        return this.pageMapping[filename] || this.pageMapping[pathname] || 'default';
     }
 
     // This is the main public method. It's now asynchronous.

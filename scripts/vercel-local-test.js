@@ -253,7 +253,7 @@ app.listen(PORT, () => {
   console.log(`⚙️  Configuration loaded: ${JSON.stringify(vercelConfig, null, 2)}`);
   console.log(`\n🧪 Test URLs:`);
   console.log(`   http://localhost:${PORT}/              (index.html)`);
-  console.log(`   http://localhost:${PORT}/home          (should rewrite to /pages/home.html)`);
+  console.log(`   http://localhost:${PORT}/              (serves index.html directly)`);
   console.log(`   http://localhost:${PORT}/about         (should rewrite to /pages/about.html)`);
   console.log(`   http://localhost:${PORT}/api/debug     (API endpoint)`);
   console.log(`   http://localhost:${PORT}/nonexistent   (should show 404)`);

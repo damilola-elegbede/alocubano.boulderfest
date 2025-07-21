@@ -15,12 +15,12 @@ Successfully implemented comprehensive mobile optimization for the A Lo Cubano B
 
 **Modified Files:**
 - `/js/navigation.js` - Enhanced to work with existing HTML structure
-- `/pages/typographic/home.html` - Added mobile CSS import
-- `/pages/typographic/about.html` - Added mobile CSS import  
-- `/pages/typographic/artists.html` - Added mobile CSS import
-- `/pages/typographic/schedule.html` - Added mobile CSS import
-- `/pages/typographic/gallery.html` - Added mobile CSS import
-- `/pages/typographic/tickets.html` - Added mobile CSS import
+- `/index.html` - Home page with mobile CSS import
+- `/pages/about.html` - Added mobile CSS import  
+- `/pages/artists.html` - Added mobile CSS import
+- `/pages/schedule.html` - Added mobile CSS import
+- `/pages/gallery.html` - Added mobile CSS import
+- `/pages/tickets.html` - Added mobile CSS import
 
 ### 📱 Mobile Optimizations Implemented
 

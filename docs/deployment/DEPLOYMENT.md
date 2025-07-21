@@ -73,7 +73,7 @@ See `GOOGLE_DRIVE_SETUP.md` for detailed instructions on obtaining these values.
 
 ### Traditional Web Hosting
 1. Upload all files via FTP
-2. Ensure `/pages/typographic/home.html` is set as index
+2. Ensure `index.html` is served as the default home page
 3. Configure .htaccess for clean URLs if needed
 
 ## Post-Deployment Testing

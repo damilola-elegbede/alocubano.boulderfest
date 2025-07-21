@@ -38,7 +38,7 @@ The website features a **typographic-forward design** that treats text as art:
 
 ```
 alocubano.boulderfest/
-├── index.html (Auto-redirect to main site)
+├── index.html (Main home page)
 ├── server.py (Python development server)
 ├── start.sh (Quick launcher)
 ├── css/
@@ -50,14 +50,13 @@ alocubano.boulderfest/
 │   ├── main.js (Core functionality)
 │   ├── typography.js (Typography effects)
 │   └── gallery.js (Google Drive media integration)
-├── pages/
-│   └── typographic/ (All website pages)
-│       ├── home.html
-│       ├── about.html
-│       ├── artists.html
-│       ├── schedule.html
-│       ├── gallery.html
-│       └── tickets.html
+├── pages/ (All website pages)
+│   ├── about.html
+│   ├── artists.html
+│   ├── schedule.html
+│   ├── gallery.html
+│   ├── tickets.html
+│   └── donations.html
 ├── api/
 │   └── gallery.js (Serverless function for Google Drive API)
 └── images/
