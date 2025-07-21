@@ -21,7 +21,11 @@
   },
   "rewrites": [
     {
-      "source": "/((?!api/)[^./]+)",
+      "source": "/home",
+      "destination": "/pages/home.html"
+    },
+    {
+      "source": "/((?!api/|home)[^./]+)",
       "destination": "/pages/$1.html"
     },
     {

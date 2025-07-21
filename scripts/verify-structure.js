@@ -20,6 +20,7 @@ const expectedFiles = {
     '404.html'
   ],
   'Pages Directory': [
+    'pages/home.html',
     'pages/about.html',
     'pages/artists.html',
     'pages/donations.html',

@@ -7,7 +7,8 @@ class ImageCacheManager {
         this.imageCacheKey = 'alocubano_image_data_cache';
         this.defaultImageUrl = '/images/hero-default.jpg';
         this.pageMapping = {
-            '/': 'home', 'index.html': 'home', 'about.html': 'about', 'artists.html': 'artists',
+            '/': 'home', '/home': 'home', 'index.html': 'home', 'home.html': 'home', 
+            'about.html': 'about', 'artists.html': 'artists',
             'schedule.html': 'schedule', 'gallery.html': 'gallery', 'tickets.html': 'tickets',
             'donations.html': 'donations'
         };

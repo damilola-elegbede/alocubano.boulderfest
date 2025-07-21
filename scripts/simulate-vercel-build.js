@@ -81,7 +81,7 @@ installProcess.on('close', (code) => {
                 },
                 {
                     name: 'Main pages exist',
-                    file: 'pages/about.html',
+                    file: 'pages/home.html',
                     required: true
                 },
                 {

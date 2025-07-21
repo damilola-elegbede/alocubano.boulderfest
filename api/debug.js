@@ -61,7 +61,8 @@ export default async function handler(req, res) {
       message: 'This endpoint is working correctly',
       apiEndpoint: '/api/debug',
       expectedRoutes: [
-        '/ -> index.html (static home page)',
+        '/ -> index.html (redirects to /home)',
+        '/home -> /pages/home.html (rewrite)', 
         '/about -> /pages/about.html (rewrite)',
         '/gallery -> /pages/gallery.html (rewrite)',
         '/api/debug -> this endpoint',
@@ -71,7 +72,8 @@ export default async function handler(req, res) {
     files: {
       message: 'File structure validation',
       expectedFiles: [
-        '/index.html (serves as home page)',
+        '/index.html (redirects to home)',
+        '/pages/home.html',
         '/pages/about.html', 
         '/pages/gallery.html',
         '/api/debug.js',
