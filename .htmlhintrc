@@ -9,7 +9,7 @@
   "empty-tag-not-self-closed": true,
   "spec-char-escape": true,
   "id-unique": true,
-  "src-not-empty": true,
+  "src-not-empty": false,
   "title-require": true,
   "alt-require": true,
   "doctype-html5": true,

@@ -4,7 +4,7 @@ module.exports = {
         '**/tests/unit/**/*.test.js'
     ],
     setupFilesAfterEnv: [
-        './tests/unit-setup.js'
+        './tests/unit-setup.cjs'
     ],
     collectCoverage: true,
     coverageDirectory: 'coverage/unit',
