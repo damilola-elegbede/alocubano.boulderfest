@@ -119,6 +119,8 @@
   height: 200px;
   object-fit: cover;
   display: block;
+  position: relative;
+  z-index: 1;
 }
 
 /* Position lazy placeholder absolutely within media container */
@@ -132,6 +134,7 @@
   align-items: center;
   justify-content: center;
   pointer-events: none; /* Ensure placeholder doesn't block clicks */
+  z-index: 0; /* Keep placeholder behind the image */
 }
 
 /* Ensure gallery items are clickable */
@@ -145,6 +148,28 @@
 /* Make sure lazy images are clickable when loaded */
 .gallery-item .lazy-image {
   pointer-events: auto;
+}
+
+/* Gallery sections */
+.gallery-section {
+  margin-bottom: var(--space-3xl);
+}
+
+.gallery-section h2 {
+  margin-bottom: var(--space-xl);
+}
+
+/* Ensure completion message doesn't block interactions */
+#gallery-completion-message {
+  pointer-events: none;
+}
+
+#gallery-completion-message .completion-message {
+  pointer-events: auto;
+  display: inline-block;
+  padding: var(--space-md) var(--space-xl);
+  background: var(--color-gray-100);
+  border-radius: var(--rounded-md);
 }
 
 /* Responsive lazy loading adjustments */
@@ -323,6 +348,42 @@
   gap: var(--space-md);
 }
 
+/* Gallery Detail Specific Styles */
+.gallery-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-2xl);
+}
+
+.gallery-detail-section {
+  padding: var(--space-2xl) 0;
+}
+
+.gallery-loading {
+  text-align: center;
+  padding: var(--space-3xl) 0;
+  color: var(--color-gray-600);
+}
+
+.gallery-back-nav {
+  padding: var(--space-xl) 0;
+}
+
+.gallery-back-nav .back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--color-black);
+  text-decoration: none;
+  transition: all var(--transition-base);
+}
+
+.gallery-back-nav .back-link:hover {
+  transform: translateX(-5px);
+  color: var(--color-blue);
+}
+
 .gallery-item {
   position: relative;
   overflow: hidden;
@@ -349,7 +410,7 @@
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.95);
-  display: flex;
+  display: none; /* Hidden by default */
   align-items: center;
   justify-content: center;
   z-index: var(--z-modal);
@@ -358,6 +419,7 @@
 }
 
 .lightbox.is-open {
+  display: flex; /* Show when open */
   opacity: 1;
 }
 
@@ -403,6 +465,48 @@
   right: var(--space-lg);
   top: 50%;
   transform: translateY(-50%);
+}
+
+/* Lightbox content and media container */
+.lightbox-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+}
+
+.lightbox-media-container {
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-caption {
+  position: absolute;
+  bottom: var(--space-xl);
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  color: var(--color-white);
+  background: rgba(0, 0, 0, 0.7);
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--rounded-md);
+}
+
+.lightbox-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.lightbox-counter {
+  margin: var(--space-xs) 0 0;
+  font-size: var(--font-size-sm);
+  opacity: 0.9;
 }
 
 /* Loading States */

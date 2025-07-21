@@ -29,7 +29,7 @@ if (typeof Lightbox === 'undefined') {
             // Create lightbox HTML if it doesn't exist
             if (!document.getElementById(this.lightboxId)) {
                 const lightboxHTML = `
-          <div id="${this.lightboxId}" class="lightbox gallery-lightbox">
+          <div id="${this.lightboxId}" class="lightbox gallery-lightbox" style="display: none;">
             <div class="lightbox-content">
               <button class="lightbox-close" aria-label="Close">&times;</button>
               <button class="lightbox-prev" aria-label="Previous">‹</button>
@@ -152,6 +152,11 @@ if (typeof Lightbox === 'undefined') {
 
         show() {
             const lightbox = document.getElementById(this.lightboxId);
+            if (!lightbox) return;
+            
+            // Remove inline display style to let CSS handle it
+            lightbox.style.display = '';
+            // Add the class which sets display: flex in CSS
             lightbox.classList.add('is-open', 'active');
             document.body.style.overflow = 'hidden';
 
@@ -161,9 +166,16 @@ if (typeof Lightbox === 'undefined') {
 
         close() {
             const lightbox = document.getElementById(this.lightboxId);
+            if (!lightbox) return;
+            
             lightbox.classList.remove('is-open', 'active');
-
+            
+            // Ensure lightbox is properly hidden
+            // The CSS should handle this, but we set it explicitly for safety
             setTimeout(() => {
+                if (!lightbox.classList.contains('is-open')) {
+                    lightbox.style.display = 'none';
+                }
                 document.body.style.overflow = '';
             }, 300);
         }
