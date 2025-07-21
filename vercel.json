@@ -5,6 +5,7 @@
     }
   },
   "images": {
+    "sizes": [16, 32, 48, 64, 96, 128, 256, 384],
     "remotePatterns": [
       {
         "protocol": "https",
@@ -15,11 +16,11 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/pages/typographic/home.html"
+      "destination": "/pages/home.html"
     },
     {
       "source": "/(.*)",
-      "destination": "/pages/typographic/$1.html"
+      "destination": "/pages/$1.html"
     }
   ],
   "cleanUrls": true,
