@@ -13,10 +13,12 @@ if (typeof LazyLoader === 'undefined') {
                 selector: options.selector || 'img[data-src]',
                 advancedSelector: options.advancedSelector || '.lazy-item[data-loaded="false"]',
                 loadedClass: options.loadedClass || 'loaded',
-                advanced: options.advanced || false
+                advanced: options.advanced || false,
+                maxRetries: options.maxRetries || 3
             };
 
             this.observer = null;
+            this.failedImages = new Map(); // Track failed images with retry count
             this.init();
         }
 
@@ -62,15 +64,45 @@ if (typeof LazyLoader === 'undefined') {
         // Simple image loading (from main.js)
         loadSimpleImage(img) {
             if (img.dataset.src) {
-                img.src = img.dataset.src;
-                img.classList.add(this.config.loadedClass);
-
-                // Optional: Add fade-in effect
-                img.style.opacity = '0';
+                const src = img.dataset.src;
+                
                 img.onload = () => {
+                    // Success - remove from failed images if it was there
+                    this.failedImages.delete(img);
+                    
+                    img.classList.add(this.config.loadedClass);
+                    // Add fade-in effect
                     img.style.transition = 'opacity 0.3s ease-in-out';
                     img.style.opacity = '1';
                 };
+                
+                img.onerror = () => {
+                    // Handle error state for simple images
+                    img.style.opacity = '1';
+                    img.style.cursor = 'pointer';
+                    img.title = 'Click to retry loading';
+                    img.alt = '❌ Failed to load - Click to retry';
+                    
+                    // Store failed image info
+                    const retryInfo = {
+                        element: img,
+                        src: src,
+                        retryCount: 0
+                    };
+                    this.failedImages.set(img, retryInfo);
+                    
+                    // Add click handler for retry
+                    img.onclick = (e) => {
+                        e.stopPropagation();
+                        this.retrySimpleImage(img);
+                    };
+                    
+                    console.warn('Failed to load image:', src);
+                };
+                
+                // Start loading
+                img.src = src;
+                img.style.opacity = '0';
 
                 // Clean up data attribute
                 delete img.dataset.src;
@@ -114,12 +146,29 @@ if (typeof LazyLoader === 'undefined') {
                         if (spinner) {
                             spinner.textContent = '❌';
                             spinner.style.display = 'block';
+                            spinner.style.cursor = 'pointer';
+                            spinner.title = 'Click to retry loading';
+                            
+                            // Store failed image info
+                            const retryInfo = {
+                                element: item,
+                                src: src,
+                                retryCount: 0
+                            };
+                            this.failedImages.set(item, retryInfo);
+                            
+                            // Add click handler for retry
+                            spinner.onclick = (e) => {
+                                e.stopPropagation();
+                                this.retryFailedImage(item);
+                            };
                         }
                         if (placeholder) {
                             placeholder.style.display = 'block'; // Keep placeholder visible on error
                         }
 
                         // Failed to load image - logged for debugging
+                        console.warn('Failed to load image:', src);
                     };
 
                     // Start loading
@@ -206,6 +255,172 @@ if (typeof LazyLoader === 'undefined') {
             this.destroy();
             this.config = { ...this.config, ...newConfig };
             this.init();
+        }
+
+        // Retry a specific failed image
+        retryFailedImage(item) {
+            const retryInfo = this.failedImages.get(item);
+            if (!retryInfo) return;
+
+            const { src, retryCount } = retryInfo;
+            
+            // Check if we've exceeded max retries
+            if (retryCount >= this.config.maxRetries) {
+                console.warn('Max retries exceeded for image:', src);
+                return;
+            }
+
+            const lazyImage = item.querySelector('.lazy-image');
+            const spinner = item.querySelector('.loading-spinner');
+            const placeholder = item.querySelector('.lazy-placeholder');
+
+            if (lazyImage && spinner) {
+                // Show loading state again
+                spinner.textContent = '';
+                spinner.innerHTML = '<div class="spinner-icon"></div>';
+                spinner.style.cursor = 'default';
+                spinner.onclick = null;
+
+                // Update retry count
+                retryInfo.retryCount++;
+                this.failedImages.set(item, retryInfo);
+
+                // Create new image element to force reload
+                const newImage = new Image();
+                
+                newImage.onload = () => {
+                    // Success - remove from failed images
+                    this.failedImages.delete(item);
+                    
+                    // Update the actual image
+                    lazyImage.src = src;
+                    
+                    // Hide placeholder and spinner
+                    if (placeholder) {
+                        placeholder.style.display = 'none';
+                    }
+                    if (spinner) {
+                        spinner.style.display = 'none';
+                    }
+
+                    // Show image with transition
+                    lazyImage.style.display = 'block';
+                    lazyImage.style.opacity = '1';
+
+                    // Mark as loaded
+                    item.classList.add(this.config.loadedClass);
+                    item.setAttribute('data-loaded', 'true');
+                };
+
+                newImage.onerror = () => {
+                    // Failed again
+                    if (spinner) {
+                        spinner.textContent = '❌';
+                        spinner.style.cursor = 'pointer';
+                        spinner.title = `Click to retry loading (${retryInfo.retryCount}/${this.config.maxRetries} attempts)`;
+                        
+                        // Re-add click handler
+                        spinner.onclick = (e) => {
+                            e.stopPropagation();
+                            this.retryFailedImage(item);
+                        };
+                    }
+                    
+                    console.warn(`Retry ${retryInfo.retryCount} failed for image:`, src);
+                };
+
+                // Attempt to load with cache-busting parameter
+                const cacheBuster = `?retry=${retryInfo.retryCount}&t=${Date.now()}`;
+                newImage.src = src + cacheBuster;
+            }
+        }
+
+        // Retry a simple image
+        retrySimpleImage(img) {
+            const retryInfo = this.failedImages.get(img);
+            if (!retryInfo) return;
+
+            const { src, retryCount } = retryInfo;
+            
+            // Check if we've exceeded max retries
+            if (retryCount >= this.config.maxRetries) {
+                console.warn('Max retries exceeded for image:', src);
+                img.alt = '❌ Failed to load (max retries exceeded)';
+                img.title = 'Max retries exceeded';
+                img.style.cursor = 'not-allowed';
+                img.onclick = null;
+                return;
+            }
+
+            // Update retry count
+            retryInfo.retryCount++;
+            this.failedImages.set(img, retryInfo);
+
+            // Reset state
+            img.style.cursor = 'wait';
+            img.alt = 'Loading...';
+            img.title = 'Loading...';
+            img.onclick = null;
+
+            // Create new image element to force reload
+            const newImage = new Image();
+            
+            newImage.onload = () => {
+                // Success - remove from failed images
+                this.failedImages.delete(img);
+                
+                // Update the actual image
+                img.src = src + `?retry=${retryInfo.retryCount}&t=${Date.now()}`;
+                img.style.cursor = 'default';
+                img.alt = '';
+                img.title = '';
+                img.classList.add(this.config.loadedClass);
+            };
+
+            newImage.onerror = () => {
+                // Failed again
+                img.style.cursor = 'pointer';
+                img.alt = '❌ Failed to load - Click to retry';
+                img.title = `Click to retry loading (${retryInfo.retryCount}/${this.config.maxRetries} attempts)`;
+                
+                // Re-add click handler
+                img.onclick = (e) => {
+                    e.stopPropagation();
+                    this.retrySimpleImage(img);
+                };
+                
+                console.warn(`Retry ${retryInfo.retryCount} failed for image:`, src);
+            };
+
+            // Attempt to load with cache-busting parameter
+            newImage.src = src + `?retry=${retryInfo.retryCount}&t=${Date.now()}`;
+        }
+
+        // Retry all failed images
+        retryAllFailedImages() {
+            const failedItems = Array.from(this.failedImages.keys());
+            console.log(`Retrying ${failedItems.length} failed images...`);
+            
+            failedItems.forEach(item => {
+                // Check if it's a simple image or advanced item
+                if (item.tagName === 'IMG') {
+                    this.retrySimpleImage(item);
+                } else {
+                    this.retryFailedImage(item);
+                }
+            });
+            
+            return failedItems.length;
+        }
+
+        // Get count of failed images
+        getFailedImageCount() {
+            return this.failedImages.size;
+        }
+
+        // Clear failed images tracking
+        clearFailedImages() {
+            this.failedImages.clear();
         }
     }
 

@@ -46,6 +46,7 @@
     socialTotal: 0,              // Total social items available
     currentCategory: 'workshops', // Which category we're currently loading
     displayOrder: [],            // Array tracking display order for lightbox
+    failedImages: [],            // Track failed image loads for retry
     rateLimitTracker: {
       requests: [],
       isBlocked: false
@@ -56,6 +57,184 @@
       cacheMisses: 0
     }
   };
+
+  // State persistence functions
+  function saveState() {
+    try {
+      const year = getYearFromPage();
+      const stateKey = `gallery_${year}_state`;
+      
+      const persistedState = {
+        timestamp: Date.now(),
+        allCategories: state.allCategories,
+        categoryCounts: state.categoryCounts,
+        workshopOffset: state.workshopOffset,
+        socialOffset: state.socialOffset,
+        workshopTotal: state.workshopTotal,
+        socialTotal: state.socialTotal,
+        totalItemsAvailable: state.totalItemsAvailable,
+        itemsDisplayed: state.itemsDisplayed,
+        hasCompleteDataset: state.hasCompleteDataset,
+        hasMorePages: state.hasMorePages,
+        loadedPages: state.loadedPages,
+        displayOrder: state.displayOrder,
+        loadedItemIds: Array.from(state.loadedItemIds),
+        displayedItemIds: Array.from(state.displayedItemIds),
+        failedImages: state.failedImages
+      };
+      
+      sessionStorage.setItem(stateKey, JSON.stringify(persistedState));
+      console.log('💾 Gallery state saved to sessionStorage');
+    } catch (error) {
+      console.error('Failed to save gallery state:', error);
+    }
+  }
+
+  function restoreState() {
+    try {
+      const year = getYearFromPage();
+      const stateKey = `gallery_${year}_state`;
+      const savedState = sessionStorage.getItem(stateKey);
+      
+      if (!savedState) {
+        console.log('No saved state found');
+        return false;
+      }
+      
+      const persistedState = JSON.parse(savedState);
+      
+      // Check if state is still valid (30 minutes expiry)
+      const age = Date.now() - persistedState.timestamp;
+      if (age > 30 * 60 * 1000) {
+        console.log('⏰ Saved state expired, clearing...');
+        sessionStorage.removeItem(stateKey);
+        return false;
+      }
+      
+      // Restore state properties
+      state.allCategories = persistedState.allCategories;
+      state.categoryCounts = persistedState.categoryCounts;
+      state.workshopOffset = persistedState.workshopOffset;
+      state.socialOffset = persistedState.socialOffset;
+      state.workshopTotal = persistedState.workshopTotal;
+      state.socialTotal = persistedState.socialTotal;
+      state.totalItemsAvailable = persistedState.totalItemsAvailable;
+      state.itemsDisplayed = persistedState.itemsDisplayed;
+      state.hasCompleteDataset = persistedState.hasCompleteDataset;
+      state.hasMorePages = persistedState.hasMorePages;
+      state.loadedPages = persistedState.loadedPages;
+      state.displayOrder = persistedState.displayOrder;
+      state.loadedItemIds = new Set(persistedState.loadedItemIds);
+      state.displayedItemIds = new Set(persistedState.displayedItemIds);
+      state.failedImages = persistedState.failedImages || [];
+      
+      console.log('✅ Gallery state restored from sessionStorage', {
+        itemsDisplayed: state.itemsDisplayed,
+        loadedPages: state.loadedPages,
+        hasMorePages: state.hasMorePages
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to restore gallery state:', error);
+      return false;
+    }
+  }
+
+  async function restoreDOM() {
+    const contentEl = document.getElementById('gallery-detail-content');
+    const loadingEl = document.getElementById('gallery-detail-loading');
+    const staticEl = document.getElementById('gallery-detail-static');
+    
+    if (!contentEl || state.displayOrder.length === 0) {
+      return;
+    }
+    
+    console.log('🔄 Restoring DOM from saved state...');
+    
+    // Hide loading and show content
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (staticEl) staticEl.style.display = 'none';
+    contentEl.style.display = 'block';
+    
+    // Group items by category
+    const categorizedItems = {
+      workshops: [],
+      socials: []
+    };
+    
+    state.displayOrder.forEach(item => {
+      if (item.category === 'workshops') {
+        categorizedItems.workshops.push(item);
+      } else if (item.category === 'socials') {
+        categorizedItems.socials.push(item);
+      }
+    });
+    
+    // Restore workshops section
+    const workshopsSection = document.getElementById('workshops-section');
+    const workshopsGallery = document.getElementById('workshops-gallery');
+    if (workshopsSection && workshopsGallery && categorizedItems.workshops.length > 0) {
+      workshopsSection.style.display = 'block';
+      await insertItemsProgressively(categorizedItems.workshops, workshopsGallery, 'workshops', 0, false);
+    }
+    
+    // Restore socials section
+    const socialsSection = document.getElementById('socials-section');
+    const socialsGallery = document.getElementById('socials-gallery');
+    if (socialsSection && socialsGallery && categorizedItems.socials.length > 0) {
+      socialsSection.style.display = 'block';
+      await insertItemsProgressively(categorizedItems.socials, socialsGallery, 'socials', categorizedItems.workshops.length, false);
+    }
+    
+    // Re-observe lazy items and attach handlers
+    observeLazyItems();
+    
+    const items = contentEl.querySelectorAll('.gallery-item');
+    items.forEach((item) => {
+      setupGalleryItemHandlers(item, { categories: categorizedItems });
+      item.setAttribute('data-loaded', 'true');
+    });
+    
+    // Restore lightbox state
+    state.lightboxItems = state.displayOrder;
+    state.lightboxCategories = state.displayOrder.map(item => item.category);
+    
+    console.log('✅ DOM restored successfully');
+    
+    // After DOM is restored, check for failed images and retry them
+    if (state.failedImages && state.failedImages.length > 0) {
+      console.log(`🔄 Found ${state.failedImages.length} failed images from previous session, retrying...`);
+      
+      // Wait a bit for LazyLoader to be fully initialized
+      setTimeout(() => {
+        // Access the global LazyLoader instance
+        const lazyLoader = window.galleryLazyLoader || state.lazyObserver;
+        
+        if (lazyLoader && typeof lazyLoader.retryAllFailedImages === 'function') {
+          console.log('♻️ Retrying all failed images from previous session');
+          lazyLoader.retryAllFailedImages();
+        } else {
+          console.warn('LazyLoader retry functionality not available');
+          
+          // Fallback: manually trigger loading for failed images
+          state.failedImages.forEach(imageSrc => {
+            const imgElements = document.querySelectorAll(`img[data-src="${imageSrc}"]`);
+            imgElements.forEach(img => {
+              // Mark as not loaded to trigger lazy loading again
+              const container = img.closest('.lazy-item');
+              if (container) {
+                container.setAttribute('data-loaded', 'false');
+              }
+            });
+          });
+          
+          // Re-observe to trigger loading
+          observeLazyItems();
+        }
+      }, 500); // Small delay to ensure LazyLoader is ready
+    }
+  }
 
   // Sequential loading algorithm for category-aware pagination
   function getNextPageItems(allCategories, pageSize = 20) {
@@ -108,10 +287,13 @@
 
   // Show completion message when all items are loaded
   function showCompletionMessage() {
+    // Completion message disabled - no longer showing "All photos loaded"
     // Remove any existing completion message
     const existing = document.getElementById('gallery-completion-message');
     if (existing) existing.remove();
     
+    // The following code has been commented out to remove the completion message
+    /*
     const completionMessage = document.createElement('div');
     completionMessage.id = 'gallery-completion-message';
     completionMessage.innerHTML = `
@@ -127,6 +309,7 @@
     } else {
       document.querySelector('main').appendChild(completionMessage);
     }
+    */
   }
 
   // Rate limiting and request caching utilities
@@ -211,6 +394,11 @@
     });
     loadGalleryDetailData();
     initLightbox();
+    
+    // Save state before page unload
+    window.addEventListener('beforeunload', () => {
+      saveState();
+    });
   });
 
   // Load gallery detail data from API with pagination
@@ -225,8 +413,24 @@
     // Initialize lazy loading observer
     initLazyLoading();
     
-    // Load first page
-    await loadNextPage(year, loadingEl, contentEl, staticEl);
+    // Try to restore from saved state
+    const stateRestored = restoreState();
+    
+    if (stateRestored && state.displayOrder.length > 0) {
+      console.log('📚 Using restored state, recreating DOM...');
+      await restoreDOM();
+      
+      // Update loading state
+      updateLoadingState();
+      
+      // Set up infinite scroll if more pages exist
+      if (state.hasMorePages) {
+        setupInfiniteScroll(year, loadingEl, contentEl, staticEl);
+      }
+    } else {
+      // Load first page normally
+      await loadNextPage(year, loadingEl, contentEl, staticEl);
+    }
   }
 
   // Load next page of photos with mutex protection
@@ -370,6 +574,9 @@
         // Update loading state (remove sentinel if complete)
         updateLoadingState();
         
+        // Save state after initial load
+        saveState();
+        
       } else {
         // For subsequent pages, use sequential algorithm with stored categories
         console.log(`📦 Loading page ${state.loadedPages + 1} using sequential algorithm`);
@@ -412,6 +619,9 @@
         
         // Update loading state (remove sentinel if complete)
         updateLoadingState();
+        
+        // Save state after each page load
+        saveState();
       }
       
       // Set up infinite scroll for more pages
@@ -634,8 +844,37 @@
     state.lazyObserver = LazyLoader.createAdvanced({
       selector: '.lazy-item[data-loaded="false"]',
       rootMargin: CONFIG.LAZY_LOAD_THRESHOLD,
-      threshold: 0.1
+      threshold: 0.1,
+      onError: (element, error, info) => {
+        // Update failed images state immediately when an error occurs
+        if (info && info.src && !state.failedImages.includes(info.src)) {
+          state.failedImages.push(info.src);
+          console.log(`📌 Added failed image to state: ${info.src}`);
+          // Save state immediately to persist failed images
+          saveState();
+        }
+      }
     });
+    
+    // Store LazyLoader instance globally for retry functionality
+    window.galleryLazyLoader = state.lazyObserver;
+    
+    // Periodically sync failed images to our state as backup
+    if (state.lazyObserver && state.lazyObserver.failedImages) {
+      setInterval(() => {
+        const failedSrcs = [];
+        state.lazyObserver.failedImages.forEach((info, element) => {
+          if (!failedSrcs.includes(info.src)) {
+            failedSrcs.push(info.src);
+          }
+        });
+        // Only update if there are changes
+        if (JSON.stringify(failedSrcs) !== JSON.stringify(state.failedImages)) {
+          state.failedImages = failedSrcs;
+          saveState(); // Persist changes
+        }
+      }, 5000); // Sync every 5 seconds
+    }
   }
 
   // Observe new lazy items
@@ -801,6 +1040,14 @@
     getPerformanceStats: () => RequestManager.getPerformanceStats(),
     clearRequestCache: () => RequestManager.clearCache(),
     getLoadedItemCount: () => state.loadedItemIds.size,
+    saveState: () => saveState(),
+    restoreState: () => restoreState(),
+    clearSavedState: () => {
+      const year = getYearFromPage();
+      const stateKey = `gallery_${year}_state`;
+      sessionStorage.removeItem(stateKey);
+      console.log('🗑️ Saved state cleared');
+    },
     resetPerformanceMetrics: () => {
       state.performanceMetrics = {
         loadTimes: [],
@@ -808,6 +1055,30 @@
         cacheMisses: 0
       };
       console.log('📊 Performance metrics reset');
+    },
+    retryFailedImages: () => {
+      const lazyLoader = window.galleryLazyLoader || state.lazyObserver;
+      if (lazyLoader && typeof lazyLoader.retryAllFailedImages === 'function') {
+        console.log('♻️ Manually retrying all failed images...');
+        lazyLoader.retryAllFailedImages();
+      } else {
+        console.warn('LazyLoader retry functionality not available');
+      }
+    },
+    getFailedImages: () => {
+      const lazyLoader = window.galleryLazyLoader || state.lazyObserver;
+      const failedList = [];
+      if (lazyLoader && lazyLoader.failedImages) {
+        lazyLoader.failedImages.forEach((info, element) => {
+          failedList.push({
+            src: info.src,
+            attempts: info.attempts,
+            lastError: info.lastError,
+            element: element
+          });
+        });
+      }
+      return failedList;
     },
     logCurrentState: () => {
       console.group('🔍 Gallery Debug Info');
@@ -822,11 +1093,18 @@
         displayedItems: state.displayedItemIds.size,
         loadedItems: state.loadedItemIds.size,
         lightboxItems: state.lightboxItems.length,
-        hasCompleteDataset: state.hasCompleteDataset
+        hasCompleteDataset: state.hasCompleteDataset,
+        failedImages: state.failedImages.length
       });
       console.log('🎯 Cache Status:', {
         requestCacheSize: state.requestCache.size,
-        rateLimitRequests: state.rateLimitTracker.requests.length
+        rateLimitRequests: state.rateLimitTracker.requests.length,
+        sessionStorageKey: `gallery_${getYearFromPage()}_state`,
+        hasSessionStorage: !!sessionStorage.getItem(`gallery_${getYearFromPage()}_state`)
+      });
+      console.log('🚫 Failed Images:', {
+        persistedFailures: state.failedImages,
+        liveFailures: window.galleryDebug.getFailedImages()
       });
       console.groupEnd();
     }
@@ -834,6 +1112,9 @@
 
   // Cleanup function for page navigation
   window.galleryCleanup = () => {
+    // Save state before cleanup
+    saveState();
+    
     // Clean up observers
     if (state.lazyObserver) {
       state.lazyObserver.destroy();
