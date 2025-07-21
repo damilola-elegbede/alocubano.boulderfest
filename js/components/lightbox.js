@@ -237,9 +237,18 @@ if (typeof Lightbox === 'undefined') {
             const title = lightbox.querySelector('.lightbox-title');
             const counter = lightbox.querySelector('.lightbox-counter');
 
-            // Update image
+            // Update image - check if the original gallery item has an updated src
+            const galleryItem = document.querySelector(`[data-index="${this.currentIndex}"] .lazy-image`);
+            let imageSrc = item.viewUrl || item.src;
+            
+            // If the gallery item has a successfully loaded image, use that src
+            if (galleryItem && galleryItem.src && !galleryItem.src.includes('data:image')) {
+                imageSrc = galleryItem.src;
+                console.log('🔄 Using updated image source from gallery:', imageSrc);
+            }
+            
             img.style.display = 'block';
-            img.src = item.viewUrl || item.src;
+            img.src = imageSrc;
             img.alt = item.name || item.alt || 'Gallery image';
 
             // Use stored categoryIndex if available, otherwise calculate it
