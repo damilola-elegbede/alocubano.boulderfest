@@ -349,8 +349,8 @@
     }
 
     // Rate limiting and request caching utilities
-    class RequestManager {
-        static isRateLimited() {
+    const RequestManager = {
+        isRateLimited() {
             const now = Date.now();
             const windowStart = now - CONFIG.RATE_LIMIT.WINDOW_MS;
 
@@ -360,13 +360,13 @@
             );
 
             return state.rateLimitTracker.requests.length >= CONFIG.RATE_LIMIT.MAX_REQUESTS;
-        }
+        },
 
-        static recordRequest() {
+        recordRequest() {
             state.rateLimitTracker.requests.push(Date.now());
-        }
+        },
 
-        static async cachedFetch(url, options = {}) {
+        async cachedFetch(url, options = {}) {
             const cacheKey = `${url}:${JSON.stringify(options)}`;
             const cached = state.requestCache.get(cacheKey);
             const now = Date.now();
@@ -376,6 +376,38 @@
                 console.log('🎯 Cache hit for:', url);
                 state.performanceMetrics.cacheHits++;
                 return cached.response;
+            }
+
+            // Clean expired entries periodically
+            if (state.requestCache.size > 0 && Math.random() < 0.1) {
+                const expiredKeys = [];
+                state.requestCache.forEach((value, key) => {
+                    if ((now - value.timestamp) >= CONFIG.REQUEST_CACHE_DURATION) {
+                        expiredKeys.push(key);
+                    }
+                });
+                expiredKeys.forEach(key => state.requestCache.delete(key));
+                if (expiredKeys.length > 0) {
+                    console.log(`🧹 Cleaned ${expiredKeys.length} expired cache entries`);
+                }
+            }
+
+            // Enforce max cache size (LRU eviction)
+            const MAX_CACHE_SIZE = 50; // Maximum number of cached requests
+            if (state.requestCache.size >= MAX_CACHE_SIZE) {
+                // Find and remove the oldest entry
+                let oldestKey = null;
+                let oldestTime = Infinity;
+                state.requestCache.forEach((value, key) => {
+                    if (value.timestamp < oldestTime) {
+                        oldestTime = value.timestamp;
+                        oldestKey = key;
+                    }
+                });
+                if (oldestKey) {
+                    state.requestCache.delete(oldestKey);
+                    console.log('🧹 Evicted oldest cache entry to maintain size limit');
+                }
             }
 
             // Check rate limit
@@ -404,21 +436,21 @@
             }
 
             return response;
-        }
+        },
 
-        static clearCache() {
+        clearCache() {
             state.requestCache.clear();
             console.log('🧹 Request cache cleared');
-        }
+        },
 
-        static getPerformanceStats() {
+        getPerformanceStats() {
             return {
                 cacheHitRatio: state.performanceMetrics.cacheHits / (state.performanceMetrics.cacheHits + state.performanceMetrics.cacheMisses),
                 totalRequests: state.performanceMetrics.cacheHits + state.performanceMetrics.cacheMisses,
                 averageLoadTime: state.performanceMetrics.loadTimes.reduce((a, b) => a + b, 0) / state.performanceMetrics.loadTimes.length || 0
             };
         }
-    }
+    };
 
     // Initialize gallery on page load
     document.addEventListener('DOMContentLoaded', () => {
@@ -519,6 +551,10 @@
                         totalItemsAvailable: state.totalItemsAvailable
                     });
                     state.hasMorePages = false;
+                    // Double-check consistency
+                    if (state.itemsDisplayed > state.totalItemsAvailable) {
+                        console.warn('⚠️ State inconsistency detected: itemsDisplayed > totalItemsAvailable');
+                    }
                     return;
                 }
 
@@ -802,13 +838,11 @@
 
         // Check if we have any categories with items
         let hasItems = false;
-        if (data && data.categories) {
-            Object.values(data.categories).forEach(items => {
-                if (items && items.length > 0) {
-                    hasItems = true;
-                }
-            });
-        }
+        Object.values(data.categories || {}).forEach(items => {
+            if (items?.length > 0) {
+                hasItems = true;
+            }
+        });
 
         if (!hasItems && !appendMode) {
             // Show static content if no items on first load
@@ -931,7 +965,7 @@
             threshold: 0.1,
             onError: (element, error, info) => {
                 // Update failed images state immediately when an error occurs
-                if (info && info.src && !state.failedImages.includes(info.src)) {
+                if (info?.src && !state.failedImages.includes(info.src)) {
                     state.failedImages.push(info.src);
                     console.log(`📌 Added failed image to state: ${info.src}`);
                     // Save state immediately to persist failed images
@@ -944,7 +978,7 @@
         window.galleryLazyLoader = state.lazyObserver;
 
         // Periodically sync failed images to our state as backup
-        if (state.lazyObserver && state.lazyObserver.failedImages) {
+        if (state.lazyObserver?.failedImages) {
             setInterval(() => {
                 const failedSrcs = [];
                 state.lazyObserver.failedImages.forEach((info, element) => {
@@ -1156,16 +1190,14 @@
         getFailedImages: () => {
             const lazyLoader = window.galleryLazyLoader || state.lazyObserver;
             const failedList = [];
-            if (lazyLoader && lazyLoader.failedImages) {
-                lazyLoader.failedImages.forEach((info, element) => {
-                    failedList.push({
-                        src: info.src,
-                        attempts: info.attempts,
-                        lastError: info.lastError,
-                        element: element
-                    });
+            lazyLoader?.failedImages?.forEach((info, element) => {
+                failedList.push({
+                    src: info.src,
+                    attempts: info.attempts,
+                    lastError: info.lastError,
+                    element: element
                 });
-            }
+            });
             return failedList;
         },
         logCurrentState: () => {
