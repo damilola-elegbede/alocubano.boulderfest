@@ -1,7 +1,4 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": ".",
-  "installCommand": "npm install",
   "functions": {
     "api/gallery.js": {
       "maxDuration": 10
