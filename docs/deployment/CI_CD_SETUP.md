@@ -57,13 +57,13 @@ npm run lint:html      # HTML only
 ### Manual Testing
 ```bash
 # Start local server
-npm run serve
+npm start
 
 # Run linting
 npm run lint
 
 # Test site manually
-# Visit http://localhost:8000/ (serves index.html as home page)
+# Visit http://localhost:3000/ (serves index.html as home page)
 ```
 
 ## GitHub Actions Workflow

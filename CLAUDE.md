@@ -250,10 +250,13 @@ alocubano.boulderfest/
 
 ### Local Development
 ```bash
-# Quick start
-./scripts/start.sh
-# or
-npm run serve
+# Quick start (Vercel development server with full API support)
+npm start
+
+# Alternative commands
+npm run start-vercel-dev    # Same as npm start
+./scripts/start.sh          # Legacy script wrapper
+npm run serve:simple        # Simple HTTP server (no API functions)
 ```
 
 ### Testing
@@ -364,7 +367,7 @@ A comprehensive cleanup was completed to improve project structure:
 - **Performance**: Use performance monitoring and optimization tools
 
 ### Development Workflow
-1. **Start development**: `./scripts/start.sh` or `npm run serve`
+1. **Start development**: `npm start` (Vercel dev server with full API support)
 2. **Make changes**: Follow the file structure and conventions
 3. **Test changes**: `npm test` for unit tests, `npm run test:links` for links
 4. **Lint code**: `npm run lint` (also runs automatically on commit)

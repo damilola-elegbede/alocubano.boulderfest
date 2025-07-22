@@ -43,8 +43,8 @@ if [ ! -d "node_modules" ]; then
     npm install
 fi
 
-# Start the server with Vercel CLI
-echo "🚀 Starting Vercel development server on http://localhost:8000"
+# Start the server with npm start (delegates to Vercel CLI)
+echo "🚀 Starting development server on http://localhost:3000"
 echo "📁 Serving from: $(pwd)"
 echo ""
 echo "✨ Features:"
@@ -59,5 +59,5 @@ echo "Press Ctrl+C to stop the server"
 echo "================================================"
 echo ""
 
-# Run Vercel dev server on port 8000
-vercel dev --listen 8000
+# Use npm start which runs vercel dev on port 3000
+npm start
