@@ -12,12 +12,16 @@ The official website for **A Lo Cubano Boulder Fest**, Boulder's premier Cuban s
 
 ### Start the server
 ```bash
-./scripts/start.sh
-# or
-npm run serve
+# Full development server with API support
+npm start
+
+# Alternative commands
+npm run start-vercel-dev    # Same as npm start
+./scripts/start.sh          # Legacy script wrapper
+npm run serve:simple        # Simple HTTP server (no API functions)
 ```
 
-Then open: **http://localhost:8000**
+Then open: **http://localhost:3000**
 
 ## 📅 Festival Information
 
@@ -112,14 +116,19 @@ alocubano.boulderfest/
 1. Clone the repository
 2. Navigate to project directory
 3. Run `npm install` to install dependencies
-4. Run `./scripts/start.sh` or `npm run dev`
-5. Open http://localhost:8000 in your browser
+4. Run `npm start` (recommended) or `./scripts/start.sh`
+5. Open http://localhost:3000 in your browser
 
 ### Available Scripts
-- `npm run dev` - Start Vercel development server on port 8000
-- `npm run serve` - Same as dev (alias)
-- `npm test` - Run unit tests
+- `npm start` - Start Vercel development server with full API support (port 3000)
+- `npm run start-vercel-dev` - Same as npm start
+- `npm run serve:simple` - Simple HTTP server without API functions (port 8000)
+- `npm test` - Run unit tests (197 tests)
+- `npm run test:all` - Run all tests including link validation
+- `npm run test:coverage` - Run tests with coverage report
+- `npm run lint` - Run ESLint and HTMLHint
 - `npm run build` - Build for production
+- `npm run prebuild` - Generate cache files for gallery
 
 ## 📱 Browser Support
 

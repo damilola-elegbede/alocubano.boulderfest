@@ -173,12 +173,12 @@ For local testing, you can use the `.env.local` file:
    ```bash
    ./scripts/start.sh
    # or
-   npm run serve
+   npm start
    ```
 
 4. Test the gallery:
-   - Gallery page: http://localhost:8000/pages/typographic/gallery.html
-   - API endpoint: http://localhost:8000/api/gallery
+   - Gallery page: http://localhost:3000/pages/typographic/gallery.html
+   - API endpoint: http://localhost:3000/api/gallery
 
 The local server includes the Google Drive API integration, so you'll see real photos from your Google Drive folder in development.
 

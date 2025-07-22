@@ -88,7 +88,7 @@ Successfully implemented comprehensive mobile optimization for the A Lo Cubano B
 - 💻 Verify desktop functionality unchanged
 
 ### Test Page Available
-- **URL**: `http://localhost:8000/test-mobile.html`
+- **URL**: `http://localhost:3000/test-mobile.html`
 - **Features**: Device detection, automated tests, live preview
 - **Manual Tests**: Navigation, touch targets, responsive layout
 

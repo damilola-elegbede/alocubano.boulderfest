@@ -4,13 +4,16 @@
 
 1. **Start the server:**
    ```bash
-   ./scripts/start.sh
-   # or
-   npm run serve
+   # Recommended: Full development server with API support
+   npm start
+   
+   # Alternative commands
+   ./scripts/start.sh          # Legacy script wrapper
+   npm run serve:simple        # Simple HTTP server (no API functions)
    ```
 
 2. **Open your browser:**
-   Navigate to: http://localhost:8000
+   Navigate to: http://localhost:3000
 
 3. **Explore the designs:**
    - Click on any design card on the landing page

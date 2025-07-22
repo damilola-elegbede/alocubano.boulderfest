@@ -134,7 +134,7 @@ fi
 ### Development Server Testing
 The tests understand your Vercel routing, so they work seamlessly with:
 ```bash
-npm run serve  # Start development server
+npm start  # Start development server
 python3 tools/link-validation/run_link_tests.py  # Test all links
 ```
 
