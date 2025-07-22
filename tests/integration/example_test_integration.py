@@ -6,7 +6,7 @@ This demonstrates how the link_validator module would be integrated
 into the main test framework for the A Lo Cubano Boulder Fest website.
 """
 
-from link_validator import LinkValidator, LinkValidationResult
+from tools.link_validation.link_validator import LinkValidator, LinkValidationResult
 import os
 from typing import Dict, List
 

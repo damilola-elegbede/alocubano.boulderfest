@@ -3,7 +3,7 @@
 Test script for Link Validator - demonstrates validation capabilities
 """
 
-from link_validator import LinkValidator, validate_single_link
+from tools.link_validation.link_validator import LinkValidator, validate_single_link
 import os
 
 def test_link_validation():
