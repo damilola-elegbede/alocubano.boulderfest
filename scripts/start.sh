@@ -13,6 +13,19 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
+# Check Node.js version (minimum 18.x required for Vercel)
+NODE_VERSION=$(node --version | sed 's/v//')
+NODE_MAJOR=$(echo "$NODE_VERSION" | cut -d'.' -f1)
+
+if [ "$NODE_MAJOR" -lt 18 ]; then
+    echo "❌ Node.js 18.x or higher is required for Vercel compatibility."
+    echo "Current version: v$NODE_VERSION"
+    echo "Please upgrade Node.js from https://nodejs.org/"
+    exit 1
+else
+    echo "✅ Node.js v$NODE_VERSION detected (>= 18.x)"
+fi
+
 # Check if npm is installed
 if ! command -v npm &> /dev/null; then
     echo "❌ npm is required but not installed."
@@ -20,19 +33,9 @@ if ! command -v npm &> /dev/null; then
     exit 1
 fi
 
-# Check if Vercel CLI is installed globally
-if ! command -v vercel &> /dev/null; then
-    echo "📦 Vercel CLI not found. Installing globally..."
-    npm install -g vercel
-    
-    # Check if installation succeeded
-    if ! command -v vercel &> /dev/null; then
-        echo "❌ Failed to install Vercel CLI."
-        echo "Try running: npm install -g vercel"
-        exit 1
-    fi
-    echo "✅ Vercel CLI installed successfully!"
-fi
+# Define Vercel CLI command (using npx for local execution)
+VCMD="npx vercel"
+echo "📦 Using Vercel CLI via npx (local execution)"
 
 # Ensure we're in the project root
 cd "$(dirname "$0")/.."
@@ -59,5 +62,5 @@ echo "Press Ctrl+C to stop the server"
 echo "================================================"
 echo ""
 
-# Use npm start which runs vercel dev on port 3000
+# Use npm start which runs npx vercel dev on port 3000
 npm start

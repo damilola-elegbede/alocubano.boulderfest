@@ -203,7 +203,7 @@ python3 tests/integration/example_test_integration.py
       • pages/home.html: /css/missing.css - Asset not found
 ```
 
-## Integration with Server.py
+## Integration with Vercel Routing
 
 The validator understands all Vercel routing patterns:
 

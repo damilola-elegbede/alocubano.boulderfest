@@ -27,8 +27,7 @@
     "lint": "npm run lint:js && npm run lint:html",
     "lint:js": "eslint --config config/eslint.config.js js/**/*.js",
     "lint:html": "htmlhint --config config/.htmlhintrc pages/**/*.html",
-    "start-vercel-dev": "vercel dev --listen 3000",
-    "start": "vercel dev --listen 3000",
+    "start": "npx vercel dev --listen 3000",
     "serve:simple": "npx http-server . -p 8000",
     "vercel:test": "node scripts/vercel-local-test.js",
     "verify-structure": "node scripts/verify-structure.js",
@@ -50,6 +49,7 @@
     "lighthouse": "^11.0.0",
     "puppeteer": "^23.11.0",
     "stylelint": "^16.21.1",
-    "stylelint-config-standard": "^36.0.1"
+    "stylelint-config-standard": "^36.0.1",
+    "vercel": "^39.0.0"
   }
 }
