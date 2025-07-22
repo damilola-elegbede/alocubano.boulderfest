@@ -1,0 +1,70 @@
+#!/bin/sh
+#
+# Post-merge hook for A Lo Cubano Boulder Fest
+# Runs validation and cleanup after merges
+#
+
+set -e
+
+squash_merge="$1"
+current_branch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
+
+echo "🔄 Running post-merge validation on branch: $current_branch"
+
+# Check if this was a squash merge
+if [ "$squash_merge" = "1" ]; then
+    echo "📦 Squash merge detected"
+else
+    echo "🌿 Regular merge detected"
+fi
+
+# Stage 1: Check if dependencies need updating
+echo "📦 Stage 1: Checking dependencies..."
+if [ package.json -nt node_modules/.package-lock.json ] 2>/dev/null || [ ! -d node_modules ]; then
+    echo "📥 Installing/updating dependencies..."
+    npm install
+    echo "✅ Dependencies updated"
+else
+    echo "✅ Dependencies are up to date"
+fi
+
+# Stage 2: Quick validation tests
+echo "🧪 Stage 2: Running post-merge validation..."
+if npm run test:unit --silent; then
+    echo "✅ Post-merge unit tests passed"
+else
+    echo "⚠️  Post-merge unit tests failed - you may need to check recent changes"
+    echo "💡 Run 'npm run test:unit' to see detailed results"
+fi
+
+# Stage 3: Link validation (quick check)
+echo "🔗 Stage 3: Quick link validation..."
+if python3 run_link_tests.py --quiet 2>/dev/null; then
+    echo "✅ Post-merge link validation passed"
+else
+    echo "⚠️  Post-merge link validation had issues - run 'python3 run_link_tests.py' for details"
+fi
+
+# Stage 4: Clean up potential merge artifacts
+echo "🧹 Stage 4: Cleaning up merge artifacts..."
+# Remove any potential temporary files
+find . -name "*.orig" -delete 2>/dev/null || true
+find . -name "*.rej" -delete 2>/dev/null || true
+
+# Stage 5: Branch-specific actions
+if [ "$current_branch" = "main" ]; then
+    echo "⭐ Main branch post-merge actions:"
+    echo "   • Consider running full test suite: npm test"
+    echo "   • Consider deploying if this was a release merge"
+elif [ "$current_branch" = "develop" ]; then
+    echo "🚧 Develop branch post-merge actions:"
+    echo "   • Integration tests may be needed"
+fi
+
+echo ""
+echo "✅ Post-merge validation completed!"
+echo "💡 If you encounter any issues, run:"
+echo "   • npm run test:unit (for unit tests)"
+echo "   • python3 run_link_tests.py (for link validation)"
+echo "   • npm run lint (for code style)"
+echo ""

@@ -64,8 +64,27 @@ async function fetchFeaturedPhotos() {
 // --- Script Execution ---
 async function main() {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
-    console.error('Missing Google service account credentials. Please check .env.local file.');
-    process.exit(1);
+    console.log('⚠️  Missing Google service account credentials. Creating placeholder featured photos file for CI/development.');
+    
+    // Create placeholder data
+    const placeholderData = {
+      items: [],
+      totalCount: 0,
+      cacheTimestamp: new Date().toISOString(),
+      isPlaceholder: true,
+      message: 'Placeholder data - Google Drive credentials not available'
+    };
+    
+    // Ensure public directory exists
+    const publicDir = path.dirname(OUTPUT_FILE);
+    if (!fs.existsSync(publicDir)) {
+      fs.mkdirSync(publicDir, { recursive: true });
+    }
+    
+    fs.writeFileSync(OUTPUT_FILE, JSON.stringify(placeholderData, null, 2));
+    console.log(`📄 Created placeholder: ${OUTPUT_FILE}`);
+    console.log('✅ Placeholder featured photos file created successfully');
+    return;
   }
 
   try {

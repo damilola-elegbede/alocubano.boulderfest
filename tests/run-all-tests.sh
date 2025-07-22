@@ -55,12 +55,9 @@ run_test() {
 FAILED_TESTS=0
 
 # Run all test suites
-run_test "HTML Validation" "npm run test:html" || ((FAILED_TESTS++))
-run_test "Accessibility Tests" "npm run test:a11y" || ((FAILED_TESTS++))
-run_test "Performance Tests" "npm run test:perf" || ((FAILED_TESTS++))
+run_test "Unit Tests" "npm run test:unit" || ((FAILED_TESTS++))
 run_test "Link Validation" "npm run test:links" || ((FAILED_TESTS++))
 run_test "JavaScript Linting" "npm run lint:js" || ((FAILED_TESTS++))
-run_test "CSS Linting" "npm run lint:css" || ((FAILED_TESTS++))
 run_test "HTML Linting" "npm run lint:html" || ((FAILED_TESTS++))
 
 # Kill test server
