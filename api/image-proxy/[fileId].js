@@ -49,11 +49,12 @@ export default async function handler(req, res) {
 
   const missingVars = Object.keys(requiredEnvVars).filter(key => !requiredEnvVars[key]);
   if (missingVars.length > 0) {
-    console.error('Missing environment variables:', missingVars);
-    return res.status(500).json({ 
-      error: 'Server Configuration Error',
-      message: 'Required environment variables are not configured'
-    });
+    console.warn('Missing environment variables for Google Drive API:', missingVars);
+    console.log('Serving placeholder image for local development');
+    
+    // For local development, serve a placeholder image instead of failing
+    // This allows the gallery to work without Google Drive credentials
+    return servePlaceholderImage(res, fileId);
   }
 
   try {
@@ -204,6 +205,35 @@ export default async function handler(req, res) {
       })
     });
   }
+}
+
+/**
+ * Serve a placeholder image for local development when Google Drive credentials are not available
+ */
+function servePlaceholderImage(res, fileId) {
+  // Generate a simple SVG placeholder with the file ID
+  const svgContent = `
+    <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="#f0f0f0"/>
+      <text x="50%" y="45%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#666">
+        Gallery Image
+      </text>
+      <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#999">
+        ${fileId.substring(0, 12)}...
+      </text>
+      <text x="50%" y="70%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#ccc">
+        (Local Dev Placeholder)
+      </text>
+    </svg>
+  `;
+
+  // Set appropriate headers
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  
+  // Send the SVG
+  res.status(200).send(svgContent);
 }
 
 // Export configuration for Vercel
