@@ -1,6 +1,4 @@
 // Converted from Vitest to Jest - removed ES module imports
-const path = require('path');
-const fs = require('fs');
 
 describe('Gallery State Restoration', () => {
   let dom;
@@ -14,7 +12,7 @@ describe('Gallery State Restoration', () => {
     const savedStateStr = sessionStorage.getItem('gallery_2025_state');
     if (!savedStateStr) {
       // No saved state - fetch fresh data
-      await global.fetch();
+      await global.fetch('/api/gallery/2025', { method: 'GET' });
       return false;
     }
 
@@ -28,7 +26,7 @@ describe('Gallery State Restoration', () => {
       if (!isStateFresh || !parsedState.timestamp) {
         // Clear stale state and fetch fresh data
         sessionStorage.removeItem('gallery_2025_state');
-        await global.fetch();
+        await global.fetch('/api/gallery/2025', { method: 'GET' });
         return false;
       } else {
         // Restore from cache
@@ -39,7 +37,7 @@ describe('Gallery State Restoration', () => {
     } catch (error) {
       // Corrupted state - clear and fetch fresh
       sessionStorage.removeItem('gallery_2025_state');
-      await global.fetch();
+      await global.fetch('/api/gallery/2025', { method: 'GET' });
       return false;
     }
   };

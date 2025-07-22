@@ -324,7 +324,7 @@
         }
 
         // First, set up click handlers for all items (but keep them as data-loaded="false")
-        const items = contentEl.querySelectorAll('.gallery-item');
+        const items = contentEl.querySelectorAll('.gallery-item:not([data-handler-loaded="true"])');
         items.forEach((item) => {
             setupGalleryItemHandlers(item, { categories: categorizedItems });
             // Note: NOT setting data-loaded="true" yet - lazy loading needs to happen first
@@ -1052,7 +1052,7 @@
             }
 
             // Add click handlers for lightbox (only for new items if appending)
-            const selector = appendMode ? '.gallery-item[data-loaded="false"]' : '.gallery-item';
+            const selector = appendMode ? '.gallery-item[data-loaded="false"]:not([data-handler-loaded="true"])' : '.gallery-item:not([data-handler-loaded="true"])';
             const items = contentEl.querySelectorAll(selector);
             console.log(`🎯 Attaching click handlers to ${items.length} items (appendMode: ${appendMode})`);
             items.forEach((item) => {
@@ -1093,6 +1093,11 @@
 
     // Setup click handlers for gallery items
     function setupGalleryItemHandlers(item, data) {
+        // Skip if handlers already attached
+        if (item.getAttribute('data-handler-loaded') === 'true') {
+            return;
+        }
+
         const displayIndex = parseInt(item.dataset.index);
 
         // Use event delegation to handle lazy-loaded content
@@ -1119,6 +1124,9 @@
         item.style.cursor = 'pointer';
         item.style.position = 'relative';
         item.style.zIndex = '1';
+
+        // Mark as having handlers loaded
+        item.setAttribute('data-handler-loaded', 'true');
     }
 
     // Initialize lazy loading using shared component
