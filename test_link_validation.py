@@ -126,6 +126,10 @@ class LinkExtractorParser(HTMLParser):
         """Add a discovered link to the collection"""
         if not url or url in ['#', 'javascript:void(0)', 'javascript:;']:
             return
+            
+        # Skip template variables and JavaScript expressions from coverage files
+        if self._is_template_variable(url):
+            return
         
         link_type = self._classify_link(url)
         
@@ -139,6 +143,32 @@ class LinkExtractorParser(HTMLParser):
         )
         
         self.links.append(link_info)
+    
+    def _is_template_variable(self, url: str) -> bool:
+        """Check if URL is a template variable or JavaScript expression to skip"""
+        # Skip template variables, JavaScript expressions, and coverage report artifacts
+        skip_patterns = [
+            '${',           # Template literals
+            'request.url',  # JavaScript properties
+            'link.href',    # JavaScript properties
+            'imageUrl',     # JavaScript variables
+            'fileId',       # JavaScript variables
+            'scriptSrc',    # JavaScript variables
+            'imageSrc',     # JavaScript variables
+            'document.',    # DOM properties
+            '</span>',      # HTML artifacts from coverage
+            '&lt;',         # HTML entities
+            '&gt;',         # HTML entities
+            'blurredDataUrl', # JavaScript variables
+            'item.thumbnailUrl', # Template expressions
+        ]
+        
+        # Also skip single-word variables that are clearly not URLs
+        single_word_variables = ['url', 'imageUrl', 'fileId']
+        if url.strip() in single_word_variables:
+            return True
+        
+        return any(pattern in url for pattern in skip_patterns)
     
     def _classify_link(self, url: str) -> LinkType:
         """Classify a link by its type"""
@@ -441,9 +471,11 @@ class HTMLFileFinder:
         # Exclude test files and coverage reports
         excluded_patterns = [
             "**/node_modules/**",
-            "**/coverage/**", 
+            "**/coverage/**",
+            "**/lcov-report/**", 
             "**/*test*.html",
-            "**/favicon-*.html"
+            "**/favicon-*.html",
+            "**/test-reports/**"
         ]
         
         filtered_files = []
