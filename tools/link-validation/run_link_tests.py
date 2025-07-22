@@ -11,15 +11,18 @@ def main():
     """Run link validation tests with proper output handling"""
     print("🎵 A Lo Cubano Boulder Fest - Running Link Validation Tests...")
     
-    # Change to project directory
-    project_dir = os.path.dirname(os.path.abspath(__file__))
-    os.chdir(project_dir)
+    # Get the project root directory
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(os.path.dirname(script_dir))
+    
+    # Test file is now in tests/unit/link-validation/
+    test_file = os.path.join(project_root, "tests", "unit", "link-validation", "test_link_validation.py")
     
     try:
         # Run the test framework
         result = subprocess.run([
-            sys.executable, "test_link_validation.py"
-        ], capture_output=False, text=True)
+            sys.executable, test_file
+        ], capture_output=False, text=True, cwd=project_root)
         
         return result.returncode
         

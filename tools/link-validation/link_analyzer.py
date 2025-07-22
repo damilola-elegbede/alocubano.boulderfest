@@ -8,8 +8,8 @@ Provides easy access to parsing, validation, and reporting functionality.
 
 import argparse
 import sys
-from html_link_parser import HTMLLinkExtractor
-from link_validation_utils import LinkAnalyzer
+from .html_link_parser import HTMLLinkExtractor
+from .link_validation_utils import LinkAnalyzer
 
 
 def main():
