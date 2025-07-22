@@ -171,9 +171,9 @@ For local testing, you can use the `.env.local` file:
 
 3. Run the development server:
    ```bash
-   ./start.sh
+   ./scripts/start.sh
    # or
-   python3 local-api-server.py
+   python3 server.py
    ```
 
 4. Test the gallery:
