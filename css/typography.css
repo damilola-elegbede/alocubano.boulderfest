@@ -1,9 +1,9 @@
 /* A Lo Cubano Boulder Fest - Design 4: Typographic */
 
 /* Import base design system */
-@import url('base.css');
-@import url('navigation.css');
-@import url('forms.css');
+@import url('/css/base.css');
+@import url('/css/navigation.css');
+@import url('/css/forms.css');
 
 /* Import Google Fonts for experimental typography */
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');

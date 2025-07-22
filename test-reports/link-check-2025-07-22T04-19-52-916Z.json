@@ -1,0 +1,921 @@
+{
+  "testName": "Demo Test Suite",
+  "timestamp": "2025-07-22T04:19:52.916Z",
+  "summary": {
+    "totalLinks": 100,
+    "brokenLinks": 12,
+    "successRate": "88.0%",
+    "duration": "5.00s",
+    "timestamp": "2025-07-22T04:19:52.914Z"
+  },
+  "results": {
+    "total": 100,
+    "broken": 12,
+    "fixed": 3,
+    "external": 25,
+    "internal": 75,
+    "byType": {
+      "navigation": {
+        "total": 30,
+        "broken": 8
+      },
+      "content": {
+        "total": 20,
+        "broken": 2
+      },
+      "asset": {
+        "total": 25,
+        "broken": 1
+      },
+      "external": {
+        "total": 25,
+        "broken": 1
+      }
+    },
+    "details": [
+      {
+        "url": "/page-0.html",
+        "type": "navigation",
+        "file": "pages/page-0.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.913Z"
+      },
+      {
+        "url": "/page-1.html",
+        "type": "navigation",
+        "file": "pages/page-1.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-2.html",
+        "type": "navigation",
+        "file": "pages/page-2.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-3.html",
+        "type": "navigation",
+        "file": "pages/page-3.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-4.html",
+        "type": "navigation",
+        "file": "pages/page-4.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-5.html",
+        "type": "navigation",
+        "file": "pages/page-5.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-6.html",
+        "type": "navigation",
+        "file": "pages/page-6.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-7.html",
+        "type": "navigation",
+        "file": "pages/page-7.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-8.html",
+        "type": "navigation",
+        "file": "pages/page-8.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-9.html",
+        "type": "navigation",
+        "file": "pages/page-9.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-10.html",
+        "type": "navigation",
+        "file": "pages/page-10.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-11.html",
+        "type": "navigation",
+        "file": "pages/page-11.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-12.html",
+        "type": "navigation",
+        "file": "pages/page-12.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-13.html",
+        "type": "navigation",
+        "file": "pages/page-13.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-14.html",
+        "type": "navigation",
+        "file": "pages/page-14.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-15.html",
+        "type": "navigation",
+        "file": "pages/page-15.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-16.html",
+        "type": "navigation",
+        "file": "pages/page-16.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-17.html",
+        "type": "navigation",
+        "file": "pages/page-17.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-18.html",
+        "type": "navigation",
+        "file": "pages/page-18.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-19.html",
+        "type": "navigation",
+        "file": "pages/page-19.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-20.html",
+        "type": "navigation",
+        "file": "pages/page-20.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-21.html",
+        "type": "navigation",
+        "file": "pages/page-21.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-22.html",
+        "type": "navigation",
+        "file": "pages/page-22.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-23.html",
+        "type": "navigation",
+        "file": "pages/page-23.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-24.html",
+        "type": "navigation",
+        "file": "pages/page-24.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-25.html",
+        "type": "navigation",
+        "file": "pages/page-25.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-26.html",
+        "type": "navigation",
+        "file": "pages/page-26.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-27.html",
+        "type": "navigation",
+        "file": "pages/page-27.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-28.html",
+        "type": "navigation",
+        "file": "pages/page-28.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-29.html",
+        "type": "navigation",
+        "file": "pages/page-29.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-30.html",
+        "type": "navigation",
+        "file": "pages/page-30.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-31.html",
+        "type": "navigation",
+        "file": "pages/page-31.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-32.html",
+        "type": "navigation",
+        "file": "pages/page-32.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-33.html",
+        "type": "navigation",
+        "file": "pages/page-33.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-34.html",
+        "type": "navigation",
+        "file": "pages/page-34.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-35.html",
+        "type": "navigation",
+        "file": "pages/page-35.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-36.html",
+        "type": "navigation",
+        "file": "pages/page-36.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-37.html",
+        "type": "navigation",
+        "file": "pages/page-37.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-38.html",
+        "type": "navigation",
+        "file": "pages/page-38.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-39.html",
+        "type": "navigation",
+        "file": "pages/page-39.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-40.html",
+        "type": "navigation",
+        "file": "pages/page-40.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-41.html",
+        "type": "navigation",
+        "file": "pages/page-41.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-42.html",
+        "type": "navigation",
+        "file": "pages/page-42.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-43.html",
+        "type": "navigation",
+        "file": "pages/page-43.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-44.html",
+        "type": "navigation",
+        "file": "pages/page-44.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-45.html",
+        "type": "navigation",
+        "file": "pages/page-45.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-46.html",
+        "type": "navigation",
+        "file": "pages/page-46.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-47.html",
+        "type": "navigation",
+        "file": "pages/page-47.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-48.html",
+        "type": "navigation",
+        "file": "pages/page-48.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-49.html",
+        "type": "navigation",
+        "file": "pages/page-49.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-50.html",
+        "type": "navigation",
+        "file": "pages/page-50.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-51.html",
+        "type": "navigation",
+        "file": "pages/page-51.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-52.html",
+        "type": "navigation",
+        "file": "pages/page-52.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-53.html",
+        "type": "navigation",
+        "file": "pages/page-53.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-54.html",
+        "type": "navigation",
+        "file": "pages/page-54.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-55.html",
+        "type": "navigation",
+        "file": "pages/page-55.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-56.html",
+        "type": "navigation",
+        "file": "pages/page-56.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-57.html",
+        "type": "navigation",
+        "file": "pages/page-57.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-58.html",
+        "type": "navigation",
+        "file": "pages/page-58.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-59.html",
+        "type": "navigation",
+        "file": "pages/page-59.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-60.html",
+        "type": "navigation",
+        "file": "pages/page-60.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-61.html",
+        "type": "navigation",
+        "file": "pages/page-61.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-62.html",
+        "type": "navigation",
+        "file": "pages/page-62.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-63.html",
+        "type": "navigation",
+        "file": "pages/page-63.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-64.html",
+        "type": "navigation",
+        "file": "pages/page-64.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-65.html",
+        "type": "navigation",
+        "file": "pages/page-65.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-66.html",
+        "type": "navigation",
+        "file": "pages/page-66.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-67.html",
+        "type": "navigation",
+        "file": "pages/page-67.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-68.html",
+        "type": "navigation",
+        "file": "pages/page-68.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-69.html",
+        "type": "navigation",
+        "file": "pages/page-69.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-70.html",
+        "type": "navigation",
+        "file": "pages/page-70.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-71.html",
+        "type": "navigation",
+        "file": "pages/page-71.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-72.html",
+        "type": "navigation",
+        "file": "pages/page-72.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-73.html",
+        "type": "navigation",
+        "file": "pages/page-73.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-74.html",
+        "type": "navigation",
+        "file": "pages/page-74.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-75.html",
+        "type": "navigation",
+        "file": "pages/page-75.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-76.html",
+        "type": "navigation",
+        "file": "pages/page-76.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-77.html",
+        "type": "navigation",
+        "file": "pages/page-77.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-78.html",
+        "type": "navigation",
+        "file": "pages/page-78.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-79.html",
+        "type": "navigation",
+        "file": "pages/page-79.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-80.html",
+        "type": "navigation",
+        "file": "pages/page-80.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-81.html",
+        "type": "navigation",
+        "file": "pages/page-81.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-82.html",
+        "type": "navigation",
+        "file": "pages/page-82.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-83.html",
+        "type": "navigation",
+        "file": "pages/page-83.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-84.html",
+        "type": "navigation",
+        "file": "pages/page-84.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-85.html",
+        "type": "navigation",
+        "file": "pages/page-85.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-86.html",
+        "type": "navigation",
+        "file": "pages/page-86.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/page-87.html",
+        "type": "navigation",
+        "file": "pages/page-87.html",
+        "lineNumber": 25,
+        "status": "ok",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/missing-page.html",
+        "type": "navigation",
+        "file": "pages/demo-page-0.html",
+        "lineNumber": 45,
+        "status": "broken",
+        "error": "Resource not found",
+        "suggestion": "Check if the file exists and path is correct",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/old-resource.css",
+        "type": "asset",
+        "file": "pages/demo-page-1.html",
+        "lineNumber": 46,
+        "status": "broken",
+        "error": "Resource not found",
+        "suggestion": "Check if the file exists and path is correct",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "https://example-broken-external.com",
+        "type": "external",
+        "file": "pages/demo-page-2.html",
+        "lineNumber": 47,
+        "status": "broken",
+        "error": "Resource not found",
+        "suggestion": "Check if the file exists and path is correct",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      },
+      {
+        "url": "/images/missing-image.jpg",
+        "type": "asset",
+        "file": "pages/demo-page-3.html",
+        "lineNumber": 48,
+        "status": "broken",
+        "error": "Resource not found",
+        "suggestion": "Check if the file exists and path is correct",
+        "timestamp": "2025-07-22T04:19:52.914Z"
+      }
+    ],
+    "startTime": -1450.136708,
+    "endTime": 3549.877292
+  },
+  "report": {
+    "summary": {
+      "totalLinks": 100,
+      "brokenLinks": 12,
+      "successRate": "88.0%",
+      "duration": "5.00s",
+      "timestamp": "2025-07-22T04:19:52.914Z"
+    },
+    "breakdown": {
+      "byType": {
+        "navigation": {
+          "total": 30,
+          "broken": 8
+        },
+        "content": {
+          "total": 20,
+          "broken": 2
+        },
+        "asset": {
+          "total": 25,
+          "broken": 1
+        },
+        "external": {
+          "total": 25,
+          "broken": 1
+        }
+      },
+      "byStatus": {
+        "ok": 88,
+        "broken": 12,
+        "fixed": 3
+      }
+    },
+    "brokenLinks": [
+      {
+        "url": "/missing-page.html",
+        "type": "navigation",
+        "file": "pages/demo-page-1.html",
+        "lineNumber": 45,
+        "error": "File not found",
+        "suggestion": "Check if the file exists in the pages directory",
+        "context": "<a href=\"/missing-page.html\">Missing Link</a>"
+      },
+      {
+        "url": "/old-resource.css",
+        "type": "asset",
+        "file": "pages/demo-page-2.html",
+        "lineNumber": 12,
+        "error": "Resource not found",
+        "suggestion": "Update CSS file reference to correct path",
+        "context": "<link rel=\"stylesheet\" href=\"/old-resource.css\">"
+      },
+      {
+        "url": "https://example-broken-external.com",
+        "type": "external",
+        "file": "pages/demo-page-3.html",
+        "lineNumber": 78,
+        "error": "HTTP 404 Not Found",
+        "suggestion": "Verify external URL is still valid",
+        "context": "<a href=\"https://example-broken-external.com\">External Link</a>"
+      }
+    ],
+    "suggestions": [
+      {
+        "priority": "high",
+        "category": "Critical Navigation",
+        "message": "Fix broken navigation links to ensure proper site navigation"
+      },
+      {
+        "priority": "medium",
+        "category": "External Links",
+        "message": "Review external links and consider implementing link monitoring"
+      },
+      {
+        "priority": "low",
+        "category": "Performance",
+        "message": "Consider implementing automated link checking in CI/CD pipeline"
+      }
+    ],
+    "healthScore": 88
+  },
+  "logs": [
+    {
+      "timestamp": "10:19:49 PM",
+      "level": "info",
+      "message": "Starting Demo Test Suite...",
+      "formatted": "\u001b[90m[10:19:49 PM]\u001b[0m \u001b[34mℹ\u001b[0m Starting Demo Test Suite..."
+    },
+    {
+      "timestamp": "10:19:49 PM",
+      "level": "info",
+      "message": "Demonstrating different log levels...",
+      "formatted": "\u001b[90m[10:19:49 PM]\u001b[0m \u001b[34mℹ\u001b[0m Demonstrating different log levels..."
+    },
+    {
+      "timestamp": "10:19:49 PM",
+      "level": "success",
+      "message": "Successfully connected to test server",
+      "formatted": "\u001b[90m[10:19:49 PM]\u001b[0m \u001b[32m✓\u001b[0m Successfully connected to test server"
+    },
+    {
+      "timestamp": "10:19:50 PM",
+      "level": "warning",
+      "message": "Non-critical warning detected",
+      "formatted": "\u001b[90m[10:19:50 PM]\u001b[0m \u001b[33m⚠\u001b[0m Non-critical warning detected"
+    },
+    {
+      "timestamp": "10:19:50 PM",
+      "level": "debug",
+      "message": "Debug information (only visible in verbose mode)",
+      "formatted": "\u001b[90m[10:19:50 PM]\u001b[0m \u001b[90m🔍\u001b[0m Debug information (only visible in verbose mode)"
+    },
+    {
+      "timestamp": "10:19:50 PM",
+      "level": "error",
+      "message": "Sample error message for demonstration",
+      "formatted": "\u001b[90m[10:19:50 PM]\u001b[0m \u001b[31m✗\u001b[0m Sample error message for demonstration"
+    },
+    {
+      "timestamp": "10:19:51 PM",
+      "level": "info",
+      "message": "Demonstrating progress tracking...",
+      "formatted": "\u001b[90m[10:19:51 PM]\u001b[0m \u001b[34mℹ\u001b[0m Demonstrating progress tracking..."
+    },
+    {
+      "timestamp": "10:19:51 PM",
+      "level": "info",
+      "message": "Processing 50 items...",
+      "formatted": "\u001b[90m[10:19:51 PM]\u001b[0m \u001b[34mℹ\u001b[0m Processing 50 items..."
+    },
+    {
+      "timestamp": "10:19:52 PM",
+      "level": "success",
+      "message": "Completed processing 50 items",
+      "formatted": "\u001b[90m[10:19:52 PM]\u001b[0m \u001b[32m✓\u001b[0m Completed processing 50 items"
+    }
+  ]
+}
