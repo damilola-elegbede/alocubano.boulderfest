@@ -1,6 +1,33 @@
 // Gallery Detail Module - Handles individual gallery page functionality
-// Cache Buster: v2025-07-20-DEBUG-ENHANCED
+// Cache Buster: v2025-07-22-PERFORMANCE-OPTIMIZED
 (function() {
+
+    // Import performance optimization modules
+    let prefetchManager = null;
+    let progressiveLoader = null;
+    let cacheWarmer = null;
+    
+    // Initialize performance modules when available
+    function initPerformanceModules() {
+        try {
+            if (typeof PrefetchManager !== 'undefined') {
+                prefetchManager = new PrefetchManager();
+                console.log('[Gallery] Prefetch manager initialized');
+            }
+            
+            if (typeof ProgressiveImageLoader !== 'undefined') {
+                progressiveLoader = new ProgressiveImageLoader();
+                console.log('[Gallery] Progressive loader initialized');
+            }
+            
+            if (typeof CacheWarmer !== 'undefined') {
+                cacheWarmer = new CacheWarmer();
+                console.log('[Gallery] Cache warmer initialized');
+            }
+        } catch (error) {
+            console.warn('[Gallery] Performance modules failed to initialize:', error);
+        }
+    }
 
     // Configuration with enhanced performance settings
     const CONFIG = {
@@ -579,6 +606,15 @@
             content: document.getElementById('gallery-detail-content'),
             static: document.getElementById('gallery-detail-static')
         });
+        
+        // Initialize performance optimization modules
+        initPerformanceModules();
+        
+        // Start cache warming if available
+        if (cacheWarmer) {
+            cacheWarmer.autoWarm();
+        }
+        
         loadGalleryDetailData();
         initLightbox();
 
@@ -960,12 +996,21 @@
                 const globalIndex = displayOrderItem ? displayOrderItem.displayIndex : state.displayOrder.length - 1;
 
                 return `
-          <div class="gallery-item lazy-item" data-index="${globalIndex}" data-category="${categoryName}" data-loaded="false">
+          <div class="gallery-item lazy-item gallery-image-container" data-index="${globalIndex}" data-category="${categoryName}" data-loaded="false">
             <div class="gallery-item-media">
               <div class="lazy-placeholder">
                 <div class="loading-spinner">📸</div>
               </div>
-              <img data-src="${item.thumbnailUrl}" alt="${title}" class="lazy-image" style="display: none;">
+              <img data-src="${item.thumbnailUrl}" 
+                   data-thumbnail="${item.thumbnailUrl}" 
+                   data-dominant-color="#f0f0f0"
+                   data-width="400" 
+                   data-height="300"
+                   data-progressive="true"
+                   data-image-id="${item.id || globalIndex}"
+                   alt="${title}" 
+                   class="lazy-image gallery-image" 
+                   style="display: none;">
             </div>
           </div>
         `;
@@ -1149,6 +1194,15 @@
                     console.log(`📌 Added failed image to state: ${info.src}`);
                     // Save state immediately to persist failed images
                     saveState();
+                }
+            },
+            onLoad: (element) => {
+                // Integrate with progressive loading when image starts loading
+                if (progressiveLoader) {
+                    const imgElement = element.querySelector('img[data-progressive="true"]');
+                    if (imgElement) {
+                        progressiveLoader.observeImage(imgElement);
+                    }
                 }
             }
         });
