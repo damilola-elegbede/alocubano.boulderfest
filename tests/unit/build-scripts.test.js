@@ -99,10 +99,22 @@ describe('Build Scripts and ES Module Compatibility', () => {
                 // Should complete successfully
                 expect(code).toBe(0);
                 
-                // Should generate expected output
-                expect(stdout).toMatch(/Fetching.*gallery data/);
-                expect(stdout).toMatch(/Fetching featured photos/);
-                expect(stdout).toMatch(/saved to/);
+                // Should generate expected output (either real data or placeholders)
+                const hasCredentials = stdout.includes('Fetching') && stdout.includes('gallery data');
+                const hasPlaceholders = stdout.includes('placeholder') || stdout.includes('Missing Google service account credentials');
+                
+                expect(hasCredentials || hasPlaceholders).toBe(true);
+                
+                if (hasCredentials) {
+                    // Normal operation with credentials
+                    expect(stdout).toMatch(/Fetching.*gallery data/);
+                    expect(stdout).toMatch(/Fetching featured photos/);
+                    expect(stdout).toMatch(/saved to/);
+                } else {
+                    // CI/placeholder mode without credentials
+                    expect(stdout).toMatch(/placeholder|Missing.*credentials/i);
+                    expect(stdout).toMatch(/Created placeholder|Placeholder.*created/i);
+                }
                 
                 done();
             });
