@@ -1,5 +1,5 @@
 module.exports = {
-    testEnvironment: 'node',
+    testEnvironment: 'jsdom',
     testMatch: [
         '**/tests/unit/**/*.test.js'
     ],
@@ -21,7 +21,7 @@ module.exports = {
         '!js/**/*.test.js',
         '!**/node_modules/**'
     ],
-    // Coverage thresholds temporarily set to 0% for development
+    // Coverage thresholds kept at 0% until tests provide real coverage
     coverageThreshold: {
         global: {
             branches: 0,
