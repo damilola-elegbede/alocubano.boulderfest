@@ -18,7 +18,8 @@
 alocubano.boulderfest/
 ├── index.html                    # Auto-redirect landing page with loading animation
 ├── server.py                     # Python development server with MIME types
-├── start.sh                      # Quick launcher script
+├── scripts/
+│   └── start.sh                 # Quick launcher script
 │
 ├── css/                          # Design System
 │   ├── base.css                  # Core design tokens and CSS variables
@@ -142,7 +143,7 @@ As of the latest design iteration, **ALL hero titles have been removed** from th
 ### Local Development
 ```bash
 # Quick start
-./start.sh
+./scripts/start.sh
 
 # Alternative method
 python3 server.py

@@ -4,7 +4,7 @@
 
 1. **Start the server:**
    ```bash
-   ./start.sh
+   ./scripts/start.sh
    # or
    python3 server.py
    ```
@@ -104,7 +104,8 @@ Each design includes 6 fully functional pages:
 alocubano.boulderfest/
 ├── index.html (Landing page)
 ├── server.py (Python web server)
-├── start.sh (Quick start script)
+├── scripts/
+│   └── start.sh (Quick start script)
 ├── css/
 │   ├── base.css (Design system variables)
 │   ├── components.css (Reusable components)

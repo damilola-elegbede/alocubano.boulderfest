@@ -12,9 +12,9 @@ The official website for **A Lo Cubano Boulder Fest**, Boulder's premier Cuban s
 
 ### Start the server
 ```bash
-./start.sh
+./scripts/start.sh
 # or
-python3 local-api-server.py
+python3 server.py
 ```
 
 Then open: **http://localhost:8000**
@@ -40,7 +40,8 @@ The website features a **typographic-forward design** that treats text as art:
 alocubano.boulderfest/
 ├── index.html (Main home page)
 ├── server.py (Python development server)
-├── start.sh (Quick launcher)
+├── scripts/
+│   └── start.sh (Quick launcher)
 ├── css/
 │   ├── base.css (Design system)
 │   ├── components.css (Reusable components)

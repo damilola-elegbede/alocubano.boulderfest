@@ -3,6 +3,7 @@ module.exports = {
     testMatch: [
         '**/tests/unit/**/*.test.js'
     ],
+    rootDir: '..',
     setupFilesAfterEnv: [
         './tests/unit-setup.cjs'
     ],
