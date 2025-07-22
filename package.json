@@ -4,6 +4,7 @@
   "description": "A Lo Cubano Boulder Fest - Minimalist Dance Festival Website",
   "type": "module",
   "private": true,
+  "packageManager": "npm@8.0.0",
   "scripts": {
     "prebuild": "node ./scripts/generate-gallery-cache.js && node ./scripts/generate-featured-photos.js",
     "build": "npm run verify-structure && echo 'Build process completed'",
