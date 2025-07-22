@@ -141,8 +141,57 @@ if (typeof FormValidator === 'undefined') {
     }
 }
 
+// Service Worker Registration
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/js/sw.js', {
+            scope: '/pages/gallery/',
+            updateViaCache: 'none'
+        })
+        .then(registration => {
+            console.log('[SW] Service Worker registered:', registration.scope);
+            
+            // Handle updates
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // New version available, prompt user to refresh
+                        console.log('[SW] New version available');
+                        if (confirm('A new version is available. Refresh to update?')) {
+                            window.location.reload();
+                        }
+                    }
+                });
+            });
+        })
+        .catch(error => {
+            console.warn('[SW] Service Worker registration failed:', error);
+        });
+    }
+}
+
+// Performance Optimization Initialization
+let performanceMonitor = null;
+
+function initPerformanceOptimizations() {
+    // Initialize performance monitoring
+    if (typeof PerformanceMonitor !== 'undefined') {
+        performanceMonitor = new PerformanceMonitor();
+        window.performanceMonitor = performanceMonitor;
+    }
+    
+    // Register Service Worker for gallery pages
+    if (window.location.pathname.includes('/gallery') || window.location.pathname === '/') {
+        registerServiceWorker();
+    }
+}
+
 // Initialize based on page
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize performance optimizations early
+    initPerformanceOptimizations();
+    
     // Landing page
     if (document.querySelector('.design-selector') && typeof DesignSelector !== 'undefined') {
         new DesignSelector();
