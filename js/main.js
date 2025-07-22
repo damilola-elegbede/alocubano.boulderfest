@@ -145,7 +145,7 @@ if (typeof FormValidator === 'undefined') {
 function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/js/sw.js', {
-            scope: '/pages/gallery/',
+            scope: '/',
             updateViaCache: 'none'
         })
         .then(registration => {
