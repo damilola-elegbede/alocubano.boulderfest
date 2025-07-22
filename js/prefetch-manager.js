@@ -244,21 +244,22 @@ class PrefetchManager {
         const currentPath = window.location.pathname;
         const urls = [];
         
-        // Gallery navigation patterns
-        if (currentPath.includes('/gallery')) {
-            // Predict year transitions
-            if (currentPath.includes('2025')) {
-                urls.push('/pages/gallery-2024.html', '/api/gallery/2024');
-            } else if (currentPath.includes('2024')) {
-                urls.push('/pages/gallery-2023.html', '/api/gallery/2023');
-            }
-            
-            // Predict related pages
-            urls.push('/pages/artists.html', '/pages/schedule.html');
+        // Only prefetch if on fast connection and not data saver mode
+        if (this.connectionSpeed.saveData || this.prefetchLimits.images === 0) {
+            return [];
         }
         
-        // Add user behavior predictions
-        urls.push(...this.getUserPredictedUrls());
+        // Gallery navigation patterns (limit to existing pages)
+        if (currentPath.includes('/gallery')) {
+            // Only predict URLs that we know exist
+            if (currentPath.includes('2025')) {
+                urls.push('/pages/artists.html', '/pages/schedule.html');
+            }
+        }
+        
+        // Add user behavior predictions (but validate first)
+        const userPredicted = this.getUserPredictedUrls();
+        urls.push(...userPredicted.slice(0, 2)); // Limit to 2 predictions
         
         return urls.filter(url => url && !this.prefetchQueue.has(url));
     }
@@ -283,15 +284,19 @@ class PrefetchManager {
         this.prefetchQueue.add(url);
         
         try {
-            await fetch(url, {
+            const response = await fetch(url, {
                 method: 'GET',
                 mode: 'cors',
                 credentials: 'omit'
             });
             
-            console.log('[Prefetch] Successfully prefetched URL:', url);
+            if (response.ok) {
+                console.log('[Prefetch] Successfully prefetched URL:', url);
+            } else {
+                console.log('[Prefetch] URL not accessible:', url, '- status:', response.status);
+            }
         } catch (error) {
-            console.warn('[Prefetch] Failed to prefetch URL:', url, error);
+            console.log('[Prefetch] URL not available for prefetch:', url, '- this is normal for non-existent pages');
         } finally {
             this.prefetchQueue.delete(url);
         }

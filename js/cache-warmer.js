@@ -250,7 +250,7 @@ class CacheWarmer {
             const galleryData = await this.getGalleryData(galleryId);
             
             if (!galleryData || !galleryData.photos) {
-                console.warn('[CacheWarmer] No gallery data found for:', galleryId);
+                console.log('[CacheWarmer] No API data found for gallery:', galleryId, '- this is expected for static galleries');
                 return;
             }
             
@@ -275,9 +275,11 @@ class CacheWarmer {
             const response = await fetch(`/api/gallery/${galleryId}`);
             if (response.ok) {
                 return await response.json();
+            } else {
+                console.log('[CacheWarmer] API endpoint not available for gallery:', galleryId, '- status:', response.status);
             }
         } catch (error) {
-            console.warn('[CacheWarmer] Failed to get gallery data:', error);
+            console.log('[CacheWarmer] Gallery API not accessible:', galleryId, '- using static data fallback');
         }
         return null;
     }
@@ -369,10 +371,13 @@ class CacheWarmer {
         if (currentPath === '/' || currentPath === '/index.html') {
             this.warmOnHomepage();
         } else if (currentPath.includes('/gallery')) {
-            // Extract gallery ID and warm that specific gallery
+            // Extract gallery ID and warm that specific gallery (but don't be aggressive)
             const galleryMatch = currentPath.match(/gallery[/-](\d{4})/);
             if (galleryMatch) {
-                this.warmSpecificGallery(galleryMatch[1]);
+                // Use a timeout to avoid immediate API calls on page load
+                setTimeout(() => {
+                    this.warmSpecificGallery(galleryMatch[1]);
+                }, 2000);
             }
         }
     }
