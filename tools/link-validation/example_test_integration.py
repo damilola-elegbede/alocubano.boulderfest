@@ -6,8 +6,15 @@ This demonstrates how the link_validator module would be integrated
 into the main test framework for the A Lo Cubano Boulder Fest website.
 """
 
-from link_validator import LinkValidator, LinkValidationResult
+import sys
 import os
+
+# Add project root to Python path for imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(os.path.dirname(current_dir))
+sys.path.insert(0, project_root)
+
+from tests.integration.link_validation.link_validator import LinkValidator, LinkValidationResult
 from typing import Dict, List
 
 class TestFramework:

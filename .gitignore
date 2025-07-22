@@ -28,6 +28,14 @@ test-reports/
 jest-results.json
 lighthouse-report.html
 
+# Generated reports and analysis
+reports/
+scripts/debug/logs/
+link_analysis*.csv
+link_analysis*.json
+link_analysis*.txt
+link_validation_report*.txt
+
 # Build outputs
 dist/
 build/

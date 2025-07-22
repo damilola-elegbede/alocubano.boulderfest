@@ -47,7 +47,7 @@ No external dependencies required - uses only Python standard library.
 
 ```bash
 # The validator is ready to use
-python3 link_validator.py
+python3 tests/integration/link-validation/link_validator.py
 ```
 
 ## Usage
@@ -55,7 +55,7 @@ python3 link_validator.py
 ### Basic Link Validation
 
 ```python
-from link_validator import LinkValidator
+from tests.integration.link_validation.link_validator import LinkValidator
 
 # Initialize validator
 validator = LinkValidator('/path/to/project')
@@ -82,7 +82,7 @@ print(f"Validation rate: {report['summary']['validation_rate']}%")
 ### Test Framework Integration
 
 ```python
-from link_validator import validate_single_link
+from tests.integration.link_validation.link_validator import validate_single_link
 
 def test_critical_pages():
     """Test that all critical pages are accessible"""
@@ -164,13 +164,13 @@ get_site_link_validation_report(project_root: str)
 
 ```bash
 # Run full site validation
-python3 link_validator.py /path/to/project
+python3 tests/integration/link-validation/link_validator.py /path/to/project
 
 # Test specific scenarios
-python3 test_link_validator.py
+python3 tests/integration/link-validation/test_link_validator.py
 
 # Example integration
-python3 example_test_integration.py
+python3 tools/link-validation/example_test_integration.py
 ```
 
 ## Output Examples
@@ -229,13 +229,13 @@ The validator understands all server.py routing patterns:
 ### Run All Tests
 ```bash
 # Validate current site
-python3 link_validator.py
+python3 tests/integration/link-validation/link_validator.py
 
 # Test validation logic
-python3 test_link_validator.py
+python3 tests/integration/link-validation/test_link_validator.py
 
 # Integration example
-python3 example_test_integration.py
+python3 tools/link-validation/example_test_integration.py
 ```
 
 ### Test Results

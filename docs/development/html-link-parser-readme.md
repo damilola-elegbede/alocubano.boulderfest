@@ -46,27 +46,30 @@ pip install requests
 
 ```bash
 # Quick analysis (internal links only)
-python3 link_analyzer.py --quick
+python3 tools/link-validation/link_analyzer.py --quick
 
 # Full analysis including external link validation
-python3 link_analyzer.py --full
+python3 tools/link-validation/link_analyzer.py --full
 
 # Analyze a single HTML file
-python3 link_analyzer.py --file pages/about.html
+python3 tools/link-validation/link_analyzer.py --file pages/about.html
 
 # Show only navigation links
-python3 link_analyzer.py --category nav
+python3 tools/link-validation/link_analyzer.py --category nav
 
 # Export detailed data to CSV
-python3 link_analyzer.py --export-csv
+python3 tools/link-validation/link_analyzer.py --export-csv
 
 # Show help
-python3 link_analyzer.py --help
+python3 tools/link-validation/link_analyzer.py --help
 ```
 
 ### Python API
 
 ```python
+# Run from project root
+import sys
+sys.path.append('tools/link-validation')
 from html_link_parser import HTMLLinkExtractor
 from link_validation_utils import LinkAnalyzer
 
@@ -199,7 +202,7 @@ External domains:
 
 ### Category Display
 ```bash
-python3 link_analyzer.py --category social
+python3 tools/link-validation/link_analyzer.py --category social
 ```
 ```
 SOCIAL LINKS (16 found)

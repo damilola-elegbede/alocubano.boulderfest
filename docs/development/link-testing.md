@@ -38,10 +38,10 @@ This test framework provides comprehensive link validation for the A Lo Cubano B
 ### Run All Tests
 ```bash
 # Simple runner
-python3 run_link_tests.py
+python3 tools/link-validation/run_link_tests.py
 
 # Direct execution
-python3 test_link_validation.py
+python3 tests/integration/link-validation/test_link_validation.py
 ```
 
 ### Test Output
@@ -57,9 +57,9 @@ python3 test_link_validation.py
 
 ```
 /
-├── test_link_validation.py      # Main test framework
-├── run_link_tests.py            # Simple test runner
-├── link_validation_config.json  # Configuration settings
+├── tests/integration/link-validation/test_link_validation.py      # Main test framework
+├── tools/link-validation/run_link_tests.py                         # Simple test runner
+├── tools/link-validation/link_validation_config.json               # Configuration settings
 ├── LINK_TESTING.md              # This documentation
 ├── link_validation_report.txt   # Generated test report
 └── link_validation_results.json # JSON results (optional)
@@ -109,7 +109,7 @@ The framework can be customized through `link_validation_config.json`:
 Add to your pre-commit hooks:
 ```bash
 #!/bin/bash
-python3 run_link_tests.py
+python3 tools/link-validation/run_link_tests.py
 if [ $? -ne 0 ]; then
   echo "❌ Link validation failed. Please fix broken links before committing."
   exit 1
@@ -121,14 +121,14 @@ fi
 # GitHub Actions example
 - name: Validate Links
   run: |
-    python3 test_link_validation.py
+    python3 tests/integration/link-validation/test_link_validation.py
 ```
 
 ### Development Server Testing
 The tests understand your `server.py` routing, so they work seamlessly with:
 ```bash
 python3 server.py  # Start development server
-python3 run_link_tests.py  # Test all links
+python3 tools/link-validation/run_link_tests.py  # Test all links
 ```
 
 ## Troubleshooting

@@ -11,14 +11,15 @@ def main():
     """Run link validation tests with proper output handling"""
     print("🎵 A Lo Cubano Boulder Fest - Running Link Validation Tests...")
     
-    # Change to project directory
-    project_dir = os.path.dirname(os.path.abspath(__file__))
+    # Change to project root directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_dir = os.path.dirname(os.path.dirname(current_dir))  # Go up two levels from tools/link-validation/
     os.chdir(project_dir)
     
     try:
         # Run the test framework
         result = subprocess.run([
-            sys.executable, "test_link_validation.py"
+            sys.executable, "tests/integration/link-validation/test_link_validation.py"
         ], capture_output=False, text=True)
         
         return result.returncode
