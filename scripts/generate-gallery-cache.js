@@ -98,8 +98,33 @@ async function fetchAllGalleryDataFromGoogle(year, yearFolderId) {
 // --- Script Execution ---
 async function main() {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
-    console.error('Missing Google service account credentials. Please check .env.local file.');
-    process.exit(1);
+    console.log('⚠️  Missing Google service account credentials. Creating placeholder files for CI/development.');
+    
+    // Create output directory if it doesn't exist
+    if (!fs.existsSync(OUTPUT_DIR)) {
+      fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+    }
+    
+    // Create placeholder files for each configured year
+    for (const [year] of Object.entries(GALLERY_CONFIG)) {
+      const outputPath = path.join(OUTPUT_DIR, `${year}.json`);
+      const placeholderData = {
+        year,
+        items: [],
+        totalCount: 0,
+        categories: { workshops: 0, socials: 0, other: 0 },
+        hasMore: false,
+        cacheTimestamp: new Date().toISOString(),
+        isPlaceholder: true,
+        message: 'Placeholder data - Google Drive credentials not available'
+      };
+      
+      fs.writeFileSync(outputPath, JSON.stringify(placeholderData, null, 2));
+      console.log(`📄 Created placeholder: ${outputPath}`);
+    }
+    
+    console.log('✅ Placeholder gallery cache files created successfully');
+    return;
   }
 
   if (!fs.existsSync(OUTPUT_DIR)) {
