@@ -8,6 +8,9 @@
     },
     "api/debug.js": {
       "maxDuration": 5
+    },
+    "api/cache-warm.js": {
+      "maxDuration": 15
     }
   },
   "images": {
@@ -67,6 +70,13 @@
       "source": "/api/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "s-maxage=3600, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/js/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
       ]
     }
   ]
