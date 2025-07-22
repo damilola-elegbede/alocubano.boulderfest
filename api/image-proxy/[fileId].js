@@ -49,12 +49,23 @@ export default async function handler(req, res) {
 
   const missingVars = Object.keys(requiredEnvVars).filter(key => !requiredEnvVars[key]);
   if (missingVars.length > 0) {
-    console.warn('Missing environment variables for Google Drive API:', missingVars);
-    console.log('Serving placeholder image for local development');
+    // Only serve placeholder in development environment
+    if (process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'development') {
+      console.warn('Missing environment variables for Google Drive API:', missingVars);
+      console.log('Serving placeholder image for local development');
+      
+      // For local development, serve a placeholder image instead of failing
+      // This allows the gallery to work without Google Drive credentials
+      return servePlaceholderImage(res, fileId);
+    }
     
-    // For local development, serve a placeholder image instead of failing
-    // This allows the gallery to work without Google Drive credentials
-    return servePlaceholderImage(res, fileId);
+    // In production or other environments, fail fast to avoid masking configuration issues
+    console.error('Missing environment variables for Google Drive API:', missingVars);
+    return res.status(500).json({ 
+      error: 'Server Configuration Error',
+      message: 'Required Google Drive API environment variables are not configured',
+      missingVariables: missingVars
+    });
   }
 
   try {
