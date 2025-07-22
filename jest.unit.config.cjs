@@ -6,7 +6,7 @@ module.exports = {
     setupFilesAfterEnv: [
         './tests/unit-setup.cjs'
     ],
-    transform: {},
+    transform: { '^.+\\.js$': 'babel-jest' },
     collectCoverage: true,
     coverageDirectory: 'coverage/unit',
     coverageReporters: ['text', 'lcov', 'html', 'json-summary'],

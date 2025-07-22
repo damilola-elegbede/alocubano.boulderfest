@@ -38,6 +38,9 @@
   },
   "devDependencies": {
     "@axe-core/puppeteer": "^4.8.0",
+    "@babel/core": "^7.28.0",
+    "@babel/preset-env": "^7.28.0",
+    "babel-jest": "^30.0.5",
     "eslint": "^9.15.0",
     "express": "^5.1.0",
     "html-validator": "^6.0.1",
