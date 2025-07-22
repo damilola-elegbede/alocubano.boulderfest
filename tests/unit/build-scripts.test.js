@@ -204,10 +204,10 @@ describe('Build Scripts and ES Module Compatibility', () => {
             expect(homeRewrite).toBeDefined();
             expect(homeRewrite.destination).toBe('/pages/home.html');
             
-            // Should have pattern-based page rewrite that handles /about
-            const patternRewrite = vercelConfig.rewrites.find(r => r.source.includes('(?!api/|home)'));
-            expect(patternRewrite).toBeDefined();
-            expect(patternRewrite.destination).toBe('/pages/$1.html');
+            // Should have specific page rewrites for all pages
+            const aboutRewrite = vercelConfig.rewrites.find(r => r.source === '/about');
+            expect(aboutRewrite).toBeDefined();
+            expect(aboutRewrite.destination).toBe('/pages/about.html');
             
             // Should have images config
             expect(vercelConfig).toHaveProperty('images');

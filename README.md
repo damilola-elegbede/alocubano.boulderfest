@@ -8,16 +8,20 @@ The official website for **A Lo Cubano Boulder Fest**, Boulder's premier Cuban s
 
 ### Prerequisites
 1. Copy `.env.example` to `.env.local` and add your Google Drive credentials
-2. Install Python dependencies: `pip3 install -r requirements.txt`
+2. Install Node.js dependencies: `npm install`
 
 ### Start the server
 ```bash
-./scripts/start.sh
-# or
-python3 server.py
+# Full development server with API support
+npm start
+
+# Alternative commands
+npm run start-vercel-dev    # Same as npm start
+./scripts/start.sh          # Legacy script wrapper
+npm run serve:simple        # Simple HTTP server (no API functions)
 ```
 
-Then open: **http://localhost:8000**
+Then open: **http://localhost:3000**
 
 ## 📅 Festival Information
 
@@ -39,7 +43,7 @@ The website features a **typographic-forward design** that treats text as art:
 ```
 alocubano.boulderfest/
 ├── index.html (Main home page)
-├── server.py (Python development server)
+├── vercel.json (Deployment configuration)
 ├── scripts/
 │   └── start.sh (Quick launcher)
 ├── css/
@@ -83,7 +87,7 @@ alocubano.boulderfest/
 - ✅ Circular favicon branding
 - ✅ Custom Instagram icon
 - ✅ Smooth animations and transitions
-- ✅ Fast Python development server
+- ✅ Fast Node.js development server
 - ✅ Google Drive API integration for dynamic gallery
 - ✅ Lightbox viewer for photos and videos
 - ✅ Serverless functions on Vercel
@@ -105,14 +109,26 @@ alocubano.boulderfest/
 ## 🛠️ Development
 
 ### Requirements
-- Python 3.x
+- Node.js 18+ and npm
 - Modern web browser (Chrome, Firefox, Safari, Edge)
 
 ### Running Locally
 1. Clone the repository
 2. Navigate to project directory
-3. Run `./start.sh` or `python3 server.py`
-4. Open http://localhost:8000 in your browser
+3. Run `npm install` to install dependencies
+4. Run `npm start` (recommended) or `./scripts/start.sh`
+5. Open http://localhost:3000 in your browser
+
+### Available Scripts
+- `npm start` - Start Vercel development server with full API support (port 3000)
+- `npm run start-vercel-dev` - Same as npm start
+- `npm run serve:simple` - Simple HTTP server without API functions (port 8000)
+- `npm test` - Run unit tests (197 tests)
+- `npm run test:all` - Run all tests including link validation
+- `npm run test:coverage` - Run tests with coverage report
+- `npm run lint` - Run ESLint and HTMLHint
+- `npm run build` - Build for production
+- `npm run prebuild` - Generate cache files for gallery
 
 ## 📱 Browser Support
 

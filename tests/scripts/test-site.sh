@@ -15,7 +15,7 @@ fi
 
 # Start server in background
 echo "Starting test server on port 8000..."
-python3 -m http.server 8000 > /dev/null 2>&1 &
+npx http-server -p 8000 > /dev/null 2>&1 &
 SERVER_PID=$!
 
 # Wait for server to start

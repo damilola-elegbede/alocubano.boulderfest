@@ -17,9 +17,9 @@ if ! command -v npm &> /dev/null; then
     exit 1
 fi
 
-# Check if Python is installed
-if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}✗ Python 3 is required but not installed${NC}"
+# Check if Node.js is installed
+if ! command -v node &> /dev/null; then
+    echo -e "${RED}✗ Node.js is required but not installed${NC}"
     exit 1
 fi
 
@@ -31,7 +31,7 @@ fi
 
 # Start test server
 echo "Starting test server..."
-python3 -m http.server 8000 > /dev/null 2>&1 &
+npx http-server -p 8000 > /dev/null 2>&1 &
 SERVER_PID=$!
 sleep 3
 

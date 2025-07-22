@@ -12,7 +12,7 @@ This test framework provides comprehensive link validation for the A Lo Cubano B
 - Handles complex link structures and query parameters
 
 ✅ **Smart Link Classification**
-- Internal pages (routed through server.py)
+- Internal pages (routed through Vercel)
 - Internal files (CSS, JS, JSON)
 - Internal images (PNG, JPG, SVG, etc.)
 - API endpoints (/api/*)
@@ -22,7 +22,7 @@ This test framework provides comprehensive link validation for the A Lo Cubano B
 - JavaScript links
 
 ✅ **Server Integration**
-- Understands server.py routing patterns
+- Understands Vercel routing patterns
 - Validates clean URLs (/home → /pages/home.html)
 - Handles special routes like /gallery-2025
 - API endpoint validation
@@ -87,7 +87,7 @@ The framework can be customized through `link_validation_config.json`:
 ### Internal Pages
 - `/home` → `/pages/home.html`
 - `/about` → `/pages/about.html`
-- Clean URLs handled by server.py routing
+- Clean URLs handled by Vercel routing
 
 ### Internal Files
 - CSS: `/css/base.css`, `/css/typography.css`
@@ -132,9 +132,9 @@ fi
 ```
 
 ### Development Server Testing
-The tests understand your `server.py` routing, so they work seamlessly with:
+The tests understand your Vercel routing, so they work seamlessly with:
 ```bash
-python3 server.py  # Start development server
+npm start  # Start development server
 python3 tools/link-validation/run_link_tests.py  # Test all links
 ```
 
@@ -144,7 +144,7 @@ python3 tools/link-validation/run_link_tests.py  # Test all links
 
 **File Not Found Errors**
 - Check if the file exists in the expected location
-- Verify server.py routing for page links
+- Verify Vercel routing for page links
 - Ensure static files are in correct directories
 
 **Query Parameter Issues**

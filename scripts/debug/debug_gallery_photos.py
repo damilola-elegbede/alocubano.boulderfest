@@ -42,9 +42,9 @@ def test_server_endpoints():
     import urllib.error
     
     endpoints = [
-        "http://localhost:8000/gallery-data/2025.json",
-        "http://localhost:8000/api/gallery?year=2025&limit=5",
-        "http://localhost:8000/pages/gallery-2025.html"
+        "http://localhost:3000/gallery-data/2025.json",
+        "http://localhost:3000/api/gallery?year=2025&limit=5",
+        "http://localhost:3000/pages/gallery-2025.html"
     ]
     
     print("\nTesting server endpoints...")

@@ -17,10 +17,8 @@
 ```
 alocubano.boulderfest/
 ├── index.html                    # Landing page with redirect to /home
-├── server.py                     # Python development server with clean URL routing
-├── vercel.json                   # Deployment configuration
+├── vercel.json                   # Deployment configuration with clean URL routing
 ├── package.json                  # Node.js dependencies and scripts
-├── requirements.txt              # Python dependencies
 ├── README.md                     # Project documentation
 ├── CLAUDE.md                     # This file - AI assistant context
 ├── LICENSE                       # MIT License
@@ -178,8 +176,6 @@ alocubano.boulderfest/
     ├── node_modules/             # NPM dependencies
     ├── coverage/                 # Test coverage reports
     ├── .tmp/                     # Temporary files
-    ├── venv/                     # Python virtual environment
-    ├── __pycache__/              # Python cache
     ├── link_analysis.csv         # Link analysis reports
     ├── link_validation_report.txt # Validation results
     └── performance-audit.html    # Lighthouse reports
@@ -228,7 +224,7 @@ alocubano.boulderfest/
 - **Configuration centralized**: All config files are in `/config/` directory  
 - **Comprehensive testing**: 197+ unit tests with Jest, link validation, performance monitoring
 - **CI/CD ready**: GitHub Actions workflow with pre-commit and pre-push hooks
-- **Clean root directory**: Only essential files at root level (package.json, server.py, etc.)
+- **Clean root directory**: Only essential files at root level (package.json, vercel.json, etc.)
 - **Organized structure**: Tests in `/tests/`, tools in `/tools/`, docs in `/docs/`
 
 ### CSS Architecture
@@ -254,12 +250,13 @@ alocubano.boulderfest/
 
 ### Local Development
 ```bash
-# Quick start
-./scripts/start.sh
-# or
-python3 server.py
-# or
-npm run serve
+# Quick start (Vercel development server with full API support)
+npm start
+
+# Alternative commands
+npm run start-vercel-dev    # Same as npm start
+./scripts/start.sh          # Legacy script wrapper
+npm run serve:simple        # Simple HTTP server (no API functions)
 ```
 
 ### Testing
@@ -370,7 +367,7 @@ A comprehensive cleanup was completed to improve project structure:
 - **Performance**: Use performance monitoring and optimization tools
 
 ### Development Workflow
-1. **Start development**: `./scripts/start.sh` or `npm run serve`
+1. **Start development**: `npm start` (Vercel dev server with full API support)
 2. **Make changes**: Follow the file structure and conventions
 3. **Test changes**: `npm test` for unit tests, `npm run test:links` for links
 4. **Lint code**: `npm run lint` (also runs automatically on commit)
