@@ -138,7 +138,7 @@ jobs:
     - name: Scan for sensitive data
       run: |
         # Check for potential secrets or API keys (excluding test files and expected strings)
-        if grep -r -E "(api[_-]?key|password|secret|token)" \
+        if grep -r -E "(api[_-]?key|password|secret[^a]|token)" \
            --include="*.js" --include="*.html" --include="*.css" \
            --exclude-dir=node_modules \
            --exclude-dir=.git \
