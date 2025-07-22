@@ -330,10 +330,10 @@ class PrefetchManager {
             console.warn('[Prefetch] Failed to get popular images from API');
         }
         
-        // Fallback to common gallery images
+        // Fallback to actual available images only
         return [
-            '/api/gallery/2025/thumbnails?limit=5',
-            '/images/hero-default.jpg'
+            '/images/hero-default.jpg',
+            '/images/logo.png'
         ];
     }
     

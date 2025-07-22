@@ -197,6 +197,13 @@ class GalleryServiceWorker {
     }
     
     async handleStaticAssetRequest(request) {
+        // Skip caching for chrome extensions and other unsupported schemes
+        const url = new URL(request.url);
+        if (url.protocol === 'chrome-extension:' || url.protocol === 'moz-extension:' || url.protocol === 'safari-extension:') {
+            console.log('[SW] Skipping unsupported scheme:', url.protocol);
+            return fetch(request);
+        }
+        
         const cache = await caches.open(this.STATIC_CACHE);
         const cachedResponse = await cache.match(request);
         

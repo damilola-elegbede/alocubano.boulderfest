@@ -223,10 +223,14 @@ class CacheWarmer {
     
     async getRecentGalleryThumbnails() {
         try {
-            const response = await fetch('/api/gallery/2025?limit=10');
+            // Use the actual gallery data endpoint that exists
+            const response = await fetch('/gallery-data/2025.json');
             if (response.ok) {
                 const data = await response.json();
-                return data.photos ? data.photos.map(photo => photo.thumbnailUrl || photo.url) : [];
+                if (data.categories && data.categories.socials) {
+                    // Get first few social images as thumbnails
+                    return data.categories.socials.slice(0, 5).map(photo => photo.thumbnailUrl);
+                }
             }
         } catch (error) {
             console.warn('[CacheWarmer] Failed to get recent gallery thumbnails:', error);
@@ -272,14 +276,22 @@ class CacheWarmer {
     
     async getGalleryData(galleryId) {
         try {
-            const response = await fetch(`/api/gallery/${galleryId}`);
+            // Use the actual static JSON file that exists
+            const response = await fetch(`/gallery-data/${galleryId}.json`);
             if (response.ok) {
-                return await response.json();
+                const data = await response.json();
+                // Transform to match expected API format
+                return {
+                    photos: [
+                        ...(data.categories?.workshops || []),
+                        ...(data.categories?.socials || [])
+                    ]
+                };
             } else {
-                console.log('[CacheWarmer] API endpoint not available for gallery:', galleryId, '- status:', response.status);
+                console.log('[CacheWarmer] Gallery data not available for:', galleryId, '- status:', response.status);
             }
         } catch (error) {
-            console.log('[CacheWarmer] Gallery API not accessible:', galleryId, '- using static data fallback');
+            console.log('[CacheWarmer] Gallery data not accessible:', galleryId, '- this is expected for non-existent galleries');
         }
         return null;
     }
