@@ -22,6 +22,7 @@ yarn.lock
 # Test artifacts
 coverage/
 test-results/
+test-reports/
 .nyc_output/
 *.lcov
 jest-results.json
