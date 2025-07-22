@@ -27,9 +27,9 @@
     "lint": "npm run lint:js && npm run lint:html",
     "lint:js": "eslint --config config/eslint.config.js js/**/*.js",
     "lint:html": "htmlhint --config config/.htmlhintrc pages/**/*.html",
-    "serve": "vercel dev --listen 8000",
-    "dev": "vercel dev --listen 8000",
-    "serve:simple": "npx http-server -p 8000",
+    "start-vercel-dev": "vercel dev --listen 3000",
+    "start": "vercel dev --listen 3000",
+    "serve:simple": "npx http-server . -p 8000",
     "vercel:test": "node scripts/vercel-local-test.js",
     "verify-structure": "node scripts/verify-structure.js",
     "pre-commit": "npm run lint && npm test"
