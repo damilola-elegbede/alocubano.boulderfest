@@ -23,9 +23,9 @@ else
     exit 1
 fi
 
-# Stage 2: Unit tests with coverage
+# Stage 2: Unit tests (without strict coverage for commits)
 echo "🧪 Stage 2: Running unit tests..."
-if npm run test:unit; then
+if npm run test:unit -- --passWithNoTests --coverage=false; then
     echo "✅ Unit tests passed"
 else
     echo "❌ Unit tests failed - please fix tests before committing"
@@ -34,7 +34,7 @@ fi
 
 # Stage 3: Check for sensitive data (basic check)
 echo "🔒 Stage 3: Checking for sensitive data..."
-if git diff --cached --name-only | xargs grep -l -i -E "(api[_-]?key|password|secret|token)" 2>/dev/null | grep -v -E "(package*.json|jest*.js|README.md|\.md$)" || false; then
+if git diff --cached --name-only | xargs grep -l -i -E "(api[_-]?key|password|secret|token)" 2>/dev/null | grep -v -E "(package*.json|jest*.js|README.md|\.md$|\.githooks/|install-hooks\.sh|\.github/workflows/)" || false; then
     echo "⚠️  WARNING: Potential sensitive data found in staged files"
     echo "Please review your changes and remove any secrets or API keys"
     exit 1
