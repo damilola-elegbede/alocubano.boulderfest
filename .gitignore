@@ -53,6 +53,7 @@ performance-audit.html
 
 # Local settings
 .claude/settings.local.json
+.claude/
 .env
 .env.local
 .env.*.local
@@ -61,9 +62,11 @@ performance-audit.html
 *.tmp
 *.temp
 .cache/
+.tmp/
 
 
 # Git hooks
 .husky/
 .githooks/
 .githooks/
+.vercel

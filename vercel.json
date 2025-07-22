@@ -2,7 +2,7 @@
   "buildCommand": "npm run prebuild && echo 'Static site ready'",
   "outputDirectory": ".",
   "framework": null,
-  "devCommand": "vercel dev",
+  "devCommand": "npx http-server . --cors",
   "functions": {
     "api/gallery.js": {
       "maxDuration": 10
@@ -30,6 +30,42 @@
     ]
   },
   "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    },
+    {
+      "source": "/images/:path*",
+      "destination": "/images/:path*"
+    },
+    {
+      "source": "/css/:path*",
+      "destination": "/css/:path*"
+    },
+    {
+      "source": "/js/:path*",
+      "destination": "/js/:path*"
+    },
+    {
+      "source": "/pages/:path*",
+      "destination": "/pages/:path*"
+    },
+    {
+      "source": "/public/:path*",
+      "destination": "/public/:path*"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/images/favicon.ico"
+    },
+    {
+      "source": "/gallery-data/:path*",
+      "destination": "/public/gallery-data/:path*"
+    },
+    {
+      "source": "/featured-photos.json",
+      "destination": "/public/featured-photos.json"
+    },
     {
       "source": "/",
       "destination": "/index.html"
@@ -59,26 +95,12 @@
       "destination": "/pages/gallery-2025.html"
     },
     {
-      "source": "/gallery-test-minimal",
-      "destination": "/pages/gallery-test-minimal.html"
-    },
-    {
       "source": "/tickets",
       "destination": "/pages/tickets.html"
     },
     {
       "source": "/donations",
       "destination": "/pages/donations.html"
-    }
-  ],
-  "routes": [
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(.*)",
-      "status": 404,
-      "dest": "/pages/404.html"
     }
   ],
   "redirects": [],
