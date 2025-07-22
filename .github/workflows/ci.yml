@@ -61,11 +61,9 @@ jobs:
     
     - name: Run comprehensive link validation
       run: |
-        # Run Python link validation (more reliable for CI)
-        python3 run_link_tests.py
-        # Also run Node.js link validation for comprehensive coverage
-        npm run test:links || echo "Node.js link validation completed with warnings"
-      continue-on-error: false
+        # Run Node.js link validation with server routing support
+        npm run test:links
+        echo "✅ Node.js link validation completed successfully"
     
     - name: Upload link validation reports
       uses: actions/upload-artifact@v4

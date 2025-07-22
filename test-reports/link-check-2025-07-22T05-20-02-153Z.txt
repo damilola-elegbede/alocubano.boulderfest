@@ -1,0 +1,33 @@
+A Lo Cubano Boulder Fest - Link Validation Report
+================================================================================
+Generated: 2025-07-22T05:20:02.153Z
+
+SUMMARY
+----------------------------------------
+Total Links: 492
+Broken Links: 1
+Success Rate: 99.8%
+Duration: 1.38s
+
+BROKEN LINKS
+----------------------------------------
+1. blob
+   File: images/favicon-circle-sizes.html:176
+   Type: asset
+   Error: File not found
+   Suggestion: Check file path and server routing configuration
+
+SUGGESTIONS
+----------------------------------------
+1. [HIGH] Critical
+   Fix 1 broken links to improve site reliability
+
+2. [HIGH] Assets
+   Fix 1 broken asset links to prevent loading errors
+
+3. [LOW] Performance
+   Consider implementing periodic automated link checking
+
+Health Score: 95/100
+
+End of Report

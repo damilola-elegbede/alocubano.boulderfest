@@ -1,0 +1,1053 @@
+A Lo Cubano Boulder Fest - Link Validation Report
+================================================================================
+Generated: 2025-07-22T05:16:36.702Z
+
+SUMMARY
+----------------------------------------
+Total Links: 1062
+Broken Links: 171
+Success Rate: 83.9%
+Duration: 3.42s
+
+BROKEN LINKS
+----------------------------------------
+1. /home
+   File: pages/about.html:25
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+2. /home
+   File: pages/about.html:39
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+3. /about
+   File: pages/about.html:40
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+4. /artists
+   File: pages/about.html:41
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+5. /schedule
+   File: pages/about.html:42
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+6. /gallery
+   File: pages/about.html:43
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+7. /tickets
+   File: pages/about.html:44
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+8. /donations
+   File: pages/about.html:45
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+9. /js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING
+   File: pages/about.html:458
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: image-cache-manager.js
+
+10. /home
+   File: pages/artists.html:25
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+11. /home
+   File: pages/artists.html:39
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+12. /about
+   File: pages/artists.html:40
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+13. /artists
+   File: pages/artists.html:41
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+14. /schedule
+   File: pages/artists.html:42
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+15. /gallery
+   File: pages/artists.html:43
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+16. /tickets
+   File: pages/artists.html:44
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+17. /donations
+   File: pages/artists.html:45
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+18. /js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING
+   File: pages/artists.html:274
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: image-cache-manager.js
+
+19. /home
+   File: pages/donations.html:25
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+20. /home
+   File: pages/donations.html:39
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+21. /about
+   File: pages/donations.html:40
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+22. /artists
+   File: pages/donations.html:41
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+23. /schedule
+   File: pages/donations.html:42
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+24. /gallery
+   File: pages/donations.html:43
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+25. /tickets
+   File: pages/donations.html:44
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+26. /donations
+   File: pages/donations.html:45
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+27. /js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING
+   File: pages/donations.html:213
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: image-cache-manager.js
+
+28. /home
+   File: pages/gallery-2025.html:24
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+29. /home
+   File: pages/gallery-2025.html:38
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+30. /about
+   File: pages/gallery-2025.html:39
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+31. /artists
+   File: pages/gallery-2025.html:40
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+32. /schedule
+   File: pages/gallery-2025.html:41
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+33. /gallery
+   File: pages/gallery-2025.html:42
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+34. /tickets
+   File: pages/gallery-2025.html:43
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+35. /donations
+   File: pages/gallery-2025.html:44
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+36. /gallery
+   File: pages/gallery-2025.html:55
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+37. /gallery
+   File: pages/gallery-2025.html:100
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+38. /tickets
+   File: pages/gallery-2025.html:101
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+39. /js/gallery-detail.js?v=2025-07-22-PERFORMANCE-OPTIMIZED
+   File: pages/gallery-2025.html:174
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: gallery-detail.js
+
+40. /js/gallery-detail.js?v=2025-07-21-FIXED
+   File: pages/gallery-test-minimal.html:49
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: gallery-detail.js
+
+41. /home
+   File: pages/gallery.html:25
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+42. /home
+   File: pages/gallery.html:39
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+43. /about
+   File: pages/gallery.html:40
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+44. /artists
+   File: pages/gallery.html:41
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+45. /schedule
+   File: pages/gallery.html:42
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+46. /gallery
+   File: pages/gallery.html:43
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+47. /tickets
+   File: pages/gallery.html:44
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+48. /donations
+   File: pages/gallery.html:45
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+49. /tickets
+   File: pages/gallery.html:127
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+50. /gallery-2025
+   File: pages/gallery.html:67
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+51. /js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING
+   File: pages/gallery.html:156
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: image-cache-manager.js
+
+52. /home
+   File: pages/home.html:31
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+53. /home
+   File: pages/home.html:45
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+54. /about
+   File: pages/home.html:46
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+55. /artists
+   File: pages/home.html:47
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+56. /schedule
+   File: pages/home.html:48
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+57. /gallery
+   File: pages/home.html:49
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+58. /tickets
+   File: pages/home.html:50
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+59. /donations
+   File: pages/home.html:51
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+60. /tickets
+   File: pages/home.html:166
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+61. /js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING
+   File: pages/home.html:216
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: image-cache-manager.js
+
+62. /home
+   File: pages/schedule.html:25
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+63. /home
+   File: pages/schedule.html:39
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+64. /about
+   File: pages/schedule.html:40
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+65. /artists
+   File: pages/schedule.html:41
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+66. /schedule
+   File: pages/schedule.html:42
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+67. /gallery
+   File: pages/schedule.html:43
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+68. /tickets
+   File: pages/schedule.html:44
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+69. /donations
+   File: pages/schedule.html:45
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+70. /js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING
+   File: pages/schedule.html:258
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: image-cache-manager.js
+
+71. /home
+   File: pages/tickets.html:25
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+72. /home
+   File: pages/tickets.html:39
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+73. /about
+   File: pages/tickets.html:40
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+74. /artists
+   File: pages/tickets.html:41
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+75. /schedule
+   File: pages/tickets.html:42
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+76. /gallery
+   File: pages/tickets.html:43
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+77. /tickets
+   File: pages/tickets.html:44
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+78. /donations
+   File: pages/tickets.html:45
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+79. /js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING
+   File: pages/tickets.html:308
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: image-cache-manager.js
+
+80. /about
+   File: 404.html:156
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+81. /tickets
+   File: 404.html:157
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+82. </span>
+   File: coverage/unit/api/cache-warm.js.html:828
+   Type: asset
+   Error: File not found
+   Suggestion: Check file path and server routing configuration
+
+83. </span>fileId
+   File: coverage/unit/js/gallery-hero.js.html:540
+   Type: asset
+   Error: File not found
+   Suggestion: Check file path and server routing configuration
+
+84. document.activeElement.href
+   File: coverage/unit/js/prefetch-manager.js.html:1397
+   Type: asset
+   Error: File not found
+   Suggestion: Check file path and server routing configuration
+
+85. </span>
+   File: coverage/unit/lcov-report/api/cache-warm.js.html:828
+   Type: asset
+   Error: File not found
+   Suggestion: Check file path and server routing configuration
+
+86. </span>fileId
+   File: coverage/unit/lcov-report/js/gallery-hero.js.html:540
+   Type: asset
+   Error: File not found
+   Suggestion: Check file path and server routing configuration
+
+87. document.activeElement.href
+   File: coverage/unit/lcov-report/js/prefetch-manager.js.html:1397
+   Type: asset
+   Error: File not found
+   Suggestion: Check file path and server routing configuration
+
+88. blob
+   File: images/favicon-circle-sizes.html:176
+   Type: asset
+   Error: File not found
+   Suggestion: Check file path and server routing configuration
+
+89. /home
+   File: index.html:50
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+90. ../node_modules/mocha/mocha.css
+   File: node_modules/url-template/test/index.html:5
+   Type: asset
+   Error: File not found
+   Suggestion: Check file path and server routing configuration
+
+91. ../node_modules/expect.js/expect.js
+   File: node_modules/url-template/test/index.html:9
+   Type: asset
+   Error: File not found
+   Suggestion: Check file path and server routing configuration
+
+92. ../node_modules/mocha/mocha.js
+   File: node_modules/url-template/test/index.html:10
+   Type: asset
+   Error: File not found
+   Suggestion: Check file path and server routing configuration
+
+93. /home
+   File: pages/about.html:25
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+94. /home
+   File: pages/about.html:39
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+95. /about
+   File: pages/about.html:40
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+96. /artists
+   File: pages/about.html:41
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+97. /schedule
+   File: pages/about.html:42
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+98. /gallery
+   File: pages/about.html:43
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+99. /tickets
+   File: pages/about.html:44
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+100. /donations
+   File: pages/about.html:45
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+101. /js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING
+   File: pages/about.html:458
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: image-cache-manager.js
+
+102. /home
+   File: pages/artists.html:25
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+103. /home
+   File: pages/artists.html:39
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+104. /about
+   File: pages/artists.html:40
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+105. /artists
+   File: pages/artists.html:41
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+106. /schedule
+   File: pages/artists.html:42
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+107. /gallery
+   File: pages/artists.html:43
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+108. /tickets
+   File: pages/artists.html:44
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+109. /donations
+   File: pages/artists.html:45
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+110. /js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING
+   File: pages/artists.html:274
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: image-cache-manager.js
+
+111. /home
+   File: pages/donations.html:25
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+112. /home
+   File: pages/donations.html:39
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+113. /about
+   File: pages/donations.html:40
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+114. /artists
+   File: pages/donations.html:41
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+115. /schedule
+   File: pages/donations.html:42
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+116. /gallery
+   File: pages/donations.html:43
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+117. /tickets
+   File: pages/donations.html:44
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+118. /donations
+   File: pages/donations.html:45
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+119. /js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING
+   File: pages/donations.html:213
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: image-cache-manager.js
+
+120. /home
+   File: pages/gallery-2025.html:24
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+121. /home
+   File: pages/gallery-2025.html:38
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+122. /about
+   File: pages/gallery-2025.html:39
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+123. /artists
+   File: pages/gallery-2025.html:40
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+124. /schedule
+   File: pages/gallery-2025.html:41
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+125. /gallery
+   File: pages/gallery-2025.html:42
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+126. /tickets
+   File: pages/gallery-2025.html:43
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+127. /donations
+   File: pages/gallery-2025.html:44
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+128. /gallery
+   File: pages/gallery-2025.html:55
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+129. /gallery
+   File: pages/gallery-2025.html:100
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+130. /tickets
+   File: pages/gallery-2025.html:101
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+131. /js/gallery-detail.js?v=2025-07-22-PERFORMANCE-OPTIMIZED
+   File: pages/gallery-2025.html:174
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: gallery-detail.js
+
+132. /js/gallery-detail.js?v=2025-07-21-FIXED
+   File: pages/gallery-test-minimal.html:49
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: gallery-detail.js
+
+133. /home
+   File: pages/gallery.html:25
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+134. /home
+   File: pages/gallery.html:39
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+135. /about
+   File: pages/gallery.html:40
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+136. /artists
+   File: pages/gallery.html:41
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+137. /schedule
+   File: pages/gallery.html:42
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+138. /gallery
+   File: pages/gallery.html:43
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+139. /tickets
+   File: pages/gallery.html:44
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+140. /donations
+   File: pages/gallery.html:45
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+141. /gallery-2025
+   File: pages/gallery.html:67
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+142. /tickets
+   File: pages/gallery.html:127
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+143. /js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING
+   File: pages/gallery.html:156
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: image-cache-manager.js
+
+144. /home
+   File: pages/home.html:31
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+145. /home
+   File: pages/home.html:45
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+146. /about
+   File: pages/home.html:46
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+147. /artists
+   File: pages/home.html:47
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+148. /schedule
+   File: pages/home.html:48
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+149. /gallery
+   File: pages/home.html:49
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+150. /tickets
+   File: pages/home.html:50
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+151. /donations
+   File: pages/home.html:51
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+152. /tickets
+   File: pages/home.html:166
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+153. /js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING
+   File: pages/home.html:216
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: image-cache-manager.js
+
+154. /home
+   File: pages/schedule.html:25
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+155. /home
+   File: pages/schedule.html:39
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+156. /about
+   File: pages/schedule.html:40
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+157. /artists
+   File: pages/schedule.html:41
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+158. /schedule
+   File: pages/schedule.html:42
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+159. /gallery
+   File: pages/schedule.html:43
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+160. /tickets
+   File: pages/schedule.html:44
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+161. /donations
+   File: pages/schedule.html:45
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+162. /js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING
+   File: pages/schedule.html:258
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: image-cache-manager.js
+
+163. /home
+   File: pages/tickets.html:25
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+164. /home
+   File: pages/tickets.html:39
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+165. /about
+   File: pages/tickets.html:40
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+166. /artists
+   File: pages/tickets.html:41
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+167. /schedule
+   File: pages/tickets.html:42
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+168. /gallery
+   File: pages/tickets.html:43
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+169. /tickets
+   File: pages/tickets.html:44
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+170. /donations
+   File: pages/tickets.html:45
+   Type: navigation
+   Error: File not found
+   Suggestion: File exists in pages directory - server routing should handle this
+
+171. /js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING
+   File: pages/tickets.html:308
+   Type: asset
+   Error: File not found
+   Suggestion: Similar files found: image-cache-manager.js
+
+SUGGESTIONS
+----------------------------------------
+1. [HIGH] Critical
+   Fix 171 broken links to improve site reliability
+
+2. [HIGH] Assets
+   Fix 28 broken asset links to prevent loading errors
+
+3. [LOW] Performance
+   Consider implementing periodic automated link checking
+
+Health Score: 0/100
+
+End of Report

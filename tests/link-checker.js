@@ -112,7 +112,15 @@ class LinkChecker {
             }
         }
 
-        return htmlFiles;
+        // Filter out unwanted files
+        return htmlFiles.filter(file => {
+            const relativePath = path.relative(rootDir, file);
+            // Exclude coverage reports, node_modules, and other non-production files
+            return !relativePath.startsWith('coverage/') && 
+                   !relativePath.startsWith('node_modules/') && 
+                   !relativePath.includes('/test/') &&
+                   !relativePath.includes('/tests/');
+        });
     }
 
     /**
@@ -211,7 +219,10 @@ class LinkChecker {
             /^\s*$/,
             /\{\{.*\}\}/,  // Template variables
             /<%.*%>/,       // Template variables
-            /^\/\/$/        // Empty protocol-relative URLs
+            /^\/\/$/,       // Empty protocol-relative URLs
+            /\$\{/,         // JavaScript template literals ${}
+            /^(request\.|link\.|imageUrl|fileId|url|blob)$/,  // JavaScript variables
+            /^(request\.url|link\.href)$/  // JavaScript object properties
         ];
 
         return skipPatterns.some(pattern => pattern.test(url));
@@ -374,11 +385,20 @@ class LinkChecker {
     }
 
     /**
-     * Check internal URL
+     * Check internal URL with Vercel routing support
      */
     async checkInternalUrl(url, currentFilePath) {
         try {
-            const resolvedPath = this.resolveInternalPath(url, currentFilePath);
+            // Strip query parameters for file checking
+            const cleanUrl = url.split('?')[0];
+            
+            // Handle Vercel clean URL routing
+            const routingResult = this.checkServerRouting(cleanUrl);
+            if (routingResult.status === 'ok') {
+                return routingResult;
+            }
+            
+            const resolvedPath = this.resolveInternalPath(cleanUrl, currentFilePath);
             
             if (!resolvedPath) {
                 return { 
@@ -391,8 +411,8 @@ class LinkChecker {
             if (fs.existsSync(resolvedPath)) {
                 return { status: 'ok', resolvedPath };
             } else {
-                // Try common fixes
-                const suggestion = this.suggestFix(url, resolvedPath);
+                // Try common fixes including server routing
+                const suggestion = this.suggestFixWithRouting(cleanUrl, resolvedPath);
                 return { 
                     status: 'broken', 
                     error: 'File not found',
@@ -431,10 +451,140 @@ class LinkChecker {
     }
 
     /**
-     * Suggest fixes for broken links
+     * Check Vercel routing patterns from vercel.json
      */
-    suggestFix(url, resolvedPath) {
+    checkServerRouting(url) {
+        // Handle API endpoints
+        if (url.startsWith('/api/')) {
+            const apiEndpoints = [
+                '/api/featured-photos',
+                '/api/gallery',
+                '/api/drive-folders', 
+                '/api/debug-gallery'
+            ];
+            
+            const isValidApi = apiEndpoints.includes(url) || url.startsWith('/api/image-proxy/');
+            
+            return {
+                status: isValidApi ? 'ok' : 'broken',
+                serverRoute: true,
+                routeType: 'api'
+            };
+        }
+        
+        // Handle gallery-data JSON redirects
+        if (url.startsWith('/gallery-data/') && url.endsWith('.json')) {
+            const publicPath = path.join(rootDir, 'public', url);
+            return {
+                status: fs.existsSync(publicPath) ? 'ok' : 'broken',
+                serverRoute: true,
+                routeType: 'gallery-data-redirect',
+                resolvedPath: publicPath
+            };
+        }
+        
+        // Handle featured-photos.json redirect
+        if (url === '/featured-photos.json') {
+            const publicPath = path.join(rootDir, 'public', 'featured-photos.json');
+            return {
+                status: fs.existsSync(publicPath) ? 'ok' : 'broken', 
+                serverRoute: true,
+                routeType: 'featured-photos-redirect',
+                resolvedPath: publicPath
+            };
+        }
+        
+        // Handle root path redirect
+        if (url === '/') {
+            const indexPath = path.join(rootDir, 'index.html');
+            return {
+                status: fs.existsSync(indexPath) ? 'ok' : 'broken',
+                serverRoute: true,
+                routeType: 'root-redirect',
+                resolvedPath: indexPath
+            };
+        }
+        
+        // Handle Vercel clean URL rewrites
+        if (url.startsWith('/') && !this.hasFileExtension(url)) {
+            const cleanPath = url.slice(1); // Remove leading slash
+            
+            // Handle /home specifically (vercel.json: "/home" -> "/pages/home.html")
+            if (cleanPath === 'home') {
+                const homePath = path.join(rootDir, 'pages', 'home.html');
+                if (fs.existsSync(homePath)) {
+                    return {
+                        status: 'ok',
+                        serverRoute: true,
+                        routeType: 'vercel-home-rewrite',
+                        resolvedPath: homePath
+                    };
+                }
+            }
+            
+            // Handle other paths (vercel.json: "/((?!api/|home)[^./]+)" -> "/pages/$1.html")
+            // This regex excludes api/, home, and paths with dots/slashes
+            const vercelPattern = /^(?!api\/|home$)[^./]+$/;
+            if (vercelPattern.test(cleanPath)) {
+                const pagesPath = path.join(rootDir, 'pages', cleanPath + '.html');
+                if (fs.existsSync(pagesPath)) {
+                    return {
+                        status: 'ok',
+                        serverRoute: true,
+                        routeType: 'vercel-pages-rewrite',
+                        resolvedPath: pagesPath
+                    };
+                }
+            }
+            
+            // Check if it's a directory with index.html (fallback)
+            const fullPath = path.join(rootDir, cleanPath);
+            if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
+                const indexPath = path.join(fullPath, 'index.html');
+                if (fs.existsSync(indexPath)) {
+                    return {
+                        status: 'ok',
+                        serverRoute: true,
+                        routeType: 'directory-index',
+                        resolvedPath: indexPath
+                    };
+                }
+            }
+        }
+        
+        return { status: 'unknown', serverRoute: false };
+    }
+    
+    /**
+     * Check if URL has a file extension
+     */
+    hasFileExtension(url) {
+        const extensions = ['.html', '.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.json'];
+        return extensions.some(ext => url.endsWith(ext));
+    }
+
+    /**
+     * Suggest fixes for broken links with server routing awareness
+     */
+    suggestFixWithRouting(url, resolvedPath) {
         const suggestions = [];
+        
+        // Check server routing suggestions first
+        if (url.startsWith('/')) {
+            // Clean URL suggestion
+            if (!this.hasFileExtension(url)) {
+                const htmlPath = path.join(rootDir, url.slice(1) + '.html');
+                if (fs.existsSync(htmlPath)) {
+                    suggestions.push(`Server will route ${url} to ${url}.html automatically`);
+                }
+            }
+            
+            // Pages directory suggestion
+            const pagesPath = path.join(rootDir, 'pages', path.basename(url) + '.html');
+            if (fs.existsSync(pagesPath)) {
+                suggestions.push(`File exists in pages directory - server routing should handle this`);
+            }
+        }
         
         // Check if file exists with .html extension
         if (!url.endsWith('.html')) {
@@ -473,7 +623,7 @@ class LinkChecker {
             }
         }
         
-        return suggestions.length > 0 ? suggestions[0] : 'Check file path and existence';
+        return suggestions.length > 0 ? suggestions[0] : 'Check file path and server routing configuration';
     }
 
     /**
