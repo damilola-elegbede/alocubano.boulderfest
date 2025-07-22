@@ -219,15 +219,21 @@ describe('UI/UX Integration Tests', () => {
     });
 
     describe('Asset Loading and Performance', () => {
-        test('featured-photos.json should be accessible in root directory', () => {
-            const featuredPhotosPath = path.join(projectRoot, 'featured-photos.json');
-            expect(fs.existsSync(featuredPhotosPath)).toBe(true);
+        test('featured-photos.json generation should be configured properly', () => {
+            // Since featured-photos.json is now generated and not tracked in Git,
+            // test that the generation is properly configured
+            const packageJson = JSON.parse(fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf8'));
             
-            // Verify content structure
-            const featuredContent = JSON.parse(fs.readFileSync(featuredPhotosPath, 'utf8'));
-            expect(featuredContent).toHaveProperty('items');
-            expect(featuredContent).toHaveProperty('totalCount');
-            expect(Array.isArray(featuredContent.items)).toBe(true);
+            // Should have prebuild script that generates featured photos
+            expect(packageJson.scripts.prebuild).toMatch(/generate-featured-photos\.js/);
+            
+            // Generation script should exist
+            const scriptPath = path.join(projectRoot, 'scripts', 'generate-featured-photos.js');
+            expect(fs.existsSync(scriptPath)).toBe(true);
+            
+            // Should be in .gitignore to prevent conflicts
+            const gitignore = fs.readFileSync(path.join(projectRoot, '.gitignore'), 'utf8');
+            expect(gitignore).toMatch(/featured-photos\.json/);
         });
 
         test('vercel.json should optimize static asset caching', () => {
