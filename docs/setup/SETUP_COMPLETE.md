@@ -6,7 +6,7 @@
    ```bash
    ./scripts/start.sh
    # or
-   python3 server.py
+   npm run serve
    ```
 
 2. **Open your browser:**
@@ -51,7 +51,7 @@ Each design includes 6 fully functional pages:
 ## 🛠 Technical Features
 
 ### ✨ What's Implemented
-- **Python HTTP server** with proper MIME types
+- **Node.js HTTP server** with proper MIME types
 - **CSS design system** with consistent variables
 - **JavaScript navigation** with smooth transitions
 - **Mobile-first responsive design**
@@ -103,7 +103,7 @@ Each design includes 6 fully functional pages:
 ```
 alocubano.boulderfest/
 ├── index.html (Landing page)
-├── server.py (Python web server)
+├── vercel.json (Deployment configuration)
 ├── scripts/
 │   └── start.sh (Quick start script)
 ├── css/
