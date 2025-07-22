@@ -6,9 +6,9 @@ Specialized HTML parsing tools for extracting and categorizing links from the A 
 
 This toolkit provides comprehensive link extraction, categorization, validation, and reporting capabilities specifically designed for the project's HTML structure. It consists of three main components:
 
-1. **`html_link_parser.py`** - Core HTML parsing and link extraction
-2. **`link_validation_utils.py`** - Link validation and accessibility checking
-3. **`link_analyzer.py`** - Command-line interface for easy usage
+1. **`tools/link-validation/html_link_parser.py`** - Core HTML parsing and link extraction
+2. **`tools/link-validation/link_validation_utils.py`** - Link validation and accessibility checking
+3. **`tools/link-validation/link_analyzer.py`** - Command-line interface for easy usage
 
 ## Features
 
@@ -46,29 +46,29 @@ pip install requests
 
 ```bash
 # Quick analysis (internal links only)
-python3 link_analyzer.py --quick
+python3 tools/link-validation/link_analyzer.py --quick
 
 # Full analysis including external link validation
-python3 link_analyzer.py --full
+python3 tools/link-validation/link_analyzer.py --full
 
 # Analyze a single HTML file
-python3 link_analyzer.py --file pages/about.html
+python3 tools/link-validation/link_analyzer.py --file pages/about.html
 
 # Show only navigation links
-python3 link_analyzer.py --category nav
+python3 tools/link-validation/link_analyzer.py --category nav
 
 # Export detailed data to CSV
-python3 link_analyzer.py --export-csv
+python3 tools/link-validation/link_analyzer.py --export-csv
 
 # Show help
-python3 link_analyzer.py --help
+python3 tools/link-validation/link_analyzer.py --help
 ```
 
 ### Python API
 
 ```python
-from html_link_parser import HTMLLinkExtractor
-from link_validation_utils import LinkAnalyzer
+from tools.link_validation.html_link_parser import HTMLLinkExtractor
+from tools.link_validation.link_validation_utils import LinkAnalyzer
 
 # Basic parsing
 extractor = HTMLLinkExtractor()
@@ -88,10 +88,14 @@ analyzer.generate_reports(results, validation)
 
 ```
 project/
-├── html_link_parser.py          # Core parsing functionality
-├── link_validation_utils.py     # Validation and reporting
-├── link_analyzer.py             # CLI interface
-├── HTML_LINK_PARSER_README.md   # This file
+├── tools/
+│   └── link-validation/
+│       ├── html_link_parser.py          # Core parsing functionality
+│       ├── link_validation_utils.py     # Validation and reporting
+│       └── link_analyzer.py             # CLI interface
+└── docs/
+    └── tools/
+        └── HTML_LINK_PARSER_README.md   # This file
 └── Generated output files:
     ├── link_analysis.csv         # Detailed CSV export
     ├── link_analysis_summary.txt # Human-readable summary
@@ -199,7 +203,7 @@ External domains:
 
 ### Category Display
 ```bash
-python3 link_analyzer.py --category social
+python3 tools/link-validation/link_analyzer.py --category social
 ```
 ```
 SOCIAL LINKS (16 found)

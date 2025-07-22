@@ -47,7 +47,7 @@ No external dependencies required - uses only Python standard library.
 
 ```bash
 # The validator is ready to use
-python3 link_validator.py
+python3 tools/link-validation/link_validator.py
 ```
 
 ## Usage
@@ -164,13 +164,13 @@ get_site_link_validation_report(project_root: str)
 
 ```bash
 # Run full site validation
-python3 link_validator.py /path/to/project
+python3 tools/link-validation/link_validator.py /path/to/project
 
 # Test specific scenarios
-python3 test_link_validator.py
+python3 tests/unit/link-validation/test_link_validator.py
 
 # Example integration
-python3 example_test_integration.py
+python3 tests/integration/example_test_integration.py
 ```
 
 ## Output Examples
@@ -229,13 +229,13 @@ The validator understands all server.py routing patterns:
 ### Run All Tests
 ```bash
 # Validate current site
-python3 link_validator.py
+python3 tools/link-validation/link_validator.py
 
 # Test validation logic
-python3 test_link_validator.py
+python3 tests/unit/link-validation/test_link_validator.py
 
 # Integration example
-python3 example_test_integration.py
+python3 tests/integration/example_test_integration.py
 ```
 
 ### Test Results
@@ -276,10 +276,18 @@ Potential improvements for the validation system:
 ## File Structure
 
 ```
-link_validator.py              # Core validation logic
-test_link_validator.py         # Test suite with examples
-example_test_integration.py    # Integration demonstration
-LINK_VALIDATION_README.md      # This documentation
+tools/
+└── link-validation/
+    └── link_validator.py              # Core validation logic
+tests/
+├── unit/
+│   └── link-validation/
+│       └── test_link_validator.py     # Test suite with examples
+└── integration/
+    └── example_test_integration.py    # Integration demonstration
+docs/
+└── tools/
+    └── LINK_VALIDATION_README.md      # This documentation
 ```
 
 ## Dependencies
