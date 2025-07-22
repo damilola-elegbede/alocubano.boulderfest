@@ -1,0 +1,45 @@
+A Lo Cubano Boulder Fest - Demo Test Suite Report
+================================================================================
+Generated: 2025-07-22T04:19:52.917Z
+
+SUMMARY
+----------------------------------------
+Total Links: 100
+Broken Links: 12
+Success Rate: 88.0%
+Duration: 5.00s
+
+BROKEN LINKS
+----------------------------------------
+1. /missing-page.html
+   File: pages/demo-page-1.html:45
+   Type: navigation
+   Error: File not found
+   Suggestion: Check if the file exists in the pages directory
+
+2. /old-resource.css
+   File: pages/demo-page-2.html:12
+   Type: asset
+   Error: Resource not found
+   Suggestion: Update CSS file reference to correct path
+
+3. https://example-broken-external.com
+   File: pages/demo-page-3.html:78
+   Type: external
+   Error: HTTP 404 Not Found
+   Suggestion: Verify external URL is still valid
+
+SUGGESTIONS
+----------------------------------------
+1. [HIGH] Critical Navigation
+   Fix broken navigation links to ensure proper site navigation
+
+2. [MEDIUM] External Links
+   Review external links and consider implementing link monitoring
+
+3. [LOW] Performance
+   Consider implementing automated link checking in CI/CD pipeline
+
+Health Score: 88/100
+
+End of Report

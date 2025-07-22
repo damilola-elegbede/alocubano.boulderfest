@@ -1,0 +1,40 @@
+A LO CUBANO BOULDER FEST - LINK ANALYSIS REPORT
+============================================================
+
+Total Links Found: 271
+Unique URLs: 44
+Files Parsed: 12
+
+LINK CATEGORIES
+--------------------
+Navigation     :  64 links
+Content        :  25 links
+Assets         : 152 links
+External       :   3 links
+Social Media   :  16 links
+Email          :   9 links
+Anchor         :   2 links
+
+EXTERNAL DOMAINS
+--------------------
+picsum.photos                 : 3 links
+
+VALIDATION RESULTS
+--------------------
+Internal       : 3 links
+Accessibility  : 4 links
+
+LINKS PER FILE
+--------------------
+404.html                 :   7 links
+about.html               :  31 links
+artists.html             :  30 links
+donations.html           :  30 links
+gallery-2025.html        :  35 links
+gallery-test-minimal.html:   1 links
+gallery.html             :  32 links
+home.html                :  33 links
+index.html               :   7 links
+schedule.html            :  30 links
+test-consolidation.html  :   5 links
+tickets.html             :  30 links
