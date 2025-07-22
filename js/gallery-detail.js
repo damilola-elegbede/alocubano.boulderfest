@@ -93,104 +93,6 @@
         console.log('🔄 Gallery state reset to initial values');
     }
 
-    // Show cache indicator to user
-    function showCacheIndicator() {
-        // Check if we should show the indicator
-        if (!state.restoredFromCache) {
-            return;
-        }
-
-        // Create cache indicator element
-        const indicator = document.createElement('div');
-        indicator.id = 'cache-indicator';
-        indicator.className = 'cache-indicator fade-in';
-        indicator.innerHTML = `
-            <span class="cache-icon">💾</span>
-            <span class="cache-text">Restored from cache</span>
-            <button class="cache-refresh" title="Refresh gallery">↻</button>
-        `;
-
-        // Style the indicator
-        indicator.style.cssText = `
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px 15px;
-            border-radius: 25px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        `;
-
-        // Add to page
-        document.body.appendChild(indicator);
-
-        // Fade in
-        requestAnimationFrame(() => {
-            indicator.style.opacity = '1';
-        });
-
-        // Add refresh button handler
-        const refreshBtn = indicator.querySelector('.cache-refresh');
-        refreshBtn.style.cssText = `
-            background: none;
-            border: none;
-            color: white;
-            cursor: pointer;
-            font-size: 18px;
-            padding: 0 5px;
-            transition: transform 0.3s ease;
-        `;
-
-        // Define event handlers for proper cleanup
-        const handleClick = () => {
-            // Clear cache and reload
-            const year = getYearFromPage();
-            const stateKey = `gallery_${year}_state`;
-            sessionStorage.removeItem(stateKey);
-            window.location.reload();
-        };
-
-        const handleMouseEnter = () => {
-            refreshBtn.style.transform = 'rotate(180deg)';
-        };
-
-        const handleMouseLeave = () => {
-            refreshBtn.style.transform = 'rotate(0deg)';
-        };
-
-        // Add event listeners
-        refreshBtn.addEventListener('click', handleClick);
-        refreshBtn.addEventListener('mouseenter', handleMouseEnter);
-        refreshBtn.addEventListener('mouseleave', handleMouseLeave);
-
-        // Store cleanup function
-        indicator._cleanup = () => {
-            refreshBtn.removeEventListener('click', handleClick);
-            refreshBtn.removeEventListener('mouseenter', handleMouseEnter);
-            refreshBtn.removeEventListener('mouseleave', handleMouseLeave);
-        };
-
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            indicator.style.opacity = '0';
-            setTimeout(() => {
-                if (indicator.parentNode) {
-                    // Clean up event listeners before removing
-                    if (indicator._cleanup) {
-                        indicator._cleanup();
-                    }
-                    indicator.remove();
-                }
-            }, 300);
-        }, 5000);
-    }
 
     // State persistence functions
     function saveState() {
@@ -724,8 +626,8 @@
                 // Mark that we've successfully restored from cache
                 state.restoredFromCache = true;
 
-                // Display cache indicator to user (optional)
-                showCacheIndicator();
+                // Log cache restoration to console (no visual indicator)
+                console.log('💾 Gallery restored from cache - no API calls needed');
 
                 return; // Exit early - no need to load fresh data
             } else {
