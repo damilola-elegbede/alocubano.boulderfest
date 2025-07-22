@@ -72,3 +72,5 @@ __pycache__/
 
 # Git hooks
 .husky/
+.githooks/
+.githooks/

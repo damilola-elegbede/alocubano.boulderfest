@@ -12,7 +12,7 @@ import requests
 from pathlib import Path
 from typing import Dict, List, Set, Tuple
 from urllib.parse import urljoin, urlparse
-from html_link_parser import HTMLLinkExtractor, ParseResults, LinkInfo
+from .html_link_parser import HTMLLinkExtractor, ParseResults, LinkInfo
 
 
 class LinkValidator:
