@@ -40,8 +40,6 @@ scriptFunction();
 **Allowed Origins**:
 - `https://alocubano.boulderfest.com`
 - `https://www.alocubano.boulderfest.com`
-- `http://localhost:8000` (development)
-- `http://127.0.0.1:8000` (development)
 - `http://localhost:3000` (development)
 - `http://127.0.0.1:3000` (development)
 
@@ -84,7 +82,7 @@ scriptFunction();
 
 ### Files Modified
 - `/js/navigation.js` - XSS fix
-- `/server.py` - Rate limiting, CORS, input validation
+- `/api/` - Rate limiting, CORS, input validation (serverless functions)
 - `/api/gallery.js` - CORS, input validation
 - `/api/featured-photos.js` - CORS restrictions
 
