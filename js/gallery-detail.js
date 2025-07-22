@@ -632,7 +632,13 @@
         // Clear any stale session storage that might interfere with workshop photos
         const year = getYearFromPage();
         const stateKey = `gallery_${year}_state`;
-        console.log('🧹 Clearing any stale session storage to ensure fresh load');
+        const hadStaleData = !!sessionStorage.getItem(stateKey);
+        console.log('🧹 DEBUG - Session storage cleanup:', {
+            year,
+            stateKey,
+            hadStaleData,
+            action: 'clearing to ensure fresh load'
+        });
         sessionStorage.removeItem(stateKey);
         
         // Initialize performance optimization modules
@@ -660,6 +666,20 @@
 
         // Extract year from the page
         const year = getYearFromPage();
+
+        console.log('🚀 DEBUG - Starting loadGalleryDetailData:', {
+            year,
+            loadingElExists: !!loadingEl,
+            contentElExists: !!contentEl,
+            staticElExists: !!staticEl,
+            currentState: {
+                loadingMutex: state.loadingMutex,
+                loadedPages: state.loadedPages,
+                itemsDisplayed: state.itemsDisplayed,
+                workshopOffset: state.workshopOffset,
+                socialOffset: state.socialOffset
+            }
+        });
 
         // Initialize lazy loading observer
         initLazyLoading();
@@ -750,7 +770,16 @@
                 isStaticFetch = true;
                 // Use absolute path to ensure it works from any page location
                 apiUrl = `/gallery-data/${year}.json?timestamp=${Date.now()}`;
-                console.log('🔥 Loading initial data from static cache:', apiUrl);
+                console.log('🔥 DEBUG - First page load from static JSON:', {
+                    apiUrl,
+                    year,
+                    offset,
+                    currentState: {
+                        workshopOffset: state.workshopOffset,
+                        socialOffset: state.socialOffset,
+                        loadedPages: state.loadedPages
+                    }
+                });
             } else {
                 // Check if we've already loaded all available items
                 if (state.hasCompleteDataset || state.itemsDisplayed >= state.totalItemsAvailable) {
@@ -863,8 +892,17 @@
                 // If we have 20 or fewer items total, we've loaded everything
                 state.hasCompleteDataset = state.totalItemsAvailable <= CONFIG.PAGINATION_SIZE;
 
-                console.log(`📦 Loaded static data: ${state.totalItemsAvailable} total items, displaying ${state.itemsDisplayed}, hasMore: ${state.hasMorePages}, complete: ${state.hasCompleteDataset}`);
-                console.log(`📍 Offsets: workshops=${state.workshopOffset}/${state.workshopTotal}, socials=${state.socialOffset}/${state.socialTotal}`);
+                console.log(`📦 DEBUG - Static data loaded successfully:`, {
+                    totalItemsAvailable: state.totalItemsAvailable,
+                    itemsDisplayed: state.itemsDisplayed,
+                    hasMorePages: state.hasMorePages,
+                    hasCompleteDataset: state.hasCompleteDataset,
+                    workshopOffsetAfter: state.workshopOffset,
+                    workshopTotal: state.workshopTotal,
+                    socialOffsetAfter: state.socialOffset,
+                    socialTotal: state.socialTotal,
+                    pageItemsReceived: pageItems.length
+                });
 
                 // Display paginated data
                 displayGalleryData({
@@ -1079,9 +1117,12 @@
 
     // Display gallery data with lazy loading and append mode
     async function displayGalleryData(data, contentEl, staticEl, loadingEl, appendMode = false) {
-        console.log('displayGalleryData called with:', {
+        console.log('🎨 DEBUG - displayGalleryData called:', {
             hasData: !!data,
             categories: data?.categories ? Object.keys(data.categories) : [],
+            workshopItems: data?.categories?.workshops?.length || 0,
+            socialItems: data?.categories?.socials?.length || 0,
+            totalItems: (data?.categories?.workshops?.length || 0) + (data?.categories?.socials?.length || 0),
             appendMode: appendMode,
             contentEl: !!contentEl,
             staticEl: !!staticEl,
