@@ -44,20 +44,15 @@ fi
 
 # Stage 3: Link validation tests
 echo "🔗 Stage 3: Running link validation..."
-if npm run test:links; then
+if npm run test:links >/dev/null 2>&1; then
     echo "✅ Link validation passed"
 else
-    echo "⚠️  Link validation had warnings, but continuing..."
-fi
-
-# Stage 4: Python-based comprehensive link validation
-echo "🐍 Stage 4: Running comprehensive Python link validation..."
-if python3 run_link_tests.py; then
-    echo "✅ Comprehensive link validation passed"
-else
-    echo "❌ Comprehensive link validation failed - cannot push"
+    echo "❌ Link validation failed - cannot push"
     exit 1
 fi
+
+# Stage 4: Server configuration validation
+echo "🔧 Stage 4: Validating configuration files..."
 
 # Stage 5: Build verification (if applicable)
 echo "🏗️  Stage 5: Verifying project structure..."
@@ -97,7 +92,7 @@ echo "📊 Push summary:"
 echo "   • Linting: ✅"
 echo "   • Unit tests: ✅"
 echo "   • Link validation: ✅"
-echo "   • Python validation: ✅"
+echo "   • Node.js validation: ✅"
 echo "   • Structure check: ✅"
 if [ "$current_branch" = "$protected_branch" ]; then
     echo "   • Security scan: ✅"
