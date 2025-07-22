@@ -418,6 +418,14 @@
 
     // Sequential loading algorithm for category-aware pagination
     function getNextPageItems(allCategories, pageSize = 20) {
+        console.log('🔍 DEBUG - getNextPageItems called:', {
+            pageSize,
+            workshopOffset: state.workshopOffset,
+            workshopTotal: state.workshopTotal,
+            workshopsAvailable: allCategories.workshops ? allCategories.workshops.length : 0,
+            condition: state.workshopOffset < state.workshopTotal
+        });
+
         const items = [];
         let remainingSpace = pageSize;
 
@@ -427,9 +435,23 @@
                 state.workshopOffset,
                 state.workshopOffset + remainingSpace
             );
+            console.log('🔍 DEBUG - Workshop items sliced:', {
+                from: state.workshopOffset,
+                to: state.workshopOffset + remainingSpace,
+                actualItems: workshopItems.length,
+                firstItemName: workshopItems[0] ? workshopItems[0].name : 'none'
+            });
+            
             items.push(...workshopItems.map(item => ({...item, category: 'workshops'})));
             state.workshopOffset += workshopItems.length;
             remainingSpace -= workshopItems.length;
+        } else {
+            console.log('🔍 DEBUG - Skipping workshops:', {
+                workshopOffset: state.workshopOffset,
+                workshopTotal: state.workshopTotal,
+                remainingSpace: remainingSpace,
+                condition: state.workshopOffset < state.workshopTotal
+            });
         }
 
         // Then, fill remaining space with socials
@@ -606,6 +628,12 @@
             content: document.getElementById('gallery-detail-content'),
             static: document.getElementById('gallery-detail-static')
         });
+        
+        // Clear any stale session storage that might interfere with workshop photos
+        const year = getYearFromPage();
+        const stateKey = `gallery_${year}_state`;
+        console.log('🧹 Clearing any stale session storage to ensure fresh load');
+        sessionStorage.removeItem(stateKey);
         
         // Initialize performance optimization modules
         initPerformanceModules();
@@ -795,8 +823,25 @@
 
                 console.log(`📊 Total items in static data: workshops=${state.workshopTotal}, socials=${state.socialTotal}, total=${state.totalItemsAvailable}`);
 
+                // Debug: Log the state before getting first page
+                console.log('🔍 DEBUG - Before getNextPageItems:', {
+                    workshopOffset: state.workshopOffset,
+                    workshopTotal: state.workshopTotal,
+                    socialOffset: state.socialOffset,
+                    socialTotal: state.socialTotal,
+                    workshopDataLength: state.allCategories.workshops ? state.allCategories.workshops.length : 0
+                });
+
                 // Get first page using sequential algorithm
                 const pageItems = getNextPageItems(state.allCategories, CONFIG.PAGINATION_SIZE);
+
+                // Debug: Log what we got from getNextPageItems
+                console.log('🔍 DEBUG - After getNextPageItems:', {
+                    pageItemsLength: pageItems.length,
+                    workshopItems: pageItems.filter(item => item.category === 'workshops').length,
+                    socialItems: pageItems.filter(item => item.category === 'socials').length,
+                    firstFewItems: pageItems.slice(0, 3).map(item => ({name: item.name, category: item.category}))
+                });
 
                 // Organize items back into categories for display
                 const paginatedCategories = {
