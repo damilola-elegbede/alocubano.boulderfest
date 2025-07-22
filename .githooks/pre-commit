@@ -1,0 +1,46 @@
+#!/bin/sh
+#
+# Pre-commit hook for A Lo Cubano Boulder Fest
+# Runs linting and unit tests before allowing commits
+#
+
+set -e
+
+echo "🚀 Running pre-commit checks..."
+
+# Check if we're in the right directory
+if [ ! -f package.json ]; then
+    echo "❌ Error: Not in project root directory"
+    exit 1
+fi
+
+# Stage 1: Linting
+echo "📝 Stage 1: Running linter..."
+if npm run lint; then
+    echo "✅ Linting passed"
+else
+    echo "❌ Linting failed - please fix errors before committing"
+    exit 1
+fi
+
+# Stage 2: Unit tests (without strict coverage for commits)
+echo "🧪 Stage 2: Running unit tests..."
+if npm run test:unit -- --passWithNoTests --coverage=false; then
+    echo "✅ Unit tests passed"
+else
+    echo "❌ Unit tests failed - please fix tests before committing"
+    exit 1
+fi
+
+# Stage 3: Check for sensitive data (basic check)
+echo "🔒 Stage 3: Checking for sensitive data..."
+SENSITIVE_FILES=$(git diff --cached --name-only | grep -v -E "(package*.json|jest*.js|README.md|\.md$|\.githooks|\.github|install-hooks\.sh)" | xargs grep -l -i -E "(api[_-]?key|password|secret[^a]|token)" 2>/dev/null || true)
+if [ -n "$SENSITIVE_FILES" ]; then
+    echo "⚠️  WARNING: Potential sensitive data found in staged files"
+    echo "Files: $SENSITIVE_FILES"
+    echo "Please review your changes and remove any secrets or API keys"
+    exit 1
+fi
+
+echo "✅ All pre-commit checks passed!"
+echo "💡 Your commit is ready to proceed"

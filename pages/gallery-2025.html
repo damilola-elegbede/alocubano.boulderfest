@@ -52,7 +52,7 @@
         <!-- Back Navigation -->
         <section class="gallery-back-nav">
             <div class="container">
-                <a href="gallery.html" class="back-link">
+                <a href="/gallery" class="back-link">
                     <span class="back-arrow">←</span>
                     <span class="back-text font-mono">BACK TO GALLERIES</span>
                 </a>
@@ -97,8 +97,8 @@
                             Check back later or follow us on social media for updates!
                         </p>
                         <div style="display: flex; gap: var(--space-lg); justify-content: center; flex-wrap: wrap;">
-                            <a href="gallery.html" class="form-button-type" style="display: inline-block;">← Back to Gallery</a>
-                            <a href="tickets.html" class="form-button-type" style="display: inline-block; background: var(--color-red);">Get 2026 Tickets</a>
+                            <a href="/gallery" class="form-button-type" style="display: inline-block;">← Back to Gallery</a>
+                            <a href="/tickets" class="form-button-type" style="display: inline-block; background: var(--color-red);">Get 2026 Tickets</a>
                         </div>
                     </div>
                 </div>
@@ -152,6 +152,11 @@
     <script src="/js/navigation.js"></script>
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
+    <!-- Performance Optimization Modules -->
+    <script src="/js/performance-monitor.js"></script>
+    <script src="/js/prefetch-manager.js"></script>
+    <script src="/js/progressive-loader.js"></script>
+    <script src="/js/cache-warmer.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
     <script>
@@ -166,6 +171,6 @@
             console.log('- socials-section:', document.getElementById('socials-section'));
         });
     </script>
-    <script src="/js/gallery-detail.js?v=2025-07-21-COUNTER-FIX"></script>
+    <script src="/js/gallery-detail.js?v=2025-07-22-PERFORMANCE-OPTIMIZED"></script>
 </body>
 </html>
