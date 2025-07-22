@@ -89,106 +89,10 @@
         state.categoryItemCounts = { workshops: 0, socials: 0 };
         state.timestamp = null;
         state.restoredFromCache = false;
-        
+
         console.log('🔄 Gallery state reset to initial values');
     }
 
-    // Show cache indicator to user
-    function showCacheIndicator() {
-        // Check if we should show the indicator
-        if (!state.restoredFromCache) return;
-        
-        // Create cache indicator element
-        const indicator = document.createElement('div');
-        indicator.id = 'cache-indicator';
-        indicator.className = 'cache-indicator fade-in';
-        indicator.innerHTML = `
-            <span class="cache-icon">💾</span>
-            <span class="cache-text">Restored from cache</span>
-            <button class="cache-refresh" title="Refresh gallery">↻</button>
-        `;
-        
-        // Style the indicator
-        indicator.style.cssText = `
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px 15px;
-            border-radius: 25px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        `;
-        
-        // Add to page
-        document.body.appendChild(indicator);
-        
-        // Fade in
-        requestAnimationFrame(() => {
-            indicator.style.opacity = '1';
-        });
-        
-        // Add refresh button handler
-        const refreshBtn = indicator.querySelector('.cache-refresh');
-        refreshBtn.style.cssText = `
-            background: none;
-            border: none;
-            color: white;
-            cursor: pointer;
-            font-size: 18px;
-            padding: 0 5px;
-            transition: transform 0.3s ease;
-        `;
-        
-        // Define event handlers for proper cleanup
-        const handleClick = () => {
-            // Clear cache and reload
-            const year = getYearFromPage();
-            const stateKey = `gallery_${year}_state`;
-            sessionStorage.removeItem(stateKey);
-            window.location.reload();
-        };
-        
-        const handleMouseEnter = () => {
-            refreshBtn.style.transform = 'rotate(180deg)';
-        };
-        
-        const handleMouseLeave = () => {
-            refreshBtn.style.transform = 'rotate(0deg)';
-        };
-        
-        // Add event listeners
-        refreshBtn.addEventListener('click', handleClick);
-        refreshBtn.addEventListener('mouseenter', handleMouseEnter);
-        refreshBtn.addEventListener('mouseleave', handleMouseLeave);
-        
-        // Store cleanup function
-        indicator._cleanup = () => {
-            refreshBtn.removeEventListener('click', handleClick);
-            refreshBtn.removeEventListener('mouseenter', handleMouseEnter);
-            refreshBtn.removeEventListener('mouseleave', handleMouseLeave);
-        };
-        
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            indicator.style.opacity = '0';
-            setTimeout(() => {
-                if (indicator.parentNode) {
-                    // Clean up event listeners before removing
-                    if (indicator._cleanup) {
-                        indicator._cleanup();
-                    }
-                    indicator.remove();
-                }
-            }, 300);
-        }, 5000);
-    }
 
     // State persistence functions
     function saveState() {
@@ -234,7 +138,7 @@
             state.version = 2;
             state.restoredFromCache = state.restoredFromCache || false;
             state.categoryItemCounts = state.categoryItemCounts || { workshops: 0, socials: 0 };
-            
+
             // Ensure displayOrder items have categoryIndex
             if (state.displayOrder && Array.isArray(state.displayOrder)) {
                 const categoryCounters = { workshops: 0, socials: 0 };
@@ -245,10 +149,10 @@
                     }
                 });
             }
-            
+
             console.log('✅ State migrated from v1 to v2');
         }
-        
+
         // Future migrations can be added here
         // if (fromVersion === 2) { ... migrate to v3 ... }
     }
@@ -282,7 +186,7 @@
 
             // Store timestamp in state for later freshness checks
             state.timestamp = persistedState.timestamp;
-            
+
             // Check if state is still valid (30 minutes expiry)
             const age = Date.now() - persistedState.timestamp;
             if (age > 30 * 60 * 1000) {
@@ -364,7 +268,7 @@
             workshops: [],
             socials: []
         };
-        
+
         // Reset category counters based on the highest index in displayOrder
         state.categoryItemCounts = {
             workshops: 0,
@@ -374,17 +278,17 @@
         // Filter out items that already exist in DOM
         let restoredCount = 0;
         let skippedCount = 0;
-        
+
         state.displayOrder.forEach(item => {
             const itemKey = `${item.category}_${item.id}`;
-            
+
             // Skip if item already exists in DOM
             if (existingItems.has(itemKey)) {
                 skippedCount++;
                 console.log(`⏭️ Skipping already displayed item: ${itemKey}`);
                 return;
             }
-            
+
             restoredCount++;
             if (item.category === 'workshops') {
                 categorizedItems.workshops.push(item);
@@ -400,7 +304,7 @@
                 }
             }
         });
-        
+
         console.log(`📊 Restoration summary: ${restoredCount} items restored, ${skippedCount} items skipped (already displayed)`);
 
         // Restore workshops section
@@ -419,21 +323,30 @@
             await insertItemsProgressively(categorizedItems.socials, socialsGallery, 'socials', categorizedItems.workshops.length, false);
         }
 
-        // Re-observe lazy items and attach handlers
-        observeLazyItems();
-
-        const items = contentEl.querySelectorAll('.gallery-item');
+        // First, set up click handlers for all items (but keep them as data-loaded="false")
+        const items = contentEl.querySelectorAll('.gallery-item:not([data-handler-loaded="true"])');
         items.forEach((item) => {
             setupGalleryItemHandlers(item, { categories: categorizedItems });
-            item.setAttribute('data-loaded', 'true');
+            // Note: NOT setting data-loaded="true" yet - lazy loading needs to happen first
         });
+
+        // Now observe lazy items (they still have data-loaded="false")
+        observeLazyItems();
+
+        // Wait a brief moment for lazy loading to initialize, then mark as loaded for tracking
+        setTimeout(() => {
+            items.forEach((item) => {
+                // Only mark as loaded for tracking purposes, but don't interfere with lazy loading
+                item.setAttribute('data-handler-loaded', 'true');
+            });
+        }, 100);
 
         // Restore lightbox state
         state.lightboxItems = state.displayOrder;
         state.lightboxCategories = state.displayOrder.map(item => item.category);
 
         console.log('✅ DOM restored successfully');
-        
+
         // Re-setup infinite scroll if needed
         if (state.hasMorePages) {
             const year = getYearFromPage();
@@ -698,7 +611,7 @@
             if (stateAge < STATE_FRESHNESS_THRESHOLD) {
                 console.log('📚 Using fresh restored state, recreating DOM...');
                 console.log(`📊 State age: ${Math.round(stateAge / 60000)} minutes`);
-                
+
                 // Restore DOM from saved state WITHOUT making API calls
                 await restoreDOM();
 
@@ -712,19 +625,19 @@
 
                 // Mark that we've successfully restored from cache
                 state.restoredFromCache = true;
-                
-                // Display cache indicator to user (optional)
-                showCacheIndicator();
-                
+
+                // Log cache restoration to console (no visual indicator)
+                console.log('💾 Gallery restored from cache - no API calls needed');
+
                 return; // Exit early - no need to load fresh data
             } else {
                 console.log('⏰ Saved state is stale, clearing and loading fresh data...');
                 console.log(`📊 State age: ${Math.round(stateAge / 60000)} minutes (threshold: 30 minutes)`);
-                
+
                 // Clear stale state
                 const stateKey = `gallery_${year}_state`;
                 sessionStorage.removeItem(stateKey);
-                
+
                 // Reset state to initial values
                 resetGalleryState();
             }
@@ -766,7 +679,7 @@
             const offset = state.loadedPages * CONFIG.PAGINATION_SIZE;
             let apiUrl;
             let isStaticFetch = false;
-            let data; // eslint-disable-line prefer-const
+            let data;
 
             // For the first page, load the static JSON file.
             if (offset === 0) {
@@ -965,7 +878,7 @@
     // Progressive DOM insertion to prevent UI blocking
     async function insertItemsProgressively(items, container, categoryName, categoryOffset = 0, isAppend = false) {
         const BATCH_SIZE = 5; // Process 5 items at a time
-        
+
         // Initialize category counters if not already present
         if (!state.categoryItemCounts) {
             state.categoryItemCounts = {
@@ -973,18 +886,18 @@
                 socials: 0
             };
         }
-        
+
         // Early exit if all items are already displayed
         const allDuplicates = items.every(item => {
             const itemId = `${categoryName}_${item.id || item.name}`;
             return state.displayedItemIds.has(itemId);
         });
-        
+
         if (allDuplicates && items.length > 0) {
             console.log(`⏭️ All ${items.length} ${categoryName} items already displayed, skipping insertion`);
             return;
         }
-        
+
         const uniqueItems = items.filter(item => {
             // Create category-aware item ID to prevent duplicates within categories
             const itemId = `${categoryName}_${item.id || item.name}`;
@@ -998,7 +911,7 @@
             }
             state.displayedItemIds.add(itemId);
             state.loadedItemIds.add(itemId); // Still track for debugging
-            
+
             // If item already has categoryIndex (from restoration), use it
             // Otherwise, assign a new one
             let categoryIndex;
@@ -1020,7 +933,7 @@
                 categoryIndex: categoryIndex
             };
             state.displayOrder.push(displayOrderItem);
-            
+
             // Enhanced debug logging for category index tracking
             // console.log(`📍 Item added to display order:`, {
             //     name: item.name,
@@ -1138,17 +1051,24 @@
                 await insertItemsProgressively(socialItems, socialsGallery, 'socials', workshopItems.length, appendMode);
             }
 
-            // Observe new lazy items
-            observeLazyItems();
-
             // Add click handlers for lightbox (only for new items if appending)
-            const selector = appendMode ? '.gallery-item[data-loaded="false"]' : '.gallery-item';
+            const selector = appendMode ? '.gallery-item[data-loaded="false"]:not([data-handler-loaded="true"])' : '.gallery-item:not([data-handler-loaded="true"])';
             const items = contentEl.querySelectorAll(selector);
             console.log(`🎯 Attaching click handlers to ${items.length} items (appendMode: ${appendMode})`);
             items.forEach((item) => {
                 setupGalleryItemHandlers(item, data);
-                item.setAttribute('data-loaded', 'true');
+                // Don't set data-loaded="true" immediately - let lazy loading happen first
             });
+
+            // Observe new lazy items AFTER handlers are attached
+            observeLazyItems();
+
+            // Mark items as handler-loaded for tracking without interfering with lazy loading
+            setTimeout(() => {
+                items.forEach((item) => {
+                    item.setAttribute('data-handler-loaded', 'true');
+                });
+            }, 100);
         }
 
         // Store all items for lightbox (flatten categories)
@@ -1173,6 +1093,11 @@
 
     // Setup click handlers for gallery items
     function setupGalleryItemHandlers(item, data) {
+        // Skip if handlers already attached
+        if (item.getAttribute('data-handler-loaded') === 'true') {
+            return;
+        }
+
         const displayIndex = parseInt(item.dataset.index);
 
         // Use event delegation to handle lazy-loaded content
@@ -1199,6 +1124,9 @@
         item.style.cursor = 'pointer';
         item.style.position = 'relative';
         item.style.zIndex = '1';
+
+        // Mark as having handlers loaded
+        item.setAttribute('data-handler-loaded', 'true');
     }
 
     // Initialize lazy loading using shared component
@@ -1224,7 +1152,7 @@
                 }
             }
         });
-        
+
         // Listen for successful image loads to track them
         document.addEventListener('load', (e) => {
             if (e.target.tagName === 'IMG' && e.target.classList.contains('lazy-image')) {
@@ -1366,7 +1294,7 @@
         //     displayIndex: currentItem.displayIndex,
         //     categoryCounts: state.categoryCounts
         // });
-        
+
         // Verify category indices for debugging
         // if (currentItem.category === 'socials') {
         //     console.log('🎭 Social item details:', {

@@ -1,13 +1,22 @@
 {
   "items": [
     {
-      "id": "1bbcT5nrX05GpWVQmI0xeEV9dIwuKyexn",
-      "name": "Copy of AloCubanoSocial 05.17.25 - 026.jpg",
+      "id": "1GXt-XzUg-KJdyZcJh_HEHz39NqaLHnnZ",
+      "name": "Copy of AloCubanoClasses 05.17.25 - 1108.jpg",
       "mimeType": "image/jpeg",
-      "thumbnailUrl": "/api/image-proxy/1bbcT5nrX05GpWVQmI0xeEV9dIwuKyexn",
-      "viewUrl": "/api/image-proxy/1bbcT5nrX05GpWVQmI0xeEV9dIwuKyexn",
-      "size": 3705161,
-      "createdAt": "2025-07-20T01:27:50.401Z"
+      "thumbnailUrl": "/api/image-proxy/1GXt-XzUg-KJdyZcJh_HEHz39NqaLHnnZ",
+      "viewUrl": "/api/image-proxy/1GXt-XzUg-KJdyZcJh_HEHz39NqaLHnnZ",
+      "size": 3774473,
+      "createdAt": "2025-07-21T23:56:29.721Z"
+    },
+    {
+      "id": "1erOhw9wOSRXphSwrQFqfkuTbym565Gjj",
+      "name": "Copy of AloCubanoClasses 05.17.25 - 810.jpg",
+      "mimeType": "image/jpeg",
+      "thumbnailUrl": "/api/image-proxy/1erOhw9wOSRXphSwrQFqfkuTbym565Gjj",
+      "viewUrl": "/api/image-proxy/1erOhw9wOSRXphSwrQFqfkuTbym565Gjj",
+      "size": 3681856,
+      "createdAt": "2025-07-21T23:56:21.434Z"
     },
     {
       "id": "1sAgisSimKAQvga2loAqSgWF8EdkE1EF1",
@@ -118,6 +127,6 @@
       "createdAt": "2025-07-20T00:22:18.829Z"
     }
   ],
-  "totalCount": 13,
-  "cacheTimestamp": "2025-07-21T23:40:25.178Z"
+  "totalCount": 14,
+  "cacheTimestamp": "2025-07-22T00:49:37.548Z"
 }
