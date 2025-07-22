@@ -74,7 +74,7 @@ This document details the performance optimizations implemented based on the spe
 ### Local Testing Setup:
 1. Install dependencies: `npm install`
 2. Test data created in `/public` directory
-3. Run local server: `python3 server.py`
+3. Run local server: `npm run serve`
 4. Verify static JSON loading in browser console
 
 ### Production Deployment:

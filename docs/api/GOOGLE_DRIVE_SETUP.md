@@ -173,7 +173,7 @@ For local testing, you can use the `.env.local` file:
    ```bash
    ./scripts/start.sh
    # or
-   python3 server.py
+   npm run serve
    ```
 
 4. Test the gallery:

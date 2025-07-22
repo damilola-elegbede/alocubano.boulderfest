@@ -2,31 +2,31 @@
 
 ## Overview
 
-The Link Validation System provides comprehensive validation of all link types found in the A Lo Cubano Boulder Fest website. It integrates with the server.py routing logic to accurately validate internal links and ensures all external references are properly formatted.
+The Link Validation System provides comprehensive validation of all link types found in the A Lo Cubano Boulder Fest website. It integrates with the Vercel routing logic to accurately validate internal links and ensures all external references are properly formatted.
 
 ## Features
 
 ### ✅ Comprehensive Link Type Support
 
-- **Internal Page Links**: Clean URLs mapped via server.py routing (`/home`, `/about`, etc.)
+- **Internal Page Links**: Clean URLs mapped via Vercel routing (`/home`, `/about`, etc.)
 - **Asset References**: CSS, JavaScript, images with query parameter support
-- **API Endpoints**: Validates all server.py API routes and patterns
+- **API Endpoints**: Validates all Vercel API routes and patterns
 - **External Links**: Social media, general web links with format validation
 - **Email Links**: Mailto links with email format validation
 - **Anchor Links**: Fragment identifiers within pages
 - **Static JSON**: Public data files for gallery and featured photos
 
-### ✅ Server.py Integration
+### ✅ Vercel Routing Integration
 
-The validator mirrors the exact routing logic from `server.py`:
+The validator mirrors the exact routing logic from Vercel configuration:
 
 ```python
 # Root path handling
 if not path or path == '/':
-    # Root redirects to /home (server.py line 190-191)
+    # Root redirects to /home (via Vercel config)
 
 # Clean URL routing
-# /about → pages/about.html (server.py lines 194-207)
+# /about → pages/about.html (via Vercel rewrites)
 
 # Static JSON redirects
 # /featured-photos.json → public/featured-photos.json
@@ -100,7 +100,7 @@ def test_critical_pages():
 | Link Pattern | Validation Logic | Example |
 |-------------|------------------|---------|
 | `/home` | Maps to `pages/home.html` | ✅ Valid if file exists |
-| `/` | Redirects to `/home` | ✅ Always valid (server.py logic) |
+| `/` | Redirects to `/home` | ✅ Always valid (Vercel routing) |
 | `/api/gallery` | Server endpoint | ✅ Matches known API routes |
 | `/nonexistent` | No matching file | ❌ Invalid |
 
@@ -205,7 +205,7 @@ python3 tests/integration/example_test_integration.py
 
 ## Integration with Server.py
 
-The validator understands all server.py routing patterns:
+The validator understands all Vercel routing patterns:
 
 1. **Clean URL Mapping** (lines 194-207)
    - `/about` → `pages/about.html`
@@ -304,7 +304,7 @@ docs/
 
 The Link Validation System provides production-ready link validation for the A Lo Cubano Boulder Fest website with:
 
-- ✅ **100% Accuracy**: Mirrors server.py routing logic exactly
+- ✅ **100% Accuracy**: Mirrors Vercel routing logic exactly
 - ✅ **Complete Coverage**: Validates all link types found on site
 - ✅ **Easy Integration**: Simple API for test framework integration
 - ✅ **Detailed Reporting**: Comprehensive validation reports

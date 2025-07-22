@@ -48,11 +48,7 @@ link_validation_report.txt
 # Performance audit reports
 performance-audit.html
 
-# Python virtual environment
-venv/
-
 # Additional test artifacts
-.pytest_cache/
 *.coverage
 
 # Local settings
@@ -66,9 +62,6 @@ venv/
 *.temp
 .cache/
 
-# Python cache
-__pycache__/
-*.pyc
 
 # Git hooks
 .husky/

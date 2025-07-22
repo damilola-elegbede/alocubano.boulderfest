@@ -2,8 +2,12 @@
   "buildCommand": "npm run prebuild && echo 'Static site ready'",
   "outputDirectory": ".",
   "framework": null,
+  "devCommand": "vercel dev",
   "functions": {
     "api/gallery.js": {
+      "maxDuration": 10
+    },
+    "api/featured-photos.js": {
       "maxDuration": 10
     },
     "api/debug.js": {
@@ -11,6 +15,9 @@
     },
     "api/cache-warm.js": {
       "maxDuration": 15
+    },
+    "api/image-proxy/[fileId].js": {
+      "maxDuration": 10
     }
   },
   "images": {
@@ -24,16 +31,54 @@
   },
   "rewrites": [
     {
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
       "source": "/home",
       "destination": "/pages/home.html"
     },
     {
-      "source": "/((?!api/|home)[^./]+)",
-      "destination": "/pages/$1.html"
+      "source": "/about",
+      "destination": "/pages/about.html"
     },
     {
-      "source": "/",
-      "destination": "/index.html"
+      "source": "/artists",
+      "destination": "/pages/artists.html"
+    },
+    {
+      "source": "/schedule",
+      "destination": "/pages/schedule.html"
+    },
+    {
+      "source": "/gallery",
+      "destination": "/pages/gallery.html"
+    },
+    {
+      "source": "/gallery-2025",
+      "destination": "/pages/gallery-2025.html"
+    },
+    {
+      "source": "/gallery-test-minimal",
+      "destination": "/pages/gallery-test-minimal.html"
+    },
+    {
+      "source": "/tickets",
+      "destination": "/pages/tickets.html"
+    },
+    {
+      "source": "/donations",
+      "destination": "/pages/donations.html"
+    }
+  ],
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "status": 404,
+      "dest": "/pages/404.html"
     }
   ],
   "redirects": [],
@@ -44,7 +89,8 @@
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
-        { "key": "X-XSS-Protection", "value": "1; mode=block" }
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
       ]
     },
     {

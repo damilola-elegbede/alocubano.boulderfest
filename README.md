@@ -8,13 +8,13 @@ The official website for **A Lo Cubano Boulder Fest**, Boulder's premier Cuban s
 
 ### Prerequisites
 1. Copy `.env.example` to `.env.local` and add your Google Drive credentials
-2. Install Python dependencies: `pip3 install -r requirements.txt`
+2. Install Node.js dependencies: `npm install`
 
 ### Start the server
 ```bash
 ./scripts/start.sh
 # or
-python3 server.py
+npm run serve
 ```
 
 Then open: **http://localhost:8000**
@@ -39,7 +39,7 @@ The website features a **typographic-forward design** that treats text as art:
 ```
 alocubano.boulderfest/
 ├── index.html (Main home page)
-├── server.py (Python development server)
+├── vercel.json (Deployment configuration)
 ├── scripts/
 │   └── start.sh (Quick launcher)
 ├── css/
@@ -83,7 +83,7 @@ alocubano.boulderfest/
 - ✅ Circular favicon branding
 - ✅ Custom Instagram icon
 - ✅ Smooth animations and transitions
-- ✅ Fast Python development server
+- ✅ Fast Node.js development server
 - ✅ Google Drive API integration for dynamic gallery
 - ✅ Lightbox viewer for photos and videos
 - ✅ Serverless functions on Vercel
@@ -105,14 +105,21 @@ alocubano.boulderfest/
 ## 🛠️ Development
 
 ### Requirements
-- Python 3.x
+- Node.js 18+ and npm
 - Modern web browser (Chrome, Firefox, Safari, Edge)
 
 ### Running Locally
 1. Clone the repository
 2. Navigate to project directory
-3. Run `./start.sh` or `python3 server.py`
-4. Open http://localhost:8000 in your browser
+3. Run `npm install` to install dependencies
+4. Run `./scripts/start.sh` or `npm run dev`
+5. Open http://localhost:8000 in your browser
+
+### Available Scripts
+- `npm run dev` - Start Vercel development server on port 8000
+- `npm run serve` - Same as dev (alias)
+- `npm test` - Run unit tests
+- `npm run build` - Build for production
 
 ## 📱 Browser Support
 

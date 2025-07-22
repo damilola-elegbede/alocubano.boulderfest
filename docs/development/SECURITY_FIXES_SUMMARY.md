@@ -84,7 +84,7 @@ scriptFunction();
 
 ### Files Modified
 - `/js/navigation.js` - XSS fix
-- `/server.py` - Rate limiting, CORS, input validation
+- `/api/` - Rate limiting, CORS, input validation (serverless functions)
 - `/api/gallery.js` - CORS, input validation
 - `/api/featured-photos.js` - CORS restrictions
 

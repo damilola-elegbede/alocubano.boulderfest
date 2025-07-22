@@ -13,9 +13,9 @@ module.exports = {
         ]
     },
     server: {
-        command: 'python3 -m http.server 8000',
+        command: 'npx vercel dev --listen 8000',
         port: 8000,
-        launchTimeout: 10000,
+        launchTimeout: 30000, // Increased for Vercel startup
         debug: true
     }
 };
