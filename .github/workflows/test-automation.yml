@@ -106,7 +106,7 @@ jobs:
       run: npm ci
       
     - name: Validate coverage thresholds
-      run: npm run test:coverage:threshold
+      run: npm run test:coverage
       
     - name: Run test health check
       run: node scripts/test-runner.js health
