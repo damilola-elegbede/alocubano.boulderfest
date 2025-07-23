@@ -74,16 +74,15 @@ class ImageCacheManager {
      * @returns {string} Complete image URL with query parameters
      */
     getImageUrl(fileId, options = {}) {
-        const format = options.format || this.defaultFormat;
-        const width = options.width || this.defaultWidth;
+        let format = options.format || this.defaultFormat;
+        let width = options.width || this.defaultWidth;
         const quality = options.quality || '85';
         const cache = options.cache || '24h';
         
         // Validate format
         if (!this.supportedFormats.includes(format)) {
             console.warn(`Unsupported format '${format}', falling back to ${this.fallbackFormat}`);
-            options.format = this.fallbackFormat;
-            return this.getImageUrl(fileId, options);
+            format = this.fallbackFormat;
         }
         
         // Validate width
@@ -92,8 +91,7 @@ class ImageCacheManager {
                 Math.abs(curr - width) < Math.abs(prev - width) ? curr : prev
             );
             console.warn(`Unsupported width '${width}', using closest width ${closestWidth}`);
-            options.width = closestWidth;
-            return this.getImageUrl(fileId, options);
+            width = closestWidth;
         }
         
         const params = new URLSearchParams({

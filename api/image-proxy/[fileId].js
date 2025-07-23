@@ -41,6 +41,17 @@ export default async function handler(req, res) {
     });
   }
 
+  // Validate quality parameter
+  const quality = Math.min(100, Math.max(1, parseInt(q) || 75));
+
+  // Validate width parameter
+  if (w && (isNaN(parseInt(w)) || parseInt(w) <= 0)) {
+    return res.status(400).json({
+      error: 'Bad Request',
+      message: 'Width parameter must be a positive integer'
+    });
+  }
+
   // Validate environment variables
   const requiredEnvVars = {
     GOOGLE_SERVICE_ACCOUNT_EMAIL: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -134,7 +145,6 @@ export default async function handler(req, res) {
     const acceptHeader = req.headers.accept || '';
     const targetFormat = format || detectOptimalFormat(acceptHeader);
     const width = w ? parseInt(w) : null;
-    const quality = parseInt(q);
 
     // Generate enhanced cache key including format and size
     const cacheKey = generateCacheKey(fileId, { width, format: targetFormat, quality });

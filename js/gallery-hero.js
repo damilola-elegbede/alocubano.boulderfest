@@ -85,7 +85,7 @@
             existingSources.forEach(source => source.remove());
         }
         
-        if (imageData && imageData.id) {
+        if (imageData?.id) {
             const { webpSrcset, jpegSrcset } = generateResponsiveSources(imageData.id);
             
             // Create WebP source

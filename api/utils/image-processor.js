@@ -33,7 +33,6 @@ async function processImage(inputBuffer, options = {}) {
         effort: 4
       });
       break;
-    case 'jpeg':
     default:
       pipeline = pipeline.jpeg({ 
         quality: quality || JPEG_QUALITY,
@@ -52,7 +51,7 @@ async function processImage(inputBuffer, options = {}) {
  */
 function detectOptimalFormat(acceptHeader) {
   // Check for WebP support
-  if (acceptHeader && acceptHeader.includes('image/webp')) {
+  if (acceptHeader?.includes('image/webp')) {
     return 'webp';
   }
   
