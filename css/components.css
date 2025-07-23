@@ -99,6 +99,127 @@
   letter-spacing: 0.1em;
 }
 
+/* Gallery Year Banner */
+.gallery-year-banner {
+  padding: var(--space-2xl) 0;
+  text-align: center;
+  background: var(--color-white);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.year-display-text {
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 15vw, 12rem);
+  font-weight: 400;
+  line-height: var(--line-height-none);
+  margin: 0 0 var(--space-md) 0;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.year-char {
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+.year-char-1 { color: var(--color-red); }
+.year-char-2 { color: var(--color-blue); }
+.year-char-3 { color: var(--color-black); }
+.year-char-4 { color: var(--color-red); }
+
+.year-char:hover {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.year-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-gray-600);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wider);
+  margin: 0;
+}
+
+/* Gallery Detail Sections */
+#gallery-detail-content {
+  display: none;
+}
+
+.gallery-section {
+  display: none;
+}
+
+.gallery-section.socials-section {
+  margin-top: var(--space-4xl);
+}
+
+.gallery-section .text-display {
+  text-align: center;
+  margin-bottom: var(--space-2xl);
+}
+
+.gallery-grid-static {
+  display: none;
+}
+
+.gallery-static-content {
+  text-align: center;
+  padding: var(--space-3xl) 0;
+}
+
+.gallery-static-title {
+  margin-bottom: var(--space-xl);
+}
+
+.gallery-static-description {
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--space-2xl);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.gallery-static-note {
+  color: var(--color-gray-600);
+  margin-bottom: var(--space-2xl);
+}
+
+.gallery-static-actions {
+  display: flex;
+  gap: var(--space-lg);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.gallery-static-actions .form-button-type {
+  display: inline-block;
+}
+
+.gallery-static-actions .form-button-type.tickets-button {
+  background: var(--color-red);
+}
+
+/* Gallery Stats Section */
+.gallery-stats {
+  background: var(--color-gray-50);
+  padding: var(--space-3xl) 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-2xl);
+  text-align: center;
+}
+
+.stat-item .font-display {
+  font-size: var(--font-size-3xl);
+  color: var(--color-red);
+}
+
+.stat-item .font-mono {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
 /* Performance optimizations */
 .gallery-grid {
   content-visibility: auto;
