@@ -89,12 +89,18 @@
             </div>
         </section>
 
-        <!-- Festival Years Navigation -->
-        <section class="section-typographic festival-years-nav">
+        <!-- Multi-Year Gallery Section -->
+        <section class="section-typographic gallery-main-section">
             <div class="container">
-                <h2 class="text-display" style="text-align: center; margin-bottom: var(--space-3xl);">EXPLORE BY YEAR</h2>
+                <h2 class="text-display" style="text-align: center; margin-bottom: var(--space-3xl);">FESTIVAL GALLERY</h2>
                 
-                <div class="festival-years-grid">
+                <!-- Multi-Year Gallery Container -->
+                <div id="multi-year-gallery-container" class="multi-year-container" style="display: none;">
+                    <!-- Multi-Year Gallery Manager will initialize here -->
+                </div>
+                
+                <!-- Fallback Year Navigation -->
+                <div id="fallback-year-navigation" class="festival-years-grid">
                     <a href="/gallery-2025" class="festival-year-card" data-year="2025">
                         <div class="year-card-content">
                             <span class="year-number font-display">2025</span>
@@ -182,9 +188,113 @@
     <script src="/js/navigation.js"></script>
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
+    <!-- Virtual Gallery System -->
+    <script src="/js/virtual-gallery.js"></script>
+    <script src="/js/multi-year-gallery.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
     <script src="/js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING"></script>
     <script src="/js/gallery-hero.js"></script>
+    
+    <!-- Gallery Initialization -->
+    <script>
+        // Global variables
+        let multiYearGallery = null;
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Main gallery page initializing...');
+            
+            // Show the simple fallback navigation by default
+            showFallbackNavigation();
+            
+            // Optionally try to initialize multi-year gallery if needed
+            // This can be enabled later if desired
+            // try {
+            //     await initializeMultiYearGallery();
+            //     console.log('Multi-Year Gallery initialized successfully');
+            // } catch (error) {
+            //     console.error('Failed to initialize gallery:', error);
+            //     showFallbackNavigation();
+            // }
+        });
+        
+        /**
+         * Initialize the Multi-Year Gallery Manager
+         */
+        async function initializeMultiYearGallery() {
+            const container = document.getElementById('multi-year-gallery-container');
+            
+            if (!container) {
+                throw new Error('Gallery container not found');
+            }
+            
+            // Check if MultiYearGalleryManager is available
+            if (typeof MultiYearGalleryManager === 'undefined') {
+                throw new Error('MultiYearGalleryManager not loaded');
+            }
+            
+            // Initialize with configuration
+            multiYearGallery = new MultiYearGalleryManager({
+                container: container,
+                defaultYear: '2025',
+                preloadAdjacentYears: true,
+                enableKeyboardNavigation: true,
+                enableUrlStateManagement: true,
+                showStatistics: true
+            });
+            
+            // Set up event listeners
+            container.addEventListener('multiYearGallery:initialized', (event) => {
+                console.log(`Gallery initialized with year: ${event.detail.year}`);
+            });
+            
+            container.addEventListener('multiYearGallery:yearChanged', (event) => {
+                console.log(`Year changed from ${event.detail.previousYear} to ${event.detail.currentYear}`);
+            });
+            
+            container.addEventListener('multiYearGallery:initializationError', (event) => {
+                console.error('Gallery initialization error:', event.detail.error);
+                if (event.detail.shouldUseFallback) {
+                    showFallbackNavigation();
+                }
+            });
+            
+            container.addEventListener('multiYearGallery:yearsLoadWarning', (event) => {
+                console.warn('Gallery years load warning:', event.detail.error);
+                console.log('Using fallback data for gallery initialization');
+            });
+        }
+        
+        /**
+         * Show fallback navigation if multi-year gallery fails
+         */
+        function showFallbackNavigation() {
+            const multiYearContainer = document.getElementById('multi-year-gallery-container');
+            const fallbackNav = document.getElementById('fallback-year-navigation');
+            
+            if (multiYearContainer) {
+                multiYearContainer.style.display = 'none';
+            }
+            
+            if (fallbackNav) {
+                fallbackNav.style.display = 'grid';
+            }
+            
+            console.log('Showing fallback year navigation');
+        }
+        
+        // Global error handler
+        window.addEventListener('error', (event) => {
+            console.error('Gallery error:', event.error.message);
+        });
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (multiYearGallery && typeof multiYearGallery.destroy === 'function') {
+                multiYearGallery.destroy();
+            }
+        });
+    </script>
 </body>
 </html>

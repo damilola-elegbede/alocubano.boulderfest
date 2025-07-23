@@ -91,26 +91,38 @@
             </div>
         </section>
 
+        <!-- Year Banner -->
+        <section class="gallery-year-banner">
+            <div class="container">
+                <h1 class="year-display-text">
+                    <span class="year-char year-char-1">2</span>
+                    <span class="year-char year-char-2">0</span>
+                    <span class="year-char year-char-3">2</span>
+                    <span class="year-char year-char-4">5</span>
+                </h1>
+                <p class="year-subtitle font-mono">FESTIVAL MEMORIES</p>
+            </div>
+        </section>
 
-        <!-- Gallery Grid Section -->
-        <section class="section-typographic gallery-detail-section" data-gallery-year="2025">
+        <!-- Traditional Gallery Grid Section -->
+        <section class="section-typographic gallery-detail-section" id="traditional-gallery" data-gallery-year="2025">
             <div class="container">
                 <div class="gallery-loading" id="gallery-detail-loading">
                     <p class="font-mono">Loading festival memories...</p>
                 </div>
                 
-                <div id="gallery-detail-content" style="display: none;">
+                <div id="gallery-detail-content">
                     <!-- Workshops Section -->
-                    <div class="gallery-section" id="workshops-section" style="display: none;">
-                        <h2 class="text-display" style="text-align: center; margin-bottom: var(--space-2xl);">WORKSHOPS</h2>
+                    <div class="gallery-section" id="workshops-section">
+                        <h2 class="text-display">WORKSHOPS</h2>
                         <div class="gallery-grid gallery-detail-grid" id="workshops-gallery">
                             <!-- Workshop images will be loaded here -->
                         </div>
                     </div>
                     
                     <!-- Socials Section -->
-                    <div class="gallery-section" id="socials-section" style="display: none; margin-top: var(--space-4xl);">
-                        <h2 class="text-display" style="text-align: center; margin-bottom: var(--space-2xl);">SOCIALS</h2>
+                    <div class="gallery-section socials-section" id="socials-section">
+                        <h2 class="text-display">SOCIALS</h2>
                         <div class="gallery-grid gallery-detail-grid" id="socials-gallery">
                             <!-- Social images will be loaded here -->
                         </div>
@@ -118,44 +130,45 @@
                 </div>
                 
                 <!-- Fallback static gallery -->
-                <div class="gallery-grid-static" id="gallery-detail-static" style="display: none;">
-                    <div style="text-align: center; padding: var(--space-3xl) 0;">
-                        <h2 class="text-display" style="margin-bottom: var(--space-xl);">2025 FESTIVAL GALLERY</h2>
-                        <p class="font-serif" style="font-size: var(--font-size-lg); margin-bottom: var(--space-2xl); max-width: 600px; margin-left: auto; margin-right: auto;">
+                <div class="gallery-grid-static" id="gallery-detail-static">
+                    <div class="gallery-static-content">
+                        <h2 class="text-display gallery-static-title">2025 FESTIVAL GALLERY</h2>
+                        <p class="font-serif gallery-static-description">
                             Our 2025 festival was an incredible celebration of Cuban culture and dance. 
                             Photos from workshops, socials, and performances will be uploaded soon.
                         </p>
-                        <p class="font-mono" style="color: var(--color-gray-600); margin-bottom: var(--space-2xl);">
+                        <p class="font-mono gallery-static-note">
                             Check back later or follow us on social media for updates!
                         </p>
-                        <div style="display: flex; gap: var(--space-lg); justify-content: center; flex-wrap: wrap;">
-                            <a href="/gallery" class="form-button-type" style="display: inline-block;">← Back to Gallery</a>
-                            <a href="/tickets" class="form-button-type" style="display: inline-block; background: var(--color-red);">Get 2026 Tickets</a>
+                        <div class="gallery-static-actions">
+                            <a href="/gallery" class="form-button-type">← Back to Gallery</a>
+                            <a href="/tickets" class="form-button-type tickets-button">Get 2026 Tickets</a>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
+
         <!-- Gallery Stats -->
-        <section class="section-typographic gallery-stats" style="background: var(--color-gray-50); padding: var(--space-3xl) 0;">
+        <section class="section-typographic gallery-stats">
             <div class="container">
-                <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-2xl); text-align: center;">
+                <div class="stats-grid">
                     <div class="stat-item">
-                        <h3 class="font-display" style="font-size: var(--font-size-3xl); color: var(--color-red);">500+</h3>
-                        <p class="font-mono" style="text-transform: uppercase; letter-spacing: 0.1em;">Attendees</p>
+                        <h3 class="font-display">500+</h3>
+                        <p class="font-mono">Attendees</p>
                     </div>
                     <div class="stat-item">
-                        <h3 class="font-display" style="font-size: var(--font-size-3xl); color: var(--color-red);">3</h3>
-                        <p class="font-mono" style="text-transform: uppercase; letter-spacing: 0.1em;">Days of Dance</p>
+                        <h3 class="font-display">3</h3>
+                        <p class="font-mono">Days of Dance</p>
                     </div>
                     <div class="stat-item">
-                        <h3 class="font-display" style="font-size: var(--font-size-3xl); color: var(--color-red);">15+</h3>
-                        <p class="font-mono" style="text-transform: uppercase; letter-spacing: 0.1em;">Workshops</p>
+                        <h3 class="font-display">15+</h3>
+                        <p class="font-mono">Workshops</p>
                     </div>
                     <div class="stat-item">
-                        <h3 class="font-display" style="font-size: var(--font-size-3xl); color: var(--color-red);">∞</h3>
-                        <p class="font-mono" style="text-transform: uppercase; letter-spacing: 0.1em;">Memories Made</p>
+                        <h3 class="font-display">∞</h3>
+                        <p class="font-mono">Memories Made</p>
                     </div>
                 </div>
             </div>
