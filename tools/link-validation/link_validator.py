@@ -15,6 +15,7 @@ properly map to existing HTML files in the pages/ directory.
 
 import os
 import re
+import json
 from urllib.parse import urlparse, urljoin
 from typing import List, Dict, Set, Tuple, Optional, Union
 from pathlib import Path
@@ -39,7 +40,7 @@ class LinkValidationResult:
 class LinkValidator:
     """Comprehensive link validator for the A Lo Cubano Boulder Fest website"""
     
-    def __init__(self, project_root: str):
+    def __init__(self, project_root: str, config_path: Optional[str] = None):
         """Initialize validator with project root directory"""
         self.project_root = Path(project_root).resolve()
         self.pages_dir = self.project_root / "pages"
@@ -48,9 +49,34 @@ class LinkValidator:
         self.images_dir = self.project_root / "images"
         self.api_dir = self.project_root / "api"
         
+        # Load configuration
+        self.config = self._load_config(config_path)
+        
         # Cache of existing files for performance
         self._file_cache = {}
         self._build_file_cache()
+    
+    def _load_config(self, config_path: Optional[str] = None) -> Dict:
+        """Load configuration from JSON file"""
+        if config_path is None:
+            config_path = self.project_root / "tools" / "link-validation" / "link_validation_config.json"
+        
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            # Return default config if file not found or invalid
+            return {
+                "validation_settings": {
+                    "skip_dns_prefetch": True,
+                    "skip_protocol_relative": True
+                },
+                "exclusion_patterns": {
+                    "dns_prefetch_links": ["//fonts.googleapis.com", "//fonts.gstatic.com"],
+                    "protocol_relative_pattern": "^//[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}",
+                    "skip_rel_attributes": ["dns-prefetch", "preconnect", "prefetch"]
+                }
+            }
     
     def _build_file_cache(self) -> None:
         """Build cache of all existing files for fast lookups"""
@@ -61,13 +87,41 @@ class LinkValidator:
                         relative_path = file_path.relative_to(self.project_root)
                         self._file_cache[str(relative_path)] = file_path
     
-    def validate_link(self, link: str, source_file: Optional[str] = None) -> LinkValidationResult:
+    def _should_skip_link(self, link: str, link_attributes: Dict[str, str] = None) -> Tuple[bool, str]:
+        """Check if a link should be skipped based on configuration patterns"""
+        if not link_attributes:
+            link_attributes = {}
+            
+        exclusions = self.config.get("exclusion_patterns", {})
+        settings = self.config.get("validation_settings", {})
+        
+        # Skip DNS prefetch and similar rel attributes
+        rel_attr = link_attributes.get("rel", "").lower()
+        skip_rel_attrs = exclusions.get("skip_rel_attributes", [])
+        if rel_attr in skip_rel_attrs:
+            return True, f"Skipped: rel='{rel_attr}' link (DNS prefetch/preconnect)"
+        
+        # Skip specific DNS prefetch links
+        dns_prefetch_links = exclusions.get("dns_prefetch_links", [])
+        if link in dns_prefetch_links:
+            return True, f"Skipped: Known DNS prefetch link"
+        
+        # Skip protocol-relative URLs if configured
+        if settings.get("skip_protocol_relative", False) and link.startswith("//"):
+            protocol_pattern = exclusions.get("protocol_relative_pattern", "")
+            if protocol_pattern and re.match(protocol_pattern, link):
+                return True, f"Skipped: Protocol-relative URL"
+        
+        return False, ""
+    
+    def validate_link(self, link: str, source_file: Optional[str] = None, link_attributes: Dict[str, str] = None) -> LinkValidationResult:
         """
         Validate a single link and return detailed result
         
         Args:
             link: The link to validate
             source_file: Optional source file path for context
+            link_attributes: Optional dictionary of link attributes (rel, class, etc.)
             
         Returns:
             LinkValidationResult with validation details
@@ -81,12 +135,25 @@ class LinkValidator:
                 error_message="Empty or invalid link"
             )
         
+        # Check if link should be skipped
+        should_skip, skip_reason = self._should_skip_link(link, link_attributes)
+        if should_skip:
+            return LinkValidationResult(
+                link=link,
+                is_valid=True,  # Mark as valid since it's intentionally skipped
+                link_type="skipped",
+                target_path=skip_reason
+            )
+        
         # Parse the link
         parsed = urlparse(link.strip())
         
         # Determine link type and validate accordingly
         if parsed.scheme in ('http', 'https'):
             return self._validate_external_link(link, parsed)
+        elif link.startswith('//'):
+            # Protocol-relative URLs - treat as external
+            return self._validate_protocol_relative_link(link)
         elif parsed.scheme == 'mailto':
             return self._validate_mailto_link(link, parsed)
         elif link.startswith('#'):
@@ -304,6 +371,57 @@ class LinkValidator:
             error_message="Invalid external URL format"
         )
     
+    def _validate_protocol_relative_link(self, link: str) -> LinkValidationResult:
+        """Validate protocol-relative links (starting with //)"""
+        # Remove the // prefix and parse the domain
+        domain_part = link[2:]  # Remove //
+        
+        # Basic domain validation
+        if not domain_part or '.' not in domain_part:
+            return LinkValidationResult(
+                link=link,
+                is_valid=False,
+                link_type="protocol_relative",
+                error_message="Invalid protocol-relative URL: missing or invalid domain"
+            )
+        
+        # Extract just the domain part (before any path)
+        domain = domain_part.split('/')[0]
+        
+        # Check if it's a known domain pattern
+        known_patterns = {
+            'fonts.googleapis.com': 'Google Fonts API',
+            'fonts.gstatic.com': 'Google Fonts Static Resources',
+            'cdnjs.cloudflare.com': 'CDNJS Library',
+            'cdn.jsdelivr.net': 'JSDelivr CDN'
+        }
+        
+        if domain in known_patterns:
+            return LinkValidationResult(
+                link=link,
+                is_valid=True,
+                link_type="protocol_relative",
+                target_path=f"External CDN: {known_patterns[domain]}"
+            )
+        
+        # General validation for protocol-relative URLs
+        # Basic pattern: domain should have at least one dot and valid characters
+        domain_pattern = r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if re.match(domain_pattern, domain):
+            return LinkValidationResult(
+                link=link,
+                is_valid=True,
+                link_type="protocol_relative",
+                target_path=f"External protocol-relative: {domain}"
+            )
+        
+        return LinkValidationResult(
+            link=link,
+            is_valid=False,
+            link_type="protocol_relative",
+            error_message=f"Invalid protocol-relative URL domain: {domain}"
+        )
+    
     def _validate_mailto_link(self, link: str, parsed) -> LinkValidationResult:
         """Validate mailto links"""
         # Extract email from mailto: link
@@ -394,38 +512,49 @@ class LinkValidator:
             error_message="Relative link target not found"
         )
     
-    def extract_links_from_html(self, html_content: str) -> List[str]:
-        """Extract all links from HTML content"""
+    def extract_links_from_html(self, html_content: str) -> List[Tuple[str, Dict[str, str]]]:
+        """Extract all links from HTML content with their attributes"""
         links = []
         
-        # Pattern to find href attributes
-        href_pattern = r'href=["\']([^"\']+)["\']'
+        # Enhanced pattern to capture link tags with attributes
+        # This pattern captures the entire link tag to extract all attributes
+        link_tag_pattern = r'<(\w+)([^>]*?(?:href|src|action)=[^>]*?)>'
         
-        # Pattern to find src attributes (for images, scripts)
-        src_pattern = r'src=["\']([^"\']+)["\']'
+        for match in re.finditer(link_tag_pattern, html_content, re.IGNORECASE | re.DOTALL):
+            tag_name = match.group(1).lower()
+            attributes_str = match.group(2)
+            
+            # Extract individual attributes
+            attributes = {}
+            attr_pattern = r'(\w+)=["\']([^"\']*)["\']'
+            
+            for attr_match in re.finditer(attr_pattern, attributes_str):
+                attr_name = attr_match.group(1).lower()
+                attr_value = attr_match.group(2)
+                attributes[attr_name] = attr_value
+            
+            # Extract the link URL from href, src, or action
+            link_url = None
+            if 'href' in attributes:
+                link_url = attributes['href']
+            elif 'src' in attributes:
+                link_url = attributes['src']
+            elif 'action' in attributes:
+                link_url = attributes['action']
+            
+            # Skip javascript: and data: URLs
+            if link_url and not link_url.startswith(('javascript:', 'data:')):
+                links.append((link_url, attributes))
         
-        # Pattern to find action attributes (for forms)
-        action_pattern = r'action=["\']([^"\']+)["\']'
+        # Remove duplicates while preserving attributes
+        seen = set()
+        unique_links = []
+        for link_url, attrs in links:
+            if link_url not in seen:
+                seen.add(link_url)
+                unique_links.append((link_url, attrs))
         
-        # Extract all href links
-        for match in re.finditer(href_pattern, html_content, re.IGNORECASE):
-            link = match.group(1)
-            if link and not link.startswith('javascript:') and not link.startswith('data:'):
-                links.append(link)
-        
-        # Extract all src links
-        for match in re.finditer(src_pattern, html_content, re.IGNORECASE):
-            link = match.group(1)
-            if link and not link.startswith('javascript:') and not link.startswith('data:'):
-                links.append(link)
-        
-        # Extract all action links
-        for match in re.finditer(action_pattern, html_content, re.IGNORECASE):
-            link = match.group(1)
-            if link and not link.startswith('javascript:') and not link.startswith('data:'):
-                links.append(link)
-        
-        return list(set(links))  # Remove duplicates
+        return unique_links
     
     def validate_file_links(self, file_path: str) -> List[LinkValidationResult]:
         """Validate all links found in a specific HTML file"""
@@ -433,11 +562,11 @@ class LinkValidator:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            links = self.extract_links_from_html(content)
+            links_with_attrs = self.extract_links_from_html(content)
             results = []
             
-            for link in links:
-                result = self.validate_link(link, file_path)
+            for link_url, attributes in links_with_attrs:
+                result = self.validate_link(link_url, file_path, attributes)
                 results.append(result)
             
             return results
