@@ -61,11 +61,8 @@ if (typeof Navigation === 'undefined') {
                 return;
             }
 
-            // Add mobile menu class to nav list for overlay behavior
-            const navList = document.querySelector('.nav-list');
-            if (navList) {
-                navList.classList.add('is-open');
-            }
+            // Mobile menu setup - class will be added only when menu is toggled
+            // The 'is-open' class should only be added when menu is explicitly opened
         }
 
         toggleMobileMenu() {
