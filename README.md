@@ -46,13 +46,13 @@ alocubano.boulderfest/
 ├── vercel.json (Deployment configuration)
 ├── scripts/
 │   ├── start.sh (Quick launcher)
-│   ├── generate-gallery-cache.js (Gallery data generation)
+│   ├── deployment-check.js (Pre-deployment validation)
 │   ├── generate-featured-photos.js (Featured photos cache)
-│   ├── verify-structure.js (Project structure validation)
+│   ├── generate-gallery-cache.js (Gallery data generation)
+│   ├── metrics-monitor.js (Performance monitoring)
 │   ├── test-maintenance.js (Test health monitoring)
 │   ├── test-runner.js (Advanced test execution)
-│   ├── deployment-check.js (Pre-deployment validation)
-│   ├── metrics-monitor.js (Performance monitoring)
+│   ├── verify-structure.js (Project structure validation)
 │   └── debug/ (Debug utilities)
 ├── css/
 │   ├── base.css (Design system)
