@@ -37,14 +37,15 @@
     "test:integration": "jest --config config/jest.unit.config.cjs --testPathPattern='integration'",
     "test:performance": "jest --config config/jest.unit.config.cjs --testPathPattern='performance'",
     "deploy:check": "node scripts/deployment-check.js",
-    "deploy:test": "npm run test:all && npm run test:performance && npm run test:integration",  
+    "deploy:test": "npm run test:all && npm run test:performance && npm run test:integration",
     "deploy:quality-gate": "npm run lint && npm run deploy:test",
     "deploy:staging": "npm run deploy:quality-gate && vercel --target preview",
     "deploy:production": "npm run deploy:quality-gate && vercel --target production"
   },
   "dependencies": {
     "dotenv": "^17.2.0",
-    "googleapis": "^153.0.0"
+    "googleapis": "^153.0.0",
+    "sharp": "^0.34.3"
   },
   "devDependencies": {
     "@axe-core/puppeteer": "^4.8.0",
