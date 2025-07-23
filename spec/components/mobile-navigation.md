@@ -169,11 +169,17 @@ class Navigation {
       menuToggle?.classList.add('is-active');
       overlay?.classList.add('is-open');
       document.body.style.overflow = 'hidden'; // Prevent background scroll
+      
+      // Enable focus trap for accessibility
+      this.enableFocusTrap();
     } else {
       navList?.classList.remove('is-open');
       menuToggle?.classList.remove('is-active');
       overlay?.classList.remove('is-open');
       document.body.style.overflow = ''; // Restore scroll
+      
+      // Disable focus trap
+      this.disableFocusTrap();
     }
   }
 
@@ -187,6 +193,69 @@ class Navigation {
     menuToggle?.classList.remove('is-active');
     overlay?.classList.remove('is-open');
     document.body.style.overflow = '';
+    
+    // Restore focus and disable focus trap
+    this.disableFocusTrap();
+  }
+
+  // Focus management methods for accessibility
+  getFocusableElements(container) {
+    const focusableSelectors = [
+      'a[href]',
+      'button:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])'
+    ].join(', ');
+    
+    return container.querySelectorAll(focusableSelectors);
+  }
+
+  enableFocusTrap() {
+    const navList = document.querySelector('.nav-list');
+    if (!navList) return;
+
+    const focusableElements = this.getFocusableElements(navList);
+    if (focusableElements.length === 0) return;
+
+    // Store the previously focused element to restore later
+    this.previouslyFocusedElement = document.activeElement;
+
+    this.firstFocusableElement = focusableElements[0];
+    this.lastFocusableElement = focusableElements[focusableElements.length - 1];
+
+    // Focus the first element when menu opens
+    this.firstFocusableElement.focus();
+  }
+
+  disableFocusTrap() {
+    // Restore focus to the element that was focused before opening the menu
+    if (this.previouslyFocusedElement) {
+      this.previouslyFocusedElement.focus();
+      this.previouslyFocusedElement = null;
+    }
+  }
+
+  handleFocusTrap(e) {
+    if (!this.mobileMenuOpen) return;
+
+    // Handle Tab key to trap focus within menu
+    if (e.key === 'Tab') {
+      if (e.shiftKey) {
+        // Shift + Tab: moving backwards
+        if (document.activeElement === this.firstFocusableElement) {
+          e.preventDefault();
+          this.lastFocusableElement.focus();
+        }
+      } else {
+        // Tab: moving forwards
+        if (document.activeElement === this.lastFocusableElement) {
+          e.preventDefault();
+          this.firstFocusableElement.focus();
+        }
+      }
+    }
   }
 }
 ```
@@ -200,10 +269,27 @@ setupEventListeners() {
     menuToggle.addEventListener('click', () => this.toggleMobileMenu());
   }
 
-  // Close on Escape key
+  // Handle keyboard navigation and focus trap
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && this.mobileMenuOpen) {
       this.closeMobileMenu();
+    }
+    
+    // Enable focus trap when menu is open
+    this.handleFocusTrap(e);
+  });
+
+  // Focus trap using focusin event (backup method)
+  document.addEventListener('focusin', (e) => {
+    if (!this.mobileMenuOpen) return;
+    
+    const navList = document.querySelector('.nav-list');
+    if (!navList || navList.contains(e.target)) return;
+    
+    // If focus moves outside the menu, redirect it back to the first focusable element
+    if (this.firstFocusableElement) {
+      e.preventDefault();
+      this.firstFocusableElement.focus();
     }
   });
 
