@@ -20,6 +20,7 @@ try {
   gallerySource = fs.readFileSync(galleryPath, 'utf8');
 } catch (error) {
   console.error('Failed to load gallery source:', error);
+  throw new Error(`Gallery consolidated tests cannot run without gallery source file: ${error.message}`);
 }
 
 // Global state for gallery loading
