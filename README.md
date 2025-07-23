@@ -45,7 +45,15 @@ alocubano.boulderfest/
 ├── index.html (Main home page)
 ├── vercel.json (Deployment configuration)
 ├── scripts/
-│   └── start.sh (Quick launcher)
+│   ├── start.sh (Quick launcher)
+│   ├── generate-gallery-cache.js (Gallery data generation)
+│   ├── generate-featured-photos.js (Featured photos cache)
+│   ├── verify-structure.js (Project structure validation)
+│   ├── test-maintenance.js (Test health monitoring)
+│   ├── test-runner.js (Advanced test execution)
+│   ├── deployment-check.js (Pre-deployment validation)
+│   ├── metrics-monitor.js (Performance monitoring)
+│   └── debug/ (Debug utilities)
 ├── css/
 │   ├── base.css (Design system)
 │   ├── components.css (Reusable components)
