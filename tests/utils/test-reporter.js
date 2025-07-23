@@ -1,6 +1,6 @@
 /**
- * A Lo Cubano Boulder Fest - Test Reporter
- * Comprehensive test output formatting and reporting system
+ * Enhanced Test Reporter
+ * Comprehensive test result reporting and analysis
  */
 
 import fs from 'fs';
@@ -35,6 +35,16 @@ class TestReporter {
         this.progressTotal = 0;
         this.progressCurrent = 0;
         this.logBuffer = [];
+        
+        // Test results tracking
+        this.results = {
+            total: 0,
+            passed: 0,
+            failed: 0,
+            coverage: {},
+            performance: {},
+            timestamp: new Date().toISOString()
+        };
     }
 
     /**
@@ -486,6 +496,57 @@ class TestReporter {
         lines.push('End of Report');
         
         return lines.join('\n');
+    }
+
+    // Generate HTML test report
+    generateHTMLReport() {
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>A Lo Cubano Test Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .passed { color: green; }
+        .failed { color: red; }
+        .coverage { background: #f5f5f5; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Test Report - ${this.results.timestamp}</h1>
+    <div class="summary">
+        <h2>Summary</h2>
+        <p>Total Tests: ${this.results.total}</p>
+        <p class="passed">Passed: ${this.results.passed}</p>
+        <p class="failed">Failed: ${this.results.failed}</p>
+    </div>
+    <div class="coverage">
+        <h2>Coverage</h2>
+        <pre>${JSON.stringify(this.results.coverage, null, 2)}</pre>
+    </div>
+</body>
+</html>
+        `;
+        
+        fs.writeFileSync('test-report.html', html);
+        console.log('📄 HTML report generated: test-report.html');
+    }
+
+    // Generate JSON report for CI/CD
+    generateJSONReport() {
+        fs.writeFileSync('test-report.json', JSON.stringify(this.results, null, 2));
+        console.log('📄 JSON report generated: test-report.json');
+    }
+
+    // Integration with Jest custom reporter
+    onRunComplete(contexts, results) {
+        this.results.total = results.numTotalTests;
+        this.results.passed = results.numPassedTests;
+        this.results.failed = results.numFailedTests;
+        
+        // Generate reports
+        this.generateHTMLReport();
+        this.generateJSONReport();
     }
 }
 
