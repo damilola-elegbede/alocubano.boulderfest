@@ -104,13 +104,13 @@ class LinkValidator:
         # Skip specific DNS prefetch links
         dns_prefetch_links = exclusions.get("dns_prefetch_links", [])
         if link in dns_prefetch_links:
-            return True, f"Skipped: Known DNS prefetch link"
+            return True, "Skipped: Known DNS prefetch link"
         
         # Skip protocol-relative URLs if configured
         if settings.get("skip_protocol_relative", False) and link.startswith("//"):
             protocol_pattern = exclusions.get("protocol_relative_pattern", "")
             if protocol_pattern and re.match(protocol_pattern, link):
-                return True, f"Skipped: Protocol-relative URL"
+                return True, "Skipped: Protocol-relative URL"
         
         return False, ""
     

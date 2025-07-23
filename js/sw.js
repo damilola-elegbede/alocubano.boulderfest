@@ -240,9 +240,37 @@ async function handleImageRequest(request) {
     
     try {
         console.log('[SW] Fetching image from network:', request.url);
-        const networkResponse = await fetch(request, {
+        
+        // Handle Google Drive images with CORS issues
+        let fetchRequest = request;
+        let fetchOptions = {
             headers: { 'Cache-Control': 'max-age=3600' }
-        });
+        };
+        
+        if (request.url.includes('drive.google.com') || request.url.includes('lh3.googleusercontent.com')) {
+            // For Google Drive URLs, try using the image proxy API or no-cors mode
+            const driveUrl = encodeURIComponent(request.url);
+            const proxyUrl = `/api/image-proxy/drive?url=${driveUrl}`;
+            
+            try {
+                // First try the proxy endpoint
+                const proxyResponse = await fetch(proxyUrl);
+                if (proxyResponse.ok) {
+                    console.log('[SW] Using proxy for Google Drive image:', request.url);
+                    fetchRequest = new Request(proxyUrl);
+                } else {
+                    // Fallback to no-cors mode for opaque response
+                    fetchOptions.mode = 'no-cors';
+                    console.log('[SW] Using no-cors mode for Google Drive image:', request.url);
+                }
+            } catch (proxyError) {
+                // Fallback to no-cors mode
+                fetchOptions.mode = 'no-cors';
+                console.log('[SW] Proxy failed, using no-cors mode for Google Drive image:', request.url);
+            }
+        }
+        
+        const networkResponse = await fetch(fetchRequest, fetchOptions);
         
         if (networkResponse.ok) {
             // Check image size before caching

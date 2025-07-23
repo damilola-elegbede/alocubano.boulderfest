@@ -15,16 +15,18 @@
  */
 
 // Page to Google Drive file ID mapping
+// TODO: Replace with actual Google Drive file IDs from project assets
+// Format: Google Drive file IDs are typically 33-44 characters long and contain letters, numbers, and symbols
 const PAGE_HERO_MAPPING = {
-  'home': '1abc123def456',           // Main festival hero image
-  'about': '1def456ghi789',         // About page hero
-  'artists': '1ghi789jkl012',       // Artists lineup hero
-  'schedule': '1jkl012mno345',      // Schedule page hero
-  'gallery': '1mno345pqr678',       // Gallery hub hero
-  'gallery-2025': '1pqr678stu901',  // 2025 gallery hero
-  'tickets': '1stu901vwx234',       // Tickets page hero
-  'donations': '1vwx234yzab567',    // Donations hero
-  'default': '1abc123def456'        // Fallback hero image
+  'home': process.env.HERO_HOME_FILE_ID || '1BxC2DyE3FzG4HxI5JyK6LzM7NyO8PxQ9RyS0',           // Main festival hero image
+  'about': process.env.HERO_ABOUT_FILE_ID || '1TxU2VyW3XzY4AzB5CzD6EzF7GzH8IzJ9KzL0',         // About page hero
+  'artists': process.env.HERO_ARTISTS_FILE_ID || '1MxN2OyP3QzR4SzT5UzV6WzX7YzZ8AzB9CzD0',       // Artists lineup hero
+  'schedule': process.env.HERO_SCHEDULE_FILE_ID || '1ExF2GyH3IzJ4KzL5MzN6OzP7QzR8SzT9UzV0',      // Schedule page hero
+  'gallery': process.env.HERO_GALLERY_FILE_ID || '1WxX2YyZ3AzB4CzD5EzF6GzH7IzJ8KzL9MzN0',       // Gallery hub hero
+  'gallery-2025': process.env.HERO_GALLERY_2025_FILE_ID || '1OxP2QyR3SzT4UzV5WzX6YzZ7AzB8CzD9EzF0',  // 2025 gallery hero
+  'tickets': process.env.HERO_TICKETS_FILE_ID || '1GxH2IyJ3KzL4MzN5OzP6QzR7SzT8UzV9WzX0',       // Tickets page hero
+  'donations': process.env.HERO_DONATIONS_FILE_ID || '1YxZ2AyB3CzD4EzF5GzH6IzJ7KzL8MzN9OzP0',    // Donations hero
+  'default': process.env.HERO_DEFAULT_FILE_ID || '1BxC2DyE3FzG4HxI5JyK6LzM7NyO8PxQ9RyS0'        // Fallback hero image (same as home)
 };
 
 // Default query parameters

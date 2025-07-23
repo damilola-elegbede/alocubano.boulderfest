@@ -547,7 +547,7 @@ class AdvancedCacheWarmer {
         } else if (currentPath.includes('/gallery')) {
             // Gallery page: warm critical first, then gallery-specific content
             this.warmPhase('critical', this.getStrategyConfig()).then(() => {
-                const galleryMatch = currentPath.match(/gallery[/-](\d{4})/);
+                const galleryMatch = currentPath.match(/gallery[/-]?(\d{4})\/?/);
                 if (galleryMatch) {
                     this.warmGalleryImages(galleryMatch[1]);
                 }
