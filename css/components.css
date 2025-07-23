@@ -965,6 +965,13 @@
   color: var(--color-white);
 }
 
+/* Keyboard accessibility focus styles */
+.year-button:focus-visible {
+  outline: 3px solid var(--color-blue);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--color-white), 0 0 0 5px var(--color-blue);
+}
+
 .year-label {
   font-size: var(--font-size-base);
   font-weight: 700;
@@ -1140,7 +1147,7 @@
 .multi-year-gallery::after {
   content: "Use arrow keys to navigate between years";
   position: absolute;
-  bottom: -var(--space-lg);
+  bottom: calc(-1 * var(--space-lg));
   left: 0;
   font-family: var(--font-code);
   font-size: var(--font-size-xs);
