@@ -10,6 +10,36 @@
   <link rel="icon" type="image/svg+xml" href="/images/favicon-circle.svg">
   <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
   
+  <!-- Critical resource preloading -->
+  <script>
+    // Inline critical path optimization
+    (function() {
+      // Preload hero image for current page
+      const pageId = window.location.pathname.split('/').pop() || 'home';
+      const heroPreload = document.createElement('link');
+      heroPreload.rel = 'preload';
+      heroPreload.as = 'image';
+      heroPreload.href = `/api/hero-image/${pageId}?w=1200&format=webp`;
+      heroPreload.crossOrigin = 'anonymous';
+      document.head.appendChild(heroPreload);
+      
+      // Preload gallery data for gallery pages
+      if (pageId.includes('gallery')) {
+        const year = pageId.includes('2025') ? '2025' : new Date().getFullYear();
+        const galleryDataPreload = document.createElement('link');
+        galleryDataPreload.rel = 'preload';
+        galleryDataPreload.as = 'fetch';
+        galleryDataPreload.href = `/api/gallery?year=${year}&category=workshops`;
+        galleryDataPreload.crossOrigin = 'anonymous';
+        document.head.appendChild(galleryDataPreload);
+      }
+    })();
+  </script>
+
+  <!-- DNS prefetch for external resources -->
+  <link rel="dns-prefetch" href="//fonts.googleapis.com">
+  <link rel="dns-prefetch" href="//fonts.gstatic.com">
+  
   <!-- Stylesheets -->
   <link rel="stylesheet" href="/css/base.css">
   <style>
