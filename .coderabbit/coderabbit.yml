@@ -9,9 +9,9 @@ reviews:
   paths:
     # IMPORTANT: Exclude paths to focus the AI and reduce noise/cost.
     exclude:
-      - '**.md'          # Exclude all markdown documentation and specs
-      - '**.json'         # Exclude json data files
-      - '**.lock'         # Exclude lock files
+      - '**/*.md'          # Exclude all markdown documentation and specs
+      - '**/*.json'         # Exclude json data files
+      - '**/*.lock'         # Exclude lock files
       - 'LICENSE'
       - '.github/**'      # Exclude GitHub-specific workflow files
       - '.tmp/**'
@@ -20,10 +20,10 @@ reviews:
       - 'dist/**'         # Exclude build output
       - 'venv/**'         # Exclude Python virtual environment
       - '__pycache__/**'  # Exclude Python cache
-      - '**.svg'          # Exclude SVG images
-      - '**.png'
-      - '**.jpg'
-      - '**.ico'
+      - '**/*.svg'          # Exclude SVG images
+      - '**/*.png'
+      - '**/*.jpg'
+      - '**/*.ico'
 
 # The 'chat' section controls the ability to chat with @coderabbitai in PR comments.
 chat:
