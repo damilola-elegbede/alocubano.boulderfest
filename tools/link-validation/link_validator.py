@@ -521,7 +521,6 @@ class LinkValidator:
         link_tag_pattern = r'<(\w+)([^>]*?(?:href|src|action)=[^>]*?)>'
         
         for match in re.finditer(link_tag_pattern, html_content, re.IGNORECASE | re.DOTALL):
-            tag_name = match.group(1).lower()
             attributes_str = match.group(2)
             
             # Extract individual attributes
