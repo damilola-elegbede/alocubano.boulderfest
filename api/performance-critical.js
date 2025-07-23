@@ -4,8 +4,24 @@
  */
 
 export default async function handler(req, res) {
-    // Set CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // Set CORS headers - environment-aware for security
+    const allowedOrigins = process.env.NODE_ENV === 'production' 
+        ? [
+            'https://alocubanoboulderfest.com', 
+            'https://www.alocubanoboulderfest.com',
+            'https://alocubano-boulderfest.vercel.app'
+          ]
+        : ['*']; // Allow all origins in development/testing
+    
+    const origin = req.headers.origin;
+    if (process.env.NODE_ENV === 'production') {
+        if (allowedOrigins.includes(origin)) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+        }
+    } else {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+    
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
