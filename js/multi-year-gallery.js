@@ -51,7 +51,7 @@ class MultiYearGalleryManager {
             // Create the DOM structure
             this.createDOMStructure();
 
-            // Load available years
+            // Load available years (now handles API failures gracefully)
             await this.loadAvailableYears();
 
             // Determine initial year from URL or default
@@ -72,9 +72,16 @@ class MultiYearGalleryManager {
             this.dispatchEvent('initialized', { year: this.currentYear });
 
         } catch (error) {
-            this.showError('Failed to initialize gallery. Please refresh the page.');
-            // Emit error event for monitoring
-            this.dispatchEvent('initializationError', { error: error.message });
+            console.error('MultiYearGalleryManager initialization failed:', error);
+            
+            // Instead of showing error, dispatch event to trigger fallback
+            this.dispatchEvent('initializationError', { 
+                error: error.message,
+                shouldUseFallback: true 
+            });
+            
+            // Don't throw the error - let the parent handle fallback
+            throw error;
         }
     }
 
@@ -149,9 +156,22 @@ class MultiYearGalleryManager {
             this.createYearSelectorButtons();
 
         } catch (error) {
-            // Emit error event for monitoring
-            this.dispatchEvent('yearsLoadError', { error: error.message });
-            throw error;
+            console.warn('Failed to load years from API, using fallback data:', error.message);
+            
+            // Use fallback data when API fails
+            this.availableYears = ['2025']; // Only show available year
+            this.yearStatistics = new Map([
+                ['2025', { imageCount: 0, totalSize: 0 }] // Basic stats
+            ]);
+            
+            // Create year selector buttons with fallback data
+            this.createYearSelectorButtons();
+            
+            // Emit warning event but don't throw - allow initialization to continue
+            this.dispatchEvent('yearsLoadWarning', { 
+                error: error.message,
+                fallbackUsed: true 
+            });
         }
     }
 
