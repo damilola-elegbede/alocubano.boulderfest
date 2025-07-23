@@ -24,7 +24,20 @@
     "external_link_timeout": 10,
     "validate_fragments": true,
     "validate_api_endpoints": true,
-    "ignore_query_params": true
+    "ignore_query_params": true,
+    "skip_dns_prefetch": true,
+    "skip_protocol_relative": true
+  },
+
+  "exclusion_patterns": {
+    "dns_prefetch_links": [
+      "//fonts.googleapis.com",
+      "//fonts.gstatic.com",
+      "//cdnjs.cloudflare.com",
+      "//cdn.jsdelivr.net"
+    ],
+    "protocol_relative_pattern": "^//[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}",
+    "skip_rel_attributes": ["dns-prefetch", "preconnect", "prefetch"]
   },
   
   "server_routes": {

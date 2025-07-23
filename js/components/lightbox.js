@@ -57,9 +57,20 @@ if (typeof Lightbox === 'undefined') {
                 prevBtn.addEventListener('click', () => this.previous());
                 nextBtn.addEventListener('click', () => this.next());
 
-                // Close on background click
+                // Close on background click (improved to handle nested elements)
                 lightbox.addEventListener('click', (e) => {
-                    if (e.target === lightbox) {
+                    // Close if clicking on lightbox background or lightbox-content (but not on image or controls)
+                    if (e.target === lightbox ||
+                        (e.target.classList.contains('lightbox-content') && !e.target.closest('.lightbox-media-container'))) {
+                        this.close();
+                    }
+                });
+
+                // Additional click handler for lightbox-content to ensure overlay clicks work
+                const lightboxContent = lightbox.querySelector('.lightbox-content');
+                lightboxContent.addEventListener('click', (e) => {
+                    // Close if clicking directly on the content area (not on image or buttons)
+                    if (e.target === lightboxContent) {
                         this.close();
                     }
                 });
@@ -74,14 +85,23 @@ if (typeof Lightbox === 'undefined') {
                     return;
                 }
 
-                if (e.key === 'Escape') {
+                // Prevent default behavior for arrow keys when lightbox is open
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Escape') {
+                    e.preventDefault();
+                }
+
+                switch (e.key) {
+                case 'Escape':
                     this.close();
-                }
-                if (e.key === 'ArrowLeft') {
+                    break;
+                case 'ArrowLeft':
+                case 'Left': // Fallback for older browsers
                     this.previous();
-                }
-                if (e.key === 'ArrowRight') {
+                    break;
+                case 'ArrowRight':
+                case 'Right': // Fallback for older browsers
                     this.next();
+                    break;
                 }
             });
         }

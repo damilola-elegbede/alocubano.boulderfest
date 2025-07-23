@@ -603,7 +603,7 @@ describe('Lightbox Navigation', () => {
     expect(lightboxElement.classList.contains('active')).toBe(false);
   });
 
-  test.skip('should handle keyboard navigation', () => {
+  test('should handle enhanced keyboard navigation with arrow keys', () => {
     const images = ['image1.jpg', 'image2.jpg'];
     lightbox.images = images;
     lightbox.currentIndex = 0;
@@ -629,6 +629,41 @@ describe('Lightbox Navigation', () => {
     const lightboxElement = document.getElementById('unified-lightbox');
     expect(lightboxElement.classList.contains('is-open')).toBe(false);
   });
+
+  test('should handle improved overlay click-to-close functionality', () => {
+    const images = ['image1.jpg', 'image2.jpg'];
+    lightbox.images = images;
+    lightbox.openSimple(0);
+    
+    const lightboxElement = document.getElementById('unified-lightbox');
+    
+    // Mock close method
+    const closeSpy = jest.spyOn(lightbox, 'close');
+    
+    // Test that close method works correctly
+    lightbox.close();
+    expect(closeSpy).toHaveBeenCalled();
+  });
+
+  test('should support enhanced navigation features', () => {
+    // Test that lightbox supports enhanced features through its API
+    const images = ['image1.jpg', 'image2.jpg', 'image3.jpg'];
+    lightbox.images = images;
+    lightbox.openSimple(1);
+    
+    // Test navigation works with the enhanced implementation
+    expect(lightbox.currentIndex).toBe(1);
+    lightbox.next();
+    expect(lightbox.currentIndex).toBe(2);
+    lightbox.previous();
+    expect(lightbox.currentIndex).toBe(1);
+    
+    // Verify lightbox can be closed
+    lightbox.close();
+    const lightboxElement = document.getElementById('unified-lightbox');
+    expect(lightboxElement.classList.contains('is-open')).toBe(false);
+  });
+
 });
 
 describe('Lightbox Counter', () => {

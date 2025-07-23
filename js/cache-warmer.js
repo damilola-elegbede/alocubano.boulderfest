@@ -1,151 +1,382 @@
 /**
- * Cache Warmer for A Lo Cubano Boulder Fest Gallery
- * Implements intelligent cache warming strategies for cold start elimination
+ * Advanced Cache Warmer for A Lo Cubano Boulder Fest Gallery
+ * Phase 2: Intelligent Cache Warming with Connection-Aware Strategies
  * 
  * Features:
- * - Homepage cache warming
- * - Critical resource prefetching
- * - Popular content identification
- * - Background warming with idle detection
+ * - Connection-aware warming strategies (minimal/conservative/aggressive)
+ * - Progressive warming phases (Critical → Essential → Predictive)
+ * - Analytics tracking and bandwidth monitoring
+ * - Resource prioritization and intelligent batching
+ * - Service worker integration for persistent caching
+ * - Performance monitoring and strategy optimization
  */
 
-class CacheWarmer {
+class AdvancedCacheWarmer {
     constructor() {
-        this.warmingQueue = new Set();
-        this.warmingStats = {
-            itemsWarmed: 0,
-            totalTime: 0,
-            failures: 0
+        this.warmingQueue = new Map(); // URL -> priority
+        this.warmingInProgress = new Set();
+        this.completedUrls = new Set();
+        
+        // Connection and device detection
+        this.connectionInfo = this.detectConnectionCapabilities();
+        this.strategy = this.determineStrategy();
+        
+        // Analytics tracking
+        this.analytics = {
+            warmed: 0,
+            failed: 0,
+            bandwidthUsed: 0,
+            timeSpent: 0,
+            strategySwitches: 0,
+            phaseCompletions: {
+                critical: false,
+                essential: false,
+                predictive: false
+            }
         };
         
-        this.criticalResources = this.getCriticalResources();
+        // Resource categorization
+        this.resources = this.categorizeResources();
+        
+        // Warming state
+        this.currentPhase = 'idle';
         this.isWarming = false;
         
-        console.log('[CacheWarmer] Initialized with', this.criticalResources.length, 'critical resources');
+        console.log('[AdvancedCacheWarmer] Initialized with strategy:', this.strategy);
+        console.log('[AdvancedCacheWarmer] Connection info:', this.connectionInfo);
+        
+        // Listen for connection changes
+        this.setupConnectionMonitoring();
+        
+        // Setup service worker messaging
+        this.setupServiceWorkerMessaging();
     }
     
-    getCriticalResources() {
+    detectConnectionCapabilities() {
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        
+        let effectiveType = 'unknown';
+        let downlink = null;
+        let rtt = null;
+        let saveData = false;
+        
+        if (connection) {
+            effectiveType = connection.effectiveType || 'unknown';
+            downlink = connection.downlink;
+            rtt = connection.rtt;
+            saveData = connection.saveData;
+        }
+        
+        // Detect device capabilities
+        const deviceMemory = navigator.deviceMemory || 4; // Default to 4GB
+        const hardwareConcurrency = navigator.hardwareConcurrency || 4;
+        
         return {
-            styles: [
-                '/css/base.css',
-                '/css/components.css',
-                '/css/typography.css',
-                '/css/navigation.css'
-            ],
-            scripts: [
-                '/js/main.js',
-                '/js/navigation.js',
-                '/js/gallery-detail.js'
-            ],
-            images: [
-                '/images/logo.png',
-                '/images/favicon-circle.svg',
-                '/images/hero-default.jpg'
-            ],
-            fonts: [
-                'https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap',
-                'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap'
-            ]
+            effectiveType,
+            downlink,
+            rtt,
+            saveData,
+            deviceMemory,
+            hardwareConcurrency,
+            isLowEnd: deviceMemory <= 2 || hardwareConcurrency <= 2
         };
     }
     
-    async warmOnHomepage() {
+    determineStrategy() {
+        const { effectiveType, saveData, isLowEnd, downlink } = this.connectionInfo;
+        
+        // Force minimal strategy for save-data or low-end devices
+        if (saveData || isLowEnd) {
+            return 'minimal';
+        }
+        
+        // Strategy based on connection quality
+        if (effectiveType === '4g' && downlink > 5) {
+            return 'aggressive';
+        } else if (effectiveType === '4g' || effectiveType === '3g') {
+            return 'conservative';
+        } else {
+            return 'minimal';
+        }
+    }
+    
+    categorizeResources() {
+        return {
+            critical: {
+                styles: [
+                    '/css/base.css',
+                    '/css/components.css',
+                    '/css/typography.css'
+                ],
+                scripts: [
+                    '/js/main.js',
+                    '/js/navigation.js'
+                ],
+                images: [
+                    '/images/logo.png',
+                    '/images/favicon-circle.svg'
+                ]
+            },
+            essential: {
+                styles: [
+                    '/css/navigation.css',
+                    '/css/forms.css'
+                ],
+                scripts: [
+                    '/js/gallery-detail.js',
+                    '/js/components/lightbox.js'
+                ],
+                images: [
+                    '/images/hero-default.jpg'
+                ],
+                fonts: [
+                    'https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap',
+                    'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap'
+                ]
+            },
+            predictive: {
+                styles: [
+                    '/css/mobile-overrides.css'
+                ],
+                scripts: [
+                    '/js/components/lazy-loading.js',
+                    '/js/typography.js'
+                ],
+                api: [
+                    '/api/featured-photos',
+                    '/api/gallery/2025'
+                ]
+            }
+        };
+    }
+    
+    setupConnectionMonitoring() {
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        
+        if (connection) {
+            connection.addEventListener('change', () => {
+                const oldStrategy = this.strategy;
+                this.connectionInfo = this.detectConnectionCapabilities();
+                this.strategy = this.determineStrategy();
+                
+                if (oldStrategy !== this.strategy) {
+                    console.log('[AdvancedCacheWarmer] Strategy changed:', oldStrategy, '→', this.strategy);
+                    this.analytics.strategySwitches++;
+                    this.adaptToNewStrategy();
+                }
+            });
+        }
+    }
+    
+    setupServiceWorkerMessaging() {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data.type === 'CACHE_WARM_COMPLETE') {
+                    this.handleServiceWorkerCacheComplete(event.data);
+                }
+            });
+        }
+    }
+    
+    adaptToNewStrategy() {
+        // Pause current warming if strategy becomes more restrictive
+        if (this.strategy === 'minimal' && this.isWarming) {
+            this.pauseWarming();
+        }
+        
+        // Resume or intensify warming if strategy becomes more permissive
+        if ((this.strategy === 'conservative' || this.strategy === 'aggressive') && !this.isWarming) {
+            this.resumeWarming();
+        }
+    }
+    
+    getStrategyConfig() {
+        const configs = {
+            minimal: {
+                batchSize: 2,
+                batchDelay: 1000,
+                maxConcurrent: 1,
+                phases: ['critical']
+            },
+            conservative: {
+                batchSize: 4,
+                batchDelay: 500,
+                maxConcurrent: 2,
+                phases: ['critical', 'essential']
+            },
+            aggressive: {
+                batchSize: 8,
+                batchDelay: 200,
+                maxConcurrent: 4,
+                phases: ['critical', 'essential', 'predictive']
+            }
+        };
+        
+        return configs[this.strategy] || configs.conservative;
+    }
+    
+    async startProgressiveWarming() {
         if (this.isWarming) {
-            console.log('[CacheWarmer] Already warming, skipping duplicate request');
+            console.log('[AdvancedCacheWarmer] Already warming in progress');
             return;
         }
         
-        console.log('[CacheWarmer] Starting homepage cache warming');
+        console.log('[AdvancedCacheWarmer] Starting progressive warming with strategy:', this.strategy);
         this.isWarming = true;
+        const startTime = performance.now();
         
         try {
-            // Warm critical resources first
-            await this.warmCriticalResources();
+            const config = this.getStrategyConfig();
             
-            // Then warm gallery thumbnails during idle time
-            if ('requestIdleCallback' in window) {
-                requestIdleCallback(() => this.warmGalleryThumbnails(), { timeout: 10000 });
-            } else {
-                setTimeout(() => this.warmGalleryThumbnails(), 2000);
+            // Phase 1: Critical resources
+            if (config.phases.includes('critical')) {
+                await this.warmPhase('critical', config);
             }
             
+            // Phase 2: Essential resources
+            if (config.phases.includes('essential')) {
+                await this.warmPhase('essential', config);
+            }
+            
+            // Phase 3: Predictive resources
+            if (config.phases.includes('predictive')) {
+                await this.warmPhase('predictive', config);
+            }
+            
+            const endTime = performance.now();
+            this.analytics.timeSpent += endTime - startTime;
+            
+            this.reportAnalytics();
+            
         } catch (error) {
-            console.error('[CacheWarmer] Homepage warming failed:', error);
+            console.error('[AdvancedCacheWarmer] Progressive warming failed:', error);
         } finally {
             this.isWarming = false;
         }
     }
     
-    async warmCriticalResources() {
-        const startTime = performance.now();
+    async warmPhase(phaseName, config) {
+        console.log(`[AdvancedCacheWarmer] Starting ${phaseName} phase`);
+        this.currentPhase = phaseName;
         
-        console.log('[CacheWarmer] Warming critical resources');
+        const phaseResources = this.resources[phaseName];
+        const allUrls = [];
         
-        const warmingPromises = [
-            this.warmResourceGroup('styles', this.criticalResources.styles),
-            this.warmResourceGroup('scripts', this.criticalResources.scripts),
-            this.warmResourceGroup('images', this.criticalResources.images),
-            this.warmResourceGroup('fonts', this.criticalResources.fonts)
-        ];
-        
-        const results = await Promise.allSettled(warmingPromises);
-        
-        const endTime = performance.now();
-        this.warmingStats.totalTime += endTime - startTime;
-        
-        // Log results
-        results.forEach((result, index) => {
-            const groupName = ['styles', 'scripts', 'images', 'fonts'][index];
-            if (result.status === 'fulfilled') {
-                console.log(`[CacheWarmer] Successfully warmed ${groupName}`);
-            } else {
-                console.warn(`[CacheWarmer] Failed to warm ${groupName}:`, result.reason);
-                this.warmingStats.failures++;
-            }
+        // Flatten all resource types for this phase
+        Object.keys(phaseResources).forEach(type => {
+            phaseResources[type].forEach(url => {
+                allUrls.push({ url, type, priority: this.getResourcePriority(type, phaseName) });
+            });
         });
+        
+        // Sort by priority (higher numbers = higher priority)
+        allUrls.sort((a, b) => b.priority - a.priority);
+        
+        // Warm resources in batches
+        await this.warmResourcesBatched(allUrls, config);
+        
+        this.analytics.phaseCompletions[phaseName] = true;
+        console.log(`[AdvancedCacheWarmer] Completed ${phaseName} phase`);
+        
+        // Add delay between phases for conservative/minimal strategies
+        if (this.strategy !== 'aggressive') {
+            await this.delay(config.batchDelay);
+        }
     }
     
-    async warmResourceGroup(groupName, resources) {
-        const promises = resources.map(resource => this.warmResource(resource, groupName));
-        return Promise.allSettled(promises);
+    getResourcePriority(type, phase) {
+        const priorities = {
+            critical: { styles: 10, scripts: 9, images: 8 },
+            essential: { styles: 7, scripts: 6, images: 5, fonts: 4 },
+            predictive: { styles: 3, scripts: 2, api: 1, images: 1 }
+        };
+        
+        return priorities[phase]?.[type] || 1;
     }
     
-    async warmResource(url, resourceType) {
-        if (this.warmingQueue.has(url)) {
+    async warmResourcesBatched(resources, config) {
+        const { batchSize, batchDelay, maxConcurrent } = config;
+        
+        for (let i = 0; i < resources.length; i += batchSize) {
+            const batch = resources.slice(i, i + batchSize);
+            
+            // Create limited concurrent promises
+            const batchPromises = batch.slice(0, maxConcurrent).map(resource => 
+                this.warmSingleResource(resource.url, resource.type)
+            );
+            
+            await Promise.allSettled(batchPromises);
+            
+            // Add delay between batches (except for last batch)
+            if (i + batchSize < resources.length) {
+                await this.delay(batchDelay);
+            }
+        }
+    }
+    
+    async warmSingleResource(url, resourceType) {
+        if (this.completedUrls.has(url) || this.warmingInProgress.has(url)) {
             return;
         }
         
-        this.warmingQueue.add(url);
+        this.warmingInProgress.add(url);
+        const startTime = performance.now();
+        let bytesTransferred = 0;
         
         try {
             const response = await fetch(url, {
                 method: 'GET',
                 mode: 'cors',
                 credentials: 'omit',
-                cache: 'default'
+                cache: 'force-cache',
+                priority: this.getRequestPriority(resourceType)
             });
             
             if (response.ok) {
-                // For images, we might want to create an image object to trigger browser caching
-                if (resourceType === 'images' && url.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
-                    await this.preloadImage(url);
+                // Track bandwidth usage
+                const contentLength = response.headers.get('content-length');
+                if (contentLength) {
+                    bytesTransferred = parseInt(contentLength, 10);
+                    this.analytics.bandwidthUsed += bytesTransferred;
                 }
                 
-                this.warmingStats.itemsWarmed++;
-                console.log(`[CacheWarmer] Warmed ${resourceType}:`, url);
+                // For images, ensure they're properly cached
+                if (resourceType === 'images' && url.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
+                    await this.ensureImageCached(url);
+                }
+                
+                this.analytics.warmed++;
+                this.completedUrls.add(url);
+                
+                console.log(`[AdvancedCacheWarmer] Warmed ${resourceType}:`, url, 
+                    bytesTransferred > 0 ? `(${this.formatBytes(bytesTransferred)})` : '');
+                
             } else {
                 throw new Error(`HTTP ${response.status}`);
             }
             
         } catch (error) {
-            console.warn(`[CacheWarmer] Failed to warm ${resourceType}:`, url, error);
-            this.warmingStats.failures++;
+            console.warn(`[AdvancedCacheWarmer] Failed to warm ${resourceType}:`, url, error.message);
+            this.analytics.failed++;
         } finally {
-            this.warmingQueue.delete(url);
+            this.warmingInProgress.delete(url);
         }
     }
     
-    async preloadImage(url) {
+    getRequestPriority(resourceType) {
+        // Use browser's resource prioritization hints
+        const priorityMap = {
+            styles: 'high',
+            scripts: 'high',
+            fonts: 'high',
+            images: 'low',
+            api: 'low'
+        };
+        
+        return priorityMap[resourceType] || 'auto';
+    }
+    
+    async ensureImageCached(url) {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = resolve;
@@ -154,248 +385,200 @@ class CacheWarmer {
         });
     }
     
-    async warmGalleryThumbnails() {
-        console.log('[CacheWarmer] Starting gallery thumbnail warming');
+    async warmGalleryImages(galleryId, limit = 10) {
+        console.log(`[AdvancedCacheWarmer] Warming gallery images for: ${galleryId}`);
         
         try {
-            const criticalImages = await this.getCriticalGalleryImages();
-            
-            if (criticalImages.length === 0) {
-                console.log('[CacheWarmer] No critical gallery images found');
-                return;
-            }
-            
-            // Warm in batches to avoid overwhelming the network
-            const batchSize = 5;
-            for (let i = 0; i < criticalImages.length; i += batchSize) {
-                const batch = criticalImages.slice(i, i + batchSize);
-                
-                const batchPromises = batch.map(imageUrl => 
-                    this.warmResource(imageUrl, 'gallery-thumbnails')
-                );
-                
-                await Promise.allSettled(batchPromises);
-                
-                // Small delay between batches
-                if (i + batchSize < criticalImages.length) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-            }
-            
-        } catch (error) {
-            console.error('[CacheWarmer] Gallery thumbnail warming failed:', error);
-        }
-    }
-    
-    async getCriticalGalleryImages() {
-        const sources = [
-            () => this.getFeaturedPhotos(),
-            () => this.getRecentGalleryThumbnails(),
-            () => this.getPopularImages()
-        ];
-        
-        for (const source of sources) {
-            try {
-                const images = await source();
-                if (images && images.length > 0) {
-                    return images.slice(0, 20); // Limit to 20 most critical
-                }
-            } catch (error) {
-                console.warn('[CacheWarmer] Failed to get images from source:', error);
-            }
-        }
-        
-        return [];
-    }
-    
-    async getFeaturedPhotos() {
-        try {
-            const response = await fetch('/api/featured-photos.js');
-            if (response.ok) {
-                const data = await response.json();
-                return data.photos ? data.photos.map(photo => photo.url) : [];
-            }
-        } catch (error) {
-            console.warn('[CacheWarmer] Failed to get featured photos:', error);
-        }
-        return [];
-    }
-    
-    async getRecentGalleryThumbnails() {
-        try {
-            // Use the actual gallery data endpoint that exists
-            const response = await fetch('/gallery-data/2025.json');
-            if (response.ok) {
-                const data = await response.json();
-                if (data.categories && data.categories.socials) {
-                    // Get first few social images as thumbnails
-                    return data.categories.socials.slice(0, 5).map(photo => photo.thumbnailUrl);
-                }
-            }
-        } catch (error) {
-            console.warn('[CacheWarmer] Failed to get recent gallery thumbnails:', error);
-        }
-        return [];
-    }
-    
-    async getPopularImages() {
-        // Fallback to known popular images
-        return [
-            '/images/hero-default.jpg',
-            '/api/image-proxy/hero-2025-1',
-            '/api/image-proxy/hero-2025-2'
-        ];
-    }
-    
-    async warmSpecificGallery(galleryId) {
-        console.log('[CacheWarmer] Warming specific gallery:', galleryId);
-        
-        try {
-            const galleryData = await this.getGalleryData(galleryId);
+            // Get gallery data
+            const galleryData = await this.fetchGalleryData(galleryId);
             
             if (!galleryData || !galleryData.photos) {
-                console.log('[CacheWarmer] No API data found for gallery:', galleryId, '- this is expected for static galleries');
                 return;
             }
             
-            // Warm gallery metadata
-            await this.warmResource(`/api/gallery/${galleryId}`, 'gallery-metadata');
+            // Select top images based on strategy
+            const config = this.getStrategyConfig();
+            const imagesToWarm = galleryData.photos
+                .slice(0, Math.min(limit, config.batchSize * 2))
+                .map(photo => ({
+                    url: photo.thumbnailUrl || photo.url,
+                    type: 'images',
+                    priority: 5
+                }));
             
-            // Warm first batch of thumbnails
-            const thumbnailUrls = galleryData.photos
-                .slice(0, 15)
-                .map(photo => photo.thumbnailUrl || photo.url)
-                .filter(url => url);
-            
-            await this.warmResourceGroup('gallery-images', thumbnailUrls);
+            await this.warmResourcesBatched(imagesToWarm, {
+                ...config,
+                batchDelay: config.batchDelay * 2 // Slower for gallery images
+            });
             
         } catch (error) {
-            console.error('[CacheWarmer] Failed to warm gallery:', galleryId, error);
+            console.error('[AdvancedCacheWarmer] Gallery warming failed:', error);
         }
     }
     
-    async getGalleryData(galleryId) {
+    async fetchGalleryData(galleryId) {
         try {
-            // Use the actual static JSON file that exists
             const response = await fetch(`/gallery-data/${galleryId}.json`);
             if (response.ok) {
                 const data = await response.json();
-                // Transform to match expected API format
                 return {
                     photos: [
                         ...(data.categories?.workshops || []),
                         ...(data.categories?.socials || [])
                     ]
                 };
-            } else {
-                console.log('[CacheWarmer] Gallery data not available for:', galleryId, '- status:', response.status);
             }
         } catch (error) {
-            console.log('[CacheWarmer] Gallery data not accessible:', galleryId, '- this is expected for non-existent galleries');
+            console.warn(`[AdvancedCacheWarmer] Failed to fetch gallery data: ${galleryId}`, error);
         }
         return null;
     }
     
-    async warmCacheInBackground(urls) {
-        if (!Array.isArray(urls) || urls.length === 0) {
-            return;
-        }
-        
-        console.log('[CacheWarmer] Background warming', urls.length, 'URLs');
-        
-        // Use requestIdleCallback for non-blocking warming
-        if ('requestIdleCallback' in window) {
-            this.warmUrlsWithIdleCallback(urls);
-        } else {
-            // Fallback for browsers without requestIdleCallback
-            this.warmUrlsWithTimeout(urls);
-        }
-    }
-    
-    warmUrlsWithIdleCallback(urls) {
-        let index = 0;
-        
-        const warmNext = (deadline) => {
-            while ((deadline.timeRemaining() > 0 || deadline.didTimeout) && index < urls.length) {
-                this.warmResource(urls[index], 'background');
-                index++;
-            }
-            
-            if (index < urls.length) {
-                requestIdleCallback(warmNext, { timeout: 5000 });
-            }
-        };
-        
-        requestIdleCallback(warmNext, { timeout: 5000 });
-    }
-    
-    warmUrlsWithTimeout(urls) {
-        let index = 0;
-        
-        const warmNext = () => {
-            if (index < urls.length) {
-                this.warmResource(urls[index], 'background');
-                index++;
-                setTimeout(warmNext, 100); // Small delay between requests
-            }
-        };
-        
-        setTimeout(warmNext, 1000); // Initial delay
-    }
-    
-    // Service Worker integration
-    async warmServiceWorkerCache(urls) {
+    // Service Worker Integration
+    async warmWithServiceWorker(urls) {
         if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
             navigator.serviceWorker.controller.postMessage({
-                type: 'CACHE_WARM',
-                data: { urls }
+                type: 'CACHE_WARM_REQUEST',
+                data: { 
+                    urls,
+                    strategy: this.strategy,
+                    priority: 'background'
+                }
             });
-        } else {
-            console.warn('[CacheWarmer] Service Worker not available for cache warming');
         }
+    }
+    
+    handleServiceWorkerCacheComplete(data) {
+        console.log('[AdvancedCacheWarmer] Service worker cache warming completed:', data);
+        
+        // Update analytics based on service worker results
+        if (data.results) {
+            this.analytics.warmed += data.results.success || 0;
+            this.analytics.failed += data.results.failed || 0;
+            this.analytics.bandwidthUsed += data.results.bytesTransferred || 0;
+        }
+    }
+    
+    // Utility methods
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    pauseWarming() {
+        this.isWarming = false;
+        console.log('[AdvancedCacheWarmer] Warming paused due to strategy change');
+    }
+    
+    resumeWarming() {
+        if (!this.isWarming) {
+            console.log('[AdvancedCacheWarmer] Resuming warming with new strategy:', this.strategy);
+            setTimeout(() => this.startProgressiveWarming(), 1000);
+        }
+    }
+    
+    reportAnalytics() {
+        const efficiency = this.analytics.warmed / (this.analytics.warmed + this.analytics.failed) * 100;
+        const avgTimePerResource = this.analytics.timeSpent / this.analytics.warmed;
+        
+        console.log('[AdvancedCacheWarmer] Warming Analytics:', {
+            strategy: this.strategy,
+            warmed: this.analytics.warmed,
+            failed: this.analytics.failed,
+            efficiency: `${efficiency.toFixed(1)}%`,
+            bandwidthUsed: this.formatBytes(this.analytics.bandwidthUsed),
+            totalTime: `${(this.analytics.timeSpent / 1000).toFixed(2)}s`,
+            avgTimePerResource: `${avgTimePerResource.toFixed(0)}ms`,
+            strategySwitches: this.analytics.strategySwitches,
+            phasesCompleted: Object.values(this.analytics.phaseCompletions).filter(Boolean).length
+        });
     }
     
     // Public API methods
-    getWarmingStats() {
+    getAnalytics() {
         return {
-            ...this.warmingStats,
+            ...this.analytics,
+            strategy: this.strategy,
+            connectionInfo: this.connectionInfo,
+            currentPhase: this.currentPhase,
+            isWarming: this.isWarming,
             queueSize: this.warmingQueue.size,
-            isWarming: this.isWarming
+            inProgress: this.warmingInProgress.size,
+            completed: this.completedUrls.size
         };
     }
     
-    clearWarmingQueue() {
+    clearCache() {
         this.warmingQueue.clear();
+        this.warmingInProgress.clear();
+        this.completedUrls.clear();
+        this.currentPhase = 'idle';
     }
     
-    resetStats() {
-        this.warmingStats = {
-            itemsWarmed: 0,
-            totalTime: 0,
-            failures: 0
+    resetAnalytics() {
+        this.analytics = {
+            warmed: 0,
+            failed: 0,
+            bandwidthUsed: 0,
+            timeSpent: 0,
+            strategySwitches: 0,
+            phaseCompletions: {
+                critical: false,
+                essential: false,
+                predictive: false
+            }
         };
     }
     
-    // Auto-start warming based on page
+    // Auto-warming based on page context
     autoWarm() {
         const currentPath = window.location.pathname;
         
-        if (currentPath === '/' || currentPath === '/index.html') {
-            this.warmOnHomepage();
+        if (currentPath === '/' || currentPath === '/home' || currentPath === '/index.html') {
+            // Homepage: start full progressive warming
+            this.startProgressiveWarming();
         } else if (currentPath.includes('/gallery')) {
-            // Extract gallery ID and warm that specific gallery (but don't be aggressive)
-            const galleryMatch = currentPath.match(/gallery[/-](\d{4})/);
-            if (galleryMatch) {
-                // Use a timeout to avoid immediate API calls on page load
-                setTimeout(() => {
-                    this.warmSpecificGallery(galleryMatch[1]);
-                }, 2000);
-            }
+            // Gallery page: warm critical first, then gallery-specific content
+            this.warmPhase('critical', this.getStrategyConfig()).then(() => {
+                const galleryMatch = currentPath.match(/gallery[/-]?(\d{4})\/?/);
+                if (galleryMatch) {
+                    this.warmGalleryImages(galleryMatch[1]);
+                }
+            });
+        } else {
+            // Other pages: warm critical resources only
+            this.warmPhase('critical', this.getStrategyConfig());
         }
+    }
+    
+    // Manual warming controls
+    async warmCriticalOnly() {
+        const config = this.getStrategyConfig();
+        await this.warmPhase('critical', config);
+    }
+    
+    async warmEssentialOnly() {
+        const config = this.getStrategyConfig();
+        await this.warmPhase('essential', config);
+    }
+    
+    async warmPredictiveOnly() {
+        const config = this.getStrategyConfig();
+        await this.warmPhase('predictive', config);
     }
 }
 
 // Export for module usage
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = CacheWarmer;
+    module.exports = AdvancedCacheWarmer;
 }
+
+// Legacy compatibility - create global instance
+window.CacheWarmer = AdvancedCacheWarmer;

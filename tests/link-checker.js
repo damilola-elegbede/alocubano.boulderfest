@@ -185,9 +185,10 @@ class LinkChecker {
                 
                 while ((match = pattern.exec(line)) !== null) {
                     const url = match[1];
+                    const context = line.trim();
                     
-                    // Skip certain URLs
-                    if (this.shouldSkipUrl(url)) continue;
+                    // Skip certain URLs (with context awareness)
+                    if (this.shouldSkipUrl(url, context)) continue;
                     
                     const linkType = this.categorizeLink(url, type);
                     
@@ -197,7 +198,7 @@ class LinkChecker {
                         file: relativePath,
                         filePath,
                         lineNumber,
-                        context: line.trim()
+                        context: context
                     });
                 }
             }
@@ -209,7 +210,7 @@ class LinkChecker {
     /**
      * Check if URL should be skipped
      */
-    shouldSkipUrl(url) {
+    shouldSkipUrl(url, context = '') {
         const skipPatterns = [
             /^mailto:/,
             /^tel:/,
@@ -225,7 +226,27 @@ class LinkChecker {
             /^(request\.url|link\.href)$/  // JavaScript object properties
         ];
 
-        return skipPatterns.some(pattern => pattern.test(url));
+        // Check against skip patterns
+        if (skipPatterns.some(pattern => pattern.test(url))) {
+            return true;
+        }
+        
+        // Skip DNS prefetch and other resource hints based on context
+        if (context.includes('rel="dns-prefetch"') || 
+            context.includes('rel="preconnect"') || 
+            context.includes('rel="prefetch"')) {
+            return true;
+        }
+        
+        // Skip known DNS prefetch URLs as they are external resources
+        const dnsPrefetchUrls = [
+            '//fonts.googleapis.com',
+            '//fonts.gstatic.com',
+            '//cdnjs.cloudflare.com',
+            '//cdn.jsdelivr.net'
+        ];
+        
+        return dnsPrefetchUrls.includes(url);
     }
 
     /**
@@ -233,6 +254,11 @@ class LinkChecker {
      */
     categorizeLink(url, defaultType) {
         if (url.startsWith('http://') || url.startsWith('https://')) {
+            return 'external';
+        }
+        
+        // Handle protocol-relative URLs (starting with //)
+        if (url.startsWith('//')) {
             return 'external';
         }
         
