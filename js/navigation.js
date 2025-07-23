@@ -61,21 +61,10 @@ if (typeof Navigation === 'undefined') {
                 return;
             }
 
-            // Enhance existing menu toggle with proper structure
-            if (!menuToggle.querySelector('.menu-icon')) {
-                menuToggle.innerHTML = `
-                <span class="menu-icon">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </span>
-            `;
-            }
-
             // Add mobile menu class to nav list for overlay behavior
             const navList = document.querySelector('.nav-list');
             if (navList) {
-                navList.classList.add('mobile-menu');
+                navList.classList.add('is-open');
             }
         }
 

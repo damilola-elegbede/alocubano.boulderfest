@@ -107,7 +107,9 @@
 
 ## Mobile Navigation
 
-### Toggle Button
+### Toggle Button & Mobile Menu Implementation
+
+#### CSS Structure
 ```css
 .menu-toggle {
   display: none;
@@ -121,18 +123,57 @@
     display: block;
   }
   
+  /* Hide navigation list by default on mobile */
   .nav-list {
-    position: fixed;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: var(--color-white);
-    transform: translateY(-100vh);
-    transition: transform 0.3s ease;
+    display: none;
   }
   
+  /* Show as slide-in panel when opened */
   .nav-list.is-open {
-    transform: translateY(0);
+    display: flex;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+    max-width: 300px;
+    height: 100vh;
+    background: var(--color-white);
+    box-shadow: -2px 0 20px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(20px);
+    flex-direction: column;
+    padding: var(--space-4xl) var(--space-xl) var(--space-xl);
+    z-index: 9999;
+    animation: slideInFromRight 0.3s ease-out;
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+```
+
+#### JavaScript Integration
+```javascript
+// Class targeting must match CSS selectors
+toggleMobileMenu() {
+  this.mobileMenuOpen = !this.mobileMenuOpen;
+  const navList = document.querySelector('.nav-list');
+  const menuToggle = document.querySelector('.menu-toggle');
+  
+  if (this.mobileMenuOpen) {
+    // Use 'is-open' class to match CSS selector
+    navList?.classList.add('is-open');
+    menuToggle?.classList.add('is-active');
+    document.body.style.overflow = 'hidden';
+  } else {
+    navList?.classList.remove('is-open');
+    menuToggle?.classList.remove('is-active');
+    document.body.style.overflow = '';
   }
 }
 ```
@@ -155,9 +196,40 @@
 }
 ```
 
+### Mobile Menu Toggle State
+```css
+.menu-toggle.is-active span {
+  /* Hamburger to X animation */
+  transform: rotate(45deg);
+}
+
+.menu-toggle.is-active span::before {
+  transform: rotate(90deg);
+  top: 0;
+}
+
+.menu-toggle.is-active span::after {
+  transform: rotate(90deg);
+  bottom: 0;
+}
+```
+
+## Class Naming Convention
+
+### State Classes
+- **`.is-open`**: Applied to `.nav-list` when mobile menu is active
+- **`.is-active`**: Applied to `.menu-toggle` for hamburger animation
+- **`.is-active`**: Applied to `.nav-link` for current page indication
+
+### Important: JavaScript/CSS Alignment
+⚠️ **Critical**: JavaScript class targeting must exactly match CSS selectors. Use `is-open` consistently across both JavaScript and CSS for mobile menu functionality.
+
 ## Accessibility
 - Keyboard navigable with Tab
 - Toggle button has aria-label
 - Current page indicated with aria-current
 - Sufficient color contrast
 - Focus states clearly visible
+- Mobile menu closes with Escape key
+- Outside click detection for mobile menu closure
+- Body scroll disabled when mobile menu is open
