@@ -10,7 +10,7 @@ This update establishes the Artists and Schedule pages as the design standards f
 - ✅ `vercel.json` - Deployment configuration for clean URLs
 - ✅ `.gitignore` - Ignore unnecessary files
 - ✅ `DEPLOYMENT.md` - Comprehensive deployment guide
-- ✅ `test-site.sh` - Simple testing script
+- ✅ `tests/scripts/test-site.sh` - Simple testing script
 
 ### Specification Updates
 - ✅ `/spec/README.md` - Updated with Artists/Schedule as reference standards
@@ -37,7 +37,7 @@ This update establishes the Artists and Schedule pages as the design standards f
 ## Pre-Merge Testing
 Run the test script:
 ```bash
-./test-site.sh
+./tests/scripts/test-site.sh
 ```
 
 ## Deployment Steps

@@ -91,11 +91,11 @@ alocubano.boulderfest/
 │   ├── generate-gallery-cache.js # Generates gallery data cache
 │   ├── generate-featured-photos.js # Generates featured photos cache
 │   ├── verify-structure.js       # Validates project structure
-│   ├── simulate-vercel-build.js  # Local Vercel simulation
-│   ├── vercel-local-test.js      # Vercel function testing
-│   ├── start.sh                  # Quick start script
-│   ├── quick_start.sh            # Alternative start script
-│   ├── quick-test.sh             # Quick test runner
+│   ├── deployment-check.js       # Pre-deployment validation
+│   ├── metrics-monitor.js         # Performance monitoring
+│   ├── test-maintenance.js        # Test health monitoring
+│   ├── test-runner.js             # Advanced test execution
+│   ├── start.sh                   # Quick start script
 │   └── debug/                    
 │       └── debug_gallery_photos.py # Gallery debugging tool
 │
