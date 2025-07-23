@@ -389,7 +389,12 @@ describe('Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
                 container: mockContainer
             });
             
-            await expect(gallery.loadAvailableYears()).rejects.toThrow('Network error');
+            // Now loadAvailableYears should not throw, but use fallback data
+            await expect(gallery.loadAvailableYears()).resolves.not.toThrow();
+            
+            // Verify fallback data is used
+            expect(gallery.availableYears).toEqual(['2025']);
+            expect(gallery.yearStatistics.get('2025')).toEqual({ imageCount: 0, totalSize: 0 });
         });
         
         test('should create single year selector button for current 2025 gallery', async () => {

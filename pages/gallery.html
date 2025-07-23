@@ -250,9 +250,16 @@
                 console.log(`Year changed from ${event.detail.previousYear} to ${event.detail.currentYear}`);
             });
             
-            container.addEventListener('multiYearGallery:error', (event) => {
-                console.error('Gallery error:', event.detail.error);
-                showFallbackNavigation();
+            container.addEventListener('multiYearGallery:initializationError', (event) => {
+                console.error('Gallery initialization error:', event.detail.error);
+                if (event.detail.shouldUseFallback) {
+                    showFallbackNavigation();
+                }
+            });
+            
+            container.addEventListener('multiYearGallery:yearsLoadWarning', (event) => {
+                console.warn('Gallery years load warning:', event.detail.error);
+                console.log('Using fallback data for gallery initialization');
             });
         }
         
