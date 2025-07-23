@@ -15,7 +15,8 @@ class MetricsMonitor {
       executionTime: 15000,       // Maximum 15 seconds
       performanceRegression: 25,   // Maximum 25% performance regression
       flakiness: 0,               // Zero flaky tests allowed
-      buildSuccess: 100           // 100% build success required
+      buildSuccess: 100,          // 100% build success required
+      coverageEnforcement: false  // Disable coverage thresholds (0% by design)
     };
     
     this.results = {

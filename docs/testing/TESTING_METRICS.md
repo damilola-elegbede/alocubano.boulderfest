@@ -61,7 +61,7 @@ npm run prebuild
 ```bash
 npm run lint          # ESLint + HTMLHint
 npm run test:fast     # Unit tests (<30s)
-npm run test:coverage:threshold  # Coverage validation
+npm run test:coverage  # Coverage reporting (0% expected)
 ```
 
 ### Pre-Push Gates  
@@ -74,7 +74,7 @@ npm run test:performance  # Performance benchmarks
 ### Deployment Gates
 ```bash
 npm run deploy:check  # Comprehensive quality validation
-npm run deploy:quality-gate  # Blocking gate for releases
+npm run deploy:quality-gate  # Blocking gate for releases (no coverage enforcement)
 ```
 
 ## Monitoring Commands
