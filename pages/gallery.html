@@ -95,12 +95,12 @@
                 <h2 class="text-display" style="text-align: center; margin-bottom: var(--space-3xl);">FESTIVAL GALLERY</h2>
                 
                 <!-- Multi-Year Gallery Container -->
-                <div id="multi-year-gallery-container" class="multi-year-container">
+                <div id="multi-year-gallery-container" class="multi-year-container" style="display: none;">
                     <!-- Multi-Year Gallery Manager will initialize here -->
                 </div>
                 
                 <!-- Fallback Year Navigation -->
-                <div id="fallback-year-navigation" class="festival-years-grid" style="display: none;">
+                <div id="fallback-year-navigation" class="festival-years-grid">
                     <a href="/gallery-2025" class="festival-year-card" data-year="2025">
                         <div class="year-card-content">
                             <span class="year-number font-display">2025</span>
@@ -205,15 +205,18 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('Main gallery page initializing...');
             
-            try {
-                // Initialize Multi-Year Gallery
-                await initializeMultiYearGallery();
-                
-                console.log('Multi-Year Gallery initialized successfully');
-            } catch (error) {
-                console.error('Failed to initialize gallery:', error);
-                showFallbackNavigation();
-            }
+            // Show the simple fallback navigation by default
+            showFallbackNavigation();
+            
+            // Optionally try to initialize multi-year gallery if needed
+            // This can be enabled later if desired
+            // try {
+            //     await initializeMultiYearGallery();
+            //     console.log('Multi-Year Gallery initialized successfully');
+            // } catch (error) {
+            //     console.error('Failed to initialize gallery:', error);
+            //     showFallbackNavigation();
+            // }
         });
         
         /**

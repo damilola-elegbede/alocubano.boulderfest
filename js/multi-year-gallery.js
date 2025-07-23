@@ -304,7 +304,7 @@ class MultiYearGalleryManager {
             const galleryInstance = await this.createVirtualGallery({
                 container: yearContainer,
                 year: year,
-                apiEndpoint: `/api/gallery?year=${year}`
+                apiEndpoint: `/api/gallery`
             });
 
             // Wait for gallery to initialize

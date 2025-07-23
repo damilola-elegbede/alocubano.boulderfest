@@ -144,7 +144,7 @@ export default async function handler(req, res) {
     // Determine optimal format based on browser capabilities and request
     const acceptHeader = req.headers.accept || '';
     const userAgent = req.headers['user-agent'] || '';
-    const targetFormat = format || detectOptimalFormat(acceptHeader, userAgent);
+    let targetFormat = format || detectOptimalFormat(acceptHeader, userAgent);
     const width = w ? parseInt(w) : null;
 
     // Generate enhanced cache key including format and size
