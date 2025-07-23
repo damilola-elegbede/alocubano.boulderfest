@@ -70,7 +70,7 @@ class PerformanceMonitor {
         };
         
         // Reporting configuration
-        this.reportingInterval = 30000; // 30 seconds
+        this.reportingInterval = 120000; // 2 minutes (reduced frequency)
         this.reportingTimer = null;
         
         // Initialize monitoring
@@ -417,7 +417,7 @@ class PerformanceMonitor {
         }
         
         try {
-            // Monitor memory usage every 10 seconds
+            // Monitor memory usage every 60 seconds (reduced frequency)
             setInterval(() => {
                 const memInfo = performance.memory;
                 const memoryData = {
@@ -440,7 +440,7 @@ class PerformanceMonitor {
                         total: memoryData.total
                     });
                 }
-            }, 10000);
+            }, 60000); // 60 seconds instead of 10
             
             console.log('[PerfMonitor] Memory monitoring initialized');
         } catch (error) {
@@ -836,7 +836,10 @@ class PerformanceMonitor {
                     body: JSON.stringify(criticalData),
                     keepalive: true
                 }).catch(error => {
-                    console.warn('[PerfMonitor] Failed to send critical metrics:', error);
+                    // Only log non-404 errors to reduce console noise
+                    if (!error.message.includes('404')) {
+                        console.warn('[PerfMonitor] Failed to send critical metrics:', error);
+                    }
                 });
             }
         } catch (error) {
@@ -1136,7 +1139,10 @@ class PerformanceMonitor {
             body: JSON.stringify(data),
             keepalive: true
         }).catch(error => {
-            console.warn('[PerfMonitor] Failed to send analytics via fetch:', error);
+            // Only log non-404 errors to reduce console noise
+            if (!error.message.includes('404') && !error.toString().includes('404')) {
+                console.warn('[PerfMonitor] Failed to send analytics via fetch:', error);
+            }
         });
     }
     
