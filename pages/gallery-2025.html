@@ -46,7 +46,6 @@
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/typography.css">
-    <link rel="stylesheet" href="/css/virtual-gallery.css">
     <link rel="stylesheet" href="/css/mobile-overrides.css">
 </head>
 <body class="typographic">
@@ -93,19 +92,6 @@
         </section>
 
 
-        <!-- Gallery Mode Selection -->
-        <section class="section-typographic gallery-mode-selection" style="padding: var(--space-lg) 0;">
-            <div class="container">
-                <div class="gallery-mode-toggle" style="text-align: center; margin-bottom: var(--space-xl);">
-                    <button id="mode-traditional" class="gallery-mode-btn active font-mono" style="margin-right: var(--space-md);">
-                        Traditional View
-                    </button>
-                    <button id="mode-virtual" class="gallery-mode-btn font-mono">
-                        Virtual Gallery
-                    </button>
-                </div>
-            </div>
-        </section>
 
         <!-- Traditional Gallery Grid Section -->
         <section class="section-typographic gallery-detail-section" id="traditional-gallery" data-gallery-year="2025">
@@ -152,20 +138,6 @@
             </div>
         </section>
 
-        <!-- Virtual Gallery Section -->
-        <section class="section-typographic virtual-gallery-section" id="virtual-gallery" style="display: none;">
-            <div class="container">
-                <h2 class="text-display" style="text-align: center; margin-bottom: var(--space-2xl);">2025 FESTIVAL GALLERY</h2>
-                <p class="font-serif" style="text-align: center; margin-bottom: var(--space-3xl); color: var(--color-gray-600);">
-                    High-performance virtual scrolling gallery with advanced image loading
-                </p>
-                
-                <!-- Virtual Gallery Container -->
-                <div id="virtual-gallery-container" class="virtual-gallery-wrapper">
-                    <!-- VirtualGalleryManager will initialize here -->
-                </div>
-            </div>
-        </section>
 
         <!-- Gallery Stats -->
         <section class="section-typographic gallery-stats" style="background: var(--color-gray-50); padding: var(--space-3xl) 0;">
@@ -214,9 +186,6 @@
     <script src="/js/navigation.js"></script>
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
-    <!-- Virtual Gallery System -->
-    <script src="/js/virtual-gallery.js"></script>
-    <script src="/js/multi-year-gallery.js"></script>
     <!-- Performance Optimization Modules -->
     <script src="/js/performance-monitor.js"></script>
     <script src="/js/prefetch-manager.js"></script>
@@ -225,10 +194,6 @@
     <script src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
     <script>
-        // Global variables
-        let virtualGalleryInstance = null;
-        let currentMode = 'traditional';
-        
         // Debug logging
         console.log('Gallery page loaded, checking for elements...');
         document.addEventListener('DOMContentLoaded', () => {
@@ -238,171 +203,6 @@
             console.log('- gallery-detail-static:', document.getElementById('gallery-detail-static'));
             console.log('- workshops-section:', document.getElementById('workshops-section'));
             console.log('- socials-section:', document.getElementById('socials-section'));
-            
-            // Set up gallery mode switching
-            setupGalleryModeToggle();
-        });
-        
-        /**
-         * Set up gallery mode toggle functionality
-         */
-        function setupGalleryModeToggle() {
-            const traditionalBtn = document.getElementById('mode-traditional');
-            const virtualBtn = document.getElementById('mode-virtual');
-            const traditionalGallery = document.getElementById('traditional-gallery');
-            const virtualGallery = document.getElementById('virtual-gallery');
-            
-            if (!traditionalBtn || !virtualBtn || !traditionalGallery || !virtualGallery) {
-                console.warn('Gallery mode toggle elements not found');
-                return;
-            }
-            
-            // Traditional mode click handler
-            traditionalBtn.addEventListener('click', () => {
-                if (currentMode === 'traditional') return;
-                
-                switchToTraditionalMode();
-            });
-            
-            // Virtual mode click handler
-            virtualBtn.addEventListener('click', () => {
-                if (currentMode === 'virtual') return;
-                
-                switchToVirtualMode();
-            });
-        }
-        
-        /**
-         * Switch to traditional gallery mode
-         */
-        function switchToTraditionalMode() {
-            const traditionalBtn = document.getElementById('mode-traditional');
-            const virtualBtn = document.getElementById('mode-virtual');
-            const traditionalGallery = document.getElementById('traditional-gallery');
-            const virtualGallery = document.getElementById('virtual-gallery');
-            
-            // Update button states
-            traditionalBtn.classList.add('active');
-            virtualBtn.classList.remove('active');
-            
-            // Show traditional gallery, hide virtual
-            traditionalGallery.style.display = 'block';
-            virtualGallery.style.display = 'none';
-            
-            // Destroy virtual gallery if it exists
-            if (virtualGalleryInstance) {
-                virtualGalleryInstance.destroy();
-                virtualGalleryInstance = null;
-            }
-            
-            currentMode = 'traditional';
-            console.log('Switched to traditional gallery mode');
-        }
-        
-        /**
-         * Switch to virtual gallery mode
-         */
-        async function switchToVirtualMode() {
-            const traditionalBtn = document.getElementById('mode-traditional');
-            const virtualBtn = document.getElementById('mode-virtual');
-            const traditionalGallery = document.getElementById('traditional-gallery');
-            const virtualGallery = document.getElementById('virtual-gallery');
-            
-            // Update button states
-            traditionalBtn.classList.remove('active');
-            virtualBtn.classList.add('active');
-            
-            // Show virtual gallery, hide traditional
-            traditionalGallery.style.display = 'none';
-            virtualGallery.style.display = 'block';
-            
-            // Initialize virtual gallery if not already done
-            if (!virtualGalleryInstance) {
-                try {
-                    await initializeVirtualGallery();
-                } catch (error) {
-                    console.error('Failed to initialize virtual gallery:', error);
-                    // Fall back to traditional mode
-                    switchToTraditionalMode();
-                    return;
-                }
-            }
-            
-            currentMode = 'virtual';
-            console.log('Switched to virtual gallery mode');
-        }
-        
-        /**
-         * Initialize virtual gallery
-         */
-        async function initializeVirtualGallery() {
-            const container = document.getElementById('virtual-gallery-container');
-            
-            if (!container) {
-                throw new Error('Virtual gallery container not found');
-            }
-            
-            if (typeof VirtualGalleryManager === 'undefined') {
-                throw new Error('VirtualGalleryManager not loaded');
-            }
-            
-            // Initialize virtual gallery
-            virtualGalleryInstance = new VirtualGalleryManager({
-                container: container,
-                apiEndpoint: '/api/gallery',
-                year: '2025',
-                enableVirtualScrolling: true,
-                itemHeight: 300,
-                itemsPerRow: 3,
-                bufferSize: 10,
-                preloadDistance: 500
-            });
-            
-            // Wait for initialization
-            await virtualGalleryInstance.init();
-            
-            console.log('Virtual gallery initialized successfully');
-        }
-        
-        // Add some basic styling for gallery mode buttons
-        const style = document.createElement('style');
-        style.textContent = `
-            .gallery-mode-btn {
-                padding: var(--space-sm) var(--space-lg);
-                border: 2px solid var(--color-black);
-                background: transparent;
-                color: var(--color-black);
-                cursor: pointer;
-                transition: all 0.2s ease;
-                text-transform: uppercase;
-                letter-spacing: 0.1em;
-            }
-            
-            .gallery-mode-btn:hover {
-                background: var(--color-black);
-                color: var(--color-white);
-            }
-            
-            .gallery-mode-btn.active {
-                background: var(--color-red);
-                border-color: var(--color-red);
-                color: var(--color-white);
-            }
-            
-            .virtual-gallery-wrapper {
-                min-height: 500px;
-                border: 1px solid var(--color-gray-200);
-                border-radius: 8px;
-                overflow: hidden;
-            }
-        `;
-        document.head.appendChild(style);
-        
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', () => {
-            if (virtualGalleryInstance && typeof virtualGalleryInstance.destroy === 'function') {
-                virtualGalleryInstance.destroy();
-            }
         });
     </script>
     <script src="/js/gallery-detail.js?v=2025-07-22-PERFORMANCE-OPTIMIZED"></script>
