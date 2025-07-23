@@ -169,6 +169,36 @@ curl https://your-domain.vercel.app/api/gallery?folderId=YOUR_FOLDER_ID
 - Video duration and dimensions
 - Batch operations for multiple folders
 
+## Hero Image API
+
+### Endpoint: `/api/hero-image/[pageId]`
+
+Provides optimized hero images for specific pages with intelligent caching.
+
+#### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `pageId` | string | required | Page identifier (home, about, gallery, etc.) |
+| `w` | integer | 1200 | Target width in pixels |
+| `format` | string | auto | Target format (webp, jpeg, auto) |
+| `q` | integer | 80 | Quality level (1-100) |
+
+#### Examples
+
+```bash
+# Home page hero image
+GET /api/hero-image/home?w=1200&format=webp
+
+# Gallery page hero image with high quality
+GET /api/hero-image/gallery?w=1600&q=90
+```
+
+#### Caching
+- **Client Cache**: 1 hour
+- **CDN Cache**: 24 hours
+- **ETag Support**: For conditional requests
+
 ## Image Proxy Enhancements
 
 ### Responsive Image Support
