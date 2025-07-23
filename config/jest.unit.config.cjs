@@ -1,7 +1,8 @@
 module.exports = {
-    testEnvironment: 'node',
+    testEnvironment: 'jsdom',
     testMatch: [
-        '**/tests/unit/**/*.test.js'
+        '**/tests/unit/**/*.test.js',
+        '**/tests/integration/**/*.test.js'
     ],
     rootDir: '..',
     setupFilesAfterEnv: [
@@ -21,14 +22,13 @@ module.exports = {
         '!js/**/*.test.js',
         '!**/node_modules/**'
     ],
-    // Coverage thresholds temporarily set to 0% for development
-    coverageThreshold: {
-        global: {
-            branches: 0,
-            functions: 0,
-            lines: 0,
-            statements: 0
-        }
-    },
-    verbose: true
+    // No coverage thresholds - we use functional quality metrics instead
+    // Performance optimizations for Phase 1 tests
+    maxWorkers: '50%',
+    testTimeout: 10000, // 10 seconds for complex integration tests
+    clearMocks: true,
+    resetMocks: true,
+    // Enhanced error reporting for real source code testing
+    verbose: true,
+    errorOnDeprecated: true
 };

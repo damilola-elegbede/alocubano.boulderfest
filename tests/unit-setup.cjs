@@ -1,34 +1,16 @@
-// Jest setup file for unit tests (no Puppeteer)
+// Jest setup file for unit tests with jsdom environment
 beforeAll(() => {
     // Set longer timeout for CI environments
     jest.setTimeout(10000);
     
-    // Mock DOM globals
-    global.document = {
-        getElementById: jest.fn(),
-        querySelector: jest.fn(),
-        querySelectorAll: jest.fn(),
-        createElement: jest.fn(),
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        body: {
-            style: {},
-            classList: {
-                add: jest.fn(),
-                remove: jest.fn()
-            }
-        }
-    };
+    // jsdom provides real DOM globals, only mock specific APIs that need it
+    global.IntersectionObserver = jest.fn(() => ({
+        observe: jest.fn(),
+        unobserve: jest.fn(),
+        disconnect: jest.fn(),
+    }));
     
-    global.window = {
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        IntersectionObserver: jest.fn()
-    };
-    
-    global.Image = jest.fn();
-    
-    // Mock console for cleaner test output
+    // Mock console for cleaner test output  
     global.console = {
         log: jest.fn(),
         error: jest.fn(),
