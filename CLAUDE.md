@@ -246,6 +246,16 @@ alocubano.boulderfest/
 - **Performance optimization**: Cache warming, request deduplication
 - **Security**: Input sanitization, rate limiting, CORS headers
 
+#### Enhanced Image Processing (Phase 1)
+- **Responsive Images**: Automatic sizing based on device capabilities
+- **Modern Formats**: WebP delivery with JPEG fallback
+- **Query Parameters**: 
+  - `w` (width): Target width in pixels
+  - `format`: Target format (webp, jpeg)
+  - `q` (quality): Quality level (1-100)
+- **Format Auto-Detection**: Serves optimal format based on browser capabilities
+- **Performance**: 25-40% bandwidth reduction through WebP compression
+
 ## Development Workflow
 
 ### Local Development
