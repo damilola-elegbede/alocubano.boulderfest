@@ -60,12 +60,12 @@ if (typeof Lightbox === 'undefined') {
                 // Close on background click (improved to handle nested elements)
                 lightbox.addEventListener('click', (e) => {
                     // Close if clicking on lightbox background or lightbox-content (but not on image or controls)
-                    if (e.target === lightbox || 
+                    if (e.target === lightbox ||
                         (e.target.classList.contains('lightbox-content') && !e.target.closest('.lightbox-media-container'))) {
                         this.close();
                     }
                 });
-                
+
                 // Additional click handler for lightbox-content to ensure overlay clicks work
                 const lightboxContent = lightbox.querySelector('.lightbox-content');
                 lightboxContent.addEventListener('click', (e) => {
@@ -90,18 +90,18 @@ if (typeof Lightbox === 'undefined') {
                     e.preventDefault();
                 }
 
-                switch(e.key) {
-                    case 'Escape':
-                        this.close();
-                        break;
-                    case 'ArrowLeft':
-                    case 'Left': // Fallback for older browsers
-                        this.previous();
-                        break;
-                    case 'ArrowRight':
-                    case 'Right': // Fallback for older browsers
-                        this.next();
-                        break;
+                switch (e.key) {
+                case 'Escape':
+                    this.close();
+                    break;
+                case 'ArrowLeft':
+                case 'Left': // Fallback for older browsers
+                    this.previous();
+                    break;
+                case 'ArrowRight':
+                case 'Right': // Fallback for older browsers
+                    this.next();
+                    break;
                 }
             });
         }
