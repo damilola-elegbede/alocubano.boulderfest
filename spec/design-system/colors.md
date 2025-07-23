@@ -35,10 +35,12 @@ All color variables are centrally defined in the root selector:
 - Brand colors: Lines 7-8  
 - Grayscale: Lines 11-19
 
-### Known Issue: Missing Color Definition
-⚠️ **CRITICAL**: `--color-primary` is referenced in `/css/typography.css` (lines 489, 525) but not defined in the color system. This should be resolved by either:
-1. Defining `--color-primary` in `/css/base.css`
-2. Replacing references with existing color variables
+### Implementation Note: Legacy Color Reference
+⚠️ **ACTION REQUIRED**: `--color-primary` is referenced in `/css/typography.css` (lines 489, 525) but not defined in the color system. **Recommended solution**: Replace these references with `--color-blue` (#5B6BB5) as it's the established brand color for interactive elements like hover states.
+
+**Affected selectors**:
+- `.social-link-type:hover` (line 489) - Should use `--color-blue` for brand consistency
+- `.footer-info a:hover` (line 525) - Should use `--color-blue` for link hover states
 
 ## Usage Guidelines
 

@@ -132,7 +132,7 @@ if (typeof LazyLoader !== 'undefined') {
 // JavaScript Usage
 const loader = LazyLoader.createAdvanced({
     rootMargin: '100px 0px',  // Larger margin for galleries
-    selector: '.lazy-item[data-loaded="false"]'
+    advancedSelector: '.lazy-item[data-loaded="false"]'
 });
 ```
 

@@ -258,7 +258,7 @@ Layering system for consistent stacking context.
 **Z-Index Usage in Base Styles:**
 ```css
 /* Focus outline uses blue color - Lines 210, 219 */
-:focus { outline: 2px solid var(--color-blue); }
+:focus { outline: 2px solid var(--color-primary-600); }
 ```
 
 ## Variable Usage Patterns
@@ -289,7 +289,7 @@ Base typography uses the variable system:
 body {
   font-family: var(--font-sans);      /* System font stack */
   font-size: var(--font-size-base);   /* 16px base size */
-  color: var(--color-black);          /* Primary text color */
+  color: var(--color-gray-900);       /* Primary text color */
   background-color: var(--color-white); /* Primary background */
 }
 ```
@@ -298,7 +298,7 @@ body {
 Focus states use the brand blue:
 ```css
 :focus, :focus-visible {
-  outline: 2px solid var(--color-blue);
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 ```

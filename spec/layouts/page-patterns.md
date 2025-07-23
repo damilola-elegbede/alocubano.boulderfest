@@ -139,7 +139,7 @@ All pages include these scripts:
     <!-- Hero Splash Image -->
     <section class="gallery-hero-splash">
         <div class="hero-image-container">
-            <img id="hero-splash-image" src="" alt="[Dynamic alt text]" class="hero-splash-img" style="object-position: top center !important;">
+            <img id="hero-splash-image" src="" alt="[Dynamic alt text]" class="hero-splash-img hero-splash-img--top-center">
         </div>
     </section>
 
