@@ -288,7 +288,7 @@ const getDriveClient = () => {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: var(--space-md);
-    content-visibility: auto; /* Performance optimization */
+    content-visibility: auto; /* Performance optimization - Safari fallback: use transform: translateZ(0) for GPU acceleration */
     contain-intrinsic-size: 300px;
 }
 
@@ -791,7 +791,7 @@ Cache-Control: no-cache                             // HTML pages
 ### Technical Improvements
 
 1. **WebP Support**: Modern image format with fallbacks
-2. **Virtual Scrolling**: Handle extremely large datasets
+2. **Virtual Scrolling**: Handle large datasets efficiently
 3. **Advanced Caching**: IndexedDB for larger storage quotas
 4. **Image Analytics**: View tracking and popular image identification
 5. **Real-time Updates**: WebSocket integration for live gallery updates

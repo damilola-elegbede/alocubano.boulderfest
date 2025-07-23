@@ -17,21 +17,32 @@ Primary brand colors extracted from the festival logo and brand identity.
 
 | Variable | Value | Usage | Notes |
 |----------|-------|-------|-------|
-| `--color-black` | `#000000` | Primary text, headers, high contrast elements | Core brand color |
-| `--color-white` | `#FFFFFF` | Backgrounds, contrast text, cards | Primary background |
-| `--color-blue` | `#5B6BB5` | Accent color, links, focus states, highlights | Brand accent |
-| `--color-red` | `#CC2936` | Call-to-action buttons, emphasis, alerts | Action color |
+| `--color-primary-900` | `#000000` | Primary text, headers, high contrast elements | Core brand color (replaces --color-black) |
+| `--color-primary-50` | `#FFFFFF` | Backgrounds, contrast text, cards | Primary background (replaces --color-white) |
+| `--color-accent-600` | `#5B6BB5` | Accent color, links, focus states, highlights | Brand accent (replaces --color-blue) |
+| `--color-secondary-600` | `#CC2936` | Call-to-action buttons, emphasis, alerts | Action color (replaces --color-red) |
+
+**⚠️ MIGRATION NOTE**: The following variable names should be updated for consistency:
+- `--color-black` → `--color-primary-900`
+- `--color-white` → `--color-primary-50`
+- `--color-blue` → `--color-accent-600`
+- `--color-red` → `--color-secondary-600`
 
 **Usage Examples:**
 ```css
 /* Headers and primary text */
-h1 { color: var(--color-black); }
+h1 { color: var(--color-primary-900); }
 
 /* Focus states and interactive elements */
-:focus { outline-color: var(--color-blue); }
+:focus { outline-color: var(--color-accent-600); }
 
 /* Action buttons and CTAs */
-.btn-primary { background: var(--color-red); }
+.btn-primary { background: var(--color-secondary-600); }
+
+/* Legacy support (to be migrated) */
+h1 { color: var(--color-black); /* Use --color-primary-900 instead */ }
+:focus { outline-color: var(--color-blue); /* Use --color-accent-600 instead */ }
+.btn-primary { background: var(--color-red); /* Use --color-secondary-600 instead */ }
 ```
 
 ### Gray Scale
@@ -166,13 +177,53 @@ Border radius scale from sharp to fully rounded.
 ### Transitions
 *Source: Lines 79-82*
 
-Three-speed transition system for consistent animations.
+Flexible transition system with separate duration and easing tokens for maximum customization.
 
+#### Duration Tokens
 | Variable | Value | Usage | Notes |
 |----------|-------|-------|-------|
-| `--transition-fast` | `150ms ease` | Quick interactions, hovers | Snappy response |
-| `--transition-base` | `250ms ease` | Standard animations | Default timing |
-| `--transition-slow` | `350ms ease` | Smooth, deliberate motion | Relaxed timing |
+| `--duration-fast` | `150ms` | Quick interactions, hovers | Snappy response |
+| `--duration-base` | `250ms` | Standard animations | Default timing |
+| `--duration-slow` | `350ms` | Smooth, deliberate motion | Relaxed timing |
+| `--duration-slower` | `500ms` | Complex animations | Extended timing |
+
+#### Easing Tokens
+| Variable | Value | Usage | Notes |
+|----------|-------|-------|-------|
+| `--easing-ease` | `ease` | General purpose | Default easing |
+| `--easing-ease-in` | `ease-in` | Starting motion | Accelerating |
+| `--easing-ease-out` | `ease-out` | Ending motion | Decelerating |
+| `--easing-ease-in-out` | `ease-in-out` | Complete motion | Smooth start/end |
+| `--easing-cubic-bezier` | `cubic-bezier(0.4, 0, 0.2, 1)` | Material Design | Custom curve |
+
+#### Composite Transitions (Legacy)
+| Variable | Value | Usage | Notes |
+|----------|-------|-------|-------|
+| `--transition-fast` | `var(--duration-fast) var(--easing-ease)` | Quick interactions | Backward compatibility |
+| `--transition-base` | `var(--duration-base) var(--easing-ease)` | Standard animations | Backward compatibility |
+| `--transition-slow` | `var(--duration-slow) var(--easing-ease)` | Smooth motion | Backward compatibility |
+
+**Usage Examples:**
+```css
+/* Flexible approach - mix and match */
+.element {
+  transition: transform var(--duration-base) var(--easing-ease-out),
+              opacity var(--duration-fast) var(--easing-ease);
+}
+
+/* Legacy approach - still supported */
+.legacy-element {
+  transition: all var(--transition-base);
+}
+
+/* Complex animation with different timings */
+.complex-element {
+  transition: 
+    transform var(--duration-slow) var(--easing-cubic-bezier),
+    background-color var(--duration-fast) var(--easing-ease),
+    box-shadow var(--duration-base) var(--easing-ease-out);
+}
+```
 
 ### Shadows
 *Source: Lines 84-88*
@@ -255,11 +306,19 @@ Focus states use the brand blue:
 ## Implementation Notes
 
 ### Variable Naming Convention
-- **Color**: `--color-{name}-{intensity}`
-- **Typography**: `--font-{property}-{size/name}`
-- **Spacing**: `--space-{size}`
-- **Effects**: `--{property}-{size}`
-- **Layout**: `--z-{context}`
+- **Color**: `--color-{semantic}-{intensity}` (e.g., `--color-primary-900`, `--color-accent-600`)
+  - Semantic names: `primary`, `secondary`, `accent`, `neutral`, `success`, `warning`, `error`
+  - Intensity scale: 50 (lightest) to 900 (darkest)
+- **Typography**: `--font-{property}-{size/name}` (e.g., `--font-size-base`, `--font-family-display`)
+- **Spacing**: `--space-{size}` (e.g., `--space-md`, `--space-xl`)
+- **Effects**: `--{property}-{size}` (e.g., `--radius-md`, `--shadow-lg`)
+- **Layout**: `--z-{context}` (e.g., `--z-modal`, `--z-dropdown`)
+
+**Best Practices:**
+- Use semantic naming over literal colors (primary vs black)
+- Follow intensity scale for consistent gradations
+- Maintain backward compatibility during migrations
+- Document breaking changes clearly
 
 ### Browser Support
 All variables use standard CSS custom property syntax with full modern browser support. No fallbacks are provided, indicating the design system targets modern browsers exclusively.

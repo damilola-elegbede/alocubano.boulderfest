@@ -454,14 +454,30 @@ The hover states follow a consistent philosophy of:
 @media (max-width: 768px) {
   /* Remove hover transforms for performance */
   .gallery-item-type:hover {
-    transform: none !important;
+    transform: none;
   }
 
   .nav-link:hover::after {
-    animation: none !important;
+    animation: none;
+  }
+  
+  /* Alternative approach: Disable hover on touch devices */
+  @media (hover: none) {
+    .gallery-item-type:hover,
+    .nav-link:hover::after {
+      /* Reset to non-hover state */
+      transform: initial;
+      animation: initial;
+    }
   }
 }
 ```
+
+**⚠️ Best Practice**: Instead of using `!important`, prefer:
+1. **Specificity**: Use more specific selectors
+2. **Media queries**: `@media (hover: hover)` for hover-capable devices
+3. **CSS resets**: Set properties to `initial` or `unset`
+4. **Structured overrides**: Organize CSS to avoid specificity conflicts
 
 ### Touch Feedback (Active States)
 ```css
@@ -471,12 +487,28 @@ The hover states follow a consistent philosophy of:
   .form-button-type:active,
   .nav-link:active {
     transform: scale(0.98);
-    transition: transform 0.1s ease;
+    transition: transform var(--duration-fast) var(--easing-ease);
   }
 
   .gallery-item-type:active {
     transform: scale(0.98);
-    transition: transform 0.1s ease;
+    transition: transform var(--duration-fast) var(--easing-ease);
+  }
+}
+
+/* Better approach: Use CSS custom properties for consistency */
+@media (max-width: 768px) {
+  .touch-feedback:active {
+    transform: scale(var(--touch-scale, 0.98));
+    transition: transform var(--duration-fast) var(--easing-ease);
+  }
+  
+  /* Apply to all interactive elements */
+  .menu-toggle,
+  .form-button-type,
+  .nav-link,
+  .gallery-item-type {
+    @extend .touch-feedback; /* or add the class directly */
   }
 }
 ```
@@ -504,12 +536,32 @@ The hover states follow a consistent philosophy of:
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+  }
+}
+
+/* Better approach: Respect user preferences without !important */
+@media (prefers-reduced-motion: reduce) {
+  .animated-element {
+    animation: none;
+    transition: none;
+  }
+  
+  /* For elements that need some transition for UX */
+  .minimal-transition {
+    transition-duration: var(--duration-fast);
+    animation-duration: var(--duration-fast);
   }
 }
 ```
+
+**Accessibility Best Practices:**
+1. **Avoid `!important`**: Use specific selectors instead
+2. **Granular control**: Target specific animated elements rather than universal selector
+3. **Preserve essential motion**: Keep transitions that aid usability (focus indicators)
+4. **Test thoroughly**: Verify animations work correctly with reduced motion enabled
 
 ### High Contrast Mode Support
 ```css

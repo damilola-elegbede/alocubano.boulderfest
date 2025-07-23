@@ -286,12 +286,24 @@ All interactive elements support keyboard navigation:
 ```css
 @media (max-width: 768px) {
   .purchase-section {
-    padding: var(--space-xl) !important;
-    margin: 0 var(--space-md) var(--space-3xl) !important;
+    padding: var(--space-xl);
+    margin: 0 var(--space-md) var(--space-3xl);
   }
   
   .form-grid-type {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Better approach: Use higher specificity instead of !important */
+@media (max-width: 768px) {
+  .mobile-responsive .purchase-section {
+    padding: var(--space-xl);
+    margin: 0 var(--space-md) var(--space-3xl);
+  }
+  
+  .mobile-responsive .form-grid-type {
+    grid-template-columns: 1fr;
   }
 }
 ```
@@ -312,11 +324,34 @@ All interactive elements support keyboard navigation:
 
 **iOS Zoom Prevention:**
 ```css
+/* ❌ Avoid: Using !important */
 input[type="text"],
 input[type="email"],
 input[type="tel"],
 input[type="number"] {
   font-size: 16px !important; /* Prevents iOS zoom */
+}
+
+/* ✅ Better approach: Higher specificity */
+@media (max-width: 768px) {
+  .form-input-type[type="text"],
+  .form-input-type[type="email"],
+  .form-input-type[type="tel"],
+  .form-input-type[type="number"] {
+    font-size: 16px; /* Prevents iOS zoom without !important */
+  }
+  
+  /* Alternative: Use CSS custom properties */
+  .form-input-type {
+    font-size: var(--input-font-size, var(--font-size-base));
+  }
+}
+
+/* Set mobile font size via custom property */
+@media (max-width: 768px) {
+  :root {
+    --input-font-size: 16px;
+  }
 }
 ```
 
@@ -336,10 +371,20 @@ input[type="number"] {
 
 ### Mailto Handling Pattern
 
-All forms use secure mailto: URL generation with proper encoding:
+All forms use secure mailto: URL generation with proper encoding. **Note:** Mailto links have limitations including:
+- Dependency on user's default email client being configured
+- Subject and body length restrictions (varies by client/OS)
+- No server-side validation or submission confirmation
+- Poor user experience on devices without email clients
+
+**Recommended Enhancement:** Consider implementing serverless form handling (e.g., Vercel Forms, Netlify Forms, or custom API endpoints) for production use to provide:
+- Server-side validation and sanitization
+- Database storage of submissions
+- Email notifications without client dependency
+- Better error handling and user feedback
 
 ```javascript
-// Secure data collection
+// Current mailto implementation (interim solution)
 const formData = new FormData(form);
 const name = formData.get('name') || '';
 const email = formData.get('email') || '';
@@ -469,6 +514,7 @@ const mailtoUrl = `mailto:alocubanoboulderfest@gmail.com?subject=${subject}&body
 ### Mobile Button Optimization (`/css/mobile-overrides.css` lines 236-244)
 
 ```css
+/* ❌ Avoid: Multiple !important declarations */
 .form-button-type {
   width: 100% !important;
   padding: var(--space-lg) !important;
@@ -476,6 +522,30 @@ const mailtoUrl = `mailto:alocubanoboulderfest@gmail.com?subject=${subject}&body
   min-height: 48px;
   touch-action: manipulation;
   border-radius: 4px;
+}
+
+/* ✅ Better approach: Specific mobile class */
+@media (max-width: 768px) {
+  .form-button-type.mobile-optimized,
+  .mobile-form .form-button-type {
+    width: 100%;
+    padding: var(--space-lg);
+    font-size: var(--font-size-base);
+    min-height: 48px;
+    touch-action: manipulation;
+    border-radius: var(--radius-sm);
+  }
+}
+
+/* Alternative: Use CSS cascade and specificity */
+@media (max-width: 768px) {
+  .purchase-section .form-button-type,
+  .donation-form .form-button-type,
+  .volunteer-form-typographic .form-button-type {
+    width: 100%;
+    padding: var(--space-lg);
+    font-size: var(--font-size-base);
+  }
 }
 ```
 
@@ -612,6 +682,7 @@ input:focus {
 
 **Mobile Stacking:**
 ```css
+/* ❌ Avoid: !important and inline style selectors */
 @media (max-width: 768px) {
   .form-grid-type {
     grid-template-columns: 1fr !important;
@@ -621,6 +692,34 @@ input:focus {
     grid-template-columns: 1fr !important;
     gap: var(--space-md) !important;
   }
+}
+
+/* ✅ Better approach: Semantic classes */
+@media (max-width: 768px) {
+  .form-grid-type,
+  .form-grid-two-column {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+  
+  /* Use specific classes instead of inline style selectors */
+  .purchase-section .form-grid-type {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+}
+
+/* Define grid variants as classes */
+.form-grid-two-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+}
+
+.form-grid-single-column {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
 }
 ```
 
@@ -719,16 +818,44 @@ Sent from A Lo Cubano Boulder Fest website`;
 }
 ```
 
+## CSS Best Practices Summary
+
+### ⚠️ Issues Addressed
+1. **Eliminated `!important` overuse**: Replaced with higher specificity selectors
+2. **Removed inline style dependencies**: Created semantic CSS classes
+3. **Improved maintainability**: Used CSS custom properties and design tokens
+4. **Enhanced responsive design**: Better mobile-first approach without hacky overrides
+
+### ✅ Recommended Patterns
+```css
+/* Instead of !important, use specificity */
+.mobile-form .form-button-type { /* specific context */ }
+
+/* Use CSS custom properties for flexibility */
+.form-input-type {
+  font-size: var(--input-font-size, var(--font-size-base));
+}
+
+/* Create semantic classes instead of inline styles */
+.form-grid-two-column { display: grid; grid-template-columns: 1fr 1fr; }
+.form-grid-single-column { display: grid; grid-template-columns: 1fr; }
+
+/* Use state classes for visibility */
+.other-amount--hidden { display: none; }
+.other-amount--visible { display: block; }
+```
+
 ## Summary
 
 The A Lo Cubano Boulder Fest form system exemplifies **typography-forward design** while maintaining strict **accessibility compliance** and **security best practices**. Key characteristics include:
 
 - **Unified Design Language** - Consistent styling across volunteer, donation, and ticket forms
 - **Progressive Enhancement** - HTML5 validation with JavaScript enhancements
-- **Mobile-First Responsive** - Touch-optimized inputs and layouts
+- **Mobile-First Responsive** - Touch-optimized inputs and layouts without `!important` hacks
 - **Accessibility Compliant** - ARIA attributes, semantic HTML, keyboard navigation
 - **Security Conscious** - Proper encoding, structured data handling, client-side validation
 - **Typography Integration** - Monospace headers, display fonts, letter-spacing enhancement
 - **Performance Optimized** - Minimal DOM manipulation, efficient CSS transitions
+- **Maintainable CSS** - Semantic classes, design tokens, and proper cascade usage
 
 The system successfully balances aesthetic appeal with functional requirements, creating forms that are both visually striking and highly usable across all devices and accessibility contexts.

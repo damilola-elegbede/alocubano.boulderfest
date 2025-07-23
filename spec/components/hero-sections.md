@@ -16,10 +16,42 @@ All hero sections follow a consistent architectural pattern:
         <img id="hero-splash-image" 
              src="" 
              alt="[Semantic alt text describing the specific context]" 
-             class="hero-splash-img" 
-             style="object-position: top center !important;">
+             class="hero-splash-img hero-splash-img--top-center">
     </div>
 </section>
+```
+
+**CSS Classes:**
+```css
+/* Base hero image styling */
+.hero-splash-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center; /* Default positioning */
+  transition: opacity var(--duration-slow) var(--easing-ease-out);
+}
+
+/* Object position variants */
+.hero-splash-img--top-center {
+  object-position: top center;
+}
+
+.hero-splash-img--center-center {
+  object-position: center center;
+}
+
+.hero-splash-img--bottom-center {
+  object-position: bottom center;
+}
+
+.hero-splash-img--top-left {
+  object-position: top left;
+}
+
+.hero-splash-img--top-right {
+  object-position: top right;
+}
 ```
 
 ### Implementation Files
@@ -41,8 +73,7 @@ All hero sections follow a consistent architectural pattern:
         <img id="hero-splash-image" 
              src="" 
              alt="Dynamic festival photo showcasing A Lo Cubano Boulder Fest celebration with dancers, musicians, and Cuban culture" 
-             class="hero-splash-img" 
-             style="object-position: top center !important;">
+             class="hero-splash-img hero-splash-img--top-center">
     </div>
 </section>
 ```
@@ -57,8 +88,7 @@ All hero sections follow a consistent architectural pattern:
 <img id="hero-splash-image" 
      src="" 
      alt="Memorable gallery photos from past A Lo Cubano Boulder Fest events showcasing dancers, performances, and community moments" 
-     class="hero-splash-img" 
-     style="object-position: top center !important;">
+     class="hero-splash-img hero-splash-img--top-center">
 ```
 
 **Semantic Purpose**: Previews the visual storytelling within the gallery sections
@@ -71,8 +101,7 @@ All hero sections follow a consistent architectural pattern:
 <img id="hero-splash-image" 
      src="" 
      alt="Behind-the-scenes moments from A Lo Cubano Boulder Fest, showcasing our community, organizers, and festival atmosphere" 
-     class="hero-splash-img" 
-     style="object-position: top center !important;">
+     class="hero-splash-img hero-splash-img--top-center">
 ```
 
 **Semantic Purpose**: Emphasizes human stories and organizational culture
@@ -85,8 +114,7 @@ All hero sections follow a consistent architectural pattern:
 <img id="hero-splash-image" 
      src="" 
      alt="Featured Cuban salsa instructors and artists performing at A Lo Cubano Boulder Fest, showcasing authentic dance techniques" 
-     class="hero-splash-img" 
-     style="object-position: top center !important;">
+     class="hero-splash-img hero-splash-img--top-center">
 ```
 
 **Semantic Purpose**: Highlights talent, skill, and authentic Cuban artistry
@@ -99,8 +127,7 @@ All hero sections follow a consistent architectural pattern:
 <img id="hero-splash-image" 
      src="" 
      alt="Workshop sessions and dance classes in action at A Lo Cubano Boulder Fest, showing the vibrant learning environment" 
-     class="hero-splash-img" 
-     style="object-position: top center !important;">
+     class="hero-splash-img hero-splash-img--top-center">
 ```
 
 **Semantic Purpose**: Focuses on educational activities and learning experiences
@@ -113,8 +140,7 @@ All hero sections follow a consistent architectural pattern:
 <img id="hero-splash-image" 
      src="" 
      alt="Excited festival attendees enjoying A Lo Cubano Boulder Fest events, highlighting the experience visitors can expect" 
-     class="hero-splash-img" 
-     style="object-position: top center !important;">
+     class="hero-splash-img hero-splash-img--top-center">
 ```
 
 **Semantic Purpose**: Emphasizes attendee experience and value proposition
@@ -145,9 +171,39 @@ All hero sections follow a consistent architectural pattern:
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: top center;
-  transition: opacity 0.5s ease-in-out;
+  object-position: center center; /* Default positioning */
+  transition: opacity var(--duration-slow) var(--easing-ease-out);
 }
+
+/* Object position variants - replaces inline styles */
+.hero-splash-img--top-center {
+  object-position: top center;
+}
+
+.hero-splash-img--center-center {
+  object-position: center center;
+}
+
+.hero-splash-img--bottom-center {
+  object-position: bottom center;
+}
+
+.hero-splash-img--top-left {
+  object-position: top left;
+}
+
+.hero-splash-img--top-right {
+  object-position: top right;
+}
+```
+
+**Migration from Inline Styles:**
+```html
+<!-- ❌ Avoid: Inline styles with !important -->
+<img class="hero-splash-img" style="object-position: top center !important;">
+
+<!-- ✅ Preferred: CSS classes -->
+<img class="hero-splash-img hero-splash-img--top-center">
 ```
 
 ### Loading States

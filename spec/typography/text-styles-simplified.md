@@ -20,7 +20,7 @@ This is the **definitive typography specification** for A Lo Cubano Boulder Fest
 --font-code: 'Space Mono', monospace;                /* Technical, metadata */
 ```
 
-### Font Size Scale (14 levels)
+### Font Size Scale (15 levels)
 ```css
 --font-size-xs: 0.75rem;     /* 12px - Small metadata */
 --font-size-sm: 0.875rem;    /* 14px - Code comments */
@@ -30,11 +30,13 @@ This is the **definitive typography specification** for A Lo Cubano Boulder Fest
 --font-size-2xl: 1.5rem;     /* 24px - Card titles */
 --font-size-3xl: 1.875rem;   /* 30px - Section headers */
 --font-size-4xl: 2.25rem;    /* 36px - Page headers */
+--font-size-4.5xl: 2.75rem;  /* 44px - Medium hero */
 --font-size-5xl: 3rem;       /* 48px - Hero text */
 --font-size-6xl: 3.75rem;    /* 60px - Large hero */
 --font-size-7xl: 4.5rem;     /* 72px - Massive display */
 --font-size-8xl: 6rem;       /* 96px - Background elements */
 --font-size-9xl: 8rem;       /* 128px - Decorative */
+--font-size-10xl: 10rem;     /* 160px - Ultra decorative */
 ```
 
 ## Implemented Typography Patterns

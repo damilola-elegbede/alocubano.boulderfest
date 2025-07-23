@@ -17,7 +17,7 @@ The A Lo Cubano Boulder Fest website implements a comprehensive performance opti
 
 ## System Architecture Overview
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    Performance System                      │
 ├─────────────────────────────────────────────────────────────┤

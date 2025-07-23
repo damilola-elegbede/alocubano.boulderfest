@@ -373,9 +373,9 @@ All pages include these scripts:
         <div class="container">
             <h2 class="text-display">WHAT PEOPLE SAY</h2>
             <div class="testimonials-grid">
-                <blockquote style="padding: var(--space-2xl); background: var(--color-white); border-left: 4px solid var(--color-red);">
-                    <p class="font-serif">Quote text...</p>
-                    <cite class="font-mono">— Name, Location</cite>
+                <blockquote class="testimonial-card">
+                    <p class="testimonial-quote font-serif">Quote text...</p>
+                    <cite class="testimonial-author font-mono">— Name, Location</cite>
                 </blockquote>
                 <!-- Additional testimonials -->
             </div>
@@ -388,7 +388,39 @@ All pages include these scripts:
 - `.festival-years-nav`, `.festival-years-grid`, `.festival-year-card`
 - `.year-card-content`, `.year-card-hover`, `.view-gallery-text`
 - `.coming-soon` (state modifier)
-- `.testimonials-grid`
+- `.testimonials-grid`, `.testimonial-card`, `.testimonial-quote`, `.testimonial-author`
+
+**Recommended CSS:**
+```css
+.testimonial-card {
+  padding: var(--space-2xl);
+  background: var(--color-white);
+  border-left: 4px solid var(--color-secondary-600);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--duration-base) var(--easing-ease);
+}
+
+.testimonial-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.testimonial-quote {
+  font-family: var(--font-serif);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--space-lg);
+  font-style: italic;
+}
+
+.testimonial-author {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  font-style: normal;
+}
+```
 
 ### 5. Gallery Detail Page Pattern (/pages/gallery-2025.html)
 
@@ -576,8 +608,8 @@ All pages include these scripts:
     <section class="section-typographic">
         <div class="container">
             <!-- Mission Text -->
-            <div style="text-align: center;">
-                <p class="font-serif">Mission statement...</p>
+            <div class="mission-text-center">
+                <p class="mission-statement font-serif">Mission statement...</p>
             </div>
 
             <!-- Donation Form -->
@@ -600,7 +632,7 @@ All pages include these scripts:
                         </div>
                         
                         <!-- Other Amount Input -->
-                        <div class="other-amount" style="display: none;">
+                        <div class="other-amount other-amount--hidden">
                             <label class="form-label-type font-mono">ENTER AMOUNT</label>
                             <input type="number" name="other-amount" class="form-input-type">
                         </div>
@@ -634,9 +666,47 @@ All pages include these scripts:
 
 #### CSS Classes Used:
 - `.donation-form-wrapper`, `.donation-form`, `.donation-amounts`, `.donation-option`
-- `.amount-box`, `.other-amount`
+- `.amount-box`, `.other-amount`, `.other-amount--hidden`
 - `.form-section`, `.form-grid-type`, `.form-group-type`
 - `.impact-grid`, `.impact-item`
+- `.mission-text-center`, `.mission-statement`
+
+**Recommended CSS:**
+```css
+.mission-text-center {
+  text-align: center;
+  margin-bottom: var(--space-3xl);
+}
+
+.mission-statement {
+  font-family: var(--font-serif);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+  max-width: 600px;
+  margin: 0 auto;
+  color: var(--color-gray-700);
+}
+
+.other-amount--hidden {
+  display: none;
+}
+
+.other-amount--visible {
+  display: block;
+  animation: fadeIn var(--duration-base) var(--easing-ease-out);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+```
 
 ### 8. Schedule Page Pattern (/pages/schedule.html)
 
@@ -670,9 +740,9 @@ All pages include these scripts:
                 
                 <div class="schedule-items">
                     <div class="schedule-item">
-                        <div style="display: grid; grid-template-columns: 140px 1fr; gap: var(--space-xl);">
-                            <div class="time font-mono">4:00 - 5:00 PM</div>
-                            <div class="details">
+                        <div class="schedule-item-grid">
+                            <div class="schedule-time font-mono">4:00 - 5:00 PM</div>
+                            <div class="schedule-details">
                                 <h3 class="font-display">LAROYE ~ ORISHAS</h3>
                             </div>
                         </div>
@@ -689,8 +759,41 @@ All pages include these scripts:
 
 #### CSS Classes Used:
 - `.schedule-day`, `.venue-info`, `.schedule-items`, `.schedule-item`
-- `.time`, `.details`
-- Grid-based layout with inline styles for time columns
+- `.schedule-item-grid`, `.schedule-time`, `.schedule-details`
+- Grid-based layout with dedicated CSS classes
+
+**Recommended CSS:**
+```css
+.schedule-item-grid {
+  display: grid;
+  grid-template-columns: var(--schedule-time-width, 140px) 1fr;
+  gap: var(--space-xl);
+  align-items: start;
+}
+
+.schedule-time {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--color-gray-600);
+}
+
+.schedule-details {
+  min-width: 0; /* Prevent grid overflow */
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+  .schedule-item-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+  
+  .schedule-time {
+    padding-bottom: var(--space-xs);
+    border-bottom: 1px solid var(--color-gray-200);
+  }
+}
+```
 
 ### 9. 404 Error Page Pattern (/pages/404.html)
 

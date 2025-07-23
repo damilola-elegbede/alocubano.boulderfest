@@ -88,8 +88,26 @@ Card components are the foundation of information display across the A Lo Cubano
 **Special Features**:
 - Interactive hover states with transform effects
 - Background gradient animation on hover
-- Conditional "coming soon" styling for disabled cards
+- Conditional "coming soon" styling for disabled cards with proper ARIA attributes
 - Responsive grid layout (1fr on mobile, auto-fit on desktop)
+
+**Accessibility Implementation**:
+```html
+<!-- Disabled/Coming Soon Card -->
+<div class="festival-year-card disabled" 
+     data-year="2026"
+     aria-disabled="true"
+     aria-label="2026 Festival - Coming Soon">
+    <div class="year-card-content">
+        <span class="year-number font-display">2026</span>
+        <span class="year-subtitle font-serif">Coming Soon</span>
+        <span class="year-highlight font-mono">Stay Tuned</span>
+    </div>
+    <div class="year-card-disabled-overlay">
+        <span class="coming-soon-text">COMING SOON</span>
+    </div>
+</div>
+```
 
 ### 5. Schedule Event Cards
 **Location**: `/pages/schedule.html` (lines 73-101, 114-168, 181-227)  
@@ -304,6 +322,41 @@ Card components are the foundation of information display across the A Lo Cubano
 - Use `<blockquote>` and `<cite>` for testimonials
 - Use proper heading hierarchy (`<h2>`, `<h3>`, `<h4>`)
 - Include `aria-label` for interactive cards
+- Add `aria-disabled="true"` for disabled or "coming soon" cards
+
+### ARIA States and Properties
+- **Disabled Cards**: Use `aria-disabled="true"` for cards that are not interactive
+- **Loading States**: Use `aria-busy="true"` for cards with loading content
+- **Expanded States**: Use `aria-expanded` for cards with collapsible content
+- **Labels**: Provide descriptive `aria-label` or `aria-labelledby` for complex cards
+
+### Screen Reader Support
+```html
+<!-- Accessible Card Examples -->
+
+<!-- Disabled Festival Year Card -->
+<div class="festival-year-card disabled" 
+     aria-disabled="true"
+     aria-label="2026 Festival - Coming Soon, not yet available">
+    <!-- card content -->
+</div>
+
+<!-- Interactive Artist Card -->
+<article class="gallery-item-type" 
+         aria-labelledby="artist-1-title"
+         role="button"
+         tabindex="0">
+    <h3 id="artist-1-title" class="gallery-type-title">LAROYE</h3>
+    <!-- card content -->
+</article>
+
+<!-- Loading Card State -->
+<div class="gallery-item-type" 
+     aria-busy="true"
+     aria-label="Loading artist information">
+    <!-- loading content -->
+</div>
+```
 
 ### Color and Contrast
 - Maintain sufficient contrast ratios for all text
@@ -311,9 +364,51 @@ Card components are the foundation of information display across the A Lo Cubano
 - Use semantic color coding (blue for categories, red for emphasis)
 
 ### Keyboard Navigation
-- All interactive cards are keyboard accessible
-- Proper focus states on hover-enabled cards
-- Logical tab order through card grids
+- All interactive cards are keyboard accessible with `tabindex="0"` when needed
+- Proper focus states on hover-enabled cards with visible focus indicators
+- Logical tab order through card grids using semantic HTML structure
+- Enter and Space key activation for clickable cards
+
+### Focus Management
+```css
+/* Visible focus indicators for all interactive cards */
+.festival-year-card:focus,
+.gallery-item-type:focus,
+.nav-link:focus {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(91, 107, 181, 0.2);
+}
+
+/* High contrast focus for better visibility */
+@media (prefers-contrast: high) {
+    .festival-year-card:focus,
+    .gallery-item-type:focus {
+        outline: 3px solid var(--color-black);
+        outline-offset: 3px;
+    }
+}
+```
+
+### Motion and Animation Accessibility
+```css
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .festival-year-card,
+    .gallery-item,
+    .card {
+        transition: none !important;
+        transform: none !important;
+        animation: none !important;
+    }
+    
+    .festival-year-card:hover,
+    .gallery-item:hover,
+    .card:hover {
+        transform: none !important;
+    }
+}
+```
 
 ## Mobile Optimization
 

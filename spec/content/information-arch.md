@@ -10,7 +10,7 @@ This document defines the complete information architecture, navigation structur
 
 ### Primary Navigation Architecture
 
-```
+```text
 A Lo Cubano Boulder Fest
 ├── Home (/)                    → /pages/home.html
 ├── About (/about)             → /pages/about.html
@@ -240,14 +240,14 @@ toggleMobileMenu() {
 ### 1. Primary User Flows
 
 #### Discovery to Registration Flow
-```
+```text
 Entry Point (/) → Home → About/Artists → Schedule → Tickets → Registration
                      ↓
                    Gallery (Social proof)
 ```
 
 #### Content Exploration Flow
-```
+```text
 Home → Gallery Hub → Yearly Galleries (2025, etc.) → Lightbox View
   ↓
 About → Festival History → Board Information
@@ -256,7 +256,7 @@ Artists → Instructor Profiles → Schedule → Specific Workshops
 ```
 
 #### Support Flow
-```
+```text
 Any Page → Donations → Support Form → Confirmation
        ↓
      Social Media Links (Instagram, WhatsApp)
@@ -281,14 +281,14 @@ Any Page → Donations → Support Form → Confirmation
 ### 1. Content Relationships
 
 #### Parent-Child Relationships
-```
+```text
 Gallery (Hub) → Gallery-2025 (Detail)
 Home (Overview) → About/Artists/Schedule (Details)
 Artists (Profiles) ↔ Schedule (Sessions) [Cross-referenced]
 ```
 
 #### Peer Relationships
-```
+```text
 About ↔ Artists ↔ Schedule [Program Information Triad]
 Tickets ↔ Donations [Action-oriented pages]
 ```

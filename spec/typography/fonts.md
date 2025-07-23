@@ -38,7 +38,7 @@ The A Lo Cubano Boulder Fest website implements a **typography-forward design sy
 - **Fallback**: System sans-serif fonts
 
 **Performance Considerations**:
-- Single weight loaded (400/normal)
+- Single weight loaded for Bebas Neue (400/normal)
 - Minimal character set for efficiency
 - High visual impact with small file size
 

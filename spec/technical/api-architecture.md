@@ -155,7 +155,7 @@ GOOGLE_DRIVE_FEATURED_PHOTOS_FOLDER_ID=1DEF...xyz
 ```
 
 ### Folder Structure Pattern
-```
+```text
 Gallery Root Folder/
 ├── 2025/
 │   ├── workshops/
@@ -602,7 +602,7 @@ interface FeaturedPhotosResponse {
 ## Image Proxy Architecture
 
 ### Proxy URL Pattern
-```
+```text
 /api/image-proxy/{fileId}
 ```
 

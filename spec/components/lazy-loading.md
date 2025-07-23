@@ -25,7 +25,7 @@ The LazyLoader accepts comprehensive configuration options with sensible default
 
 ```javascript
 const defaultConfig = {
-    rootMargin: '50px 0px',        // Intersection margin for early loading
+    rootMargin: '50px 0px',        // Intersection margin: 50px above/below viewport
     threshold: 0.1,                // Percentage of element visibility to trigger
     selector: 'img[data-src]',     // CSS selector for simple images
     advancedSelector: '.lazy-item[data-loaded="false"]', // Advanced items
@@ -34,6 +34,24 @@ const defaultConfig = {
     maxRetries: 3                  // Maximum automatic retry attempts
 };
 ```
+
+#### Root Margin Behavior Explained
+
+The `rootMargin` configuration uses CSS margin syntax and affects loading timing:
+
+- **`'50px 0px'`** - Loads images 50px **before** they enter the viewport (top/bottom)
+- **`'0px 50px'`** - Loads images 50px **before** they enter from left/right sides  
+- **`'50px'`** - Loads images 50px before entering from **all directions**
+- **`'100px 0px'`** - Loads images 100px before entering from top/bottom (better for fast scrolling)
+
+**Recommended Values**:
+- **Gallery pages**: `'100px 0px'` - Early loading for smooth scrolling
+- **Content pages**: `'50px 0px'` - Balanced performance and bandwidth
+- **Mobile devices**: `'25px 0px'` - Conservative loading for slower connections
+
+**Performance Impact**:
+- **Larger margins** = Earlier loading = Smoother UX but more bandwidth usage
+- **Smaller margins** = Later loading = Better bandwidth usage but potential loading delays
 
 ## Intersection Observer Implementation
 
@@ -64,7 +82,7 @@ createObserver() {
 ### Performance Optimizations
 
 1. **Immediate Unobserve**: Elements are unobserved immediately after triggering to prevent duplicate loading
-2. **Configurable Root Margin**: Default `50px 0px` provides early loading for better user experience
+2. **Configurable Root Margin**: Default `50px 0px` loads images 50px before entering viewport vertically for better user experience
 3. **Low Threshold**: `0.1` threshold ensures loading begins as soon as elements enter viewport
 4. **Memory Management**: Observer cleanup through `destroy()` method prevents memory leaks
 
@@ -120,9 +138,10 @@ const loader = LazyLoader.createAdvanced({
 
 **Gallery Integration Example** (from `/js/gallery-detail.js:481-491`):
 ```javascript
+// Gallery uses larger root margin for smooth scrolling experience
 state.lazyObserver = LazyLoader.createAdvanced({
     selector: '.lazy-item[data-loaded="false"]',
-    rootMargin: CONFIG.LAZY_LOAD_THRESHOLD,
+    rootMargin: CONFIG.LAZY_LOAD_THRESHOLD, // Typically '100px 0px' for galleries
     threshold: 0.1,
     onError: (element, error, info) => {
         // Update failed images state immediately when an error occurs
@@ -133,6 +152,11 @@ state.lazyObserver = LazyLoader.createAdvanced({
     }
 });
 ```
+
+**Why Galleries Use Larger Root Margins**:
+- **Fast Scrolling**: Users scroll quickly through galleries
+- **Image Heavy**: More images need to be ready in advance
+- **UX Priority**: Smooth experience is more important than bandwidth conservation
 
 ## Error Handling and Retry Logic
 
@@ -421,10 +445,21 @@ clearFailedImages()            // Clear failed image tracking
 
 ### Loading Performance
 
-- **Early Loading**: 50px root margin provides smooth user experience
-- **Viewport Optimization**: Only loads images when needed
+- **Early Loading**: 50px root margin loads images before they enter viewport for smooth UX
+- **Directional Loading**: Root margin `'50px 0px'` only affects vertical scrolling (top/bottom)
+- **Viewport Optimization**: Only loads images when needed based on scroll direction
 - **Retry Optimization**: Exponential backoff prevents server overload
 - **Memory Efficiency**: Immediate element unobserving after loading
+
+### Root Margin Performance Tuning
+
+| Use Case | Root Margin | Reasoning |
+|----------|-------------|----------|
+| **Gallery Pages** | `'100px 0px'` | Fast scrolling needs early loading |
+| **Content Pages** | `'50px 0px'` | Balanced performance and bandwidth |
+| **Mobile/Slow Connections** | `'25px 0px'` | Conservative bandwidth usage |
+| **Full-screen Images** | `'200px 0px'` | Large images need extra load time |
+| **Horizontal Carousels** | `'0px 100px'` | Load images before horizontal movement |
 
 ### Network Optimization
 

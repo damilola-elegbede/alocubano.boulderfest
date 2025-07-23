@@ -6,7 +6,7 @@ This document defines the complete asset management system for the A Lo Cubano B
 
 ## Asset Directory Structure
 
-```
+```text
 /images/                          # Static assets root
 ├── logo.png                      # Primary brand logo (78px height)
 ├── hero-default.jpg             # Default hero image fallback
@@ -283,18 +283,18 @@ High-priority assets:
 ### Caching Headers
 
 **Static Assets:**
-```
+```http
 Cache-Control: public, max-age=86400, s-maxage=604800, immutable
 ```
 
 **Dynamic Images:**
-```
+```http
 Cache-Control: public, max-age=86400, s-maxage=604800, immutable
 ETag: "fileId-size"
 ```
 
 **Development:**
-```
+```http
 Cache-Control: public, max-age=3600
 ```
 
@@ -398,7 +398,7 @@ Validates and caches gallery assets:
 ### Content Security Policy
 
 **Image Sources:**
-```
+```text
 img-src 'self' data: https://drive.google.com https://lh3.googleusercontent.com;
 ```
 

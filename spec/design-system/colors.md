@@ -2,7 +2,7 @@
 
 ## Color Palette
 
-### Primary Colors
+### Base Colors
 ```css
 --color-black: #000000;    /* Primary text, strong contrast */
 --color-white: #FFFFFF;    /* Backgrounds, inverted text */

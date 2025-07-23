@@ -36,7 +36,7 @@ The website implements a **desktop-first protection model** where:
 
 ### Implementation Files Structure
 
-```
+```text
 /css/
 ├── base.css              # Desktop-first core system
 ├── mobile-overrides.css  # Mobile-only enhancements  

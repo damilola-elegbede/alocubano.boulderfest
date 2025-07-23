@@ -219,8 +219,11 @@ The A Lo Cubano Boulder Fest website features a sophisticated navigation system 
 
 ### Mobile Menu Toggle Button
 
-#### Typographic Style (Text-based)
+#### Typographic Style (Text-based) - DEPRECATED
+**⚠️ Accessibility Issue**: This implementation causes screen reader confusion due to duplicated menu labels. Use the Component Style (Hamburger Icon) implementation instead.
+
 ```css
+/* DEPRECATED - DO NOT USE */
 .typographic .menu-toggle {
   display: none;
   background: transparent;
@@ -247,12 +250,19 @@ The A Lo Cubano Boulder Fest website features a sophisticated navigation system 
 }
 ```
 
-#### Component Style (Hamburger Icon)
+**Accessibility Problems**:
+1. Screen readers announce both the `aria-label` and the CSS `content`, causing confusion
+2. Visual text changes don't update screen reader announcements
+3. CSS-generated content is not reliably accessible across all screen readers
+
+#### Component Style (Hamburger Icon) - RECOMMENDED
+**✅ Accessible Implementation**: This approach uses proper ARIA labels without CSS content conflicts.
+
 ```css
 .menu-toggle {
   display: none;
-  width: 40px;
-  height: 40px;
+  width: 44px;  /* Increased for better touch targets */
+  height: 44px; /* Minimum 44px for accessibility */
   position: relative;
   z-index: var(--z-sticky);
   background: transparent;
@@ -292,6 +302,12 @@ The A Lo Cubano Boulder Fest website features a sophisticated navigation system 
   transform: translateY(-6px) rotate(-45deg);
 }
 ```
+
+**Accessibility Features**:
+1. **Proper ARIA Labels**: Uses `aria-label` without conflicting CSS content
+2. **Touch Target Size**: 44px minimum for mobile accessibility
+3. **Visual Focus**: Clear focus indicators for keyboard navigation
+4. **State Communication**: ARIA attributes communicate menu state changes
 
 ### Mobile Menu Panel
 ```css
@@ -438,11 +454,47 @@ toggleMobileMenu() {
         if (navList) navList.classList.add('is-open');
         if (menuToggle) menuToggle.classList.add('is-active');
         document.body.style.overflow = 'hidden'; // Prevent body scroll
+        
+        // Update accessibility attributes
+        this.updateMenuAccessibility(true);
+        
+        // Focus management - move focus to first menu item
+        const firstMenuItem = navList?.querySelector('.nav-link');
+        if (firstMenuItem) {
+            firstMenuItem.focus();
+        }
     } else {
         if (mobileMenu) mobileMenu.classList.remove('is-open');
         if (navList) navList.classList.remove('is-open');
         if (menuToggle) menuToggle.classList.remove('is-active');
         document.body.style.overflow = '';
+        
+        // Update accessibility attributes
+        this.updateMenuAccessibility(false);
+        
+        // Return focus to menu toggle button
+        if (menuToggle) {
+            menuToggle.focus();
+        }
+    }
+}
+
+// Accessibility helper method
+updateMenuAccessibility(isOpen) {
+    const menuToggle = document.querySelector('.menu-toggle');
+    const navList = document.querySelector('.nav-list');
+    const stateText = document.querySelector('.menu-state-text');
+    
+    if (menuToggle) {
+        menuToggle.setAttribute('aria-expanded', isOpen.toString());
+    }
+    
+    if (navList) {
+        navList.setAttribute('aria-hidden', (!isOpen).toString());
+    }
+    
+    if (stateText) {
+        stateText.textContent = isOpen ? 'Close menu' : 'Open menu';
     }
 }
 ```
@@ -514,15 +566,75 @@ navigateWithTransition(url) {
 - **Arrow keys**: Navigation within dropdown menus (if implemented)
 
 ### Screen Reader Support
+
+#### Proper ARIA Implementation
 ```html
-<!-- ARIA Labels -->
-<button class="menu-toggle" aria-label="Toggle menu">
-<nav class="main-nav" role="navigation">
-<a href="/home" class="nav-link is-active" aria-current="page">
+<!-- Accessible Menu Toggle -->
+<button class="menu-toggle" 
+        aria-label="Toggle navigation menu"
+        aria-expanded="false"
+        aria-controls="main-navigation">
+    <span class="menu-icon" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+    </span>
+    <!-- Screen reader text that updates with state -->
+    <span class="sr-only menu-state-text">Menu</span>
+</button>
+
+<!-- Navigation with proper semantics -->
+<nav class="main-nav" 
+     role="navigation" 
+     id="main-navigation"
+     aria-label="Main navigation">
+    <ul class="nav-list" aria-hidden="false">
+        <li><a href="/home" class="nav-link is-active" aria-current="page">Home</a></li>
+        <li><a href="/about" class="nav-link">About</a></li>
+        <!-- ... other nav items ... -->
+    </ul>
+</nav>
 
 <!-- Skip Links -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <a href="#navigation" class="skip-link">Skip to navigation</a>
+```
+
+#### Screen Reader Only Text
+```css
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+```
+
+#### Dynamic ARIA Updates
+```javascript
+// Update ARIA attributes when menu state changes
+function updateMenuAccessibility(isOpen) {
+    const menuToggle = document.querySelector('.menu-toggle');
+    const navList = document.querySelector('.nav-list');
+    const stateText = document.querySelector('.menu-state-text');
+    
+    if (menuToggle) {
+        menuToggle.setAttribute('aria-expanded', isOpen.toString());
+    }
+    
+    if (navList) {
+        navList.setAttribute('aria-hidden', (!isOpen).toString());
+    }
+    
+    if (stateText) {
+        stateText.textContent = isOpen ? 'Close menu' : 'Open menu';
+    }
+}
 ```
 
 ### Focus Management
