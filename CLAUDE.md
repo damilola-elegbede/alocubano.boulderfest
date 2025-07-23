@@ -256,6 +256,25 @@ alocubano.boulderfest/
 - **Format Auto-Detection**: Serves optimal format based on browser capabilities
 - **Performance**: 25-40% bandwidth reduction through WebP compression
 
+#### Advanced Caching Architecture (Phase 2)
+
+##### Service Worker Implementation
+- **Multi-level Caching**: Static, Image, API, and Gallery-specific caches
+- **Intelligent Strategies**: Cache-first for images, network-first for API data
+- **Background Updates**: Stale-while-revalidate for gallery content
+- **Offline Support**: Graceful degradation when network unavailable
+
+##### Preloading System
+- **Critical Path**: Hero images and gallery data preloaded in HTML head
+- **Intelligent Prefetching**: Based on user interaction patterns
+- **Resource Budgeting**: Adaptive to connection speed and device capabilities
+- **Priority Queue**: High/medium/low priority prefetch management
+
+##### Cache Warming
+- **Progressive Strategy**: Critical → Essential → Predictive resources
+- **Connection-Aware**: Adapts warming strategy to network conditions
+- **Analytics Integration**: Monitors cache efficiency and bandwidth usage
+
 ## Development Workflow
 
 ### Local Development
