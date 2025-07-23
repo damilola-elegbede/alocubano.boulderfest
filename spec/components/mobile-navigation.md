@@ -20,6 +20,8 @@ The mobile navigation system for A Lo Cubano Boulder Fest uses a slide-in panel 
     <li><a href="/gallery" class="nav-link" data-text="Gallery">Gallery</a></li>
     <li><a href="/tickets" class="nav-link" data-text="Tickets">Tickets</a></li>
   </ul>
+  <!-- Overlay element for full-screen coverage -->
+  <div class="mobile-menu-overlay"></div>
 </nav>
 ```
 
@@ -28,7 +30,7 @@ The mobile navigation system for A Lo Cubano Boulder Fest uses a slide-in panel 
 #### Mobile-Only Display Logic
 ```css
 @media (max-width: 768px) {
-  /* Hide hamburger button by default */
+  /* Show hamburger button on mobile */
   .menu-toggle {
     display: block;
     background: none;
@@ -42,6 +44,22 @@ The mobile navigation system for A Lo Cubano Boulder Fest uses a slide-in panel 
   /* Hide navigation list by default on mobile */
   .nav-list {
     display: none;
+  }
+
+  /* Full-screen overlay to block interaction outside menu */
+  .mobile-menu-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+  }
+  
+  .mobile-menu-overlay.is-open {
+    display: block;
   }
 
   /* Show as slide-in panel when opened */
@@ -135,19 +153,26 @@ class Navigation {
     this.init();
   }
 
+  init() {
+    this.setupEventListeners();
+  }
+
   toggleMobileMenu() {
     this.mobileMenuOpen = !this.mobileMenuOpen;
     const navList = document.querySelector('.nav-list');
     const menuToggle = document.querySelector('.menu-toggle');
+    const overlay = document.querySelector('.mobile-menu-overlay');
 
     if (this.mobileMenuOpen) {
       // CRITICAL: Use 'is-open' class to match CSS selector
       navList?.classList.add('is-open');
       menuToggle?.classList.add('is-active');
+      overlay?.classList.add('is-open');
       document.body.style.overflow = 'hidden'; // Prevent background scroll
     } else {
       navList?.classList.remove('is-open');
       menuToggle?.classList.remove('is-active');
+      overlay?.classList.remove('is-open');
       document.body.style.overflow = ''; // Restore scroll
     }
   }
@@ -156,9 +181,11 @@ class Navigation {
     this.mobileMenuOpen = false;
     const navList = document.querySelector('.nav-list');
     const menuToggle = document.querySelector('.menu-toggle');
+    const overlay = document.querySelector('.mobile-menu-overlay');
 
     navList?.classList.remove('is-open');
     menuToggle?.classList.remove('is-active');
+    overlay?.classList.remove('is-open');
     document.body.style.overflow = '';
   }
 }
@@ -180,7 +207,13 @@ setupEventListeners() {
     }
   });
 
-  // Close on outside click
+  // Close on overlay click
+  const overlay = document.querySelector('.mobile-menu-overlay');
+  if (overlay) {
+    overlay.addEventListener('click', () => this.closeMobileMenu());
+  }
+
+  // Close on outside click (fallback)
   document.addEventListener('click', (e) => {
     const navList = document.querySelector('.nav-list');
     const menuToggle = document.querySelector('.menu-toggle');
