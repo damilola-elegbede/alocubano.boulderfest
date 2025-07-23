@@ -168,3 +168,35 @@ curl https://your-domain.vercel.app/api/gallery?folderId=YOUR_FOLDER_ID
 - Image metadata (EXIF data)
 - Video duration and dimensions
 - Batch operations for multiple folders
+
+## Image Proxy Enhancements
+
+### Responsive Image Support
+
+The image proxy now supports responsive image delivery with automatic format optimization.
+
+#### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `w` | integer | original | Target width in pixels |
+| `format` | string | auto-detected | Target format (webp, jpeg) |
+| `q` | integer | 75 | Quality level (1-100) |
+
+#### Examples
+
+```bash
+# WebP format, 800px width
+GET /api/image-proxy/[fileId]?w=800&format=webp
+
+# Auto-detected format based on Accept header
+GET /api/image-proxy/[fileId]?w=1200
+
+# High quality JPEG
+GET /api/image-proxy/[fileId]?w=1600&format=jpeg&q=90
+```
+
+#### Browser Support
+
+- **WebP**: 95%+ browser support, automatic fallback to JPEG
+- **Format Detection**: Based on `Accept` header, graceful degradation
