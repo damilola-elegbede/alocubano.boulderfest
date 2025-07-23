@@ -341,6 +341,7 @@ A comprehensive cleanup was completed to improve project structure:
 - **Performance optimized**: Caching, lazy loading, and progressive enhancement
 - **Mobile responsive**: Fully responsive design with mobile-first approach
 - **Accessible**: WCAG compliant with semantic HTML
+- **Mobile navigation**: Fixed JavaScript class alignment issue (July 2025) - now uses `is-open` class consistently
 
 ## AI Assistant Guidelines
 
@@ -365,6 +366,18 @@ A comprehensive cleanup was completed to improve project structure:
 - **Testing**: Add tests to `/tests/unit/` and run full test suite
 - **Link validation**: Use either JS (`npm run test:links`) or Python tools
 - **Performance**: Use performance monitoring and optimization tools
+
+### Critical Development Notes
+
+#### JavaScript/CSS Class Alignment
+⚠️ **CRITICAL**: When working with mobile navigation, ensure JavaScript class targeting exactly matches CSS selectors:
+
+- **CSS**: `.nav-list.is-open { display: flex; }`
+- **JavaScript**: `navList.classList.add('is-open')`
+
+**Historical Issue (July 2025)**: Mobile navigation was completely broken due to JavaScript using `mobile-menu` class while CSS expected `is-open` class. This caused the hamburger button to be non-functional.
+
+**Prevention**: Always verify class names match between JavaScript event handlers and CSS selectors before implementing interactive features.
 
 ### Development Workflow
 1. **Start development**: `npm start` (Vercel dev server with full API support)
