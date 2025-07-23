@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Gallery Test - A Lo Cubano Boulder Fest</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="/images/favicon-circle.svg">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/typography.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/navigation.css">
+    <link rel="stylesheet" href="/css/mobile-overrides.css">
+    
+    <!-- Meta Tags -->
+    <meta name="description" content="Test page for the Virtual Gallery Manager component">
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Virtual Gallery Test">
+    <meta property="og:description" content="Testing the Virtual Gallery Manager functionality">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://alocubanoboulderfest.com/gallery-virtual-test">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-container">
+                    <a href="/home" class="logo-link" aria-label="A Lo Cubano Boulder Fest - Home">
+                        <img src="/images/logo.png" alt="A Lo Cubano Boulder Fest Logo" class="logo" width="60" height="60">
+                    </a>
+                </div>
+                
+                <nav class="main-nav" role="navigation" aria-label="Main Navigation">
+                    <ul class="nav-list">
+                        <li><a href="/home" class="nav-link">Home</a></li>
+                        <li><a href="/about" class="nav-link">About</a></li>
+                        <li><a href="/artists" class="nav-link">Artists</a></li>
+                        <li><a href="/schedule" class="nav-link">Schedule</a></li>
+                        <li><a href="/gallery" class="nav-link active" aria-current="page">Gallery</a></li>
+                        <li><a href="/tickets" class="nav-link">Tickets</a></li>
+                        <li><a href="/donations" class="nav-link">Donate</a></li>
+                    </ul>
+                </nav>
+                
+                <button class="menu-toggle" aria-label="Open Navigation Menu" aria-expanded="false">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Page Header -->
+            <section class="page-header">
+                <h1 class="page-title">Virtual Gallery Test</h1>
+                <p class="page-subtitle">
+                    Testing the Virtual Gallery Manager component with high-performance image loading, 
+                    virtual scrolling, and advanced lightbox integration.
+                </p>
+            </section>
+            
+            <!-- Gallery Options -->
+            <section class="gallery-options" style="margin-bottom: 2rem;">
+                <div class="option-group" style="margin-bottom: 1rem;">
+                    <label>
+                        <input type="checkbox" id="virtual-scrolling-toggle" checked> 
+                        Enable Virtual Scrolling
+                    </label>
+                </div>
+                <div class="option-group" style="margin-bottom: 1rem;">
+                    <label>
+                        Items per row: 
+                        <select id="items-per-row-select">
+                            <option value="2">2</option>
+                            <option value="3" selected>3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="option-group" style="margin-bottom: 1rem;">
+                    <label>
+                        Year: 
+                        <select id="year-select">
+                            <option value="2025" selected>2025</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                        </select>
+                    </label>
+                </div>
+                <button id="reinitialize-gallery" class="btn btn-primary">Reinitialize Gallery</button>
+            </section>
+            
+            <!-- Virtual Gallery Container -->
+            <section class="gallery-section">
+                <div id="virtual-gallery-test-container" class="virtual-gallery-container" style="height: 600px; border: 2px solid #ddd; border-radius: 8px;">
+                    <!-- Virtual Gallery Manager will initialize here -->
+                </div>
+            </section>
+            
+            <!-- Performance Metrics -->
+            <section class="performance-metrics" style="margin-top: 2rem; padding: 1rem; background: #f5f5f5; border-radius: 8px;">
+                <h2>Performance Metrics</h2>
+                <div id="metrics-display" style="font-family: monospace; font-size: 0.9em;">
+                    <div>Loading metrics...</div>
+                </div>
+                <button id="refresh-metrics" class="btn btn-secondary" style="margin-top: 1rem;">Refresh Metrics</button>
+            </section>
+            
+            <!-- Test Controls -->
+            <section class="test-controls" style="margin-top: 2rem; padding: 1rem; background: #f0f0f0; border-radius: 8px;">
+                <h2>Test Controls</h2>
+                <div class="control-group">
+                    <button id="destroy-gallery" class="btn btn-accent">Destroy Gallery</button>
+                    <button id="clear-cache" class="btn btn-secondary">Clear Cache</button>
+                    <button id="simulate-error" class="btn btn-warning">Simulate Error</button>
+                </div>
+                <div id="test-output" style="margin-top: 1rem; padding: 1rem; background: white; border-radius: 4px; font-family: monospace; font-size: 0.9em; max-height: 200px; overflow-y: auto;"></div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2025 A Lo Cubano Boulder Fest. All rights reserved.</p>
+                <p>Virtual Gallery Manager Test Page</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="/js/navigation.js"></script>
+    <script src="/js/components/lightbox.js"></script>
+    <script src="/js/components/lazy-loading.js"></script>
+    <script src="/js/virtual-gallery.js"></script>
+    <script>
+        // Global variables
+        let virtualGallery = null;
+        let testOutput = null;
+        let metricsInterval = null;
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', async function() {
+            testOutput = document.getElementById('test-output');
+            
+            // Initialize Virtual Gallery
+            await initializeVirtualGallery();
+            
+            // Set up test controls
+            setupTestControls();
+            
+            // Start metrics monitoring
+            startMetricsMonitoring();
+            
+            log('Virtual Gallery Test Page Initialized');
+        });
+        
+        /**
+         * Initialize the Virtual Gallery Manager
+         */
+        async function initializeVirtualGallery() {
+            try {
+                const container = document.getElementById('virtual-gallery-test-container');
+                
+                if (!container) {
+                    throw new Error('Gallery container not found');
+                }
+                
+                // Check if VirtualGalleryManager is available
+                if (typeof VirtualGalleryManager === 'undefined') {
+                    throw new Error('VirtualGalleryManager not loaded');
+                }
+                
+                // Get current settings
+                const virtualScrolling = document.getElementById('virtual-scrolling-toggle').checked;
+                const itemsPerRow = parseInt(document.getElementById('items-per-row-select').value);
+                const year = document.getElementById('year-select').value;
+                
+                // Initialize with test configuration
+                virtualGallery = new VirtualGalleryManager({
+                    container: container,
+                    apiEndpoint: '/api/gallery',
+                    year: year,
+                    enableVirtualScrolling: virtualScrolling,
+                    itemHeight: 250,
+                    itemsPerRow: itemsPerRow,
+                    bufferSize: 10,
+                    preloadDistance: 300
+                });
+                
+                // Wait for initialization
+                await virtualGallery.init();
+                
+                log(`Virtual Gallery Manager initialized successfully (year: ${year}, virtual: ${virtualScrolling}, items/row: ${itemsPerRow})`);
+                
+            } catch (error) {
+                log(`Error initializing gallery: ${error.message}`, 'error');
+            }
+        }
+        
+        /**
+         * Set up test control buttons
+         */
+        function setupTestControls() {
+            // Reinitialize Gallery
+            document.getElementById('reinitialize-gallery').addEventListener('click', async () => {
+                if (virtualGallery) {
+                    virtualGallery.destroy();
+                }
+                await initializeVirtualGallery();
+                log('Gallery reinitialized');
+            });
+            
+            // Destroy Gallery
+            document.getElementById('destroy-gallery').addEventListener('click', () => {
+                if (virtualGallery) {
+                    virtualGallery.destroy();
+                    virtualGallery = null;
+                    log('Gallery destroyed');
+                } else {
+                    log('Gallery already destroyed or not initialized', 'error');
+                }
+            });
+            
+            // Clear Cache
+            document.getElementById('clear-cache').addEventListener('click', () => {
+                // Clear localStorage cache
+                Object.keys(localStorage).forEach(key => {
+                    if (key.includes('gallery') || key.includes('cache')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                
+                // Clear sessionStorage cache
+                Object.keys(sessionStorage).forEach(key => {
+                    if (key.includes('gallery') || key.includes('cache')) {
+                        sessionStorage.removeItem(key);
+                    }
+                });
+                
+                log('Cache cleared');
+            });
+            
+            // Simulate Error
+            document.getElementById('simulate-error').addEventListener('click', () => {
+                if (virtualGallery) {
+                    // Simulate API error by changing endpoint temporarily
+                    virtualGallery.apiEndpoint = '/api/gallery-invalid';
+                    virtualGallery.loadMoreData();
+                    log('Simulated API error');
+                } else {
+                    log('Gallery not initialized', 'error');
+                }
+            });
+            
+            // Refresh Metrics
+            document.getElementById('refresh-metrics').addEventListener('click', () => {
+                updateMetricsDisplay();
+            });
+        }
+        
+        /**
+         * Start metrics monitoring
+         */
+        function startMetricsMonitoring() {
+            updateMetricsDisplay();
+            
+            // Update metrics every 5 seconds
+            metricsInterval = setInterval(() => {
+                updateMetricsDisplay();
+            }, 5000);
+        }
+        
+        /**
+         * Update metrics display
+         */
+        function updateMetricsDisplay() {
+            const metricsDisplay = document.getElementById('metrics-display');
+            
+            if (!virtualGallery) {
+                metricsDisplay.innerHTML = '<div>Gallery not initialized</div>';
+                return;
+            }
+            
+            try {
+                const metrics = virtualGallery.getPerformanceMetrics();
+                
+                metricsDisplay.innerHTML = `
+                    <div><strong>Performance Metrics:</strong></div>
+                    <div>Average Render Time: ${metrics.averageRenderTime}ms</div>
+                    <div>Scroll Events: ${metrics.scrollEvents}</div>
+                    <div>Items Rendered: ${metrics.itemsRendered}</div>
+                    <div>Total Items: ${metrics.totalItems}</div>
+                    <div>Visible Items: ${metrics.visibleItems}</div>
+                    <div>Memory Usage: ~${Math.round(performance.memory ? performance.memory.usedJSHeapSize / 1024 / 1024 : 0)}MB</div>
+                    <div>Timestamp: ${new Date().toLocaleTimeString()}</div>
+                `;
+            } catch (error) {
+                metricsDisplay.innerHTML = `<div>Error getting metrics: ${error.message}</div>`;
+            }
+        }
+        
+        /**
+         * Log messages to the test output
+         */
+        function log(message, type = 'info') {
+            if (!testOutput) return;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.style.marginBottom = '0.5rem';
+            logEntry.style.color = type === 'error' ? '#cc2936' : '#333';
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            
+            testOutput.appendChild(logEntry);
+            testOutput.scrollTop = testOutput.scrollHeight;
+        }
+        
+        // Global error handler
+        window.addEventListener('error', (event) => {
+            log(`Global error: ${event.error.message}`, 'error');
+        });
+        
+        // Global unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', (event) => {
+            log(`Unhandled promise rejection: ${event.reason}`, 'error');
+        });
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (metricsInterval) {
+                clearInterval(metricsInterval);
+            }
+            if (virtualGallery && typeof virtualGallery.destroy === 'function') {
+                virtualGallery.destroy();
+            }
+        });
+    </script>
+</body>
+</html>

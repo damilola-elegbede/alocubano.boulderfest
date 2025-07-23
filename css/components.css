@@ -771,3 +771,383 @@
     font-size: var(--font-size-xs);
   }
 }
+
+/* ==========================================================================
+   MULTI-YEAR GALLERY MANAGER
+   ========================================================================== */
+
+.multi-year-gallery {
+  position: relative;
+  width: 100%;
+}
+
+/* Year Selector Container */
+.year-selector-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-3xl);
+  padding: var(--space-lg) 0;
+  border-bottom: 2px solid var(--color-gray-200);
+}
+
+/* Year Selector Buttons */
+.year-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.year-button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-md) var(--space-lg);
+  background: transparent;
+  border: 2px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-gray-700);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  min-width: 80px;
+  min-height: 60px;
+}
+
+.year-button:hover {
+  border-color: var(--color-blue);
+  color: var(--color-blue);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(91, 107, 181, 0.15);
+}
+
+.year-button.active {
+  background: var(--color-blue);
+  border-color: var(--color-blue);
+  color: var(--color-white);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(91, 107, 181, 0.25);
+}
+
+.year-button.active:hover {
+  background: var(--color-blue);
+  color: var(--color-white);
+}
+
+.year-label {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.year-count {
+  font-size: var(--font-size-xs);
+  opacity: 0.8;
+  font-weight: 400;
+}
+
+.year-button.active .year-count {
+  opacity: 1;
+}
+
+/* Year Statistics Display */
+.year-statistics {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.year-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+}
+
+.stat-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+}
+
+.stat-label {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.stat-value {
+  font-weight: 600;
+  color: var(--color-black);
+}
+
+/* Gallery Container */
+.gallery-container {
+  position: relative;
+  min-height: 400px;
+}
+
+.year-gallery-container {
+  width: 100%;
+}
+
+.year-gallery-container[aria-hidden="true"] {
+  position: absolute;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.year-gallery-container[aria-hidden="false"] {
+  position: relative;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  animation: fadeInGallery 0.4s ease-in-out;
+}
+
+@keyframes fadeInGallery {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading Indicator */
+.multi-year-gallery .loading-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.95);
+  padding: var(--space-3xl);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.multi-year-gallery .loading-indicator[aria-hidden="false"] {
+  display: flex;
+}
+
+.multi-year-gallery .loading-text {
+  color: var(--color-gray-700);
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  font-weight: 500;
+}
+
+/* Error Display */
+.error-display {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  text-align: center;
+  z-index: 10;
+  background: var(--color-white);
+  padding: var(--space-3xl);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-red);
+  box-shadow: 0 10px 40px rgba(204, 41, 54, 0.1);
+  max-width: 400px;
+  width: 90%;
+}
+
+.error-display[aria-hidden="false"] {
+  display: flex;
+}
+
+.error-message {
+  color: var(--color-red);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  margin-bottom: var(--space-md);
+}
+
+.error-retry {
+  background: var(--color-red);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-lg);
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  min-height: 44px;
+}
+
+.error-retry:hover {
+  background: var(--color-black);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Keyboard Navigation Hints */
+.multi-year-gallery::after {
+  content: "Use arrow keys to navigate between years";
+  position: absolute;
+  bottom: -var(--space-lg);
+  left: 0;
+  font-family: var(--font-code);
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  pointer-events: none;
+}
+
+.multi-year-gallery:focus-within::after,
+.multi-year-gallery:hover::after {
+  opacity: 1;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .year-selector-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-md);
+    text-align: center;
+  }
+  
+  .year-selector {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+  
+  .year-button {
+    min-width: 70px;
+    min-height: 50px;
+    padding: var(--space-sm) var(--space-md);
+  }
+  
+  .year-label {
+    font-size: var(--font-size-sm);
+  }
+  
+  .year-count {
+    font-size: 10px;
+  }
+  
+  .year-statistics {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+  
+  .year-stats {
+    flex-direction: column;
+    gap: var(--space-xs);
+    text-align: center;
+  }
+  
+  .stat-item {
+    justify-content: center;
+  }
+  
+  .multi-year-gallery .loading-indicator,
+  .error-display {
+    padding: var(--space-xl);
+    border-radius: var(--radius-md);
+  }
+  
+  .multi-year-gallery::after {
+    display: none; /* Hide keyboard hint on mobile */
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .year-button {
+    border-color: var(--color-gray-600);
+    color: var(--color-gray-300);
+  }
+  
+  .year-button:hover {
+    border-color: var(--color-blue);
+    color: var(--color-blue);
+  }
+  
+  .year-stats {
+    color: var(--color-gray-400);
+  }
+  
+  .stat-value {
+    color: var(--color-gray-200);
+  }
+  
+  .multi-year-gallery .loading-indicator {
+    background: rgba(0, 0, 0, 0.95);
+  }
+  
+  .multi-year-gallery .loading-text {
+    color: var(--color-gray-300);
+  }
+  
+  .error-display {
+    background: var(--color-black);
+    border-color: var(--color-red);
+  }
+  
+  .error-message {
+    color: var(--color-red);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .year-button,
+  .year-gallery-container,
+  .multi-year-gallery .loading-indicator,
+  .error-display {
+    transition: none;
+    animation: none;
+  }
+  
+  .year-button:hover,
+  .year-button.active,
+  .error-retry:hover {
+    transform: none;
+  }
+  
+  @keyframes fadeInGallery {
+    from, to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
