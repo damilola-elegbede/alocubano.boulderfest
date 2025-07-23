@@ -50,12 +50,16 @@ export default async function handler(req, res) {
 
   const missingVars = Object.keys(requiredEnvVars).filter(key => !requiredEnvVars[key]);
   if (missingVars.length > 0) {
-    // Only serve placeholder in development environment
-    if (process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'development') {
+    // Only serve placeholder in development/preview environments
+    const isDevelopment = process.env.NODE_ENV === 'development' || 
+                         process.env.VERCEL_ENV === 'development' || 
+                         process.env.VERCEL_ENV === 'preview';
+    
+    if (isDevelopment) {
       console.warn('Missing environment variables for Google Drive API:', missingVars);
-      console.log('Serving placeholder image for local development');
+      console.log('Serving placeholder image for development/preview environment');
       
-      // For local development, serve a placeholder image instead of failing
+      // For development/preview, serve a placeholder image instead of failing
       // This allows the gallery to work without Google Drive credentials
       return servePlaceholderImage(res, fileId);
     }
@@ -70,6 +74,16 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Log environment info for debugging
+    console.log('Image proxy request:', {
+      fileId,
+      width: w,
+      format,
+      quality: q,
+      environment: process.env.VERCEL_ENV || process.env.NODE_ENV || 'unknown',
+      hasCredentials: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
+    });
+
     // Configure Google Drive API client
     const auth = new google.auth.GoogleAuth({
       credentials: {

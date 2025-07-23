@@ -1,4 +1,4 @@
-const sharp = require('sharp');
+import sharp from 'sharp';
 
 const WEBP_QUALITY = 80;
 const JPEG_QUALITY = 85;
@@ -77,7 +77,7 @@ function generateCacheKey(fileId, options = {}) {
   return parts.join('-');
 }
 
-module.exports = { 
+export { 
   processImage, 
   detectOptimalFormat, 
   generateCacheKey 
