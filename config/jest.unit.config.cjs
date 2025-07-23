@@ -22,15 +22,7 @@ module.exports = {
         '!js/**/*.test.js',
         '!**/node_modules/**'
     ],
-    // Coverage thresholds kept at 0% (Phase 1 real source testing uses integration patterns)
-    coverageThreshold: {
-        global: {
-            branches: 0,
-            functions: 0,
-            lines: 0,
-            statements: 0
-        }
-    },
+    // No coverage thresholds - we use functional quality metrics instead
     // Performance optimizations for Phase 1 tests
     maxWorkers: '50%',
     testTimeout: 10000, // 10 seconds for complex integration tests
