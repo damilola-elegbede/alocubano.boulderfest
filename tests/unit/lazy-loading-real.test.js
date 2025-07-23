@@ -13,6 +13,7 @@ try {
   lazyLoadingSource = fs.readFileSync(lazyLoadingPath, 'utf8');
 } catch (error) {
   console.error('Failed to load lazy loading source:', error);
+  throw new Error(`Lazy loading tests cannot run without source file: ${error.message}`);
 }
 
 describe('LazyLoader Real Source Code Integration', () => {
