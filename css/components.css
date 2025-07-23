@@ -1279,3 +1279,151 @@
     }
   }
 }
+
+/* Phase 1: New Layout Components */
+
+/* Hero Section Improvements */
+.hero-title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-6xl);
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 0;
+  color: var(--color-black);
+}
+
+.hero-subtitle {
+  font-family: var(--font-accent);
+  font-size: var(--font-size-xl);
+  font-weight: 400;
+  line-height: 1.4;
+  margin-top: var(--space-sm);
+  color: var(--color-black);
+}
+
+/* Expectations Grid */
+.expectations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-lg);
+  margin: var(--space-xl) 0;
+}
+
+.expectation-item {
+  padding: var(--space-lg);
+  border: 2px solid var(--color-black);
+  background: var(--color-white);
+}
+
+.expectation-item h3 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-3xl);
+  font-weight: 900;
+  margin: 0 0 var(--space-md) 0;
+  color: var(--color-black);
+}
+
+.expectation-item p {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  margin: 0;
+  color: var(--color-black);
+}
+
+/* Volunteer Benefits */
+.volunteer-benefits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin: var(--space-lg) 0;
+  justify-content: center;
+}
+
+.benefit-item {
+  padding: var(--space-xs) var(--space-sm);
+  background-color: var(--color-blue);
+  color: var(--color-white);
+  border-radius: 4px;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-code);
+  font-weight: 500;
+  display: inline-block;
+  text-align: center;
+}
+
+/* TBA Notices */
+.tba-notice {
+  font-style: italic;
+  color: var(--color-blue);
+  text-align: center;
+  padding: var(--space-lg);
+  background-color: rgba(91, 107, 181, 0.1);
+  border-radius: 8px;
+  font-family: var(--font-accent);
+  font-size: var(--font-size-lg);
+  margin: var(--space-xl) 0;
+}
+
+/* Section Spacing Adjustments */
+.section {
+  margin-bottom: var(--space-xl); /* Reduced from var(--space-3xl) */
+}
+
+.hero-section {
+  margin-bottom: var(--space-lg); /* Tighter hero spacing */
+}
+
+.content-section + .content-section {
+  margin-top: var(--space-lg); /* Reduced from var(--space-3xl) */
+}
+
+.content-section p + p {
+  margin-top: var(--space-md); /* Reduced from var(--space-lg) */
+}
+
+/* Year Section Headers */
+.artists-2025 h2,
+.artists-2026 h2,
+.schedule-2025 h2,
+.schedule-2026 h2 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-3xl);
+  font-weight: 900;
+  margin: var(--space-xl) 0 var(--space-lg) 0;
+  color: var(--color-black);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: var(--font-size-5xl);
+  }
+  
+  .hero-subtitle {
+    font-size: var(--font-size-lg);
+  }
+  
+  .section {
+    margin-bottom: var(--space-lg);
+  }
+  
+  .expectations-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+  
+  .volunteer-benefits {
+    justify-content: center;
+  }
+  
+  .expectation-item {
+    padding: var(--space-md);
+  }
+  
+  .expectation-item h3 {
+    font-size: var(--font-size-2xl);
+  }
+}
