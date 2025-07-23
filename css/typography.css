@@ -64,7 +64,7 @@ body {
 
 /* Creative Text Layouts for Content */
 .section-typographic {
-  padding: var(--space-4xl) 0;
+  padding: 1.5rem 0;
   position: relative;
 }
 

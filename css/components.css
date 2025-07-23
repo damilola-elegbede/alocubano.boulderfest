@@ -1352,6 +1352,52 @@
   text-align: center;
 }
 
+/* Volunteer Benefits Cards */
+.volunteer-benefits-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-xl);
+  margin: var(--space-3xl) 0;
+}
+
+.benefit-card {
+  text-align: center;
+  padding: var(--space-2xl) var(--space-lg);
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-base);
+}
+
+.benefit-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-blue);
+}
+
+.benefit-emoji {
+  font-size: 3rem;
+  margin-bottom: var(--space-md);
+  display: block;
+}
+
+.benefit-title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-black);
+  margin: var(--space-md) 0;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.benefit-description {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  color: var(--color-gray-600);
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+}
+
 /* TBA Notices */
 .tba-notice {
   font-style: italic;
@@ -1417,6 +1463,24 @@
   
   .volunteer-benefits {
     justify-content: center;
+  }
+  
+  .volunteer-benefits-cards {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-lg);
+    margin: var(--space-2xl) 0;
+  }
+  
+  .benefit-card {
+    padding: var(--space-lg) var(--space-md);
+  }
+  
+  .benefit-emoji {
+    font-size: 2.5rem;
+  }
+  
+  .benefit-title {
+    font-size: var(--font-size-base);
   }
   
   .expectation-item {
