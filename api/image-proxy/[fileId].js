@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import { processImage, detectOptimalFormat, generateCacheKey } from '../utils/image-processor.js';
 
 /**
  * Vercel serverless function for authenticated Google Drive image proxy
@@ -30,7 +31,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const { fileId } = req.query;
+  const { fileId, w, q = 75, format } = req.query;
 
   // Validate required parameters
   if (!fileId) {
@@ -115,23 +116,18 @@ export default async function handler(req, res) {
       });
     }
 
-    // Set response headers before streaming
-    const contentType = fileMetadata.mimeType || 'image/jpeg';
-    res.setHeader('Content-Type', contentType);
-    
-    // Set aggressive caching headers for images
-    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, immutable');
-    res.setHeader('ETag', `"${fileId}-${fileMetadata.size || 'unknown'}"`);
-    
-    // Set additional headers for better browser compatibility
-    res.setHeader('Accept-Ranges', 'bytes');
-    if (fileMetadata.size) {
-      res.setHeader('Content-Length', fileMetadata.size);
-    }
+    // Determine optimal format based on browser capabilities and request
+    const acceptHeader = req.headers.accept || '';
+    const targetFormat = format || detectOptimalFormat(acceptHeader);
+    const width = w ? parseInt(w) : null;
+    const quality = parseInt(q);
 
-    // Handle conditional requests (304 Not Modified)
+    // Generate enhanced cache key including format and size
+    const cacheKey = generateCacheKey(fileId, { width, format: targetFormat, quality });
+
+    // Handle conditional requests (304 Not Modified) with enhanced ETag
     const ifNoneMatch = req.headers['if-none-match'];
-    if (ifNoneMatch && ifNoneMatch === `"${fileId}-${fileMetadata.size || 'unknown'}"`) {
+    if (ifNoneMatch && ifNoneMatch === `"${cacheKey}"`) {
       return res.status(304).end();
     }
 
@@ -151,9 +147,46 @@ export default async function handler(req, res) {
       });
     }
 
-    // Convert ArrayBuffer to Buffer and send
-    const buffer = Buffer.from(fileResponse.data);
-    res.status(200).send(buffer);
+    // Convert ArrayBuffer to Buffer
+    const originalBuffer = Buffer.from(fileResponse.data);
+
+    // Process image if format conversion or resizing is needed
+    let processedBuffer = originalBuffer;
+    let finalContentType = fileMetadata.mimeType || 'image/jpeg';
+
+    // Only process if we need to resize or change format
+    if (width || targetFormat !== 'jpeg' || (targetFormat === 'jpeg' && fileMetadata.mimeType !== 'image/jpeg')) {
+      try {
+        processedBuffer = await processImage(originalBuffer, {
+          width,
+          format: targetFormat,
+          quality
+        });
+        
+        // Update content type based on target format
+        finalContentType = targetFormat === 'webp' ? 'image/webp' : 'image/jpeg';
+      } catch (processError) {
+        console.error('Image processing error:', processError);
+        // Fallback to original image if processing fails
+        processedBuffer = originalBuffer;
+        finalContentType = fileMetadata.mimeType || 'image/jpeg';
+      }
+    }
+
+    // Set response headers
+    res.setHeader('Content-Type', finalContentType);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader('ETag', `"${cacheKey}"`);
+    res.setHeader('Vary', 'Accept'); // Important for format negotiation
+    res.setHeader('Accept-Ranges', 'bytes');
+    
+    // Add custom headers for debugging
+    res.setHeader('X-Image-Format', targetFormat);
+    if (width) {
+      res.setHeader('X-Image-Width', width.toString());
+    }
+
+    res.status(200).send(processedBuffer);
 
   } catch (error) {
     console.error('Google Drive API Error:', {

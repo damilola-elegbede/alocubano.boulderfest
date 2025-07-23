@@ -28,14 +28,89 @@
     };
 
     // Helper function to generate image proxy URL based on environment
-    function getImageProxyUrl(fileId) {
-        if (CONFIG.IS_DEV) {
-            // Development: Use Python server proxy
-            return `/api/image-proxy/${fileId}`;
+    function getImageProxyUrl(fileId, width = null, format = null) {
+        const baseUrl = CONFIG.IS_DEV ? 
+            `/api/image-proxy/${fileId}` : 
+            `/api/image-proxy/${fileId}`;
+        
+        const params = new URLSearchParams();
+        if (width) params.append('w', width);
+        if (format) params.append('format', format);
+        
+        return params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
+    }
+
+    // Generate responsive image sources for hero images
+    function generateResponsiveSources(fileId) {
+        const sizes = [800, 1200, 1600, 2000];
+        
+        // WebP sources
+        const webpSrcset = sizes
+            .map(size => `${getImageProxyUrl(fileId, size, 'webp')} ${size}w`)
+            .join(', ');
+        
+        // JPEG fallback sources
+        const jpegSrcset = sizes
+            .map(size => `${getImageProxyUrl(fileId, size, 'jpeg')} ${size}w`)
+            .join(', ');
+        
+        return { webpSrcset, jpegSrcset };
+    }
+
+    // Create responsive picture element for hero image
+    function createResponsivePictureElement(heroElement, imageData) {
+        // Check if we already have a picture wrapper
+        let pictureElement = heroElement.parentElement;
+        
+        if (!pictureElement || pictureElement.tagName !== 'PICTURE') {
+            // Create new picture element
+            pictureElement = document.createElement('picture');
+            
+            // Copy relevant classes and attributes from img to picture
+            if (heroElement.className) {
+                pictureElement.className = heroElement.className;
+            }
+            
+            // Insert picture element before img
+            heroElement.parentNode.insertBefore(pictureElement, heroElement);
+            
+            // Move img inside picture
+            pictureElement.appendChild(heroElement);
+            
+            // Clear classes from img (they're now on picture)
+            heroElement.className = '';
         } else {
-            // Production: Use Vercel serverless function
-            return `/api/image-proxy/${fileId}`;
+            // Clear existing sources
+            const existingSources = pictureElement.querySelectorAll('source');
+            existingSources.forEach(source => source.remove());
         }
+        
+        if (imageData && imageData.id) {
+            const { webpSrcset, jpegSrcset } = generateResponsiveSources(imageData.id);
+            
+            // Create WebP source
+            const webpSource = document.createElement('source');
+            webpSource.srcset = webpSrcset;
+            webpSource.sizes = '100vw';
+            webpSource.type = 'image/webp';
+            
+            // Create JPEG fallback source
+            const jpegSource = document.createElement('source');
+            jpegSource.srcset = jpegSrcset;
+            jpegSource.sizes = '100vw';
+            jpegSource.type = 'image/jpeg';
+            
+            // Insert sources before img element
+            pictureElement.insertBefore(webpSource, heroElement);
+            pictureElement.insertBefore(jpegSource, heroElement);
+            
+            // Update img element with srcset for additional fallback
+            heroElement.srcset = jpegSrcset;
+            heroElement.sizes = '100vw';
+            heroElement.src = getImageProxyUrl(imageData.id, 1200, 'jpeg'); // Default size
+        }
+        
+        return pictureElement;
     }
 
     console.log('CONFIG:', CONFIG);
@@ -113,14 +188,19 @@
                 console.log(`📷 Image name: ${imageData.name || 'unknown'}`);
                 console.log(`💾 From cache: ${imageData.cached || false}`);
 
-                heroElement.src = imageData.url;
-                heroElement.classList.remove('loading');
-                heroElement.classList.add('loaded');
+                // Create responsive picture element with WebP support
+                const pictureElement = createResponsivePictureElement(heroElement, imageData);
+                
+                // Update loading states on picture element
+                pictureElement.classList.remove('loading');
+                pictureElement.classList.add('loaded');
 
-                // Add data attributes for debugging
+                // Add data attributes for debugging to img element
                 heroElement.dataset.imageId = imageData.id || 'default';
                 heroElement.dataset.imageName = imageData.name || 'default';
                 heroElement.dataset.pageId = pageId;
+                
+                console.log('🖼️ Created responsive picture element with WebP support');
             } else {
                 console.error('❌ No image data returned, using fallback');
                 showHeroError('No image data available');
@@ -178,7 +258,7 @@
             return;
         }
 
-        const newImageUrl = `/api/image-proxy/${imageData.id}`;
+        const newImageUrl = getImageProxyUrl(imageData.id, 1200, 'jpeg');
 
         // Create new image element to preload
         const tempImg = new Image();
@@ -186,13 +266,16 @@
         tempImg.onload = function() {
             // Check if we're still on the same page and showing default image
             if (heroImg.src.includes('hero-default.jpg')) {
-                // Smooth transition to assigned image
-                heroImg.style.opacity = '0.7';
+                // Smooth transition to assigned image with responsive support
+                const parentElement = heroImg.parentElement;
+                parentElement.style.opacity = '0.7';
 
                 setTimeout(() => {
-                    heroImg.src = newImageUrl;
-                    heroImg.style.opacity = '1';
-                    console.log('Upgraded to assigned image:', imageData.name);
+                    // Create responsive picture element
+                    const pictureElement = createResponsivePictureElement(heroImg, imageData);
+                    pictureElement.style.opacity = '1';
+                    
+                    console.log('Upgraded to responsive assigned image:', imageData.name);
                 }, 200);
             }
         };
