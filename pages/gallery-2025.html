@@ -17,7 +17,8 @@
       // Inline critical path optimization
       (function() {
         // Preload hero image for current page
-        const pageId = window.location.pathname.split('/').pop() || 'home';
+        const rawPageId = window.location.pathname.split('/').pop() || 'home';
+        const pageId = rawPageId.replace(/\.html$/, '');
         const heroPreload = document.createElement('link');
         heroPreload.rel = 'preload';
         heroPreload.as = 'image';

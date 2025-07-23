@@ -448,13 +448,19 @@
   backdrop-filter: blur(5px); /* Add subtle blur effect */
 }
 
-.lightbox-close:hover,
+.lightbox-close:hover {
+  opacity: 0.8;
+  background: rgba(0, 0, 0, 0.5); /* Darker background on hover */
+  border-color: rgba(255, 255, 255, 0.4); /* Brighter border on hover */
+  transform: scale(1.05); /* Slight scale effect */
+}
+
 .lightbox-prev:hover,
 .lightbox-next:hover {
   opacity: 0.8;
   background: rgba(0, 0, 0, 0.5); /* Darker background on hover */
   border-color: rgba(255, 255, 255, 0.4); /* Brighter border on hover */
-  transform: scale(1.05); /* Slight scale effect */
+  transform: translateY(-50%) scale(1.05); /* Maintain centering + scaling */
 }
 
 .lightbox-close {

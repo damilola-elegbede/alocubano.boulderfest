@@ -254,9 +254,7 @@ describe('Advanced Caching System - Phase 2', () => {
       const response1 = await handleGalleryAPIRequest(mockRequest);
       expect(mockFetch).toHaveBeenCalledWith(mockRequest);
       expect(response1).toBeDefined();
-      if (response1) {
-        expect(response1.ok).toBe(true);
-      }
+      expect(response1.ok).toBe(true);
       
       // Second request - returns cached immediately
       mockFetch.mockResolvedValueOnce(createMockResponse({ photos: ['photo1', 'photo2'] }));
@@ -665,16 +663,16 @@ describe('Advanced Caching System - Phase 2', () => {
         const format = params.get('format');
         const quality = params.get('q');
         
-        if (width && (isNaN(width) || parseInt(width) < 1 || parseInt(width) > 2000)) {
-          errors.push('Width must be between 1 and 2000 pixels');
+        if (width && (isNaN(width) || parseInt(width) < 100 || parseInt(width) > 3840)) {
+          errors.push('Width must be between 100 and 3840 pixels');
         }
         
-        if (height && (isNaN(height) || parseInt(height) < 1 || parseInt(height) > 2000)) {
-          errors.push('Height must be between 1 and 2000 pixels');
+        if (height && (isNaN(height) || parseInt(height) < 100 || parseInt(height) > 3840)) {
+          errors.push('Height must be between 100 and 3840 pixels');
         }
         
-        if (format && !['jpeg', 'jpg', 'png', 'webp'].includes(format.toLowerCase())) {
-          errors.push('Format must be jpeg, jpg, png, or webp');
+        if (format && !['jpeg', 'png', 'webp'].includes(format.toLowerCase())) {
+          errors.push('Format must be jpeg, png, or webp');
         }
         
         if (quality && (isNaN(quality) || parseInt(quality) < 1 || parseInt(quality) > 100)) {
@@ -698,10 +696,10 @@ describe('Advanced Caching System - Phase 2', () => {
       expect(validParams.params.width).toBe(800);
       expect(validParams.params.format).toBe('webp');
       
-      const invalidParams = validateHeroImageParams('w=3000&format=gif&q=150');
+      const invalidParams = validateHeroImageParams('w=5000&format=gif&q=150');
       expect(invalidParams.isValid).toBe(false);
-      expect(invalidParams.errors).toContain('Width must be between 1 and 2000 pixels');
-      expect(invalidParams.errors).toContain('Format must be jpeg, jpg, png, or webp');
+      expect(invalidParams.errors).toContain('Width must be between 100 and 3840 pixels');
+      expect(invalidParams.errors).toContain('Format must be jpeg, png, or webp');
       expect(invalidParams.errors).toContain('Quality must be between 1 and 100');
     });
     
