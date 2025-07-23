@@ -305,7 +305,9 @@ if (typeof Lightbox === 'undefined') {
 
             if (this.showCounter) {
                 const categoryCount = this.categoryCounts[category] || this.items.length;
-                const categoryLabel = category.charAt(0).toUpperCase() + category.slice(1);
+                const categoryLabel = category && typeof category === 'string' ?
+                    category.charAt(0).toUpperCase() + category.slice(1) :
+                    'Gallery';
                 counter.textContent = `${categoryLabel}: ${categoryIndex + 1} / ${categoryCount}`;
             }
         }

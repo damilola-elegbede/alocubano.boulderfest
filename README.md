@@ -130,6 +130,44 @@ alocubano.boulderfest/
 - `npm run build` - Build for production
 - `npm run prebuild` - Generate cache files for gallery
 
+## Testing
+
+### Quick Start
+```bash
+# Run all tests
+npm test
+
+# Run with coverage
+npm run test:coverage
+
+# Run integration tests
+npm run test:integration
+```
+
+### Test Categories
+- **Unit Tests**: 80%+ coverage of core functionality
+- **Integration Tests**: Component interaction validation
+- **Performance Tests**: Load time and memory usage validation
+- **Accessibility Tests**: WCAG AA compliance validation
+
+### Quality Gates
+- **Pre-commit**: Linting + fast unit tests
+- **Pre-push**: Full test suite + integration tests
+- **CI/CD**: Multi-environment validation + performance benchmarks
+
+### Documentation
+- [Testing Strategy](docs/testing/TESTING_STRATEGY.md)
+- [Troubleshooting Guide](docs/testing/TROUBLESHOOTING.md)
+
+### Maintenance
+```bash
+# Check test health
+node scripts/test-maintenance.js health
+
+# Detect flaky tests
+node scripts/test-maintenance.js flaky
+```
+
 ## 📱 Browser Support
 
 - Chrome/Edge 90+
