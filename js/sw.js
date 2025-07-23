@@ -428,6 +428,12 @@ async function handleStaticAssetRequest(request) {
  * Cache response with metadata
  */
 async function cacheWithMetadata(cache, request, response, metadata) {
+    // Safety check: ensure cache is a valid Cache object
+    if (!cache || typeof cache.put !== 'function') {
+        console.warn('[SW] Invalid cache object passed to cacheWithMetadata');
+        return;
+    }
+    
     const headers = new Headers(response.headers);
     headers.set('sw-cached-at', metadata.cachedAt.toString());
     headers.set('sw-cache-type', metadata.type || 'unknown');

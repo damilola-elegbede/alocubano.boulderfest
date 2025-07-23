@@ -481,6 +481,12 @@ class ResponsiveVirtualGallery {
         this.container = container;
         this.options = options;
         
+        // Initialize gallery components - accept as parameters or create defaults
+        this.gallery = options.gallery || new VirtualGalleryManager(container, options);
+        this.imageManager = options.imageManager || new ImageManager(options);
+        this.animationManager = options.animationManager || new AnimationManager(options);
+        this.prefetchManager = options.prefetchManager || new PrefetchManager(options);
+        
         this.currentBreakpoint = this.getCurrentBreakpoint();
         this.setupResponsiveOptimizations();
         this.setupResizeObserver();

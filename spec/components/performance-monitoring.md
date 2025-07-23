@@ -530,6 +530,49 @@ class PerformanceMetricsCollector {
         }
     }
     
+    // Intercept fetch requests for network monitoring
+    interceptFetch() {
+        const originalFetch = window.fetch;
+        
+        window.fetch = (...args) => {
+            const startTime = performance.now();
+            const [resource, options] = args;
+            
+            return originalFetch(...args)
+                .then(response => {
+                    const endTime = performance.now();
+                    const duration = endTime - startTime;
+                    
+                    // Record network metrics
+                    this.metrics.network.requests.push({
+                        url: typeof resource === 'string' ? resource : resource.url,
+                        method: options?.method || 'GET',
+                        status: response.status,
+                        duration: duration,
+                        timestamp: startTime
+                    });
+                    
+                    return response;
+                })
+                .catch(error => {
+                    const endTime = performance.now();
+                    const duration = endTime - startTime;
+                    
+                    // Record failed network metrics
+                    this.metrics.network.requests.push({
+                        url: typeof resource === 'string' ? resource : resource.url,
+                        method: options?.method || 'GET',
+                        status: 0,
+                        duration: duration,
+                        timestamp: startTime,
+                        error: error.message
+                    });
+                    
+                    throw error;
+                });
+        };
+    }
+    
     // Custom timing metrics
     markTiming(name) {
         const mark = `${name}-start`;

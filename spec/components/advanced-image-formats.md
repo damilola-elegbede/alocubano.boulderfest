@@ -676,10 +676,11 @@ class AdvancedImageFormatManager {
 
 // Progressive image loading component
 class ProgressiveImageLoader {
-    constructor(container, imageData, formatManager) {
+    constructor(container, imageData, formatManager, options = {}) {
         this.container = container;
         this.imageData = imageData;
         this.formatManager = formatManager;
+        this.isDevelopment = options.development || false;
         
         this.loadingState = 'pending';
         this.retryCount = 0;
@@ -735,7 +736,7 @@ class ProgressiveImageLoader {
         this.imgElement = img;
         
         // Add format badge in development
-        if (process.env.NODE_ENV === 'development') {
+        if (this.isDevelopment) {
             this.addFormatBadge(sources.metadata.optimalFormat);
         }
     }
@@ -983,6 +984,23 @@ class ImageFormatPerformanceTracker {
 // Example Vercel serverless function for image optimization
 export default async function handler(req, res) {
     const { fileId, w, format = 'auto', q = 85 } = req.query;
+    
+    // Input validation
+    if (!fileId || typeof fileId !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(fileId)) {
+        return res.status(400).json({ error: 'Invalid fileId parameter' });
+    }
+    
+    if (w && (isNaN(parseInt(w)) || parseInt(w) < 1 || parseInt(w) > 4000)) {
+        return res.status(400).json({ error: 'Invalid width parameter' });
+    }
+    
+    if (format !== 'auto' && !['avif', 'webp', 'jpeg', 'png'].includes(format)) {
+        return res.status(400).json({ error: 'Invalid format parameter' });
+    }
+    
+    if (isNaN(parseInt(q)) || parseInt(q) < 1 || parseInt(q) > 100) {
+        return res.status(400).json({ error: 'Invalid quality parameter' });
+    }
     
     try {
         // Get original image from Google Drive

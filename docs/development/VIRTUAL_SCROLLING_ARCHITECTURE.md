@@ -321,6 +321,7 @@ class OptimizedScrollHandler {
         this.isThrottled = false;
         this.rafId = null;
         this.lastScrollTime = 0;
+        this.lastScrollY = 0;
         this.scrollVelocity = 0;
         
         this.handleScroll = this.handleScroll.bind(this);
@@ -375,11 +376,17 @@ class OptimizedScrollHandler {
 
 ```javascript
 class ViewportCalculator {
-    constructor(container, itemHeight) {
+    constructor(container, itemHeight, totalItems = 0) {
         this.container = container;
         this.itemHeight = itemHeight;
+        this.totalItems = totalItems;
         this.cache = new Map();
         this.lastCalculation = null;
+    }
+    
+    setTotalItems(totalItems) {
+        this.totalItems = totalItems;
+        this.cache.clear(); // Clear cache when total items change
     }
     
     calculateVisibleRange(scrollTop, containerHeight, bufferSize = 0) {

@@ -6,7 +6,7 @@
  * Accepts performance metrics data and processes it for analytics
  */
 
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 /**
  * Validates the structure of incoming metrics data
@@ -133,7 +133,7 @@ function checkAlerts(aggregatedMetrics) {
     }
     
     // Check error rate (assuming we have success/error counts)
-    if (aggregatedMetrics.successCount && aggregatedMetrics.totalCount) {
+    if (aggregatedMetrics.successCount && aggregatedMetrics.totalCount && aggregatedMetrics.totalCount.avg > 0) {
         const successRate = (aggregatedMetrics.successCount.avg / aggregatedMetrics.totalCount.avg) * 100;
         if (successRate < thresholds.errorRate) {
             alerts.push({
