@@ -9,6 +9,34 @@
 (function() {
   'use strict';
   
+  // Configuration object for API endpoints
+  const PREFETCH_CONFIG = {
+    heroImageApi: '/api/hero-image',
+    galleryDataApi: '/api/gallery',
+    // Default parameters
+    defaultHeroParams: {
+      width: 1200,
+      format: 'webp'
+    },
+    defaultGalleryParams: {
+      category: 'workshops'
+    }
+  };
+  
+  /**
+   * Validate URL before creating preload link
+   * @param {string} url - URL to validate
+   * @returns {boolean} - Whether URL is valid
+   */
+  function isValidUrl(url) {
+    try {
+      new URL(url, window.location.origin);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  
   /**
    * Preload hero image for current page
    */
@@ -16,10 +44,23 @@
     const rawPageId = window.location.pathname.split('/').pop() || 'home';
     const pageId = rawPageId.replace(/\.html$/, '');
     
+    // Build hero image URL with configurable endpoint
+    const params = new URLSearchParams({
+      w: PREFETCH_CONFIG.defaultHeroParams.width,
+      format: PREFETCH_CONFIG.defaultHeroParams.format
+    });
+    const heroUrl = `${PREFETCH_CONFIG.heroImageApi}/${pageId}?${params}`;
+    
+    // Validate URL before creating preload
+    if (!isValidUrl(heroUrl)) {
+      console.warn(`[Prefetch] Invalid hero image URL: ${heroUrl}`);
+      return;
+    }
+    
     const heroPreload = document.createElement('link');
     heroPreload.rel = 'preload';
     heroPreload.as = 'image';
-    heroPreload.href = `/api/hero-image/${pageId}?w=1200&format=webp`;
+    heroPreload.href = heroUrl;
     heroPreload.crossOrigin = 'anonymous';
     heroPreload.fetchPriority = 'high';
     
@@ -32,6 +73,16 @@
   }
   
   /**
+   * Extract year from gallery page ID using regex
+   * @param {string} pageId - Page identifier
+   * @returns {string|null} - Extracted year or null if not found
+   */
+  function extractYearFromPageId(pageId) {
+    const yearMatch = pageId.match(/gallery[.-]?(\d{4})/);
+    return yearMatch ? yearMatch[1] : null;
+  }
+  
+  /**
    * Preload gallery data for gallery pages
    */
   function preloadGalleryData() {
@@ -39,12 +90,35 @@
     const pageId = rawPageId.replace(/\.html$/, '');
     
     if (pageId.includes('gallery')) {
-      const year = pageId.includes('2025') ? '2025' : new Date().getFullYear();
+      // Extract year using regex pattern
+      const extractedYear = extractYearFromPageId(pageId);
+      
+      // Skip prefetching for gallery index page (no specific year)
+      if (pageId === 'gallery') {
+        console.log('[Prefetch] Skipping gallery data prefetch for index page');
+        return;
+      }
+      
+      // Use extracted year or fall back to current year for generic pages
+      const year = extractedYear || new Date().getFullYear();
+      
+      // Build gallery data URL with configurable endpoint
+      const params = new URLSearchParams({
+        year: year,
+        category: PREFETCH_CONFIG.defaultGalleryParams.category
+      });
+      const galleryUrl = `${PREFETCH_CONFIG.galleryDataApi}?${params}`;
+      
+      // Validate URL before creating preload
+      if (!isValidUrl(galleryUrl)) {
+        console.warn(`[Prefetch] Invalid gallery data URL: ${galleryUrl}`);
+        return;
+      }
       
       const galleryDataPreload = document.createElement('link');
       galleryDataPreload.rel = 'preload';
       galleryDataPreload.as = 'fetch';
-      galleryDataPreload.href = `/api/gallery?year=${year}&category=workshops`;
+      galleryDataPreload.href = galleryUrl;
       galleryDataPreload.crossOrigin = 'anonymous';
       
       // Set crossOrigin attribute for compatibility
