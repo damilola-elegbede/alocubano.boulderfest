@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { processImage, detectOptimalFormat, generateCacheKey } from '../utils/image-processor.js';
+import { processImage, detectOptimalFormat, generateCacheKey, isAVIFSupported } from '../utils/image-processor.js';
 
 /**
  * Vercel serverless function for authenticated Google Drive image proxy
@@ -143,7 +143,8 @@ export default async function handler(req, res) {
 
     // Determine optimal format based on browser capabilities and request
     const acceptHeader = req.headers.accept || '';
-    const targetFormat = format || detectOptimalFormat(acceptHeader);
+    const userAgent = req.headers['user-agent'] || '';
+    const targetFormat = format || detectOptimalFormat(acceptHeader, userAgent);
     const width = w ? parseInt(w) : null;
 
     // Generate enhanced cache key including format and size
@@ -181,14 +182,29 @@ export default async function handler(req, res) {
     // Only process if we need to resize or change format
     if (width || targetFormat !== 'jpeg' || (targetFormat === 'jpeg' && fileMetadata.mimeType !== 'image/jpeg')) {
       try {
-        processedBuffer = await processImage(originalBuffer, {
+        const result = await processImage(originalBuffer, {
           width,
           format: targetFormat,
           quality
         });
         
-        // Update content type based on target format
-        finalContentType = targetFormat === 'webp' ? 'image/webp' : 'image/jpeg';
+        processedBuffer = result.buffer;
+        
+        // Update content type based on actual format used (may have fallen back)
+        switch (result.format) {
+          case 'avif':
+            finalContentType = 'image/avif';
+            break;
+          case 'webp':
+            finalContentType = 'image/webp';
+            break;
+          default:
+            finalContentType = 'image/jpeg';
+            break;
+        }
+        
+        // Update target format for header reporting
+        targetFormat = result.format;
       } catch (processError) {
         console.error('Image processing error:', processError);
         // Fallback to original image if processing fails
@@ -206,6 +222,7 @@ export default async function handler(req, res) {
     
     // Add custom headers for debugging
     res.setHeader('X-Image-Format', targetFormat);
+    res.setHeader('X-Browser-AVIF-Support', userAgent ? isAVIFSupported(userAgent).toString() : 'false');
     if (width) {
       res.setHeader('X-Image-Width', width.toString());
     }
