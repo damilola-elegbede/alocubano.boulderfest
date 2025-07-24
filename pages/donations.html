@@ -101,50 +101,49 @@
                 </div>
 
                 <!-- Donation Form -->
-                <div class="donation-form-wrapper" style="max-width: 600px; margin: 0 auto;">
+                <div class="donation-form-wrapper" style="max-width: 700px; margin: 0 auto;">
                     <h2 id="donation-form-title" class="text-display" style="text-align: center; margin-bottom: var(--space-2xl);">MAKE A DONATION</h2>
                     
-                    <form class="donation-form" id="donation-form" onsubmit="handleDonationForm(event)" method="post" novalidate role="form" aria-labelledby="donation-form-title">
-                        <!-- Donation Amount Options -->
-                        <fieldset class="form-section" style="margin-bottom: var(--space-2xl); border: none; padding: 0;">
-                            <legend class="form-label-type font-mono" style="display: block; margin-bottom: var(--space-lg); padding: 0;">SELECT AMOUNT</legend>
-                            
-                            <div class="donation-amounts" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-lg);">
-                                <label class="donation-option" style="display: block; cursor: pointer;">
-                                    <input type="radio" name="amount" value="20" style="margin-right: var(--space-sm);" aria-label="Donate $20">
-                                    <span class="amount-box" style="display: block; padding: var(--space-xl); border: 2px solid var(--color-gray-300); text-align: center; transition: all 0.2s ease;">
-                                        <span class="text-display" style="font-size: var(--font-size-2xl);">$20</span>
-                                    </span>
-                                </label>
-                                
-                                <label class="donation-option" style="display: block; cursor: pointer;">
-                                    <input type="radio" name="amount" value="50" style="margin-right: var(--space-sm);" aria-label="Donate $50">
-                                    <span class="amount-box" style="display: block; padding: var(--space-xl); border: 2px solid var(--color-gray-300); text-align: center; transition: all 0.2s ease;">
-                                        <span class="text-display" style="font-size: var(--font-size-2xl);">$50</span>
-                                    </span>
-                                </label>
-                                
-                                <label class="donation-option" style="display: block; cursor: pointer;">
-                                    <input type="radio" name="amount" value="100" checked style="margin-right: var(--space-sm);" aria-label="Donate $100">
-                                    <span class="amount-box" style="display: block; padding: var(--space-xl); border: 2px solid var(--color-black); text-align: center; transition: all 0.2s ease;">
-                                        <span class="text-display text-gradient" style="font-size: var(--font-size-2xl);">$100</span>
-                                    </span>
-                                </label>
-                                
-                                <label class="donation-option" style="display: block; cursor: pointer;">
-                                    <input type="radio" name="amount" value="other" style="margin-right: var(--space-sm);" aria-label="Donate custom amount">
-                                    <span class="amount-box" style="display: block; padding: var(--space-xl); border: 2px solid var(--color-gray-300); text-align: center; transition: all 0.2s ease;">
-                                        <span class="text-display" style="font-size: var(--font-size-xl);">OTHER</span>
-                                    </span>
-                                </label>
+                    <!-- Donation Selection Interface -->
+                    <section class="donation-selection">
+                        <h3 class="form-label-type font-mono" style="display: block; margin-bottom: var(--space-lg); text-align: center;">SELECT AMOUNT</h3>
+                        
+                        <div class="donation-amounts">
+                            <div class="donation-card" data-amount="20">
+                                <div class="donation-amount">$20</div>
+                                <div class="donation-label">Workshop Materials</div>
                             </div>
                             
-                            <!-- Other Amount Input -->
-                            <div class="other-amount" style="margin-top: var(--space-lg); display: none;">
-                                <label class="form-label-type font-mono" for="other-amount">ENTER AMOUNT</label>
-                                <input type="number" id="other-amount" name="other-amount" class="form-input-type" placeholder="Enter amount" min="1" style="width: 100%; padding: var(--space-md); margin-top: var(--space-sm);" aria-describedby="other-amount-help">
+                            <div class="donation-card" data-amount="50">
+                                <div class="donation-amount">$50</div>
+                                <div class="donation-label">Venue Support</div>
                             </div>
-                        </fieldset>
+                            
+                            <div class="donation-card" data-amount="100">
+                                <div class="donation-amount">$100</div>
+                                <div class="donation-label">Student Scholarship</div>
+                            </div>
+                            
+                            <div class="donation-card" data-amount="custom">
+                                <div class="donation-amount">CUSTOM</div>
+                                <div class="donation-label">Your Amount</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Custom Amount Input -->
+                        <div class="custom-amount">
+                            <label class="form-label-type font-mono" for="custom-amount">ENTER AMOUNT ($)</label>
+                            <input type="number" id="custom-amount" name="custom-amount" placeholder="Enter amount" min="1" step="1">
+                        </div>
+                        
+                        <!-- Donation Total Display -->
+                        <div class="donation-total-section">
+                            <h3 class="form-label-type font-mono">DONATION TOTAL</h3>
+                            <div class="donation-total-amount">$<span id="donation-total">0</span></div>
+                        </div>
+                    </section>
+                    
+                    <form class="donation-form" id="donation-form" method="post" novalidate role="form" aria-labelledby="donation-form-title">
 
                         <!-- Donor Information -->
                         <fieldset class="form-section" style="margin-bottom: var(--space-2xl); border: none; padding: 0;">
@@ -175,11 +174,11 @@
 
                         <!-- Submit Button -->
                         <div style="text-align: center;">
-                            <button type="submit" class="form-button-type" style="padding: var(--space-lg) var(--space-3xl);">
-                                DONATE NOW
+                            <button type="button" id="donate-button" class="form-button-type" style="padding: var(--space-lg) var(--space-3xl);" disabled>
+                                SELECT AMOUNT
                             </button>
                             <p class="font-serif" style="margin-top: var(--space-lg); color: var(--color-gray-600); font-size: var(--font-size-sm);">
-                                You will be redirected to complete your donation
+                                You will be redirected to complete your donation via email
                             </p>
                         </div>
                     </form>
@@ -244,73 +243,6 @@
     <script src="/js/typography.js"></script>
     <script src="/js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING"></script>
     <script src="/js/gallery-hero.js"></script>
-    
-    <!-- Add simple JS for other amount toggle and form handling -->
-    <script>
-        document.querySelectorAll('input[name="amount"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                const otherAmountDiv = document.querySelector('.other-amount');
-                if (this.value === 'other') {
-                    otherAmountDiv.style.display = 'block';
-                } else {
-                    otherAmountDiv.style.display = 'none';
-                }
-                
-                // Update border styles
-                document.querySelectorAll('.amount-box').forEach(box => {
-                    box.style.borderColor = 'var(--color-gray-300)';
-                });
-                this.nextElementSibling.style.borderColor = 'var(--color-black)';
-            });
-        });
-        
-        function handleDonationForm(event) {
-            event.preventDefault();
-            const form = event.target;
-            const formData = new FormData(form);
-            
-            // Collect form data
-            const name = formData.get('name') || '';
-            const email = formData.get('email') || '';
-            const phone = formData.get('phone') || '';
-            let amount = formData.get('amount') || '';
-            
-            // Handle custom amount
-            if (amount === 'other') {
-                amount = formData.get('other-amount') || '';
-                amount = `$${amount} (Custom)`;
-            } else {
-                amount = `$${amount}`;
-            }
-            
-            const donationType = formData.get('donation-type') || '';
-            const message = formData.get('message') || '';
-            
-            // Create email body
-            const emailBody = `Donation Request - A Lo Cubano Boulder Fest
-
-Name: ${name}
-Email: ${email}
-Phone: ${phone}
-Donation Amount: ${amount}
-Donation Type: ${donationType}
-
-Message:
-${message}
-
----
-Thank you for supporting A Lo Cubano Boulder Fest!
-Please reply with payment instructions.
-Sent from A Lo Cubano Boulder Fest website`;
-            
-            // Create mailto URL
-            const subject = encodeURIComponent('Donation - A Lo Cubano Boulder Fest');
-            const body = encodeURIComponent(emailBody);
-            const mailtoUrl = `mailto:alocubanoboulderfest@gmail.com?subject=${subject}&body=${body}`;
-            
-            // Open email client
-            window.location.href = mailtoUrl;
-        }
-    </script>
+    <script src="/js/donation-selection.js"></script>
 </body>
 </html>
