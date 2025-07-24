@@ -1548,7 +1548,7 @@
 
 /* Ticket Card Styling - Smaller Box Style */
 .ticket-card {
-  background: white;
+  background: var(--color-white);
   border: 2px solid var(--color-gray-200);
   border-radius: 12px;
   padding: var(--space-lg);
@@ -1601,7 +1601,7 @@
 .ticket-savings {
   display: inline-block;
   background: var(--color-red);
-  color: white;
+  color: var(--color-white);
   padding: var(--space-xs) var(--space-sm);
   border-radius: 20px;
   font-size: var(--font-size-xs);
@@ -1622,7 +1622,7 @@
   width: 40px;
   height: 40px;
   border: 2px solid var(--color-blue);
-  background: white;
+  background: var(--color-white);
   color: var(--color-blue);
   border-radius: 50%;
   font-size: var(--font-size-lg);
@@ -1633,7 +1633,7 @@
 
 .qty-btn:hover {
   background: var(--color-blue);
-  color: white;
+  color: var(--color-white);
 }
 
 .qty-btn:disabled {
@@ -1686,7 +1686,7 @@
 .checkout-btn {
   width: 100%;
   background: var(--color-red);
-  color: white;
+  color: var(--color-white);
   border: none;
   padding: var(--space-md) var(--space-lg);
   border-radius: 8px;
@@ -1734,7 +1734,7 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    color: white;
+    color: var(--color-white);
 }
 
 .contact-info {
@@ -1779,7 +1779,7 @@
     align-items: center;
     gap: var(--space-sm);
     padding: var(--space-sm) var(--space-md);
-    background: white;
+    background: var(--color-white);
     border: 2px solid var(--color-blue);
     border-radius: 8px;
     text-decoration: none;
@@ -1791,7 +1791,7 @@
 
 .contact-link:hover {
     background: var(--color-blue);
-    color: white;
+    color: var(--color-white);
     transform: translateY(-1px);
 }
 
@@ -1827,7 +1827,7 @@
 /* Location and Response Info */
 .location-info,
 .response-info {
-    background: white;
+    background: var(--color-white);
     padding: var(--space-xl);
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -1908,7 +1908,7 @@
 @media print {
     .contact-hero {
         background: none;
-        color: black;
+        color: var(--color-black);
         min-height: auto;
         padding: var(--space-md);
     }
