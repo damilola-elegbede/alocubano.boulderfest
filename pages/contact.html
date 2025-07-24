@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025 Gallery - A Lo Cubano Boulder Fest</title>
+    <title>Contact Us - A Lo Cubano Boulder Fest</title>
+    <meta name="description" content="Get in touch with A Lo Cubano Boulder Fest. Contact us for questions, partnerships, artist applications, or feedback about Boulder's premier Cuban salsa festival.">
     <!-- Favicons -->
     <link rel="icon" type="image/svg+xml" href="/images/favicon-circle.svg">
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
@@ -17,8 +18,7 @@
       // Inline critical path optimization
       (function() {
         // Preload hero image for current page
-        const rawPageId = window.location.pathname.split('/').pop() || 'home';
-        const pageId = rawPageId.replace(/\.html$/, '');
+        const pageId = window.location.pathname.split('/').pop() || 'home';
         const heroPreload = document.createElement('link');
         heroPreload.rel = 'preload';
         heroPreload.as = 'image';
@@ -71,9 +71,10 @@
                         <li><a href="/about" class="nav-link" data-text="About">About</a></li>
                         <li><a href="/artists" class="nav-link" data-text="Artists">Artists</a></li>
                         <li><a href="/schedule" class="nav-link" data-text="Schedule">Schedule</a></li>
-                        <li><a href="/gallery" class="nav-link is-active" data-text="Gallery">Gallery</a></li>
+                        <li><a href="/gallery" class="nav-link" data-text="Gallery">Gallery</a></li>
                         <li><a href="/tickets" class="nav-link" data-text="Tickets">Tickets</a></li>
                         <li><a href="/donations" class="nav-link" data-text="Donate">Donate</a></li>
+                        <li><a href="/contact" class="nav-link is-active" data-text="Contact">Contact</a></li>
                     </ul>
                 </nav>
             </div>
@@ -81,89 +82,78 @@
     </header>
 
     <main>
-        <!-- Back Navigation -->
-        <section class="gallery-back-nav">
-            <div class="container">
-                <a href="/gallery" class="back-link">
-                    <span class="back-arrow">←</span>
-                    <span class="back-text font-mono">BACK TO GALLERIES</span>
-                </a>
+
+        <!-- Hero Splash Image -->
+        <section class="gallery-hero-splash">
+            <div class="hero-image-container">
+                <img id="hero-splash-image" src="" alt="Connect with A Lo Cubano Boulder Fest team and community through various contact channels" class="hero-splash-img" style="object-position: top center !important;">
             </div>
         </section>
 
-        <!-- Year Banner -->
+        <!-- Contact Content -->
         <section class="section-typographic">
             <div class="container">
-                <h2 class="text-mask" style="text-align: center; margin-bottom: var(--space-1xl);">2025</h2>            </div>
-        </section>
-
-        <!-- Traditional Gallery Grid Section -->
-        <section class="section-typographic gallery-detail-section" id="traditional-gallery" data-gallery-year="2025">
-            <div class="container">
-                <div class="gallery-loading" id="gallery-detail-loading">
-                    <p class="font-mono">Loading festival memories...</p>
+                <!-- Contact Header -->
+                <div class="contact-header" style="text-align: center; margin-bottom: var(--space-4xl);">
+                    <h1 class="text-display text-mask">GET IN TOUCH</h1>
+                    <p class="font-serif" style="font-size: var(--font-size-lg); margin-top: var(--space-lg);">We'd love to hear from you</p>
                 </div>
                 
-                <div id="gallery-detail-content">
-                    <!-- Workshops Section -->
-                    <div class="gallery-section" id="workshops-section">
-                        <h2 class="text-display">WORKSHOPS</h2>
-                        <div class="gallery-grid gallery-detail-grid" id="workshops-gallery">
-                            <!-- Workshop images will be loaded here -->
+                <!-- Contact Information Section -->
+                <section class="contact-info">
+                    <div class="contact-grid">
+                        
+                        <!-- Email Contact -->
+                        <div class="contact-item" style="display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <h2>Email Us</h2>
+                                <p>For general inquiries, partnerships, artist applications, or any questions about the festival:</p>
+                            </div>
+                            <a href="mailto:alocubanoboulderfest@gmail.com" class="contact-link email-link" style="margin-top: auto;">
+                                <span class="contact-icon">✉</span>
+                                alocubanoboulderfest@
+                            </a>
                         </div>
-                    </div>
-                    
-                    <!-- Socials Section -->
-                    <div class="gallery-section socials-section" id="socials-section">
-                        <h2 class="text-display">SOCIALS</h2>
-                        <div class="gallery-grid gallery-detail-grid" id="socials-gallery">
-                            <!-- Social images will be loaded here -->
+                        
+                        <!-- Social Media -->
+                        <div class="contact-item" style="display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <h2>Follow Us</h2>
+                                <p>Stay connected with the latest festival updates, behind-the-scenes content, and community highlights:</p>
+                            </div>
+                            <a href="https://www.instagram.com/alocubano.boulderfest/" target="_blank" rel="noopener noreferrer" class="contact-link social-link" style="margin-top: auto;">
+                                <img src="/images/instagram-icon.svg" alt="Instagram" class="social-icon">
+                                @alocubano.boulderfest
+                            </a>
                         </div>
+                        
+                        <!-- WhatsApp Community -->
+                        <div class="contact-item" style="display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <h2>Join Our Community</h2>
+                                <p>Connect with fellow dancers, get real-time updates, and be part of our vibrant community:</p>
+                            </div>
+                            <a href="https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH" target="_blank" rel="noopener noreferrer" class="contact-link whatsapp-link" style="margin-top: auto;">
+                                <img src="/images/whatsapp-icon.svg" alt="WhatsApp" class="social-icon">
+                                WhatsApp Community
+                            </a>
+                        </div>
+                        
+                        <!-- Feedback -->
+                        <div class="contact-item" style="display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <h2>Share Your Feedback</h2>
+                                <p>Help us improve! Share your thoughts, suggestions, or experiences with past festivals:</p>
+                            </div>
+                            <a href="mailto:alocubanoboulderfest@gmail.com?subject=Festival Feedback" class="contact-link feedback-link" style="margin-top: auto;">
+                                <span class="contact-icon">💭</span>
+                                Send Feedback
+                            </a>
+                        </div>
+                        
                     </div>
-                </div>
+                </section>
                 
-                <!-- Fallback static gallery -->
-                <div class="gallery-grid-static" id="gallery-detail-static">
-                    <div class="gallery-static-content">
-                        <h2 class="text-display gallery-static-title">2025 FESTIVAL GALLERY</h2>
-                        <p class="font-serif gallery-static-description">
-                            Our 2025 festival was an incredible celebration of Cuban culture and dance. 
-                            Photos from workshops, socials, and performances will be uploaded soon.
-                        </p>
-                        <p class="font-mono gallery-static-note">
-                            Check back later or follow us on social media for updates!
-                        </p>
-                        <div class="gallery-static-actions">
-                            <a href="/gallery" class="form-button-type">← Back to Gallery</a>
-                            <a href="/tickets" class="form-button-type tickets-button">Get 2026 Tickets</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-
-        <!-- Gallery Stats -->
-        <section class="section-typographic gallery-stats">
-            <div class="container">
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <h3 class="font-display">150+</h3>
-                        <p class="font-mono">Attendees</p>
-                    </div>
-                    <div class="stat-item">
-                        <h3 class="font-display">3</h3>
-                        <p class="font-mono">Days of Dance</p>
-                    </div>
-                    <div class="stat-item">
-                        <h3 class="font-display">10</h3>
-                        <p class="font-mono">Workshops</p>
-                    </div>
-                    <div class="stat-item">
-                        <h3 class="font-display">∞</h3>
-                        <p class="font-mono">Memories Made</p>
-                    </div>
-                </div>
             </div>
         </section>
     </main>
@@ -187,28 +177,13 @@
             </div>
         </div>
     </footer>
+    
     <script src="/js/navigation.js"></script>
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
-    <!-- Performance Optimization Modules -->
-    <script src="/js/performance-monitor.js"></script>
-    <script src="/js/prefetch-manager.js"></script>
-    <script src="/js/progressive-loader.js"></script>
-    <script src="/js/cache-warmer.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
-    <script>
-        // Debug logging
-        console.log('Gallery page loaded, checking for elements...');
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded, checking gallery elements:');
-            console.log('- gallery-detail-loading:', document.getElementById('gallery-detail-loading'));
-            console.log('- gallery-detail-content:', document.getElementById('gallery-detail-content'));
-            console.log('- gallery-detail-static:', document.getElementById('gallery-detail-static'));
-            console.log('- workshops-section:', document.getElementById('workshops-section'));
-            console.log('- socials-section:', document.getElementById('socials-section'));
-        });
-    </script>
-    <script src="/js/gallery-detail.js?v=2025-07-22-PERFORMANCE-OPTIMIZED"></script>
+    <script src="/js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING"></script>
+    <script src="/js/gallery-hero.js"></script>
 </body>
 </html>

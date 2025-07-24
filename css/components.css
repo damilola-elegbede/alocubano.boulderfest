@@ -1279,3 +1279,754 @@
     }
   }
 }
+
+/* Phase 1: New Layout Components - BEM Convention */
+
+/* Hero Block */
+.hero__title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-6xl);
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 0;
+  color: var(--color-black);
+}
+
+.hero__subtitle {
+  font-family: var(--font-accent);
+  font-size: var(--font-size-xl);
+  font-weight: 400;
+  line-height: 1.4;
+  margin-top: var(--space-sm);
+  color: var(--color-black);
+}
+
+/* Expectations Block */
+.expectations {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-lg);
+  margin: var(--space-xl) 0;
+}
+
+.expectations__item {
+  padding: var(--space-lg);
+  border: 2px solid var(--color-black);
+  background: var(--color-white);
+}
+
+.expectations__item-title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-3xl);
+  font-weight: 900;
+  margin: 0 0 var(--space-md) 0;
+  color: var(--color-black);
+}
+
+.expectations__item-description {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  margin: 0;
+  color: var(--color-black);
+}
+
+/* Volunteer Benefits Block */
+.volunteer-benefits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin: var(--space-lg) 0;
+  justify-content: center;
+}
+
+.volunteer-benefits__tag {
+  padding: var(--space-xs) var(--space-sm);
+  background-color: var(--color-blue);
+  color: var(--color-white);
+  border-radius: 4px;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-code);
+  font-weight: 500;
+  display: inline-block;
+  text-align: center;
+}
+
+.volunteer-benefits__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-xl);
+  margin: var(--space-3xl) 0;
+}
+
+.volunteer-benefits__card {
+  text-align: center;
+  padding: var(--space-2xl) var(--space-lg);
+  background: var(--color-white);
+  transition: all var(--transition-base);
+}
+
+.volunteer-benefits__card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.volunteer-benefits__card-emoji {
+  font-size: 3rem;
+  margin-bottom: var(--space-md);
+  display: block;
+}
+
+.volunteer-benefits__card-title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-black);
+  margin: var(--space-md) 0;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.volunteer-benefits__card-description {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  color: var(--color-gray-600);
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+}
+
+/* Donation Selection Interface */
+.donation-selection {
+  margin: var(--space-2xl) 0;
+}
+
+.donation-amounts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.donation-card {
+  background: var(--color-white);
+  border: 2px solid var(--color-gray-200);
+  border-radius: 12px;
+  padding: var(--space-xl);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.donation-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: var(--color-blue);
+}
+
+.donation-card.selected {
+  border-color: var(--color-blue);
+  background: var(--color-blue);
+  color: var(--color-white);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(91, 107, 181, 0.2);
+}
+
+.donation-card:focus-visible {
+  outline: 2px solid var(--color-blue);
+  outline-offset: 2px;
+}
+
+.donation-amount {
+  font-family: var(--font-display);
+  font-size: var(--font-size-3xl);
+  font-weight: 900;
+  margin: 0;
+  color: inherit;
+}
+
+.donation-label {
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  margin-top: var(--space-xs);
+  color: inherit;
+  opacity: 0.8;
+}
+
+.custom-amount {
+  margin-top: var(--space-lg);
+  display: none;
+}
+
+.custom-amount input {
+  width: 100%;
+  padding: var(--space-md);
+  border: 2px solid var(--color-gray-200);
+  border-radius: 8px;
+  font-size: var(--font-size-lg);
+  text-align: center;
+  font-family: var(--font-display);
+}
+
+.custom-amount input:focus {
+  outline: none;
+  border-color: var(--color-blue);
+  box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.1);
+}
+
+.donation-total-section {
+  background: var(--color-gray-100);
+  padding: var(--space-xl);
+  border-radius: 12px;
+  text-align: center;
+  margin: var(--space-xl) 0;
+}
+
+.donation-total-amount {
+  font-family: var(--font-display);
+  font-size: var(--font-size-4xl);
+  font-weight: 900;
+  color: var(--color-blue);
+  margin: 0;
+}
+
+/* TBA Notices */
+.tba-notice {
+  font-style: italic;
+  color: var(--color-blue);
+  text-align: center;
+  padding: var(--space-lg);
+  background-color: rgba(91, 107, 181, 0.1);
+  border-radius: 8px;
+  font-family: var(--font-accent);
+  font-size: var(--font-size-lg);
+  margin: var(--space-xl) 0;
+}
+
+/* Section Spacing Adjustments */
+.section {
+  margin-bottom: var(--space-xl); /* Reduced from var(--space-3xl) */
+}
+
+.hero-section {
+  margin-bottom: var(--space-lg); /* Tighter hero spacing */
+}
+
+.content-section + .content-section {
+  margin-top: var(--space-lg); /* Reduced from var(--space-3xl) */
+}
+
+.content-section p + p {
+  margin-top: var(--space-md); /* Reduced from var(--space-lg) */
+}
+
+/* Year Section Headers */
+.artists-2025 h2,
+.artists-2026 h2,
+.schedule-2025 h2,
+.schedule-2026 h2 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-3xl);
+  font-weight: 900;
+  margin: var(--space-xl) 0 var(--space-lg) 0;
+  color: var(--color-black);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: var(--font-size-5xl);
+  }
+  
+  .hero-subtitle {
+    font-size: var(--font-size-lg);
+  }
+  
+  .section {
+    margin-bottom: var(--space-lg);
+  }
+  
+  .expectations-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+  
+  .volunteer-benefits {
+    justify-content: center;
+  }
+  
+  .volunteer-benefits-cards {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-lg);
+    margin: var(--space-2xl) 0;
+  }
+  
+  .benefit-card {
+    padding: var(--space-lg) var(--space-md);
+  }
+  
+  .benefit-emoji {
+    font-size: 2.5rem;
+  }
+  
+  .benefit-title {
+    font-size: var(--font-size-base);
+  }
+  
+  .expectation-item {
+    padding: var(--space-md);
+  }
+  
+  .expectation-item h3 {
+    font-size: var(--font-size-2xl);
+  }
+}
+
+/* Ticket Selection Interface Styling */
+.tickets-header {
+  text-align: center;
+  margin-bottom: var(--space-3xl);
+}
+
+.tickets-header h1 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-6xl);
+  margin-bottom: var(--space-md);
+}
+
+.tickets-subtitle {
+  font-size: var(--font-size-xl);
+  color: var(--color-blue);
+  font-weight: 500;
+}
+
+/* Ticket Selection Interface */
+.ticket-selection {
+  margin: var(--space-2xl) 0;
+}
+
+.ticket-selection h2 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-3xl);
+  color: var(--color-black);
+  margin-bottom: var(--space-xl);
+  text-align: center;
+}
+
+/* Ticket Categories */
+.ticket-category {
+  margin-bottom: var(--space-3xl);
+}
+
+.ticket-category h3 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-2xl);
+  color: var(--color-black);
+  margin-bottom: var(--space-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.category-description {
+  color: var(--color-gray-600);
+  margin-bottom: var(--space-lg);
+  font-size: var(--font-size-base);
+}
+
+.ticket-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-lg);
+}
+
+/* Ticket Card Styling - Smaller Box Style */
+.ticket-card {
+  background: var(--color-white);
+  border: 2px solid var(--color-gray-200);
+  border-radius: 12px;
+  padding: var(--space-lg);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.ticket-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: var(--color-blue);
+}
+
+.ticket-card.selected {
+  border-color: var(--color-blue);
+  box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.2);
+  background: rgba(91, 107, 181, 0.05);
+}
+
+.ticket-card h4 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--space-md);
+  color: var(--color-black);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ticket-description {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  margin-bottom: var(--space-md);
+  flex-grow: 1;
+}
+
+.ticket-price {
+  font-family: var(--font-display);
+  font-size: var(--font-size-2xl);
+  color: var(--color-red);
+  font-weight: bold;
+  margin-bottom: var(--space-sm);
+}
+
+.ticket-savings {
+  display: inline-block;
+  background: var(--color-red);
+  color: var(--color-white);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: 20px;
+  font-size: var(--font-size-xs);
+  font-weight: bold;
+  margin-bottom: var(--space-md);
+}
+
+/* Quantity Selector */
+.quantity-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  justify-content: center;
+}
+
+.qty-btn {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--color-blue);
+  background: var(--color-white);
+  color: var(--color-blue);
+  border-radius: 50%;
+  font-size: var(--font-size-lg);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.qty-btn:hover {
+  background: var(--color-blue);
+  color: var(--color-white);
+}
+
+.qty-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quantity {
+  font-size: var(--font-size-lg);
+  font-weight: bold;
+  min-width: 30px;
+  text-align: center;
+}
+
+/* Pricing Summary */
+.pricing-summary {
+  background: var(--color-gray-100);
+  padding: var(--space-lg);
+  border-radius: 8px;
+  margin-top: var(--space-xl);
+}
+
+.total-section h3 {
+  margin-bottom: var(--space-md);
+  font-family: var(--font-display);
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.order-item:last-child {
+  border-bottom: none;
+  margin-bottom: var(--space-md);
+}
+
+.total-final {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-lg);
+  border-top: 2px solid var(--color-gray-200);
+  padding-top: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.checkout-btn {
+  width: 100%;
+  background: var(--color-red);
+  color: var(--color-white);
+  border: none;
+  padding: var(--space-md) var(--space-lg);
+  border-radius: 8px;
+  font-size: var(--font-size-lg);
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: var(--space-lg);
+  transition: all 0.2s ease;
+}
+
+.checkout-btn:hover:not(:disabled) {
+  background: var(--color-red);
+  transform: translateY(-1px);
+}
+
+.checkout-btn:disabled {
+  background: var(--color-gray-400);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Mobile responsiveness for tickets */
+@media (max-width: 768px) {
+  .ticket-options {
+    grid-template-columns: 1fr;
+  }
+  
+  .ticket-card {
+    min-height: 180px;
+  }
+  
+  .qty-btn {
+    width: 35px;
+    height: 35px;
+    font-size: var(--font-size-base);
+  }
+}
+
+/* Contact Page Styling */
+.contact-hero {
+    background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
+                url('/images/hero-default.jpg') center/cover;
+    min-height: 40vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--color-white);
+}
+
+.contact-info {
+    margin: var(--space-3xl) 0;
+}
+
+.contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-xl);
+    margin-top: var(--space-xl);
+}
+
+.contact-item {
+    background: var(--color-gray-100);
+    padding: var(--space-xl);
+    border-radius: 12px;
+    border-left: 4px solid var(--color-blue);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.contact-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.contact-item h2 {
+    font-family: var(--font-display);
+    font-size: var(--font-size-xl);
+    color: var(--color-black);
+    margin-bottom: var(--space-md);
+}
+
+.contact-item p {
+    color: var(--color-gray-700);
+    margin-bottom: var(--space-md);
+    line-height: 1.6;
+}
+
+.contact-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-white);
+    border: 2px solid var(--color-blue);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--color-blue);
+    font-weight: 500;
+    transition: all 0.2s ease;
+    margin-bottom: var(--space-sm);
+}
+
+.contact-link:hover {
+    background: var(--color-blue);
+    color: var(--color-white);
+    transform: translateY(-1px);
+}
+
+.contact-link:focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(91, 107, 181, 0.2);
+}
+
+.email-link {
+    font-family: var(--font-code);
+    font-size: var(--font-size-sm);
+}
+
+.contact-icon {
+    font-size: var(--font-size-lg);
+}
+
+.social-icon {
+    width: 24px;
+    height: 24px;
+    filter: brightness(0) saturate(100%) invert(45%) sepia(93%) saturate(558%) hue-rotate(202deg) brightness(93%) contrast(86%);
+    transition: filter 0.2s ease;
+}
+
+.contact-link:hover .social-icon {
+    filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(7500%) hue-rotate(109deg) brightness(107%) contrast(107%);
+}
+
+.whatsapp-note,
+.feedback-note {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-500);
+    font-style: italic;
+    margin-top: var(--space-sm);
+    margin-bottom: 0;
+}
+
+/* Location and Response Info */
+.location-info,
+.response-info {
+    background: var(--color-white);
+    padding: var(--space-xl);
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin: var(--space-xl) 0;
+}
+
+.location-info h2,
+.response-info h2 {
+    font-family: var(--font-display);
+    font-size: var(--font-size-xl);
+    color: var(--color-black);
+    margin-bottom: var(--space-md);
+    border-bottom: 2px solid var(--color-blue);
+    padding-bottom: var(--space-sm);
+}
+
+.location-details h3 {
+    font-family: var(--font-accent);
+    font-size: var(--font-size-lg);
+    color: var(--color-red);
+    margin-bottom: var(--space-sm);
+}
+
+.address {
+    font-family: var(--font-code);
+    font-size: var(--font-size-base);
+    color: var(--color-gray-800);
+    margin-bottom: var(--space-md);
+    line-height: 1.5;
+}
+
+.location-note {
+    color: var(--color-gray-600);
+    font-style: italic;
+}
+
+/* Footer link styling */
+.footer-link {
+    color: var(--color-blue);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.footer-link:hover {
+    color: var(--color-red);
+    text-decoration: underline;
+}
+
+/* Mobile Responsiveness for Contact Page */
+@media (max-width: 768px) {
+    .contact-hero {
+        min-height: 30vh;
+        padding: var(--space-lg);
+    }
+    
+    .contact-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-lg);
+    }
+    
+    .contact-item {
+        padding: var(--space-lg);
+    }
+    
+    .location-info,
+    .response-info {
+        padding: var(--space-lg);
+        margin: var(--space-lg) 0;
+    }
+    
+    .contact-link {
+        font-size: var(--font-size-sm);
+        padding: var(--space-sm);
+    }
+}
+
+/* Print Styles for Contact Page */
+@media print {
+    .contact-hero {
+        background: none;
+        color: var(--color-black);
+        min-height: auto;
+        padding: var(--space-md);
+    }
+    
+    .contact-item {
+        break-inside: avoid;
+        background: none;
+        border: 1px solid var(--color-gray-400);
+    }
+    
+    .contact-link {
+        border: 1px solid var(--color-gray-800);
+        background: none;
+    }
+}
