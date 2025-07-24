@@ -115,38 +115,59 @@ describe('UI/UX Integration Tests', () => {
             expect(aboutHTML).toMatch(/function handleVolunteerForm\(event\)/);
         });
 
-        test('tickets.html should not have mailto form action', () => {
+        test('tickets.html should have secure interactive ticket selection', () => {
             const ticketsHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'tickets.html'), 'utf8');
             
             // Should not have insecure mailto action
             expect(ticketsHTML).not.toMatch(/<form[^>]*action\s*=\s*["']mailto:/);
             
-            // Should have secure JavaScript handler
-            expect(ticketsHTML).toMatch(/onsubmit\s*=\s*["']handleTicketForm\(event\)["']/);
+            // Should have interactive ticket selection system
+            expect(ticketsHTML).toMatch(/class="ticket-selection"/);
+            expect(ticketsHTML).toMatch(/class="ticket-card"/);
+            expect(ticketsHTML).toMatch(/class="quantity-selector"/);
+            expect(ticketsHTML).toMatch(/data-ticket-type=/);
+            expect(ticketsHTML).toMatch(/data-price=/);
+            
+            // Should have TicketSelection JavaScript class
+            expect(ticketsHTML).toMatch(/src="\/js\/ticket-selection\.js"/);
+            
+            // Should have fallback form handler for legacy support
             expect(ticketsHTML).toMatch(/function handleTicketForm\(event\)/);
         });
 
-        test('donations.html should not have mailto form action', () => {
+        test('donations.html should have secure card-based donation selection', () => {
             const donationsHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'donations.html'), 'utf8');
             
             // Should not have insecure mailto action
             expect(donationsHTML).not.toMatch(/<form[^>]*action\s*=\s*["']mailto:/);
             
-            // Should have secure JavaScript handler
-            expect(donationsHTML).toMatch(/onsubmit\s*=\s*["']handleDonationForm\(event\)["']/);
-            expect(donationsHTML).toMatch(/function handleDonationForm\(event\)/);
+            // Should have donation selection interface
+            expect(donationsHTML).toMatch(/class="donation-selection"/);
+            expect(donationsHTML).toMatch(/class="donation-card"/);
+            expect(donationsHTML).toMatch(/data-amount=/);
+            
+            // Should have DonationSelection JavaScript class
+            expect(donationsHTML).toMatch(/src="\/js\/donation-selection\.js"/);
         });
 
-        test('all form handlers should create proper mailto URLs', () => {
+        test('inline form handlers should create proper mailto URLs', () => {
             const aboutHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'about.html'), 'utf8');
             const ticketsHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'tickets.html'), 'utf8');
-            const donationsHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'donations.html'), 'utf8');
             
-            // All handlers should use window.location.href for mailto
-            [aboutHTML, ticketsHTML, donationsHTML].forEach(html => {
+            // Inline handlers should use window.location.href for mailto
+            [aboutHTML, ticketsHTML].forEach(html => {
                 expect(html).toMatch(/window\.location\.href\s*=\s*mailtoUrl/);
                 expect(html).toMatch(/encodeURIComponent\(/);
             });
+        });
+
+        test('donation selection JavaScript should handle mailto creation', () => {
+            const donationJS = fs.readFileSync(path.join(projectRoot, 'js', 'donation-selection.js'), 'utf8');
+            
+            // Should have proper mailto handling in JavaScript
+            expect(donationJS).toMatch(/window\.location\.href\s*=\s*mailtoUrl/);
+            expect(donationJS).toMatch(/encodeURIComponent\(/);
+            expect(donationJS).toMatch(/class DonationSelection/);
         });
     });
 
