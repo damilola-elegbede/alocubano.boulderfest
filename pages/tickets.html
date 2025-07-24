@@ -102,23 +102,104 @@
                 <section class="ticket-selection">
                     <h2>Select Your Tickets</h2>
                     
-                    <div class="ticket-options">
-                        <div class="ticket-card" data-ticket-type="early-bird-full" data-price="100">
-                            <div class="ticket-design">
-                                <div class="ticket-stub">
-                                    <div class="stub-text">ADMIT ONE</div>
-                                </div>
-                                <div class="ticket-main">
-                                    <h3>Early Bird Full Pass</h3>
-                                    <p class="ticket-description">Complete festival access - All workshops, socials, and performances</p>
-                                    <div class="ticket-price">$100</div>
-                                    <div class="ticket-savings">Save $25!</div>
+                    <!-- Full Festival Passes -->
+                    <div class="ticket-category">
+                        <h3>Full Festival Pass</h3>
+                        <p class="category-description">Complete access to all workshops, socials, and performances</p>
+                        
+                        <div class="ticket-options">
+                            <div class="ticket-card" data-ticket-type="early-bird-full" data-price="100">
+                                <h4>Early Bird Full Pass</h4>
+                                <div class="ticket-price">$100</div>
+                                <p class="ticket-description">Before April 1st</p>
+                                <div class="ticket-savings">Save $25!</div>
+                                <div class="quantity-selector">
+                                    <button class="qty-btn minus" data-action="decrease" type="button" aria-label="Decrease quantity">-</button>
+                                    <span class="quantity">0</span>
+                                    <button class="qty-btn plus" data-action="increase" type="button" aria-label="Increase quantity">+</button>
                                 </div>
                             </div>
-                            <div class="quantity-selector">
-                                <button class="qty-btn minus" data-action="decrease" type="button">-</button>
-                                <span class="quantity">0</span>
-                                <button class="qty-btn plus" data-action="increase" type="button">+</button>
+                            
+                            <div class="ticket-card" data-ticket-type="regular-full" data-price="125">
+                                <h4>Regular Full Pass</h4>
+                                <div class="ticket-price">$125</div>
+                                <p class="ticket-description">At door pricing</p>
+                                <div class="quantity-selector">
+                                    <button class="qty-btn minus" data-action="decrease" type="button" aria-label="Decrease quantity">-</button>
+                                    <span class="quantity">0</span>
+                                    <button class="qty-btn plus" data-action="increase" type="button" aria-label="Increase quantity">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Day Passes -->
+                    <div class="ticket-category">
+                        <h3>Day Passes</h3>
+                        <p class="category-description">Access to a single day of festivities</p>
+                        
+                        <div class="ticket-options">
+                            <div class="ticket-card" data-ticket-type="friday-pass" data-price="50">
+                                <h4>Friday Pass</h4>
+                                <div class="ticket-price">$50</div>
+                                <p class="ticket-description">May 16, 2026</p>
+                                <div class="quantity-selector">
+                                    <button class="qty-btn minus" data-action="decrease" type="button" aria-label="Decrease quantity">-</button>
+                                    <span class="quantity">0</span>
+                                    <button class="qty-btn plus" data-action="increase" type="button" aria-label="Increase quantity">+</button>
+                                </div>
+                            </div>
+                            
+                            <div class="ticket-card" data-ticket-type="saturday-pass" data-price="85">
+                                <h4>Saturday Pass</h4>
+                                <div class="ticket-price">$85</div>
+                                <p class="ticket-description">May 17, 2026</p>
+                                <div class="quantity-selector">
+                                    <button class="qty-btn minus" data-action="decrease" type="button" aria-label="Decrease quantity">-</button>
+                                    <span class="quantity">0</span>
+                                    <button class="qty-btn plus" data-action="increase" type="button" aria-label="Increase quantity">+</button>
+                                </div>
+                            </div>
+                            
+                            <div class="ticket-card" data-ticket-type="sunday-pass" data-price="50">
+                                <h4>Sunday Pass</h4>
+                                <div class="ticket-price">$50</div>
+                                <p class="ticket-description">May 18, 2026</p>
+                                <div class="quantity-selector">
+                                    <button class="qty-btn minus" data-action="decrease" type="button" aria-label="Decrease quantity">-</button>
+                                    <span class="quantity">0</span>
+                                    <button class="qty-btn plus" data-action="increase" type="button" aria-label="Increase quantity">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Individual Items -->
+                    <div class="ticket-category">
+                        <h3>Individual Tickets</h3>
+                        <p class="category-description">Single workshop or social access</p>
+                        
+                        <div class="ticket-options">
+                            <div class="ticket-card" data-ticket-type="single-workshop" data-price="30">
+                                <h4>Single Workshop</h4>
+                                <div class="ticket-price">$30</div>
+                                <p class="ticket-description">One workshop access</p>
+                                <div class="quantity-selector">
+                                    <button class="qty-btn minus" data-action="decrease" type="button" aria-label="Decrease quantity">-</button>
+                                    <span class="quantity">0</span>
+                                    <button class="qty-btn plus" data-action="increase" type="button" aria-label="Increase quantity">+</button>
+                                </div>
+                            </div>
+                            
+                            <div class="ticket-card" data-ticket-type="single-social" data-price="20">
+                                <h4>Single Social</h4>
+                                <div class="ticket-price">$20</div>
+                                <p class="ticket-description">One social event access</p>
+                                <div class="quantity-selector">
+                                    <button class="qty-btn minus" data-action="decrease" type="button" aria-label="Decrease quantity">-</button>
+                                    <span class="quantity">0</span>
+                                    <button class="qty-btn plus" data-action="increase" type="button" aria-label="Increase quantity">+</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -126,10 +207,7 @@
                     <div class="pricing-summary">
                         <div class="total-section">
                             <h3>Order Summary</h3>
-                            <div class="total-line">
-                                <span>Early Bird Full Pass × <span id="total-quantity">0</span></span>
-                                <span>$<span id="total-amount">0</span></span>
-                            </div>
+                            <div id="order-items"></div>
                             <div class="total-final">
                                 <strong>Total: $<span id="final-total">0</span></strong>
                             </div>
