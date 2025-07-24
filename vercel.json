@@ -101,6 +101,10 @@
     {
       "source": "/donations",
       "destination": "/pages/donations.html"
+    },
+    {
+      "source": "/contact",
+      "destination": "/pages/contact.html"
     }
   ],
   "redirects": [],

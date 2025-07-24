@@ -3,197 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact Us - A Lo Cubano Boulder Fest 2026</title>
-    <meta name="description" content="Get in touch with A Lo Cubano Boulder Fest. Contact us for questions, partnerships, or feedback about Boulder's premier Cuban salsa festival.">
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <title>Contact Us - A Lo Cubano Boulder Fest</title>
+    <meta name="description" content="Get in touch with A Lo Cubano Boulder Fest. Contact us for questions, partnerships, artist applications, or feedback about Boulder's premier Cuban salsa festival.">
+    <!-- Favicons -->
     <link rel="icon" type="image/svg+xml" href="/images/favicon-circle.svg">
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicons/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/images/favicons/favicon-192x192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/images/favicons/favicon-192x192.png">
     
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    
-    <!-- Stylesheets -->
-    <link rel="stylesheet" href="/css/base.css">
-    <link rel="stylesheet" href="/css/typography.css">
-    <link rel="stylesheet" href="/css/navigation.css">
-    <link rel="stylesheet" href="/css/components.css">
-    <link rel="stylesheet" href="/css/mobile-overrides.css">
-    
-    <!-- Open Graph / Social Media -->
-    <meta property="og:title" content="Contact Us - A Lo Cubano Boulder Fest 2026">
-    <meta property="og:description" content="Get in touch with A Lo Cubano Boulder Fest. Contact us for questions, partnerships, or feedback.">
-    <meta property="og:image" content="/images/hero-default.jpg">
-    <meta property="og:url" content="https://alocubanoboulderfest.com/contact">
-    <meta property="og:type" content="website">
-</head>
+    <!-- Critical resource preloading -->
+    <script>
+      // Inline critical path optimization
+      (function() {
+        // Preload hero image for current page
+        const pageId = window.location.pathname.split('/').pop() || 'home';
+        const heroPreload = document.createElement('link');
+        heroPreload.rel = 'preload';
+        heroPreload.as = 'image';
+        heroPreload.href = `/api/hero-image/${pageId}?w=1200&format=webp`;
+        heroPreload.crossOrigin = 'anonymous';
+        document.head.appendChild(heroPreload);
+        
+        // Preload gallery data for gallery pages
+        if (pageId.includes('gallery')) {
+          const year = pageId.includes('2025') ? '2025' : new Date().getFullYear();
+          const galleryDataPreload = document.createElement('link');
+          galleryDataPreload.rel = 'preload';
+          galleryDataPreload.as = 'fetch';
+          galleryDataPreload.href = `/api/gallery?year=${year}&category=workshops`;
+          galleryDataPreload.crossOrigin = 'anonymous';
+          document.head.appendChild(galleryDataPreload);
+        }
+      })();
+    </script>
 
-<body>
-    <!-- Navigation Header -->
-    <header class="site-header">
-        <nav class="main-nav">
-            <div class="nav-container">
-                <a href="/home" class="logo-link">
-                    <img src="/images/logo.png" alt="A Lo Cubano Boulder Fest" class="logo">
-                </a>
-                
-                <button class="mobile-menu-toggle" aria-label="Toggle navigation menu">
-                    <span class="hamburger-line"></span>
-                    <span class="hamburger-line"></span>
-                    <span class="hamburger-line"></span>
-                </button>
-                
-                <ul class="nav-list">
-                    <li><a href="/home" class="nav-link">Home</a></li>
-                    <li><a href="/about" class="nav-link">About</a></li>
-                    <li><a href="/artists" class="nav-link">Artists</a></li>
-                    <li><a href="/schedule" class="nav-link">Schedule</a></li>
-                    <li><a href="/gallery" class="nav-link">Gallery</a></li>
-                    <li><a href="/tickets" class="nav-link">Tickets</a></li>
-                    <li><a href="/donations" class="nav-link">Support</a></li>
-                    <li><a href="/contact" class="nav-link active">Contact</a></li>
-                </ul>
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//fonts.gstatic.com">
+    
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/typography.css">
+    <link rel="stylesheet" href="/css/mobile-overrides.css">
+</head>
+<body class="typographic">
+    <header class="header">
+        <div class="container">
+            <div class="grid">
+                <div class="header-left">
+                    <a href="/home" class="logo-link" aria-label="Go to home page">
+                        <img src="/images/logo.png" alt="A Lo Cubano Boulder Fest Logo" style="height: 78px;">
+                        <div class="logo-text">
+                            <span class="logo-main">A LO CUBANO</span>
+                            <span class="logo-separator">|</span>
+                            <span class="logo-sub">Boulder Fest</span>
+                        </div>
+                    </a>
+                </div>
+                <nav class="main-nav">
+                    <button class="menu-toggle" aria-label="Toggle menu">
+                        <span></span>
+                    </button>
+                    <ul class="nav-list">
+                        <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
+                        <li><a href="/about" class="nav-link" data-text="About">About</a></li>
+                        <li><a href="/artists" class="nav-link" data-text="Artists">Artists</a></li>
+                        <li><a href="/schedule" class="nav-link" data-text="Schedule">Schedule</a></li>
+                        <li><a href="/gallery" class="nav-link" data-text="Gallery">Gallery</a></li>
+                        <li><a href="/tickets" class="nav-link" data-text="Tickets">Tickets</a></li>
+                        <li><a href="/donations" class="nav-link" data-text="Donate">Donate</a></li>
+                        <li><a href="/contact" class="nav-link is-active" data-text="Contact">Contact</a></li>
+                    </ul>
+                </nav>
             </div>
-        </nav>
+        </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="hero-section contact-hero">
-        <div class="hero-container">
-            <div class="hero-content">
-                <h1 class="hero-title">Get in Touch</h1>
-                <p class="hero-subtitle">We'd love to hear from you</p>
-            </div>
-        </div>
-    </section>
+    <main>
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <div class="container">
-            
-            <!-- Contact Information Section -->
-            <section class="contact-info">
-                <div class="contact-grid">
-                    
-                    <!-- Email Contact -->
-                    <div class="contact-item">
-                        <h2>Email Us</h2>
-                        <p>For general inquiries, partnerships, artist applications, or any questions about the festival:</p>
-                        <a href="mailto:alocubanoboulderfest@gmail.com" class="contact-link email-link">
-                            <span class="contact-icon">✉</span>
-                            alocubanoboulderfest@gmail.com
-                        </a>
-                    </div>
-                    
-                    <!-- Social Media -->
-                    <div class="contact-item">
-                        <h2>Follow Us</h2>
-                        <p>Stay connected with the latest festival updates, behind-the-scenes content, and community highlights:</p>
-                        <a href="https://www.instagram.com/alocubano.boulderfest/" target="_blank" rel="noopener noreferrer" class="contact-link social-link">
-                            <img src="/images/instagram-icon.svg" alt="Instagram" class="social-icon">
-                            @alocubano.boulderfest
-                        </a>
-                    </div>
-                    
-                    <!-- WhatsApp Community -->
-                    <div class="contact-item">
-                        <h2>Join Our Community</h2>
-                        <p>Connect with fellow dancers, get real-time updates, and be part of our vibrant community:</p>
-                        <a href="#" class="contact-link whatsapp-link" id="whatsapp-link">
-                            <img src="/images/whatsapp-icon.svg" alt="WhatsApp" class="social-icon">
-                            WhatsApp Community
-                        </a>
-                        <p class="whatsapp-note">Link available closer to festival dates</p>
-                    </div>
-                    
-                    <!-- Feedback -->
-                    <div class="contact-item">
-                        <h2>Share Your Feedback</h2>
-                        <p>Help us improve! Share your thoughts, suggestions, or experiences with past festivals:</p>
-                        <a href="#" class="contact-link feedback-link" id="feedback-link">
-                            <span class="contact-icon">💭</span>
-                            Feedback Form
-                        </a>
-                        <p class="feedback-note">Form coming soon - For now, email us your thoughts!</p>
-                    </div>
-                    
+        <!-- Hero Splash Image -->
+        <section class="gallery-hero-splash">
+            <div class="hero-image-container">
+                <img id="hero-splash-image" src="" alt="Connect with A Lo Cubano Boulder Fest team and community through various contact channels" class="hero-splash-img" style="object-position: top center !important;">
+            </div>
+        </section>
+
+        <!-- Contact Content -->
+        <section class="section-typographic">
+            <div class="container">
+                <!-- Contact Header -->
+                <div class="contact-header" style="text-align: center; margin-bottom: var(--space-4xl);">
+                    <h1 class="text-display text-mask">GET IN TOUCH</h1>
+                    <p class="font-serif" style="font-size: var(--font-size-lg); margin-top: var(--space-lg);">We'd love to hear from you</p>
                 </div>
-            </section>
-            
-            <!-- Festival Location Info -->
-            <section class="location-info">
-                <h2>Festival Location</h2>
-                <div class="location-details">
-                    <h3>Avalon Ballroom</h3>
-                    <p class="address">6185 Arapahoe Rd<br>Boulder, CO 80303</p>
-                    <p class="location-note">More venue details and directions will be provided closer to the festival dates.</p>
-                </div>
-            </section>
-            
-            <!-- Response Time -->
-            <section class="response-info">
-                <h2>Response Time</h2>
-                <p>We typically respond to emails within 2-3 business days. For urgent inquiries during festival week, please allow extra time as our team focuses on event coordination.</p>
-                <p>Thank you for your patience and for being part of the A Lo Cubano Boulder Fest community!</p>
-            </section>
-            
-        </div>
+                
+                <!-- Contact Information Section -->
+                <section class="contact-info">
+                    <div class="contact-grid">
+                        
+                        <!-- Email Contact -->
+                        <div class="contact-item" style="display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <h2>Email Us</h2>
+                                <p>For general inquiries, partnerships, artist applications, or any questions about the festival:</p>
+                            </div>
+                            <a href="mailto:alocubanoboulderfest@gmail.com" class="contact-link email-link" style="margin-top: auto;">
+                                <span class="contact-icon">✉</span>
+                                alocubanoboulderfest@
+                            </a>
+                        </div>
+                        
+                        <!-- Social Media -->
+                        <div class="contact-item" style="display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <h2>Follow Us</h2>
+                                <p>Stay connected with the latest festival updates, behind-the-scenes content, and community highlights:</p>
+                            </div>
+                            <a href="https://www.instagram.com/alocubano.boulderfest/" target="_blank" rel="noopener noreferrer" class="contact-link social-link" style="margin-top: auto;">
+                                <img src="/images/instagram-icon.svg" alt="Instagram" class="social-icon">
+                                @alocubano.boulderfest
+                            </a>
+                        </div>
+                        
+                        <!-- WhatsApp Community -->
+                        <div class="contact-item" style="display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <h2>Join Our Community</h2>
+                                <p>Connect with fellow dancers, get real-time updates, and be part of our vibrant community:</p>
+                            </div>
+                            <a href="https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH" target="_blank" rel="noopener noreferrer" class="contact-link whatsapp-link" style="margin-top: auto;">
+                                <img src="/images/whatsapp-icon.svg" alt="WhatsApp" class="social-icon">
+                                WhatsApp Community
+                            </a>
+                        </div>
+                        
+                        <!-- Feedback -->
+                        <div class="contact-item" style="display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <h2>Share Your Feedback</h2>
+                                <p>Help us improve! Share your thoughts, suggestions, or experiences with past festivals:</p>
+                            </div>
+                            <a href="mailto:alocubanoboulderfest@gmail.com?subject=Festival Feedback" class="contact-link feedback-link" style="margin-top: auto;">
+                                <span class="contact-icon">💭</span>
+                                Send Feedback
+                            </a>
+                        </div>
+                        
+                    </div>
+                </section>
+                
+            </div>
+        </section>
     </main>
 
-    <!-- Footer -->
-    <footer class="site-footer">
-        <div class="footer-container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3>A Lo Cubano Boulder Fest</h3>
-                    <p>Bringing authentic Cuban culture to Boulder through music, dance, and community.</p>
-                </div>
-                
-                <div class="footer-section">
-                    <h3>Connect</h3>
-                    <p>Email: <a href="mailto:alocubanoboulderfest@gmail.com">alocubanoboulderfest@gmail.com</a></p>
-                    <p>Instagram: <a href="https://www.instagram.com/alocubano.boulderfest/" target="_blank" rel="noopener noreferrer">@alocubano.boulderfest</a></p>
-                </div>
-                
-                <div class="footer-section">
-                    <h3>Festival 2026</h3>
-                    <p>May 15-17, 2026</p>
-                    <p>Avalon Ballroom, Boulder, CO</p>
-                </div>
-            </div>
-            
-            <div class="footer-bottom">
-                <p>&copy; 2026 A Lo Cubano Boulder Fest. All rights reserved.</p>
+    <footer class="footer-typographic">
+        <div class="container">
+            <p class="footer-credits">MAY 15-17, 2026 • <a href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry" style="color: inherit; text-decoration: underline;">alocubanoboulderfest@gmail.com</a></p>
+            <div class="footer-social">
+                <a href="https://instagram.com/alocubanoboulder" target="_blank" rel="noopener noreferrer" class="social-link-type" aria-label="Follow us on Instagram">
+                    <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                </a>
+                <a href="https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH" target="_blank" rel="noopener noreferrer" class="social-link-type" aria-label="Join us on WhatsApp">
+                    <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                    </svg>
+                </a>
             </div>
         </div>
     </footer>
-
-    <!-- JavaScript -->
-    <script src="/js/main.js"></script>
+    
     <script src="/js/navigation.js"></script>
-    <script>
-        // Contact page specific JavaScript
-        document.addEventListener('DOMContentLoaded', function() {
-            // WhatsApp link placeholder
-            const whatsappLink = document.getElementById('whatsapp-link');
-            if (whatsappLink) {
-                whatsappLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    alert('WhatsApp community link will be available closer to festival dates. Stay tuned!');
-                });
-            }
-            
-            // Feedback form placeholder
-            const feedbackLink = document.getElementById('feedback-link');
-            if (feedbackLink) {
-                feedbackLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    alert('Feedback form coming soon! For now, please email us your thoughts at alocubanoboulderfest@gmail.com');
-                });
-            }
-        });
-    </script>
+    <script src="/js/components/lightbox.js"></script>
+    <script src="/js/components/lazy-loading.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/typography.js"></script>
+    <script src="/js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING"></script>
+    <script src="/js/gallery-hero.js"></script>
 </body>
 </html>
