@@ -20,11 +20,27 @@ class TicketSelection {
       btn.addEventListener('click', (e) => this.handleQuantityChange(e));
     });
 
-    // Ticket card click events
+    // Ticket card click events and keyboard accessibility
     document.querySelectorAll('.ticket-card').forEach(card => {
+      // Make cards keyboard accessible
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-pressed', 'false');
+      
+      // Click events
       card.addEventListener('click', (e) => {
         if (!e.target.classList.contains('qty-btn')) {
           this.handleTicketCardClick(e);
+        }
+      });
+      
+      // Keyboard events for accessibility
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          if (!e.target.classList.contains('qty-btn')) {
+            this.handleTicketCardClick(e);
+          }
         }
       });
     });
@@ -59,12 +75,14 @@ class TicketSelection {
       this.selectedTickets.set(ticketType, {
         quantity: currentQuantity,
         price: price,
-        name: card.querySelector('h3').textContent
+        name: card.querySelector('h4').textContent
       });
       card.classList.add('selected');
+      card.setAttribute('aria-pressed', 'true');
     } else {
       this.selectedTickets.delete(ticketType);
       card.classList.remove('selected');
+      card.setAttribute('aria-pressed', 'false');
     }
     
     this.updateDisplay();
@@ -83,25 +101,37 @@ class TicketSelection {
   }
 
   updateDisplay() {
-    const totalQuantityEl = document.getElementById('total-quantity');
-    const totalAmountEl = document.getElementById('total-amount');
+    const orderItemsEl = document.getElementById('order-items');
     const finalTotalEl = document.getElementById('final-total');
     const checkoutBtn = document.getElementById('checkout-button');
     
-    let totalQuantity = 0;
     let totalAmount = 0;
     
-    this.selectedTickets.forEach(ticket => {
-      totalQuantity += ticket.quantity;
-      totalAmount += ticket.quantity * ticket.price;
+    // Clear existing order items
+    if (orderItemsEl) {
+      orderItemsEl.innerHTML = '';
+    }
+    
+    // Add each selected ticket to order summary
+    this.selectedTickets.forEach((ticket, ticketType) => {
+      const itemAmount = ticket.quantity * ticket.price;
+      totalAmount += itemAmount;
+      
+      if (orderItemsEl) {
+        const orderItem = document.createElement('div');
+        orderItem.className = 'order-item';
+        orderItem.innerHTML = `
+          <span>${ticket.name} × ${ticket.quantity}</span>
+          <span>$${itemAmount}</span>
+        `;
+        orderItemsEl.appendChild(orderItem);
+      }
     });
     
-    if (totalQuantityEl) totalQuantityEl.textContent = totalQuantity;
-    if (totalAmountEl) totalAmountEl.textContent = totalAmount;
     if (finalTotalEl) finalTotalEl.textContent = totalAmount;
     
     if (checkoutBtn) {
-      checkoutBtn.disabled = totalQuantity === 0;
+      checkoutBtn.disabled = totalAmount === 0;
     }
   }
 
