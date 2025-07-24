@@ -115,14 +115,23 @@ describe('UI/UX Integration Tests', () => {
             expect(aboutHTML).toMatch(/function handleVolunteerForm\(event\)/);
         });
 
-        test('tickets.html should not have mailto form action', () => {
+        test('tickets.html should have secure interactive ticket selection', () => {
             const ticketsHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'tickets.html'), 'utf8');
             
             // Should not have insecure mailto action
             expect(ticketsHTML).not.toMatch(/<form[^>]*action\s*=\s*["']mailto:/);
             
-            // Should have secure JavaScript handler
-            expect(ticketsHTML).toMatch(/onsubmit\s*=\s*["']handleTicketForm\(event\)["']/);
+            // Should have interactive ticket selection system
+            expect(ticketsHTML).toMatch(/class="ticket-selection"/);
+            expect(ticketsHTML).toMatch(/class="ticket-card"/);
+            expect(ticketsHTML).toMatch(/class="quantity-selector"/);
+            expect(ticketsHTML).toMatch(/data-ticket-type=/);
+            expect(ticketsHTML).toMatch(/data-price=/);
+            
+            // Should have TicketSelection JavaScript class
+            expect(ticketsHTML).toMatch(/src="\/js\/ticket-selection\.js"/);
+            
+            // Should have fallback form handler for legacy support
             expect(ticketsHTML).toMatch(/function handleTicketForm\(event\)/);
         });
 
