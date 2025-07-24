@@ -74,6 +74,7 @@
                         <li><a href="/gallery" class="nav-link" data-text="Gallery">Gallery</a></li>
                         <li><a href="/tickets" class="nav-link is-active" data-text="Tickets">Tickets</a></li>
                         <li><a href="/donations" class="nav-link" data-text="Donate">Donate</a></li>
+                        <li><a href="/contact" class="nav-link" data-text="Contact">Contact</a></li>
                     </ul>
                 </nav>
             </div>
@@ -89,225 +90,62 @@
             </div>
         </section>
 
-        <!-- Pricing Section -->
+        <!-- Tickets Header -->
         <section class="section-typographic">
             <div class="container">
-                <!-- Full Pass Section -->
-                <div class="ticket-section" style="margin-bottom: var(--space-4xl);">
-                    <h2 class="text-display " style="margin-bottom: var(--space-xl);">FULL FESTIVAL PASS</h2>
-                    <p class="font-serif" style="font-size: var(--font-size-lg); margin-bottom: var(--space-2xl);">
-                        Includes 10 workshops, 2 socials and performances
-                    </p>
-                    
-                    <div class="pricing-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-xl); max-width: 600px;">
-                        <div class="price-item" style="padding: var(--space-xl); border: 2px solid var(--color-black);">
-                            <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-sm);">EARLY BIRD</h3>
-                            <p class="text-display " style="font-size: var(--font-size-4xl); margin-bottom: var(--space-sm);">$100</p>
-                            <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-600);">Before April 1st</p>
-                            <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-600);">$10 per workshop</p>
-                        </div>
-                        
-                        <div class="price-item" style="padding: var(--space-xl); border: 2px solid var(--color-black);">
-                            <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-sm);">AT DOOR</h3>
-                            <p class="text-display" style="font-size: var(--font-size-4xl); margin-bottom: var(--space-sm);">$125</p>
-                            <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-600);">Day of event</p>
-                            <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-600);">$12.50 per workshop</p>
-                        </div>
-                    </div>
+                <div class="tickets-header">
+                    <h1>A Lo Cubano Boulder Fest 2026 Tickets</h1>
+                    <p class="tickets-subtitle">Early bird pricing available now!</p>
                 </div>
 
-                <!-- Day Passes -->
-                <div class="ticket-section" style="margin-bottom: var(--space-4xl);">
-                    <h2 class="text-display" style="margin-bottom: var(--space-xl);">DAY PASSES</h2>
+                <!-- Ticket Selection Interface -->
+                <section class="ticket-selection">
+                    <h2>Select Your Tickets</h2>
                     
-                    <div class="day-passes" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-xl); max-width: 800px;">
-                        <div class="price-item" style="padding: var(--space-xl); border: 1px solid var(--color-gray-300);">
-                            <h3 class="font-mono" style="font-size: var(--font-size-base); margin-bottom: var(--space-sm);">FRIDAY</h3>
-                            <p class="text-display" style="font-size: var(--font-size-3xl);">$50</p>
-                        </div>
-                        
-                        <div class="price-item" style="padding: var(--space-xl); border: 1px solid var(--color-gray-300);">
-                            <h3 class="font-mono" style="font-size: var(--font-size-base); margin-bottom: var(--space-sm);">SATURDAY</h3>
-                            <p class="text-display " style="font-size: var(--font-size-3xl);">$85</p>
-                        </div>
-                        
-                        <div class="price-item" style="padding: var(--space-xl); border: 1px solid var(--color-gray-300);">
-                            <h3 class="font-mono" style="font-size: var(--font-size-base); margin-bottom: var(--space-sm);">SUNDAY</h3>
-                            <p class="text-display" style="font-size: var(--font-size-3xl);">$50</p>
+                    <div class="ticket-options">
+                        <div class="ticket-card" data-ticket-type="early-bird-full" data-price="100">
+                            <div class="ticket-design">
+                                <div class="ticket-stub">
+                                    <div class="stub-text">ADMIT ONE</div>
+                                </div>
+                                <div class="ticket-main">
+                                    <h3>Early Bird Full Pass</h3>
+                                    <p class="ticket-description">Complete festival access - All workshops, socials, and performances</p>
+                                    <div class="ticket-price">$100</div>
+                                    <div class="ticket-savings">Save $25!</div>
+                                </div>
+                            </div>
+                            <div class="quantity-selector">
+                                <button class="qty-btn minus" data-action="decrease" type="button">-</button>
+                                <span class="quantity">0</span>
+                                <button class="qty-btn plus" data-action="increase" type="button">+</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Individual Items -->
-                <div class="ticket-section" style="margin-bottom: var(--space-4xl);">
-                    <h2 class="text-display" style="margin-bottom: var(--space-xl);">INDIVIDUAL TICKETS</h2>
                     
-                    <div class="individual-items" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-xl); max-width: 500px;">
-                        <div class="price-item" style="padding: var(--space-lg); border-bottom: 1px solid var(--color-gray-200);">
-                            <h3 class="font-mono" style="font-size: var(--font-size-base);">SINGLE WORKSHOP</h3>
-                            <p class="text-display" style="font-size: var(--font-size-2xl); margin-top: var(--space-sm);">$30</p>
+                    <div class="pricing-summary">
+                        <div class="total-section">
+                            <h3>Order Summary</h3>
+                            <div class="total-line">
+                                <span>Early Bird Full Pass × <span id="total-quantity">0</span></span>
+                                <span>$<span id="total-amount">0</span></span>
+                            </div>
+                            <div class="total-final">
+                                <strong>Total: $<span id="final-total">0</span></strong>
+                            </div>
                         </div>
                         
-                        <div class="price-item" style="padding: var(--space-lg); border-bottom: 1px solid var(--color-gray-200);">
-                            <h3 class="font-mono" style="font-size: var(--font-size-base);">SINGLE SOCIAL</h3>
-                            <p class="text-display" style="font-size: var(--font-size-2xl); margin-top: var(--space-sm);">$20</p>
-                        </div>
+                        <button class="checkout-btn" id="checkout-button" disabled type="button">
+                            Proceed to Checkout
+                        </button>
                     </div>
-                </div>
-
+                </section>
+                
                 <!-- Policy -->
                 <div class="policy-section" style="margin-bottom: var(--space-4xl); text-align: center;">
                     <p class="font-display " style="font-size: var(--font-size-xl);">NO REFUNDS</p>
                 </div>
-
-                <!-- Purchase Form -->
-                <div class="purchase-section" style="max-width: 800px; margin: 0 auto var(--space-4xl); padding: var(--space-2xl); background: var(--color-gray-50);">
-                    <h2 class="text-display" style="text-align: center; margin-bottom: var(--space-2xl);">SELECT YOUR TICKETS</h2>
-                    
-                    <form id="ticket-form" onsubmit="handleTicketForm(event)" method="post">
-                        <!-- Full Pass Options -->
-                        <div class="ticket-group" style="margin-bottom: var(--space-2xl);">
-                            <h3 class="font-mono" style="margin-bottom: var(--space-lg);">FULL FESTIVAL PASS</h3>
-                            <label style="display: block; margin-bottom: var(--space-md); cursor: pointer;">
-                                <input type="checkbox" name="full-pass" value="100" data-price="100" style="margin-right: var(--space-sm);">
-                                <span>Early Bird (before April 1st) - $100</span>
-                            </label>
-                            <label style="display: block; margin-bottom: var(--space-md); cursor: pointer;">
-                                <input type="checkbox" name="full-pass" value="125" data-price="125" style="margin-right: var(--space-sm);">
-                                <span>At Door - $125</span>
-                            </label>
-                        </div>
-                        
-                        <!-- Day Passes -->
-                        <div class="ticket-group" style="margin-bottom: var(--space-2xl);">
-                            <h3 class="font-mono" style="margin-bottom: var(--space-lg);">DAY PASSES</h3>
-                            <label style="display: block; margin-bottom: var(--space-md); cursor: pointer;">
-                                <input type="checkbox" name="day-pass" value="friday" data-price="50" style="margin-right: var(--space-sm);">
-                                <span>Friday - $50</span>
-                            </label>
-                            <label style="display: block; margin-bottom: var(--space-md); cursor: pointer;">
-                                <input type="checkbox" name="day-pass" value="saturday" data-price="85" style="margin-right: var(--space-sm);">
-                                <span>Saturday - $85</span>
-                            </label>
-                            <label style="display: block; margin-bottom: var(--space-md); cursor: pointer;">
-                                <input type="checkbox" name="day-pass" value="sunday" data-price="50" style="margin-right: var(--space-sm);">
-                                <span>Sunday - $50</span>
-                            </label>
-                        </div>
-                        
-                        <!-- Individual Items -->
-                        <div class="ticket-group" style="margin-bottom: var(--space-2xl);">
-                            <h3 class="font-mono" style="margin-bottom: var(--space-lg);">INDIVIDUAL ITEMS</h3>
-                            <div style="display: grid; grid-template-columns: 1fr auto; gap: var(--space-md); align-items: center; margin-bottom: var(--space-md);">
-                                <label>Single Workshop ($30 each)</label>
-                                <input type="number" name="workshops" min="0" value="0" data-price="30" style="width: 60px; padding: var(--space-sm); text-align: center;">
-                            </div>
-                            <div style="display: grid; grid-template-columns: 1fr auto; gap: var(--space-md); align-items: center;">
-                                <label>Single Social ($20 each)</label>
-                                <input type="number" name="socials" min="0" value="0" data-price="20" style="width: 60px; padding: var(--space-sm); text-align: center;">
-                            </div>
-                        </div>
-                        
-                        <!-- Total -->
-                        <div style="border-top: 2px solid var(--color-black); padding-top: var(--space-lg); margin-bottom: var(--space-2xl);">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span class="font-display" style="font-size: var(--font-size-2xl);">TOTAL:</span>
-                                <span class="font-display" style="font-size: var(--font-size-3xl);" id="total-price">$0</span>
-                            </div>
-                        </div>
-                        
-                        <!-- Contact Info -->
-                        <div class="ticket-group" style="margin-bottom: var(--space-2xl);">
-                            <h3 class="font-mono" style="margin-bottom: var(--space-lg);">YOUR INFORMATION</h3>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-lg);">
-                                <input type="text" name="first-name" placeholder="First Name" required style="padding: var(--space-md);">
-                                <input type="text" name="last-name" placeholder="Last Name" required style="padding: var(--space-md);">
-                            </div>
-                            <input type="email" name="email" placeholder="Email" required style="width: 100%; padding: var(--space-md); margin-bottom: var(--space-lg);">
-                            <input type="tel" name="phone" placeholder="Phone (optional)" style="width: 100%; padding: var(--space-md);">
-                        </div>
-                        
-                        <!-- Submit Button -->
-                        <div style="text-align: center;">
-                            <button type="submit" class="form-button-type" style="padding: var(--space-lg) var(--space-3xl);">
-                                COMPLETE PURCHASE
-                            </button>
-                            <p class="font-serif" style="margin-top: var(--space-lg); color: var(--color-gray-600); font-size: var(--font-size-sm);">
-                                You will be redirected to complete your payment
-                            </p>
-                        </div>
-                    </form>
-                </div>
                 
-                <script>
-                    // Calculate total price
-                    function updateTotal() {
-                        let total = 0;
-                        
-                        // Full passes
-                        document.querySelectorAll('input[name="full-pass"]:checked').forEach(input => {
-                            total += parseInt(input.dataset.price);
-                        });
-                        
-                        // Day passes
-                        document.querySelectorAll('input[name="day-pass"]:checked').forEach(input => {
-                            total += parseInt(input.dataset.price);
-                        });
-                        
-                        // Workshops
-                        const workshops = document.querySelector('input[name="workshops"]');
-                        total += parseInt(workshops.value) * parseInt(workshops.dataset.price);
-                        
-                        // Socials
-                        const socials = document.querySelector('input[name="socials"]');
-                        total += parseInt(socials.value) * parseInt(socials.dataset.price);
-                        
-                        document.getElementById('total-price').textContent = '$' + total;
-                    }
-                    
-                    // Add event listeners
-                    document.querySelectorAll('#ticket-form input').forEach(input => {
-                        input.addEventListener('change', updateTotal);
-                        input.addEventListener('input', updateTotal);
-                    });
-                    
-                    // Handle full pass and day pass logic
-                    document.querySelectorAll('input[name="full-pass"]').forEach(checkbox => {
-                        checkbox.addEventListener('change', function() {
-                            if (this.checked) {
-                                // Uncheck the other full pass option
-                                document.querySelectorAll('input[name="full-pass"]').forEach(cb => {
-                                    if (cb !== this) cb.checked = false;
-                                });
-                                
-                                // Disable day passes when full pass is selected
-                                document.querySelectorAll('input[name="day-pass"]').forEach(dayPass => {
-                                    dayPass.checked = false;
-                                    dayPass.disabled = true;
-                                });
-                            } else {
-                                // Enable day passes when full pass is unselected
-                                document.querySelectorAll('input[name="day-pass"]').forEach(dayPass => {
-                                    dayPass.disabled = false;
-                                });
-                            }
-                            updateTotal();
-                        });
-                    });
-                    
-                    // Handle day pass selection
-                    document.querySelectorAll('input[name="day-pass"]').forEach(checkbox => {
-                        checkbox.addEventListener('change', function() {
-                            if (this.checked) {
-                                // Uncheck any full pass when selecting day passes
-                                document.querySelectorAll('input[name="full-pass"]').forEach(fullPass => {
-                                    fullPass.checked = false;
-                                });
-                            }
-                            updateTotal();
-                        });
-                    });
-                </script>
             </div>
         </section>
     </main>
@@ -338,6 +176,7 @@
     <script src="/js/typography.js"></script>
     <script src="/js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING"></script>
     <script src="/js/gallery-hero.js"></script>
+    <script src="/js/ticket-selection.js"></script>
     <script>
         function handleTicketForm(event) {
             event.preventDefault();
