@@ -157,7 +157,7 @@
 
   /* Section spacing mobile optimization */
   .section-typographic {
-    padding: 0.75rem 0;
+    padding: var(--space-md) 0;
   }
 
   .hero-typographic {
