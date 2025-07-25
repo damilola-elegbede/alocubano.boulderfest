@@ -10,22 +10,34 @@
  * Critical Resource Prefetcher Class
  * 
  * Encapsulates prefetch configuration and methods for preloading critical resources.
- * Supports both hero images and gallery data prefetching with intelligent URL validation.
+ * Supports both static hero images and gallery data prefetching with intelligent URL validation.
  */
 class CriticalResourcePrefetcher {
   /**
    * Default configuration for prefetch operations
    */
   static DEFAULT_CONFIG = {
-    heroImageApi: '/api/hero-image',
+    heroImageBase: '/images/hero',
     galleryDataApi: '/api/gallery',
-    defaultHeroParams: {
-      width: 1200,
-      format: 'webp'
-    },
     defaultGalleryParams: {
       category: 'workshops'
     }
+  };
+
+  /**
+   * Page-specific hero image mapping
+   */
+  static HERO_IMAGES = {
+    'home': '/images/hero/home.jpg',
+    'about': '/images/hero/about.jpg',
+    'artists': '/images/hero/artists.jpg',
+    'schedule': '/images/hero/schedule.jpg',
+    'gallery': '/images/hero/gallery.jpg',
+    'gallery-2025': '/images/hero/gallery-2025.jpg',
+    'tickets': '/images/hero/tickets.jpg',
+    'donations': '/images/hero/donations.jpg',
+    'contact': '/images/hero/contact.jpg',
+    'default': '/images/hero/hero-default.jpg'
   };
 
   /**
@@ -60,6 +72,15 @@ class CriticalResourcePrefetcher {
   }
 
   /**
+   * Get static hero image path for page
+   * @param {string} pageId - Page identifier
+   * @returns {string} - Static hero image path
+   */
+  getHeroImagePath(pageId) {
+    return CriticalResourcePrefetcher.HERO_IMAGES[pageId] || CriticalResourcePrefetcher.HERO_IMAGES['default'];
+  }
+
+  /**
    * Extract year from gallery page ID using regex
    * @param {string} pageId - Page identifier
    * @returns {string|null} - Extracted year or null if not found
@@ -77,7 +98,7 @@ class CriticalResourcePrefetcher {
    * @param {string} [options.fetchPriority] - Fetch priority hint
    * @param {boolean} [options.crossOrigin] - Enable CORS
    */
-  createPreloadLink({ href, as, fetchPriority, crossOrigin = true }) {
+  createPreloadLink({ href, as, fetchPriority, crossOrigin = false }) {
     const preloadElement = document.createElement('link');
     preloadElement.rel = 'preload';
     preloadElement.as = as;
@@ -96,17 +117,13 @@ class CriticalResourcePrefetcher {
   }
 
   /**
-   * Preload hero image for current page
+   * Preload static hero image for current page
    */
   preloadHeroImage() {
     const pageId = this.getCurrentPageId();
     
-    // Build hero image URL with configurable endpoint
-    const params = new URLSearchParams({
-      w: this.config.defaultHeroParams.width,
-      format: this.config.defaultHeroParams.format
-    });
-    const heroUrl = `${this.config.heroImageApi}/${pageId}?${params}`;
+    // Get static hero image path
+    const heroUrl = this.getHeroImagePath(pageId);
     
     // Validate URL before creating preload
     if (!this.isValidUrl(heroUrl)) {
@@ -118,10 +135,10 @@ class CriticalResourcePrefetcher {
       href: heroUrl,
       as: 'image',
       fetchPriority: 'high',
-      crossOrigin: true
+      crossOrigin: false // Static images don't need CORS
     });
     
-    console.log(`[Prefetch] Hero image preloaded for page: ${pageId}`);
+    console.log(`[Prefetch] Static hero image preloaded for page: ${pageId} (${heroUrl})`);
     return true;
   }
 
@@ -163,7 +180,7 @@ class CriticalResourcePrefetcher {
     this.createPreloadLink({
       href: galleryUrl,
       as: 'fetch',
-      crossOrigin: true
+      crossOrigin: true // API calls need CORS
     });
     
     console.log(`[Prefetch] Gallery data preloaded for year: ${year}`);

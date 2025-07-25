@@ -13,20 +13,19 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/images/favicons/favicon-192x192.png">
     <link rel="apple-touch-icon" sizes="192x192" href="/images/favicons/favicon-192x192.png">
     
-    <!-- Critical resource preloading -->
+        <!-- Critical resource preloading -->
     <script>
-      // Inline critical path optimization
+      // Inline critical path optimization - Static hero images
       (function() {
-        // Preload hero image for current page
-        const pageId = window.location.pathname.split('/').pop() || 'home';
+        // Preload static hero image for current page
         const heroPreload = document.createElement('link');
         heroPreload.rel = 'preload';
         heroPreload.as = 'image';
-        heroPreload.href = `/api/hero-image/${pageId}?w=1200&format=webp`;
-        heroPreload.crossOrigin = 'anonymous';
+        heroPreload.href = '/images/hero/about.jpg';
         document.head.appendChild(heroPreload);
         
         // Preload gallery data for gallery pages
+        const pageId = window.location.pathname.split('/').pop() || 'home';
         if (pageId.includes('gallery')) {
           const year = pageId.includes('2025') ? '2025' : new Date().getFullYear();
           const galleryDataPreload = document.createElement('link');
@@ -66,7 +65,7 @@
                     <button class="menu-toggle" aria-label="Toggle menu">
                         <span></span>
                     </button>
-                    <ul class="nav-list">
+                                        <ul class="nav-list">
                         <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
                         <li><a href="/about" class="nav-link is-active" data-text="About">About</a></li>
                         <li><a href="/artists" class="nav-link" data-text="Artists">Artists</a></li>
@@ -423,9 +422,7 @@
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
     <script src="/js/main.js"></script>
-    <script src="/js/typography.js"></script>
-    <script src="/js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING"></script>
-    <script src="/js/gallery-hero.js"></script>
+    <script src="/js/typography.js"></script><script src="/js/gallery-hero.js"></script>
     <script>
         function handleVolunteerForm(event) {
             event.preventDefault();
