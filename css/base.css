@@ -157,23 +157,10 @@ button {
   width: 100%;
   max-width: 1440px;
   margin: 0 auto;
-  padding: 0 var(--space-xl);
+  padding: 0 var(--space-md);
 }
 
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
-
-/* Responsive Breakpoints */
-@media (min-width: 640px) {
+@media (min-width: 480px) {
   .container {
     padding: 0 var(--space-lg);
   }
@@ -189,6 +176,18 @@ button {
   .container {
     padding: 0 var(--space-2xl);
   }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 /* Loading Animation */

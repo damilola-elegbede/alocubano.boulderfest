@@ -779,6 +779,13 @@ body {
   }
 }
 
+/* Tablet breakpoint */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .text-composition {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* Mobile Responsive Typography */
 @media (max-width: 768px) {
   .nav-menu-type {
@@ -787,10 +794,6 @@ body {
   
   .nav-menu-type a {
     font-size: var(--font-size-xs);
-  }
-  
-  .hero-title-massive {
-    font-size: clamp(var(--font-size-3xl), 12vw, var(--font-size-6xl));
   }
   
   .text-composition {

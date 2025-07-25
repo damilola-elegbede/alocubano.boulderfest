@@ -8,26 +8,7 @@
    DESKTOP PROTECTION - Ensure desktop navigation always works
    ========================================================================== */
 
-@media (min-width: 769px) {
-  .menu-toggle {
-    display: none !important;
-  }
-  
-  .nav-list {
-    display: flex !important;
-    position: static !important;
-    width: auto !important;
-    height: auto !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    padding: 0 !important;
-    flex-direction: row !important;
-    gap: var(--space-lg) !important;
-    z-index: auto !important;
-    transform: none !important;
-  }
-}
+/* Desktop navigation is handled by navigation.css - removed conflicting overrides */
 
 /* ==========================================================================
    MOBILE-ONLY NAVIGATION ENHANCEMENTS
@@ -65,39 +46,7 @@
     border-radius: 1px;
   }
 
-  /* Enhanced mobile menu panel */
-  .nav-list {
-    display: none; /* Hidden by default on mobile */
-  }
-
-  .nav-list.is-open {
-    display: flex;
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 100%;
-    max-width: 300px;
-    height: 100vh;
-    background: var(--color-white);
-    box-shadow: -2px 0 20px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(20px);
-    padding: var(--space-4xl) var(--space-xl) var(--space-xl);
-    flex-direction: column;
-    gap: var(--space-lg);
-    z-index: 1000;
-    transform: translateX(0);
-    transition: transform 0.3s ease;
-  }
-
-  .nav-list.is-open .nav-link {
-    font-size: var(--font-size-lg);
-    font-weight: 500;
-    padding: var(--space-md) 0;
-    touch-action: manipulation;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-  }
+  /* Mobile navigation is now handled by navigation.css */
 }
 
 /* ==========================================================================
@@ -108,7 +57,7 @@
   /* Hero title mobile optimization */
   .hero-title-massive {
     font-size: clamp(var(--font-size-4xl), 12vw, var(--font-size-6xl)) !important;
-    line-height: 0.9 !important;
+    line-height: 1.1 !important;
     letter-spacing: -0.02em !important;
   }
 
@@ -149,11 +98,6 @@
    ========================================================================== */
 
 @media (max-width: 768px) {
-  /* Container mobile spacing */
-  .container {
-    padding: 0 var(--space-lg);
-    max-width: 100%;
-  }
 
   /* Section spacing mobile optimization */
   .section-typographic {
@@ -166,20 +110,17 @@
   }
 
   /* Grid layouts mobile stacking */
-  .text-composition {
-    grid-template-columns: 1fr !important;
-    gap: var(--space-lg) !important;
+  .text-composition,
+  .gallery-typographic {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
   }
 
-  .gallery-typographic {
-    grid-template-columns: 1fr !important;
-    gap: var(--space-lg) !important;
-  }
 
   /* Pricing tables mobile optimization */
   .pricing-grid {
-    grid-template-columns: 1fr !important;
-    gap: var(--space-lg) !important;
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
   }
 
   .day-passes {
@@ -367,3 +308,4 @@
   }
   */
 }
+

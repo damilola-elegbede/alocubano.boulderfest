@@ -129,14 +129,17 @@
   align-items: baseline;
 }
 
-.typographic .nav-list,
-.nav-list {
-  display: flex;
-  gap: var(--space-2xl);
-  align-items: baseline;
-  list-style: none;
-  margin: 0;
-  padding: 0;
+/* Desktop navigation */
+@media (min-width: 769px) {
+  .typographic .nav-list,
+  .nav-list {
+    display: flex;
+    gap: var(--space-2xl);
+    align-items: baseline;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 /* Navigation Links - Typographic Style (Primary) */
@@ -219,35 +222,60 @@
   color: var(--color-red);
 }
 
-/* Mobile Menu - Typographic Style */
+/* Mobile Menu - Typographic Style (Updated to use hamburger icon) */
 .typographic .menu-toggle {
   display: none;
   background: transparent;
   border: none;
   cursor: pointer;
-  font-family: var(--font-display);
-  font-size: var(--font-size-xl);
-  letter-spacing: var(--letter-spacing-wide);
-  text-transform: uppercase;
-  color: var(--color-black);
+  width: 40px;
+  height: 40px;
   position: relative;
   transition: all var(--transition-base);
-  z-index: var(--z-sticky);
-}
-
-.typographic .menu-toggle::before {
-  content: 'MENU';
-  transition: all var(--transition-base);
-}
-
-.typographic .menu-toggle.is-active::before {
-  content: 'CLOSE';
-  color: var(--color-red);
+  z-index: 1001; /* Higher than mobile menu (1000) */
+  padding: 0;
 }
 
 .typographic .menu-toggle:hover {
-  color: var(--color-red);
   transform: scale(1.1);
+}
+
+.typographic .menu-icon {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  gap: 4px;
+}
+
+.typographic .menu-icon span {
+  display: block;
+  width: 28px;
+  height: 3px;
+  background-color: #000000;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border-radius: 2px;
+}
+
+.typographic .menu-toggle:hover .menu-icon span {
+  background-color: #000000;
+}
+
+.typographic .menu-toggle.is-active .menu-icon span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+  background-color: #000000;
+}
+
+.typographic .menu-toggle.is-active .menu-icon span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.typographic .menu-toggle.is-active .menu-icon span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+  background-color: #000000;
 }
 
 /* Mobile Menu - Component Style */
@@ -256,7 +284,7 @@
   width: 40px;
   height: 40px;
   position: relative;
-  z-index: var(--z-sticky);
+  z-index: 1001; /* Higher than mobile menu (1000) */
   background: transparent;
   border: none;
   cursor: pointer;
@@ -275,63 +303,108 @@
 
 .menu-icon span {
   display: block;
-  width: 24px;
-  height: 2px;
-  background-color: var(--color-black);
-  transition: all var(--transition-base);
+  width: 28px;
+  height: 3px;
+  background-color: #000000;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border-radius: 2px;
+}
+
+.menu-toggle:hover .menu-icon span {
+  background-color: #000000;
 }
 
 .menu-toggle.is-active .menu-icon span:nth-child(1) {
-  transform: translateY(6px) rotate(45deg);
+  transform: translateY(7px) rotate(45deg);
+  background-color: #000000;
 }
 
 .menu-toggle.is-active .menu-icon span:nth-child(2) {
   opacity: 0;
+  transform: scaleX(0);
 }
 
 .menu-toggle.is-active .menu-icon span:nth-child(3) {
-  transform: translateY(-6px) rotate(-45deg);
+  transform: translateY(-7px) rotate(-45deg);
+  background-color: #000000;
 }
 
 /* Mobile Navigation Responsive */
 @media (max-width: 768px) {
   .typographic .menu-toggle,
   .menu-toggle {
-    display: block;
+    display: block !important;
+    position: fixed !important;
+    top: var(--space-lg);
+    right: var(--space-xl);
+    z-index: 1001 !important; /* Always above mobile menu */
   }
   
-  .typographic .nav-list {
-    display: none;
+  /* Mobile navigation - starts off-screen, slides in when opened */
+  .typographic .nav-list,
+  .nav-list {
+    position: fixed !important;
+    top: 0;
+    right: 0;
+    width: 33.33vw;
+    height: 100vh;
+    background: var(--color-white);
+    opacity: 0.85;
+    padding: var(--space-4xl) var(--space-lg) var(--space-xl);
+    flex-direction: column;
+    gap: var(--space-sm);
+    z-index: 1000;
+    /* Start off-screen from right */
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    /* Always display flex, just hidden via transform */
+    display: flex !important;
+  }
+  
+  .typographic .nav-list.is-open,
+  .nav-list.is-open {
+    /* Slide in when opened */
+    transform: translateX(0) !important;
+  }
+
+  /* Mobile menu backdrop */
+  .typographic .nav-list.is-open::before,
+  .typographic .nav-list.is-active::before {
+    content: '';
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: var(--color-white);
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: var(--space-3xl);
-    z-index: 999;
+    background: rgba(0, 0, 0, 0);
+    z-index: -1;
+    pointer-events: none;
   }
   
-  .typographic .nav-list.is-active {
-    display: flex;
-  }
-  
-  .typographic .nav-link {
+  .typographic .nav-list.is-open .nav-link,
+  .nav-list.is-open .nav-link {
     font-family: var(--font-display);
-    font-size: var(--font-size-4xl);
-    letter-spacing: var(--letter-spacing-tight);
+    font-size: var(--font-size-lg);
+    font-weight: 500;
+    letter-spacing: var(--letter-spacing-wide);
     text-transform: uppercase;
     color: var(--color-black);
-    padding: var(--space-md) 0;
-    text-align: center;
+    padding: var(--space-md) var(--space-sm);
+    text-decoration: none;
     position: relative;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+    touch-action: manipulation;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    border-radius: 4px;
     overflow: hidden;
+    white-space: nowrap;
   }
-  
-  .typographic .nav-link::before {
+
+  .typographic .nav-list.is-open .nav-link::before,
+  .nav-list.is-open .nav-link::before {
     content: '';
     position: absolute;
     top: 0;
@@ -339,21 +412,27 @@
     width: 100%;
     height: 100%;
     background: var(--color-red);
-    transition: left 0.3s ease;
+    transition: left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
     z-index: -1;
   }
   
-  .typographic .nav-link:hover {
-    color: var(--color-white);
+  .typographic .nav-list.is-open .nav-link:hover,
+  .nav-list.is-open .nav-link:hover {
+    color: var(--color-white) !important;
+    transform: translateX(8px) !important;
+  }
+
+  .typographic .nav-list.is-open .nav-link:hover::before,
+  .nav-list.is-open .nav-link:hover::before {
+    left: 0 !important;
   }
   
-  .typographic .nav-link:hover::before {
-    left: 0;
-  }
-  
-  .typographic .nav-link.is-active {
+  .typographic .nav-list.is-open .nav-link.is-active,
+  .nav-list.is-open .nav-link.is-active {
     color: var(--color-red);
+    font-weight: 600;
   }
+  
 }
 
 /* Main content spacing */
@@ -382,3 +461,4 @@ main, .main-content {
 .nav-menu-type a:hover::after {
   opacity: 1;
 }
+
