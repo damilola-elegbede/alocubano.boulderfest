@@ -345,9 +345,8 @@
   .nav-list {
     position: fixed !important;
     top: 0;
-    left: 0;
     right: 0;
-    width: 100vw;
+    width: 33.33vw;
     height: 100vh;
     background: var(--color-white);
     opacity: 0.85;
@@ -377,7 +376,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0);
     z-index: -1;
     pointer-events: none;
   }
@@ -398,6 +397,7 @@
     min-height: 44px;
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     border-radius: 4px;
     overflow: hidden;
     white-space: nowrap;
