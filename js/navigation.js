@@ -1,17 +1,23 @@
 // Navigation module for A Lo Cubano Boulder Fest
 
-if (typeof Navigation === 'undefined') {
-    class Navigation {
+class SiteNavigation {
         constructor() {
+            console.log('🏗️ Navigation constructor called');
             this.currentDesign = localStorage.getItem('selectedDesign') || 'design1';
             this.mobileMenuOpen = false;
+            console.log('🔧 Initial mobileMenuOpen state:', this.mobileMenuOpen);
+            console.log('🔧 About to call init()');
             this.init();
         }
 
         init() {
+            console.log('🚀 Navigation init started');
             this.setupEventListeners();
             this.createMobileMenu();
             this.highlightCurrentPage();
+            
+            // Initialize mobile menu properly
+            this.ensureMenuStateSync();
         }
 
         setupEventListeners() {
@@ -41,6 +47,13 @@ if (typeof Navigation === 'undefined') {
                 }
             });
 
+            // Close mobile menu when navigation link is clicked
+            document.addEventListener('click', (e) => {
+                if (e.target.matches('.nav-link') && this.mobileMenuOpen) {
+                    this.closeMobileMenu();
+                }
+            });
+
             // Smooth scroll for anchor links
             document.querySelectorAll('a[href^="#"]').forEach(anchor => {
                 anchor.addEventListener('click', (e) => {
@@ -67,49 +80,46 @@ if (typeof Navigation === 'undefined') {
 
         toggleMobileMenu() {
             this.mobileMenuOpen = !this.mobileMenuOpen;
-            const mobileMenu = document.querySelector('.mobile-menu');
             const menuToggle = document.querySelector('.menu-toggle');
             const navList = document.querySelector('.nav-list');
 
             if (this.mobileMenuOpen) {
-                if (mobileMenu) {
-                    mobileMenu.classList.add('is-open');
-                }
                 if (navList) {
                     navList.classList.add('is-open');
                 }
                 if (menuToggle) {
                     menuToggle.classList.add('is-active');
+                    menuToggle.setAttribute('aria-expanded', 'true');
                 }
                 document.body.style.overflow = 'hidden';
             } else {
-                if (mobileMenu) {
-                    mobileMenu.classList.remove('is-open');
-                }
                 if (navList) {
                     navList.classList.remove('is-open');
                 }
                 if (menuToggle) {
                     menuToggle.classList.remove('is-active');
+                    menuToggle.setAttribute('aria-expanded', 'false');
                 }
                 document.body.style.overflow = '';
             }
+            
+            // Ensure menu state stays synchronized
+            setTimeout(() => {
+                this.ensureMenuStateSync();
+            }, 100);
         }
 
         closeMobileMenu() {
             this.mobileMenuOpen = false;
-            const mobileMenu = document.querySelector('.mobile-menu');
             const menuToggle = document.querySelector('.menu-toggle');
             const navList = document.querySelector('.nav-list');
 
-            if (mobileMenu) {
-                mobileMenu.classList.remove('is-open');
-            }
             if (navList) {
                 navList.classList.remove('is-open');
             }
             if (menuToggle) {
                 menuToggle.classList.remove('is-active');
+                menuToggle.setAttribute('aria-expanded', 'false');
             }
             document.body.style.overflow = '';
         }
@@ -134,8 +144,25 @@ if (typeof Navigation === 'undefined') {
         getDesign() {
             return this.currentDesign;
         }
+
+        // Ensure hamburger button animation stays synchronized with menu state
+        ensureMenuStateSync() {
+            const menuToggle = document.querySelector('.menu-toggle');
+            
+            if (menuToggle) {
+                const hasActiveClass = menuToggle.classList.contains('is-active');
+                
+                // Fix sync issues between menu state and hamburger animation
+                if (this.mobileMenuOpen && !hasActiveClass) {
+                    menuToggle.classList.add('is-active');
+                    menuToggle.setAttribute('aria-expanded', 'true');
+                } else if (!this.mobileMenuOpen && hasActiveClass) {
+                    menuToggle.classList.remove('is-active');
+                    menuToggle.setAttribute('aria-expanded', 'false');
+                }
+            }
+        }
     }
-}
 
 // Page transition effects
 if (typeof PageTransition === 'undefined') {
@@ -193,11 +220,11 @@ if (typeof PageTransition === 'undefined') {
                 this.reExecuteScripts(newDoc);
 
                 // Re-initialize navigation only if it doesn't exist or is broken
-                if (!window.navigation || typeof window.navigation.init !== 'function') {
-                    window.navigation = new Navigation();
+                if (!window.siteNavigation || typeof window.siteNavigation.init !== 'function') {
+                    window.siteNavigation = new SiteNavigation();
                 } else {
                 // Just reinitialize the existing navigation
-                    window.navigation.init();
+                    window.siteNavigation.init();
                 }
 
                 // Remove exit class and add enter class
@@ -257,15 +284,28 @@ if (typeof PageTransition === 'undefined') {
 
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', () => {
-    if (typeof Navigation !== 'undefined' && typeof window.navigation === 'undefined') {
-        window.navigation = new Navigation();
+    console.log('📄 DOMContentLoaded fired');
+    console.log('🔍 SiteNavigation class available:', typeof SiteNavigation !== 'undefined');
+    console.log('🔍 Window siteNavigation exists:', typeof window.siteNavigation !== 'undefined');
+    
+    if (typeof SiteNavigation !== 'undefined') {
+        if (typeof window.siteNavigation === 'undefined') {
+            console.log('✨ Creating new SiteNavigation instance');
+            window.siteNavigation = new SiteNavigation();
+        } else {
+            console.log('🔄 Re-initializing existing Navigation instance');
+            window.siteNavigation.init();
+        }
+    } else {
+        console.log('❌ SiteNavigation class not available');
     }
     if (typeof PageTransition !== 'undefined' && typeof window.pageTransition === 'undefined') {
         window.pageTransition = new PageTransition();
     }
+    
 });
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { Navigation, PageTransition };
+    module.exports = { SiteNavigation, PageTransition };
 }
