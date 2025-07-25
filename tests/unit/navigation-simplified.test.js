@@ -58,7 +58,7 @@ describe('Navigation Real Source Code - Integration Testing', () => {
   test('should load navigation source code successfully', () => {
     expect(navigationSource).toBeDefined();
     expect(navigationSource.length).toBeGreaterThan(1000);
-    expect(navigationSource).toContain('class Navigation');
+    expect(navigationSource).toContain('class SiteNavigation');
     expect(navigationSource).toContain('class PageTransition');
   });
 
@@ -99,14 +99,14 @@ describe('Navigation Real Source Code - Integration Testing', () => {
   test('should have proper module export patterns', () => {
     // Test module export structure
     expect(navigationSource).toContain('module.exports');
-    expect(navigationSource).toContain('Navigation');
+    expect(navigationSource).toContain('SiteNavigation');
     expect(navigationSource).toContain('PageTransition');
   });
 
   test('should handle DOM ready initialization', () => {
     // Test DOM ready patterns
     expect(navigationSource).toContain('DOMContentLoaded');
-    expect(navigationSource).toContain('window.navigation');
+    expect(navigationSource).toContain('window.siteNavigation');
     expect(navigationSource).toContain('window.pageTransition');
   });
 
