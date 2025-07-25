@@ -25,7 +25,6 @@
         if (path.includes('about')) pageId = 'about';
         else if (path.includes('artists')) pageId = 'artists';
         else if (path.includes('schedule')) pageId = 'schedule';
-        else if (path.includes('gallery-2025')) pageId = 'gallery-2025';
         else if (path.includes('gallery')) pageId = 'gallery';
         else if (path.includes('tickets')) pageId = 'tickets';
         else if (path.includes('donations')) pageId = 'donations';
