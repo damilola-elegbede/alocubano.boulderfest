@@ -98,7 +98,7 @@ The framework can be customized through `link_validation_config.json`:
 ### Internal Images
 - Logo: `/images/logo.png`
 - Favicons: `/images/favicon-*.png`
-- SVG icons: `/images/instagram-type.svg`
+- SVG icons: `/images/social/instagram-type.svg`
 
 ### API Endpoints
 - Gallery: `/api/gallery?year=2025`

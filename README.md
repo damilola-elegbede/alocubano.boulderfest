@@ -74,7 +74,7 @@ alocubano.boulderfest/
 │   └── gallery.js (Serverless function for Google Drive API)
 └── images/
     ├── logo.png (Main logo)
-    ├── favicon-circle.svg (Circular favicon)
+    ├── social/ (Social media icons folder)
     ├── instagram-type.svg (Custom IG icon)
     └── favicons/ (Multiple favicon sizes)
 ```
