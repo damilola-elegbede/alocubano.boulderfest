@@ -555,33 +555,28 @@
 .lightbox-next {
   position: absolute;
   color: var(--color-white);
-  font-size: var(--font-size-3xl); /* Restored to smaller size */
-  width: 50px; /* Restored original size */
-  height: 50px; /* Restored original size */
+  font-size: var(--font-size-3xl);
+  width: 50px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all var(--transition-base); /* Transition all properties for smooth hover */
-  background: rgba(0, 0, 0, 0.3); /* Subtle background for better visibility */
-  border-radius: 50%; /* Make buttons circular */
-  border: 2px solid rgba(255, 255, 255, 0.2); /* Subtle border */
-  backdrop-filter: blur(5px); /* Add subtle blur effect */
+  transition: all var(--transition-base);
+  background: transparent;
+  border: none;
+  backdrop-filter: none;
 }
 
 .lightbox-close:hover {
-  opacity: 0.8;
-  background: rgba(0, 0, 0, 0.5); /* Darker background on hover */
-  border-color: rgba(255, 255, 255, 0.4); /* Brighter border on hover */
-  transform: scale(1.05); /* Slight scale effect */
+  opacity: 0.7;
+  transform: scale(1.2);
 }
 
 .lightbox-prev:hover,
 .lightbox-next:hover {
-  opacity: 0.8;
-  background: rgba(0, 0, 0, 0.5); /* Darker background on hover */
-  border-color: rgba(255, 255, 255, 0.4); /* Brighter border on hover */
-  transform: translateY(-50%) scale(1.05); /* Maintain centering + scaling */
+  opacity: 0.7;
+  transform: translateY(-50%) scale(1.4);
 }
 
 .lightbox-close {
@@ -622,14 +617,13 @@
 
 .lightbox-caption {
   position: absolute;
-  bottom: var(--space-xl);
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 0;
+  left: 0;
+  right: 0;
   text-align: center;
   color: var(--color-white);
-  background: rgba(0, 0, 0, 0.7);
-  padding: var(--space-sm) var(--space-lg);
-  border-radius: var(--rounded-md);
+  background: rgba(0, 0, 0, 0.8);
+  padding: var(--space-md) var(--space-lg);
 }
 
 .lightbox-title {
@@ -639,7 +633,7 @@
 
 .lightbox-counter {
   margin: var(--space-xs) 0 0;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   opacity: 0.9;
 }
 
