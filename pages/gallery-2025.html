@@ -36,7 +36,6 @@
     
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/components.css">
-    <link rel="stylesheet" href="/css/navigation.css">
     <link rel="stylesheet" href="/css/typography.css">
     <link rel="stylesheet" href="/css/mobile-overrides.css">
 </head>
@@ -55,14 +54,14 @@
                     </a>
                 </div>
                 <nav class="main-nav">
-                    <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false">
+                    <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="main-navigation">
                         <div class="menu-icon">
                             <span></span>
                             <span></span>
                             <span></span>
                         </div>
                     </button>
-                                        <ul class="nav-list">
+                                        <ul class="nav-list" id="main-navigation">
                         <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
                         <li><a href="/about" class="nav-link" data-text="About">About</a></li>
                         <li><a href="/artists" class="nav-link" data-text="Artists">Artists</a></li>
