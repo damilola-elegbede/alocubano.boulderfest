@@ -14,15 +14,8 @@
     
         <!-- Critical resource preloading -->
     <script>
-      // Inline critical path optimization - Static hero images
+      // Inline critical path optimization - Gallery data preloading only
       (function() {
-        // Preload static hero image for current page
-        const heroPreload = document.createElement('link');
-        heroPreload.rel = 'preload';
-        heroPreload.as = 'image';
-        heroPreload.href = '/images/hero/gallery-2025.jpg';
-        document.head.appendChild(heroPreload);
-        
         // Preload gallery data for gallery pages
         const pageId = window.location.pathname.split('/').pop() || 'home';
         if (pageId.includes('gallery')) {

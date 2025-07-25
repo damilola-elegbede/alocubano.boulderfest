@@ -43,8 +43,7 @@ describe('Static Hero Image System', () => {
         'gallery': '/images/hero/gallery.jpg',  
         'tickets': '/images/hero/tickets.jpg',
         'donations': '/images/hero/donations.jpg',
-        'contact': '/images/hero/contact.jpg',
-        'gallery-2025': '/images/hero/gallery-2025.jpg'
+        'contact': '/images/hero/contact.jpg'
       };
 
       // Test all page mappings
@@ -56,7 +55,6 @@ describe('Static Hero Image System', () => {
       expect(HERO_IMAGES['tickets']).toBe('/images/hero/tickets.jpg');
       expect(HERO_IMAGES['donations']).toBe('/images/hero/donations.jpg');
       expect(HERO_IMAGES['contact']).toBe('/images/hero/contact.jpg');
-      expect(HERO_IMAGES['gallery-2025']).toBe('/images/hero/gallery-2025.jpg');
 
       // Verify all paths use the correct directory structure
       Object.values(HERO_IMAGES).forEach(path => {
@@ -75,7 +73,6 @@ describe('Static Hero Image System', () => {
           'tickets': '/images/hero/tickets.jpg',
           'donations': '/images/hero/donations.jpg',
           'contact': '/images/hero/contact.jpg',
-          'gallery-2025': '/images/hero/gallery-2025.jpg'
         };
         
         return HERO_IMAGES[pageId] || '/images/hero/hero-default.jpg';
@@ -102,7 +99,6 @@ describe('Static Hero Image System', () => {
       // Test various URL patterns
       expect(getCurrentPageId('/home')).toBe('home');
       expect(getCurrentPageId('/about')).toBe('about');
-      expect(getCurrentPageId('/gallery-2025')).toBe('gallery-2025');
       expect(getCurrentPageId('/')).toBe('home');
       expect(getCurrentPageId('')).toBe('home');
     });
@@ -210,7 +206,6 @@ describe('Static Hero Image System', () => {
         '/images/hero/tickets.jpg',
         '/images/hero/donations.jpg',
         '/images/hero/contact.jpg',
-        '/images/hero/gallery-2025.jpg',
         '/images/hero/hero-default.jpg'
       ];
 
