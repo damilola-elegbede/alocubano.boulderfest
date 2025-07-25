@@ -345,10 +345,9 @@
   .nav-list {
     position: fixed !important;
     top: 0;
+    left: 0;
     right: 0;
-    width: fit-content;
-    min-width: 150px;
-    max-width: 60vw;
+    width: 100vw;
     height: 100vh;
     background: var(--color-white);
     opacity: 0.85;
@@ -378,7 +377,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0);
+    background: rgba(0, 0, 0, 0.3);
     z-index: -1;
     pointer-events: none;
   }
