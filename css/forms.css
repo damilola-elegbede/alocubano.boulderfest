@@ -306,3 +306,22 @@
   border-width: 0 3px 3px 0;
   transform: rotate(45deg);
 }
+
+/* Donation Form Layout */
+.donation-form-container {
+  max-width: min(700px, 100%);
+  padding: 0 var(--space-md);
+}
+
+.donation-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+}
+
+@media (max-width: 768px) {
+  .donation-form-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+}

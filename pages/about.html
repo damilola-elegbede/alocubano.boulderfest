@@ -53,7 +53,7 @@
             <div class="grid">
                 <div class="header-left">
                     <a href="/home" class="logo-link" aria-label="Go to home page">
-                        <img src="/images/logo.png" alt="A Lo Cubano Boulder Fest Logo" style="height: 78px;">
+                        <img src="/images/logo.png" alt="A Lo Cubano Boulder Fest Logo" class="site-logo">
                         <div class="logo-text">
                             <span class="logo-main">A LO CUBANO</span>
                             <span class="logo-separator">|</span>
@@ -62,10 +62,14 @@
                     </a>
                 </div>
                 <nav class="main-nav">
-                    <button class="menu-toggle" aria-label="Toggle menu">
-                        <span></span>
+                    <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="main-navigation">
+                        <div class="menu-icon">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
                     </button>
-                                        <ul class="nav-list">
+                                        <ul class="nav-list" id="main-navigation">
                         <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
                         <li><a href="/about" class="nav-link is-active" data-text="About">About</a></li>
                         <li><a href="/artists" class="nav-link" data-text="Artists">Artists</a></li>
