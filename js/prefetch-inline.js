@@ -30,9 +30,9 @@ class CriticalResourcePrefetcher {
   static HERO_IMAGES = {
     'home': '/images/hero/home.jpg',
     'about': '/images/hero/about.jpg',
-    'artists': '/images/hero/artists.jpg',
-    'schedule': '/images/hero/schedule.jpg',
-    'gallery': '/images/hero/gallery.jpg',
+    'artists': '/images/hero/boulder-fest-2026-hero.jpg',
+    'schedule': '/images/hero/boulder-fest-2025-hero.jpg',
+    'gallery': '/images/hero/weekender-2026-09-hero.jpg',
     'gallery-2025': '/images/hero/gallery-2025.jpg',
     'tickets': '/images/hero/tickets.jpg',
     'donations': '/images/hero/donations.jpg',

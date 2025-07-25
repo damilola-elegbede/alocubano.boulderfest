@@ -13,16 +13,53 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/images/favicons/favicon-192x192.png">
     <link rel="apple-touch-icon" sizes="192x192" href="/images/favicons/favicon-192x192.png">
     
-        <!-- Critical resource preloading -->
+                <!-- Critical resource preloading -->
     <script>
-      // Inline critical path optimization - Static hero images
+      // Inline critical path optimization - Event hero images with responsive variants
       (function() {
-        // Preload static hero image for current page
-        const heroPreload = document.createElement('link');
-        heroPreload.rel = 'preload';
-        heroPreload.as = 'image';
-        heroPreload.href = '/images/hero/donations.jpg';
-        document.head.appendChild(heroPreload);
+        // Check if optimized variants exist for event heroes
+        const heroPath = '/images/hero/donations.jpg';
+        const isEventHero = false;
+        
+        if (isEventHero) {
+          // Preload optimized variants for event heroes (WebP first, then JPEG fallback)
+          const isMobile = window.innerWidth <= 768;
+          const variant = isMobile ? 'mobile' : 'desktop';
+          const baseName = 'donations';
+          
+          // Preload WebP variant
+          const webpPreload = document.createElement('link');
+          webpPreload.rel = 'preload';
+          webpPreload.as = 'image';
+          webpPreload.href = `/images/hero-optimized/${variant}/${baseName}.webp`;
+          webpPreload.type = 'image/webp';
+          document.head.appendChild(webpPreload);
+          
+          // Preload AVIF variant for supported browsers
+          if (typeof window !== 'undefined' && 'OffscreenCanvas' in window) {
+            const avifPreload = document.createElement('link');
+            avifPreload.rel = 'preload';
+            avifPreload.as = 'image';
+            avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
+            avifPreload.type = 'image/avif';
+            document.head.appendChild(avifPreload);
+          }
+          
+          // Fallback JPEG preload
+          const jpegPreload = document.createElement('link');
+          jpegPreload.rel = 'preload';
+          jpegPreload.as = 'image';
+          jpegPreload.href = `/images/hero-optimized/${variant}/${baseName}.jpg`;
+          jpegPreload.type = 'image/jpeg';
+          document.head.appendChild(jpegPreload);
+        } else {
+          // Standard hero image preload for top-level pages
+          const heroPreload = document.createElement('link');
+          heroPreload.rel = 'preload';
+          heroPreload.as = 'image';
+          heroPreload.href = heroPath;
+          document.head.appendChild(heroPreload);
+        }
         
         // Preload gallery data for gallery pages
         const pageId = window.location.pathname.split('/').pop() || 'home';
@@ -69,12 +106,30 @@
                             <span></span>
                         </div>
                     </button>
-                                        <ul class="nav-list" id="main-navigation">
+                    <ul class="nav-list" id="main-navigation">
                         <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
                         <li><a href="/about" class="nav-link" data-text="About">About</a></li>
-                        <li><a href="/artists" class="nav-link" data-text="Artists">Artists</a></li>
-                        <li><a href="/schedule" class="nav-link" data-text="Schedule">Schedule</a></li>
-                        <li><a href="/gallery" class="nav-link" data-text="Gallery">Gallery</a></li>
+                        <li class="nav-item has-dropdown">
+                            <button class="nav-trigger" aria-expanded="false" aria-haspopup="true" data-dropdown="events">
+                                Events
+                                <span class="dropdown-arrow" aria-hidden="true">▼</span>
+                            </button>
+                            <ul class="dropdown-menu" aria-hidden="true" role="menu" data-dropdown-content="events">
+                                <li class="dropdown-category" role="group">
+                                    <span class="dropdown-category-title" role="presentation">Boulder Fest</span>
+                                    <ul class="dropdown-submenu">
+                                        <li><a href="/boulder-fest-2025/artists" class="dropdown-link" role="menuitem" data-event="boulder-fest-2025" data-event-status="current">2025 Festival</a></li>
+                                        <li><a href="/boulder-fest-2026/artists" class="dropdown-link" role="menuitem" data-event="boulder-fest-2026" data-event-status="upcoming">2026 Festival</a></li>
+                                    </ul>
+                                </li>
+                                <li class="dropdown-category" role="group">
+                                    <span class="dropdown-category-title" role="presentation">Weekend Events</span>
+                                    <ul class="dropdown-submenu">
+                                        <li><a href="/weekender-2026-09/artists" class="dropdown-link" role="menuitem" data-event="weekender-2026-09" data-event-status="upcoming">Sept 2026 Weekender</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
                         <li><a href="/tickets" class="nav-link" data-text="Tickets">Tickets</a></li>
                         <li><a href="/donations" class="nav-link is-active" data-text="Donate">Donate</a></li>
                         <li><a href="/contact" class="nav-link" data-text="Contact">Contact</a></li>

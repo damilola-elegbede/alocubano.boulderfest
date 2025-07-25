@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule - Boulder Fest 2026 - A Lo Cubano</title>
+    <meta name="description" content="Coming Soon! Full 3-day schedule for Boulder Fest 2026 (May 15-17). Workshop times, social dance events, and performance schedules at Avalon Ballroom in Boulder, Colorado.">
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" href="/images/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicons/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/images/favicons/favicon-192x192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/images/favicons/favicon-192x192.png">
+    
+    <!-- Critical resource preloading -->
+    <script>
+      // Inline critical path optimization - Event hero images with responsive variants
+      (function() {
+        // Check if optimized variants exist for event heroes
+        const heroPath = '/images/hero/boulder-fest-2026-hero.jpg';
+        const isEventHero = true;
+        
+        if (isEventHero) {
+          // Preload optimized variants for event heroes (WebP first, then JPEG fallback)
+          const isMobile = window.innerWidth <= 768;
+          const variant = isMobile ? 'mobile' : 'desktop';
+          const baseName = 'boulder-fest-2026-hero';
+          
+          // Preload WebP variant
+          const webpPreload = document.createElement('link');
+          webpPreload.rel = 'preload';
+          webpPreload.as = 'image';
+          webpPreload.href = `/images/hero-optimized/${variant}/${baseName}.webp`;
+          webpPreload.type = 'image/webp';
+          document.head.appendChild(webpPreload);
+          
+          // Preload AVIF variant for supported browsers
+          if (typeof window !== 'undefined' && 'OffscreenCanvas' in window) {
+            const avifPreload = document.createElement('link');
+            avifPreload.rel = 'preload';
+            avifPreload.as = 'image';
+            avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
+            avifPreload.type = 'image/avif';
+            document.head.appendChild(avifPreload);
+          }
+          
+          // Fallback JPEG preload
+          const jpegPreload = document.createElement('link');
+          jpegPreload.rel = 'preload';
+          jpegPreload.as = 'image';
+          jpegPreload.href = `/images/hero-optimized/${variant}/${baseName}.jpg`;
+          jpegPreload.type = 'image/jpeg';
+          document.head.appendChild(jpegPreload);
+        } else {
+          // Standard hero image preload for top-level pages
+          const heroPreload = document.createElement('link');
+          heroPreload.rel = 'preload';
+          heroPreload.as = 'image';
+          heroPreload.href = heroPath;
+          document.head.appendChild(heroPreload);
+        }
+      })();
+    </script>
+
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//fonts.gstatic.com">
+    
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/typography.css">
+    <link rel="stylesheet" href="/css/mobile-overrides.css">
+</head>
+<body class="typographic">
+    <header class="header">
+        <div class="container">
+            <div class="grid">
+                <div class="header-left">
+                    <a href="/home" class="logo-link" aria-label="Go to home page">
+                        <img src="/images/logo.png" alt="A Lo Cubano Boulder Fest Logo" class="site-logo">
+                        <div class="logo-text">
+                            <span class="logo-main">A LO CUBANO</span>
+                            <span class="logo-separator">|</span>
+                            <span class="logo-sub">Boulder Fest</span>
+                        </div>
+                    </a>
+                </div>
+                <nav class="main-nav">
+                    <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="main-navigation">
+                        <div class="menu-icon">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                    <ul class="nav-list" id="main-navigation">
+                        <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
+                        <li><a href="/about" class="nav-link" data-text="About">About</a></li>
+                        <li><a href="/artists" class="nav-link" data-text="Artists">Artists</a></li>
+                        <li><a href="/schedule" class="nav-link" data-text="Schedule">Schedule</a></li>
+                        <li><a href="/gallery" class="nav-link" data-text="Gallery">Gallery</a></li>
+                        <li><a href="/tickets" class="nav-link" data-text="Tickets">Tickets</a></li>
+                        <li><a href="/donations" class="nav-link" data-text="Donate">Donate</a></li>
+                        <li><a href="/contact" class="nav-link" data-text="Contact">Contact</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Splash Image -->
+        <section class="gallery-hero-splash">
+            <div class="hero-image-container">
+                <img id="hero-splash-image" src="" alt="Boulder Fest 2026 - Coming Soon! Workshop sessions and dance classes schedule" class="hero-splash-img" style="object-position: top center !important;">
+            </div>
+        </section>
+
+        <!-- Coming Soon Section -->
+        <section class="section-typographic">
+            <div class="container">
+                <h1 class="text-mask">Boulder Fest 2026</h1>
+                <h2 class="text-gradient" style="margin-bottom: var(--space-lg);">SCHEDULE</h2>
+                
+                <!-- Countdown Timer -->
+                <div class="coming-soon-container" style="text-align: center; margin: var(--space-2xl) 0;">
+                    <div class="countdown-display" style="margin-bottom: var(--space-xl);">
+                        <div class="countdown-timer" style="display: flex; justify-content: center; gap: var(--space-lg); flex-wrap: wrap;">
+                            <div class="countdown-unit" style="text-align: center;">
+                                <div id="days" class="countdown-number font-display" style="font-size: var(--font-size-4xl); color: var(--color-blue);">000</div>
+                                <div class="countdown-label font-mono" style="font-size: var(--font-size-sm);">DAYS</div>
+                            </div>
+                            <div class="countdown-unit" style="text-align: center;">
+                                <div id="hours" class="countdown-number font-display" style="font-size: var(--font-size-4xl); color: var(--color-red);">00</div>
+                                <div class="countdown-label font-mono" style="font-size: var(--font-size-sm);">HOURS</div>
+                            </div>
+                            <div class="countdown-unit" style="text-align: center;">
+                                <div id="minutes" class="countdown-number font-display" style="font-size: var(--font-size-4xl); color: var(--color-blue);">00</div>
+                                <div class="countdown-label font-mono" style="font-size: var(--font-size-sm);">MINUTES</div>
+                            </div>
+                            <div class="countdown-unit" style="text-align: center;">
+                                <div id="seconds" class="countdown-number font-display" style="font-size: var(--font-size-4xl); color: var(--color-red);">00</div>
+                                <div class="countdown-label font-mono" style="font-size: var(--font-size-sm);">SECONDS</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="coming-soon-message" style="margin-bottom: var(--space-xl);">
+                        <h3 class="text-block-large" style="margin-bottom: var(--space-md);">SCHEDULE COMING SOON</h3>
+                        <p class="font-serif" style="font-size: var(--font-size-lg); max-width: 600px; margin: 0 auto; line-height: 1.6;">
+                            We're carefully crafting an incredible 3-day schedule packed with workshops, social dancing, 
+                            and cultural experiences. Get ready for the most comprehensive Cuban salsa experience in Colorado.
+                        </p>
+                    </div>
+                    
+                    <!-- Event Overview -->
+                    <div class="event-overview" style="margin-bottom: var(--space-xl);">
+                        <div class="overview-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-lg); margin: var(--space-xl) 0;">
+                            <div class="overview-item" style="background: var(--color-gray-100); padding: var(--space-lg); border-radius: 8px; text-align: center;">
+                                <div class="overview-icon font-display" style="font-size: var(--font-size-3xl); color: var(--color-blue); margin-bottom: var(--space-sm);">3</div>
+                                <div class="overview-title font-mono" style="font-size: var(--font-size-sm); margin-bottom: var(--space-xs);">DAYS</div>
+                                <div class="overview-subtitle font-serif" style="font-size: var(--font-size-xs); color: var(--color-gray-600);">May 15-17, 2026</div>
+                            </div>
+                            <div class="overview-item" style="background: var(--color-gray-100); padding: var(--space-lg); border-radius: 8px; text-align: center;">
+                                <div class="overview-icon font-display" style="font-size: var(--font-size-3xl); color: var(--color-red); margin-bottom: var(--space-sm);">15+</div>
+                                <div class="overview-title font-mono" style="font-size: var(--font-size-sm); margin-bottom: var(--space-xs);">WORKSHOPS</div>
+                                <div class="overview-subtitle font-serif" style="font-size: var(--font-size-xs); color: var(--color-gray-600);">All skill levels</div>
+                            </div>
+                            <div class="overview-item" style="background: var(--color-gray-100); padding: var(--space-lg); border-radius: 8px; text-align: center;">
+                                <div class="overview-icon font-display" style="font-size: var(--font-size-3xl); color: var(--color-blue); margin-bottom: var(--space-sm);">2</div>
+                                <div class="overview-title font-mono" style="font-size: var(--font-size-sm); margin-bottom: var(--space-xs);">SOCIAL NIGHTS</div>
+                                <div class="overview-subtitle font-serif" style="font-size: var(--font-size-xs); color: var(--color-gray-600);">Friday & Saturday</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Venue Information -->
+                    <div class="venue-info" style="background: var(--color-gray-50); padding: var(--space-xl); border-radius: 12px; margin: var(--space-xl) 0;">
+                        <h3 class="text-gradient" style="margin-bottom: var(--space-md);">VENUE</h3>
+                        <div class="venue-details" style="text-align: center;">
+                            <p class="font-display" style="font-size: var(--font-size-xl); margin-bottom: var(--space-sm);">AVALON BALLROOM</p>
+                            <p class="font-serif" style="margin-bottom: var(--space-sm);">6185 Arapahoe Rd, Boulder, CO 80302</p>
+                            <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-600);">
+                                Professional dance floors • Climate controlled • Full sound system
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Early Bird Signup -->
+                <div class="early-bird-signup" style="background: var(--color-gray-50); padding: var(--space-xl); border-radius: 12px; text-align: center; margin: var(--space-xl) 0;">
+                    <h3 class="text-gradient" style="margin-bottom: var(--space-md);">GET SCHEDULE UPDATES</h3>
+                    <p class="font-serif" style="margin-bottom: var(--space-lg); max-width: 500px; margin-left: auto; margin-right: auto;">
+                        Be the first to see our detailed schedule and secure your spot in your favorite workshops. 
+                        Early birds get priority scheduling!
+                    </p>
+                    <form class="notification-form" style="max-width: 400px; margin: 0 auto;">
+                        <div style="display: flex; gap: var(--space-sm);">
+                            <input type="email" placeholder="Your email address" required 
+                                   style="flex: 1; padding: var(--space-md); border: 1px solid var(--color-gray-300); border-radius: 4px; font-family: var(--font-serif);">
+                            <button type="submit" class="btn-primary" 
+                                    style="padding: var(--space-md) var(--space-lg); background: var(--color-blue); color: white; border: none; border-radius: 4px; font-family: var(--font-mono); cursor: pointer;">
+                                NOTIFY ME
+                            </button>
+                        </div>
+                        <p style="font-size: var(--font-size-xs); color: var(--color-gray-600); margin-top: var(--space-sm);">
+                            Priority workshop registration • Schedule updates • Special offers
+                        </p>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <hr class="hr-typographic style-minimal">
+
+        <!-- Boulder Fest 2025 Reference -->
+        <section class="section-typographic">
+            <div class="container">
+                <h2 class="text-mask">Boulder Fest 2025</h2>
+                <p class="font-serif" style="margin-bottom: var(--space-lg); max-width: 700px;">
+                    Boulder Fest 2025 featured a packed 3-day schedule with workshops covering everything from 
+                    Orishas and Rumba to Timba Suelta and Casino, plus amazing social dances every night.
+                </p>
+                
+                <!-- Sample Schedule Preview -->
+                <div class="schedule-preview" style="margin-top: var(--space-xl);">
+                    <h3 class="font-display" style="margin-bottom: var(--space-lg);">WHAT TO EXPECT IN 2026</h3>
+                    
+                    <div class="schedule-categories" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-lg);">
+                        <div class="category-item" style="border: 1px solid var(--color-gray-200); padding: var(--space-lg); border-radius: 8px;">
+                            <h4 class="font-mono" style="color: var(--color-blue); margin-bottom: var(--space-sm);">FRIDAY WORKSHOPS</h4>
+                            <ul class="font-serif" style="line-height: 1.6; font-size: var(--font-size-sm);">
+                                <li>Afro-Cuban foundations</li>
+                                <li>Timba techniques</li>
+                                <li>Cultural context sessions</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="category-item" style="border: 1px solid var(--color-gray-200); padding: var(--space-lg); border-radius: 8px;">
+                            <h4 class="font-mono" style="color: var(--color-red); margin-bottom: var(--space-sm);">SATURDAY WORKSHOPS</h4>
+                            <ul class="font-serif" style="line-height: 1.6; font-size: var(--font-size-sm);">
+                                <li>Advanced partner work</li>
+                                <li>Ladies & Men's styling</li>
+                                <li>Rueda formations</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="category-item" style="border: 1px solid var(--color-gray-200); padding: var(--space-lg); border-radius: 8px;">
+                            <h4 class="font-mono" style="color: var(--color-blue); margin-bottom: var(--space-sm);">SUNDAY SESSIONS</h4>
+                            <ul class="font-serif" style="line-height: 1.6; font-size: var(--font-size-sm);">
+                                <li>Integration workshops</li>
+                                <li>Q&A with masters</li>
+                                <li>Community building</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: var(--space-xl);">
+                    <a href="/schedule" class="text-block-mono" style="color: var(--color-blue); text-decoration: underline;">
+                        → View Boulder Fest 2025 Full Schedule
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer-typographic">
+        <div class="container">
+            <p class="footer-credits">MAY 15-17, 2026 • <a href="mailto:alocubanoboulderfest@gmail.com?subject=Boulder Fest 2026 Schedule Inquiry" style="color: inherit; text-decoration: underline;">alocubanoboulderfest@gmail.com</a></p>
+            <div class="footer-social">
+                <a href="https://instagram.com/alocubano.boulderfest" target="_blank" rel="noopener noreferrer" class="social-link-type" aria-label="Follow us on Instagram">
+                    <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                </a>
+                <a href="https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH" target="_blank" rel="noopener noreferrer" class="social-link-type" aria-label="Join us on WhatsApp">
+                    <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Countdown Timer Implementation
+        function updateCountdown() {
+            const targetDate = new Date('2026-05-15T00:00:00-06:00'); // Boulder, CO timezone
+            const now = new Date();
+            const difference = targetDate - now;
+
+            if (difference > 0) {
+                const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+                document.getElementById('days').textContent = String(days).padStart(3, '0');
+                document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+                document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+                document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+            } else {
+                // Event has started or passed
+                document.getElementById('days').textContent = '000';
+                document.getElementById('hours').textContent = '00';
+                document.getElementById('minutes').textContent = '00';
+                document.getElementById('seconds').textContent = '00';
+            }
+        }
+
+        // Update countdown every second
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+
+        // Schedule Notification Form Handler
+        document.querySelector('.notification-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = this.querySelector('input[type="email"]').value;
+            
+            // Simple validation
+            if (email && email.includes('@')) {
+                // For now, show success message (in production, this would connect to an email service)
+                const button = this.querySelector('button');
+                const originalText = button.textContent;
+                button.textContent = 'SUBSCRIBED!';
+                button.style.background = 'var(--color-green, #10B981)';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = 'var(--color-blue)';
+                    this.reset();
+                }, 3000);
+                
+                // TODO: Integrate with email service (Mailchimp, ConvertKit, etc.)
+                console.log('Schedule notification signup:', email);
+            }
+        });
+    </script>
+    
+    <script src="/js/navigation.js"></script>
+    <script src="/js/components/lightbox.js"></script>
+    <script src="/js/components/lazy-loading.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/typography.js"></script>
+    <script src="/js/gallery-hero.js"></script>
+</body>
+</html>

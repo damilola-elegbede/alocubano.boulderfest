@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boulder Fest 2025 Gallery - A Lo Cubano Boulder Fest</title>
+    <meta name="description" content="Explore memorable moments from A Lo Cubano Boulder Fest 2025 through our visual gallery. See highlights from workshops, social dancing, and community celebrations.">
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" href="/images/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicons/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/images/favicons/favicon-192x192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/images/favicons/favicon-192x192.png">
+    
+                <!-- Critical resource preloading -->
+    <script>
+      // Inline critical path optimization - Event hero images with responsive variants
+      (function() {
+        // Check if optimized variants exist for event heroes
+        const heroPath = '/images/hero/boulder-fest-2025-hero.jpg';
+        const isEventHero = true;
+        
+        if (isEventHero) {
+          // Preload optimized variants for event heroes (WebP first, then JPEG fallback)
+          const isMobile = window.innerWidth <= 768;
+          const variant = isMobile ? 'mobile' : 'desktop';
+          const baseName = 'boulder-fest-2025-hero';
+          
+          // Preload WebP variant
+          const webpPreload = document.createElement('link');
+          webpPreload.rel = 'preload';
+          webpPreload.as = 'image';
+          webpPreload.href = `/images/hero-optimized/${variant}/${baseName}.webp`;
+          webpPreload.type = 'image/webp';
+          document.head.appendChild(webpPreload);
+          
+          // Preload AVIF variant for supported browsers
+          if (typeof window !== 'undefined' && 'OffscreenCanvas' in window) {
+            const avifPreload = document.createElement('link');
+            avifPreload.rel = 'preload';
+            avifPreload.as = 'image';
+            avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
+            avifPreload.type = 'image/avif';
+            document.head.appendChild(avifPreload);
+          }
+          
+          // Fallback JPEG preload
+          const jpegPreload = document.createElement('link');
+          jpegPreload.rel = 'preload';
+          jpegPreload.as = 'image';
+          jpegPreload.href = `/images/hero-optimized/${variant}/${baseName}.jpg`;
+          jpegPreload.type = 'image/jpeg';
+          document.head.appendChild(jpegPreload);
+        } else {
+          // Standard hero image preload for top-level pages
+          const heroPreload = document.createElement('link');
+          heroPreload.rel = 'preload';
+          heroPreload.as = 'image';
+          heroPreload.href = heroPath;
+          document.head.appendChild(heroPreload);
+        }
+        
+        // Preload gallery data for gallery pages
+        const pageId = window.location.pathname.split('/').pop() || 'home';
+        if (pageId.includes('gallery')) {
+          const year = pageId.includes('2025') ? '2025' : new Date().getFullYear();
+          const galleryDataPreload = document.createElement('link');
+          galleryDataPreload.rel = 'preload';
+          galleryDataPreload.as = 'fetch';
+          galleryDataPreload.href = `/api/gallery?year=${year}&category=workshops`;
+          galleryDataPreload.crossOrigin = 'anonymous';
+          document.head.appendChild(galleryDataPreload);
+        }
+      })();
+    </script>
+
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//fonts.gstatic.com">
+    
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "DanceEvent",
+      "name": "A Lo Cubano Boulder Fest 2025",
+      "description": "Explore memorable moments from A Lo Cubano Boulder Fest 2025 through our visual gallery showcasing Cuban salsa workshops and social dancing.",
+      "startDate": "2025-05-15",
+      "endDate": "2025-05-17",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Avalon Ballroom",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "6185 Arapahoe Rd",
+          "addressLocality": "Boulder",
+          "addressRegion": "CO",
+          "postalCode": "80302",
+          "addressCountry": "US"
+        }
+      },
+      "organizer": {
+        "@type": "Organization",
+        "name": "A Lo Cubano Boulder Fest",
+        "email": "alocubanoboulderfest@gmail.com",
+        "url": "https://alocubanoboulderfest.com"
+      }
+    }
+    </script>
+    
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/typography.css">
+    <link rel="stylesheet" href="/css/mobile-overrides.css">
+</head>
+<body class="typographic">
+    <header class="header">
+        <div class="container">
+            <div class="grid">
+                <div class="header-left">
+                    <a href="/home" class="logo-link" aria-label="Go to home page">
+                        <img src="/images/logo.png" alt="A Lo Cubano Boulder Fest Logo" class="site-logo">
+                        <div class="logo-text">
+                            <span class="logo-main">A LO CUBANO</span>
+                            <span class="logo-separator">|</span>
+                            <span class="logo-sub">Boulder Fest</span>
+                        </div>
+                    </a>
+                </div>
+                <nav class="main-nav">
+                    <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="main-navigation">
+                        <div class="menu-icon">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                                        <ul class="nav-list" id="main-navigation">
+                        <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
+                        <li><a href="/about" class="nav-link" data-text="About">About</a></li>
+                        <li><a href="/boulder-fest-2025-artists" class="nav-link" data-text="Artists">Artists</a></li>
+                        <li><a href="/boulder-fest-2025-schedule" class="nav-link" data-text="Schedule">Schedule</a></li>
+                        <li><a href="/boulder-fest-2025-gallery" class="nav-link is-active" data-text="Gallery">Gallery</a></li>
+                        <li><a href="/boulder-fest-2025-tickets" class="nav-link" data-text="Tickets">Tickets</a></li>
+                        <li><a href="/donations" class="nav-link" data-text="Donate">Donate</a></li>
+                        <li><a href="/contact" class="nav-link" data-text="Contact">Contact</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main>
+
+        <!-- Hero Splash Image -->
+        <section class="gallery-hero-splash">
+            <div class="hero-image-container">
+                <img id="hero-splash-image" src="" alt="Memorable gallery photos from A Lo Cubano Boulder Fest 2025 showcasing dancers, performances, and community moments" class="hero-splash-img" style="object-position: top center !important;">
+            </div>
+        </section>
+
+        <!-- Event Status Notice -->
+        <section class="section-typographic">
+            <div class="container">
+                <h1 class="text-mask" style="text-align: center; margin-bottom: var(--space-xl);">BOULDER FEST 2025</h1>
+                <div class="event-status-notice" style="text-align: center; margin-bottom: var(--space-2xl);">
+                    <p class="font-display" style="font-size: var(--font-size-xl); color: var(--color-blue); margin-bottom: var(--space-sm);">MAY 15-17, 2025</p>
+                    <p class="font-serif" style="font-size: var(--font-size-lg); margin-bottom: var(--space-md);">AVALON BALLROOM • BOULDER, COLORADO</p>
+                    <div class="registration-status" style="padding: var(--space-md); background: var(--color-gray-50); border-radius: var(--border-radius-lg); display: inline-block;">
+                        <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-600); margin-bottom: var(--space-xs);">EVENT STATUS</p>
+                        <p class="font-display" style="font-size: var(--font-size-lg); color: var(--color-red);">REGISTRATION OPEN</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gallery Content -->
+        <section class="section-typographic">
+            <div class="container">
+                <h2 class="text-mask" style="text-align: center; margin-bottom: var(--space-1xl);">GALLERY COMING SOON</h2>
+                
+                <!-- Event Preview Info -->
+                <div class="event-info-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-xl); margin-bottom: var(--space-2xl);">
+                    <div class="info-card" style="text-align: center; padding: var(--space-lg); background: var(--color-gray-50); border-radius: var(--border-radius-lg);">
+                        <h3 class="font-display" style="font-size: var(--font-size-xl); margin-bottom: var(--space-md); color: var(--color-blue);">AMAZING INSTRUCTORS</h3>
+                        <p class="font-serif">Learn from authentic Cuban masters including Laroye, Malena & Adriel, Emarlos & Courtney, Giselle Soto, and Nathan Hook.</p>
+                    </div>
+                    
+                    <div class="info-card" style="text-align: center; padding: var(--space-lg); background: var(--color-gray-50); border-radius: var(--border-radius-lg);">
+                        <h3 class="font-display" style="font-size: var(--font-size-xl); margin-bottom: var(--space-md); color: var(--color-red);">DIVERSE WORKSHOPS</h3>
+                        <p class="font-serif">From Orishas and Rumba to Timba Suelta and Cubaton, explore the full spectrum of Cuban dance traditions.</p>
+                    </div>
+                    
+                    <div class="info-card" style="text-align: center; padding: var(--space-lg); background: var(--color-gray-50); border-radius: var(--border-radius-lg);">
+                        <h3 class="font-display" style="font-size: var(--font-size-xl); margin-bottom: var(--space-md); color: var(--color-green);">EPIC SOCIALS</h3>
+                        <p class="font-serif">Dance the nights away with DJ Byron, DJ Tito, and DJ Diva spinning authentic Cuban rhythms.</p>
+                    </div>
+                </div>
+                
+                <!-- Gallery Placeholder -->
+                <div class="gallery-placeholder" style="text-align: center; padding: var(--space-2xl); background: var(--color-gray-100); border-radius: var(--border-radius-lg); margin-bottom: var(--space-2xl);">
+                    <h3 class="text-gradient" style="margin-bottom: var(--space-lg);">GALLERY PHOTOS WILL BE ADDED AFTER THE EVENT</h3>
+                    <p class="font-serif" style="font-size: var(--font-size-lg); margin-bottom: var(--space-xl);">Join us at Boulder Fest 2025 to create these magical moments!</p>
+                    <a href="/boulder-fest-2025-tickets" class="form-button-type" style="display: inline-block;">GET YOUR TICKETS</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Call to Action -->
+        <section class="section-typographic">
+            <div class="container" style="text-align: center;">
+                <h2 class="text-display" style="margin-bottom: var(--space-lg);">BE PART OF THE STORY</h2>
+                <p class="font-serif" style="font-size: var(--font-size-lg); margin-bottom: var(--space-2xl);">Your photos and memories will fill this gallery</p>
+                <div style="display: flex; gap: var(--space-lg); justify-content: center; flex-wrap: wrap;">
+                    <a href="/boulder-fest-2025-tickets" class="form-button-type" style="display: inline-block;">GET TICKETS</a>
+                    <a href="/boulder-fest-2025-schedule" class="form-button-type" style="display: inline-block; background: transparent; color: var(--color-primary); border: 2px solid var(--color-primary);">VIEW SCHEDULE</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer-typographic">
+        <div class="container">
+            <p class="footer-credits">MAY 15-17, 2025 • <a href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry" style="color: inherit; text-decoration: underline;">alocubanoboulderfest@gmail.com</a></p>
+            <div class="footer-social">
+                <a href="https://instagram.com/alocubanoboulder" target="_blank" rel="noopener noreferrer" class="social-link-type" aria-label="Follow us on Instagram">
+                    <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                </a>
+                <a href="https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH" target="_blank" rel="noopener noreferrer" class="social-link-type" aria-label="Join us on WhatsApp">
+                    <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </footer>
+    <script src="/js/navigation.js"></script>
+    <script src="/js/components/lightbox.js"></script>
+    <script src="/js/components/lazy-loading.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/typography.js"></script><script src="/js/gallery-hero.js"></script>
+</body>
+</html>
