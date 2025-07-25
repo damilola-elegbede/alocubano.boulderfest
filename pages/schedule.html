@@ -44,6 +44,7 @@
     
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/navigation.css">
     <link rel="stylesheet" href="/css/typography.css">
     <link rel="stylesheet" href="/css/mobile-overrides.css">
 </head>
@@ -53,7 +54,7 @@
             <div class="grid">
                 <div class="header-left">
                     <a href="/home" class="logo-link" aria-label="Go to home page">
-                        <img src="/images/logo.png" alt="A Lo Cubano Boulder Fest Logo" style="height: 78px;">
+                        <img src="/images/logo.png" alt="A Lo Cubano Boulder Fest Logo" class="site-logo">
                         <div class="logo-text">
                             <span class="logo-main">A LO CUBANO</span>
                             <span class="logo-separator">|</span>
@@ -62,8 +63,12 @@
                     </a>
                 </div>
                 <nav class="main-nav">
-                    <button class="menu-toggle" aria-label="Toggle menu">
-                        <span></span>
+                    <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false">
+                        <div class="menu-icon">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
                     </button>
                                         <ul class="nav-list">
                         <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
@@ -113,8 +118,8 @@
                     
                     <div class="schedule-items">
                         <div class="schedule-item" style="padding: var(--space-lg) 0; border-bottom: 1px solid var(--color-gray-200);">
-                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: var(--space-xl);">
-                                <div class="time font-mono">4:00 - 5:00 PM</div>
+                            <div class="schedule-item">
+                                <div class="schedule-time time font-mono">4:00 - 5:00 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">LAROYE ~ ORISHAS</h3>
                                 </div>
@@ -122,8 +127,8 @@
                         </div>
                         
                         <div class="schedule-item" style="padding: var(--space-lg) 0; border-bottom: 1px solid var(--color-gray-200);">
-                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: var(--space-xl);">
-                                <div class="time font-mono">5:15 - 6:15 PM</div>
+                            <div class="schedule-item">
+                                <div class="schedule-time time font-mono">5:15 - 6:15 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">MALENA & ADRIEL ~ TIMBA SUELTA</h3>
                                 </div>
@@ -131,8 +136,8 @@
                         </div>
                         
                         <div class="schedule-item" style="padding: var(--space-lg) 0; border-bottom: 1px solid var(--color-gray-200);">
-                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: var(--space-xl);">
-                                <div class="time font-mono">8:00 PM - 12:00 AM</div>
+                            <div class="schedule-item">
+                                <div class="schedule-time time font-mono">8:00 PM - 12:00 AM</div>
                                 <div class="details">
                                     <h3 class="text-gradient" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-sm);">SOCIAL DANCE</h3>
                                     <p class="font-serif" style="margin-bottom: var(--space-xs);">La Mariposa • 2845 28th St, Boulder, CO 80301</p>
@@ -154,8 +159,8 @@
                     
                     <div class="schedule-items">
                         <div class="schedule-item" style="padding: var(--space-lg) 0; border-bottom: 1px solid var(--color-gray-200);">
-                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: var(--space-xl);">
-                                <div class="time font-mono">11:00 AM - 12:00 PM</div>
+                            <div class="schedule-item">
+                                <div class="schedule-time time font-mono">11:00 AM - 12:00 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">EMARLOS & COURTNEY ~ SON CUBANO</h3>
                                 </div>
@@ -163,8 +168,8 @@
                         </div>
                         
                         <div class="schedule-item" style="padding: var(--space-lg) 0; border-bottom: 1px solid var(--color-gray-200);">
-                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: var(--space-xl);">
-                                <div class="time font-mono">12:15 - 1:15 PM</div>
+                            <div class="schedule-item">
+                                <div class="schedule-time time font-mono">12:15 - 1:15 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">LAROYE ~ RUMBA FUNDAMENTALS</h3>
                                 </div>
@@ -172,8 +177,8 @@
                         </div>
                         
                         <div class="schedule-item" style="padding: var(--space-lg) 0; border-bottom: 1px solid var(--color-gray-200);">
-                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: var(--space-xl);">
-                                <div class="time font-mono">1:30 - 2:30 PM</div>
+                            <div class="schedule-item">
+                                <div class="schedule-time time font-mono">1:30 - 2:30 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">MALENA & ADRIEL ~ CASINO INTERMEDIATE</h3>
                                 </div>
@@ -181,8 +186,8 @@
                         </div>
                         
                         <div class="schedule-item" style="padding: var(--space-lg) 0; border-bottom: 1px solid var(--color-gray-200);">
-                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: var(--space-xl);">
-                                <div class="time font-mono">2:45 - 3:45 PM</div>
+                            <div class="schedule-item">
+                                <div class="schedule-time time font-mono">2:45 - 3:45 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">GISELLE SOTO ~ CUBATON</h3>
                                 </div>
@@ -190,8 +195,8 @@
                         </div>
                         
                         <div class="schedule-item" style="padding: var(--space-lg) 0; border-bottom: 1px solid var(--color-gray-200);">
-                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: var(--space-xl);">
-                                <div class="time font-mono">4:00 - 5:00 PM</div>
+                            <div class="schedule-item">
+                                <div class="schedule-time time font-mono">4:00 - 5:00 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">LAROYE ~ LADIES STYLING</h3>
                                 </div>
@@ -199,8 +204,8 @@
                         </div>
                         
                         <div class="schedule-item" style="padding: var(--space-lg) 0; border-bottom: 1px solid var(--color-gray-200);">
-                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: var(--space-xl);">
-                                <div class="time font-mono">8:00 PM - 12:00 AM</div>
+                            <div class="schedule-item">
+                                <div class="schedule-time time font-mono">8:00 PM - 12:00 AM</div>
                                 <div class="details">
                                     <h3 class="text-gradient" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-sm);">SOCIAL DANCE</h3>
                                     <p class="font-serif" style="margin-bottom: var(--space-xs);">Junkyard Social Club • 2525 Frontier Ave, Boulder 80302</p>
@@ -221,8 +226,8 @@
                     
                     <div class="schedule-items">
                         <div class="schedule-item" style="padding: var(--space-lg) 0; border-bottom: 1px solid var(--color-gray-200);">
-                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: var(--space-xl);">
-                                <div class="time font-mono">10:00 - 11:00 AM</div>
+                            <div class="schedule-item">
+                                <div class="schedule-time time font-mono">10:00 - 11:00 AM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">GISELLE ~ LADIES STYLING</h3>
                                     <p class="font-serif" style="font-size: var(--font-size-sm); color: var(--color-gray-600);">Social Hall</p>
@@ -231,8 +236,8 @@
                         </div>
                         
                         <div class="schedule-item" style="padding: var(--space-lg) 0; border-bottom: 1px solid var(--color-gray-200);">
-                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: var(--space-xl);">
-                                <div class="time font-mono">11:00 AM - 12:00 PM</div>
+                            <div class="schedule-item">
+                                <div class="schedule-time time font-mono">11:00 AM - 12:00 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">LUNCH BREAK</h3>
                                 </div>
@@ -240,8 +245,8 @@
                         </div>
                         
                         <div class="schedule-item" style="padding: var(--space-lg) 0; border-bottom: 1px solid var(--color-gray-200);">
-                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: var(--space-xl);">
-                                <div class="time font-mono">12:00 - 1:00 PM</div>
+                            <div class="schedule-item">
+                                <div class="schedule-time time font-mono">12:00 - 1:00 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">EMARLOS & COURTNEY ~ CASINO INTERMEDIATE</h3>
                                     <p class="font-serif" style="font-size: var(--font-size-sm); color: var(--color-gray-600);">Tango Room</p>
@@ -250,8 +255,8 @@
                         </div>
                         
                         <div class="schedule-item" style="padding: var(--space-lg) 0; border-bottom: 1px solid var(--color-gray-200);">
-                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: var(--space-xl);">
-                                <div class="time font-mono">1:15 - 2:15 PM</div>
+                            <div class="schedule-item">
+                                <div class="schedule-time time font-mono">1:15 - 2:15 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">NATHAN HOOK ~ RUEDA INTERMEDIATE/ADVANCED</h3>
                                     <p class="font-serif" style="font-size: var(--font-size-sm); color: var(--color-gray-600);">North Hall</p>
@@ -260,7 +265,7 @@
                         </div>
                         
                         <div class="schedule-item" style="padding: var(--space-lg) 0;">
-                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: var(--space-xl);">
+                            <div class="schedule-item">
                                 <div class="time"></div>
                                 <div class="details">
                                     <p class="text-gradient" style="font-size: var(--font-size-xl);">NO SOCIAL ON SUNDAY</p>

@@ -685,34 +685,9 @@
   }
 }
 
-/* Responsive */
+/* Responsive - Navigation handled by navigation.css */
 @media (max-width: 768px) {
-  .menu-toggle {
-    display: flex;
-  }
-
-  .mobile-menu {
-    position: fixed;
-    top: 0;
-    right: -100%;
-    width: 100%;
-    max-width: 300px;
-    height: 100vh;
-    background-color: var(--color-white);
-    box-shadow: var(--shadow-xl);
-    z-index: var(--z-dropdown);
-    transition: right var(--transition-base);
-    padding: var(--space-4xl) var(--space-xl) var(--space-xl);
-  }
-
-  .mobile-menu.is-open {
-    right: 0;
-  }
-
-  .nav-list {
-    flex-direction: column;
-    gap: var(--space-md);
-  }
+  /* Mobile navigation is fully handled by navigation.css */
 
   .nav-link {
     font-size: var(--font-size-base);
@@ -722,6 +697,13 @@
   .gallery-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: var(--space-sm);
+  }
+}
+
+/* Tablet breakpoint */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 }
 
@@ -2023,4 +2005,29 @@
         border: 1px solid var(--color-gray-800);
         background: none;
     }
+}
+
+/* Schedule Components */
+.schedule-item {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: var(--space-xl);
+}
+
+@media (max-width: 768px) {
+  .schedule-item {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+  
+  .schedule-time {
+    font-weight: 600;
+    margin-bottom: var(--space-xs);
+  }
+}
+
+/* Site Logo Responsive */
+.site-logo {
+  height: clamp(60px, 8vw, 78px);
+  width: auto;
 }
