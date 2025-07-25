@@ -79,40 +79,104 @@
       "destination": "/pages/about.html"
     },
     {
-      "source": "/artists",
+      "source": "/boulder-fest-2026/home",
+      "destination": "/pages/home.html"
+    },
+    {
+      "source": "/boulder-fest-2026/about",
+      "destination": "/pages/about.html"
+    },
+    {
+      "source": "/boulder-fest-2026/artists",
       "destination": "/pages/artists.html"
     },
     {
-      "source": "/schedule",
+      "source": "/boulder-fest-2026/schedule",
       "destination": "/pages/schedule.html"
     },
     {
-      "source": "/gallery",
+      "source": "/boulder-fest-2026/gallery",
       "destination": "/pages/gallery.html"
     },
     {
-      "source": "/gallery-2025",
-      "destination": "/pages/gallery-2025.html"
-    },
-    {
-      "source": "/tickets",
+      "source": "/boulder-fest-2026/tickets",
       "destination": "/pages/tickets.html"
     },
     {
-      "source": "/donations",
+      "source": "/boulder-fest-2026/donations",
       "destination": "/pages/donations.html"
+    },
+    {
+      "source": "/boulder-fest-2025/gallery",
+      "destination": "/pages/gallery-2025.html"
+    },
+    {
+      "source": "/weekender-2026-09/:page",
+      "destination": "/pages/:page.html"
+    },
+    {
+      "source": "/workshop-series-2026/:page",
+      "destination": "/pages/:page.html"
+    },
+    {
+      "source": "/about-festival",
+      "destination": "/pages/about.html"
     },
     {
       "source": "/contact",
       "destination": "/pages/contact.html"
     }
   ],
-  "redirects": [],
+  "redirects": [
+    {
+      "source": "/home",
+      "destination": "/boulder-fest-2026/home",
+      "permanent": true
+    },
+    {
+      "source": "/about",
+      "destination": "/boulder-fest-2026/about",
+      "permanent": true
+    },
+    {
+      "source": "/artists",
+      "destination": "/boulder-fest-2026/artists",
+      "permanent": true
+    },
+    {
+      "source": "/schedule",
+      "destination": "/boulder-fest-2026/schedule",
+      "permanent": true
+    },
+    {
+      "source": "/gallery",
+      "destination": "/boulder-fest-2026/gallery",
+      "permanent": true
+    },
+    {
+      "source": "/gallery-2025",
+      "destination": "/boulder-fest-2025/gallery",
+      "permanent": true
+    },
+    {
+      "source": "/tickets",
+      "destination": "/boulder-fest-2026/tickets",
+      "permanent": true
+    },
+    {
+      "source": "/donations",
+      "destination": "/boulder-fest-2026/donations",
+      "permanent": true
+    }
+  ],
   "trailingSlash": false,
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
+        { "key": "Link", "value": "<https://fonts.googleapis.com>; rel=dns-prefetch" },
+        { "key": "Link", "value": "<https://instagram.com>; rel=dns-prefetch" },
+        { "key": "Link", "value": "<https://drive.google.com>; rel=preconnect; crossorigin" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
         { "key": "X-XSS-Protection", "value": "1; mode=block" },
@@ -122,13 +186,15 @@
     {
       "source": "/(.*)\\.(jpg|jpeg|png|gif|svg|webp)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
+        { "key": "Vary", "value": "Accept" }
       ]
     },
     {
       "source": "/(.*)\\.(css|js)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" },
+        { "key": "Vary", "value": "Accept-Encoding" }
       ]
     },
     {
@@ -141,7 +207,10 @@
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "s-maxage=3600, stale-while-revalidate=86400" }
+        { "key": "Cache-Control", "value": "s-maxage=3600, stale-while-revalidate=86400" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
       ]
     },
     {

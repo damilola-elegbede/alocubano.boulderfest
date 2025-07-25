@@ -13,10 +13,19 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: '.env.local' });
 
 // --- Configuration ---
-// Map year to actual folder ID
-const GALLERY_CONFIG = {
+// Event-based gallery configuration - maps event IDs to Google Drive folder IDs
+const EVENT_GALLERY_CONFIG = {
+  'boulder-fest-2025': '1hB8ajnn3RFaFBlEJ_7GuPpUHmt6-_w8e', // ALoCubano_BoulderFest_2025
+  'boulder-fest-2026': null, // To be configured when folder is available
+  'weekender-2026-09': null, // To be configured when folder is available
+  // Add future events here as needed
+};
+
+// Legacy year-based config for backward compatibility
+const LEGACY_GALLERY_CONFIG = {
   '2025': '1hB8ajnn3RFaFBlEJ_7GuPpUHmt6-_w8e', // ALoCubano_BoulderFest_2025
-  // Add other years here as needed
+  '2024': null, // Historical data if available
+  '2023': null, // Historical data if available
 };
 const OUTPUT_DIR = path.join(__dirname, '..', 'public', 'gallery-data');
 
@@ -31,15 +40,15 @@ const auth = new google.auth.GoogleAuth({
 const drive = google.drive({ version: 'v3', auth });
 
 // --- Main Fetch Logic ---
-async function fetchAllGalleryDataFromGoogle(year, yearFolderId) {
-  console.log(`Fetching all gallery data for ${year} from Google Drive folder: ${yearFolderId}...`);
+async function fetchAllGalleryDataFromGoogle(eventIdOrYear, folderId) {
+  console.log(`Fetching all gallery data for ${eventIdOrYear} from Google Drive folder: ${folderId}...`);
   
   try {
-    // yearFolderId is already the specific year folder, no need to search
+    // folderId is already the specific event folder, no need to search
 
-    // Get category folders within the year
+    // Get category folders within the event
     const categoryFolders = await drive.files.list({
-      q: `'${yearFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+      q: `'${folderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
       fields: 'files(id, name)',
       orderBy: 'name',
     });
@@ -81,16 +90,27 @@ async function fetchAllGalleryDataFromGoogle(year, yearFolderId) {
       totalCount += galleryItems.length;
     }
 
-    console.log(`Found ${totalCount} items for ${year}.`);
-    return {
-      year,
+    console.log(`Found ${totalCount} items for ${eventIdOrYear}.`);
+    
+    // Determine if this is an event or legacy year format
+    const isEventFormat = eventIdOrYear.includes('-');
+    const responseData = {
       totalCount,
       categories: categories,
       hasMore: false, // The static file contains all items
       cacheTimestamp: new Date().toISOString(),
     };
+    
+    if (isEventFormat) {
+      responseData.eventId = eventIdOrYear;
+      responseData.event = eventIdOrYear; // for backward compatibility
+    } else {
+      responseData.year = eventIdOrYear;
+    }
+    
+    return responseData;
   } catch (error) {
-    console.error(`Error fetching gallery data for ${year}:`, error);
+    console.error(`Error fetching gallery data for ${eventIdOrYear}:`, error);
     return null;
   }
 }
@@ -105,14 +125,15 @@ async function main() {
       fs.mkdirSync(OUTPUT_DIR, { recursive: true });
     }
     
-    // Create placeholder files for each configured year
-    for (const [year] of Object.entries(GALLERY_CONFIG)) {
-      const outputPath = path.join(OUTPUT_DIR, `${year}.json`);
+    // Create placeholder files for each configured event and legacy year
+    for (const [eventId] of Object.entries(EVENT_GALLERY_CONFIG)) {
+      const outputPath = path.join(OUTPUT_DIR, `${eventId}.json`);
       const placeholderData = {
-        year,
+        eventId,
+        event: eventId,
         items: [],
         totalCount: 0,
-        categories: { workshops: 0, socials: 0, other: 0 },
+        categories: { workshops: [], socials: [], other: [] },
         hasMore: false,
         cacheTimestamp: new Date().toISOString(),
         isPlaceholder: true,
@@ -120,7 +141,25 @@ async function main() {
       };
       
       fs.writeFileSync(outputPath, JSON.stringify(placeholderData, null, 2));
-      console.log(`📄 Created placeholder: ${outputPath}`);
+      console.log(`📄 Created event placeholder: ${outputPath}`);
+    }
+    
+    // Create legacy year placeholders for backward compatibility
+    for (const [year] of Object.entries(LEGACY_GALLERY_CONFIG)) {
+      const outputPath = path.join(OUTPUT_DIR, `${year}.json`);
+      const placeholderData = {
+        year,
+        items: [],
+        totalCount: 0,
+        categories: { workshops: [], socials: [], other: [] },
+        hasMore: false,
+        cacheTimestamp: new Date().toISOString(),
+        isPlaceholder: true,
+        message: 'Placeholder data - Google Drive credentials not available'
+      };
+      
+      fs.writeFileSync(outputPath, JSON.stringify(placeholderData, null, 2));
+      console.log(`📄 Created legacy placeholder: ${outputPath}`);
     }
     
     console.log('✅ Placeholder gallery cache files created successfully');
@@ -131,9 +170,25 @@ async function main() {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   }
 
-  for (const [year, folderId] of Object.entries(GALLERY_CONFIG)) {
+  // Process event-based gallery data
+  for (const [eventId, folderId] of Object.entries(EVENT_GALLERY_CONFIG)) {
     if (!folderId) {
-      console.warn(`Skipping ${year}: No folder ID configured`);
+      console.warn(`Skipping ${eventId}: No folder ID configured`);
+      continue;
+    }
+    
+    const galleryData = await fetchAllGalleryDataFromGoogle(eventId, folderId);
+    if (galleryData) {
+      const outputPath = path.join(OUTPUT_DIR, `${eventId}.json`);
+      fs.writeFileSync(outputPath, JSON.stringify(galleryData, null, 2));
+      console.log(`✅ Gallery data for ${eventId} saved to ${outputPath}`);
+    }
+  }
+  
+  // Process legacy year-based gallery data for backward compatibility
+  for (const [year, folderId] of Object.entries(LEGACY_GALLERY_CONFIG)) {
+    if (!folderId) {
+      console.warn(`Skipping legacy year ${year}: No folder ID configured`);
       continue;
     }
     
@@ -141,7 +196,7 @@ async function main() {
     if (galleryData) {
       const outputPath = path.join(OUTPUT_DIR, `${year}.json`);
       fs.writeFileSync(outputPath, JSON.stringify(galleryData, null, 2));
-      console.log(`✅ Gallery data for ${year} saved to ${outputPath}`);
+      console.log(`✅ Legacy gallery data for ${year} saved to ${outputPath}`);
     }
   }
 }

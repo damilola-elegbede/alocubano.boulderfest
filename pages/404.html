@@ -10,16 +10,53 @@
   <link rel="icon" type="image/png" href="/images/favicons/favicon-32x32.png">
   <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
   
-      <!-- Critical resource preloading -->
+              <!-- Critical resource preloading -->
     <script>
-      // Inline critical path optimization - Static hero images
+      // Inline critical path optimization - Event hero images with responsive variants
       (function() {
-        // Preload static hero image for current page
-        const heroPreload = document.createElement('link');
-        heroPreload.rel = 'preload';
-        heroPreload.as = 'image';
-        heroPreload.href = '/images/hero/hero-default.jpg';
-        document.head.appendChild(heroPreload);
+        // Check if optimized variants exist for event heroes
+        const heroPath = '/images/hero/hero-default.jpg';
+        const isEventHero = false;
+        
+        if (isEventHero) {
+          // Preload optimized variants for event heroes (WebP first, then JPEG fallback)
+          const isMobile = window.innerWidth <= 768;
+          const variant = isMobile ? 'mobile' : 'desktop';
+          const baseName = 'hero-default';
+          
+          // Preload WebP variant
+          const webpPreload = document.createElement('link');
+          webpPreload.rel = 'preload';
+          webpPreload.as = 'image';
+          webpPreload.href = `/images/hero-optimized/${variant}/${baseName}.webp`;
+          webpPreload.type = 'image/webp';
+          document.head.appendChild(webpPreload);
+          
+          // Preload AVIF variant for supported browsers
+          if (typeof window !== 'undefined' && 'OffscreenCanvas' in window) {
+            const avifPreload = document.createElement('link');
+            avifPreload.rel = 'preload';
+            avifPreload.as = 'image';
+            avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
+            avifPreload.type = 'image/avif';
+            document.head.appendChild(avifPreload);
+          }
+          
+          // Fallback JPEG preload
+          const jpegPreload = document.createElement('link');
+          jpegPreload.rel = 'preload';
+          jpegPreload.as = 'image';
+          jpegPreload.href = `/images/hero-optimized/${variant}/${baseName}.jpg`;
+          jpegPreload.type = 'image/jpeg';
+          document.head.appendChild(jpegPreload);
+        } else {
+          // Standard hero image preload for top-level pages
+          const heroPreload = document.createElement('link');
+          heroPreload.rel = 'preload';
+          heroPreload.as = 'image';
+          heroPreload.href = heroPath;
+          document.head.appendChild(heroPreload);
+        }
         
         // Preload gallery data for gallery pages
         const pageId = window.location.pathname.split('/').pop() || 'home';
