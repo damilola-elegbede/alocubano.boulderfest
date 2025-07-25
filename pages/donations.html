@@ -13,20 +13,19 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/images/favicons/favicon-192x192.png">
     <link rel="apple-touch-icon" sizes="192x192" href="/images/favicons/favicon-192x192.png">
     
-    <!-- Critical resource preloading -->
+        <!-- Critical resource preloading -->
     <script>
-      // Inline critical path optimization
+      // Inline critical path optimization - Static hero images
       (function() {
-        // Preload hero image for current page
-        const pageId = window.location.pathname.split('/').pop() || 'home';
+        // Preload static hero image for current page
         const heroPreload = document.createElement('link');
         heroPreload.rel = 'preload';
         heroPreload.as = 'image';
-        heroPreload.href = `/api/hero-image/${pageId}?w=1200&format=webp`;
-        heroPreload.crossOrigin = 'anonymous';
+        heroPreload.href = '/images/hero/donations.jpg';
         document.head.appendChild(heroPreload);
         
         // Preload gallery data for gallery pages
+        const pageId = window.location.pathname.split('/').pop() || 'home';
         if (pageId.includes('gallery')) {
           const year = pageId.includes('2025') ? '2025' : new Date().getFullYear();
           const galleryDataPreload = document.createElement('link');
@@ -66,7 +65,7 @@
                     <button class="menu-toggle" aria-label="Toggle menu">
                         <span></span>
                     </button>
-                    <ul class="nav-list">
+                                        <ul class="nav-list">
                         <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
                         <li><a href="/about" class="nav-link" data-text="About">About</a></li>
                         <li><a href="/artists" class="nav-link" data-text="Artists">Artists</a></li>
@@ -184,27 +183,6 @@
                     </form>
                 </div>
 
-                <!-- Impact Section -->
-                <div style="margin-top: var(--space-5xl); text-align: center;">
-                    <h2 class="text-display text-mask" style="margin-bottom: var(--space-2xl);">YOUR IMPACT</h2>
-                    
-                    <div class="impact-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-2xl); max-width: 800px; margin: 0 auto;">
-                        <div class="impact-item">
-                            <p class="text-display text-gradient" style="font-size: var(--font-size-3xl); margin-bottom: var(--space-sm);">$20</p>
-                            <p class="font-serif">Provides workshop materials for 5 students</p>
-                        </div>
-                        
-                        <div class="impact-item">
-                            <p class="text-display text-gradient" style="font-size: var(--font-size-3xl); margin-bottom: var(--space-sm);">$50</p>
-                            <p class="font-serif">Covers venue costs for one workshop</p>
-                        </div>
-                        
-                        <div class="impact-item">
-                            <p class="text-display text-gradient" style="font-size: var(--font-size-3xl); margin-bottom: var(--space-sm);">$100</p>
-                            <p class="font-serif">Sponsors a student scholarship</p>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Tax Info -->
                 <div style="margin-top: var(--space-4xl); text-align: center; padding: var(--space-2xl); background: var(--color-gray-50);">
@@ -240,9 +218,7 @@
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
     <script src="/js/main.js"></script>
-    <script src="/js/typography.js"></script>
-    <script src="/js/image-cache-manager.js?v=2025-07-20-DEBUG-TIMING"></script>
-    <script src="/js/gallery-hero.js"></script>
+    <script src="/js/typography.js"></script><script src="/js/gallery-hero.js"></script>
     <script src="/js/donation-selection.js"></script>
 </body>
 </html>

@@ -42,9 +42,9 @@ alocubano.boulderfest/
 │   ├── navigation.js             # Navigation and menu handling
 │   ├── typography.js             # Typography animations and effects
 │   ├── gallery-detail.js         # Gallery page functionality
-│   ├── gallery-hero.js           # Gallery hero section handler
+│   ├── gallery-hero.js           # Gallery hero section handler (legacy)
 │   ├── cache-warmer.js           # Cache warming utilities
-│   ├── image-cache-manager.js    # Image caching logic
+│   ├── image-cache-manager.js    # Image caching logic (gallery images only)
 │   ├── performance-monitor.js    # Performance monitoring
 │   ├── prefetch-manager.js       # Resource prefetching
 │   ├── progressive-loader.js     # Progressive image loading
@@ -65,15 +65,14 @@ alocubano.boulderfest/
 │   ├── gallery.html              # Photo gallery hub
 │   ├── gallery-2025.html         # 2025 festival photos
 │   ├── gallery-test-minimal.html # Gallery test page
-│   ├── gallery-virtual.html      # Virtual scrolling gallery demo (Phase 3)
 │   ├── tickets.html              # Ticket information
 │   ├── donations.html            # Support the festival
 │   └── 404.html                  # Custom error page
 │
 ├── api/                          # Vercel serverless functions
 │   ├── gallery.js                # Gallery API with Google Drive integration
-│   ├── featured-photos.js        # Featured photos endpoint
-│   ├── cache-warm.js             # Cache warming endpoint
+│   ├── featured-photos.js        # Featured photos endpoint (gallery images only)
+│   ├── cache-warm.js             # Cache warming endpoint (gallery images only)
 │   ├── debug.js                  # Debug utilities
 │   ├── virtual-gallery.js        # Virtual gallery data endpoint (Phase 3)
 │   ├── performance-metrics.js    # Advanced performance metrics API (Phase 3)
@@ -84,19 +83,27 @@ alocubano.boulderfest/
 │   ├── logo.png                  # Festival logo
 │   ├── favicon.ico               # Browser favicon
 │   ├── favicon-circle.svg        # SVG favicon
-│   ├── hero-default.jpg          # Default hero image
 │   ├── instagram-icon.svg        # Social media icons
 │   ├── instagram-type.svg        
 │   ├── instagram.svg             
 │   ├── whatsapp-icon.svg         
 │   ├── favicons/                 # Multiple favicon formats
 │   │   └── [various sizes]       
+│   ├── hero/                     # Static hero images by page
+│   │   ├── home.jpg              # Home page hero
+│   │   ├── about.jpg             # About page hero
+│   │   ├── artists.jpg           # Artists page hero
+│   │   ├── schedule.jpg          # Schedule page hero
+│   │   ├── gallery.jpg           # Gallery page hero
+│   │   ├── tickets.jpg           # Tickets page hero
+│   │   ├── donations.jpg         # Donations page hero
+│   │   └── hero-default.jpg      # Fallback hero image
 │   └── gallery/                  # Gallery placeholder images
 │       └── placeholder-[1-4].svg 
 │
 ├── scripts/                      # Build and utility scripts
 │   ├── generate-gallery-cache.js # Generates gallery data cache
-│   ├── generate-featured-photos.js # Generates featured photos cache
+│   ├── generate-featured-photos.js # Generates featured photos cache (gallery images only)
 │   ├── verify-structure.js       # Validates project structure
 │   ├── deployment-check.js       # Pre-deployment validation
 │   ├── metrics-monitor.js         # Performance monitoring
@@ -250,6 +257,15 @@ alocubano.boulderfest/
 - **Performance-focused**: Intersection Observer, lazy loading, caching strategies
 - **Error handling**: Comprehensive error handling and graceful degradation
 
+### Static Hero Image System
+- **Page-Specific Images**: Each page has a dedicated hero image in `/images/hero/` directory
+- **Simple Mapping**: Direct filename mapping from page ID to static image path (e.g., `home.jpg`, `about.jpg`)
+- **No Dynamic Loading**: Direct file loading without APIs, caching, or session management
+- **Optimized Display**: `object-position: top center` CSS styling for consistent framing
+- **Preloading**: Static hero images preloaded in HTML head for immediate display
+- **Fallback Support**: `hero-default.jpg` serves as fallback for any missing page-specific images
+- **Performance Benefits**: Eliminates API calls, reduces complexity, improves page load times
+
 ### API Design
 - **Serverless functions**: Vercel-compatible functions in `/api/`
 - **Caching strategy**: Intelligent cache-first approach with fallbacks
@@ -275,7 +291,7 @@ alocubano.boulderfest/
 - **Offline Support**: Graceful degradation when network unavailable
 
 ##### Preloading System
-- **Critical Path**: Hero images and gallery data preloaded in HTML head
+- **Critical Path**: Static hero images and gallery data preloaded in HTML head
 - **Intelligent Prefetching**: Based on user interaction patterns
 - **Resource Budgeting**: Adaptive to connection speed and device capabilities
 - **Priority Queue**: High/medium/low priority prefetch management
@@ -433,30 +449,33 @@ npm run serve:simple        # Simple HTTP server (no API functions)
 1. **Design tokens**: Update CSS variables in `/css/base.css`
 2. **Styles**: Modify relevant CSS files in `/css/`
 3. **Content**: Edit HTML files in `/pages/`
-4. **Functionality**: Update JavaScript modules in `/js/`
-5. **API**: Modify serverless functions in `/api/`
-6. **Virtual Scrolling**: Update virtual gallery components in `/js/components/virtual-scroller.js`
-7. **Performance**: Modify advanced monitoring in `/js/advanced-performance-monitor.js`
-8. **Multi-Year Galleries**: Update multi-year coordination in `/js/multi-year-gallery-manager.js`
+4. **Hero Images**: Replace static images in `/images/hero/` directory (page-specific naming)
+5. **Functionality**: Update JavaScript modules in `/js/`
+6. **API**: Modify serverless functions in `/api/` (gallery images only)
+7. **Virtual Scrolling**: Update virtual gallery components in `/js/components/virtual-scroller.js`
+8. **Performance**: Modify advanced monitoring in `/js/advanced-performance-monitor.js`
+9. **Multi-Year Galleries**: Update multi-year coordination in `/js/multi-year-gallery-manager.js`
 
 ### Adding New Pages
 1. Create HTML file in `/pages/`
-2. Follow existing header/footer structure from other pages
-3. Add navigation link to header in all pages
-4. Update internal links and navigation
-5. Test responsive design and accessibility
-6. Run test suite to ensure no regressions
+2. Add corresponding hero image to `/images/hero/` (use page filename as image name)
+3. Follow existing header/footer structure from other pages
+4. Add navigation link to header in all pages
+5. Update internal links and navigation
+6. Test responsive design and accessibility
+7. Run test suite to ensure no regressions
 
 ## Deployment (Vercel)
 - **Serverless functions**: API routes automatically deployed
 - **Static optimization**: Automatic asset optimization and CDN
-- **Cache generation**: Build scripts generate required cache files
-- **Environment variables**: Google Drive API credentials for gallery
+- **Cache generation**: Build scripts generate required cache files (gallery images only)
+- **Environment variables**: Google Drive API credentials for gallery images only
+- **Static assets**: Hero images deployed directly as static files
 - **Monitoring**: Performance tracking and error monitoring
 
 ## Generated Files (Not in Git)
 The following files are generated by build scripts and are excluded from version control:
-- `public/featured-photos.json` - Featured photos cache
+- `public/featured-photos.json` - Featured photos cache (gallery images only)
 - `public/gallery-data/` - Gallery data cache directory
 - `coverage/` - Test coverage reports
 - `node_modules/` - NPM dependencies
@@ -534,8 +553,9 @@ Major architectural enhancements for high-performance gallery experience:
 ### Common Tasks
 - **Content updates**: Modify HTML files in `/pages/`
 - **Style changes**: Update relevant CSS files in `/css/`
+- **Hero image updates**: Replace static images in `/images/hero/` (use page-specific filenames)
 - **JavaScript features**: Add modules to `/js/` or components to `/js/components/`
-- **API changes**: Modify serverless functions in `/api/`
+- **API changes**: Modify serverless functions in `/api/` (gallery images only)
 - **Configuration**: Update config files in `/config/`
 - **Testing**: Add tests to `/tests/unit/` and run full test suite
 - **Link validation**: Use either JS (`npm run test:links`) or Python tools
@@ -546,6 +566,18 @@ Major architectural enhancements for high-performance gallery experience:
 - **Advanced Monitoring**: Configure performance budgets and real-time metrics
 
 ### Critical Development Notes
+
+#### Static Hero Image System (Architectural Change)
+⚠️ **IMPORTANT**: The hero image system has been simplified from dynamic loading to static files:
+
+- **Old System (DEPRECATED)**: Dynamic hero images via Google Drive API, session-based assignment, ImageCacheManager
+- **New System**: Static page-specific images in `/images/hero/` directory with direct file mapping
+- **Migration**: Remove any references to dynamic hero loading, session storage, or API-based hero assignment
+- **File Naming**: Use page ID as filename: `home.jpg`, `about.jpg`, `artists.jpg`, etc.
+- **CSS Implementation**: Use `object-position: top center` for consistent image framing
+- **Performance**: No API calls needed, immediate loading, simplified caching
+
+**Prevention**: Always use static hero image paths, never implement dynamic hero loading systems.
 
 #### JavaScript/CSS Class Alignment
 ⚠️ **CRITICAL**: When working with mobile navigation, ensure JavaScript class targeting exactly matches CSS selectors:
@@ -671,7 +703,6 @@ class AdvancedPerformanceMonitor {
 - **Multi-year galleries**: `js/multi-year-gallery-manager.js`
 - **Advanced monitoring**: `js/advanced-performance-monitor.js`
 - **Phase 3 APIs**: `api/virtual-gallery.js`, `api/performance-metrics.js`
-- **Phase 3 pages**: `pages/gallery-virtual.html`
 
 ### Cultural Sensitivity
 - **Cuban culture**: Respect authentic traditions

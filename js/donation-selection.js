@@ -55,6 +55,7 @@ class DonationSelection {
   handleDonationCardClick(event) {
     const card = event.currentTarget;
     const amount = card.dataset.amount;
+    const isCurrentlySelected = card.classList.contains('selected');
     
     // Clear all selections
     document.querySelectorAll('.donation-card').forEach(c => {
@@ -62,17 +63,24 @@ class DonationSelection {
       c.setAttribute('aria-pressed', 'false');
     });
     
-    // Select clicked card
-    card.classList.add('selected');
-    card.setAttribute('aria-pressed', 'true');
-    
-    if (amount === 'custom') {
-      this.selectedAmount = 'custom';
-      this.showCustomInput();
-    } else {
-      this.selectedAmount = parseInt(amount);
+    // If the clicked card was already selected, unselect it (toggle behavior)
+    if (isCurrentlySelected) {
+      this.selectedAmount = null;
       this.customAmount = null;
       this.hideCustomInput();
+    } else {
+      // Select clicked card
+      card.classList.add('selected');
+      card.setAttribute('aria-pressed', 'true');
+      
+      if (amount === 'custom') {
+        this.selectedAmount = 'custom';
+        this.showCustomInput();
+      } else {
+        this.selectedAmount = parseInt(amount);
+        this.customAmount = null;
+        this.hideCustomInput();
+      }
     }
     
     this.updateDisplay();
