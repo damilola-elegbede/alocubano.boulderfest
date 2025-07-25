@@ -114,7 +114,7 @@ class AdvancedCacheWarmer {
                 ],
                 images: [
                     '/images/logo.png',
-                    '/images/favicon-circle.svg'
+                    '/images/favicons/favicon-32x32.png'
                 ]
             },
             essential: {
