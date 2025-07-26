@@ -29,7 +29,12 @@
         if (path === '/tickets') return 'tickets';
         if (path === '/contact') return 'contact';
         
-        // Check for event-specific pages
+        // Check for new direct event-specific paths
+        if (path === '/2026-artists' || path === '/2026-schedule' || path === '/2026-gallery') return 'boulder-fest-2026';
+        if (path === '/2025-artists' || path === '/2025-schedule' || path === '/2025-gallery') return 'boulder-fest-2025';
+        if (path === '/2026-sept-artists' || path === '/2026-sept-schedule' || path === '/2026-sept-gallery') return 'weekender-2026-09';
+        
+        // Check for legacy event-specific pages (for backward compatibility)
         if (path.includes('boulder-fest-2026')) return 'boulder-fest-2026';
         else if (path.includes('boulder-fest-2025')) return 'boulder-fest-2025';
         else if (path.includes('weekender-2026-09')) return 'weekender-2026-09';
