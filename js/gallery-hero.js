@@ -22,17 +22,20 @@
         const path = window.location.pathname;
         let pageId = 'home';
         
-        // Check for event-specific pages first
+        // Check for main pages first (direct routes)
+        if (path === '/home' || path === '/') return 'home';
+        if (path === '/about') return 'about';
+        if (path === '/donations') return 'donations';
+        if (path === '/tickets') return 'tickets';
+        if (path === '/contact') return 'contact';
+        
+        // Check for event-specific pages
         if (path.includes('boulder-fest-2026')) return 'boulder-fest-2026';
         else if (path.includes('boulder-fest-2025')) return 'boulder-fest-2025';
         else if (path.includes('weekender-2026-09')) return 'weekender-2026-09';
-        else if (path.includes('about')) pageId = 'about';
         else if (path.includes('artists')) pageId = 'artists';
         else if (path.includes('schedule')) pageId = 'schedule';
         else if (path.includes('gallery')) pageId = 'gallery';
-        else if (path.includes('tickets')) pageId = 'tickets';
-        else if (path.includes('donations')) pageId = 'donations';
-        else if (path.includes('contact')) pageId = 'contact';
         
         return pageId;
     }

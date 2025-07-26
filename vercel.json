@@ -153,19 +153,13 @@
     {
       "source": "/contact",
       "destination": "/pages/contact.html"
+    },
+    {
+      "source": "/donations",
+      "destination": "/pages/donations.html"
     }
   ],
   "redirects": [
-    {
-      "source": "/home",
-      "destination": "/boulder-fest-2026/home",
-      "permanent": true
-    },
-    {
-      "source": "/about",
-      "destination": "/boulder-fest-2026/about",
-      "permanent": true
-    },
     {
       "source": "/artists",
       "destination": "/boulder-fest-2026/artists",
@@ -189,11 +183,6 @@
     {
       "source": "/tickets",
       "destination": "/pages/tickets.html",
-      "permanent": true
-    },
-    {
-      "source": "/donations",
-      "destination": "/boulder-fest-2026/donations",
       "permanent": true
     },
     {
