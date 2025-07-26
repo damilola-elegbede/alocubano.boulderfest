@@ -679,7 +679,7 @@ class TestRunner:
 
 def main():
     """Main test execution function"""
-    # Get project root directory (go up 3 levels from tests/unit/link-validation/)
+    # Get project root directory (go up 4 levels from tests/unit/link-validation/)
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     
     # Initialize test runner
