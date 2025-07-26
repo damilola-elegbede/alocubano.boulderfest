@@ -87,52 +87,21 @@
     
     <!-- Weekender-specific color theme -->
     <style>
-        :root {
-            /* Weekender Orange/Teal Color Theme */
-            --weekender-orange: #FF6B35;
-            --weekender-teal: #2A9D8F;
-            --weekender-orange-light: #FF8A61;
-            --weekender-teal-light: #4FB3A5;
-            --weekender-orange-dark: #E55A2B;
-            --weekender-teal-dark: #238A7A;
-        }
-        
-        /* Override brand colors for weekender theme */
-        .weekender-theme {
-            --color-red: var(--weekender-orange);
-            --color-blue: var(--weekender-teal);
-        }
-        
-        /* Weekender-specific styling */
-        .weekender-accent {
-            color: var(--weekender-orange);
-        }
-        
-        .weekender-accent-alt {
-            color: var(--weekender-teal);
-        }
-        
-        .text-gradient.weekender {
-            background: linear-gradient(135deg, var(--weekender-orange), var(--weekender-teal));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
         
         .weekender-highlight {
-            border-left: 4px solid var(--weekender-orange);
+            border-left: 4px solid var(--color-red);
             padding-left: var(--space-md);
         }
         
         .schedule-item.intensive {
-            background: linear-gradient(135deg, rgba(255, 107, 53, 0.05), rgba(42, 157, 143, 0.05));
+            background: rgba(204, 41, 54, 0.05);
             border-radius: var(--radius-md);
             padding: var(--space-lg);
             margin-bottom: var(--space-md);
         }
         
         .intensive-marker {
-            background: var(--weekender-orange);
+            background: var(--color-red);
             color: white;
             padding: var(--space-xs) var(--space-sm);
             border-radius: var(--radius-sm);
@@ -143,7 +112,7 @@
         }
     </style>
 </head>
-<body class="typographic weekender-theme">
+<body class="typographic">
     <header class="header">
         <div class="container">
             <div class="grid">
@@ -447,6 +416,7 @@
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
     <script src="/js/main.js"></script>
-    <script src="/js/typography.js"></script><script src="/js/gallery-hero.js"></script>
+    <script src="/js/typography.js"></script>
+    <script src="/js/gallery-hero.js"></script>
 </body>
 </html>

@@ -12,43 +12,62 @@
   
               <!-- Critical resource preloading -->
     <script>
-      // Inline critical path optimization - Event hero images with responsive variants
-      (function() {
+      // AVIF support detection function
+      function supportsAVIF() {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = 'data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAADybWV0YQAAAAAAAAAoaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAGxpYmF2aWYAAAAADnBpdG0AAAAAAAEAAAAeaWxvYwAAAABEAAABAAEAAAABAAABGgAAAB0AAAAoaWluZgAAAAAAAQAAABppbmZlAgAAAAABAABhdjAxQ29sb3IAAAAAamlwcnAAAABLaXBjbwAAABRpc3BlAAAAAAAAAAIAAAACAAAAEHBpeGkAAAAAAwgICAAAAAxhdjFDgQ0MAAAAABNjb2xybmNseAACAAIAAYAAAAAXaXBtYQAAAAAAAAABAAEEAQKDBAAAACVtZGF0EgAKCBgABogQEAwgMg8f8D///8WfhwB8+ErK42A=';
+        });
+      }
+      
+      // Responsive image preloading with proper timing
+      function preloadImages() {
         // Check if optimized variants exist for event heroes
         const heroPath = '/images/hero/hero-default.jpg';
         const isEventHero = false;
         
         if (isEventHero) {
-          // Preload optimized variants for event heroes (WebP first, then JPEG fallback)
+          // Detect mobile after DOM is ready for accurate viewport
           const isMobile = window.innerWidth <= 768;
           const variant = isMobile ? 'mobile' : 'desktop';
           const baseName = 'hero-default';
           
-          // Preload WebP variant
-          const webpPreload = document.createElement('link');
-          webpPreload.rel = 'preload';
-          webpPreload.as = 'image';
-          webpPreload.href = `/images/hero-optimized/${variant}/${baseName}.webp`;
-          webpPreload.type = 'image/webp';
-          document.head.appendChild(webpPreload);
+          // Preload both mobile and desktop variants for critical content
+          const variants = ['mobile', 'desktop'];
           
-          // Preload AVIF variant for supported browsers
-          if (typeof window !== 'undefined' && 'OffscreenCanvas' in window) {
-            const avifPreload = document.createElement('link');
-            avifPreload.rel = 'preload';
-            avifPreload.as = 'image';
-            avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
-            avifPreload.type = 'image/avif';
-            document.head.appendChild(avifPreload);
-          }
+          variants.forEach(variantType => {
+            // Preload WebP variant
+            const webpPreload = document.createElement('link');
+            webpPreload.rel = 'preload';
+            webpPreload.as = 'image';
+            webpPreload.href = `/images/hero-optimized/${variantType}/${baseName}.webp`;
+            webpPreload.type = 'image/webp';
+            document.head.appendChild(webpPreload);
+            
+            // Fallback JPEG preload
+            const jpegPreload = document.createElement('link');
+            jpegPreload.rel = 'preload';
+            jpegPreload.as = 'image';
+            jpegPreload.href = `/images/hero-optimized/${variantType}/${baseName}.jpg`;
+            jpegPreload.type = 'image/jpeg';
+            document.head.appendChild(jpegPreload);
+          });
           
-          // Fallback JPEG preload
-          const jpegPreload = document.createElement('link');
-          jpegPreload.rel = 'preload';
-          jpegPreload.as = 'image';
-          jpegPreload.href = `/images/hero-optimized/${variant}/${baseName}.jpg`;
-          jpegPreload.type = 'image/jpeg';
-          document.head.appendChild(jpegPreload);
+          // Preload AVIF variant with proper detection
+          supportsAVIF().then(supported => {
+            if (supported) {
+              variants.forEach(variantType => {
+                const avifPreload = document.createElement('link');
+                avifPreload.rel = 'preload';
+                avifPreload.as = 'image';
+                avifPreload.href = `/images/hero-optimized/${variantType}/${baseName}.avif`;
+                avifPreload.type = 'image/avif';
+                document.head.appendChild(avifPreload);
+              });
+            }
+          });
         } else {
           // Standard hero image preload for top-level pages
           const heroPreload = document.createElement('link');
@@ -69,7 +88,24 @@
           galleryDataPreload.crossOrigin = 'anonymous';
           document.head.appendChild(galleryDataPreload);
         }
-      })();
+      }
+      
+      // Wait for DOM to be ready before preloading
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', preloadImages);
+      } else {
+        preloadImages();
+      }
+      
+      // Update variant on resize for dynamic responsiveness
+      window.addEventListener('resize', () => {
+        // Debounce resize events
+        clearTimeout(window.resizeTimeout);
+        window.resizeTimeout = setTimeout(() => {
+          // Re-evaluate mobile detection and update if needed
+          preloadImages();
+        }, 250);
+      });
     </script>
 
   <!-- DNS prefetch for external resources -->
