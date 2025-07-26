@@ -61,10 +61,33 @@ export default async function handler(req, res) {
   try {
     // Validate and sanitize query parameters
     const yearParam = req.query.year || '2025';
-    const eventParam = req.query.event; // Add support for event parameter
+    const eventParamRaw = req.query.event; // Add support for event parameter
     const categoryParam = req.query.category;
     const limitParam = req.query.limit || '50';
     const offsetParam = req.query.offset || '0';
+    
+    // Validate and sanitize event parameter to prevent path traversal
+    let eventParam = null;
+    if (eventParamRaw) {
+      // Whitelist of allowed event names
+      const allowedEvents = [
+        'boulder-fest-2025',
+        'boulder-fest-2026', 
+        'weekender-2026-09',
+        'workshop-series-2026'
+      ];
+      
+      // Only allow alphanumeric characters, hyphens, and underscores
+      const sanitizedEvent = eventParamRaw.replace(/[^a-zA-Z0-9\-_]/g, '');
+      
+      if (allowedEvents.includes(sanitizedEvent)) {
+        eventParam = sanitizedEvent;
+      } else {
+        return res.status(400).json({ 
+          error: 'Invalid event parameter. Allowed values: ' + allowedEvents.join(', ') 
+        });
+      }
+    }
     
     // Validate year (must be 4-digit number between 2020-2030)
     const year = yearParam.match(/^\d{4}$/) ? yearParam : '2025';

@@ -35,15 +35,13 @@
           webpPreload.type = 'image/webp';
           document.head.appendChild(webpPreload);
           
-          // Preload AVIF variant for supported browsers
-          if (typeof window !== 'undefined' && 'OffscreenCanvas' in window) {
-            const avifPreload = document.createElement('link');
-            avifPreload.rel = 'preload';
-            avifPreload.as = 'image';
-            avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
-            avifPreload.type = 'image/avif';
-            document.head.appendChild(avifPreload);
-          }
+          // Preload AVIF variant (browsers that don't support AVIF will ignore)
+          const avifPreload = document.createElement('link');
+          avifPreload.rel = 'preload';
+          avifPreload.as = 'image';
+          avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
+          avifPreload.type = 'image/avif';
+          document.head.appendChild(avifPreload);
           
           // Fallback JPEG preload
           const jpegPreload = document.createElement('link');
