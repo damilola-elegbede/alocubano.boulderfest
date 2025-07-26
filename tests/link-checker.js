@@ -419,7 +419,7 @@ class LinkChecker {
             const cleanUrl = url.split('?')[0];
             
             // Handle Vercel clean URL routing
-            const routingResult = this.checkServerRouting(cleanUrl);
+            const routingResult = this.checkServerRouting(cleanUrl, new Set(), 0);
             if (routingResult.status === 'ok') {
                 return routingResult;
             }
@@ -478,8 +478,35 @@ class LinkChecker {
 
     /**
      * Check Vercel routing patterns from vercel.json
+     * @param {string} url - The URL to check
+     * @param {Set} visitedRoutes - Set of visited routes to prevent infinite recursion
+     * @param {number} depth - Current recursion depth
      */
-    checkServerRouting(url) {
+    checkServerRouting(url, visitedRoutes = new Set(), depth = 0) {
+        // Prevent infinite recursion by tracking visited routes
+        if (visitedRoutes.has(url)) {
+            return {
+                status: 'broken',
+                serverRoute: true,
+                routeType: 'circular-redirect',
+                error: 'Circular redirect detected',
+                suggestion: 'Check vercel.json for circular redirect patterns'
+            };
+        }
+        
+        // Prevent excessive recursion depth (safety limit)
+        if (depth > 10) {
+            return {
+                status: 'broken',
+                serverRoute: true,
+                routeType: 'max-recursion-depth',
+                error: 'Maximum redirect depth exceeded',
+                suggestion: 'Reduce redirect chain length in vercel.json'
+            };
+        }
+        
+        // Add current URL to visited set
+        visitedRoutes.add(url);
         // Handle API endpoints
         if (url.startsWith('/api/')) {
             const apiEndpoints = [
@@ -571,7 +598,7 @@ class LinkChecker {
                 };
             } else {
                 // Redirect to another route that might also be rewritten
-                return this.checkServerRouting(redirectTarget);
+                return this.checkServerRouting(redirectTarget, visitedRoutes, depth + 1);
             }
         }
         
