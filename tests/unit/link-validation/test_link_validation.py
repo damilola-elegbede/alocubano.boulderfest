@@ -182,8 +182,8 @@ class LinkExtractorParser(HTMLParser):
         if url.startswith('#'):
             return LinkType.FRAGMENT
         
-        # External links
-        if url.startswith(('http://', 'https://')):
+        # External links (including protocol-relative URLs)
+        if url.startswith(('http://', 'https://', '//')):
             return LinkType.EXTERNAL_HTTP
         
         # Email links
@@ -207,7 +207,7 @@ class LinkExtractorParser(HTMLParser):
             return LinkType.INTERNAL_IMAGE
         
         # Special routes (handled by server.py routing)
-        if url in ['/', '/gallery-2025'] or url.startswith('/gallery-data/'):
+        if url == '/' or url.startswith('/gallery-data/'):
             return LinkType.SPECIAL_ROUTE
         
         # Default to internal page
@@ -228,17 +228,41 @@ class LinkValidator:
             self.project_root / "public"
         ]
         
-        # Server.py routing patterns (based on analysis)
+        # Server.py routing patterns (based on current vercel.json)
         self.server_routes = {
             '/': '/index.html',
             '/home': '/pages/home.html',
             '/about': '/pages/about.html',
-            '/artists': '/pages/artists.html',
-            '/schedule': '/pages/schedule.html',
-            '/gallery': '/pages/gallery.html',
+            '/contact': '/pages/contact.html',
             '/tickets': '/pages/tickets.html',
             '/donations': '/pages/donations.html',
-            '/gallery-2025': '/pages/gallery-2025.html'
+            '/boulder-fest-2025': '/pages/boulder-fest-2025-index.html',
+            '/boulder-fest-2025/artists': '/pages/boulder-fest-2025-artists.html',
+            '/boulder-fest-2025/schedule': '/pages/boulder-fest-2025-schedule.html',
+            '/boulder-fest-2025/gallery': '/pages/boulder-fest-2025-gallery.html',
+            '/boulder-fest-2026': '/pages/boulder-fest-2026-index.html',
+            '/boulder-fest-2026/artists': '/pages/boulder-fest-2026-artists.html',
+            '/boulder-fest-2026/schedule': '/pages/boulder-fest-2026-schedule.html',
+            '/boulder-fest-2026/gallery': '/pages/boulder-fest-2026-gallery.html',
+            '/weekender-2026-09': '/pages/weekender-2026-09-index.html',
+            '/weekender-2026-09/artists': '/pages/weekender-2026-09-artists.html',
+            '/weekender-2026-09/schedule': '/pages/weekender-2026-09-schedule.html',
+            '/weekender-2026-09/gallery': '/pages/weekender-2026-09-gallery.html',
+            '/2026-artists': '/pages/boulder-fest-2026-artists.html',
+            '/2026-schedule': '/pages/boulder-fest-2026-schedule.html',
+            '/2026-gallery': '/pages/boulder-fest-2026-gallery.html',
+            '/2025-artists': '/pages/boulder-fest-2025-artists.html',
+            '/2025-schedule': '/pages/boulder-fest-2025-schedule.html',
+            '/2025-gallery': '/pages/boulder-fest-2025-gallery.html',
+            '/2026-sept-artists': '/pages/weekender-2026-09-artists.html',
+            '/2026-sept-schedule': '/pages/weekender-2026-09-schedule.html',
+            '/2026-sept-gallery': '/pages/weekender-2026-09-gallery.html',
+            # Redirects that ultimately resolve to pages
+            '/gallery-2025': '/pages/boulder-fest-2025-gallery.html',
+            '/weekender-2026-09-tickets': '/pages/tickets.html',
+            '/artists': '/pages/boulder-fest-2026-artists.html',
+            '/schedule': '/pages/boulder-fest-2026-schedule.html',
+            '/gallery': '/pages/boulder-fest-2026-gallery.html'
         }
         
         # API endpoints (from server.py)
@@ -383,9 +407,6 @@ class LinkValidator:
             # Root route redirects to index.html
             return (self.project_root / "index.html").exists()
         
-        elif url == '/gallery-2025':
-            # Special gallery route
-            return (self.pages_dir / "gallery-2025.html").exists()
         
         elif url.startswith('/gallery-data/') and url.endswith('.json'):
             # Static gallery data files
@@ -404,7 +425,20 @@ class LinkValidator:
         """Validate external HTTP links (format validation only)"""
         url = link.url
         
-        # Basic URL format validation
+        # Handle protocol-relative URLs (//example.com)
+        if url.startswith('//'):
+            # Protocol-relative URLs are valid, just check the netloc part
+            try:
+                parsed = urllib.parse.urlparse('https:' + url)  # Add a scheme for parsing
+                if not parsed.netloc:
+                    link.validation_error = f"Invalid protocol-relative URL format: {url}"
+                    return False
+                return True
+            except Exception as e:
+                link.validation_error = f"Protocol-relative URL parsing error: {str(e)}"
+                return False
+        
+        # Basic URL format validation for full URLs
         try:
             parsed = urllib.parse.urlparse(url)
             if not all([parsed.scheme, parsed.netloc]):
@@ -645,8 +679,8 @@ class TestRunner:
 
 def main():
     """Main test execution function"""
-    # Get project root directory
-    project_root = os.path.dirname(os.path.abspath(__file__))
+    # Get project root directory (go up 3 levels from tests/unit/link-validation/)
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     
     # Initialize test runner
     runner = TestRunner(project_root)
