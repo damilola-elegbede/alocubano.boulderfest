@@ -199,27 +199,27 @@
     {
       "source": "/gallery-2025",
       "destination": "/2025-gallery",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/tickets",
       "destination": "/pages/tickets.html",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/boulder-fest-2025/tickets",
       "destination": "/pages/tickets.html",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/boulder-fest-2026/tickets",
       "destination": "/pages/tickets.html",
-      "permanent": true
+      "permanent": false
     },
     {
       "source": "/weekender-2026-09/tickets",
       "destination": "/pages/tickets.html",
-      "permanent": true
+      "permanent": false
     }
   ],
   "trailingSlash": false,
@@ -261,7 +261,7 @@
       "source": "/api/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "s-maxage=3600, stale-while-revalidate=86400" },
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Origin", "value": "https://alocubano.boulderfest.com" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
         { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
       ]
