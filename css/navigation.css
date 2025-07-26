@@ -359,6 +359,13 @@
     transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     /* Always display flex, just hidden via transform */
     display: flex !important;
+    /* Remove list bullets */
+    list-style: none;
+    margin: 0;
+    padding-left: var(--space-lg);
+    padding-right: var(--space-lg);
+    padding-top: var(--space-4xl);
+    padding-bottom: var(--space-xl);
   }
   
   .typographic .nav-list.is-open,
@@ -385,7 +392,7 @@
   .nav-list.is-open .nav-link {
     font-family: var(--font-display);
     font-size: var(--font-size-lg);
-    font-weight: 500;
+    font-weight: 400;
     letter-spacing: var(--letter-spacing-wide);
     text-transform: uppercase;
     color: var(--color-black);
@@ -401,6 +408,7 @@
     border-radius: 4px;
     overflow: hidden;
     white-space: nowrap;
+    list-style: none;
   }
 
   .typographic .nav-list.is-open .nav-link::before,
@@ -430,7 +438,15 @@
   .typographic .nav-list.is-open .nav-link.is-active,
   .nav-list.is-open .nav-link.is-active {
     color: var(--color-red);
-    font-weight: 600;
+    font-weight: 500;
+  }
+
+  /* Remove bullets from mobile menu list items */
+  .typographic .nav-list.is-open li,
+  .nav-list.is-open li {
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
   
 }
