@@ -389,7 +389,7 @@ function main() {
         listEvents();
         break;
         
-      case 'transition':
+      case 'transition': {
         const newState = args[2];
         if (!eventId || !newState) {
           console.error('❌ Usage: transition <event-id> <state>');
@@ -397,6 +397,7 @@ function main() {
         }
         transitionEvent(eventId, newState, options);
         break;
+      }
         
       case 'promote':
         if (!eventId) {
