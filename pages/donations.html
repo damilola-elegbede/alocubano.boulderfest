@@ -13,7 +13,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/images/favicons/favicon-192x192.png">
     <link rel="apple-touch-icon" sizes="192x192" href="/images/favicons/favicon-192x192.png">
     
-                <!-- Critical resource preloading -->
+    <!-- Critical resource preloading -->
     <script>
       // Inline critical path optimization - Event hero images with responsive variants
       (function() {
@@ -110,7 +110,7 @@
                         <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
                         <li><a href="/about" class="nav-link" data-text="About">About</a></li>
                         <li class="nav-item has-dropdown">
-                            <button class="nav-trigger" aria-expanded="false" aria-haspopup="true" data-dropdown="events">
+                            <button class="nav-trigger" aria-expanded="false" aria-haspopup="true" data-dropdown="events" data-text="Events">
                                 Events
                                 <span class="dropdown-arrow" aria-hidden="true">▼</span>
                             </button>
@@ -118,14 +118,14 @@
                                 <li class="dropdown-category" role="group">
                                     <span class="dropdown-category-title" role="presentation">Boulder Fest</span>
                                     <ul class="dropdown-submenu">
-                                        <li><a href="/boulder-fest-2025/artists" class="dropdown-link" role="menuitem" data-event="boulder-fest-2025" data-event-status="current">2025 Festival</a></li>
-                                        <li><a href="/boulder-fest-2026/artists" class="dropdown-link" role="menuitem" data-event="boulder-fest-2026" data-event-status="upcoming">2026 Festival</a></li>
+                                        <li><a href="/boulder-fest-2026" class="dropdown-link" role="menuitem" data-event="boulder-fest-2026" data-event-status="upcoming">2026 Festival</a></li>
+                                        <li><a href="/boulder-fest-2025" class="dropdown-link" role="menuitem" data-event="boulder-fest-2025" data-event-status="current">2025 Festival</a></li>
                                     </ul>
                                 </li>
                                 <li class="dropdown-category" role="group">
                                     <span class="dropdown-category-title" role="presentation">Weekend Events</span>
                                     <ul class="dropdown-submenu">
-                                        <li><a href="/weekender-2026-09/artists" class="dropdown-link" role="menuitem" data-event="weekender-2026-09" data-event-status="upcoming">Sept 2026 Weekender</a></li>
+                                        <li><a href="/weekender-2026-09" class="dropdown-link" role="menuitem" data-event="weekender-2026-09" data-event-status="upcoming">Sept 2026 Weekender</a></li>
                                     </ul>
                                 </li>
                             </ul>
@@ -159,14 +159,14 @@
                 </div>
 
                 <!-- Donation Form -->
-                <div class="donation-form-wrapper donation-form-container">
-                    <h2 id="donation-form-title" class="text-display" style="text-align: center; margin-bottom: var(--space-2xl);">MAKE A DONATION</h2>
+                <div class="donation-form-wrapper donation-form-container" style="max-width: 800px; margin: 0 auto; text-align: center;">
+                    <h2 id="donation-form-title" class="text-display" style="text-align: center !important; margin-bottom: var(--space-2xl);">MAKE A DONATION</h2>
                     
                     <!-- Donation Selection Interface -->
                     <section class="donation-selection">
                         <h3 class="form-label-type font-mono" style="display: block; margin-bottom: var(--space-lg); text-align: center;">SELECT AMOUNT</h3>
                         
-                        <div class="donation-amounts">
+                        <div class="donation-amounts" style="display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-lg); margin-bottom: var(--space-xl);">
                             <div class="donation-card" data-amount="20">
                                 <div class="donation-amount">$20</div>
                                 <div class="donation-label">Workshop Materials</div>
@@ -189,14 +189,14 @@
                         </div>
                         
                         <!-- Custom Amount Input -->
-                        <div class="custom-amount">
-                            <label class="form-label-type font-mono" for="custom-amount">ENTER AMOUNT ($)</label>
+                        <div class="custom-amount" style="text-align: center; margin-bottom: var(--space-xl);">
+                            <label class="form-label-type font-mono" for="custom-amount" style="display: block; text-align: center;">ENTER AMOUNT ($)</label>
                             <input type="number" id="custom-amount" name="custom-amount" placeholder="Enter amount" min="1" step="1">
                         </div>
                         
                         <!-- Donation Total Display -->
-                        <div class="donation-total-section">
-                            <h3 class="form-label-type font-mono">DONATION TOTAL</h3>
+                        <div class="donation-total-section" style="text-align: center; margin-bottom: var(--space-xl);">
+                            <h3 class="form-label-type font-mono" style="text-align: center;">DONATION TOTAL</h3>
                             <div class="donation-total-amount">$<span id="donation-total">0</span></div>
                         </div>
                     </section>
@@ -277,7 +277,8 @@
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
     <script src="/js/main.js"></script>
-    <script src="/js/typography.js"></script><script src="/js/gallery-hero.js"></script>
+    <script src="/js/typography.js"></script>
+    <script src="/js/gallery-hero.js"></script>
     <script src="/js/donation-selection.js"></script>
 </body>
 </html>

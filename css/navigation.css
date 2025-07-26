@@ -468,13 +468,16 @@ main, .main-content {
   /* Event-Specific Color Themes */
   --boulder-fest-primary: var(--color-red);    /* #CC2936 */
   --boulder-fest-secondary: var(--color-blue); /* #5B6BB5 */
-  --weekender-primary: #FF6B35;               /* Orange */
-  --weekender-secondary: #2E8B8B;             /* Teal */
+  --weekender-primary: var(--color-blue);     /* Blue - on brand */
+  --weekender-secondary: var(--color-red);   /* Red - on brand */
   
   /* Mobile Dropdown Variables */
   --mobile-dropdown-padding: var(--space-lg);
   --mobile-accordion-timing: 0.35s;
   --touch-safe-target: 48px;
+  
+  /* Z-index Variables */
+  --z-dropdown: 1100;
 }
 
 /* Dropdown Container - Both Navigation Styles */
@@ -890,6 +893,299 @@ main, .main-content {
 /* Cleanup will-change after animations */
 .nav-dropdown-menu:not(:hover):not(.is-open) {
   will-change: auto;
+}
+
+/* =================================================================
+   ACTUAL HTML STRUCTURE DROPDOWN STYLES (Events Menu)
+   ================================================================= */
+
+/* Events dropdown container */
+.nav-item.has-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+/* Events dropdown trigger button - match nav-link styles */
+.nav-trigger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  /* Match nav-link styles for consistency */
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+  color: var(--color-gray-700);
+  text-decoration: none;
+  position: relative;
+  transition: all var(--transition-base);
+  padding: var(--space-xs) 0;
+  font-weight: 500;
+}
+
+/* Dropdown arrow styling */
+.dropdown-arrow {
+  margin-left: var(--space-xs);
+  font-size: 0.8em;
+  transition: transform var(--transition-base) var(--salsa-spring-easing);
+  display: inline-block;
+}
+
+/* Arrow rotation when open */
+.nav-trigger[aria-expanded="true"] .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* Dropdown menu - hidden by default */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + var(--dropdown-offset-y));
+  left: 50%;
+  transform: translateX(-50%) translateY(var(--dance-bounce-height)) scale(0.95);
+  min-width: var(--dropdown-min-width);
+  max-width: var(--dropdown-max-width);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--dropdown-border-radius);
+  padding: var(--dropdown-padding);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: var(--z-dropdown);
+  backdrop-filter: blur(var(--dropdown-backdrop-blur));
+  box-shadow: var(--shadow-lg);
+  transition: all var(--salsa-fade-timing) var(--salsa-spring-easing);
+  list-style: none;
+  margin: 0;
+}
+
+/* Show dropdown when triggered */
+.nav-trigger[aria-expanded="true"] + .dropdown-menu {
+  transform: translateX(-50%) translateY(0) scale(1);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  animation: salsaDropdownEntry 0.4s var(--salsa-spring-easing) forwards;
+}
+
+/* Dropdown category styling */
+.dropdown-category {
+  margin-bottom: var(--space-sm);
+}
+
+.dropdown-category:last-child {
+  margin-bottom: 0;
+}
+
+.dropdown-category-title {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-gray-600);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  margin-bottom: var(--space-xs);
+  padding: 0 var(--space-xs);
+}
+
+.dropdown-submenu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Dropdown links */
+.dropdown-link {
+  display: block;
+  padding: var(--space-xs) var(--space-sm);
+  color: var(--color-gray-700);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  line-height: 1.5;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-base);
+  border-radius: 2px;
+}
+
+/* Salsa-inspired background slides for dropdown links */
+.dropdown-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(var(--color-red-rgb), 0.1), transparent);
+  transition: left 0.5s var(--salsa-spring-easing);
+  z-index: -1;
+}
+
+.dropdown-link:hover {
+  color: var(--color-red);
+  background-color: rgba(var(--color-red-rgb), 0.05);
+  transform: translateX(2px);
+}
+
+.dropdown-link:hover::before {
+  left: 100%;
+}
+
+/* Typographic style for nav trigger (to match other nav links) */
+.typographic .nav-trigger {
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+  color: var(--color-gray-700);
+  position: relative;
+  transition: all var(--transition-base);
+  padding: var(--space-xs) 0;
+}
+
+/* Typographic slide-down text replacement for nav trigger */
+.typographic .nav-trigger::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--color-black);
+  font-weight: 700;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: all var(--transition-base);
+  pointer-events: none;
+}
+
+.typographic .nav-trigger:hover {
+  color: transparent;
+}
+
+.typographic .nav-trigger:hover::before {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* =================================================================
+   EVENT SUB NAVIGATION STYLES
+   ================================================================= */
+
+/* Event Sub Navigation Container */
+.event-subnav {
+  background: var(--color-white);
+  border-bottom: 1px solid var(--color-gray-200);
+  padding: var(--space-md) 0;
+  margin-bottom: var(--space-xl);
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Event Navigation List */
+.event-nav-list {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: var(--space-lg);
+  justify-content: center;
+  align-items: center;
+}
+
+/* Event Navigation Links - Match main nav styling */
+.event-nav-link {
+  position: relative;
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+  color: var(--color-gray-700);
+  text-decoration: none;
+  transition: all var(--transition-base);
+  padding: var(--space-xs) 0;
+  font-weight: 500;
+}
+
+/* Typographic slide-down text replacement for event nav links */
+.typographic .event-nav-link::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--color-black);
+  font-weight: 700;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: all var(--transition-base);
+  pointer-events: none;
+}
+
+.typographic .event-nav-link:hover {
+  color: transparent;
+}
+
+.typographic .event-nav-link:hover::before {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Active state styling */
+.event-nav-link.is-active {
+  color: var(--color-red);
+  font-weight: 700;
+}
+
+.typographic .event-nav-link.is-active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-red);
+}
+
+/* Alternative styling for non-typographic theme */
+.event-nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--color-red);
+  transition: width var(--transition-base);
+}
+
+.event-nav-link:hover::after,
+.event-nav-link.is-active::after {
+  width: 100%;
+}
+
+.event-nav-link:hover {
+  color: var(--color-red);
+}
+
+/* Mobile Responsive Event Navigation */
+@media (max-width: 768px) {
+  .event-nav-list {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 0 var(--space-md);
+    gap: var(--space-md);
+  }
+  
+  .event-nav-link {
+    white-space: nowrap;
+    font-size: var(--font-size-xs);
+  }
+  
+  .event-subnav {
+    position: static;
+  }
 }
 
 /* =================================================================
