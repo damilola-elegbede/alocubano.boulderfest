@@ -139,14 +139,6 @@
       "destination": "/pages/weekender-2026-09-gallery.html"
     },
     {
-      "source": "/weekender-2026-09/:page",
-      "destination": "/pages/:page.html"
-    },
-    {
-      "source": "/workshop-series-2026/:page",
-      "destination": "/pages/:page.html"
-    },
-    {
       "source": "/about-festival",
       "destination": "/pages/about.html"
     },
@@ -193,6 +185,14 @@
     {
       "source": "/2026-sept-gallery",
       "destination": "/pages/weekender-2026-09-gallery.html"
+    },
+    {
+      "source": "/weekender-2026-09/:page",
+      "destination": "/pages/:page.html"
+    },
+    {
+      "source": "/workshop-series-2026/:page",
+      "destination": "/pages/:page.html"
     }
   ],
   "redirects": [

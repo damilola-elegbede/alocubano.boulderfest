@@ -76,7 +76,11 @@ function getEventHero(event) {
 function getNextFutureHeroNumber() {
   const futureHeroes = Object.values(EVENT_HERO_MAPPING)
     .filter(hero => hero.includes('future-event-hero'))
-    .map(hero => parseInt(hero.match(/\d+/)[0]))
+    .map(hero => {
+      const match = hero.match(/\d+/);
+      return match ? parseInt(match[0]) : null;
+    })
+    .filter(number => number !== null)
     .sort((a, b) => a - b);
   
   return futureHeroes.length > 0 ? Math.max(...futureHeroes) + 1 : 1;
