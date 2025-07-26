@@ -22,7 +22,11 @@
         });
       }
       
-      // Responsive image preloading with proper timing
+      // Track current variant to prevent unnecessary re-preloading
+      let currentVariant = null;
+      let preloadLinksAdded = false;
+      
+      // Responsive image preloading with proper timing and deduplication
       function preloadImages() {
         // Check if optimized variants exist for event heroes
         const heroPath = '/images/hero/hero-default.jpg';
@@ -34,6 +38,19 @@
           const variant = isMobile ? 'mobile' : 'desktop';
           const baseName = 'hero-default';
           
+          // Skip re-preloading if variant hasn't changed
+          if (currentVariant === variant && preloadLinksAdded) {
+            return;
+          }
+          
+          // Remove existing preload links to prevent accumulation
+          const existingPreloads = document.head.querySelectorAll('link[rel="preload"][href*="/images/hero-optimized/"]');
+          existingPreloads.forEach(link => link.remove());
+          
+          // Update tracking variables
+          currentVariant = variant;
+          preloadLinksAdded = true;
+          
           // Preload both mobile and desktop variants for critical content
           const variants = ['mobile', 'desktop'];
           
@@ -44,6 +61,7 @@
             webpPreload.as = 'image';
             webpPreload.href = `/images/hero-optimized/${variantType}/${baseName}.webp`;
             webpPreload.type = 'image/webp';
+            webpPreload.dataset.heroPreload = 'true'; // Mark for easy identification
             document.head.appendChild(webpPreload);
             
             // Fallback JPEG preload
@@ -52,6 +70,7 @@
             jpegPreload.as = 'image';
             jpegPreload.href = `/images/hero-optimized/${variantType}/${baseName}.jpg`;
             jpegPreload.type = 'image/jpeg';
+            jpegPreload.dataset.heroPreload = 'true'; // Mark for easy identification
             document.head.appendChild(jpegPreload);
           });
           
@@ -64,28 +83,34 @@
                 avifPreload.as = 'image';
                 avifPreload.href = `/images/hero-optimized/${variantType}/${baseName}.avif`;
                 avifPreload.type = 'image/avif';
+                avifPreload.dataset.heroPreload = 'true'; // Mark for easy identification
                 document.head.appendChild(avifPreload);
               });
             }
           });
         } else {
-          // Standard hero image preload for top-level pages
-          const heroPreload = document.createElement('link');
-          heroPreload.rel = 'preload';
-          heroPreload.as = 'image';
-          heroPreload.href = heroPath;
-          document.head.appendChild(heroPreload);
+          // Standard hero image preload for top-level pages (only once)
+          if (!preloadLinksAdded) {
+            const heroPreload = document.createElement('link');
+            heroPreload.rel = 'preload';
+            heroPreload.as = 'image';
+            heroPreload.href = heroPath;
+            heroPreload.dataset.heroPreload = 'true'; // Mark for easy identification
+            document.head.appendChild(heroPreload);
+            preloadLinksAdded = true;
+          }
         }
         
-        // Preload gallery data for gallery pages
+        // Preload gallery data for gallery pages (only once)
         const pageId = window.location.pathname.split('/').pop() || 'home';
-        if (pageId.includes('gallery')) {
+        if (pageId.includes('gallery') && !document.head.querySelector('link[rel="preload"][href*="/api/gallery"]')) {
           const year = pageId.includes('2025') ? '2025' : new Date().getFullYear();
           const galleryDataPreload = document.createElement('link');
           galleryDataPreload.rel = 'preload';
           galleryDataPreload.as = 'fetch';
           galleryDataPreload.href = `/api/gallery?year=${year}&category=workshops`;
           galleryDataPreload.crossOrigin = 'anonymous';
+          galleryDataPreload.dataset.heroPreload = 'true'; // Mark for easy identification
           document.head.appendChild(galleryDataPreload);
         }
       }

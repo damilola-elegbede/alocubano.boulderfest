@@ -15,12 +15,40 @@
     
                 <!-- Critical resource preloading -->
     <script>
-      // AVIF support detection function
+      // Enhanced AVIF support detection function with decoding verification
       function supportsAVIF() {
         return new Promise((resolve) => {
           const img = new Image();
-          img.onload = () => resolve(true);
-          img.onerror = () => resolve(false);
+          let isResolved = false;
+          
+          // Timeout to prevent hanging and resolve false positives
+          const timeoutId = setTimeout(() => {
+            if (!isResolved) {
+              isResolved = true;
+              resolve(false);
+            }
+          }, 1000); // 1 second timeout
+          
+          img.onload = () => {
+            clearTimeout(timeoutId);
+            if (!isResolved) {
+              isResolved = true;
+              // Verify the image decoded correctly by checking dimensions
+              // A properly decoded 2x2 AVIF should have width and height of 2
+              const isValidDecode = img.width === 2 && img.height === 2;
+              resolve(isValidDecode);
+            }
+          };
+          
+          img.onerror = () => {
+            clearTimeout(timeoutId);
+            if (!isResolved) {
+              isResolved = true;
+              resolve(false);
+            }
+          };
+          
+          // Use a minimal 2x2 AVIF image for testing
           img.src = 'data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAADybWV0YQAAAAAAAAAoaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAGxpYmF2aWYAAAAADnBpdG0AAAAAAAEAAAAeaWxvYwAAAABEAAABAAEAAAABAAABGgAAAB0AAAAoaWluZgAAAAAAAQAAABppbmZlAgAAAAABAABhdjAxQ29sb3IAAAAAamlwcnAAAABLaXBjbwAAABRpc3BlAAAAAAAAAAIAAAACAAAAEHBpeGkAAAAAAwgICAAAAAxhdjFDgQ0MAAAAABNjb2xybmNseAACAAIAAYAAAAAXaXBtYQAAAAAAAAABAAEEAQKDBAAAACVtZGF0EgAKCBgABogQEAwgMg8f8D///8WfhwB8+ErK42A=';
         });
       }
