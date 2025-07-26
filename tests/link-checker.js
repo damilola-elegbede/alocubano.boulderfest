@@ -497,6 +497,83 @@ class LinkChecker {
                 routeType: 'api'
             };
         }
+
+        // Define exact Vercel rewrites from vercel.json
+        const vercelRewrites = {
+            '/': '/index.html',
+            '/home': '/pages/home.html',
+            '/about': '/pages/about.html',
+            '/boulder-fest-2026/home': '/pages/home.html',
+            '/boulder-fest-2026/about': '/pages/about.html',
+            '/boulder-fest-2026/donations': '/pages/donations.html',
+            '/boulder-fest-2025': '/pages/boulder-fest-2025-index.html',
+            '/boulder-fest-2025/artists': '/pages/boulder-fest-2025-artists.html',
+            '/boulder-fest-2025/schedule': '/pages/boulder-fest-2025-schedule.html',
+            '/boulder-fest-2025/gallery': '/pages/boulder-fest-2025-gallery.html',
+            '/boulder-fest-2026': '/pages/boulder-fest-2026-index.html',
+            '/boulder-fest-2026/artists': '/pages/boulder-fest-2026-artists.html',
+            '/boulder-fest-2026/schedule': '/pages/boulder-fest-2026-schedule.html',
+            '/boulder-fest-2026/gallery': '/pages/boulder-fest-2026-gallery.html',
+            '/weekender-2026-09': '/pages/weekender-2026-09-index.html',
+            '/weekender-2026-09/artists': '/pages/weekender-2026-09-artists.html',
+            '/weekender-2026-09/schedule': '/pages/weekender-2026-09-schedule.html',
+            '/weekender-2026-09/gallery': '/pages/weekender-2026-09-gallery.html',
+            '/about-festival': '/pages/about.html',
+            '/contact': '/pages/contact.html',
+            '/donations': '/pages/donations.html',
+            '/2026-artists': '/pages/boulder-fest-2026-artists.html',
+            '/2026-schedule': '/pages/boulder-fest-2026-schedule.html',
+            '/2026-gallery': '/pages/boulder-fest-2026-gallery.html',
+            '/2025-artists': '/pages/boulder-fest-2025-artists.html',
+            '/2025-schedule': '/pages/boulder-fest-2025-schedule.html',
+            '/2025-gallery': '/pages/boulder-fest-2025-gallery.html',
+            '/2026-sept-artists': '/pages/weekender-2026-09-artists.html',
+            '/2026-sept-schedule': '/pages/weekender-2026-09-schedule.html',
+            '/2026-sept-gallery': '/pages/weekender-2026-09-gallery.html'
+        };
+
+        // Check exact rewrite matches
+        if (vercelRewrites[url]) {
+            const targetPath = path.join(rootDir, vercelRewrites[url]);
+            return {
+                status: fs.existsSync(targetPath) ? 'ok' : 'broken',
+                serverRoute: true,
+                routeType: 'vercel-rewrite',
+                resolvedPath: targetPath,
+                rewriteTarget: vercelRewrites[url]
+            };
+        }
+
+        // Handle Vercel redirects
+        const vercelRedirects = {
+            '/gallery-2025': '/2025-gallery',
+            '/tickets': '/pages/tickets.html',
+            '/boulder-fest-2025/tickets': '/pages/tickets.html',
+            '/boulder-fest-2026/tickets': '/pages/tickets.html',
+            '/weekender-2026-09/tickets': '/pages/tickets.html',
+            '/weekender-2026-09-tickets': '/pages/tickets.html',
+            '/artists': '/2026-artists',
+            '/gallery': '/2026-gallery', 
+            '/schedule': '/2026-schedule'
+        };
+
+        if (vercelRedirects[url]) {
+            // For redirects, we need to check the target
+            const redirectTarget = vercelRedirects[url];
+            if (redirectTarget.startsWith('/pages/')) {
+                const targetPath = path.join(rootDir, redirectTarget);
+                return {
+                    status: fs.existsSync(targetPath) ? 'ok' : 'broken',
+                    serverRoute: true,
+                    routeType: 'vercel-redirect',
+                    resolvedPath: targetPath,
+                    redirectTarget: redirectTarget
+                };
+            } else {
+                // Redirect to another route that might also be rewritten
+                return this.checkServerRouting(redirectTarget);
+            }
+        }
         
         // Handle gallery-data JSON redirects
         if (url.startsWith('/gallery-data/') && url.endsWith('.json')) {
@@ -518,64 +595,6 @@ class LinkChecker {
                 routeType: 'featured-photos-redirect',
                 resolvedPath: publicPath
             };
-        }
-        
-        // Handle root path redirect
-        if (url === '/') {
-            const indexPath = path.join(rootDir, 'index.html');
-            return {
-                status: fs.existsSync(indexPath) ? 'ok' : 'broken',
-                serverRoute: true,
-                routeType: 'root-redirect',
-                resolvedPath: indexPath
-            };
-        }
-        
-        // Handle Vercel clean URL rewrites
-        if (url.startsWith('/') && !this.hasFileExtension(url)) {
-            const cleanPath = url.slice(1); // Remove leading slash
-            
-            // Handle /home specifically (vercel.json: "/home" -> "/pages/home.html")
-            if (cleanPath === 'home') {
-                const homePath = path.join(rootDir, 'pages', 'home.html');
-                if (fs.existsSync(homePath)) {
-                    return {
-                        status: 'ok',
-                        serverRoute: true,
-                        routeType: 'vercel-home-rewrite',
-                        resolvedPath: homePath
-                    };
-                }
-            }
-            
-            // Handle other paths (vercel.json: "/((?!api/|home)[^./]+)" -> "/pages/$1.html")
-            // This regex excludes api/, home, and paths with dots/slashes
-            const vercelPattern = /^(?!api\/|home$)[^./]+$/;
-            if (vercelPattern.test(cleanPath)) {
-                const pagesPath = path.join(rootDir, 'pages', cleanPath + '.html');
-                if (fs.existsSync(pagesPath)) {
-                    return {
-                        status: 'ok',
-                        serverRoute: true,
-                        routeType: 'vercel-pages-rewrite',
-                        resolvedPath: pagesPath
-                    };
-                }
-            }
-            
-            // Check if it's a directory with index.html (fallback)
-            const fullPath = path.join(rootDir, cleanPath);
-            if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
-                const indexPath = path.join(fullPath, 'index.html');
-                if (fs.existsSync(indexPath)) {
-                    return {
-                        status: 'ok',
-                        serverRoute: true,
-                        routeType: 'directory-index',
-                        resolvedPath: indexPath
-                    };
-                }
-            }
         }
         
         return { status: 'unknown', serverRoute: false };
