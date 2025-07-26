@@ -92,11 +92,21 @@ jobs:
         # Verify all required files exist
         test -f pages/home.html
         test -f pages/about.html
-        test -f pages/artists.html
-        test -f pages/schedule.html
-        test -f pages/gallery.html
+        test -f pages/contact.html
         test -f pages/tickets.html
         test -f pages/donations.html
+        test -f pages/boulder-fest-2025-index.html
+        test -f pages/boulder-fest-2025-artists.html
+        test -f pages/boulder-fest-2025-schedule.html
+        test -f pages/boulder-fest-2025-gallery.html
+        test -f pages/boulder-fest-2026-index.html
+        test -f pages/boulder-fest-2026-artists.html
+        test -f pages/boulder-fest-2026-schedule.html
+        test -f pages/boulder-fest-2026-gallery.html
+        test -f pages/weekender-2026-09-index.html
+        test -f pages/weekender-2026-09-artists.html
+        test -f pages/weekender-2026-09-schedule.html
+        test -f pages/weekender-2026-09-gallery.html
         test -f css/typography.css
         test -f vercel.json
         test -f README.md
@@ -110,10 +120,29 @@ jobs:
         # Test if server is running
         curl -f http://localhost:8000/pages/home.html || exit 1
         
-        # Test all pages
-        for page in about artists schedule gallery tickets donations; do
-          curl -f http://localhost:8000/pages/$page.html || exit 1
-        done
+        # Test core pages
+        curl -f http://localhost:8000/pages/about.html || exit 1
+        curl -f http://localhost:8000/pages/contact.html || exit 1
+        curl -f http://localhost:8000/pages/tickets.html || exit 1
+        curl -f http://localhost:8000/pages/donations.html || exit 1
+        
+        # Test 2025 festival pages
+        curl -f http://localhost:8000/pages/boulder-fest-2025-index.html || exit 1
+        curl -f http://localhost:8000/pages/boulder-fest-2025-artists.html || exit 1
+        curl -f http://localhost:8000/pages/boulder-fest-2025-schedule.html || exit 1
+        curl -f http://localhost:8000/pages/boulder-fest-2025-gallery.html || exit 1
+        
+        # Test 2026 festival pages  
+        curl -f http://localhost:8000/pages/boulder-fest-2026-index.html || exit 1
+        curl -f http://localhost:8000/pages/boulder-fest-2026-artists.html || exit 1
+        curl -f http://localhost:8000/pages/boulder-fest-2026-schedule.html || exit 1
+        curl -f http://localhost:8000/pages/boulder-fest-2026-gallery.html || exit 1
+        
+        # Test weekender pages
+        curl -f http://localhost:8000/pages/weekender-2026-09-index.html || exit 1
+        curl -f http://localhost:8000/pages/weekender-2026-09-artists.html || exit 1
+        curl -f http://localhost:8000/pages/weekender-2026-09-schedule.html || exit 1
+        curl -f http://localhost:8000/pages/weekender-2026-09-gallery.html || exit 1
         
         # Test CSS loading
         curl -f http://localhost:8000/css/typography.css || exit 1
