@@ -22,7 +22,11 @@
         const path = window.location.pathname;
         let pageId = 'home';
         
-        if (path.includes('about')) pageId = 'about';
+        // Check for event-specific pages first
+        if (path.includes('boulder-fest-2026')) return 'boulder-fest-2026';
+        else if (path.includes('boulder-fest-2025')) return 'boulder-fest-2025';
+        else if (path.includes('weekender-2026-09')) return 'weekender-2026-09';
+        else if (path.includes('about')) pageId = 'about';
         else if (path.includes('artists')) pageId = 'artists';
         else if (path.includes('schedule')) pageId = 'schedule';
         else if (path.includes('gallery')) pageId = 'gallery';
@@ -35,6 +39,11 @@
 
     // Get hero image for current page
     function getHeroImagePath(pageId) {
+        // Event-specific hero images
+        if (pageId === 'boulder-fest-2026') return '/images/hero/boulder-fest-2026-hero.jpg';
+        if (pageId === 'boulder-fest-2025') return '/images/hero/boulder-fest-2025-hero.jpg';
+        if (pageId === 'weekender-2026-09') return '/images/hero/weekender-2026-09-hero.jpg';
+        
         return HERO_IMAGES[pageId] || HERO_IMAGES['default'];
     }
 
@@ -89,6 +98,31 @@
 
     // Get appropriate alt text for hero image
     function getHeroAltText(pageId) {
+        // Event-specific alt texts
+        if (pageId === 'boulder-fest-2026') {
+            const path = window.location.pathname;
+            if (path.includes('artists')) return 'Boulder Fest 2026 Artists - Featured Cuban salsa instructors and performers';
+            if (path.includes('schedule')) return 'Boulder Fest 2026 Schedule - Workshop sessions and social dancing';  
+            if (path.includes('gallery')) return 'Boulder Fest 2026 Gallery - Photo memories from the festival';
+            return 'Boulder Fest 2026 - Cuban salsa festival in Boulder, Colorado';
+        }
+        
+        if (pageId === 'boulder-fest-2025') {
+            const path = window.location.pathname;
+            if (path.includes('artists')) return 'Boulder Fest 2025 Artists - Featured Cuban salsa instructors and performers';
+            if (path.includes('schedule')) return 'Boulder Fest 2025 Schedule - Workshop sessions and social dancing';
+            if (path.includes('gallery')) return 'Boulder Fest 2025 Gallery - Photo memories from the festival';
+            return 'Boulder Fest 2025 - Cuban salsa festival in Boulder, Colorado';
+        }
+        
+        if (pageId === 'weekender-2026-09') {
+            const path = window.location.pathname;
+            if (path.includes('artists')) return 'September 2026 Weekender Artists - Intimate Cuban salsa intensive instructors';
+            if (path.includes('schedule')) return 'September 2026 Weekender Schedule - Intensive workshop sessions';
+            if (path.includes('gallery')) return 'September 2026 Weekender Gallery - Intimate weekend memories';
+            return 'September 2026 Weekender - Intimate Cuban salsa weekend intensive';
+        }
+        
         const altTexts = {
             'home': 'A Lo Cubano Boulder Fest - Cuban salsa festival in Boulder, Colorado',
             'about': 'About A Lo Cubano Boulder Fest - Behind the scenes moments',

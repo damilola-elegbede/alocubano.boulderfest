@@ -88,22 +88,22 @@ class DropdownManager {
     }
 
     handleDropdownClick(event) {
-        const trigger = event.target.closest('.dropdown-trigger');
+        const trigger = event.target.closest('.nav-trigger, .dropdown-trigger');
         
         if (trigger) {
             event.preventDefault();
             this.toggleDropdown(trigger);
-        } else if (!event.target.closest('.dropdown-container')) {
+        } else if (!event.target.closest('.nav-item.has-dropdown, .dropdown-container')) {
             // Click outside - close all dropdowns
             this.closeAllDropdowns();
         }
     }
 
     handleDropdownHover(event) {
-        const container = event.target.closest('.dropdown-container');
+        const container = event.target.closest('.nav-item.has-dropdown, .dropdown-container');
         if (!container || this.config.touchEnabled) return;
 
-        const trigger = container.querySelector('.dropdown-trigger');
+        const trigger = container.querySelector('.nav-trigger, .dropdown-trigger');
         if (!trigger) return;
 
         // Clear any pending hide timer
@@ -120,7 +120,7 @@ class DropdownManager {
     }
 
     handleDropdownLeave(event) {
-        const container = event.target.closest('.dropdown-container');
+        const container = event.target.closest('.nav-item.has-dropdown, .dropdown-container');
         if (!container) return;
 
         // Clear show timer
@@ -135,7 +135,7 @@ class DropdownManager {
     }
 
     handleDropdownFocus(event) {
-        const container = event.target.closest('.dropdown-container');
+        const container = event.target.closest('.nav-item.has-dropdown, .dropdown-container');
         if (!container) return;
 
         const trigger = container.querySelector('.dropdown-trigger');
@@ -148,7 +148,7 @@ class DropdownManager {
     handleDropdownBlur(event) {
         // Use setTimeout to allow focus to move to related target
         setTimeout(() => {
-            const container = event.target.closest('.dropdown-container');
+            const container = event.target.closest('.nav-item.has-dropdown, .dropdown-container');
             if (!container) return;
 
             const relatedTarget = event.relatedTarget;
@@ -159,7 +159,7 @@ class DropdownManager {
     }
 
     toggleDropdown(trigger) {
-        const container = trigger.closest('.dropdown-container');
+        const container = trigger.closest('.nav-item.has-dropdown, .dropdown-container');
         const menu = container.querySelector('.dropdown-menu');
         const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
 
@@ -172,7 +172,7 @@ class DropdownManager {
     }
 
     showDropdown(trigger) {
-        const container = trigger.closest('.dropdown-container');
+        const container = trigger.closest('.nav-item.has-dropdown, .dropdown-container');
         const menu = container.querySelector('.dropdown-menu');
 
         // Set ARIA attributes
@@ -208,7 +208,7 @@ class DropdownManager {
     }
 
     hideDropdown(container) {
-        const trigger = container.querySelector('.dropdown-trigger');
+        const trigger = container.querySelector('.nav-trigger, .dropdown-trigger');
         const menu = container.querySelector('.dropdown-menu');
 
         // Set ARIA attributes
@@ -256,7 +256,7 @@ class DropdownManager {
 
     handleTriggerKeydown(event) {
         const trigger = event.target;
-        const container = trigger.closest('.dropdown-container');
+        const container = trigger.closest('.nav-item.has-dropdown, .dropdown-container');
         
         switch (event.key) {
             case 'ArrowDown':
@@ -347,7 +347,7 @@ class DropdownManager {
 
         // Enhanced touch support for mobile devices
         document.addEventListener('touchstart', (event) => {
-            const dropdown = event.target.closest('.dropdown-container');
+            const dropdown = event.target.closest('.nav-item.has-dropdown, .dropdown-container');
             if (!dropdown && this.activeDropdown) {
                 this.closeAllDropdowns();
             }
@@ -474,7 +474,7 @@ class DropdownManager {
     }
 
     closeAllDropdowns() {
-        document.querySelectorAll('.dropdown-container').forEach(container => {
+        document.querySelectorAll('.nav-item.has-dropdown, .dropdown-container').forEach(container => {
             this.hideDropdown(container);
         });
     }
@@ -829,7 +829,7 @@ class SiteNavigation {
                     link.setAttribute('aria-current', 'page');
                     
                     // If this is in a dropdown, mark the parent trigger as active too
-                    const dropdown = link.closest('.dropdown-container');
+                    const dropdown = link.closest('.nav-item.has-dropdown, .dropdown-container');
                     if (dropdown) {
                         const trigger = dropdown.querySelector('.dropdown-trigger');
                         if (trigger) {
@@ -896,7 +896,7 @@ class SiteNavigation {
             return {
                 ...this.performanceMetrics,
                 timestamp: Date.now(),
-                activeDropdowns: document.querySelectorAll('.dropdown-container.dropdown-active').length,
+                activeDropdowns: document.querySelectorAll('.nav-item.has-dropdown.dropdown-active, .dropdown-container.dropdown-active').length,
                 mobileMenuOpen: this.mobileMenuOpen
             };
         }

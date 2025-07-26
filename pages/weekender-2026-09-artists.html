@@ -82,6 +82,7 @@
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/typography.css">
+    <link rel="stylesheet" href="/css/navigation.css">
     <link rel="stylesheet" href="/css/mobile-overrides.css">
     
     <!-- Weekender-specific color theme -->
@@ -150,7 +151,7 @@
                         <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
                         <li><a href="/about" class="nav-link" data-text="About">About</a></li>
                         <li class="nav-item has-dropdown is-active">
-                            <button class="nav-trigger" aria-expanded="false" aria-haspopup="true" data-dropdown="events">
+                            <button class="nav-trigger" aria-expanded="false" aria-haspopup="true" data-dropdown="events" data-text="Events">
                                 Events
                                 <span class="dropdown-arrow" aria-hidden="true">▼</span>
                             </button>
@@ -158,14 +159,14 @@
                                 <li class="dropdown-category" role="group">
                                     <span class="dropdown-category-title" role="presentation">Boulder Fest</span>
                                     <ul class="dropdown-submenu">
-                                        <li><a href="/boulder-fest-2025/artists" class="dropdown-link" role="menuitem" data-event="boulder-fest-2025" data-event-status="current">2025 Festival</a></li>
-                                        <li><a href="/boulder-fest-2026/artists" class="dropdown-link" role="menuitem" data-event="boulder-fest-2026" data-event-status="upcoming">2026 Festival</a></li>
+                                        <li><a href="/boulder-fest-2026" class="dropdown-link" role="menuitem" data-event="boulder-fest-2026" data-event-status="upcoming">2026 Festival</a></li>
+                                        <li><a href="/boulder-fest-2025" class="dropdown-link" role="menuitem" data-event="boulder-fest-2025" data-event-status="current">2025 Festival</a></li>
                                     </ul>
                                 </li>
                                 <li class="dropdown-category" role="group">
                                     <span class="dropdown-category-title" role="presentation">Weekend Events</span>
                                     <ul class="dropdown-submenu">
-                                        <li><a href="/weekender-2026-09/artists" class="dropdown-link is-active" role="menuitem" data-event="weekender-2026-09" data-event-status="upcoming">Sept 2026 Weekender</a></li>
+                                        <li><a href="/weekender-2026-09" class="dropdown-link is-active" role="menuitem" data-event="weekender-2026-09" data-event-status="upcoming">Sept 2026 Weekender</a></li>
                                     </ul>
                                 </li>
                             </ul>
@@ -184,7 +185,21 @@
         <!-- Hero Splash Image -->
         <section class="gallery-hero-splash">
             <div class="hero-image-container">
-                <img id="hero-splash-image" src="" alt="Intimate weekender setting with Cuban salsa instructors teaching in a focused, intensive format" class="hero-splash-img" style="object-position: top center !important;">
+                <img id="hero-splash-image" src="/images/hero/weekender-2026-09-hero.jpg" alt="Intimate weekender setting with Cuban salsa instructors teaching in a focused, intensive format" class="hero-splash-img" style="object-position: top center !important;">
+            </div>
+        </section>
+
+        <!-- Event Sub Navigation -->
+        <section class="event-subnav">
+            <div class="container">
+                <nav class="event-nav" aria-label="September 2026 Weekender Navigation">
+                    <ul class="event-nav-list">
+                        <li><a href="/weekender-2026-09" class="event-nav-link" data-text="Overview">Overview</a></li>
+                        <li><a href="/weekender-2026-09/artists" class="event-nav-link is-active" data-text="Artists">Artists</a></li>
+                        <li><a href="/weekender-2026-09/schedule" class="event-nav-link" data-text="Schedule">Schedule</a></li>
+                        <li><a href="/weekender-2026-09/gallery" class="event-nav-link" data-text="Gallery">Gallery</a></li>
+                    </ul>
+                </nav>
             </div>
         </section>
 
