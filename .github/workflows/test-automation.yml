@@ -30,9 +30,6 @@ jobs:
       run: npm run lint
       
     - name: Run unit tests
-      run: npm run test:fast
-      
-    - name: Run tests (no coverage tracking)
       run: npm run test:unit
 
   integration-tests:
