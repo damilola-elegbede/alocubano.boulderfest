@@ -191,6 +191,22 @@
   background: var(--color-red);
 }
 
+/* Active state for nav-trigger (Events) when on events pages */
+.typographic .nav-trigger.is-active {
+  color: var(--color-red);
+  font-weight: 700;
+}
+
+.typographic .nav-trigger.is-active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-red);
+}
+
 /* Navigation Links - Component Style (Alternative) */
 .nav-link {
   position: relative;
@@ -220,6 +236,22 @@
 
 .nav-link:hover {
   color: var(--color-red);
+}
+
+/* Active state for nav-trigger (Events) - component style */
+.nav-trigger.is-active {
+  color: var(--color-red);
+  font-weight: 700;
+}
+
+.nav-trigger.is-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--color-red);
 }
 
 /* Mobile Menu - Typographic Style (Updated to use hamburger icon) */
