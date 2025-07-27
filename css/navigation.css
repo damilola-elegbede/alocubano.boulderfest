@@ -207,6 +207,22 @@
   background: var(--color-red);
 }
 
+/* Active state for nav-trigger when parent nav-item is active (for event pages) - Desktop */
+.typographic .nav-item.is-active .nav-trigger {
+  color: var(--color-red);
+  font-weight: 700;
+}
+
+.typographic .nav-item.is-active .nav-trigger::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-red);
+}
+
 /* Navigation Links - Component Style (Alternative) */
 .nav-link {
   position: relative;
@@ -234,6 +250,12 @@
   width: 100%;
 }
 
+/* Active state for nav-link - Component style */
+.nav-link.is-active {
+  color: var(--color-red);
+  font-weight: 700;
+}
+
 .nav-link:hover {
   color: var(--color-red);
 }
@@ -245,6 +267,22 @@
 }
 
 .nav-trigger.is-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--color-red);
+}
+
+/* Active state for nav-trigger when parent nav-item is active (for event pages) - Component style */
+.nav-item.is-active .nav-trigger {
+  color: var(--color-red);
+  font-weight: 700;
+}
+
+.nav-item.is-active .nav-trigger::after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -495,7 +533,9 @@
   .typographic .nav-list.is-open .nav-link.is-active,
   .nav-list.is-open .nav-link.is-active,
   .typographic .nav-list.is-open .nav-trigger.is-active,
-  .nav-list.is-open .nav-trigger.is-active {
+  .nav-list.is-open .nav-trigger.is-active,
+  .typographic .nav-list.is-open .nav-item.is-active .nav-trigger,
+  .nav-list.is-open .nav-item.is-active .nav-trigger {
     color: var(--color-red);
     font-weight: 500;
   }
