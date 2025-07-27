@@ -79,40 +79,156 @@
       "destination": "/pages/about.html"
     },
     {
-      "source": "/artists",
-      "destination": "/pages/artists.html"
+      "source": "/boulder-fest-2026/home",
+      "destination": "/pages/home.html"
     },
     {
-      "source": "/schedule",
-      "destination": "/pages/schedule.html"
+      "source": "/boulder-fest-2026/about",
+      "destination": "/pages/about.html"
     },
     {
-      "source": "/gallery",
-      "destination": "/pages/gallery.html"
+      "source": "/boulder-fest-2026/donations",
+      "destination": "/pages/donations.html"
     },
     {
-      "source": "/gallery-2025",
-      "destination": "/pages/gallery-2025.html"
+      "source": "/boulder-fest-2025",
+      "destination": "/pages/boulder-fest-2025-index.html"
     },
     {
-      "source": "/tickets",
-      "destination": "/pages/tickets.html"
+      "source": "/boulder-fest-2025/artists",
+      "destination": "/pages/boulder-fest-2025-artists.html"
+    },
+    {
+      "source": "/boulder-fest-2025/schedule",
+      "destination": "/pages/boulder-fest-2025-schedule.html"
+    },
+    {
+      "source": "/boulder-fest-2025/gallery",
+      "destination": "/pages/boulder-fest-2025-gallery.html"
+    },
+    {
+      "source": "/boulder-fest-2026",
+      "destination": "/pages/boulder-fest-2026-index.html"
+    },
+    {
+      "source": "/boulder-fest-2026/artists",
+      "destination": "/pages/boulder-fest-2026-artists.html"
+    },
+    {
+      "source": "/boulder-fest-2026/schedule",
+      "destination": "/pages/boulder-fest-2026-schedule.html"
+    },
+    {
+      "source": "/boulder-fest-2026/gallery",
+      "destination": "/pages/boulder-fest-2026-gallery.html"
+    },
+    {
+      "source": "/weekender-2026-09",
+      "destination": "/pages/weekender-2026-09-index.html"
+    },
+    {
+      "source": "/weekender-2026-09/artists",
+      "destination": "/pages/weekender-2026-09-artists.html"
+    },
+    {
+      "source": "/weekender-2026-09/schedule",
+      "destination": "/pages/weekender-2026-09-schedule.html"
+    },
+    {
+      "source": "/weekender-2026-09/gallery",
+      "destination": "/pages/weekender-2026-09-gallery.html"
+    },
+    {
+      "source": "/about-festival",
+      "destination": "/pages/about.html"
+    },
+    {
+      "source": "/contact",
+      "destination": "/pages/contact.html"
     },
     {
       "source": "/donations",
       "destination": "/pages/donations.html"
     },
     {
-      "source": "/contact",
-      "destination": "/pages/contact.html"
+      "source": "/2026-artists",
+      "destination": "/pages/boulder-fest-2026-artists.html"
+    },
+    {
+      "source": "/2026-schedule",
+      "destination": "/pages/boulder-fest-2026-schedule.html"
+    },
+    {
+      "source": "/2026-gallery",
+      "destination": "/pages/boulder-fest-2026-gallery.html"
+    },
+    {
+      "source": "/2025-artists",
+      "destination": "/pages/boulder-fest-2025-artists.html"
+    },
+    {
+      "source": "/2025-schedule",
+      "destination": "/pages/boulder-fest-2025-schedule.html"
+    },
+    {
+      "source": "/2025-gallery",
+      "destination": "/pages/boulder-fest-2025-gallery.html"
+    },
+    {
+      "source": "/2026-sept-artists",
+      "destination": "/pages/weekender-2026-09-artists.html"
+    },
+    {
+      "source": "/2026-sept-schedule",
+      "destination": "/pages/weekender-2026-09-schedule.html"
+    },
+    {
+      "source": "/2026-sept-gallery",
+      "destination": "/pages/weekender-2026-09-gallery.html"
+    },
+    {
+      "source": "/weekender-2026-09/:page",
+      "destination": "/pages/:page.html"
+    },
+    {
+      "source": "/workshop-series-2026/:page",
+      "destination": "/pages/:page.html"
+    },
+    {
+      "source": "/tickets",
+      "destination": "/pages/tickets.html"
     }
   ],
-  "redirects": [],
+  "redirects": [
+    {
+      "source": "/gallery-2025",
+      "destination": "/2025-gallery",
+      "permanent": false
+    },
+    {
+      "source": "/boulder-fest-2025/tickets",
+      "destination": "/pages/tickets.html",
+      "permanent": false
+    },
+    {
+      "source": "/boulder-fest-2026/tickets",
+      "destination": "/pages/tickets.html",
+      "permanent": false
+    },
+    {
+      "source": "/weekender-2026-09/tickets",
+      "destination": "/pages/tickets.html",
+      "permanent": false
+    }
+  ],
   "trailingSlash": false,
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
+        { "key": "Link", "value": "<https://fonts.googleapis.com>; rel=dns-prefetch" },
+        { "key": "Link", "value": "<https://instagram.com>; rel=dns-prefetch" },
+        { "key": "Link", "value": "<https://drive.google.com>; rel=preconnect; crossorigin" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
         { "key": "X-XSS-Protection", "value": "1; mode=block" },
@@ -122,13 +238,15 @@
     {
       "source": "/(.*)\\.(jpg|jpeg|png|gif|svg|webp)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
+        { "key": "Vary", "value": "Accept" }
       ]
     },
     {
       "source": "/(.*)\\.(css|js)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" },
+        { "key": "Vary", "value": "Accept-Encoding" }
       ]
     },
     {
@@ -141,7 +259,10 @@
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "s-maxage=3600, stale-while-revalidate=86400" }
+        { "key": "Cache-Control", "value": "s-maxage=3600, stale-while-revalidate=86400" },
+        { "key": "Access-Control-Allow-Origin", "value": "https://alocubano.boulderfest.com" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
       ]
     },
     {

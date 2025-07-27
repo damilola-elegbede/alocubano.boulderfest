@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schedule - A Lo Cubano Boulder Fest</title>
-    <meta name="description" content="Full 3-day schedule for A Lo Cubano Boulder Fest 2026 (May 15-17). View workshop times, social dance events, and performance schedules at Avalon Ballroom in Boulder, Colorado.">
+    <title>Boulder Fest 2025 Schedule - A Lo Cubano Boulder Fest</title>
+    <meta name="description" content="Full 3-day schedule for A Lo Cubano Boulder Fest 2025 (May 15-17). View workshop times, social dance events, and performance schedules at Avalon Ballroom in Boulder, Colorado.">
     <!-- Favicons -->
     <link rel="icon" type="image/png" href="/images/favicons/favicon-32x32.png">
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
@@ -13,16 +13,51 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/images/favicons/favicon-192x192.png">
     <link rel="apple-touch-icon" sizes="192x192" href="/images/favicons/favicon-192x192.png">
     
-        <!-- Critical resource preloading -->
+                <!-- Critical resource preloading -->
     <script>
-      // Inline critical path optimization - Static hero images
+      // Inline critical path optimization - Event hero images with responsive variants
       (function() {
-        // Preload static hero image for current page
-        const heroPreload = document.createElement('link');
-        heroPreload.rel = 'preload';
-        heroPreload.as = 'image';
-        heroPreload.href = '/images/hero/schedule.jpg';
-        document.head.appendChild(heroPreload);
+        // Check if optimized variants exist for event heroes
+        const heroPath = '/images/hero/boulder-fest-2025-hero.jpg';
+        const isEventHero = true;
+        
+        if (isEventHero) {
+          // Preload optimized variants for event heroes (WebP first, then JPEG fallback)
+          const isMobile = window.innerWidth <= 768;
+          const variant = isMobile ? 'mobile' : 'desktop';
+          const baseName = 'boulder-fest-2025-hero';
+          
+          // Preload WebP variant
+          const webpPreload = document.createElement('link');
+          webpPreload.rel = 'preload';
+          webpPreload.as = 'image';
+          webpPreload.href = `/images/hero-optimized/${variant}/${baseName}.webp`;
+          webpPreload.type = 'image/webp';
+          document.head.appendChild(webpPreload);
+          
+          // Preload AVIF variant (browsers that don't support AVIF will ignore)
+          const avifPreload = document.createElement('link');
+          avifPreload.rel = 'preload';
+          avifPreload.as = 'image';
+          avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
+          avifPreload.type = 'image/avif';
+          document.head.appendChild(avifPreload);
+          
+          // Fallback JPEG preload
+          const jpegPreload = document.createElement('link');
+          jpegPreload.rel = 'preload';
+          jpegPreload.as = 'image';
+          jpegPreload.href = `/images/hero-optimized/${variant}/${baseName}.jpg`;
+          jpegPreload.type = 'image/jpeg';
+          document.head.appendChild(jpegPreload);
+        } else {
+          // Standard hero image preload for top-level pages
+          const heroPreload = document.createElement('link');
+          heroPreload.rel = 'preload';
+          heroPreload.as = 'image';
+          heroPreload.href = heroPath;
+          document.head.appendChild(heroPreload);
+        }
         
         // Preload gallery data for gallery pages
         const pageId = window.location.pathname.split('/').pop() || 'home';
@@ -42,9 +77,56 @@
     <link rel="dns-prefetch" href="//fonts.googleapis.com">
     <link rel="dns-prefetch" href="//fonts.gstatic.com">
     
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "DanceEvent",
+      "name": "A Lo Cubano Boulder Fest 2025",
+      "description": "Full 3-day schedule for A Lo Cubano Boulder Fest 2025 featuring Cuban salsa workshops, social dancing, and performances.",
+      "startDate": "2025-05-15",
+      "endDate": "2025-05-17",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "location": {
+        "@type": "Place",
+        "name": "Avalon Ballroom",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "6185 Arapahoe Rd",
+          "addressLocality": "Boulder",
+          "addressRegion": "CO",
+          "postalCode": "80302",
+          "addressCountry": "US"
+        }
+      },
+      "organizer": {
+        "@type": "Organization",
+        "name": "A Lo Cubano Boulder Fest",
+        "email": "alocubanoboulderfest@gmail.com",
+        "url": "https://alocubanoboulderfest.com"
+      },
+      "subEvent": [
+        {
+          "@type": "DanceEvent",
+          "name": "Orishas Workshop with Laroye",
+          "startDate": "2025-05-16T16:00",
+          "endDate": "2025-05-16T17:00"
+        },
+        {
+          "@type": "DanceEvent",
+          "name": "Social Dance at La Mariposa",
+          "startDate": "2025-05-16T20:00",
+          "endDate": "2025-05-17T00:00"
+        }
+      ]
+    }
+    </script>
+    
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/typography.css">
+    <link rel="stylesheet" href="/css/navigation.css">
     <link rel="stylesheet" href="/css/mobile-overrides.css">
 </head>
 <body class="typographic">
@@ -69,12 +151,30 @@
                             <span></span>
                         </div>
                     </button>
-                                        <ul class="nav-list" id="main-navigation">
+                    <ul class="nav-list" id="main-navigation">
                         <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
                         <li><a href="/about" class="nav-link" data-text="About">About</a></li>
-                        <li><a href="/artists" class="nav-link" data-text="Artists">Artists</a></li>
-                        <li><a href="/schedule" class="nav-link is-active" data-text="Schedule">Schedule</a></li>
-                        <li><a href="/gallery" class="nav-link" data-text="Gallery">Gallery</a></li>
+                        <li class="nav-item has-dropdown">
+                            <button class="nav-trigger" aria-expanded="false" aria-haspopup="true" data-dropdown="events" data-text="Events">
+                                Events
+                                <span class="dropdown-arrow" aria-hidden="true">▼</span>
+                            </button>
+                            <ul class="dropdown-menu" aria-hidden="true" role="menu" data-dropdown-content="events">
+                                <li class="dropdown-category" role="group">
+                                    <span class="dropdown-category-title" role="presentation">Boulder Fest</span>
+                                    <ul class="dropdown-submenu">
+                                        <li><a href="/boulder-fest-2026" class="dropdown-link" role="menuitem" data-event="boulder-fest-2026" data-event-status="upcoming">2026 Festival</a></li>
+                                        <li><a href="/boulder-fest-2025" class="dropdown-link" role="menuitem" data-event="boulder-fest-2025" data-event-status="current">2025 Festival</a></li>
+                                    </ul>
+                                </li>
+                                <li class="dropdown-category" role="group">
+                                    <span class="dropdown-category-title" role="presentation">Weekend Events</span>
+                                    <ul class="dropdown-submenu">
+                                        <li><a href="/weekender-2026-09" class="dropdown-link" role="menuitem" data-event="weekender-2026-09" data-event-status="upcoming">Sept 2026 Weekender</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
                         <li><a href="/tickets" class="nav-link" data-text="Tickets">Tickets</a></li>
                         <li><a href="/donations" class="nav-link" data-text="Donate">Donate</a></li>
                         <li><a href="/contact" class="nav-link" data-text="Contact">Contact</a></li>
@@ -89,20 +189,26 @@
         <!-- Hero Splash Image -->
         <section class="gallery-hero-splash">
             <div class="hero-image-container">
-                <img id="hero-splash-image" src="" alt="Workshop sessions and dance classes in action at A Lo Cubano Boulder Fest, showing the vibrant learning environment" class="hero-splash-img" style="object-position: top center !important;">
+                <img id="hero-splash-image" src="/images/hero/boulder-fest-2025-hero.jpg" alt="Workshop sessions and dance classes in action at A Lo Cubano Boulder Fest 2025, showing the vibrant learning environment" class="hero-splash-img" style="object-position: top center !important;">
+            </div>
+        </section>
+
+        <!-- Event Sub Navigation -->
+        <section class="event-subnav">
+            <div class="container">
+                <nav class="event-nav" aria-label="Boulder Fest 2025 Navigation">
+                    <ul class="event-nav-list">
+                        <li><a href="/boulder-fest-2025" class="event-nav-link" data-text="Overview">Overview</a></li>
+                        <li><a href="/2025-artists" class="event-nav-link" data-text="Artists">Artists</a></li>
+                        <li><a href="/2025-schedule" class="event-nav-link" data-text="Schedule">Schedule</a></li>
+                        <li><a href="/2025-gallery" class="event-nav-link" data-text="Gallery">Gallery</a></li>
+                    </ul>
+                </nav>
             </div>
         </section>
 
         
         
-        <!-- 2026 Schedule -->
-        <section class="section-typographic">
-            <div class="container">
-                <h2 class="text-mask">2026 Schedule</h2>
-                <p class="tba-notice">Schedule to be announced - Mark your calendars for May 15-17, 2026!</p>
-            </div>
-        </section>
-        <hr class="hr-typographic style-minimal">
         <!-- Schedule Content -->
         <section class="section-typographic">
             <div class="container">
@@ -120,7 +226,9 @@
                             <div class="schedule-item">
                                 <div class="schedule-time time font-mono">4:00 - 5:00 PM</div>
                                 <div class="details">
-                                    <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">LAROYE ~ ORISHAS</h3>
+                                    <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">LAROYE ~ ORISHAS WORKSHOP</h3>
+                                    <p class="font-serif" style="font-size: var(--font-size-base); color: var(--color-gray-600); margin-bottom: var(--space-xs);">Explore the spiritual foundations of Afro-Cuban dance through Orishas movements. Learn about the deities of Santería and their characteristic movements, connecting dance with its sacred origins.</p>
+                                    <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-500);">Beginner to Intermediate Level • Main Hall</p>
                                 </div>
                             </div>
                         </div>
@@ -130,6 +238,8 @@
                                 <div class="schedule-time time font-mono">5:15 - 6:15 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">MALENA & ADRIEL ~ TIMBA SUELTA</h3>
+                                    <p class="font-serif" style="font-size: var(--font-size-base); color: var(--color-gray-600); margin-bottom: var(--space-xs);">Master the dynamic solo styling of Timba. Learn explosive isolations, dramatic pauses, and the distinctive attitude that makes Timba suelta so captivating.</p>
+                                    <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-500);">Intermediate to Advanced Level • Studio A</p>
                                 </div>
                             </div>
                         </div>
@@ -162,6 +272,8 @@
                                 <div class="schedule-time time font-mono">11:00 AM - 12:00 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">EMARLOS & COURTNEY ~ SON CUBANO</h3>
+                                    <p class="font-serif" style="font-size: var(--font-size-base); color: var(--color-gray-600); margin-bottom: var(--space-xs);">Discover the roots of Cuban salsa through Son Cubano. Learn the foundational steps, traditional partner work, and the elegant style that forms the basis of all Cuban dance.</p>
+                                    <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-500);">All Levels Welcome • Main Hall</p>
                                 </div>
                             </div>
                         </div>
@@ -171,6 +283,8 @@
                                 <div class="schedule-time time font-mono">12:15 - 1:15 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">LAROYE ~ RUMBA FUNDAMENTALS</h3>
+                                    <p class="font-serif" style="font-size: var(--font-size-base); color: var(--color-gray-600); margin-bottom: var(--space-xs);">Learn the essential movements of Rumba Guaguancó. Focus on the basic steps, body movement, and the cultural storytelling that makes rumba the heart of Cuban folklore.</p>
+                                    <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-500);">Beginner Friendly • Studio B</p>
                                 </div>
                             </div>
                         </div>
@@ -180,6 +294,8 @@
                                 <div class="schedule-time time font-mono">1:30 - 2:30 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">MALENA & ADRIEL ~ CASINO INTERMEDIATE</h3>
+                                    <p class="font-serif" style="font-size: var(--font-size-base); color: var(--color-gray-600); margin-bottom: var(--space-xs);">Advance your Casino skills with complex patterns, smooth transitions, and intricate partner work. Perfect for dancers ready to take their Cuban salsa to the next level.</p>
+                                    <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-500);">Intermediate Level • Main Hall</p>
                                 </div>
                             </div>
                         </div>
@@ -189,6 +305,8 @@
                                 <div class="schedule-time time font-mono">2:45 - 3:45 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">GISELLE SOTO ~ CUBATON</h3>
+                                    <p class="font-serif" style="font-size: var(--font-size-base); color: var(--color-gray-600); margin-bottom: var(--space-xs);">Experience the urban fusion of Cuban culture with modern reggaeton beats. Learn dynamic choreography that blends traditional Cuban movement with contemporary urban style.</p>
+                                    <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-500);">All Levels • Studio A</p>
                                 </div>
                             </div>
                         </div>
@@ -198,6 +316,8 @@
                                 <div class="schedule-time time font-mono">4:00 - 5:00 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">LAROYE ~ LADIES STYLING</h3>
+                                    <p class="font-serif" style="font-size: var(--font-size-base); color: var(--color-gray-600); margin-bottom: var(--space-xs);">Develop feminine grace and power in Cuban dance. Learn arm styling, hip movement, and the confident attitude that embodies the spirit of Cuban women dancers.</p>
+                                    <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-500);">Ladies Only • Studio B</p>
                                 </div>
                             </div>
                         </div>
@@ -228,8 +348,9 @@
                             <div class="schedule-item">
                                 <div class="schedule-time time font-mono">10:00 - 11:00 AM</div>
                                 <div class="details">
-                                    <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">GISELLE ~ LADIES STYLING</h3>
-                                    <p class="font-serif" style="font-size: var(--font-size-sm); color: var(--color-gray-600);">Social Hall</p>
+                                    <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">GISELLE SOTO ~ LADIES STYLING</h3>
+                                    <p class="font-serif" style="font-size: var(--font-size-base); color: var(--color-gray-600); margin-bottom: var(--space-xs);">Master the art of Cuban feminine expression. Focus on body isolation, elegant arm movements, and the sensual styling that makes Cuban dance so captivating.</p>
+                                    <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-500);">Ladies Only • Social Hall</p>
                                 </div>
                             </div>
                         </div>
@@ -239,6 +360,8 @@
                                 <div class="schedule-time time font-mono">11:00 AM - 12:00 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">LUNCH BREAK</h3>
+                                    <p class="font-serif" style="font-size: var(--font-size-base); color: var(--color-gray-600); margin-bottom: var(--space-xs);">Enjoy local Boulder cuisine and connect with fellow dancers. Food trucks and nearby restaurants available.</p>
+                                    <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-500);">Free Time • Various Locations</p>
                                 </div>
                             </div>
                         </div>
@@ -248,7 +371,8 @@
                                 <div class="schedule-time time font-mono">12:00 - 1:00 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">EMARLOS & COURTNEY ~ CASINO INTERMEDIATE</h3>
-                                    <p class="font-serif" style="font-size: var(--font-size-sm); color: var(--color-gray-600);">Tango Room</p>
+                                    <p class="font-serif" style="font-size: var(--font-size-base); color: var(--color-gray-600); margin-bottom: var(--space-xs);">Build on yesterday's foundation with more advanced Casino patterns. Learn complex hand positions, intricate turns, and smooth lead-follow techniques.</p>
+                                    <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-500);">Intermediate Level • Tango Room</p>
                                 </div>
                             </div>
                         </div>
@@ -258,7 +382,8 @@
                                 <div class="schedule-time time font-mono">1:15 - 2:15 PM</div>
                                 <div class="details">
                                     <h3 class="font-display" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">NATHAN HOOK ~ RUEDA INTERMEDIATE/ADVANCED</h3>
-                                    <p class="font-serif" style="font-size: var(--font-size-sm); color: var(--color-gray-600);">North Hall</p>
+                                    <p class="font-serif" style="font-size: var(--font-size-base); color: var(--color-gray-600); margin-bottom: var(--space-xs);">Experience the joy of group Casino dancing. Learn complex Rueda calls, synchronized movements, and the communication skills needed for this spectacular Cuban circle dance.</p>
+                                    <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-500);">Intermediate/Advanced • North Hall</p>
                                 </div>
                             </div>
                         </div>
@@ -279,7 +404,7 @@
 
     <footer class="footer-typographic">
         <div class="container">
-            <p class="footer-credits">MAY 15-17, 2026 • <a href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry" style="color: inherit; text-decoration: underline;">alocubanoboulderfest@gmail.com</a></p>
+            <p class="footer-credits">MAY 15-17, 2025 • <a href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry" style="color: inherit; text-decoration: underline;">alocubanoboulderfest@gmail.com</a></p>
             <div class="footer-social">
                 <a href="https://instagram.com/alocubanoboulder" target="_blank" rel="noopener noreferrer" class="social-link-type" aria-label="Follow us on Instagram">
                     <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

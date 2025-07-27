@@ -10,29 +10,127 @@
   <link rel="icon" type="image/png" href="/images/favicons/favicon-32x32.png">
   <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
   
-      <!-- Critical resource preloading -->
+              <!-- Critical resource preloading -->
     <script>
-      // Inline critical path optimization - Static hero images
-      (function() {
-        // Preload static hero image for current page
-        const heroPreload = document.createElement('link');
-        heroPreload.rel = 'preload';
-        heroPreload.as = 'image';
-        heroPreload.href = '/images/hero/hero-default.jpg';
-        document.head.appendChild(heroPreload);
+      // AVIF support detection function
+      function supportsAVIF() {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = 'data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAADybWV0YQAAAAAAAAAoaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAGxpYmF2aWYAAAAADnBpdG0AAAAAAAEAAAAeaWxvYwAAAABEAAABAAEAAAABAAABGgAAAB0AAAAoaWluZgAAAAAAAQAAABppbmZlAgAAAAABAABhdjAxQ29sb3IAAAAAamlwcnAAAABLaXBjbwAAABRpc3BlAAAAAAAAAAIAAAACAAAAEHBpeGkAAAAAAwgICAAAAAxhdjFDgQ0MAAAAABNjb2xybmNseAACAAIAAYAAAAAXaXBtYQAAAAAAAAABAAEEAQKDBAAAACVtZGF0EgAKCBgABogQEAwgMg8f8D///8WfhwB8+ErK42A=';
+        });
+      }
+      
+      // Track current variant to prevent unnecessary re-preloading
+      let currentVariant = null;
+      let preloadLinksAdded = false;
+      
+      // Responsive image preloading with proper timing and deduplication
+      function preloadImages() {
+        // Check if optimized variants exist for event heroes
+        const heroPath = '/images/hero/hero-default.jpg';
+        const isEventHero = false;
         
-        // Preload gallery data for gallery pages
+        if (isEventHero) {
+          // Detect mobile after DOM is ready for accurate viewport
+          const isMobile = window.innerWidth <= 768;
+          const variant = isMobile ? 'mobile' : 'desktop';
+          const baseName = 'hero-default';
+          
+          // Skip re-preloading if variant hasn't changed
+          if (currentVariant === variant && preloadLinksAdded) {
+            return;
+          }
+          
+          // Remove existing preload links to prevent accumulation
+          const existingPreloads = document.head.querySelectorAll('link[rel="preload"][href*="/images/hero-optimized/"]');
+          existingPreloads.forEach(link => link.remove());
+          
+          // Update tracking variables
+          currentVariant = variant;
+          preloadLinksAdded = true;
+          
+          // Preload both mobile and desktop variants for critical content
+          const variants = ['mobile', 'desktop'];
+          
+          variants.forEach(variantType => {
+            // Preload WebP variant
+            const webpPreload = document.createElement('link');
+            webpPreload.rel = 'preload';
+            webpPreload.as = 'image';
+            webpPreload.href = `/images/hero-optimized/${variantType}/${baseName}.webp`;
+            webpPreload.type = 'image/webp';
+            webpPreload.dataset.heroPreload = 'true'; // Mark for easy identification
+            document.head.appendChild(webpPreload);
+            
+            // Fallback JPEG preload
+            const jpegPreload = document.createElement('link');
+            jpegPreload.rel = 'preload';
+            jpegPreload.as = 'image';
+            jpegPreload.href = `/images/hero-optimized/${variantType}/${baseName}.jpg`;
+            jpegPreload.type = 'image/jpeg';
+            jpegPreload.dataset.heroPreload = 'true'; // Mark for easy identification
+            document.head.appendChild(jpegPreload);
+          });
+          
+          // Preload AVIF variant with proper detection
+          supportsAVIF().then(supported => {
+            if (supported) {
+              variants.forEach(variantType => {
+                const avifPreload = document.createElement('link');
+                avifPreload.rel = 'preload';
+                avifPreload.as = 'image';
+                avifPreload.href = `/images/hero-optimized/${variantType}/${baseName}.avif`;
+                avifPreload.type = 'image/avif';
+                avifPreload.dataset.heroPreload = 'true'; // Mark for easy identification
+                document.head.appendChild(avifPreload);
+              });
+            }
+          });
+        } else {
+          // Standard hero image preload for top-level pages (only once)
+          if (!preloadLinksAdded) {
+            const heroPreload = document.createElement('link');
+            heroPreload.rel = 'preload';
+            heroPreload.as = 'image';
+            heroPreload.href = heroPath;
+            heroPreload.dataset.heroPreload = 'true'; // Mark for easy identification
+            document.head.appendChild(heroPreload);
+            preloadLinksAdded = true;
+          }
+        }
+        
+        // Preload gallery data for gallery pages (only once)
         const pageId = window.location.pathname.split('/').pop() || 'home';
-        if (pageId.includes('gallery')) {
+        if (pageId.includes('gallery') && !document.head.querySelector('link[rel="preload"][href*="/api/gallery"]')) {
           const year = pageId.includes('2025') ? '2025' : new Date().getFullYear();
           const galleryDataPreload = document.createElement('link');
           galleryDataPreload.rel = 'preload';
           galleryDataPreload.as = 'fetch';
           galleryDataPreload.href = `/api/gallery?year=${year}&category=workshops`;
           galleryDataPreload.crossOrigin = 'anonymous';
+          galleryDataPreload.dataset.heroPreload = 'true'; // Mark for easy identification
           document.head.appendChild(galleryDataPreload);
         }
-      })();
+      }
+      
+      // Wait for DOM to be ready before preloading
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', preloadImages);
+      } else {
+        preloadImages();
+      }
+      
+      // Update variant on resize for dynamic responsiveness
+      window.addEventListener('resize', () => {
+        // Debounce resize events
+        clearTimeout(window.resizeTimeout);
+        window.resizeTimeout = setTimeout(() => {
+          // Re-evaluate mobile detection and update if needed
+          preloadImages();
+        }, 250);
+      });
     </script>
 
   <!-- DNS prefetch for external resources -->
