@@ -193,17 +193,16 @@
     {
       "source": "/workshop-series-2026/:page",
       "destination": "/pages/:page.html"
+    },
+    {
+      "source": "/tickets",
+      "destination": "/pages/tickets.html"
     }
   ],
   "redirects": [
     {
       "source": "/gallery-2025",
       "destination": "/2025-gallery",
-      "permanent": false
-    },
-    {
-      "source": "/tickets",
-      "destination": "/pages/tickets.html",
       "permanent": false
     },
     {
