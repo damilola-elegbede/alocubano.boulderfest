@@ -389,7 +389,9 @@
   }
   
   .typographic .nav-list.is-open .nav-link,
-  .nav-list.is-open .nav-link {
+  .nav-list.is-open .nav-link,
+  .typographic .nav-list.is-open .nav-trigger,
+  .nav-list.is-open .nav-trigger {
     font-family: var(--font-display);
     font-size: var(--font-size-lg);
     font-weight: 400;
@@ -409,10 +411,16 @@
     overflow: hidden;
     white-space: nowrap;
     list-style: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 100%;
   }
 
   .typographic .nav-list.is-open .nav-link::before,
-  .nav-list.is-open .nav-link::before {
+  .nav-list.is-open .nav-link::before,
+  .typographic .nav-list.is-open .nav-trigger::before,
+  .nav-list.is-open .nav-trigger::before {
     content: '';
     position: absolute;
     top: 0;
@@ -425,18 +433,24 @@
   }
   
   .typographic .nav-list.is-open .nav-link:hover,
-  .nav-list.is-open .nav-link:hover {
+  .nav-list.is-open .nav-link:hover,
+  .typographic .nav-list.is-open .nav-trigger:hover,
+  .nav-list.is-open .nav-trigger:hover {
     color: var(--color-white) !important;
     transform: translateX(8px) !important;
   }
 
   .typographic .nav-list.is-open .nav-link:hover::before,
-  .nav-list.is-open .nav-link:hover::before {
+  .nav-list.is-open .nav-link:hover::before,
+  .typographic .nav-list.is-open .nav-trigger:hover::before,
+  .nav-list.is-open .nav-trigger:hover::before {
     left: 0 !important;
   }
   
   .typographic .nav-list.is-open .nav-link.is-active,
-  .nav-list.is-open .nav-link.is-active {
+  .nav-list.is-open .nav-link.is-active,
+  .typographic .nav-list.is-open .nav-trigger.is-active,
+  .nav-list.is-open .nav-trigger.is-active {
     color: var(--color-red);
     font-weight: 500;
   }
