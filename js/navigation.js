@@ -817,6 +817,19 @@ class SiteNavigation {
                 el.classList.remove('is-active');
             });
 
+            // Define Events sub-page patterns
+            const eventSubPagePatterns = [
+                // Boulder Fest 2026 sub-pages
+                '/2026-artists', '/2026-schedule', '/2026-gallery',
+                // Boulder Fest 2025 sub-pages
+                '/2025-artists', '/2025-schedule', '/2025-gallery',
+                // Weekender 2026 sub-pages
+                '/2026-sept-artists', '/2026-sept-schedule', '/2026-sept-gallery'
+            ];
+
+            // Check if current page is an Events sub-page
+            const isEventSubPage = eventSubPagePatterns.some(pattern => currentPath === pattern);
+
             navLinks.forEach(link => {
                 link.classList.remove('is-active');
                 const linkPath = new URL(link.href).pathname;
@@ -850,6 +863,33 @@ class SiteNavigation {
                     link.removeAttribute('aria-current');
                 }
             });
+
+            // Special handling for Events sub-pages
+            if (isEventSubPage) {
+                // Find the Events trigger and mark it as active
+                const eventsTriggers = document.querySelectorAll('[data-dropdown="events"], .nav-trigger');
+                eventsTriggers.forEach(trigger => {
+                    const triggerText = trigger.textContent.trim();
+                    if (triggerText.includes('Events')) {
+                        trigger.classList.add('is-active');
+                        // Also mark the parent nav-item as active for desktop styles
+                        const navItem = trigger.closest('.nav-item');
+                        if (navItem) {
+                            navItem.classList.add('is-active');
+                        }
+                    }
+                });
+            }
+
+            // Debug logging for Tickets page issue
+            if (currentPath === '/tickets') {
+                console.log('🎫 On Tickets page - checking navigation highlighting');
+                const ticketsLink = document.querySelector('a[href="/tickets"]');
+                if (ticketsLink) {
+                    console.log('🎫 Tickets link found:', ticketsLink);
+                    console.log('🎫 Has is-active class:', ticketsLink.classList.contains('is-active'));
+                }
+            }
         }
 
         setDesign(designName) {
