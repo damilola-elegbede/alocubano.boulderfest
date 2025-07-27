@@ -810,7 +810,12 @@ class SiteNavigation {
 
         highlightCurrentPage() {
             const currentPath = window.location.pathname;
-            const navLinks = document.querySelectorAll('.nav-link, .dropdown-link');
+            const navLinks = document.querySelectorAll('.nav-link, .dropdown-link, .event-nav-link');
+            
+            // First, clear all active states
+            document.querySelectorAll('.nav-trigger, .nav-item').forEach(el => {
+                el.classList.remove('is-active');
+            });
 
             navLinks.forEach(link => {
                 link.classList.remove('is-active');
@@ -831,9 +836,14 @@ class SiteNavigation {
                     // If this is in a dropdown, mark the parent trigger as active too
                     const dropdown = link.closest('.nav-item.has-dropdown, .dropdown-container');
                     if (dropdown) {
-                        const trigger = dropdown.querySelector('.dropdown-trigger');
+                        const trigger = dropdown.querySelector('.dropdown-trigger, .nav-trigger');
                         if (trigger) {
-                            trigger.classList.add('has-active-child');
+                            trigger.classList.add('is-active');
+                            // Also mark the parent nav-item as active for desktop styles
+                            const navItem = trigger.closest('.nav-item');
+                            if (navItem) {
+                                navItem.classList.add('is-active');
+                            }
                         }
                     }
                 } else {
