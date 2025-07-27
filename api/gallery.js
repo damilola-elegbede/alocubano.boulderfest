@@ -61,9 +61,33 @@ export default async function handler(req, res) {
   try {
     // Validate and sanitize query parameters
     const yearParam = req.query.year || '2025';
+    const eventParamRaw = req.query.event; // Add support for event parameter
     const categoryParam = req.query.category;
     const limitParam = req.query.limit || '50';
     const offsetParam = req.query.offset || '0';
+    
+    // Validate and sanitize event parameter to prevent path traversal
+    let eventParam = null;
+    if (eventParamRaw) {
+      // Whitelist of allowed event names
+      const allowedEvents = [
+        'boulder-fest-2025',
+        'boulder-fest-2026', 
+        'weekender-2026-09',
+        'workshop-series-2026'
+      ];
+      
+      // Only allow alphanumeric characters, hyphens, and underscores
+      const sanitizedEvent = eventParamRaw.replace(/[^a-zA-Z0-9\-_]/g, '');
+      
+      if (allowedEvents.includes(sanitizedEvent)) {
+        eventParam = sanitizedEvent;
+      } else {
+        return res.status(400).json({ 
+          error: 'Invalid event parameter. Allowed values: ' + allowedEvents.join(', ') 
+        });
+      }
+    }
     
     // Validate year (must be 4-digit number between 2020-2030)
     const year = yearParam.match(/^\d{4}$/) ? yearParam : '2025';
@@ -97,8 +121,17 @@ export default async function handler(req, res) {
     }
     const offset = parsedOffset;
     
-    // Try to read from pre-generated cache first
-    const cacheFile = path.join(process.cwd(), 'public', 'gallery-data', `${year}.json`);
+    // Try to read from pre-generated cache first - prioritize event-specific files
+    let cacheFile;
+    if (eventParam) {
+      // Try event-specific file first
+      cacheFile = path.join(process.cwd(), 'public', 'gallery-data', `${eventParam}.json`);
+      console.log(`Trying event-specific cache file: ${cacheFile}`);
+    } else {
+      // Fall back to year-based file
+      cacheFile = path.join(process.cwd(), 'public', 'gallery-data', `${year}.json`);
+      console.log(`Trying year-based cache file: ${cacheFile}`);
+    }
     
     if (fs.existsSync(cacheFile)) {
       // Read from cache for much better performance
@@ -135,6 +168,8 @@ export default async function handler(req, res) {
 
       const result = {
         year,
+        event: cachedData.event || eventParam, // Include event info if available
+        eventId: cachedData.eventId || cachedData.event || eventParam,
         categories,
         items: paginatedItems, // For backwards compatibility
         totalCount,
@@ -142,7 +177,13 @@ export default async function handler(req, res) {
         offset,
         hasMore: (offset + limit) < totalCount,
         cacheTimestamp: cachedData.cacheTimestamp || new Date().toISOString(),
-        source: 'cache' // Indicate this came from cache
+        source: 'cache', // Indicate this came from cache
+        // Include additional event metadata if available
+        ...(cachedData.seo && { seo: cachedData.seo }),
+        ...(cachedData.theme && { theme: cachedData.theme }),
+        ...(cachedData.dates && { dates: cachedData.dates }),
+        ...(cachedData.venue && { venue: cachedData.venue }),
+        ...(cachedData.status && { status: cachedData.status })
       };
 
       // Set cache headers
@@ -241,6 +282,8 @@ export default async function handler(req, res) {
 
     const result = {
       year,
+      event: eventParam,
+      eventId: eventParam,
       categories,
       items: paginatedItems, // For backwards compatibility
       totalCount,

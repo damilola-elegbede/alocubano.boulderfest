@@ -13,16 +13,108 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/images/favicons/favicon-192x192.png">
     <link rel="apple-touch-icon" sizes="192x192" href="/images/favicons/favicon-192x192.png">
     
-        <!-- Critical resource preloading -->
+                <!-- Critical resource preloading -->
     <script>
-      // Inline critical path optimization - Static hero images
-      (function() {
-        // Preload static hero image for current page
-        const heroPreload = document.createElement('link');
-        heroPreload.rel = 'preload';
-        heroPreload.as = 'image';
-        heroPreload.href = '/images/hero/contact.jpg';
-        document.head.appendChild(heroPreload);
+      // Enhanced AVIF support detection function with decoding verification
+      function supportsAVIF() {
+        return new Promise((resolve) => {
+          const img = new Image();
+          let isResolved = false;
+          
+          // Timeout to prevent hanging and resolve false positives
+          const timeoutId = setTimeout(() => {
+            if (!isResolved) {
+              isResolved = true;
+              resolve(false);
+            }
+          }, 1000); // 1 second timeout
+          
+          img.onload = () => {
+            clearTimeout(timeoutId);
+            if (!isResolved) {
+              isResolved = true;
+              // Verify the image decoded correctly by checking dimensions
+              // A properly decoded 2x2 AVIF should have width and height of 2
+              const isValidDecode = img.width === 2 && img.height === 2;
+              resolve(isValidDecode);
+            }
+          };
+          
+          img.onerror = () => {
+            clearTimeout(timeoutId);
+            if (!isResolved) {
+              isResolved = true;
+              resolve(false);
+            }
+          };
+          
+          // Use a minimal 2x2 AVIF image for testing
+          img.src = 'data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAADybWV0YQAAAAAAAAAoaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAGxpYmF2aWYAAAAADnBpdG0AAAAAAAEAAAAeaWxvYwAAAABEAAABAAEAAAABAAABGgAAAB0AAAAoaWluZgAAAAAAAQAAABppbmZlAgAAAAABAABhdjAxQ29sb3IAAAAAamlwcnAAAABLaXBjbwAAABRpc3BlAAAAAAAAAAIAAAACAAAAEHBpeGkAAAAAAwgICAAAAAxhdjFDgQ0MAAAAABNjb2xybmNseAACAAIAAYAAAAAXaXBtYQAAAAAAAAABAAEEAQKDBAAAACVtZGF0EgAKCBgABogQEAwgMg8f8D///8WfhwB8+ErK42A=';
+        });
+      }
+      
+      // Responsive viewport detection
+      function isMobileViewport() {
+        return window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+      }
+      
+      // Responsive image preloading with proper timing
+      function preloadImages() {
+        // Check if optimized variants exist for event heroes
+        const heroPath = '/images/hero/contact.jpg';
+        const isEventHero = false;
+        
+        if (isEventHero) {
+          // Use media queries for more reliable viewport detection
+          const isMobile = isMobileViewport();
+          const variant = isMobile ? 'mobile' : 'desktop';
+          const baseName = 'contact';
+          
+          // Preload both variants for critical content
+          const variants = ['mobile', 'desktop'];
+          
+          variants.forEach(variantType => {
+            // Preload WebP variant
+            const webpPreload = document.createElement('link');
+            webpPreload.rel = 'preload';
+            webpPreload.as = 'image';
+            webpPreload.href = `/images/hero-optimized/${variantType}/${baseName}.webp`;
+            webpPreload.type = 'image/webp';
+            webpPreload.media = variantType === 'mobile' ? '(max-width: 768px)' : '(min-width: 769px)';
+            document.head.appendChild(webpPreload);
+            
+            // Fallback JPEG preload
+            const jpegPreload = document.createElement('link');
+            jpegPreload.rel = 'preload';
+            jpegPreload.as = 'image';
+            jpegPreload.href = `/images/hero-optimized/${variantType}/${baseName}.jpg`;
+            jpegPreload.type = 'image/jpeg';
+            jpegPreload.media = variantType === 'mobile' ? '(max-width: 768px)' : '(min-width: 769px)';
+            document.head.appendChild(jpegPreload);
+          });
+          
+          // Preload AVIF variant with proper detection
+          supportsAVIF().then(supported => {
+            if (supported) {
+              variants.forEach(variantType => {
+                const avifPreload = document.createElement('link');
+                avifPreload.rel = 'preload';
+                avifPreload.as = 'image';
+                avifPreload.href = `/images/hero-optimized/${variantType}/${baseName}.avif`;
+                avifPreload.type = 'image/avif';
+                avifPreload.media = variantType === 'mobile' ? '(max-width: 768px)' : '(min-width: 769px)';
+                document.head.appendChild(avifPreload);
+              });
+            }
+          });
+        } else {
+          // Standard hero image preload for top-level pages
+          const heroPreload = document.createElement('link');
+          heroPreload.rel = 'preload';
+          heroPreload.as = 'image';
+          heroPreload.href = heroPath;
+          document.head.appendChild(heroPreload);
+        }
         
         // Preload gallery data for gallery pages
         const pageId = window.location.pathname.split('/').pop() || 'home';
@@ -35,7 +127,14 @@
           galleryDataPreload.crossOrigin = 'anonymous';
           document.head.appendChild(galleryDataPreload);
         }
-      })();
+      }
+      
+      // Wait for DOM to be ready before preloading
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', preloadImages);
+      } else {
+        preloadImages();
+      }
     </script>
 
     <!-- DNS prefetch for external resources -->
@@ -69,15 +168,33 @@
                             <span></span>
                         </div>
                     </button>
-                                        <ul class="nav-list" id="main-navigation">
+                    <ul class="nav-list" id="main-navigation">
                         <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
                         <li><a href="/about" class="nav-link" data-text="About">About</a></li>
-                        <li><a href="/artists" class="nav-link" data-text="Artists">Artists</a></li>
-                        <li><a href="/schedule" class="nav-link" data-text="Schedule">Schedule</a></li>
-                        <li><a href="/gallery" class="nav-link" data-text="Gallery">Gallery</a></li>
+                        <li class="nav-item has-dropdown">
+                            <button class="nav-trigger" aria-expanded="false" aria-haspopup="true" data-dropdown="events" data-text="Events">
+                                Events
+                                <span class="dropdown-arrow" aria-hidden="true">▼</span>
+                            </button>
+                            <ul class="dropdown-menu" aria-hidden="true" role="menu" data-dropdown-content="events">
+                                <li class="dropdown-category" role="group">
+                                    <span class="dropdown-category-title" role="presentation">Boulder Fest</span>
+                                    <ul class="dropdown-submenu">
+                                        <li><a href="/boulder-fest-2026" class="dropdown-link" role="menuitem" data-event="boulder-fest-2026" data-event-status="upcoming">2026 Festival</a></li>
+                                        <li><a href="/boulder-fest-2025" class="dropdown-link" role="menuitem" data-event="boulder-fest-2025" data-event-status="current">2025 Festival</a></li>
+                                    </ul>
+                                </li>
+                                <li class="dropdown-category" role="group">
+                                    <span class="dropdown-category-title" role="presentation">Weekend Events</span>
+                                    <ul class="dropdown-submenu">
+                                        <li><a href="/weekender-2026-09" class="dropdown-link" role="menuitem" data-event="weekender-2026-09" data-event-status="upcoming">Sept 2026 Weekender</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
                         <li><a href="/tickets" class="nav-link" data-text="Tickets">Tickets</a></li>
                         <li><a href="/donations" class="nav-link" data-text="Donate">Donate</a></li>
-                        <li><a href="/contact" class="nav-link is-active" data-text="Contact">Contact</a></li>
+                        <li><a href="/contact" class="nav-link" data-text="Contact">Contact</a></li>
                     </ul>
                 </nav>
             </div>

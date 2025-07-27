@@ -191,6 +191,38 @@
   background: var(--color-red);
 }
 
+/* Active state for nav-trigger (Events) when on events pages */
+.typographic .nav-trigger.is-active {
+  color: var(--color-red);
+  font-weight: 700;
+}
+
+.typographic .nav-trigger.is-active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-red);
+}
+
+/* Active state for nav-trigger when parent nav-item is active (for event pages) - Desktop */
+.typographic .nav-item.is-active .nav-trigger {
+  color: var(--color-red);
+  font-weight: 700;
+}
+
+.typographic .nav-item.is-active .nav-trigger::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-red);
+}
+
 /* Navigation Links - Component Style (Alternative) */
 .nav-link {
   position: relative;
@@ -218,8 +250,46 @@
   width: 100%;
 }
 
+/* Active state for nav-link - Component style */
+.nav-link.is-active {
+  color: var(--color-red);
+  font-weight: 700;
+}
+
 .nav-link:hover {
   color: var(--color-red);
+}
+
+/* Active state for nav-trigger (Events) - component style */
+.nav-trigger.is-active {
+  color: var(--color-red);
+  font-weight: 700;
+}
+
+.nav-trigger.is-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--color-red);
+}
+
+/* Active state for nav-trigger when parent nav-item is active (for event pages) - Component style */
+.nav-item.is-active .nav-trigger {
+  color: var(--color-red);
+  font-weight: 700;
+}
+
+.nav-item.is-active .nav-trigger::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--color-red);
 }
 
 /* Mobile Menu - Typographic Style (Updated to use hamburger icon) */
@@ -346,7 +416,7 @@
     position: fixed !important;
     top: 0;
     right: 0;
-    width: 33.33vw;
+    width: 200px;
     height: 100vh;
     background: var(--color-white);
     opacity: 0.85;
@@ -359,6 +429,13 @@
     transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     /* Always display flex, just hidden via transform */
     display: flex !important;
+    /* Remove list bullets */
+    list-style: none;
+    margin: 0;
+    padding-left: var(--space-lg);
+    padding-right: var(--space-lg);
+    padding-top: var(--space-4xl);
+    padding-bottom: var(--space-xl);
   }
   
   .typographic .nav-list.is-open,
@@ -382,10 +459,12 @@
   }
   
   .typographic .nav-list.is-open .nav-link,
-  .nav-list.is-open .nav-link {
+  .nav-list.is-open .nav-link,
+  .typographic .nav-list.is-open .nav-trigger,
+  .nav-list.is-open .nav-trigger {
     font-family: var(--font-display);
     font-size: var(--font-size-lg);
-    font-weight: 500;
+    font-weight: 400;
     letter-spacing: var(--letter-spacing-wide);
     text-transform: uppercase;
     color: var(--color-black);
@@ -401,6 +480,11 @@
     border-radius: 4px;
     overflow: hidden;
     white-space: nowrap;
+    list-style: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 100%;
   }
 
   .typographic .nav-list.is-open .nav-link::before,
@@ -416,10 +500,23 @@
     z-index: -1;
   }
   
+  /* Remove background effects for nav-trigger to prevent Events highlighting */
+  .typographic .nav-list.is-open .nav-trigger::before,
+  .nav-list.is-open .nav-trigger::before {
+    display: none;
+  }
+  
   .typographic .nav-list.is-open .nav-link:hover,
   .nav-list.is-open .nav-link:hover {
     color: var(--color-white) !important;
     transform: translateX(8px) !important;
+  }
+  
+  /* Keep nav-trigger hover behavior minimal - no background changes */
+  .typographic .nav-list.is-open .nav-trigger:hover,
+  .nav-list.is-open .nav-trigger:hover {
+    /* Only keep basic hover styling, no background color changes */
+    transform: none !important;
   }
 
   .typographic .nav-list.is-open .nav-link:hover::before,
@@ -427,10 +524,28 @@
     left: 0 !important;
   }
   
+  /* Prevent background slide-in for nav-trigger */
+  .typographic .nav-list.is-open .nav-trigger:hover::before,
+  .nav-list.is-open .nav-trigger:hover::before {
+    display: none !important;
+  }
+  
   .typographic .nav-list.is-open .nav-link.is-active,
-  .nav-list.is-open .nav-link.is-active {
+  .nav-list.is-open .nav-link.is-active,
+  .typographic .nav-list.is-open .nav-trigger.is-active,
+  .nav-list.is-open .nav-trigger.is-active,
+  .typographic .nav-list.is-open .nav-item.is-active .nav-trigger,
+  .nav-list.is-open .nav-item.is-active .nav-trigger {
     color: var(--color-red);
-    font-weight: 600;
+    font-weight: 500;
+  }
+
+  /* Remove bullets from mobile menu list items */
+  .typographic .nav-list.is-open li,
+  .nav-list.is-open li {
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
   
 }
@@ -440,7 +555,747 @@ main, .main-content {
   margin-top: calc(var(--space-4xl) + var(--space-lg));
 }
 
-/* Navigation Menu Type Extensions */
+/* =================================================================
+   DROPDOWN NAVIGATION SYSTEM
+   Cuban Dance-Inspired Dropdown Menus with Typography-Forward Design
+   ================================================================= */
+
+/* Dropdown Design Variables - Cuban Cultural Extension */
+:root {
+  /* Color RGB Values for rgba() usage */
+  --color-red-rgb: 204, 41, 54; /* RGB values for #CC2936 */
+  
+  /* Dropdown Layout Variables */
+  --dropdown-offset-y: var(--space-sm);
+  --dropdown-min-width: 200px;
+  --dropdown-max-width: 320px;
+  --dropdown-padding: var(--space-md);
+  --dropdown-item-height: var(--space-3xl);
+  --dropdown-separator-height: 1px;
+  --dropdown-border-radius: 4px;
+  --dropdown-backdrop-blur: 20px;
+  
+  /* Cuban Dance Animation Variables */
+  --salsa-spring-easing: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --cuban-rhythm-delay: 0.05s;
+  --dance-bounce-height: -8px;
+  --dance-subtle-rotation: 0.5deg;
+  --salsa-fade-timing: 200ms;
+  --dropdown-slide-distance: var(--space-sm);
+  
+  /* Event-Specific Color Themes */
+  --boulder-fest-primary: var(--color-red);    /* #CC2936 */
+  --boulder-fest-secondary: var(--color-blue); /* #5B6BB5 */
+  --weekender-primary: var(--color-blue);     /* Blue - on brand */
+  --weekender-secondary: var(--color-red);   /* Red - on brand */
+  
+  /* Mobile Dropdown Variables */
+  --mobile-dropdown-padding: var(--space-lg);
+  --mobile-accordion-timing: 0.35s;
+  --touch-safe-target: 48px;
+  
+  /* Z-index Variables */
+  --z-dropdown: 1100;
+}
+
+/* Dropdown Container - Both Navigation Styles */
+.nav-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.nav-dropdown-toggle {
+  position: relative;
+  cursor: pointer;
+}
+
+/* Dropdown Arrow Indicator */
+.nav-dropdown-toggle::after {
+  content: '';
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: var(--space-xs);
+  vertical-align: middle;
+  border-top: 4px solid currentColor;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+  transition: transform var(--transition-base) var(--salsa-spring-easing);
+}
+
+.nav-dropdown.is-open .nav-dropdown-toggle::after,
+.nav-dropdown:hover .nav-dropdown-toggle::after {
+  transform: rotate(180deg);
+}
+
+/* Dropdown Menu Base Styles */
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + var(--dropdown-offset-y));
+  left: 50%;
+  transform: translateX(-50%) translateY(var(--dance-bounce-height)) scale(0.95);
+  min-width: var(--dropdown-min-width);
+  max-width: var(--dropdown-max-width);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--dropdown-border-radius);
+  padding: var(--dropdown-padding);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: var(--z-dropdown);
+  backdrop-filter: blur(var(--dropdown-backdrop-blur));
+  box-shadow: var(--shadow-lg);
+  transition: all var(--salsa-fade-timing) var(--salsa-spring-easing);
+}
+
+/* Salsa-Inspired Entry Animation */
+@keyframes salsaDropdownEntry {
+  0% {
+    transform: translateX(-50%) translateY(var(--dance-bounce-height)) scale(0.95) rotate(-1deg);
+    opacity: 0;
+  }
+  30% {
+    transform: translateX(-50%) translateY(2px) scale(1.02) rotate(var(--dance-subtle-rotation));
+    opacity: 0.8;
+  }
+  60% {
+    transform: translateX(-50%) translateY(-1px) scale(0.98) rotate(-0.2deg);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateX(-50%) translateY(0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* Dropdown Active State - Desktop */
+@media (min-width: 769px) {
+  .nav-dropdown:hover .nav-dropdown-menu,
+  .nav-dropdown.is-open .nav-dropdown-menu {
+    transform: translateX(-50%) translateY(0) scale(1);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    animation: salsaDropdownEntry 0.4s var(--salsa-spring-easing) forwards;
+  }
+}
+
+/* Dropdown Items */
+.nav-dropdown-item {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.nav-dropdown-link {
+  display: flex;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  color: var(--color-gray-700);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  white-space: nowrap;
+  min-height: var(--touch-safe-target);
+  transition: all var(--transition-base) var(--salsa-spring-easing);
+  touch-action: manipulation;
+  position: relative;
+  z-index: 1;
+}
+
+/* Cuban Hip Movement Hover Animation */
+@keyframes cubanHipMovement {
+  0%, 100% { 
+    transform: translateX(0) rotate(0deg); 
+  }
+  50% { 
+    transform: translateX(2px) rotate(var(--dance-subtle-rotation)); 
+  }
+}
+
+.nav-dropdown-link:hover {
+  color: var(--color-white);
+  transform: translateX(4px);
+  animation: cubanHipMovement 0.6s ease-in-out;
+}
+
+/* Background Slide Animation */
+.nav-dropdown-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--boulder-fest-primary), var(--boulder-fest-secondary));
+  transition: left var(--transition-base) var(--salsa-spring-easing);
+  z-index: -1;
+  border-radius: 2px;
+}
+
+.nav-dropdown-link:hover::before {
+  left: 0;
+}
+
+/* Staggered Animation for Dropdown Items */
+.nav-dropdown-menu .nav-dropdown-item:nth-child(1) .nav-dropdown-link {
+  animation-delay: 0ms;
+}
+
+.nav-dropdown-menu .nav-dropdown-item:nth-child(2) .nav-dropdown-link {
+  animation-delay: calc(var(--cuban-rhythm-delay) * 1);
+}
+
+.nav-dropdown-menu .nav-dropdown-item:nth-child(3) .nav-dropdown-link {
+  animation-delay: calc(var(--cuban-rhythm-delay) * 2);
+}
+
+.nav-dropdown-menu .nav-dropdown-item:nth-child(4) .nav-dropdown-link {
+  animation-delay: calc(var(--cuban-rhythm-delay) * 3);
+}
+
+.nav-dropdown-menu .nav-dropdown-item:nth-child(5) .nav-dropdown-link {
+  animation-delay: calc(var(--cuban-rhythm-delay) * 4);
+}
+
+/* Separator for Dropdown Sections */
+.nav-dropdown-separator {
+  height: var(--dropdown-separator-height);
+  background: var(--color-gray-300);
+  margin: var(--space-xs) 0;
+  border-radius: var(--dropdown-separator-height);
+}
+
+/* =================================================================
+   TYPOGRAPHIC STYLE DROPDOWN EXTENSIONS
+   ================================================================= */
+
+/* Typographic Navigation Dropdown Specific Styles */
+.typographic .nav-dropdown-toggle {
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+  color: var(--color-gray-700);
+  text-decoration: none;
+  position: relative;
+  transition: all var(--transition-base);
+  padding: var(--space-xs) 0;
+}
+
+/* Typographic slide-down text replacement for dropdown toggles */
+.typographic .nav-dropdown-toggle::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--color-black);
+  font-weight: 700;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: all var(--transition-base);
+  pointer-events: none;
+}
+
+.typographic .nav-dropdown-toggle:hover {
+  color: transparent;
+}
+
+.typographic .nav-dropdown-toggle:hover::before {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.typographic .nav-dropdown-link {
+  font-family: var(--font-code);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--letter-spacing-wide);
+  font-weight: 400;
+}
+
+.typographic .nav-dropdown-link:hover {
+  font-weight: 600;
+}
+
+/* =================================================================
+   EVENT-SPECIFIC DROPDOWN THEMES
+   ================================================================= */
+
+/* Boulder Fest Theme (Default - Red/Blue) */
+.nav-dropdown[data-theme="boulder-fest"] .nav-dropdown-link::before {
+  background: linear-gradient(135deg, var(--boulder-fest-primary), var(--boulder-fest-secondary));
+}
+
+/* Weekender Theme (Orange/Teal) */
+.nav-dropdown[data-theme="weekender"] .nav-dropdown-link::before {
+  background: linear-gradient(135deg, var(--weekender-primary), var(--weekender-secondary));
+}
+
+/* Event-specific toggle colors */
+.nav-dropdown[data-theme="weekender"] .nav-dropdown-toggle:hover::before {
+  color: var(--weekender-primary);
+}
+
+/* =================================================================
+   MOBILE DROPDOWN IMPLEMENTATION
+   Hybrid Approach: Accordion on Mobile, Dropdown on Desktop
+   ================================================================= */
+
+@media (max-width: 768px) {
+  /* Mobile Accordion Behavior */
+  .nav-dropdown-menu {
+    position: static;
+    transform: none;
+    min-width: auto;
+    max-width: none;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: max-height var(--mobile-accordion-timing) var(--salsa-spring-easing);
+  }
+  
+  .nav-dropdown.is-open .nav-dropdown-menu {
+    max-height: 400px; /* Adjust based on content */
+    padding: var(--mobile-dropdown-padding) 0;
+  }
+  
+  /* Mobile dropdown items styling */
+  .nav-dropdown-link {
+    padding: var(--space-md) var(--mobile-dropdown-padding);
+    font-size: var(--font-size-base);
+    border-left: 3px solid transparent;
+    margin-bottom: var(--space-xs);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: var(--dropdown-border-radius);
+  }
+  
+  .nav-dropdown-link:hover {
+    border-left-color: var(--boulder-fest-primary);
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(var(--space-xs));
+  }
+  
+  /* Mobile accordion arrow */
+  .nav-dropdown-toggle::after {
+    border-top-width: 6px;
+    border-right-width: 6px;
+    border-left-width: 6px;
+    margin-left: var(--space-sm);
+  }
+  
+  /* Prevent desktop hover states on mobile */
+  .nav-dropdown:hover .nav-dropdown-menu {
+    animation: none;
+  }
+  
+  /* Mobile touch optimization */
+  .nav-dropdown-toggle {
+    min-height: var(--touch-safe-target);
+    display: flex;
+    align-items: center;
+    touch-action: manipulation;
+  }
+}
+
+/* =================================================================
+   ADVANCED MOBILE OPTIMIZATIONS
+   ================================================================= */
+
+/* iOS Safari Optimizations */
+@supports (-webkit-touch-callout: none) {
+  .nav-dropdown-menu {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  
+  .nav-dropdown-link {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Android Performance Optimizations */
+@media (max-width: 768px) and (-webkit-min-device-pixel-ratio: 1) {
+  .nav-dropdown-menu {
+    will-change: max-height;
+  }
+  
+  .nav-dropdown-link {
+    will-change: transform, background-color;
+  }
+}
+
+/* Gesture Conflict Prevention */
+.nav-dropdown {
+  touch-action: manipulation;
+}
+
+/* =================================================================
+   ACCESSIBILITY ENHANCEMENTS
+   ================================================================= */
+
+/* Focus Management */
+.nav-dropdown-toggle:focus,
+.nav-dropdown-link:focus {
+  outline: 2px solid var(--boulder-fest-secondary);
+  outline-offset: 2px;
+}
+
+/* Screen Reader Support */
+.nav-dropdown[aria-expanded="true"] .nav-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .nav-dropdown-menu {
+    background: var(--color-white);
+    border: 2px solid var(--color-black);
+  }
+  
+  .nav-dropdown-link {
+    border-bottom: 1px solid var(--color-gray-300);
+  }
+}
+
+/* Reduced Motion Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .nav-dropdown-menu {
+    animation: none;
+    transition: opacity var(--transition-fast);
+  }
+  
+  .nav-dropdown-link {
+    animation: none;
+    transition: color var(--transition-fast);
+  }
+  
+  .nav-dropdown-toggle::after {
+    transition: transform var(--transition-fast);
+  }
+}
+
+/* =================================================================
+   PERFORMANCE OPTIMIZATIONS
+   ================================================================= */
+
+/* GPU Acceleration for Smooth Animations */
+.nav-dropdown-menu,
+.nav-dropdown-link,
+.nav-dropdown-toggle::after {
+  will-change: transform, opacity;
+  transform: translateZ(0); /* Force GPU layer */
+}
+
+/* Critical CSS Strategy - Above the Fold */
+@media (min-width: 769px) {
+  .nav-dropdown:nth-child(-n+3) .nav-dropdown-menu {
+    will-change: transform, opacity, visibility;
+  }
+}
+
+/* Cleanup will-change after animations */
+.nav-dropdown-menu:not(:hover):not(.is-open) {
+  will-change: auto;
+}
+
+/* =================================================================
+   ACTUAL HTML STRUCTURE DROPDOWN STYLES (Events Menu)
+   ================================================================= */
+
+/* Events dropdown container */
+.nav-item.has-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+/* Events dropdown trigger button - match nav-link styles */
+.nav-trigger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  /* Match nav-link styles for consistency */
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+  color: var(--color-gray-700);
+  text-decoration: none;
+  position: relative;
+  transition: all var(--transition-base);
+  padding: var(--space-xs) 0;
+  font-weight: 500;
+}
+
+/* Dropdown arrow styling */
+.dropdown-arrow {
+  margin-left: var(--space-xs);
+  font-size: 0.8em;
+  transition: transform var(--transition-base) var(--salsa-spring-easing);
+  display: inline-block;
+}
+
+/* Arrow rotation when open */
+.nav-trigger[aria-expanded="true"] .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* Dropdown menu - hidden by default */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + var(--dropdown-offset-y));
+  left: 50%;
+  transform: translateX(-50%) translateY(var(--dance-bounce-height)) scale(0.95);
+  min-width: var(--dropdown-min-width);
+  max-width: var(--dropdown-max-width);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--dropdown-border-radius);
+  padding: var(--dropdown-padding);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: var(--z-dropdown);
+  backdrop-filter: blur(var(--dropdown-backdrop-blur));
+  box-shadow: var(--shadow-lg);
+  transition: all var(--salsa-fade-timing) var(--salsa-spring-easing);
+  list-style: none;
+  margin: 0;
+}
+
+/* Show dropdown when triggered */
+.nav-trigger[aria-expanded="true"] + .dropdown-menu {
+  transform: translateX(-50%) translateY(0) scale(1);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  animation: salsaDropdownEntry 0.4s var(--salsa-spring-easing) forwards;
+}
+
+/* Dropdown category styling */
+.dropdown-category {
+  margin-bottom: var(--space-sm);
+}
+
+.dropdown-category:last-child {
+  margin-bottom: 0;
+}
+
+.dropdown-category-title {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-gray-600);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  margin-bottom: var(--space-xs);
+  padding: 0 var(--space-xs);
+}
+
+.dropdown-submenu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Dropdown links */
+.dropdown-link {
+  display: block;
+  padding: var(--space-xs) var(--space-sm);
+  color: var(--color-gray-700);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  line-height: 1.5;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-base);
+  border-radius: 2px;
+}
+
+/* Dropdown links - simple text color change to match navigation style */
+.dropdown-link:hover {
+  color: var(--color-red);
+  transform: translateX(2px);
+}
+
+/* Typographic style for nav trigger (to match other nav links) */
+.typographic .nav-trigger {
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+  color: var(--color-gray-700);
+  position: relative;
+  transition: all var(--transition-base);
+  padding: var(--space-xs) 0;
+}
+
+/* Typographic slide-down text replacement for nav trigger */
+.typographic .nav-trigger::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--color-black);
+  font-weight: 700;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: all var(--transition-base);
+  pointer-events: none;
+}
+
+/* Remove typographic hover effects for nav-trigger to prevent text highlighting */
+.typographic .nav-trigger:hover {
+  /* Keep original color, no transparency effect */
+  color: var(--color-gray-700);
+}
+
+.typographic .nav-trigger:hover::before {
+  /* Disable slide-down text replacement */
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+/* =================================================================
+   EVENT SUB NAVIGATION STYLES
+   ================================================================= */
+
+/* Event Sub Navigation Container */
+.event-subnav {
+  background: var(--color-white);
+  border-bottom: 1px solid var(--color-gray-200);
+  padding: var(--space-md) 0;
+  margin-bottom: var(--space-xl);
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Event Navigation List */
+.event-nav-list {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: var(--space-lg);
+  justify-content: center;
+  align-items: center;
+}
+
+/* Event Navigation Links - Match main nav styling */
+.event-nav-link {
+  position: relative;
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+  color: var(--color-gray-700);
+  text-decoration: none;
+  transition: all var(--transition-base);
+  padding: var(--space-xs) 0;
+  font-weight: 500;
+}
+
+/* Typographic slide-down text replacement for event nav links */
+.typographic .event-nav-link::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--color-black);
+  font-weight: 700;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: all var(--transition-base);
+  pointer-events: none;
+}
+
+.typographic .event-nav-link:hover {
+  color: transparent;
+}
+
+.typographic .event-nav-link:hover::before {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Active state styling */
+.event-nav-link.is-active {
+  color: var(--color-red);
+  font-weight: 700;
+}
+
+.typographic .event-nav-link.is-active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-red);
+}
+
+/* Alternative styling for non-typographic theme */
+.event-nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--color-red);
+  transition: width var(--transition-base);
+}
+
+.event-nav-link:hover::after,
+.event-nav-link.is-active::after {
+  width: 100%;
+}
+
+.event-nav-link:hover {
+  color: var(--color-red);
+}
+
+/* Mobile Responsive Event Navigation */
+@media (max-width: 768px) {
+  .event-nav-list {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 0 var(--space-md);
+    gap: var(--space-md);
+  }
+  
+  .event-nav-link {
+    white-space: nowrap;
+    font-size: var(--font-size-xs);
+  }
+  
+  .event-subnav {
+    position: static;
+  }
+}
+
+/* =================================================================
+   NAVIGATION MENU TYPE EXTENSIONS (Original)
+   ================================================================= */
+
 .nav-menu-type a::before {
   content: '[';
   position: absolute;
@@ -460,5 +1315,26 @@ main, .main-content {
 .nav-menu-type a:hover::before,
 .nav-menu-type a:hover::after {
   opacity: 1;
+}
+
+/* =================================================================
+   SKIP LINK - Accessibility Feature
+   ================================================================= */
+
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--color-black);
+  color: var(--color-white);
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+  z-index: 1000;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 6px;
 }
 

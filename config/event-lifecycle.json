@@ -1,0 +1,30 @@
+{
+  "events": {
+    "boulder-fest-2025": {
+      "state": "upcoming",
+      "createdAt": "2025-07-25T17:35:50.587Z",
+      "transitions": [],
+      "metadata": {}
+    },
+    "boulder-fest-2026": {
+      "state": "upcoming",
+      "createdAt": "2025-07-25T17:35:50.587Z",
+      "transitions": [],
+      "metadata": {}
+    },
+    "weekender-2026-09": {
+      "state": "upcoming",
+      "createdAt": "2025-07-25T17:35:50.587Z",
+      "transitions": [],
+      "metadata": {}
+    }
+  },
+  "transitions": {
+    "lastUpdated": "2025-07-25T17:35:50.593Z"
+  },
+  "settings": {
+    "autoArchive": false,
+    "archiveDelayDays": 365,
+    "currentEventLimit": 1
+  }
+}

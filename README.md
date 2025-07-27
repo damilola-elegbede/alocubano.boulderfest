@@ -136,7 +136,6 @@ alocubano.boulderfest/
 - `npm run serve:simple` - Simple HTTP server without API functions (port 8000)
 - `npm test` - Run unit tests (197 tests)
 - `npm run test:all` - Run all tests including link validation
-- `npm run test:coverage` - Run tests with coverage report
 - `npm run lint` - Run ESLint and HTMLHint
 - `npm run build` - Build for production
 - `npm run prebuild` - Generate cache files for gallery
@@ -148,16 +147,13 @@ alocubano.boulderfest/
 # Run all tests
 npm test
 
-# Run with coverage
-npm run test:coverage
-
 # Run integration tests
 npm run test:integration
 ```
 
 ### Test Categories
-- **Unit Tests**: 80%+ coverage of core functionality
-- **Integration Tests**: Component interaction validation
+- **Unit Tests**: Core functionality validation
+- **Integration Tests**: Component interaction validation  
 - **Performance Tests**: Load time and memory usage validation
 - **Accessibility Tests**: WCAG AA compliance validation
 

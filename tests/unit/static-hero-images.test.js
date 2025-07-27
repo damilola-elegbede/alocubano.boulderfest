@@ -38,9 +38,9 @@ describe('Static Hero Image System', () => {
       const HERO_IMAGES = {
         'home': '/images/hero/home.jpg',
         'about': '/images/hero/about.jpg',
-        'artists': '/images/hero/artists.jpg',
-        'schedule': '/images/hero/schedule.jpg',
-        'gallery': '/images/hero/gallery.jpg',  
+        'artists': '/images/hero/boulder-fest-2026-hero.jpg',
+        'schedule': '/images/hero/boulder-fest-2025-hero.jpg',
+        'gallery': '/images/hero/weekender-2026-09-hero.jpg',  
         'tickets': '/images/hero/tickets.jpg',
         'donations': '/images/hero/donations.jpg',
         'contact': '/images/hero/contact.jpg'
@@ -49,9 +49,9 @@ describe('Static Hero Image System', () => {
       // Test all page mappings
       expect(HERO_IMAGES['home']).toBe('/images/hero/home.jpg');
       expect(HERO_IMAGES['about']).toBe('/images/hero/about.jpg');
-      expect(HERO_IMAGES['artists']).toBe('/images/hero/artists.jpg');
-      expect(HERO_IMAGES['schedule']).toBe('/images/hero/schedule.jpg');
-      expect(HERO_IMAGES['gallery']).toBe('/images/hero/gallery.jpg');
+      expect(HERO_IMAGES['artists']).toBe('/images/hero/boulder-fest-2026-hero.jpg');
+      expect(HERO_IMAGES['schedule']).toBe('/images/hero/boulder-fest-2025-hero.jpg');
+      expect(HERO_IMAGES['gallery']).toBe('/images/hero/weekender-2026-09-hero.jpg');
       expect(HERO_IMAGES['tickets']).toBe('/images/hero/tickets.jpg');
       expect(HERO_IMAGES['donations']).toBe('/images/hero/donations.jpg');
       expect(HERO_IMAGES['contact']).toBe('/images/hero/contact.jpg');
@@ -67,9 +67,9 @@ describe('Static Hero Image System', () => {
         const HERO_IMAGES = {
           'home': '/images/hero/home.jpg',
           'about': '/images/hero/about.jpg',
-          'artists': '/images/hero/artists.jpg',
-          'schedule': '/images/hero/schedule.jpg',
-          'gallery': '/images/hero/gallery.jpg',
+          'artists': '/images/hero/boulder-fest-2026-hero.jpg',
+          'schedule': '/images/hero/boulder-fest-2025-hero.jpg',
+          'gallery': '/images/hero/weekender-2026-09-hero.jpg',
           'tickets': '/images/hero/tickets.jpg',
           'donations': '/images/hero/donations.jpg',
           'contact': '/images/hero/contact.jpg',
@@ -200,9 +200,9 @@ describe('Static Hero Image System', () => {
       const heroImagePaths = [
         '/images/hero/home.jpg',
         '/images/hero/about.jpg',
-        '/images/hero/artists.jpg',
-        '/images/hero/schedule.jpg',
-        '/images/hero/gallery.jpg',
+        '/images/hero/boulder-fest-2026-hero.jpg',
+        '/images/hero/boulder-fest-2025-hero.jpg',
+        '/images/hero/weekender-2026-09-hero.jpg',
         '/images/hero/tickets.jpg',
         '/images/hero/donations.jpg',
         '/images/hero/contact.jpg',

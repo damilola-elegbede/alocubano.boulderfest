@@ -326,7 +326,7 @@
   height: 60vh;
   min-height: 400px;
   overflow: hidden;
-  margin-bottom: var(--space-3xl);
+  margin-bottom: var(--space-lg);
 }
 
 .hero-image-container {
