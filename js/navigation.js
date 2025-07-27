@@ -55,6 +55,7 @@ class DropdownManager {
         this.nav = navigationSystem;
         this.activeDropdown = null;
         this.dropdownTimers = new Map();
+        this.activeObservers = new Map(); // Track active IntersectionObservers to prevent memory leaks
         this.config = {
             hoverDelay: 150,
             hideDelay: 300,
@@ -413,6 +414,11 @@ class DropdownManager {
     setupIntersectionObserver(container) {
         if (!('IntersectionObserver' in window)) return;
 
+        // Check if observer already exists for this container
+        if (this.activeObservers.has(container)) {
+            return; // Observer already set up, no need to create another
+        }
+
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (!entry.isIntersecting && this.activeDropdown === container) {
@@ -426,10 +432,23 @@ class DropdownManager {
 
         observer.observe(container);
         
+        // Store the observer in the Map
+        this.activeObservers.set(container, observer);
+        
         // Clean up observer when dropdown closes
-        this.nav.eventBus.once('dropdownClosed', () => {
-            observer.disconnect();
+        this.nav.eventBus.once('dropdownClosed', (data) => {
+            if (data.container === container) {
+                this.cleanupObserver(container);
+            }
         });
+    }
+
+    cleanupObserver(container) {
+        const observer = this.activeObservers.get(container);
+        if (observer) {
+            observer.disconnect();
+            this.activeObservers.delete(container);
+        }
     }
 
     prefetchEventPages(container) {
@@ -483,6 +502,13 @@ class DropdownManager {
         // Clean up event listeners and timers
         this.dropdownTimers.forEach(timer => clearTimeout(timer));
         this.dropdownTimers.clear();
+        
+        // Clean up all active observers
+        this.activeObservers.forEach((observer, container) => {
+            observer.disconnect();
+        });
+        this.activeObservers.clear();
+        
         this.activeDropdown = null;
     }
 }
@@ -493,8 +519,6 @@ class DropdownManager {
  */
 class SiteNavigation {
         constructor(config = {}) {
-            console.log('🏗️ Navigation constructor called - Enhanced EventNavigationSystem');
-            
             // Legacy compatibility
             this.currentDesign = localStorage.getItem('selectedDesign') || 'design1';
             this.mobileMenuOpen = false;
@@ -510,6 +534,25 @@ class SiteNavigation {
                 ...config
             };
             
+            // Event sub-page configuration for maintainability
+            this.eventConfig = {
+                subPageTypes: ['artists', 'schedule', 'gallery'],
+                events: {
+                    'boulder-fest-2026': {
+                        year: '2026',
+                        prefix: '2026'
+                    },
+                    'boulder-fest-2025': {
+                        year: '2025',
+                        prefix: '2025'
+                    },
+                    'weekender-2026-09': {
+                        year: '2026',
+                        prefix: '2026-sept'
+                    }
+                }
+            };
+            
             // Event system for loose coupling
             this.eventBus = new EventBus();
             
@@ -523,13 +566,10 @@ class SiteNavigation {
                 keyboardNavUsage: 0
             };
             
-            console.log('🔧 Initial mobileMenuOpen state:', this.mobileMenuOpen);
-            console.log('🔧 About to call init()');
             this.init();
         }
 
         init() {
-            console.log('🚀 Navigation init started - Enhanced EventNavigationSystem');
             
             // Parse current route context
             this.parseCurrentRoute();
@@ -556,8 +596,6 @@ class SiteNavigation {
             
             // Setup accessibility enhancements
             this.setupAccessibilityEnhancements();
-            
-            console.log('✅ EventNavigationSystem initialization complete');
         }
 
         parseCurrentRoute() {
@@ -599,11 +637,6 @@ class SiteNavigation {
             // Setup dropdown event listeners
             this.eventBus.on('dropdownOpened', (data) => {
                 this.performanceMetrics.dropdownUsage++;
-                console.log('📊 Dropdown opened:', data);
-            });
-            
-            this.eventBus.on('dropdownClosed', (data) => {
-                console.log('📊 Dropdown closed:', data);
             });
         }
 
@@ -647,26 +680,6 @@ class SiteNavigation {
             skipLink.href = '#main-content';
             skipLink.textContent = 'Skip to main content';
             skipLink.className = 'skip-link';
-            skipLink.style.cssText = `
-                position: absolute;
-                top: -40px;
-                left: 6px;
-                background: var(--color-black);
-                color: var(--color-white);
-                padding: 8px;
-                text-decoration: none;
-                border-radius: 4px;
-                z-index: 1000;
-                transition: top 0.2s;
-            `;
-            
-            skipLink.addEventListener('focus', () => {
-                skipLink.style.top = '6px';
-            });
-            
-            skipLink.addEventListener('blur', () => {
-                skipLink.style.top = '-40px';
-            });
             
             document.body.insertBefore(skipLink, document.body.firstChild);
         }
@@ -808,6 +821,19 @@ class SiteNavigation {
             document.body.style.overflow = '';
         }
 
+        getEventSubPagePatterns() {
+            const patterns = [];
+            
+            // Dynamically generate patterns from event configuration
+            Object.values(this.eventConfig.events).forEach(event => {
+                this.eventConfig.subPageTypes.forEach(type => {
+                    patterns.push(`/${event.prefix}-${type}`);
+                });
+            });
+            
+            return patterns;
+        }
+
         highlightCurrentPage() {
             const currentPath = window.location.pathname;
             const navLinks = document.querySelectorAll('.nav-link, .dropdown-link, .event-nav-link');
@@ -817,15 +843,8 @@ class SiteNavigation {
                 el.classList.remove('is-active');
             });
 
-            // Define Events sub-page patterns
-            const eventSubPagePatterns = [
-                // Boulder Fest 2026 sub-pages
-                '/2026-artists', '/2026-schedule', '/2026-gallery',
-                // Boulder Fest 2025 sub-pages
-                '/2025-artists', '/2025-schedule', '/2025-gallery',
-                // Weekender 2026 sub-pages
-                '/2026-sept-artists', '/2026-sept-schedule', '/2026-sept-gallery'
-            ];
+            // Get Events sub-page patterns dynamically
+            const eventSubPagePatterns = this.getEventSubPagePatterns();
 
             // Check if current page is an Events sub-page
             const isEventSubPage = eventSubPagePatterns.some(pattern => currentPath === pattern);
@@ -881,15 +900,6 @@ class SiteNavigation {
                 });
             }
 
-            // Debug logging for Tickets page issue
-            if (currentPath === '/tickets') {
-                console.log('🎫 On Tickets page - checking navigation highlighting');
-                const ticketsLink = document.querySelector('a[href="/tickets"]');
-                if (ticketsLink) {
-                    console.log('🎫 Tickets link found:', ticketsLink);
-                    console.log('🎫 Has is-active class:', ticketsLink.classList.contains('is-active'));
-                }
-            }
         }
 
         setDesign(designName) {
@@ -965,58 +975,6 @@ class SiteNavigation {
                 'about-festival': 'About Festival'
             };
             return displayNames[page] || page.charAt(0).toUpperCase() + page.slice(1);
-        }
-
-        // Create sample dropdown for demonstration (can be removed in production)
-        createSampleEventDropdown() {
-            const navList = document.querySelector('.nav-list');
-            if (!navList) return;
-
-            // Find a good place to insert dropdown (after Home)
-            const homeLink = navList.querySelector('a[href="/home"]');
-            if (!homeLink) return;
-
-            const dropdownHTML = `
-                <li class="dropdown-container">
-                    <button class="dropdown-trigger nav-link" 
-                            data-text="Events" 
-                            aria-expanded="false"
-                            aria-haspopup="true"
-                            id="events-dropdown-trigger">
-                        Events
-                        <span class="dropdown-arrow" aria-hidden="true">▼</span>
-                    </button>
-                    <ul class="dropdown-menu" 
-                        role="menu" 
-                        aria-labelledby="events-dropdown-trigger"
-                        aria-hidden="true">
-                        <li role="none">
-                            <a href="/boulder-fest-2026/home" 
-                               class="dropdown-link" 
-                               role="menuitem"
-                               data-event="boulder-fest-2026">
-                                Boulder Fest 2026
-                                <span class="event-dates">May 15-17, 2026</span>
-                            </a>
-                        </li>
-                        <li role="none">
-                            <a href="/weekender-2026-09/home" 
-                               class="dropdown-link" 
-                               role="menuitem"
-                               data-event="weekender-2026-09">
-                                Weekend Intensive
-                                <span class="event-dates">Sep 12-14, 2026</span>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-            `;
-
-            // Insert after home link's parent li
-            const homeLi = homeLink.closest('li');
-            if (homeLi) {
-                homeLi.insertAdjacentHTML('afterend', dropdownHTML);
-            }
         }
 
         // Clean up resources
@@ -1138,9 +1096,6 @@ if (typeof PageTransition === 'undefined') {
                         } catch (error) {
                             console.warn('Error executing inline script:', error);
                         }
-                    } else {
-                    // Skip inline scripts with class declarations to avoid redeclaration errors
-                        console.log('Skipping inline script with class declaration to avoid redeclaration');
                     }
                 }
             });
@@ -1150,20 +1105,12 @@ if (typeof PageTransition === 'undefined') {
 
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('📄 DOMContentLoaded fired');
-    console.log('🔍 SiteNavigation class available:', typeof SiteNavigation !== 'undefined');
-    console.log('🔍 Window siteNavigation exists:', typeof window.siteNavigation !== 'undefined');
-    
     if (typeof SiteNavigation !== 'undefined') {
         if (typeof window.siteNavigation === 'undefined') {
-            console.log('✨ Creating new SiteNavigation instance');
             window.siteNavigation = new SiteNavigation();
         } else {
-            console.log('🔄 Re-initializing existing Navigation instance');
             window.siteNavigation.init();
         }
-    } else {
-        console.log('❌ SiteNavigation class not available');
     }
     if (typeof PageTransition !== 'undefined' && typeof window.pageTransition === 'undefined') {
         window.pageTransition = new PageTransition();
