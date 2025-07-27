@@ -124,8 +124,8 @@
     // State persistence functions
     function saveState() {
         try {
-            const year = getYearFromPage();
-            const stateKey = `gallery_${year}_state`;
+            const event = getEventFromPage();
+            const stateKey = `gallery_${event}_state`;
 
             const persistedState = {
                 version: CONFIG.STATE_VERSION, // Add version for future migrations
@@ -186,8 +186,8 @@
 
     function restoreState() {
         try {
-            const year = getYearFromPage();
-            const stateKey = `gallery_${year}_state`;
+            const event = getEventFromPage();
+            const stateKey = `gallery_${event}_state`;
             const savedState = sessionStorage.getItem(stateKey);
 
             if (!savedState) {
@@ -630,11 +630,11 @@
         });
         
         // Clear any stale session storage that might interfere with workshop photos
-        const year = getYearFromPage();
-        const stateKey = `gallery_${year}_state`;
+        const event = getEventFromPage();
+        const stateKey = `gallery_${event}_state`;
         const hadStaleData = !!sessionStorage.getItem(stateKey);
         console.log('🧹 DEBUG - Session storage cleanup:', {
-            year,
+            event,
             stateKey,
             hadStaleData,
             action: 'clearing to ensure fresh load'
@@ -719,7 +719,8 @@
                 console.log(`📊 State age: ${Math.round(stateAge / 60000)} minutes (threshold: 30 minutes)`);
 
                 // Clear stale state
-                const stateKey = `gallery_${year}_state`;
+                const eventForState = getEventFromPage();
+                const stateKey = `gallery_${eventForState}_state`;
                 sessionStorage.removeItem(stateKey);
 
                 // Reset state to initial values
@@ -768,10 +769,12 @@
             // For the first page, load the static JSON file.
             if (offset === 0) {
                 isStaticFetch = true;
-                // Use absolute path to ensure it works from any page location
-                apiUrl = `/gallery-data/${year}.json?timestamp=${Date.now()}`;
+                // Try event-specific file first, fallback to year-based
+                const event = getEventFromPage();
+                apiUrl = `/gallery-data/${event}.json?timestamp=${Date.now()}`;
                 console.log('🔥 DEBUG - First page load from static JSON:', {
                     apiUrl,
+                    event,
                     year,
                     offset,
                     currentState: {
@@ -797,7 +800,8 @@
                 }
 
                 // For subsequent pages (infinite scroll), hit the API.
-                apiUrl = `${CONFIG.API_ENDPOINT}?year=${year}&limit=${CONFIG.PAGINATION_SIZE}&offset=${offset}&timestamp=${Date.now()}`;
+                const event = getEventFromPage();
+                apiUrl = `${CONFIG.API_ENDPOINT}?year=${year}&event=${event}&limit=${CONFIG.PAGINATION_SIZE}&offset=${offset}&timestamp=${Date.now()}`;
                 console.log('🔥 Making paginated API call to:', apiUrl);
             }
 
@@ -1479,6 +1483,33 @@
         return '2025';
     }
 
+    // Get event from page for event-specific gallery loading
+    function getEventFromPage() {
+        // Try to get from data attribute first
+        const eventElement = document.querySelector('[data-gallery-event]');
+        if (eventElement && eventElement.dataset.galleryEvent) {
+            return eventElement.dataset.galleryEvent;
+        }
+
+        // Try to infer from URL path patterns
+        const pathname = window.location.pathname;
+        
+        // Check for specific event patterns in URL
+        if (pathname.includes('boulder-fest-2026')) {
+            return 'boulder-fest-2026';
+        }
+        if (pathname.includes('weekender-2026-09')) {
+            return 'weekender-2026-09';
+        }
+        if (pathname.includes('boulder-fest-2025') || pathname.includes('gallery-2025')) {
+            return 'boulder-fest-2025';
+        }
+
+        // Default to boulder-fest-2025 for current year
+        const year = getYearFromPage();
+        return `boulder-fest-${year}`;
+    }
+
     // Cache management
     function getCachedData(year) {
         try {
@@ -1525,8 +1556,8 @@
         saveState: () => saveState(),
         restoreState: () => restoreState(),
         clearSavedState: () => {
-            const year = getYearFromPage();
-            const stateKey = `gallery_${year}_state`;
+            const event = getEventFromPage();
+            const stateKey = `gallery_${event}_state`;
             sessionStorage.removeItem(stateKey);
             console.log('🗑️ Saved state cleared');
         },
@@ -1578,8 +1609,8 @@
             console.log('🎯 Cache Status:', {
                 requestCacheSize: state.requestCache.size,
                 rateLimitRequests: state.rateLimitTracker.requests.length,
-                sessionStorageKey: `gallery_${getYearFromPage()}_state`,
-                hasSessionStorage: !!sessionStorage.getItem(`gallery_${getYearFromPage()}_state`)
+                sessionStorageKey: `gallery_${getEventFromPage()}_state`,
+                hasSessionStorage: !!sessionStorage.getItem(`gallery_${getEventFromPage()}_state`)
             });
             console.log('🚫 Failed Images:', {
                 persistedFailures: state.failedImages,

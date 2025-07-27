@@ -22,24 +22,23 @@ describe('UI/UX Integration Tests', () => {
             expect(componentsCSS).toMatch(/\.view-gallery-text\s*{/);
         });
 
-        test('gallery.html should contain properly structured festival year cards', () => {
-            const galleryHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'gallery.html'), 'utf8');
+        test('boulder-fest-2025-gallery.html should contain properly structured festival year cards', () => {
+            const galleryHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'boulder-fest-2025-gallery.html'), 'utf8');
 
-            // Check for festival years grid
-            expect(galleryHTML).toMatch(/class=["']festival-years-grid["']/);
+            // Check for gallery detail section
+            expect(galleryHTML).toMatch(/class=["'][^"']*gallery-detail-section[^"']*["']/);
 
-            // Check for 2025 active card
-            expect(galleryHTML).toMatch(/class=["']festival-year-card["'][^>]*data-year=["']2025["']/);
-            expect(galleryHTML).toMatch(/href=["']\/gallery-2025["']/);
+            // Check for workshops section
+            expect(galleryHTML).toMatch(/id=["']workshops-section["']/);
 
-            // Check for year card content structure
-            expect(galleryHTML).toMatch(/class=["']year-number[^"']*["']/);
-            expect(galleryHTML).toMatch(/class=["']year-subtitle[^"']*["']/);
-            expect(galleryHTML).toMatch(/class=["']year-highlight[^"']*["']/);
+            // Check for socials section  
+            expect(galleryHTML).toMatch(/id=["']socials-section["']/);
+
+            // Check for gallery detail content
+            expect(galleryHTML).toMatch(/id=["']gallery-detail-content["']/);
+
+            // Check for year reference
             expect(galleryHTML).toMatch(/2025/);
-
-            // Check for coming soon cards
-            expect(galleryHTML).toMatch(/class=["']festival-year-card coming-soon["']/);
         });
 
         test('should have mobile responsive styles for festival year cards', () => {
@@ -174,8 +173,8 @@ describe('UI/UX Integration Tests', () => {
     describe('CSS Integration and Loading', () => {
         test('all HTML pages should load components.css', () => {
             const htmlFiles = [
-                'pages/gallery.html',
-                'pages/gallery-2025.html',
+                'pages/boulder-fest-2025-gallery.html',
+                'pages/boulder-fest-2026-gallery.html',
                 'pages/about.html',
                 'pages/tickets.html',
                 'pages/donations.html'
@@ -222,7 +221,7 @@ describe('UI/UX Integration Tests', () => {
 
     describe('Responsive Design Integration', () => {
         test('gallery page should be mobile responsive', () => {
-            const galleryHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'gallery.html'), 'utf8');
+            const galleryHTML = fs.readFileSync(path.join(projectRoot, 'pages', 'boulder-fest-2025-gallery.html'), 'utf8');
             
             // Should have viewport meta tag
             expect(galleryHTML).toMatch(/<meta[^>]*name=["']viewport["'][^>]*>/);

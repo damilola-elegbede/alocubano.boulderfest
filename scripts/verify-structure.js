@@ -19,16 +19,34 @@ const expectedFiles = {
     'vercel.json',
     '404.html'
   ],
-  'Pages Directory': [
+  'Core Pages': [
     'pages/home.html',
     'pages/about.html',
-    'pages/artists.html',
+    'pages/contact.html',
     'pages/donations.html',
-    'pages/gallery.html',
-    'pages/gallery-2025.html',
-    'pages/gallery-test-minimal.html', 
-    'pages/schedule.html',
     'pages/tickets.html'
+  ],
+  'Event Pages - Boulder Fest 2025': [
+    'pages/boulder-fest-2025-artists.html',
+    'pages/boulder-fest-2025-schedule.html',
+    'pages/boulder-fest-2025-gallery.html',
+    'pages/boulder-fest-2025-tickets.html'
+  ],
+  'Event Pages - Boulder Fest 2026': [
+    'pages/boulder-fest-2026-artists.html',
+    'pages/boulder-fest-2026-schedule.html',
+    'pages/boulder-fest-2026-gallery.html',
+    'pages/boulder-fest-2026-tickets.html'
+  ],
+  'Event Pages - Weekender 2026-09': [
+    'pages/weekender-2026-09-artists.html',
+    'pages/weekender-2026-09-schedule.html',
+    'pages/weekender-2026-09-gallery.html',
+    'pages/weekender-2026-09-tickets.html'
+  ],
+  'Legacy Pages (for backward compatibility)': [
+    'pages/gallery.html',
+    'pages/gallery-2025.html'
   ],
   'API Directory': [
     'api/debug.js',
@@ -49,6 +67,83 @@ const expectedFiles = {
 let allGood = true;
 let missingFiles = [];
 let extraInfo = [];
+
+// Event structure validation
+function validateEventStructure() {
+  const events = ['boulder-fest-2025', 'boulder-fest-2026', 'weekender-2026-09'];
+  const eventPages = ['artists', 'schedule', 'gallery', 'tickets'];
+  
+  const heroImagePath = path.join(projectRoot, 'images', 'hero');
+  const heroOptimizedPath = path.join(projectRoot, 'images', 'hero-optimized');
+  
+  let eventStructureValid = true;
+  
+  // Check event pages exist
+  events.forEach(event => {
+    console.log(`  📅 Validating event: ${event}`);
+    
+    eventPages.forEach(pageType => {
+      const pagePath = path.join(projectRoot, 'pages', `${event}-${pageType}.html`);
+      if (fs.existsSync(pagePath)) {
+        console.log(`    ✅ ${event}-${pageType}.html exists`);
+      } else {
+        console.log(`    ❌ ${event}-${pageType}.html MISSING`);
+        eventStructureValid = false;
+      }
+    });
+    
+    // Check hero images
+    const heroImage = path.join(heroImagePath, `${event}-hero.jpg`);
+    if (fs.existsSync(heroImage)) {
+      console.log(`    ✅ Hero image exists: ${event}-hero.jpg`);
+    } else {
+      console.log(`    ⚠️  Hero image missing: ${event}-hero.jpg`);
+    }
+    
+    // Check optimized hero variants
+    const variants = ['desktop', 'mobile', 'placeholder'];
+    const formats = ['jpg', 'webp', 'avif'];
+    
+    variants.forEach(variant => {
+      const variantDir = path.join(heroOptimizedPath, variant);
+      if (fs.existsSync(variantDir)) {
+        formats.forEach(format => {
+          const optimizedImage = path.join(variantDir, `${event}-hero.${format}`);
+          if (!fs.existsSync(optimizedImage)) {
+            console.log(`    ⚠️  Missing optimized ${variant}/${format}: ${event}-hero.${format}`);
+          }
+        });
+      }
+    });
+  });
+  
+  // Check gallery data files
+  console.log(`  📸 Validating gallery data files:`);
+  const galleryDataDir = path.join(projectRoot, 'public', 'gallery-data');
+  if (fs.existsSync(galleryDataDir)) {
+    events.forEach(event => {
+      const galleryFile = path.join(galleryDataDir, `${event}.json`);
+      if (fs.existsSync(galleryFile)) {
+        try {
+          const data = JSON.parse(fs.readFileSync(galleryFile, 'utf8'));
+          if (data.eventId === event || data.event === event) {
+            console.log(`    ✅ Gallery data valid: ${event}.json`);
+          } else {
+            console.log(`    ⚠️  Gallery data structure issue: ${event}.json`);
+          }
+        } catch (error) {
+          console.log(`    ❌ Gallery data invalid JSON: ${event}.json`);
+        }
+      } else {
+        console.log(`    ⚠️  Gallery data missing: ${event}.json`);
+      }
+    });
+  } else {
+    console.log(`    ❌ Gallery data directory missing: ${galleryDataDir}`);
+  }
+  
+  return eventStructureValid;
+}
 
 // Check each category
 Object.entries(expectedFiles).forEach(([category, files]) => {
@@ -170,6 +265,12 @@ if (caseIssues.length > 0) {
 } else {
   console.log('  ✅ No case sensitivity issues found');
 }
+
+console.log('');
+
+// Validate event-based structure
+console.log('🎭 Event-Based Architecture Validation:');
+validateEventStructure();
 
 console.log('');
 

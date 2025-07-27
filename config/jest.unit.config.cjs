@@ -8,21 +8,8 @@ module.exports = {
     setupFilesAfterEnv: [
         './tests/unit-setup.cjs'
     ],
-    collectCoverage: true,
-    coverageDirectory: 'coverage/unit',
-    coverageReporters: [
-        'text',
-        'lcov',
-        'html',
-        'json-summary'
-    ],
-    collectCoverageFrom: [
-        'js/**/*.js',
-        'api/**/*.js',
-        '!js/**/*.test.js',
-        '!**/node_modules/**'
-    ],
-    // No coverage thresholds - we use functional quality metrics instead
+    // Coverage collection disabled - focus on functional testing instead
+    collectCoverage: false,
     // Performance optimizations for Phase 1 tests
     maxWorkers: '50%',
     testTimeout: 10000, // 10 seconds for complex integration tests

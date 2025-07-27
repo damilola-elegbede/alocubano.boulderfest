@@ -14,32 +14,47 @@ The festival website uses a **static hero image system** for page headers, desig
 ### File Structure
 ```
 /images/hero/
-├── home.jpg              # Home page hero
-├── about.jpg             # About page hero  
-├── artists.jpg           # Artists page hero
-├── schedule.jpg          # Schedule page hero
-├── gallery.jpg           # Gallery hub hero
-├── gallery-2025.jpg      # 2025 gallery hero
-├── tickets.jpg           # Tickets page hero
-├── donations.jpg         # Donations page hero
-├── contact.jpg           # Contact page hero
-└── hero-default.jpg      # Fallback hero image
+├── home.jpg                     # Home page hero
+├── about.jpg                    # About page hero  
+├── boulder-fest-2025-hero.jpg   # Boulder Fest 2025 event hero (repurposed from schedule.jpg)
+├── boulder-fest-2026-hero.jpg   # Boulder Fest 2026 event hero (repurposed from artists.jpg)
+├── weekender-2026-09-hero.jpg   # September 2026 Weekender hero (repurposed from gallery.jpg)
+├── future-event-hero1.jpg       # Future event hero 1 (repurposed from temp.jpg)
+├── gallery-2025.jpg             # 2025 gallery hero (kept as-is)
+├── tickets.jpg                  # Tickets page hero
+├── donations.jpg                # Donations page hero
+├── contact.jpg                  # Contact page hero
+└── hero-default.jpg             # Fallback hero image
 ```
 
 ## Implementation
 
 ### Page ID to Image Mapping
 ```javascript
+// Top-level pages (keep existing mapping)
 const HERO_IMAGES = {
   'home': '/images/hero/home.jpg',
   'about': '/images/hero/about.jpg',
-  'artists': '/images/hero/artists.jpg',
-  'schedule': '/images/hero/schedule.jpg',
-  'gallery': '/images/hero/gallery.jpg',
-  'gallery-2025': '/images/hero/gallery-2025.jpg',
   'tickets': '/images/hero/tickets.jpg',
   'donations': '/images/hero/donations.jpg',
-  'contact': '/images/hero/contact.jpg'
+  'contact': '/images/hero/contact.jpg',
+  'gallery-2025': '/images/hero/gallery-2025.jpg',
+};
+
+// Event hero mapping according to the simplified strategy
+const EVENT_HERO_MAPPING = {
+  'boulder-fest-2025': '/images/hero/boulder-fest-2025-hero.jpg',
+  'boulder-fest-2026': '/images/hero/boulder-fest-2026-hero.jpg',
+  'weekender-2026-09': '/images/hero/weekender-2026-09-hero.jpg',
+  'future-event-1': '/images/hero/future-event-hero1.jpg',
+  // Add more future events as needed...
+};
+
+// Current page mappings (redirect to event heroes)
+const CURRENT_PAGE_MAPPING = {
+  'artists': '/images/hero/boulder-fest-2026-hero.jpg',     // Boulder Fest 2026
+  'schedule': '/images/hero/boulder-fest-2025-hero.jpg',   // Boulder Fest 2025
+  'gallery': '/images/hero/weekender-2026-09-hero.jpg',    // September 2026 Weekender
 };
 ```
 
