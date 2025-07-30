@@ -1,0 +1,216 @@
+name: Payment System Monitoring
+
+on:
+  schedule:
+    # Run every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  # Synthetic monitoring for payment endpoints
+  synthetic-monitoring:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check payment API health
+      run: |
+        # Health check endpoints
+        ENDPOINTS=(
+          "https://alocubano.boulderfest.com/api/payment/health"
+          "https://alocubano.boulderfest.com/api/payment/stripe/status"
+          "https://alocubano.boulderfest.com/api/payment/paypal/status"
+        )
+        
+        for endpoint in "${ENDPOINTS[@]}"; do
+          response=$(curl -s -o /dev/null -w "%{http_code}" "$endpoint")
+          if [ "$response" != "200" ]; then
+            echo "❌ $endpoint returned $response"
+            # Send alert
+            curl -X POST ${{ secrets.PAGERDUTY_WEBHOOK }} \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"routing_key\": \"${{ secrets.PAGERDUTY_ROUTING_KEY }}\",
+                \"event_action\": \"trigger\",
+                \"payload\": {
+                  \"summary\": \"Payment endpoint unhealthy: $endpoint\",
+                  \"severity\": \"error\",
+                  \"source\": \"github-actions\"
+                }
+              }"
+          else
+            echo "✅ $endpoint is healthy"
+          fi
+        done
+    
+    - name: Test payment flow
+      run: |
+        # Run synthetic payment transaction
+        response=$(curl -X POST https://alocubano.boulderfest.com/api/payment/test \
+          -H "Authorization: Bearer ${{ secrets.SYNTHETIC_TEST_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "amount": 100,
+            "currency": "usd",
+            "test_mode": true
+          }')
+        
+        if ! echo "$response" | jq -e '.success == true' > /dev/null; then
+          echo "❌ Synthetic payment test failed"
+          exit 1
+        fi
+
+  # Real user monitoring aggregation
+  rum-analysis:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Analyze payment performance metrics
+      run: |
+        # Fetch RUM data from monitoring service
+        curl -X GET "https://api.datadoghq.com/api/v1/rum/analytics" \
+          -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
+          -H "DD-APPLICATION-KEY: ${{ secrets.DATADOG_APP_KEY }}" \
+          -d "filter[query]=service:payment" \
+          -d "filter[from]=now-5m" \
+          -d "filter[to]=now" \
+          > rum_data.json
+        
+        # Analyze performance
+        p95_latency=$(jq '.data.buckets[0].p95' rum_data.json)
+        error_rate=$(jq '.data.buckets[0].error_rate' rum_data.json)
+        
+        if (( $(echo "$p95_latency > 500" | bc -l) )); then
+          echo "⚠️ P95 latency ${p95_latency}ms exceeds threshold"
+        fi
+        
+        if (( $(echo "$error_rate > 1" | bc -l) )); then
+          echo "❌ Error rate ${error_rate}% exceeds threshold"
+        fi
+
+  # Payment transaction monitoring
+  transaction-monitoring:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check payment success rates
+      run: |
+        # Query payment success metrics
+        SUCCESS_RATE=$(curl -X GET "https://alocubano.boulderfest.com/api/metrics/payment/success-rate" \
+          -H "Authorization: Bearer ${{ secrets.METRICS_API_KEY }}")
+        
+        if (( $(echo "$SUCCESS_RATE < 95" | bc -l) )); then
+          echo "❌ Payment success rate ${SUCCESS_RATE}% below threshold"
+          
+          # Create incident
+          curl -X POST https://api.pagerduty.com/incidents \
+            -H "Authorization: Token token=${{ secrets.PAGERDUTY_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "incident": {
+                "type": "incident",
+                "title": "Low payment success rate",
+                "service": {
+                  "id": "${{ secrets.PAGERDUTY_SERVICE_ID }}",
+                  "type": "service_reference"
+                },
+                "urgency": "high",
+                "body": {
+                  "type": "incident_body",
+                  "details": "Payment success rate dropped to '"$SUCCESS_RATE"'%"
+                }
+              }
+            }'
+        fi
+    
+    - name: Check for payment anomalies
+      run: |
+        # Detect unusual payment patterns
+        npm run monitor:payment-anomalies
+
+  # Security monitoring
+  security-monitoring:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check for suspicious payment activity
+      run: |
+        # Monitor for potential fraud patterns
+        SUSPICIOUS_COUNT=$(curl -X GET "https://alocubano.boulderfest.com/api/metrics/payment/suspicious" \
+          -H "Authorization: Bearer ${{ secrets.METRICS_API_KEY }}")
+        
+        if [ "$SUSPICIOUS_COUNT" -gt "0" ]; then
+          echo "⚠️ Detected $SUSPICIOUS_COUNT suspicious payment attempts"
+          
+          # Alert security team
+          curl -X POST ${{ secrets.SECURITY_WEBHOOK }} \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"alert\": \"Suspicious payment activity detected\",
+              \"count\": $SUSPICIOUS_COUNT,
+              \"severity\": \"high\"
+            }"
+        fi
+    
+    - name: Check rate limiting
+      run: |
+        # Verify rate limiting is working
+        RATE_LIMIT_VIOLATIONS=$(curl -X GET "https://alocubano.boulderfest.com/api/metrics/rate-limit/violations" \
+          -H "Authorization: Bearer ${{ secrets.METRICS_API_KEY }}")
+        
+        echo "Rate limit violations in last 5 minutes: $RATE_LIMIT_VIOLATIONS"
+
+  # Database monitoring
+  database-monitoring:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check database performance
+      run: |
+        # Monitor payment-related queries
+        SLOW_QUERIES=$(curl -X GET "${{ secrets.DATABASE_MONITORING_URL }}/slow-queries" \
+          -H "Authorization: Bearer ${{ secrets.DATABASE_MONITORING_TOKEN }}" \
+          -d "schema=payments")
+        
+        if [ "$SLOW_QUERIES" -gt "10" ]; then
+          echo "⚠️ High number of slow queries: $SLOW_QUERIES"
+        fi
+    
+    - name: Check database connections
+      run: |
+        # Monitor connection pool
+        CONNECTION_USAGE=$(curl -X GET "${{ secrets.DATABASE_MONITORING_URL }}/connections" \
+          -H "Authorization: Bearer ${{ secrets.DATABASE_MONITORING_TOKEN }}")
+        
+        if (( $(echo "$CONNECTION_USAGE > 80" | bc -l) )); then
+          echo "⚠️ Database connection pool usage high: ${CONNECTION_USAGE}%"
+        fi
+
+  # Cost monitoring
+  cost-monitoring:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Monitor payment processing costs
+      run: |
+        # Check Stripe processing fees
+        STRIPE_FEES=$(curl -X GET "https://api.stripe.com/v1/balance/history" \
+          -H "Authorization: Bearer ${{ secrets.STRIPE_SECRET_KEY }}" \
+          -d "limit=100" \
+          -d "created[gte]=$(date -u -d '5 minutes ago' +%s)" \
+          | jq '[.data[] | select(.type=="charge") | .fee] | add')
+        
+        echo "Stripe fees in last 5 minutes: $STRIPE_FEES"
+        
+        # Check if fees are unusually high
+        AVERAGE_FEES=500  # cents
+        if [ "$STRIPE_FEES" -gt "$((AVERAGE_FEES * 2))" ]; then
+          echo "⚠️ Unusually high payment processing fees detected"
+        fi

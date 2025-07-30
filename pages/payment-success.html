@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful - A Lo Cubano Boulder Fest</title>
+    <meta name="description" content="Your ticket purchase was successful! Thank you for supporting A Lo Cubano Boulder Fest 2026.">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" href="/images/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicons/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/images/favicons/favicon-192x192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/images/favicons/favicon-192x192.png">
+    
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//fonts.gstatic.com">
+    
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/typography.css">
+    <link rel="stylesheet" href="/css/payment-integration.css">
+    <link rel="stylesheet" href="/css/mobile-overrides.css">
+</head>
+<body class="typographic">
+    <header class="header">
+        <div class="container">
+            <div class="grid">
+                <div class="header-left">
+                    <a href="/home" class="logo-link" aria-label="Go to home page">
+                        <img src="/images/logo.png" alt="A Lo Cubano Boulder Fest Logo" class="site-logo">
+                        <div class="logo-text">
+                            <span class="logo-main">A LO CUBANO</span>
+                            <span class="logo-separator">|</span>
+                            <span class="logo-sub">Boulder Fest</span>
+                        </div>
+                    </a>
+                </div>
+                <nav class="main-nav">
+                    <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="main-navigation">
+                        <div class="menu-icon">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                    <ul class="nav-list" id="main-navigation">
+                        <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
+                        <li><a href="/about" class="nav-link" data-text="About">About</a></li>
+                        <li class="nav-item has-dropdown">
+                            <button class="nav-trigger" aria-expanded="false" aria-haspopup="true" data-dropdown="events" data-text="Events">
+                                Events
+                                <span class="dropdown-arrow" aria-hidden="true">▼</span>
+                            </button>
+                            <ul class="dropdown-menu" aria-hidden="true" role="menu" data-dropdown-content="events">
+                                <li class="dropdown-category" role="group">
+                                    <span class="dropdown-category-title" role="presentation">Boulder Fest</span>
+                                    <ul class="dropdown-submenu">
+                                        <li><a href="/boulder-fest-2026" class="dropdown-link" role="menuitem" data-event="boulder-fest-2026" data-event-status="upcoming">2026 Festival</a></li>
+                                        <li><a href="/boulder-fest-2025" class="dropdown-link" role="menuitem" data-event="boulder-fest-2025" data-event-status="current">2025 Festival</a></li>
+                                    </ul>
+                                </li>
+                                <li class="dropdown-category" role="group">
+                                    <span class="dropdown-category-title" role="presentation">Weekend Events</span>
+                                    <ul class="dropdown-submenu">
+                                        <li><a href="/weekender-2026-09" class="dropdown-link" role="menuitem" data-event="weekender-2026-09" data-event-status="upcoming">Sept 2026 Weekender</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li><a href="/tickets" class="nav-link" data-text="Tickets">Tickets</a></li>
+                        <li><a href="/donations" class="nav-link" data-text="Donate">Donate</a></li>
+                        <li><a href="/contact" class="nav-link" data-text="Contact">Contact</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="section-typographic">
+            <div class="container">
+                <div class="payment-success-container">
+                    <div class="success-header">
+                        <div class="success-icon" aria-hidden="true">
+                            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22,4 12,14.01 9,11.01"></polyline>
+                            </svg>
+                        </div>
+                        <h1 class="success-title">Payment Successful!</h1>
+                        <p class="success-subtitle">Thank you for your purchase. Your tickets are confirmed.</p>
+                    </div>
+
+                    <div class="order-confirmation" id="order-details">
+                        <h2>Order Confirmation</h2>
+                        <div class="loading-order-details">
+                            <div class="loading-spinner">
+                                <svg width="24" height="24" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="32" stroke-dashoffset="24">
+                                        <animatetransform attributeName="transform" type="rotate" values="0 12 12;360 12 12" dur="1s" repeatCount="indefinite"/>
+                                    </circle>
+                                </svg>
+                            </div>
+                            <p>Loading order details...</p>
+                        </div>
+                    </div>
+
+                    <div class="next-steps">
+                        <h2>What's Next?</h2>
+                        <div class="steps-grid">
+                            <div class="step-item">
+                                <div class="step-icon" aria-hidden="true">📧</div>
+                                <h3>Check Your Email</h3>
+                                <p>You'll receive a confirmation email with your tickets and event details within a few minutes.</p>
+                            </div>
+                            <div class="step-item">
+                                <div class="step-icon" aria-hidden="true">📱</div>
+                                <h3>Save Your Tickets</h3>
+                                <p>Add your tickets to your phone's wallet or save the PDF for easy access at the event.</p>
+                            </div>
+                            <div class="step-item">
+                                <div class="step-icon" aria-hidden="true">💃</div>
+                                <h3>Get Ready to Dance!</h3>
+                                <p>Join our community and stay updated with the latest news and announcements.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="social-connect">
+                        <h2>Stay Connected</h2>
+                        <p>Follow us for updates, tips, and behind-the-scenes content:</p>
+                        <div class="social-links">
+                            <a href="https://instagram.com/alocubanoboulder" target="_blank" rel="noopener noreferrer" class="social-link">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                                </svg>
+                                Follow @alocubanoboulder
+                            </a>
+                            <a href="https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH" target="_blank" rel="noopener noreferrer" class="social-link">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                                </svg>
+                                Join WhatsApp Community
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <a href="/home" class="btn btn-primary">
+                            Return to Home
+                        </a>
+                        <a href="/boulder-fest-2026" class="btn btn-secondary">
+                            View Event Details
+                        </a>
+                    </div>
+
+                    <div class="help-section">
+                        <h3>Need Help?</h3>
+                        <p>If you have any questions or need assistance, please contact us:</p>
+                        <div class="contact-info">
+                            <a href="mailto:alocubanoboulderfest@gmail.com" class="contact-link">
+                                📧 alocubanoboulderfest@gmail.com
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer-typographic">
+        <div class="container">
+            <p class="footer-credits">MAY 15-17, 2026 • <a href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry" style="color: inherit; text-decoration: underline;">alocubanoboulderfest@gmail.com</a></p>
+            <div class="footer-social">
+                <a href="https://instagram.com/alocubanoboulder" target="_blank" rel="noopener noreferrer" class="social-link-type" aria-label="Follow us on Instagram">
+                    <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                </a>
+                <a href="https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH" target="_blank" rel="noopener noreferrer" class="social-link-type" aria-label="Join us on WhatsApp">
+                    <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/navigation.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/typography.js"></script>
+    
+    <script>
+        // Payment success page functionality
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('session_id');
+            
+            if (sessionId) {
+                try {
+                    // Fetch order details
+                    const response = await fetch(`/api/payment/order-details?session_id=${sessionId}`);
+                    const orderData = await response.json();
+                    
+                    if (response.ok) {
+                        displayOrderDetails(orderData);
+                        
+                        // Track successful conversion
+                        if (typeof gtag !== 'undefined') {
+                            gtag('event', 'purchase', {
+                                transaction_id: orderData.orderId,
+                                value: orderData.totalAmount,
+                                currency: 'USD',
+                                items: orderData.items.map(item => ({
+                                    item_id: item.ticketType,
+                                    item_name: item.name,
+                                    category: 'ticket',
+                                    quantity: item.quantity,
+                                    price: item.price
+                                }))
+                            });
+                        }
+                    } else {
+                        showErrorMessage('Unable to load order details. Please check your email for confirmation.');
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch order details:', error);
+                    showErrorMessage('Unable to load order details. Please check your email for confirmation.');
+                }
+            } else {
+                showErrorMessage('No order information found. Please check your email for confirmation.');
+            }
+        });
+        
+        function displayOrderDetails(orderData) {
+            const container = document.getElementById('order-details');
+            
+            container.innerHTML = `
+                <h2>Order Confirmation</h2>
+                <div class="order-summary">
+                    <div class="order-header">
+                        <div class="order-number">Order #${orderData.orderNumber}</div>
+                        <div class="order-date">${new Date(orderData.createdAt).toLocaleDateString()}</div>
+                    </div>
+                    
+                    <div class="order-customer">
+                        <h3>Customer Information</h3>
+                        <p><strong>${orderData.customerName}</strong></p>
+                        <p>${orderData.customerEmail}</p>
+                        ${orderData.customerPhone ? `<p>${orderData.customerPhone}</p>` : ''}
+                    </div>
+                    
+                    <div class="order-items">
+                        <h3>Tickets Purchased</h3>
+                        ${orderData.items.map(item => `
+                            <div class="order-item">
+                                <span class="item-name">${item.name}</span>
+                                <span class="item-quantity">× ${item.quantity}</span>
+                                <span class="item-total">$${(item.price * item.quantity).toFixed(2)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="order-total">
+                        <strong>Total: $${orderData.totalAmount.toFixed(2)}</strong>
+                    </div>
+                </div>`;
+        }
+        
+        function showErrorMessage(message) {
+            const container = document.getElementById('order-details');
+            container.innerHTML = `
+                <h2>Order Confirmation</h2>
+                <div class="error-message">
+                    <p>${message}</p>
+                    <p>If you continue to have issues, please contact us at <a href="mailto:alocubanoboulderfest@gmail.com">alocubanoboulderfest@gmail.com</a></p>
+                </div>`;
+        }
+    </script>
+    
+    <style>
+        .payment-success-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: var(--space-2xl) 0;
+        }
+        
+        .success-header {
+            text-align: center;
+            margin-bottom: var(--space-3xl);
+        }
+        
+        .success-icon {
+            color: var(--color-blue);
+            margin-bottom: var(--space-lg);
+        }
+        
+        .success-title {
+            font-family: var(--font-display);
+            font-size: var(--font-size-4xl);
+            font-weight: 900;
+            color: var(--color-black);
+            margin-bottom: var(--space-md);
+            text-transform: uppercase;
+            letter-spacing: var(--letter-spacing-wide);
+        }
+        
+        .success-subtitle {
+            font-size: var(--font-size-lg);
+            color: var(--color-gray-600);
+            margin: 0;
+        }
+        
+        .order-confirmation {
+            background: var(--color-white);
+            padding: var(--space-2xl);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            margin-bottom: var(--space-3xl);
+        }
+        
+        .order-confirmation h2 {
+            font-family: var(--font-display);
+            font-size: var(--font-size-2xl);
+            color: var(--color-black);
+            margin-bottom: var(--space-lg);
+            text-transform: uppercase;
+            letter-spacing: var(--letter-spacing-wide);
+        }
+        
+        .loading-order-details {
+            text-align: center;
+            padding: var(--space-2xl);
+            color: var(--color-gray-600);
+        }
+        
+        .loading-spinner {
+            margin-bottom: var(--space-md);
+            color: var(--color-blue);
+        }
+        
+        .order-summary {
+            display: grid;
+            gap: var(--space-lg);
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: var(--space-md);
+            border-bottom: 2px solid var(--color-gray-200);
+        }
+        
+        .order-number {
+            font-family: var(--font-code);
+            font-weight: 600;
+            color: var(--color-blue);
+        }
+        
+        .order-date {
+            font-family: var(--font-code);
+            font-size: var(--font-size-sm);
+            color: var(--color-gray-600);
+        }
+        
+        .order-customer h3,
+        .order-items h3 {
+            font-family: var(--font-display);
+            font-size: var(--font-size-lg);
+            color: var(--color-black);
+            margin-bottom: var(--space-sm);
+            text-transform: uppercase;
+            letter-spacing: var(--letter-spacing-wide);
+        }
+        
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-sm) 0;
+            border-bottom: 1px solid var(--color-gray-200);
+        }
+        
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        
+        .order-total {
+            text-align: right;
+            font-family: var(--font-display);
+            font-size: var(--font-size-xl);
+            font-weight: 900;
+            color: var(--color-red);
+            padding-top: var(--space-md);
+            border-top: 2px solid var(--color-gray-200);
+        }
+        
+        .next-steps,
+        .social-connect {
+            margin-bottom: var(--space-3xl);
+        }
+        
+        .next-steps h2,
+        .social-connect h2 {
+            font-family: var(--font-display);
+            font-size: var(--font-size-2xl);
+            color: var(--color-black);
+            margin-bottom: var(--space-lg);
+            text-transform: uppercase;
+            letter-spacing: var(--letter-spacing-wide);
+        }
+        
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-xl);
+        }
+        
+        .step-item {
+            text-align: center;
+            padding: var(--space-xl);
+            background: var(--color-gray-50);
+            border-radius: var(--radius-lg);
+        }
+        
+        .step-icon {
+            font-size: 3rem;
+            margin-bottom: var(--space-md);
+        }
+        
+        .step-item h3 {
+            font-family: var(--font-display);
+            font-size: var(--font-size-lg);
+            color: var(--color-black);
+            margin-bottom: var(--space-sm);
+            text-transform: uppercase;
+            letter-spacing: var(--letter-spacing-wide);
+        }
+        
+        .social-links {
+            display: flex;
+            gap: var(--space-lg);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .social-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-md) var(--space-lg);
+            background: var(--color-blue);
+            color: var(--color-white);
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            transition: all var(--transition-base);
+        }
+        
+        .social-link:hover {
+            background: var(--color-red);
+            transform: translateY(-2px);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: var(--space-lg);
+            justify-content: center;
+            margin-bottom: var(--space-3xl);
+            flex-wrap: wrap;
+        }
+        
+        .help-section {
+            text-align: center;
+            padding: var(--space-xl);
+            background: var(--color-gray-50);
+            border-radius: var(--radius-lg);
+        }
+        
+        .help-section h3 {
+            font-family: var(--font-display);
+            font-size: var(--font-size-lg);
+            color: var(--color-black);
+            margin-bottom: var(--space-sm);
+            text-transform: uppercase;
+            letter-spacing: var(--letter-spacing-wide);
+        }
+        
+        .contact-link {
+            color: var(--color-blue);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .contact-link:hover {
+            color: var(--color-red);
+            text-decoration: underline;
+        }
+        
+        .error-message {
+            text-align: center;
+            padding: var(--space-xl);
+            background: var(--color-gray-50);
+            border-radius: var(--radius-md);
+            color: var(--color-gray-700);
+        }
+        
+        @media (max-width: 768px) {
+            .payment-success-container {
+                padding: var(--space-lg) 0;
+            }
+            
+            .success-title {
+                font-size: var(--font-size-3xl);
+            }
+            
+            .order-confirmation {
+                padding: var(--space-lg);
+            }
+            
+            .order-header {
+                flex-direction: column;
+                gap: var(--space-sm);
+                text-align: center;
+            }
+            
+            .steps-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .social-links {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</body>
+</html>

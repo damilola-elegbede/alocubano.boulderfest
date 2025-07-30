@@ -1,0 +1,237 @@
+{
+  "title": "A Lo Cubano Payment System Dashboard",
+  "description": "Real-time monitoring of payment processing, performance, and health metrics",
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "title": "Payment Success Rate",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:payment.success{env:production}.as_rate() / sum:payment.attempts{env:production}.as_rate() * 100",
+            "display_type": "line",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "min": "0",
+          "max": "100",
+          "label": "Success Rate %"
+        },
+        "markers": [
+          {
+            "value": "y = 95",
+            "display_type": "error dashed",
+            "label": "SLO Target"
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "title": "Payment Processing Time (P95)",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "p95:payment.processing_time{env:production} by {provider}",
+            "display_type": "line"
+          }
+        ],
+        "yaxis": {
+          "min": "0",
+          "label": "Time (ms)"
+        },
+        "markers": [
+          {
+            "value": "y = 200",
+            "display_type": "warning dashed",
+            "label": "Performance Target"
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "title": "Payment Volume by Provider",
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "sum:payment.amount{env:production} by {provider}.as_count()",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 10000,
+                "palette": "green"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "title": "Failed Payments by Error Code",
+        "type": "heatmap",
+        "requests": [
+          {
+            "q": "sum:payment.failed{env:production} by {error_code}"
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "title": "Database Connection Pool Usage",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "avg:database.connection_pool.usage{env:production}",
+            "aggregator": "last",
+            "conditional_formats": [
+              {
+                "comparator": "<",
+                "value": 80,
+                "palette": "green"
+              },
+              {
+                "comparator": ">=",
+                "value": 80,
+                "palette": "yellow"
+              },
+              {
+                "comparator": ">=",
+                "value": 90,
+                "palette": "red"
+              }
+            ]
+          }
+        ],
+        "precision": 0,
+        "unit": "%"
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "title": "API Error Rate",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:api.request.errors{env:production,path:/api/payment/*}.as_rate() / sum:api.request.count{env:production,path:/api/payment/*}.as_rate() * 100",
+            "display_type": "bars",
+            "style": {
+              "palette": "warm"
+            }
+          }
+        ],
+        "yaxis": {
+          "min": "0",
+          "label": "Error Rate %"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "title": "Webhook Processing Latency",
+        "type": "distribution",
+        "requests": [
+          {
+            "q": "avg:webhook.processing_time{env:production} by {event_type}"
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "title": "Revenue by Event",
+        "type": "treemap",
+        "requests": [
+          {
+            "q": "sum:payment.amount{env:production,status:completed} by {event_id}",
+            "formulas": [
+              {
+                "formula": "query1 / 100"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "definition": {
+        "title": "Fraud Detection Alerts",
+        "type": "event_stream",
+        "query": "source:payment-fraud-detection priority:high",
+        "event_size": "s"
+      }
+    },
+    {
+      "id": 10,
+      "definition": {
+        "title": "Payment System Health",
+        "type": "check_status",
+        "check": "payment.health",
+        "grouping": "cluster",
+        "group_by": ["provider", "region"]
+      }
+    },
+    {
+      "id": 11,
+      "definition": {
+        "title": "Refund Processing Time",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:refund.processing_time{env:production}",
+            "display_type": "line",
+            "style": {
+              "palette": "purple"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "definition": {
+        "title": "Payment Gateway Availability",
+        "type": "hostmap",
+        "requests": [
+          {
+            "q": "avg:synthetics.uptime{env:production,check:payment-gateway} by {provider}"
+          }
+        ],
+        "style": {
+          "palette": "green_to_orange",
+          "palette_flip": false
+        }
+      }
+    }
+  ],
+  "layout_type": "ordered",
+  "notify_list": ["devops@alocubano.boulderfest.com"],
+  "template_variables": [
+    {
+      "name": "env",
+      "default": "production",
+      "available_values": ["production", "staging", "development"]
+    },
+    {
+      "name": "provider",
+      "default": "*",
+      "available_values": ["stripe", "paypal", "*"]
+    }
+  ]
+}

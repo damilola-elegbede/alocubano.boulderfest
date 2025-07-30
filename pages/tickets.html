@@ -82,6 +82,7 @@
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/typography.css">
+    <link rel="stylesheet" href="/css/payment-integration.css">
     <link rel="stylesheet" href="/css/mobile-overrides.css">
 </head>
 <body class="typographic">
@@ -277,6 +278,11 @@
                     </div>
                 </section>
                 
+                <!-- Payment Integration Container -->
+                <div id="payment-container" class="payment-container" style="display: none;">
+                    <!-- Payment steps will be dynamically inserted here -->
+                </div>
+                
                 <!-- Policy -->
                 <div class="policy-section" style="margin-bottom: var(--space-4xl); text-align: center;">
                     <p class="font-display " style="font-size: var(--font-size-xl);">NO REFUNDS</p>
@@ -305,11 +311,28 @@
             </div>
         </div>
     </footer>
+    <!-- Stripe JS -->
+    <script src="https://js.stripe.com/v3/"></script>
+    
+    <!-- Stripe Configuration -->
+    <script>
+        // Replace with your actual Stripe publishable key
+        window.STRIPE_PUBLISHABLE_KEY = 'pk_test_51234567890abcdefghijklmnopqrstuvwxyz'; // TODO: Replace with real key
+    </script>
+    
+    <!-- Payment Configuration -->
+    <script src="/js/payment-config.js"></script>
+    
+    <!-- Core scripts -->
     <script src="/js/navigation.js"></script>
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
     <script src="/js/main.js"></script>
-    <script src="/js/typography.js"></script><script src="/js/gallery-hero.js"></script>
+    <script src="/js/typography.js"></script>
+    <script src="/js/gallery-hero.js"></script>
+    
+    <!-- Enhanced ticket selection with payment integration -->
+    <script type="module" src="/js/payment-integration.js"></script>
     <script src="/js/ticket-selection.js"></script>
     <script>
         function handleTicketForm(event) {

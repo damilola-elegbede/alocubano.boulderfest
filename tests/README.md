@@ -1,262 +1,301 @@
-# A Lo Cubano Boulder Fest - Test Output Formatting and Reporting System
+# Payment System Test Suite - A Lo Cubano Boulder Fest
 
-## Overview
+This comprehensive test suite ensures the reliability, security, and performance of the A Lo Cubano Boulder Fest payment system. The test suite includes unit tests, integration tests, end-to-end tests, performance tests, and security tests with 80%+ code coverage and production-ready quality gates.
 
-This comprehensive test reporting system provides clear, actionable results for link validation with multiple output formats and detailed analysis.
-
-## Features
-
-### 🎯 Summary Report
-- **Overall Site Health Status**: Color-coded health score from 0-100
-- **Total Links Tested**: Complete count of discovered links
-- **Broken Links Count**: Number of failed link validations
-- **Success Rate Percentage**: Overall link reliability metric
-- **Test Execution Time**: Performance timing information
-
-### 🔍 Detailed Breakdown
-- **Broken Links with Context**: File path, line number, and surrounding code
-- **Link Type Categorization**: Navigation, content, asset, and external link analysis
-- **Suggested Fixes**: Intelligent recommendations for fixing broken links
-- **Link Consistency Analysis**: Cross-page validation and patterns
-
-### 📊 Multiple Output Formats
-- **Console Output**: Color-coded, interactive development feedback
-- **Structured Text Report**: Human-readable summary for documentation
-- **JSON Format**: Machine-readable data for CI/CD integration
-- **JUnit XML**: Compatible with test reporting systems
-
-## Usage
-
-### Basic Commands
-
-```bash
-# Run basic link validation
-npm run test:links
-
-# Verbose output with detailed logging
-npm run test:links:verbose
-
-# Skip external links (faster, local-only)
-npm run test:links:local
-
-# Generate JSON report for CI/CD
-npm run test:links:json
-
-# Run all tests including link validation
-npm run test:all
-```
-
-### Shell Script Interface
-
-```bash
-# Using the shell wrapper
-./tests/link-check.sh --verbose --json
-
-# CI/CD optimized mode
-./tests/link-check.sh --ci --json
-```
-
-### Advanced Options
-
-```bash
-# Custom timeout and retries
-node tests/run-link-tests.js --timeout 10000 --retries 3
-
-# Custom output directory
-node tests/run-link-tests.js --output-dir ./reports --json
-
-# Help information
-node tests/run-link-tests.js --help
-```
-
-## Report Components
-
-### 1. Executive Summary
-```
-📊 SUMMARY REPORT
-──────────────────────────────────────────────────
-Total Links Tested: 1093
-Broken Links: 202
-Success Rate: 81.5%
-Test Duration: 4.43s
-```
-
-### 2. Broken Links Analysis
-```
-🔗 BROKEN LINKS DETAILS
-──────────────────────────────────────────────────
-
-1. /home
-   File: pages/about.html:25
-   Type: navigation
-   Error: File not found
-   Suggestion: Check file path and existence
-   Context: <a href="/home" class="logo-link">
-```
-
-### 3. Health Score Assessment
-```
-💯 SITE HEALTH SCORE
-──────────────────────────────────────────────────
-
-🔴 Overall Health: 67/100
-Assessment: Fair. Several link issues need attention.
-```
-
-### 4. Improvement Suggestions
-```
-💡 IMPROVEMENT SUGGESTIONS
-──────────────────────────────────────────────────
-
-1. [HIGH] Critical
-   Fix 15 broken links to improve site reliability
-
-2. [MEDIUM] External Links
-   Review 3 broken external links - consider link monitoring
-```
-
-## Color-Coded Status Indicators
-
-- 🟢 **Green**: Healthy links (95-100% success rate)
-- 🟡 **Yellow**: Minor issues (80-94% success rate)  
-- 🟠 **Orange**: Moderate problems (60-79% success rate)
-- 🔴 **Red**: Critical issues (below 60% success rate)
-
-## Integration with CI/CD
-
-### GitHub Actions
-The system automatically integrates with GitHub Actions:
-
-```yaml
-- name: Run Link Validation
-  run: npm run test:links:json
-  continue-on-error: true
-
-- name: Upload Test Reports
-  uses: actions/upload-artifact@v3
-  with:
-    name: link-reports
-    path: test-reports/
-```
-
-### Generated Outputs
-- **GitHub Step Summary**: Markdown formatted results
-- **JUnit XML**: `junit-link-validation.xml`
-- **JSON Summary**: `link-validation-summary.json`
-- **Error Annotations**: Direct file/line annotations
-
-## File Structure
+## Test Structure
 
 ```
 tests/
-├── link-checker.js          # Core link validation logic
-├── utils/
-│   └── test-reporter.js     # Comprehensive reporting system
-├── run-link-tests.js        # Main test runner
-├── ci-link-check.js         # CI/CD optimized version
-├── link-check.sh           # Shell wrapper script
-└── README.md               # This documentation
+├── unit/                     # Unit tests for payment logic
+│   ├── payment-calculator.test.js
+│   ├── payment-validator.test.js
+│   └── inventory-manager.test.js
+├── integration/              # API integration tests
+│   ├── payment-api.test.js
+│   └── webhook-integration.test.js
+├── e2e/                      # End-to-end tests
+│   ├── payment-checkout.e2e.js
+│   └── mobile-checkout.e2e.js
+├── security/                 # Security tests
+│   ├── payment-security.test.js
+│   └── pci-compliance.test.js
+├── performance/              # Load and performance tests
+│   ├── payment-load.test.js
+│   └── checkout-performance.test.js
+├── accessibility/            # Accessibility tests
+│   ├── payment-a11y.test.js
+│   └── wcag-compliance.test.js
+├── config/                   # Test configurations
+│   ├── jest.unit.config.cjs
+│   ├── playwright.config.js
+│   └── k6-load-test.js
+└── mocks/                    # Mock implementations
+    ├── stripe-mock.js
+    └── email-mock.js
 ```
 
-## Report Output Examples
+## Running Tests
 
-### Console Output (Development)
-- Real-time progress indicators
-- Color-coded status messages
-- Interactive error details
-- Actionable fix suggestions
+### Unit Tests
+```bash
+# Run all unit tests
+npm run test:unit
 
-### Text Report (Documentation)
-```
-A Lo Cubano Boulder Fest - Link Validation Report
-================================================================================
-Generated: 2025-07-22T04:17:49.483Z
+# Run specific test file
+npm run test:unit -- payment-calculator.test.js
 
-SUMMARY
-----------------------------------------
-Total Links: 1093
-Broken Links: 202
-Success Rate: 81.5%
-Duration: 0.34s
+# Run with coverage
+npm run test:unit -- --coverage
+
+# Run in watch mode
+npm run test:unit -- --watch
 ```
 
-### JSON Report (CI/CD Integration)
-```json
+### Integration Tests
+```bash
+# Run all integration tests
+npm run test:integration
+
+# Run with specific environment
+NODE_ENV=staging npm run test:integration
+```
+
+### End-to-End Tests
+```bash
+# Run E2E tests (headless)
+npm run test:e2e
+
+# Run E2E tests with UI
+npm run test:e2e:ui
+
+# Run specific browser
+npm run test:e2e -- --project=chromium
+
+# Run mobile tests only
+npm run test:e2e -- --grep mobile
+```
+
+### Security Tests
+```bash
+# Run security tests
+npm run test:security
+
+# Run OWASP tests only
+npm run test:security -- --grep OWASP
+
+# Run PCI compliance tests
+npm run test:security -- --grep PCI
+```
+
+### Performance Tests
+```bash
+# Run load tests with k6
+k6 run tests/config/k6-load-test.js
+
+# Run with specific VUs (virtual users)
+k6 run -u 100 -d 30s tests/config/k6-load-test.js
+
+# Run performance benchmarks
+npm run test:performance
+```
+
+### Accessibility Tests
+```bash
+# Run accessibility tests
+npm run test:a11y
+
+# Generate accessibility report
+npm run test:a11y -- --reporter=html
+```
+
+## Test Data
+
+### Test Credit Cards
+```javascript
+// Success cards
+'4242424242424242' // Visa
+'5555555555554444' // Mastercard
+'378282246310005'  // Amex
+
+// Failure cards
+'4000000000000002' // Declined
+'4000000000009995' // Insufficient funds
+'4000000000000069' // Expired
+
+// 3D Secure
+'4000002500003155' // 3DS required
+'4000002760003184' // 3DS optional
+```
+
+### Test Promo Codes
+- `DANCE2026` - 15% off
+- `EARLYBIRD` - 20% off
+- `GROUP10` - 10% group discount
+- `TEST50` - $50 off (test only)
+
+### Test Users
+```javascript
 {
-  "testName": "Link Validation",
-  "timestamp": "2025-07-22T04:17:49.483Z",
-  "summary": {
-    "totalLinks": 1093,
-    "brokenLinks": 202,
-    "successRate": "81.5%",
-    "duration": "0.34s"
-  },
-  "healthScore": 67,
-  "brokenLinks": [...]
+  US: { email: 'test.us@example.com', country: 'US', state: 'CO' },
+  CA: { email: 'test.ca@example.com', country: 'CA', province: 'ON' },
+  MX: { email: 'test.mx@example.com', country: 'MX', state: 'CDMX' }
 }
 ```
 
-## Configuration Options
+## CI/CD Integration
 
-### Environment Variables
-- `NODE_ENV=ci`: Enables CI-optimized output
-- `CHECK_EXTERNAL=false`: Skips external link validation
-- `NO_COLOR=true`: Disables colored output
+### GitHub Actions Workflow
+```yaml
+name: Payment Tests
+on: [push, pull_request]
 
-### Command Line Arguments
-- `--verbose`: Enable detailed logging
-- `--no-external`: Skip external links
-- `--json`: Generate JSON reports
-- `--output-dir`: Custom report directory
-- `--timeout`: Request timeout (ms)
-- `--retries`: Maximum retry attempts
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - run: npm ci
+      - run: npm run test:unit
+      - run: npm run test:integration
+      - run: npm run test:security
+      - run: npm run test:e2e
+```
 
-## Performance Characteristics
+### Pre-commit Hooks
+```bash
+# .husky/pre-commit
+npm run test:unit -- --testPathPattern=payment --passWithNoTests
+npm run lint
+```
 
-- **Batch Processing**: Links validated in parallel batches of 10
-- **Caching**: Duplicate URLs cached to avoid redundant requests
-- **Progress Indication**: Real-time progress bars and status updates
-- **Timeout Handling**: Configurable timeouts for external requests
-- **Retry Logic**: Automatic retry for failed requests
+### Pre-push Hooks
+```bash
+# .husky/pre-push
+npm run test:all
+npm run test:security
+```
+
+## Test Reports
+
+### Coverage Reports
+- HTML: `coverage/lcov-report/index.html`
+- JSON: `coverage/coverage-final.json`
+- Console: Run with `--coverage`
+
+### E2E Reports
+- HTML: `test-results/e2e-report.html`
+- Videos: `test-results/videos/`
+- Screenshots: `test-results/screenshots/`
+
+### Performance Reports
+- k6 HTML: `k6-report.html`
+- JSON metrics: `k6-metrics.json`
+
+## Debugging Tests
+
+### Unit/Integration Tests
+```bash
+# Run with Node debugger
+node --inspect-brk node_modules/.bin/jest payment-calculator.test.js
+
+# VS Code debugging
+# Use "Jest: Debug" launch configuration
+```
+
+### E2E Tests
+```bash
+# Run with Playwright Inspector
+PWDEBUG=1 npm run test:e2e
+
+# Run with slow motion
+npm run test:e2e -- --slow-mo=1000
+
+# Save trace for debugging
+npm run test:e2e -- --trace=on
+```
+
+### Performance Tests
+```bash
+# Run k6 with debug output
+k6 run --http-debug tests/config/k6-load-test.js
+
+# Output detailed metrics
+k6 run --out json=metrics.json tests/config/k6-load-test.js
+```
+
+## Best Practices
+
+### Writing Tests
+1. **Descriptive Names**: Use clear, descriptive test names
+2. **Arrange-Act-Assert**: Follow AAA pattern
+3. **Independent Tests**: Each test should run independently
+4. **Mock External Services**: Use mocks for Stripe, email, etc.
+5. **Test Data Builders**: Use factories for complex test data
+
+### Test Maintenance
+1. **Regular Updates**: Update tests with feature changes
+2. **Flaky Test Detection**: Monitor and fix flaky tests
+3. **Performance Monitoring**: Track test suite execution time
+4. **Coverage Goals**: Maintain minimum 80% coverage
+
+### Security Testing
+1. **Regular Scans**: Run security tests weekly
+2. **Dependency Updates**: Check for vulnerabilities
+3. **Penetration Testing**: Annual third-party testing
+4. **Compliance Audits**: Quarterly PCI compliance checks
 
 ## Troubleshooting
 
 ### Common Issues
-1. **High External Link Failures**: Use `--no-external` for local testing
-2. **Timeout Errors**: Increase timeout with `--timeout 10000`
-3. **Memory Issues**: Large sites may need batch size adjustment
 
-### Debug Mode
+#### Tests Failing Locally
 ```bash
-# Enable verbose logging
-npm run test:links:verbose
+# Clear Jest cache
+npm run test:unit -- --clearCache
 
-# Check specific files
-node tests/run-link-tests.js --verbose --output-dir ./debug
+# Reset test database
+npm run db:test:reset
+
+# Check environment variables
+npm run test:env:check
 ```
 
-## Integration with Main Test Suite
-
-The link validation is integrated into the main test runner:
-
+#### E2E Tests Timing Out
 ```bash
-./tests/run-all-tests.sh
+# Increase timeout
+npm run test:e2e -- --timeout=60000
+
+# Check if dev server is running
+npm run dev:check
 ```
 
-This runs:
-1. Unit Tests
-2. **Link Validation** ← This system
-3. JavaScript Linting
-4. HTML Linting
+#### Performance Tests OOM
+```bash
+# Increase Node memory
+NODE_OPTIONS="--max-old-space-size=4096" k6 run tests/config/k6-load-test.js
+```
 
-## Future Enhancements
+## Contributing
 
-- [ ] Link monitoring with historical tracking
-- [ ] Performance benchmarking for link checking
-- [ ] Integration with sitemap validation
-- [ ] Automated fix suggestions implementation
-- [ ] Custom rule configuration for specific link types
+### Adding New Tests
+1. Create test file in appropriate directory
+2. Follow existing naming conventions
+3. Include test in CI pipeline
+4. Update this README if needed
 
-## Support
+### Test Review Checklist
+- [ ] Tests pass locally
+- [ ] No hardcoded values
+- [ ] Proper cleanup/teardown
+- [ ] Follows coding standards
+- [ ] Adequate test coverage
+- [ ] No flaky tests
 
-For issues or feature requests related to the test output formatting and reporting system, check the generated reports in the `test-reports/` directory for detailed debugging information.
+## Resources
+
+- [Jest Documentation](https://jestjs.io/docs/getting-started)
+- [Playwright Documentation](https://playwright.dev/docs/intro)
+- [k6 Documentation](https://k6.io/docs/)
+- [OWASP Testing Guide](https://owasp.org/www-project-web-security-testing-guide/)
+- [PCI DSS Requirements](https://www.pcisecuritystandards.org/)
