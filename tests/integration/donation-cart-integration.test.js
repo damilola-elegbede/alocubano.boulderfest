@@ -298,7 +298,7 @@ describe('Donation Cart Integration Tests', () => {
                     throw new Error('Please select or enter a donation amount.');
                 }
                 
-                await this.cartManager.addDonation(this.selectedAmount);
+                this.cartManager.addDonation(this.selectedAmount);
                 this.selectedAmount = null;
             }
             
@@ -461,7 +461,7 @@ describe('Donation Cart Integration Tests', () => {
             expect(initialSummary.isEmpty).toBe(true);
             
             // Act
-            await cartManager.addDonation(30, '$30 Donation');
+            cartManager.addDonation(30, '$30 Donation');
             
             // Assert
             const updatedSummary = floatingCart.getCartSummary();
@@ -484,7 +484,7 @@ describe('Donation Cart Integration Tests', () => {
             });
             
             // Act - Add donation
-            await cartManager.addDonation(25, '$25 Support');
+            cartManager.addDonation(25, '$25 Support');
             
             // Assert
             const summary = floatingCart.getCartSummary();
@@ -504,7 +504,7 @@ describe('Donation Cart Integration Tests', () => {
 
         test('should update FloatingCart when cart is cleared', async () => {
             // Arrange
-            await cartManager.addDonation(40, '$40 Donation');
+            cartManager.addDonation(40, '$40 Donation');
             expect(floatingCart.getCartSummary().isEmpty).toBe(false);
             
             // Act
@@ -519,8 +519,8 @@ describe('Donation Cart Integration Tests', () => {
 
         test('should handle donation-specific display logic', async () => {
             // Act - Add multiple donations
-            await cartManager.addDonation(20, '$20 Support', '', 'boulder-fest-2026', 'preset');
-            await cartManager.addDonation(75.5, '$75.50 Custom Support', '', 'boulder-fest-2026', 'custom');
+            cartManager.addDonation(20, '$20 Support', '', 'boulder-fest-2026', 'preset');
+            cartManager.addDonation(75.5, '$75.50 Custom Support', '', 'boulder-fest-2026', 'custom');
             
             // Assert
             const donations = cartManager.getDonations();
@@ -601,7 +601,7 @@ describe('Donation Cart Integration Tests', () => {
             cartManager.addEventListener('alocubano:cart:cleared', eventHandlers.cleared);
             
             // Act - Add donation
-            await cartManager.addDonation(60, '$60 Support');
+            cartManager.addDonation(60, '$60 Support');
             expect(eventHandlers.updated).toHaveBeenCalledWith(
                 expect.objectContaining({
                     type: 'alocubano:cart:updated',
@@ -733,7 +733,7 @@ describe('Donation Cart Integration Tests', () => {
     describe('6. State Synchronization', () => {
         test('should maintain consistent state across all components', async () => {
             // Act - Add items through different pathways
-            await cartManager.addDonation(25, 'Direct CartManager Donation');
+            cartManager.addDonation(25, 'Direct CartManager Donation');
             
             donationSelection.selectPresetAmount(50);
             await donationSelection.addToCart();
@@ -769,7 +769,7 @@ describe('Donation Cart Integration Tests', () => {
             });
             
             // Act - Add donations
-            await cartManager.addDonation(30, 'Support Donation');
+            cartManager.addDonation(30, 'Support Donation');
             donationSelection.selectPresetAmount(70);
             await donationSelection.addToCart();
             

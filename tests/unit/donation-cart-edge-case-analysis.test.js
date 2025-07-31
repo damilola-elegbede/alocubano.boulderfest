@@ -147,7 +147,7 @@ describe('Donation Cart Edge Case Analysis', () => {
             expect(compatibilityIssues.length).toBe(4);
             
             const criticalIssues = compatibilityIssues.filter(issue => 
-                issue.issue.includes('storage') || issue.issue.includes('JavaScript')
+                issue.issue.toLowerCase().includes('storage') || issue.issue.toLowerCase().includes('javascript')
             );
             expect(criticalIssues.length).toBe(2);
         });
