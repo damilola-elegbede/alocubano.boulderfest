@@ -158,9 +158,8 @@ describe('Donation Cart Integration - Edge Case Testing', () => {
         });
         
         // Enhanced CartManager mock with edge case handling
-        CartManager = class MockCartManager extends EventTarget {
+        CartManager = class MockCartManager {
             constructor() {
-                super();
                 this.items = new Map();
                 this.isLoaded = false;
                 this.loadPromise = Promise.resolve(this);
@@ -168,6 +167,34 @@ describe('Donation Cart Integration - Edge Case Testing', () => {
                 this.eventListeners = new Map();
                 this.intervals = new Set();
                 this.timeouts = new Set();
+            }
+            
+            // Custom event handling for Jest environment
+            addEventListener(type, callback) {
+                if (!this.eventListeners.has(type)) {
+                    this.eventListeners.set(type, new Set());
+                }
+                this.eventListeners.get(type).add(callback);
+            }
+            
+            removeEventListener(type, callback) {
+                if (this.eventListeners.has(type)) {
+                    this.eventListeners.get(type).delete(callback);
+                }
+            }
+            
+            dispatchEvent(event) {
+                const listeners = this.eventListeners.get(event.type);
+                if (listeners) {
+                    listeners.forEach(callback => {
+                        try {
+                            callback(event);
+                        } catch (error) {
+                            console.error('Event listener error:', error);
+                        }
+                    });
+                }
+                return true;
             }
             
             static getInstance() {
@@ -879,7 +906,7 @@ describe('Donation Cart Integration - Edge Case Testing', () => {
             expect(Array.from(cartManager.items.values())).toEqual([]);
         });
 
-        test('should handle slow network conditions', (done) => {
+        test('should handle slow network conditions', async () => {
             // Mock slow async operations
             const slowOperation = new Promise((resolve) => {
                 setTimeout(() => {
@@ -888,10 +915,8 @@ describe('Donation Cart Integration - Edge Case Testing', () => {
             });
             
             // Should handle slow operations without timing out
-            slowOperation.then(() => {
-                expect(cartManager.getDonations()).toHaveLength(1);
-                done();
-            });
+            await slowOperation;
+            expect(cartManager.getDonations()).toHaveLength(1);
         });
 
         test('should handle mobile viewport changes', () => {

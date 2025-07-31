@@ -164,12 +164,40 @@ describe('Donation Cart Integration Tests', () => {
         
         // Mock CartManager for testing if not available
         if (!CartManager) {
-            CartManager = class MockCartManager extends EventTarget {
+            CartManager = class MockCartManager {
                 constructor() {
-                    super();
                     this.items = new Map();
                     this.isLoaded = false;
                     this.loadPromise = Promise.resolve(this);
+                    this.eventListeners = new Map();
+                }
+                
+                // Custom event handling for Jest environment
+                addEventListener(type, callback) {
+                    if (!this.eventListeners.has(type)) {
+                        this.eventListeners.set(type, new Set());
+                    }
+                    this.eventListeners.get(type).add(callback);
+                }
+                
+                removeEventListener(type, callback) {
+                    if (this.eventListeners.has(type)) {
+                        this.eventListeners.get(type).delete(callback);
+                    }
+                }
+                
+                dispatchEvent(event) {
+                    const listeners = this.eventListeners.get(event.type);
+                    if (listeners) {
+                        listeners.forEach(callback => {
+                            try {
+                                callback(event);
+                            } catch (error) {
+                                console.error('Event listener error:', error);
+                            }
+                        });
+                    }
+                    return true;
                 }
                 
                 static getInstance() {
