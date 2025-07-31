@@ -4,7 +4,7 @@
  */
 
 import { AnalyticsTracker } from './lib/analytics-tracker.js';
-import { CartManager } from './lib/cart-manager.js';
+// CartManager is available globally via window.CartManager
 import { PaymentFormValidator } from './lib/payment-form-validator.js';
 import { InventoryChecker } from './lib/inventory-checker.js';
 import { LoadingStateManager } from './lib/loading-state-manager.js';

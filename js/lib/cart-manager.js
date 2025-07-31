@@ -4,13 +4,9 @@
  */
 
 class CartManager extends EventTarget {
-    // Singleton pattern
-    static instance = null;
-    static DEBUG = false;
-
     constructor() {
         console.log('[CartManager] DEBUG: Constructor called');
-        
+
         // Enforce singleton pattern
         if (CartManager.instance) {
             console.log('[CartManager] DEBUG: Returning existing singleton instance');
@@ -19,13 +15,13 @@ class CartManager extends EventTarget {
 
         console.log('[CartManager] DEBUG: Creating new CartManager instance');
         super();
-        
+
         // Core properties
         this.items = new Map();
         this.cartExpiry = 15 * 60 * 1000; // 15 minutes
         this.storageKey = 'alocubano_cart_v2';
         this.expiryKey = 'alocubano_cart_expiry_v2';
-        
+
         // Legacy storage keys for migration
         this.legacyStorageKey = 'alocubano_cart';
         this.legacyExpiryKey = 'alocubano_cart_expiry';
@@ -34,11 +30,11 @@ class CartManager extends EventTarget {
         this.isLoaded = false;
         this.loadPromise = null;
         this.isRestoringDOM = false; // Flag to prevent sync during DOM restoration
-        
+
         // Multi-tab synchronization
         this.storageDebounceTimer = null;
         this.storageDebounceDelay = 250; // 250ms debounce
-        
+
         // Memory management tracking
         this.eventListeners = new Map();
         this.intervals = new Set();
@@ -71,20 +67,20 @@ class CartManager extends EventTarget {
             // FORCE DEBUG MODE ON DURING INVESTIGATION
             CartManager.DEBUG = true;
             console.log('[CartManager] FORCED DEBUG MODE ENABLED FOR INVESTIGATION');
-            
+
             this.log('Initializing CartManager...');
             await this.loadFromStorage();
             this.bindEvents();
             this.startExpiryCheck();
-            
+
             this.isLoaded = true;
             this.log('CartManager initialized successfully');
-            
+
             console.log('[CartManager] DEBUG: Initialization complete');
             console.log('[CartManager] DEBUG: Final items after init:', this.items);
             console.log('[CartManager] DEBUG: Final item count:', this.getItemCount());
             console.log('[CartManager] DEBUG: Final total:', this.getTotal());
-            
+
             // Auto-restore to DOM if we have items
             if (this.items.size > 0) {
                 console.log('[CartManager] DEBUG: Auto-restoring DOM selections after initialization');
@@ -92,7 +88,7 @@ class CartManager extends EventTarget {
             } else {
                 console.log('[CartManager] DEBUG: No items to restore to DOM');
             }
-            
+
             // Dispatch namespaced cart loaded event
             this.dispatchEvent(new CustomEvent('alocubano:cart:loaded', {
                 detail: {
@@ -101,7 +97,7 @@ class CartManager extends EventTarget {
                     total: this.getTotal()
                 }
             }));
-            
+
             return this;
         } catch (error) {
             this.log('Error initializing CartManager:', error);
@@ -124,7 +120,7 @@ class CartManager extends EventTarget {
 
     bindEvents() {
         this.log('Binding event listeners...');
-        
+
         // Listen for ticket selection changes
         // FIXED: Only sync after manual user interactions, not during initialization
         const clickHandler = (e) => {
@@ -143,13 +139,13 @@ class CartManager extends EventTarget {
         const storageHandler = (e) => {
             if (e.key === this.storageKey || e.key === this.legacyStorageKey) {
                 this.log('Storage event detected:', e.key);
-                
+
                 // Debounce rapid storage updates
                 if (this.storageDebounceTimer) {
                     clearTimeout(this.storageDebounceTimer);
                 }
-                
-                this.storageDebounceTimer = setTimeout(async () => {
+
+                this.storageDebounceTimer = setTimeout(async() => {
                     try {
                         await this.loadFromStorage();
                         this.restoreSelectionsToDOM();
@@ -159,7 +155,7 @@ class CartManager extends EventTarget {
                         this.log('Error during multi-tab sync:', error);
                     }
                 }, this.storageDebounceDelay);
-                
+
                 // Track timeout for cleanup
                 this.timeouts.add(this.storageDebounceTimer);
             }
@@ -176,7 +172,7 @@ class CartManager extends EventTarget {
         };
         document.addEventListener('visibilitychange', visibilityHandler);
         this.eventListeners.set('document:visibilitychange', { element: document, handler: visibilityHandler });
-        
+
         this.log('Event listeners bound successfully');
     }
 
@@ -185,20 +181,20 @@ class CartManager extends EventTarget {
         console.log('[CartManager] DEBUG: restoreSelectionsToDOM() called');
         console.log('[CartManager] DEBUG: Current items to restore:', this.items);
         console.log('[CartManager] DEBUG: Items Map size:', this.items.size);
-        
+
         // Set flag to prevent sync during DOM restoration
         this.isRestoringDOM = true;
-        
+
         // Use requestAnimationFrame to batch DOM updates and avoid layout thrashing
         requestAnimationFrame(() => {
             try {
                 // 1. Find and Update Ticket Cards
                 this.log('Updating ticket card UI elements...');
-                
+
                 // Track successful updates for debugging
                 let updatedCards = 0;
-                let missingCards = [];
-                
+                const missingCards = [];
+
                 this.items.forEach((item, ticketType) => {
                     try {
                         const card = document.querySelector(`.ticket-card[data-ticket-type="${ticketType}"]`);
@@ -217,7 +213,7 @@ class CartManager extends EventTarget {
                                 card.classList.remove('selected');
                                 card.setAttribute('aria-pressed', 'false');
                             }
-                            
+
                             updatedCards++;
                             this.log(`Updated ticket card UI for: ${ticketType} (quantity: ${item.quantity})`);
                         } else {
@@ -255,7 +251,7 @@ class CartManager extends EventTarget {
                 try {
                     // Call existing updateTicketSelectionUI method for comprehensive updates
                     this.updateTicketSelectionUI();
-                    
+
                     // Update checkout buttons to proper enabled/disabled state
                     const checkoutButtons = document.querySelectorAll('#checkout-button, .checkout-btn, [data-action="checkout"]');
                     checkoutButtons.forEach(btn => {
@@ -284,11 +280,11 @@ class CartManager extends EventTarget {
                     } else {
                         this.log('window.ticketSelection.updateAllDisplays() not available');
                     }
-                    
+
                     // Dispatch cart update event to notify other components
                     this.dispatchCartUpdate();
                     this.log('Dispatched cart update event');
-                    
+
                 } catch (error) {
                     this.log('Error triggering external updates:', error);
                 }
@@ -301,10 +297,10 @@ class CartManager extends EventTarget {
                     cartTotal: this.getTotalFormatted(),
                     itemCount: this.getItemCount()
                 });
-                
+
             } catch (error) {
                 this.log('Critical error during DOM restoration:', error);
-                
+
                 // Fallback: try basic update method
                 try {
                     this.log('Attempting fallback DOM update...');
@@ -323,13 +319,13 @@ class CartManager extends EventTarget {
     syncWithTicketSelection() {
         try {
             this.log('Syncing with ticket selection...');
-            
+
             // Safety check: Don't sync during DOM restoration
             if (this.isRestoringDOM) {
                 this.log('Skipping sync - DOM restoration in progress');
                 return;
             }
-            
+
             const ticketCards = document.querySelectorAll('.ticket-card');
             const newItems = new Map();
 
@@ -342,7 +338,7 @@ class CartManager extends EventTarget {
                         const ticketType = card.dataset.ticketType;
                         const price = parseFloat(card.dataset.price);
                         const name = card.querySelector('h5')?.textContent?.trim() || card.querySelector('h4')?.textContent?.trim();
-                        
+
                         // Determine which event this ticket belongs to
                         const eventSection = card.closest('.ticket-selection[data-event]');
                         const eventId = eventSection ? eventSection.dataset.event : 'boulder-fest-2026';
@@ -372,7 +368,7 @@ class CartManager extends EventTarget {
             }
 
             // Compare with existing items to avoid unnecessary updates
-            const itemsChanged = newItems.size !== this.items.size || 
+            const itemsChanged = newItems.size !== this.items.size ||
                                 Array.from(newItems.keys()).some(key => {
                                     const newItem = newItems.get(key);
                                     const existingItem = this.items.get(key);
@@ -397,7 +393,7 @@ class CartManager extends EventTarget {
     addItem(ticketType, name, price, quantity = 1, eventId = 'boulder-fest-2026') {
         try {
             this.log('Adding item:', { ticketType, name, price, quantity, eventId });
-            
+
             if (!ticketType || !name || price <= 0 || quantity <= 0) {
                 throw new Error('Invalid item parameters');
             }
@@ -428,7 +424,7 @@ class CartManager extends EventTarget {
     updateItemQuantity(ticketType, quantity) {
         try {
             this.log('Updating item quantity:', { ticketType, quantity });
-            
+
             if (quantity <= 0) {
                 return this.removeItem(ticketType);
             }
@@ -475,12 +471,12 @@ class CartManager extends EventTarget {
             this.items.clear();
             this.saveToStorage();
             this.dispatchCartUpdate();
-            
+
             // Dispatch namespaced cart cleared event
             this.dispatchEvent(new CustomEvent('alocubano:cart:cleared', {
                 detail: { timestamp: Date.now() }
             }));
-            
+
             this.log('Cart cleared successfully');
         } catch (error) {
             this.log('Error clearing cart:', error);
@@ -518,7 +514,7 @@ class CartManager extends EventTarget {
     validateCartState() {
         this.log('Validating cart state...');
         const issues = [];
-        
+
         try {
             // Check if items is a Map
             if (!(this.items instanceof Map)) {
@@ -617,7 +613,7 @@ class CartManager extends EventTarget {
             console.log('[CartManager] DEBUG: saveToStorage() called');
             console.log('[CartManager] DEBUG: Current items to save:', this.items);
             console.log('[CartManager] DEBUG: Items Map size:', this.items.size);
-            
+
             // Validate cart state before saving
             const stateValidation = this.validateCartState();
             if (!stateValidation.valid) {
@@ -639,15 +635,15 @@ class CartManager extends EventTarget {
 
             localStorage.setItem(this.storageKey, JSON.stringify(cartData));
             localStorage.setItem(this.expiryKey, cartData.expiry.toString());
-            
+
             console.log('[CartManager] DEBUG: Data saved to localStorage');
             console.log('[CartManager] DEBUG: Verification - stored data:', localStorage.getItem(this.storageKey));
-            
+
             this.log('Cart saved to storage successfully');
             return true;
         } catch (error) {
             this.log('Failed to save cart to storage:', error);
-            
+
             // Attempt recovery by clearing corrupted data
             try {
                 this.clearStorage();
@@ -655,7 +651,7 @@ class CartManager extends EventTarget {
             } catch (clearError) {
                 this.log('Failed to clear corrupted storage:', clearError);
             }
-            
+
             return false;
         }
     }
@@ -663,18 +659,18 @@ class CartManager extends EventTarget {
     async loadFromStorage() {
         try {
             this.log('Loading cart from storage...');
-            
+
             // DEBUG: Log all localStorage cart-related keys
             console.log('[CartManager] DEBUG: All localStorage keys:', Object.keys(localStorage));
             console.log('[CartManager] DEBUG: Current storage key:', this.storageKey);
             console.log('[CartManager] DEBUG: Legacy storage key:', this.legacyStorageKey);
-            
+
             // Try loading from current storage key first
             let saved = localStorage.getItem(this.storageKey);
             let isLegacyData = false;
-            
+
             console.log('[CartManager] DEBUG: Raw saved data from current key:', saved);
-            
+
             // Migration support: check for legacy data
             if (!saved) {
                 this.log('No current cart data found, checking for legacy data...');
@@ -685,21 +681,21 @@ class CartManager extends EventTarget {
                     this.log('Legacy cart data found, will migrate...');
                 }
             }
-            
+
             if (!saved) {
                 this.log('No cart data found in storage');
                 console.log('[CartManager] DEBUG: No saved data found in either key');
                 return;
             }
-            
+
             console.log('[CartManager] DEBUG: About to parse saved data:', saved);
 
             const cartData = JSON.parse(saved);
 
             // Check expiry
-            const expiry = cartData.expiry || (isLegacyData ? 
+            const expiry = cartData.expiry || (isLegacyData ?
                 parseInt(localStorage.getItem(this.legacyExpiryKey) || '0') : 0);
-                
+
             if (Date.now() > expiry) {
                 this.log('Cart data expired, clearing storage');
                 this.clearStorage();
@@ -712,12 +708,12 @@ class CartManager extends EventTarget {
             // Restore items with validation
             const items = cartData.items || [];
             this.items = new Map();
-            
+
             // Validate each item during restoration
             let validItemCount = 0;
             console.log('[CartManager] DEBUG: Items array from storage:', items);
             console.log('[CartManager] DEBUG: Items array length:', items.length);
-            
+
             for (const [key, item] of items) {
                 console.log('[CartManager] DEBUG: Processing item:', key, item);
                 if (this.isValidItem(item)) {
@@ -729,11 +725,11 @@ class CartManager extends EventTarget {
                     console.log('[CartManager] DEBUG: Invalid item details:', item);
                 }
             }
-            
+
             this.log(`Cart loaded from storage: ${validItemCount} valid items`);
             console.log('[CartManager] DEBUG: Final items Map:', this.items);
             console.log('[CartManager] DEBUG: Final items Map size:', this.items.size);
-            
+
             // If legacy data was loaded, save in new format and clear legacy
             if (isLegacyData && validItemCount > 0) {
                 this.log('Migrating legacy cart data...');
@@ -741,27 +737,27 @@ class CartManager extends EventTarget {
                 this.clearLegacyStorage();
                 this.log('Legacy data migration completed');
             }
-            
+
         } catch (error) {
             this.log('Failed to load cart from storage:', error);
             console.log('[CartManager] DEBUG: Load error stack:', error.stack);
             console.log('[CartManager] DEBUG: Load error details:', error);
             this.clearStorage();
             this.clearLegacyStorage();
-            
+
             // Reset to empty cart state
             this.items = new Map();
         }
     }
 
     isValidItem(item) {
-        return item && 
+        return item &&
                typeof item === 'object' &&
-               item.ticketType && 
-               item.name && 
-               typeof item.price === 'number' && 
+               item.ticketType &&
+               item.name &&
+               typeof item.price === 'number' &&
                item.price > 0 &&
-               typeof item.quantity === 'number' && 
+               typeof item.quantity === 'number' &&
                item.quantity > 0 &&
                typeof item.addedAt === 'number' &&
                (!item.eventId || typeof item.eventId === 'string'); // eventId is optional but must be string if present
@@ -798,10 +794,10 @@ class CartManager extends EventTarget {
                     this.log('Cart has expired, clearing...');
                     this.clearCart();
                     this.clearStorage();
-                    
+
                     // Dispatch namespaced cart expired event
                     this.dispatchEvent(new CustomEvent('alocubano:cart:expired', {
-                        detail: { 
+                        detail: {
                             expiredAt: expiry,
                             clearedAt: Date.now()
                         }
@@ -823,11 +819,11 @@ class CartManager extends EventTarget {
         const interval = setInterval(() => {
             this.checkExpiry();
         }, 60000);
-        
+
         // Track interval for cleanup
         this.intervals.add(interval);
         this.log('Expiry check interval started');
-        
+
         return interval;
     }
 
@@ -868,7 +864,7 @@ class CartManager extends EventTarget {
     destroy() {
         try {
             this.log('Destroying CartManager instance...');
-            
+
             // Clear all event listeners
             for (const [key, { element, handler }] of this.eventListeners) {
                 try {
@@ -879,7 +875,7 @@ class CartManager extends EventTarget {
                 }
             }
             this.eventListeners.clear();
-            
+
             // Clear all intervals
             for (const interval of this.intervals) {
                 try {
@@ -889,7 +885,7 @@ class CartManager extends EventTarget {
                 }
             }
             this.intervals.clear();
-            
+
             // Clear all timeouts
             for (const timeout of this.timeouts) {
                 try {
@@ -899,23 +895,23 @@ class CartManager extends EventTarget {
                 }
             }
             this.timeouts.clear();
-            
+
             // Clear debounce timer
             if (this.storageDebounceTimer) {
                 clearTimeout(this.storageDebounceTimer);
                 this.storageDebounceTimer = null;
             }
-            
+
             // Clear cart data
             this.items.clear();
-            
+
             // Reset initialization state
             this.isLoaded = false;
             this.loadPromise = null;
-            
+
             // Clear singleton instance
             CartManager.instance = null;
-            
+
             this.log('CartManager destroyed successfully');
         } catch (error) {
             this.log('Error during CartManager destruction:', error);
@@ -949,7 +945,7 @@ class CartManager extends EventTarget {
     updateTicketSelectionUI() {
         try {
             this.log('Updating ticket selection UI...');
-            
+
             this.items.forEach((item, ticketType) => {
                 try {
                     const card = document.querySelector(`[data-ticket-type="${ticketType}"]`);
@@ -1004,7 +1000,7 @@ class CartManager extends EventTarget {
             } catch (error) {
                 this.log('Error updating checkout button:', error);
             }
-            
+
             this.log('Ticket selection UI updated successfully');
         } catch (error) {
             this.log('Error updating ticket selection UI:', error);
@@ -1093,6 +1089,10 @@ class CartManager extends EventTarget {
         }
     }
 }
+
+// Initialize static properties
+CartManager.instance = null;
+CartManager.DEBUG = false;
 
 // Make CartManager available globally for non-module scripts
 if (typeof window !== 'undefined') {
