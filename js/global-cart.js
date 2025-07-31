@@ -295,11 +295,13 @@ class GlobalCart {
 
 // Initialize global cart when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
-    // Initialize on all pages except tickets (which has its own floating cart)
+    // Initialize on all pages except tickets and donations (which have floating carts)
     const isTicketsPage = window.location.pathname.includes('/tickets') || 
                          document.querySelector('.ticket-selection');
+    const isDonationsPage = window.location.pathname.includes('/donations') || 
+                           document.querySelector('.donation-selection');
     
-    if (!isTicketsPage) {
+    if (!isTicketsPage && !isDonationsPage) {
         try {
             window.globalCart = new GlobalCart();
         } catch (error) {

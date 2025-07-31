@@ -3,6 +3,7 @@
 /* Import modular CSS */
 @import url('/css/navigation.css');
 @import url('/css/forms.css');
+@import url('/css/donation-integration.css');
 
 /* Loading Overlay Components */
 .hero-loading-overlay {

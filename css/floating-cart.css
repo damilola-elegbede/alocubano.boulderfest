@@ -110,12 +110,10 @@
 /* Expand/Collapse Arrow */
 .cart-arrow {
   margin-left: var(--space-sm);
-  transition: transform var(--transition-base);
+  transition: opacity var(--transition-base);
   color: var(--color-gray-600);
-}
-
-.floating-cart.expanded .cart-arrow {
-  transform: rotate(180deg);
+  font-size: var(--font-size-sm);
+  line-height: 1;
 }
 
 /* Cart Content - Hidden when collapsed */
@@ -161,11 +159,16 @@
 
 /* Individual Cart Items */
 .cart-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 70px;
   align-items: center;
-  justify-content: space-between;
+  gap: calc(var(--space-sm) / 3);
   padding: var(--space-sm) 0;
+  padding-left: calc(var(--space-sm) + 4px);
+  margin-left: -4px;
   border-bottom: 1px solid var(--color-gray-100);
+  border-left: 4px solid var(--color-blue);
+  background: rgba(91, 107, 181, 0.02);
   animation: slideInCart 0.3s ease-out;
 }
 
@@ -207,7 +210,9 @@
 .cart-quantity-controls {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-xs);
+  width: auto;
 }
 
 .cart-qty-btn {
@@ -255,7 +260,8 @@
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-black);
-  margin-left: var(--space-sm);
+  text-align: right;
+  min-width: 70px;
 }
 
 /* Cart Footer - Simplified without total */
@@ -286,9 +292,10 @@
 
 .cart-total-amount {
   font-family: var(--font-display);
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-2xl);
   font-weight: 700;
-  color: var(--color-blue);
+  color: var(--color-black);
+  letter-spacing: var(--letter-spacing-tight);
 }
 
 /* Cart Actions */
@@ -483,6 +490,8 @@
 
   .cart-item {
     padding: var(--space-sm) 0;
+    grid-template-columns: 1fr auto 60px;
+    gap: calc(var(--space-xs) / 2);
   }
 
   .cart-item-name {
@@ -493,6 +502,10 @@
     font-size: var(--font-size-xs);
   }
 
+  .cart-quantity-controls {
+    width: auto;
+  }
+
   .cart-quantity-display {
     font-size: var(--font-size-xs);
     min-width: 16px;
@@ -500,7 +513,7 @@
 
   .cart-item-total {
     font-size: var(--font-size-xs);
-    margin-left: var(--space-xs);
+    min-width: 60px;
   }
 
   .cart-total-label {
@@ -508,7 +521,7 @@
   }
 
   .cart-total-amount {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-xl);
   }
 
   .cart-checkout-btn {

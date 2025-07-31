@@ -19,12 +19,14 @@ class CartManager extends EventTarget {
         // Core properties
         this.items = new Map();
         this.cartExpiry = 15 * 60 * 1000; // 15 minutes
-        this.storageKey = 'alocubano_cart_v2';
-        this.expiryKey = 'alocubano_cart_expiry_v2';
+        this.storageKey = 'alocubano_cart_v3';
+        this.expiryKey = 'alocubano_cart_expiry_v3';
 
         // Legacy storage keys for migration
         this.legacyStorageKey = 'alocubano_cart';
         this.legacyExpiryKey = 'alocubano_cart_expiry';
+        this.legacyStorageKeyV2 = 'alocubano_cart_v2';
+        this.legacyExpiryKeyV2 = 'alocubano_cart_expiry_v2';
 
         // Initialization state management
         this.isLoaded = false;
@@ -345,6 +347,7 @@ class CartManager extends EventTarget {
 
                         if (ticketType && price && name) {
                             newItems.set(ticketType, {
+                                itemType: 'ticket', // Ensure tickets are properly typed
                                 ticketType,
                                 name,
                                 price,
@@ -367,12 +370,26 @@ class CartManager extends EventTarget {
                 return;
             }
 
+            // Preserve donations when syncing tickets
+            const existingDonations = new Map();
+            this.items.forEach((item, key) => {
+                if (item.itemType === 'donation') {
+                    existingDonations.set(key, item);
+                }
+            });
+
+            // Add preserved donations back to new items
+            existingDonations.forEach((donation, key) => {
+                newItems.set(key, donation);
+            });
+
             // Compare with existing items to avoid unnecessary updates
             const itemsChanged = newItems.size !== this.items.size ||
                                 Array.from(newItems.keys()).some(key => {
                                     const newItem = newItems.get(key);
                                     const existingItem = this.items.get(key);
-                                    return !existingItem || newItem.quantity !== existingItem.quantity;
+                                    return !existingItem || newItem.quantity !== existingItem.quantity ||
+                                           newItem.itemType !== existingItem.itemType;
                                 });
 
             if (!itemsChanged) {
@@ -401,6 +418,7 @@ class CartManager extends EventTarget {
             const existingItem = this.items.get(ticketType);
 
             const item = {
+                itemType: 'ticket', // Default to ticket for backwards compatibility
                 ticketType,
                 name,
                 price,
@@ -421,6 +439,45 @@ class CartManager extends EventTarget {
         }
     }
 
+    addDonation(amount, name, description = '', eventId = 'boulder-fest-2026', donationType = 'preset') {
+        try {
+            this.log('Adding donation:', { amount, name, description, eventId, donationType });
+
+            if (!amount || amount <= 0 || !name) {
+                throw new Error('Invalid donation parameters: amount and name are required');
+            }
+
+            if (!['preset', 'custom'].includes(donationType)) {
+                throw new Error('Invalid donation type: must be "preset" or "custom"');
+            }
+
+            // Create unique donation ID using timestamp to allow multiple donations
+            const donationId = `donation-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+
+            const donation = {
+                itemType: 'donation',
+                ticketType: donationId, // Use as unique ID for consistency
+                name,
+                price: amount,
+                quantity: 1, // Donations always have quantity 1
+                eventId,
+                addedAt: Date.now(),
+                donationType,
+                description
+            };
+
+            this.items.set(donationId, donation);
+            this.saveToStorage();
+            this.dispatchCartUpdate();
+            this.log('Donation added successfully:', donation);
+
+            return donation;
+        } catch (error) {
+            this.log('Error adding donation:', error);
+            throw error;
+        }
+    }
+
     updateItemQuantity(ticketType, quantity) {
         try {
             this.log('Updating item quantity:', { ticketType, quantity });
@@ -431,9 +488,16 @@ class CartManager extends EventTarget {
 
             const item = this.items.get(ticketType);
             if (item) {
+                // Donations cannot have their quantity changed
+                if (item.itemType === 'donation') {
+                    this.log('Cannot update quantity for donation items');
+                    throw new Error('Donation quantities cannot be changed');
+                }
+
                 item.quantity = quantity;
                 this.items.set(ticketType, item);
                 this.saveToStorage();
+                this.restoreSelectionsToDOM();
                 this.dispatchCartUpdate();
                 this.log('Item quantity updated successfully:', item);
                 return item;
@@ -453,6 +517,7 @@ class CartManager extends EventTarget {
             const removed = this.items.delete(ticketType);
             if (removed) {
                 this.saveToStorage();
+                this.restoreSelectionsToDOM();
                 this.dispatchCartUpdate();
                 this.log('Item removed successfully:', ticketType);
             } else {
@@ -490,6 +555,28 @@ class CartManager extends EventTarget {
 
     getItem(ticketType) {
         return this.items.get(ticketType);
+    }
+
+    getTickets() {
+        return Array.from(this.items.values()).filter(item =>
+            item.itemType === 'ticket' || !item.itemType // Include items without itemType for backwards compatibility
+        );
+    }
+
+    getDonations() {
+        return Array.from(this.items.values()).filter(item =>
+            item.itemType === 'donation'
+        );
+    }
+
+    getTotalByType() {
+        const tickets = this.getTickets();
+        const donations = this.getDonations();
+
+        return {
+            tickets: tickets.reduce((total, item) => total + (item.price * item.quantity), 0),
+            donations: donations.reduce((total, item) => total + (item.price * item.quantity), 0)
+        };
     }
 
     getItemCount() {
@@ -534,10 +621,25 @@ class CartManager extends EventTarget {
                 }
 
                 const requiredFields = ['ticketType', 'name', 'price', 'quantity', 'addedAt'];
-                const optionalFields = ['eventId'];
+                // Optional fields for reference: ['eventId', 'itemType', 'donationType', 'description']
                 for (const field of requiredFields) {
                     if (!(field in item)) {
                         issues.push(`Missing field '${field}' in item: ${key}`);
+                    }
+                }
+
+                // Validate itemType if present
+                if (item.itemType && !['ticket', 'donation'].includes(item.itemType)) {
+                    issues.push(`Invalid itemType '${item.itemType}' in item: ${key}`);
+                }
+
+                // Validate donation-specific fields
+                if (item.itemType === 'donation') {
+                    if (item.quantity !== 1) {
+                        issues.push(`Donation quantity must be 1 for item: ${key}`);
+                    }
+                    if (item.donationType && !['preset', 'custom'].includes(item.donationType)) {
+                        issues.push(`Invalid donationType '${item.donationType}' in item: ${key}`);
                     }
                 }
 
@@ -572,12 +674,22 @@ class CartManager extends EventTarget {
                     errors.push(`Invalid item: ${item.name || 'Unknown'}`);
                 }
 
-                if (item.quantity > 10) { // Max 10 tickets per type
-                    errors.push(`Maximum 10 tickets allowed per type: ${item.name}`);
-                }
-
-                if (item.price <= 0 || item.price > 1000) { // Sanity check
-                    errors.push(`Invalid price for: ${item.name}`);
+                // Type-specific validation
+                if (item.itemType === 'donation') {
+                    if (item.quantity !== 1) {
+                        errors.push(`Donation quantity must be 1: ${item.name}`);
+                    }
+                    if (item.price <= 0 || item.price > 10000) { // Max $10,000 donation
+                        errors.push(`Invalid donation amount for: ${item.name}`);
+                    }
+                } else {
+                    // Ticket validation (default behavior for backwards compatibility)
+                    if (item.quantity > 10) { // Max 10 tickets per type
+                        errors.push(`Maximum 10 tickets allowed per type: ${item.name}`);
+                    }
+                    if (item.price <= 0 || item.price > 1000) { // Sanity check
+                        errors.push(`Invalid price for: ${item.name}`);
+                    }
                 }
             });
 
@@ -626,7 +738,7 @@ class CartManager extends EventTarget {
                 items: Array.from(this.items.entries()),
                 timestamp: Date.now(),
                 expiry: Date.now() + this.cartExpiry,
-                version: 2 // Version for future migrations
+                version: 3 // Updated version for donation support
             };
 
             console.log('[CartManager] DEBUG: Cart data to save:', cartData);
@@ -668,17 +780,30 @@ class CartManager extends EventTarget {
             // Try loading from current storage key first
             let saved = localStorage.getItem(this.storageKey);
             let isLegacyData = false;
+            let legacyVersion = null;
 
             console.log('[CartManager] DEBUG: Raw saved data from current key:', saved);
 
-            // Migration support: check for legacy data
+            // Migration support: check for legacy data in order of newest to oldest
             if (!saved) {
                 this.log('No current cart data found, checking for legacy data...');
-                saved = localStorage.getItem(this.legacyStorageKey);
-                console.log('[CartManager] DEBUG: Raw saved data from legacy key:', saved);
+
+                // Check v2 first
+                saved = localStorage.getItem(this.legacyStorageKeyV2);
+                console.log('[CartManager] DEBUG: Raw saved data from v2 key:', saved);
                 if (saved) {
                     isLegacyData = true;
-                    this.log('Legacy cart data found, will migrate...');
+                    legacyVersion = 'v2';
+                    this.log('Legacy v2 cart data found, will migrate...');
+                } else {
+                    // Check v1
+                    saved = localStorage.getItem(this.legacyStorageKey);
+                    console.log('[CartManager] DEBUG: Raw saved data from v1 key:', saved);
+                    if (saved) {
+                        isLegacyData = true;
+                        legacyVersion = 'v1';
+                        this.log('Legacy v1 cart data found, will migrate...');
+                    }
                 }
             }
 
@@ -693,8 +818,14 @@ class CartManager extends EventTarget {
             const cartData = JSON.parse(saved);
 
             // Check expiry
-            const expiry = cartData.expiry || (isLegacyData ?
-                parseInt(localStorage.getItem(this.legacyExpiryKey) || '0') : 0);
+            let expiry = cartData.expiry;
+            if (!expiry && isLegacyData) {
+                if (legacyVersion === 'v2') {
+                    expiry = parseInt(localStorage.getItem(this.legacyExpiryKeyV2) || '0');
+                } else {
+                    expiry = parseInt(localStorage.getItem(this.legacyExpiryKey) || '0');
+                }
+            }
 
             if (Date.now() > expiry) {
                 this.log('Cart data expired, clearing storage');
@@ -716,13 +847,16 @@ class CartManager extends EventTarget {
 
             for (const [key, item] of items) {
                 console.log('[CartManager] DEBUG: Processing item:', key, item);
-                if (this.isValidItem(item)) {
-                    this.items.set(key, item);
+
+                // Migrate item if necessary
+                const migratedItem = this.migrateItem(item, legacyVersion);
+                if (this.isValidItem(migratedItem)) {
+                    this.items.set(key, migratedItem);
                     validItemCount++;
                     console.log('[CartManager] DEBUG: Valid item added:', key);
                 } else {
-                    this.log('Skipping invalid item during load:', item);
-                    console.log('[CartManager] DEBUG: Invalid item details:', item);
+                    this.log('Skipping invalid item during load:', migratedItem);
+                    console.log('[CartManager] DEBUG: Invalid item details:', migratedItem);
                 }
             }
 
@@ -750,6 +884,33 @@ class CartManager extends EventTarget {
         }
     }
 
+    migrateItem(item, legacyVersion) {
+        try {
+            if (!item || typeof item !== 'object') {
+                return item;
+            }
+
+            // Clone the item to avoid modifying the original
+            const migratedItem = { ...item };
+
+            // Add itemType if missing (assume 'ticket' for backwards compatibility)
+            if (!migratedItem.itemType) {
+                migratedItem.itemType = 'ticket';
+                this.log('Migrated item - added itemType: ticket');
+            }
+
+            // Ensure all required fields have proper defaults
+            if (!migratedItem.eventId) {
+                migratedItem.eventId = 'boulder-fest-2026';
+            }
+
+            return migratedItem;
+        } catch (error) {
+            this.log('Error migrating item:', error);
+            return item;
+        }
+    }
+
     isValidItem(item) {
         return item &&
                typeof item === 'object' &&
@@ -760,14 +921,19 @@ class CartManager extends EventTarget {
                typeof item.quantity === 'number' &&
                item.quantity > 0 &&
                typeof item.addedAt === 'number' &&
-               (!item.eventId || typeof item.eventId === 'string'); // eventId is optional but must be string if present
+               (!item.eventId || typeof item.eventId === 'string') && // eventId is optional but must be string if present
+               (!item.itemType || ['ticket', 'donation'].includes(item.itemType)) && // itemType is optional but must be valid if present
+               (!item.donationType || ['preset', 'custom'].includes(item.donationType)) && // donationType is optional but must be valid if present
+               (!item.description || typeof item.description === 'string'); // description is optional but must be string if present
     }
 
     clearLegacyStorage() {
         try {
             localStorage.removeItem(this.legacyStorageKey);
             localStorage.removeItem(this.legacyExpiryKey);
-            this.log('Legacy storage cleared');
+            localStorage.removeItem(this.legacyStorageKeyV2);
+            localStorage.removeItem(this.legacyExpiryKeyV2);
+            this.log('Legacy storage cleared (v1 and v2)');
         } catch (error) {
             this.log('Failed to clear legacy storage:', error);
         }
