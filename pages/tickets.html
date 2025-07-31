@@ -352,6 +352,10 @@
     <script src="/js/multi-event-tickets.js"></script>
     
     <!-- Enhanced ticket selection with payment integration -->
+    <!-- Load CartManager first as dependency -->
+    <script src="/js/lib/cart-manager.js"></script>
+    
+    <!-- Load other components that depend on CartManager -->
     <script type="module" src="/js/payment-integration.js"></script>
     <script src="/js/ticket-selection.js"></script>
     

@@ -1,29 +1,60 @@
 /**
  * Multi-Event Ticket Selection and Dynamic Pricing
  * Handles ticket selection, quantity management, and price calculation across multiple events
+ * Uses CartManager as the single source of truth for cart state
  */
+
+// Import CartManager - it's available globally via window.CartManager
 
 class TicketSelection {
     constructor() {
-        this.selectedTickets = new Map(); // Global ticket selection across all events
-        this.eventTickets = new Map(); // Event-specific ticket selections
-        this.events = ['boulder-fest-2026'];
+        // Remove internal state management - CartManager is now the single source of truth
+        this.events = ['boulder-fest-2026']; // Keep events as configuration
+        this.cartManager = null; // Will be initialized with CartManager instance
         this.init();
     }
 
-    init() {
-        this.initializeEventMaps();
-        this.bindEvents();
-        this.updateAllDisplays();
+    async init() {
+        try {
+            // Initialize CartManager and wait for it to load
+            this.cartManager = window.CartManager.getInstance();
+            await this.cartManager.waitForLoad();
+            
+            this.bindEvents();
+            this.bindCartManagerEvents();
+            this.updateAllDisplays();
+            
+            console.log('TicketSelection initialized successfully with CartManager');
+        } catch (error) {
+            console.error('Error initializing TicketSelection with CartManager:', error);
+            // Graceful fallback
+            this.bindEvents();
+            this.updateAllDisplays();
+        }
     }
 
     /**
-     * Initialize event-specific ticket maps
+     * Bind CartManager event listeners for real-time updates
      */
-    initializeEventMaps() {
-        this.events.forEach(eventId => {
-            this.eventTickets.set(eventId, new Map());
+    bindCartManagerEvents() {
+        if (!this.cartManager) return;
+        
+        // Listen to cart update events
+        this.cartManager.addEventListener('alocubano:cart:updated', (event) => {
+            this.updateAllDisplays();
         });
+        
+        // Listen to cart loaded events
+        this.cartManager.addEventListener('alocubano:cart:loaded', (event) => {
+            this.updateAllDisplays();
+        });
+        
+        // Listen to cart cleared events
+        this.cartManager.addEventListener('alocubano:cart:cleared', (event) => {
+            this.updateAllDisplays();
+        });
+        
+        console.log('CartManager event listeners bound successfully');
     }
 
     bindEvents() {
@@ -93,44 +124,57 @@ class TicketSelection {
             currentQuantity--;
         }
 
+        // Update DOM immediately for responsive UI
         quantitySpan.textContent = currentQuantity;
 
         // Get ticket name from h5 element (updated structure)
         const ticketNameElement = card.querySelector('h5') || card.querySelector('h4');
         const ticketName = ticketNameElement ? ticketNameElement.textContent : 'Ticket';
 
-        const ticketData = {
-            quantity: currentQuantity,
-            price: price,
-            name: ticketName,
-            eventId: eventId
-        };
+        // Update cart state through CartManager
+        if (!this.cartManager) {
+            console.warn('CartManager not available, falling back to direct DOM updates');
+            this.updateCardState(card, currentQuantity);
+            return;
+        }
 
-        if (currentQuantity > 0) {
-            // Update global tickets map
-            this.selectedTickets.set(ticketType, ticketData);
-            
-            // Update event-specific tickets map
-            if (eventId && this.eventTickets.has(eventId)) {
-                this.eventTickets.get(eventId).set(ticketType, ticketData);
+        try {
+            if (currentQuantity > 0) {
+                // Use CartManager to add/update item
+                const existingItem = this.cartManager.getItem(ticketType);
+                if (existingItem) {
+                    this.cartManager.updateItemQuantity(ticketType, currentQuantity);
+                } else {
+                    this.cartManager.addItem(ticketType, ticketName, price, currentQuantity, eventId);
+                }
+                
+                card.classList.add('selected');
+                card.setAttribute('aria-pressed', 'true');
+            } else {
+                // Remove from cart
+                this.cartManager.removeItem(ticketType);
+                
+                card.classList.remove('selected');
+                card.setAttribute('aria-pressed', 'false');
             }
-            
+        } catch (error) {
+            console.error('Error updating cart through CartManager:', error);
+            // Fallback to direct DOM updates
+            this.updateCardState(card, currentQuantity);
+        }
+    }
+
+    /**
+     * Fallback method to update card state when CartManager is not available
+     */
+    updateCardState(card, quantity) {
+        if (quantity > 0) {
             card.classList.add('selected');
             card.setAttribute('aria-pressed', 'true');
         } else {
-            // Remove from global tickets map
-            this.selectedTickets.delete(ticketType);
-            
-            // Remove from event-specific tickets map
-            if (eventId && this.eventTickets.has(eventId)) {
-                this.eventTickets.get(eventId).delete(ticketType);
-            }
-            
             card.classList.remove('selected');
             card.setAttribute('aria-pressed', 'false');
         }
-
-        this.updateAllDisplays();
     }
 
     handleTicketCardClick(event) {
@@ -154,20 +198,8 @@ class TicketSelection {
         });
         this.updateGlobalDisplay();
         
-        // Notify floating cart of changes
-        this.notifyFloatingCart();
-    }
-
-    /**
-     * Notify floating cart component of ticket changes
-     */
-    notifyFloatingCart() {
-        if (window.floatingCart) {
-            // Ensure floating cart is synced with current selections
-            setTimeout(() => {
-                window.floatingCart.syncWithTicketSelection();
-            }, 0);
-        }
+        // No need to explicitly notify floating cart anymore - 
+        // CartManager events handle cross-component synchronization
     }
 
     /**
@@ -178,9 +210,8 @@ class TicketSelection {
         const finalTotalEl = document.getElementById(`final-total-${eventId}`);
         const checkoutBtn = document.getElementById(`checkout-button-${eventId}`);
 
-        if (!this.eventTickets.has(eventId)) return;
-
-        const eventTickets = this.eventTickets.get(eventId);
+        // Get tickets for this event from CartManager
+        const eventTickets = this.getEventTicketsFromCart(eventId);
         let totalAmount = 0;
 
         // Clear existing order items
@@ -189,7 +220,7 @@ class TicketSelection {
         }
 
         // Add each selected ticket to event order summary
-        eventTickets.forEach((ticket, ticketType) => {
+        eventTickets.forEach((ticket) => {
             const itemAmount = ticket.quantity * ticket.price;
             totalAmount += itemAmount;
 
@@ -214,6 +245,16 @@ class TicketSelection {
     }
 
     /**
+     * Get tickets for a specific event from CartManager
+     */
+    getEventTicketsFromCart(eventId) {
+        if (!this.cartManager) return [];
+        
+        const allItems = this.cartManager.getItems();
+        return allItems.filter(item => item.eventId === eventId);
+    }
+
+    /**
      * Update global display across all events
      */
     updateGlobalDisplay() {
@@ -221,6 +262,8 @@ class TicketSelection {
         const globalFinalTotalEl = document.getElementById('global-final-total');
         const globalCheckoutBtn = document.getElementById('global-checkout-button');
 
+        // Get all items from CartManager
+        const allItems = this.cartManager ? this.cartManager.getItems() : [];
         let globalTotal = 0;
 
         // Clear existing global order items
@@ -230,17 +273,17 @@ class TicketSelection {
 
         // Group tickets by event for display
         const eventGroups = new Map();
-        this.selectedTickets.forEach((ticket, ticketType) => {
+        allItems.forEach((ticket) => {
             const eventId = ticket.eventId;
             if (!eventGroups.has(eventId)) {
                 eventGroups.set(eventId, []);
             }
-            eventGroups.get(eventId).push({ ticketType, ticket });
+            eventGroups.get(eventId).push(ticket);
         });
 
         // Display tickets grouped by event
         eventGroups.forEach((tickets, eventId) => {
-            const eventTotal = tickets.reduce((sum, { ticket }) => sum + (ticket.quantity * ticket.price), 0);
+            const eventTotal = tickets.reduce((sum, ticket) => sum + (ticket.quantity * ticket.price), 0);
             globalTotal += eventTotal;
 
             if (globalOrderItemsEl) {
@@ -251,7 +294,7 @@ class TicketSelection {
                 globalOrderItemsEl.appendChild(eventHeader);
 
                 // Add tickets for this event
-                tickets.forEach(({ ticket }) => {
+                tickets.forEach((ticket) => {
                     const itemAmount = ticket.quantity * ticket.price;
                     const orderItem = document.createElement('div');
                     orderItem.className = 'order-item';
@@ -289,17 +332,16 @@ class TicketSelection {
      * Handle checkout for a specific event
      */
     handleEventCheckout(eventId) {
-        const eventTickets = this.eventTickets.get(eventId);
-        if (!eventTickets || eventTickets.size === 0) {
+        const eventTickets = this.getEventTicketsFromCart(eventId);
+        if (!eventTickets || eventTickets.length === 0) {
             return;
         }
 
-        console.log(`Checkout initiated for ${eventId}:`, Array.from(eventTickets.entries()));
+        console.log(`Checkout initiated for ${eventId}:`, eventTickets);
         
         // Trigger payment integration for this event
         if (window.PaymentIntegration) {
-            const ticketData = Array.from(eventTickets.values());
-            window.PaymentIntegration.initiatePayment(ticketData, eventId);
+            window.PaymentIntegration.initiatePayment(eventTickets, eventId);
         } else {
             alert(`Checkout for ${this.getEventDisplayName(eventId)} - Integration with payment processor will be added.`);
         }
@@ -309,19 +351,96 @@ class TicketSelection {
      * Handle global checkout across all events
      */
     handleGlobalCheckout() {
-        if (this.selectedTickets.size === 0) {
+        const allTickets = this.cartManager ? this.cartManager.getItems() : [];
+        if (allTickets.length === 0) {
             return;
         }
 
-        console.log('Global checkout initiated:', Array.from(this.selectedTickets.entries()));
+        console.log('Global checkout initiated:', allTickets);
         
         // Trigger payment integration for all selected tickets
         if (window.PaymentIntegration) {
-            const ticketData = Array.from(this.selectedTickets.values());
-            window.PaymentIntegration.initiatePayment(ticketData, 'multi-event');
+            window.PaymentIntegration.initiatePayment(allTickets, 'multi-event');
         } else {
             alert('Global checkout - Integration with payment processor will be added.');
         }
+    }
+
+    /**
+     * Backward compatibility method - get selected tickets in legacy format
+     * @deprecated Use cartManager.getItems() directly instead
+     */
+    getSelectedTickets() {
+        if (!this.cartManager) return new Map();
+        
+        const items = this.cartManager.getItems();
+        const legacyMap = new Map();
+        
+        items.forEach(item => {
+            legacyMap.set(item.ticketType, {
+                quantity: item.quantity,
+                price: item.price,
+                name: item.name,
+                eventId: item.eventId
+            });
+        });
+        
+        return legacyMap;
+    }
+
+    /**
+     * Backward compatibility method - get event tickets in legacy format
+     * @deprecated Use getEventTicketsFromCart() instead
+     */
+    getEventTickets() {
+        if (!this.cartManager) return new Map();
+        
+        const legacyEventMap = new Map();
+        this.events.forEach(eventId => {
+            const eventTickets = this.getEventTicketsFromCart(eventId);
+            const eventMap = new Map();
+            
+            eventTickets.forEach(item => {
+                eventMap.set(item.ticketType, {
+                    quantity: item.quantity,
+                    price: item.price,
+                    name: item.name,
+                    eventId: item.eventId
+                });
+            });
+            
+            legacyEventMap.set(eventId, eventMap);
+        });
+        
+        return legacyEventMap;
+    }
+
+    /**
+     * Get cart manager instance (for external access)
+     */
+    getCartManager() {
+        return this.cartManager;
+    }
+
+    /**
+     * Helper method to check if cart has items
+     */
+    hasItems() {
+        return this.cartManager ? !this.cartManager.isEmpty() : false;
+    }
+
+    /**
+     * Helper method to get total items count
+     */
+    getTotalItemCount() {
+        return this.cartManager ? this.cartManager.getItemCount() : 0;
+    }
+
+    /**
+     * Helper method to get total amount
+     */
+    getTotalAmount() {
+        return this.cartManager ? this.cartManager.getTotal() : 0;
     }
 }
 

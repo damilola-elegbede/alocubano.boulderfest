@@ -1,12 +1,14 @@
 /**
  * Floating Cart Component - A Lo Cubano Boulder Fest
- * Handles the floating cart UI and synchronization with ticket selection
+ * Handles the floating cart UI using CartManager as single source of truth
  */
+
+// CartManager is available globally via window.CartManager
 
 class FloatingCart {
     constructor() {
         this.isExpanded = false;
-        this.cartData = new Map(); // Stores cart items by ticket type
+        this.cartManager = null; // Will be initialized with CartManager instance
         this.eventNames = {
             'boulder-fest-2026': 'Boulder Fest 2026'
         };
@@ -14,32 +16,43 @@ class FloatingCart {
         this.init();
     }
 
-    init() {
-        this.createCartHTML();
-        this.bindEvents();
-        
-        // Load from storage first, then sync
-        this.loadFromStorage();
-        
-        // Wait for ticket selection to be ready, then sync
-        this.waitForTicketSelectionAndSync();
-        
-        // Make cart globally accessible
-        window.floatingCart = this;
-        
-        // Listen for storage changes (for cross-tab synchronization)
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'alocubano_cart') {
-                this.loadFromStorage();
-                this.updateCartDisplay();
-            }
-        });
-        
-        // Auto-save cart changes
-        this.setupAutoSave();
-        
-        // Initialize mobile-specific features
-        this.initializeMobileFeatures();
+    async init() {
+        try {
+            console.log('FloatingCart: Starting initialization...');
+            
+            // Initialize CartManager and wait for it to load
+            this.cartManager = window.CartManager.getInstance();
+            console.log('FloatingCart: CartManager instance obtained');
+            
+            await this.cartManager.waitForLoad();
+            console.log('FloatingCart: CartManager loaded, now creating HTML...');
+            
+            this.createCartHTML();
+            console.log('FloatingCart: HTML created');
+            
+            this.bindEvents();
+            this.bindCartManagerEvents();
+            console.log('FloatingCart: Events bound');
+            
+            this.updateCartDisplay();
+            
+            // Make cart globally accessible
+            window.floatingCart = this;
+            
+            // Initialize mobile-specific features
+            this.initializeMobileFeatures();
+            
+            console.log('FloatingCart initialized successfully with CartManager');
+        } catch (error) {
+            console.error('Error initializing FloatingCart:', error);
+            // Graceful fallback - initialize without CartManager
+            console.log('FloatingCart: Falling back to initialization without CartManager');
+            this.createCartHTML();
+            this.bindEvents();
+            this.updateCartDisplay();
+            window.floatingCart = this;
+            this.initializeMobileFeatures();
+        }
     }
 
     /**
@@ -146,6 +159,12 @@ class FloatingCart {
         const clearBtn = document.getElementById('cart-clear-btn');
         const checkoutBtn = document.getElementById('cart-checkout-btn');
 
+        // Check if essential elements exist before binding events
+        if (!toggleBtn || !clearBtn || !checkoutBtn) {
+            console.error('FloatingCart: Essential cart elements not found, cannot bind events');
+            return;
+        }
+
         // Toggle cart expansion
         toggleBtn.addEventListener('click', () => this.toggleCart());
         
@@ -222,6 +241,12 @@ class FloatingCart {
         const toggle = document.getElementById('cart-toggle');
         const content = document.getElementById('cart-content');
 
+        // Check if elements exist before manipulating them
+        if (!cart || !toggle || !content) {
+            console.warn('FloatingCart: Cannot expand cart - essential elements not found');
+            return;
+        }
+
         this.isExpanded = true;
         cart.classList.add('expanded');
         toggle.setAttribute('aria-expanded', 'true');
@@ -239,6 +264,12 @@ class FloatingCart {
         const toggle = document.getElementById('cart-toggle');
         const content = document.getElementById('cart-content');
 
+        // Check if elements exist before manipulating them
+        if (!cart || !toggle || !content) {
+            console.warn('FloatingCart: Cannot collapse cart - essential elements not found');
+            return;
+        }
+
         this.isExpanded = false;
         cart.classList.remove('expanded');
         toggle.setAttribute('aria-expanded', 'false');
@@ -246,117 +277,57 @@ class FloatingCart {
     }
 
     /**
-     * Wait for ticket selection to be ready and then sync
+     * Bind CartManager event listeners
      */
-    waitForTicketSelectionAndSync() {
-        let attempts = 0;
-        const maxAttempts = 50; // 5 seconds max wait
+    bindCartManagerEvents() {
+        if (!this.cartManager) return;
         
-        const checkAndSync = () => {
-            if (window.ticketSelection) {
-                // If we have saved cart data, restore it to the ticket selection
-                if (this.cartData.size > 0) {
-                    this.restoreToTicketSelection();
-                } else {
-                    // Otherwise sync from ticket selection
-                    this.syncWithTicketSelection();
-                }
-                return;
-            }
-            
-            attempts++;
-            if (attempts < maxAttempts) {
-                setTimeout(checkAndSync, 100);
-            } else {
-                console.warn('Ticket selection system not found, cart will work independently');
-                this.updateCartDisplay();
-            }
-        };
-        
-        checkAndSync();
-    }
-
-    /**
-     * Restore saved cart data to the ticket selection system
-     */
-    restoreToTicketSelection() {
-        if (!window.ticketSelection) return;
-        
-        // Clear existing selections
-        window.ticketSelection.selectedTickets.clear();
-        window.ticketSelection.events.forEach(eventId => {
-            if (window.ticketSelection.eventTickets.has(eventId)) {
-                window.ticketSelection.eventTickets.get(eventId).clear();
-            }
+        // Listen to CartManager events with namespaced event names
+        this.cartManager.addEventListener('alocubano:cart:loaded', (e) => {
+            console.log('FloatingCart: CartManager loaded event received, updating cart display');
+            this.updateCartDisplay();
         });
         
-        // Restore saved items
-        this.cartData.forEach((ticket, ticketType) => {
-            // Find the corresponding ticket card and update it
-            const ticketCard = document.querySelector(`[data-ticket-type="${ticketType}"]`);
-            if (ticketCard) {
-                const quantitySpan = ticketCard.querySelector('.quantity');
-                if (quantitySpan) {
-                    quantitySpan.textContent = ticket.quantity;
-                }
-                
-                if (ticket.quantity > 0) {
-                    ticketCard.classList.add('selected');
-                    ticketCard.setAttribute('aria-pressed', 'true');
-                }
-            }
-            
-            // Update the ticket selection system
-            window.ticketSelection.selectedTickets.set(ticketType, { ...ticket });
-            
-            const eventId = ticket.eventId;
-            if (!window.ticketSelection.eventTickets.has(eventId)) {
-                window.ticketSelection.eventTickets.set(eventId, new Map());
-            }
-            window.ticketSelection.eventTickets.get(eventId).set(ticketType, { ...ticket });
+        this.cartManager.addEventListener('alocubano:cart:updated', (e) => {
+            console.log('FloatingCart: CartManager updated event received, refreshing cart display');
+            this.updateCartDisplay();
         });
         
-        // Update all displays
-        if (window.ticketSelection.updateAllDisplays) {
-            window.ticketSelection.updateAllDisplays();
-        }
-        
-        this.updateCartDisplay();
-    }
-
-    /**
-     * Sync cart with the main ticket selection system
-     */
-    syncWithTicketSelection() {
-        if (!window.ticketSelection) {
-            return;
-        }
-
-        const tickets = window.ticketSelection.selectedTickets;
-        this.cartData.clear();
-
-        // Copy data from ticket selection
-        tickets.forEach((ticket, ticketType) => {
-            if (ticket.quantity > 0) {
-                this.cartData.set(ticketType, { ...ticket });
-            }
+        this.cartManager.addEventListener('alocubano:cart:cleared', (e) => {
+            console.log('FloatingCart: CartManager cleared event received, updating cart display');
+            this.updateCartDisplay();
         });
-
-        this.updateCartDisplay();
+        
+        this.cartManager.addEventListener('alocubano:cart:expired', (e) => {
+            console.log('FloatingCart: Cart expired event received, showing message');
+            this.showMessage('Your cart has expired and been cleared.', 'warning');
+            this.updateCartDisplay();
+        });
     }
 
     /**
      * Update the cart display
      */
-    updateCartDisplay() {
+    updateCartDisplay(retryCount = 0) {
+        // Check if cart HTML has been created yet
+        const floatingCart = document.getElementById('floating-cart');
+        if (!floatingCart) {
+            console.debug('FloatingCart HTML not ready yet, deferring cart display update (retry', retryCount + 1, ')');
+            
+            // Limit retries to prevent infinite loops
+            if (retryCount < 20) { // Max 1 second of retries (20 * 50ms)
+                setTimeout(() => this.updateCartDisplay(retryCount + 1), 50);
+            } else {
+                console.warn('FloatingCart: Gave up waiting for HTML elements after 20 retries');
+            }
+            return;
+        }
+        
         this.updateCartSummary();
         this.updateCartItems();
         this.updateCartFooter();
         
-        // Auto-save to storage whenever cart is updated
-        this.saveToStorage();
-        
-        // Dispatch cart update event for global cart
+        // Dispatch cart update event for global cart compatibility
         this.dispatchCartUpdate();
     }
 
@@ -367,13 +338,19 @@ class FloatingCart {
         const badge = document.getElementById('cart-badge');
         const cartTotal = document.getElementById('cart-total');
         
+        // Early return if essential elements don't exist yet
+        if (!badge || !cartTotal) {
+            console.debug('Cart summary elements not ready yet, skipping update');
+            return;
+        }
+        
         let totalItems = 0;
         let totalAmount = 0;
 
-        this.cartData.forEach(ticket => {
-            totalItems += ticket.quantity;
-            totalAmount += ticket.quantity * ticket.price;
-        });
+        if (this.cartManager) {
+            totalItems = this.cartManager.getItemCount();
+            totalAmount = this.cartManager.getTotal();
+        }
 
         // Update badge
         if (totalItems > 0) {
@@ -381,7 +358,11 @@ class FloatingCart {
             badge.style.display = 'flex';
             badge.classList.add('pulse-badge');
             // Remove animation class after animation completes
-            setTimeout(() => badge.classList.remove('pulse-badge'), 300);
+            setTimeout(() => {
+                if (badge) {
+                    badge.classList.remove('pulse-badge');
+                }
+            }, 300);
         } else {
             badge.style.display = 'none';
         }
@@ -402,59 +383,106 @@ class FloatingCart {
         const itemsContainer = document.getElementById('cart-items');
         const emptyState = document.getElementById('cart-empty');
 
-        if (this.cartData.size === 0) {
-            emptyState.style.display = 'block';
+        // Early return if essential elements don't exist yet
+        if (!itemsContainer) {
+            console.warn('FloatingCart: cart-items element not found, cannot update');
             return;
         }
 
-        emptyState.style.display = 'none';
-
-        // Group items by event
-        const eventGroups = new Map();
-        this.cartData.forEach((ticket, ticketType) => {
-            const eventId = ticket.eventId;
-            if (!eventGroups.has(eventId)) {
-                eventGroups.set(eventId, []);
+        // Create empty state element if it doesn't exist
+        if (!emptyState) {
+            const emptyHTML = `
+                <div class="cart-empty" id="cart-empty">
+                    <svg class="cart-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="9" cy="21" r="1"></circle>
+                        <circle cx="20" cy="21" r="1"></circle>
+                        <path d="m1 1 4 4 3.09 11.73A2 2 0 0 0 10.16 19H20.5a2 2 0 0 0 2-1.81L23 8H7"></path>
+                    </svg>
+                    <div class="cart-empty-message">Your cart is empty</div>
+                    <div class="cart-empty-submessage">Add tickets to get started!</div>
+                </div>
+            `;
+            itemsContainer.insertAdjacentHTML('afterbegin', emptyHTML);
+        }
+        
+        // Get fresh reference to emptyState in case it was recreated
+        const currentEmptyState = document.getElementById('cart-empty');
+        
+        if (!this.cartManager || this.cartManager.isEmpty()) {
+            if (currentEmptyState) {
+                currentEmptyState.style.display = 'block';
             }
-            eventGroups.get(eventId).push({ ticketType, ticket });
-        });
+            return;
+        }
 
-        // Build HTML for cart items
-        let itemsHTML = '';
-        eventGroups.forEach((tickets, eventId) => {
-            const eventName = this.eventNames[eventId] || eventId;
-            itemsHTML += `<div class="cart-event-group">`;
-            itemsHTML += `<div class="cart-event-title">${eventName}</div>`;
+        if (currentEmptyState) {
+            currentEmptyState.style.display = 'none';
+        }
+
+        try {
+            // Get items from CartManager and group by event
+            const items = this.cartManager.getItems();
+            const eventGroups = new Map();
             
-            tickets.forEach(({ ticketType, ticket }) => {
-                const itemTotal = ticket.quantity * ticket.price;
-                itemsHTML += `
-                    <div class="cart-item" data-ticket-type="${ticketType}">
-                        <div class="cart-item-info">
-                            <div class="cart-item-name">${ticket.name}</div>
-                            <div class="cart-item-price">$${ticket.price.toFixed(2)} each</div>
+            items.forEach(ticket => {
+                // Extract eventId from ticketType or use default
+                const eventId = ticket.eventId || 'boulder-fest-2026';
+                if (!eventGroups.has(eventId)) {
+                    eventGroups.set(eventId, []);
+                }
+                eventGroups.get(eventId).push({ ticketType: ticket.ticketType, ticket });
+            });
+
+            // Build HTML for cart items
+            let itemsHTML = '';
+            eventGroups.forEach((tickets, eventId) => {
+                const eventName = this.eventNames[eventId] || eventId;
+                itemsHTML += `<div class="cart-event-group">`;
+                itemsHTML += `<div class="cart-event-title">${eventName}</div>`;
+                
+                tickets.forEach(({ ticketType, ticket }) => {
+                    const itemTotal = ticket.quantity * ticket.price;
+                    itemsHTML += `
+                        <div class="cart-item" data-ticket-type="${ticketType}">
+                            <div class="cart-item-info">
+                                <div class="cart-item-name">${ticket.name}</div>
+                                <div class="cart-item-price">$${ticket.price.toFixed(2)} each</div>
+                            </div>
+                            <div class="cart-quantity-controls">
+                                <button class="cart-qty-btn cart-qty-decrease" 
+                                        data-ticket-type="${ticketType}" 
+                                        aria-label="Decrease quantity">−</button>
+                                <span class="cart-quantity-display">${ticket.quantity}</span>
+                                <button class="cart-qty-btn cart-qty-increase" 
+                                        data-ticket-type="${ticketType}" 
+                                        aria-label="Increase quantity">+</button>
+                            </div>
+                            <div class="cart-item-total">$${itemTotal.toFixed(2)}</div>
                         </div>
-                        <div class="cart-quantity-controls">
-                            <button class="cart-qty-btn cart-qty-decrease" 
-                                    data-ticket-type="${ticketType}" 
-                                    aria-label="Decrease quantity">−</button>
-                            <span class="cart-quantity-display">${ticket.quantity}</span>
-                            <button class="cart-qty-btn cart-qty-increase" 
-                                    data-ticket-type="${ticketType}" 
-                                    aria-label="Increase quantity">+</button>
-                        </div>
-                        <div class="cart-item-total">$${itemTotal.toFixed(2)}</div>
+                    `;
+                });
+                
+                itemsHTML += `</div>`;
+            });
+
+            itemsContainer.innerHTML = itemsHTML;
+
+            // Bind quantity control events
+            this.bindQuantityControls();
+            
+        } catch (error) {
+            console.error('FloatingCart: Error processing cart items:', error);
+            
+            // Fallback: show error message in cart
+            if (itemsContainer) {
+                itemsContainer.innerHTML = `
+                    <div class="cart-error">
+                        <div class="cart-error-message">Error loading cart items</div>
+                        <div class="cart-error-detail">Please refresh the page</div>
                     </div>
                 `;
-            });
-            
-            itemsHTML += `</div>`;
-        });
-
-        itemsContainer.innerHTML = itemsHTML;
-
-        // Bind quantity control events
-        this.bindQuantityControls();
+            }
+        }
     }
 
     /**
@@ -483,45 +511,50 @@ class FloatingCart {
      * Adjust quantity of a ticket
      */
     adjustQuantity(ticketType, change) {
-        // Find the corresponding ticket card in the main interface
-        const ticketCard = document.querySelector(`[data-ticket-type="${ticketType}"]`);
-        if (!ticketCard) return;
-
-        const quantitySpan = ticketCard.querySelector('.quantity');
-        if (!quantitySpan) return;
-
-        const currentQuantity = parseInt(quantitySpan.textContent) || 0;
-        const newQuantity = Math.max(0, currentQuantity + change);
-
-        // Update the main ticket selection interface
-        quantitySpan.textContent = newQuantity;
+        console.log(`FloatingCart: adjustQuantity called for ${ticketType}, change: ${change}`);
         
-        // Trigger the main ticket selection update
-        if (change > 0) {
-            const plusBtn = ticketCard.querySelector('.qty-btn.plus');
-            if (plusBtn) {
-                // Create a synthetic event to trigger the main system
-                const event = new Event('click', { bubbles: true });
-                plusBtn.dispatchEvent(event);
-            }
-        } else {
-            const minusBtn = ticketCard.querySelector('.qty-btn.minus');
-            if (minusBtn) {
-                // Create a synthetic event to trigger the main system
-                const event = new Event('click', { bubbles: true });
-                minusBtn.dispatchEvent(event);
-            }
+        if (!this.cartManager) {
+            console.warn('CartManager not available for quantity adjustment');
+            return;
         }
 
-        // Add animation to cart item
-        const cartItem = document.querySelector(`.cart-item[data-ticket-type="${ticketType}"]`);
-        if (cartItem) {
-            if (newQuantity === 0) {
+        try {
+            const currentItem = this.cartManager.getItem(ticketType);
+            console.log('FloatingCart: Current item:', currentItem);
+            
+            if (!currentItem && change <= 0) {
+                console.log('FloatingCart: Cannot decrease non-existent item');
+                return; // Can't decrease non-existent item
+            }
+
+            const currentQuantity = currentItem ? currentItem.quantity : 0;
+            const newQuantity = Math.max(0, currentQuantity + change);
+            console.log(`FloatingCart: Current quantity: ${currentQuantity}, New quantity: ${newQuantity}`);
+
+            // Update quantity through CartManager
+            if (newQuantity > 0) {
+                console.log('FloatingCart: Updating item quantity via CartManager');
+                this.cartManager.updateItemQuantity(ticketType, newQuantity);
+            } else {
+                console.log('FloatingCart: Removing item via CartManager');
+                this.cartManager.removeItem(ticketType);
+            }
+
+            // Add animation to cart item
+            const cartItem = document.querySelector(`.cart-item[data-ticket-type="${ticketType}"]`);
+            if (cartItem && newQuantity === 0) {
+                console.log('FloatingCart: Adding removal animation');
                 cartItem.classList.add('cart-item-removing');
                 setTimeout(() => {
-                    this.syncWithTicketSelection();
+                    console.log('FloatingCart: Delayed update after removal animation');
+                    this.updateCartDisplay();
                 }, 300);
+            } else {
+                console.log('FloatingCart: No animation needed, CartManager should trigger update');
             }
+        } catch (error) {
+            console.error('Error adjusting quantity:', error);
+            this.showMessage('Error updating cart. Please try again.', 'error');
         }
     }
 
@@ -533,15 +566,18 @@ class FloatingCart {
         const checkoutBtn = document.getElementById('cart-checkout-btn');
         const footerTotal = document.getElementById('cart-footer-total');
 
-        if (this.cartData.size > 0) {
-            // Calculate total for footer
-            let totalAmount = 0;
-            this.cartData.forEach(ticket => {
-                totalAmount += ticket.quantity * ticket.price;
-            });
+        // Early return if essential elements don't exist yet
+        if (!footer || !checkoutBtn || !footerTotal) {
+            console.debug('Cart footer elements not ready yet, skipping update');
+            return;
+        }
+
+        if (this.cartManager && !this.cartManager.isEmpty()) {
+            // Get total from CartManager
+            const totalAmount = this.cartManager.getTotal();
 
             // Update footer total
-            footerTotal.textContent = `$${totalAmount.toFixed(2)}`;
+            footerTotal.textContent = this.cartManager.getTotalFormatted();
             
             footer.style.display = 'block';
             checkoutBtn.disabled = false;
@@ -555,72 +591,56 @@ class FloatingCart {
      * Clear all items from cart
      */
     clearCart() {
-        if (this.cartData.size === 0) return;
+        if (!this.cartManager || this.cartManager.isEmpty()) {
+            return;
+        }
 
         // Confirm before clearing
         if (!confirm('Are you sure you want to clear your cart?')) {
             return;
         }
 
-        // Reset all quantity selectors in the main interface
-        this.cartData.forEach((ticket, ticketType) => {
-            const ticketCard = document.querySelector(`[data-ticket-type="${ticketType}"]`);
-            if (ticketCard) {
-                const quantitySpan = ticketCard.querySelector('.quantity');
-                if (quantitySpan) {
-                    quantitySpan.textContent = '0';
-                }
-                ticketCard.classList.remove('selected');
-                ticketCard.setAttribute('aria-pressed', 'false');
-            }
-        });
+        try {
+            // Clear cart through CartManager - this will handle DOM updates via restoreSelectionsToDOM
+            this.cartManager.clearCart();
 
-        // Clear cart data
-        this.cartData.clear();
-
-        // Clear from localStorage
-        this.clearStorage();
-
-        // Trigger update in main ticket selection system
-        if (window.ticketSelection) {
-            window.ticketSelection.selectedTickets.clear();
-            window.ticketSelection.events.forEach(eventId => {
-                if (window.ticketSelection.eventTickets.has(eventId)) {
-                    window.ticketSelection.eventTickets.get(eventId).clear();
-                }
-            });
-            window.ticketSelection.updateAllDisplays();
+            // Show success message
+            this.showMessage('Cart cleared successfully!');
+        } catch (error) {
+            console.error('Error clearing cart:', error);
+            this.showMessage('Error clearing cart. Please try again.', 'error');
         }
-
-        // Update cart display
-        this.updateCartDisplay();
-
-        // Show success message
-        this.showMessage('Cart cleared successfully!');
     }
 
     /**
      * Handle checkout button click
      */
     handleCheckout() {
-        if (this.cartData.size === 0) return;
-
-        // Convert cart data to format expected by payment system
-        const ticketData = Array.from(this.cartData.values());
-        
-        // Use global checkout if available
-        if (window.ticketSelection) {
-            window.ticketSelection.handleGlobalCheckout();
-        } else if (window.PaymentIntegration) {
-            window.PaymentIntegration.initiatePayment(ticketData, 'floating-cart');
-        } else {
-            // Fallback - redirect to checkout
-            console.log('Checkout initiated from floating cart:', ticketData);
-            alert('Checkout functionality will be integrated with the payment system.');
+        if (!this.cartManager || this.cartManager.isEmpty()) {
+            return;
         }
 
-        // Collapse cart after checkout
-        this.collapseCart();
+        try {
+            // Get cart items from CartManager
+            const ticketData = this.cartManager.getItems();
+            
+            // Use global checkout if available
+            if (window.ticketSelection) {
+                window.ticketSelection.handleGlobalCheckout();
+            } else if (window.PaymentIntegration) {
+                window.PaymentIntegration.initiatePayment(ticketData, 'floating-cart');
+            } else {
+                // Fallback - redirect to checkout
+                console.log('Checkout initiated from floating cart:', ticketData);
+                alert('Checkout functionality will be integrated with the payment system.');
+            }
+
+            // Collapse cart after checkout
+            this.collapseCart();
+        } catch (error) {
+            console.error('Error during checkout:', error);
+            this.showMessage('Error processing checkout. Please try again.', 'error');
+        }
     }
 
     /**
@@ -685,11 +705,15 @@ class FloatingCart {
         const messageEl = document.createElement('div');
         messageEl.className = `cart-message cart-message-${type}`;
         messageEl.textContent = message;
+        
+        const backgroundColor = type === 'success' ? '#10b981' : 
+                              type === 'warning' ? '#f59e0b' : '#ef4444';
+        
         messageEl.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
-            background: ${type === 'success' ? '#10b981' : '#ef4444'};
+            background: ${backgroundColor};
             color: white;
             padding: 12px 20px;
             border-radius: 8px;
@@ -721,81 +745,9 @@ class FloatingCart {
         }, 3000);
     }
 
-    /**
-     * Setup auto-save functionality
-     */
-    setupAutoSave() {
-        // Save cart when page is about to unload
-        window.addEventListener('beforeunload', () => {
-            this.saveToStorage();
-        });
-        
-        // Save cart periodically (every 30 seconds if cart has items)
-        setInterval(() => {
-            if (this.cartData.size > 0) {
-                this.saveToStorage();
-            }
-        }, 30000);
-    }
 
     /**
-     * Save cart to localStorage for session persistence
-     */
-    saveToStorage() {
-        try {
-            const cartData = Array.from(this.cartData.entries());
-            const cartState = {
-                cartData,
-                timestamp: Date.now(),
-                version: '1.0',
-                url: window.location.pathname
-            };
-            localStorage.setItem('alocubano_cart', JSON.stringify(cartState));
-        } catch (error) {
-            console.warn('Could not save cart to localStorage:', error);
-        }
-    }
-
-    /**
-     * Load cart from localStorage
-     */
-    loadFromStorage() {
-        try {
-            const stored = localStorage.getItem('alocubano_cart');
-            if (stored) {
-                const { cartData, timestamp, version } = JSON.parse(stored);
-                
-                // Only load if data is less than 7 days old and version matches
-                const sevenDaysAgo = 7 * 24 * 60 * 60 * 1000;
-                if (Date.now() - timestamp < sevenDaysAgo && version === '1.0') {
-                    this.cartData = new Map(cartData);
-                    console.log('Loaded cart from storage:', this.cartData.size, 'items');
-                    return true;
-                } else {
-                    // Clean up old data
-                    this.clearStorage();
-                }
-            }
-        } catch (error) {
-            console.warn('Could not load cart from localStorage:', error);
-            this.clearStorage();
-        }
-        return false;
-    }
-
-    /**
-     * Clear cart from localStorage
-     */
-    clearStorage() {
-        try {
-            localStorage.removeItem('alocubano_cart');
-        } catch (error) {
-            console.warn('Could not clear cart from localStorage:', error);
-        }
-    }
-
-    /**
-     * Dispatch cart update event for other components
+     * Dispatch cart update event for other components (legacy compatibility)
      */
     dispatchCartUpdate() {
         const cartSummary = this.getCartSummary();
@@ -809,28 +761,33 @@ class FloatingCart {
      * Get cart summary for external use
      */
     getCartSummary() {
-        let totalItems = 0;
-        let totalAmount = 0;
-
-        this.cartData.forEach(ticket => {
-            totalItems += ticket.quantity;
-            totalAmount += ticket.quantity * ticket.price;
-        });
+        if (!this.cartManager) {
+            return {
+                itemCount: 0,
+                totalAmount: 0,
+                items: [],
+                isEmpty: true
+            };
+        }
 
         return {
-            itemCount: totalItems,
-            totalAmount,
-            items: Array.from(this.cartData.values()),
-            isEmpty: this.cartData.size === 0
+            itemCount: this.cartManager.getItemCount(),
+            totalAmount: this.cartManager.getTotal(),
+            items: this.cartManager.getItems(),
+            isEmpty: this.cartManager.isEmpty()
         };
     }
 }
 
 // Initialize floating cart when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Only initialize on tickets page
     if (document.querySelector('.ticket-selection')) {
-        window.floatingCart = new FloatingCart();
+        try {
+            window.floatingCart = new FloatingCart();
+        } catch (error) {
+            console.error('Failed to initialize FloatingCart:', error);
+        }
     }
 });
 
