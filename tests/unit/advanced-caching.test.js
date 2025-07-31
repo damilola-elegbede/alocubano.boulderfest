@@ -77,6 +77,39 @@ const createMockServiceWorker = () => {
   return mockSW;
 };
 
+// Mock DOM for Node environment
+if (typeof document === 'undefined') {
+  global.document = {
+    body: {
+      innerHTML: '',
+      appendChild: jest.fn(),
+      removeChild: jest.fn(),
+      insertBefore: jest.fn(),
+      querySelector: jest.fn(),
+      querySelectorAll: jest.fn(() => [])
+    },
+    createElement: jest.fn((tag) => ({
+      tagName: tag.toUpperCase(),
+      innerHTML: '',
+      textContent: '',
+      style: {},
+      setAttribute: jest.fn(),
+      getAttribute: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      appendChild: jest.fn(),
+      insertBefore: jest.fn(),
+      querySelector: jest.fn(),
+      querySelectorAll: jest.fn(() => [])
+    })),
+    getElementById: jest.fn(),
+    querySelector: jest.fn(),
+    querySelectorAll: jest.fn(() => []),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn()
+  };
+}
+
 describe('Advanced Caching System - Phase 2', () => {
   let mockFetch;
   let mockServiceWorker;
@@ -84,7 +117,9 @@ describe('Advanced Caching System - Phase 2', () => {
   
   beforeEach(() => {
     // Reset DOM
-    document.body.innerHTML = '';
+    if (document.body) {
+      document.body.innerHTML = '';
+    }
     
     // Mock fetch
     mockFetch = jest.fn();
