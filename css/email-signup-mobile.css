@@ -1,0 +1,269 @@
+/* Mobile Email Signup Optimizations for A Lo Cubano Boulder Fest
+ * Focused on mobile-first email capture with optimal UX
+ * Mobile breakpoint: 768px and below
+ */
+
+/* ==========================================================================
+   EMAIL SIGNUP FORM - MOBILE OPTIMIZATIONS
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* Early Bird Signup Container */
+  .early-bird-signup {
+    padding: var(--space-lg) var(--space-md) !important;
+    margin: var(--space-lg) 0 !important;
+    border-radius: 8px !important;
+  }
+
+  /* Notification Form Container */
+  .notification-form {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Mobile-Optimized Form Layout */
+  .notification-form > div {
+    flex-direction: column !important;
+    gap: var(--space-md) !important;
+  }
+
+  /* Email Input Field - Mobile Optimization */
+  .notification-form input[type="email"] {
+    width: 100% !important;
+    min-height: 48px !important; /* Optimal touch target */
+    padding: var(--space-md) var(--space-lg) !important;
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    border: 2px solid var(--color-gray-300) !important;
+    border-radius: 6px !important;
+    background-color: var(--color-white) !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    touch-action: manipulation !important;
+    
+    /* Visual feedback */
+    transition: all 0.2s ease !important;
+  }
+
+  /* Input Focus State */
+  .notification-form input[type="email"]:focus {
+    border-color: var(--color-blue) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1) !important;
+  }
+
+  /* Input Hover State (for devices with hover) */
+  @media (hover: hover) {
+    .notification-form input[type="email"]:hover {
+      border-color: var(--color-gray-400) !important;
+    }
+  }
+
+  /* Submit Button - Mobile Optimization */
+  .notification-form .btn-primary {
+    width: 100% !important;
+    min-height: 48px !important;
+    padding: var(--space-md) var(--space-xl) !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    touch-action: manipulation !important;
+    position: relative !important;
+    overflow: hidden !important;
+    
+    /* Prevent text selection on tap */
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    
+    /* Visual feedback */
+    transition: all 0.2s ease !important;
+  }
+
+  /* Button Active State - Touch Feedback */
+  .notification-form .btn-primary:active {
+    transform: scale(0.98) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Loading State for Button */
+  .notification-form .btn-primary.loading {
+    color: transparent !important;
+    pointer-events: none !important;
+  }
+
+  .notification-form .btn-primary.loading::after {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 50%;
+    left: 50%;
+    margin-left: -10px;
+    margin-top: -10px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: button-spinner 0.8s linear infinite;
+  }
+
+  @keyframes button-spinner {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Privacy Text - Mobile Optimization */
+  .notification-form p {
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+    color: var(--color-gray-600) !important;
+    text-align: center !important;
+    margin-top: var(--space-md) !important;
+    padding: 0 var(--space-sm) !important;
+  }
+
+  /* Success Message - Mobile Optimization */
+  .notification-success {
+    background-color: var(--color-green-50);
+    border: 1px solid var(--color-green-200);
+    color: var(--color-green-800);
+    padding: var(--space-md);
+    border-radius: 6px;
+    margin-top: var(--space-md);
+    font-size: 14px;
+    text-align: center;
+    animation: slideInUp 0.3s ease;
+  }
+
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Error Message - Mobile Optimization */
+  .notification-error {
+    background-color: var(--color-red-50);
+    border: 1px solid var(--color-red-200);
+    color: var(--color-red-800);
+    padding: var(--space-md);
+    border-radius: 6px;
+    margin-top: var(--space-md);
+    font-size: 14px;
+    text-align: center;
+    animation: shake 0.3s ease;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+}
+
+/* ==========================================================================
+   EXTRA SMALL DEVICES (480px and below)
+   ========================================================================== */
+
+@media (max-width: 480px) {
+  /* Tighter padding for very small screens */
+  .early-bird-signup {
+    padding: var(--space-md) var(--space-sm) !important;
+    margin: var(--space-md) -var(--space-sm) !important; /* Full-width effect */
+    border-radius: 0 !important;
+  }
+
+  /* Smaller text for space efficiency */
+  .early-bird-signup h3 {
+    font-size: var(--font-size-xl) !important;
+  }
+
+  .early-bird-signup p {
+    font-size: var(--font-size-sm) !important;
+    padding: 0 var(--space-sm) !important;
+  }
+}
+
+/* ==========================================================================
+   ACCESSIBILITY ENHANCEMENTS
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .notification-form input[type="email"] {
+      border-width: 3px !important;
+    }
+
+    .notification-form .btn-primary {
+      border: 3px solid currentColor !important;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .notification-form input[type="email"],
+    .notification-form .btn-primary {
+      transition: none !important;
+    }
+
+    .notification-success,
+    .notification-error {
+      animation: none !important;
+    }
+  }
+
+  /* Focus visible for keyboard navigation */
+  .notification-form input[type="email"]:focus-visible,
+  .notification-form .btn-primary:focus-visible {
+    outline: 3px solid var(--color-blue) !important;
+    outline-offset: 2px !important;
+  }
+}
+
+/* ==========================================================================
+   KEYBOARD BEHAVIOR OPTIMIZATIONS
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* Ensure proper keyboard behavior */
+  .notification-form {
+    /* Prevent form zoom on older iOS */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+
+  /* Input attributes for optimal keyboard */
+  .notification-form input[type="email"] {
+    /* Disable autocorrect and autocapitalize for email */
+    autocorrect: off;
+    autocapitalize: off;
+    spellcheck: false;
+    
+    /* Enable email keyboard on mobile */
+    inputmode: email;
+  }
+}
+
+/* ==========================================================================
+   PERFORMANCE OPTIMIZATIONS
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* Hardware acceleration for smooth animations */
+  .notification-form input[type="email"],
+  .notification-form .btn-primary {
+    will-change: transform;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+
+  /* Remove will-change after interactions */
+  .notification-form input[type="email"]:not(:focus),
+  .notification-form .btn-primary:not(:active) {
+    will-change: auto;
+  }
+}

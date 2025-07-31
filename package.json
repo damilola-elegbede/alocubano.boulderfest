@@ -40,7 +40,7 @@
     "event-lifecycle:list": "node scripts/manage-event-lifecycle.js list",
     "event-lifecycle:archive": "node scripts/manage-event-lifecycle.js auto-archive --dry-run",
     "pre-commit": "npm run lint && npm run test:fast",
-    "test:fast": "FAST_TESTS=true SKIP_DB_TESTS=true jest --config config/jest.unit.config.cjs --passWithNoTests",
+    "test:fast": "jest --config config/jest.fast.config.cjs --passWithNoTests",
     "test:metrics": "node scripts/metrics-monitor.js",
     "test:pre-push": "npm run test:all && npm run test:integration && npm run test:performance",
     "db:migrate": "node scripts/run-migrations.js run",

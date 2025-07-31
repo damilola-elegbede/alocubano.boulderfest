@@ -83,6 +83,7 @@
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/typography.css">
     <link rel="stylesheet" href="/css/payment-integration.css">
+    <link rel="stylesheet" href="/css/floating-cart.css">
     <link rel="stylesheet" href="/css/mobile-overrides.css">
 </head>
 <body class="typographic">
@@ -136,6 +137,9 @@
                         <li><a href="/contact" class="nav-link" data-text="Contact">Contact</a></li>
                     </ul>
                 </nav>
+                <div class="header-right" id="header-right">
+                    <!-- Cart icon will be dynamically inserted here (hidden on tickets page) -->
+                </div>
             </div>
         </div>
     </header>
@@ -149,26 +153,51 @@
             </div>
         </section>
 
-        <!-- Tickets Header -->
+        <!-- Boulder Fest 2026 Tickets Header -->
         <section class="section-typographic">
             <div class="container">
                 <div class="tickets-header">
-                    <h1>A Lo Cubano Boulder Fest 2026 Tickets</h1>
-                    <p class="tickets-subtitle">Early bird pricing available now!</p>
+                    <h1>Boulder Fest 2026 Tickets</h1>
+                    <p class="tickets-subtitle">May 15-17, 2026 • Avalon Ballroom, Boulder, CO</p>
                 </div>
 
-                <!-- Ticket Selection Interface -->
-                <section class="ticket-selection">
-                    <h2>Select Your Tickets</h2>
+                <!-- Ticket Navigation Cards -->
+                <style>
+                    .event-nav-card:hover {
+                        border-color: var(--color-black) !important;
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                    }
+                </style>
+                <div class="event-nav-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-lg); margin: var(--space-lg) 0;">
+                    <a href="#full-pass" class="event-nav-card" style="display: block; padding: var(--space-lg); border: 2px solid var(--color-gray-300); text-decoration: none; color: var(--color-black); transition: all var(--transition-base);">
+                        <h3 style="margin: 0 0 var(--space-sm) 0; font-family: var(--font-display); font-size: var(--font-size-xl); color: var(--color-black);">Full Festival Pass</h3>
+                        <p style="margin: 0; color: var(--color-gray-600);">Complete access to all workshops, socials, and performances</p>
+                    </a>
+                    <a href="#day-passes" class="event-nav-card" style="display: block; padding: var(--space-lg); border: 2px solid var(--color-gray-300); text-decoration: none; color: var(--color-black); transition: all var(--transition-base);">
+                        <h3 style="margin: 0 0 var(--space-sm) 0; font-family: var(--font-display); font-size: var(--font-size-xl); color: var(--color-black);">Day Passes</h3>
+                        <p style="margin: 0; color: var(--color-gray-600);">Access to a single day of festivities</p>
+                    </a>
+                    <a href="#individual-tickets" class="event-nav-card" style="display: block; padding: var(--space-lg); border: 2px solid var(--color-gray-300); text-decoration: none; color: var(--color-black); transition: all var(--transition-base);">
+                        <h3 style="margin: 0 0 var(--space-sm) 0; font-family: var(--font-display); font-size: var(--font-size-xl); color: var(--color-black);">Individual Tickets</h3>
+                        <p style="margin: 0; color: var(--color-gray-600);">Single workshop or social access</p>
+                    </a>
+                </div>
+
+                <!-- Boulder Fest 2026 Ticket Selection -->
+                <div class="ticket-selection" data-event="boulder-fest-2026">
+                    <div class="event-header">
+                        <p class="event-description">Our biggest festival yet! Three days of authentic Cuban salsa with world-class instructors, live music, and unforgettable nights of social dancing.</p>
+                    </div>
                     
                     <!-- Full Festival Passes -->
-                    <div class="ticket-category">
-                        <h3>Full Festival Pass</h3>
+                    <div class="ticket-category" id="full-pass">
+                        <h4>Full Festival Pass</h4>
                         <p class="category-description">Complete access to all workshops, socials, and performances</p>
                         
-                        <div class="ticket-options">
-                            <div class="ticket-card" data-ticket-type="early-bird-full" data-price="100">
-                                <h4>Early Bird Full Pass</h4>
+                            <div class="ticket-options">
+                                <div class="ticket-card" data-ticket-type="bf2026-early-bird-full" data-price="100">
+                                    <h5>Early Bird Full Pass</h5>
                                 <div class="ticket-price">$100</div>
                                 <p class="ticket-description">Before April 1st</p>
                                 <div class="ticket-savings">Save $25!</div>
@@ -179,8 +208,8 @@
                                 </div>
                             </div>
                             
-                            <div class="ticket-card" data-ticket-type="regular-full" data-price="125">
-                                <h4>Regular Full Pass</h4>
+                                <div class="ticket-card" data-ticket-type="bf2026-regular-full" data-price="125">
+                                    <h5>Regular Full Pass</h5>
                                 <div class="ticket-price">$125</div>
                                 <p class="ticket-description">At door pricing</p>
                                 <div class="quantity-selector">
@@ -189,17 +218,17 @@
                                     <button class="qty-btn plus" data-action="increase" type="button" aria-label="Increase quantity">+</button>
                                 </div>
                             </div>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <!-- Day Passes -->
-                    <div class="ticket-category">
-                        <h3>Day Passes</h3>
-                        <p class="category-description">Access to a single day of festivities</p>
                         
-                        <div class="ticket-options">
-                            <div class="ticket-card" data-ticket-type="friday-pass" data-price="50">
-                                <h4>Friday Pass</h4>
+                    <!-- Day Passes -->
+                    <div class="ticket-category" id="day-passes">
+                        <h4>Day Passes</h4>
+                        <p class="category-description">Access to a single day of festivities</p>
+                            
+                            <div class="ticket-options">
+                                <div class="ticket-card" data-ticket-type="bf2026-friday-pass" data-price="50">
+                                    <h5>Friday Pass</h5>
                                 <div class="ticket-price">$50</div>
                                 <p class="ticket-description">May 16, 2026</p>
                                 <div class="quantity-selector">
@@ -209,8 +238,8 @@
                                 </div>
                             </div>
                             
-                            <div class="ticket-card" data-ticket-type="saturday-pass" data-price="85">
-                                <h4>Saturday Pass</h4>
+                                <div class="ticket-card" data-ticket-type="bf2026-saturday-pass" data-price="85">
+                                    <h5>Saturday Pass</h5>
                                 <div class="ticket-price">$85</div>
                                 <p class="ticket-description">May 17, 2026</p>
                                 <div class="quantity-selector">
@@ -220,8 +249,8 @@
                                 </div>
                             </div>
                             
-                            <div class="ticket-card" data-ticket-type="sunday-pass" data-price="50">
-                                <h4>Sunday Pass</h4>
+                                <div class="ticket-card" data-ticket-type="bf2026-sunday-pass" data-price="50">
+                                    <h5>Sunday Pass</h5>
                                 <div class="ticket-price">$50</div>
                                 <p class="ticket-description">May 18, 2026</p>
                                 <div class="quantity-selector">
@@ -230,17 +259,17 @@
                                     <button class="qty-btn plus" data-action="increase" type="button" aria-label="Increase quantity">+</button>
                                 </div>
                             </div>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <!-- Individual Items -->
-                    <div class="ticket-category">
-                        <h3>Individual Tickets</h3>
-                        <p class="category-description">Single workshop or social access</p>
                         
-                        <div class="ticket-options">
-                            <div class="ticket-card" data-ticket-type="single-workshop" data-price="30">
-                                <h4>Single Workshop</h4>
+                    <!-- Individual Items -->
+                    <div class="ticket-category" id="individual-tickets">
+                        <h4>Individual Tickets</h4>
+                        <p class="category-description">Single workshop or social access</p>
+                            
+                            <div class="ticket-options">
+                                <div class="ticket-card" data-ticket-type="bf2026-single-workshop" data-price="30">
+                                    <h5>Single Workshop</h5>
                                 <div class="ticket-price">$30</div>
                                 <p class="ticket-description">One workshop access</p>
                                 <div class="quantity-selector">
@@ -250,8 +279,8 @@
                                 </div>
                             </div>
                             
-                            <div class="ticket-card" data-ticket-type="single-social" data-price="20">
-                                <h4>Single Social</h4>
+                                <div class="ticket-card" data-ticket-type="bf2026-single-social" data-price="20">
+                                    <h5>Single Social</h5>
                                 <div class="ticket-price">$20</div>
                                 <p class="ticket-description">One social event access</p>
                                 <div class="quantity-selector">
@@ -260,23 +289,11 @@
                                     <button class="qty-btn plus" data-action="increase" type="button" aria-label="Increase quantity">+</button>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <div class="pricing-summary">
-                        <div class="total-section">
-                            <h3>Order Summary</h3>
-                            <div id="order-items"></div>
-                            <div class="total-final">
-                                <strong>Total: $<span id="final-total">0</span></strong>
                             </div>
                         </div>
                         
-                        <button class="checkout-btn" id="checkout-button" disabled type="button">
-                            Proceed to Checkout
-                        </button>
-                    </div>
-                </section>
+                </div>
+
                 
                 <!-- Payment Integration Container -->
                 <div id="payment-container" class="payment-container" style="display: none;">
@@ -331,9 +348,15 @@
     <script src="/js/typography.js"></script>
     <script src="/js/gallery-hero.js"></script>
     
+    <!-- Multi-event tickets functionality -->
+    <script src="/js/multi-event-tickets.js"></script>
+    
     <!-- Enhanced ticket selection with payment integration -->
     <script type="module" src="/js/payment-integration.js"></script>
     <script src="/js/ticket-selection.js"></script>
+    
+    <!-- Floating cart component -->
+    <script src="/js/floating-cart.js"></script>
     <script>
         function handleTicketForm(event) {
             event.preventDefault();
