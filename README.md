@@ -7,7 +7,10 @@ The official website for **A Lo Cubano Boulder Fest**, Boulder's premier Cuban s
 ## 🚀 Quick Start
 
 ### Prerequisites
-1. Copy `.env.example` to `.env.local` and add your Google Drive credentials
+1. Copy `.env.example` to `.env.local` and add your credentials:
+   - Google Drive API credentials for gallery integration
+   - Stripe API keys for payment processing
+   - SendGrid API key for email notifications
 2. Install Node.js dependencies: `npm install`
 
 ### Start the server
@@ -71,7 +74,14 @@ alocubano.boulderfest/
 │   ├── tickets.html
 │   └── donations.html
 ├── api/
-│   └── gallery.js (Serverless function for Google Drive API)
+│   ├── gallery.js (Google Drive API integration)
+│   ├── payment/ (Stripe payment processing)
+│   │   ├── create-checkout-session.js
+│   │   └── calculate-total.js
+│   ├── webhooks/ (Payment webhooks)
+│   │   └── stripe.js
+│   └── inventory/ (Ticket availability)
+│       └── check-availability.js
 └── images/
     ├── logo.png (Main logo)
     ├── social/ (Social media icons folder)
@@ -87,7 +97,8 @@ alocubano.boulderfest/
 - **Artists**: 2026 instructor lineup and workshops
 - **Schedule**: 3-day workshop and social schedule
 - **Gallery**: Dynamic media gallery with Google Drive integration, festival photos/videos
-- **Tickets**: Pricing tiers and registration
+- **Tickets**: Online ticket purchasing with secure payment processing
+- **Donations**: Support the festival with integrated donation system
 
 ### Technical
 - ✅ Typographic design system
@@ -102,6 +113,10 @@ alocubano.boulderfest/
 - ✅ Google Drive API integration for dynamic gallery
 - ✅ Lightbox viewer for photos and videos
 - ✅ Serverless functions on Vercel
+- ✅ Secure payment processing with Stripe integration
+- ✅ Multi-item cart system with real-time updates
+- ✅ Automated email receipts and notifications
+- ✅ PCI-compliant payment handling
 
 ## 👥 Board of Directors
 
@@ -109,6 +124,25 @@ alocubano.boulderfest/
 - **Vice President & Treasurer**: Damilola Elegbede
 - **Secretary**: Analis Ledesma
 - **Board Members**: Donal Solick, Yolanda Meiler
+
+## 💳 Payment System
+
+### Secure Payment Processing
+- **Payment Gateway**: Stripe (PCI Level 1 compliant)
+- **Supported Methods**: All major credit cards, digital wallets
+- **Security**: 3D Secure authentication, encrypted data handling
+- **Receipts**: Automated email confirmation and receipts
+
+### Cart Features
+- **Multi-item Cart**: Combine tickets and donations in single transaction
+- **Real-time Updates**: Dynamic pricing and availability checking
+- **Persistent Cart**: Cart contents saved across browser sessions
+- **Mobile Optimized**: Touch-friendly payment interface
+
+### Documentation
+- **Complete Guide**: [Payment System Documentation](payment/README.md)
+- **Setup Instructions**: [Payment Setup](payment/docs/setup/PAYMENT_SETUP.md)
+- **API Reference**: [Payment API](payment/docs/development/API_REFERENCE.md)
 
 ## 🎟️ Ticket Information
 

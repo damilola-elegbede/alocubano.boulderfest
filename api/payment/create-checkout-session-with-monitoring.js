@@ -154,15 +154,15 @@ async function handler(req, res) {
 
   try {
     // Track checkout start for analytics
-    const items = req.body.items || [];
+    const rawItems = req.body.items || [];
     const totalAmount = req.body.totalAmount || 0;
     
-    if (items.length > 0) {
-      trackBeginCheckout(items, totalAmount);
+    if (rawItems.length > 0) {
+      trackBeginCheckout(rawItems, totalAmount);
       
       // Track conversion step
       businessIntelligence.trackConversionStep('begin_checkout', requestId, {
-        itemCount: items.length,
+        itemCount: rawItems.length,
         totalAmount,
         userAgent: req.headers['user-agent']
       });
@@ -199,7 +199,7 @@ async function handler(req, res) {
     }
 
     // Sanitize input data
-    const { items: rawItems, customerInfo: rawCustomerInfo } = req.body;
+    const { customerInfo: rawCustomerInfo } = req.body;
     const customerInfo = sanitizeCustomerInfo(rawCustomerInfo);
     const items = sanitizeItems(rawItems);
 

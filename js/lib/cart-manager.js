@@ -1260,6 +1260,9 @@ class CartManager extends EventTarget {
 CartManager.instance = null;
 CartManager.DEBUG = false;
 
+// Export for ES modules
+export default CartManager;
+
 // Make CartManager available globally for non-module scripts
 if (typeof window !== 'undefined') {
     window.CartManager = CartManager;
