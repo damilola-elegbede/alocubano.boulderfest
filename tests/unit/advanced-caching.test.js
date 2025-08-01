@@ -30,12 +30,12 @@ const createMockResponse = (data, options = {}) => {
 const createMockServiceWorker = () => {
   const mockSW = {
     caches: new Map(),
-    skipWaiting: jest.fn(),
+    skipWaiting: vi.fn(),
     clients: {
-      claim: jest.fn()
+      claim: vi.fn()
     },
-    addEventListener: jest.fn(),
-    postMessage: jest.fn()
+    addEventListener: vi.fn(),
+    postMessage: vi.fn()
   };
   
   // Mock cache API
@@ -87,7 +87,7 @@ describe('Advanced Caching System - Phase 2', () => {
     document.body.innerHTML = '';
     
     // Mock fetch
-    mockFetch = jest.fn();
+    mockFetch = vi.fn();
     global.fetch = mockFetch;
     
     // Mock service worker
@@ -102,15 +102,15 @@ describe('Advanced Caching System - Phase 2', () => {
         uplink: 5,
         rtt: 100,
         saveData: false,
-        addEventListener: jest.fn()
+        addEventListener: vi.fn()
       },
       deviceMemory: 8,
       hardwareConcurrency: 8,
       serviceWorker: {
         controller: {
-          postMessage: jest.fn()
+          postMessage: vi.fn()
         },
-        addEventListener: jest.fn()
+        addEventListener: vi.fn()
       }
     };
     
@@ -123,8 +123,8 @@ describe('Advanced Caching System - Phase 2', () => {
     global.performance = {
       now: jest.fn(() => Date.now()),
       getEntriesByType: jest.fn(() => []),
-      mark: jest.fn(),
-      measure: jest.fn()
+      mark: vi.fn(),
+      measure: vi.fn()
     };
     
     // Mock requestIdleCallback
@@ -133,7 +133,7 @@ describe('Advanced Caching System - Phase 2', () => {
     });
     
     // Clear all mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Service Worker Cache Strategies', () => {
@@ -679,9 +679,9 @@ describe('Advanced Caching System - Phase 2', () => {
       
       // Override the cache open to return a mock that fails appropriately
       const originalCacheOpen = global.caches.open;
-      global.caches.open = jest.fn().mockResolvedValue({
-        addAll: jest.fn().mockRejectedValue(new Error('Batch add failed')),
-        add: jest.fn().mockImplementation((resource) => {
+      global.caches.open = vi.fn().mockResolvedValue({
+        addAll: vi.fn().mockRejectedValue(new Error('Batch add failed')),
+        add: vi.fn().mockImplementation((resource) => {
           if (resource.includes('nonexistent.js')) {
             throw new Error('404 Not Found');
           }
