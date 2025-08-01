@@ -80,3 +80,6 @@ docs/technical/
 
 # Temporary payment directory (if auto-generated)
 payment/
+
+# Disabled workflows (temporarily disabled for revamp)
+.github/workflows-disabled/
