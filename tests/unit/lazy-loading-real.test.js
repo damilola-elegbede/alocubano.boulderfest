@@ -1,4 +1,6 @@
 /**
+
+import { vi } from 'vitest';
  * Lazy Loading Component Tests - Real Source Code
  * Testing actual LazyLoader class from js/components/lazy-loading.js
  */
@@ -24,12 +26,12 @@ describe('LazyLoader Real Source Code Integration', () => {
   const setupLazyLoadingEnvironment = () => {
     // Mock IntersectionObserver with callback capture
     mockIntersectionObserver = {
-      observe: jest.fn(),
-      unobserve: jest.fn(),
-      disconnect: jest.fn()
+      observe: vi.fn(),
+      unobserve: vi.fn(),
+      disconnect: vi.fn()
     };
 
-    global.IntersectionObserver = jest.fn().mockImplementation((callback, options) => {
+    global.IntersectionObserver = vi.fn().mockImplementation((callback, options) => {
       observeCallback = callback; // Capture the callback for testing
       return mockIntersectionObserver;
     });
@@ -50,7 +52,7 @@ describe('LazyLoader Real Source Code Integration', () => {
     document.body.innerHTML = '';
     
     // Reset mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     lazyLoaderLoaded = false;
     
     // Set up environment

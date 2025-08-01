@@ -1288,10 +1288,7 @@ if (typeof window !== 'undefined' && !window.performanceMonitor) {
     };
 }
 
-// Export for module usage
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = PerformanceMonitor;
-}
+// CommonJS export removed to avoid conflicts with ES6 modules
 
 // Export for ES6 modules (handled by bundlers)
-// export default PerformanceMonitor;
+export default PerformanceMonitor;

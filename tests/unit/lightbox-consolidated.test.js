@@ -1,4 +1,6 @@
 /**
+
+import { vi } from 'vitest';
  * Consolidated Lightbox Tests - Testing Actual Source Code
  * Replaces 3 redundant lightbox test files
  */
@@ -27,7 +29,7 @@ const createMockLightboxElement = () => {
     alt: '', 
     style: { opacity: '1' }, 
     onerror: null, 
-    parentElement: { appendChild: jest.fn() }
+    parentElement: { appendChild: vi.fn() }
   };
   
   const mockCounter = { 
@@ -63,17 +65,17 @@ const createMockLightboxElement = () => {
       })
     },
     style: { display: 'none' },
-    remove: jest.fn(),
+    remove: vi.fn(),
     querySelector: jest.fn((selector) => {
       if (selector.includes('lightbox-image')) return mockImage;
       if (selector.includes('lightbox-title')) return mockTitle;
       if (selector.includes('lightbox-counter')) return mockCounter;
-      if (selector.includes('lightbox-close')) return { addEventListener: jest.fn() };
-      if (selector.includes('lightbox-prev')) return { addEventListener: jest.fn(), style: { display: 'block' } };
-      if (selector.includes('lightbox-next')) return { addEventListener: jest.fn(), style: { display: 'block' } };
+      if (selector.includes('lightbox-close')) return { addEventListener: vi.fn() };
+      if (selector.includes('lightbox-prev')) return { addEventListener: vi.fn(), style: { display: 'block' } };
+      if (selector.includes('lightbox-next')) return { addEventListener: vi.fn(), style: { display: 'block' } };
       return null;
     }),
-    addEventListener: jest.fn(),
+    addEventListener: vi.fn(),
     
     // Store references to mock elements for easier access
     _mockElements: {
@@ -90,7 +92,7 @@ const mockLightboxElement = createMockLightboxElement();
 if (!global.document) global.document = {};
 if (!global.document.body) global.document.body = {};
 
-global.document.body.insertAdjacentHTML = jest.fn();
+global.document.body.insertAdjacentHTML = vi.fn();
 global.document.getElementById = jest.fn((id) => {
   if (id.includes('lightbox')) return mockLightboxElement;
   return null;
@@ -100,16 +102,16 @@ global.document.querySelectorAll = jest.fn((selector) => {
   if (selector === '.gallery-image') {
     // Return mock NodeList with addEventListener method
     return [
-      {src: 'image1.jpg', addEventListener: jest.fn()}, 
-      {src: 'image2.jpg', addEventListener: jest.fn()}, 
-      {src: 'image3.jpg', addEventListener: jest.fn()}
+      {src: 'image1.jpg', addEventListener: vi.fn()}, 
+      {src: 'image2.jpg', addEventListener: vi.fn()}, 
+      {src: 'image3.jpg', addEventListener: vi.fn()}
     ];
   }
   if (selector === '.test-gallery') {
     // Return only 2 images for the test-gallery selector
     return [
-      {src: 'image1.jpg', addEventListener: jest.fn()}, 
-      {src: 'image2.jpg', addEventListener: jest.fn()}
+      {src: 'image1.jpg', addEventListener: vi.fn()}, 
+      {src: 'image2.jpg', addEventListener: vi.fn()}
     ];
   }
   if (selector === '#unified-lightbox') {
@@ -313,7 +315,7 @@ describe('Lightbox Component', () => {
     document.body.innerHTML = '';
     
     // Reset jest mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     
     // Create a fresh mock lightbox element for each test
     const freshMockElement = createMockLightboxElement();
@@ -330,15 +332,15 @@ describe('Lightbox Component', () => {
     global.document.querySelectorAll = jest.fn((selector) => {
       if (selector === '.gallery-image') {
         return [
-          {src: 'image1.jpg', addEventListener: jest.fn()}, 
-          {src: 'image2.jpg', addEventListener: jest.fn()}, 
-          {src: 'image3.jpg', addEventListener: jest.fn()}
+          {src: 'image1.jpg', addEventListener: vi.fn()}, 
+          {src: 'image2.jpg', addEventListener: vi.fn()}, 
+          {src: 'image3.jpg', addEventListener: vi.fn()}
         ];
       }
       if (selector === '.test-gallery') {
         return [
-          {src: 'image1.jpg', addEventListener: jest.fn()}, 
-          {src: 'image2.jpg', addEventListener: jest.fn()}
+          {src: 'image1.jpg', addEventListener: vi.fn()}, 
+          {src: 'image2.jpg', addEventListener: vi.fn()}
         ];
       }
       if (selector === '#unified-lightbox') {
@@ -443,7 +445,7 @@ describe('Lightbox Navigation', () => {
 
   beforeEach(() => {
     document.body.innerHTML = '';
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     
     // Create a fresh mock lightbox element for each test
     const freshMockElement = createMockLightboxElement();
@@ -457,15 +459,15 @@ describe('Lightbox Navigation', () => {
     global.document.querySelectorAll = jest.fn((selector) => {
       if (selector === '.gallery-image') {
         return [
-          {src: 'image1.jpg', addEventListener: jest.fn()}, 
-          {src: 'image2.jpg', addEventListener: jest.fn()}, 
-          {src: 'image3.jpg', addEventListener: jest.fn()}
+          {src: 'image1.jpg', addEventListener: vi.fn()}, 
+          {src: 'image2.jpg', addEventListener: vi.fn()}, 
+          {src: 'image3.jpg', addEventListener: vi.fn()}
         ];
       }
       if (selector === '.test-gallery') {
         return [
-          {src: 'image1.jpg', addEventListener: jest.fn()}, 
-          {src: 'image2.jpg', addEventListener: jest.fn()}
+          {src: 'image1.jpg', addEventListener: vi.fn()}, 
+          {src: 'image2.jpg', addEventListener: vi.fn()}
         ];
       }
       if (selector === '#unified-lightbox') {
@@ -638,7 +640,7 @@ describe('Lightbox Navigation', () => {
     const lightboxElement = document.getElementById('unified-lightbox');
     
     // Mock close method
-    const closeSpy = jest.spyOn(lightbox, 'close');
+    const closeSpy = vi.spyOn(lightbox, 'close');
     
     // Test that close method works correctly
     lightbox.close();
@@ -671,7 +673,7 @@ describe('Lightbox Counter', () => {
 
   beforeEach(() => {
     document.body.innerHTML = '';
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     
     // Create a fresh mock lightbox element for each test
     const freshMockElement = createMockLightboxElement();
@@ -685,15 +687,15 @@ describe('Lightbox Counter', () => {
     global.document.querySelectorAll = jest.fn((selector) => {
       if (selector === '.gallery-image') {
         return [
-          {src: 'image1.jpg', addEventListener: jest.fn()}, 
-          {src: 'image2.jpg', addEventListener: jest.fn()}, 
-          {src: 'image3.jpg', addEventListener: jest.fn()}
+          {src: 'image1.jpg', addEventListener: vi.fn()}, 
+          {src: 'image2.jpg', addEventListener: vi.fn()}, 
+          {src: 'image3.jpg', addEventListener: vi.fn()}
         ];
       }
       if (selector === '.test-gallery') {
         return [
-          {src: 'image1.jpg', addEventListener: jest.fn()}, 
-          {src: 'image2.jpg', addEventListener: jest.fn()}
+          {src: 'image1.jpg', addEventListener: vi.fn()}, 
+          {src: 'image2.jpg', addEventListener: vi.fn()}
         ];
       }
       if (selector === '#unified-lightbox') {

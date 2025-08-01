@@ -1,0 +1,198 @@
+/**
+ * Brevo Webhook Handler
+ * Processes incoming webhook events from Brevo
+ */
+
+import { getEmailSubscriberService } from '../lib/email-subscriber-service.js';
+import { getBrevoService } from '../lib/brevo-service.js';
+
+/**
+ * Get raw body from request
+ */
+function getRawBody(req) {
+    return new Promise((resolve, reject) => {
+        let body = '';
+        req.setEncoding('utf8');
+        req.on('data', chunk => {
+            body += chunk;
+        });
+        req.on('end', () => {
+            resolve(body);
+        });
+        req.on('error', reject);
+    });
+}
+
+/**
+ * Get client IP address
+ */
+function getClientIp(req) {
+    return req.headers['x-forwarded-for'] ||
+           req.connection?.remoteAddress ||
+           req.socket?.remoteAddress ||
+           (req.connection?.socket?.remoteAddress) ||
+           '127.0.0.1';
+}
+
+/**
+ * Validate webhook source (basic IP whitelist)
+ */
+function isValidWebhookSource(ip) {
+    // Brevo webhook IPs (update with actual Brevo webhook IPs)
+    const allowedIPs = [
+        '185.41.28.0/24',
+        '185.41.29.0/24',
+        '217.70.184.0/24'
+    ];
+    
+    // In production, implement proper IP range checking
+    // For now, allow all (remove this in production)
+    return true;
+}
+
+/**
+ * Main handler function
+ */
+export default async function handler(req, res) {
+    // Only allow POST requests
+    if (req.method !== 'POST') {
+        return res.status(405).json({ 
+            error: 'Method not allowed. Use POST.' 
+        });
+    }
+    
+    try {
+        // Validate webhook source
+        const clientIP = getClientIp(req);
+        if (!isValidWebhookSource(clientIP)) {
+            console.warn('Webhook request from unauthorized IP:', clientIP);
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+        
+        // Get raw body for signature verification
+        const rawBody = await getRawBody(req);
+        
+        // Validate webhook signature if secret is configured
+        if (process.env.BREVO_WEBHOOK_SECRET) {
+            const signature = req.headers['x-brevo-signature'];
+            if (!signature) {
+                return res.status(401).json({ error: 'Missing webhook signature' });
+            }
+            
+            const brevoService = getBrevoService();
+            const isValidSignature = brevoService.validateWebhookSignature(rawBody, signature);
+            
+            if (!isValidSignature) {
+                console.warn('Invalid webhook signature from IP:', clientIP);
+                return res.status(401).json({ error: 'Invalid signature' });
+            }
+        }
+        
+        // Parse webhook data
+        let webhookData;
+        try {
+            webhookData = JSON.parse(rawBody);
+        } catch (error) {
+            return res.status(400).json({ error: 'Invalid JSON payload' });
+        }
+        
+        // Validate required webhook fields
+        if (!webhookData.event || !webhookData.email) {
+            return res.status(400).json({ 
+                error: 'Missing required webhook fields (event, email)' 
+            });
+        }
+        
+        console.log('Processing Brevo webhook:', {
+            event: webhookData.event,
+            email: webhookData.email,
+            timestamp: webhookData.date || new Date().toISOString(),
+            ip: clientIP
+        });
+        
+        // Get services
+        const emailService = getEmailSubscriberService();
+        
+        // Process the webhook event
+        const processedEvent = await emailService.processWebhookEvent(webhookData);
+        
+        if (!processedEvent) {
+            // Subscriber not found in our database, but that's OK
+            console.log('Webhook processed but subscriber not found:', webhookData.email);
+            return res.status(200).json({ 
+                success: true, 
+                message: 'Webhook processed (subscriber not found)' 
+            });
+        }
+        
+        // Handle specific event types
+        let responseMessage = 'Webhook processed successfully';
+        
+        switch (webhookData.event) {
+            case 'delivered':
+                responseMessage = 'Email delivery recorded';
+                break;
+                
+            case 'opened':
+                responseMessage = 'Email open recorded';
+                break;
+                
+            case 'clicked':
+                responseMessage = 'Email click recorded';
+                break;
+                
+            case 'unsubscribed':
+                responseMessage = 'Unsubscribe processed';
+                break;
+                
+            case 'soft_bounce':
+                responseMessage = 'Soft bounce recorded';
+                break;
+                
+            case 'hard_bounce':
+                responseMessage = 'Hard bounce processed, contact marked as bounced';
+                break;
+                
+            case 'spam':
+                responseMessage = 'Spam complaint processed, contact marked as bounced';
+                break;
+                
+            case 'invalid_email':
+                responseMessage = 'Invalid email processed, contact marked as bounced';
+                break;
+                
+            default:
+                responseMessage = `Unknown event type processed: ${webhookData.event}`;
+        }
+        
+        // Return success response
+        return res.status(200).json({
+            success: true,
+            message: responseMessage,
+            event: processedEvent
+        });
+        
+    } catch (error) {
+        console.error('Brevo webhook processing error:', {
+            error: error.message,
+            stack: error.stack,
+            webhook_data: req.body,
+            ip: getClientIp(req),
+            timestamp: new Date().toISOString()
+        });
+        
+        // Return error response (but don't expose internal details)
+        return res.status(500).json({
+            error: 'Internal server error processing webhook'
+        });
+    }
+}
+
+/**
+ * Vercel edge config (if using Vercel)
+ */
+export const config = {
+    runtime: 'nodejs',
+    regions: ['iad1'], // Use region closest to Brevo servers
+    maxDuration: 10 // 10 seconds max execution time
+};
