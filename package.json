@@ -13,7 +13,7 @@
     "performance:audit": "lighthouse http://localhost:8000 --output-path=./performance-audit.html --save-assets",
     "test": "jest",
     "test:fast": "jest --passWithNoTests",
-    "test:unit": "jest --passWithNoTests",
+    "test:unit": "jest",
     "test:links": "echo 'Link validation passed - no links to test yet'",
     "lint": "npm run lint:js && npm run lint:html",
     "lint:js": "eslint --config config/eslint.config.js js/**/*.js",
