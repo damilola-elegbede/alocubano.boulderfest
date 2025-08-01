@@ -19,7 +19,7 @@ class ImageCacheManager {
         this.imageDataCache = this.loadImageDataCache();
         this.lastApiCall = 0;
         this.minApiInterval = 2000; // Minimum 2 seconds between API calls
-        
+
         // Format-aware caching defaults
         this.defaultFormat = 'webp';
         this.fallbackFormat = 'jpeg';
@@ -59,7 +59,7 @@ class ImageCacheManager {
         const format = options.format || this.defaultFormat;
         const width = options.width || this.defaultWidth;
         const quality = options.quality || '85';
-        
+
         return `${fileId}_${format}_${width}_q${quality}`;
     }
 
@@ -78,29 +78,29 @@ class ImageCacheManager {
         let width = options.width || this.defaultWidth;
         const quality = options.quality || '85';
         const cache = options.cache || '24h';
-        
+
         // Validate format
         if (!this.supportedFormats.includes(format)) {
             console.warn(`Unsupported format '${format}', falling back to ${this.fallbackFormat}`);
             format = this.fallbackFormat;
         }
-        
+
         // Validate width
         if (!this.supportedWidths.includes(width)) {
-            const closestWidth = this.supportedWidths.reduce((prev, curr) => 
+            const closestWidth = this.supportedWidths.reduce((prev, curr) =>
                 Math.abs(curr - width) < Math.abs(prev - width) ? curr : prev
             );
             console.warn(`Unsupported width '${width}', using closest width ${closestWidth}`);
             width = closestWidth;
         }
-        
+
         const params = new URLSearchParams({
             format,
             width: width.toString(),
             quality,
             cache
         });
-        
+
         return `/api/image-proxy/${fileId}?${params.toString()}`;
     }
 
@@ -113,7 +113,7 @@ class ImageCacheManager {
     isImageVariantCached(fileId, options = {}) {
         const cacheKey = this.getCacheKey(fileId, options);
         const cached = this.imageDataCache[cacheKey];
-        
+
         if (!cached) {
             return false;
         }
@@ -135,7 +135,7 @@ class ImageCacheManager {
      */
     cacheImageVariant(fileId, url, options = {}, name = 'Unknown') {
         const cacheKey = this.getCacheKey(fileId, options);
-        
+
         this.imageDataCache[cacheKey] = {
             url: url,
             name: name,
@@ -144,7 +144,7 @@ class ImageCacheManager {
             quality: options.quality || '85',
             timestamp: Date.now()
         };
-        
+
         this.saveImageDataCache();
         console.log(`📦 Cached image variant: ${name} (${options.format || this.defaultFormat}, ${options.width || this.defaultWidth}px)`);
     }
@@ -185,12 +185,12 @@ class ImageCacheManager {
         }
 
         this.lastApiCall = Date.now();
-        
+
         // Use new format-aware URL generation if options are provided
         if (options.format || options.width) {
             return this.getImageUrl(fileId, options);
         }
-        
+
         // Fallback to legacy URL for backward compatibility
         return `/api/image-proxy/${fileId}?size=medium&quality=85&cache=24h`;
     }
@@ -248,8 +248,8 @@ class ImageCacheManager {
         // 3. Check if the specific variant is cached
         if (this.isImageVariantCached(fileId, options)) {
             const cachedData = this.getCachedImageVariant(fileId, options);
-            console.log(`📦 Using cached optimized image for ${pageId}:`, assignedImage.name, 
-                       `(${cachedData.format}, ${cachedData.width}px)`);
+            console.log(`📦 Using cached optimized image for ${pageId}:`, assignedImage.name,
+                `(${cachedData.format}, ${cachedData.width}px)`);
             return {
                 id: fileId,
                 url: cachedData.url,
@@ -262,19 +262,19 @@ class ImageCacheManager {
 
         // 4. Generate new optimized URL and cache it
         console.log(`🔄 Generating optimized image for ${pageId}:`, assignedImage.name,
-                   `(${options.format || this.defaultFormat}, ${options.width || this.defaultWidth}px)`);
-        
+            `(${options.format || this.defaultFormat}, ${options.width || this.defaultWidth}px)`);
+
         const url = await this.rateLimitedApiCall(fileId, options);
         this.cacheImageVariant(fileId, url, options, assignedImage.name);
 
         console.log(`🖼️ New optimized image assigned for ${pageId}:`, assignedImage.name);
-        return { 
-            id: fileId, 
-            url: url, 
+        return {
+            id: fileId,
+            url: url,
             name: assignedImage.name,
             format: options.format || this.defaultFormat,
             width: options.width || this.defaultWidth,
-            cached: false 
+            cached: false
         };
     }
 
@@ -405,7 +405,7 @@ class ImageCacheManager {
     clearCache() {
         this.imageDataCache = {};
         this.sessionAssignments = null;
-        
+
         try {
             localStorage.removeItem(this.imageCacheKey);
             sessionStorage.removeItem(this.cacheKey);
@@ -423,10 +423,10 @@ class ImageCacheManager {
         const totalEntries = Object.keys(this.imageDataCache).length;
         const variantEntries = Object.keys(this.imageDataCache).filter(key => key.includes('_')).length;
         const legacyEntries = totalEntries - variantEntries;
-        
+
         const cacheSize = JSON.stringify(this.imageDataCache).length;
         const sessionSize = JSON.stringify(this.sessionAssignments || {}).length;
-        
+
         return {
             totalEntries,
             variantEntries,

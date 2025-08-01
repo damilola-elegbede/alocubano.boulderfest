@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Payment Issue - A Lo Cubano Boulder Fest</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Open+Sans:wght@400;600;700&display=swap');
+        
+        /* Reset styles */
+        body, table, td, p, h1, h2, h3 {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            outline: 0;
+        }
+        
+        body {
+            font-family: 'Open Sans', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            width: 100% !important;
+            min-width: 100%;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        
+        table {
+            border-collapse: collapse;
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        
+        img {
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+            -ms-interpolation-mode: bicubic;
+        }
+        
+        /* Main container */
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Header with gradient background */
+        .header {
+            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #d32f2f 100%);
+            color: #ffffff;
+            padding: 50px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
+        
+        .logo {
+            font-family: 'Bebas Neue', 'Arial Black', cursive;
+            font-size: 56px;
+            font-weight: 400;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .tagline {
+            font-size: 18px;
+            font-weight: 600;
+            opacity: 0.95;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .festival-date {
+            font-size: 14px;
+            margin-top: 8px;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Content area */
+        .content {
+            padding: 50px 40px;
+            background-color: #ffffff;
+        }
+        
+        .alert-icon {
+            text-align: center;
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: #ff6b35;
+        }
+        
+        .alert-title {
+            font-family: 'Bebas Neue', 'Arial Black', cursive;
+            font-size: 36px;
+            color: #ff6b35;
+            margin-bottom: 25px;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+        
+        .alert-subtitle {
+            font-size: 18px;
+            color: #666666;
+            text-align: center;
+            margin-bottom: 35px;
+            font-style: italic;
+        }
+        
+        .message {
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 25px;
+            color: #444444;
+        }
+        
+        /* Issue details card */
+        .issue-card {
+            background: linear-gradient(145deg, #fff5f5, #fee);
+            border: 1px solid #fed7d7;
+            border-left: 5px solid #ff6b35;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 35px 0;
+            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.1);
+        }
+        
+        .issue-title {
+            font-family: 'Bebas Neue', 'Arial Black', cursive;
+            font-size: 24px;
+            color: #d32f2f;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+        
+        .issue-description {
+            font-size: 15px;
+            color: #666666;
+            background-color: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 20px;
+        }
+        
+        .help-message {
+            font-size: 14px;
+            color: #718096;
+            font-style: italic;
+        }
+        
+        /* Retry button */
+        .retry-section {
+            text-align: center;
+            margin: 40px 0;
+            padding: 30px;
+            background: linear-gradient(145deg, #f7fafc, #edf2f7);
+            border-radius: 12px;
+            border: 2px dashed #ff6b35;
+        }
+        
+        .retry-message {
+            font-size: 16px;
+            color: #444444;
+            margin-bottom: 25px;
+            line-height: 1.7;
+        }
+        
+        .retry-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b35, #d32f2f);
+            color: #ffffff !important;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+            border: none;
+            cursor: pointer;
+        }
+        
+        .retry-button:hover {
+            background: linear-gradient(135deg, #e55a2b, #b71c1c);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
+        }
+        
+        /* Support section */
+        .support-section {
+            background: linear-gradient(135deg, #e6fffa, #b2f5ea);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 35px 0;
+            text-align: center;
+        }
+        
+        .support-title {
+            font-family: 'Bebas Neue', 'Arial Black', cursive;
+            font-size: 24px;
+            color: #2d3748;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+        
+        .support-message {
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 20px;
+            line-height: 1.7;
+        }
+        
+        .support-contact {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .support-email {
+            color: #d32f2f;
+            text-decoration: none;
+            font-weight: 700;
+        }
+        
+        .support-email:hover {
+            text-decoration: underline;
+        }
+        
+        /* Footer */
+        .footer {
+            background: linear-gradient(135deg, #2c2c2c, #1a1a1a);
+            color: #ffffff;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .footer-logo {
+            font-family: 'Bebas Neue', 'Arial Black', cursive;
+            font-size: 32px;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+        }
+        
+        .footer-info {
+            font-size: 14px;
+            line-height: 1.8;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+        
+        .footer-contact {
+            font-size: 13px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #444444;
+            opacity: 0.8;
+        }
+        
+        .social-link {
+            color: #ff6b35;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .social-link:hover {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+        
+        /* Responsive design */
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            
+            .header, .content, .footer {
+                padding: 30px 20px !important;
+            }
+            
+            .logo {
+                font-size: 42px !important;
+            }
+            
+            .alert-title {
+                font-size: 28px !important;
+            }
+            
+            .issue-card, .retry-section, .support-section {
+                padding: 20px !important;
+                margin: 25px 0 !important;
+            }
+            
+            .retry-button {
+                padding: 14px 24px !important;
+                font-size: 14px !important;
+            }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .email-container {
+                background-color: #1a1a1a !important;
+            }
+            
+            .content {
+                background-color: #1a1a1a !important;
+                color: #e0e0e0 !important;
+            }
+            
+            .message, .retry-message, .support-message {
+                color: #cccccc !important;
+            }
+            
+            .issue-card {
+                background: linear-gradient(145deg, #2a1f1f, #3a2a2a) !important;
+                border-color: #664444 !important;
+            }
+            
+            .retry-section, .support-section {
+                background: linear-gradient(145deg, #2a2a2a, #333333) !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+        <tr>
+            <td>
+                <div class="email-container">
+                    <!-- Header -->
+                    <div class="header">
+                        <div class="logo">A LO CUBANO</div>
+                        <div class="tagline">Boulder Fest</div>
+                        <div class="festival-date">May 15-17, 2026</div>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div class="content">
+                        <div class="alert-icon">⚠️</div>
+                        <h1 class="alert-title">Payment Issue</h1>
+                        <p class="alert-subtitle">Don't worry - we can fix this together!</p>
+                        
+                        <p class="message">
+                            Hi {{customerName}},
+                        </p>
+                        
+                        <p class="message">
+                            We encountered a small hiccup while processing your payment for A Lo Cubano Boulder Fest. This happens sometimes, and it's usually easy to resolve!
+                        </p>
+                        
+                        <!-- Issue Details -->
+                        <div class="issue-card">
+                            <div class="issue-title">What happened?</div>
+                            <div class="issue-description">{{failureReason}}</div>
+                            <div class="help-message">
+                                This is typically due to temporary network issues, bank verification requirements, or card security checks.
+                            </div>
+                        </div>
+                        
+                        <!-- Retry Section -->
+                        <div class="retry-section">
+                            <p class="retry-message">
+                                The good news? You can try again right now! Most payment issues resolve immediately on the second attempt.
+                            </p>
+                            
+                            <a href="{{retryUrl}}" class="retry-button">
+                                Try Payment Again
+                            </a>
+                        </div>
+                        
+                        <!-- Support Section -->
+                        <div class="support-section">
+                            <div class="support-title">Need Help?</div>
+                            <p class="support-message">
+                                If you continue to experience issues, our team is here to help! We respond to all emails within 24 hours.
+                            </p>
+                            <div class="support-contact">
+                                Contact us: <a href="mailto:alocubanoboulderfest@gmail.com" class="support-email">alocubanoboulderfest@gmail.com</a>
+                            </div>
+                        </div>
+                        
+                        <p class="message">
+                            We're committed to making sure you can join us for this incredible Cuban salsa experience. Don't let a technical glitch stop you from dancing!
+                        </p>
+                        
+                        <p class="message">
+                            <strong>Gracias for your patience,</strong><br>
+                            The A Lo Cubano Boulder Fest Team
+                        </p>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="footer">
+                        <div class="footer-logo">A LO CUBANO BOULDER FEST</div>
+                        <div class="footer-info">May 15-17, 2026</div>
+                        <div class="footer-info">Avalon Ballroom</div>
+                        <div class="footer-info">6185 Arapahoe Rd, Boulder, CO 80303</div>
+                        
+                        <div class="footer-contact">
+                            Questions? Contact us at 
+                            <a href="mailto:alocubanoboulderfest@gmail.com" class="social-link">alocubanoboulderfest@gmail.com</a>
+                            <br>
+                            Follow us: <a href="https://www.instagram.com/alocubano.boulderfest/" class="social-link">@alocubano.boulderfest</a>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

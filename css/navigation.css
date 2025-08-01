@@ -21,7 +21,7 @@
 
 .typographic .grid {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
   gap: var(--space-lg);
 }
@@ -31,6 +31,14 @@
   display: flex;
   align-items: center;
   gap: var(--space-md);
+}
+
+/* Header Right Section - Cart Icon */
+.typographic .header-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  z-index: 999; /* Below dropdowns (1100) but above general content */
 }
 
 .typographic .logo-link {
@@ -408,6 +416,14 @@
     top: var(--space-lg);
     right: var(--space-xl);
     z-index: 1001 !important; /* Always above mobile menu */
+  }
+
+  /* Mobile header right positioning - cart to the left of hamburger */
+  .typographic .header-right {
+    position: fixed;
+    top: var(--space-lg);
+    right: calc(var(--space-xl) + 50px); /* Position to left of hamburger menu */
+    z-index: 1002; /* Above mobile menu toggle but below dropdowns */
   }
   
   /* Mobile navigation - starts off-screen, slides in when opened */
@@ -874,7 +890,7 @@ main, .main-content {
   /* Mobile dropdown items styling */
   .nav-dropdown-link {
     padding: var(--space-md) var(--mobile-dropdown-padding);
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-lg);
     border-left: 3px solid transparent;
     margin-bottom: var(--space-xs);
     background: rgba(255, 255, 255, 0.1);

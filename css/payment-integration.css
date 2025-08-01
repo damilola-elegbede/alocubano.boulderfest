@@ -1,0 +1,1115 @@
+/**
+ * Payment Integration Styles for A Lo Cubano Boulder Fest
+ * Typography-forward design with accessibility and mobile-first approach
+ */
+
+/* ==========================================================================
+   PAYMENT CONTAINER & LAYOUT
+   ========================================================================== */
+
+.payment-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-lg);
+}
+
+.payment-step {
+  display: none;
+  animation: fadeInSlide 0.4s ease-out;
+}
+
+.payment-step.active {
+  display: block;
+}
+
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   STEP HEADER
+   ========================================================================== */
+
+.step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2xl);
+  padding-bottom: var(--space-lg);
+  border-bottom: 2px solid var(--color-gray-200);
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: transparent;
+  border: 2px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-gray-700);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.back-btn:hover {
+  border-color: var(--color-blue);
+  color: var(--color-blue);
+  transform: translateX(-2px);
+}
+
+.back-btn:focus-visible {
+  outline: 2px solid var(--color-blue);
+  outline-offset: 2px;
+}
+
+.back-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.step-title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-3xl);
+  font-weight: 900;
+  color: var(--color-black);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.step-progress {
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  font-weight: 500;
+}
+
+.progress-indicator {
+  background: var(--color-blue);
+  color: var(--color-white);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+}
+
+/* ==========================================================================
+   CUSTOMER INFO FORM
+   ========================================================================== */
+
+.customer-info-step {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--space-3xl);
+  align-items: start;
+}
+
+.customer-form {
+  background: var(--color-white);
+  padding: var(--space-2xl);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.form-group {
+  margin-bottom: var(--space-xl);
+}
+
+.form-label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--color-black);
+  margin-bottom: var(--space-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.form-input {
+  width: 100%;
+  padding: var(--space-md);
+  border: 2px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  color: var(--color-black);
+  background: var(--color-white);
+  transition: all var(--transition-base);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-blue);
+  box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.1);
+}
+
+.form-input.error {
+  border-color: var(--color-red);
+  box-shadow: 0 0 0 3px rgba(204, 41, 54, 0.1);
+}
+
+.form-input:disabled {
+  background: var(--color-gray-100);
+  color: var(--color-gray-500);
+  cursor: not-allowed;
+}
+
+.field-error {
+  display: none;
+  color: var(--color-red);
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-xs);
+  font-weight: 500;
+}
+
+.field-error:not(:empty) {
+  display: block;
+}
+
+.field-help {
+  color: var(--color-gray-600);
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-xs);
+  font-style: italic;
+}
+
+.form-actions {
+  margin-top: var(--space-2xl);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.continue-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-xl);
+  background: var(--color-red);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  min-height: 50px;
+}
+
+.continue-btn:hover:not(:disabled) {
+  background: var(--color-black);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.continue-btn:disabled {
+  background: var(--color-gray-400);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.continue-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ==========================================================================
+   PAYMENT FORM
+   ========================================================================== */
+
+.payment-form-step {
+  display: block;
+}
+
+.payment-content {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-3xl);
+  align-items: start;
+}
+
+.payment-form-container {
+  background: var(--color-white);
+  padding: var(--space-2xl);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.customer-info-display {
+  background: var(--color-gray-100);
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2xl);
+}
+
+.customer-info-display h3 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-black);
+  margin-bottom: var(--space-md);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.customer-info-display p {
+  margin: var(--space-xs) 0;
+  color: var(--color-gray-800);
+}
+
+.edit-info-btn {
+  background: transparent;
+  border: 1px solid var(--color-blue);
+  color: var(--color-blue);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  margin-top: var(--space-sm);
+}
+
+.edit-info-btn:hover {
+  background: var(--color-blue);
+  color: var(--color-white);
+}
+
+.payment-element-container {
+  margin-bottom: var(--space-2xl);
+}
+
+.payment-element-container h3 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-black);
+  margin-bottom: var(--space-lg);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.payment-element {
+  border: 2px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  background: var(--color-white);
+  min-height: 200px;
+  transition: border-color var(--transition-base);
+}
+
+.payment-element:focus-within {
+  border-color: var(--color-blue);
+  box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.1);
+}
+
+.payment-policies {
+  background: var(--color-gray-50);
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2xl);
+}
+
+.policy-item {
+  margin-bottom: var(--space-md);
+}
+
+.policy-item:last-child {
+  margin-bottom: 0;
+}
+
+.policy-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-700);
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+}
+
+.policy-text a {
+  color: var(--color-blue);
+  text-decoration: underline;
+}
+
+.policy-text a:hover {
+  color: var(--color-red);
+}
+
+.payment-submit-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-lg) var(--space-xl);
+  background: var(--color-red);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  min-height: 60px;
+  position: relative;
+}
+
+.payment-submit-btn:hover:not(:disabled) {
+  background: var(--color-black);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.payment-submit-btn:disabled {
+  background: var(--color-gray-400);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.payment-submit-btn[aria-busy="true"] {
+  color: transparent;
+}
+
+.btn-text {
+  transition: opacity var(--transition-base);
+}
+
+.btn-amount {
+  font-weight: 900;
+  font-size: var(--font-size-xl);
+}
+
+.btn-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--color-white);
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   ORDER SUMMARY SIDEBAR
+   ========================================================================== */
+
+.order-summary-sidebar {
+  background: var(--color-white);
+  padding: var(--space-xl);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  position: sticky;
+  top: var(--space-lg);
+  max-height: calc(100vh - var(--space-2xl));
+  overflow-y: auto;
+}
+
+.order-summary-sidebar h3 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-black);
+  margin-bottom: var(--space-lg);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  border-bottom: 2px solid var(--color-gray-200);
+  padding-bottom: var(--space-sm);
+}
+
+.order-details {
+  margin-bottom: var(--space-lg);
+}
+
+.order-number {
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  margin-bottom: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-gray-100);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.order-item:last-child {
+  border-bottom: none;
+}
+
+.item-details {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-800);
+  line-height: var(--line-height-snug);
+}
+
+.item-amount {
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-black);
+}
+
+.total-amount {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 2px solid var(--color-gray-200);
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  font-weight: 900;
+  color: var(--color-red);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.security-badges {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--color-gray-200);
+}
+
+.security-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-600);
+  font-family: var(--font-code);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.security-item svg {
+  width: 14px;
+  height: 14px;
+  color: var(--color-blue);
+}
+
+/* ==========================================================================
+   ERROR HANDLING
+   ========================================================================== */
+
+.payment-error-display {
+  position: fixed;
+  top: var(--space-lg);
+  right: var(--space-lg);
+  max-width: 400px;
+  background: var(--color-white);
+  border: 2px solid var(--color-red);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xl);
+  z-index: var(--z-modal);
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.error-content {
+  padding: var(--space-lg);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.error-content svg {
+  width: 20px;
+  height: 20px;
+  color: var(--color-red);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.error-message {
+  flex-grow: 1;
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-800);
+  line-height: var(--line-height-relaxed);
+}
+
+.error-dismiss {
+  background: transparent;
+  border: none;
+  font-size: var(--font-size-xl);
+  color: var(--color-gray-500);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.error-dismiss:hover {
+  color: var(--color-red);
+}
+
+/* ==========================================================================
+   INVENTORY NOTIFICATIONS
+   ========================================================================== */
+
+.inventory-notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 500px;
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  z-index: var(--z-modal);
+  animation: scaleIn 0.3s ease-out;
+}
+
+.inventory-notification.warning {
+  border: 2px solid var(--color-red);
+}
+
+.inventory-notification.success {
+  border: 2px solid var(--color-blue);
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.notification-message {
+  padding: var(--space-lg) var(--space-xl);
+  font-size: var(--font-size-base);
+  color: var(--color-gray-800);
+  font-weight: 500;
+}
+
+.notification-details {
+  padding: 0 var(--space-xl) var(--space-lg);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  line-height: var(--line-height-relaxed);
+}
+
+.notification-details div {
+  margin-bottom: var(--space-xs);
+}
+
+.notification-action {
+  margin: 0 var(--space-xl) var(--space-lg);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--color-blue);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.notification-action:hover {
+  background: var(--color-red);
+  transform: translateY(-1px);
+}
+
+.notification-close {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  background: transparent;
+  border: none;
+  font-size: var(--font-size-xl);
+  color: var(--color-gray-500);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+}
+
+.notification-close:hover {
+  background: var(--color-gray-100);
+  color: var(--color-red);
+}
+
+/* ==========================================================================
+   LOADING OVERLAY
+   ========================================================================== */
+
+.payment-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-base);
+}
+
+.payment-loading-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.loading-content {
+  background: var(--color-white);
+  padding: var(--space-3xl);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: var(--shadow-xl);
+}
+
+.loading-spinner {
+  margin-bottom: var(--space-lg);
+  color: var(--color-blue);
+}
+
+.loading-spinner svg {
+  width: 40px;
+  height: 40px;
+}
+
+.loading-message {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-black);
+  margin-bottom: var(--space-lg);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.loading-progress {
+  margin-bottom: var(--space-lg);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--color-gray-200);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: var(--space-sm);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+  border-radius: var(--radius-full);
+  transition: width var(--transition-base);
+  width: 0%;
+}
+
+.progress-text {
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  font-weight: 600;
+}
+
+.loading-cancel {
+  padding: var(--space-sm) var(--space-lg);
+  background: transparent;
+  border: 2px solid var(--color-gray-300);
+  color: var(--color-gray-700);
+  border-radius: var(--radius-md);
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.loading-cancel:hover {
+  border-color: var(--color-red);
+  color: var(--color-red);
+}
+
+/* ==========================================================================
+   INVENTORY STATUS INDICATORS
+   ========================================================================== */
+
+.inventory-indicator {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  background: var(--color-gray-800);
+  color: var(--color-white);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-code);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.inventory-indicator.warning {
+  background: var(--color-red);
+}
+
+.inventory-indicator.low-stock {
+  background: orange;
+}
+
+.availability-display {
+  margin-top: var(--space-sm);
+  font-family: var(--font-code);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  text-align: center;
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+}
+
+.availability-display.available {
+  color: var(--color-blue);
+  background: rgba(91, 107, 181, 0.1);
+}
+
+.availability-display.low-stock {
+  color: orange;
+  background: rgba(255, 165, 0, 0.1);
+}
+
+.availability-display.sold-out {
+  color: var(--color-red);
+  background: rgba(204, 41, 54, 0.1);
+}
+
+.ticket-card.sold-out {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.ticket-card.sold-out .qty-btn {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   BUTTON LOADING STATES
+   ========================================================================== */
+
+.button-spinner {
+  animation: spin 0.8s linear infinite;
+  margin-right: var(--space-xs);
+}
+
+.btn.loading {
+  position: relative;
+  color: transparent;
+}
+
+.btn.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  color: var(--color-white);
+}
+
+.form-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.form-loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  z-index: 1;
+  border-radius: var(--radius-lg);
+}
+
+/* ==========================================================================
+   ACCESSIBILITY HELPERS
+   ========================================================================== */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus management */
+.payment-step:focus {
+  outline: none;
+}
+
+.payment-container:focus-within .skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--color-blue);
+  color: var(--color-white);
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+  z-index: 1000;
+}
+
+/* ==========================================================================
+   MOBILE RESPONSIVE
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .payment-container {
+    padding: var(--space-md);
+  }
+
+  .customer-info-step,
+  .payment-content {
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+
+  .order-summary-sidebar {
+    position: static;
+    order: -1;
+    margin-bottom: var(--space-xl);
+  }
+
+  .step-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-md);
+  }
+
+  .step-title {
+    font-size: var(--font-size-2xl);
+  }
+
+  .customer-form,
+  .payment-form-container {
+    padding: var(--space-lg);
+  }
+
+  .payment-error-display {
+    position: fixed;
+    top: var(--space-sm);
+    left: var(--space-sm);
+    right: var(--space-sm);
+    max-width: none;
+  }
+
+  .inventory-notification {
+    position: fixed;
+    top: var(--space-lg);
+    left: var(--space-sm);
+    right: var(--space-sm);
+    max-width: none;
+    transform: none;
+  }
+
+  .loading-content {
+    padding: var(--space-xl);
+    width: 95%;
+  }
+
+  .back-btn {
+    font-size: var(--font-size-xs);
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  .form-input {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  .continue-btn,
+  .payment-submit-btn {
+    min-height: 48px;
+    font-size: var(--font-size-base);
+  }
+}
+
+@media (max-width: 480px) {
+  .step-header {
+    margin-bottom: var(--space-xl);
+  }
+
+  .customer-form,
+  .payment-form-container {
+    padding: var(--space-md);
+  }
+
+  .order-summary-sidebar {
+    padding: var(--space-md);
+  }
+
+  .loading-content {
+    padding: var(--space-lg);
+  }
+
+  .payment-submit-btn {
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .btn-amount {
+    font-size: var(--font-size-lg);
+  }
+}
+
+/* ==========================================================================
+   HIGH CONTRAST MODE
+   ========================================================================== */
+
+@media (prefers-contrast: high) {
+  .form-input,
+  .payment-element {
+    border-width: 3px;
+  }
+
+  .continue-btn,
+  .payment-submit-btn {
+    border: 2px solid transparent;
+  }
+
+  .continue-btn:focus,
+  .payment-submit-btn:focus {
+    border-color: var(--color-white);
+  }
+}
+
+/* ==========================================================================
+   REDUCED MOTION
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .payment-step,
+  .payment-error-display,
+  .inventory-notification,
+  .payment-loading-overlay,
+  .loading-content {
+    animation: none;
+    transition: none;
+  }
+
+  .spinner,
+  .button-spinner,
+  .loading-spinner svg {
+    animation: none;
+  }
+
+  .continue-btn:hover,
+  .payment-submit-btn:hover,
+  .back-btn:hover {
+    transform: none;
+  }
+}
+
+/* ==========================================================================
+   PRINT STYLES
+   ========================================================================== */
+
+@media print {
+  .payment-container {
+    background: white;
+    box-shadow: none;
+  }
+
+  .back-btn,
+  .continue-btn,
+  .payment-submit-btn,
+  .loading-cancel {
+    display: none;
+  }
+
+  .payment-loading-overlay,
+  .payment-error-display,
+  .inventory-notification {
+    display: none;
+  }
+
+  .order-summary-sidebar {
+    break-inside: avoid;
+    border: 1px solid var(--color-gray-400);
+  }
+}

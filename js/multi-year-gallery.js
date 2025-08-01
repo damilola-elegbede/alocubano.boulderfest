@@ -73,13 +73,13 @@ class MultiYearGalleryManager {
 
         } catch (error) {
             console.error('MultiYearGalleryManager initialization failed:', error);
-            
+
             // Instead of showing error, dispatch event to trigger fallback
-            this.dispatchEvent('initializationError', { 
+            this.dispatchEvent('initializationError', {
                 error: error.message,
-                shouldUseFallback: true 
+                shouldUseFallback: true
             });
-            
+
             // Don't throw the error - let the parent handle fallback
             throw error;
         }
@@ -157,20 +157,20 @@ class MultiYearGalleryManager {
 
         } catch (error) {
             console.warn('Failed to load years from API, using fallback data:', error.message);
-            
+
             // Use fallback data when API fails
             this.availableYears = ['2025']; // Only show available year
             this.yearStatistics = new Map([
                 ['2025', { imageCount: 0, totalSize: 0 }] // Basic stats
             ]);
-            
+
             // Create year selector buttons with fallback data
             this.createYearSelectorButtons();
-            
+
             // Emit warning event but don't throw - allow initialization to continue
-            this.dispatchEvent('yearsLoadWarning', { 
+            this.dispatchEvent('yearsLoadWarning', {
                 error: error.message,
-                fallbackUsed: true 
+                fallbackUsed: true
             });
         }
     }
@@ -304,7 +304,7 @@ class MultiYearGalleryManager {
             const galleryInstance = await this.createVirtualGallery({
                 container: yearContainer,
                 year: year,
-                apiEndpoint: `/api/gallery`
+                apiEndpoint: '/api/gallery'
             });
 
             // Wait for gallery to initialize

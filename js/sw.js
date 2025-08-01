@@ -1,7 +1,7 @@
 /**
  * Advanced Service Worker for A Lo Cubano Boulder Fest - Phase 2
  * Multi-level caching with intelligent strategies for optimal performance
- * 
+ *
  * Features:
  * - Multi-level caching (STATIC, IMAGE, API caches)
  * - Cache-first for images with size limits
@@ -21,14 +21,14 @@ const CACHE_CONFIG = {
     // Size limits (in bytes)
     maxImageCacheSize: 5 * 1024 * 1024, // 5MB
     maxImageSize: 1024 * 1024, // 1MB per image
-    
+
     // TTL settings (in milliseconds)
     imageTTL: 24 * 60 * 60 * 1000, // 24 hours
     apiTTL: 30 * 60 * 1000, // 30 minutes
     staticTTL: 7 * 24 * 60 * 60 * 1000, // 7 days
-    
+
     // Update intervals
-    backgroundUpdateInterval: 5 * 60 * 1000, // 5 minutes
+    backgroundUpdateInterval: 5 * 60 * 1000 // 5 minutes
 };
 
 // Critical resources to precache
@@ -54,7 +54,7 @@ const STATIC_RESOURCES = [
  */
 self.addEventListener('install', event => {
     console.log('[SW v2.0.0] Installing advanced service worker...');
-    
+
     event.waitUntil(
         precacheStaticResources()
             .then(() => {
@@ -73,7 +73,7 @@ self.addEventListener('install', event => {
  */
 self.addEventListener('activate', event => {
     console.log('[SW v2.0.0] Activating advanced service worker...');
-    
+
     event.waitUntil(
         Promise.all([
             cleanupOldCaches(),
@@ -91,17 +91,17 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     const request = event.request;
     const url = new URL(request.url);
-    
+
     // Only handle GET requests
     if (request.method !== 'GET') {
         return;
     }
-    
+
     // Skip browser extensions and non-HTTP(S) schemes
     if (!url.protocol.startsWith('http')) {
         return;
     }
-    
+
     // Route to appropriate strategy
     if (isImageRequest(url)) {
         event.respondWith(handleImageRequest(request));
@@ -120,30 +120,30 @@ self.addEventListener('fetch', event => {
  */
 self.addEventListener('message', event => {
     const { type, data } = event.data || {};
-    
+
     switch (type) {
-        case 'SKIP_WAITING':
-            self.skipWaiting();
-            break;
-            
-        case 'CACHE_WARM':
-            handleCacheWarm(data?.urls || []);
-            break;
-            
-        case 'CACHE_CLEAR':
-            handleCacheClear(data?.cacheType);
-            break;
-            
-        case 'CACHE_STATS':
-            handleCacheStats(event.ports[0]);
-            break;
-            
-        case 'BACKGROUND_UPDATE':
-            handleBackgroundUpdate(data?.urls || []);
-            break;
-            
-        default:
-            console.warn('[SW] Unknown message type:', type);
+    case 'SKIP_WAITING':
+        self.skipWaiting();
+        break;
+
+    case 'CACHE_WARM':
+        handleCacheWarm(data?.urls || []);
+        break;
+
+    case 'CACHE_CLEAR':
+        handleCacheClear(data?.cacheType);
+        break;
+
+    case 'CACHE_STATS':
+        handleCacheStats(event.ports[0]);
+        break;
+
+    case 'BACKGROUND_UPDATE':
+        handleBackgroundUpdate(data?.urls || []);
+        break;
+
+    default:
+        console.warn('[SW] Unknown message type:', type);
     }
 });
 
@@ -152,7 +152,7 @@ self.addEventListener('message', event => {
  */
 async function precacheStaticResources() {
     const cache = await caches.open(STATIC_CACHE);
-    
+
     try {
         await cache.addAll(STATIC_RESOURCES);
         console.log('[SW] Precached', STATIC_RESOURCES.length, 'static resources');
@@ -175,12 +175,12 @@ async function precacheStaticResources() {
 async function cleanupOldCaches() {
     const cacheNames = await caches.keys();
     const currentCaches = [STATIC_CACHE, IMAGE_CACHE, API_CACHE];
-    
-    const oldCaches = cacheNames.filter(name => 
-        name.startsWith('alocubano-') && 
+
+    const oldCaches = cacheNames.filter(name =>
+        name.startsWith('alocubano-') &&
         !currentCaches.includes(name)
     );
-    
+
     if (oldCaches.length > 0) {
         await Promise.all(oldCaches.map(cacheName => caches.delete(cacheName)));
         console.log('[SW] Cleaned up old caches:', oldCaches);
@@ -228,30 +228,30 @@ function isStaticAsset(url) {
 async function handleImageRequest(request) {
     const cache = await caches.open(IMAGE_CACHE);
     const cachedResponse = await cache.match(request);
-    
+
     // Return cached version if available and valid
     if (cachedResponse && isCacheEntryValid(cachedResponse, CACHE_CONFIG.imageTTL)) {
         console.log('[SW] Image cache hit:', request.url);
-        
+
         // Schedule background update for frequently accessed images
         scheduleBackgroundUpdate(request);
         return cachedResponse;
     }
-    
+
     try {
         console.log('[SW] Fetching image from network:', request.url);
-        
+
         // Handle Google Drive images with CORS issues
         let fetchRequest = request;
-        let fetchOptions = {
+        const fetchOptions = {
             headers: { 'Cache-Control': 'max-age=3600' }
         };
-        
+
         if (request.url.includes('drive.google.com') || request.url.includes('lh3.googleusercontent.com')) {
             // For Google Drive URLs, try using the image proxy API or no-cors mode
             const driveUrl = encodeURIComponent(request.url);
             const proxyUrl = `/api/image-proxy/drive?url=${driveUrl}`;
-            
+
             try {
                 // First try the proxy endpoint
                 const proxyResponse = await fetch(proxyUrl);
@@ -269,36 +269,36 @@ async function handleImageRequest(request) {
                 console.log('[SW] Proxy failed, using no-cors mode for Google Drive image:', request.url);
             }
         }
-        
+
         const networkResponse = await fetch(fetchRequest, fetchOptions);
-        
+
         if (networkResponse.ok) {
             // Check image size before caching
             const contentLength = networkResponse.headers.get('content-length');
             const imageSize = contentLength ? parseInt(contentLength) : 0;
-            
+
             if (imageSize > 0 && imageSize <= CACHE_CONFIG.maxImageSize) {
                 const responseToCache = networkResponse.clone();
                 await cacheWithMetadata(cache, request, responseToCache, {
                     size: imageSize,
                     cachedAt: Date.now()
                 });
-                
+
                 // Clean up cache if it exceeds size limit
                 await cleanupImageCache(cache);
             }
         }
-        
+
         return networkResponse;
     } catch (error) {
         console.error('[SW] Image fetch failed:', error);
-        
+
         // Return stale cache as fallback
         if (cachedResponse) {
             console.log('[SW] Returning stale cache as fallback');
             return cachedResponse;
         }
-        
+
         // Return placeholder
         return createImagePlaceholder();
     }
@@ -311,19 +311,19 @@ async function handleImageRequest(request) {
 async function handleGalleryAPIRequest(request) {
     const cache = await caches.open(API_CACHE);
     const cachedResponse = await cache.match(request);
-    
+
     // Always try to update in background
     const networkUpdate = updateCacheInBackground(cache, request);
-    
+
     if (cachedResponse) {
         console.log('[SW] Gallery API cache hit, updating in background');
         return cachedResponse;
     }
-    
+
     try {
         console.log('[SW] Gallery API cache miss, fetching from network');
         const networkResponse = await fetch(request);
-        
+
         if (networkResponse.ok) {
             const responseToCache = networkResponse.clone();
             await cacheWithMetadata(cache, request, responseToCache, {
@@ -331,11 +331,11 @@ async function handleGalleryAPIRequest(request) {
                 type: 'gallery-api'
             });
         }
-        
+
         return networkResponse;
     } catch (error) {
         console.error('[SW] Gallery API fetch failed:', error);
-        
+
         // Wait for background update if no cache available
         try {
             await networkUpdate;
@@ -346,7 +346,7 @@ async function handleGalleryAPIRequest(request) {
         } catch (bgError) {
             console.error('[SW] Background update failed:', bgError);
         }
-        
+
         throw error;
     }
 }
@@ -357,13 +357,13 @@ async function handleGalleryAPIRequest(request) {
  */
 async function handleAPIRequest(request) {
     const cache = await caches.open(API_CACHE);
-    
+
     try {
         console.log('[SW] API network first:', request.url);
         const networkResponse = await fetch(request, {
             headers: { 'Cache-Control': 'no-cache' }
         });
-        
+
         if (networkResponse.ok) {
             const responseToCache = networkResponse.clone();
             await cacheWithMetadata(cache, request, responseToCache, {
@@ -371,17 +371,17 @@ async function handleAPIRequest(request) {
                 type: 'api'
             });
         }
-        
+
         return networkResponse;
     } catch (error) {
         console.error('[SW] API network failed, trying cache:', error);
-        
+
         const cachedResponse = await cache.match(request);
         if (cachedResponse && isCacheEntryValid(cachedResponse, CACHE_CONFIG.apiTTL)) {
             console.log('[SW] API cache fallback:', request.url);
             return cachedResponse;
         }
-        
+
         throw error;
     }
 }
@@ -393,22 +393,22 @@ async function handleAPIRequest(request) {
 async function handleStaticAssetRequest(request) {
     const cache = await caches.open(STATIC_CACHE);
     const cachedResponse = await cache.match(request);
-    
+
     if (cachedResponse) {
         console.log('[SW] Static asset cache hit:', request.url);
-        
+
         // Update in background if stale
         if (!isCacheEntryValid(cachedResponse, CACHE_CONFIG.staticTTL)) {
             updateCacheInBackground(cache, request);
         }
-        
+
         return cachedResponse;
     }
-    
+
     try {
         console.log('[SW] Static asset cache miss:', request.url);
         const networkResponse = await fetch(request);
-        
+
         if (networkResponse.ok) {
             const responseToCache = networkResponse.clone();
             await cacheWithMetadata(cache, request, responseToCache, {
@@ -416,7 +416,7 @@ async function handleStaticAssetRequest(request) {
                 type: 'static'
             });
         }
-        
+
         return networkResponse;
     } catch (error) {
         console.error('[SW] Static asset fetch failed:', error);
@@ -433,21 +433,21 @@ async function cacheWithMetadata(cache, request, response, metadata) {
         console.warn('[SW] Invalid cache object passed to cacheWithMetadata');
         return;
     }
-    
+
     const headers = new Headers(response.headers);
     headers.set('sw-cached-at', metadata.cachedAt.toString());
     headers.set('sw-cache-type', metadata.type || 'unknown');
-    
+
     if (metadata.size) {
         headers.set('sw-content-size', metadata.size.toString());
     }
-    
+
     const responseWithMetadata = new Response(response.body, {
         status: response.status,
         statusText: response.statusText,
         headers: headers
     });
-    
+
     await cache.put(request, responseWithMetadata);
 }
 
@@ -456,8 +456,10 @@ async function cacheWithMetadata(cache, request, response, metadata) {
  */
 function isCacheEntryValid(response, ttl) {
     const cachedAt = response.headers.get('sw-cached-at');
-    if (!cachedAt) return false;
-    
+    if (!cachedAt) {
+        return false;
+    }
+
     const age = Date.now() - parseInt(cachedAt);
     return age < ttl;
 }
@@ -487,7 +489,7 @@ function scheduleBackgroundUpdate(request) {
     // Simple debouncing - only update if not updated recently
     const lastUpdate = self.lastBackgroundUpdate || 0;
     const now = Date.now();
-    
+
     if (now - lastUpdate > CACHE_CONFIG.backgroundUpdateInterval) {
         self.lastBackgroundUpdate = now;
         setTimeout(() => {
@@ -503,26 +505,28 @@ async function cleanupImageCache(cache) {
     const keys = await cache.keys();
     let totalSize = 0;
     const entries = [];
-    
+
     // Calculate total size and collect entries
     for (const key of keys) {
         const response = await cache.match(key);
         if (response) {
             const size = parseInt(response.headers.get('sw-content-size') || '0');
             const cachedAt = parseInt(response.headers.get('sw-cached-at') || '0');
-            
+
             entries.push({ key, size, cachedAt });
             totalSize += size;
         }
     }
-    
+
     // Remove oldest entries if over size limit
     if (totalSize > CACHE_CONFIG.maxImageCacheSize) {
         entries.sort((a, b) => a.cachedAt - b.cachedAt);
-        
+
         for (const entry of entries) {
-            if (totalSize <= CACHE_CONFIG.maxImageCacheSize) break;
-            
+            if (totalSize <= CACHE_CONFIG.maxImageCacheSize) {
+                break;
+            }
+
             await cache.delete(entry.key);
             totalSize -= entry.size;
             console.log('[SW] Cleaned up cached image:', entry.key.url);
@@ -547,7 +551,7 @@ function createImagePlaceholder() {
             </text>
         </svg>
     `;
-    
+
     return new Response(svg, {
         headers: {
             'Content-Type': 'image/svg+xml',
@@ -560,11 +564,13 @@ function createImagePlaceholder() {
  * Message handlers
  */
 async function handleCacheWarm(urls) {
-    if (!Array.isArray(urls) || urls.length === 0) return;
-    
+    if (!Array.isArray(urls) || urls.length === 0) {
+        return;
+    }
+
     console.log('[SW] Warming cache with', urls.length, 'URLs');
-    
-    const promises = urls.map(async (url) => {
+
+    const promises = urls.map(async(url) => {
         try {
             const response = await fetch(url);
             if (response.ok) {
@@ -578,7 +584,7 @@ async function handleCacheWarm(urls) {
             console.warn('[SW] Cache warm failed for:', url, error);
         }
     });
-    
+
     await Promise.allSettled(promises);
     console.log('[SW] Cache warming completed');
 }
@@ -589,7 +595,7 @@ async function handleCacheClear(cacheType) {
         'images': IMAGE_CACHE,
         'api': API_CACHE
     };
-    
+
     const cacheName = cacheMap[cacheType];
     if (cacheName) {
         await caches.delete(cacheName);
@@ -611,13 +617,13 @@ async function handleCacheStats(port) {
             getCacheStats(IMAGE_CACHE, 'images'),
             getCacheStats(API_CACHE, 'api')
         ]);
-        
+
         const stats = {
             version: CACHE_VERSION,
             caches: Object.fromEntries(caches_data),
             timestamp: Date.now()
         };
-        
+
         port.postMessage({ type: 'CACHE_STATS_RESPONSE', data: stats });
     } catch (error) {
         port.postMessage({ type: 'CACHE_STATS_ERROR', error: error.message });
@@ -626,7 +632,7 @@ async function handleCacheStats(port) {
 
 async function handleBackgroundUpdate(urls) {
     console.log('[SW] Background update requested for', urls.length, 'URLs');
-    
+
     for (const url of urls) {
         try {
             const cache = await getCacheForUrl(url);
@@ -642,7 +648,7 @@ async function handleBackgroundUpdate(urls) {
  */
 async function getCacheForUrl(url) {
     const urlObj = new URL(url);
-    
+
     if (isImageRequest(urlObj)) {
         return caches.open(IMAGE_CACHE);
     } else if (isAPIRequest(urlObj)) {
@@ -657,7 +663,7 @@ async function getCacheStats(cacheName, type) {
         const cache = await caches.open(cacheName);
         const keys = await cache.keys();
         let totalSize = 0;
-        
+
         for (const key of keys) {
             const response = await cache.match(key);
             if (response) {
@@ -665,7 +671,7 @@ async function getCacheStats(cacheName, type) {
                 totalSize += size;
             }
         }
-        
+
         return [type, {
             name: cacheName,
             entries: keys.length,
@@ -678,7 +684,9 @@ async function getCacheStats(cacheName, type) {
 }
 
 function formatBytes(bytes) {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) {
+        return '0 B';
+    }
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));

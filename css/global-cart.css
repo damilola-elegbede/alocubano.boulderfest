@@ -1,0 +1,209 @@
+/**
+ * Global Cart Icon - A Lo Cubano Boulder Fest
+ * Typography-forward design matching site aesthetic
+ */
+
+.global-cart-icon {
+    /* Remove fixed positioning - now integrated in header */
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    
+    /* Typography-forward design */
+    font-family: var(--font-display);
+    
+    /* Initial state - hidden */
+    opacity: 0;
+    transform: translateY(-20px) scale(0.9);
+    transition: all var(--transition-base);
+    
+    /* Hover states */
+    transition: all 0.2s ease;
+
+    /* Ensure it doesn't interfere with navigation */
+    pointer-events: auto;
+}
+
+.global-cart-icon.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.global-cart-icon:hover,
+.global-cart-icon.hovering {
+    transform: translateY(-2px) scale(1.05);
+}
+
+.global-cart-icon:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.global-cart-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-sm);
+    
+    /* Design system colors */
+    background: var(--color-white);
+    border-radius: var(--radius-md);
+    
+    /* Compact design */
+    width: 48px;
+    height: 48px;
+}
+
+.global-cart-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.global-cart-svg {
+    width: 22px;
+    height: 22px;
+    color: var(--color-black);
+    stroke-width: 2.5;
+}
+
+.global-cart-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    z-index: 1; /* Ensure badge appears above cart icon */
+    
+    /* Typography system */
+    font-family: var(--font-display);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: var(--letter-spacing-wide);
+    line-height: var(--line-height-none);
+    
+    /* Badge styling */
+    background: var(--color-red);
+    color: var(--color-white);
+    border-radius: var(--radius-full);
+    
+    /* Size and positioning */
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* Animation on update */
+    transition: all var(--transition-fast);
+}
+
+
+/* Pulse animation for cart updates */
+.global-cart-icon.cart-pulse {
+    animation: cartPulse 0.6s ease-out;
+}
+
+@keyframes cartPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Mobile responsive design */
+@media (max-width: 768px) {
+    .global-cart-icon {
+        /* Mobile positioning handled by header-right container */
+        /* top and right positioning removed - handled by parent container */
+        /* Ensure cart icon doesn't get hidden behind mobile notches */
+        padding-top: env(safe-area-inset-top, 0);
+        /* Match hamburger menu size for consistent mobile UI */
+        min-width: 40px;
+        min-height: 40px;
+    }
+    
+    .global-cart-content {
+        width: 40px;
+        height: 40px;
+        padding: var(--space-xs);
+        /* Match hamburger menu size on mobile */
+        min-width: 40px;
+        min-height: 40px;
+    }
+    
+    .global-cart-svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .global-cart-badge {
+        min-width: 18px;
+        height: 18px;
+        font-size: 10px;
+        top: -5px;
+        right: -5px;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .global-cart-content {
+        border-width: 3px;
+        box-shadow: var(--shadow-xl);
+    }
+    
+    .global-cart-badge {
+        border: 2px solid var(--color-white);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .global-cart-icon,
+    .global-cart-badge {
+        transition: none;
+    }
+    
+    .global-cart-icon.cart-pulse {
+        animation: none;
+    }
+    
+    .global-cart-icon:hover,
+    .global-cart-icon.hovering {
+        transform: none;
+    }
+}
+
+/* Focus styles for accessibility */
+.global-cart-icon:focus {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 2px;
+}
+
+.global-cart-icon:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Color variants for different contexts */
+.global-cart-icon.red-accent .global-cart-badge {
+    background: var(--color-red);
+}
+
+.global-cart-icon.blue-accent .global-cart-badge {
+    background: var(--color-blue);
+}
+
+/* Remove this class - no longer needed with header integration */
+
+/* Hide on tickets page (floating cart takes precedence) */
+.page-tickets .global-cart-icon {
+    display: none !important;
+}
+
+/* For pages with expanded mobile navigation, adjust positioning */
+.nav-expanded .global-cart-icon {
+    display: none;
+}
+
+/* Ensure proper stacking context */
+.global-cart-icon {
+    isolation: isolate;
+}

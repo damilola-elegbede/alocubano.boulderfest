@@ -70,3 +70,16 @@ performance-audit.html
 .githooks/
 .githooks/
 .vercel
+
+# Auto-generated documentation
+DOCUMENTATION_INDEX.md
+PERFORMANCE_ANALYSIS_REPORT.md
+docs/README.md
+docs/archive/
+docs/technical/
+
+# Temporary payment directory (if auto-generated)
+payment/
+
+# Disabled workflows (temporarily disabled for revamp)
+.github/workflows-disabled/

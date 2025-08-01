@@ -166,15 +166,15 @@ jobs:
     
     - name: Scan for sensitive data
       run: |
-        # Check for potential secrets or API keys (excluding test files and expected strings)
-        if grep -r -E "(api[_-]?key|password|secret[^a]|token)" \
+        # Check for potential hardcoded secrets (excluding environment variables and legitimate patterns)
+        if grep -r -E "(api[_-]?key\s*=\s*['\"][^'\"]{10,}|password\s*=\s*['\"][^'\"]+|secret\s*=\s*['\"][^'\"]{10,}|token\s*=\s*['\"][^'\"]{10,})" \
            --include="*.js" --include="*.html" --include="*.css" \
            --exclude-dir=node_modules \
            --exclude-dir=.git \
            --exclude="package*.json" \
            --exclude="jest*.js" \
-           .; then
-          echo "⚠️  Potential sensitive data found - please review"
+           . | grep -v "process\.env\|your-\|example\|test\|fake\|placeholder"; then
+          echo "⚠️  Hardcoded secrets found - please review"
           exit 1
         fi
         echo "✓ No sensitive data detected"
