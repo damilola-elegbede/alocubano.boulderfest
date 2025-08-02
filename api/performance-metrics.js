@@ -244,7 +244,7 @@ export default async function handler(req, res) {
         
         // Extract request metadata
         const userAgent = req.headers['user-agent'] || '';
-        const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || '';
+        const clientIP = req.headers['x-forwarded-for'] || req.connection?.remoteAddress || '';
         const timestamp = metricsData.timestamp;
         
         // Generate session ID

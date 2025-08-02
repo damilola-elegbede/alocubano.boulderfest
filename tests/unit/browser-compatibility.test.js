@@ -3,6 +3,7 @@
  * Testing actual browser API usage and fallbacks
  */
 
+import { vi } from 'vitest';
 const fs = require('fs');
 const path = require('path');
 
@@ -32,7 +33,7 @@ describe('IntersectionObserver Compatibility', () => {
       </div>
     `;
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -75,7 +76,7 @@ describe('IntersectionObserver Compatibility', () => {
 
   test('handles intersection observer errors', () => {
     // Mock IntersectionObserver that throws errors
-    global.IntersectionObserver = jest.fn().mockImplementation(() => {
+    global.IntersectionObserver = vi.fn().mockImplementation(() => {
       throw new Error('IntersectionObserver construction failed');
     });
 
@@ -114,12 +115,12 @@ describe('IntersectionObserver Compatibility', () => {
 
   test('handles partial IntersectionObserver support', () => {
     // Mock incomplete IntersectionObserver (missing methods)
-    global.IntersectionObserver = jest.fn().mockImplementation(() => ({
-      observe: jest.fn(),
+    global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+      observe: vi.fn(),
       // Missing unobserve and disconnect methods
     }));
 
-    const mockCallback = jest.fn();
+    const mockCallback = vi.fn();
     const observer = new IntersectionObserver(mockCallback);
     
     expect(observer.observe).toBeDefined();
@@ -158,14 +159,14 @@ describe('IntersectionObserver Compatibility', () => {
     
     if (needsPolyfill) {
       // Simulate polyfill loading
-      global.IntersectionObserver = jest.fn().mockImplementation((callback) => ({
-        observe: jest.fn(),
-        unobserve: jest.fn(),
-        disconnect: jest.fn(),
+      global.IntersectionObserver = vi.fn().mockImplementation((callback) => ({
+        observe: vi.fn(),
+        unobserve: vi.fn(),
+        disconnect: vi.fn(),
         callback
       }));
       
-      global.IntersectionObserverEntry = jest.fn();
+      global.IntersectionObserverEntry = vi.fn();
     }
     
     // After polyfill, feature should be available
@@ -179,7 +180,7 @@ describe('Service Worker Compatibility', () => {
 
   beforeEach(() => {
     originalNavigator = global.navigator;
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -201,7 +202,7 @@ describe('Service Worker Compatibility', () => {
     expect(cacheStrategy).toBe('network-only');
     
     // Test that app functions without service worker
-    const mockFetch = jest.fn().mockResolvedValue({
+    const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ data: 'network-response' })
     });
@@ -222,7 +223,7 @@ describe('Service Worker Compatibility', () => {
     
     // Mock navigator with failing serviceWorker
     global.navigator.serviceWorker = {
-      register: jest.fn().mockRejectedValue(new Error('Registration failed'))
+      register: vi.fn().mockRejectedValue(new Error('Registration failed'))
     };
 
     // Test actual registration error scenarios
@@ -259,15 +260,15 @@ describe('Service Worker Compatibility', () => {
     // Mock service worker with update capability
     const mockRegistration = {
       waiting: {
-        postMessage: jest.fn()
+        postMessage: vi.fn()
       },
-      update: jest.fn().mockResolvedValue(null),
-      addEventListener: jest.fn()
+      update: vi.fn().mockResolvedValue(null),
+      addEventListener: vi.fn()
     };
 
     global.navigator.serviceWorker = {
-      register: jest.fn().mockResolvedValue(mockRegistration),
-      addEventListener: jest.fn()
+      register: vi.fn().mockResolvedValue(mockRegistration),
+      addEventListener: vi.fn()
     };
 
     // Test service worker update flow
@@ -295,11 +296,11 @@ describe('Service Worker Compatibility', () => {
       addEventListener: jest.fn((event, handler) => {
         messageHandlers.push({ event, handler });
       }),
-      postMessage: jest.fn()
+      postMessage: vi.fn()
     };
 
     // Test message listener setup
-    const messageHandler = jest.fn();
+    const messageHandler = vi.fn();
     global.navigator.serviceWorker.addEventListener('message', messageHandler);
     
     expect(global.navigator.serviceWorker.addEventListener).toHaveBeenCalledWith('message', messageHandler);
@@ -318,7 +319,7 @@ describe('Local Storage Compatibility', () => {
 
   beforeEach(() => {
     originalLocalStorage = global.localStorage;
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -353,12 +354,12 @@ describe('Local Storage Compatibility', () => {
   test('handles localStorage quota exceeded', () => {
     // Mock localStorage that throws quota exceeded error
     global.localStorage = {
-      setItem: jest.fn().mockImplementation(() => {
+      setItem: vi.fn().mockImplementation(() => {
         throw new Error('QuotaExceededError');
       }),
-      getItem: jest.fn().mockReturnValue(null),
-      removeItem: jest.fn(),
-      clear: jest.fn()
+      getItem: vi.fn().mockReturnValue(null),
+      removeItem: vi.fn(),
+      clear: vi.fn()
     };
 
     // Test quota exceeded scenario
@@ -391,10 +392,10 @@ describe('Local Storage Compatibility', () => {
   test('handles localStorage access restrictions', () => {
     // Mock localStorage that throws security errors
     global.localStorage = {
-      getItem: jest.fn().mockImplementation(() => {
+      getItem: vi.fn().mockImplementation(() => {
         throw new Error('SecurityError');
       }),
-      setItem: jest.fn().mockImplementation(() => {
+      setItem: vi.fn().mockImplementation(() => {
         throw new Error('SecurityError');
       })
     };
@@ -431,7 +432,7 @@ describe('Fetch API Compatibility', () => {
 
   beforeEach(() => {
     originalFetch = global.fetch;
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -448,9 +449,9 @@ describe('Fetch API Compatibility', () => {
     
     // Test XMLHttpRequest fallback
     const mockXHR = {
-      open: jest.fn(),
-      send: jest.fn(),
-      setRequestHeader: jest.fn(),
+      open: vi.fn(),
+      send: vi.fn(),
+      setRequestHeader: vi.fn(),
       readyState: 4,
       status: 200,
       responseText: JSON.stringify({ data: 'xhr-response' })
@@ -482,7 +483,7 @@ describe('Fetch API Compatibility', () => {
 
   test('handles fetch with unsupported features', async () => {
     // Mock basic fetch without modern features
-    global.fetch = jest.fn().mockImplementation((url, options = {}) => {
+    global.fetch = vi.fn().mockImplementation((url, options = {}) => {
       // Simulate fetch without AbortController support
       if (options.signal) {
         console.warn('AbortController not supported in this fetch implementation');
@@ -508,7 +509,7 @@ describe('Fetch API Compatibility', () => {
 
   test('handles CORS limitations in older browsers', async () => {
     // Mock fetch with CORS restrictions
-    global.fetch = jest.fn().mockImplementation((url) => {
+    global.fetch = vi.fn().mockImplementation((url) => {
       if (url.startsWith('https://external-domain.com')) {
         return Promise.reject(new TypeError('CORS not supported'));
       }

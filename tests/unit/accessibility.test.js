@@ -3,6 +3,7 @@
  * Testing actual ARIA implementation and keyboard navigation
  */
 
+import { vi } from 'vitest';
 const fs = require('fs');
 const path = require('path');
 
@@ -44,10 +45,10 @@ describe('Lightbox Accessibility', () => {
     `;
 
     // Mock focus management
-    Element.prototype.focus = jest.fn();
-    Element.prototype.blur = jest.fn();
+    Element.prototype.focus = vi.fn();
+    Element.prototype.blur = vi.fn();
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('lightbox has proper ARIA labels', () => {
@@ -130,7 +131,7 @@ describe('Lightbox Accessibility', () => {
     
     // Mock focus method on all focusable elements
     focusableElements.forEach(element => {
-      element.focus = jest.fn();
+      element.focus = vi.fn();
     });
     
     // Test tab order management
@@ -168,7 +169,7 @@ describe('Lightbox Accessibility', () => {
     
     // Test focus restoration on close
     const triggerButton = document.getElementById('gallery-trigger');
-    triggerButton.focus = jest.fn();
+    triggerButton.focus = vi.fn();
     triggerButton.focus();
     
     if (global.window.Lightbox) {
@@ -234,11 +235,11 @@ describe('Lightbox Accessibility', () => {
       const highContrastQuery = '(prefers-contrast: high)';
       const mockMediaQuery = {
         matches: true,
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn()
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn()
       };
       
-      window.matchMedia = jest.fn().mockReturnValue(mockMediaQuery);
+      window.matchMedia = vi.fn().mockReturnValue(mockMediaQuery);
       
       const highContrastMQ = window.matchMedia(highContrastQuery);
       return highContrastMQ.matches;
@@ -273,10 +274,10 @@ describe('Lightbox Accessibility', () => {
       const reducedMotionQuery = '(prefers-reduced-motion: reduce)';
       const mockMediaQuery = {
         matches: true,
-        addEventListener: jest.fn()
+        addEventListener: vi.fn()
       };
       
-      window.matchMedia = jest.fn().mockReturnValue(mockMediaQuery);
+      window.matchMedia = vi.fn().mockReturnValue(mockMediaQuery);
       return window.matchMedia(reducedMotionQuery).matches;
     };
     
@@ -324,10 +325,10 @@ describe('Gallery Accessibility', () => {
     `;
 
     // Mock keyboard event handling
-    Element.prototype.focus = jest.fn();
-    Element.prototype.scrollIntoView = jest.fn();
+    Element.prototype.focus = vi.fn();
+    Element.prototype.scrollIntoView = vi.fn();
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('gallery images have proper alt text', () => {
@@ -373,7 +374,7 @@ describe('Gallery Accessibility', () => {
     
     // Mock focus method on all gallery items
     galleryItems.forEach(item => {
-      item.focus = jest.fn();
+      item.focus = vi.fn();
     });
     
     // First item should be focusable
@@ -443,7 +444,7 @@ describe('Gallery Accessibility', () => {
     const enterKey = new KeyboardEvent('keydown', { key: 'Enter' });
     const spaceKey = new KeyboardEvent('keydown', { key: ' ' });
     
-    const mockActivation = jest.fn();
+    const mockActivation = vi.fn();
     galleryItems[currentIndex].addEventListener('click', mockActivation);
     
     // Simulate activation with Enter/Space
@@ -549,7 +550,7 @@ describe('Navigation Accessibility', () => {
       <div class="nav-status" aria-live="polite" class="sr-only"></div>
     `;
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('navigation has proper ARIA structure', () => {

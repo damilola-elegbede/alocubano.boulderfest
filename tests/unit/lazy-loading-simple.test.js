@@ -2,14 +2,16 @@
  * Simplified unit tests for LazyLoading functionality
  */
 
+import { vi } from 'vitest';
+
 describe('LazyLoading Component Logic', () => {
   describe('Intersection Observer Logic', () => {
     test('should handle element entering viewport', () => {
       const mockElement = {
         dataset: { src: 'image.jpg', alt: 'Test image' },
         classList: {
-          add: jest.fn(),
-          remove: jest.fn()
+          add: vi.fn(),
+          remove: vi.fn()
         },
         style: {}
       };
@@ -50,8 +52,8 @@ describe('LazyLoading Component Logic', () => {
       const mockElement = {
         dataset: { src: 'valid-image.jpg', alt: 'Valid image' },
         classList: {
-          add: jest.fn(),
-          remove: jest.fn()
+          add: vi.fn(),
+          remove: vi.fn()
         }
       };
       
@@ -77,8 +79,8 @@ describe('LazyLoading Component Logic', () => {
     test('should handle image load error', () => {
       const mockElement = {
         classList: {
-          add: jest.fn(),
-          remove: jest.fn()
+          add: vi.fn(),
+          remove: vi.fn()
         }
       };
       
@@ -183,7 +185,7 @@ describe('LazyLoading Component Logic', () => {
       
       const validElement = {
         dataset: { src: 'valid.jpg' },
-        classList: { add: jest.fn(), remove: jest.fn() }
+        classList: { add: vi.fn(), remove: vi.fn() }
       };
       
       const invalidElement = {

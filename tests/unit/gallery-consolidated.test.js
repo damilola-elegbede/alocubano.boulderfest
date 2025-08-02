@@ -10,8 +10,12 @@
  */
 
 // Load actual gallery-detail.js in test environment
+import { vi } from 'vitest';
 const fs = require('fs');
 const path = require('path');
+
+// Alias jest to vi for compatibility
+global.jest = vi;
 
 // CRITICAL: Import actual source code by loading and evaluating it
 let gallerySource;
@@ -43,7 +47,7 @@ describe('Gallery Core Functionality - Real Source Code Integration', () => {
 
     // Mock required global dependencies
     global.LazyLoader = class MockLazyLoader {
-      constructor() { this.observer = { observe: jest.fn(), disconnect: jest.fn() }; }
+      constructor() { this.observer = { observe: vi.fn(), disconnect: vi.fn() }; }
       static createAdvanced() { return new MockLazyLoader(); }
     };
     
@@ -95,11 +99,11 @@ describe('Gallery Core Functionality - Real Source Code Integration', () => {
     setupGalleryEnvironment();
 
     // Mock global dependencies that the actual code expects
-    global.fetch = jest.fn();
-    global.IntersectionObserver = jest.fn().mockImplementation(() => ({
-      observe: jest.fn(),
-      unobserve: jest.fn(),
-      disconnect: jest.fn()
+    global.fetch = vi.fn();
+    global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+      observe: vi.fn(),
+      unobserve: vi.fn(),
+      disconnect: vi.fn()
     }));
     
     // Create fresh mock storage for each test
@@ -139,7 +143,7 @@ describe('Gallery Core Functionality - Real Source Code Integration', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     document.body.innerHTML = '';
   });
 
@@ -281,7 +285,7 @@ describe('Gallery State Management - Real Source Integration', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('should manage gallery state persistence structure', () => {
@@ -365,8 +369,8 @@ describe('Gallery API Integration', () => {
   // Test actual request handling logic
   
   beforeEach(() => {
-    global.fetch = jest.fn();
-    global.console = { ...console, log: jest.fn(), error: jest.fn() };
+    global.fetch = vi.fn();
+    global.console = { ...console, log: vi.fn(), error: vi.fn() };
   });
 
   test('should construct correct API URLs', () => {

@@ -3,6 +3,7 @@
  * Testing actual touch events and mobile behavior
  */
 
+import { vi } from 'vitest';
 const fs = require('fs');
 const path = require('path');
 
@@ -59,7 +60,7 @@ describe('Touch Navigation', () => {
     // Mock touch support detection
     global.ontouchstart = {};
     
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('swipe gestures work in lightbox', () => {
@@ -351,7 +352,7 @@ describe('Mobile Menu Behavior', () => {
       <div class="mobile-overlay" style="display: none;"></div>
     `;
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('mobile menu toggles correctly', () => {
@@ -535,7 +536,7 @@ describe('Mobile Gallery Interactions', () => {
       </div>
     `;
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('handles touch tap on gallery items', () => {
@@ -650,7 +651,7 @@ describe('Mobile Gallery Interactions', () => {
     
     // Test touch event passive listeners for better scroll performance
     const passiveOptions = { passive: true };
-    const touchHandler = jest.fn();
+    const touchHandler = vi.fn();
     
     document.addEventListener('touchstart', touchHandler, passiveOptions);
     document.addEventListener('touchmove', touchHandler, passiveOptions);

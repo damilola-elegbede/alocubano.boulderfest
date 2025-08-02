@@ -2,21 +2,33 @@
  * Unit tests for optimized gallery API (cache-first strategy)
  */
 
-const fs = require('fs');
-const path = require('path');
+import { vi } from 'vitest';
+import fs from 'fs';
+import path from 'path';
 
 // Mock filesystem operations
-jest.mock('fs', () => ({
-  existsSync: jest.fn(),
-  readFileSync: jest.fn(),
-  writeFileSync: jest.fn(),
-  statSync: jest.fn()
+vi.mock('fs', () => ({
+  default: {
+    existsSync: vi.fn(),
+    readFileSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    statSync: vi.fn()
+  },
+  existsSync: vi.fn(),
+  readFileSync: vi.fn(),
+  writeFileSync: vi.fn(),
+  statSync: vi.fn()
 }));
 
-jest.mock('path', () => ({
-  join: jest.fn(),
-  dirname: jest.fn(),
-  resolve: jest.fn()
+vi.mock('path', () => ({
+  default: {
+    join: vi.fn((...args) => args.join('/')),
+    dirname: vi.fn((p) => p.split('/').slice(0, -1).join('/')),
+    resolve: vi.fn((...args) => '/' + args.join('/'))
+  },
+  join: vi.fn((...args) => args.join('/')),
+  dirname: vi.fn((p) => p.split('/').slice(0, -1).join('/')),
+  resolve: vi.fn((...args) => '/' + args.join('/'))
 }));
 
 describe('Optimized Gallery API (Cache-First)', () => {
@@ -27,10 +39,10 @@ describe('Optimized Gallery API (Cache-First)', () => {
     // Mock console to suppress test output
     originalConsole = global.console;
     global.console = {
-      log: jest.fn(),
-      error: jest.fn(),
-      warn: jest.fn(),
-      info: jest.fn()
+      log: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      info: vi.fn()
     };
     
     // Mock request and response objects
@@ -42,19 +54,20 @@ describe('Optimized Gallery API (Cache-First)', () => {
     };
     
     mockRes = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      setHeader: jest.fn(),
-      end: jest.fn()
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+      setHeader: vi.fn(),
+      end: vi.fn()
     };
     
-    // Setup path mocks
-    path.join.mockImplementation((...args) => args.join('/'));
-    path.dirname.mockImplementation((p) => p.split('/').slice(0, -1).join('/'));
-    path.resolve.mockImplementation((...args) => '/' + args.join('/'));
+    // Clear all mocks and reset implementations
+    vi.clearAllMocks();
     
-    // Clear all mocks
-    jest.clearAllMocks();
+    // Reset filesystem mocks to default behavior
+    vi.mocked(fs.existsSync).mockReset();
+    vi.mocked(fs.readFileSync).mockReset();
+    vi.mocked(fs.writeFileSync).mockReset();
+    vi.mocked(fs.statSync).mockReset();
   });
   
   afterEach(() => {
@@ -68,8 +81,8 @@ describe('Optimized Gallery API (Cache-First)', () => {
         { id: '2', name: 'test2.jpg', webViewLink: 'https://example.com/2' }
       ];
       
-      fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockReturnValue(JSON.stringify(mockCacheData));
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockCacheData));
       
       // Simulate the optimized API handler
       const handler = (req, res) => {
@@ -89,14 +102,14 @@ describe('Optimized Gallery API (Cache-First)', () => {
       
       handler(mockReq, mockRes);
       
-      expect(fs.existsSync).toHaveBeenCalled();
-      expect(fs.readFileSync).toHaveBeenCalled();
+      expect(vi.mocked(fs.existsSync)).toHaveBeenCalled();
+      expect(vi.mocked(fs.readFileSync)).toHaveBeenCalled();
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith(mockCacheData);
     });
     
     test('should handle cache file not found', () => {
-      fs.existsSync.mockReturnValue(false);
+      vi.mocked(fs.existsSync).mockReturnValue(false);
       
       const handler = (req, res) => {
         try {
@@ -115,14 +128,14 @@ describe('Optimized Gallery API (Cache-First)', () => {
       
       handler(mockReq, mockRes);
       
-      expect(fs.existsSync).toHaveBeenCalled();
+      expect(vi.mocked(fs.existsSync)).toHaveBeenCalled();
       expect(mockRes.status).toHaveBeenCalledWith(500);
       expect(mockRes.json).toHaveBeenCalledWith({ error: 'Cache not found' });
     });
     
     test('should handle malformed cache data', () => {
-      fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockReturnValue('invalid json');
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockReturnValue('invalid json');
       
       const handler = (req, res) => {
         try {
@@ -279,7 +292,7 @@ describe('Optimized Gallery API (Cache-First)', () => {
   
   describe('Error Handling and Recovery', () => {
     test('should handle filesystem errors gracefully', () => {
-      fs.existsSync.mockImplementation(() => {
+      vi.mocked(fs.existsSync).mockImplementation(() => {
         throw new Error('Filesystem error');
       });
       
@@ -304,7 +317,7 @@ describe('Optimized Gallery API (Cache-First)', () => {
     });
     
     test('should provide fallback when cache fails', () => {
-      fs.existsSync.mockReturnValue(false);
+      vi.mocked(fs.existsSync).mockReturnValue(false);
       
       const handler = (req, res) => {
         try {
@@ -389,7 +402,7 @@ describe('Optimized Gallery API (Cache-First)', () => {
         return { result, durationMs };
       };
       
-      fs.readFileSync.mockReturnValue('{"test": "data"}');
+      vi.mocked(fs.readFileSync).mockReturnValue('{"test": "data"}');
       
       const { result, durationMs } = measurePerformance(() => {
         return JSON.parse(fs.readFileSync('test.json', 'utf8'));
@@ -446,7 +459,7 @@ describe('Optimized Gallery API (Cache-First)', () => {
         mtime: new Date('2024-01-01T00:00:00Z')
       };
       
-      fs.statSync.mockReturnValue(mockStats);
+      vi.mocked(fs.statSync).mockReturnValue(mockStats);
       
       const isCacheStale = (cacheFile, maxAgeHours = 24) => {
         try {

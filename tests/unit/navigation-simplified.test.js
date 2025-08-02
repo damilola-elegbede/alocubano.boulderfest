@@ -3,6 +3,8 @@
  * Testing navigation functionality through DOM interaction
  */
 
+import { vi } from 'vitest';
+
 const fs = require('fs');
 const path = require('path');
 
@@ -49,10 +51,10 @@ describe('Navigation Real Source Code - Integration Testing', () => {
     });
 
     // Mock scrollIntoView
-    Element.prototype.scrollIntoView = jest.fn();
+    Element.prototype.scrollIntoView = vi.fn();
 
     // Clear mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('should load navigation source code successfully', () => {

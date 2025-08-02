@@ -1,4 +1,6 @@
 /**
+
+import { vi } from 'vitest';
  * API-Frontend Integration Tests
  * Testing actual data flow and error handling between API and frontend components
  */
@@ -15,17 +17,19 @@ try {
 }
 
 // Mock Google Drive but test actual API-Frontend flow
-jest.mock('googleapis', () => ({
+const mockDriveFiles = {
+  list: vi.fn()
+};
+
+vi.mock('googleapis', () => ({
   google: {
     auth: {
-      GoogleAuth: jest.fn().mockImplementation(() => ({
-        getClient: jest.fn().mockResolvedValue({})
+      GoogleAuth: vi.fn().mockImplementation(() => ({
+        getClient: vi.fn().mockResolvedValue({})
       }))
     },
-    drive: jest.fn().mockImplementation(() => ({
-      files: {
-        list: jest.fn()
-      }
+    drive: vi.fn().mockImplementation(() => ({
+      files: mockDriveFiles
     }))
   }
 }));
@@ -35,7 +39,7 @@ describe('Gallery API to Frontend Integration', () => {
 
   beforeEach(() => {
     // Reset all mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     
     // Set up mock environment variables
     process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL = 'test@example.com';
@@ -52,16 +56,25 @@ describe('Gallery API to Frontend Integration', () => {
     };
 
     mockResponse = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-      setHeader: jest.fn().mockReturnThis(),
-      end: jest.fn().mockReturnThis()
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis(),
+      setHeader: vi.fn().mockReturnThis(),
+      end: vi.fn().mockReturnThis()
     };
 
-    // Mock filesystem operations
-    jest.spyOn(fs, 'existsSync').mockReturnValue(false);
-    jest.spyOn(fs, 'readFileSync').mockImplementation(() => {
-      throw new Error('Cache file not found');
+    // Mock filesystem operations for cache handling
+    vi.spyOn(fs, 'existsSync').mockReturnValue(false);
+    vi.spyOn(fs, 'readFileSync').mockImplementation((filePath) => {
+      // Allow actual file reads for the gallery API source
+      if (filePath.includes('api/gallery.js')) {
+        return vi.requireActual('fs').readFileSync(filePath, 'utf8');
+      }
+      // Mock cache file reads
+      if (filePath.includes('cache')) {
+        throw new Error('Cache file not found');
+      }
+      // Default fallback
+      return '{}';
     });
   });
 
@@ -83,8 +96,6 @@ describe('Gallery API to Frontend Integration', () => {
 
   test('API response format matches frontend expectations', async () => {
     // Mock Google Drive API response
-    const { google } = require('googleapis');
-    const mockDriveFiles = google.drive().files;
     
     mockDriveFiles.list.mockResolvedValue({
       data: {
@@ -217,7 +228,7 @@ describe('Gallery API to Frontend Integration', () => {
     expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Reset mocks for second request
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockResponse.status.mockReturnThis();
     mockResponse.json.mockReturnThis();
     mockResponse.setHeader.mockReturnThis();
@@ -448,9 +459,9 @@ describe('Gallery API to Frontend Integration', () => {
     mockRequest.query = { year: '2025' };
 
     // Create separate response objects for concurrent testing
-    const mockResponse1 = { ...mockResponse, status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() };
-    const mockResponse2 = { ...mockResponse, status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() };
-    const mockResponse3 = { ...mockResponse, status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() };
+    const mockResponse1 = { ...mockResponse, status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() };
+    const mockResponse2 = { ...mockResponse, status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() };
+    const mockResponse3 = { ...mockResponse, status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() };
 
     // Make multiple concurrent requests
     const requests = [

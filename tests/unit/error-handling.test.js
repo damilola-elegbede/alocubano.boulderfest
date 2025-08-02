@@ -1,4 +1,6 @@
 /**
+
+import { vi } from 'vitest';
  * Error Boundary and Edge Case Tests
  * Testing actual error scenarios and recovery
  */
@@ -21,11 +23,11 @@ describe('Gallery Error Handling', () => {
 
   beforeEach(() => {
     // Mock fetch for network testing
-    mockFetch = jest.fn();
+    mockFetch = vi.fn();
     global.fetch = mockFetch;
 
     // Mock console.error to track error handling
-    mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     // Setup DOM
     document.body.innerHTML = `
@@ -38,10 +40,10 @@ describe('Gallery Error Handling', () => {
     `;
 
     // Mock Image constructor for error testing
-    global.Image = jest.fn().mockImplementation(() => {
+    global.Image = vi.fn().mockImplementation(() => {
       const img = {
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
         src: '',
         onerror: null,
         onload: null,
@@ -69,7 +71,7 @@ describe('Gallery Error Handling', () => {
       return img;
     });
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -296,7 +298,7 @@ describe('Lightbox Error Scenarios', () => {
       </div>
     `;
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('handles corrupted image data', async () => {
@@ -393,9 +395,9 @@ describe('Lightbox Error Scenarios', () => {
       
       // Mock focusable elements
       const focusableElements = [
-        { focus: jest.fn(), blur: jest.fn(), tabIndex: 0 },
-        { focus: jest.fn(), blur: jest.fn(), tabIndex: 0 },
-        { focus: jest.fn(), blur: jest.fn(), tabIndex: -1 }
+        { focus: vi.fn(), blur: vi.fn(), tabIndex: 0 },
+        { focus: vi.fn(), blur: vi.fn(), tabIndex: 0 },
+        { focus: vi.fn(), blur: vi.fn(), tabIndex: -1 }
       ];
       
       // Mock querySelector to return focusable elements
@@ -424,7 +426,7 @@ describe('Lightbox Error Scenarios', () => {
       
       // Test focus restoration on close
       const initialFocus = document.createElement('button');
-      initialFocus.focus = jest.fn();
+      initialFocus.focus = vi.fn();
       
       lightbox.close();
       
@@ -512,9 +514,9 @@ describe('Network and API Error Handling', () => {
   let mockFetch;
 
   beforeEach(() => {
-    mockFetch = jest.fn();
+    mockFetch = vi.fn();
     global.fetch = mockFetch;
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('handles API timeout scenarios', async () => {

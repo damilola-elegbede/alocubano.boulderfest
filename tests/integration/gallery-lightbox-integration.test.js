@@ -1,4 +1,6 @@
 /**
+
+import { vi } from 'vitest';
  * Gallery-Lightbox Integration Tests
  * Testing actual component interaction between Gallery and Lightbox
  */
@@ -43,7 +45,7 @@ describe('Gallery-Lightbox Integration - Real Component Interaction', () => {
 
     // Mock required global dependencies
     global.LazyLoader = class MockLazyLoader {
-      constructor() { this.observer = { observe: jest.fn(), disconnect: jest.fn() }; }
+      constructor() { this.observer = { observe: vi.fn(), disconnect: vi.fn() }; }
       static createAdvanced() { return new MockLazyLoader(); }
       observeNewElements() { return true; }
     };
@@ -65,9 +67,9 @@ describe('Gallery-Lightbox Integration - Real Component Interaction', () => {
     Object.defineProperty(global, 'sessionStorage', { value: mockSessionStorage, configurable: true });
 
     // Mock APIs
-    global.fetch = jest.fn();
-    global.IntersectionObserver = jest.fn().mockImplementation(() => ({
-      observe: jest.fn(), unobserve: jest.fn(), disconnect: jest.fn()
+    global.fetch = vi.fn();
+    global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+      observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn()
     }));
 
     // Load actual source codes
@@ -89,7 +91,7 @@ describe('Gallery-Lightbox Integration - Real Component Interaction', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     document.body.innerHTML = '';
     setupIntegrationEnvironment();
   });
@@ -367,7 +369,7 @@ describe('Gallery-Lightbox Integration - Real Component Interaction', () => {
       
       // Verify event listeners would be properly attached
       galleryImages.forEach((img, index) => {
-        const clickHandler = jest.fn();
+        const clickHandler = vi.fn();
         img.addEventListener('click', clickHandler);
         
         // Simulate click
@@ -434,8 +436,8 @@ describe('Gallery-Lightbox Integration - Real Component Interaction', () => {
         const lightbox = new global.window.Lightbox();
         
         // Simulate focus before opening lightbox
-        focusedImage.focus = jest.fn();
-        focusedImage.blur = jest.fn();
+        focusedImage.focus = vi.fn();
+        focusedImage.blur = vi.fn();
         
         const mockItems = [{ id: 'focus1', viewUrl: 'focus1.jpg', name: 'Focus Test' }];
         lightbox.openAdvanced(mockItems, 0, ['focus'], { focus: 1 });

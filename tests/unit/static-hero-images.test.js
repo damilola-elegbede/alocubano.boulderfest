@@ -1,4 +1,6 @@
 /**
+
+import { vi } from 'vitest';
  * Tests for Static Hero Image System
  * 
  * Tests the new simplified static hero image loading system that replaced
@@ -16,21 +18,21 @@ describe('Static Hero Image System', () => {
       src: '',
       alt: '',
       style: { display: '' },
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn()
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
     };
 
     // Mock document.getElementById
     mockDocument = {
-      getElementById: jest.fn().mockReturnValue(mockHeroImage),
-      querySelector: jest.fn().mockReturnValue(mockHeroImage)
+      getElementById: vi.fn().mockReturnValue(mockHeroImage),
+      querySelector: vi.fn().mockReturnValue(mockHeroImage)
     };
 
     global.document = mockDocument;
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Hero Image Path Mapping', () => {
@@ -140,7 +142,7 @@ describe('Static Hero Image System', () => {
       };
 
       // Ensure the global document mock is properly set
-      global.document.getElementById = jest.fn().mockReturnValue(mockHeroImage);
+      global.document.getElementById = vi.fn().mockReturnValue(mockHeroImage);
 
       // Test loading for different pages
       expect(loadHeroImage('home')).toBe(true);
@@ -231,7 +233,7 @@ describe('Static Hero Image System', () => {
       // Mock element with inline style
       const mockElement = {
         style: { objectPosition: 'top center' },
-        getAttribute: jest.fn().mockReturnValue('object-position: top center !important;')
+        getAttribute: vi.fn().mockReturnValue('object-position: top center !important;')
       };
 
       expect(testObjectPosition(mockElement)).toBe(true);
@@ -259,9 +261,9 @@ describe('Static Hero Image System', () => {
     test('should eliminate session storage usage', () => {
       // Mock sessionStorage to verify it's not used
       const sessionStorageMock = {
-        getItem: jest.fn(),
-        setItem: jest.fn(),
-        removeItem: jest.fn()
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn()
       };
 
       global.sessionStorage = sessionStorageMock;
