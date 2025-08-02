@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./tests/setup-vitest.js'],
-    globalTeardown: './tests/global-teardown.js',
+    // globalTeardown: './tests/global-teardown.js',
     
     // Test file patterns
     include: [
