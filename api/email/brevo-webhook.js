@@ -5,7 +5,10 @@
 
 import { getEmailSubscriberService } from '../lib/email-subscriber-service.js';
 import { getBrevoService } from '../lib/brevo-service.js';
-import ipRangeCheck from 'ip-range-check';
+import * as ipRangeCheckModule from 'ip-range-check';
+
+// Handle both default and named exports
+const ipRangeCheck = ipRangeCheckModule.default || ipRangeCheckModule;
 
 /**
  * Get raw body from request
@@ -50,8 +53,20 @@ function isValidWebhookSource(ip) {
         '172.246.240.0/20'
     ];
     
-    // Check if the IP falls within the allowed ranges
-    return ipRangeCheck(ip, allowedIPs);
+    try {
+        // Check if the IP falls within the allowed ranges
+        if (typeof ipRangeCheck === 'function') {
+            return ipRangeCheck(ip, allowedIPs);
+        } else if (ipRangeCheck && typeof ipRangeCheck.inRange === 'function') {
+            return ipRangeCheck.inRange(ip, allowedIPs);
+        } else {
+            console.error('ip-range-check module not properly loaded');
+            return false;
+        }
+    } catch (error) {
+        console.error('Error checking IP range:', error);
+        return false;
+    }
 }
 
 /**
