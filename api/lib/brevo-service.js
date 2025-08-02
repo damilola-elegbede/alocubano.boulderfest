@@ -3,7 +3,7 @@
  * Handles all Brevo API interactions for email list management
  */
 
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 class BrevoService {
     constructor() {
@@ -327,7 +327,16 @@ class BrevoService {
             .update(payload)
             .digest('hex');
         
-        return signature === expectedSignature;
+        // Use timing-safe comparison to prevent timing attacks
+        const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+        const signatureBuffer = Buffer.from(signature, 'hex');
+        
+        // Ensure buffers are the same length before comparison
+        if (expectedBuffer.length !== signatureBuffer.length) {
+            return false;
+        }
+        
+        return timingSafeEqual(expectedBuffer, signatureBuffer);
     }
     
     /**

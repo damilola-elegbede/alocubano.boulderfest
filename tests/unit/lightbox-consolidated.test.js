@@ -1,9 +1,12 @@
 /**
-
-import { vi } from 'vitest';
  * Consolidated Lightbox Tests - Testing Actual Source Code
  * Replaces 3 redundant lightbox test files
  */
+
+import { vi } from 'vitest';
+
+// Alias jest to vi for compatibility
+global.jest = vi;
 
 // CRITICAL: Load actual lightbox source code
 // Since Jest doesn't support ES modules by default, we'll load and evaluate the source

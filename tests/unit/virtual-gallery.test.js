@@ -1,9 +1,12 @@
 /**
-
-import { vi } from 'vitest';
  * Virtual Gallery Manager Unit Tests
  * Comprehensive test suite for the virtual scrolling gallery system
  */
+
+import { vi } from 'vitest';
+
+// Alias jest to vi for compatibility
+global.jest = { fn: vi.fn };
 
 // Mock the DOM APIs that aren't available in Jest/Node environment
 global.IntersectionObserver = vi.fn().mockImplementation((callback) => ({

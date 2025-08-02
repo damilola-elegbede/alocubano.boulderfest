@@ -1,9 +1,9 @@
 /**
-
-import { vi } from 'vitest';
  * Lazy Loading Component Tests - Real Source Code
  * Testing actual LazyLoader class from js/components/lazy-loading.js
  */
+
+import { vi } from 'vitest';
 
 const fs = require('fs');
 const path = require('path');

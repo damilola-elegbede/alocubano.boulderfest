@@ -4,7 +4,7 @@
  */
 
 import { getBrevoService } from './brevo-service.js';
-import { createHmac } from 'crypto';
+import { createHmac, randomBytes } from 'crypto';
 
 class EmailSubscriberService {
     constructor() {
@@ -463,6 +463,14 @@ class EmailSubscriberService {
     validateUnsubscribeToken(email, token) {
         const expectedToken = this.generateUnsubscribeToken(email);
         return token === expectedToken;
+    }
+    
+    /**
+     * Generate verification token
+     * @returns {string} Random verification token
+     */
+    generateVerificationToken() {
+        return randomBytes(32).toString('hex');
     }
 }
 

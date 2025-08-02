@@ -172,7 +172,7 @@ jobs:
         echo "Scanning for hardcoded secrets..."
         
         # Run grep and capture exit code
-        grep -r -E "(api[_-]?key|password|secret|token)\\s*[:=]\\s*[\"'][^\"']*[\"']" \
+        grep -r -E "(api[_-]?key|password|secret|token)[[:space:]]*[:=][[:space:]]*[\"'][^\"']*[\"']" \
            --include="*.js" \
            --include="*.html" \
            --include="*.css" \
