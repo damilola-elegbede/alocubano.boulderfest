@@ -24,10 +24,39 @@ class NewsletterSignup {
         
         // Real-time validation
         this.emailInput.addEventListener('blur', () => this.validateEmail());
-        this.emailInput.addEventListener('input', () => this.clearError());
+        this.emailInput.addEventListener('input', () => {
+            this.clearError();
+            this.updateButtonState(); // Update button state as user types
+        });
+        
+        // Checkbox gating for subscribe button
+        this.consentCheckbox.addEventListener('change', () => this.updateButtonState());
+        
+        // Initialize button state
+        this.updateButtonState();
         
         // Mobile optimizations
         this.setupMobileOptimizations();
+    }
+    
+    updateButtonState() {
+        // Enable/disable subscribe button based on both email validity and checkbox state
+        const isEmailValid = this.isEmailValid();
+        const isConsentGiven = this.consentCheckbox.checked;
+        
+        if (isEmailValid && isConsentGiven) {
+            this.submitButton.disabled = false;
+            this.submitButton.setAttribute('aria-disabled', 'false');
+        } else {
+            this.submitButton.disabled = true;
+            this.submitButton.setAttribute('aria-disabled', 'true');
+        }
+    }
+    
+    isEmailValid() {
+        const email = this.emailInput.value.trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return email && emailRegex.test(email);
     }
     
     setupMobileOptimizations() {
@@ -138,9 +167,10 @@ class NewsletterSignup {
             this.consentCheckbox.disabled = true;
         } else {
             this.submitButton.setAttribute('aria-busy', 'false');
-            this.submitButton.disabled = false;
             this.emailInput.readOnly = false;
             this.consentCheckbox.disabled = false;
+            // Update button state based on checkbox instead of always enabling
+            this.updateButtonState();
         }
     }
     

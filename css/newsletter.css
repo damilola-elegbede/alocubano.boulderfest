@@ -1,21 +1,15 @@
 /* Newsletter Signup Component */
 .contact-newsletter {
     background: var(--color-white);
-    border-left-color: var(--color-red);
+    border-left-color: var(--color-blue);
     position: relative;
     overflow: hidden;
+    grid-column: 1 / -1; /* Span all columns */
+    max-width: 900px; /* Three times the typical width */
+    margin: 0 auto; /* Center horizontally */
+    justify-self: center; /* Center within grid */
 }
 
-.contact-newsletter::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 40%;
-    height: 100%;
-    background: linear-gradient(135deg, transparent 50%, rgba(204, 41, 54, 0.03) 50%);
-    pointer-events: none;
-}
 
 .newsletter-form-type {
     margin-top: auto;
@@ -33,7 +27,7 @@
 }
 
 .newsletter-input-wrapper:focus-within {
-    box-shadow: 0 0 0 3px rgba(204, 41, 54, 0.1);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
     transform: translateY(-2px);
 }
 
@@ -61,22 +55,48 @@
 .newsletter-submit {
     position: relative;
     border: none;
-    border-left: 2px solid var(--color-black);
+    border-left: 2px solid var(--color-blue);
     padding: var(--space-md) var(--space-lg);
     min-width: 140px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: var(--space-sm);
+    background: var(--color-blue);
+    color: var(--color-white);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.newsletter-submit:disabled {
+    background: var(--color-gray-300);
+    border-left-color: var(--color-gray-300);
+    color: var(--color-gray-500);
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .newsletter-submit .button-icon {
-    transition: transform var(--transition-base);
     font-size: var(--font-size-lg);
 }
 
-.newsletter-submit:hover .button-icon {
-    transform: translateX(4px);
+/* Override all hover effects for newsletter submit button */
+.newsletter-submit:hover {
+    background: var(--color-blue) !important;
+    transform: none !important;
+    border-color: var(--color-blue) !important;
+    color: var(--color-white) !important;
+}
+
+.newsletter-submit:disabled:hover {
+    background: var(--color-gray-300) !important;
+    transform: none !important;
+    border-left-color: var(--color-gray-300) !important;
+    color: var(--color-gray-500) !important;
+}
+
+.newsletter-submit:hover::before {
+    left: -100% !important; /* Hide any sliding background animations */
 }
 
 /* Consent Checkbox */
@@ -131,7 +151,7 @@
     justify-content: center;
     width: 24px;
     height: 24px;
-    background: var(--color-red);
+    background: var(--color-blue);
     color: var(--color-white);
     border-radius: var(--radius-full);
     font-size: var(--font-size-xs);
@@ -192,6 +212,10 @@
         width: 100%;
         min-height: 48px;
         justify-content: center;
+    }
+    
+    .newsletter-submit:disabled {
+        border-top-color: var(--color-gray-300);
     }
     
     .newsletter-input {
