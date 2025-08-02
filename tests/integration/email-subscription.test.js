@@ -8,6 +8,7 @@ const mockEmailService = {
     createSubscriber: vi.fn(),
     unsubscribeSubscriber: vi.fn(),
     validateUnsubscribeToken: vi.fn(),
+    generateVerificationToken: vi.fn(() => 'test-verification-token'),
     brevoService: {
         sendVerificationEmail: vi.fn()
     }

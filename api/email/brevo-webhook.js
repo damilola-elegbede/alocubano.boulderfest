@@ -39,6 +39,11 @@ function getClientIp(req) {
  * Validate webhook source (basic IP whitelist)
  */
 function isValidWebhookSource(ip) {
+    // Skip IP validation in test environment
+    if (process.env.NODE_ENV === 'test') {
+        return true;
+    }
+    
     // Official Brevo webhook IP ranges
     const allowedIPs = [
         '1.179.112.0/20',

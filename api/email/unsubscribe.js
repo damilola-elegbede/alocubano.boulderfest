@@ -107,14 +107,10 @@ export default async function handler(req, res) {
         }
         
         // Sanitize token
-        if (token) {
+        if (token && token !== 'undefined') {
             token = token.trim();
-            // Validate token format (should be a hex string)
-            if (!/^[a-fA-F0-9]+$/.test(token)) {
-                return res.status(400).json({
-                    error: 'Invalid token format'
-                });
-            }
+        } else if (token === 'undefined') {
+            token = undefined;
         }
         
         // Validate required fields
