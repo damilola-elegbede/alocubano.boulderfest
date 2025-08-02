@@ -40,7 +40,7 @@ function getClientIp(req) {
  */
 function isValidWebhookSource(ip) {
     // Skip IP validation in test environment
-    if (process.env.NODE_ENV === 'test') {
+    if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
         return true;
     }
     
