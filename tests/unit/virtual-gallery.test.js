@@ -27,7 +27,7 @@ global.ResizeObserver = vi.fn().mockImplementation((callback) => ({
 // Mock performance API
 global.performance = {
     ...global.performance,
-    now: jest.fn(() => Date.now()),
+    now: vi.fn(() => Date.now()),
     mark: vi.fn(),
     measure: vi.fn(),
     getEntriesByType: vi.fn().mockReturnValue([]),
@@ -57,11 +57,11 @@ const createMockElement = (tag = 'div') => ({
     appendChild: vi.fn(),
     removeChild: vi.fn(),
     querySelector: vi.fn(),
-    querySelectorAll: jest.fn(() => []),
+    querySelectorAll: vi.fn(() => []),
     setAttribute: vi.fn(),
     getAttribute: vi.fn(),
     removeAttribute: vi.fn(),
-    getBoundingClientRect: jest.fn(() => ({
+    getBoundingClientRect: vi.fn(() => ({
         top: 0, left: 0, right: 0, bottom: 0, width: 800, height: 600
     })),
     scrollTo: vi.fn(),
@@ -77,13 +77,13 @@ const createMockElement = (tag = 'div') => ({
 // Mock document
 global.document = {
     ...global.document,
-    createElement: jest.fn((tag) => createMockElement(tag)),
-    createDocumentFragment: jest.fn(() => ({
+    createElement: vi.fn((tag) => createMockElement(tag)),
+    createDocumentFragment: vi.fn(() => ({
         appendChild: vi.fn(),
         children: []
     })),
     querySelector: vi.fn(),
-    querySelectorAll: jest.fn(() => []),
+    querySelectorAll: vi.fn(() => []),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     body: createMockElement('body')
@@ -94,7 +94,7 @@ global.window = {
     ...global.window,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-    requestAnimationFrame: jest.fn((cb) => setTimeout(cb, 16)),
+    requestAnimationFrame: vi.fn((cb) => setTimeout(cb, 16)),
     cancelAnimationFrame: vi.fn(),
     innerWidth: 1200,
     innerHeight: 800,

@@ -402,7 +402,7 @@ describe('Lightbox Error Scenarios', () => {
       
       // Mock querySelector to return focusable elements
       const originalQuerySelectorAll = document.querySelectorAll;
-      document.querySelectorAll = jest.fn((selector) => {
+      document.querySelectorAll = vi.fn((selector) => {
         if (selector.includes('button, [href], input, select, textarea, [tabindex]')) {
           return focusableElements;
         }

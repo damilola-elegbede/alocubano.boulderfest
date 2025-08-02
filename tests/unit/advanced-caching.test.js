@@ -40,38 +40,38 @@ const createMockServiceWorker = () => {
   
   // Mock cache API
   global.caches = {
-    open: jest.fn((name) => {
+    open: vi.fn((name) => {
       if (!mockSW.caches.has(name)) {
         mockSW.caches.set(name, new Map());
       }
       const cache = mockSW.caches.get(name);
       return Promise.resolve({
-        match: jest.fn((request) => {
+        match: vi.fn((request) => {
           const key = typeof request === 'string' ? request : request.url;
           return Promise.resolve(cache.get(key) || null);
         }),
-        put: jest.fn((request, response) => {
+        put: vi.fn((request, response) => {
           const key = typeof request === 'string' ? request : request.url;
           cache.set(key, response);
           return Promise.resolve();
         }),
-        add: jest.fn((url) => {
+        add: vi.fn((url) => {
           cache.set(url, createMockResponse('cached'));
           return Promise.resolve();
         }),
-        addAll: jest.fn((urls) => {
+        addAll: vi.fn((urls) => {
           urls.forEach(url => cache.set(url, createMockResponse('cached')));
           return Promise.resolve();
         }),
-        delete: jest.fn((request) => {
+        delete: vi.fn((request) => {
           const key = typeof request === 'string' ? request : request.url;
           return Promise.resolve(cache.delete(key));
         }),
-        keys: jest.fn(() => Promise.resolve(Array.from(cache.keys())))
+        keys: vi.fn(() => Promise.resolve(Array.from(cache.keys())))
       });
     }),
-    keys: jest.fn(() => Promise.resolve(Array.from(mockSW.caches.keys()))),
-    delete: jest.fn((name) => Promise.resolve(mockSW.caches.delete(name)))
+    keys: vi.fn(() => Promise.resolve(Array.from(mockSW.caches.keys()))),
+    delete: vi.fn((name) => Promise.resolve(mockSW.caches.delete(name)))
   };
   
   return mockSW;
@@ -121,14 +121,14 @@ describe('Advanced Caching System - Phase 2', () => {
     
     // Mock performance API
     global.performance = {
-      now: jest.fn(() => Date.now()),
-      getEntriesByType: jest.fn(() => []),
+      now: vi.fn(() => Date.now()),
+      getEntriesByType: vi.fn(() => []),
       mark: vi.fn(),
       measure: vi.fn()
     };
     
     // Mock requestIdleCallback
-    global.requestIdleCallback = jest.fn((callback) => {
+    global.requestIdleCallback = vi.fn((callback) => {
       setTimeout(() => callback({ timeRemaining: () => 50 }), 0);
     });
     
