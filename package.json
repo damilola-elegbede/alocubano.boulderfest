@@ -52,6 +52,7 @@
   "dependencies": {
     "dotenv": "^17.2.0",
     "googleapis": "^153.0.0",
+    "ip-range-check": "^0.2.0",
     "sharp": "^0.34.3"
   },
   "devDependencies": {

@@ -1,8 +1,8 @@
 /**
-
-import { vi } from 'vitest';
  * Simplified unit tests for LazyLoading functionality
  */
+
+import { vi } from 'vitest';
 
 describe('LazyLoading Component Logic', () => {
   describe('Intersection Observer Logic', () => {

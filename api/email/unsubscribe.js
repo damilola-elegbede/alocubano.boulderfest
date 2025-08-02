@@ -8,6 +8,16 @@ import { getEmailSubscriberService } from '../lib/email-subscriber-service.js';
 // Rate limiting storage
 const rateLimitMap = new Map();
 
+// Periodic cleanup to prevent memory leaks
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of rateLimitMap.entries()) {
+        if (now > value.resetTime) {
+            rateLimitMap.delete(key);
+        }
+    }
+}, 60 * 1000); // Clean up every minute
+
 /**
  * Rate limiting middleware
  */
@@ -94,6 +104,17 @@ export default async function handler(req, res) {
             return res.status(405).json({ 
                 error: 'Method not allowed. Use GET or POST.' 
             });
+        }
+        
+        // Sanitize token
+        if (token) {
+            token = token.trim();
+            // Validate token format (should be a hex string)
+            if (!/^[a-fA-F0-9]+$/.test(token)) {
+                return res.status(400).json({
+                    error: 'Invalid token format'
+                });
+            }
         }
         
         // Validate required fields

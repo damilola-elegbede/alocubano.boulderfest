@@ -176,7 +176,7 @@ export default async function handler(req, res) {
             consentSource: sanitized.source || 'website',
             consentIp: getClientIp(req),
             verificationToken: process.env.REQUIRE_EMAIL_VERIFICATION === 'true' ? 
-                require('crypto').randomBytes(32).toString('hex') : null
+                emailService.generateVerificationToken() : null
         };
         
         // Create subscriber

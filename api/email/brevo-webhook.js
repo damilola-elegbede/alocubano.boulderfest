@@ -5,6 +5,7 @@
 
 import { getEmailSubscriberService } from '../lib/email-subscriber-service.js';
 import { getBrevoService } from '../lib/brevo-service.js';
+import ipRangeCheck from 'ip-range-check';
 
 /**
  * Get raw body from request
@@ -38,16 +39,14 @@ function getClientIp(req) {
  * Validate webhook source (basic IP whitelist)
  */
 function isValidWebhookSource(ip) {
-    // Brevo webhook IPs (update with actual Brevo webhook IPs)
+    // Official Brevo webhook IP ranges
     const allowedIPs = [
-        '185.41.28.0/24',
-        '185.41.29.0/24',
-        '217.70.184.0/24'
+        '1.179.112.0/20',
+        '172.246.240.0/20'
     ];
     
-    // In production, implement proper IP range checking
-    // For now, allow all (remove this in production)
-    return true;
+    // Check if the IP falls within the allowed ranges
+    return ipRangeCheck(ip, allowedIPs);
 }
 
 /**

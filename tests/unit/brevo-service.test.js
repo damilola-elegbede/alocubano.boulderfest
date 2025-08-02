@@ -8,8 +8,17 @@ vi.mock('crypto', () => {
     return {
         createHmac: vi.fn(() => ({
             update: vi.fn().mockReturnThis(),
-            digest: vi.fn(() => 'mocked-signature')
-        }))
+            digest: vi.fn(() => '6d6f636b65642d7369676e6174757265') // 'mocked-signature' in hex
+        })),
+        timingSafeEqual: vi.fn((a, b) => {
+            // Compare buffers byte by byte
+            if (a.length !== b.length) return false;
+            let same = true;
+            for (let i = 0; i < a.length; i++) {
+                if (a[i] !== b[i]) same = false;
+            }
+            return same;
+        })
     };
 });
 
@@ -291,8 +300,8 @@ describe('BrevoService', () => {
         
         it('should validate correct signature', () => {
             const payload = JSON.stringify({ test: 'data' });
-            // Since we're mocking crypto to always return 'mocked-signature'
-            const isValid = brevoService.validateWebhookSignature(payload, 'mocked-signature');
+            // Since we're mocking crypto to always return hex value
+            const isValid = brevoService.validateWebhookSignature(payload, '6d6f636b65642d7369676e6174757265');
             expect(isValid).toBe(true);
         });
         

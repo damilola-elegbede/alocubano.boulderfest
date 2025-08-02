@@ -14,6 +14,9 @@ import { vi } from 'vitest';
 const fs = require('fs');
 const path = require('path');
 
+// Alias jest to vi for compatibility
+global.jest = vi;
+
 // CRITICAL: Import actual source code by loading and evaluating it
 let gallerySource;
 try {
