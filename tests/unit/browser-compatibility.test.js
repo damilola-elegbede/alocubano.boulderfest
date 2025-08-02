@@ -293,7 +293,7 @@ describe('Service Worker Compatibility', () => {
     const messageHandlers = [];
     
     global.navigator.serviceWorker = {
-      addEventListener: jest.fn((event, handler) => {
+      addEventListener: vi.fn((event, handler) => {
         messageHandlers.push({ event, handler });
       }),
       postMessage: vi.fn()
@@ -457,7 +457,7 @@ describe('Fetch API Compatibility', () => {
       responseText: JSON.stringify({ data: 'xhr-response' })
     };
     
-    global.XMLHttpRequest = jest.fn(() => mockXHR);
+    global.XMLHttpRequest = vi.fn(() => mockXHR);
     
     // Simulate XHR-based request
     const xhrRequest = (url) => {

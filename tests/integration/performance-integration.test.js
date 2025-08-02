@@ -84,7 +84,7 @@ describe('Gallery Loading Performance', () => {
 
     // Mock Image constructor for loading simulation
     global.Image = vi.fn().mockImplementation(() => ({
-      addEventListener: jest.fn((event, handler) => {
+      addEventListener: vi.fn((event, handler) => {
         if (event === 'load') {
           // Simulate image load after short delay
           setTimeout(handler, 10);
@@ -158,7 +158,7 @@ describe('Gallery Loading Performance', () => {
     const originalImage = global.Image;
     global.Image = vi.fn().mockImplementation(() => {
       const img = {
-        addEventListener: jest.fn((event, callback) => {
+        addEventListener: vi.fn((event, callback) => {
           if (event === 'load') {
             // Simulate loading delay based on number of images
             setTimeout(() => {

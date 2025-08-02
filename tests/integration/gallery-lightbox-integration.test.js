@@ -53,14 +53,14 @@ describe('Gallery-Lightbox Integration - Real Component Interaction', () => {
     // Mock storage
     mockLocalStorage = {
       data: {},
-      getItem: jest.fn((key) => mockLocalStorage.data[key] || null),
-      setItem: jest.fn((key, value) => { mockLocalStorage.data[key] = value; }),
+      getItem: vi.fn((key) => mockLocalStorage.data[key] || null),
+      setItem: vi.fn((key, value) => { mockLocalStorage.data[key] = value; }),
     };
 
     mockSessionStorage = {
       data: {},
-      getItem: jest.fn((key) => mockSessionStorage.data[key] || null),
-      setItem: jest.fn((key, value) => { mockSessionStorage.data[key] = value; }),
+      getItem: vi.fn((key) => mockSessionStorage.data[key] || null),
+      setItem: vi.fn((key, value) => { mockSessionStorage.data[key] = value; }),
     };
 
     Object.defineProperty(global, 'localStorage', { value: mockLocalStorage, configurable: true });

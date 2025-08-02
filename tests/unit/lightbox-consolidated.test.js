@@ -48,19 +48,19 @@ const createMockLightboxElement = () => {
   return {
     id: 'unified-lightbox',
     classList: {
-      add: jest.fn((...classes) => {
+      add: vi.fn((...classes) => {
         classes.forEach(cls => {
           if (cls === 'is-open') mockState.isOpen = true;
           if (cls === 'active') mockState.isActive = true;
         });
       }),
-      remove: jest.fn((...classes) => {
+      remove: vi.fn((...classes) => {
         classes.forEach(cls => {
           if (cls === 'is-open') mockState.isOpen = false;
           if (cls === 'active') mockState.isActive = false;
         });
       }),
-      contains: jest.fn((className) => {
+      contains: vi.fn((className) => {
         if (className === 'lightbox' || className === 'gallery-lightbox') return true;
         if (className === 'is-open') return mockState.isOpen;
         if (className === 'active') return mockState.isActive;
@@ -69,7 +69,7 @@ const createMockLightboxElement = () => {
     },
     style: { display: 'none' },
     remove: vi.fn(),
-    querySelector: jest.fn((selector) => {
+    querySelector: vi.fn((selector) => {
       if (selector.includes('lightbox-image')) return mockImage;
       if (selector.includes('lightbox-title')) return mockTitle;
       if (selector.includes('lightbox-counter')) return mockCounter;
@@ -96,12 +96,12 @@ if (!global.document) global.document = {};
 if (!global.document.body) global.document.body = {};
 
 global.document.body.insertAdjacentHTML = vi.fn();
-global.document.getElementById = jest.fn((id) => {
+global.document.getElementById = vi.fn((id) => {
   if (id.includes('lightbox')) return mockLightboxElement;
   return null;
 });
 
-global.document.querySelectorAll = jest.fn((selector) => {
+global.document.querySelectorAll = vi.fn((selector) => {
   if (selector === '.gallery-image') {
     // Return mock NodeList with addEventListener method
     return [
@@ -163,7 +163,7 @@ try {
         // The mock element is already created by the test setup
         // Just ensure it's properly attached
         const mockElement = createMockLightboxElement();
-        global.document.getElementById = jest.fn((id) => {
+        global.document.getElementById = vi.fn((id) => {
           if (id === this.lightboxId || id.includes('lightbox')) return mockElement;
           return null;
         });
@@ -327,12 +327,12 @@ describe('Lightbox Component', () => {
     global.currentMockElement = freshMockElement;
     
     // Ensure our mock lightbox element is properly set up
-    global.document.getElementById = jest.fn((id) => {
+    global.document.getElementById = vi.fn((id) => {
       if (id.includes('lightbox')) return freshMockElement;
       return null;
     });
     
-    global.document.querySelectorAll = jest.fn((selector) => {
+    global.document.querySelectorAll = vi.fn((selector) => {
       if (selector === '.gallery-image') {
         return [
           {src: 'image1.jpg', addEventListener: vi.fn()}, 
@@ -454,12 +454,12 @@ describe('Lightbox Navigation', () => {
     const freshMockElement = createMockLightboxElement();
     
     // Ensure our mock lightbox element is properly set up
-    global.document.getElementById = jest.fn((id) => {
+    global.document.getElementById = vi.fn((id) => {
       if (id.includes('lightbox')) return freshMockElement;
       return null;
     });
     
-    global.document.querySelectorAll = jest.fn((selector) => {
+    global.document.querySelectorAll = vi.fn((selector) => {
       if (selector === '.gallery-image') {
         return [
           {src: 'image1.jpg', addEventListener: vi.fn()}, 
@@ -682,12 +682,12 @@ describe('Lightbox Counter', () => {
     const freshMockElement = createMockLightboxElement();
     
     // Ensure our mock lightbox element is properly set up
-    global.document.getElementById = jest.fn((id) => {
+    global.document.getElementById = vi.fn((id) => {
       if (id.includes('lightbox')) return freshMockElement;
       return null;
     });
     
-    global.document.querySelectorAll = jest.fn((selector) => {
+    global.document.querySelectorAll = vi.fn((selector) => {
       if (selector === '.gallery-image') {
         return [
           {src: 'image1.jpg', addEventListener: vi.fn()}, 
