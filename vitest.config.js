@@ -6,6 +6,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./tests/setup-vitest.js'],
+    globalTeardown: './tests/global-teardown.js',
     
     // Test file patterns
     include: [
@@ -17,10 +18,26 @@ export default defineConfig({
       'node_modules/**'
     ],
     
-    // Performance optimizations
+    // Memory-conscious performance settings
     threads: true,
-    maxConcurrency: 8,
+    maxConcurrency: 2, // Reduced from 8 to prevent memory exhaustion
+    minThreads: 1,
+    maxThreads: 2,
     testTimeout: 10000,
+    
+    // Pool options for memory management
+    poolOptions: {
+      threads: {
+        singleThread: false,
+        maxThreads: 2,
+        minThreads: 1,
+        isolate: true
+      }
+    },
+    
+    // Enhanced cleanup options
+    clearMocks: true,
+    restoreMocks: true,
     
     // Coverage configuration
     coverage: {

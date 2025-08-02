@@ -330,3 +330,81 @@ global.createMockResponse = (data, status = 200) => ({
 beforeEach(() => {
   vi.clearAllMocks();
 });
+
+// Aggressive cleanup after each test to prevent memory leaks
+afterEach(() => {
+  // Clear all mocks and timers
+  vi.clearAllMocks();
+  vi.clearAllTimers();
+  vi.restoreAllMocks();
+  
+  // Clear DOM completely
+  if (typeof document !== 'undefined' && document.body && document.head) {
+    try {
+      document.body.innerHTML = '';
+      document.head.innerHTML = '';
+      
+      // Clear any remaining event listeners (safer approach)
+      const elements = document.querySelectorAll('*');
+      elements.forEach(el => {
+        if (el && el.cloneNode && el.parentNode) {
+          try {
+            const newElement = el.cloneNode(true);
+            el.parentNode.replaceChild(newElement, el);
+          } catch (e) {
+            // Silently ignore DOM manipulation errors
+          }
+        }
+      });
+    } catch (e) {
+      // Silently ignore DOM cleanup errors
+    }
+  }
+  
+  // Clear storage
+  try {
+    global.localStorage?.clear();
+    global.sessionStorage?.clear();
+  } catch (e) {
+    // Silently ignore storage cleanup errors
+  }
+  
+  // Clear global fetch calls
+  try {
+    global.fetch?.mockClear();
+  } catch (e) {
+    // Silently ignore fetch cleanup errors
+  }
+  
+  // Force garbage collection if available
+  if (global.gc) {
+    try {
+      global.gc();
+    } catch (e) {
+      // Silently ignore GC errors
+    }
+  }
+  
+  // Clear any remaining timeouts/intervals (safer approach)
+  try {
+    const highestTimeoutId = setTimeout(() => {}, 0);
+    for (let i = 0; i < Math.min(highestTimeoutId, 1000); i++) {
+      clearTimeout(i);
+      clearInterval(i);
+    }
+  } catch (e) {
+    // Silently ignore timer cleanup errors
+  }
+  
+  // Log memory usage for monitoring (only in verbose mode)
+  if (process.memoryUsage && process.env.NODE_ENV !== 'test') {
+    try {
+      const memUsage = process.memoryUsage();
+      if (memUsage.heapUsed > 100 * 1024 * 1024) { // Log if > 100MB
+        console.warn(`High memory usage: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`);
+      }
+    } catch (e) {
+      // Silently ignore memory monitoring errors
+    }
+  }
+});
