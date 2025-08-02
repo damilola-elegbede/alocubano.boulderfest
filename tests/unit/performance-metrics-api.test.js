@@ -638,10 +638,21 @@ describe('Performance Metrics API', () => {
                 // Mock performance.now to provide realistic timing measurements
                 let timeCounter = 0;
                 const originalPerformanceNow = performance.now;
-                performance.now = () => {
-                    timeCounter += 0.001; // Add minimal time increment
-                    return timeCounter;
-                };
+                
+                // Use defineProperty for Node 18.x compatibility
+                try {
+                    Object.defineProperty(performance, 'now', {
+                        value: () => {
+                            timeCounter += 0.001; // Add minimal time increment
+                            return timeCounter;
+                        },
+                        writable: true,
+                        configurable: true
+                    });
+                } catch (e) {
+                    // If we can't override, just use the original
+                    console.warn('Could not override performance.now');
+                }
                 
                 try {
                     const startTime = performance.now();
@@ -667,7 +678,15 @@ describe('Performance Metrics API', () => {
                     };
                 } finally {
                     // Restore original performance.now
-                    performance.now = originalPerformanceNow;
+                    try {
+                        Object.defineProperty(performance, 'now', {
+                            value: originalPerformanceNow,
+                            writable: true,
+                            configurable: true
+                        });
+                    } catch (e) {
+                        // If we can't restore, that's okay
+                    }
                 }
             };
 

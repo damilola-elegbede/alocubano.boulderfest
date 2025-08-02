@@ -11,9 +11,14 @@ Object.assign(global.navigator, {
 });
 
 // Enhance performance API with test-specific needs
-Object.assign(global.performance, {
-    getEntriesByType: vi.fn().mockReturnValue([])
-});
+// Use defineProperty for Node 18.x compatibility
+if (!global.performance.getEntriesByType || typeof global.performance.getEntriesByType !== 'function') {
+    Object.defineProperty(global.performance, 'getEntriesByType', {
+        value: vi.fn().mockReturnValue([]),
+        writable: true,
+        configurable: true
+    });
+}
 
 // Mock window and document with vi functions
 const mockWindowAddEventListener = vi.fn();
