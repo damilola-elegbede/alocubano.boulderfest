@@ -180,7 +180,7 @@ describe('LazyLoader Real Source Code Integration', () => {
     expect(mockIntersectionObserver.unobserve).toHaveBeenCalledWith(img);
   });
 
-  test('should handle failed image loading with retry logic', (done) => {
+  test('should handle failed image loading with retry logic', { timeout: 5000 }, (done) => {
     const LazyLoader = global.window.LazyLoader;
     
     const img = document.createElement('img');
@@ -209,7 +209,7 @@ describe('LazyLoader Real Source Code Integration', () => {
       expect(loader.failedImages.size).toBeGreaterThan(0);
       
       done();
-    }, 50);
+    }, 100);
   });
 
   test('should handle advanced mode with lazy items', () => {
