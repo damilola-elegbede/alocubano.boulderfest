@@ -39,28 +39,78 @@ if (!global.performance) {
   global.performance = {};
 }
 
-Object.assign(global.performance, {
+// Node 18.x has a read-only performance object, so we need to use defineProperty
+const performanceMethods = {
   now: vi.fn(() => Date.now()),
   mark: vi.fn(),
   measure: vi.fn(),
   getEntriesByType: vi.fn(() => []),
   getEntriesByName: vi.fn(() => []),
   clearMarks: vi.fn(),
-  clearMeasures: vi.fn(),
-  memory: {
-    usedJSHeapSize: 1024 * 1024,
-    totalJSHeapSize: 2 * 1024 * 1024,
-    jsHeapSizeLimit: 4 * 1024 * 1024
-  },
-  navigation: {
-    type: 1,
-    redirectCount: 0
-  },
-  timing: {
-    navigationStart: Date.now() - 1000,
-    loadEventEnd: Date.now()
+  clearMeasures: vi.fn()
+};
+
+// Define each method individually to handle read-only properties
+Object.keys(performanceMethods).forEach(key => {
+  try {
+    if (!global.performance[key] || typeof global.performance[key] !== 'function') {
+      Object.defineProperty(global.performance, key, {
+        value: performanceMethods[key],
+        writable: true,
+        configurable: true
+      });
+    }
+  } catch (e) {
+    // Silently fail if property cannot be defined
   }
 });
+
+// Define complex properties separately
+try {
+  if (!global.performance.memory) {
+    Object.defineProperty(global.performance, 'memory', {
+      value: {
+        usedJSHeapSize: 1024 * 1024,
+        totalJSHeapSize: 2 * 1024 * 1024,
+        jsHeapSizeLimit: 4 * 1024 * 1024
+      },
+      writable: true,
+      configurable: true
+    });
+  }
+} catch (e) {
+  // Silently fail
+}
+
+try {
+  if (!global.performance.navigation) {
+    Object.defineProperty(global.performance, 'navigation', {
+      value: {
+        type: 1,
+        redirectCount: 0
+      },
+      writable: true,
+      configurable: true
+    });
+  }
+} catch (e) {
+  // Silently fail
+}
+
+try {
+  if (!global.performance.timing) {
+    Object.defineProperty(global.performance, 'timing', {
+      value: {
+        navigationStart: Date.now() - 1000,
+        loadEventEnd: Date.now()
+      },
+      writable: true,
+      configurable: true
+    });
+  }
+} catch (e) {
+  // Silently fail
+}
 
 // PageTransition API (experimental browser API)
 global.PageTransition = vi.fn().mockImplementation(() => ({
