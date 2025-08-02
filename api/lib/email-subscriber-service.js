@@ -4,6 +4,7 @@
  */
 
 import { getBrevoService } from './brevo-service.js';
+import { createHmac } from 'crypto';
 
 class EmailSubscriberService {
     constructor() {
@@ -450,10 +451,8 @@ class EmailSubscriberService {
      * Generate unsubscribe token
      */
     generateUnsubscribeToken(email) {
-        const crypto = require('crypto');
         const secret = process.env.UNSUBSCRIBE_SECRET || 'default-secret';
-        return crypto
-            .createHmac('sha256', secret)
+        return createHmac('sha256', secret)
             .update(email)
             .digest('hex');
     }

@@ -3,6 +3,8 @@
  * Handles all Brevo API interactions for email list management
  */
 
+import { createHmac } from 'crypto';
+
 class BrevoService {
     constructor() {
         this.apiKey = process.env.BREVO_API_KEY;
@@ -315,15 +317,13 @@ class BrevoService {
      * Validate webhook signature
      */
     validateWebhookSignature(payload, signature) {
-        const crypto = require('crypto');
         const secret = process.env.BREVO_WEBHOOK_SECRET;
         
         if (!secret) {
             throw new Error('BREVO_WEBHOOK_SECRET not configured');
         }
         
-        const expectedSignature = crypto
-            .createHmac('sha256', secret)
+        const expectedSignature = createHmac('sha256', secret)
             .update(payload)
             .digest('hex');
         
