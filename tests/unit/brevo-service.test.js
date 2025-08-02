@@ -18,7 +18,10 @@ vi.mock('crypto', () => {
                 if (a[i] !== b[i]) same = false;
             }
             return same;
-        })
+        }),
+        randomBytes: vi.fn(() => ({
+            toString: vi.fn(() => 'mocked-random-bytes')
+        }))
     };
 });
 

@@ -15,7 +15,10 @@ vi.mock('crypto', () => {
                 }),
                 digest: vi.fn(() => 'mocked-token')
             };
-        })
+        }),
+        randomBytes: vi.fn(() => ({
+            toString: vi.fn(() => 'mocked-verification-token')
+        }))
     };
 });
 
@@ -427,6 +430,13 @@ describe('EmailSubscriberService', () => {
             const instance2 = getEmailSubscriberService();
             
             expect(instance1).toBe(instance2);
+        });
+    });
+    
+    describe('generateVerificationToken', () => {
+        it('should generate a verification token', () => {
+            const token = emailService.generateVerificationToken();
+            expect(token).toBe('mocked-verification-token');
         });
     });
 });

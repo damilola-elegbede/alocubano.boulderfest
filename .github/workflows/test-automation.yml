@@ -30,9 +30,13 @@ jobs:
       run: npm run lint
       
     - name: Run unit tests
-      run: npm run test:unit
+      run: |
+        echo "Node version: $(node --version)"
+        echo "NPM version: $(npm --version)"
+        npm run test:unit
       env:
         NODE_ENV: test
+        CI: true
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -104,6 +108,7 @@ jobs:
       run: npm run test:unit
       env:
         NODE_ENV: test
+        CI: true
       
     # Skip health check - it runs tests 3 times which may cause timeouts
     # - name: Run test health check
@@ -115,3 +120,4 @@ jobs:
       run: npm test -- --silent --passWithNoTests
       env:
         NODE_ENV: test
+        CI: true
