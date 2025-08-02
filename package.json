@@ -42,7 +42,7 @@
     "test:metrics": "node scripts/metrics-monitor.js",
     "test:pre-push": "npm run test:all && npm run test:integration && npm run test:performance",
     "test:integration": "vitest run tests/integration",
-    "test:performance": "vitest run tests/unit --grep='performance'",
+    "test:performance": "vitest run tests/unit/performance*.test.js tests/integration/performance*.test.js",
     "deploy:check": "node scripts/deployment-check.js",
     "deploy:test": "npm run test:all && npm run test:performance && npm run test:integration",
     "deploy:quality-gate": "npm run lint && npm run deploy:test",
