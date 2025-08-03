@@ -5,6 +5,16 @@
 
 import { getEmailSubscriberService } from '../lib/email-subscriber-service.js';
 
+// HTML escape function to prevent XSS attacks
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 // Rate limiting storage
 const rateLimitMap = new Map();
 
@@ -266,7 +276,7 @@ export default async function handler(req, res) {
                     <div class="container">
                         <div class="success-icon">✓</div>
                         <h1>You've Been Unsubscribed</h1>
-                        <p>We've successfully removed <strong>${email}</strong> from our mailing list.</p>
+                        <p>We've successfully removed <strong>${escapeHtml(email)}</strong> from our mailing list.</p>
                         <p>You won't receive any more marketing emails from A Lo Cubano Boulder Fest.</p>
                         <p>We're sorry to see you go, but we understand that inbox priorities change.</p>
                         
