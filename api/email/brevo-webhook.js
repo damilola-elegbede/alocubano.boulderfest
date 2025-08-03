@@ -80,9 +80,11 @@ export default async function handler(req, res) {
         });
     }
     
+    let webhookData = null;
+    const clientIP = getClientIp(req);
+    
     try {
         // Validate webhook source
-        const clientIP = getClientIp(req);
         if (!isValidWebhookSource(clientIP)) {
             console.warn('Webhook request from unauthorized IP:', clientIP);
             return res.status(403).json({ error: 'Unauthorized' });
@@ -108,7 +110,6 @@ export default async function handler(req, res) {
         }
         
         // Parse webhook data
-        let webhookData;
         try {
             webhookData = JSON.parse(rawBody);
         } catch (error) {
