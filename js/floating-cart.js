@@ -93,23 +93,23 @@ function createCartHTML() {
 function setupEventListeners(elements, cartManager) {
     // Toggle cart panel
     elements.button.addEventListener('click', () => {
-        toggleCartPanel(elements, true);
+        toggleCartPanel(elements, true, cartManager);
     });
 
     // Close cart panel
     elements.closeButton.addEventListener('click', () => {
-        toggleCartPanel(elements, false);
+        toggleCartPanel(elements, false, cartManager);
     });
 
     // Close on backdrop click
     elements.backdrop.addEventListener('click', () => {
-        toggleCartPanel(elements, false);
+        toggleCartPanel(elements, false, cartManager);
     });
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && elements.panel.classList.contains('open')) {
-            toggleCartPanel(elements, false);
+            toggleCartPanel(elements, false, cartManager);
         }
     });
 
@@ -137,6 +137,14 @@ function setupEventListeners(elements, cartManager) {
 
     // Checkout button handler
     elements.checkoutButton.addEventListener('click', () => {
+        // Track analytics
+        if (cartManager && cartManager.analytics) {
+            cartManager.analytics.trackCartEvent('checkout_clicked', {
+                total: cartManager.getState().totals.total,
+                itemCount: cartManager.getState().totals.itemCount
+            });
+        }
+        
         handleCheckoutClick(cartManager);
     });
 }
@@ -191,7 +199,7 @@ function handleCheckoutClick(cartManager) {
     window.location.href = `/tickets?${params.toString()}`;
 }
 
-function toggleCartPanel(elements, isOpen) {
+function toggleCartPanel(elements, isOpen, cartManager) {
     if (isOpen) {
         elements.panel.classList.add('open');
         elements.backdrop.classList.add('active');
@@ -199,6 +207,13 @@ function toggleCartPanel(elements, isOpen) {
 
         // Focus management for accessibility
         elements.closeButton.focus();
+        
+        // Track analytics
+        if (cartManager && cartManager.analytics) {
+            cartManager.analytics.trackCartEvent('cart_opened', {
+                itemCount: cartManager.getState().totals.itemCount
+            });
+        }
     } else {
         elements.panel.classList.remove('open');
         elements.backdrop.classList.remove('active');
