@@ -3,6 +3,8 @@
  * Testing actual LazyLoader class from js/components/lazy-loading.js
  */
 
+import { vi } from 'vitest';
+
 const fs = require('fs');
 const path = require('path');
 
@@ -24,12 +26,12 @@ describe('LazyLoader Real Source Code Integration', () => {
   const setupLazyLoadingEnvironment = () => {
     // Mock IntersectionObserver with callback capture
     mockIntersectionObserver = {
-      observe: jest.fn(),
-      unobserve: jest.fn(),
-      disconnect: jest.fn()
+      observe: vi.fn(),
+      unobserve: vi.fn(),
+      disconnect: vi.fn()
     };
 
-    global.IntersectionObserver = jest.fn().mockImplementation((callback, options) => {
+    global.IntersectionObserver = vi.fn().mockImplementation((callback, options) => {
       observeCallback = callback; // Capture the callback for testing
       return mockIntersectionObserver;
     });
@@ -50,7 +52,7 @@ describe('LazyLoader Real Source Code Integration', () => {
     document.body.innerHTML = '';
     
     // Reset mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     lazyLoaderLoaded = false;
     
     // Set up environment
@@ -178,7 +180,7 @@ describe('LazyLoader Real Source Code Integration', () => {
     expect(mockIntersectionObserver.unobserve).toHaveBeenCalledWith(img);
   });
 
-  test('should handle failed image loading with retry logic', (done) => {
+  test('should handle failed image loading with retry logic', { timeout: 5000 }, (done) => {
     const LazyLoader = global.window.LazyLoader;
     
     const img = document.createElement('img');
@@ -207,7 +209,7 @@ describe('LazyLoader Real Source Code Integration', () => {
       expect(loader.failedImages.size).toBeGreaterThan(0);
       
       done();
-    }, 50);
+    }, 100);
   });
 
   test('should handle advanced mode with lazy items', () => {

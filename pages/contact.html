@@ -145,6 +145,7 @@
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/typography.css">
     <link rel="stylesheet" href="/css/mobile-overrides.css">
+    <link rel="stylesheet" href="/css/newsletter.css">
 </head>
 <body class="typographic">
     <header class="header">
@@ -271,6 +272,50 @@
                             </a>
                         </div>
                         
+                        <!-- Newsletter Signup -->
+                        <div class="contact-item contact-newsletter" style="display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <h1>Hear from us!</h1>
+                                <p>Be the first to know about festival updates, artist announcements, and exclusive pre-sale ticket access.</p>
+                            </div>
+                            
+                            <form class="newsletter-form-type" id="newsletter-form" aria-label="Email newsletter signup">
+                                <div class="form-group-type">
+                                    <label for="newsletter-email" class="form-label-type visually-hidden">Email Address</label>
+                                    <div class="newsletter-input-wrapper">
+                                        <input 
+                                            type="email" 
+                                            id="newsletter-email" 
+                                            name="email" 
+                                            class="form-input-type newsletter-input"
+                                            placeholder="YOUR EMAIL ADDRESS"
+                                            required
+                                            aria-required="true"
+                                            aria-describedby="newsletter-error newsletter-success"
+                                            autocomplete="email"
+                                            inputmode="email"
+                                        >
+                                        <button type="submit" class="form-button-type newsletter-submit" aria-label="Subscribe to newsletter">
+                                            <span class="button-text">SUBSCRIBE</span>
+                                            <span class="button-icon" aria-hidden="true">→</span>
+                                        </button>
+                                    </div>
+                                    <span id="newsletter-error" class="error-message" role="alert" aria-live="polite"></span>
+                                    <div id="newsletter-success" class="newsletter-success" role="status" aria-live="polite" aria-hidden="true">
+                                        <span class="success-icon">✓</span>
+                                        <span class="success-text">Welcome to the A Lo Cubano family!</span>
+                                    </div>
+                                </div>
+                                <div class="newsletter-consent">
+                                    <label class="custom-checkbox">
+                                        <input type="checkbox" name="consent" required aria-required="true">
+                                        <span class="checkmark"></span>
+                                        <span class="checkbox-label">I agree to receive marketing emails about festival updates and events</span>
+                                    </label>
+                                </div>
+                            </form>
+                        </div>
+                        
                     </div>
                 </section>
                 
@@ -302,6 +347,8 @@
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
     <script src="/js/main.js"></script>
-    <script src="/js/typography.js"></script><script src="/js/gallery-hero.js"></script>
+    <script src="/js/typography.js"></script>
+    <script src="/js/gallery-hero.js"></script>
+    <script src="/js/newsletter.js"></script>
 </body>
 </html>

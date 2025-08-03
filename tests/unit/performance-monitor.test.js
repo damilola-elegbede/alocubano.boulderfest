@@ -3,41 +3,26 @@
  * Tests the comprehensive monitoring system implementation
  */
 
-// Mock browser APIs that aren't available in Jest/Node environment
-global.PerformanceObserver = jest.fn().mockImplementation((callback) => ({
-    observe: jest.fn(),
-    disconnect: jest.fn()
-}));
+import { vi } from 'vitest';
 
-global.performance = {
-    ...global.performance,
-    getEntriesByType: jest.fn().mockReturnValue([]),
-    memory: {
-        usedJSHeapSize: 1000000,
-        totalJSHeapSize: 2000000,
-        jsHeapSizeLimit: 4000000
-    },
-    now: jest.fn(() => Date.now())
-};
+// Add any test-specific API enhancements (avoiding conflicts with global setup)
+Object.assign(global.navigator, {
+    sendBeacon: vi.fn().mockReturnValue(true)
+});
 
-global.navigator = {
-    ...global.navigator,
-    sendBeacon: jest.fn().mockReturnValue(true),
-    connection: {
-        effectiveType: '4g',
-        downlink: 10,
-        rtt: 50,
-        saveData: false,
-        addEventListener: jest.fn()
-    },
-    serviceWorker: {
-        addEventListener: jest.fn()
-    }
-};
+// Enhance performance API with test-specific needs
+// Use defineProperty for Node 18.x compatibility
+if (!global.performance.getEntriesByType || typeof global.performance.getEntriesByType !== 'function') {
+    Object.defineProperty(global.performance, 'getEntriesByType', {
+        value: vi.fn().mockReturnValue([]),
+        writable: true,
+        configurable: true
+    });
+}
 
-// Mock window and document with jest functions
-const mockWindowAddEventListener = jest.fn();
-const mockDocumentAddEventListener = jest.fn();
+// Mock window and document with vi functions
+const mockWindowAddEventListener = vi.fn();
+const mockDocumentAddEventListener = vi.fn();
 
 global.window = {
     ...global.window,
@@ -64,12 +49,12 @@ global.document = {
     readyState: 'complete',
     visibilityState: 'visible',
     body: {
-        querySelector: jest.fn(),
-        querySelectorAll: jest.fn()
+        querySelector: vi.fn(),
+        querySelectorAll: vi.fn()
     }
 };
 
-const PerformanceMonitor = require('../../js/performance-monitor.js');
+import PerformanceMonitor from '../../js/performance-monitor.js';
 
 describe('Advanced Performance Monitor', () => {
     let monitor;
@@ -78,11 +63,11 @@ describe('Advanced Performance Monitor', () => {
 
     beforeEach(() => {
         // Reset mocks
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         
         // Spy on console methods to suppress test output
-        consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+        consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
         
         // Create new monitor instance
         monitor = new PerformanceMonitor();
@@ -393,7 +378,7 @@ describe('Advanced Performance Monitor', () => {
 
         test('should send critical metrics when critical event occurs', () => {
             // Mock sendBeacon for this test
-            const mockSendBeacon = jest.fn().mockReturnValue(true);
+            const mockSendBeacon = vi.fn().mockReturnValue(true);
             navigator.sendBeacon = mockSendBeacon;
             
             // Record an error that should trigger critical reporting
@@ -726,7 +711,7 @@ describe('Advanced Performance Monitor', () => {
 
         test('should support critical event notifications through sendBeacon', () => {
             // Mock sendBeacon to track calls
-            const mockSendBeacon = jest.fn().mockReturnValue(true);
+            const mockSendBeacon = vi.fn().mockReturnValue(true);
             navigator.sendBeacon = mockSendBeacon;
             
             // Simulate critical event

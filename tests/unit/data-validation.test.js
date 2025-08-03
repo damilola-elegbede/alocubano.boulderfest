@@ -1,4 +1,6 @@
 /**
+
+import { vi } from 'vitest';
  * Data Validation and Security Tests
  * Testing actual input validation and sanitization
  */
@@ -27,13 +29,13 @@ describe('API Input Validation', () => {
     };
 
     mockResponse = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-      setHeader: jest.fn().mockReturnThis(),
-      end: jest.fn().mockReturnThis()
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis(),
+      setHeader: vi.fn().mockReturnThis(),
+      end: vi.fn().mockReturnThis()
     };
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('validates gallery request parameters', () => {
@@ -378,7 +380,7 @@ describe('API Input Validation', () => {
 
 describe('Image URL Validation', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('validates image URLs before loading', () => {

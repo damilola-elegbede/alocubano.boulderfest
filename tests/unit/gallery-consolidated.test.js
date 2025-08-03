@@ -10,8 +10,12 @@
  */
 
 // Load actual gallery-detail.js in test environment
+import { vi } from 'vitest';
 const fs = require('fs');
 const path = require('path');
+
+// Alias jest to vi for compatibility
+global.jest = vi;
 
 // CRITICAL: Import actual source code by loading and evaluating it
 let gallerySource;
@@ -43,7 +47,7 @@ describe('Gallery Core Functionality - Real Source Code Integration', () => {
 
     // Mock required global dependencies
     global.LazyLoader = class MockLazyLoader {
-      constructor() { this.observer = { observe: jest.fn(), disconnect: jest.fn() }; }
+      constructor() { this.observer = { observe: vi.fn(), disconnect: vi.fn() }; }
       static createAdvanced() { return new MockLazyLoader(); }
     };
     
@@ -95,28 +99,28 @@ describe('Gallery Core Functionality - Real Source Code Integration', () => {
     setupGalleryEnvironment();
 
     // Mock global dependencies that the actual code expects
-    global.fetch = jest.fn();
-    global.IntersectionObserver = jest.fn().mockImplementation(() => ({
-      observe: jest.fn(),
-      unobserve: jest.fn(),
-      disconnect: jest.fn()
+    global.fetch = vi.fn();
+    global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+      observe: vi.fn(),
+      unobserve: vi.fn(),
+      disconnect: vi.fn()
     }));
     
     // Create fresh mock storage for each test
     mockLocalStorage = {
       data: {},
-      getItem: jest.fn((key) => mockLocalStorage.data[key] || null),
-      setItem: jest.fn((key, value) => { mockLocalStorage.data[key] = value; }),
-      removeItem: jest.fn((key) => { delete mockLocalStorage.data[key]; }),
-      clear: jest.fn(() => { mockLocalStorage.data = {}; })
+      getItem: vi.fn((key) => mockLocalStorage.data[key] || null),
+      setItem: vi.fn((key, value) => { mockLocalStorage.data[key] = value; }),
+      removeItem: vi.fn((key) => { delete mockLocalStorage.data[key]; }),
+      clear: vi.fn(() => { mockLocalStorage.data = {}; })
     };
     
     mockSessionStorage = {
       data: {},
-      getItem: jest.fn((key) => mockSessionStorage.data[key] || null),
-      setItem: jest.fn((key, value) => { mockSessionStorage.data[key] = value; }),
-      removeItem: jest.fn((key) => { delete mockSessionStorage.data[key]; }),
-      clear: jest.fn(() => { mockSessionStorage.data = {}; })
+      getItem: vi.fn((key) => mockSessionStorage.data[key] || null),
+      setItem: vi.fn((key, value) => { mockSessionStorage.data[key] = value; }),
+      removeItem: vi.fn((key) => { delete mockSessionStorage.data[key]; }),
+      clear: vi.fn(() => { mockSessionStorage.data = {}; })
     };
     
     // Use configurable property to allow redefinition
@@ -132,14 +136,14 @@ describe('Gallery Core Functionality - Real Source Code Integration', () => {
     });
 
     // Mock performance API
-    global.performance = { now: jest.fn(() => 1000) };
-    global.requestAnimationFrame = jest.fn(cb => setTimeout(cb, 16));
+    global.performance = { now: vi.fn(() => 1000) };
+    global.requestAnimationFrame = vi.fn(cb => setTimeout(cb, 16));
 
     // Mock window.location would conflict with jsdom, handled by test logic instead
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     document.body.innerHTML = '';
   });
 
@@ -267,10 +271,10 @@ describe('Gallery State Management - Real Source Integration', () => {
   beforeEach(() => {
     mockSessionStorage = {
       data: {},
-      getItem: jest.fn((key) => mockSessionStorage.data[key] || null),
-      setItem: jest.fn((key, value) => { mockSessionStorage.data[key] = value; }),
-      removeItem: jest.fn((key) => { delete mockSessionStorage.data[key]; }),
-      clear: jest.fn(() => { mockSessionStorage.data = {}; })
+      getItem: vi.fn((key) => mockSessionStorage.data[key] || null),
+      setItem: vi.fn((key, value) => { mockSessionStorage.data[key] = value; }),
+      removeItem: vi.fn((key) => { delete mockSessionStorage.data[key]; }),
+      clear: vi.fn(() => { mockSessionStorage.data = {}; })
     };
     
     Object.defineProperty(global, 'sessionStorage', { 
@@ -281,7 +285,7 @@ describe('Gallery State Management - Real Source Integration', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('should manage gallery state persistence structure', () => {
@@ -365,8 +369,8 @@ describe('Gallery API Integration', () => {
   // Test actual request handling logic
   
   beforeEach(() => {
-    global.fetch = jest.fn();
-    global.console = { ...console, log: jest.fn(), error: jest.fn() };
+    global.fetch = vi.fn();
+    global.console = { ...console, log: vi.fn(), error: vi.fn() };
   });
 
   test('should construct correct API URLs', () => {
@@ -437,9 +441,9 @@ describe('Gallery Cache System', () => {
   beforeEach(() => {
     mockLocalStorage = {
       data: {},
-      getItem: jest.fn((key) => mockLocalStorage.data[key] || null),
-      setItem: jest.fn((key, value) => { mockLocalStorage.data[key] = value; }),
-      removeItem: jest.fn((key) => { delete mockLocalStorage.data[key]; })
+      getItem: vi.fn((key) => mockLocalStorage.data[key] || null),
+      setItem: vi.fn((key, value) => { mockLocalStorage.data[key] = value; }),
+      removeItem: vi.fn((key) => { delete mockLocalStorage.data[key]; })
     };
     
     Object.defineProperty(global, 'localStorage', { 

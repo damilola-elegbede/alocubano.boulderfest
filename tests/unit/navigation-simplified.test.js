@@ -3,6 +3,8 @@
  * Testing navigation functionality through DOM interaction
  */
 
+import { vi } from 'vitest';
+
 const fs = require('fs');
 const path = require('path');
 
@@ -38,8 +40,8 @@ describe('Navigation Real Source Code - Integration Testing', () => {
     // Mock localStorage
     mockLocalStorage = {
       data: {},
-      getItem: jest.fn((key) => mockLocalStorage.data[key] || null),
-      setItem: jest.fn((key, value) => { mockLocalStorage.data[key] = value; }),
+      getItem: vi.fn((key) => mockLocalStorage.data[key] || null),
+      setItem: vi.fn((key, value) => { mockLocalStorage.data[key] = value; }),
     };
 
     Object.defineProperty(global, 'localStorage', {
@@ -49,10 +51,10 @@ describe('Navigation Real Source Code - Integration Testing', () => {
     });
 
     // Mock scrollIntoView
-    Element.prototype.scrollIntoView = jest.fn();
+    Element.prototype.scrollIntoView = vi.fn();
 
     // Clear mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('should load navigation source code successfully', () => {

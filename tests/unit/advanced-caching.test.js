@@ -30,48 +30,48 @@ const createMockResponse = (data, options = {}) => {
 const createMockServiceWorker = () => {
   const mockSW = {
     caches: new Map(),
-    skipWaiting: jest.fn(),
+    skipWaiting: vi.fn(),
     clients: {
-      claim: jest.fn()
+      claim: vi.fn()
     },
-    addEventListener: jest.fn(),
-    postMessage: jest.fn()
+    addEventListener: vi.fn(),
+    postMessage: vi.fn()
   };
   
   // Mock cache API
   global.caches = {
-    open: jest.fn((name) => {
+    open: vi.fn((name) => {
       if (!mockSW.caches.has(name)) {
         mockSW.caches.set(name, new Map());
       }
       const cache = mockSW.caches.get(name);
       return Promise.resolve({
-        match: jest.fn((request) => {
+        match: vi.fn((request) => {
           const key = typeof request === 'string' ? request : request.url;
           return Promise.resolve(cache.get(key) || null);
         }),
-        put: jest.fn((request, response) => {
+        put: vi.fn((request, response) => {
           const key = typeof request === 'string' ? request : request.url;
           cache.set(key, response);
           return Promise.resolve();
         }),
-        add: jest.fn((url) => {
+        add: vi.fn((url) => {
           cache.set(url, createMockResponse('cached'));
           return Promise.resolve();
         }),
-        addAll: jest.fn((urls) => {
+        addAll: vi.fn((urls) => {
           urls.forEach(url => cache.set(url, createMockResponse('cached')));
           return Promise.resolve();
         }),
-        delete: jest.fn((request) => {
+        delete: vi.fn((request) => {
           const key = typeof request === 'string' ? request : request.url;
           return Promise.resolve(cache.delete(key));
         }),
-        keys: jest.fn(() => Promise.resolve(Array.from(cache.keys())))
+        keys: vi.fn(() => Promise.resolve(Array.from(cache.keys())))
       });
     }),
-    keys: jest.fn(() => Promise.resolve(Array.from(mockSW.caches.keys()))),
-    delete: jest.fn((name) => Promise.resolve(mockSW.caches.delete(name)))
+    keys: vi.fn(() => Promise.resolve(Array.from(mockSW.caches.keys()))),
+    delete: vi.fn((name) => Promise.resolve(mockSW.caches.delete(name)))
   };
   
   return mockSW;
@@ -87,7 +87,7 @@ describe('Advanced Caching System - Phase 2', () => {
     document.body.innerHTML = '';
     
     // Mock fetch
-    mockFetch = jest.fn();
+    mockFetch = vi.fn();
     global.fetch = mockFetch;
     
     // Mock service worker
@@ -102,15 +102,15 @@ describe('Advanced Caching System - Phase 2', () => {
         uplink: 5,
         rtt: 100,
         saveData: false,
-        addEventListener: jest.fn()
+        addEventListener: vi.fn()
       },
       deviceMemory: 8,
       hardwareConcurrency: 8,
       serviceWorker: {
         controller: {
-          postMessage: jest.fn()
+          postMessage: vi.fn()
         },
-        addEventListener: jest.fn()
+        addEventListener: vi.fn()
       }
     };
     
@@ -121,19 +121,19 @@ describe('Advanced Caching System - Phase 2', () => {
     
     // Mock performance API
     global.performance = {
-      now: jest.fn(() => Date.now()),
-      getEntriesByType: jest.fn(() => []),
-      mark: jest.fn(),
-      measure: jest.fn()
+      now: vi.fn(() => Date.now()),
+      getEntriesByType: vi.fn(() => []),
+      mark: vi.fn(),
+      measure: vi.fn()
     };
     
     // Mock requestIdleCallback
-    global.requestIdleCallback = jest.fn((callback) => {
+    global.requestIdleCallback = vi.fn((callback) => {
       setTimeout(() => callback({ timeRemaining: () => 50 }), 0);
     });
     
     // Clear all mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Service Worker Cache Strategies', () => {
@@ -679,9 +679,9 @@ describe('Advanced Caching System - Phase 2', () => {
       
       // Override the cache open to return a mock that fails appropriately
       const originalCacheOpen = global.caches.open;
-      global.caches.open = jest.fn().mockResolvedValue({
-        addAll: jest.fn().mockRejectedValue(new Error('Batch add failed')),
-        add: jest.fn().mockImplementation((resource) => {
+      global.caches.open = vi.fn().mockResolvedValue({
+        addAll: vi.fn().mockRejectedValue(new Error('Batch add failed')),
+        add: vi.fn().mockImplementation((resource) => {
           if (resource.includes('nonexistent.js')) {
             throw new Error('404 Not Found');
           }
