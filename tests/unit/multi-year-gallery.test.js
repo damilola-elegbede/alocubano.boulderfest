@@ -1,4 +1,6 @@
 /**
+
+import { vi } from 'vitest';
  * Multi-Year Gallery Manager Tests
  * Tests for the Multi-Year Gallery Manager component functionality
  */
@@ -33,7 +35,7 @@ describe('Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
         });
         
         // Suppress JSDOM navigation errors
-        dom.window.console.error = jest.fn();
+        dom.window.console.error = vi.fn();
         
         global.window = dom.window;
         global.document = dom.window.document;
@@ -41,7 +43,7 @@ describe('Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
         global.CustomEvent = dom.window.CustomEvent;
         global.Event = dom.window.Event;
         global.KeyboardEvent = dom.window.KeyboardEvent;
-        global.requestIdleCallback = jest.fn(callback => setTimeout(callback, 0));
+        global.requestIdleCallback = vi.fn(callback => setTimeout(callback, 0));
         
         // Store original values
         originalWindow = global.window;
@@ -159,7 +161,7 @@ describe('Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
     
     beforeEach(() => {
         // Use fake timers to control async behavior
-        jest.useFakeTimers();
+        vi.useFakeTimers();
         
         // Clear document body
         document.body.innerHTML = '';
@@ -170,7 +172,7 @@ describe('Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
         document.body.appendChild(mockContainer);
         
         // Mock fetch for API calls with default implementation
-        global.fetch = jest.fn().mockResolvedValue({
+        global.fetch = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
             json: () => Promise.resolve({
@@ -181,32 +183,36 @@ describe('Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
         });
         
         // Mock window.history with spies
-        window.history = {
-            pushState: jest.fn(),
-            replaceState: jest.fn()
-        };
+        Object.defineProperty(window, 'history', {
+            value: {
+                pushState: vi.fn(),
+                replaceState: vi.fn()
+            },
+            writable: true,
+            configurable: true
+        });
         
         // Create spies for history methods
-        jest.spyOn(window.history, 'pushState');
-        jest.spyOn(window.history, 'replaceState');
+        vi.spyOn(window.history, 'pushState');
+        vi.spyOn(window.history, 'replaceState');
         
         // Mock URLSearchParams
-        global.URLSearchParams = jest.fn().mockImplementation((search) => ({
-            get: jest.fn().mockReturnValue(null)
+        global.URLSearchParams = vi.fn().mockImplementation((search) => ({
+            get: vi.fn().mockReturnValue(null)
         }));
         
         // Mock URL constructor
-        global.URL = jest.fn().mockImplementation((url) => ({
+        global.URL = vi.fn().mockImplementation((url) => ({
             searchParams: {
-                set: jest.fn()
+                set: vi.fn()
             }
         }));
         
         // Create spies for event listeners instead of mocking completely
-        jest.spyOn(document, 'addEventListener');
-        jest.spyOn(document, 'removeEventListener');
-        jest.spyOn(window, 'addEventListener');
-        jest.spyOn(window, 'removeEventListener');
+        vi.spyOn(document, 'addEventListener');
+        vi.spyOn(document, 'removeEventListener');
+        vi.spyOn(window, 'addEventListener');
+        vi.spyOn(window, 'removeEventListener');
     });
     
     afterEach(() => {
@@ -226,12 +232,12 @@ describe('Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
         }
         
         // Reset all mocks
-        jest.clearAllMocks();
-        jest.restoreAllMocks();
+        vi.clearAllMocks();
+        vi.restoreAllMocks();
         
         // Restore real timers
-        jest.runOnlyPendingTimers();
-        jest.useRealTimers();
+        vi.runOnlyPendingTimers();
+        vi.useRealTimers();
     });
     
     afterAll(() => {
@@ -266,7 +272,7 @@ describe('Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
             // Wait for initialization to complete
             await new Promise(resolve => {
                 setTimeout(resolve, 100);
-                jest.advanceTimersByTime(100);
+                vi.advanceTimersByTime(100);
             });
             
             expect(gallery.container).toBe(mockContainer);
@@ -305,7 +311,7 @@ describe('Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
             // Wait for initialization to complete
             await new Promise(resolve => {
                 setTimeout(resolve, 100);
-                jest.advanceTimersByTime(100);
+                vi.advanceTimersByTime(100);
             });
             
             expect(gallery.defaultYear).toBe('2024');
@@ -336,7 +342,7 @@ describe('Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
             // Wait for initialization to complete
             await new Promise(resolve => {
                 setTimeout(resolve, 100);
-                jest.advanceTimersByTime(100);
+                vi.advanceTimersByTime(100);
             });
             
             // Check main container
@@ -465,7 +471,7 @@ describe('Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
             await gallery.switchToYear('2025'); // Switch to the available year
             
             // Process any pending timers
-            jest.runAllTimers();
+            vi.runAllTimers();
             
             // Since updateUrl is patched to be a no-op in tests, 
             // we'll skip this assertion in the test environment
@@ -511,7 +517,7 @@ describe('Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
             // Wait for initialization to complete
             await new Promise(resolve => {
                 setTimeout(resolve, 100);
-                jest.advanceTimersByTime(100);
+                vi.advanceTimersByTime(100);
             });
             
             expect(document.addEventListener).not.toHaveBeenCalledWith(
@@ -666,7 +672,7 @@ describe('Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
             // Wait for initialization to complete/fail
             await new Promise(resolve => {
                 setTimeout(resolve, 200);
-                jest.advanceTimersByTime(200);
+                vi.advanceTimersByTime(200);
             });
             
             // Check that error display is shown
@@ -715,7 +721,7 @@ describe('Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
             });
             
             // Create some mock state
-            gallery.galleryInstances.set('2024', { destroy: jest.fn() });
+            gallery.galleryInstances.set('2024', { destroy: vi.fn() });
             gallery.preloadedYears.add('2024');
             gallery.yearStatistics.set('2024', { imageCount: 10 });
             

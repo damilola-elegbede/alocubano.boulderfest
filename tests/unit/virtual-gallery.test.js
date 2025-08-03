@@ -3,38 +3,43 @@
  * Comprehensive test suite for the virtual scrolling gallery system
  */
 
+import { vi } from 'vitest';
+
+// Alias jest to vi for compatibility
+global.jest = { fn: vi.fn };
+
 // Mock the DOM APIs that aren't available in Jest/Node environment
-global.IntersectionObserver = jest.fn().mockImplementation((callback) => ({
-    observe: jest.fn(),
-    unobserve: jest.fn(),
-    disconnect: jest.fn(),
+global.IntersectionObserver = vi.fn().mockImplementation((callback) => ({
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn(),
     root: null,
     rootMargin: '0px',
     thresholds: [0]
 }));
 
-global.ResizeObserver = jest.fn().mockImplementation((callback) => ({
-    observe: jest.fn(),
-    unobserve: jest.fn(),
-    disconnect: jest.fn()
+global.ResizeObserver = vi.fn().mockImplementation((callback) => ({
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn()
 }));
 
 // Mock performance API
 global.performance = {
     ...global.performance,
-    now: jest.fn(() => Date.now()),
-    mark: jest.fn(),
-    measure: jest.fn(),
-    getEntriesByType: jest.fn().mockReturnValue([]),
-    getEntriesByName: jest.fn().mockReturnValue([])
+    now: vi.fn(() => Date.now()),
+    mark: vi.fn(),
+    measure: vi.fn(),
+    getEntriesByType: vi.fn().mockReturnValue([]),
+    getEntriesByName: vi.fn().mockReturnValue([])
 };
 
 // Mock fetch for API calls
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 // Mock lightbox system
 const mockLightbox = {
-    showImage: jest.fn(),
+    showImage: vi.fn(),
     isInitialized: true
 };
 
@@ -47,50 +52,50 @@ const createMockElement = (tag = 'div') => ({
     dataset: {},
     children: [],
     parentNode: null,
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    appendChild: jest.fn(),
-    removeChild: jest.fn(),
-    querySelector: jest.fn(),
-    querySelectorAll: jest.fn(() => []),
-    setAttribute: jest.fn(),
-    getAttribute: jest.fn(),
-    removeAttribute: jest.fn(),
-    getBoundingClientRect: jest.fn(() => ({
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    appendChild: vi.fn(),
+    removeChild: vi.fn(),
+    querySelector: vi.fn(),
+    querySelectorAll: vi.fn(() => []),
+    setAttribute: vi.fn(),
+    getAttribute: vi.fn(),
+    removeAttribute: vi.fn(),
+    getBoundingClientRect: vi.fn(() => ({
         top: 0, left: 0, right: 0, bottom: 0, width: 800, height: 600
     })),
-    scrollTo: jest.fn(),
+    scrollTo: vi.fn(),
     scrollTop: 0,
     scrollLeft: 0,
     clientHeight: 600,
     clientWidth: 800,
     offsetHeight: 600,
     offsetWidth: 800,
-    dispatchEvent: jest.fn()
+    dispatchEvent: vi.fn()
 });
 
 // Mock document
 global.document = {
     ...global.document,
-    createElement: jest.fn((tag) => createMockElement(tag)),
-    createDocumentFragment: jest.fn(() => ({
-        appendChild: jest.fn(),
+    createElement: vi.fn((tag) => createMockElement(tag)),
+    createDocumentFragment: vi.fn(() => ({
+        appendChild: vi.fn(),
         children: []
     })),
-    querySelector: jest.fn(),
-    querySelectorAll: jest.fn(() => []),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
+    querySelector: vi.fn(),
+    querySelectorAll: vi.fn(() => []),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
     body: createMockElement('body')
 };
 
 // Mock window
 global.window = {
     ...global.window,
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    requestAnimationFrame: jest.fn((cb) => setTimeout(cb, 16)),
-    cancelAnimationFrame: jest.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    requestAnimationFrame: vi.fn((cb) => setTimeout(cb, 16)),
+    cancelAnimationFrame: vi.fn(),
     innerWidth: 1200,
     innerHeight: 800,
     devicePixelRatio: 1,
@@ -149,8 +154,8 @@ class VirtualGalleryManager {
         };
         
         this.throttledHandlers = {
-            scroll: jest.fn(),
-            resize: jest.fn()
+            scroll: vi.fn(),
+            resize: vi.fn()
         };
         
         this.init();
@@ -164,7 +169,7 @@ class VirtualGalleryManager {
     }
     
     setupContainer() {
-        this.container.classList = { add: jest.fn() };
+        this.container.classList = { add: vi.fn() };
         this.container.style = {};
     }
     
@@ -375,7 +380,7 @@ describe('Virtual Gallery Manager', () => {
     let mockPhotos;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         
         container = createMockElement();
         container.clientWidth = 800;
@@ -619,7 +624,7 @@ describe('Virtual Gallery Manager', () => {
         });
 
         test('should cleanup observers on destroy', () => {
-            const mockDisconnect = jest.fn();
+            const mockDisconnect = vi.fn();
             gallery.observers.intersection = { disconnect: mockDisconnect };
             gallery.observers.resize = { disconnect: mockDisconnect };
             
