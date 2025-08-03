@@ -195,7 +195,7 @@ export default async function handler(req, res) {
         console.error('Brevo webhook processing error:', {
             error: error.message,
             stack: error.stack,
-            webhook_data: req.body,
+            webhook_data: webhookData,
             ip: getClientIp(req),
             timestamp: new Date().toISOString()
         });

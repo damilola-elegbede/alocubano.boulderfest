@@ -185,24 +185,35 @@ global.MutationObserver = vi.fn().mockImplementation((callback) => ({
   takeRecords: vi.fn(() => [])
 }));
 
-// Storage APIs
-global.localStorage = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-  length: 0,
-  key: vi.fn()
-};
+// Storage APIs with proper implementation
+function createStorageMock() {
+  const storage = {};
+  
+  return {
+    getItem: vi.fn((key) => {
+      return storage[key] || null;
+    }),
+    setItem: vi.fn((key, value) => {
+      storage[key] = String(value);
+    }),
+    removeItem: vi.fn((key) => {
+      delete storage[key];
+    }),
+    clear: vi.fn(() => {
+      Object.keys(storage).forEach(key => delete storage[key]);
+    }),
+    get length() {
+      return Object.keys(storage).length;
+    },
+    key: vi.fn((index) => {
+      const keys = Object.keys(storage);
+      return keys[index] || null;
+    })
+  };
+}
 
-global.sessionStorage = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-  length: 0,
-  key: vi.fn()
-};
+global.localStorage = createStorageMock();
+global.sessionStorage = createStorageMock();
 
 // URL API
 if (!global.URL) {
@@ -396,8 +407,8 @@ afterEach(() => {
     // Silently ignore timer cleanup errors
   }
   
-  // Log memory usage for monitoring (only in verbose mode)
-  if (process.memoryUsage && process.env.NODE_ENV !== 'test') {
+  // Log memory usage for monitoring (especially in test environment)
+  if (process.memoryUsage && (process.env.NODE_ENV === 'test' || process.env.VERBOSE)) {
     try {
       const memUsage = process.memoryUsage();
       if (memUsage.heapUsed > 100 * 1024 * 1024) { // Log if > 100MB
