@@ -2,6 +2,8 @@
  * Unified Cart Management System
  * Handles all cart operations across tickets and donations
  */
+import { getAnalyticsTracker } from './analytics-tracker.js';
+
 export class CartManager extends EventTarget {
     constructor() {
         super();
@@ -17,6 +19,7 @@ export class CartManager extends EventTarget {
         this.storageKey = 'alocubano_cart';
         this.initialized = false;
         this.isProcessing = false;
+        this.analytics = getAnalyticsTracker();
     }
 
     // Core initialization
@@ -35,6 +38,7 @@ export class CartManager extends EventTarget {
         await this.validateCart();
 
         this.initialized = true;
+        this.analytics.track('payment_integration_initialized');
         this.emit('cart:initialized', this.getState());
     }
 
@@ -80,6 +84,15 @@ export class CartManager extends EventTarget {
 
             // Save and emit
             this.saveToStorage();
+
+            // Track analytics
+            this.analytics.trackCartEvent('ticket_added', {
+                ticketType,
+                quantity,
+                price,
+                total: this.state.tickets[ticketType].quantity * price
+            });
+
             this.emit('cart:ticket:added', {
                 ticketType,
                 quantity,
@@ -95,8 +108,17 @@ export class CartManager extends EventTarget {
 
     async removeTicket(ticketType) {
         if (this.state.tickets[ticketType]) {
+            const ticket = this.state.tickets[ticketType];
             delete this.state.tickets[ticketType];
             this.saveToStorage();
+
+            // Track analytics
+            this.analytics.trackCartEvent('ticket_removed', {
+                ticketType,
+                quantity: ticket.quantity,
+                price: ticket.price
+            });
+
             this.emit('cart:ticket:removed', { ticketType });
             this.emit('cart:updated', this.getState());
         }
@@ -129,6 +151,14 @@ export class CartManager extends EventTarget {
         };
 
         this.saveToStorage();
+
+        // Track analytics
+        this.analytics.trackCartEvent('donation_updated', {
+            oldAmount,
+            newAmount: amount,
+            difference: amount - oldAmount
+        });
+
         this.emit('cart:donation:updated', {
             oldAmount,
             newAmount: amount
@@ -249,6 +279,12 @@ export class CartManager extends EventTarget {
             }
         };
         this.saveToStorage();
+
+        // Track analytics
+        this.analytics.trackCartEvent('cart_cleared', {
+            sessionId: this.state.metadata.sessionId
+        });
+
         this.emit('cart:cleared');
         this.emit('cart:updated', this.getState());
     }
