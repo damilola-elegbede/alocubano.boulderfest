@@ -205,6 +205,12 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
+// Note: For production use, consider using a well-maintained sanitization library
+// like DOMPurify (https://github.com/cure53/DOMPurify) or the xss npm package
+// (https://www.npmjs.com/package/xss). These libraries provide more robust and
+// secure HTML sanitization than handcrafted helpers, handling edge cases and
+// staying updated with emerging security threats.
+
 // Validate emails
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 if (!emailRegex.test(email)) {
