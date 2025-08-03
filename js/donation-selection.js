@@ -84,12 +84,24 @@ class DonationSelection {
     }
     
     this.updateDisplay();
+    
+    // Emit event for cart system integration
+    const finalAmount = this.selectedAmount === 'custom' ? (this.customAmount || 0) : (this.selectedAmount || 0);
+    document.dispatchEvent(new CustomEvent('donation-amount-changed', {
+      detail: { amount: finalAmount }
+    }));
   }
 
   handleCustomAmountChange(event) {
     const value = parseFloat(event.target.value) || 0;
     this.customAmount = value > 0 ? value : null;
     this.updateDisplay();
+    
+    // Emit event for cart system integration
+    const finalAmount = this.selectedAmount === 'custom' ? (this.customAmount || 0) : (this.selectedAmount || 0);
+    document.dispatchEvent(new CustomEvent('donation-amount-changed', {
+      detail: { amount: finalAmount }
+    }));
   }
 
   showCustomInput() {

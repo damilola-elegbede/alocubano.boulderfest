@@ -86,6 +86,19 @@ class TicketSelection {
     }
     
     this.updateDisplay();
+    
+    // Emit event for cart system integration
+    const eventDetail = {
+      ticketType,
+      quantity: currentQuantity,
+      price,
+      name: card.querySelector('h4').textContent,
+      eventId: 'alocubano-boulderfest-2026'
+    };
+    
+    document.dispatchEvent(new CustomEvent('ticket-quantity-changed', {
+      detail: eventDetail
+    }));
   }
 
   handleTicketCardClick(event) {
