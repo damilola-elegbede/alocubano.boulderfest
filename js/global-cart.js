@@ -3,6 +3,7 @@
  * Sets up cart system on all pages
  */
 import { getCartManager } from './lib/cart-manager.js';
+import { initializeFloatingCart } from './floating-cart.js';
 
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
@@ -19,10 +20,8 @@ async function initializeGlobalCart() {
         // Initialize cart
         await cartManager.initialize();
         
-        // Initialize floating cart UI (will be created in Phase 2)
-        if (typeof initializeFloatingCart !== 'undefined') {
-            initializeFloatingCart(cartManager);
-        }
+        // Initialize floating cart UI
+        initializeFloatingCart(cartManager);
         
         // Set up page-specific integrations
         setupPageIntegrations(cartManager);
