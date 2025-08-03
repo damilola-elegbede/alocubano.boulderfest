@@ -258,11 +258,15 @@ function updateCartUI(elements, cartState) {
     // Update total
     elements.totalElement.textContent = `$${totals.total.toFixed(2)}`;
 
-    // Show/hide floating button based on cart contents
+    // Show floating button - keep visible for testing, style based on contents
+    elements.container.style.display = 'block';
+    
     if (totals.total > 0) {
-        elements.container.style.display = 'block';
+        elements.button.style.opacity = '1';
+        elements.button.style.pointerEvents = 'auto';
     } else {
-        elements.container.style.display = 'none';
+        elements.button.style.opacity = '0.5';
+        elements.button.style.pointerEvents = 'auto'; // Still allow clicking for testing
     }
 }
 
