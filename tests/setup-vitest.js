@@ -1,4 +1,9 @@
 import { vi } from 'vitest';
+import { EventListenerTracker, cleanupTest, logMemoryUsage } from './utils/cleanup-helpers.js';
+
+// Global event listener tracker
+global.__testEventTracker = new EventListenerTracker();
+global.__testEventTracker.start();
 
 // Jest compatibility layer - provide jest global for legacy tests
 global.jest = {
@@ -344,78 +349,39 @@ beforeEach(() => {
 
 // Aggressive cleanup after each test to prevent memory leaks
 afterEach(() => {
-  // Clear all mocks and timers
-  vi.clearAllMocks();
-  vi.clearAllTimers();
-  vi.restoreAllMocks();
+  // Use comprehensive cleanup utility
+  cleanupTest({
+    eventTracker: global.__testEventTracker,
+    clearTimers: true,
+    clearStorage: true,
+    clearMocks: true,
+    clearDOM: true
+  });
   
-  // Clear DOM completely
-  if (typeof document !== 'undefined' && document.body && document.head) {
-    try {
-      document.body.innerHTML = '';
-      document.head.innerHTML = '';
-      
-      // Clear any remaining event listeners (safer approach)
-      const elements = document.querySelectorAll('*');
-      elements.forEach(el => {
-        if (el && el.cloneNode && el.parentNode) {
-          try {
-            const newElement = el.cloneNode(true);
-            el.parentNode.replaceChild(newElement, el);
-          } catch (e) {
-            // Silently ignore DOM manipulation errors
-          }
-        }
-      });
-    } catch (e) {
-      // Silently ignore DOM cleanup errors
-    }
+  // Log memory usage if high
+  const memStats = logMemoryUsage('AfterEach');
+  if (memStats && memStats.heapUsedMB > 500) {
+    console.warn(`Test may have memory leak: ${memStats.heapUsedMB}MB heap used`);
+  }
+});
+
+// Global teardown - final cleanup
+afterAll(() => {
+  // Final cleanup
+  if (global.__testEventTracker) {
+    global.__testEventTracker.cleanup();
+    global.__testEventTracker = null;
   }
   
-  // Clear storage
-  try {
-    global.localStorage?.clear();
-    global.sessionStorage?.clear();
-  } catch (e) {
-    // Silently ignore storage cleanup errors
-  }
-  
-  // Clear global fetch calls
-  try {
-    global.fetch?.mockClear();
-  } catch (e) {
-    // Silently ignore fetch cleanup errors
-  }
-  
-  // Force garbage collection if available
+  // Force final garbage collection
   if (global.gc) {
     try {
       global.gc();
     } catch (e) {
-      // Silently ignore GC errors
+      // Silently ignore
     }
   }
   
-  // Clear any remaining timeouts/intervals (safer approach)
-  try {
-    const highestTimeoutId = setTimeout(() => {}, 0);
-    for (let i = 0; i < Math.min(highestTimeoutId, 1000); i++) {
-      clearTimeout(i);
-      clearInterval(i);
-    }
-  } catch (e) {
-    // Silently ignore timer cleanup errors
-  }
-  
-  // Log memory usage for monitoring (especially in test environment)
-  if (process.memoryUsage && (process.env.NODE_ENV === 'test' || process.env.VERBOSE)) {
-    try {
-      const memUsage = process.memoryUsage();
-      if (memUsage.heapUsed > 100 * 1024 * 1024) { // Log if > 100MB
-        console.warn(`High memory usage: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`);
-      }
-    } catch (e) {
-      // Silently ignore memory monitoring errors
-    }
-  }
+  // Log final memory stats
+  logMemoryUsage('AfterAll');
 });

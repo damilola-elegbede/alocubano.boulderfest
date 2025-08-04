@@ -20,7 +20,7 @@ export class PaymentFormValidator {
             },
             phone: {
                 required: false,
-                pattern: /^[\+]?[1-9][\d]{0,15}$/,
+                pattern: /^[\+]?[1-9][\d]{9,15}$/,
                 message: 'Please enter a valid phone number (10-16 digits)'
             },
             firstName: {
@@ -118,7 +118,8 @@ export class PaymentFormValidator {
 
             // Focus first invalid field
             if (!isFormValid && errors.length > 0) {
-                const firstErrorField = form.querySelector(`[name="${errors[0].field}"], #${errors[0].field}`);
+                const fieldName = this.escapeCssIdentifier(errors[0].field);
+                const firstErrorField = form.querySelector(`[name="${fieldName}"], #${fieldName}`);
                 if (firstErrorField) {
                     firstErrorField.focus();
                 }
@@ -152,11 +153,13 @@ export class PaymentFormValidator {
 
         field.classList.add('error');
         field.setAttribute('aria-invalid', 'true');
-        field.setAttribute('aria-describedby', errorEl.id || 'error-' + field.name);
 
+        // Ensure errorEl has an ID before setting aria-describedby
         if (!errorEl.id) {
             errorEl.id = 'error-' + (field.name || field.id || 'field');
         }
+
+        field.setAttribute('aria-describedby', errorEl.id);
     }
 
     clearFieldError(field) {
@@ -323,6 +326,16 @@ export class PaymentFormValidator {
         }
 
         return { valid: true };
+    }
+
+    // CSS identifier escaping utility
+    escapeCssIdentifier(identifier) {
+        if (!identifier) {
+            return '';
+        }
+
+        // Escape special CSS characters that could break selectors
+        return identifier.replace(/[!"#$%&'()*+,.\/:;<=>?@\[\\\]^`{|}~]/g, '\\$&');
     }
 }
 

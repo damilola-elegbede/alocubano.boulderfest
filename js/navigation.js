@@ -17,8 +17,10 @@ class EventBus {
     }
 
     off(eventName, callback) {
-        if (!this.events.has(eventName)) return;
-        
+        if (!this.events.has(eventName)) {
+            return;
+        }
+
         const callbacks = this.events.get(eventName);
         const index = callbacks.indexOf(callback);
         if (index > -1) {
@@ -27,8 +29,10 @@ class EventBus {
     }
 
     emit(eventName, data) {
-        if (!this.events.has(eventName)) return;
-        
+        if (!this.events.has(eventName)) {
+            return;
+        }
+
         this.events.get(eventName).forEach(callback => {
             try {
                 callback(data);
@@ -76,13 +80,13 @@ class DropdownManager {
     setupDropdownListeners() {
         // Click handlers
         document.addEventListener('click', this.handleDropdownClick.bind(this));
-        
+
         // Mouse interaction handlers (only for non-touch devices for better UX)
         if (!this.config.touchEnabled) {
             document.addEventListener('mouseover', this.handleDropdownHover.bind(this));
             document.addEventListener('mouseout', this.handleDropdownLeave.bind(this));
         }
-        
+
         // Focus handlers for keyboard navigation
         document.addEventListener('focusin', this.handleDropdownFocus.bind(this));
         document.addEventListener('focusout', this.handleDropdownBlur.bind(this));
@@ -90,7 +94,7 @@ class DropdownManager {
 
     handleDropdownClick(event) {
         const trigger = event.target.closest('.nav-trigger, .dropdown-trigger');
-        
+
         if (trigger) {
             event.preventDefault();
             this.toggleDropdown(trigger);
@@ -102,10 +106,14 @@ class DropdownManager {
 
     handleDropdownHover(event) {
         const container = event.target.closest('.nav-item.has-dropdown, .dropdown-container');
-        if (!container || this.config.touchEnabled) return;
+        if (!container || this.config.touchEnabled) {
+            return;
+        }
 
         const trigger = container.querySelector('.nav-trigger, .dropdown-trigger');
-        if (!trigger) return;
+        if (!trigger) {
+            return;
+        }
 
         // Clear any pending hide timer
         this.clearTimer(container);
@@ -122,7 +130,9 @@ class DropdownManager {
 
     handleDropdownLeave(event) {
         const container = event.target.closest('.nav-item.has-dropdown, .dropdown-container');
-        if (!container) return;
+        if (!container) {
+            return;
+        }
 
         // Clear show timer
         this.clearTimer(container);
@@ -137,7 +147,9 @@ class DropdownManager {
 
     handleDropdownFocus(event) {
         const container = event.target.closest('.nav-item.has-dropdown, .dropdown-container');
-        if (!container) return;
+        if (!container) {
+            return;
+        }
 
         const trigger = container.querySelector('.dropdown-trigger');
         if (event.target === trigger) {
@@ -150,7 +162,9 @@ class DropdownManager {
         // Use setTimeout to allow focus to move to related target
         setTimeout(() => {
             const container = event.target.closest('.nav-item.has-dropdown, .dropdown-container');
-            if (!container) return;
+            if (!container) {
+                return;
+            }
 
             const relatedTarget = event.relatedTarget;
             if (!relatedTarget || !container.contains(relatedTarget)) {
@@ -179,11 +193,11 @@ class DropdownManager {
         // Set ARIA attributes
         trigger.setAttribute('aria-expanded', 'true');
         menu.setAttribute('aria-hidden', 'false');
-        
+
         // Add visual classes
         menu.classList.add('is-open');
         container.classList.add('dropdown-active');
-        
+
         this.activeDropdown = container;
         this.keyboardFocusIndex = -1;
 
@@ -197,9 +211,9 @@ class DropdownManager {
         this.announceDropdownState(trigger, true);
 
         // Emit event for analytics/other systems
-        this.nav.eventBus.emit('dropdownOpened', { 
-            container, 
-            trigger, 
+        this.nav.eventBus.emit('dropdownOpened', {
+            container,
+            trigger,
             menu,
             timestamp: Date.now()
         });
@@ -215,7 +229,7 @@ class DropdownManager {
         // Set ARIA attributes
         trigger.setAttribute('aria-expanded', 'false');
         menu.setAttribute('aria-hidden', 'true');
-        
+
         // Remove visual classes
         menu.classList.remove('is-open');
         container.classList.remove('dropdown-active');
@@ -230,16 +244,18 @@ class DropdownManager {
         this.announceDropdownState(trigger, false);
 
         // Emit event
-        this.nav.eventBus.emit('dropdownClosed', { 
-            container, 
-            trigger, 
+        this.nav.eventBus.emit('dropdownClosed', {
+            container,
+            trigger,
             menu,
             timestamp: Date.now()
         });
     }
 
     setupKeyboardNavigation() {
-        if (!this.config.keyboardNavEnabled) return;
+        if (!this.config.keyboardNavEnabled) {
+            return;
+        }
 
         document.addEventListener('keydown', (event) => {
             // Handle dropdown triggers
@@ -258,27 +274,27 @@ class DropdownManager {
     handleTriggerKeydown(event) {
         const trigger = event.target;
         const container = trigger.closest('.nav-item.has-dropdown, .dropdown-container');
-        
-        switch (event.key) {
-            case 'ArrowDown':
-            case 'Enter':
-            case ' ':
-                event.preventDefault();
-                this.showDropdown(trigger);
-                // Focus first menu item
-                setTimeout(() => {
-                    const firstItem = container.querySelector('.dropdown-link');
-                    if (firstItem) {
-                        firstItem.focus();
-                        this.keyboardFocusIndex = 0;
-                    }
-                }, 10);
-                break;
 
-            case 'Escape':
-                event.preventDefault();
-                this.hideDropdown(container);
-                break;
+        switch (event.key) {
+        case 'ArrowDown':
+        case 'Enter':
+        case ' ':
+            event.preventDefault();
+            this.showDropdown(trigger);
+            // Focus first menu item
+            setTimeout(() => {
+                const firstItem = container.querySelector('.dropdown-link');
+                if (firstItem) {
+                    firstItem.focus();
+                    this.keyboardFocusIndex = 0;
+                }
+            }, 10);
+            break;
+
+        case 'Escape':
+            event.preventDefault();
+            this.hideDropdown(container);
+            break;
         }
     }
 
@@ -289,62 +305,64 @@ class DropdownManager {
         let currentIndex = items.indexOf(currentFocus);
 
         switch (event.key) {
-            case 'ArrowDown':
-                event.preventDefault();
-                currentIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
-                items[currentIndex].focus();
-                this.keyboardFocusIndex = currentIndex;
-                break;
+        case 'ArrowDown':
+            event.preventDefault();
+            currentIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+            items[currentIndex].focus();
+            this.keyboardFocusIndex = currentIndex;
+            break;
 
-            case 'ArrowUp':
-                event.preventDefault();
-                currentIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
-                items[currentIndex].focus();
-                this.keyboardFocusIndex = currentIndex;
-                break;
+        case 'ArrowUp':
+            event.preventDefault();
+            currentIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+            items[currentIndex].focus();
+            this.keyboardFocusIndex = currentIndex;
+            break;
 
-            case 'Home':
-                event.preventDefault();
-                items[0].focus();
-                this.keyboardFocusIndex = 0;
-                break;
+        case 'Home':
+            event.preventDefault();
+            items[0].focus();
+            this.keyboardFocusIndex = 0;
+            break;
 
-            case 'End':
-                event.preventDefault();
-                items[items.length - 1].focus();
-                this.keyboardFocusIndex = items.length - 1;
-                break;
+        case 'End':
+            event.preventDefault();
+            items[items.length - 1].focus();
+            this.keyboardFocusIndex = items.length - 1;
+            break;
 
-            case 'Escape':
-                event.preventDefault();
-                this.closeAllDropdowns();
-                const trigger = this.activeDropdown?.querySelector('.dropdown-trigger');
-                if (trigger) {
-                    trigger.focus();
+        case 'Escape':
+            event.preventDefault();
+            this.closeAllDropdowns();
+            const trigger = this.activeDropdown?.querySelector('.dropdown-trigger');
+            if (trigger) {
+                trigger.focus();
+            }
+            break;
+
+        case 'Tab':
+            // Allow natural tab behavior, but close dropdown when tabbing out
+            setTimeout(() => {
+                if (!this.activeDropdown?.contains(document.activeElement)) {
+                    this.closeAllDropdowns();
                 }
-                break;
+            }, 10);
+            break;
 
-            case 'Tab':
-                // Allow natural tab behavior, but close dropdown when tabbing out
-                setTimeout(() => {
-                    if (!this.activeDropdown?.contains(document.activeElement)) {
-                        this.closeAllDropdowns();
-                    }
-                }, 10);
-                break;
-
-            case 'Enter':
-            case ' ':
-                if (currentFocus && currentFocus.classList.contains('dropdown-link')) {
-                    event.preventDefault();
-                    currentFocus.click();
-                }
-                break;
+        case 'Enter':
+        case ' ':
+            if (currentFocus && currentFocus.classList.contains('dropdown-link')) {
+                event.preventDefault();
+                currentFocus.click();
+            }
+            break;
         }
     }
 
     setupTouchInteractions() {
-        if (!this.config.touchEnabled) return;
+        if (!this.config.touchEnabled) {
+            return;
+        }
 
         // Enhanced touch support for mobile devices
         document.addEventListener('touchstart', (event) => {
@@ -399,7 +417,7 @@ class DropdownManager {
         // Vertical positioning
         const spaceBelow = viewportHeight - triggerRect.bottom;
         const spaceAbove = triggerRect.top;
-        
+
         if (spaceBelow < menuRect.height && spaceAbove > menuRect.height) {
             // Not enough space below, but enough above
             menu.style.bottom = '100%';
@@ -412,7 +430,9 @@ class DropdownManager {
     }
 
     setupIntersectionObserver(container) {
-        if (!('IntersectionObserver' in window)) return;
+        if (!('IntersectionObserver' in window)) {
+            return;
+        }
 
         // Check if observer already exists for this container
         if (this.activeObservers.has(container)) {
@@ -431,10 +451,10 @@ class DropdownManager {
         });
 
         observer.observe(container);
-        
+
         // Store the observer in the Map
         this.activeObservers.set(container, observer);
-        
+
         // Clean up observer when dropdown closes
         this.nav.eventBus.once('dropdownClosed', (data) => {
             if (data.container === container) {
@@ -454,7 +474,7 @@ class DropdownManager {
     prefetchEventPages(container) {
         // Performance optimization: prefetch likely next pages
         const eventLinks = container.querySelectorAll('.dropdown-link[data-event]');
-        
+
         eventLinks.forEach(link => {
             if ('requestIdleCallback' in window) {
                 requestIdleCallback(() => {
@@ -502,13 +522,13 @@ class DropdownManager {
         // Clean up event listeners and timers
         this.dropdownTimers.forEach(timer => clearTimeout(timer));
         this.dropdownTimers.clear();
-        
+
         // Clean up all active observers
         this.activeObservers.forEach((observer, container) => {
             observer.disconnect();
         });
         this.activeObservers.clear();
-        
+
         this.activeDropdown = null;
     }
 }
@@ -518,299 +538,278 @@ class DropdownManager {
  * Extends the existing SiteNavigation class while maintaining backward compatibility
  */
 class SiteNavigation {
-        constructor(config = {}) {
-            // Legacy compatibility
-            this.currentDesign = localStorage.getItem('selectedDesign') || 'design1';
-            this.mobileMenuOpen = false;
-            
-            // Enhanced navigation properties
-            this.currentEvent = null;
-            this.currentPage = null;
-            this.config = {
-                enableDropdowns: true,
-                enableKeyboardNav: true,
-                enableEventSwitcher: true,
-                cubanRhythmTiming: true, // Cuban dance-inspired animation timing
-                ...config
-            };
-            
-            // Event sub-page configuration for maintainability
-            this.eventConfig = {
-                subPageTypes: ['artists', 'schedule', 'gallery'],
-                events: {
-                    'boulder-fest-2026': {
-                        year: '2026',
-                        prefix: '2026'
-                    },
-                    'boulder-fest-2025': {
-                        year: '2025',
-                        prefix: '2025'
-                    },
-                    'weekender-2026-09': {
-                        year: '2026',
-                        prefix: '2026-sept'
-                    }
+    constructor(config = {}) {
+        // Legacy compatibility
+        this.currentDesign = localStorage.getItem('selectedDesign') || 'design1';
+        this.mobileMenuOpen = false;
+
+        // Enhanced navigation properties
+        this.currentEvent = null;
+        this.currentPage = null;
+        this.config = {
+            enableDropdowns: true,
+            enableKeyboardNav: true,
+            enableEventSwitcher: true,
+            cubanRhythmTiming: true, // Cuban dance-inspired animation timing
+            ...config
+        };
+
+        // Event sub-page configuration for maintainability
+        this.eventConfig = {
+            subPageTypes: ['artists', 'schedule', 'gallery'],
+            events: {
+                'boulder-fest-2026': {
+                    year: '2026',
+                    prefix: '2026'
+                },
+                'boulder-fest-2025': {
+                    year: '2025',
+                    prefix: '2025'
+                },
+                'weekender-2026-09': {
+                    year: '2026',
+                    prefix: '2026-sept'
                 }
-            };
-            
-            // Event system for loose coupling
-            this.eventBus = new EventBus();
-            
-            // Dropdown manager
-            this.dropdownManager = null;
-            
-            // Performance monitoring
-            this.performanceMetrics = {
-                navigationInteractions: 0,
-                dropdownUsage: 0,
-                keyboardNavUsage: 0
-            };
-            
-            this.init();
-        }
-
-        init() {
-            
-            // Parse current route context
-            this.parseCurrentRoute();
-            
-            // Setup event listeners (enhanced)
-            this.setupEventListeners();
-            
-            // Initialize dropdown functionality
-            if (this.config.enableDropdowns) {
-                this.initializeDropdowns();
             }
-            
-            // Create mobile menu
-            this.createMobileMenu();
-            
-            // Highlight current page
-            this.highlightCurrentPage();
-            
-            // Initialize mobile menu properly
-            this.ensureMenuStateSync();
-            
-            // Setup performance monitoring
-            this.setupPerformanceMonitoring();
-            
-            // Setup accessibility enhancements
-            this.setupAccessibilityEnhancements();
+        };
+
+        // Event system for loose coupling
+        this.eventBus = new EventBus();
+
+        // Dropdown manager
+        this.dropdownManager = null;
+
+        // Performance monitoring
+        this.performanceMetrics = {
+            navigationInteractions: 0,
+            dropdownUsage: 0,
+            keyboardNavUsage: 0
+        };
+
+        this.init();
+    }
+
+    init() {
+
+        // Parse current route context
+        this.parseCurrentRoute();
+
+        // Setup event listeners (enhanced)
+        this.setupEventListeners();
+
+        // Initialize dropdown functionality
+        if (this.config.enableDropdowns) {
+            this.initializeDropdowns();
         }
 
-        parseCurrentRoute() {
-            const path = window.location.pathname;
-            const segments = path.split('/').filter(Boolean);
-            
-            // For future multi-event architecture
-            if (segments.length >= 2) {
-                // Event-specific page: /event-slug/page
-                this.currentEvent = segments[0];
-                this.currentPage = segments[1];
-            } else if (segments.length === 1) {
-                // Single page or legacy route
-                this.currentEvent = null;
-                this.currentPage = segments[0] || 'home';
-            } else {
-                // Root path
-                this.currentEvent = null;
-                this.currentPage = 'home';
+        // Create mobile menu
+        this.createMobileMenu();
+
+        // Highlight current page
+        this.highlightCurrentPage();
+
+        // Initialize mobile menu properly
+        this.ensureMenuStateSync();
+
+        // Setup performance monitoring
+        this.setupPerformanceMonitoring();
+
+        // Setup accessibility enhancements
+        this.setupAccessibilityEnhancements();
+    }
+
+    parseCurrentRoute() {
+        const path = window.location.pathname;
+        const segments = path.split('/').filter(Boolean);
+
+        // For future multi-event architecture
+        if (segments.length >= 2) {
+            // Event-specific page: /event-slug/page
+            this.currentEvent = segments[0];
+            this.currentPage = segments[1];
+        } else if (segments.length === 1) {
+            // Single page or legacy route
+            this.currentEvent = null;
+            this.currentPage = segments[0] || 'home';
+        } else {
+            // Root path
+            this.currentEvent = null;
+            this.currentPage = 'home';
+        }
+
+        // Emit route change event
+        this.eventBus.emit('routeChanged', {
+            event: this.currentEvent,
+            page: this.currentPage,
+            path: path,
+            timestamp: Date.now()
+        });
+    }
+
+    initializeDropdowns() {
+        if (this.dropdownManager) {
+            this.dropdownManager.destroy();
+        }
+
+        this.dropdownManager = new DropdownManager(this);
+        this.dropdownManager.init();
+
+        // Setup dropdown event listeners
+        this.eventBus.on('dropdownOpened', (data) => {
+            this.performanceMetrics.dropdownUsage++;
+        });
+    }
+
+    setupPerformanceMonitoring() {
+        // Track navigation interactions for analytics
+        document.addEventListener('click', (event) => {
+            if (event.target.matches('.nav-link, .dropdown-link')) {
+                this.performanceMetrics.navigationInteractions++;
+
+                // Cuban culture: Track rhythm of navigation
+                this.eventBus.emit('navigationInteraction', {
+                    type: 'click',
+                    target: event.target.textContent,
+                    timestamp: Date.now(),
+                    metrics: this.performanceMetrics
+                });
             }
-            
-            // Emit route change event
-            this.eventBus.emit('routeChanged', {
-                event: this.currentEvent,
-                page: this.currentPage,
-                path: path,
-                timestamp: Date.now()
-            });
-        }
+        });
+    }
 
-        initializeDropdowns() {
-            if (this.dropdownManager) {
-                this.dropdownManager.destroy();
+    setupAccessibilityEnhancements() {
+        // Enhanced focus management
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Tab') {
+                this.performanceMetrics.keyboardNavUsage++;
+                document.body.classList.add('keyboard-navigation-active');
             }
-            
-            this.dropdownManager = new DropdownManager(this);
-            this.dropdownManager.init();
-            
-            // Setup dropdown event listeners
-            this.eventBus.on('dropdownOpened', (data) => {
-                this.performanceMetrics.dropdownUsage++;
-            });
+        });
+
+        document.addEventListener('mousedown', () => {
+            document.body.classList.remove('keyboard-navigation-active');
+        });
+
+        // Skip link for main content
+        this.createSkipLink();
+    }
+
+    createSkipLink() {
+        // Create skip link for keyboard users
+        const skipLink = document.createElement('a');
+        skipLink.href = '#main-content';
+        skipLink.textContent = 'Skip to main content';
+        skipLink.className = 'skip-link';
+
+        document.body.insertBefore(skipLink, document.body.firstChild);
+    }
+
+    setupEventListeners() {
+        // Mobile menu toggle
+        const menuToggle = document.querySelector('.menu-toggle');
+        if (menuToggle) {
+            menuToggle.addEventListener('click', () => this.toggleMobileMenu());
         }
 
-        setupPerformanceMonitoring() {
-            // Track navigation interactions for analytics
-            document.addEventListener('click', (event) => {
-                if (event.target.matches('.nav-link, .dropdown-link')) {
-                    this.performanceMetrics.navigationInteractions++;
-                    
-                    // Cuban culture: Track rhythm of navigation
-                    this.eventBus.emit('navigationInteraction', {
-                        type: 'click',
-                        target: event.target.textContent,
-                        timestamp: Date.now(),
-                        metrics: this.performanceMetrics
+        // Close mobile menu on escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.mobileMenuOpen) {
+                this.closeMobileMenu();
+            }
+        });
+
+        // Close mobile menu on click outside
+        document.addEventListener('click', (e) => {
+            const navList = document.querySelector('.nav-list');
+            const menuToggle = document.querySelector('.menu-toggle');
+
+            if (this.mobileMenuOpen && menuToggle && !menuToggle.contains(e.target)) {
+                // Check if click is outside nav list (mobile menu)
+                if (navList && !navList.contains(e.target)) {
+                    this.closeMobileMenu();
+                }
+            }
+        });
+
+        // Close mobile menu when navigation link is clicked
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('.nav-link') && this.mobileMenuOpen) {
+                this.closeMobileMenu();
+            }
+        });
+
+        // Enhanced smooth scroll for anchor links with Cuban rhythm timing
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = document.querySelector(anchor.getAttribute('href'));
+                if (target) {
+                    // Cuban dance-inspired smooth scrolling
+                    const scrollOptions = {
+                        behavior: this.config.cubanRhythmTiming ? 'smooth' : 'auto',
+                        block: 'start'
+                    };
+                    target.scrollIntoView(scrollOptions);
+
+                    // Emit navigation event
+                    this.eventBus.emit('anchorNavigation', {
+                        target: anchor.getAttribute('href'),
+                        timestamp: Date.now()
                     });
                 }
             });
+        });
+
+        // Global keyboard shortcuts for power users
+        document.addEventListener('keydown', (event) => {
+            // Alt + M to toggle mobile menu
+            if (event.altKey && event.key === 'm') {
+                event.preventDefault();
+                this.toggleMobileMenu();
+            }
+
+            // Alt + H to go home
+            if (event.altKey && event.key === 'h') {
+                event.preventDefault();
+                window.location.href = '/home';
+            }
+        });
+
+        // Enhanced visibility change handling
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && this.mobileMenuOpen) {
+                this.closeMobileMenu();
+            }
+        });
+    }
+
+    createMobileMenu() {
+        const nav = document.querySelector('.main-nav');
+        const menuToggle = document.querySelector('.menu-toggle');
+
+        if (!nav || !menuToggle) {
+            return;
         }
 
-        setupAccessibilityEnhancements() {
-            // Enhanced focus management
-            document.addEventListener('keydown', (event) => {
-                if (event.key === 'Tab') {
-                    this.performanceMetrics.keyboardNavUsage++;
-                    document.body.classList.add('keyboard-navigation-active');
-                }
-            });
+        // Mobile menu setup - class will be added only when menu is toggled
+        // The 'is-open' class should only be added when menu is explicitly opened
+    }
 
-            document.addEventListener('mousedown', () => {
-                document.body.classList.remove('keyboard-navigation-active');
-            });
+    toggleMobileMenu() {
+        this.mobileMenuOpen = !this.mobileMenuOpen;
+        const menuToggle = document.querySelector('.menu-toggle');
+        const navList = document.querySelector('.nav-list');
 
-            // Skip link for main content
-            this.createSkipLink();
-        }
-
-        createSkipLink() {
-            // Create skip link for keyboard users
-            const skipLink = document.createElement('a');
-            skipLink.href = '#main-content';
-            skipLink.textContent = 'Skip to main content';
-            skipLink.className = 'skip-link';
-            
-            document.body.insertBefore(skipLink, document.body.firstChild);
-        }
-
-        setupEventListeners() {
-            // Mobile menu toggle
-            const menuToggle = document.querySelector('.menu-toggle');
+        if (this.mobileMenuOpen) {
+            if (navList) {
+                navList.classList.add('is-open');
+            }
             if (menuToggle) {
-                menuToggle.addEventListener('click', () => this.toggleMobileMenu());
+                menuToggle.classList.add('is-active');
+                menuToggle.setAttribute('aria-expanded', 'true');
             }
-
-            // Close mobile menu on escape
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && this.mobileMenuOpen) {
-                    this.closeMobileMenu();
-                }
-            });
-
-            // Close mobile menu on click outside
-            document.addEventListener('click', (e) => {
-                const navList = document.querySelector('.nav-list');
-                const menuToggle = document.querySelector('.menu-toggle');
-
-                if (this.mobileMenuOpen && menuToggle && !menuToggle.contains(e.target)) {
-                // Check if click is outside nav list (mobile menu)
-                    if (navList && !navList.contains(e.target)) {
-                        this.closeMobileMenu();
-                    }
-                }
-            });
-
-            // Close mobile menu when navigation link is clicked
-            document.addEventListener('click', (e) => {
-                if (e.target.matches('.nav-link') && this.mobileMenuOpen) {
-                    this.closeMobileMenu();
-                }
-            });
-
-            // Enhanced smooth scroll for anchor links with Cuban rhythm timing
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const target = document.querySelector(anchor.getAttribute('href'));
-                    if (target) {
-                        // Cuban dance-inspired smooth scrolling
-                        const scrollOptions = {
-                            behavior: this.config.cubanRhythmTiming ? 'smooth' : 'auto',
-                            block: 'start'
-                        };
-                        target.scrollIntoView(scrollOptions);
-                        
-                        // Emit navigation event
-                        this.eventBus.emit('anchorNavigation', {
-                            target: anchor.getAttribute('href'),
-                            timestamp: Date.now()
-                        });
-                    }
-                });
-            });
-
-            // Global keyboard shortcuts for power users
-            document.addEventListener('keydown', (event) => {
-                // Alt + M to toggle mobile menu
-                if (event.altKey && event.key === 'm') {
-                    event.preventDefault();
-                    this.toggleMobileMenu();
-                }
-                
-                // Alt + H to go home
-                if (event.altKey && event.key === 'h') {
-                    event.preventDefault();
-                    window.location.href = '/home';
-                }
-            });
-
-            // Enhanced visibility change handling
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden && this.mobileMenuOpen) {
-                    this.closeMobileMenu();
-                }
-            });
-        }
-
-        createMobileMenu() {
-            const nav = document.querySelector('.main-nav');
-            const menuToggle = document.querySelector('.menu-toggle');
-
-            if (!nav || !menuToggle) {
-                return;
-            }
-
-            // Mobile menu setup - class will be added only when menu is toggled
-            // The 'is-open' class should only be added when menu is explicitly opened
-        }
-
-        toggleMobileMenu() {
-            this.mobileMenuOpen = !this.mobileMenuOpen;
-            const menuToggle = document.querySelector('.menu-toggle');
-            const navList = document.querySelector('.nav-list');
-
-            if (this.mobileMenuOpen) {
-                if (navList) {
-                    navList.classList.add('is-open');
-                }
-                if (menuToggle) {
-                    menuToggle.classList.add('is-active');
-                    menuToggle.setAttribute('aria-expanded', 'true');
-                }
-                document.body.style.overflow = 'hidden';
-            } else {
-                if (navList) {
-                    navList.classList.remove('is-open');
-                }
-                if (menuToggle) {
-                    menuToggle.classList.remove('is-active');
-                    menuToggle.setAttribute('aria-expanded', 'false');
-                }
-                document.body.style.overflow = '';
-            }
-            
-            // Ensure menu state stays synchronized
-            setTimeout(() => {
-                this.ensureMenuStateSync();
-            }, 100);
-        }
-
-        closeMobileMenu() {
-            this.mobileMenuOpen = false;
-            const menuToggle = document.querySelector('.menu-toggle');
-            const navList = document.querySelector('.nav-list');
-
+            document.body.style.overflow = 'hidden';
+        } else {
             if (navList) {
                 navList.classList.remove('is-open');
             }
@@ -821,75 +820,76 @@ class SiteNavigation {
             document.body.style.overflow = '';
         }
 
-        getEventSubPagePatterns() {
-            const patterns = [];
-            
-            // Dynamically generate patterns from event configuration
-            Object.values(this.eventConfig.events).forEach(event => {
-                this.eventConfig.subPageTypes.forEach(type => {
-                    patterns.push(`/${event.prefix}-${type}`);
-                });
-            });
-            
-            return patterns;
+        // Ensure menu state stays synchronized
+        setTimeout(() => {
+            this.ensureMenuStateSync();
+        }, 100);
+    }
+
+    closeMobileMenu() {
+        this.mobileMenuOpen = false;
+        const menuToggle = document.querySelector('.menu-toggle');
+        const navList = document.querySelector('.nav-list');
+
+        if (navList) {
+            navList.classList.remove('is-open');
         }
+        if (menuToggle) {
+            menuToggle.classList.remove('is-active');
+            menuToggle.setAttribute('aria-expanded', 'false');
+        }
+        document.body.style.overflow = '';
+    }
 
-        highlightCurrentPage() {
-            const currentPath = window.location.pathname;
-            const navLinks = document.querySelectorAll('.nav-link, .dropdown-link, .event-nav-link');
-            
-            // First, clear all active states
-            document.querySelectorAll('.nav-trigger, .nav-item').forEach(el => {
-                el.classList.remove('is-active');
+    getEventSubPagePatterns() {
+        const patterns = [];
+
+        // Dynamically generate patterns from event configuration
+        Object.values(this.eventConfig.events).forEach(event => {
+            this.eventConfig.subPageTypes.forEach(type => {
+                patterns.push(`/${event.prefix}-${type}`);
             });
+        });
 
-            // Get Events sub-page patterns dynamically
-            const eventSubPagePatterns = this.getEventSubPagePatterns();
+        return patterns;
+    }
 
-            // Check if current page is an Events sub-page
-            const isEventSubPage = eventSubPagePatterns.some(pattern => currentPath === pattern);
+    highlightCurrentPage() {
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('.nav-link, .dropdown-link, .event-nav-link');
 
-            navLinks.forEach(link => {
-                link.classList.remove('is-active');
-                const linkPath = new URL(link.href).pathname;
-                
-                // Enhanced path matching for current page highlighting
-                const isCurrentPage = currentPath === linkPath || 
-                                    (currentPath === '/' && linkPath === '/home') || 
+        // First, clear all active states
+        document.querySelectorAll('.nav-trigger, .nav-item').forEach(el => {
+            el.classList.remove('is-active');
+        });
+
+        // Get Events sub-page patterns dynamically
+        const eventSubPagePatterns = this.getEventSubPagePatterns();
+
+        // Check if current page is an Events sub-page
+        const isEventSubPage = eventSubPagePatterns.some(pattern => currentPath === pattern);
+
+        navLinks.forEach(link => {
+            link.classList.remove('is-active');
+            const linkPath = new URL(link.href).pathname;
+
+            // Enhanced path matching for current page highlighting
+            const isCurrentPage = currentPath === linkPath ||
+                                    (currentPath === '/' && linkPath === '/home') ||
                                     (currentPath === '/home' && linkPath === '/home') ||
                                     (currentPath.startsWith(linkPath + '/') && linkPath !== '/');
-                
-                if (isCurrentPage) {
-                    link.classList.add('is-active');
-                    
-                    // Set aria-current for accessibility
-                    link.setAttribute('aria-current', 'page');
-                    
-                    // If this is in a dropdown, mark the parent trigger as active too
-                    const dropdown = link.closest('.nav-item.has-dropdown, .dropdown-container');
-                    if (dropdown) {
-                        const trigger = dropdown.querySelector('.dropdown-trigger, .nav-trigger');
-                        if (trigger) {
-                            trigger.classList.add('is-active');
-                            // Also mark the parent nav-item as active for desktop styles
-                            const navItem = trigger.closest('.nav-item');
-                            if (navItem) {
-                                navItem.classList.add('is-active');
-                            }
-                        }
-                    }
-                } else {
-                    link.removeAttribute('aria-current');
-                }
-            });
 
-            // Special handling for Events sub-pages
-            if (isEventSubPage) {
-                // Find the Events trigger and mark it as active
-                const eventsTriggers = document.querySelectorAll('[data-dropdown="events"], .nav-trigger');
-                eventsTriggers.forEach(trigger => {
-                    const triggerText = trigger.textContent.trim();
-                    if (triggerText.includes('Events')) {
+            if (isCurrentPage) {
+                link.classList.add('is-active');
+
+                // Set aria-current for accessibility
+                link.setAttribute('aria-current', 'page');
+
+                // If this is in a dropdown, mark the parent trigger as active too
+                const dropdown = link.closest('.nav-item.has-dropdown, .dropdown-container');
+                if (dropdown) {
+                    const trigger = dropdown.querySelector('.dropdown-trigger, .nav-trigger');
+                    if (trigger) {
                         trigger.classList.add('is-active');
                         // Also mark the parent nav-item as active for desktop styles
                         const navItem = trigger.closest('.nav-item');
@@ -897,96 +897,116 @@ class SiteNavigation {
                             navItem.classList.add('is-active');
                         }
                     }
-                });
-            }
-
-        }
-
-        setDesign(designName) {
-            this.currentDesign = designName;
-            localStorage.setItem('selectedDesign', designName);
-        }
-
-        getDesign() {
-            return this.currentDesign;
-        }
-
-        // Ensure hamburger button animation stays synchronized with menu state
-        ensureMenuStateSync() {
-            const menuToggle = document.querySelector('.menu-toggle');
-            
-            if (menuToggle) {
-                const hasActiveClass = menuToggle.classList.contains('is-active');
-                
-                // Fix sync issues between menu state and hamburger animation
-                if (this.mobileMenuOpen && !hasActiveClass) {
-                    menuToggle.classList.add('is-active');
-                    menuToggle.setAttribute('aria-expanded', 'true');
-                } else if (!this.mobileMenuOpen && hasActiveClass) {
-                    menuToggle.classList.remove('is-active');
-                    menuToggle.setAttribute('aria-expanded', 'false');
                 }
+            } else {
+                link.removeAttribute('aria-current');
             }
+        });
+
+        // Special handling for Events sub-pages
+        if (isEventSubPage) {
+            // Find the Events trigger and mark it as active
+            const eventsTriggers = document.querySelectorAll('[data-dropdown="events"], .nav-trigger');
+            eventsTriggers.forEach(trigger => {
+                const triggerText = trigger.textContent.trim();
+                if (triggerText.includes('Events')) {
+                    trigger.classList.add('is-active');
+                    // Also mark the parent nav-item as active for desktop styles
+                    const navItem = trigger.closest('.nav-item');
+                    if (navItem) {
+                        navItem.classList.add('is-active');
+                    }
+                }
+            });
         }
 
-        // Navigation with transition (enhanced for Cuban rhythm)
-        navigateWithTransition(url) {
-            // Close any open dropdowns before navigation
-            if (this.dropdownManager) {
-                this.dropdownManager.closeAllDropdowns();
+    }
+
+    setDesign(designName) {
+        this.currentDesign = designName;
+        localStorage.setItem('selectedDesign', designName);
+    }
+
+    getDesign() {
+        return this.currentDesign;
+    }
+
+    // Ensure hamburger button animation stays synchronized with menu state
+    ensureMenuStateSync() {
+        const menuToggle = document.querySelector('.menu-toggle');
+
+        if (menuToggle) {
+            const hasActiveClass = menuToggle.classList.contains('is-active');
+
+            // Fix sync issues between menu state and hamburger animation
+            if (this.mobileMenuOpen && !hasActiveClass) {
+                menuToggle.classList.add('is-active');
+                menuToggle.setAttribute('aria-expanded', 'true');
+            } else if (!this.mobileMenuOpen && hasActiveClass) {
+                menuToggle.classList.remove('is-active');
+                menuToggle.setAttribute('aria-expanded', 'false');
             }
-            
-            // Close mobile menu if open
-            if (this.mobileMenuOpen) {
-                this.closeMobileMenu();
-            }
-            
-            // Cuban dance-inspired transition timing
-            const transitionClass = this.config.cubanRhythmTiming ? 'page-exiting-cuban' : 'page-exiting';
-            document.body.classList.add(transitionClass);
-
-            const transitionDelay = this.config.cubanRhythmTiming ? 250 : 300;
-            setTimeout(() => {
-                window.location.href = url;
-            }, transitionDelay);
-        }
-
-        // Get performance metrics
-        getPerformanceMetrics() {
-            return {
-                ...this.performanceMetrics,
-                timestamp: Date.now(),
-                activeDropdowns: document.querySelectorAll('.nav-item.has-dropdown.dropdown-active, .dropdown-container.dropdown-active').length,
-                mobileMenuOpen: this.mobileMenuOpen
-            };
-        }
-
-        // Event-aware page title helper
-        getPageDisplayName(page) {
-            const displayNames = {
-                'home': 'Home',
-                'about': 'About',
-                'artists': 'Artists',
-                'schedule': 'Schedule',
-                'gallery': 'Gallery',
-                'tickets': 'Tickets',
-                'donations': 'Donate',
-                'contact': 'Contact',
-                'about-festival': 'About Festival'
-            };
-            return displayNames[page] || page.charAt(0).toUpperCase() + page.slice(1);
-        }
-
-        // Clean up resources
-        destroy() {
-            if (this.dropdownManager) {
-                this.dropdownManager.destroy();
-            }
-            
-            // Clear any timers or observers
-            this.eventBus.events.clear();
         }
     }
+
+    // Navigation with transition (enhanced for Cuban rhythm)
+    navigateWithTransition(url) {
+        // Close any open dropdowns before navigation
+        if (this.dropdownManager) {
+            this.dropdownManager.closeAllDropdowns();
+        }
+
+        // Close mobile menu if open
+        if (this.mobileMenuOpen) {
+            this.closeMobileMenu();
+        }
+
+        // Cuban dance-inspired transition timing
+        const transitionClass = this.config.cubanRhythmTiming ? 'page-exiting-cuban' : 'page-exiting';
+        document.body.classList.add(transitionClass);
+
+        const transitionDelay = this.config.cubanRhythmTiming ? 250 : 300;
+        setTimeout(() => {
+            window.location.href = url;
+        }, transitionDelay);
+    }
+
+    // Get performance metrics
+    getPerformanceMetrics() {
+        return {
+            ...this.performanceMetrics,
+            timestamp: Date.now(),
+            activeDropdowns: document.querySelectorAll('.nav-item.has-dropdown.dropdown-active, .dropdown-container.dropdown-active').length,
+            mobileMenuOpen: this.mobileMenuOpen
+        };
+    }
+
+    // Event-aware page title helper
+    getPageDisplayName(page) {
+        const displayNames = {
+            'home': 'Home',
+            'about': 'About',
+            'artists': 'Artists',
+            'schedule': 'Schedule',
+            'gallery': 'Gallery',
+            'tickets': 'Tickets',
+            'donations': 'Donate',
+            'contact': 'Contact',
+            'about-festival': 'About Festival'
+        };
+        return displayNames[page] || page.charAt(0).toUpperCase() + page.slice(1);
+    }
+
+    // Clean up resources
+    destroy() {
+        if (this.dropdownManager) {
+            this.dropdownManager.destroy();
+        }
+
+        // Clear any timers or observers
+        this.eventBus.events.clear();
+    }
+}
 
 // Page transition effects
 if (typeof PageTransition === 'undefined') {
@@ -1115,7 +1135,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof PageTransition !== 'undefined' && typeof window.pageTransition === 'undefined') {
         window.pageTransition = new PageTransition();
     }
-    
+
 });
 
 // Export for use in other modules

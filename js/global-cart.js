@@ -16,19 +16,19 @@ async function initializeGlobalCart() {
     try {
         // Get cart manager instance
         const cartManager = getCartManager();
-        
+
         // Initialize cart
         await cartManager.initialize();
-        
+
         // Initialize floating cart UI
         initializeFloatingCart(cartManager);
-        
+
         // Set up page-specific integrations
         setupPageIntegrations(cartManager);
-        
+
         // Set up global debugging
         setupGlobalDebugging(cartManager);
-        
+
     } catch (error) {
         console.error('Failed to initialize global cart:', error);
     }
@@ -36,7 +36,7 @@ async function initializeGlobalCart() {
 
 function setupPageIntegrations(cartManager) {
     const currentPath = window.location.pathname;
-    
+
     if (currentPath.includes('/tickets') || currentPath.includes('tickets.html')) {
         setupTicketsPageIntegration(cartManager);
     } else if (currentPath.includes('/donations') || currentPath.includes('donations.html')) {
@@ -46,25 +46,19 @@ function setupPageIntegrations(cartManager) {
 
 function setupTicketsPageIntegration(cartManager) {
     // Listen for ticket selection updates
-    document.addEventListener('ticket-quantity-changed', async (event) => {
+    document.addEventListener('ticket-quantity-changed', async(event) => {
         const { ticketType, quantity, price, name, eventId } = event.detail;
-        
+
         try {
             if (quantity > 0) {
-                // First ensure the ticket exists in the cart
-                const currentState = cartManager.getState();
-                if (!currentState.tickets || !currentState.tickets[ticketType]) {
-                    // Add the ticket with quantity 0 first
-                    await cartManager.addTicket({
-                        ticketType,
-                        quantity: 0,
-                        price,
-                        name,
-                        eventId
-                    });
-                }
-                // Then update to the exact quantity
-                await cartManager.updateTicketQuantity(ticketType, quantity);
+                // Use upsert operation that handles both add and update in one call
+                await cartManager.upsertTicket({
+                    ticketType,
+                    quantity,
+                    price,
+                    name,
+                    eventId
+                });
             } else {
                 await cartManager.removeTicket(ticketType);
             }
@@ -75,9 +69,9 @@ function setupTicketsPageIntegration(cartManager) {
     });
 
     // Listen for direct ticket quantity updates
-    document.addEventListener('ticket-quantity-updated', async (event) => {
+    document.addEventListener('ticket-quantity-updated', async(event) => {
         const { ticketType, quantity } = event.detail;
-        
+
         try {
             await cartManager.updateTicketQuantity(ticketType, quantity);
         } catch (error) {
@@ -88,9 +82,9 @@ function setupTicketsPageIntegration(cartManager) {
 
 function setupDonationsPageIntegration(cartManager) {
     // Listen for donation amount additions to cart
-    document.addEventListener('donation-amount-changed', async (event) => {
+    document.addEventListener('donation-amount-changed', async(event) => {
         const { amount } = event.detail;
-        
+
         // Only add to cart if amount is greater than 0
         if (amount > 0) {
             try {
@@ -103,8 +97,22 @@ function setupDonationsPageIntegration(cartManager) {
 }
 
 function setupGlobalDebugging(cartManager) {
-    // Add global debugging functions for development
-    if (typeof window !== 'undefined') {
+    // Add global debugging functions for development only
+    const isDevelopment = () => {
+        // Check multiple indicators for development environment
+        return (
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1' ||
+            window.location.port === '3000' ||
+            window.location.port === '8080' ||
+            window.location.search.includes('debug=true') ||
+            localStorage.getItem('dev_mode') === 'true'
+        );
+    };
+
+    if (typeof window !== 'undefined' && isDevelopment()) {
+        const debugEventListeners = [];
+
         window.cartDebug = {
             getState: () => cartManager.getState(),
             getDebugInfo: () => cartManager.getDebugInfo(),
@@ -134,20 +142,37 @@ function setupGlobalDebugging(cartManager) {
                         detail: { amount }
                     }));
                 }
+            },
+            // Cleanup function to remove event listeners and debug tools
+            cleanup: () => {
+                debugEventListeners.forEach(({ target, event, handler }) => {
+                    target.removeEventListener(event, handler);
+                });
+                debugEventListeners.length = 0;
+                delete window.cartDebug;
             }
         };
-        
+
         // Listen for cart events and log them in development
-        cartManager.addEventListener('cart:updated', (event) => {
+        const cartUpdatedHandler = (event) => {
             console.log('Cart updated:', event.detail);
-        });
-        
-        cartManager.addEventListener('cart:ticket:added', (event) => {
+        };
+        const ticketAddedHandler = (event) => {
             console.log('Ticket added to cart:', event.detail);
-        });
-        
-        cartManager.addEventListener('cart:donation:updated', (event) => {
+        };
+        const donationUpdatedHandler = (event) => {
             console.log('Donation updated in cart:', event.detail);
-        });
+        };
+
+        cartManager.addEventListener('cart:updated', cartUpdatedHandler);
+        cartManager.addEventListener('cart:ticket:added', ticketAddedHandler);
+        cartManager.addEventListener('cart:donation:updated', donationUpdatedHandler);
+
+        // Track listeners for cleanup
+        debugEventListeners.push(
+            { target: cartManager, event: 'cart:updated', handler: cartUpdatedHandler },
+            { target: cartManager, event: 'cart:ticket:added', handler: ticketAddedHandler },
+            { target: cartManager, event: 'cart:donation:updated', handler: donationUpdatedHandler }
+        );
     }
 }

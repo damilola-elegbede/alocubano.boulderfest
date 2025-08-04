@@ -118,9 +118,11 @@ function setupEventListeners(elements, cartManager) {
     });
 
     // Quantity adjustment handlers
-    elements.itemsContainer.addEventListener('click', async (event) => {
+    elements.itemsContainer.addEventListener('click', async(event) => {
         const button = event.target.closest('.qty-adjust');
-        if (!button) return;
+        if (!button) {
+            return;
+        }
 
         const cartItem = button.closest('.cart-item');
         const ticketType = cartItem.dataset.ticketType;
@@ -132,7 +134,7 @@ function setupEventListeners(elements, cartManager) {
     });
 
     // Remove donation handler
-    elements.itemsContainer.addEventListener('click', async (event) => {
+    elements.itemsContainer.addEventListener('click', async(event) => {
         const removeButton = event.target.closest('.remove-donation');
         if (removeButton) {
             const donationId = removeButton.dataset.donationId;
@@ -151,14 +153,21 @@ function setupEventListeners(elements, cartManager) {
                 itemCount: cartManager.getState().totals.itemCount
             });
         }
-        
+
         handleCheckoutClick(cartManager);
     });
 
     // Clear cart button handler
-    elements.clearButton.addEventListener('click', async () => {
+    elements.clearButton.addEventListener('click', async() => {
+        // Show confirmation dialog to prevent accidental data loss
+        const userConfirmed = await showClearCartConfirmation(cartManager.getState());
+
+        if (!userConfirmed) {
+            return; // User cancelled
+        }
+
         await cartManager.clear();
-        
+
         // Show success message
         const messageDiv = document.createElement('div');
         messageDiv.className = 'cart-clear-message';
@@ -178,7 +187,7 @@ function setupEventListeners(elements, cartManager) {
             animation: slideInUp 0.3s ease-out;
         `;
         document.body.appendChild(messageDiv);
-        
+
         setTimeout(() => {
             messageDiv.style.animation = 'slideOutDown 0.3s ease-out';
             setTimeout(() => messageDiv.remove(), 300);
@@ -190,7 +199,9 @@ async function handleQuantityAdjustment(cartManager, ticketType, action) {
     const currentState = cartManager.getState();
     const ticket = currentState.tickets[ticketType];
 
-    if (!ticket) return;
+    if (!ticket) {
+        return;
+    }
 
     let newQuantity = ticket.quantity;
     if (action === 'increase') {
@@ -228,12 +239,16 @@ function handleCheckoutClick(cartManager) {
         }
     }
 
-    // For now, redirect to tickets page with cart data
-    // In future phases, this will open a checkout modal
-    const params = new URLSearchParams();
-    params.set('checkout', 'true');
-    params.set('cart', JSON.stringify(cartState));
-    window.location.href = `/tickets?${params.toString()}`;
+    // Store cart state securely in sessionStorage to avoid URL length limits
+    // and prevent exposing sensitive data in URLs
+    try {
+        sessionStorage.setItem('checkout_cart', JSON.stringify(cartState));
+        window.location.href = '/tickets?checkout=true';
+    } catch (error) {
+        // Fallback if sessionStorage is not available
+        console.warn('sessionStorage not available, using basic checkout flow');
+        window.location.href = '/tickets?checkout=true';
+    }
 }
 
 function toggleCartPanel(elements, isOpen, cartManager) {
@@ -244,7 +259,7 @@ function toggleCartPanel(elements, isOpen, cartManager) {
 
         // Focus management for accessibility
         elements.closeButton.focus();
-        
+
         // Track analytics
         if (cartManager && cartManager.analytics) {
             cartManager.analytics.trackCartEvent('cart_opened', {
@@ -304,7 +319,7 @@ function updateCartUI(elements, cartState) {
 
     // Show/hide floating button based on cart contents
     const hasItems = totals.itemCount > 0 || totals.donationCount > 0;
-    
+
     if (hasItems || totals.total > 0) {
         elements.container.style.display = 'block';
         elements.button.style.opacity = '1';
@@ -324,7 +339,7 @@ function renderCartItems(container, tickets, donations) {
             <div class="cart-category">
                 <h4 class="cart-category-header tickets">A Lo Cubano 2026 Tickets</h4>
         `;
-        
+
         ticketValues.forEach(ticket => {
             const itemTotal = ticket.price * ticket.quantity;
             html += `
@@ -341,8 +356,8 @@ function renderCartItems(container, tickets, donations) {
                 </div>
             `;
         });
-        
-        html += `</div>`;
+
+        html += '</div>';
     }
 
     // Render donations category
@@ -351,7 +366,7 @@ function renderCartItems(container, tickets, donations) {
             <div class="cart-category">
                 <h4 class="cart-category-header">Donations</h4>
         `;
-        
+
         donations.forEach(donation => {
             html += `
                 <div class="cart-item" data-donation-id="${donation.id}">
@@ -363,8 +378,8 @@ function renderCartItems(container, tickets, donations) {
                 </div>
             `;
         });
-        
-        html += `</div>`;
+
+        html += '</div>';
     }
 
     container.innerHTML = html;
@@ -378,6 +393,137 @@ function escapeHtml(unsafe) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+}
+
+// Clear cart confirmation dialog
+async function showClearCartConfirmation(cartState) {
+    return new Promise((resolve) => {
+        // Create modal backdrop
+        const backdrop = document.createElement('div');
+        backdrop.className = 'confirmation-backdrop';
+        backdrop.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+
+        // Create modal content
+        const modal = document.createElement('div');
+        modal.className = 'confirmation-modal';
+        modal.style.cssText = `
+            background: var(--color-white);
+            border-radius: 12px;
+            padding: var(--space-xl);
+            max-width: 400px;
+            margin: var(--space-lg);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            font-family: var(--font-body);
+        `;
+
+        const ticketCount = Object.keys(cartState.tickets).length;
+        const donationCount = cartState.donations.length;
+        const totalItems = ticketCount + donationCount;
+
+        modal.innerHTML = `
+            <h3 style="color: var(--color-blue); margin-bottom: var(--space-lg); font-family: var(--font-display);">
+                Clear Cart?
+            </h3>
+            <p style="margin-bottom: var(--space-xl); color: var(--color-text); line-height: 1.4;">
+                This will remove all ${totalItems} item${totalItems !== 1 ? 's' : ''} from your cart 
+                ${ticketCount > 0 ? `(${ticketCount} ticket${ticketCount !== 1 ? 's' : ''})` : ''}
+                ${ticketCount > 0 && donationCount > 0 ? ' and ' : ''}
+                ${donationCount > 0 ? `(${donationCount} donation${donationCount !== 1 ? 's' : ''})` : ''}.
+                This action cannot be undone.
+            </p>
+            <div class="confirmation-buttons" style="display: flex; gap: var(--space-md); justify-content: center;">
+                <button class="confirm-cancel" style="
+                    padding: var(--space-md) var(--space-lg);
+                    border: 2px solid var(--color-blue);
+                    background: transparent;
+                    color: var(--color-blue);
+                    border-radius: 6px;
+                    font-family: var(--font-display);
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                ">Keep Cart</button>
+                <button class="confirm-clear" style="
+                    padding: var(--space-md) var(--space-lg);
+                    border: none;
+                    background: var(--color-red);
+                    color: white;
+                    border-radius: 6px;
+                    font-family: var(--font-display);
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                ">Clear Cart</button>
+            </div>
+        `;
+
+        backdrop.appendChild(modal);
+        document.body.appendChild(backdrop);
+
+        // Add hover effects
+        const cancelBtn = modal.querySelector('.confirm-cancel');
+        const clearBtn = modal.querySelector('.confirm-clear');
+
+        cancelBtn.addEventListener('mouseenter', () => {
+            cancelBtn.style.background = 'var(--color-blue)';
+            cancelBtn.style.color = 'white';
+        });
+        cancelBtn.addEventListener('mouseleave', () => {
+            cancelBtn.style.background = 'transparent';
+            cancelBtn.style.color = 'var(--color-blue)';
+        });
+
+        clearBtn.addEventListener('mouseenter', () => {
+            clearBtn.style.background = '#d32f2f';
+        });
+        clearBtn.addEventListener('mouseleave', () => {
+            clearBtn.style.background = 'var(--color-red)';
+        });
+
+        // Handle button clicks
+        cancelBtn.addEventListener('click', () => {
+            document.body.removeChild(backdrop);
+            resolve(false);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            document.body.removeChild(backdrop);
+            resolve(true);
+        });
+
+        // Handle backdrop click (cancel)
+        backdrop.addEventListener('click', (e) => {
+            if (e.target === backdrop) {
+                document.body.removeChild(backdrop);
+                resolve(false);
+            }
+        });
+
+        // Handle escape key
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                document.body.removeChild(backdrop);
+                document.removeEventListener('keydown', handleEscape);
+                resolve(false);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+
+        // Focus the cancel button initially (safer default)
+        cancelBtn.focus();
+    });
 }
 
 // Export for potential use in global-cart.js

@@ -18,8 +18,8 @@ export class AnalyticsTracker {
             this.hasGA4 = true;
         }
 
-        // Facebook Pixel (if available)
-        if (typeof fbq !== 'undefined') {
+        // Facebook Pixel (if available) - safer check using window object
+        if (typeof window !== 'undefined' && window.fbq && (typeof window.fbq === 'function' || typeof window.fbq === 'object')) {
             this.hasFacebookPixel = true;
         }
 
@@ -54,14 +54,17 @@ export class AnalyticsTracker {
         this.sendToServices(eventName, eventData);
 
         // Send to custom endpoint (async, non-blocking)
-        this.sendToCustomEndpoint(eventData).catch(() => {
-            // Analytics tracking failed - continue silently
+        this.sendToCustomEndpoint(eventData).catch((error) => {
+            // Analytics tracking failed - log in development mode only
+            if (this.isDevelopment()) {
+                console.error('Custom analytics endpoint failed:', error);
+            }
         });
     }
 
     sendToServices(eventName, data) {
         // Google Analytics 4
-        if (this.hasGA4) {
+        if (this.hasGA4 && typeof gtag === 'function') {
             try {
                 gtag('event', eventName, {
                     custom_parameter_1: data.sessionId,
@@ -75,7 +78,7 @@ export class AnalyticsTracker {
         }
 
         // Facebook Pixel
-        if (this.hasFacebookPixel) {
+        if (this.hasFacebookPixel && typeof window !== 'undefined' && typeof window.fbq === 'function') {
             try {
                 const fbEventMap = {
                     'checkout_button_clicked': 'InitiateCheckout',
@@ -86,7 +89,7 @@ export class AnalyticsTracker {
 
                 const fbEvent = fbEventMap[eventName];
                 if (fbEvent) {
-                    fbq('track', fbEvent, {
+                    window.fbq('track', fbEvent, {
                         value: data.value || 0,
                         currency: data.currency || 'USD',
                         content_ids: data.items?.map(item => item.id) || [],
@@ -102,15 +105,24 @@ export class AnalyticsTracker {
 
     async sendToCustomEndpoint(eventData) {
         try {
+            // Create AbortController for timeout handling
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
             await fetch(this.analyticsEndpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(eventData)
+                body: JSON.stringify(eventData),
+                signal: controller.signal
             });
-        } catch {
+
+            // Clear timeout if request completes successfully
+            clearTimeout(timeoutId);
+        } catch (error) {
             // Custom endpoint failed - continue silently
+            // Timeout or network errors are handled here
         }
     }
 
@@ -234,19 +246,57 @@ export class AnalyticsTracker {
         this.events = [];
     }
 
+    // Environment detection for development-only features
+    isDevelopment() {
+        return (
+            typeof window !== 'undefined' && (
+                window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.port === '3000' ||
+                window.location.port === '8080' ||
+                window.location.search.includes('debug=true') ||
+                localStorage.getItem('dev_mode') === 'true'
+            )
+        );
+    }
+
     // Event cleanup for page unload
     cleanup() {
-        // Send any remaining events
+        // Send any remaining events using sendBeacon for reliable transmission
         if (this.events.length > 0) {
-            const recentEvents = this.events.slice(-10); // Last 10 events
-            this.sendToCustomEndpoint({
+            const sessionEndData = {
                 type: 'session_end',
                 sessionId: this.sessionId,
-                recentEvents: recentEvents,
+                recentEvents: this.events.slice(-10), // Last 10 events
                 sessionDuration: Date.now() - this.startTime
-            }).catch(() => {
-                // Cleanup failed - continue silently
-            });
+            };
+
+            // Use sendBeacon for reliable data transmission on page unload
+            if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+                try {
+                    const success = navigator.sendBeacon(
+                        this.analyticsEndpoint,
+                        JSON.stringify(sessionEndData)
+                    );
+
+                    // Fallback to async fetch if sendBeacon fails
+                    if (!success) {
+                        this.sendToCustomEndpoint(sessionEndData).catch(() => {
+                            // Cleanup failed - continue silently
+                        });
+                    }
+                } catch (error) {
+                    // sendBeacon failed, try async fetch
+                    this.sendToCustomEndpoint(sessionEndData).catch(() => {
+                        // Cleanup failed - continue silently
+                    });
+                }
+            } else {
+                // sendBeacon not supported, use async fetch as fallback
+                this.sendToCustomEndpoint(sessionEndData).catch(() => {
+                    // Cleanup failed - continue silently
+                });
+            }
         }
     }
 }

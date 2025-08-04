@@ -103,9 +103,10 @@ For custom amounts:
 
 **Need to Start Over?**
 - Click **"Clear Cart"** at the bottom of the cart
-- Instantly removes all items with smooth notification
-- No confirmation dialog - immediate clear with blue notification
-- All page quantities reset to zero
+- **Confirmation dialog** appears to prevent accidental data loss
+- Shows count of items to be removed (tickets and donations)
+- Click **"Keep Cart"** to cancel or **"Clear Cart"** to confirm
+- All page quantities reset to zero after confirmation
 - Elegant slide-in notification confirms cart was cleared
 
 ## Typography and Design
