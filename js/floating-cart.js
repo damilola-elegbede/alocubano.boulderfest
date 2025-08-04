@@ -167,12 +167,14 @@ function setupEventListeners(elements, cartManager) {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: #4CAF50;
+            background: var(--color-blue);
             color: white;
             padding: 12px 24px;
-            border-radius: 4px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(91, 107, 181, 0.3);
             z-index: 10000;
+            font-family: var(--font-display);
+            font-weight: 700;
             animation: slideInUp 0.3s ease-out;
         `;
         document.body.appendChild(messageDiv);
