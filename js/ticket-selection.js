@@ -9,9 +9,39 @@ class TicketSelection {
     this.init();
   }
 
-  init() {
+  async init() {
     this.bindEvents();
+    
+    // CRITICAL FIX: Wait for cart manager to be fully initialized
+    await this.waitForCartManager();
+    
+    this.syncWithCartState();
     this.updateDisplay();
+  }
+  
+  async waitForCartManager() {
+    return new Promise((resolve) => {
+      // Check if cart manager is already available
+      if (window.cartDebug && window.cartDebug.getState) {
+        resolve();
+        return;
+      }
+      
+      // Wait for cart initialization event
+      const handleCartInit = () => {
+        document.removeEventListener('cart:initialized', handleCartInit);
+        resolve();
+      };
+      
+      document.addEventListener('cart:initialized', handleCartInit);
+      
+      // Timeout after 5 seconds to prevent infinite waiting
+      setTimeout(() => {
+        document.removeEventListener('cart:initialized', handleCartInit);
+        console.warn('Cart manager initialization timeout - proceeding anyway');
+        resolve();
+      }, 5000);
+    });
   }
 
   bindEvents() {
@@ -45,11 +75,31 @@ class TicketSelection {
       });
     });
 
-    // Checkout button
-    const checkoutBtn = document.getElementById('checkout-button');
-    if (checkoutBtn) {
-      checkoutBtn.addEventListener('click', () => this.handleCheckout());
-    }
+    // Checkout button removed - checkout handled by floating cart
+    
+    // Listen for cart manager events (real-time updates)
+    document.addEventListener('cart:updated', () => {
+      this.syncWithCartState();
+    });
+
+    document.addEventListener('cart:ticket:added', () => {
+      this.syncWithCartState();
+    });
+
+    document.addEventListener('cart:ticket:removed', () => {
+      this.syncWithCartState();
+    });
+
+    document.addEventListener('cart:ticket:updated', () => {
+      this.syncWithCartState();
+    });
+    
+    // Listen for direct localStorage changes (cross-tab sync)
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'alocubano_cart') {
+        this.syncWithCartState();
+      }
+    });
   }
 
   handleQuantityChange(event) {
@@ -114,38 +164,55 @@ class TicketSelection {
   }
 
   updateDisplay() {
-    const orderItemsEl = document.getElementById('order-items');
-    const finalTotalEl = document.getElementById('final-total');
-    const checkoutBtn = document.getElementById('checkout-button');
+    // Order summary and total display removed - handled by floating cart
+    // This method is kept for potential future use or other display updates
+  }
+
+  syncWithCartState() {
+    // Check if cart data exists in localStorage
+    const cartData = localStorage.getItem('alocubano_cart');
+    let cartState = {};
     
-    let totalAmount = 0;
-    
-    // Clear existing order items
-    if (orderItemsEl) {
-      orderItemsEl.innerHTML = '';
+    if (cartData) {
+      try {
+        cartState = JSON.parse(cartData);
+      } catch (error) {
+        console.warn('Failed to parse cart state:', error);
+        return;
+      }
     }
-    
-    // Add each selected ticket to order summary
-    this.selectedTickets.forEach((ticket, ticketType) => {
-      const itemAmount = ticket.quantity * ticket.price;
-      totalAmount += itemAmount;
+
+    const cartTickets = cartState.tickets || {};
+
+    // Reset all ticket cards first
+    document.querySelectorAll('.ticket-card').forEach(card => {
+      const ticketType = card.dataset.ticketType;
+      const quantitySpan = card.querySelector('.quantity');
       
-      if (orderItemsEl) {
-        const orderItem = document.createElement('div');
-        orderItem.className = 'order-item';
-        orderItem.innerHTML = `
-          <span>${ticket.name} × ${ticket.quantity}</span>
-          <span>$${itemAmount}</span>
-        `;
-        orderItemsEl.appendChild(orderItem);
+      if (quantitySpan) {
+        // Check if this ticket is in the cart
+        const cartTicket = cartTickets[ticketType];
+        const quantity = cartTicket ? cartTicket.quantity : 0;
+        
+        // Update UI quantity
+        quantitySpan.textContent = quantity;
+        
+        // Update internal state
+        if (quantity > 0) {
+          this.selectedTickets.set(ticketType, {
+            quantity: quantity,
+            price: cartTicket.price,
+            name: cartTicket.name
+          });
+          card.classList.add('selected');
+          card.setAttribute('aria-pressed', 'true');
+        } else {
+          this.selectedTickets.delete(ticketType);
+          card.classList.remove('selected');
+          card.setAttribute('aria-pressed', 'false');
+        }
       }
     });
-    
-    if (finalTotalEl) finalTotalEl.textContent = totalAmount;
-    
-    if (checkoutBtn) {
-      checkoutBtn.disabled = totalAmount === 0;
-    }
   }
 
   handleCheckout() {

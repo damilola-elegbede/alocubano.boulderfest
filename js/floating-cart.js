@@ -23,7 +23,8 @@ export function initializeFloatingCart(cartManager) {
         emptyMessage: document.querySelector('.cart-empty-message'),
         backdrop: document.querySelector('.cart-backdrop'),
         closeButton: document.querySelector('.cart-close'),
-        checkoutButton: document.querySelector('.cart-checkout-btn')
+        checkoutButton: document.querySelector('.cart-checkout-btn'),
+        clearButton: document.querySelector('.cart-clear-btn')
     };
 
     // Set up event listeners
@@ -51,7 +52,7 @@ function createCartHTML() {
             <!-- Floating Button -->
             <button class="floating-cart-button" aria-label="View cart">
                 <svg class="cart-icon" viewBox="0 0 24 24" width="24" height="24">
-                    <path d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7ZM9 3V4H15V3H9ZM7 6V19H17V6H7Z"/>
+                    <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03L21.7 4H5.21l-.94-2H1zm16 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
                 </svg>
                 <span class="cart-badge" style="display: none;">0</span>
             </button>
@@ -83,6 +84,9 @@ function createCartHTML() {
                     </div>
                     <button class="cart-checkout-btn" disabled>
                         Proceed to Checkout
+                    </button>
+                    <button class="cart-clear-btn" aria-label="Clear cart">
+                        Clear cart
                     </button>
                 </div>
             </div>
@@ -131,7 +135,10 @@ function setupEventListeners(elements, cartManager) {
     elements.itemsContainer.addEventListener('click', async (event) => {
         const removeButton = event.target.closest('.remove-donation');
         if (removeButton) {
-            await cartManager.updateDonation(0);
+            const donationId = removeButton.dataset.donationId;
+            if (donationId) {
+                await cartManager.removeDonation(donationId);
+            }
         }
     });
 
@@ -146,6 +153,34 @@ function setupEventListeners(elements, cartManager) {
         }
         
         handleCheckoutClick(cartManager);
+    });
+
+    // Clear cart button handler
+    elements.clearButton.addEventListener('click', async () => {
+        await cartManager.clear();
+        
+        // Show success message
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'cart-clear-message';
+        messageDiv.textContent = 'Cart cleared';
+        messageDiv.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 10000;
+            animation: slideInUp 0.3s ease-out;
+        `;
+        document.body.appendChild(messageDiv);
+        
+        setTimeout(() => {
+            messageDiv.style.animation = 'slideOutDown 0.3s ease-out';
+            setTimeout(() => messageDiv.remove(), 300);
+        }, 1500);
     });
 }
 
@@ -225,11 +260,12 @@ function toggleCartPanel(elements, isOpen, cartManager) {
 }
 
 function updateCartUI(elements, cartState) {
-    const { totals, isEmpty, tickets, donations } = cartState;
+    const { totals = {}, isEmpty, tickets, donations } = cartState;
 
     // Update badge
-    if (totals.itemCount > 0 || totals.donations > 0) {
-        elements.badge.textContent = totals.itemCount || '•';
+    if ((totals.itemCount > 0) || (totals.donationCount > 0)) {
+        const totalItems = totals.itemCount + (totals.donationCount || 0);
+        elements.badge.textContent = totalItems || '•';
         elements.badge.style.display = 'flex';
 
         // Add pulse animation for updates
@@ -246,10 +282,16 @@ function updateCartUI(elements, cartState) {
         elements.emptyMessage.style.display = 'block';
         elements.itemsContainer.style.display = 'none';
         elements.checkoutButton.disabled = true;
+        if (elements.clearButton) {
+            elements.clearButton.style.display = 'none';
+        }
     } else {
         elements.emptyMessage.style.display = 'none';
         elements.itemsContainer.style.display = 'block';
         elements.checkoutButton.disabled = false;
+        if (elements.clearButton) {
+            elements.clearButton.style.display = 'block';
+        }
 
         // Render items
         renderCartItems(elements.itemsContainer, tickets, donations);
@@ -258,50 +300,69 @@ function updateCartUI(elements, cartState) {
     // Update total
     elements.totalElement.textContent = `$${totals.total.toFixed(2)}`;
 
-    // Show floating button - keep visible for testing, style based on contents
-    elements.container.style.display = 'block';
+    // Show/hide floating button based on cart contents
+    const hasItems = totals.itemCount > 0 || totals.donationCount > 0;
     
-    if (totals.total > 0) {
+    if (hasItems || totals.total > 0) {
+        elements.container.style.display = 'block';
         elements.button.style.opacity = '1';
         elements.button.style.pointerEvents = 'auto';
     } else {
-        elements.button.style.opacity = '0.5';
-        elements.button.style.pointerEvents = 'auto'; // Still allow clicking for testing
+        elements.container.style.display = 'none';
     }
 }
 
 function renderCartItems(container, tickets, donations) {
     let html = '';
 
-    // Render tickets
-    Object.values(tickets).forEach(ticket => {
-        const itemTotal = ticket.price * ticket.quantity;
+    // Render tickets category
+    const ticketValues = Object.values(tickets);
+    if (ticketValues.length > 0) {
         html += `
-            <div class="cart-item" data-ticket-type="${ticket.ticketType}">
-                <div class="cart-item-info">
-                    <h4>${escapeHtml(ticket.name)}</h4>
-                    <p class="cart-item-price">$${ticket.price.toFixed(2)} × ${ticket.quantity} = $${itemTotal.toFixed(2)}</p>
-                </div>
-                <div class="cart-item-actions">
-                    <button class="qty-adjust minus" data-action="decrease" aria-label="Decrease quantity">−</button>
-                    <span class="qty-display">${ticket.quantity}</span>
-                    <button class="qty-adjust plus" data-action="increase" aria-label="Increase quantity">+</button>
-                </div>
-            </div>
+            <div class="cart-category">
+                <h4 class="cart-category-header tickets">A Lo Cubano 2026 Tickets</h4>
         `;
-    });
+        
+        ticketValues.forEach(ticket => {
+            const itemTotal = ticket.price * ticket.quantity;
+            html += `
+                <div class="cart-item" data-ticket-type="${ticket.ticketType}">
+                    <div class="cart-item-info">
+                        <h4>${escapeHtml(ticket.name)}</h4>
+                        <p class="cart-item-price">$${ticket.price.toFixed(2)} × ${ticket.quantity} = $${itemTotal.toFixed(2)}</p>
+                    </div>
+                    <div class="cart-item-actions">
+                        <button class="qty-adjust minus" data-action="decrease" aria-label="Decrease quantity">−</button>
+                        <span class="qty-display">${ticket.quantity}</span>
+                        <button class="qty-adjust plus" data-action="increase" aria-label="Increase quantity">+</button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `</div>`;
+    }
 
-    // Render donation
-    if (donations.amount > 0) {
+    // Render donations category
+    if (donations && donations.length > 0) {
         html += `
-            <div class="cart-item donation-item">
-                <div class="cart-item-info">
-                    <h4>Donation</h4>
-                    <p class="cart-item-price">$${donations.amount.toFixed(2)}</p>
-                </div>
-                <button class="remove-donation" aria-label="Remove donation">×</button>
-            </div>
+            <div class="cart-category">
+                <h4 class="cart-category-header">Donations</h4>
         `;
+        
+        donations.forEach(donation => {
+            html += `
+                <div class="cart-item" data-donation-id="${donation.id}">
+                    <div class="cart-item-info">
+                        <h4>${escapeHtml(donation.name)}</h4>
+                        <p class="cart-item-price">$${donation.amount.toFixed(2)}</p>
+                    </div>
+                    <button class="remove-donation" data-donation-id="${donation.id}" aria-label="Remove donation">×</button>
+                </div>
+            `;
+        });
+        
+        html += `</div>`;
     }
 
     container.innerHTML = html;

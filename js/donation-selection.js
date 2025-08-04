@@ -37,13 +37,12 @@ class DonationSelection {
       });
     });
 
-    // Custom amount input
-    const customInput = document.getElementById('custom-amount');
-    if (customInput) {
-      customInput.addEventListener('input', (e) => {
+    // Custom amount input (in-card)
+    document.addEventListener('input', (e) => {
+      if (e.target.classList.contains('custom-amount-input')) {
         this.handleCustomAmountChange(e);
-      });
-    }
+      }
+    });
 
     // Donate button
     const donateBtn = document.getElementById('donate-button');
@@ -53,21 +52,29 @@ class DonationSelection {
   }
 
   handleDonationCardClick(event) {
+    // Don't handle clicks on the input field itself
+    if (event.target.classList.contains('custom-amount-input')) {
+      return;
+    }
+    
     const card = event.currentTarget;
     const amount = card.dataset.amount;
     const isCurrentlySelected = card.classList.contains('selected');
     
-    // Clear all selections
+    // Clear all selections and reset custom input
     document.querySelectorAll('.donation-card').forEach(c => {
       c.classList.remove('selected');
       c.setAttribute('aria-pressed', 'false');
+      const donationAmount = c.querySelector('.donation-amount');
+      if (c.dataset.amount === 'custom' && donationAmount) {
+        donationAmount.innerHTML = 'CUSTOM';
+      }
     });
     
     // If the clicked card was already selected, unselect it (toggle behavior)
     if (isCurrentlySelected) {
       this.selectedAmount = null;
       this.customAmount = null;
-      this.hideCustomInput();
     } else {
       // Select clicked card
       card.classList.add('selected');
@@ -75,59 +82,46 @@ class DonationSelection {
       
       if (amount === 'custom') {
         this.selectedAmount = 'custom';
-        this.showCustomInput();
+        const donationAmount = card.querySelector('.donation-amount');
+        if (donationAmount) {
+          donationAmount.innerHTML = '<span class="custom-amount-wrapper"><span class="dollar-sign">$</span><input type="number" class="custom-amount-input" min="1" step="1" placeholder="75"></span>';
+          const input = donationAmount.querySelector('.custom-amount-input');
+          if (input) {
+            input.focus();
+            input.select();
+          }
+        }
       } else {
         this.selectedAmount = parseInt(amount);
         this.customAmount = null;
-        this.hideCustomInput();
       }
     }
     
     this.updateDisplay();
-    
-    // Emit event for cart system integration
-    const finalAmount = this.selectedAmount === 'custom' ? (this.customAmount || 0) : (this.selectedAmount || 0);
-    document.dispatchEvent(new CustomEvent('donation-amount-changed', {
-      detail: { amount: finalAmount }
-    }));
   }
 
   handleCustomAmountChange(event) {
     const value = parseFloat(event.target.value) || 0;
     this.customAmount = value > 0 ? value : null;
-    this.updateDisplay();
     
-    // Emit event for cart system integration
-    const finalAmount = this.selectedAmount === 'custom' ? (this.customAmount || 0) : (this.selectedAmount || 0);
-    document.dispatchEvent(new CustomEvent('donation-amount-changed', {
-      detail: { amount: finalAmount }
-    }));
+    // If value is 0 or empty, switch back to CUSTOM
+    const customInput = event.target;
+    const card = customInput.closest('.donation-card');
+    const donationAmount = card.querySelector('.donation-amount');
+    
+    if (value === 0 || !event.target.value) {
+      donationAmount.innerHTML = 'CUSTOM';
+      card.classList.remove('selected');
+      card.setAttribute('aria-pressed', 'false');
+      this.selectedAmount = null;
+      this.customAmount = null;
+    }
+    
+    this.updateDisplay();
   }
 
-  showCustomInput() {
-    const customDiv = document.querySelector('.custom-amount');
-    if (customDiv) {
-      customDiv.style.display = 'block';
-      const input = document.getElementById('custom-amount');
-      if (input) {
-        input.focus();
-      }
-    }
-  }
-
-  hideCustomInput() {
-    const customDiv = document.querySelector('.custom-amount');
-    if (customDiv) {
-      customDiv.style.display = 'none';
-      const input = document.getElementById('custom-amount');
-      if (input) {
-        input.value = '';
-      }
-    }
-  }
 
   updateDisplay() {
-    const totalEl = document.getElementById('donation-total');
     const donateBtn = document.getElementById('donate-button');
     
     let displayAmount = 0;
@@ -138,13 +132,9 @@ class DonationSelection {
       displayAmount = this.selectedAmount;
     }
     
-    if (totalEl) {
-      totalEl.textContent = displayAmount;
-    }
-    
     if (donateBtn) {
       donateBtn.disabled = displayAmount === 0;
-      donateBtn.textContent = displayAmount > 0 ? `DONATE $${displayAmount}` : 'SELECT AMOUNT';
+      donateBtn.textContent = displayAmount > 0 ? `ADD TO CART - $${displayAmount}` : 'ADD TO CART';
     }
   }
 
@@ -152,41 +142,84 @@ class DonationSelection {
     const amount = this.selectedAmount === 'custom' ? this.customAmount : this.selectedAmount;
     
     if (!amount || amount <= 0) {
-      alert('Please select or enter a donation amount.');
+      this.showMessage('Please select or enter a donation amount.', 'error');
       return;
     }
     
-    // Get form data
-    const form = document.getElementById('donation-form');
-    const formData = new FormData(form);
+    // Add donation to cart
+    document.dispatchEvent(new CustomEvent('donation-amount-changed', {
+      detail: { amount: amount }
+    }));
     
-    const firstName = formData.get('first-name') || '';
-    const lastName = formData.get('last-name') || '';
-    const email = formData.get('email') || '';
-    const message = formData.get('message') || '';
+    // Show celebratory animation
+    this.showCelebratoryAnimation(amount);
     
-    // Create email body similar to ticket system
-    const emailBody = `Donation Request - A Lo Cubano Boulder Fest
+    // Reset the form
+    this.selectedAmount = null;
+    this.customAmount = null;
+    document.querySelectorAll('.donation-card').forEach(c => {
+      c.classList.remove('selected');
+      c.setAttribute('aria-pressed', 'false');
+      const donationAmount = c.querySelector('.donation-amount');
+      if (c.dataset.amount === 'custom' && donationAmount) {
+        donationAmount.innerHTML = 'CUSTOM';
+      }
+    });
+    this.updateDisplay();
+  }
 
-Name: ${firstName} ${lastName}
-Email: ${email}
-Donation Amount: $${amount}
-
-Message:
-${message}
-
----
-Thank you for supporting A Lo Cubano Boulder Fest!
-Please reply with payment instructions and confirmation details.
-Sent from A Lo Cubano Boulder Fest website`;
+  showCelebratoryAnimation(amount) {
+    // Create animation container
+    const animationContainer = document.createElement('div');
+    animationContainer.className = 'donation-celebration';
+    animationContainer.innerHTML = `
+      <div class="celebration-content">
+        <div class="celebration-icon">🎉</div>
+        <div class="celebration-text">Thank You!</div>
+        <div class="celebration-amount">$${amount} added to cart</div>
+      </div>
+      <div class="celebration-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+      </div>
+    `;
     
-    // Create mailto URL
-    const subject = encodeURIComponent('Donation - A Lo Cubano Boulder Fest');
-    const body = encodeURIComponent(emailBody);
-    const mailtoUrl = `mailto:alocubanoboulderfest@gmail.com?subject=${subject}&body=${body}`;
+    document.body.appendChild(animationContainer);
     
-    // Open email client
-    window.location.href = mailtoUrl;
+    // Trigger animation
+    setTimeout(() => animationContainer.classList.add('show'), 10);
+    
+    // Remove after 2 seconds
+    setTimeout(() => {
+      animationContainer.classList.add('fade-out');
+      setTimeout(() => {
+        if (animationContainer.parentNode) {
+          animationContainer.parentNode.removeChild(animationContainer);
+        }
+      }, 300);
+    }, 2000);
+  }
+
+  showMessage(message, type = 'info') {
+    // Simple message display without blocking alert
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `donation-message ${type}`;
+    messageDiv.textContent = message;
+    document.body.appendChild(messageDiv);
+    
+    setTimeout(() => messageDiv.classList.add('show'), 10);
+    setTimeout(() => {
+      messageDiv.classList.add('fade-out');
+      setTimeout(() => {
+        if (messageDiv.parentNode) {
+          messageDiv.parentNode.removeChild(messageDiv);
+        }
+      }, 300);
+    }, 3000);
   }
 }
 
