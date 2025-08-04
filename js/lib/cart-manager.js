@@ -4,12 +4,49 @@
  */
 import { getAnalyticsTracker } from './analytics-tracker.js';
 
+// Storage Write Coordinator to prevent conflicts
+class CartStorageCoordinator {
+    constructor() {
+        this.writeLock = false;
+        this.pendingWrites = [];
+    }
+
+    async write(key, data) {
+        return new Promise((resolve) => {
+            if (this.writeLock) {
+                this.pendingWrites.push({ key, data, resolve });
+                return;
+            }
+
+            this.writeLock = true;
+
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+                resolve();
+            } catch (error) {
+                console.error('Failed to write to localStorage:', error);
+                resolve(); // Don't block on storage errors
+            } finally {
+                this.writeLock = false;
+                this.processPendingWrites();
+            }
+        });
+    }
+
+    processPendingWrites() {
+        if (this.pendingWrites.length > 0) {
+            const { key, data, resolve } = this.pendingWrites.shift();
+            this.write(key, data).then(resolve);
+        }
+    }
+}
+
 export class CartManager extends EventTarget {
     constructor() {
         super();
         this.state = {
             tickets: {},
-            donations: {},
+            donations: [],
             metadata: {
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
@@ -18,8 +55,10 @@ export class CartManager extends EventTarget {
         };
         this.storageKey = 'alocubano_cart';
         this.initialized = false;
-        this.isProcessing = false;
+        this.operationQueue = [];
+        this.isExecutingQueue = false;
         this.analytics = getAnalyticsTracker();
+        this.storageCoordinator = new CartStorageCoordinator();
     }
 
     // Core initialization
@@ -42,6 +81,36 @@ export class CartManager extends EventTarget {
         this.emit('cart:initialized', this.getState());
     }
 
+    // Operation Queue Management
+    async queueOperation(operationName, operation) {
+        return new Promise((resolve, reject) => {
+            this.operationQueue.push({ operationName, operation, resolve, reject });
+            this.processQueue();
+        });
+    }
+
+    async processQueue() {
+        if (this.isExecutingQueue || this.operationQueue.length === 0) {
+            return;
+        }
+
+        this.isExecutingQueue = true;
+
+        while (this.operationQueue.length > 0) {
+            const { operationName, operation, resolve, reject } = this.operationQueue.shift();
+
+            try {
+                const result = await operation();
+                resolve(result);
+            } catch (error) {
+                console.error(`Operation ${operationName} failed:`, error);
+                reject(error);
+            }
+        }
+
+        this.isExecutingQueue = false;
+    }
+
     // State management
     getState() {
         return {
@@ -59,14 +128,8 @@ export class CartManager extends EventTarget {
             throw new Error('Invalid ticket data');
         }
 
-        // Check if already processing
-        if (this.isProcessing) {
-            return false;
-        }
-
-        this.isProcessing = true;
-
-        try {
+        // CRITICAL FIX: Use operation queue instead of blocking lock
+        return this.queueOperation('addTicket', async() => {
             // Update state
             if (!this.state.tickets[ticketType]) {
                 this.state.tickets[ticketType] = {
@@ -82,8 +145,8 @@ export class CartManager extends EventTarget {
             this.state.tickets[ticketType].quantity += quantity;
             this.state.tickets[ticketType].updatedAt = Date.now();
 
-            // Save and emit
-            this.saveToStorage();
+            // Use coordinated storage write
+            await this.saveToStorage();
 
             // Track analytics
             this.analytics.trackCartEvent('ticket_added', {
@@ -93,6 +156,7 @@ export class CartManager extends EventTarget {
                 total: this.state.tickets[ticketType].quantity * price
             });
 
+            // Emit events immediately
             this.emit('cart:ticket:added', {
                 ticketType,
                 quantity,
@@ -101,9 +165,7 @@ export class CartManager extends EventTarget {
             this.emit('cart:updated', this.getState());
 
             return true;
-        } finally {
-            this.isProcessing = false;
-        }
+        });
     }
 
     async removeTicket(ticketType) {
@@ -139,31 +201,68 @@ export class CartManager extends EventTarget {
     }
 
     // Donation operations
+    async addDonation(amount) {
+        if (amount <= 0) {
+            throw new Error('Invalid donation amount');
+        }
+
+        // Create new donation item
+        const donationId = `donation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const donation = {
+            id: donationId,
+            amount: amount,
+            name: 'Festival Support',
+            addedAt: Date.now()
+        };
+
+        this.state.donations.push(donation);
+        this.saveToStorage();
+
+        // Track analytics
+        this.analytics.trackCartEvent('donation_added', {
+            donationAmount: amount,
+            donationId: donationId
+        });
+
+        this.emit('cart:donation:added', {
+            donation,
+            totalDonations: this.state.donations.length
+        });
+        this.emit('cart:updated', this.getState());
+    }
+
+    async removeDonation(donationId) {
+        const donationIndex = this.state.donations.findIndex(d => d.id === donationId);
+
+        if (donationIndex !== -1) {
+            const donation = this.state.donations[donationIndex];
+            this.state.donations.splice(donationIndex, 1);
+            this.saveToStorage();
+
+            // Track analytics
+            this.analytics.trackCartEvent('donation_removed', {
+                donationAmount: donation.amount,
+                donationId: donationId
+            });
+
+            this.emit('cart:donation:removed', { donationId });
+            this.emit('cart:updated', this.getState());
+        }
+    }
+
     async updateDonation(amount) {
+        // Kept for backward compatibility, but now clears all donations and adds one
         if (amount < 0) {
             throw new Error('Invalid donation amount');
         }
 
-        const oldAmount = this.state.donations.amount || 0;
-        this.state.donations = {
-            amount,
-            updatedAt: Date.now()
-        };
-
-        this.saveToStorage();
-
-        // Track analytics
-        this.analytics.trackCartEvent('donation_updated', {
-            oldAmount,
-            newAmount: amount,
-            difference: amount - oldAmount
-        });
-
-        this.emit('cart:donation:updated', {
-            oldAmount,
-            newAmount: amount
-        });
-        this.emit('cart:updated', this.getState());
+        this.state.donations = [];
+        if (amount > 0) {
+            await this.addDonation(amount);
+        } else {
+            this.saveToStorage();
+            this.emit('cart:updated', this.getState());
+        }
     }
 
     // Cart calculations
@@ -176,24 +275,22 @@ export class CartManager extends EventTarget {
             ticketCount += ticket.quantity;
         });
 
-        const donationTotal = this.state.donations.amount || 0;
+        const donationTotal = this.state.donations.reduce((sum, donation) => sum + donation.amount, 0);
+        const donationCount = this.state.donations.length;
 
         return {
             tickets: ticketsTotal,
             donations: donationTotal,
             total: ticketsTotal + donationTotal,
-            itemCount: ticketCount
+            itemCount: ticketCount,
+            donationCount: donationCount
         };
     }
 
     // Persistence
-    saveToStorage() {
-        try {
-            this.state.metadata.updatedAt = Date.now();
-            localStorage.setItem(this.storageKey, JSON.stringify(this.state));
-        } catch {
-            // Failed to save cart - continue silently
-        }
+    async saveToStorage() {
+        this.state.metadata.updatedAt = Date.now();
+        await this.storageCoordinator.write(this.storageKey, this.state);
     }
 
     loadFromStorage() {
@@ -201,12 +298,31 @@ export class CartManager extends EventTarget {
             const stored = localStorage.getItem(this.storageKey);
             if (stored) {
                 const parsed = JSON.parse(stored);
-                // Validate stored data
+
+                // Migrate old donation format if needed
+                if (parsed.donations && !Array.isArray(parsed.donations)) {
+                    console.log('Migrating old donation format to new array format');
+                    if (parsed.donations.amount && parsed.donations.amount > 0) {
+                        // Convert old single donation to array format
+                        parsed.donations = [{
+                            id: `donation_${Date.now()}_migrated`,
+                            amount: parsed.donations.amount,
+                            name: 'Festival Support',
+                            addedAt: parsed.donations.updatedAt || Date.now()
+                        }];
+                    } else {
+                        // No donation amount, use empty array
+                        parsed.donations = [];
+                    }
+                }
+
+                // Validate and set stored data
                 if (this.isValidStoredCart(parsed)) {
                     this.state = parsed;
                 }
             }
-        } catch {
+        } catch (error) {
+            console.log('Failed to load cart from storage:', error);
             // Failed to load cart - continue with empty state
         }
     }
@@ -216,7 +332,7 @@ export class CartManager extends EventTarget {
                typeof data === 'object' &&
                data.metadata &&
                typeof data.tickets === 'object' &&
-               typeof data.donations === 'object';
+               Array.isArray(data.donations);
     }
 
     // Event handling
@@ -236,7 +352,11 @@ export class CartManager extends EventTarget {
     }
 
     emit(eventName, detail) {
+        // Dispatch on CartManager instance (for direct listeners)
         this.dispatchEvent(new CustomEvent(eventName, { detail }));
+
+        // CRITICAL FIX: Also dispatch on document for cross-component communication
+        document.dispatchEvent(new CustomEvent(eventName, { detail }));
     }
 
     // Validation
@@ -264,14 +384,14 @@ export class CartManager extends EventTarget {
 
     isEmpty() {
         const hasTickets = Object.keys(this.state.tickets).length > 0;
-        const hasDonation = this.state.donations.amount > 0;
-        return !hasTickets && !hasDonation;
+        const hasDonations = this.state.donations.length > 0;
+        return !hasTickets && !hasDonations;
     }
 
     clear() {
         this.state = {
             tickets: {},
-            donations: {},
+            donations: [],
             metadata: {
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
@@ -294,7 +414,8 @@ export class CartManager extends EventTarget {
         return {
             state: this.state,
             initialized: this.initialized,
-            isProcessing: this.isProcessing,
+            queueLength: this.operationQueue.length,
+            isExecutingQueue: this.isExecutingQueue,
             sessionId: this.state.metadata.sessionId,
             lastUpdated: new Date(this.state.metadata.updatedAt).toISOString()
         };

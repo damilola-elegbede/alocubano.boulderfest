@@ -29,8 +29,6 @@ async function initializeGlobalCart() {
         // Set up global debugging
         setupGlobalDebugging(cartManager);
         
-        console.log('Global cart system initialized');
-        
     } catch (error) {
         console.error('Failed to initialize global cart:', error);
     }
@@ -53,13 +51,20 @@ function setupTicketsPageIntegration(cartManager) {
         
         try {
             if (quantity > 0) {
-                await cartManager.addTicket({
-                    ticketType,
-                    quantity,
-                    price,
-                    name,
-                    eventId
-                });
+                // First ensure the ticket exists in the cart
+                const currentState = cartManager.getState();
+                if (!currentState.tickets || !currentState.tickets[ticketType]) {
+                    // Add the ticket with quantity 0 first
+                    await cartManager.addTicket({
+                        ticketType,
+                        quantity: 0,
+                        price,
+                        name,
+                        eventId
+                    });
+                }
+                // Then update to the exact quantity
+                await cartManager.updateTicketQuantity(ticketType, quantity);
             } else {
                 await cartManager.removeTicket(ticketType);
             }
@@ -82,14 +87,17 @@ function setupTicketsPageIntegration(cartManager) {
 }
 
 function setupDonationsPageIntegration(cartManager) {
-    // Listen for donation amount updates
+    // Listen for donation amount additions to cart
     document.addEventListener('donation-amount-changed', async (event) => {
         const { amount } = event.detail;
         
-        try {
-            await cartManager.updateDonation(amount);
-        } catch (error) {
-            console.error('Failed to update donation:', error);
+        // Only add to cart if amount is greater than 0
+        if (amount > 0) {
+            try {
+                await cartManager.addDonation(amount);
+            } catch (error) {
+                console.error('Failed to add donation:', error);
+            }
         }
     });
 }
@@ -108,7 +116,7 @@ function setupGlobalDebugging(cartManager) {
                 eventId: 'test-event',
                 quantity: 1
             }),
-            addTestDonation: (amount = 10) => cartManager.updateDonation(amount),
+            addTestDonation: (amount = 10) => cartManager.addDonation(amount),
             simulate: {
                 ticketAdded: (ticketType = 'general') => {
                     document.dispatchEvent(new CustomEvent('ticket-quantity-changed', {
