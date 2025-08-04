@@ -84,7 +84,7 @@ class DonationSelection {
         this.selectedAmount = 'custom';
         const donationAmount = card.querySelector('.donation-amount');
         if (donationAmount) {
-          donationAmount.innerHTML = '<span class="custom-amount-wrapper"><span class="dollar-sign">$</span><input type="number" class="custom-amount-input" min="1" step="1" placeholder="75"></span>';
+          donationAmount.innerHTML = '<span class="custom-amount-wrapper"><span class="dollar-sign">$</span><input type="number" class="custom-amount-input" min="1" step="1"></span>';
           const input = donationAmount.querySelector('.custom-amount-input');
           if (input) {
             input.focus();
@@ -176,6 +176,9 @@ class DonationSelection {
       setTimeout(() => donateBtn.classList.remove('donation-celebration'), 600);
     }
     
+    // Create confetti celebration
+    this.createConfetti();
+    
     // Create celebration message
     const celebrationMessage = document.createElement('div');
     celebrationMessage.className = 'celebration-message';
@@ -192,6 +195,29 @@ class DonationSelection {
         celebrationMessage.parentNode.removeChild(celebrationMessage);
       }
     }, 2000);
+  }
+
+  createConfetti() {
+    const colors = ['#5B6BB5', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'];
+    const confettiCount = 50;
+    
+    for (let i = 0; i < confettiCount; i++) {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti-piece';
+      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.left = Math.random() * 100 + 'vw';
+      confetti.style.animationDelay = Math.random() * 3 + 's';
+      confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+      
+      document.body.appendChild(confetti);
+      
+      // Remove confetti piece after animation
+      setTimeout(() => {
+        if (confetti.parentNode) {
+          confetti.parentNode.removeChild(confetti);
+        }
+      }, 5000);
+    }
   }
 
   showMessage(message, type = 'info') {

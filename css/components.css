@@ -1535,6 +1535,57 @@
   }
 }
 
+/* Confetti Animation */
+.confetti-piece {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  background: #5B6BB5;
+  top: -10px;
+  z-index: 9999;
+  animation: confettiFall linear forwards;
+  pointer-events: none;
+}
+
+.confetti-piece:nth-child(odd) {
+  width: 8px;
+  height: 8px;
+  animation-name: confettiFallRotate;
+}
+
+.confetti-piece:nth-child(3n) {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.confetti-piece:nth-child(4n) {
+  width: 12px;
+  height: 4px;
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(-100vh) rotateZ(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotateZ(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes confettiFallRotate {
+  0% {
+    transform: translateY(-100vh) rotateZ(0deg) rotateY(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotateZ(360deg) rotateY(720deg);
+    opacity: 0;
+  }
+}
+
 /* TBA Notices */
 .tba-notice {
   font-style: italic;
