@@ -170,75 +170,31 @@
                         <div class="donation-amounts" style="display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-lg); margin-bottom: var(--space-xl);">
                             <div class="donation-card" data-amount="20">
                                 <div class="donation-amount">$20</div>
-                                <div class="donation-label">Workshop Materials</div>
                             </div>
                             
                             <div class="donation-card" data-amount="50">
                                 <div class="donation-amount">$50</div>
-                                <div class="donation-label">Venue Support</div>
                             </div>
                             
                             <div class="donation-card" data-amount="100">
                                 <div class="donation-amount">$100</div>
-                                <div class="donation-label">Student Scholarship</div>
                             </div>
                             
                             <div class="donation-card" data-amount="custom">
                                 <div class="donation-amount">CUSTOM</div>
-                                <div class="donation-label">Your Amount</div>
                             </div>
                         </div>
                         
-                        <!-- Custom Amount Input -->
-                        <div class="custom-amount" style="text-align: center; margin-bottom: var(--space-xl);">
-                            <label class="form-label-type font-mono" for="custom-amount" style="display: block; text-align: center;">ENTER AMOUNT ($)</label>
-                            <input type="number" id="custom-amount" name="custom-amount" placeholder="Enter amount" min="1" step="1">
-                        </div>
-                        
-                        <!-- Donation Total Display -->
-                        <div class="donation-total-section" style="text-align: center; margin-bottom: var(--space-xl);">
-                            <h3 class="form-label-type font-mono" style="text-align: center;">DONATION TOTAL</h3>
-                            <div class="donation-total-amount">$<span id="donation-total">0</span></div>
-                        </div>
                     </section>
                     
                     <form class="donation-form" id="donation-form" method="post" novalidate role="form" aria-labelledby="donation-form-title">
 
-                        <!-- Donor Information -->
-                        <fieldset class="form-section" style="margin-bottom: var(--space-2xl); border: none; padding: 0;">
-                            <legend class="font-mono" style="margin-bottom: var(--space-lg); padding: 0;">YOUR INFORMATION</legend>
-                            
-                            <div class="form-grid-type donation-form-grid" style="margin-bottom: var(--space-lg);">
-                                <div class="form-group-type">
-                                    <label class="form-label-type font-mono" for="first-name">FIRST NAME</label>
-                                    <input type="text" id="first-name" name="first-name" class="form-input-type" required autocomplete="given-name" minlength="2" maxlength="50" style="width: 100%; padding: var(--space-md); margin-top: var(--space-sm);" aria-describedby="first-name-error">
-                                </div>
-                                
-                                <div class="form-group-type">
-                                    <label class="form-label-type font-mono" for="last-name">LAST NAME</label>
-                                    <input type="text" id="last-name" name="last-name" class="form-input-type" required autocomplete="family-name" minlength="2" maxlength="50" style="width: 100%; padding: var(--space-md); margin-top: var(--space-sm);" aria-describedby="last-name-error">
-                                </div>
-                            </div>
-                            
-                            <div class="form-group-type" style="margin-bottom: var(--space-lg);">
-                                <label class="form-label-type font-mono" for="email">EMAIL</label>
-                                <input type="email" id="email" name="email" class="form-input-type" required autocomplete="email" style="width: 100%; padding: var(--space-md); margin-top: var(--space-sm);" aria-describedby="email-error">
-                            </div>
-                            
-                            <div class="form-group-type">
-                                <label class="form-label-type font-mono" for="message">MESSAGE (OPTIONAL)</label>
-                                <textarea id="message" name="message" class="form-textarea-type" rows="4" placeholder="Share why you're supporting the festival..." style="width: 100%; padding: var(--space-md); margin-top: var(--space-sm);"></textarea>
-                            </div>
-                        </fieldset>
 
                         <!-- Submit Button -->
                         <div style="text-align: center;">
                             <button type="button" id="donate-button" class="form-button-type" style="padding: var(--space-lg) var(--space-3xl);" disabled>
-                                SELECT AMOUNT
+                                ADD TO CART
                             </button>
-                            <p class="font-serif" style="margin-top: var(--space-lg); color: var(--color-gray-600); font-size: var(--font-size-sm);">
-                                You will be redirected to complete your donation via email
-                            </p>
                         </div>
                     </form>
                 </div>

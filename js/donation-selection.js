@@ -169,38 +169,28 @@ class DonationSelection {
   }
 
   showCelebratoryAnimation(amount) {
-    // Create animation container
-    const animationContainer = document.createElement('div');
-    animationContainer.className = 'donation-celebration';
-    animationContainer.innerHTML = `
-      <div class="celebration-content">
-        <div class="celebration-icon">🎉</div>
-        <div class="celebration-text">Thank You!</div>
-        <div class="celebration-amount">$${amount} added to cart</div>
-      </div>
-      <div class="celebration-particles">
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-      </div>
+    // Add celebration animation to the donate button
+    const donateBtn = document.getElementById('donate-button');
+    if (donateBtn) {
+      donateBtn.classList.add('donation-celebration');
+      setTimeout(() => donateBtn.classList.remove('donation-celebration'), 600);
+    }
+    
+    // Create celebration message
+    const celebrationMessage = document.createElement('div');
+    celebrationMessage.className = 'celebration-message';
+    celebrationMessage.innerHTML = `
+      🎉 Thank You!<br>
+      $${amount} added to cart
     `;
     
-    document.body.appendChild(animationContainer);
+    document.body.appendChild(celebrationMessage);
     
-    // Trigger animation
-    setTimeout(() => animationContainer.classList.add('show'), 10);
-    
-    // Remove after 2 seconds
+    // Remove after animation completes
     setTimeout(() => {
-      animationContainer.classList.add('fade-out');
-      setTimeout(() => {
-        if (animationContainer.parentNode) {
-          animationContainer.parentNode.removeChild(animationContainer);
-        }
-      }, 300);
+      if (celebrationMessage.parentNode) {
+        celebrationMessage.parentNode.removeChild(celebrationMessage);
+      }
     }, 2000);
   }
 
