@@ -198,16 +198,16 @@ class DonationSelection {
   }
 
   createConfetti() {
-    const colors = ['#5B6BB5', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'];
-    const confettiCount = 50;
+    const colors = ['#5B6BB5', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#FF9FF3', '#54A0FF'];
+    const confettiCount = 150; // Much more dense
     
     for (let i = 0; i < confettiCount; i++) {
       const confetti = document.createElement('div');
       confetti.className = 'confetti-piece';
       confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-      confetti.style.left = Math.random() * 100 + 'vw';
-      confetti.style.animationDelay = Math.random() * 3 + 's';
-      confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+      confetti.style.left = Math.random() * 120 + 'vw'; // Spread wider than screen
+      confetti.style.animationDelay = Math.random() * 2 + 's'; // Shorter delay spread
+      confetti.style.animationDuration = (Math.random() * 2 + 3) + 's'; // Longer duration
       
       document.body.appendChild(confetti);
       
@@ -216,7 +216,7 @@ class DonationSelection {
         if (confetti.parentNode) {
           confetti.parentNode.removeChild(confetti);
         }
-      }, 5000);
+      }, 6000);
     }
   }
 
