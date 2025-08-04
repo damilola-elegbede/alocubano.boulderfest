@@ -229,7 +229,32 @@ Processes donation and adds to cart.
 - **Validation**: Ensures amount > 0
 - **Cart Integration**: Dispatches event for cart system
 - **UI Reset**: Clears form after successful addition
-- **Celebration Animation**: Shows success feedback
+- **Confetti Celebration**: Shows spectacular confetti animation with 150 pieces
+- **Thank You Message**: Displays prominent white overlay message
+
+#### `createConfetti()`
+
+Creates dense confetti celebration animation.
+
+**Parameters:** None
+
+**Features:**
+- **150 confetti pieces** for maximum visual impact
+- **8 vibrant colors** including festival theme colors
+- **Multiple shapes**: squares, circles, rectangles, diamonds
+- **Varied animations**: different fall speeds and rotations
+- **6-second duration** with automatic cleanup
+- **Spreads across 120vw** for full-screen effect
+
+**Colors Used:**
+- Festival blue: `#5B6BB5`
+- Vibrant red: `#FF6B6B` 
+- Aqua: `#4ECDC4`
+- Light blue: `#45B7D1`
+- Green: `#96CEB4`
+- Yellow: `#FFEAA7`
+- Pink: `#FF9FF3`
+- Blue: `#54A0FF`
 
 #### `updateDisplay()`
 
@@ -257,11 +282,28 @@ Dispatched when user confirms donation.
   <div class="donation-card" data-amount="20">
     <div class="donation-amount">$20</div>
   </div>
+  <div class="donation-card" data-amount="50">
+    <div class="donation-amount">$50</div>
+  </div>
+  <div class="donation-card" data-amount="100">
+    <div class="donation-amount">$100</div>
+  </div>
   <div class="donation-card" data-amount="custom">
     <div class="donation-amount">CUSTOM</div>
   </div>
 </div>
 <button id="donate-button">ADD TO CART</button>
+```
+
+**Note**: Custom card transforms to include input field:
+```html
+<!-- After clicking custom card -->
+<div class="donation-amount">
+  <span class="custom-amount-wrapper">
+    <span class="dollar-sign">$</span>
+    <input type="number" class="custom-amount-input" min="1" step="1">
+  </span>
+</div>
 ```
 
 ## TicketSelection API
@@ -539,6 +581,21 @@ class Component {
 .cart-category-header { /* Category headers - 18px font */ }
 .cart-close { /* Close button - no border */ }
 .cart-clear-btn { /* Clear cart button */ }
+
+/* Confetti Animation */
+.confetti-piece { /* Individual confetti pieces */ }
+.celebration-message { /* Thank you overlay message */ }
+.donation-celebration { /* Button celebration animation */ }
+
+/* Cart Clear Notification */
+.cart-clear-message { /* Cart cleared notification */ }
+
+/* Animations */
+@keyframes confettiFall { /* Basic confetti fall animation */ }
+@keyframes confettiFallRotate { /* Rotating confetti animation */ }
+@keyframes celebrationMessage { /* Thank you message animation */ }
+@keyframes slideInUp { /* Cart clear notification slide in */ }
+@keyframes slideOutDown { /* Cart clear notification slide out */ }
 ```
 
 ## Browser Compatibility

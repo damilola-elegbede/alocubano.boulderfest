@@ -51,25 +51,27 @@ Your selections automatically appear in the floating cart with:
 
 ### Step 1: Visit Donations Page
 
-Go to [alocubanoboulder.com/donations](https://alocubanoboulder.com/donations) to support the festival.
+Go to [alocubanoboulder.com/donations](https://alocubanoboulder.com/donations) to support the festival with our simplified donation experience.
 
 ### Step 2: Choose Donation Amount
 
 **Quick Select Options:**
-- **$20** - Workshop Materials
-- **$50** - Venue Support  
-- **$100** - Student Scholarship
-- **Custom Amount** - Enter your preferred amount
+- **$20** - Quick donation
+- **$50** - Standard donation  
+- **$100** - Premium donation
+- **CUSTOM** - Enter your preferred amount
 
 ### Step 3: Custom Donations
 
 For custom amounts:
-1. **Click "Custom Amount"** card
-2. **Enter Your Amount**: Type your desired donation (minimum $1)
-3. **Complete Your Info**: Fill in your contact details
-4. **Add to Cart**: Click "ADD TO CART" when ready
+1. **Click "CUSTOM"** card - it transforms into a dollar sign with input field
+2. **Enter Your Amount**: Type your desired donation (minimum $1, no placeholder)
+3. **Add to Cart**: Click "ADD TO CART" when ready - enjoy the confetti celebration!
 
-**Improved Experience**: The custom amount input now displays horizontally with the dollar sign for better readability.
+**Streamlined Experience**: 
+- Custom input appears centered in the card with $ prefix
+- No form fields required - just select amount and add to cart
+- Spectacular confetti celebration when donation is added!
 
 ## Cart Management
 
@@ -101,9 +103,10 @@ For custom amounts:
 
 **Need to Start Over?**
 - Click **"Clear Cart"** at the bottom of the cart
-- Instantly removes all items
-- No confirmation dialog - immediate clear
+- Instantly removes all items with smooth notification
+- No confirmation dialog - immediate clear with blue notification
 - All page quantities reset to zero
+- Elegant slide-in notification confirms cart was cleared
 
 ## Typography and Design
 
@@ -174,8 +177,8 @@ A: Try refreshing the page. Your cart data is saved locally and should restore.
 **Q: Quantities are jumping to large numbers**
 A: This has been fixed! Quantities now increase by exactly 1 with each click.
 
-**Q: The custom donation input looks weird**
-A: We've improved the layout - the $ sign and input box now align horizontally.
+**Q: How does the custom donation work?**
+A: Click the CUSTOM card and it transforms into a $ sign with input field. Enter any amount (minimum $1) and click ADD TO CART for a confetti celebration!
 
 **Q: Cart isn't showing when I add items**
 A: This has been fixed! The cart now properly appears when items are added.
