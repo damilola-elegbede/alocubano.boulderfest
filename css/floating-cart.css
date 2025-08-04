@@ -128,11 +128,12 @@
 
 .cart-header h3 {
     margin: 0;
-    font-size: var(--font-size-xl);
-    font-weight: 700;
+    font-size: var(--font-size-2xl);
+    font-weight: 900;
     font-family: var(--font-display);
     color: var(--color-black);
-    letter-spacing: var(--letter-spacing-wide);
+    letter-spacing: var(--letter-spacing-wider);
+    text-transform: uppercase;
 }
 
 .cart-close {
@@ -199,8 +200,8 @@
 
 .cart-category-header {
     font-family: var(--font-display);
-    font-size: var(--font-size-sm);
-    font-weight: 700;
+    font-size: var(--font-size-lg);
+    font-weight: 900;
     color: var(--color-red);
     letter-spacing: var(--letter-spacing-widest);
     text-transform: uppercase;
@@ -233,13 +234,17 @@
 .cart-item-info h4 {
     margin: 0 0 4px 0;
     font-size: var(--font-size-base);
-    font-weight: 500;
+    font-weight: 700;
+    font-family: var(--font-display);
     color: var(--color-black);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
 }
 
 .cart-item-price {
     color: var(--color-gray-600);
     font-size: var(--font-size-sm);
+    font-family: var(--font-code);
     margin: 0;
 }
 
@@ -283,8 +288,9 @@
 .qty-display {
     min-width: 24px;
     text-align: center;
-    font-weight: 500;
+    font-weight: 700;
     font-size: 16px;
+    font-family: var(--font-code);
 }
 
 /* Donation Item */
@@ -331,12 +337,17 @@
     align-items: center;
     margin-bottom: var(--space-md);
     font-size: var(--font-size-lg);
-    font-weight: 600;
+    font-weight: 700;
+    font-family: var(--font-display);
     color: var(--color-black);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
 }
 
 .cart-total-amount {
     color: var(--cart-primary);
+    font-family: var(--font-code);
+    font-weight: 700;
 }
 
 .cart-checkout-btn {
@@ -347,9 +358,10 @@
     border: none;
     border-radius: var(--cart-radius);
     font-size: var(--font-size-base);
-    font-weight: 700;
+    font-weight: 900;
     font-family: var(--font-display);
-    letter-spacing: var(--letter-spacing-wide);
+    letter-spacing: var(--letter-spacing-wider);
+    text-transform: uppercase;
     cursor: pointer;
     transition: background-color var(--transition-fast), transform var(--transition-fast);
 }
@@ -383,9 +395,11 @@
     background: transparent;
     border: none;
     color: var(--color-gray-600);
-    font-family: var(--font-body);
+    font-family: var(--font-display);
     font-size: var(--font-size-sm);
-    font-weight: 400;
+    font-weight: 700;
+    letter-spacing: var(--letter-spacing-wider);
+    text-transform: uppercase;
     text-decoration: underline;
     cursor: pointer;
     transition: color 0.2s ease;
