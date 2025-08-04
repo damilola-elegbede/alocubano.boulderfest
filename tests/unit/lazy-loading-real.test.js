@@ -180,7 +180,7 @@ describe('LazyLoader Real Source Code Integration', () => {
     expect(mockIntersectionObserver.unobserve).toHaveBeenCalledWith(img);
   });
 
-  test('should handle failed image loading with retry logic', { timeout: 5000 }, (done) => {
+  test('should handle failed image loading with retry logic', { timeout: 5000 }, async () => {
     const LazyLoader = global.window.LazyLoader;
     
     const img = document.createElement('img');
@@ -200,16 +200,18 @@ describe('LazyLoader Real Source Code Integration', () => {
     }
 
     // Simulate image load error
-    setTimeout(() => {
-      const errorEvent = new Event('error');
-      img.dispatchEvent(errorEvent);
-      
-      // Should track failed image
-      expect(loader.failedImages).toBeInstanceOf(Map);
-      expect(loader.failedImages.size).toBeGreaterThan(0);
-      
-      done();
-    }, 100);
+    await new Promise((resolve) => {
+      setTimeout(() => {
+        const errorEvent = new Event('error');
+        img.dispatchEvent(errorEvent);
+        
+        // Should track failed image
+        expect(loader.failedImages).toBeInstanceOf(Map);
+        expect(loader.failedImages.size).toBeGreaterThan(0);
+        
+        resolve();
+      }, 100);
+    });
   });
 
   test('should handle advanced mode with lazy items', () => {

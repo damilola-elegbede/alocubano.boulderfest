@@ -135,7 +135,7 @@ describe('Confetti Celebration System', () => {
             expect(celebrationMessage.innerHTML).toContain('$75 added to cart');
         });
 
-        test('should remove celebration message after timeout', (done) => {
+        test('should remove celebration message after timeout', async () => {
             const celebrationMessage = document.createElement('div');
             celebrationMessage.className = 'celebration-message';
             celebrationMessage.textContent = 'Test message';
@@ -145,14 +145,16 @@ describe('Confetti Celebration System', () => {
             expect(document.querySelector('.celebration-message')).toBeTruthy();
             
             // Simulate the cleanup timeout
-            setTimeout(() => {
-                if (celebrationMessage.parentNode) {
-                    celebrationMessage.parentNode.removeChild(celebrationMessage);
-                }
-                
-                expect(document.querySelector('.celebration-message')).toBeFalsy();
-                done();
-            }, 100); // Shorter timeout for testing
+            await new Promise((resolve) => {
+                setTimeout(() => {
+                    if (celebrationMessage.parentNode) {
+                        celebrationMessage.parentNode.removeChild(celebrationMessage);
+                    }
+                    
+                    expect(document.querySelector('.celebration-message')).toBeFalsy();
+                    resolve();
+                }, 100); // Shorter timeout for testing
+            });
         });
     });
 
@@ -169,23 +171,25 @@ describe('Confetti Celebration System', () => {
             expect(donateBtn.classList.contains('donation-celebration')).toBe(true);
         });
 
-        test('should remove celebration class after animation', (done) => {
+        test('should remove celebration class after animation', async () => {
             const donateBtn = document.getElementById('donate-button');
             
             donateBtn.classList.add('donation-celebration');
             expect(donateBtn.classList.contains('donation-celebration')).toBe(true);
             
             // Simulate the timeout removal
-            setTimeout(() => {
-                donateBtn.classList.remove('donation-celebration');
-                expect(donateBtn.classList.contains('donation-celebration')).toBe(false);
-                done();
-            }, 100); // Shorter timeout for testing
+            await new Promise((resolve) => {
+                setTimeout(() => {
+                    donateBtn.classList.remove('donation-celebration');
+                    expect(donateBtn.classList.contains('donation-celebration')).toBe(false);
+                    resolve();
+                }, 100); // Shorter timeout for testing
+            });
         });
     });
 
     describe('Performance and Cleanup', () => {
-        test('should clean up confetti pieces after animation', (done) => {
+        test('should clean up confetti pieces after animation', async () => {
             const confetti = document.createElement('div');
             confetti.className = 'confetti-piece';
             confetti.style.backgroundColor = '#5B6BB5';
@@ -195,14 +199,16 @@ describe('Confetti Celebration System', () => {
             expect(document.querySelector('.confetti-piece')).toBeTruthy();
             
             // Simulate cleanup timeout
-            setTimeout(() => {
-                if (confetti.parentNode) {
-                    confetti.parentNode.removeChild(confetti);
-                }
-                
-                expect(document.querySelector('.confetti-piece')).toBeFalsy();
-                done();
-            }, 100); // Shorter timeout for testing
+            await new Promise((resolve) => {
+                setTimeout(() => {
+                    if (confetti.parentNode) {
+                        confetti.parentNode.removeChild(confetti);
+                    }
+                    
+                    expect(document.querySelector('.confetti-piece')).toBeFalsy();
+                    resolve();
+                }, 100); // Shorter timeout for testing
+            });
         });
 
         test('should handle multiple confetti celebrations without memory leaks', () => {
