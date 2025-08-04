@@ -1,36 +1,37 @@
+/**
+ * Global teardown for Vitest
+ * Ensures all resources are cleaned up after test runs
+ */
+
 export default async function globalTeardown() {
-  console.log('🧹 Running global test teardown...');
-  
-  // Force garbage collection if available
-  if (global.gc) {
-    console.log('🗑️  Forcing garbage collection...');
-    global.gc();
-  }
-  
-  // Clear all remaining timers
-  const highestTimeoutId = setTimeout(() => {}, 0);
-  for (let i = 0; i < highestTimeoutId; i++) {
-    clearTimeout(i);
-    clearInterval(i);
-  }
-  
-  // Clear any global state
-  if (global.localStorage) {
-    global.localStorage.clear();
-  }
-  if (global.sessionStorage) {
-    global.sessionStorage.clear();
-  }
-  
-  // Log final memory usage
-  if (process.memoryUsage) {
-    const memUsage = process.memoryUsage();
-    console.log(`📊 Final memory usage:
-  RSS: ${Math.round(memUsage.rss / 1024 / 1024)}MB
-  Heap Used: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB
-  Heap Total: ${Math.round(memUsage.heapTotal / 1024 / 1024)}MB
-  External: ${Math.round(memUsage.external / 1024 / 1024)}MB`);
-  }
-  
-  console.log('✅ Global teardown complete');
+    console.log('\n🧹 Running global test teardown...');
+    
+    // Log final memory usage
+    if (process.memoryUsage) {
+        const usage = process.memoryUsage();
+        const heapUsedMB = Math.round(usage.heapUsed / 1024 / 1024);
+        const heapTotalMB = Math.round(usage.heapTotal / 1024 / 1024);
+        const rssMB = Math.round(usage.rss / 1024 / 1024);
+        
+        console.log(`📊 Final memory usage: Heap ${heapUsedMB}MB/${heapTotalMB}MB, RSS ${rssMB}MB`);
+    }
+    
+    // Force final garbage collection
+    if (global.gc) {
+        try {
+            global.gc();
+            console.log('✅ Forced garbage collection');
+        } catch (e) {
+            console.log('⚠️ Could not force garbage collection');
+        }
+    }
+    
+    // Clear any remaining timers (belt and suspenders)
+    const maxTimerId = setTimeout(() => {}, 0);
+    for (let i = 0; i < maxTimerId; i++) {
+        clearTimeout(i);
+        clearInterval(i);
+    }
+    
+    console.log('✅ Global teardown complete\n');
 }

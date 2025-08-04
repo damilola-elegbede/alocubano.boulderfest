@@ -63,13 +63,15 @@ export class InventoryChecker extends EventTarget {
             return result;
 
         } catch (error) {
-            // Return optimistic result on error
-            // In production, you might want to be more conservative
+            // Return conservative result on error to prevent overselling
+            // Flag availability as uncertain and require manual verification
             return {
-                available: true,
-                unavailable: [],
-                message: 'Unable to verify availability - proceeding optimistically',
-                error: error.message
+                available: false,
+                unavailable: items.map(item => item.ticketType),
+                message: 'Unable to verify availability - please try again or contact support',
+                error: error.message,
+                requiresRetry: true,
+                retryAfter: 5000 // Suggest retry after 5 seconds
             };
         } finally {
             this.isChecking = false;

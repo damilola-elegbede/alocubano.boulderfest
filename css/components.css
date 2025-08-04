@@ -1538,6 +1538,32 @@
   }
 }
 
+/* Respect user's preference for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .celebration-message {
+    animation: celebrationMessageReduced 2s ease-in-out forwards;
+  }
+  
+  @keyframes celebrationMessageReduced {
+    0% { 
+      opacity: 0; 
+      transform: translate(-50%, -50%); 
+    }
+    20% { 
+      opacity: 1; 
+      transform: translate(-50%, -50%); 
+    }
+    80% { 
+      opacity: 1; 
+      transform: translate(-50%, -50%); 
+    }
+    100% { 
+      opacity: 0; 
+      transform: translate(-50%, -50%); 
+    }
+  }
+}
+
 /* Confetti Animation */
 .confetti-piece {
   position: fixed;
@@ -1599,6 +1625,14 @@
   100% {
     transform: translateY(100vh) rotateZ(360deg) rotateY(720deg);
     opacity: 0;
+  }
+}
+
+/* Respect user's preference for reduced motion - disable confetti animation */
+@media (prefers-reduced-motion: reduce) {
+  .confetti-piece {
+    animation: none;
+    display: none; /* Hide confetti entirely for users who prefer reduced motion */
   }
 }
 

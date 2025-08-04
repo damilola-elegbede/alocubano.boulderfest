@@ -4,6 +4,34 @@
  */
 import { getAnalyticsTracker } from './analytics-tracker.js';
 
+// Development-only logging utility
+const devLog = {
+    error: (message, ...args) => {
+        if (typeof window !== 'undefined' && (
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1' ||
+            window.location.port === '3000' ||
+            window.location.port === '8080' ||
+            window.location.search.includes('debug=true') ||
+            localStorage.getItem('dev_mode') === 'true'
+        )) {
+            console.error(message, ...args);
+        }
+    },
+    log: (message, ...args) => {
+        if (typeof window !== 'undefined' && (
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1' ||
+            window.location.port === '3000' ||
+            window.location.port === '8080' ||
+            window.location.search.includes('debug=true') ||
+            localStorage.getItem('dev_mode') === 'true'
+        )) {
+            console.log(message, ...args);
+        }
+    }
+};
+
 // Storage Write Coordinator to prevent conflicts
 class CartStorageCoordinator {
     constructor() {
@@ -24,7 +52,7 @@ class CartStorageCoordinator {
                 localStorage.setItem(key, JSON.stringify(data));
                 resolve();
             } catch (error) {
-                console.error('Failed to write to localStorage:', error);
+                devLog.error('Failed to write to localStorage:', error);
                 resolve(); // Don't block on storage errors
             } finally {
                 this.writeLock = false;
@@ -103,7 +131,7 @@ export class CartManager extends EventTarget {
                 const result = await operation();
                 resolve(result);
             } catch (error) {
-                console.error(`Operation ${operationName} failed:`, error);
+                devLog.error(`Operation ${operationName} failed:`, error);
                 reject(error);
             }
         }
@@ -198,6 +226,43 @@ export class CartManager extends EventTarget {
                 this.emit('cart:updated', this.getState());
             }
         }
+    }
+
+    // Upsert operation that combines add and update logic
+    async upsertTicket(ticketData) {
+        const { ticketType, price, name, eventId, quantity } = ticketData;
+
+        if (!ticketType || !price || !name || quantity <= 0) {
+            throw new Error('Invalid ticket data for upsert');
+        }
+
+        return this.queueOperation('upsertTicket', async() => {
+            // Update state - handles both new and existing tickets
+            if (!this.state.tickets[ticketType]) {
+                // Add new ticket
+                this.state.tickets[ticketType] = {
+                    ticketType,
+                    price,
+                    name,
+                    eventId,
+                    quantity: 0,
+                    addedAt: Date.now()
+                };
+            }
+
+            // Set the exact quantity (replaces current quantity)
+            this.state.tickets[ticketType].quantity = quantity;
+            this.state.tickets[ticketType].updatedAt = Date.now();
+
+            // Use coordinated storage write
+            await this.saveToStorage();
+
+            // Emit events using dual dispatch pattern
+            this.emit('cart:ticket:updated', { ticketType, quantity });
+            this.emit('cart:updated', this.getState());
+
+            return this.state.tickets[ticketType];
+        });
     }
 
     // Donation operations
@@ -301,7 +366,7 @@ export class CartManager extends EventTarget {
 
                 // Migrate old donation format if needed
                 if (parsed.donations && !Array.isArray(parsed.donations)) {
-                    console.log('Migrating old donation format to new array format');
+                    devLog.log('Migrating old donation format to new array format');
                     if (parsed.donations.amount && parsed.donations.amount > 0) {
                         // Convert old single donation to array format
                         parsed.donations = [{
@@ -322,7 +387,7 @@ export class CartManager extends EventTarget {
                 }
             }
         } catch (error) {
-            console.log('Failed to load cart from storage:', error);
+            devLog.log('Failed to load cart from storage:', error);
             // Failed to load cart - continue with empty state
         }
     }
@@ -368,9 +433,14 @@ export class CartManager extends EventTarget {
             }
         }
 
-        // Validate donation amount
-        if (this.state.donations.amount && this.state.donations.amount < 0) {
-            this.state.donations = {};
+        // Validate donations array - remove any with negative amounts
+        if (Array.isArray(this.state.donations)) {
+            this.state.donations = this.state.donations.filter(donation => {
+                return donation && typeof donation === 'object' && donation.amount > 0;
+            });
+        } else {
+            // Ensure donations is always an array
+            this.state.donations = [];
         }
 
         // Save cleaned state
