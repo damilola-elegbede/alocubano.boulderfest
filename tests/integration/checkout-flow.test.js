@@ -412,7 +412,7 @@ describe("Complete Checkout Flow Integration", () => {
         },
         instructions: {
           clearCart: true,
-          redirectDelay: 5000,
+          redirectDelay: 20000,
           nextSteps: expect.arrayContaining([
             "Check your email for order confirmation",
             "Save your order confirmation number",
@@ -601,7 +601,7 @@ describe("Complete Checkout Flow Integration", () => {
         instructions: {
           preserveCart: true,
           redirectUrl: "/tickets",
-          redirectDelay: 3000,
+          redirectDelay: 20000,
           nextSteps: expect.arrayContaining([
             "Your cart items are still saved",
             "You can complete your purchase anytime",

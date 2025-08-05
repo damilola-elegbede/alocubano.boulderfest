@@ -229,6 +229,7 @@ class StripePaymentHandler {
             if (typeof window !== 'undefined' &&
                 (window.location.hostname === 'localhost' ||
                  window.location.hostname === '127.0.0.1')) {
+                // eslint-disable-next-line no-console
                 console.error('Checkout session creation error:', error);
             }
             return {
