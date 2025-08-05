@@ -23,9 +23,7 @@ export default async function handler(req, res) {
   try {
     const { session_id, order_id } = req.query;
 
-    console.log(
-      `Checkout cancelled - Session: ${session_id}, Order: ${order_id}`,
-    );
+    // Track cancellation event
 
     // If we have an order ID, mark it as cancelled
     if (order_id) {
@@ -55,19 +53,13 @@ export default async function handler(req, res) {
               [order_id],
             );
 
-            if (result.changes > 0) {
-              console.log(`Order ${order_id} marked as cancelled`);
-            }
-          } else {
-            console.log(
-              `Order ${order_id} status is ${existingOrder.fulfillment_status}, not updating`,
-            );
+            // Order successfully marked as cancelled
           }
-        } else {
-          console.warn(`Order ${order_id} not found in database`);
+          // Order status is not awaiting_payment, skip update
         }
+        // Order not found in database - this is ok for cancelled checkouts
       } catch (dbError) {
-        console.error("Database error updating cancelled order:", dbError);
+        // Database error - continue anyway, cancellation isn't critical
         // Continue anyway - cancellation isn't critical for database consistency
       }
     }
@@ -79,7 +71,7 @@ export default async function handler(req, res) {
       instructions: {
         preserveCart: true, // Don't clear the cart
         redirectUrl: "/tickets", // Redirect back to tickets page
-        redirectDelay: 3000, // 3 seconds
+        redirectDelay: 20000, // 20 seconds
         nextSteps: [
           "Your cart items are still saved",
           "You can complete your purchase anytime",
@@ -93,7 +85,7 @@ export default async function handler(req, res) {
       },
     });
   } catch (error) {
-    console.error("Checkout cancel processing failed:", error);
+    // Error processing cancellation - return graceful response
 
     // Even if there's an error, we want to handle the cancellation gracefully
     res.status(200).json({
