@@ -3,6 +3,10 @@
  * Styling for Stripe payment integration modal
  */
 
+/* Import base design system for typography and colors */
+@import url('/css/base.css');
+@import url('/css/typography.css');
+
 /* Payment Modal Overlay */
 .payment-modal {
     position: fixed;
@@ -10,7 +14,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: rgba(255, 255, 255, 0.7);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -46,50 +50,75 @@
 }
 
 .payment-content h2 {
-    font-family: var(--font-body);
-    font-size: 1.5rem;
+    font-family: var(--font-display);
+    font-size: 2.5rem;
     margin-bottom: 2rem;
-    color: #000;
+    color: var(--color-blue);
     text-align: center;
-    font-weight: 300;
+    font-weight: 400;
     letter-spacing: 0.05em;
     text-transform: uppercase;
 }
 
 /* Order Summary */
 .order-summary {
-    background: transparent;
-    padding: 1.5rem 0;
-    border-bottom: 1px solid #000;
+    background: #f9f9f9;
+    padding: 1.5rem;
+    border: 1px solid #000;
     margin-bottom: 2rem;
 }
 
 .order-summary h3 {
-    font-size: 1rem;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
     margin-bottom: 1rem;
-    color: #000;
-    font-weight: 300;
+    color: var(--color-red);
+    font-weight: 400;
     letter-spacing: 0.05em;
     text-transform: uppercase;
+    border-bottom: 1px solid var(--color-red);
+    padding-bottom: 0.5rem;
 }
 
 .order-summary p {
     font-size: 1.1rem;
-    color: #666;
+    color: #000;
     margin: 0.5rem 0;
+    font-weight: 500;
 }
 
 .order-items {
     margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid #e0e0e0;
 }
 
 .order-item {
     display: flex;
     justify-content: space-between;
-    margin: 0.5rem 0;
-    font-size: 0.95rem;
+    margin: 0.75rem 0;
+    font-size: 1rem;
+    color: #000;
+    font-family: var(--font-sans);
+}
+
+.order-item span:first-child {
+    font-family: var(--font-accent);
+    font-weight: 400;
+}
+
+.order-item span:last-child {
+    font-family: var(--font-code);
+    font-weight: 700;
+}
+
+.order-total {
+    font-family: var(--font-display);
+    font-weight: 400;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--color-black);
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 /* Payment Form */
@@ -106,21 +135,28 @@
 .customer-info input {
     width: 100%;
     padding: 0.875rem;
-    border: 2px solid #e0e0e0;
-    border-radius: 6px;
+    border: 1px solid #000;
+    border-radius: 0;
     font-size: 1rem;
     font-family: var(--font-sans);
     transition: all 0.2s ease;
+    background: #fff;
+    color: #000;
 }
 
 .customer-info input:focus {
     outline: none;
-    border-color: #333;
-    box-shadow: 0 0 0 3px rgba(51, 51, 51, 0.1);
+    border-color: #000;
+    box-shadow: 0 0 0 2px #000;
 }
 
 .customer-info input::placeholder {
-    color: #999;
+    color: #666;
+    opacity: 1;
+    font-family: var(--font-sans);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.875rem;
 }
 
 /* Two column layout for name fields */
@@ -147,27 +183,28 @@
 
 #card-element.focused {
     border-color: #000;
-    outline: 1px solid #000;
-    outline-offset: 2px;
+    box-shadow: 0 0 0 2px #000;
 }
 
 #card-element.StripeElement--invalid {
-    border-color: #e74c3c;
+    border-color: #CC2936;
+    background-color: #fef2f2;
 }
 
 /* Card Errors */
 #card-errors {
-    color: #e74c3c;
+    color: #CC2936;
     margin: 0.5rem 0;
     font-size: 0.875rem;
     display: none;
+    font-weight: 500;
 }
 
 /* Payment Buttons */
 .payment-buttons {
     display: flex;
     gap: 1rem;
-    justify-content: flex-end;
+    justify-content: center;
     margin-top: 2rem;
 }
 
@@ -175,17 +212,17 @@
     padding: 0.875rem 2rem;
     border-radius: 0;
     font-size: 1rem;
-    font-weight: 300;
+    font-weight: 400;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-family: var(--font-body);
+    font-family: var(--font-display);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.1em;
 }
 
 #cancel-payment {
     background: transparent;
-    border: 1px solid #000;
+    border: 2px solid #000;
     color: #000;
 }
 
@@ -195,21 +232,26 @@
 }
 
 #submit-payment {
-    background: #000;
+    background: var(--color-blue);
     color: white;
-    border: 1px solid #000;
+    border: 2px solid var(--color-blue);
     min-width: 150px;
+    font-family: var(--font-display);
+    font-size: 1.125rem;
 }
 
 #submit-payment:hover:not(:disabled) {
-    background: #333;
-    border-color: #333;
+    background: var(--color-white);
+    color: var(--color-blue);
+    border-color: var(--color-blue);
 }
 
 #submit-payment:disabled {
-    background: #ccc;
+    background: #f0f0f0;
     border-color: #ccc;
+    color: #999;
     cursor: not-allowed;
+    opacity: 0.7;
 }
 
 /* Loading Spinner */
@@ -236,13 +278,14 @@
 }
 
 .form-field.error input {
-    border-color: #e74c3c;
+    border-color: #CC2936;
 }
 
 .field-error {
-    color: #e74c3c;
+    color: #CC2936;
     font-size: 0.875rem;
     margin-top: 0.25rem;
+    font-weight: 500;
 }
 
 /* Success Message */
@@ -269,9 +312,12 @@
 }
 
 .payment-success h3 {
-    font-size: 1.5rem;
+    font-family: var(--font-display);
+    font-size: 2rem;
     margin-bottom: 1rem;
-    color: #333;
+    color: var(--color-blue);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .payment-success p {
@@ -287,7 +333,7 @@
     }
     
     .payment-content h2 {
-        font-size: 1.5rem;
+        font-size: 2rem;
     }
     
     .payment-buttons {
@@ -316,54 +362,4 @@
     border: 0;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    .payment-content {
-        background: #1a1a1a;
-        color: #e0e0e0;
-    }
-    
-    .payment-content h2,
-    .payment-content h3 {
-        color: #e0e0e0;
-    }
-    
-    .order-summary {
-        background: #2a2a2a;
-    }
-    
-    .order-summary p {
-        color: #b0b0b0;
-    }
-    
-    .customer-info input {
-        background: #2a2a2a;
-        border-color: #444;
-        color: #e0e0e0;
-    }
-    
-    .customer-info input:focus {
-        border-color: #e0e0e0;
-        box-shadow: 0 0 0 3px rgba(224, 224, 224, 0.1);
-    }
-    
-    #card-element {
-        background: #2a2a2a;
-        border-color: #444;
-    }
-    
-    #card-element.focused {
-        border-color: #e0e0e0;
-    }
-    
-    #cancel-payment {
-        background: #2a2a2a;
-        border-color: #444;
-        color: #e0e0e0;
-    }
-    
-    #cancel-payment:hover {
-        background: #3a3a3a;
-        border-color: #555;
-    }
-}
+/* Remove dark mode to maintain consistent black & white aesthetic */

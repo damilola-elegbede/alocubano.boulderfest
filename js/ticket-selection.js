@@ -42,7 +42,7 @@ class TicketSelection {
             // Timeout after 5 seconds to prevent infinite waiting
             setTimeout(() => {
                 document.removeEventListener('cart:initialized', handleCartInit);
-                console.warn('Cart manager initialization timeout - proceeding anyway');
+                // Cart manager initialization timeout - proceeding anyway
                 resolve();
             }, 5000);
         });
@@ -187,8 +187,8 @@ class TicketSelection {
         if (cartData) {
             try {
                 cartState = JSON.parse(cartData);
-            } catch (error) {
-                console.warn('Failed to parse cart state:', error);
+            } catch {
+                // Failed to parse cart state - invalid JSON
                 return;
             }
         }
@@ -230,7 +230,7 @@ class TicketSelection {
         // Get cart state from cart manager
         const cartState = window.cartDebug?.getState() || {};
         const tickets = cartState.tickets || {};
-        
+
         if (Object.keys(tickets).length === 0) {
             alert('Please select at least one ticket before checking out.');
             return;
@@ -240,7 +240,7 @@ class TicketSelection {
         const total = Object.values(tickets).reduce((sum, ticket) => {
             return sum + (ticket.price * ticket.quantity);
         }, 0);
-        
+
         // Build order data
         const orderData = {
             amount: total,
@@ -277,7 +277,7 @@ class TicketSelection {
                                 </div>
                             `).join('')}
                         </div>
-                        <p style="font-weight: bold; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e0e0e0;">
+                        <p class="order-total">
                             Total: $${orderData.amount.toFixed(2)}
                         </p>
                     </div>
@@ -297,7 +297,7 @@ class TicketSelection {
                         
                         <div class="payment-buttons">
                             <button type="button" id="cancel-payment">Cancel</button>
-                            <button type="submit" id="submit-payment">Pay $${orderData.amount.toFixed(2)}</button>
+                            <button type="submit" id="submit-payment" disabled>Pay $${orderData.amount.toFixed(2)}</button>
                         </div>
                     </form>
                 </div>
@@ -307,23 +307,33 @@ class TicketSelection {
         // Add modal to page
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         this.paymentModal = document.getElementById('payment-modal');
-        
+
         // Initialize Stripe handler if not already done
         if (!this.stripeHandler) {
             this.stripeHandler = getStripePaymentHandler();
         }
-        
+
         // Mount Stripe card element
         await this.stripeHandler.mountCardElement('card-element');
-        
+
+        // Set up form validation
+        this.setupFormValidation();
+
         // Handle form submission
         document.getElementById('payment-form').addEventListener('submit', (e) => {
             this.handlePaymentSubmit(e, orderData);
         });
-        
+
         // Handle cancel
         document.getElementById('cancel-payment').addEventListener('click', () => {
             this.closePaymentModal();
+        });
+
+        // Close modal when clicking on overlay (but not on content)
+        this.paymentModal.addEventListener('click', (e) => {
+            if (e.target === this.paymentModal) {
+                this.closePaymentModal();
+            }
         });
 
         // Close modal on escape key
@@ -336,10 +346,9 @@ class TicketSelection {
 
     async handlePaymentSubmit(event, orderData) {
         event.preventDefault();
-        
-        const submitButton = document.getElementById('submit-payment');
+
         const errorElement = document.getElementById('card-errors');
-        
+
         // Get customer info
         const customerInfo = {
             firstName: document.getElementById('firstName').value.trim(),
@@ -347,7 +356,7 @@ class TicketSelection {
             email: document.getElementById('email').value.trim(),
             phone: document.getElementById('phone').value.trim()
         };
-        
+
         // Validate customer info
         const validation = this.stripeHandler.validateCustomerInfo(customerInfo);
         if (!validation.isValid) {
@@ -355,10 +364,10 @@ class TicketSelection {
             errorElement.style.display = 'block';
             return;
         }
-        
+
         // Process payment
         const result = await this.stripeHandler.processPayment(orderData, customerInfo);
-        
+
         if (result.success) {
             this.showSuccessMessage(result.orderId);
             this.clearCart();
@@ -374,7 +383,7 @@ class TicketSelection {
             this.paymentModal.remove();
             this.paymentModal = null;
         }
-        
+
         // Remove escape key listener
         if (this.handleEscapeKey) {
             document.removeEventListener('keydown', this.handleEscapeKey);
@@ -385,6 +394,81 @@ class TicketSelection {
         if (this.stripeHandler) {
             this.stripeHandler.clearCard();
         }
+    }
+
+    setupFormValidation() {
+        const submitButton = document.getElementById('submit-payment');
+        const requiredFields = ['firstName', 'lastName', 'email'];
+
+        // Initially disable the submit button
+        submitButton.disabled = true;
+
+        // Validation function
+        const validateForm = () => {
+            let isValid = true;
+
+            // Check required fields
+            for (const fieldId of requiredFields) {
+                const field = document.getElementById(fieldId);
+                if (!field || !field.value.trim()) {
+                    isValid = false;
+                    break;
+                }
+            }
+
+            // Check email format
+            if (isValid) {
+                const email = document.getElementById('email').value.trim();
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    isValid = false;
+                }
+            }
+
+            // Check if Stripe card element is complete and valid
+            if (isValid && this.stripeHandler && this.stripeHandler.card) {
+                // We'll check card validity through Stripe's change event
+                const cardErrors = document.getElementById('card-errors');
+                if (cardErrors && cardErrors.textContent) {
+                    isValid = false;
+                }
+            }
+
+            // Enable/disable submit button
+            submitButton.disabled = !isValid;
+        };
+
+        // Add input listeners to all form fields
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('input', validateForm);
+                field.addEventListener('blur', validateForm);
+            }
+        });
+
+        // Listen for Stripe card changes
+        if (this.stripeHandler && this.stripeHandler.card) {
+            this.stripeHandler.card.on('change', (event) => {
+                // First handle the error display (existing functionality)
+                const displayError = document.getElementById('card-errors');
+                if (displayError) {
+                    if (event.error) {
+                        displayError.textContent = event.error.message;
+                        displayError.style.display = 'block';
+                    } else {
+                        displayError.textContent = '';
+                        displayError.style.display = 'none';
+                    }
+                }
+
+                // Then validate the entire form
+                validateForm();
+            });
+        }
+
+        // Initial validation
+        validateForm();
     }
 
     showSuccessMessage(orderId) {
@@ -403,7 +487,7 @@ class TicketSelection {
         `;
 
         document.body.insertAdjacentHTML('beforeend', successHTML);
-        
+
         // Auto-close after 5 seconds
         setTimeout(() => {
             document.querySelector('.payment-success').closest('.payment-modal').remove();
@@ -413,18 +497,18 @@ class TicketSelection {
     clearCart() {
         // Clear selected tickets
         this.selectedTickets.clear();
-        
+
         // Clear cart through cart manager
         if (window.cartDebug?.clearCart) {
             window.cartDebug.clearCart();
         } else {
             // Fallback: clear localStorage directly
             localStorage.removeItem('alocubano_cart');
-            
+
             // Dispatch event to update UI
             document.dispatchEvent(new CustomEvent('cart:cleared'));
         }
-        
+
         // Update display
         this.updateDisplay();
         this.syncWithCartState();
