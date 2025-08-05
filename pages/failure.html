@@ -73,26 +73,26 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--color-gray-200);
+        background: var(--color-accent-red);
         border: 2px solid var(--color-black);
         border-radius: 50%;
-        animation: fadeIn 0.5s ease-out;
+        animation: scaleIn 0.5s ease-out;
       }
 
       .failure-icon svg {
         width: 50px;
         height: 50px;
-        color: var(--color-black);
+        color: var(--color-white);
       }
 
-      @keyframes fadeIn {
+      @keyframes scaleIn {
         from {
           opacity: 0;
-          transform: translateY(-10px);
+          transform: scale(0.9);
         }
         to {
           opacity: 1;
-          transform: translateY(0);
+          transform: scale(1);
         }
       }
 
@@ -147,7 +147,7 @@
       .failure-btn {
         padding: var(--space-md) var(--space-xl);
         border: 2px solid var(--color-black);
-        background: var(--color-black);
+        background: var(--color-accent-red);
         color: var(--color-white);
         font-family: var(--font-display);
         font-size: var(--font-size-base);
@@ -161,7 +161,8 @@
 
       .failure-btn:hover {
         background: var(--color-white);
-        color: var(--color-black);
+        color: var(--color-accent-red);
+        border-color: var(--color-accent-red);
       }
 
       .failure-btn.secondary {
@@ -194,6 +195,27 @@
 
       .loading-state {
         display: none;
+      }
+
+      .countdown-timer {
+        background: var(--color-accent-red);
+        color: var(--color-white);
+        padding: var(--space-md) var(--space-lg);
+        text-align: center;
+        font-family: var(--font-sans);
+        font-size: var(--font-size-sm);
+        letter-spacing: 0.05em;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+      }
+
+      .countdown-seconds {
+        font-weight: bold;
+        font-size: var(--font-size-base);
       }
 
       @media (max-width: 640px) {
@@ -431,6 +453,11 @@
           </div>
         </div>
       </section>
+
+      <!-- Countdown Timer -->
+      <div class="countdown-timer" id="countdown-timer">
+        This page will redirect in <span class="countdown-seconds" id="countdown-seconds">20</span> seconds...
+      </div>
     </main>
 
     <footer class="footer-typographic">
@@ -505,8 +532,35 @@
       const mainMessage = document.getElementById("main-message");
       const detailsMessage = document.getElementById("details-message");
       const stepsContent = document.getElementById("steps-content");
+      
+      // Countdown timer variables
+      let countdownInterval;
+      let remainingSeconds = 20;
 
-      // Process cancellation
+      /**
+       * Starts a countdown timer that redirects to tickets page after 20 seconds
+       * Updates the countdown display every second
+       */
+      function startCountdown() {
+        const countdownElement = document.getElementById("countdown-seconds");
+        
+        countdownInterval = setInterval(() => {
+          remainingSeconds--;
+          if (countdownElement) {
+            countdownElement.textContent = remainingSeconds;
+          }
+          
+          if (remainingSeconds <= 0) {
+            clearInterval(countdownInterval);
+            window.location.href = "/tickets";
+          }
+        }, 1000);
+      }
+
+      /**
+       * Processes payment cancellation by calling the API and updating UI
+       * Handles both session_id and order_id parameters from URL
+       */
       async function processCancellation() {
         // Show loading briefly
         loadingState.style.display = "block";
@@ -529,27 +583,30 @@
             }
 
             if (data.instructions?.nextSteps) {
-              stepsContent.innerHTML = data.instructions.nextSteps
-                .map((step) => `<p>• ${step}</p>`)
-                .join("");
+              // Clear existing content safely
+              stepsContent.textContent = '';
+              
+              // Add each step safely to prevent XSS
+              data.instructions.nextSteps.forEach(step => {
+                const p = document.createElement('p');
+                p.textContent = `• ${step}`;
+                stepsContent.appendChild(p);
+              });
             }
 
-            // Auto-redirect if specified
-            if (data.instructions?.redirectDelay) {
-              setTimeout(() => {
-                window.location.href =
-                  data.instructions.redirectUrl || "/tickets";
-              }, data.instructions.redirectDelay);
-            }
+            // Don't use the API's redirect - we're controlling it locally
           } catch (error) {
-            console.error("Error processing cancellation:", error);
+            // Update UI to inform user of error
+            mainMessage.textContent = "We couldn't process your cancellation request, but your cart is still saved.";
             // Continue with default behavior
           }
         }
 
-        // Hide loading state
+        // Hide loading state and start countdown
         setTimeout(() => {
           loadingState.style.display = "none";
+          // Start the countdown timer after processing
+          startCountdown();
         }, 500);
       }
 
@@ -557,7 +614,6 @@
       processCancellation();
 
       // Important: Do NOT clear the cart so users can try again
-      console.log("Cart preserved - users can retry their purchase");
     </script>
 
     <script src="/js/navigation.js"></script>
