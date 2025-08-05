@@ -16,6 +16,7 @@ const devLog = {
         window.location.search.includes('debug=true') ||
         localStorage.getItem('dev_mode') === 'true')
         ) {
+            // eslint-disable-next-line no-console
             console.error(message, ...args);
         }
     },
@@ -29,6 +30,7 @@ const devLog = {
         window.location.search.includes('debug=true') ||
         localStorage.getItem('dev_mode') === 'true')
         ) {
+            // eslint-disable-next-line no-console
             console.log(message, ...args);
         }
     }
