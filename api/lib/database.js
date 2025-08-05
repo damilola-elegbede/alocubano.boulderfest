@@ -123,6 +123,10 @@ function convertPostgreSQLToSQLite(sql) {
         .replace(/JSONB/gi, 'TEXT')
         // Replace INTEGER[] with TEXT (store as JSON)
         .replace(/INTEGER\[\]/gi, 'TEXT')
+        // Replace any remaining array syntax
+        .replace(/\[\]/gi, '')
+        // Replace JSONB default values
+        .replace(/DEFAULT '{}'/gi, "DEFAULT '[]'")
         // Replace CURRENT_TIMESTAMP with datetime('now')
         .replace(/CURRENT_TIMESTAMP/gi, 'datetime(\'now\')')
         // Remove or replace plpgsql functions

@@ -89,13 +89,13 @@ class StripePaymentHandler {
         const style = {
             base: {
                 fontSize: '16px',
-                fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                color: '#333333',
-                fontWeight: '400',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                color: '#000000',
+                fontWeight: '300',
                 '::placeholder': {
-                    color: '#999999'
-                },
-                lineHeight: '24px'
+                    color: '#999999',
+                    fontWeight: '300'
+                }
             },
             invalid: {
                 color: '#e74c3c',
@@ -107,7 +107,8 @@ class StripePaymentHandler {
         this.card = this.elements.create('card', {
             style: style,
             hidePostalCode: false, // Show postal code field
-            iconStyle: 'solid'
+            iconStyle: 'solid',
+            disableLink: true // Disable Stripe Link for simpler checkout
         });
 
         return this.card;
