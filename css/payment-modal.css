@@ -1,11 +1,28 @@
 /**
- * Payment Modal Styles
- * Styling for Stripe payment integration modal
+ * Payment Modal Styles - DEPRECATED
+ * 
+ * This file is deprecated as of the Stripe Checkout Sessions migration.
+ * The custom payment modal has been replaced with Stripe's hosted checkout.
+ * 
+ * Retained for:
+ * - Legacy support during transition period
+ * - Reference for any remaining UI elements
+ * 
+ * Will be removed in a future release once all references are updated.
+ * 
+ * Migrated styles:
+ * - .spinner → checkout-loading.css (new file for checkout loading states)
+ * - .error-message → forms.css (already exists)
+ * - .loading states → components.css (already exists)
  */
 
 /* Import base design system for typography and colors */
 @import url('/css/base.css');
 @import url('/css/typography.css');
+
+/* ============================================
+   DEPRECATED: Custom Payment Modal
+   ============================================ */
 
 /* Payment Modal Overlay */
 .payment-modal {
@@ -254,7 +271,7 @@
     opacity: 0.7;
 }
 
-/* Loading Spinner */
+/* Loading Spinner - DEPRECATED: Use checkout-loading.css */
 .spinner {
     display: inline-block;
     width: 14px;
@@ -361,5 +378,3 @@
     white-space: nowrap;
     border: 0;
 }
-
-/* Remove dark mode to maintain consistent black & white aesthetic */

@@ -2,7 +2,15 @@
 
 ## Overview
 
-This document describes the Stripe payment integration implemented for A Lo Cubano Boulder Fest. The integration enables secure payment processing for both ticket purchases and donations.
+This document describes the Stripe Checkout Sessions payment integration implemented for A Lo Cubano Boulder Fest. The integration enables secure payment processing for both ticket purchases and donations using Stripe's hosted checkout flow.
+
+## Key Changes from Previous Implementation
+
+- Migrated from Payment Intents with custom modal to Stripe Checkout Sessions
+- Stripe now handles the entire payment collection flow
+- Improved conversion rates and simplified PCI compliance
+- Redirect-based checkout experience
+- Built-in email collection and validation
 
 ## Architecture
 
@@ -14,45 +22,53 @@ This document describes the Stripe payment integration implemented for A Lo Cuba
    - Does NOT store sensitive payment data (handled by Stripe)
 
 2. **API Endpoints**
-   - `/api/payments/create-payment-intent.js` - Creates Stripe payment intents
+   - `/api/payments/create-checkout-session.js` - Creates Stripe Checkout Sessions
    - `/api/payments/stripe-webhook.js` - Handles Stripe webhook events
+   - `/api/payments/handle-payment-success.js` - Processes successful payments
 
 3. **Database Utility** (`/api/lib/database.js`)
    - SQLite connection management
    - Automatic migration running
-   - PostgreSQL to SQLite syntax conversion
 
 ### Frontend Components
 
-1. **Payment Integration Library** (`/js/lib/stripe-integration.js`)
-   - Stripe Elements initialization
-   - Payment form handling
-   - Customer data validation
+1. **Checkout Integration** (`/js/lib/stripe-integration.js`)
+   - Creates Checkout Sessions via API
+   - Handles redirection to Stripe Checkout
+   - Email collection before checkout
 
 2. **Updated Components**
-   - `/js/ticket-selection.js` - Ticket purchase flow with payment modal
-   - `/js/donation-selection.js` - Donation flow with payment processing
+   - `/js/floating-cart.js` - Email collection modal and checkout trigger
+   - `/js/ticket-selection.js` - Simplified ticket selection without payment modal
+   - `/js/donation-selection.js` - Simplified donation flow without payment modal
 
-3. **Styling** (`/css/payment-modal.css`)
-   - Payment modal design
-   - Responsive layout
-   - Dark mode support
+3. **Success/Failure Pages**
+   - `/pages/success.html` - Order confirmation page
+     - Displays order details and amount
+     - Shows "Next step is registration" for ticket purchases
+     - Automatically clears cart
+     - Auto-redirects to home after 5 seconds
+   - `/pages/failure.html` - Payment failure/cancellation page
+     - Apologetic messaging
+     - Preserves cart for retry
+     - Contact information for support
+     - Auto-redirects to tickets page after 3 seconds
 
 ## Setup Instructions
 
 ### 1. Environment Variables
 
-Create a `.env.local` file based on `.env.example`:
+Update your `.env.local` file with the following variables:
 
 ```bash
-# Test Keys
+# Existing Stripe Keys
 STRIPE_PUBLISHABLE_KEY=pk_test_your_key_here
 STRIPE_SECRET_KEY=sk_test_your_key_here
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 
-# Production Keys (when ready)
-STRIPE_PUBLISHABLE_KEY=pk_live_your_key_here
-STRIPE_SECRET_KEY=sk_live_your_key_here
+# Optional: Configure default settings
+STRIPE_DEFAULT_CURRENCY=usd
+STRIPE_PAYMENT_METHOD_TYPES=card,us_bank_account
 ```
 
 ### 2. Stripe Dashboard Configuration
@@ -60,42 +76,40 @@ STRIPE_SECRET_KEY=sk_live_your_key_here
 1. **Create Webhook Endpoint**
    - URL: `https://yourdomain.com/api/payments/stripe-webhook`
    - Events to listen for:
-     - `payment_intent.succeeded`
-     - `payment_intent.payment_failed`
-     - `payment_intent.canceled`
+     - `checkout.session.completed`
+     - `checkout.session.async_payment_succeeded`
+     - `checkout.session.async_payment_failed`
      - `charge.refunded`
 
-2. **Copy Webhook Secret**
-   - Find in Stripe Dashboard > Webhooks > Your endpoint
-   - Add to `STRIPE_WEBHOOK_SECRET` environment variable
+2. **Return URLs**
+   - Success and cancel pages are automatically handled by the application
+   - Success: `/success.html` - Displays order confirmation and next steps
+   - Cancel: `/failure.html` - Shows error message with retry options
+   - URLs are dynamically generated based on the request origin
 
-### 3. Frontend Key Loading
+### 3. Checkout Session Flow
 
-The Stripe publishable key is securely loaded from environment variables via the `/api/config/stripe-public` endpoint. This ensures:
-- No hardcoded keys in source files
-- Keys can be rotated without code changes
-- Different keys for different environments (dev/staging/prod)
-
-The key is automatically fetched when the payment pages load.
-
-### 4. Database Setup
-
-The SQLite database will be automatically created on first API call. Migrations run automatically.
+1. Client requests Checkout Session via `/api/payments/create-checkout-session`
+2. Server creates Stripe Checkout Session with:
+   - Order details
+   - Supported payment methods
+   - Return URLs
+3. Client redirected to Stripe-hosted checkout
+4. After payment, redirected back to success/cancel URL
+5. Webhook processes final payment confirmation
 
 ## Testing
 
-### Test Cards
+### Test Cards and Scenarios
 
-Use these Stripe test cards:
-
-- **Success**: `4242 4242 4242 4242`
-- **Decline**: `4000 0000 0000 0002`
+- **Successful Payment**: `4242 4242 4242 4242`
 - **Authentication Required**: `4000 0025 0000 3155`
+- **Declined**: `4000 0000 0000 0002`
 
 ### Running Tests
 
 ```bash
-npm run test:unit -- tests/unit/stripe-payment.test.js
+npm run test:unit -- tests/unit/stripe-checkout.test.js
 ```
 
 ## Payment Flow
@@ -104,118 +118,115 @@ npm run test:unit -- tests/unit/stripe-payment.test.js
 
 1. User selects tickets on `/tickets` page
 2. Clicks checkout in floating cart
-3. Payment modal appears with order summary
-4. User enters customer info and card details
-5. Payment processed via Stripe
-6. Order saved to database
-7. Confirmation email sent via Brevo
-8. Success message displayed
+3. Email collection modal appears
+4. API creates Stripe Checkout Session
+5. Redirected to Stripe-hosted payment page
+6. Completes payment
+7. Redirected to `/success.html` with order details
+8. Success page shows "Next step is registration" message
+9. Cart automatically cleared
+10. Webhook processes order fulfillment
+11. Confirmation email sent via Brevo
 
-### Donation
+### Donation Flow
 
 1. User selects donation amount on `/donations` page
-2. Adds to cart
-3. Clicks checkout in floating cart
-4. Same payment flow as tickets
+2. Clicks checkout in floating cart
+3. Email collection modal appears
+4. API creates Stripe Checkout Session
+5. Redirected to Stripe-hosted payment page
+6. Completes payment
+7. Redirected to `/success.html` with order details
+8. Success page shows "Transaction successful" message
+9. Cart automatically cleared
+
+### Failed/Cancelled Payment Flow
+
+1. User cancels payment or payment fails
+2. Redirected to `/failure.html`
+3. Apologetic message displayed with retry options
+4. Cart preserved for retry
+5. Contact information provided for support
 
 ## Security Considerations
 
 1. **PCI Compliance**
-   - Card details never touch our servers
-   - Stripe Elements handles all sensitive data
-   - Only payment intent IDs stored locally
+   - Entire payment flow hosted by Stripe
+   - No card details touch our servers
+   - Built-in fraud protection
 
 2. **Webhook Verification**
    - All webhooks verified using Stripe signature
    - Raw body verification prevents tampering
 
 3. **Input Validation**
-   - Email format validation
-   - Amount validation (positive numbers only)
-   - XSS prevention through proper escaping
+   - Stripe handles email and payment validation
+   - Server-side amount and order validation
 
 ## Error Handling
 
 1. **Payment Failures**
-   - Clear error messages shown to users
+   - Clear error messages on return
    - Order status updated to 'failed'
-   - No charge attempted
+   - No charge attempted if payment incomplete
 
-2. **Network Errors**
-   - Graceful fallback messages
-   - Payment intent automatically canceled on server errors
+2. **Redirect Scenarios**
+   - Success URL: Payment completed
+   - Cancel URL: User abandoned checkout
+   - Webhook confirms final payment status
 
-3. **Webhook Failures**
-   - Non-blocking - returns 200 to prevent retries
-   - Errors logged for investigation
+## Monitoring and Metrics
 
-## Monitoring
+### Key Metrics
 
-### Key Metrics to Track
+1. **Checkout Conversion Rate**
+   - Monitor `checkout.session.completed` events
+   - Track abandonment rates
 
-1. **Payment Success Rate**
-   - Monitor `payment_intent.succeeded` vs `payment_intent.failed`
-
-2. **Order Fulfillment**
-   - Track orders by `fulfillment_status`
+2. **Payment Success Rate**
+   - Compare completed vs. initiated sessions
 
 3. **Webhook Processing**
    - Monitor webhook response times
-   - Check for signature verification failures
-
-### Logs to Review
-
-- Payment intent creation failures
-- Webhook processing errors
-- Database connection issues
-
-## Future Enhancements
-
-1. **PayPal Integration**
-   - Add as alternative payment method
-   - Same order tracking system
-
-2. **Recurring Donations**
-   - Stripe subscription support
-   - Monthly giving options
-
-3. **Admin Dashboard**
-   - Order management interface
-   - Refund processing
-   - Sales reports
+   - Check signature verification
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **"Stripe not initialized" error**
-   - Check publishable key is set correctly
-   - Verify Stripe script loaded
+1. **Checkout Session Creation Fails**
+   - Verify Stripe API keys
+   - Check server environment
+   - Validate order details
 
-2. **Payment intent creation fails**
-   - Check API keys in environment
-   - Verify server has database access
-
-3. **Webhooks not received**
+2. **Webhook Not Received**
    - Check webhook endpoint URL
-   - Verify webhook secret matches
+   - Verify webhook secret
+   - Ensure network accessibility
 
 ### Debug Mode
-
-Enable debug logging:
 
 ```javascript
 // In browser console
 localStorage.setItem('stripe_debug', 'true');
 ```
 
-## Support
+## Support and Resources
 
-For Stripe-specific issues:
-- Stripe Documentation: https://stripe.com/docs
-- Stripe Support: https://support.stripe.com
+- Stripe Checkout Documentation: https://stripe.com/docs/checkout
+- Implementation Questions: alocubanoboulderfest@gmail.com
 
-For implementation questions:
-- Review this documentation
-- Check test files for examples
-- Contact: alocubanoboulderfest@gmail.com
+## Future Enhancements
+
+1. **Payment Method Expansion**
+   - Apple Pay
+   - Google Pay
+   - International payment methods
+
+2. **Recurring Donations**
+   - Stripe Checkout for subscriptions
+   - Monthly giving options
+
+3. **Advanced Reporting**
+   - Detailed checkout analytics
+   - Conversion optimization tools

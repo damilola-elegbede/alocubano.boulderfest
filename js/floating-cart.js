@@ -145,7 +145,7 @@ function setupEventListeners(elements, cartManager) {
   });
 
   // Checkout button handler
-  elements.checkoutButton.addEventListener("click", () => {
+  elements.checkoutButton.addEventListener("click", async () => {
     // Track analytics
     if (cartManager && cartManager.analytics) {
       cartManager.analytics.trackCartEvent("checkout_clicked", {
@@ -154,7 +154,7 @@ function setupEventListeners(elements, cartManager) {
       });
     }
 
-    handleCheckoutClick(cartManager);
+    await handleCheckoutClick(cartManager);
   });
 
   // Clear cart button handler
@@ -215,7 +215,7 @@ async function handleQuantityAdjustment(cartManager, ticketType, action) {
   await cartManager.updateTicketQuantity(ticketType, newQuantity);
 }
 
-function handleCheckoutClick(cartManager) {
+async function handleCheckoutClick(cartManager) {
   const cartState = cartManager.getState();
 
   if (cartState.isEmpty) {
@@ -241,26 +241,66 @@ function handleCheckoutClick(cartManager) {
     }
   }
 
-  // Dispatch a custom event that page-specific handlers can listen to
-  const checkoutEvent = new CustomEvent("cart:checkout", {
-    detail: { cartState },
-    bubbles: true,
-    cancelable: true
-  });
+  // Show email collection modal
+  const customerInfo = await showEmailCollectionModal();
   
-  document.dispatchEvent(checkoutEvent);
-  
-  // If no handler prevented default, redirect to tickets page
-  if (!checkoutEvent.defaultPrevented) {
-    // Store cart state securely in sessionStorage to avoid URL length limits
-    // and prevent exposing sensitive data in URLs
-    try {
-      sessionStorage.setItem("checkout_cart", JSON.stringify(cartState));
-      window.location.href = "/tickets?checkout=true";
-    } catch {
-      // Fallback if sessionStorage is not available - continue without warning
-      window.location.href = "/tickets?checkout=true";
+  if (!customerInfo) {
+    // User cancelled
+    return;
+  }
+
+  // Show loading state
+  showCheckoutLoadingState();
+
+  try {
+    // Prepare cart items for checkout session
+    const cartItems = [];
+    
+    // Add tickets
+    Object.values(cartState.tickets).forEach(ticket => {
+      cartItems.push({
+        type: 'ticket',
+        ticketType: ticket.ticketType,
+        name: ticket.name,
+        price: ticket.price,
+        quantity: ticket.quantity,
+        eventDate: '2026-05-15'
+      });
+    });
+    
+    // Add donations
+    if (cartState.donations && cartState.donations.length > 0) {
+      cartState.donations.forEach(donation => {
+        cartItems.push({
+          type: 'donation',
+          name: donation.name || 'A Lo Cubano Boulder Fest Donation',
+          price: donation.amount,
+          quantity: 1,
+          category: 'general'
+        });
+      });
     }
+
+    // Create checkout session
+    const stripeHandler = getStripePaymentHandler();
+    const result = await stripeHandler.createCheckoutSession({
+      cartItems,
+      customerInfo
+    });
+
+    if (result.success) {
+      // Redirect to Stripe Checkout
+      window.location.href = result.checkoutUrl;
+    } else {
+      // Show error
+      hideCheckoutLoadingState();
+      showCheckoutError(result.error || 'Unable to create checkout session. Please try again.');
+    }
+  } catch (error) {
+    // Show error
+    hideCheckoutLoadingState();
+    showCheckoutError('An unexpected error occurred. Please try again.');
+    console.error('Checkout error:', error);
   }
 }
 
@@ -556,6 +596,126 @@ async function showClearCartConfirmation(cartState) {
     // Focus the cancel button initially (safer default)
     cancelBtn.focus();
   });
+}
+
+// Helper function to show email collection modal
+function showEmailCollectionModal() {
+  return new Promise((resolve) => {
+    // Create modal HTML
+    const modalHTML = `
+      <div class="checkout-email-modal">
+        <div class="checkout-email-backdrop"></div>
+        <div class="checkout-email-content">
+          <h3>Complete Your Purchase</h3>
+          <p>Please provide your contact information to continue to checkout.</p>
+          <form id="checkout-email-form">
+            <div class="checkout-form-row">
+              <input type="text" id="checkout-firstName" placeholder="First Name" required>
+              <input type="text" id="checkout-lastName" placeholder="Last Name" required>
+            </div>
+            <input type="email" id="checkout-email" placeholder="Email Address" required>
+            <input type="tel" id="checkout-phone" placeholder="Phone (optional)">
+            <div class="checkout-form-buttons">
+              <button type="button" class="checkout-cancel-btn">Cancel</button>
+              <button type="submit" class="checkout-continue-btn">Continue to Payment</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    const modal = document.querySelector('.checkout-email-modal');
+    const form = document.getElementById('checkout-email-form');
+    const cancelBtn = modal.querySelector('.checkout-cancel-btn');
+    const backdrop = modal.querySelector('.checkout-email-backdrop');
+    
+    // Focus first input
+    document.getElementById('checkout-firstName').focus();
+    
+    // Handle form submission
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const customerInfo = {
+        firstName: document.getElementById('checkout-firstName').value.trim(),
+        lastName: document.getElementById('checkout-lastName').value.trim(),
+        email: document.getElementById('checkout-email').value.trim(),
+        phone: document.getElementById('checkout-phone').value.trim()
+      };
+      
+      // Basic validation
+      if (!customerInfo.firstName || !customerInfo.lastName || !customerInfo.email) {
+        return;
+      }
+      
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(customerInfo.email)) {
+        alert('Please enter a valid email address');
+        return;
+      }
+      
+      modal.remove();
+      resolve(customerInfo);
+    });
+    
+    // Handle cancel
+    const handleCancel = () => {
+      modal.remove();
+      resolve(null);
+    };
+    
+    cancelBtn.addEventListener('click', handleCancel);
+    backdrop.addEventListener('click', handleCancel);
+    
+    // Handle escape key
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        handleCancel();
+        document.removeEventListener('keydown', handleEscape);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+  });
+}
+
+// Show loading state during checkout
+function showCheckoutLoadingState() {
+  const loadingHTML = `
+    <div class="checkout-loading-overlay">
+      <div class="checkout-loading-content">
+        <div class="checkout-loading-spinner"></div>
+        <p>Creating secure checkout session...</p>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', loadingHTML);
+}
+
+// Hide loading state
+function hideCheckoutLoadingState() {
+  const overlay = document.querySelector('.checkout-loading-overlay');
+  if (overlay) {
+    overlay.remove();
+  }
+}
+
+// Show checkout error
+function showCheckoutError(message) {
+  const errorHTML = `
+    <div class="checkout-error-message">
+      <div class="checkout-error-content">
+        <svg viewBox="0 0 24 24" width="24" height="24" class="checkout-error-icon">
+          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+        </svg>
+        <p>${escapeHtml(message)}</p>
+        <button onclick="this.closest('.checkout-error-message').remove()">OK</button>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', errorHTML);
 }
 
 // Export for potential use in global-cart.js
