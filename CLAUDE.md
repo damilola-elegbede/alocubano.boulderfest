@@ -56,6 +56,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 - CSS3 with mobile-first responsive design
 - Virtual gallery with lazy loading
 - Service worker for offline support
+- Floating cart system with intelligent visibility
 
 ### Backend
 - Vercel serverless functions
@@ -177,6 +178,50 @@ git push origin main
 // Processes: delivered, opened, clicked, bounced, etc.
 ```
 
+## Cart System Architecture
+
+### Floating Cart Implementation
+
+The floating cart system provides a persistent shopping experience across all pages with intelligent visibility rules.
+
+#### Core Components
+- **floating-cart.js**: Main cart management and UI logic
+- **cart-manager.js**: State management and data persistence
+- **CSS components**: Responsive styling and animations
+
+#### Visibility Logic (determineCartVisibility function)
+```javascript
+function determineCartVisibility(hasItems) {
+    const currentPath = window.location.pathname;
+    
+    // Page behavior configuration
+    const pageConfig = {
+        // Always visible on purchase pages
+        alwaysShow: ['/tickets', '/donations'],
+        // Never visible on error/redirect pages
+        neverShow: ['/404', '/index.html'],
+        // Other pages: show only when cart has items
+        showWhenHasItems: true
+    };
+}
+```
+
+#### Page-Specific Behavior
+- **Purchase Pages** (`/tickets`, `/donations`): Always visible to encourage purchases
+- **Content Pages** (`/about`, `/artists`, `/schedule`, `/gallery`): Visible only when cart contains items
+- **System Pages** (`/404`, `/index.html`): Never visible to avoid UI conflicts
+
+#### State Management
+- **LocalStorage persistence**: Cart contents survive page refreshes and navigation
+- **Real-time updates**: Cart UI updates immediately when items are added/removed
+- **Cross-page synchronization**: Cart state maintained across all pages
+
+#### Performance Considerations
+- **Lazy initialization**: Cart elements created only when needed
+- **Event delegation**: Efficient event handling for dynamic content
+- **CSS animations**: Hardware-accelerated transitions for smooth UX
+- **Memory management**: Proper cleanup of event listeners and timers
+
 ## Performance Guidelines
 
 ### Gallery Optimization
@@ -184,6 +229,12 @@ git push origin main
 - Progressive image loading (AVIF → WebP → JPEG)
 - 24-hour browser cache for static assets
 - Lazy loading with Intersection Observer
+
+### Cart System Performance
+- **State persistence**: localStorage with JSON serialization
+- **UI updates**: Debounced rendering for smooth interactions
+- **Memory efficiency**: Event listener cleanup and DOM management
+- **Animation performance**: CSS transforms and opacity changes only
 
 ### API Performance
 - Cache-first strategy with fallback
@@ -267,6 +318,23 @@ window.galleryDebugAPI.clearCache();
 
 // View current gallery state
 window.galleryDebugAPI.getState();
+
+// Cart system debugging
+// Check cart visibility logic
+console.log('Cart should be visible:', determineCartVisibility(true));
+console.log('Current page path:', window.location.pathname);
+
+// View cart state
+console.log('Cart contents:', JSON.parse(localStorage.getItem('cart') || '[]'));
+
+// Force cart visibility (for testing)
+document.querySelector('.floating-cart').style.display = 'block';
+
+// Check cart manager instance
+if (window.cartManager) {
+    console.log('Cart items:', window.cartManager.getItems());
+    console.log('Cart total:', window.cartManager.getTotal());
+}
 ```
 
 ## Project Structure
@@ -276,7 +344,19 @@ window.galleryDebugAPI.getState();
 ├── api/               # Serverless functions
 ├── css/              # Stylesheets
 ├── js/               # Frontend JavaScript
+│   ├── floating-cart.js    # Cart UI and visibility logic
+│   ├── cart-manager.js     # Cart state management
+│   ├── navigation.js       # Menu & transitions
+│   ├── main.js            # Core functionality
+│   ├── typography.js      # Typography effects
+│   └── gallery.js         # Google Drive media integration
 ├── pages/            # HTML pages
+│   ├── tickets.html       # Cart always visible
+│   ├── donations.html     # Cart always visible
+│   ├── about.html         # Cart visible when has items
+│   ├── artists.html       # Cart visible when has items
+│   ├── schedule.html      # Cart visible when has items
+│   └── gallery.html       # Cart visible when has items
 ├── tests/            # Test suites
 │   ├── unit/        # Unit tests
 │   └── integration/ # Integration tests
