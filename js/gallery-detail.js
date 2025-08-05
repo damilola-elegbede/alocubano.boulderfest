@@ -6,7 +6,7 @@
     let prefetchManager = null;
     let progressiveLoader = null;
     let cacheWarmer = null;
-    
+
     // Initialize performance modules when available
     function initPerformanceModules() {
         try {
@@ -14,12 +14,12 @@
                 prefetchManager = new PrefetchManager();
                 console.log('[Gallery] Prefetch manager initialized');
             }
-            
+
             if (typeof ProgressiveImageLoader !== 'undefined') {
                 progressiveLoader = new ProgressiveImageLoader();
                 console.log('[Gallery] Progressive loader initialized');
             }
-            
+
             if (typeof CacheWarmer !== 'undefined') {
                 cacheWarmer = new CacheWarmer();
                 console.log('[Gallery] Cache warmer initialized');
@@ -119,7 +119,6 @@
 
         console.log('🔄 Gallery state reset to initial values');
     }
-
 
     // State persistence functions
     function saveState() {
@@ -441,7 +440,7 @@
                 actualItems: workshopItems.length,
                 firstItemName: workshopItems[0] ? workshopItems[0].name : 'none'
             });
-            
+
             items.push(...workshopItems.map(item => ({...item, category: 'workshops'})));
             state.workshopOffset += workshopItems.length;
             remainingSpace -= workshopItems.length;
@@ -628,7 +627,7 @@
             content: document.getElementById('gallery-detail-content'),
             static: document.getElementById('gallery-detail-static')
         });
-        
+
         // Clear any stale session storage that might interfere with workshop photos
         const event = getEventFromPage();
         const stateKey = `gallery_${event}_state`;
@@ -640,15 +639,15 @@
             action: 'clearing to ensure fresh load'
         });
         sessionStorage.removeItem(stateKey);
-        
+
         // Initialize performance optimization modules
         initPerformanceModules();
-        
+
         // Start cache warming if available
         if (cacheWarmer) {
             cacheWarmer.autoWarm();
         }
-        
+
         loadGalleryDetailData();
         initLightbox();
 
@@ -896,7 +895,7 @@
                 // If we have 20 or fewer items total, we've loaded everything
                 state.hasCompleteDataset = state.totalItemsAvailable <= CONFIG.PAGINATION_SIZE;
 
-                console.log(`📦 DEBUG - Static data loaded successfully:`, {
+                console.log('📦 DEBUG - Static data loaded successfully:', {
                     totalItemsAvailable: state.totalItemsAvailable,
                     itemsDisplayed: state.itemsDisplayed,
                     hasMorePages: state.hasMorePages,
@@ -1493,7 +1492,7 @@
 
         // Try to infer from URL path patterns
         const pathname = window.location.pathname;
-        
+
         // Check for specific event patterns in URL
         if (pathname.includes('boulder-fest-2026')) {
             return 'boulder-fest-2026';

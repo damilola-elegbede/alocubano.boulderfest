@@ -160,12 +160,12 @@ describe('UI/UX Integration Tests', () => {
             });
         });
 
-        test('donation selection JavaScript should handle mailto creation', () => {
+        test('donation selection JavaScript should handle cart integration', () => {
             const donationJS = fs.readFileSync(path.join(projectRoot, 'js', 'donation-selection.js'), 'utf8');
             
-            // Should have proper mailto handling in JavaScript
-            expect(donationJS).toMatch(/window\.location\.href\s*=\s*mailtoUrl/);
-            expect(donationJS).toMatch(/encodeURIComponent\(/);
+            // Should have proper cart integration in JavaScript
+            expect(donationJS).toMatch(/donation-amount-changed/);
+            expect(donationJS).toMatch(/dispatchEvent\(/);
             expect(donationJS).toMatch(/class DonationSelection/);
         });
     });

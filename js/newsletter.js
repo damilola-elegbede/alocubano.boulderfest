@@ -11,39 +11,41 @@ class NewsletterSignup {
         this.errorElement = document.getElementById('newsletter-error');
         this.successElement = document.getElementById('newsletter-success');
         this.consentCheckbox = this.form?.querySelector('input[name="consent"]');
-        
+
         this.isSubmitting = false;
         this.init();
     }
-    
+
     init() {
-        if (!this.form) return;
-        
+        if (!this.form) {
+            return;
+        }
+
         // Form submission
         this.form.addEventListener('submit', (e) => this.handleSubmit(e));
-        
+
         // Real-time validation
         this.emailInput.addEventListener('blur', () => this.validateEmail());
         this.emailInput.addEventListener('input', () => {
             this.clearError();
             this.updateButtonState(); // Update button state as user types
         });
-        
+
         // Checkbox gating for subscribe button
         this.consentCheckbox.addEventListener('change', () => this.updateButtonState());
-        
+
         // Initialize button state
         this.updateButtonState();
-        
+
         // Mobile optimizations
         this.setupMobileOptimizations();
     }
-    
+
     updateButtonState() {
         // Enable/disable subscribe button based on both email validity and checkbox state
         const isEmailValid = this.isEmailValid();
         const isConsentGiven = this.consentCheckbox.checked;
-        
+
         if (isEmailValid && isConsentGiven) {
             this.submitButton.disabled = false;
             this.submitButton.setAttribute('aria-disabled', 'false');
@@ -52,19 +54,19 @@ class NewsletterSignup {
             this.submitButton.setAttribute('aria-disabled', 'true');
         }
     }
-    
+
     isEmailValid() {
         const email = this.emailInput.value.trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return email && emailRegex.test(email);
     }
-    
+
     setupMobileOptimizations() {
         // Prevent zoom on iOS
         this.emailInput.setAttribute('inputmode', 'email');
         this.emailInput.setAttribute('autocorrect', 'off');
         this.emailInput.setAttribute('autocapitalize', 'off');
-        
+
         // Handle virtual keyboard
         if ('visualViewport' in window) {
             window.visualViewport.addEventListener('resize', () => {
@@ -72,38 +74,44 @@ class NewsletterSignup {
             });
         }
     }
-    
+
     handleKeyboardResize() {
         // Scroll form into view when keyboard opens
         if (window.visualViewport.height < window.innerHeight * 0.75) {
             this.form.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     }
-    
+
     async handleSubmit(e) {
         e.preventDefault();
-        
-        if (this.isSubmitting) return;
-        
+
+        if (this.isSubmitting) {
+            return;
+        }
+
         // Clear previous messages
         this.clearError();
         this.hideSuccess();
-        
+
         // Validate
-        if (!this.validateEmail()) return;
-        if (!this.validateConsent()) return;
-        
+        if (!this.validateEmail()) {
+            return;
+        }
+        if (!this.validateConsent()) {
+            return;
+        }
+
         // Get form data
         const email = this.emailInput.value.trim();
-        
+
         // Set loading state
         this.setLoadingState(true);
-        
+
         try {
             const response = await fetch('/api/email/subscribe', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     email,
@@ -116,9 +124,9 @@ class NewsletterSignup {
                     }
                 })
             });
-            
+
             const data = await response.json();
-            
+
             if (response.ok) {
                 this.handleSuccess(data);
             } else {
@@ -131,24 +139,24 @@ class NewsletterSignup {
             this.setLoadingState(false);
         }
     }
-    
+
     validateEmail() {
         const email = this.emailInput.value.trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        
+
         if (!email) {
             this.showError('Please enter your email address');
             return false;
         }
-        
+
         if (!emailRegex.test(email)) {
             this.showError('Please enter a valid email address');
             return false;
         }
-        
+
         return true;
     }
-    
+
     validateConsent() {
         if (!this.consentCheckbox.checked) {
             this.showError('Please agree to receive marketing emails');
@@ -156,10 +164,10 @@ class NewsletterSignup {
         }
         return true;
     }
-    
+
     setLoadingState(isLoading) {
         this.isSubmitting = isLoading;
-        
+
         if (isLoading) {
             this.submitButton.setAttribute('aria-busy', 'true');
             this.submitButton.disabled = true;
@@ -173,15 +181,15 @@ class NewsletterSignup {
             this.updateButtonState();
         }
     }
-    
+
     handleSuccess(data) {
         // Clear form
         this.form.reset();
-        
+
         // Show success message
         this.successElement.setAttribute('aria-hidden', 'false');
         this.successElement.style.display = 'flex';
-        
+
         // Track event
         if (typeof gtag !== 'undefined') {
             gtag('event', 'newsletter_signup', {
@@ -189,36 +197,36 @@ class NewsletterSignup {
                 event_label: 'contact_page'
             });
         }
-        
+
         // Hide success message after 10 seconds
         setTimeout(() => {
             this.hideSuccess();
         }, 10000);
     }
-    
+
     handleError(message) {
         this.showError(message);
-        
+
         // Set invalid state
         this.emailInput.setAttribute('aria-invalid', 'true');
         this.emailInput.parentElement.classList.add('error');
     }
-    
+
     showError(message) {
         this.errorElement.textContent = message;
         this.errorElement.style.display = 'block';
-        
+
         // Announce to screen readers
         this.errorElement.setAttribute('aria-live', 'assertive');
     }
-    
+
     clearError() {
         this.errorElement.textContent = '';
         this.errorElement.style.display = 'none';
         this.emailInput.setAttribute('aria-invalid', 'false');
         this.emailInput.parentElement.classList.remove('error');
     }
-    
+
     hideSuccess() {
         this.successElement.setAttribute('aria-hidden', 'true');
         this.successElement.style.display = 'none';

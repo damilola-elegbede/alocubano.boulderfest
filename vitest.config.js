@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./tests/setup-vitest.js'],
-    // globalTeardown: './tests/global-teardown.js',
+    globalTeardown: './tests/global-teardown.js',
     
     // Test file patterns
     include: [
@@ -31,16 +31,24 @@ export default defineConfig({
         singleThread: false,
         maxThreads: 2,
         minThreads: 1,
+        isolate: true,
+        // Use worker threads instead of child processes
+        useAtomics: true
+      },
+      forks: {
+        singleFork: false,
+        maxForks: 2,
+        minForks: 1,
         isolate: true
       }
     },
     
-    // Enhanced cleanup options
-    clearMocks: true,
-    restoreMocks: true,
+    // Bail early on test failures to save resources
+    bail: 10,
     
-    // Coverage configuration
+    // Disable coverage by default to save memory
     coverage: {
+      enabled: false,
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       exclude: [
@@ -61,6 +69,10 @@ export default defineConfig({
         }
       }
     },
+    
+    // Enhanced cleanup options
+    clearMocks: true,
+    restoreMocks: true,
     
     // Reporter configuration
     reporter: ['verbose']
