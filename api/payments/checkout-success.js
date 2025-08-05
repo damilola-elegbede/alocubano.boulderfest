@@ -73,11 +73,9 @@ export default async function handler(req, res) {
         );
 
         if (result.changes > 0) {
-          console.log(
-            `Order ${orderId} marked as paid - Session: ${session_id}`,
-          );
+          // Order marked as paid
         } else {
-          console.warn(`Order ${orderId} not found in database`);
+          // Order not found in database
         }
 
         // Get order details for confirmation
@@ -93,7 +91,7 @@ export default async function handler(req, res) {
           try {
             orderDetails = JSON.parse(order.order_details || "{}");
           } catch (error) {
-            console.error("Database error updating order:", error);
+            // Database error occurred
             orderDetails = {};
           }
 
@@ -118,7 +116,7 @@ export default async function handler(req, res) {
             },
             instructions: {
               clearCart: true,
-              redirectDelay: 5000, // 5 seconds
+              redirectDelay: 20000, // 20 seconds // 5 seconds
               nextSteps: [
                 "Check your email for order confirmation",
                 "Save your order confirmation number",
@@ -128,7 +126,7 @@ export default async function handler(req, res) {
           });
         }
       } catch (dbError) {
-        console.error("Database error updating order:", dbError);
+        // Database error occurred
         // Continue to return success even if DB update fails
         // The payment was successful according to Stripe
       }
@@ -147,7 +145,7 @@ export default async function handler(req, res) {
       },
       instructions: {
         clearCart: true,
-        redirectDelay: 5000,
+        redirectDelay: 20000, // 20 seconds
         nextSteps: [
           "Check your email for order confirmation",
           "Contact us if you have any questions about your order",
@@ -158,7 +156,7 @@ export default async function handler(req, res) {
         : "Order ID not found in session",
     });
   } catch (error) {
-    console.error("Checkout success processing failed:", error);
+    // Checkout processing failed
 
     // Handle specific Stripe errors
     if (error.type === "StripeInvalidRequestError") {
@@ -177,7 +175,7 @@ export default async function handler(req, res) {
         message: "Unable to connect to payment service",
       });
     } else if (error.type === "StripeAuthenticationError") {
-      console.error("Stripe authentication error - check API keys");
+      // Stripe authentication error
       return res.status(500).json({
         error: "Configuration error",
         message: "Payment service configuration error",

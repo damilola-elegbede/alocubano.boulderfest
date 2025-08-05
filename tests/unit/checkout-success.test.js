@@ -282,7 +282,7 @@ describe("Checkout Success Handler", () => {
 
       expect(responseData.instructions).toEqual({
         clearCart: true,
-        redirectDelay: 5000,
+        redirectDelay: 20000,
         nextSteps: [
           "Check your email for order confirmation",
           "Save your order confirmation number",
@@ -656,7 +656,7 @@ describe("Checkout Success Handler", () => {
         },
         instructions: {
           clearCart: true,
-          redirectDelay: 5000,
+          redirectDelay: 20000,
           nextSteps: [
             "Check your email for order confirmation",
             "Save your order confirmation number",
@@ -701,7 +701,7 @@ describe("Checkout Success Handler", () => {
         },
         instructions: {
           clearCart: true,
-          redirectDelay: 5000,
+          redirectDelay: 20000,
           nextSteps: [
             "Check your email for order confirmation",
             "Contact us if you have any questions about your order",
