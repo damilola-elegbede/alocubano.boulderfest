@@ -1,180 +1,447 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>September 2026 Weekender - A Lo Cubano Boulder Fest</title>
-    <meta name="description" content="Join us for the September 2026 Weekender - An intimate Cuban salsa weekend with workshops, socials, and authentic Cuban culture in Boulder, Colorado.">
-    
+    <meta
+      name="description"
+      content="Join us for the September 2026 Weekender - An intimate Cuban salsa weekend with workshops, socials, and authentic Cuban culture in Boulder, Colorado."
+    />
+
     <!-- Favicons -->
-    <link rel="icon" type="image/png" href="/images/favicons/favicon-32x32.png">
-    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
-    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicons/favicon-16x16.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/images/favicons/favicon-192x192.png">
-    <link rel="apple-touch-icon" sizes="192x192" href="/images/favicons/favicon-192x192.png">
-    
+    <link
+      rel="icon"
+      type="image/png"
+      href="/images/favicons/favicon-32x32.png"
+    />
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/images/favicons/favicon-16x16.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/images/favicons/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+
     <!-- DNS prefetch for external resources -->
-    <link rel="dns-prefetch" href="//fonts.googleapis.com">
-    <link rel="dns-prefetch" href="//fonts.gstatic.com">
-    
-    <link rel="stylesheet" href="/css/base.css">
-    <link rel="stylesheet" href="/css/components.css">
-    <link rel="stylesheet" href="/css/typography.css">
-    <link rel="stylesheet" href="/css/navigation.css">
-    <link rel="stylesheet" href="/css/forms.css">
-    <link rel="stylesheet" href="/css/floating-cart.css">
-    <link rel="stylesheet" href="/css/mobile-overrides.css">
-</head>
-<body class="typographic">
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/forms.css" />
+    <link rel="stylesheet" href="/css/floating-cart.css" />
+    <link rel="stylesheet" href="/css/mobile-overrides.css" />
+  </head>
+  <body class="typographic">
     <!-- Skip Links for Accessibility -->
-    <a href="#main-content" class="skip-link" style="position: absolute; top: -40px; left: 0; background: var(--color-black); color: var(--color-white); padding: 8px; text-decoration: none; z-index: 1000; transition: top 0.3s;">Skip to main content</a>
-    <a href="#navigation" class="skip-link" style="position: absolute; top: -40px; left: 0; background: var(--color-black); color: var(--color-white); padding: 8px; text-decoration: none; z-index: 1000; transition: top 0.3s;">Skip to navigation</a>
-    
+    <a
+      href="#main-content"
+      class="skip-link"
+      style="
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--color-black);
+        color: var(--color-white);
+        padding: 8px;
+        text-decoration: none;
+        z-index: 1000;
+        transition: top 0.3s;
+      "
+      >Skip to main content</a
+    >
+    <a
+      href="#navigation"
+      class="skip-link"
+      style="
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--color-black);
+        color: var(--color-white);
+        padding: 8px;
+        text-decoration: none;
+        z-index: 1000;
+        transition: top 0.3s;
+      "
+      >Skip to navigation</a
+    >
+
     <header class="header" id="navigation">
-        <div class="container">
-            <div class="grid">
-                <div class="header-left">
-                    <a href="/home" class="logo-link" aria-label="Go to home page">
-                        <img src="/images/logo.png" alt="A Lo Cubano Boulder Fest Logo" class="site-logo">
-                        <div class="logo-text">
-                            <span class="logo-main">A LO CUBANO</span>
-                            <span class="logo-separator">|</span>
-                            <span class="logo-sub">Boulder Fest</span>
-                        </div>
-                    </a>
-                </div>
-                <nav class="main-nav">
-                    <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="main-navigation">
-                        <div class="menu-icon">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
-                    </button>
-                    <ul class="nav-list" id="main-navigation">
-                        <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
-                        <li><a href="/about" class="nav-link" data-text="About">About</a></li>
-                        <li class="nav-item has-dropdown">
-                            <button class="nav-trigger" aria-expanded="false" aria-haspopup="true" data-dropdown="events" data-text="Events">
-                                Events
-                                <span class="dropdown-arrow" aria-hidden="true">▼</span>
-                            </button>
-                            <ul class="dropdown-menu" aria-hidden="true" role="menu" data-dropdown-content="events">
-                                <li class="dropdown-category" role="group">
-                                    <span class="dropdown-category-title" role="presentation">Boulder Fest</span>
-                                    <ul class="dropdown-submenu">
-                                        <li><a href="/boulder-fest-2026" class="dropdown-link" role="menuitem" data-event="boulder-fest-2026" data-event-status="upcoming">2026 Festival</a></li>
-                                        <li><a href="/boulder-fest-2025" class="dropdown-link" role="menuitem" data-event="boulder-fest-2025" data-event-status="current">2025 Festival</a></li>
-                                    </ul>
-                                </li>
-                                <li class="dropdown-category" role="group">
-                                    <span class="dropdown-category-title" role="presentation">Weekend Events</span>
-                                    <ul class="dropdown-submenu">
-                                        <li><a href="/weekender-2026-09" class="dropdown-link" role="menuitem" data-event="weekender-2026-09" data-event-status="upcoming">Sept 2026 Weekender</a></li>
-                                    </ul>
-                                </li>
-                            </ul>
-                        </li>
-                        <li><a href="/tickets" class="nav-link" data-text="Tickets">Tickets</a></li>
-                        <li><a href="/donations" class="nav-link" data-text="Donate">Donate</a></li>
-                        <li><a href="/contact" class="nav-link" data-text="Contact">Contact</a></li>
+      <div class="container">
+        <div class="grid">
+          <div class="header-left">
+            <a href="/home" class="logo-link" aria-label="Go to home page">
+              <img
+                src="/images/logo.png"
+                alt="A Lo Cubano Boulder Fest Logo"
+                class="site-logo"
+              />
+              <div class="logo-text">
+                <span class="logo-main">A LO CUBANO</span>
+                <span class="logo-separator">|</span>
+                <span class="logo-sub">Boulder Fest</span>
+              </div>
+            </a>
+          </div>
+          <nav class="main-nav">
+            <button
+              class="menu-toggle"
+              aria-label="Toggle menu"
+              aria-expanded="false"
+              aria-controls="main-navigation"
+            >
+              <div class="menu-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </button>
+            <ul class="nav-list" id="main-navigation">
+              <li>
+                <a href="/home" class="nav-link" data-text="Home">Home</a>
+              </li>
+              <li>
+                <a href="/about" class="nav-link" data-text="About">About</a>
+              </li>
+              <li class="nav-item has-dropdown">
+                <button
+                  class="nav-trigger"
+                  aria-expanded="false"
+                  aria-haspopup="true"
+                  data-dropdown="events"
+                  data-text="Events"
+                >
+                  Events
+                  <span class="dropdown-arrow" aria-hidden="true">▼</span>
+                </button>
+                <ul
+                  class="dropdown-menu"
+                  aria-hidden="true"
+                  role="menu"
+                  data-dropdown-content="events"
+                >
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Boulder Fest</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/boulder-fest-2026"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="boulder-fest-2026"
+                          data-event-status="upcoming"
+                          >2026 Festival</a
+                        >
+                      </li>
+                      <li>
+                        <a
+                          href="/boulder-fest-2025"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="boulder-fest-2025"
+                          data-event-status="current"
+                          >2025 Festival</a
+                        >
+                      </li>
                     </ul>
-                </nav>
-            </div>
+                  </li>
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Weekend Events</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/weekender-2026-09"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="weekender-2026-09"
+                          data-event-status="upcoming"
+                          >Sept 2026 Weekender</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <a href="/tickets" class="nav-link" data-text="Tickets"
+                  >Tickets</a
+                >
+              </li>
+              <li>
+                <a href="/donations" class="nav-link" data-text="Donate"
+                  >Donate</a
+                >
+              </li>
+              <li>
+                <a href="/contact" class="nav-link" data-text="Contact"
+                  >Contact</a
+                >
+              </li>
+            </ul>
+          </nav>
         </div>
+      </div>
     </header>
 
     <main id="main-content">
+      <!-- Hero Splash Image -->
+      <section class="gallery-hero-splash">
+        <div class="hero-image-container">
+          <img
+            src="/images/hero/weekender-2026-09-hero.jpg"
+            alt="September 2026 Weekender celebration with intimate Cuban dance sessions and cultural connection"
+            class="hero-splash-img"
+            style="object-position: top center !important"
+          />
+        </div>
+      </section>
 
-        <!-- Hero Splash Image -->
-        <section class="gallery-hero-splash">
-            <div class="hero-image-container">
-                <img src="/images/hero/weekender-2026-09-hero.jpg" alt="September 2026 Weekender celebration with intimate Cuban dance sessions and cultural connection" class="hero-splash-img" style="object-position: top center !important;">
+      <!-- Event Sub Navigation -->
+      <section class="event-subnav">
+        <div class="container">
+          <nav
+            class="event-nav"
+            aria-label="September 2026 Weekender Navigation"
+          >
+            <ul class="event-nav-list">
+              <li>
+                <a
+                  href="/weekender-2026-09"
+                  class="event-nav-link"
+                  data-text="Overview"
+                  >Overview</a
+                >
+              </li>
+              <li>
+                <a
+                  href="/2026-sept-artists"
+                  class="event-nav-link"
+                  data-text="Artists"
+                  >Artists</a
+                >
+              </li>
+              <li>
+                <a
+                  href="/2026-sept-schedule"
+                  class="event-nav-link"
+                  data-text="Schedule"
+                  >Schedule</a
+                >
+              </li>
+              <li>
+                <a
+                  href="/2026-sept-gallery"
+                  class="event-nav-link"
+                  data-text="Gallery"
+                  >Gallery</a
+                >
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </section>
+
+      <!-- Typographic Festival Info -->
+      <section class="section-typographic" style="padding: var(--space-1xl) 0">
+        <div class="container">
+          <div class="text-composition">
+            <div class="text-block-large">
+              <h1 class="hero__title text-mask">September 2026 Weekender!</h1>
+              <h2 class="hero__subtitle">
+                An intimate weekend of authentic Cuban salsa, focused workshops,
+                and close-knit community dancing
+              </h2>
             </div>
-        </section>
-
-        <!-- Event Sub Navigation -->
-        <section class="event-subnav">
-            <div class="container">
-                <nav class="event-nav" aria-label="September 2026 Weekender Navigation">
-                    <ul class="event-nav-list">
-                        <li><a href="/weekender-2026-09" class="event-nav-link" data-text="Overview">Overview</a></li>
-                        <li><a href="/2026-sept-artists" class="event-nav-link" data-text="Artists">Artists</a></li>
-                        <li><a href="/2026-sept-schedule" class="event-nav-link" data-text="Schedule">Schedule</a></li>
-                        <li><a href="/2026-sept-gallery" class="event-nav-link" data-text="Gallery">Gallery</a></li>
-                    </ul>
-                </nav>
+            <div class="text-block-mono">
+              // SEPTEMBER 12-14, 2026<br />
+              // BOULDER, COLORADO<br />
+              // CUBAN ARTISTS & INSTRUCTORS<br />
+              // INTIMATE VENUE<br />
+              // AUTHENTIC CONNECTIONS
             </div>
-        </section>
+          </div>
+        </div>
+      </section>
 
-        <!-- Typographic Festival Info -->
-        <section class="section-typographic" style="padding: var(--space-1xl) 0;">
-            <div class="container">
-                <div class="text-composition">
-                    <div class="text-block-large">
-                        <h1 class="hero__title text-mask">September 2026 Weekender!</h1>
-                        <h2 class="hero__subtitle">An intimate weekend of authentic Cuban salsa, focused workshops, and close-knit community dancing</h2>
-                    </div>
-                    <div class="text-block-mono">
-                        // SEPTEMBER 12-14, 2026<br>
-                        // BOULDER, COLORADO<br>
-                        // CUBAN ARTISTS & INSTRUCTORS<br>
-                        // INTIMATE VENUE<br>
-                        // AUTHENTIC CONNECTIONS
-                    </div>
-                </div>
+      <!-- Event Navigation -->
+      <section class="section-typographic" style="padding: var(--space-xl) 0">
+        <div class="container">
+          <h2 class="text-mask">SEPTEMBER 2026 WEEKENDER</h2>
+          <div
+            class="event-nav-grid"
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+              gap: var(--space-lg);
+              margin-top: var(--space-lg);
+            "
+          >
+            <a
+              href="/2026-sept-artists"
+              class="event-nav-card"
+              style="
+                display: block;
+                padding: var(--space-lg);
+                border: 2px solid var(--color-gray-300);
+                text-decoration: none;
+                color: var(--color-black);
+                transition: all var(--transition-base);
+              "
+            >
+              <h3
+                style="
+                  margin: 0 0 var(--space-sm) 0;
+                  font-family: var(--font-display);
+                  font-size: var(--font-size-xl);
+                  color: var(--color-black);
+                "
+              >
+                Artists
+              </h3>
+              <p style="margin: 0; color: var(--color-gray-600)">
+                Meet our featured Cuban artists for this intimate weekend
+              </p>
+            </a>
+            <a
+              href="/2026-sept-schedule"
+              class="event-nav-card"
+              style="
+                display: block;
+                padding: var(--space-lg);
+                border: 2px solid var(--color-gray-300);
+                text-decoration: none;
+                color: var(--color-black);
+                transition: all var(--transition-base);
+              "
+            >
+              <h3
+                style="
+                  margin: 0 0 var(--space-sm) 0;
+                  font-family: var(--font-display);
+                  font-size: var(--font-size-xl);
+                  color: var(--color-black);
+                "
+              >
+                Schedule
+              </h3>
+              <p style="margin: 0; color: var(--color-gray-600)">
+                Weekend schedule of workshops and social dancing
+              </p>
+            </a>
+            <a
+              href="/2026-sept-gallery"
+              class="event-nav-card"
+              style="
+                display: block;
+                padding: var(--space-lg);
+                border: 2px solid var(--color-gray-300);
+                text-decoration: none;
+                color: var(--color-black);
+                transition: all var(--transition-base);
+              "
+            >
+              <h3
+                style="
+                  margin: 0 0 var(--space-sm) 0;
+                  font-family: var(--font-display);
+                  font-size: var(--font-size-xl);
+                  color: var(--color-black);
+                "
+              >
+                Gallery
+              </h3>
+              <p style="margin: 0; color: var(--color-gray-600)">
+                Photos from previous weekender events
+              </p>
+            </a>
+            <a
+              href="/tickets"
+              class="event-nav-card"
+              style="
+                display: block;
+                padding: var(--space-lg);
+                border: 2px solid var(--color-gray-300);
+                text-decoration: none;
+                color: var(--color-black);
+                transition: all var(--transition-base);
+              "
+            >
+              <h3
+                style="
+                  margin: 0 0 var(--space-sm) 0;
+                  font-family: var(--font-display);
+                  font-size: var(--font-size-xl);
+                  color: var(--color-black);
+                "
+              >
+                Tickets
+              </h3>
+              <p style="margin: 0; color: var(--color-gray-600)">
+                Reserve your spot for this special weekend
+              </p>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- What To Expect Typography -->
+      <section class="section-typographic" style="padding: var(--space-1xl) 0">
+        <div class="container">
+          <h2 class="text-mask">WHAT TO EXPECT</h2>
+          <div class="expectations">
+            <div class="expectations__item">
+              <h3 class="expectations__item-title">Intimate Workshops</h3>
+              <p class="expectations__item-description">
+                Smaller class sizes for more personalized attention in Casino,
+                Rueda, and Suelta
+              </p>
             </div>
-        </section>
 
-        <!-- Event Navigation -->
-        <section class="section-typographic" style="padding: var(--space-xl) 0;">
-            <div class="container">
-                <h2 class="text-mask">SEPTEMBER 2026 WEEKENDER</h2>
-                <div class="event-nav-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-lg); margin-top: var(--space-lg);">
-                    <a href="/2026-sept-artists" class="event-nav-card" style="display: block; padding: var(--space-lg); border: 2px solid var(--color-gray-300); text-decoration: none; color: var(--color-black); transition: all var(--transition-base);">
-                        <h3 style="margin: 0 0 var(--space-sm) 0; font-family: var(--font-display); font-size: var(--font-size-xl); color: var(--color-black);">Artists</h3>
-                        <p style="margin: 0; color: var(--color-gray-600);">Meet our featured Cuban artists for this intimate weekend</p>
-                    </a>
-                    <a href="/2026-sept-schedule" class="event-nav-card" style="display: block; padding: var(--space-lg); border: 2px solid var(--color-gray-300); text-decoration: none; color: var(--color-black); transition: all var(--transition-base);">
-                        <h3 style="margin: 0 0 var(--space-sm) 0; font-family: var(--font-display); font-size: var(--font-size-xl); color: var(--color-black);">Schedule</h3>
-                        <p style="margin: 0; color: var(--color-gray-600);">Weekend schedule of workshops and social dancing</p>
-                    </a>
-                    <a href="/2026-sept-gallery" class="event-nav-card" style="display: block; padding: var(--space-lg); border: 2px solid var(--color-gray-300); text-decoration: none; color: var(--color-black); transition: all var(--transition-base);">
-                        <h3 style="margin: 0 0 var(--space-sm) 0; font-family: var(--font-display); font-size: var(--font-size-xl); color: var(--color-black);">Gallery</h3>
-                        <p style="margin: 0; color: var(--color-gray-600);">Photos from previous weekender events</p>
-                    </a>
-                    <a href="/tickets" class="event-nav-card" style="display: block; padding: var(--space-lg); border: 2px solid var(--color-gray-300); text-decoration: none; color: var(--color-black); transition: all var(--transition-base);">
-                        <h3 style="margin: 0 0 var(--space-sm) 0; font-family: var(--font-display); font-size: var(--font-size-xl); color: var(--color-black);">Tickets</h3>
-                        <p style="margin: 0; color: var(--color-gray-600);">Reserve your spot for this special weekend</p>
-                    </a>
-                </div>
+            <div class="expectations__item">
+              <h3 class="expectations__item-title">Close-Knit Socials</h3>
+              <p class="expectations__item-description">
+                Intimate social dancing in a cozy setting where everyone gets to
+                dance with everyone, creating deeper connections through Cuban
+                rhythms.
+              </p>
             </div>
-        </section>
 
-        <!-- What To Expect Typography -->
-        <section class="section-typographic" style="padding: var(--space-1xl) 0;">
-            <div class="container">
-                <h2 class="text-mask">WHAT TO EXPECT</h2>
-                <div class="expectations">
-                    <div class="expectations__item">
-                        <h3 class="expectations__item-title">Intimate Workshops</h3>
-                        <p class="expectations__item-description">Smaller class sizes for more personalized attention in Casino, Rueda, and Suelta</p>
-                    </div>
-                    
-                    <div class="expectations__item">
-                        <h3 class="expectations__item-title">Close-Knit Socials</h3>
-                        <p class="expectations__item-description">Intimate social dancing in a cozy setting where everyone gets to dance with everyone, creating deeper connections through Cuban rhythms.</p>
-                    </div>
-                    
-                    <div class="expectations__item">
-                        <h3 class="expectations__item-title">Cultural Immersion</h3>
-                        <p class="expectations__item-description">A more focused cultural experience with extended time to learn from our Cuban artists and connect with the authentic roots of the music and dance.</p>
-                    </div>
-                </div>
+            <div class="expectations__item">
+              <h3 class="expectations__item-title">Cultural Immersion</h3>
+              <p class="expectations__item-description">
+                A more focused cultural experience with extended time to learn
+                from our Cuban artists and connect with the authentic roots of
+                the music and dance.
+              </p>
             </div>
-        </section>
-
+          </div>
+        </div>
+      </section>
     </main>
 
     <!-- Scripts -->
@@ -187,16 +454,15 @@
     <script type="module" src="/js/global-cart.js"></script>
 
     <style>
-        .event-nav-card:hover {
-            border-color: var(--color-red);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        
-        .event-nav-card:hover h3 {
-            color: var(--color-red);
-        }
-    </style>
+      .event-nav-card:hover {
+        border-color: var(--color-red);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
 
-</body>
+      .event-nav-card:hover h3 {
+        color: var(--color-red);
+      }
+    </style>
+  </body>
 </html>

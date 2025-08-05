@@ -38,6 +38,7 @@ This guide outlines the database evolution strategy for migrating from Stripe Pa
 ### Migration Strategy
 
 #### Phase 1: Blue-Green Database Evolution
+
 1. Apply schema changes that support both payment methods
 2. Update application code to handle both flows
 3. Gradually migrate traffic to Checkout Sessions
@@ -65,13 +66,13 @@ POST /api/payments/create-checkout-session
 ```javascript
 // Add new event handlers
 switch (event.type) {
-  case 'checkout.session.completed':
+  case "checkout.session.completed":
     // Update order status to 'paid'
     break;
-  case 'checkout.session.expired':
+  case "checkout.session.expired":
     // Update order status to 'expired'
     break;
-  case 'checkout.session.async_payment_succeeded':
+  case "checkout.session.async_payment_succeeded":
     // Handle delayed payment methods
     break;
 }
@@ -80,6 +81,7 @@ switch (event.type) {
 ### Zero-Downtime Deployment Steps
 
 1. **Deploy Database Migration**
+
    ```bash
    # Apply forward migration
    sqlite3 orders.db < migrations/20250206_add_checkout_session_support.sql
@@ -96,19 +98,21 @@ switch (event.type) {
    - Increase traffic percentage gradually
 
 4. **Data Consistency Checks**
+
    ```sql
    -- Monitor migration progress
    SELECT * FROM migration_stats;
-   
+
    -- Find any inconsistencies
-   SELECT * FROM orders 
-   WHERE stripe_payment_intent_id IS NULL 
+   SELECT * FROM orders
+   WHERE stripe_payment_intent_id IS NULL
      AND stripe_checkout_session_id IS NULL;
    ```
 
 ### Rollback Plan
 
 If issues arise:
+
 ```bash
 # Apply rollback migration
 sqlite3 orders.db < migrations/20250206_rollback_checkout_session.sql
@@ -124,7 +128,7 @@ sqlite3 orders.db < migrations/20250206_rollback_checkout_session.sql
 2. **Query Optimization**
    ```sql
    -- Use unified view for cross-method queries
-   SELECT * FROM orders_unified 
+   SELECT * FROM orders_unified
    WHERE effective_status = 'paid'
      AND created_at > datetime('now', '-7 days');
    ```
@@ -161,6 +165,7 @@ sqlite3 orders.db < migrations/20250206_rollback_checkout_session.sql
 ### Fields That Become Obsolete
 
 With full Checkout Sessions adoption:
+
 - Frontend Stripe Elements code
 - Client-side payment confirmation logic
 - Some webhook complexity for payment retries
@@ -187,6 +192,7 @@ However, these are removed at the application layer, not the database layer, mai
 ## Conclusion
 
 This migration strategy ensures:
+
 - Zero downtime during transition
 - Full backward compatibility
 - Data integrity throughout

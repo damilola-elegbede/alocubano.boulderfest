@@ -3,6 +3,7 @@
 ## Timing Functions
 
 ### Base Transitions
+
 ```css
 --transition-base: 0.3s ease;
 --transition-slow: 0.5s ease;
@@ -10,6 +11,7 @@
 ```
 
 ### Easing Functions
+
 ```css
 --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
 --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -20,6 +22,7 @@
 ## Common Transitions
 
 ### Hover Transitions
+
 ```css
 /* Link hover */
 a {
@@ -33,12 +36,14 @@ button {
 
 /* Card hover */
 .card {
-  transition: transform var(--transition-base),
-              box-shadow var(--transition-base);
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base);
 }
 ```
 
 ### Page Transitions
+
 ```css
 /* Fade in on load */
 .fade-in {
@@ -68,56 +73,99 @@ button {
 ## Text Animations
 
 ### Typewriter Effect
+
 ```css
 @keyframes typing {
-  from { width: 0 }
-  to { width: 100% }
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
 }
 
 @keyframes blink-caret {
-  from, to { border-color: transparent }
-  50% { border-color: var(--color-black) }
+  from,
+  to {
+    border-color: transparent;
+  }
+  50% {
+    border-color: var(--color-black);
+  }
 }
 
 .typewriter {
   overflow: hidden;
   border-right: 2px solid var(--color-black);
   white-space: nowrap;
-  animation: 
+  animation:
     typing 3.5s steps(40, end),
     blink-caret 0.75s step-end infinite;
 }
 ```
 
 ### Glitch Effect
+
 ```css
 @keyframes glitch {
-  0%, 100% { transform: translate(0) }
-  20% { transform: translate(-2px, 2px) }
-  40% { transform: translate(-2px, -2px) }
-  60% { transform: translate(2px, 2px) }
-  80% { transform: translate(2px, -2px) }
+  0%,
+  100% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
 }
 
 @keyframes glitch-1 {
-  0%, 100% { clip-path: inset(0 0 0 0) }
-  25% { clip-path: inset(0 0 50% 0) }
-  50% { clip-path: inset(50% 0 0 0) }
-  75% { clip-path: inset(0 0 30% 0) }
+  0%,
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+  25% {
+    clip-path: inset(0 0 50% 0);
+  }
+  50% {
+    clip-path: inset(50% 0 0 0);
+  }
+  75% {
+    clip-path: inset(0 0 30% 0);
+  }
 }
 
 @keyframes glitch-2 {
-  0%, 100% { transform: translate(0) }
-  20% { transform: translate(2px, -2px) }
-  40% { transform: translate(-2px, 2px) }
-  60% { transform: translate(3px, 3px) }
-  80% { transform: translate(-3px, -3px) }
+  0%,
+  100% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(2px, -2px);
+  }
+  40% {
+    transform: translate(-2px, 2px);
+  }
+  60% {
+    transform: translate(3px, 3px);
+  }
+  80% {
+    transform: translate(-3px, -3px);
+  }
 }
 ```
 
 ## Scroll Animations
 
 ### Parallax Effect
+
 ```css
 .parallax {
   transform: translateY(var(--parallax-offset, 0));
@@ -129,6 +177,7 @@ button {
 ```
 
 ### Reveal on Scroll
+
 ```css
 .reveal {
   opacity: 0;
@@ -150,6 +199,7 @@ button {
 ## Performance Guidelines
 
 ### Best Practices
+
 1. Use `transform` and `opacity` for smooth 60fps animations
 2. Add `will-change` for properties that will animate
 3. Remove `will-change` after animation completes
@@ -157,6 +207,7 @@ button {
 5. Reduce animations on mobile for better performance
 
 ### Reduced Motion
+
 ```css
 @media (prefers-reduced-motion: reduce) {
   *,

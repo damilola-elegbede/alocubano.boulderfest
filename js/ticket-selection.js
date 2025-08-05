@@ -3,7 +3,6 @@
  * Handles ticket selection, quantity management, and price calculation
  */
 
-
 class TicketSelection {
     constructor() {
         this.selectedTickets = new Map();
@@ -47,12 +46,12 @@ class TicketSelection {
 
     bindEvents() {
     // Quantity button events
-        document.querySelectorAll('.qty-btn').forEach(btn => {
+        document.querySelectorAll('.qty-btn').forEach((btn) => {
             btn.addEventListener('click', (e) => this.handleQuantityChange(e));
         });
 
         // Ticket card click events and keyboard accessibility
-        document.querySelectorAll('.ticket-card').forEach(card => {
+        document.querySelectorAll('.ticket-card').forEach((card) => {
             // Make cards keyboard accessible
             card.setAttribute('tabindex', '0');
             card.setAttribute('role', 'button');
@@ -101,7 +100,6 @@ class TicketSelection {
                 this.syncWithCartState();
             }
         });
-
     }
 
     handleQuantityChange(event) {
@@ -148,9 +146,11 @@ class TicketSelection {
             eventId: 'alocubano-boulderfest-2026'
         };
 
-        document.dispatchEvent(new CustomEvent('ticket-quantity-changed', {
-            detail: eventDetail
-        }));
+        document.dispatchEvent(
+            new CustomEvent('ticket-quantity-changed', {
+                detail: eventDetail
+            })
+        );
     }
 
     handleTicketCardClick(event) {
@@ -187,7 +187,7 @@ class TicketSelection {
         const cartTickets = cartState.tickets || {};
 
         // Reset all ticket cards first
-        document.querySelectorAll('.ticket-card').forEach(card => {
+        document.querySelectorAll('.ticket-card').forEach((card) => {
             const ticketType = card.dataset.ticketType;
             const quantitySpan = card.querySelector('.quantity');
 
@@ -216,8 +216,6 @@ class TicketSelection {
             }
         });
     }
-
-
 }
 
 // Initialize when DOM is loaded

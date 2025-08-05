@@ -6,13 +6,14 @@ A Cuban salsa festival website featuring workshops, social dancing, and communit
 
 **Festival Dates**: May 15-17, 2026  
 **Location**: Avalon Ballroom, Boulder, CO  
-**Website**: Typography-forward design celebrating Cuban culture  
+**Website**: Typography-forward design celebrating Cuban culture
 
 ## Development Standards
 
 ### Critical Rules
 
 **NEVER use --no-verify**
+
 ```bash
 # ❌ FORBIDDEN - Test failures are ALWAYS real
 git commit --no-verify  # NEVER DO THIS
@@ -26,12 +27,14 @@ npm test && git push
 When tests fail, it means something is broken. Always investigate and fix the root cause.
 
 ### Code Quality
+
 - **Tests**: Maintain 80%+ coverage on critical paths
 - **Memory**: Vitest limited to 2 concurrent threads (prevents 40GB+ usage)
 - **Performance**: <100ms API responses, Core Web Vitals green
 - **Security**: Escape HTML, validate inputs, use environment variables
 
 ### Git Workflow
+
 ```bash
 # Branch naming
 feature/brevo-email-integration
@@ -52,6 +55,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 ## Technical Stack
 
 ### Frontend
+
 - Vanilla JavaScript (ES6 modules)
 - CSS3 with mobile-first responsive design
 - Virtual gallery with lazy loading
@@ -59,12 +63,14 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 - Floating cart system with intelligent visibility
 
 ### Backend
+
 - Vercel serverless functions
 - Brevo (SendinBlue) email integration
 - SQLite database for subscribers
 - Token-based authentication
 
 ### Testing
+
 - Vitest with jsdom environment
 - Unit, integration, and E2E tests
 - Pre-commit hooks with Husky
@@ -73,6 +79,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 ## Environment Setup
 
 ### Required Environment Variables
+
 ```bash
 BREVO_API_KEY=your-api-key
 BREVO_NEWSLETTER_LIST_ID=1
@@ -83,6 +90,7 @@ BREVO_WEBHOOK_SECRET=webhook-secret
 ```
 
 ### Local Development
+
 ```bash
 # Install dependencies
 npm install
@@ -100,6 +108,7 @@ npm run test:unit -- tests/unit/brevo-service.test.js
 ## Server Logging
 
 When starting the server using `npm start`, pipe the output to a log file in `./.tmp/` directory:
+
 ```bash
 # First run
 npm start > ./.tmp/server.log 2>&1
@@ -112,6 +121,7 @@ npm start > ./.tmp/server_2.log 2>&1
 ## Common Tasks
 
 ### Running Tests
+
 ```bash
 # All tests
 npm test
@@ -127,6 +137,7 @@ npm run test:unit:watch
 ```
 
 ### Debugging Test Issues
+
 ```bash
 # If tests hang or use too much memory
 NODE_OPTIONS="--max-old-space-size=4096" npm test
@@ -139,6 +150,7 @@ npm run test:unit -- --run path/to/test.js
 ```
 
 ### Deployment
+
 ```bash
 # Check before deploy
 npm run deploy:check
@@ -153,6 +165,7 @@ git push origin main
 ## API Development
 
 ### Email Subscribe Endpoint
+
 ```javascript
 // POST /api/email/subscribe
 {
@@ -165,6 +178,7 @@ git push origin main
 ```
 
 ### Email Unsubscribe
+
 ```javascript
 // GET/POST /api/email/unsubscribe
 // Requires: email and token parameters
@@ -172,6 +186,7 @@ git push origin main
 ```
 
 ### Webhook Processing
+
 ```javascript
 // POST /api/email/brevo-webhook
 // Validates signature if BREVO_WEBHOOK_SECRET is set
@@ -185,38 +200,43 @@ git push origin main
 The floating cart system provides a persistent shopping experience across all pages with intelligent visibility rules.
 
 #### Core Components
+
 - **floating-cart.js**: Main cart management and UI logic
 - **cart-manager.js**: State management and data persistence
 - **CSS components**: Responsive styling and animations
 
 #### Visibility Logic (determineCartVisibility function)
+
 ```javascript
 function determineCartVisibility(hasItems) {
-    const currentPath = window.location.pathname;
-    
-    // Page behavior configuration
-    const pageConfig = {
-        // Always visible on purchase pages
-        alwaysShow: ['/tickets', '/donations'],
-        // Never visible on error/redirect pages
-        neverShow: ['/404', '/index.html'],
-        // Other pages: show only when cart has items
-        showWhenHasItems: true
-    };
+  const currentPath = window.location.pathname;
+
+  // Page behavior configuration
+  const pageConfig = {
+    // Always visible on purchase pages
+    alwaysShow: ["/tickets", "/donations"],
+    // Never visible on error/redirect pages
+    neverShow: ["/404", "/index.html"],
+    // Other pages: show only when cart has items
+    showWhenHasItems: true,
+  };
 }
 ```
 
 #### Page-Specific Behavior
+
 - **Purchase Pages** (`/tickets`, `/donations`): Always visible to encourage purchases
 - **Content Pages** (`/about`, `/artists`, `/schedule`, `/gallery`): Visible only when cart contains items
 - **System Pages** (`/404`, `/index.html`): Never visible to avoid UI conflicts
 
 #### State Management
+
 - **LocalStorage persistence**: Cart contents survive page refreshes and navigation
 - **Real-time updates**: Cart UI updates immediately when items are added/removed
 - **Cross-page synchronization**: Cart state maintained across all pages
 
 #### Performance Considerations
+
 - **Lazy initialization**: Cart elements created only when needed
 - **Event delegation**: Efficient event handling for dynamic content
 - **CSS animations**: Hardware-accelerated transitions for smooth UX
@@ -225,18 +245,21 @@ function determineCartVisibility(hasItems) {
 ## Performance Guidelines
 
 ### Gallery Optimization
+
 - Virtual scrolling for 1000+ images
 - Progressive image loading (AVIF → WebP → JPEG)
 - 24-hour browser cache for static assets
 - Lazy loading with Intersection Observer
 
 ### Cart System Performance
+
 - **State persistence**: localStorage with JSON serialization
 - **UI updates**: Debounced rendering for smooth interactions
 - **Memory efficiency**: Event listener cleanup and DOM management
 - **Animation performance**: CSS transforms and opacity changes only
 
 ### API Performance
+
 - Cache-first strategy with fallback
 - Rate limiting: 100 requests/minute
 - Response compression enabled
@@ -245,15 +268,16 @@ function determineCartVisibility(hasItems) {
 ## Security Best Practices
 
 ### Input Validation
+
 ```javascript
 // Always escape HTML
 function escapeHtml(unsafe) {
-    return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 // Note: For production use, consider using a well-maintained sanitization library
@@ -265,11 +289,12 @@ function escapeHtml(unsafe) {
 // Validate emails
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 if (!emailRegex.test(email)) {
-    return res.status(400).json({ error: 'Invalid email' });
+  return res.status(400).json({ error: "Invalid email" });
 }
 ```
 
 ### Environment Variables
+
 ```javascript
 // ✅ CORRECT
 const apiKey = process.env.BREVO_API_KEY;
@@ -283,21 +308,25 @@ const apiKey = "actual-key-here"; // FORBIDDEN
 ### Common Issues
 
 **Tests Failing with Memory Errors**
+
 - Vitest is configured for max 2 concurrent threads
 - Check for memory leaks in test cleanup
 - Run `npm run test:unit -- --run` for single-threaded
 
 **CI/CD Pipeline Not Triggering**
+
 - Ensure branch matches pattern in `.github/workflows/ci.yml`
 - Feature branches need `feature/**` pattern
 - Check GitHub Actions logs for details
 
 **Deploy Preview Not Created**
+
 - Deploy previews only trigger on pull requests
 - Direct pushes to feature branches skip preview
 - Create PR to see preview deployment
 
 **API Rate Limiting**
+
 - Check request patterns in logs
 - Implement exponential backoff
 - Cache responses when possible
@@ -321,19 +350,19 @@ window.galleryDebugAPI.getState();
 
 // Cart system debugging
 // Check cart visibility logic
-console.log('Cart should be visible:', determineCartVisibility(true));
-console.log('Current page path:', window.location.pathname);
+console.log("Cart should be visible:", determineCartVisibility(true));
+console.log("Current page path:", window.location.pathname);
 
 // View cart state
-console.log('Cart contents:', JSON.parse(localStorage.getItem('cart') || '[]'));
+console.log("Cart contents:", JSON.parse(localStorage.getItem("cart") || "[]"));
 
 // Force cart visibility (for testing)
-document.querySelector('.floating-cart').style.display = 'block';
+document.querySelector(".floating-cart").style.display = "block";
 
 // Check cart manager instance
 if (window.cartManager) {
-    console.log('Cart items:', window.cartManager.getItems());
-    console.log('Cart total:', window.cartManager.getTotal());
+  console.log("Cart items:", window.cartManager.getItems());
+  console.log("Cart total:", window.cartManager.getTotal());
 }
 ```
 
@@ -372,6 +401,7 @@ if (window.cartManager) {
 **Instagram**: [@alocubano.boulderfest](https://www.instagram.com/alocubano.boulderfest/)
 
 **Documentation**:
+
 - [Vercel Deployment](https://vercel.com/docs)
 - [Brevo API Docs](https://developers.brevo.com)
 - [Vitest Testing](https://vitest.dev)

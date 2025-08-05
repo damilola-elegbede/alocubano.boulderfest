@@ -3,7 +3,6 @@
  * Handles donation amount selection with card-based interface
  */
 
-
 class DonationSelection {
     constructor() {
         this.selectedAmount = null;
@@ -50,7 +49,6 @@ class DonationSelection {
         if (donateBtn) {
             donateBtn.addEventListener('click', () => this.handleDonate());
         }
-
     }
 
     handleDonationCardClick(event) {
@@ -255,7 +253,6 @@ class DonationSelection {
             }, 300);
         }, 3000);
     }
-
 }
 
 // Initialize when DOM is loaded

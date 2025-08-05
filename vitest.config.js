@@ -1,30 +1,27 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
     // Default environment is jsdom for browser-based tests
-    environment: 'jsdom',
+    environment: "jsdom",
     globals: true,
-    setupFiles: ['./tests/setup-vitest.js'],
-    globalTeardown: './tests/global-teardown.js',
-    
+    setupFiles: ["./tests/setup-vitest.js"],
+    globalTeardown: "./tests/global-teardown.js",
+
     // Test file patterns
-    include: [
-      'tests/unit/**/*.test.js',
-      'tests/integration/**/*.test.js'
-    ],
+    include: ["tests/unit/**/*.test.js", "tests/integration/**/*.test.js"],
     exclude: [
-      'tests/e2e/**/*.test.js', // Exclude E2E tests (need Playwright)
-      'node_modules/**'
+      "tests/e2e/**/*.test.js", // Exclude E2E tests (need Playwright)
+      "node_modules/**",
     ],
-    
+
     // Memory-conscious performance settings
     threads: true,
     maxConcurrency: 2, // Reduced from 8 to prevent memory exhaustion
     minThreads: 1,
     maxThreads: 2,
     testTimeout: 10000,
-    
+
     // Pool options for memory management
     poolOptions: {
       threads: {
@@ -33,48 +30,48 @@ export default defineConfig({
         minThreads: 1,
         isolate: true,
         // Use worker threads instead of child processes
-        useAtomics: true
+        useAtomics: true,
       },
       forks: {
         singleFork: false,
         maxForks: 2,
         minForks: 1,
-        isolate: true
-      }
+        isolate: true,
+      },
     },
-    
+
     // Bail early on test failures to save resources
     bail: 10,
-    
+
     // Disable coverage by default to save memory
     coverage: {
       enabled: false,
-      provider: 'v8',
-      reporter: ['text', 'html', 'lcov'],
+      provider: "v8",
+      reporter: ["text", "html", "lcov"],
       exclude: [
-        'node_modules/',
-        'tests/',
-        '**/*.config.js',
-        'scripts/',
-        'public/',
-        'css/',
-        'images/'
+        "node_modules/",
+        "tests/",
+        "**/*.config.js",
+        "scripts/",
+        "public/",
+        "css/",
+        "images/",
       ],
       thresholds: {
         global: {
           branches: 70,
           functions: 70,
           lines: 70,
-          statements: 70
-        }
-      }
+          statements: 70,
+        },
+      },
     },
-    
+
     // Enhanced cleanup options
     clearMocks: true,
     restoreMocks: true,
-    
+
     // Reporter configuration
-    reporter: ['verbose']
-  }
+    reporter: ["verbose"],
+  },
 });

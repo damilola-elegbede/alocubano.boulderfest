@@ -2,208 +2,208 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop, 'feature/**' ]
+    branches: [main, develop, "feature/**"]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
   lint:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm install
-    
-    - name: Run linting
-      run: npm run lint
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run linting
+        run: npm run lint
 
   test:
     runs-on: ubuntu-latest
     needs: [lint]
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm install
-    
-    - name: Setup Python for link validation
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.x'
-    
-    - name: Run Jest unit tests
-      run: npm run test:unit
-      continue-on-error: false
-    
-    # TODO: Re-enable after JS module refactoring
-    # - name: Upload Jest coverage reports
-    #   uses: actions/upload-artifact@v4
-    #   if: always()
-    #   with:
-    #     name: jest-coverage-report
-    #     path: coverage/
-    #     retention-days: 30
-    
-    - name: Run comprehensive link validation
-      run: |
-        # Run Node.js link validation with server routing support
-        npm run test:links || echo "⚠️ Link validation found issues but continuing CI"
-        echo "✅ Node.js link validation step completed"
-    
-    - name: Upload link validation reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: link-validation-report
-        path: test-reports/
-        retention-days: 30
-    
-    - name: Check coverage thresholds
-      run: |
-        echo "✅ All tests passed - coverage temporarily disabled"
-        echo "📊 Jest unit tests: 197 tests passing (coverage disabled until JS module refactoring)"
-        echo "🔗 Link validation: All links verified"
-        echo "💡 TODO: Enable coverage after JS module refactoring to ES modules"
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Setup Python for link validation
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Run Jest unit tests
+        run: npm run test:unit
+        continue-on-error: false
+
+      # TODO: Re-enable after JS module refactoring
+      # - name: Upload Jest coverage reports
+      #   uses: actions/upload-artifact@v4
+      #   if: always()
+      #   with:
+      #     name: jest-coverage-report
+      #     path: coverage/
+      #     retention-days: 30
+
+      - name: Run comprehensive link validation
+        run: |
+          # Run Node.js link validation with server routing support
+          npm run test:links || echo "⚠️ Link validation found issues but continuing CI"
+          echo "✅ Node.js link validation step completed"
+
+      - name: Upload link validation reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: link-validation-report
+          path: test-reports/
+          retention-days: 30
+
+      - name: Check coverage thresholds
+        run: |
+          echo "✅ All tests passed - coverage temporarily disabled"
+          echo "📊 Jest unit tests: 197 tests passing (coverage disabled until JS module refactoring)"
+          echo "🔗 Link validation: All links verified"
+          echo "💡 TODO: Enable coverage after JS module refactoring to ES modules"
 
   build-test:
     runs-on: ubuntu-latest
     needs: [lint, test]
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Check file structure
-      run: |
-        # Verify all required files exist
-        test -f pages/home.html
-        test -f pages/about.html
-        test -f pages/contact.html
-        test -f pages/tickets.html
-        test -f pages/donations.html
-        test -f pages/boulder-fest-2025-index.html
-        test -f pages/boulder-fest-2025-artists.html
-        test -f pages/boulder-fest-2025-schedule.html
-        test -f pages/boulder-fest-2025-gallery.html
-        test -f pages/boulder-fest-2026-index.html
-        test -f pages/boulder-fest-2026-artists.html
-        test -f pages/boulder-fest-2026-schedule.html
-        test -f pages/boulder-fest-2026-gallery.html
-        test -f pages/weekender-2026-09-index.html
-        test -f pages/weekender-2026-09-artists.html
-        test -f pages/weekender-2026-09-schedule.html
-        test -f pages/weekender-2026-09-gallery.html
-        test -f css/typography.css
-        test -f vercel.json
-        test -f README.md
-    
-    - name: Test static server
-      run: |
-        python3 -m http.server 8000 &
-        SERVER_PID=$!
-        sleep 5
-        
-        # Test if server is running
-        curl -f http://localhost:8000/pages/home.html || exit 1
-        
-        # Test core pages
-        curl -f http://localhost:8000/pages/about.html || exit 1
-        curl -f http://localhost:8000/pages/contact.html || exit 1
-        curl -f http://localhost:8000/pages/tickets.html || exit 1
-        curl -f http://localhost:8000/pages/donations.html || exit 1
-        
-        # Test 2025 festival pages
-        curl -f http://localhost:8000/pages/boulder-fest-2025-index.html || exit 1
-        curl -f http://localhost:8000/pages/boulder-fest-2025-artists.html || exit 1
-        curl -f http://localhost:8000/pages/boulder-fest-2025-schedule.html || exit 1
-        curl -f http://localhost:8000/pages/boulder-fest-2025-gallery.html || exit 1
-        
-        # Test 2026 festival pages  
-        curl -f http://localhost:8000/pages/boulder-fest-2026-index.html || exit 1
-        curl -f http://localhost:8000/pages/boulder-fest-2026-artists.html || exit 1
-        curl -f http://localhost:8000/pages/boulder-fest-2026-schedule.html || exit 1
-        curl -f http://localhost:8000/pages/boulder-fest-2026-gallery.html || exit 1
-        
-        # Test weekender pages
-        curl -f http://localhost:8000/pages/weekender-2026-09-index.html || exit 1
-        curl -f http://localhost:8000/pages/weekender-2026-09-artists.html || exit 1
-        curl -f http://localhost:8000/pages/weekender-2026-09-schedule.html || exit 1
-        curl -f http://localhost:8000/pages/weekender-2026-09-gallery.html || exit 1
-        
-        # Test CSS loading
-        curl -f http://localhost:8000/css/typography.css || exit 1
-        
-        kill $SERVER_PID
-    
+      - uses: actions/checkout@v4
+
+      - name: Check file structure
+        run: |
+          # Verify all required files exist
+          test -f pages/home.html
+          test -f pages/about.html
+          test -f pages/contact.html
+          test -f pages/tickets.html
+          test -f pages/donations.html
+          test -f pages/boulder-fest-2025-index.html
+          test -f pages/boulder-fest-2025-artists.html
+          test -f pages/boulder-fest-2025-schedule.html
+          test -f pages/boulder-fest-2025-gallery.html
+          test -f pages/boulder-fest-2026-index.html
+          test -f pages/boulder-fest-2026-artists.html
+          test -f pages/boulder-fest-2026-schedule.html
+          test -f pages/boulder-fest-2026-gallery.html
+          test -f pages/weekender-2026-09-index.html
+          test -f pages/weekender-2026-09-artists.html
+          test -f pages/weekender-2026-09-schedule.html
+          test -f pages/weekender-2026-09-gallery.html
+          test -f css/typography.css
+          test -f vercel.json
+          test -f README.md
+
+      - name: Test static server
+        run: |
+          python3 -m http.server 8000 &
+          SERVER_PID=$!
+          sleep 5
+
+          # Test if server is running
+          curl -f http://localhost:8000/pages/home.html || exit 1
+
+          # Test core pages
+          curl -f http://localhost:8000/pages/about.html || exit 1
+          curl -f http://localhost:8000/pages/contact.html || exit 1
+          curl -f http://localhost:8000/pages/tickets.html || exit 1
+          curl -f http://localhost:8000/pages/donations.html || exit 1
+
+          # Test 2025 festival pages
+          curl -f http://localhost:8000/pages/boulder-fest-2025-index.html || exit 1
+          curl -f http://localhost:8000/pages/boulder-fest-2025-artists.html || exit 1
+          curl -f http://localhost:8000/pages/boulder-fest-2025-schedule.html || exit 1
+          curl -f http://localhost:8000/pages/boulder-fest-2025-gallery.html || exit 1
+
+          # Test 2026 festival pages  
+          curl -f http://localhost:8000/pages/boulder-fest-2026-index.html || exit 1
+          curl -f http://localhost:8000/pages/boulder-fest-2026-artists.html || exit 1
+          curl -f http://localhost:8000/pages/boulder-fest-2026-schedule.html || exit 1
+          curl -f http://localhost:8000/pages/boulder-fest-2026-gallery.html || exit 1
+
+          # Test weekender pages
+          curl -f http://localhost:8000/pages/weekender-2026-09-index.html || exit 1
+          curl -f http://localhost:8000/pages/weekender-2026-09-artists.html || exit 1
+          curl -f http://localhost:8000/pages/weekender-2026-09-schedule.html || exit 1
+          curl -f http://localhost:8000/pages/weekender-2026-09-gallery.html || exit 1
+
+          # Test CSS loading
+          curl -f http://localhost:8000/css/typography.css || exit 1
+
+          kill $SERVER_PID
+
   security-scan:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Check security headers configuration
-      run: |
-        # Check if security headers are configured in vercel.json
-        if ! grep -q "X-Content-Type-Options" vercel.json; then
-          echo "Security headers not found in vercel.json"
-          exit 1
-        fi
-        echo "✓ Security headers configured"
-    
-    - name: Scan for sensitive data
-      run: |
-        # Check for actual hardcoded secrets (not just variable names)
-        # This looks for patterns like: apiKey = "actual-key-value"
-        # Excludes legitimate code patterns and test files
-        echo "Scanning for hardcoded secrets..."
-        
-        # Run grep and capture exit code
-        grep -r -E "(api[_-]?key|password|secret|token)[[:space:]]*[:=][[:space:]]*[\"'][^\"']*[\"']" \
-           --include="*.js" \
-           --include="*.html" \
-           --include="*.css" \
-           --exclude-dir=node_modules \
-           --exclude-dir=.git \
-           --exclude-dir=tests \
-           --exclude="*.test.js" \
-           --exclude="package*.json" \
-           . > /tmp/potential_secrets.txt 2>/dev/null || true
-        
-        # Filter out legitimate patterns
-        if [ -s /tmp/potential_secrets.txt ]; then
-          grep -v -E "(process\\.env|headers|api-key|verification_token|unsubscribe.*token|webhook.*secret|default-secret)" /tmp/potential_secrets.txt > /tmp/filtered_secrets.txt || true
-          
-          if [ -s /tmp/filtered_secrets.txt ]; then
-            echo "⚠️  Potential sensitive data found:"
-            cat /tmp/filtered_secrets.txt
+      - uses: actions/checkout@v4
+
+      - name: Check security headers configuration
+        run: |
+          # Check if security headers are configured in vercel.json
+          if ! grep -q "X-Content-Type-Options" vercel.json; then
+            echo "Security headers not found in vercel.json"
             exit 1
           fi
-        fi
-        
-        echo "✓ No sensitive data detected"
-    
-    - name: Validate required configuration files
-      run: |
-        # Check that essential config files exist and are valid
-        test -f vercel.json || { echo "vercel.json missing"; exit 1; }
-        test -f package.json || { echo "package.json missing"; exit 1; }
-        
-        # Basic JSON syntax check
-        python3 -m json.tool vercel.json > /dev/null || { echo "vercel.json has invalid JSON"; exit 1; }
-        python3 -m json.tool package.json > /dev/null || { echo "package.json has invalid JSON"; exit 1; }
-        
-        echo "✓ Configuration files validated"
+          echo "✓ Security headers configured"
+
+      - name: Scan for sensitive data
+        run: |
+          # Check for actual hardcoded secrets (not just variable names)
+          # This looks for patterns like: apiKey = "actual-key-value"
+          # Excludes legitimate code patterns and test files
+          echo "Scanning for hardcoded secrets..."
+
+          # Run grep and capture exit code
+          grep -r -E "(api[_-]?key|password|secret|token)[[:space:]]*[:=][[:space:]]*[\"'][^\"']*[\"']" \
+             --include="*.js" \
+             --include="*.html" \
+             --include="*.css" \
+             --exclude-dir=node_modules \
+             --exclude-dir=.git \
+             --exclude-dir=tests \
+             --exclude="*.test.js" \
+             --exclude="package*.json" \
+             . > /tmp/potential_secrets.txt 2>/dev/null || true
+
+          # Filter out legitimate patterns
+          if [ -s /tmp/potential_secrets.txt ]; then
+            grep -v -E "(process\\.env|headers|api-key|verification_token|unsubscribe.*token|webhook.*secret|default-secret)" /tmp/potential_secrets.txt > /tmp/filtered_secrets.txt || true
+            
+            if [ -s /tmp/filtered_secrets.txt ]; then
+              echo "⚠️  Potential sensitive data found:"
+              cat /tmp/filtered_secrets.txt
+              exit 1
+            fi
+          fi
+
+          echo "✓ No sensitive data detected"
+
+      - name: Validate required configuration files
+        run: |
+          # Check that essential config files exist and are valid
+          test -f vercel.json || { echo "vercel.json missing"; exit 1; }
+          test -f package.json || { echo "package.json missing"; exit 1; }
+
+          # Basic JSON syntax check
+          python3 -m json.tool vercel.json > /dev/null || { echo "vercel.json has invalid JSON"; exit 1; }
+          python3 -m json.tool package.json > /dev/null || { echo "package.json has invalid JSON"; exit 1; }
+
+          echo "✓ Configuration files validated"

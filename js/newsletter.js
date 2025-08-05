@@ -32,7 +32,9 @@ class NewsletterSignup {
         });
 
         // Checkbox gating for subscribe button
-        this.consentCheckbox.addEventListener('change', () => this.updateButtonState());
+        this.consentCheckbox.addEventListener('change', () =>
+            this.updateButtonState()
+        );
 
         // Initialize button state
         this.updateButtonState();
@@ -42,7 +44,7 @@ class NewsletterSignup {
     }
 
     updateButtonState() {
-        // Enable/disable subscribe button based on both email validity and checkbox state
+    // Enable/disable subscribe button based on both email validity and checkbox state
         const isEmailValid = this.isEmailValid();
         const isConsentGiven = this.consentCheckbox.checked;
 
@@ -62,7 +64,7 @@ class NewsletterSignup {
     }
 
     setupMobileOptimizations() {
-        // Prevent zoom on iOS
+    // Prevent zoom on iOS
         this.emailInput.setAttribute('inputmode', 'email');
         this.emailInput.setAttribute('autocorrect', 'off');
         this.emailInput.setAttribute('autocapitalize', 'off');
@@ -76,7 +78,7 @@ class NewsletterSignup {
     }
 
     handleKeyboardResize() {
-        // Scroll form into view when keyboard opens
+    // Scroll form into view when keyboard opens
         if (window.visualViewport.height < window.innerHeight * 0.75) {
             this.form.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
@@ -130,11 +132,15 @@ class NewsletterSignup {
             if (response.ok) {
                 this.handleSuccess(data);
             } else {
-                this.handleError(data.error || 'Subscription failed. Please try again.');
+                this.handleError(
+                    data.error || 'Subscription failed. Please try again.'
+                );
             }
         } catch (error) {
             console.error('Newsletter signup error:', error);
-            this.handleError('Network error. Please check your connection and try again.');
+            this.handleError(
+                'Network error. Please check your connection and try again.'
+            );
         } finally {
             this.setLoadingState(false);
         }
@@ -183,7 +189,7 @@ class NewsletterSignup {
     }
 
     handleSuccess(data) {
-        // Clear form
+    // Clear form
         this.form.reset();
 
         // Show success message

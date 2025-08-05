@@ -1,401 +1,565 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Payment Cancelled - A Lo Cubano Boulder Fest</title>
-    <meta name="description" content="Your payment was cancelled or could not be completed. You can try again or contact us for assistance.">
+    <meta
+      name="description"
+      content="Your payment was cancelled or could not be completed. You can try again or contact us for assistance."
+    />
     <!-- Favicons -->
-    <link rel="icon" type="image/png" href="/images/favicons/favicon-32x32.png">
-    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
-    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicons/favicon-16x16.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/images/favicons/favicon-192x192.png">
-    <link rel="apple-touch-icon" sizes="192x192" href="/images/favicons/favicon-192x192.png">
-    
+    <link
+      rel="icon"
+      type="image/png"
+      href="/images/favicons/favicon-32x32.png"
+    />
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/images/favicons/favicon-16x16.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/images/favicons/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+
     <!-- DNS prefetch for external resources -->
-    <link rel="dns-prefetch" href="//fonts.googleapis.com">
-    <link rel="dns-prefetch" href="//fonts.gstatic.com">
-    
-    <link rel="stylesheet" href="/css/base.css">
-    <link rel="stylesheet" href="/css/components.css">
-    <link rel="stylesheet" href="/css/typography.css">
-    <link rel="stylesheet" href="/css/floating-cart.css">
-    <link rel="stylesheet" href="/css/checkout-loading.css">
-    <link rel="stylesheet" href="/css/mobile-overrides.css">
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/floating-cart.css" />
+    <link rel="stylesheet" href="/css/checkout-loading.css" />
+    <link rel="stylesheet" href="/css/mobile-overrides.css" />
 
     <style>
-        /* Failure Page Specific Styles */
+      /* Failure Page Specific Styles */
+      .failure-container {
+        min-height: 60vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--space-2xl) var(--space-xl);
+      }
+
+      .failure-content {
+        text-align: center;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .failure-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto var(--space-2xl);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--color-gray-200);
+        border: 2px solid var(--color-black);
+        border-radius: 50%;
+        animation: fadeIn 0.5s ease-out;
+      }
+
+      .failure-icon svg {
+        width: 50px;
+        height: 50px;
+        color: var(--color-black);
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .failure-title {
+        font-family: var(--font-display);
+        font-size: var(--font-size-4xl);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: var(--space-xl);
+        line-height: 1.2;
+      }
+
+      .failure-message {
+        font-family: var(--font-sans);
+        font-size: var(--font-size-lg);
+        line-height: 1.6;
+        margin-bottom: var(--space-2xl);
+        color: var(--color-gray-700);
+      }
+
+      .failure-details {
+        background: var(--color-gray-100);
+        border: 2px solid var(--color-black);
+        padding: var(--space-xl);
+        margin: var(--space-2xl) 0;
+        text-align: left;
+      }
+
+      .failure-details h3 {
+        font-family: var(--font-display);
+        font-size: var(--font-size-xl);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: var(--space-lg);
+      }
+
+      .failure-details p {
+        font-family: var(--font-sans);
+        font-size: var(--font-size-base);
+        line-height: 1.6;
+        margin-bottom: var(--space-md);
+      }
+
+      .failure-actions {
+        display: flex;
+        gap: var(--space-lg);
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: var(--space-2xl);
+      }
+
+      .failure-btn {
+        padding: var(--space-md) var(--space-xl);
+        border: 2px solid var(--color-black);
+        background: var(--color-black);
+        color: var(--color-white);
+        font-family: var(--font-display);
+        font-size: var(--font-size-base);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        display: inline-block;
+      }
+
+      .failure-btn:hover {
+        background: var(--color-white);
+        color: var(--color-black);
+      }
+
+      .failure-btn.secondary {
+        background: var(--color-white);
+        color: var(--color-black);
+      }
+
+      .failure-btn.secondary:hover {
+        background: var(--color-black);
+        color: var(--color-white);
+      }
+
+      .contact-info {
+        margin-top: var(--space-xl);
+        padding-top: var(--space-xl);
+        border-top: 1px solid var(--color-gray-300);
+      }
+
+      .contact-info p {
+        font-family: var(--font-sans);
+        font-size: var(--font-size-base);
+        color: var(--color-gray-600);
+        margin-bottom: var(--space-sm);
+      }
+
+      .contact-info a {
+        color: var(--color-black);
+        text-decoration: underline;
+      }
+
+      .loading-state {
+        display: none;
+      }
+
+      @media (max-width: 640px) {
         .failure-container {
-            min-height: 60vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: var(--space-2xl) var(--space-xl);
-        }
-
-        .failure-content {
-            text-align: center;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .failure-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto var(--space-2xl);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--color-gray-200);
-            border: 2px solid var(--color-black);
-            border-radius: 50%;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        .failure-icon svg {
-            width: 50px;
-            height: 50px;
-            color: var(--color-black);
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+          padding: var(--space-xl) var(--space-lg);
         }
 
         .failure-title {
-            font-family: var(--font-display);
-            font-size: var(--font-size-4xl);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: var(--space-xl);
-            line-height: 1.2;
+          font-size: var(--font-size-3xl);
         }
 
         .failure-message {
-            font-family: var(--font-sans);
-            font-size: var(--font-size-lg);
-            line-height: 1.6;
-            margin-bottom: var(--space-2xl);
-            color: var(--color-gray-700);
-        }
-
-        .failure-details {
-            background: var(--color-gray-100);
-            border: 2px solid var(--color-black);
-            padding: var(--space-xl);
-            margin: var(--space-2xl) 0;
-            text-align: left;
-        }
-
-        .failure-details h3 {
-            font-family: var(--font-display);
-            font-size: var(--font-size-xl);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: var(--space-lg);
-        }
-
-        .failure-details p {
-            font-family: var(--font-sans);
-            font-size: var(--font-size-base);
-            line-height: 1.6;
-            margin-bottom: var(--space-md);
+          font-size: var(--font-size-base);
         }
 
         .failure-actions {
-            display: flex;
-            gap: var(--space-lg);
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: var(--space-2xl);
+          flex-direction: column;
+          width: 100%;
         }
 
         .failure-btn {
-            padding: var(--space-md) var(--space-xl);
-            border: 2px solid var(--color-black);
-            background: var(--color-black);
-            color: var(--color-white);
-            font-family: var(--font-display);
-            font-size: var(--font-size-base);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            cursor: pointer;
-            display: inline-block;
+          width: 100%;
+          text-align: center;
         }
-
-        .failure-btn:hover {
-            background: var(--color-white);
-            color: var(--color-black);
-        }
-
-        .failure-btn.secondary {
-            background: var(--color-white);
-            color: var(--color-black);
-        }
-
-        .failure-btn.secondary:hover {
-            background: var(--color-black);
-            color: var(--color-white);
-        }
-
-        .contact-info {
-            margin-top: var(--space-xl);
-            padding-top: var(--space-xl);
-            border-top: 1px solid var(--color-gray-300);
-        }
-
-        .contact-info p {
-            font-family: var(--font-sans);
-            font-size: var(--font-size-base);
-            color: var(--color-gray-600);
-            margin-bottom: var(--space-sm);
-        }
-
-        .contact-info a {
-            color: var(--color-black);
-            text-decoration: underline;
-        }
-
-        .loading-state {
-            display: none;
-        }
-
-        @media (max-width: 640px) {
-            .failure-container {
-                padding: var(--space-xl) var(--space-lg);
-            }
-
-            .failure-title {
-                font-size: var(--font-size-3xl);
-            }
-
-            .failure-message {
-                font-size: var(--font-size-base);
-            }
-
-            .failure-actions {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .failure-btn {
-                width: 100%;
-                text-align: center;
-            }
-        }
+      }
     </style>
-</head>
-<body class="typographic">
+  </head>
+  <body class="typographic">
     <header class="header">
-        <div class="container">
-            <div class="grid">
-                <div class="header-left">
-                    <a href="/home" class="logo-link" aria-label="Go to home page">
-                        <img src="/images/logo.png" alt="A Lo Cubano Boulder Fest Logo" class="site-logo">
-                        <div class="logo-text">
-                            <span class="logo-main">A LO CUBANO</span>
-                            <span class="logo-separator">|</span>
-                            <span class="logo-sub">Boulder Fest</span>
-                        </div>
-                    </a>
-                </div>
-                <nav class="main-nav">
-                    <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="main-navigation">
-                        <div class="menu-icon">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
-                    </button>
-                    <ul class="nav-list" id="main-navigation">
-                        <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
-                        <li><a href="/about" class="nav-link" data-text="About">About</a></li>
-                        <li class="nav-item has-dropdown">
-                            <button class="nav-trigger" aria-expanded="false" aria-haspopup="true" data-dropdown="events" data-text="Events">
-                                Events
-                                <span class="dropdown-arrow" aria-hidden="true">▼</span>
-                            </button>
-                            <ul class="dropdown-menu" aria-hidden="true" role="menu" data-dropdown-content="events">
-                                <li class="dropdown-category" role="group">
-                                    <span class="dropdown-category-title" role="presentation">Boulder Fest</span>
-                                    <ul class="dropdown-submenu">
-                                        <li><a href="/boulder-fest-2026" class="dropdown-link" role="menuitem" data-event="boulder-fest-2026" data-event-status="upcoming">2026 Festival</a></li>
-                                        <li><a href="/boulder-fest-2025" class="dropdown-link" role="menuitem" data-event="boulder-fest-2025" data-event-status="current">2025 Festival</a></li>
-                                    </ul>
-                                </li>
-                                <li class="dropdown-category" role="group">
-                                    <span class="dropdown-category-title" role="presentation">Weekend Events</span>
-                                    <ul class="dropdown-submenu">
-                                        <li><a href="/weekender-2026-09" class="dropdown-link" role="menuitem" data-event="weekender-2026-09" data-event-status="upcoming">Sept 2026 Weekender</a></li>
-                                    </ul>
-                                </li>
-                            </ul>
-                        </li>
-                        <li><a href="/tickets" class="nav-link" data-text="Tickets">Tickets</a></li>
-                        <li><a href="/donations" class="nav-link" data-text="Donate">Donate</a></li>
-                        <li><a href="/contact" class="nav-link" data-text="Contact">Contact</a></li>
+      <div class="container">
+        <div class="grid">
+          <div class="header-left">
+            <a href="/home" class="logo-link" aria-label="Go to home page">
+              <img
+                src="/images/logo.png"
+                alt="A Lo Cubano Boulder Fest Logo"
+                class="site-logo"
+              />
+              <div class="logo-text">
+                <span class="logo-main">A LO CUBANO</span>
+                <span class="logo-separator">|</span>
+                <span class="logo-sub">Boulder Fest</span>
+              </div>
+            </a>
+          </div>
+          <nav class="main-nav">
+            <button
+              class="menu-toggle"
+              aria-label="Toggle menu"
+              aria-expanded="false"
+              aria-controls="main-navigation"
+            >
+              <div class="menu-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </button>
+            <ul class="nav-list" id="main-navigation">
+              <li>
+                <a href="/home" class="nav-link" data-text="Home">Home</a>
+              </li>
+              <li>
+                <a href="/about" class="nav-link" data-text="About">About</a>
+              </li>
+              <li class="nav-item has-dropdown">
+                <button
+                  class="nav-trigger"
+                  aria-expanded="false"
+                  aria-haspopup="true"
+                  data-dropdown="events"
+                  data-text="Events"
+                >
+                  Events
+                  <span class="dropdown-arrow" aria-hidden="true">▼</span>
+                </button>
+                <ul
+                  class="dropdown-menu"
+                  aria-hidden="true"
+                  role="menu"
+                  data-dropdown-content="events"
+                >
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Boulder Fest</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/boulder-fest-2026"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="boulder-fest-2026"
+                          data-event-status="upcoming"
+                          >2026 Festival</a
+                        >
+                      </li>
+                      <li>
+                        <a
+                          href="/boulder-fest-2025"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="boulder-fest-2025"
+                          data-event-status="current"
+                          >2025 Festival</a
+                        >
+                      </li>
                     </ul>
-                </nav>
-            </div>
+                  </li>
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Weekend Events</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/weekender-2026-09"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="weekender-2026-09"
+                          data-event-status="upcoming"
+                          >Sept 2026 Weekender</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <a href="/tickets" class="nav-link" data-text="Tickets"
+                  >Tickets</a
+                >
+              </li>
+              <li>
+                <a href="/donations" class="nav-link" data-text="Donate"
+                  >Donate</a
+                >
+              </li>
+              <li>
+                <a href="/contact" class="nav-link" data-text="Contact"
+                  >Contact</a
+                >
+              </li>
+            </ul>
+          </nav>
         </div>
+      </div>
     </header>
 
     <main>
-        <!-- Loading State -->
-        <div class="loading-state">
-            <div class="checkout-loading" style="position: relative; background: transparent;">
-                <div class="checkout-loading-content">
-                    <div class="checkout-spinner"></div>
-                    <div class="checkout-loading-text">Processing</div>
-                    <div class="checkout-loading-subtext">Please wait...</div>
-                </div>
-            </div>
+      <!-- Loading State -->
+      <div class="loading-state">
+        <div
+          class="checkout-loading"
+          style="position: relative; background: transparent"
+        >
+          <div class="checkout-loading-content">
+            <div class="checkout-spinner"></div>
+            <div class="checkout-loading-text">Processing</div>
+            <div class="checkout-loading-subtext">Please wait...</div>
+          </div>
         </div>
+      </div>
 
-        <!-- Failure State -->
-        <section class="failure-container">
-            <div class="failure-content">
-                <div class="failure-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </div>
-                
-                <h1 class="failure-title">Payment Cancelled</h1>
-                
-                <p class="failure-message" id="main-message">
-                    Your payment was cancelled or could not be completed. Don't worry - your cart items have been saved and you can try again anytime.
-                </p>
+      <!-- Failure State -->
+      <section class="failure-container">
+        <div class="failure-content">
+          <div class="failure-icon">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </div>
 
-                <div class="failure-details">
-                    <h3>What Happened?</h3>
-                    <p id="details-message">• You cancelled the checkout process, or</p>
-                    <p>• The payment couldn't be processed, or</p>
-                    <p>• There was a temporary connection issue</p>
-                </div>
+          <h1 class="failure-title">Payment Cancelled</h1>
 
-                <div class="failure-details" id="next-steps">
-                    <h3>What Can You Do?</h3>
-                    <div id="steps-content">
-                        <p>• Your cart items are still saved - nothing was lost!</p>
-                        <p>• Return to the tickets page to complete your purchase</p>
-                        <p>• Try a different payment method if the issue persists</p>
-                        <p>• Contact us if you continue to experience problems</p>
-                    </div>
-                </div>
+          <p class="failure-message" id="main-message">
+            Your payment was cancelled or could not be completed. Don't worry -
+            your cart items have been saved and you can try again anytime.
+          </p>
 
-                <div class="failure-actions">
-                    <a href="/tickets" class="failure-btn">Try Again</a>
-                    <a href="/home" class="failure-btn secondary">Return to Home</a>
-                </div>
+          <div class="failure-details">
+            <h3>What Happened?</h3>
+            <p id="details-message">• You cancelled the checkout process, or</p>
+            <p>• The payment couldn't be processed, or</p>
+            <p>• There was a temporary connection issue</p>
+          </div>
 
-                <div class="contact-info">
-                    <p>Need help? Contact us:</p>
-                    <p>Email: <a href="mailto:alocubanoboulderfest@gmail.com">alocubanoboulderfest@gmail.com</a></p>
-                    <p>Instagram: <a href="https://instagram.com/alocubano.boulderfest" target="_blank" rel="noopener noreferrer">@alocubano.boulderfest</a></p>
-                </div>
+          <div class="failure-details" id="next-steps">
+            <h3>What Can You Do?</h3>
+            <div id="steps-content">
+              <p>• Your cart items are still saved - nothing was lost!</p>
+              <p>• Return to the tickets page to complete your purchase</p>
+              <p>• Try a different payment method if the issue persists</p>
+              <p>• Contact us if you continue to experience problems</p>
             </div>
-        </section>
+          </div>
+
+          <div class="failure-actions">
+            <a href="/tickets" class="failure-btn">Try Again</a>
+            <a href="/home" class="failure-btn secondary">Return to Home</a>
+          </div>
+
+          <div class="contact-info">
+            <p>Need help? Contact us:</p>
+            <p>
+              Email:
+              <a href="mailto:alocubanoboulderfest@gmail.com"
+                >alocubanoboulderfest@gmail.com</a
+              >
+            </p>
+            <p>
+              Instagram:
+              <a
+                href="https://instagram.com/alocubano.boulderfest"
+                target="_blank"
+                rel="noopener noreferrer"
+                >@alocubano.boulderfest</a
+              >
+            </p>
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer class="footer-typographic">
-        <div class="container">
-            <p class="footer-credits">MAY 15-17, 2026 • <a href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry" style="color: inherit; text-decoration: underline;">alocubanoboulderfest@gmail.com</a></p>
-            <div class="footer-social">
-                <a href="https://instagram.com/alocubanoboulder" target="_blank" rel="noopener noreferrer" class="social-link-type" aria-label="Follow us on Instagram">
-                    <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-                    </svg>
-                </a>
-                <a href="https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH" target="_blank" rel="noopener noreferrer" class="social-link-type" aria-label="Join us on WhatsApp">
-                    <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-                    </svg>
-                </a>
-            </div>
+      <div class="container">
+        <p class="footer-credits">
+          MAY 15-17, 2026 •
+          <a
+            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
+            style="color: inherit; text-decoration: underline"
+            >alocubanoboulderfest@gmail.com</a
+          >
+        </p>
+        <div class="footer-social">
+          <a
+            href="https://instagram.com/alocubanoboulder"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-link-type"
+            aria-label="Follow us on Instagram"
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+          </a>
+          <a
+            href="https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-link-type"
+            aria-label="Join us on WhatsApp"
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
+              ></path>
+            </svg>
+          </a>
         </div>
+      </div>
     </footer>
 
     <script>
-        // Get parameters from URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const sessionId = urlParams.get('session_id');
-        const orderId = urlParams.get('order_id');
+      // Get parameters from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionId = urlParams.get("session_id");
+      const orderId = urlParams.get("order_id");
 
-        // Elements
-        const loadingState = document.querySelector('.loading-state');
-        const mainMessage = document.getElementById('main-message');
-        const detailsMessage = document.getElementById('details-message');
-        const stepsContent = document.getElementById('steps-content');
+      // Elements
+      const loadingState = document.querySelector(".loading-state");
+      const mainMessage = document.getElementById("main-message");
+      const detailsMessage = document.getElementById("details-message");
+      const stepsContent = document.getElementById("steps-content");
 
-        // Process cancellation
-        async function processCancellation() {
-            // Show loading briefly
-            loadingState.style.display = 'block';
+      // Process cancellation
+      async function processCancellation() {
+        // Show loading briefly
+        loadingState.style.display = "block";
 
-            if (sessionId || orderId) {
-                try {
-                    // Call the checkout-cancel API to update order status
-                    const params = new URLSearchParams();
-                    if (sessionId) params.append('session_id', sessionId);
-                    if (orderId) params.append('order_id', orderId);
+        if (sessionId || orderId) {
+          try {
+            // Call the checkout-cancel API to update order status
+            const params = new URLSearchParams();
+            if (sessionId) params.append("session_id", sessionId);
+            if (orderId) params.append("order_id", orderId);
 
-                    const response = await fetch(`/api/payments/checkout-cancel?${params}`);
-                    const data = await response.json();
+            const response = await fetch(
+              `/api/payments/checkout-cancel?${params}`,
+            );
+            const data = await response.json();
 
-                    // Update UI based on response
-                    if (data.message) {
-                        mainMessage.textContent = data.message;
-                    }
-
-                    if (data.instructions?.nextSteps) {
-                        stepsContent.innerHTML = data.instructions.nextSteps
-                            .map(step => `<p>• ${step}</p>`)
-                            .join('');
-                    }
-
-                    // Auto-redirect if specified
-                    if (data.instructions?.redirectDelay) {
-                        setTimeout(() => {
-                            window.location.href = data.instructions.redirectUrl || '/tickets';
-                        }, data.instructions.redirectDelay);
-                    }
-                } catch (error) {
-                    console.error('Error processing cancellation:', error);
-                    // Continue with default behavior
-                }
+            // Update UI based on response
+            if (data.message) {
+              mainMessage.textContent = data.message;
             }
 
-            // Hide loading state
-            setTimeout(() => {
-                loadingState.style.display = 'none';
-            }, 500);
+            if (data.instructions?.nextSteps) {
+              stepsContent.innerHTML = data.instructions.nextSteps
+                .map((step) => `<p>• ${step}</p>`)
+                .join("");
+            }
+
+            // Auto-redirect if specified
+            if (data.instructions?.redirectDelay) {
+              setTimeout(() => {
+                window.location.href =
+                  data.instructions.redirectUrl || "/tickets";
+              }, data.instructions.redirectDelay);
+            }
+          } catch (error) {
+            console.error("Error processing cancellation:", error);
+            // Continue with default behavior
+          }
         }
 
-        // Process cancellation when page loads
-        processCancellation();
+        // Hide loading state
+        setTimeout(() => {
+          loadingState.style.display = "none";
+        }, 500);
+      }
 
-        // Important: Do NOT clear the cart so users can try again
-        console.log('Cart preserved - users can retry their purchase');
+      // Process cancellation when page loads
+      processCancellation();
+
+      // Important: Do NOT clear the cart so users can try again
+      console.log("Cart preserved - users can retry their purchase");
     </script>
 
     <script src="/js/navigation.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
-    
+
     <!-- Global Cart System -->
     <script type="module" src="/js/global-cart.js"></script>
-</body>
+  </body>
 </html>

@@ -3,12 +3,13 @@
 ## Header Structure
 
 ### HTML Pattern
+
 ```html
 <header class="header">
   <div class="container">
     <div class="grid">
       <div class="header-left">
-        <img src="logo.png" alt="Logo" style="height: 78px;">
+        <img src="logo.png" alt="Logo" style="height: 78px;" />
         <div class="logo-text">
           <span class="logo-main">A LO CUBANO</span>
           <span class="logo-separator">|</span>
@@ -32,6 +33,7 @@
 ### CSS Specifications
 
 #### Fixed Header
+
 ```css
 .header {
   position: fixed;
@@ -40,10 +42,12 @@
   right: 0;
   z-index: 1000;
   padding: var(--space-lg) 0;
-  background: linear-gradient(to bottom, 
-    var(--color-white) 0%, 
-    var(--color-white) 90%, 
-    transparent 100%);
+  background: linear-gradient(
+    to bottom,
+    var(--color-white) 0%,
+    var(--color-white) 90%,
+    transparent 100%
+  );
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--color-gray-200);
   transition: all 0.3s ease;
@@ -51,6 +55,7 @@
 ```
 
 #### Logo Styling
+
 ```css
 .logo-text {
   font-family: var(--font-display);
@@ -77,6 +82,7 @@
 ```
 
 #### Navigation Links
+
 ```css
 .nav-link {
   position: relative;
@@ -110,6 +116,7 @@
 ### Toggle Button & Mobile Menu Implementation
 
 #### CSS Structure
+
 ```css
 .menu-toggle {
   display: none;
@@ -122,12 +129,12 @@
   .menu-toggle {
     display: block;
   }
-  
+
   /* Hide navigation list by default on mobile */
   .nav-list {
     display: none;
   }
-  
+
   /* Show as slide-in panel when opened */
   .nav-list.is-open {
     display: flex;
@@ -158,13 +165,14 @@
 ```
 
 #### JavaScript Integration
+
 ```javascript
 // Class targeting must match CSS selectors
 toggleMobileMenu() {
   this.mobileMenuOpen = !this.mobileMenuOpen;
   const navList = document.querySelector('.nav-list');
   const menuToggle = document.querySelector('.menu-toggle');
-  
+
   if (this.mobileMenuOpen) {
     // Use 'is-open' class to match CSS selector
     navList?.classList.add('is-open');
@@ -181,6 +189,7 @@ toggleMobileMenu() {
 ## States
 
 ### Active State
+
 ```css
 .nav-link.is-active {
   color: var(--color-red);
@@ -189,6 +198,7 @@ toggleMobileMenu() {
 ```
 
 ### Scroll State
+
 ```css
 .header.is-scrolled {
   padding: var(--space-md) 0;
@@ -197,6 +207,7 @@ toggleMobileMenu() {
 ```
 
 ### Mobile Menu Toggle State
+
 ```css
 .menu-toggle.is-active span {
   /* Hamburger to X animation */
@@ -217,14 +228,17 @@ toggleMobileMenu() {
 ## Class Naming Convention
 
 ### State Classes
+
 - **`.is-open`**: Applied to `.nav-list` when mobile menu is active
 - **`.is-active`**: Applied to `.menu-toggle` for hamburger animation
 - **`.is-active`**: Applied to `.nav-link` for current page indication
 
 ### Important: JavaScript/CSS Alignment
+
 ⚠️ **Critical**: JavaScript class targeting must exactly match CSS selectors. Use `is-open` consistently across both JavaScript and CSS for mobile menu functionality.
 
 ## Accessibility
+
 - Keyboard navigable with Tab
 - Toggle button has aria-label
 - Current page indicated with aria-current

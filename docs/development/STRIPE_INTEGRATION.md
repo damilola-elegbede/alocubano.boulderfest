@@ -208,7 +208,7 @@ npm run test:unit -- tests/unit/stripe-checkout.test.js
 
 ```javascript
 // In browser console
-localStorage.setItem('stripe_debug', 'true');
+localStorage.setItem("stripe_debug", "true");
 ```
 
 ## Support and Resources

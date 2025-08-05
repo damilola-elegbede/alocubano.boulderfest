@@ -15,7 +15,7 @@
 
 class IntelligentPrefetchManager {
     constructor() {
-        // Core state management
+    // Core state management
         this.priorityQueue = new Map(); // priority -> Set of resources
         this.processingQueue = new Set();
         this.resourceCache = new Map();
@@ -67,7 +67,10 @@ class IntelligentPrefetchManager {
     }
 
     detectConnectionCapabilities() {
-        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        const connection =
+      navigator.connection ||
+      navigator.mozConnection ||
+      navigator.webkitConnection;
 
         if (connection) {
             const capabilities = {
@@ -97,11 +100,20 @@ class IntelligentPrefetchManager {
 
         // Base score from effective type
         switch (effectiveType) {
-        case 'slow-2g': score = 1; break;
-        case '2g': score = 2; break;
-        case '3g': score = 4; break;
-        case '4g': score = 8; break;
-        default: score = 6;
+        case 'slow-2g':
+            score = 1;
+            break;
+        case '2g':
+            score = 2;
+            break;
+        case '3g':
+            score = 4;
+            break;
+        case '4g':
+            score = 8;
+            break;
+        default:
+            score = 6;
         }
 
         // Adjust based on actual measurements
@@ -135,12 +147,12 @@ class IntelligentPrefetchManager {
     }
 
     estimateConnectionFromPerformance() {
-        // Use performance timing to estimate connection quality
+    // Use performance timing to estimate connection quality
         const navigation = performance.getEntriesByType('navigation')[0];
         if (navigation) {
             const downloadTime = navigation.loadEventEnd - navigation.fetchStart;
-            const estimatedSpeed = downloadTime < 2000 ? '4g' :
-                downloadTime < 5000 ? '3g' : '2g';
+            const estimatedSpeed =
+        downloadTime < 2000 ? '4g' : downloadTime < 5000 ? '3g' : '2g';
 
             return {
                 effectiveType: estimatedSpeed,
@@ -149,7 +161,8 @@ class IntelligentPrefetchManager {
                 saveData: false,
                 estimated: true,
                 bandwidthScore: downloadTime < 2000 ? 8 : downloadTime < 5000 ? 4 : 2,
-                qualityTier: downloadTime < 2000 ? 'high' : downloadTime < 5000 ? 'medium' : 'low'
+                qualityTier:
+          downloadTime < 2000 ? 'high' : downloadTime < 5000 ? 'medium' : 'low'
             };
         }
 
@@ -169,7 +182,9 @@ class IntelligentPrefetchManager {
             memory: navigator.deviceMemory || 4, // GB
             cores: navigator.hardwareConcurrency || 4,
             maxTouchPoints: navigator.maxTouchPoints || 0,
-            isMobile: /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+            isMobile: /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+                navigator.userAgent
+            ),
             screenSize: {
                 width: screen.width,
                 height: screen.height,
@@ -178,7 +193,8 @@ class IntelligentPrefetchManager {
         };
 
         // Calculate device performance tier
-        capabilities.performanceTier = this.calculateDevicePerformanceTier(capabilities);
+        capabilities.performanceTier =
+      this.calculateDevicePerformanceTier(capabilities);
 
         return capabilities;
     }
@@ -236,33 +252,55 @@ class IntelligentPrefetchManager {
         };
 
         // Adjust based on connection quality
-        const connectionMultiplier = {
-            'minimal': 0.2,
-            'low': 0.5,
-            'medium': 1.0,
-            'high': 1.8,
-            'premium': 2.5
-        }[qualityTier] || 1.0;
+        const connectionMultiplier =
+      {
+          minimal: 0.2,
+          low: 0.5,
+          medium: 1.0,
+          high: 1.8,
+          premium: 2.5
+      }[qualityTier] || 1.0;
 
         // Adjust based on device performance
-        const deviceMultiplier = {
-            'low': 0.6,
-            'medium': 1.0,
-            'high': 1.4,
-            'premium': 2.0
-        }[performanceTier] || 1.0;
+        const deviceMultiplier =
+      {
+          low: 0.6,
+          medium: 1.0,
+          high: 1.4,
+          premium: 2.0
+      }[performanceTier] || 1.0;
 
         // Apply multipliers
-        budget.maxConcurrentRequests = Math.round(budget.maxConcurrentRequests * connectionMultiplier * deviceMultiplier);
-        budget.maxResourceSize = Math.round(budget.maxResourceSize * connectionMultiplier);
-        budget.totalBudget = Math.round(budget.totalBudget * connectionMultiplier * deviceMultiplier);
-        budget.prefetchDistance = Math.round(budget.prefetchDistance * connectionMultiplier);
+        budget.maxConcurrentRequests = Math.round(
+            budget.maxConcurrentRequests * connectionMultiplier * deviceMultiplier
+        );
+        budget.maxResourceSize = Math.round(
+            budget.maxResourceSize * connectionMultiplier
+        );
+        budget.totalBudget = Math.round(
+            budget.totalBudget * connectionMultiplier * deviceMultiplier
+        );
+        budget.prefetchDistance = Math.round(
+            budget.prefetchDistance * connectionMultiplier
+        );
 
         // Clamp values to reasonable ranges
-        budget.maxConcurrentRequests = Math.max(1, Math.min(budget.maxConcurrentRequests, 8));
-        budget.maxResourceSize = Math.max(0.5 * 1024 * 1024, Math.min(budget.maxResourceSize, 10 * 1024 * 1024));
-        budget.totalBudget = Math.max(2 * 1024 * 1024, Math.min(budget.totalBudget, 50 * 1024 * 1024));
-        budget.prefetchDistance = Math.max(1, Math.min(budget.prefetchDistance, 10));
+        budget.maxConcurrentRequests = Math.max(
+            1,
+            Math.min(budget.maxConcurrentRequests, 8)
+        );
+        budget.maxResourceSize = Math.max(
+            0.5 * 1024 * 1024,
+            Math.min(budget.maxResourceSize, 10 * 1024 * 1024)
+        );
+        budget.totalBudget = Math.max(
+            2 * 1024 * 1024,
+            Math.min(budget.totalBudget, 50 * 1024 * 1024)
+        );
+        budget.prefetchDistance = Math.max(
+            1,
+            Math.min(budget.prefetchDistance, 10)
+        );
 
         return budget;
     }
@@ -318,10 +356,10 @@ class IntelligentPrefetchManager {
 
     initializePriorityQueue() {
         this.priorityQueue.set('critical', new Set()); // Immediate viewport
-        this.priorityQueue.set('high', new Set());     // Predicted next views
-        this.priorityQueue.set('medium', new Set());   // Similar images
-        this.priorityQueue.set('low', new Set());      // Speculative prefetch
-        this.priorityQueue.set('idle', new Set());     // Background warming
+        this.priorityQueue.set('high', new Set()); // Predicted next views
+        this.priorityQueue.set('medium', new Set()); // Similar images
+        this.priorityQueue.set('low', new Set()); // Speculative prefetch
+        this.priorityQueue.set('idle', new Set()); // Background warming
     }
 
     createViewportObserver() {
@@ -332,7 +370,7 @@ class IntelligentPrefetchManager {
         };
 
         return new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
+            entries.forEach((entry) => {
                 const priority = this.calculateViewportPriority(entry);
                 if (priority && entry.target.dataset.src) {
                     this.addToPriorityQueue(entry.target.dataset.src, priority, {
@@ -362,7 +400,7 @@ class IntelligentPrefetchManager {
     }
 
     initBackgroundWorker() {
-        // Create a simple background processing system
+    // Create a simple background processing system
         return {
             isRunning: false,
             intervalId: null,
@@ -424,11 +462,14 @@ class IntelligentPrefetchManager {
             this.processNextInQueue();
         }
 
-        console.log(`[IntelligentPrefetch] Added to ${priority} queue:`, resourceUrl);
+        console.log(
+            `[IntelligentPrefetch] Added to ${priority} queue:`,
+            resourceUrl
+        );
     }
 
     estimateResourceSize(resourceUrl) {
-        // Use heuristics to estimate resource size
+    // Use heuristics to estimate resource size
         if (resourceUrl.includes('thumb') || resourceUrl.includes('small')) {
             return 50 * 1024; // 50KB for thumbnails
         }
@@ -451,7 +492,9 @@ class IntelligentPrefetchManager {
         if (this.processingActive) {
             return;
         }
-        if (this.processingQueue.size >= this.resourceBudget.maxConcurrentRequests) {
+        if (
+            this.processingQueue.size >= this.resourceBudget.maxConcurrentRequests
+        ) {
             return;
         }
         if (this.currentBudgetUsed >= this.resourceBudget.totalBudget) {
@@ -474,8 +517,13 @@ class IntelligentPrefetchManager {
                 queue.delete(JSON.stringify(resourceInfo));
 
                 // Check budget before processing
-                if (this.currentBudgetUsed + resourceInfo.estimatedSize > this.resourceBudget.totalBudget) {
-                    console.log('[IntelligentPrefetch] Budget exhausted, skipping resource');
+                if (
+                    this.currentBudgetUsed + resourceInfo.estimatedSize >
+          this.resourceBudget.totalBudget
+                ) {
+                    console.log(
+                        '[IntelligentPrefetch] Budget exhausted, skipping resource'
+                    );
                     break;
                 }
 
@@ -515,7 +563,8 @@ class IntelligentPrefetchManager {
             });
 
             if (response.ok) {
-                const actualSize = parseInt(response.headers.get('content-length')) || estimatedSize;
+                const actualSize =
+          parseInt(response.headers.get('content-length')) || estimatedSize;
                 this.resourceSizes.set(url, actualSize);
                 this.resourceCache.set(url, {
                     cached: true,
@@ -527,12 +576,21 @@ class IntelligentPrefetchManager {
                 const loadTime = performance.now() - startTime;
                 this.updatePerformanceMetrics(url, loadTime, actualSize, priority);
 
-                console.log(`[IntelligentPrefetch] Successfully prefetched (${priority}):`, url, `(${actualSize}B in ${Math.round(loadTime)}ms)`);
+                console.log(
+                    `[IntelligentPrefetch] Successfully prefetched (${priority}):`,
+                    url,
+                    `(${actualSize}B in ${Math.round(loadTime)}ms)`
+                );
 
                 // Update prediction model with successful prefetch
                 this.updatePredictionModel(url, true);
             } else {
-                console.warn('[IntelligentPrefetch] Failed to prefetch:', url, 'Status:', response.status);
+                console.warn(
+                    '[IntelligentPrefetch] Failed to prefetch:',
+                    url,
+                    'Status:',
+                    response.status
+                );
                 this.updatePredictionModel(url, false);
             }
         } catch (error) {
@@ -557,12 +615,16 @@ class IntelligentPrefetchManager {
 
         // Update average load time
         const loadTimeWeight = 0.1;
-        metrics.averageLoadTime = metrics.averageLoadTime * (1 - loadTimeWeight) + loadTime * loadTimeWeight;
+        metrics.averageLoadTime =
+      metrics.averageLoadTime * (1 - loadTimeWeight) +
+      loadTime * loadTimeWeight;
 
         // Update bandwidth utilization
         const bytesPerMs = size / loadTime;
         const bandwidthWeight = 0.05;
-        metrics.bandwidthUtilization = metrics.bandwidthUtilization * (1 - bandwidthWeight) + bytesPerMs * bandwidthWeight;
+        metrics.bandwidthUtilization =
+      metrics.bandwidthUtilization * (1 - bandwidthWeight) +
+      bytesPerMs * bandwidthWeight;
 
         // Track prefetch success rates by priority
         if (!metrics.prioritySuccess) {
@@ -577,7 +639,9 @@ class IntelligentPrefetchManager {
 
         // Check if this prefetch was actually used (simplified heuristic)
         setTimeout(() => {
-            const element = document.querySelector(`[src="${url}"], [data-src="${url}"]`);
+            const element = document.querySelector(
+                `[src="${url}"], [data-src="${url}"]`
+            );
             if (element && this.isElementVisible(element)) {
                 priorityStats.hits++;
                 metrics.prefetchHitRate = this.calculateOverallHitRate();
@@ -628,7 +692,7 @@ class IntelligentPrefetchManager {
         // Update user preferences based on successful prefetches
         if (success) {
             this.userInteractions.categoryPreferences[category] =
-                (this.userInteractions.categoryPreferences[category] || 0) + 1;
+        (this.userInteractions.categoryPreferences[category] || 0) + 1;
         }
     }
 
@@ -669,22 +733,34 @@ class IntelligentPrefetchManager {
     }
 
     setupAdvancedEventListeners() {
-        // Enhanced scroll tracking with prediction
-        window.addEventListener('scroll', this.throttle(this.handleIntelligentScroll.bind(this), 200));
+    // Enhanced scroll tracking with prediction
+        window.addEventListener(
+            'scroll',
+            this.throttle(this.handleIntelligentScroll.bind(this), 200)
+        );
 
         // Mouse movement for hover prediction
-        document.addEventListener('mousemove', this.throttle(this.handleMouseMovement.bind(this), 500));
+        document.addEventListener(
+            'mousemove',
+            this.throttle(this.handleMouseMovement.bind(this), 500)
+        );
 
         // Click pattern tracking
         document.addEventListener('click', this.handleUserClick.bind(this));
 
         // Connection change adaptation
         if ('connection' in navigator) {
-            navigator.connection.addEventListener('change', this.handleConnectionChange.bind(this));
+            navigator.connection.addEventListener(
+                'change',
+                this.handleConnectionChange.bind(this)
+            );
         }
 
         // Visibility change optimization
-        document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+        document.addEventListener(
+            'visibilitychange',
+            this.handleVisibilityChange.bind(this)
+        );
 
         // Page unload cleanup
         window.addEventListener('beforeunload', this.handlePageUnload.bind(this));
@@ -694,8 +770,10 @@ class IntelligentPrefetchManager {
     }
 
     observeGalleryImages() {
-        const galleryImages = document.querySelectorAll('.gallery-image, [data-src]');
-        galleryImages.forEach(img => {
+        const galleryImages = document.querySelectorAll(
+            '.gallery-image, [data-src]'
+        );
+        galleryImages.forEach((img) => {
             this.viewportObserver.observe(img);
         });
     }
@@ -744,7 +822,8 @@ class IntelligentPrefetchManager {
 
     getScrollPercentage() {
         const scrollTop = window.pageYOffset;
-        const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const documentHeight =
+      document.documentElement.scrollHeight - window.innerHeight;
         return documentHeight > 0 ? (scrollTop / documentHeight) * 100 : 0;
     }
 
@@ -771,7 +850,7 @@ class IntelligentPrefetchManager {
 
             // Track hover patterns
             this.userInteractions.hoverEvents[target.dataset.src] =
-                (this.userInteractions.hoverEvents[target.dataset.src] || 0) + 1;
+        (this.userInteractions.hoverEvents[target.dataset.src] || 0) + 1;
         }
     }
 
@@ -793,7 +872,7 @@ class IntelligentPrefetchManager {
         const category = this.categorizeResource(clickedImageUrl);
         const similarImages = this.findSimilarImages(category);
 
-        similarImages.slice(0, 3).forEach(imageUrl => {
+        similarImages.slice(0, 3).forEach((imageUrl) => {
             this.addToPriorityQueue(imageUrl, 'medium', {
                 reason: 'similar-to-clicked',
                 originalImage: clickedImageUrl
@@ -805,7 +884,7 @@ class IntelligentPrefetchManager {
         const galleryImages = document.querySelectorAll('[data-src]');
         const similarImages = [];
 
-        galleryImages.forEach(img => {
+        galleryImages.forEach((img) => {
             if (this.categorizeResource(img.dataset.src) === category) {
                 similarImages.push(img.dataset.src);
             }
@@ -819,7 +898,7 @@ class IntelligentPrefetchManager {
         const allImages = document.querySelectorAll('[data-src]');
         const imageArray = Array.from(allImages);
 
-        visibleImages.forEach(visibleImg => {
+        visibleImages.forEach((visibleImg) => {
             const index = imageArray.indexOf(visibleImg);
 
             // Prefetch next few images
@@ -836,15 +915,15 @@ class IntelligentPrefetchManager {
 
     getVisibleImages() {
         const images = document.querySelectorAll('[data-src]');
-        return Array.from(images).filter(img => this.isElementVisible(img));
+        return Array.from(images).filter((img) => this.isElementVisible(img));
     }
 
     prefetchSimilarContent() {
-        // Prefetch related content based on current page and user behavior
+    // Prefetch related content based on current page and user behavior
         const currentPath = window.location.pathname;
         const relatedUrls = this.predictRelatedContent(currentPath);
 
-        relatedUrls.forEach(url => {
+        relatedUrls.forEach((url) => {
             this.addToPriorityQueue(url, 'low', {
                 reason: 'similar-content',
                 basePage: currentPath
@@ -867,21 +946,21 @@ class IntelligentPrefetchManager {
         // User behavior-based predictions
         const preferences = this.userInteractions.categoryPreferences;
         const topCategories = Object.entries(preferences)
-            .sort(([,a], [,b]) => b - a)
+            .sort(([, a], [, b]) => b - a)
             .slice(0, 2)
             .map(([category]) => category);
 
-        topCategories.forEach(category => {
+        topCategories.forEach((category) => {
             if (category === 'gallery-2025' && !currentPath.includes('gallery')) {
                 urls.push('/pages/gallery-2025.html');
             }
         });
 
-        return urls.filter(url => url && !url.includes(currentPath));
+        return urls.filter((url) => url && !url.includes(currentPath));
     }
 
     decayResourceBudget() {
-        // Gradually reduce budget usage to simulate memory pressure relief
+    // Gradually reduce budget usage to simulate memory pressure relief
         const decayRate = 0.95;
         const minBudget = this.resourceBudget.totalBudget * 0.1;
 
@@ -900,12 +979,15 @@ class IntelligentPrefetchManager {
 
     scheduleIdleWork() {
         if ('requestIdleCallback' in window) {
-            requestIdleCallback((deadline) => {
-                this.performIdleWork(deadline);
+            requestIdleCallback(
+                (deadline) => {
+                    this.performIdleWork(deadline);
 
-                // Schedule next idle period
-                setTimeout(() => this.scheduleIdleWork(), 5000);
-            }, { timeout: 10000 });
+                    // Schedule next idle period
+                    setTimeout(() => this.scheduleIdleWork(), 5000);
+                },
+                { timeout: 10000 }
+            );
         } else {
             // Fallback for browsers without requestIdleCallback
             setTimeout(() => {
@@ -919,7 +1001,11 @@ class IntelligentPrefetchManager {
         const timeRemaining = deadline.timeRemaining();
 
         if (timeRemaining > 20 && this.getTotalQueueSize() > 0) {
-            console.log('[IntelligentPrefetch] Performing idle work with', timeRemaining, 'ms');
+            console.log(
+                '[IntelligentPrefetch] Performing idle work with',
+                timeRemaining,
+                'ms'
+            );
             this.processNextInQueue();
         }
 
@@ -962,12 +1048,17 @@ class IntelligentPrefetchManager {
     monitorConnectionChanges() {
         if ('connection' in navigator) {
             navigator.connection.addEventListener('change', () => {
-                console.log('[IntelligentPrefetch] Connection changed, recalculating budget');
+                console.log(
+                    '[IntelligentPrefetch] Connection changed, recalculating budget'
+                );
                 this.connectionInfo = this.detectConnectionCapabilities();
                 this.resourceBudget = this.calculateResourceBudget();
 
                 // Clear low-priority items if connection degraded
-                if (this.connectionInfo.qualityTier === 'low' || this.connectionInfo.saveData) {
+                if (
+                    this.connectionInfo.qualityTier === 'low' ||
+          this.connectionInfo.saveData
+                ) {
                     this.priorityQueue.get('low').clear();
                     this.priorityQueue.get('idle').clear();
                 }
@@ -976,7 +1067,7 @@ class IntelligentPrefetchManager {
     }
 
     trainPredictionModel() {
-        // Use historical data to improve predictions
+    // Use historical data to improve predictions
         const interactions = this.userInteractions;
 
         // Build similarity matrix from user behavior
@@ -985,7 +1076,8 @@ class IntelligentPrefetchManager {
         }
 
         // Update contextual factors
-        this.predictionModel.contextualFactors.timeOfDay = this.getTimeOfDayFactor();
+        this.predictionModel.contextualFactors.timeOfDay =
+      this.getTimeOfDayFactor();
     }
 
     buildSimilarityMatrix() {
@@ -995,8 +1087,8 @@ class IntelligentPrefetchManager {
         // Simple co-occurrence based similarity
         const clickedUrls = Object.keys(clicks);
 
-        clickedUrls.forEach(url1 => {
-            clickedUrls.forEach(url2 => {
+        clickedUrls.forEach((url1) => {
+            clickedUrls.forEach((url2) => {
                 if (url1 !== url2) {
                     const category1 = this.categorizeResource(url1);
                     const category2 = this.categorizeResource(url2);
@@ -1011,7 +1103,7 @@ class IntelligentPrefetchManager {
     }
 
     initializePerformanceMonitoring() {
-        // Set up performance monitoring
+    // Set up performance monitoring
         setInterval(() => {
             this.updateConnectionMetrics();
         }, 30000); // Update every 30 seconds
@@ -1056,7 +1148,7 @@ class IntelligentPrefetchManager {
     }
 
     handlePageUnload() {
-        // Save interaction data
+    // Save interaction data
         this.saveInteractionData();
 
         // Clean up resources
@@ -1069,9 +1161,15 @@ class IntelligentPrefetchManager {
 
     saveInteractionData() {
         try {
-            localStorage.setItem('alocubano-interaction-data', JSON.stringify(this.userInteractions));
+            localStorage.setItem(
+                'alocubano-interaction-data',
+                JSON.stringify(this.userInteractions)
+            );
         } catch (error) {
-            console.warn('[IntelligentPrefetch] Failed to save interaction data:', error);
+            console.warn(
+                '[IntelligentPrefetch] Failed to save interaction data:',
+                error
+            );
         }
     }
 
@@ -1095,10 +1193,13 @@ class IntelligentPrefetchManager {
                 lastExecTime = currentTime;
             } else {
                 clearTimeout(timeoutId);
-                timeoutId = setTimeout(() => {
-                    func.apply(this, args);
-                    lastExecTime = Date.now();
-                }, delay - (currentTime - lastExecTime));
+                timeoutId = setTimeout(
+                    () => {
+                        func.apply(this, args);
+                        lastExecTime = Date.now();
+                    },
+                    delay - (currentTime - lastExecTime)
+                );
             }
         };
     }

@@ -48,8 +48,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Initialize the virtual gallery
-     */
+   * Initialize the virtual gallery
+   */
     async init() {
         try {
             if (!this.container) {
@@ -62,7 +62,6 @@ class VirtualGalleryManager {
             this.render();
 
             return this;
-
         } catch (error) {
             console.error('Failed to initialize virtual gallery:', error);
             this.showError('Failed to initialize gallery. Please refresh the page.');
@@ -71,8 +70,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Create the DOM structure for virtual scrolling
-     */
+   * Create the DOM structure for virtual scrolling
+   */
     createDOMStructure() {
         this.container.innerHTML = `
             <div class="virtual-gallery">
@@ -98,7 +97,9 @@ class VirtualGalleryManager {
         `;
 
         // Cache DOM elements
-        this.scrollContainer = this.container.querySelector('.virtual-scroll-container');
+        this.scrollContainer = this.container.querySelector(
+            '.virtual-scroll-container'
+        );
         this.virtualList = this.container.querySelector('.virtual-list');
         this.loadingIndicator = this.container.querySelector('.virtual-loading');
         this.errorDisplay = this.container.querySelector('.virtual-error');
@@ -123,8 +124,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Set up event listeners
-     */
+   * Set up event listeners
+   */
     setupEventListeners() {
         if (this.enableVirtualScrolling) {
             this.scrollContainer.addEventListener('scroll', this.boundScrollHandler);
@@ -138,8 +139,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Load initial data from API
-     */
+   * Load initial data from API
+   */
     async loadInitialData() {
         try {
             this.showLoading();
@@ -149,7 +150,6 @@ class VirtualGalleryManager {
 
             this.processAPIResponse(data);
             this.hideLoading();
-
         } catch (error) {
             console.error('Failed to load initial data:', error);
             this.showError('Failed to load gallery data.');
@@ -158,15 +158,15 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Fetch data from API with pagination
-     */
+   * Fetch data from API with pagination
+   */
     async fetchData(offset, limit) {
         const url = `${this.apiEndpoint}?year=${this.year}&offset=${offset}&limit=${limit}`;
 
         const response = await fetch(url, {
             method: 'GET',
             headers: {
-                'Accept': 'application/json'
+                Accept: 'application/json'
             }
         });
 
@@ -178,16 +178,16 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Process API response and update state
-     */
+   * Process API response and update state
+   */
     processAPIResponse(data) {
-        // Handle both structured (categories) and flat responses
+    // Handle both structured (categories) and flat responses
         let newItems = [];
 
         if (data.categories) {
             // Structured response with categories
             Object.entries(data.categories).forEach(([category, items]) => {
-                items.forEach(item => {
+                items.forEach((item) => {
                     newItems.push({
                         ...item,
                         category: category,
@@ -197,7 +197,7 @@ class VirtualGalleryManager {
             });
         } else if (data.images) {
             // Flat image array
-            newItems = data.images.map(item => ({
+            newItems = data.images.map((item) => ({
                 ...item,
                 id: item.id || item.name
             }));
@@ -215,8 +215,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Update virtual list dimensions
-     */
+   * Update virtual list dimensions
+   */
     updateDimensions() {
         if (!this.enableVirtualScrolling) {
             return;
@@ -231,8 +231,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Handle scroll events for virtual scrolling
-     */
+   * Handle scroll events for virtual scrolling
+   */
     handleScroll() {
         if (!this.enableVirtualScrolling) {
             return;
@@ -243,7 +243,11 @@ class VirtualGalleryManager {
 
         // Check if we need to load more data
         const scrollBottom = this.scrollTop + this.containerHeight;
-        if (scrollBottom > this.totalHeight - this.preloadDistance && !this.isLoading && this.hasMoreData) {
+        if (
+            scrollBottom > this.totalHeight - this.preloadDistance &&
+      !this.isLoading &&
+      this.hasMoreData
+        ) {
             this.loadMoreData();
         }
 
@@ -252,8 +256,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Handle resize events
-     */
+   * Handle resize events
+   */
     handleResize() {
         this.containerHeight = this.scrollContainer.clientHeight;
         this.updateDimensions();
@@ -261,8 +265,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Load more data for infinite scroll
-     */
+   * Load more data for infinite scroll
+   */
     async loadMoreData() {
         if (this.isLoading || !this.hasMoreData) {
             return;
@@ -277,7 +281,6 @@ class VirtualGalleryManager {
 
             this.processAPIResponse(data);
             this.render();
-
         } catch (error) {
             console.error('Failed to load more data:', error);
         } finally {
@@ -286,8 +289,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Render virtual items
-     */
+   * Render virtual items
+   */
     render() {
         const startTime = performance.now();
 
@@ -307,12 +310,14 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Render items using virtual scrolling
-     */
+   * Render items using virtual scrolling
+   */
     renderVirtual() {
-        // Calculate visible range
+    // Calculate visible range
         const startRow = Math.floor(this.scrollTop / this.itemHeight);
-        const endRow = Math.ceil((this.scrollTop + this.containerHeight) / this.itemHeight);
+        const endRow = Math.ceil(
+            (this.scrollTop + this.containerHeight) / this.itemHeight
+        );
 
         // Add buffer
         const bufferedStartRow = Math.max(0, startRow - this.bufferSize);
@@ -323,7 +328,10 @@ class VirtualGalleryManager {
 
         // Calculate item indices
         const startIndex = bufferedStartRow * this.itemsPerRow;
-        const endIndex = Math.min(this.items.length, bufferedEndRow * this.itemsPerRow);
+        const endIndex = Math.min(
+            this.items.length,
+            bufferedEndRow * this.itemsPerRow
+        );
 
         // Clear existing items
         this.virtualList.innerHTML = '';
@@ -356,11 +364,12 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Render items using standard layout (non-virtual)
-     */
+   * Render items using standard layout (non-virtual)
+   */
     renderStandard() {
-        // Only render new items
-        const existingItems = this.virtualList.querySelectorAll('.gallery-item').length;
+    // Only render new items
+        const existingItems =
+      this.virtualList.querySelectorAll('.gallery-item').length;
 
         for (let i = existingItems; i < this.items.length; i++) {
             const item = this.items[i];
@@ -370,8 +379,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Create a gallery item element
-     */
+   * Create a gallery item element
+   */
     createItemElement(item, index) {
         const element = document.createElement('div');
         element.className = 'gallery-item virtual-item';
@@ -411,22 +420,25 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Set up lazy loading for an item
-     */
+   * Set up lazy loading for an item
+   */
     setupLazyLoading(element) {
-        // Use Intersection Observer for lazy loading
+    // Use Intersection Observer for lazy loading
         if (!this.lazyObserver) {
-            this.lazyObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        this.loadItemImage(entry.target);
-                        this.lazyObserver.unobserve(entry.target);
-                    }
-                });
-            }, {
-                rootMargin: '50px',
-                threshold: 0.1
-            });
+            this.lazyObserver = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            this.loadItemImage(entry.target);
+                            this.lazyObserver.unobserve(entry.target);
+                        }
+                    });
+                },
+                {
+                    rootMargin: '50px',
+                    threshold: 0.1
+                }
+            );
         }
 
         const img = element.querySelector('img[data-src]');
@@ -436,8 +448,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Load image for a specific item
-     */
+   * Load image for a specific item
+   */
     loadItemImage(img) {
         const placeholder = img.parentElement.querySelector('.lazy-placeholder');
 
@@ -464,8 +476,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Open lightbox for item at index
-     */
+   * Open lightbox for item at index
+   */
     openLightbox(index) {
         if (typeof Lightbox === 'undefined') {
             console.warn('Lightbox component not available');
@@ -483,25 +495,32 @@ class VirtualGalleryManager {
         }
 
         // Prepare items for lightbox
-        const lightboxItems = this.items.map(item => ({
+        const lightboxItems = this.items.map((item) => ({
             ...item,
             url: item.url,
             thumbnailUrl: item.thumbnailUrl || item.url,
             title: (item.name || '').replace(/\.[^/.]+$/, '')
         }));
 
-        const categories = this.items.map(item => item.category || 'uncategorized');
+        const categories = this.items.map(
+            (item) => item.category || 'uncategorized'
+        );
         const categoryCounts = this.getCategoryCounts();
 
-        this.lightbox.openAdvanced(lightboxItems, index, categories, categoryCounts);
+        this.lightbox.openAdvanced(
+            lightboxItems,
+            index,
+            categories,
+            categoryCounts
+        );
     }
 
     /**
-     * Get category counts for lightbox
-     */
+   * Get category counts for lightbox
+   */
     getCategoryCounts() {
         const counts = {};
-        this.items.forEach(item => {
+        this.items.forEach((item) => {
             const category = item.category || 'uncategorized';
             counts[category] = (counts[category] || 0) + 1;
         });
@@ -509,24 +528,27 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Set up infinite scroll for non-virtual mode
-     */
+   * Set up infinite scroll for non-virtual mode
+   */
     setupInfiniteScroll() {
-        // Create sentinel element
+    // Create sentinel element
         const sentinel = document.createElement('div');
         sentinel.className = 'infinite-scroll-sentinel';
         sentinel.style.cssText = 'height: 1px; margin: 20px 0;';
 
         // Observe sentinel
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting && !this.isLoading && this.hasMoreData) {
-                    this.loadMoreData();
-                }
-            });
-        }, {
-            rootMargin: '100px'
-        });
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting && !this.isLoading && this.hasMoreData) {
+                        this.loadMoreData();
+                    }
+                });
+            },
+            {
+                rootMargin: '100px'
+            }
+        );
 
         observer.observe(sentinel);
         this.container.appendChild(sentinel);
@@ -535,8 +557,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Show loading indicator
-     */
+   * Show loading indicator
+   */
     showLoading() {
         if (this.loadingIndicator) {
             this.loadingIndicator.setAttribute('aria-hidden', 'false');
@@ -545,8 +567,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Hide loading indicator
-     */
+   * Hide loading indicator
+   */
     hideLoading() {
         if (this.loadingIndicator) {
             this.loadingIndicator.setAttribute('aria-hidden', 'true');
@@ -555,8 +577,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Show error message
-     */
+   * Show error message
+   */
     showError(message) {
         if (this.errorDisplay) {
             const messageElement = this.errorDisplay.querySelector('.error-message');
@@ -569,8 +591,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Hide error message
-     */
+   * Hide error message
+   */
     hideError() {
         if (this.errorDisplay) {
             this.errorDisplay.setAttribute('aria-hidden', 'true');
@@ -579,8 +601,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Retry loading
-     */
+   * Retry loading
+   */
     async retryLoad() {
         this.hideError();
         try {
@@ -592,8 +614,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Throttle function for performance
-     */
+   * Throttle function for performance
+   */
     throttle(func, limit) {
         let inThrottle;
         return function() {
@@ -602,18 +624,20 @@ class VirtualGalleryManager {
             if (!inThrottle) {
                 func.apply(context, args);
                 inThrottle = true;
-                setTimeout(() => inThrottle = false, limit);
+                setTimeout(() => (inThrottle = false), limit);
             }
         };
     }
 
     /**
-     * Get performance metrics
-     */
+   * Get performance metrics
+   */
     getPerformanceMetrics() {
-        const avgRenderTime = this.performanceMetrics.renderTimes.length > 0
-            ? this.performanceMetrics.renderTimes.reduce((a, b) => a + b, 0) / this.performanceMetrics.renderTimes.length
-            : 0;
+        const avgRenderTime =
+      this.performanceMetrics.renderTimes.length > 0
+          ? this.performanceMetrics.renderTimes.reduce((a, b) => a + b, 0) /
+          this.performanceMetrics.renderTimes.length
+          : 0;
 
         return {
             averageRenderTime: avgRenderTime.toFixed(2),
@@ -625,8 +649,8 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Lifecycle methods for integration
-     */
+   * Lifecycle methods for integration
+   */
     onShow() {
         if (this.container) {
             this.container.style.display = 'block';
@@ -642,12 +666,15 @@ class VirtualGalleryManager {
     }
 
     /**
-     * Destroy the virtual gallery and clean up resources
-     */
+   * Destroy the virtual gallery and clean up resources
+   */
     destroy() {
-        // Remove event listeners
+    // Remove event listeners
         if (this.enableVirtualScrolling) {
-            this.scrollContainer?.removeEventListener('scroll', this.boundScrollHandler);
+            this.scrollContainer?.removeEventListener(
+                'scroll',
+                this.boundScrollHandler
+            );
             window.removeEventListener('resize', this.boundResizeHandler);
         }
 

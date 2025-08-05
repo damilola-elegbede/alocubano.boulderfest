@@ -42,7 +42,10 @@ class AdvancedCacheWarmer {
         this.currentPhase = 'idle';
         this.isWarming = false;
 
-        console.log('[AdvancedCacheWarmer] Initialized with strategy:', this.strategy);
+        console.log(
+            '[AdvancedCacheWarmer] Initialized with strategy:',
+            this.strategy
+        );
         console.log('[AdvancedCacheWarmer] Connection info:', this.connectionInfo);
 
         // Listen for connection changes
@@ -53,7 +56,10 @@ class AdvancedCacheWarmer {
     }
 
     detectConnectionCapabilities() {
-        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        const connection =
+      navigator.connection ||
+      navigator.mozConnection ||
+      navigator.webkitConnection;
 
         let effectiveType = 'unknown';
         let downlink = null;
@@ -103,55 +109,32 @@ class AdvancedCacheWarmer {
     categorizeResources() {
         return {
             critical: {
-                styles: [
-                    '/css/base.css',
-                    '/css/components.css',
-                    '/css/typography.css'
-                ],
-                scripts: [
-                    '/js/main.js',
-                    '/js/navigation.js'
-                ],
-                images: [
-                    '/images/logo.png',
-                    '/images/favicons/favicon-32x32.png'
-                ]
+                styles: ['/css/base.css', '/css/components.css', '/css/typography.css'],
+                scripts: ['/js/main.js', '/js/navigation.js'],
+                images: ['/images/logo.png', '/images/favicons/favicon-32x32.png']
             },
             essential: {
-                styles: [
-                    '/css/navigation.css',
-                    '/css/forms.css'
-                ],
-                scripts: [
-                    '/js/gallery-detail.js',
-                    '/js/components/lightbox.js'
-                ],
-                images: [
-                    '/images/hero-default.jpg'
-                ],
+                styles: ['/css/navigation.css', '/css/forms.css'],
+                scripts: ['/js/gallery-detail.js', '/js/components/lightbox.js'],
+                images: ['/images/hero-default.jpg'],
                 fonts: [
                     'https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap',
                     'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap'
                 ]
             },
             predictive: {
-                styles: [
-                    '/css/mobile-overrides.css'
-                ],
-                scripts: [
-                    '/js/components/lazy-loading.js',
-                    '/js/typography.js'
-                ],
-                api: [
-                    '/api/featured-photos',
-                    '/api/gallery/2025'
-                ]
+                styles: ['/css/mobile-overrides.css'],
+                scripts: ['/js/components/lazy-loading.js', '/js/typography.js'],
+                api: ['/api/featured-photos', '/api/gallery/2025']
             }
         };
     }
 
     setupConnectionMonitoring() {
-        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        const connection =
+      navigator.connection ||
+      navigator.mozConnection ||
+      navigator.webkitConnection;
 
         if (connection) {
             connection.addEventListener('change', () => {
@@ -160,7 +143,12 @@ class AdvancedCacheWarmer {
                 this.strategy = this.determineStrategy();
 
                 if (oldStrategy !== this.strategy) {
-                    console.log('[AdvancedCacheWarmer] Strategy changed:', oldStrategy, '→', this.strategy);
+                    console.log(
+                        '[AdvancedCacheWarmer] Strategy changed:',
+                        oldStrategy,
+                        '→',
+                        this.strategy
+                    );
                     this.analytics.strategySwitches++;
                     this.adaptToNewStrategy();
                 }
@@ -179,13 +167,16 @@ class AdvancedCacheWarmer {
     }
 
     adaptToNewStrategy() {
-        // Pause current warming if strategy becomes more restrictive
+    // Pause current warming if strategy becomes more restrictive
         if (this.strategy === 'minimal' && this.isWarming) {
             this.pauseWarming();
         }
 
         // Resume or intensify warming if strategy becomes more permissive
-        if ((this.strategy === 'conservative' || this.strategy === 'aggressive') && !this.isWarming) {
+        if (
+            (this.strategy === 'conservative' || this.strategy === 'aggressive') &&
+      !this.isWarming
+        ) {
             this.resumeWarming();
         }
     }
@@ -221,7 +212,10 @@ class AdvancedCacheWarmer {
             return;
         }
 
-        console.log('[AdvancedCacheWarmer] Starting progressive warming with strategy:', this.strategy);
+        console.log(
+            '[AdvancedCacheWarmer] Starting progressive warming with strategy:',
+            this.strategy
+        );
         this.isWarming = true;
         const startTime = performance.now();
 
@@ -247,7 +241,6 @@ class AdvancedCacheWarmer {
             this.analytics.timeSpent += endTime - startTime;
 
             this.reportAnalytics();
-
         } catch (error) {
             console.error('[AdvancedCacheWarmer] Progressive warming failed:', error);
         } finally {
@@ -263,9 +256,13 @@ class AdvancedCacheWarmer {
         const allUrls = [];
 
         // Flatten all resource types for this phase
-        Object.keys(phaseResources).forEach(type => {
-            phaseResources[type].forEach(url => {
-                allUrls.push({ url, type, priority: this.getResourcePriority(type, phaseName) });
+        Object.keys(phaseResources).forEach((type) => {
+            phaseResources[type].forEach((url) => {
+                allUrls.push({
+                    url,
+                    type,
+                    priority: this.getResourcePriority(type, phaseName)
+                });
             });
         });
 
@@ -301,9 +298,11 @@ class AdvancedCacheWarmer {
             const batch = resources.slice(i, i + batchSize);
 
             // Create limited concurrent promises
-            const batchPromises = batch.slice(0, maxConcurrent).map(resource =>
-                this.warmSingleResource(resource.url, resource.type)
-            );
+            const batchPromises = batch
+                .slice(0, maxConcurrent)
+                .map((resource) =>
+                    this.warmSingleResource(resource.url, resource.type)
+                );
 
             await Promise.allSettled(batchPromises);
 
@@ -341,22 +340,30 @@ class AdvancedCacheWarmer {
                 }
 
                 // For images, ensure they're properly cached
-                if (resourceType === 'images' && url.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
+                if (
+                    resourceType === 'images' &&
+          url.match(/\.(jpg|jpeg|png|webp|gif)$/i)
+                ) {
                     await this.ensureImageCached(url);
                 }
 
                 this.analytics.warmed++;
                 this.completedUrls.add(url);
 
-                console.log(`[AdvancedCacheWarmer] Warmed ${resourceType}:`, url,
-                    bytesTransferred > 0 ? `(${this.formatBytes(bytesTransferred)})` : '');
-
+                console.log(
+                    `[AdvancedCacheWarmer] Warmed ${resourceType}:`,
+                    url,
+                    bytesTransferred > 0 ? `(${this.formatBytes(bytesTransferred)})` : ''
+                );
             } else {
                 throw new Error(`HTTP ${response.status}`);
             }
-
         } catch (error) {
-            console.warn(`[AdvancedCacheWarmer] Failed to warm ${resourceType}:`, url, error.message);
+            console.warn(
+                `[AdvancedCacheWarmer] Failed to warm ${resourceType}:`,
+                url,
+                error.message
+            );
             this.analytics.failed++;
         } finally {
             this.warmingInProgress.delete(url);
@@ -364,7 +371,7 @@ class AdvancedCacheWarmer {
     }
 
     getRequestPriority(resourceType) {
-        // Use browser's resource prioritization hints
+    // Use browser's resource prioritization hints
         const priorityMap = {
             styles: 'high',
             scripts: 'high',
@@ -386,7 +393,9 @@ class AdvancedCacheWarmer {
     }
 
     async warmGalleryImages(galleryId, limit = 10) {
-        console.log(`[AdvancedCacheWarmer] Warming gallery images for: ${galleryId}`);
+        console.log(
+            `[AdvancedCacheWarmer] Warming gallery images for: ${galleryId}`
+        );
 
         try {
             // Get gallery data
@@ -400,7 +409,7 @@ class AdvancedCacheWarmer {
             const config = this.getStrategyConfig();
             const imagesToWarm = galleryData.photos
                 .slice(0, Math.min(limit, config.batchSize * 2))
-                .map(photo => ({
+                .map((photo) => ({
                     url: photo.thumbnailUrl || photo.url,
                     type: 'images',
                     priority: 5
@@ -410,7 +419,6 @@ class AdvancedCacheWarmer {
                 ...config,
                 batchDelay: config.batchDelay * 2 // Slower for gallery images
             });
-
         } catch (error) {
             console.error('[AdvancedCacheWarmer] Gallery warming failed:', error);
         }
@@ -429,7 +437,10 @@ class AdvancedCacheWarmer {
                 };
             }
         } catch (error) {
-            console.warn(`[AdvancedCacheWarmer] Failed to fetch gallery data: ${galleryId}`, error);
+            console.warn(
+                `[AdvancedCacheWarmer] Failed to fetch gallery data: ${galleryId}`,
+                error
+            );
         }
         return null;
     }
@@ -449,7 +460,10 @@ class AdvancedCacheWarmer {
     }
 
     handleServiceWorkerCacheComplete(data) {
-        console.log('[AdvancedCacheWarmer] Service worker cache warming completed:', data);
+        console.log(
+            '[AdvancedCacheWarmer] Service worker cache warming completed:',
+            data
+        );
 
         // Update analytics based on service worker results
         if (data.results) {
@@ -461,7 +475,7 @@ class AdvancedCacheWarmer {
 
     // Utility methods
     delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+        return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
     formatBytes(bytes) {
@@ -481,13 +495,19 @@ class AdvancedCacheWarmer {
 
     resumeWarming() {
         if (!this.isWarming) {
-            console.log('[AdvancedCacheWarmer] Resuming warming with new strategy:', this.strategy);
+            console.log(
+                '[AdvancedCacheWarmer] Resuming warming with new strategy:',
+                this.strategy
+            );
             setTimeout(() => this.startProgressiveWarming(), 1000);
         }
     }
 
     reportAnalytics() {
-        const efficiency = this.analytics.warmed / (this.analytics.warmed + this.analytics.failed) * 100;
+        const efficiency =
+      (this.analytics.warmed /
+        (this.analytics.warmed + this.analytics.failed)) *
+      100;
         const avgTimePerResource = this.analytics.timeSpent / this.analytics.warmed;
 
         console.log('[AdvancedCacheWarmer] Warming Analytics:', {
@@ -499,7 +519,9 @@ class AdvancedCacheWarmer {
             totalTime: `${(this.analytics.timeSpent / 1000).toFixed(2)}s`,
             avgTimePerResource: `${avgTimePerResource.toFixed(0)}ms`,
             strategySwitches: this.analytics.strategySwitches,
-            phasesCompleted: Object.values(this.analytics.phaseCompletions).filter(Boolean).length
+            phasesCompleted: Object.values(this.analytics.phaseCompletions).filter(
+                Boolean
+            ).length
         });
     }
 
@@ -543,7 +565,11 @@ class AdvancedCacheWarmer {
     autoWarm() {
         const currentPath = window.location.pathname;
 
-        if (currentPath === '/' || currentPath === '/home' || currentPath === '/index.html') {
+        if (
+            currentPath === '/' ||
+      currentPath === '/home' ||
+      currentPath === '/index.html'
+        ) {
             // Homepage: start full progressive warming
             this.startProgressiveWarming();
         } else if (currentPath.includes('/gallery')) {

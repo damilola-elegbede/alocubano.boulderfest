@@ -14,7 +14,7 @@ if (document.readyState === 'loading') {
 
 async function initializeGlobalCart() {
     try {
-        // Get cart manager instance
+    // Get cart manager instance
         const cartManager = getCartManager();
 
         // Initialize cart
@@ -28,7 +28,6 @@ async function initializeGlobalCart() {
 
         // Set up global debugging
         setupGlobalDebugging(cartManager);
-
     } catch (error) {
         console.error('Failed to initialize global cart:', error);
     }
@@ -37,9 +36,15 @@ async function initializeGlobalCart() {
 function setupPageIntegrations(cartManager) {
     const currentPath = window.location.pathname;
 
-    if (currentPath.includes('/tickets') || currentPath.includes('tickets.html')) {
+    if (
+        currentPath.includes('/tickets') ||
+    currentPath.includes('tickets.html')
+    ) {
         setupTicketsPageIntegration(cartManager);
-    } else if (currentPath.includes('/donations') || currentPath.includes('donations.html')) {
+    } else if (
+        currentPath.includes('/donations') ||
+    currentPath.includes('donations.html')
+    ) {
         setupDonationsPageIntegration(cartManager);
     }
 }
@@ -99,14 +104,14 @@ function setupDonationsPageIntegration(cartManager) {
 function setupGlobalDebugging(cartManager) {
     // Add global debugging functions for development only
     const isDevelopment = () => {
-        // Check multiple indicators for development environment
+    // Check multiple indicators for development environment
         return (
             window.location.hostname === 'localhost' ||
-            window.location.hostname === '127.0.0.1' ||
-            window.location.port === '3000' ||
-            window.location.port === '8080' ||
-            window.location.search.includes('debug=true') ||
-            localStorage.getItem('dev_mode') === 'true'
+      window.location.hostname === '127.0.0.1' ||
+      window.location.port === '3000' ||
+      window.location.port === '8080' ||
+      window.location.search.includes('debug=true') ||
+      localStorage.getItem('dev_mode') === 'true'
         );
     };
 
@@ -117,30 +122,35 @@ function setupGlobalDebugging(cartManager) {
             getState: () => cartManager.getState(),
             getDebugInfo: () => cartManager.getDebugInfo(),
             clearCart: () => cartManager.clear(),
-            addTestTicket: () => cartManager.addTicket({
-                ticketType: 'test',
-                price: 25,
-                name: 'Test Ticket',
-                eventId: 'test-event',
-                quantity: 1
-            }),
+            addTestTicket: () =>
+                cartManager.addTicket({
+                    ticketType: 'test',
+                    price: 25,
+                    name: 'Test Ticket',
+                    eventId: 'test-event',
+                    quantity: 1
+                }),
             addTestDonation: (amount = 10) => cartManager.addDonation(amount),
             simulate: {
                 ticketAdded: (ticketType = 'general') => {
-                    document.dispatchEvent(new CustomEvent('ticket-quantity-changed', {
-                        detail: {
-                            ticketType,
-                            quantity: 1,
-                            price: 50,
-                            name: 'General Admission',
-                            eventId: 'main-event'
-                        }
-                    }));
+                    document.dispatchEvent(
+                        new CustomEvent('ticket-quantity-changed', {
+                            detail: {
+                                ticketType,
+                                quantity: 1,
+                                price: 50,
+                                name: 'General Admission',
+                                eventId: 'main-event'
+                            }
+                        })
+                    );
                 },
                 donationAdded: (amount = 25) => {
-                    document.dispatchEvent(new CustomEvent('donation-amount-changed', {
-                        detail: { amount }
-                    }));
+                    document.dispatchEvent(
+                        new CustomEvent('donation-amount-changed', {
+                            detail: { amount }
+                        })
+                    );
                 }
             },
             // Cleanup function to remove event listeners and debug tools
@@ -166,13 +176,28 @@ function setupGlobalDebugging(cartManager) {
 
         cartManager.addEventListener('cart:updated', cartUpdatedHandler);
         cartManager.addEventListener('cart:ticket:added', ticketAddedHandler);
-        cartManager.addEventListener('cart:donation:updated', donationUpdatedHandler);
+        cartManager.addEventListener(
+            'cart:donation:updated',
+            donationUpdatedHandler
+        );
 
         // Track listeners for cleanup
         debugEventListeners.push(
-            { target: cartManager, event: 'cart:updated', handler: cartUpdatedHandler },
-            { target: cartManager, event: 'cart:ticket:added', handler: ticketAddedHandler },
-            { target: cartManager, event: 'cart:donation:updated', handler: donationUpdatedHandler }
+            {
+                target: cartManager,
+                event: 'cart:updated',
+                handler: cartUpdatedHandler
+            },
+            {
+                target: cartManager,
+                event: 'cart:ticket:added',
+                handler: ticketAddedHandler
+            },
+            {
+                target: cartManager,
+                event: 'cart:donation:updated',
+                handler: donationUpdatedHandler
+            }
         );
     }
 }

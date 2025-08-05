@@ -7,7 +7,7 @@ This document provides comprehensive API documentation for the A Lo Cubano Bould
 The cart system consists of three main components:
 
 1. **CartManager** (`/js/lib/cart-manager.js`) - Core cart state management
-2. **DonationSelection** (`/js/donation-selection.js`) - Donation interface handler  
+2. **DonationSelection** (`/js/donation-selection.js`) - Donation interface handler
 3. **TicketSelection** (`/js/ticket-selection.js`) - Ticket interface handler
 
 ### Event-Driven Architecture
@@ -25,6 +25,7 @@ const cartManager = new CartManager();
 ```
 
 **Features:**
+
 - Extends `EventTarget` for custom event handling
 - Automatically initializes storage coordination
 - Sets up dual event dispatch (instance + document level)
@@ -36,19 +37,22 @@ const cartManager = new CartManager();
 Updates or removes ticket quantities in the cart.
 
 **Parameters:**
+
 - `ticketType` (string) - Unique identifier for ticket type
 - `quantity` (number) - New quantity (0 removes the ticket)
 
 **Returns:** `Promise<void>`
 
 **Events Emitted:**
+
 - `cart:updated` - When cart state changes
 - `cart:ticket:updated` - Specific to ticket changes
 
 **Example:**
+
 ```javascript
-await cartManager.updateTicketQuantity('early-bird-full', 2);
-await cartManager.updateTicketQuantity('friday-pass', 0); // Removes ticket
+await cartManager.updateTicketQuantity("early-bird-full", 2);
+await cartManager.updateTicketQuantity("friday-pass", 0); // Removes ticket
 ```
 
 #### `addTicket(ticketType, quantity, price, name, eventId)`
@@ -56,6 +60,7 @@ await cartManager.updateTicketQuantity('friday-pass', 0); // Removes ticket
 Adds tickets to the cart (incremental).
 
 **Parameters:**
+
 - `ticketType` (string) - Ticket identifier
 - `quantity` (number) - Number to add
 - `price` (number) - Price per ticket
@@ -63,8 +68,15 @@ Adds tickets to the cart (incremental).
 - `eventId` (string) - Event identifier
 
 **Example:**
+
 ```javascript
-await cartManager.addTicket('early-bird-full', 1, 100, 'Early Bird Full Pass', 'alocubano-2026');
+await cartManager.addTicket(
+  "early-bird-full",
+  1,
+  100,
+  "Early Bird Full Pass",
+  "alocubano-2026",
+);
 ```
 
 #### `addDonation(amount, type, metadata)`
@@ -72,17 +84,22 @@ await cartManager.addTicket('early-bird-full', 1, 100, 'Early Bird Full Pass', '
 Adds a donation to the cart.
 
 **Parameters:**
+
 - `amount` (number) - Donation amount
 - `type` (string, optional) - Donation type ('general', 'scholarship', etc.)
 - `metadata` (object, optional) - Additional donation info
 
 **Events Emitted:**
+
 - `cart:updated`
 - `cart:donation:added`
 
 **Example:**
+
 ```javascript
-await cartManager.addDonation(50, 'scholarship', { message: 'Supporting students' });
+await cartManager.addDonation(50, "scholarship", {
+  message: "Supporting students",
+});
 ```
 
 #### `removeDonation(index)`
@@ -90,9 +107,11 @@ await cartManager.addDonation(50, 'scholarship', { message: 'Supporting students
 Removes a donation by index.
 
 **Parameters:**
+
 - `index` (number) - Index of donation to remove
 
 **Example:**
+
 ```javascript
 await cartManager.removeDonation(0); // Remove first donation
 ```
@@ -102,10 +121,12 @@ await cartManager.removeDonation(0); // Remove first donation
 Clears all cart contents.
 
 **Events Emitted:**
+
 - `cart:cleared`
 - `cart:updated`
 
 **Example:**
+
 ```javascript
 await cartManager.clear();
 ```
@@ -115,6 +136,7 @@ await cartManager.clear();
 Returns current cart state (immutable copy).
 
 **Returns:** `Object`
+
 ```javascript
 {
   tickets: {
@@ -143,20 +165,24 @@ Returns current cart state (immutable copy).
 Dispatches events on both the instance and document (dual dispatch fix).
 
 **Parameters:**
+
 - `eventName` (string) - Event name
 - `detail` (any) - Event detail payload
 
 **Example:**
+
 ```javascript
-cartManager.emit('custom:event', { data: 'example' });
+cartManager.emit("custom:event", { data: "example" });
 ```
 
 ### Events
 
 #### `cart:updated`
+
 Fired whenever cart state changes.
 
 **Detail:**
+
 ```javascript
 {
   state: object,      // Current cart state
@@ -166,15 +192,19 @@ Fired whenever cart state changes.
 ```
 
 #### `cart:initialized`
+
 Fired when CartManager finishes initialization.
 
 #### `cart:cleared`
+
 Fired when cart is cleared.
 
 #### `cart:ticket:added`, `cart:ticket:updated`, `cart:ticket:removed`
+
 Fired for specific ticket operations.
 
 #### `cart:donation:added`, `cart:donation:removed`
+
 Fired for specific donation operations.
 
 ## DonationSelection API
@@ -199,9 +229,11 @@ const donationSelection = new DonationSelection();
 Handles donation card selection with toggle behavior.
 
 **Parameters:**
+
 - `event` (Event) - Click event
 
 **Features:**
+
 - **Toggle Selection**: Click selected card to deselect
 - **Custom Input**: Clicking custom card shows input field
 - **Keyboard Support**: Enter/Space key support
@@ -211,9 +243,11 @@ Handles donation card selection with toggle behavior.
 Handles custom amount input changes.
 
 **Parameters:**
+
 - `event` (Event) - Input event
 
 **Behavior:**
+
 - Validates input (minimum $1)
 - Reverts to "CUSTOM" display when empty
 - Updates button state immediately
@@ -223,9 +257,11 @@ Handles custom amount input changes.
 Processes donation and adds to cart.
 
 **Events Dispatched:**
+
 - `donation-amount-changed` with `{ amount: number }`
 
 **Features:**
+
 - **Validation**: Ensures amount > 0
 - **Cart Integration**: Dispatches event for cart system
 - **UI Reset**: Clears form after successful addition
@@ -239,6 +275,7 @@ Creates dense confetti celebration animation.
 **Parameters:** None
 
 **Features:**
+
 - **150 confetti pieces** for maximum visual impact
 - **8 vibrant colors** including festival theme colors
 - **Multiple shapes**: squares, circles, rectangles, diamonds
@@ -247,8 +284,9 @@ Creates dense confetti celebration animation.
 - **Spreads across 120vw** for full-screen effect
 
 **Colors Used:**
+
 - Festival blue: `#5B6BB5`
-- Vibrant red: `#FF6B6B` 
+- Vibrant red: `#FF6B6B`
 - Aqua: `#4ECDC4`
 - Light blue: `#45B7D1`
 - Green: `#96CEB4`
@@ -261,6 +299,7 @@ Creates dense confetti celebration animation.
 Updates donate button text and state.
 
 **Button States:**
+
 - `"SELECT AMOUNT"` - When no amount selected
 - `"ADD TO CART - $X"` - When amount selected
 - Disabled when no valid amount
@@ -268,11 +307,15 @@ Updates donate button text and state.
 ### Custom Events
 
 #### `donation-amount-changed`
+
 Dispatched when user confirms donation.
 
 **Detail:**
+
 ```javascript
-{ amount: number }
+{
+  amount: number;
+}
 ```
 
 ### HTML Structure Requirements
@@ -296,12 +339,13 @@ Dispatched when user confirms donation.
 ```
 
 **Note**: Custom card transforms to include input field:
+
 ```html
 <!-- After clicking custom card -->
 <div class="donation-amount">
   <span class="custom-amount-wrapper">
     <span class="dollar-sign">$</span>
-    <input type="number" class="custom-amount-input" min="1" step="1">
+    <input type="number" class="custom-amount-input" min="1" step="1" />
   </span>
 </div>
 ```
@@ -327,6 +371,7 @@ const ticketSelection = new TicketSelection();
 Initializes the ticket selection system.
 
 **Features:**
+
 - **Cart Manager Wait**: Waits for CartManager initialization
 - **Event Binding**: Sets up all event listeners
 - **State Sync**: Synchronizes with existing cart state
@@ -344,9 +389,11 @@ Waits for CartManager to be available.
 Handles quantity button clicks.
 
 **Parameters:**
+
 - `event` (Event) - Click event from + or - button
 
 **Features:**
+
 - **Event Propagation**: Uses `stopPropagation()` to prevent card clicks
 - **Quantity Validation**: Prevents negative quantities
 - **Immediate Update**: Updates UI and cart state
@@ -357,9 +404,11 @@ Handles quantity button clicks.
 Handles clicking on ticket cards.
 
 **Parameters:**
+
 - `event` (Event) - Click event
 
 **Behavior:**
+
 - If quantity is 0, adds 1 ticket
 - Ignores clicks on quantity buttons (via propagation stop)
 
@@ -368,6 +417,7 @@ Handles clicking on ticket cards.
 Synchronizes UI with cart localStorage state.
 
 **Features:**
+
 - **Parse Safety**: Handles corrupted localStorage gracefully
 - **UI Update**: Updates all quantity displays
 - **State Consistency**: Ensures UI matches cart state
@@ -376,9 +426,11 @@ Synchronizes UI with cart localStorage state.
 ### Custom Events
 
 #### `ticket-quantity-changed`
+
 Dispatched when ticket quantities change.
 
 **Detail:**
+
 ```javascript
 {
   ticketType: string,
@@ -412,18 +464,18 @@ All components communicate via events:
 
 ```javascript
 // Donation to Cart
-document.addEventListener('donation-amount-changed', (e) => {
+document.addEventListener("donation-amount-changed", (e) => {
   cartManager.addDonation(e.detail.amount);
 });
 
-// Ticket to Cart  
-document.addEventListener('ticket-quantity-changed', (e) => {
+// Ticket to Cart
+document.addEventListener("ticket-quantity-changed", (e) => {
   const { ticketType, quantity, price, name, eventId } = e.detail;
   cartManager.updateTicketQuantity(ticketType, quantity);
 });
 
 // Cart Updates
-document.addEventListener('cart:updated', (e) => {
+document.addEventListener("cart:updated", (e) => {
   updateCartUI(e.detail.state);
 });
 ```
@@ -448,8 +500,8 @@ Cart state is automatically persisted to `localStorage`:
 Components listen for storage events:
 
 ```javascript
-window.addEventListener('storage', (event) => {
-  if (event.key === 'alocubano_cart') {
+window.addEventListener("storage", (event) => {
+  if (event.key === "alocubano_cart") {
     syncWithCartState();
   }
 });
@@ -463,24 +515,24 @@ window.addEventListener('storage', (event) => {
 // Safe localStorage access
 let cartState = {};
 try {
-  const stored = localStorage.getItem('alocubano_cart');
+  const stored = localStorage.getItem("alocubano_cart");
   cartState = stored ? JSON.parse(stored) : {};
 } catch (error) {
-  console.warn('Failed to parse cart state:', error);
+  console.warn("Failed to parse cart state:", error);
   cartState = { tickets: {}, donations: [], total: 0 };
 }
 
 // Safe event dispatch
 try {
-  document.dispatchEvent(new CustomEvent('cart:updated', { detail }));
+  document.dispatchEvent(new CustomEvent("cart:updated", { detail }));
 } catch (error) {
-  console.error('Event dispatch failed:', error);
+  console.error("Event dispatch failed:", error);
 }
 
 // Safe DOM access
-const element = document.querySelector('.cart-element');
+const element = document.querySelector(".cart-element");
 if (element) {
-  element.textContent = 'Updated';
+  element.textContent = "Updated";
 }
 ```
 
@@ -488,9 +540,9 @@ if (element) {
 
 ```javascript
 // Cart errors
-document.addEventListener('cart:error', (e) => {
-  console.error('Cart error:', e.detail);
-  showUserFriendlyError('Cart operation failed. Please try again.');
+document.addEventListener("cart:error", (e) => {
+  console.error("Cart error:", e.detail);
+  showUserFriendlyError("Cart operation failed. Please try again.");
 });
 ```
 
@@ -504,7 +556,7 @@ const mockCartManager = {
   updateTicketQuantity: vi.fn(),
   addDonation: vi.fn(),
   clear: vi.fn(),
-  getState: vi.fn(() => ({ tickets: {}, donations: [], total: 0 }))
+  getState: vi.fn(() => ({ tickets: {}, donations: [], total: 0 })),
 };
 
 window.cartManager = mockCartManager;
@@ -517,7 +569,7 @@ window.cartManager = mockCartManager;
 const ticketSelection = new TicketSelection();
 const cartUpdatedSpy = vi.fn();
 
-document.addEventListener('cart:updated', cartUpdatedSpy);
+document.addEventListener("cart:updated", cartUpdatedSpy);
 
 // Simulate ticket addition
 ticketSelection.handleQuantityChange(mockEvent);
@@ -560,42 +612,94 @@ class Component {
 
 ```css
 /* Donation Selection */
-.donation-selection { /* Container */ }
-.donation-card { /* Individual donation options */ }
-.donation-card.selected { /* Selected state */ }
-.custom-amount-wrapper { /* Custom input wrapper - FIX */ }
-.dollar-sign { /* Dollar sign in custom input */ }
-.custom-amount-input { /* Custom amount input field */ }
+.donation-selection {
+  /* Container */
+}
+.donation-card {
+  /* Individual donation options */
+}
+.donation-card.selected {
+  /* Selected state */
+}
+.custom-amount-wrapper {
+  /* Custom input wrapper - FIX */
+}
+.dollar-sign {
+  /* Dollar sign in custom input */
+}
+.custom-amount-input {
+  /* Custom amount input field */
+}
 
 /* Ticket Selection */
-.ticket-selection { /* Container */ }
-.ticket-card { /* Individual ticket cards */ }
-.ticket-card.selected { /* Selected state */ }
-.quantity-selector { /* Quantity controls container */ }
-.qty-btn { /* Quantity buttons */ }
-.quantity { /* Quantity display */ }
+.ticket-selection {
+  /* Container */
+}
+.ticket-card {
+  /* Individual ticket cards */
+}
+.ticket-card.selected {
+  /* Selected state */
+}
+.quantity-selector {
+  /* Quantity controls container */
+}
+.qty-btn {
+  /* Quantity buttons */
+}
+.quantity {
+  /* Quantity display */
+}
 
 /* Cart UI */
-.floating-cart-container { /* Main cart container */ }
-.cart-header h3 { /* "Your Cart" - 24px font */ }
-.cart-category-header { /* Category headers - 18px font */ }
-.cart-close { /* Close button - no border */ }
-.cart-clear-btn { /* Clear cart button */ }
+.floating-cart-container {
+  /* Main cart container */
+}
+.cart-header h3 {
+  /* "Your Cart" - 24px font */
+}
+.cart-category-header {
+  /* Category headers - 18px font */
+}
+.cart-close {
+  /* Close button - no border */
+}
+.cart-clear-btn {
+  /* Clear cart button */
+}
 
 /* Confetti Animation */
-.confetti-piece { /* Individual confetti pieces */ }
-.celebration-message { /* Thank you overlay message */ }
-.donation-celebration { /* Button celebration animation */ }
+.confetti-piece {
+  /* Individual confetti pieces */
+}
+.celebration-message {
+  /* Thank you overlay message */
+}
+.donation-celebration {
+  /* Button celebration animation */
+}
 
 /* Cart Clear Notification */
-.cart-clear-message { /* Cart cleared notification */ }
+.cart-clear-message {
+  /* Cart cleared notification */
+}
 
 /* Animations */
-@keyframes confettiFall { /* Basic confetti fall animation */ }
-@keyframes confettiFallRotate { /* Rotating confetti animation */ }
-@keyframes celebrationMessage { /* Thank you message animation */ }
-@keyframes slideInUp { /* Cart clear notification slide in */ }
-@keyframes slideOutDown { /* Cart clear notification slide out */ }
+@keyframes confettiFall {
+  /* Basic confetti fall animation */
+}
+@keyframes confettiFallRotate {
+  /* Rotating confetti animation */
+}
+@keyframes celebrationMessage {
+  /* Thank you message animation */
+}
+@keyframes slideInUp {
+  /* Cart clear notification slide in */
+}
+@keyframes slideOutDown {
+  /* Cart clear notification slide out */
+}
 ```
 
 ## Browser Compatibility
@@ -611,6 +715,7 @@ class Component {
 ### Polyfills Needed
 
 For IE11 support:
+
 ```javascript
 // Custom Event polyfill
 // Map polyfill
@@ -627,9 +732,9 @@ Enable debug logging:
 window.cartDebug = true;
 
 // Provides access to:
-window.cartDebug.getState() // Current cart state
-window.cartDebug.clearCache() // Clear all caches
-window.cartDebug.getCacheStats() // Cache statistics
+window.cartDebug.getState(); // Current cart state
+window.cartDebug.clearCache(); // Clear all caches
+window.cartDebug.getCacheStats(); // Cache statistics
 ```
 
 ### Common Issues
@@ -660,4 +765,4 @@ If upgrading from an older cart system:
 
 ---
 
-*API Documentation v1.1 - Updated August 2025*
+_API Documentation v1.1 - Updated August 2025_
