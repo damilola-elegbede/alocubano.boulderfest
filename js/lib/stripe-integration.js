@@ -11,15 +11,27 @@ class StripePaymentHandler {
         this.elements = null;
         this.card = null;
         this.isInitialized = false;
-        this.publishableKey = window.STRIPE_PUBLISHABLE_KEY || null;
-
-        if (this.publishableKey) {
-            this.init();
-        }
+        this.publishableKey = null;
+        this.initPromise = null;
     }
 
     async init() {
+        // If already initializing, return the existing promise
+        if (this.initPromise) {
+            return this.initPromise;
+        }
+
+        this.initPromise = this._performInit();
+        return this.initPromise;
+    }
+
+    async _performInit() {
         try {
+            // Wait for the publishable key to be available
+            if (!this.publishableKey) {
+                this.publishableKey = await this.waitForPublishableKey();
+            }
+
             // Initialize Stripe
             this.stripe = await loadStripe(this.publishableKey);
 
@@ -42,12 +54,22 @@ class StripePaymentHandler {
         }
     }
 
+    async waitForPublishableKey(maxAttempts = 20, delay = 250) {
+        for (let i = 0; i < maxAttempts; i++) {
+            if (window.STRIPE_PUBLISHABLE_KEY) {
+                return window.STRIPE_PUBLISHABLE_KEY;
+            }
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        throw new Error('Stripe publishable key not found. Payment system may not be configured.');
+    }
+
     /**
      * Create and setup card element
      */
-    setupCardElement() {
+    async setupCardElement() {
         if (!this.isInitialized) {
-            throw new Error('Stripe not initialized');
+            await this.init();
         }
 
         // Card element styling to match site design
@@ -82,9 +104,9 @@ class StripePaymentHandler {
      * Mount card element to container
      * @param {string} containerId - ID of the container element
      */
-    mountCardElement(containerId) {
+    async mountCardElement(containerId) {
         if (!this.card) {
-            this.setupCardElement();
+            await this.setupCardElement();
         }
 
         const container = document.getElementById(containerId);

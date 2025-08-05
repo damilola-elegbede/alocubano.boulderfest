@@ -69,13 +69,14 @@ STRIPE_SECRET_KEY=sk_live_your_key_here
    - Find in Stripe Dashboard > Webhooks > Your endpoint
    - Add to `STRIPE_WEBHOOK_SECRET` environment variable
 
-### 3. Update Frontend Keys
+### 3. Frontend Key Loading
 
-In `/pages/tickets.html` and `/pages/donations.html`, update the Stripe publishable key:
+The Stripe publishable key is securely loaded from environment variables via the `/api/config/stripe-public` endpoint. This ensures:
+- No hardcoded keys in source files
+- Keys can be rotated without code changes
+- Different keys for different environments (dev/staging/prod)
 
-```javascript
-window.STRIPE_PUBLISHABLE_KEY = 'pk_test_your_actual_key';
-```
+The key is automatically fetched when the payment pages load.
 
 ### 4. Database Setup
 
