@@ -11,7 +11,7 @@ This guide outlines the database evolution strategy for migrating from Stripe Pa
 1. **stripe_checkout_session_id** (TEXT)
    - Stores the Checkout Session ID from Stripe
    - Indexed for efficient lookups
-   - Can coexist with payment_intent_id
+   - Can coexist with stripe_payment_intent_id
 
 2. **payment_method** (TEXT)
    - Values: `payment_intent` or `checkout_session`
@@ -74,6 +74,10 @@ switch (event.type) {
     break;
   case "checkout.session.async_payment_succeeded":
     // Handle delayed payment methods
+    break;
+  case "checkout.session.async_payment_failed":
+    // Update order status to 'failed'
+    // Trigger error handling logic
     break;
 }
 ```
