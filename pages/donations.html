@@ -83,6 +83,7 @@
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/typography.css">
     <link rel="stylesheet" href="/css/floating-cart.css">
+    <link rel="stylesheet" href="/css/payment-modal.css">
     <link rel="stylesheet" href="/css/mobile-overrides.css">
 </head>
 <body class="typographic">
@@ -230,13 +231,20 @@
             </div>
         </div>
     </footer>
+    <!-- Add Stripe publishable key to window -->
+    <script>
+        // Add Stripe publishable key to window
+        // Replace with actual key from environment
+        window.STRIPE_PUBLISHABLE_KEY = 'pk_test_51234567890'; // TODO: Replace with actual test key
+    </script>
+    
     <script src="/js/navigation.js"></script>
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
     <script src="/js/gallery-hero.js"></script>
-    <script src="/js/donation-selection.js"></script>
+    <script type="module" src="/js/donation-selection.js"></script>
     
     <!-- Global Cart System -->
     <script type="module" src="/js/global-cart.js"></script>

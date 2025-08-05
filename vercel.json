@@ -18,6 +18,12 @@
     },
     "api/image-proxy/[fileId].js": {
       "maxDuration": 10
+    },
+    "api/payments/create-payment-intent.js": {
+      "maxDuration": 10
+    },
+    "api/payments/stripe-webhook.js": {
+      "maxDuration": 30
     }
   },
   "images": {
