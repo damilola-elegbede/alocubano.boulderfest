@@ -87,7 +87,7 @@ from link_validator import validate_single_link
 def test_critical_pages():
     """Test that all critical pages are accessible"""
     critical_pages = ['/home', '/about', '/artists', '/schedule']
-    
+
     for page in critical_pages:
         result = validate_single_link(page, project_root)
         assert result.is_valid, f"Critical page not accessible: {page}"
@@ -97,29 +97,29 @@ def test_critical_pages():
 
 ### Internal Links
 
-| Link Pattern | Validation Logic | Example |
-|-------------|------------------|---------|
-| `/home` | Maps to `pages/home.html` | ✅ Valid if file exists |
-| `/` | Redirects to `/home` | ✅ Always valid (Vercel routing) |
-| `/api/gallery` | Server endpoint | ✅ Matches known API routes |
-| `/nonexistent` | No matching file | ❌ Invalid |
+| Link Pattern   | Validation Logic          | Example                          |
+| -------------- | ------------------------- | -------------------------------- |
+| `/home`        | Maps to `pages/home.html` | ✅ Valid if file exists          |
+| `/`            | Redirects to `/home`      | ✅ Always valid (Vercel routing) |
+| `/api/gallery` | Server endpoint           | ✅ Matches known API routes      |
+| `/nonexistent` | No matching file          | ❌ Invalid                       |
 
 ### Asset Links
 
-| Asset Type | Validation | Query Parameters |
-|-----------|------------|-----------------|
-| `/css/base.css` | File exists check | ✅ Supported |
-| `/js/main.js?v=123` | Ignores query params | ✅ Validated |
-| `/images/logo.png` | File system lookup | ✅ Standard validation |
+| Asset Type          | Validation           | Query Parameters       |
+| ------------------- | -------------------- | ---------------------- |
+| `/css/base.css`     | File exists check    | ✅ Supported           |
+| `/js/main.js?v=123` | Ignores query params | ✅ Validated           |
+| `/images/logo.png`  | File system lookup   | ✅ Standard validation |
 
 ### External Links
 
-| Link Type | Validation Pattern | Example |
-|----------|-------------------|---------|
-| Instagram | `https://instagram.com/username` | ✅ Format validation |
-| WhatsApp | `https://wa.me/phone` | ✅ Pattern matching |
-| Email | `mailto:user@domain.com` | ✅ Email format check |
-| General | Valid HTTPS URL | ✅ Basic format validation |
+| Link Type | Validation Pattern               | Example                    |
+| --------- | -------------------------------- | -------------------------- |
+| Instagram | `https://instagram.com/username` | ✅ Format validation       |
+| WhatsApp  | `https://wa.me/phone`            | ✅ Pattern matching        |
+| Email     | `mailto:user@domain.com`         | ✅ Email format check      |
+| General   | Valid HTTPS URL                  | ✅ Basic format validation |
 
 ## API Reference
 
@@ -176,6 +176,7 @@ python3 tests/integration/example_test_integration.py
 ## Output Examples
 
 ### Successful Validation
+
 ```
 🔗 A Lo Cubano Boulder Fest - Link Validation
 ==================================================
@@ -195,6 +196,7 @@ python3 tests/integration/example_test_integration.py
 ```
 
 ### Validation Issues
+
 ```
 ❌ Issues by type:
    internal: 2 issues
@@ -227,6 +229,7 @@ The validator understands all Vercel routing patterns:
 ## Testing
 
 ### Run All Tests
+
 ```bash
 # Validate current site
 python3 tools/link-validation/link_validator.py
@@ -239,6 +242,7 @@ python3 tests/integration/example_test_integration.py
 ```
 
 ### Test Results
+
 - ✅ **245/245** links validated successfully (100%)
 - ✅ All critical pages accessible
 - ✅ All core assets found

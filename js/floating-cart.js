@@ -2,49 +2,51 @@
  * Floating Cart UI Component
  * Mobile-first responsive cart interface
  */
+import { getStripePaymentHandler } from './lib/stripe-integration.js';
+
 export function initializeFloatingCart(cartManager) {
-  // Check if already initialized
-  if (document.querySelector(".floating-cart-container")) {
-    return;
-  }
+    // Check if already initialized
+    if (document.querySelector('.floating-cart-container')) {
+        return;
+    }
 
-  // Create cart HTML structure
-  const cartHTML = createCartHTML();
-  document.body.insertAdjacentHTML("beforeend", cartHTML);
+    // Create cart HTML structure
+    const cartHTML = createCartHTML();
+    document.body.insertAdjacentHTML('beforeend', cartHTML);
 
-  // Get DOM references
-  const elements = {
-    container: document.querySelector(".floating-cart-container"),
-    button: document.querySelector(".floating-cart-button"),
-    panel: document.querySelector(".floating-cart-panel"),
-    badge: document.querySelector(".cart-badge"),
-    itemsContainer: document.querySelector(".cart-items"),
-    totalElement: document.querySelector(".cart-total-amount"),
-    emptyMessage: document.querySelector(".cart-empty-message"),
-    backdrop: document.querySelector(".cart-backdrop"),
-    closeButton: document.querySelector(".cart-close"),
-    checkoutButton: document.querySelector(".cart-checkout-btn"),
-    clearButton: document.querySelector(".cart-clear-btn"),
-  };
+    // Get DOM references
+    const elements = {
+        container: document.querySelector('.floating-cart-container'),
+        button: document.querySelector('.floating-cart-button'),
+        panel: document.querySelector('.floating-cart-panel'),
+        badge: document.querySelector('.cart-badge'),
+        itemsContainer: document.querySelector('.cart-items'),
+        totalElement: document.querySelector('.cart-total-amount'),
+        emptyMessage: document.querySelector('.cart-empty-message'),
+        backdrop: document.querySelector('.cart-backdrop'),
+        closeButton: document.querySelector('.cart-close'),
+        checkoutButton: document.querySelector('.cart-checkout-btn'),
+        clearButton: document.querySelector('.cart-clear-btn')
+    };
 
-  // Set up event listeners
-  setupEventListeners(elements, cartManager);
+    // Set up event listeners
+    setupEventListeners(elements, cartManager);
 
-  // Initial render
-  updateCartUI(elements, cartManager.getState());
+    // Initial render
+    updateCartUI(elements, cartManager.getState());
 
-  // Listen for cart updates
-  cartManager.addEventListener("cart:updated", (event) => {
-    updateCartUI(elements, event.detail);
-  });
+    // Listen for cart updates
+    cartManager.addEventListener('cart:updated', (event) => {
+        updateCartUI(elements, event.detail);
+    });
 
-  cartManager.addEventListener("cart:initialized", (event) => {
-    updateCartUI(elements, event.detail);
-  });
+    cartManager.addEventListener('cart:initialized', (event) => {
+        updateCartUI(elements, event.detail);
+    });
 }
 
 function createCartHTML() {
-  return `
+    return `
         <div class="floating-cart-container">
             <!-- Backdrop -->
             <div class="cart-backdrop"></div>
@@ -95,86 +97,86 @@ function createCartHTML() {
 }
 
 function setupEventListeners(elements, cartManager) {
-  // Toggle cart panel
-  elements.button.addEventListener("click", () => {
-    toggleCartPanel(elements, true, cartManager);
-  });
+    // Toggle cart panel
+    elements.button.addEventListener('click', () => {
+        toggleCartPanel(elements, true, cartManager);
+    });
 
-  // Close cart panel
-  elements.closeButton.addEventListener("click", () => {
-    toggleCartPanel(elements, false, cartManager);
-  });
+    // Close cart panel
+    elements.closeButton.addEventListener('click', () => {
+        toggleCartPanel(elements, false, cartManager);
+    });
 
-  // Close on backdrop click
-  elements.backdrop.addEventListener("click", () => {
-    toggleCartPanel(elements, false, cartManager);
-  });
+    // Close on backdrop click
+    elements.backdrop.addEventListener('click', () => {
+        toggleCartPanel(elements, false, cartManager);
+    });
 
-  // Keyboard shortcuts
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && elements.panel.classList.contains("open")) {
-      toggleCartPanel(elements, false, cartManager);
-    }
-  });
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && elements.panel.classList.contains('open')) {
+            toggleCartPanel(elements, false, cartManager);
+        }
+    });
 
-  // Quantity adjustment handlers
-  elements.itemsContainer.addEventListener("click", async (event) => {
-    const button = event.target.closest(".qty-adjust");
-    if (!button) {
-      return;
-    }
+    // Quantity adjustment handlers
+    elements.itemsContainer.addEventListener('click', async(event) => {
+        const button = event.target.closest('.qty-adjust');
+        if (!button) {
+            return;
+        }
 
-    const cartItem = button.closest(".cart-item");
-    const ticketType = cartItem.dataset.ticketType;
-    const action = button.dataset.action;
+        const cartItem = button.closest('.cart-item');
+        const ticketType = cartItem.dataset.ticketType;
+        const action = button.dataset.action;
 
-    if (ticketType && action) {
-      await handleQuantityAdjustment(cartManager, ticketType, action);
-    }
-  });
+        if (ticketType && action) {
+            await handleQuantityAdjustment(cartManager, ticketType, action);
+        }
+    });
 
-  // Remove donation handler
-  elements.itemsContainer.addEventListener("click", async (event) => {
-    const removeButton = event.target.closest(".remove-donation");
-    if (removeButton) {
-      const donationId = removeButton.dataset.donationId;
-      if (donationId) {
-        await cartManager.removeDonation(donationId);
-      }
-    }
-  });
+    // Remove donation handler
+    elements.itemsContainer.addEventListener('click', async(event) => {
+        const removeButton = event.target.closest('.remove-donation');
+        if (removeButton) {
+            const donationId = removeButton.dataset.donationId;
+            if (donationId) {
+                await cartManager.removeDonation(donationId);
+            }
+        }
+    });
 
-  // Checkout button handler
-  elements.checkoutButton.addEventListener("click", () => {
+    // Checkout button handler
+    elements.checkoutButton.addEventListener('click', async() => {
     // Track analytics
-    if (cartManager && cartManager.analytics) {
-      cartManager.analytics.trackCartEvent("checkout_clicked", {
-        total: cartManager.getState().totals.total,
-        itemCount: cartManager.getState().totals.itemCount,
-      });
-    }
+        if (cartManager && cartManager.analytics) {
+            cartManager.analytics.trackCartEvent('checkout_clicked', {
+                total: cartManager.getState().totals.total,
+                itemCount: cartManager.getState().totals.itemCount
+            });
+        }
 
-    handleCheckoutClick(cartManager);
-  });
+        await handleCheckoutClick(cartManager);
+    });
 
-  // Clear cart button handler
-  elements.clearButton.addEventListener("click", async () => {
+    // Clear cart button handler
+    elements.clearButton.addEventListener('click', async() => {
     // Show confirmation dialog to prevent accidental data loss
-    const userConfirmed = await showClearCartConfirmation(
-      cartManager.getState(),
-    );
+        const userConfirmed = await showClearCartConfirmation(
+            cartManager.getState()
+        );
 
-    if (!userConfirmed) {
-      return; // User cancelled
-    }
+        if (!userConfirmed) {
+            return; // User cancelled
+        }
 
-    await cartManager.clear();
+        await cartManager.clear();
 
-    // Show success message
-    const messageDiv = document.createElement("div");
-    messageDiv.className = "cart-clear-message";
-    messageDiv.textContent = "Cart cleared";
-    messageDiv.style.cssText = `
+        // Show success message
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'cart-clear-message';
+        messageDiv.textContent = 'Cart cleared';
+        messageDiv.style.cssText = `
             position: fixed;
             bottom: 20px;
             right: 20px;
@@ -188,181 +190,235 @@ function setupEventListeners(elements, cartManager) {
             font-weight: 700;
             animation: slideInUp 0.3s ease-out;
         `;
-    document.body.appendChild(messageDiv);
+        document.body.appendChild(messageDiv);
 
-    setTimeout(() => {
-      messageDiv.style.animation = "slideOutDown 0.3s ease-out";
-      setTimeout(() => messageDiv.remove(), 300);
-    }, 1500);
-  });
+        setTimeout(() => {
+            messageDiv.style.animation = 'slideOutDown 0.3s ease-out';
+            setTimeout(() => messageDiv.remove(), 300);
+        }, 1500);
+    });
 }
 
 async function handleQuantityAdjustment(cartManager, ticketType, action) {
-  const currentState = cartManager.getState();
-  const ticket = currentState.tickets[ticketType];
+    const currentState = cartManager.getState();
+    const ticket = currentState.tickets[ticketType];
 
-  if (!ticket) {
-    return;
-  }
+    if (!ticket) {
+        return;
+    }
 
-  let newQuantity = ticket.quantity;
-  if (action === "increase") {
-    newQuantity += 1;
-  } else if (action === "decrease") {
-    newQuantity -= 1;
-  }
+    let newQuantity = ticket.quantity;
+    if (action === 'increase') {
+        newQuantity += 1;
+    } else if (action === 'decrease') {
+        newQuantity -= 1;
+    }
 
-  await cartManager.updateTicketQuantity(ticketType, newQuantity);
+    await cartManager.updateTicketQuantity(ticketType, newQuantity);
 }
 
-function handleCheckoutClick(cartManager) {
-  const cartState = cartManager.getState();
+async function handleCheckoutClick(cartManager) {
+    const cartState = cartManager.getState();
 
-  if (cartState.isEmpty) {
-    return;
-  }
-
-  // Track checkout initiation
-  if (window.gtag) {
-    try {
-      window.gtag("event", "begin_checkout", {
-        currency: "USD",
-        value: cartState.totals.total,
-        items: Object.values(cartState.tickets).map((ticket) => ({
-          item_id: ticket.ticketType,
-          item_name: ticket.name,
-          category: "ticket",
-          quantity: ticket.quantity,
-          price: ticket.price,
-        })),
-      });
-    } catch {
-      // Analytics tracking failed - continue silently
+    if (cartState.isEmpty) {
+        return;
     }
-  }
 
-  // Store cart state securely in sessionStorage to avoid URL length limits
-  // and prevent exposing sensitive data in URLs
-  try {
-    sessionStorage.setItem("checkout_cart", JSON.stringify(cartState));
-    window.location.href = "/tickets?checkout=true";
-  } catch {
-    // Fallback if sessionStorage is not available - continue without warning
-    window.location.href = "/tickets?checkout=true";
-  }
+    // Track checkout initiation
+    if (window.gtag) {
+        try {
+            window.gtag('event', 'begin_checkout', {
+                currency: 'USD',
+                value: cartState.totals.total,
+                items: Object.values(cartState.tickets).map((ticket) => ({
+                    item_id: ticket.ticketType,
+                    item_name: ticket.name,
+                    category: 'ticket',
+                    quantity: ticket.quantity,
+                    price: ticket.price
+                }))
+            });
+        } catch {
+            // Analytics tracking failed - continue silently
+        }
+    }
+
+    // Skip email collection modal - Stripe Checkout will collect this information
+    const customerInfo = {
+        email: '', // Stripe will collect this
+        firstName: '',
+        lastName: '',
+        phone: ''
+    };
+
+    // Show loading state
+    showCheckoutLoadingState();
+
+    try {
+    // Prepare cart items for checkout session
+        const cartItems = [];
+
+        // Add tickets
+        Object.values(cartState.tickets).forEach((ticket) => {
+            cartItems.push({
+                type: 'ticket',
+                ticketType: ticket.ticketType,
+                name: ticket.name,
+                price: ticket.price,
+                quantity: ticket.quantity,
+                eventDate: '2026-05-15'
+            });
+        });
+
+        // Add donations
+        if (cartState.donations && cartState.donations.length > 0) {
+            cartState.donations.forEach((donation) => {
+                cartItems.push({
+                    type: 'donation',
+                    name: donation.name || 'A Lo Cubano Boulder Fest Donation',
+                    price: donation.amount,
+                    quantity: 1,
+                    category: 'general'
+                });
+            });
+        }
+
+        // Create checkout session
+        const stripeHandler = getStripePaymentHandler();
+        const result = await stripeHandler.createCheckoutSession({
+            cartItems,
+            customerInfo
+        });
+
+        if (result.success) {
+            // Redirect to Stripe Checkout
+            window.location.href = result.checkoutUrl;
+        } else {
+            // Show error
+            hideCheckoutLoadingState();
+            showCheckoutError(
+                result.error || 'Unable to create checkout session. Please try again.'
+            );
+        }
+    } catch (error) {
+    // Show error
+        hideCheckoutLoadingState();
+        showCheckoutError('An unexpected error occurred. Please try again.');
+        // Checkout error handled silently
+    }
 }
 
 function determineCartVisibility(hasItems) {
-  const currentPath = window.location.pathname;
+    const currentPath = window.location.pathname;
 
-  // Define page behavior configuration
-  const pageConfig = {
+    // Define page behavior configuration
+    const pageConfig = {
     // Pages that never show cart (error pages, redirect pages)
-    neverShow: ["/404", "/index.html"],
-  };
+        neverShow: ['/404', '/index.html']
+    };
 
-  // Check if current page should never show cart
-  if (pageConfig.neverShow.some((path) => currentPath.includes(path))) {
-    return false;
-  }
+    // Check if current page should never show cart
+    if (pageConfig.neverShow.some((path) => currentPath.includes(path))) {
+        return false;
+    }
 
-  // For all pages (including tickets and donations), show cart only when it has items
-  return hasItems;
+    // For all pages (including tickets and donations), show cart only when it has items
+    return hasItems;
 }
 
 function toggleCartPanel(elements, isOpen, cartManager) {
-  if (isOpen) {
-    elements.panel.classList.add("open");
-    elements.backdrop.classList.add("active");
-    document.body.style.overflow = "hidden";
+    if (isOpen) {
+        elements.panel.classList.add('open');
+        elements.backdrop.classList.add('active');
+        document.body.style.overflow = 'hidden';
 
-    // Focus management for accessibility
-    elements.closeButton.focus();
+        // Focus management for accessibility
+        elements.closeButton.focus();
 
-    // Track analytics
-    if (cartManager && cartManager.analytics) {
-      cartManager.analytics.trackCartEvent("cart_opened", {
-        itemCount: cartManager.getState().totals.itemCount,
-      });
+        // Track analytics
+        if (cartManager && cartManager.analytics) {
+            cartManager.analytics.trackCartEvent('cart_opened', {
+                itemCount: cartManager.getState().totals.itemCount
+            });
+        }
+    } else {
+        elements.panel.classList.remove('open');
+        elements.backdrop.classList.remove('active');
+        document.body.style.overflow = '';
+
+        // Return focus to button
+        elements.button.focus();
     }
-  } else {
-    elements.panel.classList.remove("open");
-    elements.backdrop.classList.remove("active");
-    document.body.style.overflow = "";
-
-    // Return focus to button
-    elements.button.focus();
-  }
 }
 
 function updateCartUI(elements, cartState) {
-  const { totals = {}, isEmpty, tickets, donations } = cartState;
+    const { totals = {}, isEmpty, tickets, donations } = cartState;
 
-  // Update badge
-  if (totals.itemCount > 0 || totals.donationCount > 0) {
-    const totalItems = totals.itemCount + (totals.donationCount || 0);
-    elements.badge.textContent = totalItems || "•";
-    elements.badge.style.display = "flex";
+    // Update badge
+    if (totals.itemCount > 0 || totals.donationCount > 0) {
+        const totalItems = totals.itemCount + (totals.donationCount || 0);
+        elements.badge.textContent = totalItems || '•';
+        elements.badge.style.display = 'flex';
 
-    // Add pulse animation for updates
-    elements.badge.classList.add("pulse");
-    setTimeout(() => {
-      elements.badge.classList.remove("pulse");
-    }, 300);
-  } else {
-    elements.badge.style.display = "none";
-  }
-
-  // Update content visibility
-  if (isEmpty) {
-    elements.emptyMessage.style.display = "block";
-    elements.itemsContainer.style.display = "none";
-    elements.checkoutButton.disabled = true;
-    if (elements.clearButton) {
-      elements.clearButton.style.display = "none";
-    }
-  } else {
-    elements.emptyMessage.style.display = "none";
-    elements.itemsContainer.style.display = "block";
-    elements.checkoutButton.disabled = false;
-    if (elements.clearButton) {
-      elements.clearButton.style.display = "block";
+        // Add pulse animation for updates
+        elements.badge.classList.add('pulse');
+        setTimeout(() => {
+            elements.badge.classList.remove('pulse');
+        }, 300);
+    } else {
+        elements.badge.style.display = 'none';
     }
 
-    // Render items
-    renderCartItems(elements.itemsContainer, tickets, donations);
-  }
+    // Update content visibility
+    if (isEmpty) {
+        elements.emptyMessage.style.display = 'block';
+        elements.itemsContainer.style.display = 'none';
+        elements.checkoutButton.disabled = true;
+        if (elements.clearButton) {
+            elements.clearButton.style.display = 'none';
+        }
+    } else {
+        elements.emptyMessage.style.display = 'none';
+        elements.itemsContainer.style.display = 'block';
+        elements.checkoutButton.disabled = false;
+        if (elements.clearButton) {
+            elements.clearButton.style.display = 'block';
+        }
 
-  // Update total
-  elements.totalElement.textContent = `$${totals.total.toFixed(2)}`;
+        // Render items
+        renderCartItems(elements.itemsContainer, tickets, donations);
+    }
 
-  // Show/hide floating button based on cart contents and page
-  const hasItems = totals.itemCount > 0 || totals.donationCount > 0;
-  const shouldShowCart = determineCartVisibility(hasItems);
+    // Update total
+    elements.totalElement.textContent = `$${totals.total.toFixed(2)}`;
 
-  if (shouldShowCart) {
-    elements.container.style.display = "block";
-    elements.button.style.opacity = "1";
-    elements.button.style.pointerEvents = "auto";
-  } else {
-    elements.container.style.display = "none";
-  }
+    // Show/hide floating button based on cart contents and page
+    const hasItems = totals.itemCount > 0 || totals.donationCount > 0;
+    const shouldShowCart = determineCartVisibility(hasItems);
+
+    if (shouldShowCart) {
+        elements.container.style.display = 'block';
+        elements.button.style.opacity = '1';
+        elements.button.style.pointerEvents = 'auto';
+    } else {
+        elements.container.style.display = 'none';
+    }
 }
 
 function renderCartItems(container, tickets, donations) {
-  let html = "";
+    let html = '';
 
-  // Render tickets category
-  const ticketValues = Object.values(tickets);
-  if (ticketValues.length > 0) {
-    html += `
+    // Render tickets category
+    const ticketValues = Object.values(tickets);
+    if (ticketValues.length > 0) {
+        html += `
             <div class="cart-category">
                 <h4 class="cart-category-header tickets">A Lo Cubano 2026 Tickets</h4>
         `;
 
-    ticketValues.forEach((ticket) => {
-      const itemTotal = ticket.price * ticket.quantity;
-      html += `
+        ticketValues.forEach((ticket) => {
+            const itemTotal = ticket.price * ticket.quantity;
+            html += `
                 <div class="cart-item" data-ticket-type="${ticket.ticketType}">
                     <div class="cart-item-info">
                         <h4>${escapeHtml(ticket.name)}</h4>
@@ -375,20 +431,20 @@ function renderCartItems(container, tickets, donations) {
                     </div>
                 </div>
             `;
-    });
+        });
 
-    html += "</div>";
-  }
+        html += '</div>';
+    }
 
-  // Render donations category
-  if (donations && donations.length > 0) {
-    html += `
+    // Render donations category
+    if (donations && donations.length > 0) {
+        html += `
             <div class="cart-category">
                 <h4 class="cart-category-header">Donations</h4>
         `;
 
-    donations.forEach((donation) => {
-      html += `
+        donations.forEach((donation) => {
+            html += `
                 <div class="cart-item" data-donation-id="${donation.id}">
                     <div class="cart-item-info">
                         <h4>${escapeHtml(donation.name)}</h4>
@@ -397,31 +453,31 @@ function renderCartItems(container, tickets, donations) {
                     <button class="remove-donation" data-donation-id="${donation.id}" aria-label="Remove donation">×</button>
                 </div>
             `;
-    });
+        });
 
-    html += "</div>";
-  }
+        html += '</div>';
+    }
 
-  container.innerHTML = html;
+    container.innerHTML = html;
 }
 
 // Security utility
 function escapeHtml(unsafe) {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 // Clear cart confirmation dialog
 async function showClearCartConfirmation(cartState) {
-  return new Promise((resolve) => {
+    return new Promise((resolve) => {
     // Create modal backdrop
-    const backdrop = document.createElement("div");
-    backdrop.className = "confirmation-backdrop";
-    backdrop.style.cssText = `
+        const backdrop = document.createElement('div');
+        backdrop.className = 'confirmation-backdrop';
+        backdrop.style.cssText = `
             position: fixed;
             top: 0;
             left: 0;
@@ -434,10 +490,10 @@ async function showClearCartConfirmation(cartState) {
             z-index: 10000;
         `;
 
-    // Create modal content
-    const modal = document.createElement("div");
-    modal.className = "confirmation-modal";
-    modal.style.cssText = `
+        // Create modal content
+        const modal = document.createElement('div');
+        modal.className = 'confirmation-modal';
+        modal.style.cssText = `
             background: var(--color-white);
             border-radius: 12px;
             padding: var(--space-xl);
@@ -448,19 +504,19 @@ async function showClearCartConfirmation(cartState) {
             font-family: var(--font-body);
         `;
 
-    const ticketCount = Object.keys(cartState.tickets).length;
-    const donationCount = cartState.donations.length;
-    const totalItems = ticketCount + donationCount;
+        const ticketCount = Object.keys(cartState.tickets).length;
+        const donationCount = cartState.donations.length;
+        const totalItems = ticketCount + donationCount;
 
-    modal.innerHTML = `
+        modal.innerHTML = `
             <h3 style="color: var(--color-blue); margin-bottom: var(--space-lg); font-family: var(--font-display);">
                 Clear Cart?
             </h3>
             <p style="margin-bottom: var(--space-xl); color: var(--color-text); line-height: 1.4;">
-                This will remove all ${totalItems} item${totalItems !== 1 ? "s" : ""} from your cart 
-                ${ticketCount > 0 ? `(${ticketCount} ticket${ticketCount !== 1 ? "s" : ""})` : ""}
-                ${ticketCount > 0 && donationCount > 0 ? " and " : ""}
-                ${donationCount > 0 ? `(${donationCount} donation${donationCount !== 1 ? "s" : ""})` : ""}.
+                This will remove all ${totalItems} item${totalItems !== 1 ? 's' : ''} from your cart 
+                ${ticketCount > 0 ? `(${ticketCount} ticket${ticketCount !== 1 ? 's' : ''})` : ''}
+                ${ticketCount > 0 && donationCount > 0 ? ' and ' : ''}
+                ${donationCount > 0 ? `(${donationCount} donation${donationCount !== 1 ? 's' : ''})` : ''}.
                 This action cannot be undone.
             </p>
             <div class="confirmation-buttons" style="display: flex; gap: var(--space-md); justify-content: center;">
@@ -489,61 +545,99 @@ async function showClearCartConfirmation(cartState) {
             </div>
         `;
 
-    backdrop.appendChild(modal);
-    document.body.appendChild(backdrop);
+        backdrop.appendChild(modal);
+        document.body.appendChild(backdrop);
 
-    // Add hover effects
-    const cancelBtn = modal.querySelector(".confirm-cancel");
-    const clearBtn = modal.querySelector(".confirm-clear");
+        // Add hover effects
+        const cancelBtn = modal.querySelector('.confirm-cancel');
+        const clearBtn = modal.querySelector('.confirm-clear');
 
-    cancelBtn.addEventListener("mouseenter", () => {
-      cancelBtn.style.background = "var(--color-blue)";
-      cancelBtn.style.color = "white";
+        cancelBtn.addEventListener('mouseenter', () => {
+            cancelBtn.style.background = 'var(--color-blue)';
+            cancelBtn.style.color = 'white';
+        });
+        cancelBtn.addEventListener('mouseleave', () => {
+            cancelBtn.style.background = 'transparent';
+            cancelBtn.style.color = 'var(--color-blue)';
+        });
+
+        clearBtn.addEventListener('mouseenter', () => {
+            clearBtn.style.background = '#d32f2f';
+        });
+        clearBtn.addEventListener('mouseleave', () => {
+            clearBtn.style.background = 'var(--color-red)';
+        });
+
+        // Handle button clicks
+        cancelBtn.addEventListener('click', () => {
+            document.body.removeChild(backdrop);
+            resolve(false);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            document.body.removeChild(backdrop);
+            resolve(true);
+        });
+
+        // Handle backdrop click (cancel)
+        backdrop.addEventListener('click', (e) => {
+            if (e.target === backdrop) {
+                document.body.removeChild(backdrop);
+                resolve(false);
+            }
+        });
+
+        // Handle escape key
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                document.body.removeChild(backdrop);
+                document.removeEventListener('keydown', handleEscape);
+                resolve(false);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+
+        // Focus the cancel button initially (safer default)
+        cancelBtn.focus();
     });
-    cancelBtn.addEventListener("mouseleave", () => {
-      cancelBtn.style.background = "transparent";
-      cancelBtn.style.color = "var(--color-blue)";
-    });
+}
 
-    clearBtn.addEventListener("mouseenter", () => {
-      clearBtn.style.background = "#d32f2f";
-    });
-    clearBtn.addEventListener("mouseleave", () => {
-      clearBtn.style.background = "var(--color-red)";
-    });
 
-    // Handle button clicks
-    cancelBtn.addEventListener("click", () => {
-      document.body.removeChild(backdrop);
-      resolve(false);
-    });
+// Show loading state during checkout
+function showCheckoutLoadingState() {
+    const loadingHTML = `
+    <div class="checkout-loading-overlay">
+      <div class="checkout-loading-content">
+        <div class="checkout-loading-spinner"></div>
+        <p>Creating secure checkout session...</p>
+      </div>
+    </div>
+  `;
+    document.body.insertAdjacentHTML('beforeend', loadingHTML);
+}
 
-    clearBtn.addEventListener("click", () => {
-      document.body.removeChild(backdrop);
-      resolve(true);
-    });
+// Hide loading state
+function hideCheckoutLoadingState() {
+    const overlay = document.querySelector('.checkout-loading-overlay');
+    if (overlay) {
+        overlay.remove();
+    }
+}
 
-    // Handle backdrop click (cancel)
-    backdrop.addEventListener("click", (e) => {
-      if (e.target === backdrop) {
-        document.body.removeChild(backdrop);
-        resolve(false);
-      }
-    });
-
-    // Handle escape key
-    const handleEscape = (e) => {
-      if (e.key === "Escape") {
-        document.body.removeChild(backdrop);
-        document.removeEventListener("keydown", handleEscape);
-        resolve(false);
-      }
-    };
-    document.addEventListener("keydown", handleEscape);
-
-    // Focus the cancel button initially (safer default)
-    cancelBtn.focus();
-  });
+// Show checkout error
+function showCheckoutError(message) {
+    const errorHTML = `
+    <div class="checkout-error-message">
+      <div class="checkout-error-content">
+        <svg viewBox="0 0 24 24" width="24" height="24" class="checkout-error-icon">
+          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+        </svg>
+        <p>${escapeHtml(message)}</p>
+        <button onclick="this.closest('.checkout-error-message').remove()">OK</button>
+      </div>
+    </div>
+  `;
+    document.body.insertAdjacentHTML('beforeend', errorHTML);
 }
 
 // Export for potential use in global-cart.js

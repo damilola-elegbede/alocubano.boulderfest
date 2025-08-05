@@ -1,30 +1,34 @@
 // Cart Synchronization Integration Tests
 // Tests cross-component communication and state synchronization
 
-import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import { JSDOM } from 'jsdom';
-import fs from 'fs';
-import path from 'path';
-import { cleanupJSDOM, EventListenerTracker, logMemoryUsage } from '../utils/cleanup-helpers.js';
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { JSDOM } from "jsdom";
+import fs from "fs";
+import path from "path";
+import {
+  cleanupJSDOM,
+  EventListenerTracker,
+  logMemoryUsage,
+} from "../utils/cleanup-helpers.js";
 
-describe('Cart Synchronization Integration Tests', () => {
-    let dom;
-    let document;
-    let window;
-    let localStorage;
-    let donationSelectionSource;
-    let ticketSelectionSource;
-    let cartManagerSource;
-    let registeredListeners;
+describe("Cart Synchronization Integration Tests", () => {
+  let dom;
+  let document;
+  let window;
+  let localStorage;
+  let donationSelectionSource;
+  let ticketSelectionSource;
+  let cartManagerSource;
+  let registeredListeners;
 
-    beforeEach(async () => {
-        // Track all event listeners added during tests
-        registeredListeners = [];
-        // For integration tests, we'll use mock implementations that work in JSDOM
-        // The real source files have too many dependencies for simple integration testing
-        
-        // Create minimal mock sources for testing
-        donationSelectionSource = `
+  beforeEach(async () => {
+    // Track all event listeners added during tests
+    registeredListeners = [];
+    // For integration tests, we'll use mock implementations that work in JSDOM
+    // The real source files have too many dependencies for simple integration testing
+
+    // Create minimal mock sources for testing
+    donationSelectionSource = `
                 class DonationSelection {
                     constructor() {
                         this.selectedAmount = null;
@@ -66,8 +70,8 @@ describe('Cart Synchronization Integration Tests', () => {
                 }
                 window.DonationSelection = DonationSelection;
             `;
-            
-            ticketSelectionSource = `
+
+    ticketSelectionSource = `
                 class TicketSelection {
                     constructor() {
                         this.selectedTickets = new Map();
@@ -117,8 +121,8 @@ describe('Cart Synchronization Integration Tests', () => {
                 }
                 window.TicketSelection = TicketSelection;
             `;
-            
-            cartManagerSource = `
+
+    cartManagerSource = `
                 class CartManager extends EventTarget {
                     constructor() {
                         super();
@@ -210,8 +214,8 @@ describe('Cart Synchronization Integration Tests', () => {
                 window.CartManager = CartManager;
             `;
 
-        dom = new JSDOM(
-            `<!DOCTYPE html>
+    dom = new JSDOM(
+      `<!DOCTYPE html>
             <html>
             <head>
                 <title>Cart Integration Test</title>
@@ -265,429 +269,452 @@ describe('Cart Synchronization Integration Tests', () => {
                 </div>
             </body>
             </html>`,
-            {
-                url: 'https://localhost',
-                pretendToBeVisual: true,
-                resources: 'usable'
-            }
-        );
-        
-        document = dom.window.document;
-        window = dom.window;
-        
-        // Mock localStorage properly for JSDOM
-        localStorage = {
-            data: {},
-            getItem: vi.fn((key) => localStorage.data[key] || null),
-            setItem: vi.fn((key, value) => { localStorage.data[key] = value; }),
-            removeItem: vi.fn((key) => { delete localStorage.data[key]; }),
-            clear: vi.fn(() => { localStorage.data = {}; })
-        };
-        
-        // Define localStorage on window using defineProperty
-        Object.defineProperty(window, 'localStorage', {
-            value: localStorage,
-            writable: true
-        });
-        
-        global.document = document;
-        global.window = window;
-        global.localStorage = localStorage;
-        
-        // Inject source code for integration testing
-        const script = document.createElement('script');
-        script.textContent = `
+      {
+        url: "https://localhost",
+        pretendToBeVisual: true,
+        resources: "usable",
+      },
+    );
+
+    document = dom.window.document;
+    window = dom.window;
+
+    // Mock localStorage properly for JSDOM
+    localStorage = {
+      data: {},
+      getItem: vi.fn((key) => localStorage.data[key] || null),
+      setItem: vi.fn((key, value) => {
+        localStorage.data[key] = value;
+      }),
+      removeItem: vi.fn((key) => {
+        delete localStorage.data[key];
+      }),
+      clear: vi.fn(() => {
+        localStorage.data = {};
+      }),
+    };
+
+    // Define localStorage on window using defineProperty
+    Object.defineProperty(window, "localStorage", {
+      value: localStorage,
+      writable: true,
+    });
+
+    global.document = document;
+    global.window = window;
+    global.localStorage = localStorage;
+
+    // Inject source code for integration testing
+    const script = document.createElement("script");
+    script.textContent = `
             ${cartManagerSource}
             ${donationSelectionSource}
             ${ticketSelectionSource}
         `;
-        document.head.appendChild(script);
-        
-        // Execute script content in window context to ensure classes are available
-        try {
-            const scriptFunction = new window.Function(script.textContent);
-            scriptFunction();
-        } catch (scriptError) {
-            console.error('Script execution error:', scriptError.message);
+    document.head.appendChild(script);
+
+    // Execute script content in window context to ensure classes are available
+    try {
+      const scriptFunction = new window.Function(script.textContent);
+      scriptFunction();
+    } catch (scriptError) {
+      console.error("Script execution error:", scriptError.message);
+    }
+
+    // Override addEventListener to track listeners
+    const originalDocAddEventListener = document.addEventListener;
+    const originalWinAddEventListener = window.addEventListener;
+
+    document.addEventListener = function (type, listener, options) {
+      registeredListeners.push({ target: "document", type, listener });
+      return originalDocAddEventListener.call(this, type, listener, options);
+    };
+
+    window.addEventListener = function (type, listener, options) {
+      registeredListeners.push({ target: "window", type, listener });
+      return originalWinAddEventListener.call(this, type, listener, options);
+    };
+  });
+
+  afterEach(() => {
+    // Comprehensive cleanup
+    if (dom) {
+      // Remove all tracked event listeners
+      registeredListeners.forEach(({ target, type, listener }) => {
+        if (target === "document" && document) {
+          document.removeEventListener(type, listener);
+        } else if (target === "window" && window) {
+          window.removeEventListener(type, listener);
         }
-        
-        // Override addEventListener to track listeners
-        const originalDocAddEventListener = document.addEventListener;
-        const originalWinAddEventListener = window.addEventListener;
-        
-        document.addEventListener = function(type, listener, options) {
-            registeredListeners.push({ target: 'document', type, listener });
-            return originalDocAddEventListener.call(this, type, listener, options);
-        };
-        
-        window.addEventListener = function(type, listener, options) {
-            registeredListeners.push({ target: 'window', type, listener });
-            return originalWinAddEventListener.call(this, type, listener, options);
-        };
+      });
+
+      // Clean up JSDOM properly
+      cleanupJSDOM(dom);
+      dom = null;
+    }
+
+    // Clear references
+    document = null;
+    window = null;
+    localStorage = null;
+
+    // Clear module cache to free memory from loaded source files
+    vi.resetModules();
+
+    // Log memory if needed
+    logMemoryUsage("Cart Sync Test Cleanup");
+  });
+
+  describe("Cart Manager Integration", () => {
+    test("should initialize cart manager and respond to events", async () => {
+      const cartManager = new window.CartManager();
+
+      expect(cartManager).toBeTruthy();
+      expect(cartManager.state).toBeTruthy();
+      expect(cartManager.state.tickets).toEqual({});
+      expect(cartManager.state.donations).toEqual([]);
     });
 
-    afterEach(() => {
-        // Comprehensive cleanup
-        if (dom) {
-            // Remove all tracked event listeners
-            registeredListeners.forEach(({ target, type, listener }) => {
-                if (target === 'document' && document) {
-                    document.removeEventListener(type, listener);
-                } else if (target === 'window' && window) {
-                    window.removeEventListener(type, listener);
-                }
-            });
-            
-            // Clean up JSDOM properly
-            cleanupJSDOM(dom);
-            dom = null;
+    test("should handle dual event dispatch from cart manager", async () => {
+      const cartManager = new window.CartManager();
+
+      const documentListener = vi.fn();
+      const cartManagerListener = vi.fn();
+
+      document.addEventListener("cart:updated", documentListener);
+      cartManager.addEventListener("cart:updated", cartManagerListener);
+
+      cartManager.updateTicketQuantity("early-bird-full", 1);
+
+      // Both listeners should be called due to dual dispatch fix
+      expect(cartManagerListener).toHaveBeenCalled();
+      expect(documentListener).toHaveBeenCalled();
+    });
+  });
+
+  describe("Donation to Cart Integration", () => {
+    test("should add donation to cart when donation button clicked", async () => {
+      const cartManager = new window.CartManager();
+      const donationSelection = new window.DonationSelection();
+
+      // Set up the integration - cart manager should listen to donation events
+      document.addEventListener("donation-amount-changed", (event) => {
+        cartManager.addDonation(event.detail.amount);
+      });
+
+      // Set up donation amount
+      donationSelection.selectedAmount = 50;
+
+      const cartUpdatedListener = vi.fn();
+      document.addEventListener("cart:updated", cartUpdatedListener);
+
+      // Simulate donation
+      donationSelection.handleDonate();
+
+      // Should dispatch donation event which triggers cart update
+      expect(cartUpdatedListener).toHaveBeenCalled();
+    });
+
+    test("should handle donation amount changed events", async () => {
+      const cartManager = new window.CartManager();
+
+      const donationListener = vi.fn();
+      document.addEventListener("donation-amount-changed", donationListener);
+
+      // Simulate donation event
+      document.dispatchEvent(
+        new window.CustomEvent("donation-amount-changed", {
+          detail: { amount: 25 },
+        }),
+      );
+
+      expect(donationListener).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: { amount: 25 },
+        }),
+      );
+    });
+
+    test("should synchronize donation UI with cart state", async () => {
+      const cartManager = new window.CartManager();
+
+      // Add donation to cart
+      cartManager.addDonation(75);
+
+      expect(cartManager.state.donations).toContain(75);
+      expect(cartManager.state.donations.length).toBe(1);
+    });
+  });
+
+  describe("Ticket Selection to Cart Integration", () => {
+    test("should add tickets to cart when quantity changed", async () => {
+      const cartManager = new window.CartManager();
+      const ticketSelection = new window.TicketSelection();
+
+      const cartUpdatedListener = vi.fn();
+      document.addEventListener("cart:updated", cartUpdatedListener);
+
+      // Simulate ticket quantity change
+      ticketSelection.handleQuantityChange(
+        "early-bird-full",
+        2,
+        100,
+        "Early Bird Full Pass",
+      );
+
+      // Should dispatch ticket quantity change event
+      const ticketListener = vi.fn();
+      document.addEventListener("ticket-quantity-changed", ticketListener);
+
+      document.dispatchEvent(
+        new window.CustomEvent("ticket-quantity-changed", {
+          detail: {
+            ticketType: "early-bird-full",
+            quantity: 2,
+            price: 100,
+            name: "Early Bird Full Pass",
+          },
+        }),
+      );
+
+      expect(ticketListener).toHaveBeenCalled();
+    });
+
+    test("should synchronize ticket quantities with cart state", async () => {
+      const cartManager = new window.CartManager();
+
+      // Update ticket quantity
+      cartManager.updateTicketQuantity("early-bird-full", 3);
+
+      expect(cartManager.state.tickets["early-bird-full"]).toBeTruthy();
+      expect(cartManager.state.tickets["early-bird-full"].quantity).toBe(3);
+    });
+
+    test("should remove tickets when quantity is zero", async () => {
+      const cartManager = new window.CartManager();
+
+      // Add ticket first
+      cartManager.updateTicketQuantity("early-bird-full", 1);
+      expect(cartManager.state.tickets["early-bird-full"]).toBeTruthy();
+
+      // Remove ticket
+      cartManager.updateTicketQuantity("early-bird-full", 0);
+      expect(cartManager.state.tickets["early-bird-full"]).toBeUndefined();
+    });
+  });
+
+  describe("Cross-Component State Synchronization", () => {
+    test("should synchronize state between ticket selection and cart", async () => {
+      const cartManager = new window.CartManager();
+
+      // Set initial cart state
+      cartManager.state.tickets = {
+        "early-bird-full": {
+          quantity: 2,
+          price: 100,
+          name: "Early Bird Full Pass",
+        },
+        "friday-pass": { quantity: 1, price: 50, name: "Friday Pass" },
+      };
+
+      // Store in localStorage (simulating persistence)
+      localStorage.setItem("alocubano_cart", JSON.stringify(cartManager.state));
+
+      // Verify synchronization
+      const storedState = JSON.parse(localStorage.getItem("alocubano_cart"));
+      expect(storedState.tickets["early-bird-full"].quantity).toBe(2);
+      expect(storedState.tickets["friday-pass"].quantity).toBe(1);
+    });
+
+    test("should handle localStorage updates across components", async () => {
+      const cartManager = new window.CartManager();
+
+      // Simulate cross-tab synchronization
+      const storageListener = vi.fn();
+      window.addEventListener("storage", storageListener);
+
+      // Update localStorage (simulating external update)
+      const newState = {
+        tickets: { "early-bird-full": { quantity: 1 } },
+        donations: [25],
+        total: 125,
+      };
+      localStorage.setItem("alocubano_cart", JSON.stringify(newState));
+
+      // Simulate storage event
+      window.dispatchEvent(
+        new window.StorageEvent("storage", {
+          key: "alocubano_cart",
+          newValue: JSON.stringify(newState),
+          oldValue: null,
+        }),
+      );
+
+      expect(storageListener).toHaveBeenCalled();
+    });
+
+    test("should maintain UI consistency during rapid state changes", async () => {
+      const cartManager = new window.CartManager();
+      const ticketCard = document.querySelector(
+        '[data-ticket-type="early-bird-full"]',
+      );
+      const quantitySpan = ticketCard.querySelector(".quantity");
+
+      // Simulate rapid quantity updates
+      const updates = [1, 2, 3, 2, 1, 0];
+
+      for (const quantity of updates) {
+        cartManager.updateTicketQuantity("early-bird-full", quantity);
+        // Simulate UI update
+        quantitySpan.textContent = quantity.toString();
+      }
+
+      expect(quantitySpan.textContent).toBe("0");
+      expect(cartManager.state.tickets["early-bird-full"]).toBeUndefined();
+    });
+  });
+
+  describe("Clear Cart Integration", () => {
+    test("should clear all cart data and synchronize UI", async () => {
+      const cartManager = new window.CartManager();
+
+      // Set up cart with data
+      cartManager.state.tickets = { "early-bird-full": { quantity: 1 } };
+      cartManager.state.donations = [50];
+
+      const clearListener = vi.fn();
+      document.addEventListener("cart:cleared", clearListener);
+
+      // Clear cart
+      cartManager.clear();
+
+      expect(cartManager.state.tickets).toEqual({});
+      expect(cartManager.state.donations).toEqual([]);
+      expect(clearListener).toHaveBeenCalled();
+    });
+
+    test("should reset all UI elements when cart cleared", async () => {
+      const cartManager = new window.CartManager();
+
+      // Set up UI with values
+      const quantitySpans = document.querySelectorAll(".quantity");
+      quantitySpans.forEach((span) => (span.textContent = "2"));
+
+      const donationCards = document.querySelectorAll(".donation-card");
+      donationCards.forEach((card) => card.classList.add("selected"));
+
+      // Clear cart and simulate UI reset
+      cartManager.clear();
+
+      // Simulate UI reset logic
+      quantitySpans.forEach((span) => (span.textContent = "0"));
+      donationCards.forEach((card) => card.classList.remove("selected"));
+
+      // Verify reset
+      quantitySpans.forEach((span) => {
+        expect(span.textContent).toBe("0");
+      });
+
+      donationCards.forEach((card) => {
+        expect(card.classList.contains("selected")).toBe(false);
+      });
+    });
+  });
+
+  describe("Error Handling in Integration", () => {
+    test("should handle cart manager initialization failure gracefully", async () => {
+      // Simulate initialization error
+      const originalCartManager = window.CartManager;
+      window.CartManager = undefined;
+
+      let cartManager;
+      try {
+        cartManager = new window.CartManager();
+      } catch (error) {
+        // Should handle gracefully
+        cartManager = null;
+      }
+
+      expect(cartManager).toBeNull();
+
+      // Restore
+      window.CartManager = originalCartManager;
+    });
+
+    test("should handle corrupted localStorage during synchronization", async () => {
+      const cartManager = new window.CartManager();
+
+      // Set corrupted data
+      localStorage.setItem("alocubano_cart", "invalid json");
+
+      // Should handle parsing errors
+      let state = {};
+      try {
+        const storedData = localStorage.getItem("alocubano_cart");
+        state = JSON.parse(storedData);
+      } catch (error) {
+        state = { tickets: {}, donations: [], total: 0 };
+      }
+
+      expect(state.tickets).toBeDefined();
+      expect(state.donations).toBeDefined();
+    });
+
+    test("should handle event listener failures gracefully", async () => {
+      const cartManager = new window.CartManager();
+
+      // Add faulty event listener
+      const faultyListener = () => {
+        throw new Error("Listener error");
+      };
+
+      document.addEventListener("cart:updated", faultyListener);
+
+      // Should not break other functionality
+      expect(() => {
+        cartManager.updateTicketQuantity("early-bird-full", 1);
+      }).not.toThrow();
+    });
+  });
+
+  describe("Performance Integration", () => {
+    test("should handle rapid cart updates without performance degradation", async () => {
+      const cartManager = new window.CartManager();
+
+      const startTime = performance.now();
+
+      // Simulate rapid updates (100 operations)
+      for (let i = 0; i < 100; i++) {
+        cartManager.updateTicketQuantity(`ticket-${i}`, 1);
+        cartManager.addDonation(10);
+      }
+
+      const endTime = performance.now();
+      const duration = endTime - startTime;
+
+      // Should complete within reasonable time (adjust threshold as needed)
+      expect(duration).toBeLessThan(1000); // 1 second
+      expect(Object.keys(cartManager.state.tickets).length).toBe(100);
+      expect(cartManager.state.donations.length).toBe(100);
+    });
+
+    test("should not create memory leaks during extended operation", async () => {
+      const cartManager = new window.CartManager();
+
+      // Simulate extended operation cycle
+      for (let cycle = 0; cycle < 10; cycle++) {
+        // Add items
+        for (let i = 0; i < 10; i++) {
+          cartManager.updateTicketQuantity(`ticket-${i}`, 1);
         }
-        
-        // Clear references
-        document = null;
-        window = null;
-        localStorage = null;
-        
-        // Clear module cache to free memory from loaded source files
-        vi.resetModules();
-        
-        // Log memory if needed
-        logMemoryUsage('Cart Sync Test Cleanup');
+
+        // Clear cart
+        cartManager.clear();
+      }
+
+      // Cart should be empty after all cycles
+      expect(Object.keys(cartManager.state.tickets).length).toBe(0);
+      expect(cartManager.state.donations.length).toBe(0);
     });
-
-    describe('Cart Manager Integration', () => {
-        test('should initialize cart manager and respond to events', async () => {
-            const cartManager = new window.CartManager();
-            
-            expect(cartManager).toBeTruthy();
-            expect(cartManager.state).toBeTruthy();
-            expect(cartManager.state.tickets).toEqual({});
-            expect(cartManager.state.donations).toEqual([]);
-        });
-
-        test('should handle dual event dispatch from cart manager', async () => {
-            const cartManager = new window.CartManager();
-            
-            const documentListener = vi.fn();
-            const cartManagerListener = vi.fn();
-            
-            document.addEventListener('cart:updated', documentListener);
-            cartManager.addEventListener('cart:updated', cartManagerListener);
-            
-            cartManager.updateTicketQuantity('early-bird-full', 1);
-            
-            // Both listeners should be called due to dual dispatch fix
-            expect(cartManagerListener).toHaveBeenCalled();
-            expect(documentListener).toHaveBeenCalled();
-        });
-    });
-
-    describe('Donation to Cart Integration', () => {
-        test('should add donation to cart when donation button clicked', async () => {
-            const cartManager = new window.CartManager();
-            const donationSelection = new window.DonationSelection();
-            
-            // Set up the integration - cart manager should listen to donation events
-            document.addEventListener('donation-amount-changed', (event) => {
-                cartManager.addDonation(event.detail.amount);
-            });
-            
-            // Set up donation amount
-            donationSelection.selectedAmount = 50;
-            
-            const cartUpdatedListener = vi.fn();
-            document.addEventListener('cart:updated', cartUpdatedListener);
-            
-            // Simulate donation
-            donationSelection.handleDonate();
-            
-            // Should dispatch donation event which triggers cart update
-            expect(cartUpdatedListener).toHaveBeenCalled();
-        });
-
-        test('should handle donation amount changed events', async () => {
-            const cartManager = new window.CartManager();
-            
-            const donationListener = vi.fn();
-            document.addEventListener('donation-amount-changed', donationListener);
-            
-            // Simulate donation event
-            document.dispatchEvent(new window.CustomEvent('donation-amount-changed', {
-                detail: { amount: 25 }
-            }));
-            
-            expect(donationListener).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    detail: { amount: 25 }
-                })
-            );
-        });
-
-        test('should synchronize donation UI with cart state', async () => {
-            const cartManager = new window.CartManager();
-            
-            // Add donation to cart
-            cartManager.addDonation(75);
-            
-            expect(cartManager.state.donations).toContain(75);
-            expect(cartManager.state.donations.length).toBe(1);
-        });
-    });
-
-    describe('Ticket Selection to Cart Integration', () => {
-        test('should add tickets to cart when quantity changed', async () => {
-            const cartManager = new window.CartManager();
-            const ticketSelection = new window.TicketSelection();
-            
-            const cartUpdatedListener = vi.fn();
-            document.addEventListener('cart:updated', cartUpdatedListener);
-            
-            // Simulate ticket quantity change
-            ticketSelection.handleQuantityChange('early-bird-full', 2, 100, 'Early Bird Full Pass');
-            
-            // Should dispatch ticket quantity change event
-            const ticketListener = vi.fn();
-            document.addEventListener('ticket-quantity-changed', ticketListener);
-            
-            document.dispatchEvent(new window.CustomEvent('ticket-quantity-changed', {
-                detail: { 
-                    ticketType: 'early-bird-full', 
-                    quantity: 2, 
-                    price: 100, 
-                    name: 'Early Bird Full Pass' 
-                }
-            }));
-            
-            expect(ticketListener).toHaveBeenCalled();
-        });
-
-        test('should synchronize ticket quantities with cart state', async () => {
-            const cartManager = new window.CartManager();
-            
-            // Update ticket quantity
-            cartManager.updateTicketQuantity('early-bird-full', 3);
-            
-            expect(cartManager.state.tickets['early-bird-full']).toBeTruthy();
-            expect(cartManager.state.tickets['early-bird-full'].quantity).toBe(3);
-        });
-
-        test('should remove tickets when quantity is zero', async () => {
-            const cartManager = new window.CartManager();
-            
-            // Add ticket first
-            cartManager.updateTicketQuantity('early-bird-full', 1);
-            expect(cartManager.state.tickets['early-bird-full']).toBeTruthy();
-            
-            // Remove ticket
-            cartManager.updateTicketQuantity('early-bird-full', 0);
-            expect(cartManager.state.tickets['early-bird-full']).toBeUndefined();
-        });
-    });
-
-    describe('Cross-Component State Synchronization', () => {
-        test('should synchronize state between ticket selection and cart', async () => {
-            const cartManager = new window.CartManager();
-            
-            // Set initial cart state
-            cartManager.state.tickets = {
-                'early-bird-full': { quantity: 2, price: 100, name: 'Early Bird Full Pass' },
-                'friday-pass': { quantity: 1, price: 50, name: 'Friday Pass' }
-            };
-            
-            // Store in localStorage (simulating persistence)
-            localStorage.setItem('alocubano_cart', JSON.stringify(cartManager.state));
-            
-            // Verify synchronization
-            const storedState = JSON.parse(localStorage.getItem('alocubano_cart'));
-            expect(storedState.tickets['early-bird-full'].quantity).toBe(2);
-            expect(storedState.tickets['friday-pass'].quantity).toBe(1);
-        });
-
-        test('should handle localStorage updates across components', async () => {
-            const cartManager = new window.CartManager();
-            
-            // Simulate cross-tab synchronization
-            const storageListener = vi.fn();
-            window.addEventListener('storage', storageListener);
-            
-            // Update localStorage (simulating external update)
-            const newState = { 
-                tickets: { 'early-bird-full': { quantity: 1 } }, 
-                donations: [25], 
-                total: 125 
-            };
-            localStorage.setItem('alocubano_cart', JSON.stringify(newState));
-            
-            // Simulate storage event
-            window.dispatchEvent(new window.StorageEvent('storage', {
-                key: 'alocubano_cart',
-                newValue: JSON.stringify(newState),
-                oldValue: null
-            }));
-            
-            expect(storageListener).toHaveBeenCalled();
-        });
-
-        test('should maintain UI consistency during rapid state changes', async () => {
-            const cartManager = new window.CartManager();
-            const ticketCard = document.querySelector('[data-ticket-type="early-bird-full"]');
-            const quantitySpan = ticketCard.querySelector('.quantity');
-            
-            // Simulate rapid quantity updates
-            const updates = [1, 2, 3, 2, 1, 0];
-            
-            for (const quantity of updates) {
-                cartManager.updateTicketQuantity('early-bird-full', quantity);
-                // Simulate UI update
-                quantitySpan.textContent = quantity.toString();
-            }
-            
-            expect(quantitySpan.textContent).toBe('0');
-            expect(cartManager.state.tickets['early-bird-full']).toBeUndefined();
-        });
-    });
-
-    describe('Clear Cart Integration', () => {
-        test('should clear all cart data and synchronize UI', async () => {
-            const cartManager = new window.CartManager();
-            
-            // Set up cart with data
-            cartManager.state.tickets = { 'early-bird-full': { quantity: 1 } };
-            cartManager.state.donations = [50];
-            
-            const clearListener = vi.fn();
-            document.addEventListener('cart:cleared', clearListener);
-            
-            // Clear cart
-            cartManager.clear();
-            
-            expect(cartManager.state.tickets).toEqual({});
-            expect(cartManager.state.donations).toEqual([]);
-            expect(clearListener).toHaveBeenCalled();
-        });
-
-        test('should reset all UI elements when cart cleared', async () => {
-            const cartManager = new window.CartManager();
-            
-            // Set up UI with values
-            const quantitySpans = document.querySelectorAll('.quantity');
-            quantitySpans.forEach(span => span.textContent = '2');
-            
-            const donationCards = document.querySelectorAll('.donation-card');
-            donationCards.forEach(card => card.classList.add('selected'));
-            
-            // Clear cart and simulate UI reset
-            cartManager.clear();
-            
-            // Simulate UI reset logic
-            quantitySpans.forEach(span => span.textContent = '0');
-            donationCards.forEach(card => card.classList.remove('selected'));
-            
-            // Verify reset
-            quantitySpans.forEach(span => {
-                expect(span.textContent).toBe('0');
-            });
-            
-            donationCards.forEach(card => {
-                expect(card.classList.contains('selected')).toBe(false);
-            });
-        });
-    });
-
-    describe('Error Handling in Integration', () => {
-        test('should handle cart manager initialization failure gracefully', async () => {
-            // Simulate initialization error
-            const originalCartManager = window.CartManager;
-            window.CartManager = undefined;
-            
-            let cartManager;
-            try {
-                cartManager = new window.CartManager();
-            } catch (error) {
-                // Should handle gracefully
-                cartManager = null;
-            }
-            
-            expect(cartManager).toBeNull();
-            
-            // Restore
-            window.CartManager = originalCartManager;
-        });
-
-        test('should handle corrupted localStorage during synchronization', async () => {
-            const cartManager = new window.CartManager();
-            
-            // Set corrupted data
-            localStorage.setItem('alocubano_cart', 'invalid json');
-            
-            // Should handle parsing errors
-            let state = {};
-            try {
-                const storedData = localStorage.getItem('alocubano_cart');
-                state = JSON.parse(storedData);
-            } catch (error) {
-                state = { tickets: {}, donations: [], total: 0 };
-            }
-            
-            expect(state.tickets).toBeDefined();
-            expect(state.donations).toBeDefined();
-        });
-
-        test('should handle event listener failures gracefully', async () => {
-            const cartManager = new window.CartManager();
-            
-            // Add faulty event listener
-            const faultyListener = () => {
-                throw new Error('Listener error');
-            };
-            
-            document.addEventListener('cart:updated', faultyListener);
-            
-            // Should not break other functionality
-            expect(() => {
-                cartManager.updateTicketQuantity('early-bird-full', 1);
-            }).not.toThrow();
-        });
-    });
-
-    describe('Performance Integration', () => {
-        test('should handle rapid cart updates without performance degradation', async () => {
-            const cartManager = new window.CartManager();
-            
-            const startTime = performance.now();
-            
-            // Simulate rapid updates (100 operations)
-            for (let i = 0; i < 100; i++) {
-                cartManager.updateTicketQuantity(`ticket-${i}`, 1);
-                cartManager.addDonation(10);
-            }
-            
-            const endTime = performance.now();
-            const duration = endTime - startTime;
-            
-            // Should complete within reasonable time (adjust threshold as needed)
-            expect(duration).toBeLessThan(1000); // 1 second
-            expect(Object.keys(cartManager.state.tickets).length).toBe(100);
-            expect(cartManager.state.donations.length).toBe(100);
-        });
-
-        test('should not create memory leaks during extended operation', async () => {
-            const cartManager = new window.CartManager();
-            
-            // Simulate extended operation cycle
-            for (let cycle = 0; cycle < 10; cycle++) {
-                // Add items
-                for (let i = 0; i < 10; i++) {
-                    cartManager.updateTicketQuantity(`ticket-${i}`, 1);
-                }
-                
-                // Clear cart
-                cartManager.clear();
-            }
-            
-            // Cart should be empty after all cycles
-            expect(Object.keys(cartManager.state.tickets).length).toBe(0);
-            expect(cartManager.state.donations.length).toBe(0);
-        });
-    });
+  });
 });

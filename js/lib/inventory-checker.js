@@ -33,7 +33,7 @@ export class InventoryChecker extends EventTarget {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    items: items.map(item => ({
+                    items: items.map((item) => ({
                         ticketType: item.ticketType,
                         quantity: item.quantity,
                         eventId: item.eventId
@@ -55,20 +55,22 @@ export class InventoryChecker extends EventTarget {
 
             // Dispatch event if items unavailable
             if (!result.available) {
-                this.dispatchEvent(new CustomEvent('availability-changed', {
-                    detail: result
-                }));
+                this.dispatchEvent(
+                    new CustomEvent('availability-changed', {
+                        detail: result
+                    })
+                );
             }
 
             return result;
-
         } catch (error) {
             // Return conservative result on error to prevent overselling
             // Flag availability as uncertain and require manual verification
             return {
                 available: false,
-                unavailable: items.map(item => item.ticketType),
-                message: 'Unable to verify availability - please try again or contact support',
+                unavailable: items.map((item) => item.ticketType),
+                message:
+          'Unable to verify availability - please try again or contact support',
                 error: error.message,
                 requiresRetry: true,
                 retryAfter: 5000 // Suggest retry after 5 seconds
@@ -111,14 +113,20 @@ export class InventoryChecker extends EventTarget {
         try {
             const result = await this.checkCartAvailability(cartState);
 
-            if (!result.available && result.unavailable && result.unavailable.length > 0) {
+            if (
+                !result.available &&
+        result.unavailable &&
+        result.unavailable.length > 0
+            ) {
                 // Some items are no longer available
-                this.dispatchEvent(new CustomEvent('inventory-warning', {
-                    detail: {
-                        unavailable: result.unavailable,
-                        message: result.message || 'Some items are no longer available'
-                    }
-                }));
+                this.dispatchEvent(
+                    new CustomEvent('inventory-warning', {
+                        detail: {
+                            unavailable: result.unavailable,
+                            message: result.message || 'Some items are no longer available'
+                        }
+                    })
+                );
             }
         } catch {
             // Periodic check failed - continue silently
@@ -135,14 +143,14 @@ export class InventoryChecker extends EventTarget {
 
     // Mock inventory checking for development
     async mockCheckAvailability(items) {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
+    // Simulate API delay
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         // Simulate some business logic
         const unavailable = [];
         const warnings = [];
 
-        items.forEach(item => {
+        items.forEach((item) => {
             // Mock: General admission has limited availability
             if (item.ticketType === 'general' && item.quantity > 5) {
                 unavailable.push({
@@ -176,16 +184,17 @@ export class InventoryChecker extends EventTarget {
             available: unavailable.length === 0,
             unavailable,
             warnings,
-            message: unavailable.length > 0
-                ? 'Some items have limited availability'
-                : 'All items are available',
+            message:
+        unavailable.length > 0
+            ? 'Some items have limited availability'
+            : 'All items are available',
             timestamp: Date.now()
         };
     }
 
     generateCacheKey(items) {
         return items
-            .map(item => `${item.ticketType}-${item.quantity}`)
+            .map((item) => `${item.ticketType}-${item.quantity}`)
             .sort()
             .join('|');
     }

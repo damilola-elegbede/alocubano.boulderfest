@@ -1,7 +1,6 @@
 // Gallery Detail Module - Handles individual gallery page functionality
 // Cache Buster: v2025-07-22-PERFORMANCE-OPTIMIZED
 (function() {
-
     // Import performance optimization modules
     let prefetchManager = null;
     let progressiveLoader = null;
@@ -25,7 +24,10 @@
                 console.log('[Gallery] Cache warmer initialized');
             }
         } catch (error) {
-            console.warn('[Gallery] Performance modules failed to initialize:', error);
+            console.warn(
+                '[Gallery] Performance modules failed to initialize:',
+                error
+            );
         }
     }
 
@@ -66,13 +68,13 @@
         itemsDisplayed: 0, // Count of items actually displayed
         hasCompleteDataset: false, // Flag indicating we have all data
         // New state for sequential category-aware pagination
-        workshopOffset: 0,           // Current position in workshops array
-        socialOffset: 0,             // Current position in socials array
-        workshopTotal: 0,            // Total workshop items available
-        socialTotal: 0,              // Total social items available
+        workshopOffset: 0, // Current position in workshops array
+        socialOffset: 0, // Current position in socials array
+        workshopTotal: 0, // Total workshop items available
+        socialTotal: 0, // Total social items available
         currentCategory: 'workshops', // Which category we're currently loading
-        displayOrder: [],            // Array tracking display order for lightbox
-        failedImages: [],            // Track failed image loads for retry
+        displayOrder: [], // Array tracking display order for lightbox
+        failedImages: [], // Track failed image loads for retry
         successfulImages: new Set(), // Track successfully loaded images to avoid re-retrying
         rateLimitTracker: {
             requests: [],
@@ -157,18 +159,21 @@
 
     // Migrate state from older versions
     function migrateState(state, fromVersion) {
-        // Migration from v1 to v2
+    // Migration from v1 to v2
         if (fromVersion === 1) {
             // v2 adds better duplicate tracking and cache indicators
             // Ensure all required fields exist
             state.version = 2;
             state.restoredFromCache = state.restoredFromCache || false;
-            state.categoryItemCounts = state.categoryItemCounts || { workshops: 0, socials: 0 };
+            state.categoryItemCounts = state.categoryItemCounts || {
+                workshops: 0,
+                socials: 0
+            };
 
             // Ensure displayOrder items have categoryIndex
             if (state.displayOrder && Array.isArray(state.displayOrder)) {
                 const categoryCounters = { workshops: 0, socials: 0 };
-                state.displayOrder.forEach(item => {
+                state.displayOrder.forEach((item) => {
                     if (item.categoryIndex === undefined && item.category) {
                         item.categoryIndex = categoryCounters[item.category] || 0;
                         categoryCounters[item.category]++;
@@ -179,8 +184,8 @@
             console.log('✅ State migrated from v1 to v2');
         }
 
-        // Future migrations can be added here
-        // if (fromVersion === 2) { ... migrate to v3 ... }
+    // Future migrations can be added here
+    // if (fromVersion === 2) { ... migrate to v3 ... }
     }
 
     function restoreState() {
@@ -199,14 +204,18 @@
             // Check version compatibility
             const stateVersion = persistedState.version || 1; // Default to v1 for old states
             if (stateVersion > CONFIG.STATE_VERSION) {
-                console.warn(`⚠️ State version ${stateVersion} is newer than current version ${CONFIG.STATE_VERSION}`);
+                console.warn(
+                    `⚠️ State version ${stateVersion} is newer than current version ${CONFIG.STATE_VERSION}`
+                );
                 sessionStorage.removeItem(stateKey);
                 return false;
             }
 
             // Migrate old state formats if needed
             if (stateVersion < CONFIG.STATE_VERSION) {
-                console.log(`🔄 Migrating state from version ${stateVersion} to ${CONFIG.STATE_VERSION}`);
+                console.log(
+                    `🔄 Migrating state from version ${stateVersion} to ${CONFIG.STATE_VERSION}`
+                );
                 migrateState(persistedState, stateVersion);
             }
 
@@ -238,7 +247,10 @@
             state.displayedItemIds = new Set(persistedState.displayedItemIds);
             state.failedImages = persistedState.failedImages || [];
             state.successfulImages = new Set(persistedState.successfulImages || []);
-            state.categoryItemCounts = persistedState.categoryItemCounts || { workshops: 0, socials: 0 };
+            state.categoryItemCounts = persistedState.categoryItemCounts || {
+                workshops: 0,
+                socials: 0
+            };
 
             console.log('✅ Gallery state restored from sessionStorage', {
                 itemsDisplayed: state.itemsDisplayed,
@@ -276,9 +288,11 @@
         // Don't clear displayedItemIds - we need to check against existing items
         // Instead, we'll verify what's actually in the DOM
         const existingItems = new Set();
-        document.querySelectorAll('.gallery-item').forEach(item => {
+        document.querySelectorAll('.gallery-item').forEach((item) => {
             const category = item.dataset.category;
-            const imgSrc = item.querySelector('img')?.src || item.querySelector('img')?.dataset.src;
+            const imgSrc =
+        item.querySelector('img')?.src ||
+        item.querySelector('img')?.dataset.src;
             if (imgSrc) {
                 // Extract ID from image source
                 const match = imgSrc.match(/\/([^\/]+)$/);
@@ -305,7 +319,7 @@
         let restoredCount = 0;
         let skippedCount = 0;
 
-        state.displayOrder.forEach(item => {
+        state.displayOrder.forEach((item) => {
             const itemKey = `${item.category}_${item.id}`;
 
             // Skip if item already exists in DOM
@@ -320,37 +334,67 @@
                 categorizedItems.workshops.push(item);
                 // Update counter to the highest categoryIndex + 1
                 if (item.categoryIndex !== undefined) {
-                    state.categoryItemCounts.workshops = Math.max(state.categoryItemCounts.workshops, item.categoryIndex + 1);
+                    state.categoryItemCounts.workshops = Math.max(
+                        state.categoryItemCounts.workshops,
+                        item.categoryIndex + 1
+                    );
                 }
             } else if (item.category === 'socials') {
                 categorizedItems.socials.push(item);
                 // Update counter to the highest categoryIndex + 1
                 if (item.categoryIndex !== undefined) {
-                    state.categoryItemCounts.socials = Math.max(state.categoryItemCounts.socials, item.categoryIndex + 1);
+                    state.categoryItemCounts.socials = Math.max(
+                        state.categoryItemCounts.socials,
+                        item.categoryIndex + 1
+                    );
                 }
             }
         });
 
-        console.log(`📊 Restoration summary: ${restoredCount} items restored, ${skippedCount} items skipped (already displayed)`);
+        console.log(
+            `📊 Restoration summary: ${restoredCount} items restored, ${skippedCount} items skipped (already displayed)`
+        );
 
         // Restore workshops section
         const workshopsSection = document.getElementById('workshops-section');
         const workshopsGallery = document.getElementById('workshops-gallery');
-        if (workshopsSection && workshopsGallery && categorizedItems.workshops.length > 0) {
+        if (
+            workshopsSection &&
+      workshopsGallery &&
+      categorizedItems.workshops.length > 0
+        ) {
             workshopsSection.style.display = 'block';
-            await insertItemsProgressively(categorizedItems.workshops, workshopsGallery, 'workshops', 0, false);
+            await insertItemsProgressively(
+                categorizedItems.workshops,
+                workshopsGallery,
+                'workshops',
+                0,
+                false
+            );
         }
 
         // Restore socials section
         const socialsSection = document.getElementById('socials-section');
         const socialsGallery = document.getElementById('socials-gallery');
-        if (socialsSection && socialsGallery && categorizedItems.socials.length > 0) {
+        if (
+            socialsSection &&
+      socialsGallery &&
+      categorizedItems.socials.length > 0
+        ) {
             socialsSection.style.display = 'block';
-            await insertItemsProgressively(categorizedItems.socials, socialsGallery, 'socials', categorizedItems.workshops.length, false);
+            await insertItemsProgressively(
+                categorizedItems.socials,
+                socialsGallery,
+                'socials',
+                categorizedItems.workshops.length,
+                false
+            );
         }
 
         // First, set up click handlers for all items (but keep them as data-loaded="false")
-        const items = contentEl.querySelectorAll('.gallery-item:not([data-handler-loaded="true"])');
+        const items = contentEl.querySelectorAll(
+            '.gallery-item:not([data-handler-loaded="true"])'
+        );
         items.forEach((item) => {
             setupGalleryItemHandlers(item, { categories: categorizedItems });
             // Note: NOT setting data-loaded="true" yet - lazy loading needs to happen first
@@ -369,7 +413,7 @@
 
         // Restore lightbox state
         state.lightboxItems = state.displayOrder;
-        state.lightboxCategories = state.displayOrder.map(item => item.category);
+        state.lightboxCategories = state.displayOrder.map((item) => item.category);
 
         console.log('✅ DOM restored successfully');
 
@@ -381,25 +425,34 @@
 
         // After DOM is restored, check for failed images and retry them
         // Filter out images that were already successfully loaded
-        const imagesToRetry = state.failedImages.filter(src => !state.successfulImages.has(src));
+        const imagesToRetry = state.failedImages.filter(
+            (src) => !state.successfulImages.has(src)
+        );
         if (imagesToRetry.length > 0) {
-            console.log(`🔄 Found ${imagesToRetry.length} failed images from previous session, retrying...`);
+            console.log(
+                `🔄 Found ${imagesToRetry.length} failed images from previous session, retrying...`
+            );
 
             // Wait a bit for LazyLoader to be fully initialized
             setTimeout(() => {
                 // Access the global LazyLoader instance
                 const lazyLoader = window.galleryLazyLoader || state.lazyObserver;
 
-                if (lazyLoader && typeof lazyLoader.retryAllFailedImages === 'function') {
+                if (
+                    lazyLoader &&
+          typeof lazyLoader.retryAllFailedImages === 'function'
+                ) {
                     console.log('♻️ Retrying all failed images from previous session');
                     lazyLoader.retryAllFailedImages();
                 } else {
                     console.warn('LazyLoader retry functionality not available');
 
                     // Fallback: manually trigger loading for failed images
-                    imagesToRetry.forEach(imageSrc => {
-                        const imgElements = document.querySelectorAll(`img[data-src="${imageSrc}"]`);
-                        imgElements.forEach(img => {
+                    imagesToRetry.forEach((imageSrc) => {
+                        const imgElements = document.querySelectorAll(
+                            `img[data-src="${imageSrc}"]`
+                        );
+                        imgElements.forEach((img) => {
                             // Mark as not loaded to trigger lazy loading again
                             const container = img.closest('.lazy-item');
                             if (container) {
@@ -421,7 +474,9 @@
             pageSize,
             workshopOffset: state.workshopOffset,
             workshopTotal: state.workshopTotal,
-            workshopsAvailable: allCategories.workshops ? allCategories.workshops.length : 0,
+            workshopsAvailable: allCategories.workshops
+                ? allCategories.workshops.length
+                : 0,
             condition: state.workshopOffset < state.workshopTotal
         });
 
@@ -441,7 +496,9 @@
                 firstItemName: workshopItems[0] ? workshopItems[0].name : 'none'
             });
 
-            items.push(...workshopItems.map(item => ({...item, category: 'workshops'})));
+            items.push(
+                ...workshopItems.map((item) => ({ ...item, category: 'workshops' }))
+            );
             state.workshopOffset += workshopItems.length;
             remainingSpace -= workshopItems.length;
         } else {
@@ -459,13 +516,16 @@
                 state.socialOffset,
                 state.socialOffset + remainingSpace
             );
-            items.push(...socialItems.map(item => ({...item, category: 'socials'})));
+            items.push(
+                ...socialItems.map((item) => ({ ...item, category: 'socials' }))
+            );
             state.socialOffset += socialItems.length;
         }
 
         // Update completion state
-        state.hasMorePages = state.workshopOffset < state.workshopTotal ||
-                        state.socialOffset < state.socialTotal;
+        state.hasMorePages =
+      state.workshopOffset < state.workshopTotal ||
+      state.socialOffset < state.socialTotal;
 
         return items;
     }
@@ -523,10 +583,12 @@
 
             // Clean old requests
             state.rateLimitTracker.requests = state.rateLimitTracker.requests.filter(
-                timestamp => timestamp > windowStart
+                (timestamp) => timestamp > windowStart
             );
 
-            return state.rateLimitTracker.requests.length >= CONFIG.RATE_LIMIT.MAX_REQUESTS;
+            return (
+                state.rateLimitTracker.requests.length >= CONFIG.RATE_LIMIT.MAX_REQUESTS
+            );
         },
 
         recordRequest() {
@@ -539,7 +601,7 @@
             const now = Date.now();
 
             // Check cache first
-            if (cached && (now - cached.timestamp) < CONFIG.REQUEST_CACHE_DURATION) {
+            if (cached && now - cached.timestamp < CONFIG.REQUEST_CACHE_DURATION) {
                 console.log('🎯 Cache hit for:', url);
                 state.performanceMetrics.cacheHits++;
                 return cached.response;
@@ -549,11 +611,11 @@
             if (state.requestCache.size > 0 && Math.random() < 0.1) {
                 const expiredKeys = [];
                 state.requestCache.forEach((value, key) => {
-                    if ((now - value.timestamp) >= CONFIG.REQUEST_CACHE_DURATION) {
+                    if (now - value.timestamp >= CONFIG.REQUEST_CACHE_DURATION) {
                         expiredKeys.push(key);
                     }
                 });
-                expiredKeys.forEach(key => state.requestCache.delete(key));
+                expiredKeys.forEach((key) => state.requestCache.delete(key));
                 if (expiredKeys.length > 0) {
                     console.log(`🧹 Cleaned ${expiredKeys.length} expired cache entries`);
                 }
@@ -580,10 +642,14 @@
             // Check rate limit
             if (this.isRateLimited()) {
                 console.warn('⚠️ Rate limited, waiting...');
-                await new Promise(resolve => setTimeout(resolve, CONFIG.RATE_LIMIT.RETRY_DELAY));
+                await new Promise((resolve) =>
+                    setTimeout(resolve, CONFIG.RATE_LIMIT.RETRY_DELAY)
+                );
 
                 if (this.isRateLimited()) {
-                    throw new Error('Rate limit exceeded. Please wait before making more requests.');
+                    throw new Error(
+                        'Rate limit exceeded. Please wait before making more requests.'
+                    );
                 }
             }
 
@@ -612,9 +678,16 @@
 
         getPerformanceStats() {
             return {
-                cacheHitRatio: state.performanceMetrics.cacheHits / (state.performanceMetrics.cacheHits + state.performanceMetrics.cacheMisses),
-                totalRequests: state.performanceMetrics.cacheHits + state.performanceMetrics.cacheMisses,
-                averageLoadTime: state.performanceMetrics.loadTimes.reduce((a, b) => a + b, 0) / state.performanceMetrics.loadTimes.length || 0
+                cacheHitRatio:
+          state.performanceMetrics.cacheHits /
+          (state.performanceMetrics.cacheHits +
+            state.performanceMetrics.cacheMisses),
+                totalRequests:
+          state.performanceMetrics.cacheHits +
+          state.performanceMetrics.cacheMisses,
+                averageLoadTime:
+          state.performanceMetrics.loadTimes.reduce((a, b) => a + b, 0) /
+            state.performanceMetrics.loadTimes.length || 0
             };
         }
     };
@@ -714,8 +787,12 @@
 
                 return; // Exit early - no need to load fresh data
             } else {
-                console.log('⏰ Saved state is stale, clearing and loading fresh data...');
-                console.log(`📊 State age: ${Math.round(stateAge / 60000)} minutes (threshold: 30 minutes)`);
+                console.log(
+                    '⏰ Saved state is stale, clearing and loading fresh data...'
+                );
+                console.log(
+                    `📊 State age: ${Math.round(stateAge / 60000)} minutes (threshold: 30 minutes)`
+                );
 
                 // Clear stale state
                 const eventForState = getEventFromPage();
@@ -763,7 +840,6 @@
             const offset = state.loadedPages * CONFIG.PAGINATION_SIZE;
             let apiUrl;
             let isStaticFetch = false;
-            let data;
 
             // For the first page, load the static JSON file.
             if (offset === 0) {
@@ -784,7 +860,10 @@
                 });
             } else {
                 // Check if we've already loaded all available items
-                if (state.hasCompleteDataset || state.itemsDisplayed >= state.totalItemsAvailable) {
+                if (
+                    state.hasCompleteDataset ||
+          state.itemsDisplayed >= state.totalItemsAvailable
+                ) {
                     console.log('✅ All items already displayed', {
                         hasCompleteDataset: state.hasCompleteDataset,
                         itemsDisplayed: state.itemsDisplayed,
@@ -793,7 +872,9 @@
                     state.hasMorePages = false;
                     // Double-check consistency
                     if (state.itemsDisplayed > state.totalItemsAvailable) {
-                        console.warn('⚠️ State inconsistency detected: itemsDisplayed > totalItemsAvailable');
+                        console.warn(
+                            '⚠️ State inconsistency detected: itemsDisplayed > totalItemsAvailable'
+                        );
                     }
                     return;
                 }
@@ -810,7 +891,7 @@
             const response = await RequestManager.cachedFetch(apiUrl, {
                 method: 'GET',
                 headers: {
-                    'Accept': 'application/json'
+                    Accept: 'application/json'
                 }
             });
 
@@ -829,7 +910,7 @@
                 throw new Error(`API error: ${response.status} ${response.statusText}`);
             }
 
-            data = await response.json();
+            const data = await response.json();
             console.log('Data parsed successfully:', {
                 totalCount: data.totalCount,
                 hasCategories: !!data.categories,
@@ -849,11 +930,15 @@
                 state.socialTotal = (data.categories.socials || []).length;
                 state.totalItemsAvailable = state.workshopTotal + state.socialTotal;
 
-                for (const [categoryName, items] of Object.entries(data.categories || {})) {
+                for (const [categoryName, items] of Object.entries(
+                    data.categories || {}
+                )) {
                     state.categoryCounts[categoryName] = items.length;
                 }
 
-                console.log(`📊 Total items in static data: workshops=${state.workshopTotal}, socials=${state.socialTotal}, total=${state.totalItemsAvailable}`);
+                console.log(
+                    `📊 Total items in static data: workshops=${state.workshopTotal}, socials=${state.socialTotal}, total=${state.totalItemsAvailable}`
+                );
 
                 // Debug: Log the state before getting first page
                 console.log('🔍 DEBUG - Before getNextPageItems:', {
@@ -861,18 +946,28 @@
                     workshopTotal: state.workshopTotal,
                     socialOffset: state.socialOffset,
                     socialTotal: state.socialTotal,
-                    workshopDataLength: state.allCategories.workshops ? state.allCategories.workshops.length : 0
+                    workshopDataLength: state.allCategories.workshops
+                        ? state.allCategories.workshops.length
+                        : 0
                 });
 
                 // Get first page using sequential algorithm
-                const pageItems = getNextPageItems(state.allCategories, CONFIG.PAGINATION_SIZE);
+                const pageItems = getNextPageItems(
+                    state.allCategories,
+                    CONFIG.PAGINATION_SIZE
+                );
 
                 // Debug: Log what we got from getNextPageItems
                 console.log('🔍 DEBUG - After getNextPageItems:', {
                     pageItemsLength: pageItems.length,
-                    workshopItems: pageItems.filter(item => item.category === 'workshops').length,
-                    socialItems: pageItems.filter(item => item.category === 'socials').length,
-                    firstFewItems: pageItems.slice(0, 3).map(item => ({name: item.name, category: item.category}))
+                    workshopItems: pageItems.filter(
+                        (item) => item.category === 'workshops'
+                    ).length,
+                    socialItems: pageItems.filter((item) => item.category === 'socials')
+                        .length,
+                    firstFewItems: pageItems
+                        .slice(0, 3)
+                        .map((item) => ({ name: item.name, category: item.category }))
                 });
 
                 // Organize items back into categories for display
@@ -881,7 +976,7 @@
                     socials: []
                 };
 
-                pageItems.forEach(item => {
+                pageItems.forEach((item) => {
                     if (item.category === 'workshops') {
                         paginatedCategories.workshops.push(item);
                     } else if (item.category === 'socials') {
@@ -893,7 +988,8 @@
                 state.loadedPages++;
 
                 // If we have 20 or fewer items total, we've loaded everything
-                state.hasCompleteDataset = state.totalItemsAvailable <= CONFIG.PAGINATION_SIZE;
+                state.hasCompleteDataset =
+          state.totalItemsAvailable <= CONFIG.PAGINATION_SIZE;
 
                 console.log('📦 DEBUG - Static data loaded successfully:', {
                     totalItemsAvailable: state.totalItemsAvailable,
@@ -908,24 +1004,34 @@
                 });
 
                 // Display paginated data
-                displayGalleryData({
-                    categories: paginatedCategories,
-                    totalCount: data.totalCount,
-                    hasMore: state.hasMorePages
-                }, contentEl, staticEl, loadingEl, false);
+                displayGalleryData(
+                    {
+                        categories: paginatedCategories,
+                        totalCount: data.totalCount,
+                        hasMore: state.hasMorePages
+                    },
+                    contentEl,
+                    staticEl,
+                    loadingEl,
+                    false
+                );
 
                 // Update loading state (remove sentinel if complete)
                 updateLoadingState();
 
                 // Save state after initial load
                 saveState();
-
             } else {
                 // For subsequent pages, use sequential algorithm with stored categories
-                console.log(`📦 Loading page ${state.loadedPages + 1} using sequential algorithm`);
+                console.log(
+                    `📦 Loading page ${state.loadedPages + 1} using sequential algorithm`
+                );
 
                 // Get next page using sequential algorithm
-                const pageItems = getNextPageItems(state.allCategories, CONFIG.PAGINATION_SIZE);
+                const pageItems = getNextPageItems(
+                    state.allCategories,
+                    CONFIG.PAGINATION_SIZE
+                );
 
                 // Organize items back into categories for display
                 const paginatedCategories = {
@@ -933,7 +1039,7 @@
                     socials: []
                 };
 
-                pageItems.forEach(item => {
+                pageItems.forEach((item) => {
                     if (item.category === 'workshops') {
                         paginatedCategories.workshops.push(item);
                     } else if (item.category === 'socials') {
@@ -945,20 +1051,33 @@
                 state.loadedPages++;
 
                 // Check if we've reached the total
-                if (state.itemsDisplayed >= state.totalItemsAvailable || !state.hasMorePages) {
+                if (
+                    state.itemsDisplayed >= state.totalItemsAvailable ||
+          !state.hasMorePages
+                ) {
                     state.hasCompleteDataset = true;
                     console.log('✅ All items now displayed');
                 }
 
-                console.log(`📦 Loaded page ${state.loadedPages}: ${pageItems.length} items, hasMore: ${state.hasMorePages}`);
-                console.log(`📍 Offsets: workshops=${state.workshopOffset}/${state.workshopTotal}, socials=${state.socialOffset}/${state.socialTotal}`);
+                console.log(
+                    `📦 Loaded page ${state.loadedPages}: ${pageItems.length} items, hasMore: ${state.hasMorePages}`
+                );
+                console.log(
+                    `📍 Offsets: workshops=${state.workshopOffset}/${state.workshopTotal}, socials=${state.socialOffset}/${state.socialTotal}`
+                );
 
                 // Display the gallery with just the new items (append mode)
-                displayGalleryData({
-                    categories: paginatedCategories,
-                    totalCount: state.totalItemsAvailable,
-                    hasMore: state.hasMorePages
-                }, contentEl, staticEl, loadingEl, true);
+                displayGalleryData(
+                    {
+                        categories: paginatedCategories,
+                        totalCount: state.totalItemsAvailable,
+                        hasMore: state.hasMorePages
+                    },
+                    contentEl,
+                    staticEl,
+                    loadingEl,
+                    true
+                );
 
                 // Update loading state (remove sentinel if complete)
                 updateLoadingState();
@@ -971,7 +1090,6 @@
             if (state.hasMorePages) {
                 setupInfiniteScroll(year, loadingEl, contentEl, staticEl);
             }
-
         } catch (error) {
             console.error('Gallery API request failed:', error);
             const errorUrl = apiUrl || 'Unknown URL';
@@ -990,7 +1108,6 @@
                     staticEl.style.display = 'block';
                 }
             }
-
         } finally {
             // Always clear loading mutex
             state.loadingMutex = false;
@@ -998,7 +1115,13 @@
     }
 
     // Progressive DOM insertion to prevent UI blocking
-    async function insertItemsProgressively(items, container, categoryName, categoryOffset = 0, isAppend = false) {
+    async function insertItemsProgressively(
+        items,
+        container,
+        categoryName,
+        categoryOffset = 0,
+        isAppend = false
+    ) {
         const BATCH_SIZE = 5; // Process 5 items at a time
 
         // Initialize category counters if not already present
@@ -1010,17 +1133,19 @@
         }
 
         // Early exit if all items are already displayed
-        const allDuplicates = items.every(item => {
+        const allDuplicates = items.every((item) => {
             const itemId = `${categoryName}_${item.id || item.name}`;
             return state.displayedItemIds.has(itemId);
         });
 
         if (allDuplicates && items.length > 0) {
-            console.log(`⏭️ All ${items.length} ${categoryName} items already displayed, skipping insertion`);
+            console.log(
+                `⏭️ All ${items.length} ${categoryName} items already displayed, skipping insertion`
+            );
             return;
         }
 
-        const uniqueItems = items.filter(item => {
+        const uniqueItems = items.filter((item) => {
             // Create category-aware item ID to prevent duplicates within categories
             const itemId = `${categoryName}_${item.id || item.name}`;
             // Check against displayed items, not all loaded items
@@ -1040,7 +1165,10 @@
             if (item.categoryIndex !== undefined) {
                 categoryIndex = item.categoryIndex;
                 // Update counter if this index is higher than current counter
-                state.categoryItemCounts[categoryName] = Math.max(state.categoryItemCounts[categoryName], categoryIndex + 1);
+                state.categoryItemCounts[categoryName] = Math.max(
+                    state.categoryItemCounts[categoryName],
+                    categoryIndex + 1
+                );
             } else {
                 // Assign new index and increment counter
                 categoryIndex = state.categoryItemCounts[categoryName];
@@ -1068,20 +1196,27 @@
             return true;
         });
 
-        console.log(`🔄 Progressive insert: ${uniqueItems.length} items in batches of ${BATCH_SIZE}`);
-        console.log(`📊 Category counts: workshops=${state.categoryItemCounts.workshops}, socials=${state.categoryItemCounts.socials}`);
+        console.log(
+            `🔄 Progressive insert: ${uniqueItems.length} items in batches of ${BATCH_SIZE}`
+        );
+        console.log(
+            `📊 Category counts: workshops=${state.categoryItemCounts.workshops}, socials=${state.categoryItemCounts.socials}`
+        );
 
         for (let i = 0; i < uniqueItems.length; i += BATCH_SIZE) {
             const batch = uniqueItems.slice(i, i + BATCH_SIZE);
-            const batchHTML = batch.map((item, index) => {
-                const title = item.name.replace(/\.[^/.]+$/, ''); // Remove file extension
-                // Use the actual display order index
-                const displayOrderItem = state.displayOrder.find(d =>
-                    d.id === item.id && d.category === categoryName
-                );
-                const globalIndex = displayOrderItem ? displayOrderItem.displayIndex : state.displayOrder.length - 1;
+            const batchHTML = batch
+                .map((item, index) => {
+                    const title = item.name.replace(/\.[^/.]+$/, ''); // Remove file extension
+                    // Use the actual display order index
+                    const displayOrderItem = state.displayOrder.find(
+                        (d) => d.id === item.id && d.category === categoryName
+                    );
+                    const globalIndex = displayOrderItem
+                        ? displayOrderItem.displayIndex
+                        : state.displayOrder.length - 1;
 
-                return `
+                    return `
           <div class="gallery-item lazy-item gallery-image-container" data-index="${globalIndex}" data-category="${categoryName}" data-loaded="false">
             <div class="gallery-item-media">
               <div class="lazy-placeholder">
@@ -1100,7 +1235,8 @@
             </div>
           </div>
         `;
-            }).join('');
+                })
+                .join('');
 
             // Insert batch and yield control to prevent UI blocking
             if (isAppend) {
@@ -1113,19 +1249,27 @@
 
             // Yield control to browser after each batch
             if (i + BATCH_SIZE < uniqueItems.length) {
-                await new Promise(resolve => requestAnimationFrame(resolve));
+                await new Promise((resolve) => requestAnimationFrame(resolve));
             }
         }
     }
 
     // Display gallery data with lazy loading and append mode
-    async function displayGalleryData(data, contentEl, staticEl, loadingEl, appendMode = false) {
+    async function displayGalleryData(
+        data,
+        contentEl,
+        staticEl,
+        loadingEl,
+        appendMode = false
+    ) {
         console.log('🎨 DEBUG - displayGalleryData called:', {
             hasData: !!data,
             categories: data?.categories ? Object.keys(data.categories) : [],
             workshopItems: data?.categories?.workshops?.length || 0,
             socialItems: data?.categories?.socials?.length || 0,
-            totalItems: (data?.categories?.workshops?.length || 0) + (data?.categories?.socials?.length || 0),
+            totalItems:
+        (data?.categories?.workshops?.length || 0) +
+        (data?.categories?.socials?.length || 0),
             appendMode: appendMode,
             contentEl: !!contentEl,
             staticEl: !!staticEl,
@@ -1134,7 +1278,7 @@
 
         // Check if we have any categories with items
         let hasItems = false;
-        Object.values(data.categories || {}).forEach(items => {
+        Object.values(data.categories || {}).forEach((items) => {
             if (items?.length > 0) {
                 hasItems = true;
             }
@@ -1174,7 +1318,13 @@
             const workshopsGallery = document.getElementById('workshops-gallery');
             if (workshopsSection && workshopsGallery && workshopItems.length > 0) {
                 workshopsSection.style.display = 'block';
-                await insertItemsProgressively(workshopItems, workshopsGallery, 'workshops', 0, appendMode);
+                await insertItemsProgressively(
+                    workshopItems,
+                    workshopsGallery,
+                    'workshops',
+                    0,
+                    appendMode
+                );
             }
 
             // Update Socials section
@@ -1182,13 +1332,23 @@
             const socialsGallery = document.getElementById('socials-gallery');
             if (socialsSection && socialsGallery && socialItems.length > 0) {
                 socialsSection.style.display = 'block';
-                await insertItemsProgressively(socialItems, socialsGallery, 'socials', workshopItems.length, appendMode);
+                await insertItemsProgressively(
+                    socialItems,
+                    socialsGallery,
+                    'socials',
+                    workshopItems.length,
+                    appendMode
+                );
             }
 
             // Add click handlers for lightbox (only for new items if appending)
-            const selector = appendMode ? '.gallery-item[data-loaded="false"]:not([data-handler-loaded="true"])' : '.gallery-item:not([data-handler-loaded="true"])';
+            const selector = appendMode
+                ? '.gallery-item[data-loaded="false"]:not([data-handler-loaded="true"])'
+                : '.gallery-item:not([data-handler-loaded="true"])';
             const items = contentEl.querySelectorAll(selector);
-            console.log(`🎯 Attaching click handlers to ${items.length} items (appendMode: ${appendMode})`);
+            console.log(
+                `🎯 Attaching click handlers to ${items.length} items (appendMode: ${appendMode})`
+            );
             items.forEach((item) => {
                 setupGalleryItemHandlers(item, data);
                 // Don't set data-loaded="true" immediately - let lazy loading happen first
@@ -1210,7 +1370,7 @@
         const allCategories = [];
 
         for (const [categoryName, items] of Object.entries(data.categories)) {
-            items.forEach(item => {
+            items.forEach((item) => {
                 allItems.push(item);
                 allCategories.push(categoryName);
             });
@@ -1227,7 +1387,7 @@
 
     // Setup click handlers for gallery items
     function setupGalleryItemHandlers(item, data) {
-        // Skip if handlers already attached
+    // Skip if handlers already attached
         if (item.getAttribute('data-handler-loaded') === 'true') {
             return;
         }
@@ -1250,7 +1410,11 @@
             if (state.displayOrder.length > displayIndex) {
                 openLightbox(state.displayOrder, displayIndex);
             } else {
-                console.error('Index out of bounds:', displayIndex, state.displayOrder.length);
+                console.error(
+                    'Index out of bounds:',
+                    displayIndex,
+                    state.displayOrder.length
+                );
             }
         });
 
@@ -1288,7 +1452,9 @@
             onLoad: (element) => {
                 // Integrate with progressive loading when image starts loading
                 if (progressiveLoader) {
-                    const imgElement = element.querySelector('img[data-progressive="true"]');
+                    const imgElement = element.querySelector(
+                        'img[data-progressive="true"]'
+                    );
                     if (imgElement) {
                         progressiveLoader.observeImage(imgElement);
                     }
@@ -1297,27 +1463,34 @@
         });
 
         // Listen for successful image loads to track them
-        document.addEventListener('load', (e) => {
-            if (e.target.tagName === 'IMG' && e.target.classList.contains('lazy-image')) {
-                const src = e.target.src;
-                if (src && !src.includes('data:image')) {
-                    // Add to successful images
-                    state.successfulImages.add(src);
-                    // Remove from failed images if present
-                    const failedIndex = state.failedImages.indexOf(src);
-                    if (failedIndex > -1) {
-                        state.failedImages.splice(failedIndex, 1);
-                    }
-                    // Save state periodically (throttled)
-                    if (!state.saveStateTimeout) {
-                        state.saveStateTimeout = setTimeout(() => {
-                            saveState();
-                            state.saveStateTimeout = null;
-                        }, 1000);
+        document.addEventListener(
+            'load',
+            (e) => {
+                if (
+                    e.target.tagName === 'IMG' &&
+          e.target.classList.contains('lazy-image')
+                ) {
+                    const src = e.target.src;
+                    if (src && !src.includes('data:image')) {
+                        // Add to successful images
+                        state.successfulImages.add(src);
+                        // Remove from failed images if present
+                        const failedIndex = state.failedImages.indexOf(src);
+                        if (failedIndex > -1) {
+                            state.failedImages.splice(failedIndex, 1);
+                        }
+                        // Save state periodically (throttled)
+                        if (!state.saveStateTimeout) {
+                            state.saveStateTimeout = setTimeout(() => {
+                                saveState();
+                                state.saveStateTimeout = null;
+                            }, 1000);
+                        }
                     }
                 }
-            }
-        }, true); // Use capture phase
+            },
+            true
+        ); // Use capture phase
 
         // Store LazyLoader instance globally for retry functionality
         window.galleryLazyLoader = state.lazyObserver;
@@ -1346,7 +1519,9 @@
             return;
         }
 
-        const lazyItems = document.querySelectorAll('.lazy-item[data-loaded="false"]');
+        const lazyItems = document.querySelectorAll(
+            '.lazy-item[data-loaded="false"]'
+        );
         state.lazyObserver.observeNewElements(lazyItems);
     }
 
@@ -1369,8 +1544,10 @@
         // Create new sentinel element
         const sentinel = document.createElement('div');
         sentinel.id = sentinelId;
-        sentinel.innerHTML = '<div class="loading-more">Loading more photos...</div>';
-        sentinel.style.cssText = 'height: 50px; display: flex; align-items: center; justify-content: center; margin: 2rem 0;';
+        sentinel.innerHTML =
+      '<div class="loading-more">Loading more photos...</div>';
+        sentinel.style.cssText =
+      'height: 50px; display: flex; align-items: center; justify-content: center; margin: 2rem 0;';
 
         // Insert before gallery stats section
         const galleryStats = document.querySelector('.gallery-stats');
@@ -1381,22 +1558,29 @@
         }
 
         // Create single-use observer to prevent duplicate triggers
-        const scrollObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting && state.hasMorePages && !state.loadingMutex) {
-                    console.log('📜 Infinite scroll triggered');
+        const scrollObserver = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (
+                        entry.isIntersecting &&
+            state.hasMorePages &&
+            !state.loadingMutex
+                    ) {
+                        console.log('📜 Infinite scroll triggered');
 
-                    // Immediately disconnect observer to prevent duplicate triggers
-                    scrollObserver.unobserve(entry.target);
+                        // Immediately disconnect observer to prevent duplicate triggers
+                        scrollObserver.unobserve(entry.target);
 
-                    // Load next page
-                    loadNextPage(year, loadingEl, contentEl, staticEl);
-                }
-            });
-        }, {
-            rootMargin: '100px',
-            threshold: 0.1
-        });
+                        // Load next page
+                        loadNextPage(year, loadingEl, contentEl, staticEl);
+                    }
+                });
+            },
+            {
+                rootMargin: '100px',
+                threshold: 0.1
+            }
+        );
 
         scrollObserver.observe(sentinel);
         state.observedSentinels.add(sentinelId);
@@ -1453,9 +1637,16 @@
 
         state.lightboxItems = items;
         state.currentLightboxIndex = index;
-        state.lightboxCategories = items.map(item => item.category || 'uncategorized');
+        state.lightboxCategories = items.map(
+            (item) => item.category || 'uncategorized'
+        );
 
-        state.lightbox.openAdvanced(items, index, state.lightboxCategories, state.categoryCounts);
+        state.lightbox.openAdvanced(
+            items,
+            index,
+            state.lightboxCategories,
+            state.categoryCounts
+        );
     }
 
     function closeLightbox() {
@@ -1484,7 +1675,7 @@
 
     // Get event from page for event-specific gallery loading
     function getEventFromPage() {
-        // Try to get from data attribute first
+    // Try to get from data attribute first
         const eventElement = document.querySelector('[data-gallery-event]');
         if (eventElement && eventElement.dataset.galleryEvent) {
             return eventElement.dataset.galleryEvent;
@@ -1500,7 +1691,10 @@
         if (pathname.includes('weekender-2026-09')) {
             return 'weekender-2026-09';
         }
-        if (pathname.includes('boulder-fest-2025') || pathname.includes('gallery-2025')) {
+        if (
+            pathname.includes('boulder-fest-2025') ||
+      pathname.includes('gallery-2025')
+        ) {
             return 'boulder-fest-2025';
         }
 
@@ -1592,7 +1786,10 @@
         },
         logCurrentState: () => {
             console.group('🔍 Gallery Debug Info');
-            console.log('📊 Performance Stats:', RequestManager.getPerformanceStats());
+            console.log(
+                '📊 Performance Stats:',
+                RequestManager.getPerformanceStats()
+            );
             console.log('📋 State Overview:', {
                 loadedPages: state.loadedPages,
                 hasMorePages: state.hasMorePages,
@@ -1609,7 +1806,9 @@
                 requestCacheSize: state.requestCache.size,
                 rateLimitRequests: state.rateLimitTracker.requests.length,
                 sessionStorageKey: `gallery_${getEventFromPage()}_state`,
-                hasSessionStorage: !!sessionStorage.getItem(`gallery_${getEventFromPage()}_state`)
+                hasSessionStorage: !!sessionStorage.getItem(
+                    `gallery_${getEventFromPage()}_state`
+                )
             });
             console.log('🚫 Failed Images:', {
                 persistedFailures: state.failedImages,
@@ -1631,7 +1830,7 @@
 
         // Clean up intersection observers for sentinels
         const sentinels = document.querySelectorAll('[id*="load-more-sentinel"]');
-        sentinels.forEach(sentinel => {
+        sentinels.forEach((sentinel) => {
             if (sentinel._observer) {
                 sentinel._observer.disconnect();
             }
@@ -1642,5 +1841,4 @@
 
         console.log('🧹 Gallery cleanup completed');
     };
-
 })();

@@ -14,18 +14,21 @@ if (typeof SmoothScroll === 'undefined') {
             // Observe all sections for scroll animations
             const sections = document.querySelectorAll('.animate-on-scroll');
 
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('is-visible');
-                    }
-                });
-            }, {
-                threshold: 0.1,
-                rootMargin: '0px 0px -50px 0px'
-            });
+            const observer = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('is-visible');
+                        }
+                    });
+                },
+                {
+                    threshold: 0.1,
+                    rootMargin: '0px 0px -50px 0px'
+                }
+            );
 
-            sections.forEach(section => {
+            sections.forEach((section) => {
                 observer.observe(section);
             });
         }
@@ -56,7 +59,7 @@ if (typeof FormValidator === 'undefined') {
 
             // Real-time validation
             const inputs = this.form.querySelectorAll('input, textarea, select');
-            inputs.forEach(input => {
+            inputs.forEach((input) => {
                 input.addEventListener('blur', () => this.validateField(input));
                 input.addEventListener('input', () => {
                     if (input.classList.contains('error')) {
@@ -70,7 +73,7 @@ if (typeof FormValidator === 'undefined') {
             const inputs = this.form.querySelectorAll('[required]');
             let isValid = true;
 
-            inputs.forEach(input => {
+            inputs.forEach((input) => {
                 if (!this.validateField(input)) {
                     isValid = false;
                 }
@@ -144,19 +147,23 @@ if (typeof FormValidator === 'undefined') {
 // Service Worker Registration
 function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/js/sw.js', {
-            scope: '/',
-            updateViaCache: 'none'
-        })
-            .then(registration => {
+        navigator.serviceWorker
+            .register('/js/sw.js', {
+                scope: '/',
+                updateViaCache: 'none'
+            })
+            .then((registration) => {
                 console.log('[SW] Service Worker registered:', registration.scope);
 
                 // Handle updates
                 registration.addEventListener('updatefound', () => {
                     const newWorker = registration.installing;
                     newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        // New version available, prompt user to refresh
+                        if (
+                            newWorker.state === 'installed' &&
+              navigator.serviceWorker.controller
+                        ) {
+                            // New version available, prompt user to refresh
                             console.log('[SW] New version available');
                             if (confirm('A new version is available. Refresh to update?')) {
                                 window.location.reload();
@@ -165,7 +172,7 @@ function registerServiceWorker() {
                     });
                 });
             })
-            .catch(error => {
+            .catch((error) => {
                 console.warn('[SW] Service Worker registration failed:', error);
             });
     }
@@ -182,7 +189,10 @@ function initPerformanceOptimizations() {
     }
 
     // Register Service Worker for gallery pages
-    if (window.location.pathname.includes('/gallery') || window.location.pathname === '/') {
+    if (
+        window.location.pathname.includes('/gallery') ||
+    window.location.pathname === '/'
+    ) {
         registerServiceWorker();
     }
 }
@@ -193,7 +203,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initPerformanceOptimizations();
 
     // Landing page
-    if (document.querySelector('.design-selector') && typeof DesignSelector !== 'undefined') {
+    if (
+        document.querySelector('.design-selector') &&
+    typeof DesignSelector !== 'undefined'
+    ) {
         new DesignSelector();
     }
 
@@ -208,13 +221,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Initialize shared lightbox component for simple galleries
-    if (document.querySelector('.gallery-grid') && typeof Lightbox !== 'undefined') {
+    if (
+        document.querySelector('.gallery-grid') &&
+    typeof Lightbox !== 'undefined'
+    ) {
         Lightbox.initializeFor('simple', { selector: '.gallery-image' });
     }
 
     // Forms
     if (typeof FormValidator !== 'undefined') {
-        document.querySelectorAll('form').forEach(form => {
+        document.querySelectorAll('form').forEach((form) => {
             new FormValidator(form);
         });
     }

@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout Cancelled - A Lo Cubano Boulder Fest</title>
+    <meta
+      name="description"
+      content="Checkout was cancelled. Your cart items are still saved and you can complete your purchase anytime."
+    />
+
+    <!-- Favicons -->
+    <link
+      rel="icon"
+      type="image/png"
+      href="/images/favicons/favicon-32x32.png"
+    />
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/css/base.css" />
+    <style>
+      body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: var(--space-xl);
+        margin: 0;
+        font-family: var(--font-sans);
+        text-align: center;
+      }
+
+      .cancel-container {
+        max-width: 600px;
+        background: var(--color-white);
+        border-radius: 12px;
+        padding: var(--space-xl);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        animation: slideInUp 0.6s ease-out;
+      }
+
+      .logo-container {
+        width: 150px;
+        height: 56px;
+        margin: 0 auto var(--space-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .logo-container img {
+        width: auto;
+        height: 56px;
+        object-fit: contain;
+      }
+
+      .cancel-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto var(--space-lg);
+        background: #fbbf24;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: scaleIn 0.5s ease-out 0.3s both;
+      }
+
+      .cancel-icon::after {
+        content: "⏸";
+        color: white;
+        font-size: 2.5rem;
+        font-weight: bold;
+      }
+
+      .cancel-title {
+        font-size: var(--font-size-3xl);
+        font-weight: 700;
+        color: var(--color-black);
+        margin-bottom: var(--space-md);
+        font-family: var(--font-display);
+      }
+
+      .cancel-message {
+        font-size: var(--font-size-lg);
+        color: var(--color-black);
+        margin-bottom: var(--space-lg);
+        line-height: 1.6;
+        opacity: 0.8;
+      }
+
+      .reassurance-box {
+        background: #e3f2fd;
+        border-radius: 8px;
+        padding: var(--space-lg);
+        margin: var(--space-lg) 0;
+        text-align: left;
+      }
+
+      .reassurance-box h3 {
+        margin-top: 0;
+        color: var(--color-blue);
+        font-size: var(--font-size-lg);
+        margin-bottom: var(--space-md);
+      }
+
+      .reassurance-box ul {
+        margin: 0;
+        padding-left: var(--space-lg);
+      }
+
+      .reassurance-box li {
+        margin-bottom: var(--space-sm);
+        line-height: 1.6;
+      }
+
+      .support-info {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: var(--space-lg);
+        margin: var(--space-lg) 0;
+        text-align: left;
+      }
+
+      .support-info h3 {
+        margin-top: 0;
+        color: var(--color-black);
+        font-size: var(--font-size-lg);
+        margin-bottom: var(--space-md);
+      }
+
+      .support-info p {
+        margin-bottom: var(--space-sm);
+        line-height: 1.6;
+      }
+
+      .support-links {
+        display: flex;
+        gap: var(--space-md);
+        flex-wrap: wrap;
+        margin-top: var(--space-md);
+      }
+
+      .support-links a {
+        color: var(--color-blue);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .support-links a:hover {
+        color: var(--color-red);
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: var(--space-md);
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: var(--space-xl);
+      }
+
+      .btn {
+        display: inline-block;
+        padding: var(--space-md) var(--space-lg);
+        background-color: var(--color-blue);
+        color: var(--color-white);
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+      }
+
+      .btn:hover {
+        background-color: var(--color-red);
+        transform: translateY(-2px);
+      }
+
+      .btn-secondary {
+        background-color: transparent;
+        color: var(--color-black);
+        border: 2px solid var(--color-black);
+      }
+
+      .btn-secondary:hover {
+        background-color: var(--color-black);
+        color: var(--color-white);
+      }
+
+      .countdown {
+        font-size: var(--font-size-sm);
+        color: #666;
+        margin-top: var(--space-md);
+        font-style: italic;
+      }
+
+      @keyframes slideInUp {
+        from {
+          opacity: 0;
+          transform: translateY(50px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes scaleIn {
+        from {
+          opacity: 0;
+          transform: scale(0.5);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      @media (max-width: 600px) {
+        .cancel-container {
+          margin: var(--space-md);
+          padding: var(--space-lg);
+        }
+
+        .action-buttons {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .btn {
+          width: 200px;
+          text-align: center;
+        }
+
+        .support-links {
+          flex-direction: column;
+          gap: var(--space-sm);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="cancel-container">
+      <div class="logo-container">
+        <img src="/images/logo.png" alt="A Lo Cubano Boulder Fest Logo" />
+      </div>
+
+      <div class="cancel-icon"></div>
+      <div class="cancel-title">Checkout Cancelled</div>
+      <div class="cancel-message">
+        No worries! Your checkout was cancelled and no payment was charged. Your
+        cart items are still saved and ready when you are.
+      </div>
+
+      <div class="reassurance-box">
+        <h3>✅ Good to know:</h3>
+        <ul>
+          <li>No payment was processed</li>
+          <li>Your cart items are still saved</li>
+          <li>You can complete your purchase anytime</li>
+          <li>Tickets are still available at the same prices</li>
+        </ul>
+      </div>
+
+      <div class="support-info">
+        <h3>Need help?</h3>
+        <p>
+          If you experienced any issues during checkout or have questions about
+          the festival, we're here to help!
+        </p>
+        <div class="support-links">
+          <a href="mailto:alocubanoboulderfest@gmail.com">📧 Email Us</a>
+          <a
+            href="https://www.instagram.com/alocubano.boulderfest/"
+            target="_blank"
+            >📱 Instagram</a
+          >
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <a href="/tickets" class="btn" id="try-again-btn">Try Again</a>
+        <a href="/" class="btn-secondary">Return Home</a>
+        <a href="/about" class="btn-secondary">About Festival</a>
+      </div>
+
+      <div class="countdown" id="countdown">
+        Automatically redirecting to tickets page in
+        <span id="countdown-timer">5</span> seconds...
+      </div>
+    </div>
+
+    <script>
+      // Process checkout cancellation
+      async function processCheckoutCancel() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get("session_id");
+        const orderId = urlParams.get("order_id");
+
+        console.log("Processing checkout cancellation:", {
+          sessionId,
+          orderId,
+        });
+
+        try {
+          // Notify our backend about the cancellation
+          const response = await fetch(
+            `/api/payments/checkout-cancel?session_id=${encodeURIComponent(sessionId || "")}&order_id=${encodeURIComponent(orderId || "")}`,
+          );
+          const data = await response.json();
+
+          if (response.ok && data.cancelled) {
+            console.log("Cancellation processed successfully:", data);
+
+            // Update countdown timer if different redirect delay specified
+            if (
+              data.instructions?.redirectDelay &&
+              data.instructions.redirectDelay !== 3000
+            ) {
+              const newDelay = Math.floor(
+                data.instructions.redirectDelay / 1000,
+              );
+              document.getElementById("countdown-timer").textContent = newDelay;
+              startCountdown(
+                newDelay,
+                data.instructions.redirectUrl || "/tickets",
+              );
+            } else {
+              startCountdown(5, "/tickets");
+            }
+          } else {
+            console.error("Error processing cancellation:", data);
+            // Still start countdown even if backend call failed
+            startCountdown(5, "/tickets");
+          }
+        } catch (error) {
+          console.error("Error notifying backend of cancellation:", error);
+          // Continue with countdown even if backend notification failed
+          startCountdown(5, "/tickets");
+        }
+      }
+
+      // Countdown timer for auto-redirect
+      function startCountdown(seconds, redirectUrl) {
+        let timeLeft = seconds;
+        const timerElement = document.getElementById("countdown-timer");
+        const countdownElement = document.getElementById("countdown");
+
+        const interval = setInterval(() => {
+          timeLeft--;
+          timerElement.textContent = timeLeft;
+
+          if (timeLeft <= 0) {
+            clearInterval(interval);
+            countdownElement.textContent = "Redirecting now...";
+            window.location.href = redirectUrl;
+          }
+        }, 1000);
+
+        // Allow user to cancel auto-redirect by interacting with the page
+        const cancelAutoRedirect = () => {
+          clearInterval(interval);
+          countdownElement.style.display = "none";
+        };
+
+        // Cancel auto-redirect if user clicks any button or link
+        document.querySelectorAll("a, button").forEach((element) => {
+          element.addEventListener("click", cancelAutoRedirect);
+        });
+
+        // Cancel auto-redirect if user scrolls or moves mouse (indicates engagement)
+        let hasInteracted = false;
+        const handleInteraction = () => {
+          if (!hasInteracted) {
+            hasInteracted = true;
+            clearInterval(interval);
+            countdownElement.innerHTML =
+              'Auto-redirect cancelled. <a href="' +
+              redirectUrl +
+              '" style="color: var(--color-blue);">Click here to continue</a>';
+          }
+        };
+
+        // Wait a bit before enabling interaction detection to avoid immediate cancellation
+        setTimeout(() => {
+          window.addEventListener("scroll", handleInteraction, { once: true });
+          window.addEventListener("mousemove", handleInteraction, {
+            once: true,
+          });
+          window.addEventListener("keydown", handleInteraction, { once: true });
+        }, 2000);
+      }
+
+      // Initialize when page loads
+      document.addEventListener("DOMContentLoaded", () => {
+        console.log("Checkout cancel page loaded");
+        console.log("Current URL:", window.location.href);
+
+        // Process the checkout cancellation
+        processCheckoutCancel();
+      });
+
+      // Debug logging
+      console.log("=== CHECKOUT CANCEL PAGE DEBUG ===");
+      console.log("Page loaded at:", new Date().toISOString());
+      console.log("Current URL:", window.location.href);
+      console.log(
+        "URL Parameters:",
+        Object.fromEntries(new URLSearchParams(window.location.search)),
+      );
+    </script>
+  </body>
+</html>

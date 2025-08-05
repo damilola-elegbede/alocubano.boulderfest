@@ -38,7 +38,7 @@ class TicketSelection {
             // Timeout after 5 seconds to prevent infinite waiting
             setTimeout(() => {
                 document.removeEventListener('cart:initialized', handleCartInit);
-                console.warn('Cart manager initialization timeout - proceeding anyway');
+                // Cart manager initialization timeout - proceeding anyway
                 resolve();
             }, 5000);
         });
@@ -46,12 +46,12 @@ class TicketSelection {
 
     bindEvents() {
     // Quantity button events
-        document.querySelectorAll('.qty-btn').forEach(btn => {
+        document.querySelectorAll('.qty-btn').forEach((btn) => {
             btn.addEventListener('click', (e) => this.handleQuantityChange(e));
         });
 
         // Ticket card click events and keyboard accessibility
-        document.querySelectorAll('.ticket-card').forEach(card => {
+        document.querySelectorAll('.ticket-card').forEach((card) => {
             // Make cards keyboard accessible
             card.setAttribute('tabindex', '0');
             card.setAttribute('role', 'button');
@@ -146,9 +146,11 @@ class TicketSelection {
             eventId: 'alocubano-boulderfest-2026'
         };
 
-        document.dispatchEvent(new CustomEvent('ticket-quantity-changed', {
-            detail: eventDetail
-        }));
+        document.dispatchEvent(
+            new CustomEvent('ticket-quantity-changed', {
+                detail: eventDetail
+            })
+        );
     }
 
     handleTicketCardClick(event) {
@@ -176,8 +178,8 @@ class TicketSelection {
         if (cartData) {
             try {
                 cartState = JSON.parse(cartData);
-            } catch (error) {
-                console.warn('Failed to parse cart state:', error);
+            } catch {
+                // Failed to parse cart state - invalid JSON
                 return;
             }
         }
@@ -185,7 +187,7 @@ class TicketSelection {
         const cartTickets = cartState.tickets || {};
 
         // Reset all ticket cards first
-        document.querySelectorAll('.ticket-card').forEach(card => {
+        document.querySelectorAll('.ticket-card').forEach((card) => {
             const ticketType = card.dataset.ticketType;
             const quantitySpan = card.querySelector('.quantity');
 
@@ -213,18 +215,6 @@ class TicketSelection {
                 }
             }
         });
-    }
-
-    handleCheckout() {
-        if (this.selectedTickets.size === 0) {
-            return;
-        }
-
-        // For now, log the selection (later integrate with payment processor)
-        console.log('Checkout initiated with:', Array.from(this.selectedTickets.entries()));
-
-        // Simulate checkout process
-        alert('Checkout functionality will be integrated with payment processor. Selected tickets logged to console.');
     }
 }
 

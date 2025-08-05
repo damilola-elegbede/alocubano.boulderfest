@@ -1,9 +1,11 @@
 # A Lo Cubano Boulder Fest - Design Specification
 
 ## Overview
+
 This document serves as the comprehensive design specification for the A Lo Cubano Boulder Fest website. It captures all design decisions, patterns, and guidelines for future implementation.
 
 ## Directory Structure
+
 ```
 spec/
 ├── README.md                          # This file - main documentation
@@ -37,6 +39,7 @@ spec/
 ## Design Philosophy
 
 ### Core Principles
+
 1. **Typography First**: Text is the primary design element
 2. **Minimalist Aesthetic**: Clean, focused, distraction-free
 3. **Cultural Authenticity**: Respectful representation of Cuban culture
@@ -44,6 +47,7 @@ spec/
 5. **Accessibility**: WCAG 2.1 AA compliant
 
 ### Visual Language
+
 - **Bold Typography**: Using display fonts for impact
 - **Strategic Color**: Red accents on monochrome base
 - **Generous Whitespace**: Let content breathe
@@ -51,7 +55,9 @@ spec/
 - **Clear Hierarchy**: Guide the eye naturally
 
 ### Reference Standards
+
 The **Artists** and **Schedule** pages exemplify the ideal balance and simplicity for this website:
+
 - **Artists Page**: Demonstrates creative typography use with consistent card patterns
 - **Schedule Page**: Shows clean, scannable information hierarchy with minimal styling
 
@@ -60,23 +66,27 @@ These pages should be used as the standard for all other page designs.
 ## Quick Reference
 
 ### Colors
+
 - Primary: `#000000` (Black)
 - Secondary: `#FFFFFF` (White)
 - Accent: `#CC2936` (Cuban Red)
 - Support: `#5B6BB5` (Cuban Blue)
 
 ### Fonts
+
 - Display: `Bebas Neue`
 - Accent: `Playfair Display`
 - Monospace: `Space Mono`
 - Body: `Inter`
 
 ### Breakpoints
+
 - Mobile: `< 768px`
 - Tablet: `768px - 1024px`
 - Desktop: `> 1024px`
 
 ## Implementation Notes
+
 - All specifications use CSS custom properties for maintainability
 - Mobile-first responsive approach
 - Progressive enhancement for animations
@@ -85,6 +95,7 @@ These pages should be used as the standard for all other page designs.
 ## Phase 3 Advanced Features
 
 ### Virtual Scrolling Gallery System
+
 - **DOM Recycling**: Efficiently handles thousands of images with minimal DOM elements
 - **Multi-Year Navigation**: Seamless switching between festival years (2025, 2024, 2023)
 - **Performance Monitoring**: Real-time metrics collection and optimization suggestions
@@ -94,6 +105,7 @@ These pages should be used as the standard for all other page designs.
 ### Key Phase 3 Components
 
 #### Virtual Gallery Manager (`gallery-virtual-scrolling.md`)
+
 - Core virtual scrolling implementation with DOM recycling
 - Multi-year gallery management with smooth transitions
 - Advanced image component with progressive loading
@@ -101,6 +113,7 @@ These pages should be used as the standard for all other page designs.
 - Memory management and performance optimization
 
 #### Performance Monitoring System (`performance-monitoring.md`)
+
 - Real-time FPS, memory, and network monitoring
 - Performance dashboard with metrics visualization
 - Intelligent optimization recommendations
@@ -108,6 +121,7 @@ These pages should be used as the standard for all other page designs.
 - Integration with virtual scrolling components
 
 #### Advanced Image Formats (`advanced-image-formats.md`)
+
 - AVIF format support with intelligent fallbacks
 - Progressive enhancement for modern image formats
 - Responsive image generation with optimal sizing
@@ -115,6 +129,7 @@ These pages should be used as the standard for all other page designs.
 - Browser capability detection and adaptation
 
 #### Virtual Scrolling Animations (`virtual-scrolling-animations.md`)
+
 - Smooth 60fps animations for virtual elements
 - Scroll-responsive effects and momentum-based scaling
 - Loading state animations and progressive disclosure
@@ -122,6 +137,7 @@ These pages should be used as the standard for all other page designs.
 - Performance-aware animation budgeting
 
 #### Responsive Virtual Gallery Layouts (`responsive-virtual-gallery.md`)
+
 - Mobile-first responsive design for virtual components
 - Container query support for component-level responsiveness
 - Performance-aware responsive optimizations
@@ -129,6 +145,7 @@ These pages should be used as the standard for all other page designs.
 - Dark mode and high contrast support
 
 #### Accessibility Virtual Gallery (`accessibility-virtual-gallery.md`)
+
 - WCAG 2.1 AA compliance for virtual scrolling components
 - Screen reader support with dynamic content announcements
 - Comprehensive keyboard navigation patterns
@@ -138,18 +155,21 @@ These pages should be used as the standard for all other page designs.
 ### Technical Architecture
 
 #### Performance-First Design
+
 - **60fps Target**: All animations and interactions maintain smooth frame rates
 - **Memory Efficiency**: DOM recycling prevents memory leaks in long sessions
 - **Adaptive Loading**: Content loading adapts to device capabilities and connection speed
 - **Intelligent Caching**: Multi-layer caching strategy with automatic cache warming
 
 #### Accessibility & Inclusivity
+
 - **Screen Reader Support**: Comprehensive ARIA labels and live regions
 - **Keyboard Navigation**: Full keyboard accessibility with focus management
 - **Reduced Motion**: Respects user motion preferences
 - **High Contrast**: Enhanced visibility for users with visual impairments
 
 #### Browser Compatibility
+
 - **Progressive Enhancement**: Core functionality works on all browsers
 - **Modern Features**: AVIF, container queries, and intersection observers with fallbacks
 - **Performance Monitoring**: Graceful degradation for older browsers
@@ -158,6 +178,7 @@ These pages should be used as the standard for all other page designs.
 ## Design Standards Reference
 
 ### Artists Page Pattern
+
 - Hero with massive typographic title
 - Text composition blocks mixing font sizes and styles
 - Consistent card structure with: number, name, meta info, description, tags
@@ -165,6 +186,7 @@ These pages should be used as the standard for all other page designs.
 - Grid-based layout with generous spacing
 
 ### Schedule Page Pattern
+
 - Clean day/time/event structure
 - Minimal visual styling - focus on readability
 - Consistent time formatting in monospace

@@ -1,54 +1,54 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 // Page to hero image mapping
 const HERO_MAPPING = {
-  'home': '/images/hero/home.jpg',
-  'about': '/images/hero/about.jpg',
-  'tickets': '/images/hero/tickets.jpg',
-  'donations': '/images/hero/donations.jpg',
-  'contact': '/images/hero/contact.jpg',
-  '404': '/images/hero/hero-default.jpg'
+  home: "/images/hero/home.jpg",
+  about: "/images/hero/about.jpg",
+  tickets: "/images/hero/tickets.jpg",
+  donations: "/images/hero/donations.jpg",
+  contact: "/images/hero/contact.jpg",
+  404: "/images/hero/hero-default.jpg",
 };
 
 // Event hero mapping according to the plan
 const EVENT_HERO_MAPPING = {
-  'boulder-fest-2025': '/images/hero/boulder-fest-2025-hero.jpg',
-  'boulder-fest-2026': '/images/hero/boulder-fest-2026-hero.jpg',
-  'weekender-2026-09': '/images/hero/weekender-2026-09-hero.jpg',
+  "boulder-fest-2025": "/images/hero/boulder-fest-2025-hero.jpg",
+  "boulder-fest-2026": "/images/hero/boulder-fest-2026-hero.jpg",
+  "weekender-2026-09": "/images/hero/weekender-2026-09-hero.jpg",
   // Future events use numbered hero images
-  'future-event-1': '/images/hero/future-event-hero1.jpg',
-  'future-event-2': '/images/hero/future-event-hero2.jpg',
-  'future-event-3': '/images/hero/future-event-hero3.jpg',
+  "future-event-1": "/images/hero/future-event-hero1.jpg",
+  "future-event-2": "/images/hero/future-event-hero2.jpg",
+  "future-event-3": "/images/hero/future-event-hero3.jpg",
   // Add more as needed...
 };
 
 // Event page mappings - all pages within an event use the same hero
 const EVENT_PAGE_MAPPING = {
   // Current redirected pages that use event heroes
-  'artists': 'boulder-fest-2026',
-  'schedule': 'boulder-fest-2025', 
-  'gallery': 'weekender-2026-09',
+  artists: "boulder-fest-2026",
+  schedule: "boulder-fest-2025",
+  gallery: "weekender-2026-09",
   // Future event-specific pages
-  'boulder-fest-2025-artists': 'boulder-fest-2025',
-  'boulder-fest-2025-schedule': 'boulder-fest-2025',
-  'boulder-fest-2025-gallery': 'boulder-fest-2025',
-  'boulder-fest-2025-tickets': 'boulder-fest-2025',
-  'boulder-fest-2026-artists': 'boulder-fest-2026',
-  'boulder-fest-2026-schedule': 'boulder-fest-2026',
-  'boulder-fest-2026-gallery': 'boulder-fest-2026',
-  'boulder-fest-2026-tickets': 'boulder-fest-2026',
-  'weekender-2026-09-artists': 'weekender-2026-09',
-  'weekender-2026-09-schedule': 'weekender-2026-09',
-  'weekender-2026-09-gallery': 'weekender-2026-09',
-  'weekender-2026-09-tickets': 'weekender-2026-09',
+  "boulder-fest-2025-artists": "boulder-fest-2025",
+  "boulder-fest-2025-schedule": "boulder-fest-2025",
+  "boulder-fest-2025-gallery": "boulder-fest-2025",
+  "boulder-fest-2025-tickets": "boulder-fest-2025",
+  "boulder-fest-2026-artists": "boulder-fest-2026",
+  "boulder-fest-2026-schedule": "boulder-fest-2026",
+  "boulder-fest-2026-gallery": "boulder-fest-2026",
+  "boulder-fest-2026-tickets": "boulder-fest-2026",
+  "weekender-2026-09-artists": "weekender-2026-09",
+  "weekender-2026-09-schedule": "weekender-2026-09",
+  "weekender-2026-09-gallery": "weekender-2026-09",
+  "weekender-2026-09-tickets": "weekender-2026-09",
 };
 
 // Function to get page ID from filename
 function getPageIdFromFilename(filename) {
-  const baseName = path.basename(filename, '.html');
+  const baseName = path.basename(filename, ".html");
   return baseName;
 }
 
@@ -57,16 +57,16 @@ function getHeroImagePath(pageId) {
   // Check if it's an event page first
   if (EVENT_PAGE_MAPPING[pageId]) {
     const eventId = EVENT_PAGE_MAPPING[pageId];
-    return EVENT_HERO_MAPPING[eventId] || '/images/hero/hero-default.jpg';
+    return EVENT_HERO_MAPPING[eventId] || "/images/hero/hero-default.jpg";
   }
-  
+
   // Otherwise use standard page mapping
-  return HERO_MAPPING[pageId] || '/images/hero/hero-default.jpg';
+  return HERO_MAPPING[pageId] || "/images/hero/hero-default.jpg";
 }
 
 // Utility functions for event hero management
 function getHeroForEventPage(event, page) {
-  return EVENT_HERO_MAPPING[event] || '/images/hero/hero-default.jpg';
+  return EVENT_HERO_MAPPING[event] || "/images/hero/hero-default.jpg";
 }
 
 function getEventHero(event) {
@@ -75,23 +75,26 @@ function getEventHero(event) {
 
 function getNextFutureHeroNumber() {
   const futureHeroes = Object.values(EVENT_HERO_MAPPING)
-    .filter(hero => hero.includes('future-event-hero'))
-    .map(hero => {
+    .filter((hero) => hero.includes("future-event-hero"))
+    .map((hero) => {
       const match = hero.match(/\d+/);
       return match ? parseInt(match[0]) : null;
     })
-    .filter(number => number !== null)
+    .filter((number) => number !== null)
     .sort((a, b) => a - b);
-  
+
   return futureHeroes.length > 0 ? Math.max(...futureHeroes) + 1 : 1;
 }
 
 // New preload script content with responsive image support
 function getNewPreloadScript(pageId) {
   const heroPath = getHeroImagePath(pageId);
-  const baseName = path.basename(heroPath, '.jpg');
-  const isEventHero = heroPath.includes('boulder-fest-') || heroPath.includes('weekender-') || heroPath.includes('future-event-');
-  
+  const baseName = path.basename(heroPath, ".jpg");
+  const isEventHero =
+    heroPath.includes("boulder-fest-") ||
+    heroPath.includes("weekender-") ||
+    heroPath.includes("future-event-");
+
   return `    <!-- Critical resource preloading -->
     <script>
       // Inline critical path optimization - Event hero images with responsive variants
@@ -156,23 +159,26 @@ function getNewPreloadScript(pageId) {
 // Function to update a single HTML file
 function updateHtmlFile(filePath) {
   try {
-    const content = fs.readFileSync(filePath, 'utf8');
+    const content = fs.readFileSync(filePath, "utf8");
     const filename = path.basename(filePath);
     const pageId = getPageIdFromFilename(filename);
-    
+
     console.log(`Updating ${filename} (pageId: ${pageId})`);
-    
+
     // Find and replace the preload script section
-    const preloadRegex = /<!-- Critical resource preloading -->[\s\S]*?<\/script>/;
-    
+    const preloadRegex =
+      /<!-- Critical resource preloading -->[\s\S]*?<\/script>/;
+
     if (preloadRegex.test(content)) {
-      const newContent = content.replace(preloadRegex, getNewPreloadScript(pageId));
-      fs.writeFileSync(filePath, newContent, 'utf8');
+      const newContent = content.replace(
+        preloadRegex,
+        getNewPreloadScript(pageId),
+      );
+      fs.writeFileSync(filePath, newContent, "utf8");
       console.log(`✅ Updated ${filename}`);
     } else {
       console.log(`⚠️ No preload script found in ${filename}`);
     }
-    
   } catch (error) {
     console.error(`❌ Error updating ${filePath}:`, error.message);
   }
@@ -180,28 +186,29 @@ function updateHtmlFile(filePath) {
 
 // Main function
 function main() {
-  const pagesDir = path.join(__dirname, '..', 'pages');
-  
-  console.log('🔄 Updating hero image preloads in HTML files...');
+  const pagesDir = path.join(__dirname, "..", "pages");
+
+  console.log("🔄 Updating hero image preloads in HTML files...");
   console.log(`Pages directory: ${pagesDir}`);
-  
+
   if (!fs.existsSync(pagesDir)) {
-    console.error('❌ Pages directory not found!');
+    console.error("❌ Pages directory not found!");
     process.exit(1);
   }
-  
+
   // Get all HTML files
-  const htmlFiles = fs.readdirSync(pagesDir)
-    .filter(file => file.endsWith('.html'))
-    .map(file => path.join(pagesDir, file));
-  
+  const htmlFiles = fs
+    .readdirSync(pagesDir)
+    .filter((file) => file.endsWith(".html"))
+    .map((file) => path.join(pagesDir, file));
+
   console.log(`Found ${htmlFiles.length} HTML files:`);
-  htmlFiles.forEach(file => console.log(`  - ${path.basename(file)}`));
-  
+  htmlFiles.forEach((file) => console.log(`  - ${path.basename(file)}`));
+
   // Update each file
   htmlFiles.forEach(updateHtmlFile);
-  
-  console.log('🎉 Hero image preload updates completed!');
+
+  console.log("🎉 Hero image preload updates completed!");
 }
 
 // Run the script
@@ -209,13 +216,13 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { 
-  updateHtmlFile, 
-  getHeroImagePath, 
+module.exports = {
+  updateHtmlFile,
+  getHeroImagePath,
   getPageIdFromFilename,
   getHeroForEventPage,
   getEventHero,
   getNextFutureHeroNumber,
   EVENT_HERO_MAPPING,
-  EVENT_PAGE_MAPPING 
+  EVENT_PAGE_MAPPING,
 };

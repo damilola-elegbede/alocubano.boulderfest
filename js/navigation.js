@@ -33,7 +33,7 @@ class EventBus {
             return;
         }
 
-        this.events.get(eventName).forEach(callback => {
+        this.events.get(eventName).forEach((callback) => {
             try {
                 callback(data);
             } catch (error) {
@@ -67,7 +67,9 @@ class DropdownManager {
             touchEnabled: 'ontouchstart' in window || navigator.maxTouchPoints > 0
         };
         this.keyboardFocusIndex = -1;
-        this.prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        this.prefersReducedMotion = window.matchMedia(
+            '(prefers-reduced-motion: reduce)'
+        ).matches;
     }
 
     init() {
@@ -78,13 +80,19 @@ class DropdownManager {
     }
 
     setupDropdownListeners() {
-        // Click handlers
+    // Click handlers
         document.addEventListener('click', this.handleDropdownClick.bind(this));
 
         // Mouse interaction handlers (only for non-touch devices for better UX)
         if (!this.config.touchEnabled) {
-            document.addEventListener('mouseover', this.handleDropdownHover.bind(this));
-            document.addEventListener('mouseout', this.handleDropdownLeave.bind(this));
+            document.addEventListener(
+                'mouseover',
+                this.handleDropdownHover.bind(this)
+            );
+            document.addEventListener(
+                'mouseout',
+                this.handleDropdownLeave.bind(this)
+            );
         }
 
         // Focus handlers for keyboard navigation
@@ -98,14 +106,18 @@ class DropdownManager {
         if (trigger) {
             event.preventDefault();
             this.toggleDropdown(trigger);
-        } else if (!event.target.closest('.nav-item.has-dropdown, .dropdown-container')) {
+        } else if (
+            !event.target.closest('.nav-item.has-dropdown, .dropdown-container')
+        ) {
             // Click outside - close all dropdowns
             this.closeAllDropdowns();
         }
     }
 
     handleDropdownHover(event) {
-        const container = event.target.closest('.nav-item.has-dropdown, .dropdown-container');
+        const container = event.target.closest(
+            '.nav-item.has-dropdown, .dropdown-container'
+        );
         if (!container || this.config.touchEnabled) {
             return;
         }
@@ -129,7 +141,9 @@ class DropdownManager {
     }
 
     handleDropdownLeave(event) {
-        const container = event.target.closest('.nav-item.has-dropdown, .dropdown-container');
+        const container = event.target.closest(
+            '.nav-item.has-dropdown, .dropdown-container'
+        );
         if (!container) {
             return;
         }
@@ -146,7 +160,9 @@ class DropdownManager {
     }
 
     handleDropdownFocus(event) {
-        const container = event.target.closest('.nav-item.has-dropdown, .dropdown-container');
+        const container = event.target.closest(
+            '.nav-item.has-dropdown, .dropdown-container'
+        );
         if (!container) {
             return;
         }
@@ -159,9 +175,11 @@ class DropdownManager {
     }
 
     handleDropdownBlur(event) {
-        // Use setTimeout to allow focus to move to related target
+    // Use setTimeout to allow focus to move to related target
         setTimeout(() => {
-            const container = event.target.closest('.nav-item.has-dropdown, .dropdown-container');
+            const container = event.target.closest(
+                '.nav-item.has-dropdown, .dropdown-container'
+            );
             if (!container) {
                 return;
             }
@@ -174,7 +192,9 @@ class DropdownManager {
     }
 
     toggleDropdown(trigger) {
-        const container = trigger.closest('.nav-item.has-dropdown, .dropdown-container');
+        const container = trigger.closest(
+            '.nav-item.has-dropdown, .dropdown-container'
+        );
         const menu = container.querySelector('.dropdown-menu');
         const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
 
@@ -187,7 +207,9 @@ class DropdownManager {
     }
 
     showDropdown(trigger) {
-        const container = trigger.closest('.nav-item.has-dropdown, .dropdown-container');
+        const container = trigger.closest(
+            '.nav-item.has-dropdown, .dropdown-container'
+        );
         const menu = container.querySelector('.dropdown-menu');
 
         // Set ARIA attributes
@@ -273,7 +295,9 @@ class DropdownManager {
 
     handleTriggerKeydown(event) {
         const trigger = event.target;
-        const container = trigger.closest('.nav-item.has-dropdown, .dropdown-container');
+        const container = trigger.closest(
+            '.nav-item.has-dropdown, .dropdown-container'
+        );
 
         switch (event.key) {
         case 'ArrowDown':
@@ -342,7 +366,7 @@ class DropdownManager {
             break;
 
         case 'Tab':
-            // Allow natural tab behavior, but close dropdown when tabbing out
+        // Allow natural tab behavior, but close dropdown when tabbing out
             setTimeout(() => {
                 if (!this.activeDropdown?.contains(document.activeElement)) {
                     this.closeAllDropdowns();
@@ -366,23 +390,33 @@ class DropdownManager {
         }
 
         // Enhanced touch support for mobile devices
-        document.addEventListener('touchstart', (event) => {
-            const dropdown = event.target.closest('.nav-item.has-dropdown, .dropdown-container');
-            if (!dropdown && this.activeDropdown) {
-                this.closeAllDropdowns();
-            }
-        }, { passive: true });
+        document.addEventListener(
+            'touchstart',
+            (event) => {
+                const dropdown = event.target.closest(
+                    '.nav-item.has-dropdown, .dropdown-container'
+                );
+                if (!dropdown && this.activeDropdown) {
+                    this.closeAllDropdowns();
+                }
+            },
+            { passive: true }
+        );
 
         // Prevent scroll when interacting with dropdowns on mobile
-        document.addEventListener('touchmove', (event) => {
-            if (this.activeDropdown && event.target.closest('.dropdown-menu')) {
-                event.preventDefault();
-            }
-        }, { passive: false });
+        document.addEventListener(
+            'touchmove',
+            (event) => {
+                if (this.activeDropdown && event.target.closest('.dropdown-menu')) {
+                    event.preventDefault();
+                }
+            },
+            { passive: false }
+        );
     }
 
     setupAccessibilityFeatures() {
-        // Enhance focus visibility for keyboard users
+    // Enhance focus visibility for keyboard users
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Tab') {
                 document.body.classList.add('keyboard-nav');
@@ -440,16 +474,19 @@ class DropdownManager {
             return; // Observer already set up, no need to create another
         }
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (!entry.isIntersecting && this.activeDropdown === container) {
-                    this.hideDropdown(container);
-                }
-            });
-        }, {
-            threshold: 0.1,
-            rootMargin: '-50px'
-        });
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting && this.activeDropdown === container) {
+                        this.hideDropdown(container);
+                    }
+                });
+            },
+            {
+                threshold: 0.1,
+                rootMargin: '-50px'
+            }
+        );
 
         observer.observe(container);
 
@@ -473,10 +510,10 @@ class DropdownManager {
     }
 
     prefetchEventPages(container) {
-        // Performance optimization: prefetch likely next pages
+    // Performance optimization: prefetch likely next pages
         const eventLinks = container.querySelectorAll('.dropdown-link[data-event]');
 
-        eventLinks.forEach(link => {
+        eventLinks.forEach((link) => {
             if ('requestIdleCallback' in window) {
                 requestIdleCallback(() => {
                     // Prefetch the page content
@@ -490,14 +527,15 @@ class DropdownManager {
     }
 
     announceDropdownState(trigger, isOpen) {
-        // Create or update screen reader announcement
+    // Create or update screen reader announcement
         let announcement = document.getElementById('dropdown-announcement');
         if (!announcement) {
             announcement = document.createElement('div');
             announcement.id = 'dropdown-announcement';
             announcement.setAttribute('aria-live', 'polite');
             announcement.setAttribute('aria-atomic', 'true');
-            announcement.style.cssText = 'position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;';
+            announcement.style.cssText =
+        'position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;';
             document.body.appendChild(announcement);
         }
 
@@ -514,14 +552,16 @@ class DropdownManager {
     }
 
     closeAllDropdowns() {
-        document.querySelectorAll('.nav-item.has-dropdown, .dropdown-container').forEach(container => {
-            this.hideDropdown(container);
-        });
+        document
+            .querySelectorAll('.nav-item.has-dropdown, .dropdown-container')
+            .forEach((container) => {
+                this.hideDropdown(container);
+            });
     }
 
     destroy() {
-        // Clean up event listeners and timers
-        this.dropdownTimers.forEach(timer => clearTimeout(timer));
+    // Clean up event listeners and timers
+        this.dropdownTimers.forEach((timer) => clearTimeout(timer));
         this.dropdownTimers.clear();
 
         // Clean up all active observers
@@ -540,7 +580,7 @@ class DropdownManager {
  */
 class SiteNavigation {
     constructor(config = {}) {
-        // Legacy compatibility
+    // Legacy compatibility
         this.currentDesign = localStorage.getItem('selectedDesign') || 'design1';
         this.mobileMenuOpen = false;
 
@@ -591,8 +631,7 @@ class SiteNavigation {
     }
 
     init() {
-
-        // Parse current route context
+    // Parse current route context
         this.parseCurrentRoute();
 
         // Setup event listeners (enhanced)
@@ -662,7 +701,7 @@ class SiteNavigation {
     }
 
     setupPerformanceMonitoring() {
-        // Track navigation interactions for analytics
+    // Track navigation interactions for analytics
         document.addEventListener('click', (event) => {
             if (event.target.matches('.nav-link, .dropdown-link')) {
                 this.performanceMetrics.navigationInteractions++;
@@ -679,7 +718,7 @@ class SiteNavigation {
     }
 
     setupAccessibilityEnhancements() {
-        // Enhanced focus management
+    // Enhanced focus management
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Tab') {
                 this.performanceMetrics.keyboardNavUsage++;
@@ -696,7 +735,7 @@ class SiteNavigation {
     }
 
     createSkipLink() {
-        // Create skip link for keyboard users
+    // Create skip link for keyboard users
         const skipLink = document.createElement('a');
         skipLink.href = '#main-content';
         skipLink.textContent = 'Skip to main content';
@@ -706,7 +745,7 @@ class SiteNavigation {
     }
 
     setupEventListeners() {
-        // Mobile menu toggle
+    // Mobile menu toggle
         const menuToggle = document.querySelector('.menu-toggle');
         if (menuToggle) {
             menuToggle.addEventListener('click', () => this.toggleMobileMenu());
@@ -740,7 +779,7 @@ class SiteNavigation {
         });
 
         // Enhanced smooth scroll for anchor links with Cuban rhythm timing
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
             anchor.addEventListener('click', (e) => {
                 e.preventDefault();
                 const target = document.querySelector(anchor.getAttribute('href'));
@@ -792,8 +831,8 @@ class SiteNavigation {
             return;
         }
 
-        // Mobile menu setup - class will be added only when menu is toggled
-        // The 'is-open' class should only be added when menu is explicitly opened
+    // Mobile menu setup - class will be added only when menu is toggled
+    // The 'is-open' class should only be added when menu is explicitly opened
     }
 
     toggleMobileMenu() {
@@ -846,8 +885,8 @@ class SiteNavigation {
         const patterns = [];
 
         // Dynamically generate patterns from event configuration
-        Object.values(this.eventConfig.events).forEach(event => {
-            this.eventConfig.subPageTypes.forEach(type => {
+        Object.values(this.eventConfig.events).forEach((event) => {
+            this.eventConfig.subPageTypes.forEach((type) => {
                 patterns.push(`/${event.prefix}-${type}`);
             });
         });
@@ -857,10 +896,12 @@ class SiteNavigation {
 
     highlightCurrentPage() {
         const currentPath = window.location.pathname;
-        const navLinks = document.querySelectorAll('.nav-link, .dropdown-link, .event-nav-link');
+        const navLinks = document.querySelectorAll(
+            '.nav-link, .dropdown-link, .event-nav-link'
+        );
 
         // First, clear all active states
-        document.querySelectorAll('.nav-trigger, .nav-item').forEach(el => {
+        document.querySelectorAll('.nav-trigger, .nav-item').forEach((el) => {
             el.classList.remove('is-active');
         });
 
@@ -868,17 +909,20 @@ class SiteNavigation {
         const eventSubPagePatterns = this.getEventSubPagePatterns();
 
         // Check if current page is an Events sub-page
-        const isEventSubPage = eventSubPagePatterns.some(pattern => currentPath === pattern);
+        const isEventSubPage = eventSubPagePatterns.some(
+            (pattern) => currentPath === pattern
+        );
 
-        navLinks.forEach(link => {
+        navLinks.forEach((link) => {
             link.classList.remove('is-active');
             const linkPath = new URL(link.href).pathname;
 
             // Enhanced path matching for current page highlighting
-            const isCurrentPage = currentPath === linkPath ||
-                                    (currentPath === '/' && linkPath === '/home') ||
-                                    (currentPath === '/home' && linkPath === '/home') ||
-                                    (currentPath.startsWith(linkPath + '/') && linkPath !== '/');
+            const isCurrentPage =
+        currentPath === linkPath ||
+        (currentPath === '/' && linkPath === '/home') ||
+        (currentPath === '/home' && linkPath === '/home') ||
+        (currentPath.startsWith(linkPath + '/') && linkPath !== '/');
 
             if (isCurrentPage) {
                 link.classList.add('is-active');
@@ -887,9 +931,13 @@ class SiteNavigation {
                 link.setAttribute('aria-current', 'page');
 
                 // If this is in a dropdown, mark the parent trigger as active too
-                const dropdown = link.closest('.nav-item.has-dropdown, .dropdown-container');
+                const dropdown = link.closest(
+                    '.nav-item.has-dropdown, .dropdown-container'
+                );
                 if (dropdown) {
-                    const trigger = dropdown.querySelector('.dropdown-trigger, .nav-trigger');
+                    const trigger = dropdown.querySelector(
+                        '.dropdown-trigger, .nav-trigger'
+                    );
                     if (trigger) {
                         trigger.classList.add('is-active');
                         // Also mark the parent nav-item as active for desktop styles
@@ -907,8 +955,10 @@ class SiteNavigation {
         // Special handling for Events sub-pages
         if (isEventSubPage) {
             // Find the Events trigger and mark it as active
-            const eventsTriggers = document.querySelectorAll('[data-dropdown="events"], .nav-trigger');
-            eventsTriggers.forEach(trigger => {
+            const eventsTriggers = document.querySelectorAll(
+                '[data-dropdown="events"], .nav-trigger'
+            );
+            eventsTriggers.forEach((trigger) => {
                 const triggerText = trigger.textContent.trim();
                 if (triggerText.includes('Events')) {
                     trigger.classList.add('is-active');
@@ -920,7 +970,6 @@ class SiteNavigation {
                 }
             });
         }
-
     }
 
     setDesign(designName) {
@@ -952,7 +1001,7 @@ class SiteNavigation {
 
     // Navigation with transition (enhanced for Cuban rhythm)
     navigateWithTransition(url) {
-        // Close any open dropdowns before navigation
+    // Close any open dropdowns before navigation
         if (this.dropdownManager) {
             this.dropdownManager.closeAllDropdowns();
         }
@@ -963,7 +1012,9 @@ class SiteNavigation {
         }
 
         // Cuban dance-inspired transition timing
-        const transitionClass = this.config.cubanRhythmTiming ? 'page-exiting-cuban' : 'page-exiting';
+        const transitionClass = this.config.cubanRhythmTiming
+            ? 'page-exiting-cuban'
+            : 'page-exiting';
         document.body.classList.add(transitionClass);
 
         const transitionDelay = this.config.cubanRhythmTiming ? 250 : 300;
@@ -977,7 +1028,9 @@ class SiteNavigation {
         return {
             ...this.performanceMetrics,
             timestamp: Date.now(),
-            activeDropdowns: document.querySelectorAll('.nav-item.has-dropdown.dropdown-active, .dropdown-container.dropdown-active').length,
+            activeDropdowns: document.querySelectorAll(
+                '.nav-item.has-dropdown.dropdown-active, .dropdown-container.dropdown-active'
+            ).length,
             mobileMenuOpen: this.mobileMenuOpen
         };
     }
@@ -985,14 +1038,14 @@ class SiteNavigation {
     // Event-aware page title helper
     getPageDisplayName(page) {
         const displayNames = {
-            'home': 'Home',
-            'about': 'About',
-            'artists': 'Artists',
-            'schedule': 'Schedule',
-            'gallery': 'Gallery',
-            'tickets': 'Tickets',
-            'donations': 'Donate',
-            'contact': 'Contact',
+            home: 'Home',
+            about: 'About',
+            artists: 'Artists',
+            schedule: 'Schedule',
+            gallery: 'Gallery',
+            tickets: 'Tickets',
+            donations: 'Donate',
+            contact: 'Contact',
             'about-festival': 'About Festival'
         };
         return displayNames[page] || page.charAt(0).toUpperCase() + page.slice(1);
@@ -1023,7 +1076,12 @@ if (typeof PageTransition === 'undefined') {
             // Handle link clicks
             document.addEventListener('click', (e) => {
                 const link = e.target.closest('a');
-                if (link && link.href && !link.href.startsWith('#') && link.href.includes(window.location.host)) {
+                if (
+                    link &&
+          link.href &&
+          !link.href.startsWith('#') &&
+          link.href.includes(window.location.host)
+                ) {
                     e.preventDefault();
                     this.navigateWithTransition(link.href);
                 }
@@ -1065,10 +1123,13 @@ if (typeof PageTransition === 'undefined') {
                 this.reExecuteScripts(newDoc);
 
                 // Re-initialize navigation only if it doesn't exist or is broken
-                if (!window.siteNavigation || typeof window.siteNavigation.init !== 'function') {
+                if (
+                    !window.siteNavigation ||
+          typeof window.siteNavigation.init !== 'function'
+                ) {
                     window.siteNavigation = new SiteNavigation();
                 } else {
-                // Just reinitialize the existing navigation
+                    // Just reinitialize the existing navigation
                     window.siteNavigation.init();
                 }
 
@@ -1079,39 +1140,40 @@ if (typeof PageTransition === 'undefined') {
                 setTimeout(() => {
                     document.body.classList.remove('page-entering');
                 }, 300);
-
             } catch {
-            // Page transition error, fallback to normal navigation
+                // Page transition error, fallback to normal navigation
                 window.location.href = url;
             }
         }
 
         reExecuteScripts(newDoc) {
-        // Get all script tags from the new document
+            // Get all script tags from the new document
             const scripts = newDoc.querySelectorAll('script');
 
-            scripts.forEach(script => {
+            scripts.forEach((script) => {
                 if (script.src) {
-                // Check if this script is already loaded to avoid redeclaring classes
+                    // Check if this script is already loaded to avoid redeclaring classes
                     const scriptSrc = script.src;
-                    const existingScript = document.querySelector(`script[src="${scriptSrc}"]`);
+                    const existingScript = document.querySelector(
+                        `script[src="${scriptSrc}"]`
+                    );
 
                     if (!existingScript) {
-                    // External script - create new script element only if not already loaded
+                        // External script - create new script element only if not already loaded
                         const newScript = document.createElement('script');
                         newScript.src = scriptSrc;
                         newScript.async = false; // Maintain execution order
                         document.head.appendChild(newScript);
                     }
                 } else if (script.textContent) {
-                // For inline scripts, check if it contains class declarations that might already exist
+                    // For inline scripts, check if it contains class declarations that might already exist
                     const scriptContent = script.textContent;
                     const hasClassDeclaration = /class\s+\w+/.test(scriptContent);
 
                     if (!hasClassDeclaration) {
-                    // Inline script without class declarations - create safe execution context
+                        // Inline script without class declarations - create safe execution context
                         try {
-                        // Create a safe function execution instead of eval()
+                            // Create a safe function execution instead of eval()
                             const scriptFunction = new Function(scriptContent);
                             scriptFunction();
                         } catch (error) {
@@ -1133,10 +1195,12 @@ document.addEventListener('DOMContentLoaded', () => {
             window.siteNavigation.init();
         }
     }
-    if (typeof PageTransition !== 'undefined' && typeof window.pageTransition === 'undefined') {
+    if (
+        typeof PageTransition !== 'undefined' &&
+    typeof window.pageTransition === 'undefined'
+    ) {
         window.pageTransition = new PageTransition();
     }
-
 });
 
 // Export for use in other modules

@@ -56,7 +56,11 @@
 @media (max-width: 768px) {
   /* Hero title mobile optimization */
   .hero-title-massive {
-    font-size: clamp(var(--font-size-4xl), 12vw, var(--font-size-6xl)) !important;
+    font-size: clamp(
+      var(--font-size-4xl),
+      12vw,
+      var(--font-size-6xl)
+    ) !important;
     line-height: 1.1 !important;
     letter-spacing: -0.02em !important;
   }
@@ -98,7 +102,6 @@
    ========================================================================== */
 
 @media (max-width: 768px) {
-
   /* Section spacing mobile optimization */
   .section-typographic {
     padding: var(--space-md) 0;
@@ -115,7 +118,6 @@
     grid-template-columns: 1fr;
     gap: var(--space-lg);
   }
-
 
   /* Pricing tables mobile optimization */
   .pricing-grid {
@@ -279,7 +281,11 @@
   }
 
   .hero-title-massive {
-    font-size: clamp(var(--font-size-3xl), 10vw, var(--font-size-5xl)) !important;
+    font-size: clamp(
+      var(--font-size-3xl),
+      10vw,
+      var(--font-size-5xl)
+    ) !important;
   }
 
   .text-display {
@@ -308,4 +314,3 @@
   }
   */
 }
-

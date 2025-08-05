@@ -61,6 +61,7 @@ Open the downloaded JSON file and locate these values:
 ```
 
 You'll need:
+
 - `client_email`
 - `private_key`
 - `project_id`
@@ -82,19 +83,23 @@ You'll need:
 4. Add the following variables:
 
 ### GOOGLE_SERVICE_ACCOUNT_EMAIL
+
 - **Value**: The `client_email` from your JSON file
 - **Example**: `alocubano-drive-reader@your-project-id.iam.gserviceaccount.com`
 
 ### GOOGLE_PRIVATE_KEY
+
 - **Value**: The `private_key` from your JSON file
 - **IMPORTANT**: Include the entire key with line breaks preserved
 - The value should start with `-----BEGIN PRIVATE KEY-----` and end with `-----END PRIVATE KEY-----`
 
 ### GOOGLE_PROJECT_ID
+
 - **Value**: The `project_id` from your JSON file
 - **Example**: `alocubano-gallery-123456`
 
 ### GOOGLE_DRIVE_FOLDER_ID
+
 - **Value**: `1elqFy6HFf792_vGju8wYaEBJtLjQyOSq`
 - This is extracted from the Google Drive URL
 
@@ -122,16 +127,19 @@ GOOGLE_DRIVE_FOLDER_ID=1elqFy6HFf792_vGju8wYaEBJtLjQyOSq
 ## Troubleshooting
 
 ### "Permission denied" errors
+
 - Verify the service account email has access to the Google Drive folder
 - Check that you're using the correct folder ID
 - Ensure the service account has "Viewer" permissions
 
 ### "Invalid credentials" errors
+
 - Double-check the private key formatting (preserve line breaks)
 - Verify all environment variables are set correctly
 - Make sure you're using the correct project ID
 
 ### Images not loading
+
 - Check browser console for errors
 - Verify the API is enabled in Google Cloud Console
 - Check Vercel function logs for detailed error messages
@@ -147,6 +155,7 @@ GOOGLE_DRIVE_FOLDER_ID=1elqFy6HFf792_vGju8wYaEBJtLjQyOSq
 ## Next Steps
 
 Once configured, the gallery will:
+
 1. Fetch images from the specified Google Drive folder
 2. Display them in a responsive grid layout
 3. Cache results for better performance
@@ -157,11 +166,13 @@ Once configured, the gallery will:
 For local testing, you can use the `.env.local` file:
 
 1. Copy the example file:
+
    ```bash
    cp .env.example .env.local
    ```
 
 2. Add your credentials to `.env.local`:
+
    ```env
    GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account@your-project.iam.gserviceaccount.com
    GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
@@ -170,6 +181,7 @@ For local testing, you can use the `.env.local` file:
    ```
 
 3. Run the development server:
+
    ```bash
    ./scripts/start.sh
    # or

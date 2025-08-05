@@ -18,7 +18,7 @@
 
 export class VirtualGalleryManager {
     constructor(container, options = {}) {
-        // Validate container
+    // Validate container
         if (!container) {
             throw new Error('VirtualGalleryManager requires a container element');
         }
@@ -34,7 +34,8 @@ export class VirtualGalleryManager {
             itemHeight: options.itemHeight || 250,
             itemsPerRow: options.itemsPerRow || 'auto',
             bufferSize: options.bufferSize || 5,
-            loadingPlaceholder: options.loadingPlaceholder || '/images/gallery/placeholder-1.svg',
+            loadingPlaceholder:
+        options.loadingPlaceholder || '/images/gallery/placeholder-1.svg',
             enableLightbox: options.enableLightbox ?? true,
             enableAnalytics: options.enableAnalytics ?? true,
             imageFormats: options.imageFormats || ['avif', 'webp', 'jpeg'],
@@ -98,8 +99,8 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Set up the container with required structure and styles
-     */
+   * Set up the container with required structure and styles
+   */
     setupContainer() {
         this.container.classList.add('virtual-gallery');
         this.container.style.position = 'relative';
@@ -124,7 +125,9 @@ export class VirtualGalleryManager {
         this.container.appendChild(this.contentWrapper);
 
         // Add event listeners
-        this.container.addEventListener('scroll', this.handleScroll, { passive: true });
+        this.container.addEventListener('scroll', this.handleScroll, {
+            passive: true
+        });
         window.addEventListener('resize', this.handleResize, { passive: true });
         this.container.addEventListener('click', this.handleItemClick);
 
@@ -133,9 +136,9 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Load photos into the virtual gallery
-     * @param {Array} photos - Array of photo objects with src, alt, etc.
-     */
+   * Load photos into the virtual gallery
+   * @param {Array} photos - Array of photo objects with src, alt, etc.
+   */
     async loadPhotos(photos) {
         if (!Array.isArray(photos)) {
             throw new Error('VirtualGalleryManager.loadPhotos expects an array');
@@ -178,8 +181,8 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Update container and layout dimensions
-     */
+   * Update container and layout dimensions
+   */
     updateDimensions() {
         const containerStyles = getComputedStyle(this.container);
 
@@ -188,15 +191,19 @@ export class VirtualGalleryManager {
         // Calculate available width (accounting for padding and scrollbar)
         const paddingLeft = parseInt(containerStyles.paddingLeft, 10) || 0;
         const paddingRight = parseInt(containerStyles.paddingRight, 10) || 0;
-        const scrollbarWidth = this.container.offsetWidth - this.container.clientWidth;
+        const scrollbarWidth =
+      this.container.offsetWidth - this.container.clientWidth;
 
-        this.availableWidth = this.container.clientWidth - paddingLeft - paddingRight - scrollbarWidth;
+        this.availableWidth =
+      this.container.clientWidth - paddingLeft - paddingRight - scrollbarWidth;
 
         // Calculate items per row based on container width
         if (this.config.itemsPerRow === 'auto') {
             const minItemWidth = 200; // Minimum item width
             const gap = 16; // Gap between items
-            const possibleItems = Math.floor((this.availableWidth + gap) / (minItemWidth + gap));
+            const possibleItems = Math.floor(
+                (this.availableWidth + gap) / (minItemWidth + gap)
+            );
             this.state.itemsPerRow = Math.max(1, Math.min(possibleItems, 6)); // Clamp between 1-6
         } else {
             this.state.itemsPerRow = this.config.itemsPerRow;
@@ -204,7 +211,9 @@ export class VirtualGalleryManager {
 
         // Calculate item width including gaps
         const totalGaps = (this.state.itemsPerRow - 1) * 16;
-        this.itemWidth = Math.floor((this.availableWidth - totalGaps) / this.state.itemsPerRow);
+        this.itemWidth = Math.floor(
+            (this.availableWidth - totalGaps) / this.state.itemsPerRow
+        );
 
         // Emit dimensions update event for analytics
         if (this.config.enableAnalytics) {
@@ -218,15 +227,18 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Calculate layout parameters
-     */
+   * Calculate layout parameters
+   */
     calculateLayout() {
         if (!this.photos.length) {
             return;
         }
 
-        this.state.totalRows = Math.ceil(this.photos.length / this.state.itemsPerRow);
-        this.state.contentHeight = this.state.totalRows * (this.config.itemHeight + 16) - 16; // Account for gaps
+        this.state.totalRows = Math.ceil(
+            this.photos.length / this.state.itemsPerRow
+        );
+        this.state.contentHeight =
+      this.state.totalRows * (this.config.itemHeight + 16) - 16; // Account for gaps
 
         // Update content wrapper height
         this.contentWrapper.style.height = `${this.state.contentHeight}px`;
@@ -242,8 +254,8 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Handle scroll events with virtual scrolling logic
-     */
+   * Handle scroll events with virtual scrolling logic
+   */
     handleScroll() {
         const startTime = performance.now();
 
@@ -253,16 +265,25 @@ export class VirtualGalleryManager {
         this.metrics.totalScrollEvents++;
 
         // Calculate visible range with buffer
-        const visibleStart = Math.floor(this.state.scrollTop / (this.config.itemHeight + 16));
-        const visibleEnd = Math.ceil((this.state.scrollTop + this.state.containerHeight) / (this.config.itemHeight + 16));
+        const visibleStart = Math.floor(
+            this.state.scrollTop / (this.config.itemHeight + 16)
+        );
+        const visibleEnd = Math.ceil(
+            (this.state.scrollTop + this.state.containerHeight) /
+        (this.config.itemHeight + 16)
+        );
 
         const bufferedStart = Math.max(0, visibleStart - this.config.bufferSize);
-        const bufferedEnd = Math.min(this.state.totalRows - 1, visibleEnd + this.config.bufferSize);
+        const bufferedEnd = Math.min(
+            this.state.totalRows - 1,
+            visibleEnd + this.config.bufferSize
+        );
 
         // Only re-render if visible range changed significantly
-        if (Math.abs(bufferedStart - this.state.visibleStart) > 1 ||
-            Math.abs(bufferedEnd - this.state.visibleEnd) > 1) {
-
+        if (
+            Math.abs(bufferedStart - this.state.visibleStart) > 1 ||
+      Math.abs(bufferedEnd - this.state.visibleEnd) > 1
+        ) {
             this.state.visibleStart = bufferedStart;
             this.state.visibleEnd = bufferedEnd;
 
@@ -281,10 +302,10 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Handle container resize events
-     */
+   * Handle container resize events
+   */
     handleResize() {
-        // Emit resize event for analytics
+    // Emit resize event for analytics
         if (this.config.enableAnalytics) {
             this.emitEvent('gallery:resize-handled', {
                 timestamp: Date.now()
@@ -305,8 +326,8 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Render visible items in the viewport
-     */
+   * Render visible items in the viewport
+   */
     render() {
         if (!this.photos.length) {
             return;
@@ -352,10 +373,10 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Create a new item or reuse from pool
-     * @param {number} index - Photo index
-     * @returns {HTMLElement} Gallery item element
-     */
+   * Create a new item or reuse from pool
+   * @param {number} index - Photo index
+   * @returns {HTMLElement} Gallery item element
+   */
     createOrReuseItem(index) {
         const photo = this.photos[index];
         let item;
@@ -382,9 +403,9 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Create a new gallery item element
-     * @returns {HTMLElement} New gallery item
-     */
+   * Create a new gallery item element
+   * @returns {HTMLElement} New gallery item
+   */
     createGalleryItem() {
         const item = document.createElement('div');
         item.className = 'gallery-item virtual-item';
@@ -465,11 +486,11 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Update item content with photo data
-     * @param {HTMLElement} item - Gallery item element
-     * @param {Object} photo - Photo data
-     * @param {number} index - Photo index
-     */
+   * Update item content with photo data
+   * @param {HTMLElement} item - Gallery item element
+   * @param {Object} photo - Photo data
+   * @param {number} index - Photo index
+   */
     updateItemContent(item, photo, index) {
         const img = item.querySelector('img');
         const placeholder = item.querySelector('.gallery-item-placeholder');
@@ -479,7 +500,11 @@ export class VirtualGalleryManager {
         item.dataset.photoIndex = index;
 
         // Update image source with format negotiation
-        const optimizedSrc = this.getOptimizedImageSrc(photo, this.itemWidth, this.config.itemHeight);
+        const optimizedSrc = this.getOptimizedImageSrc(
+            photo,
+            this.itemWidth,
+            this.config.itemHeight
+        );
 
         if (img.src !== optimizedSrc) {
             // Show placeholder while loading
@@ -519,10 +544,10 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Update item position in the grid
-     * @param {HTMLElement} item - Gallery item element
-     * @param {number} index - Photo index
-     */
+   * Update item position in the grid
+   * @param {HTMLElement} item - Gallery item element
+   * @param {number} index - Photo index
+   */
     updateItemPosition(item, index) {
         const row = Math.floor(index / this.state.itemsPerRow);
         const col = index % this.state.itemsPerRow;
@@ -535,14 +560,14 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Get optimized image source with format negotiation
-     * @param {Object} photo - Photo data
-     * @param {number} width - Target width
-     * @param {number} height - Target height
-     * @returns {string} Optimized image URL
-     */
+   * Get optimized image source with format negotiation
+   * @param {Object} photo - Photo data
+   * @param {number} width - Target width
+   * @param {number} height - Target height
+   * @returns {string} Optimized image URL
+   */
     getOptimizedImageSrc(photo, width, height) {
-        // Use thumbnail if available and appropriately sized
+    // Use thumbnail if available and appropriately sized
         if (photo.thumbnail && width <= 300) {
             return photo.thumbnail;
         }
@@ -563,17 +588,23 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Determine the best image format based on browser support
-     * @returns {string} Best supported format
-     */
+   * Determine the best image format based on browser support
+   * @returns {string} Best supported format
+   */
     getBestImageFormat() {
-        // Check for AVIF support
-        if (this.config.imageFormats.includes('avif') && this.supportsFormat('avif')) {
+    // Check for AVIF support
+        if (
+            this.config.imageFormats.includes('avif') &&
+      this.supportsFormat('avif')
+        ) {
             return 'avif';
         }
 
         // Check for WebP support
-        if (this.config.imageFormats.includes('webp') && this.supportsFormat('webp')) {
+        if (
+            this.config.imageFormats.includes('webp') &&
+      this.supportsFormat('webp')
+        ) {
             return 'webp';
         }
 
@@ -582,29 +613,31 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Check if browser supports image format
-     * @param {string} format - Image format to check
-     * @returns {boolean} Support status
-     */
+   * Check if browser supports image format
+   * @param {string} format - Image format to check
+   * @returns {boolean} Support status
+   */
     supportsFormat(format) {
         const canvas = document.createElement('canvas');
         canvas.width = 1;
         canvas.height = 1;
 
         try {
-            return canvas.toDataURL(`image/${format}`).startsWith(`data:image/${format}`);
+            return canvas
+                .toDataURL(`image/${format}`)
+                .startsWith(`data:image/${format}`);
         } catch {
             return false;
         }
     }
 
     /**
-     * Recycle an item back to the pool
-     * @param {number} index - Photo index
-     * @param {HTMLElement} item - Gallery item element
-     */
+   * Recycle an item back to the pool
+   * @param {number} index - Photo index
+   * @param {HTMLElement} item - Gallery item element
+   */
     recycleItem(index, item) {
-        // Remove from visible items
+    // Remove from visible items
         this.visibleItems.delete(index);
 
         // Remove from DOM but keep in pool for reuse
@@ -628,8 +661,8 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Clear all visible items
-     */
+   * Clear all visible items
+   */
     clearVisibleItems() {
         for (const [index, item] of this.visibleItems) {
             this.recycleItem(index, item);
@@ -638,11 +671,11 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Handle intersection observer events
-     * @param {Array} entries - Intersection entries
-     */
+   * Handle intersection observer events
+   * @param {Array} entries - Intersection entries
+   */
     handleIntersection(entries) {
-        entries.forEach(entry => {
+        entries.forEach((entry) => {
             if (entry.isIntersecting) {
                 const img = entry.target;
                 const item = img.closest('.gallery-item');
@@ -658,9 +691,9 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Handle item click events
-     * @param {Event} event - Click event
-     */
+   * Handle item click events
+   * @param {Event} event - Click event
+   */
     handleItemClick(event) {
         const item = event.target.closest('.gallery-item');
         if (!item) {
@@ -690,23 +723,25 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Update performance metrics
-     * @param {string} type - Metric type
-     * @param {number} value - Metric value
-     */
+   * Update performance metrics
+   * @param {string} type - Metric type
+   * @param {number} value - Metric value
+   */
     updateMetrics(type, value) {
         switch (type) {
         case 'render':
-            const totalTime = this.metrics.averageRenderTime * this.metrics.renderCount + value;
-            this.metrics.averageRenderTime = totalTime / (this.metrics.renderCount + 1);
+            const totalTime =
+          this.metrics.averageRenderTime * this.metrics.renderCount + value;
+            this.metrics.averageRenderTime =
+          totalTime / (this.metrics.renderCount + 1);
             break;
         }
     }
 
     /**
-     * Get current performance metrics
-     * @returns {Object} Performance metrics
-     */
+   * Get current performance metrics
+   * @returns {Object} Performance metrics
+   */
     getMetrics() {
         return {
             ...this.metrics,
@@ -718,9 +753,9 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Estimate memory usage
-     * @returns {Object} Memory usage estimate
-     */
+   * Estimate memory usage
+   * @returns {Object} Memory usage estimate
+   */
     estimateMemoryUsage() {
         const itemSize = 1024; // Estimated bytes per DOM item
         const imageSize = this.itemWidth * this.config.itemHeight * 4; // RGBA bytes
@@ -728,15 +763,16 @@ export class VirtualGalleryManager {
         return {
             domItems: this.visibleItems.size * itemSize,
             images: this.visibleItems.size * imageSize,
-            total: (this.visibleItems.size * itemSize) + (this.visibleItems.size * imageSize)
+            total:
+        this.visibleItems.size * itemSize + this.visibleItems.size * imageSize
         };
     }
 
     /**
-     * Emit custom events
-     * @param {string} eventName - Event name
-     * @param {Object} data - Event data
-     */
+   * Emit custom events
+   * @param {string} eventName - Event name
+   * @param {Object} data - Event data
+   */
     emitEvent(eventName, data = {}) {
         const event = new CustomEvent(eventName, {
             detail: {
@@ -753,13 +789,15 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Scroll to a specific photo
-     * @param {number} index - Photo index
-     * @param {boolean} smooth - Whether to scroll smoothly
-     */
+   * Scroll to a specific photo
+   * @param {number} index - Photo index
+   * @param {boolean} smooth - Whether to scroll smoothly
+   */
     scrollToPhoto(index, smooth = true) {
         if (index < 0 || index >= this.photos.length) {
-            throw new Error(`Invalid photo index: ${index}. Must be between 0 and ${this.photos.length - 1}`);
+            throw new Error(
+                `Invalid photo index: ${index}. Must be between 0 and ${this.photos.length - 1}`
+            );
         }
 
         const row = Math.floor(index / this.state.itemsPerRow);
@@ -777,10 +815,10 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Refresh the gallery (useful after data changes)
-     */
+   * Refresh the gallery (useful after data changes)
+   */
     refresh() {
-        // Emit refresh event for analytics
+    // Emit refresh event for analytics
         if (this.config.enableAnalytics) {
             this.emitEvent('gallery:refresh-started', {
                 timestamp: Date.now()
@@ -798,10 +836,10 @@ export class VirtualGalleryManager {
     }
 
     /**
-     * Destroy the gallery manager and clean up resources
-     */
+   * Destroy the gallery manager and clean up resources
+   */
     destroy() {
-        // Emit destroy event for cleanup tracking
+    // Emit destroy event for cleanup tracking
         if (this.config.enableAnalytics) {
             this.emitEvent('gallery:destroy-started', {
                 uptime: Date.now() - this.metrics.startTime
@@ -847,28 +885,28 @@ export class VirtualGalleryManager {
     // Utility functions
 
     /**
-     * Throttle function execution
-     * @param {Function} func - Function to throttle
-     * @param {number} limit - Time limit in ms
-     * @returns {Function} Throttled function
-     */
+   * Throttle function execution
+   * @param {Function} func - Function to throttle
+   * @param {number} limit - Time limit in ms
+   * @returns {Function} Throttled function
+   */
     throttle(func, limit) {
         let inThrottle;
         return function(...args) {
             if (!inThrottle) {
                 func.apply(this, args);
                 inThrottle = true;
-                setTimeout(() => inThrottle = false, limit);
+                setTimeout(() => (inThrottle = false), limit);
             }
         };
     }
 
     /**
-     * Debounce function execution
-     * @param {Function} func - Function to debounce
-     * @param {number} delay - Delay in ms
-     * @returns {Function} Debounced function
-     */
+   * Debounce function execution
+   * @param {Function} func - Function to debounce
+   * @param {number} delay - Delay in ms
+   * @returns {Function} Debounced function
+   */
     debounce(func, delay) {
         let timeoutId;
         return function(...args) {

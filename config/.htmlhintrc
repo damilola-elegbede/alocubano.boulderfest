@@ -6,7 +6,7 @@
   "attr-no-duplication": true,
   "doctype-first": true,
   "tag-pair": true,
-  "empty-tag-not-self-closed": true,
+  "empty-tag-not-self-closed": false,
   "spec-char-escape": true,
   "id-unique": true,
   "src-not-empty": false,

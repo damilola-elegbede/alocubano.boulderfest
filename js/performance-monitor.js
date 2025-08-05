@@ -18,7 +18,7 @@
 
 class PerformanceMonitor {
     constructor() {
-        // Core metrics storage
+    // Core metrics storage
         this.metrics = {
             // Core Web Vitals
             lcp: { value: 0, measurements: [] },
@@ -112,7 +112,9 @@ class PerformanceMonitor {
             this.setupUnloadReporting();
 
             this.isObserving = true;
-            console.log('[PerfMonitor] All monitoring systems initialized successfully');
+            console.log(
+                '[PerfMonitor] All monitoring systems initialized successfully'
+            );
         } catch (error) {
             console.error('[PerfMonitor] Error initializing monitoring:', error);
             this.recordError('monitoring_init_error', error);
@@ -132,11 +134,13 @@ class PerformanceMonitor {
     calculatePageLoadMetrics() {
         const navigation = performance.getEntriesByType('navigation')[0];
         if (navigation) {
-            this.metrics.pageLoadTime = navigation.loadEventEnd - navigation.navigationStart;
+            this.metrics.pageLoadTime =
+        navigation.loadEventEnd - navigation.navigationStart;
 
             this.logEvent('page_load', {
                 loadTime: this.metrics.pageLoadTime,
-                domContentLoaded: navigation.domContentLoadedEventEnd - navigation.navigationStart,
+                domContentLoaded:
+          navigation.domContentLoadedEventEnd - navigation.navigationStart,
                 firstContentfulPaint: this.getFirstContentfulPaint()
             });
         }
@@ -144,7 +148,9 @@ class PerformanceMonitor {
 
     getFirstContentfulPaint() {
         const paintEntries = performance.getEntriesByType('paint');
-        const fcp = paintEntries.find(entry => entry.name === 'first-contentful-paint');
+        const fcp = paintEntries.find(
+            (entry) => entry.name === 'first-contentful-paint'
+        );
         return fcp ? fcp.startTime : 0;
     }
 
@@ -183,22 +189,29 @@ class PerformanceMonitor {
                     this.metrics.lcp.measurements.push({
                         value: lcpValue,
                         timestamp: Date.now(),
-                        element: lastEntry.element ? {
-                            tagName: lastEntry.element.tagName,
-                            id: lastEntry.element.id,
-                            className: lastEntry.element.className
-                        } : null
+                        element: lastEntry.element
+                            ? {
+                                tagName: lastEntry.element.tagName,
+                                id: lastEntry.element.id,
+                                className: lastEntry.element.className
+                            }
+                            : null
                     });
 
                     this.logEvent('lcp_measurement', {
                         value: lcpValue,
                         element: lastEntry.element ? lastEntry.element.tagName : 'unknown',
                         url: lastEntry.url || window.location.href,
-                        isGalleryImage: lastEntry.element && lastEntry.element.classList.contains('gallery-image')
+                        isGalleryImage:
+              lastEntry.element &&
+              lastEntry.element.classList.contains('gallery-image')
                     });
 
                     // Custom event for gallery-specific LCP tracking
-                    if (lastEntry.element && lastEntry.element.classList.contains('gallery-image')) {
+                    if (
+                        lastEntry.element &&
+            lastEntry.element.classList.contains('gallery-image')
+                    ) {
                         this.recordCustomMetric('gallery_lcp', lcpValue);
                     }
                 }
@@ -215,18 +228,20 @@ class PerformanceMonitor {
         try {
             this.observers.fid = new PerformanceObserver((list) => {
                 const entries = list.getEntries();
-                entries.forEach(entry => {
+                entries.forEach((entry) => {
                     const fidValue = entry.processingStart - entry.startTime;
                     this.metrics.fid.value = fidValue;
                     this.metrics.fid.measurements.push({
                         value: fidValue,
                         timestamp: Date.now(),
                         inputType: entry.name,
-                        target: entry.target ? {
-                            tagName: entry.target.tagName,
-                            id: entry.target.id,
-                            className: entry.target.className
-                        } : null
+                        target: entry.target
+                            ? {
+                                tagName: entry.target.tagName,
+                                id: entry.target.id,
+                                className: entry.target.className
+                            }
+                            : null
                     });
 
                     this.logEvent('fid_measurement', {
@@ -234,10 +249,10 @@ class PerformanceMonitor {
                         inputType: entry.name,
                         target: entry.target ? entry.target.tagName : 'unknown',
                         processingTime: entry.processingEnd - entry.processingStart,
-                        isGalleryInteraction: entry.target && (
-                            entry.target.closest('.gallery-container') ||
-                            entry.target.classList.contains('gallery-image')
-                        )
+                        isGalleryInteraction:
+              entry.target &&
+              (entry.target.closest('.gallery-container') ||
+                entry.target.classList.contains('gallery-image'))
                     });
 
                     // Track gallery-specific FID
@@ -262,22 +277,26 @@ class PerformanceMonitor {
             this.observers.cls = new PerformanceObserver((list) => {
                 const entries = list.getEntries();
 
-                entries.forEach(entry => {
+                entries.forEach((entry) => {
                     // Only count layout shifts without recent input
                     if (!entry.hadRecentInput) {
                         sessionValue += entry.value;
                         sessionEntries.push({
                             value: entry.value,
                             timestamp: Date.now(),
-                            sources: entry.sources ? Array.from(entry.sources).map(source => ({
-                                node: source.node ? {
-                                    tagName: source.node.tagName,
-                                    id: source.node.id,
-                                    className: source.node.className
-                                } : null,
-                                currentRect: source.currentRect,
-                                previousRect: source.previousRect
-                            })) : []
+                            sources: entry.sources
+                                ? Array.from(entry.sources).map((source) => ({
+                                    node: source.node
+                                        ? {
+                                            tagName: source.node.tagName,
+                                            id: source.node.id,
+                                            className: source.node.className
+                                        }
+                                        : null,
+                                    currentRect: source.currentRect,
+                                    previousRect: source.previousRect
+                                }))
+                                : []
                         });
 
                         this.metrics.cls.value = sessionValue;
@@ -311,12 +330,13 @@ class PerformanceMonitor {
             return false;
         }
 
-        return Array.from(entry.sources).some(source => {
+        return Array.from(entry.sources).some((source) => {
             const node = source.node;
-            return node && (
-                node.classList.contains('gallery-image') ||
-                node.classList.contains('gallery-container') ||
-                node.closest('.gallery-container') !== null
+            return (
+                node &&
+        (node.classList.contains('gallery-image') ||
+          node.classList.contains('gallery-container') ||
+          node.closest('.gallery-container') !== null)
             );
         });
     }
@@ -326,7 +346,7 @@ class PerformanceMonitor {
             this.observers.resource = new PerformanceObserver((list) => {
                 const entries = list.getEntries();
 
-                entries.forEach(entry => {
+                entries.forEach((entry) => {
                     // Track resource timing for images and API calls
                     if (entry.initiatorType === 'img' || entry.name.includes('/api/')) {
                         const resourceData = {
@@ -344,7 +364,8 @@ class PerformanceMonitor {
 
                         // Keep only recent resource timings (last 100)
                         if (this.metrics.resourceTimings.length > 100) {
-                            this.metrics.resourceTimings = this.metrics.resourceTimings.slice(-100);
+                            this.metrics.resourceTimings =
+                this.metrics.resourceTimings.slice(-100);
                         }
 
                         this.logEvent('resource_timing', resourceData);
@@ -399,14 +420,18 @@ class PerformanceMonitor {
         // Update success rate
         const successCount = isSuccess ? 1 : 0;
         this.metrics.imageLoadSuccessRate =
-            (this.metrics.imageLoadSuccessRate * (this.metrics.totalImagesLoaded - 1) + successCount) /
-            this.metrics.totalImagesLoaded;
+      (this.metrics.imageLoadSuccessRate *
+        (this.metrics.totalImagesLoaded - 1) +
+        successCount) /
+      this.metrics.totalImagesLoaded;
 
         // Update average load time
         if (isSuccess) {
             this.metrics.averageImageLoadTime =
-                (this.metrics.averageImageLoadTime * (this.metrics.totalImagesLoaded - 1) + duration) /
-                this.metrics.totalImagesLoaded;
+        (this.metrics.averageImageLoadTime *
+          (this.metrics.totalImagesLoaded - 1) +
+          duration) /
+        this.metrics.totalImagesLoaded;
         }
 
         this.recordCustomMetric('image_load_duration', duration);
@@ -446,7 +471,10 @@ class PerformanceMonitor {
 
             console.log('[PerfMonitor] Memory monitoring initialized');
         } catch (error) {
-            console.error('[PerfMonitor] Error initializing memory monitoring:', error);
+            console.error(
+                '[PerfMonitor] Error initializing memory monitoring:',
+                error
+            );
             this.recordError('memory_monitoring_error', error);
         }
     }
@@ -458,7 +486,10 @@ class PerformanceMonitor {
         }
 
         try {
-            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            const connection =
+        navigator.connection ||
+        navigator.mozConnection ||
+        navigator.webkitConnection;
 
             const updateNetworkInfo = () => {
                 this.metrics.networkInfo = {
@@ -480,7 +511,10 @@ class PerformanceMonitor {
 
             console.log('[PerfMonitor] Network monitoring initialized');
         } catch (error) {
-            console.error('[PerfMonitor] Error initializing network monitoring:', error);
+            console.error(
+                '[PerfMonitor] Error initializing network monitoring:',
+                error
+            );
             this.recordError('network_monitoring_error', error);
         }
     }
@@ -525,7 +559,10 @@ class PerformanceMonitor {
 
             console.log('[PerfMonitor] Gallery-specific tracking initialized');
         } catch (error) {
-            console.error('[PerfMonitor] Error initializing gallery tracking:', error);
+            console.error(
+                '[PerfMonitor] Error initializing gallery tracking:',
+                error
+            );
             this.recordError('gallery_tracking_error', error);
         }
     }
@@ -534,54 +571,74 @@ class PerformanceMonitor {
         let scrollStartTime = 0;
         let isScrolling = false;
 
-        document.addEventListener('scroll', () => {
-            if (!isScrolling) {
-                scrollStartTime = performance.now();
-                isScrolling = true;
-            }
+        document.addEventListener(
+            'scroll',
+            () => {
+                if (!isScrolling) {
+                    scrollStartTime = performance.now();
+                    isScrolling = true;
+                }
 
-            // Debounce scroll end detection
-            clearTimeout(this.scrollEndTimer);
-            this.scrollEndTimer = setTimeout(() => {
-                const scrollDuration = performance.now() - scrollStartTime;
-                this.metrics.virtualScrollPerformance.renderTime = scrollDuration;
+                // Debounce scroll end detection
+                clearTimeout(this.scrollEndTimer);
+                this.scrollEndTimer = setTimeout(() => {
+                    const scrollDuration = performance.now() - scrollStartTime;
+                    this.metrics.virtualScrollPerformance.renderTime = scrollDuration;
 
-                this.logEvent('virtual_scroll_performance', {
-                    duration: scrollDuration,
-                    timestamp: Date.now()
-                });
+                    this.logEvent('virtual_scroll_performance', {
+                        duration: scrollDuration,
+                        timestamp: Date.now()
+                    });
 
-                isScrolling = false;
-            }, 150);
-        }, { passive: true });
+                    isScrolling = false;
+                }, 150);
+            },
+            { passive: true }
+        );
     }
 
     trackImageLoadingResults() {
-        // Track successful image loads
-        document.addEventListener('load', (event) => {
-            if (event.target.tagName === 'IMG' && event.target.classList.contains('gallery-image')) {
-                this.recordCustomMetric('image_load_success', 1);
-                this.logEvent('gallery_image_loaded', {
-                    src: event.target.src,
-                    loadTime: Date.now() - (parseInt(event.target.dataset.loadStartTime) || Date.now())
-                });
-            }
-        }, true);
+    // Track successful image loads
+        document.addEventListener(
+            'load',
+            (event) => {
+                if (
+                    event.target.tagName === 'IMG' &&
+          event.target.classList.contains('gallery-image')
+                ) {
+                    this.recordCustomMetric('image_load_success', 1);
+                    this.logEvent('gallery_image_loaded', {
+                        src: event.target.src,
+                        loadTime:
+              Date.now() -
+              (parseInt(event.target.dataset.loadStartTime) || Date.now())
+                    });
+                }
+            },
+            true
+        );
 
         // Track failed image loads
-        document.addEventListener('error', (event) => {
-            if (event.target.tagName === 'IMG' && event.target.classList.contains('gallery-image')) {
-                this.recordCustomMetric('image_load_failure', 1);
-                this.recordError('image_load_error', {
-                    src: event.target.src,
-                    error: 'Failed to load image'
-                });
-            }
-        }, true);
+        document.addEventListener(
+            'error',
+            (event) => {
+                if (
+                    event.target.tagName === 'IMG' &&
+          event.target.classList.contains('gallery-image')
+                ) {
+                    this.recordCustomMetric('image_load_failure', 1);
+                    this.recordError('image_load_error', {
+                        src: event.target.src,
+                        error: 'Failed to load image'
+                    });
+                }
+            },
+            true
+        );
     }
 
     trackCacheEfficiency() {
-        // Monitor service worker cache events
+    // Monitor service worker cache events
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.addEventListener('message', (event) => {
                 if (event.data && event.data.type === 'CACHE_PERFORMANCE') {
@@ -594,8 +651,9 @@ class PerformanceMonitor {
     updateCacheEfficiencyMetrics(cacheData) {
         this.metrics.cacheHits = cacheData.hits || 0;
         this.metrics.cacheMisses = cacheData.misses || 0;
-        this.metrics.cacheHitRatio = this.metrics.cacheHits /
-            (this.metrics.cacheHits + this.metrics.cacheMisses);
+        this.metrics.cacheHitRatio =
+      this.metrics.cacheHits /
+      (this.metrics.cacheHits + this.metrics.cacheMisses);
 
         this.logEvent('cache_efficiency', {
             hitRatio: this.metrics.cacheHitRatio,
@@ -643,8 +701,9 @@ class PerformanceMonitor {
     updateCacheMetrics(cacheData) {
         this.metrics.cacheHits = cacheData.hits || 0;
         this.metrics.cacheMisses = cacheData.misses || 0;
-        this.metrics.cacheHitRatio = this.metrics.cacheHits /
-            (this.metrics.cacheHits + this.metrics.cacheMisses) || 0;
+        this.metrics.cacheHitRatio =
+      this.metrics.cacheHits /
+        (this.metrics.cacheHits + this.metrics.cacheMisses) || 0;
 
         this.logEvent('cache_stats', {
             hitRatio: this.metrics.cacheHitRatio,
@@ -654,18 +713,25 @@ class PerformanceMonitor {
     }
 
     trackImageLoading() {
-        // Track gallery image loading times
+    // Track gallery image loading times
         document.addEventListener('progressiveload', (event) => {
             const loadTime = event.detail.loadTime || 0;
             this.trackImageLoadTime(event.detail.url, loadTime);
         });
 
         // Track regular image loads
-        document.addEventListener('load', (event) => {
-            if (event.target.tagName === 'IMG' && event.target.classList.contains('gallery-image')) {
-                this.trackImageLoad(event.target);
-            }
-        }, true);
+        document.addEventListener(
+            'load',
+            (event) => {
+                if (
+                    event.target.tagName === 'IMG' &&
+          event.target.classList.contains('gallery-image')
+                ) {
+                    this.trackImageLoad(event.target);
+                }
+            },
+            true
+        );
     }
 
     trackImageLoadTime(imageUrl, loadTime) {
@@ -673,12 +739,13 @@ class PerformanceMonitor {
 
         const currentAverage = this.metrics.averageImageLoadTime;
         this.metrics.averageImageLoadTime =
-            (currentAverage * (this.metrics.totalImagesLoaded - 1) + loadTime) /
-            this.metrics.totalImagesLoaded;
+      (currentAverage * (this.metrics.totalImagesLoaded - 1) + loadTime) /
+      this.metrics.totalImagesLoaded;
 
         // Track time to first image
         if (this.metrics.timeToFirstImage === 0) {
-            this.metrics.timeToFirstImage = Date.now() - this.metrics.sessionStartTime;
+            this.metrics.timeToFirstImage =
+        Date.now() - this.metrics.sessionStartTime;
         }
 
         this.logEvent('image_load', {
@@ -697,26 +764,31 @@ class PerformanceMonitor {
     }
 
     trackPrefetchEffectiveness() {
-        // Track which prefetched images are actually viewed
+    // Track which prefetched images are actually viewed
         if ('IntersectionObserver' in window) {
-            const viewObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        this.trackImageViewed(entry.target);
-                    }
-                });
-            }, { threshold: 0.5 });
+            const viewObserver = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            this.trackImageViewed(entry.target);
+                        }
+                    });
+                },
+                { threshold: 0.5 }
+            );
 
             // Observe gallery images
             const observer = new MutationObserver((mutations) => {
-                mutations.forEach(mutation => {
-                    mutation.addedNodes.forEach(node => {
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach((node) => {
                         if (node.nodeType === Node.ELEMENT_NODE) {
-                            const images = node.querySelectorAll ?
-                                node.querySelectorAll('img.gallery-image') :
-                                (node.classList && node.classList.contains('gallery-image') ? [node] : []);
+                            const images = node.querySelectorAll
+                                ? node.querySelectorAll('img.gallery-image')
+                                : node.classList && node.classList.contains('gallery-image')
+                                    ? [node]
+                                    : [];
 
-                            images.forEach(img => viewObserver.observe(img));
+                            images.forEach((img) => viewObserver.observe(img));
                         }
                     });
                 });
@@ -742,8 +814,8 @@ class PerformanceMonitor {
     }
 
     updatePrefetchAccuracy(wasViewed) {
-        // This would be implemented with more sophisticated tracking
-        // of prefetched vs viewed images
+    // This would be implemented with more sophisticated tracking
+    // of prefetched vs viewed images
         this.logEvent('prefetch_accuracy', { wasViewed });
     }
 
@@ -837,10 +909,13 @@ class PerformanceMonitor {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(criticalData),
                     keepalive: true
-                }).catch(error => {
+                }).catch((error) => {
                     // Only log non-404 errors to reduce console noise
                     if (!error.message.includes('404')) {
-                        console.warn('[PerfMonitor] Failed to send critical metrics:', error);
+                        console.warn(
+                            '[PerfMonitor] Failed to send critical metrics:',
+                            error
+                        );
                     }
                 });
             }
@@ -850,16 +925,18 @@ class PerformanceMonitor {
     }
 
     startPeriodicReporting() {
-        // Report metrics every 30 seconds
+    // Report metrics every 30 seconds
         this.reportingTimer = setInterval(() => {
             this.reportMetrics();
         }, this.reportingInterval);
 
-        console.log(`[PerfMonitor] Periodic reporting started (${this.reportingInterval}ms interval)`);
+        console.log(
+            `[PerfMonitor] Periodic reporting started (${this.reportingInterval}ms interval)`
+        );
     }
 
     setupUnloadReporting() {
-        // Use multiple unload events for better reliability
+    // Use multiple unload events for better reliability
         const unloadHandler = () => {
             this.sendFinalReport();
         };
@@ -902,7 +979,7 @@ class PerformanceMonitor {
     }
 
     fallbackFinalReport(reportData) {
-        // Synchronous XHR as last resort (deprecated but works for unload)
+    // Synchronous XHR as last resort (deprecated but works for unload)
         try {
             const xhr = new XMLHttpRequest();
             xhr.open('POST', '/api/performance-final', false); // synchronous
@@ -937,9 +1014,11 @@ class PerformanceMonitor {
 
             // Clear old events to manage memory
             this.cleanupOldEvents();
-
         } catch (error) {
-            console.error('[PerfMonitor] Error generating performance report:', error);
+            console.error(
+                '[PerfMonitor] Error generating performance report:',
+                error
+            );
             this.recordError('report_generation_error', error);
         }
     }
@@ -998,15 +1077,20 @@ class PerformanceMonitor {
 
     calculateAggregatedMetrics() {
         const events = this.events;
-        const imageLoadEvents = events.filter(e => e.type === 'image_load');
-        const errorEvents = events.filter(e => e.type === 'error');
+        const imageLoadEvents = events.filter((e) => e.type === 'image_load');
+        const errorEvents = events.filter((e) => e.type === 'error');
 
         return {
             totalEvents: events.length,
             imageLoads: {
                 total: imageLoadEvents.length,
-                averageTime: imageLoadEvents.length > 0 ?
-                    imageLoadEvents.reduce((sum, e) => sum + (e.data.loadTime || 0), 0) / imageLoadEvents.length : 0,
+                averageTime:
+          imageLoadEvents.length > 0
+              ? imageLoadEvents.reduce(
+                  (sum, e) => sum + (e.data.loadTime || 0),
+                  0
+              ) / imageLoadEvents.length
+              : 0,
                 successRate: this.metrics.imageLoadSuccessRate
             },
             errors: {
@@ -1027,9 +1111,9 @@ class PerformanceMonitor {
         const cls = this.metrics.cls.value;
 
         // Score based on Core Web Vitals thresholds
-        const lcpScore = lcp <= 2500 ? 100 : (lcp <= 4000 ? 50 : 0);
-        const fidScore = fid <= 100 ? 100 : (fid <= 300 ? 50 : 0);
-        const clsScore = cls <= 0.1 ? 100 : (cls <= 0.25 ? 50 : 0);
+        const lcpScore = lcp <= 2500 ? 100 : lcp <= 4000 ? 50 : 0;
+        const fidScore = fid <= 100 ? 100 : fid <= 300 ? 50 : 0;
+        const clsScore = cls <= 0.1 ? 100 : cls <= 0.25 ? 50 : 0;
 
         return {
             lcp: lcpScore,
@@ -1043,7 +1127,7 @@ class PerformanceMonitor {
         const cwvScore = this.calculateCoreWebVitalsScore().overall;
         const cacheScore = this.metrics.cacheHitRatio * 100;
         const imageScore = this.metrics.imageLoadSuccessRate * 100;
-        const errorScore = Math.max(0, 100 - (this.metrics.errorCount * 10));
+        const errorScore = Math.max(0, 100 - this.metrics.errorCount * 10);
 
         return {
             coreWebVitals: cwvScore,
@@ -1086,14 +1170,15 @@ class PerformanceMonitor {
 
     generateSessionId() {
         if (!this.sessionId) {
-            this.sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            this.sessionId =
+        'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
         return this.sessionId;
     }
 
     cleanupOldEvents() {
-        const cutoffTime = Date.now() - (10 * 60 * 1000); // 10 minutes ago
-        this.events = this.events.filter(event => event.timestamp > cutoffTime);
+        const cutoffTime = Date.now() - 10 * 60 * 1000; // 10 minutes ago
+        this.events = this.events.filter((event) => event.timestamp > cutoffTime);
     }
 
     sendToAnalytics(report) {
@@ -1121,13 +1206,14 @@ class PerformanceMonitor {
                 );
 
                 if (!success) {
-                    console.warn('[PerfMonitor] sendBeacon failed, falling back to fetch');
+                    console.warn(
+                        '[PerfMonitor] sendBeacon failed, falling back to fetch'
+                    );
                     this.sendWithFetch(analyticsEndpoint, report);
                 }
             } else {
                 this.sendWithFetch(analyticsEndpoint, report);
             }
-
         } catch (error) {
             console.error('[PerfMonitor] Error sending to analytics:', error);
             this.recordError('analytics_send_error', error);
@@ -1140,10 +1226,13 @@ class PerformanceMonitor {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
             keepalive: true
-        }).catch(error => {
+        }).catch((error) => {
             // Only log non-404 errors to reduce console noise
             if (!error.message.includes('404') && !error.toString().includes('404')) {
-                console.warn('[PerfMonitor] Failed to send analytics via fetch:', error);
+                console.warn(
+                    '[PerfMonitor] Failed to send analytics via fetch:',
+                    error
+                );
             }
         });
     }
@@ -1155,7 +1244,7 @@ class PerformanceMonitor {
 
     getEvents(filterType = null) {
         if (filterType) {
-            return this.events.filter(event => event.type === filterType);
+            return this.events.filter((event) => event.type === filterType);
         }
         return [...this.events];
     }
@@ -1203,7 +1292,7 @@ class PerformanceMonitor {
             }
 
             // Disconnect observers
-            Object.values(this.observers).forEach(observer => {
+            Object.values(this.observers).forEach((observer) => {
                 if (observer && observer.disconnect) {
                     observer.disconnect();
                 }

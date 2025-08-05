@@ -13,13 +13,17 @@ export class AnalyticsTracker {
     }
 
     initializeServices() {
-        // Google Analytics 4 (if available)
+    // Google Analytics 4 (if available)
         if (typeof gtag !== 'undefined') {
             this.hasGA4 = true;
         }
 
         // Facebook Pixel (if available) - safer check using window object
-        if (typeof window !== 'undefined' && window.fbq && (typeof window.fbq === 'function' || typeof window.fbq === 'object')) {
+        if (
+            typeof window !== 'undefined' &&
+      window.fbq &&
+      (typeof window.fbq === 'function' || typeof window.fbq === 'object')
+        ) {
             this.hasFacebookPixel = true;
         }
 
@@ -54,16 +58,14 @@ export class AnalyticsTracker {
         this.sendToServices(eventName, eventData);
 
         // Send to custom endpoint (async, non-blocking)
-        this.sendToCustomEndpoint(eventData).catch((error) => {
-            // Analytics tracking failed - log in development mode only
-            if (this.isDevelopment()) {
-                console.error('Custom analytics endpoint failed:', error);
-            }
+        this.sendToCustomEndpoint(eventData).catch(() => {
+            // Analytics tracking failed - silently continue in production
+            // Error details are not logged to avoid console noise
         });
     }
 
     sendToServices(eventName, data) {
-        // Google Analytics 4
+    // Google Analytics 4
         if (this.hasGA4 && typeof gtag === 'function') {
             try {
                 gtag('event', eventName, {
@@ -78,13 +80,17 @@ export class AnalyticsTracker {
         }
 
         // Facebook Pixel
-        if (this.hasFacebookPixel && typeof window !== 'undefined' && typeof window.fbq === 'function') {
+        if (
+            this.hasFacebookPixel &&
+      typeof window !== 'undefined' &&
+      typeof window.fbq === 'function'
+        ) {
             try {
                 const fbEventMap = {
-                    'checkout_button_clicked': 'InitiateCheckout',
-                    'customer_info_submitted': 'AddPaymentInfo',
-                    'payment_submit_attempted': 'Purchase',
-                    'payment_completed': 'Purchase'
+                    checkout_button_clicked: 'InitiateCheckout',
+                    customer_info_submitted: 'AddPaymentInfo',
+                    payment_submit_attempted: 'Purchase',
+                    payment_completed: 'Purchase'
                 };
 
                 const fbEvent = fbEventMap[eventName];
@@ -92,7 +98,7 @@ export class AnalyticsTracker {
                     window.fbq('track', fbEvent, {
                         value: data.value || 0,
                         currency: data.currency || 'USD',
-                        content_ids: data.items?.map(item => item.id) || [],
+                        content_ids: data.items?.map((item) => item.id) || [],
                         content_type: 'product',
                         num_items: data.items?.length || 0
                     });
@@ -120,7 +126,7 @@ export class AnalyticsTracker {
 
             // Clear timeout if request completes successfully
             clearTimeout(timeoutId);
-        } catch (error) {
+        } catch {
             // Custom endpoint failed - continue silently
             // Timeout or network errors are handled here
         }
@@ -129,7 +135,7 @@ export class AnalyticsTracker {
     // E-commerce specific tracking methods
     trackPurchaseStart(items, totalValue) {
         this.track('purchase_started', {
-            items: items.map(item => ({
+            items: items.map((item) => ({
                 id: item.ticketType,
                 name: item.name,
                 category: 'ticket',
@@ -146,7 +152,7 @@ export class AnalyticsTracker {
             transaction_id: orderData.orderId,
             value: orderData.totalAmount,
             currency: 'USD',
-            items: orderData.items.map(item => ({
+            items: orderData.items.map((item) => ({
                 id: item.ticketType,
                 name: item.name,
                 category: 'ticket',
@@ -167,12 +173,12 @@ export class AnalyticsTracker {
     // Cart-specific tracking
     trackCartEvent(eventType, details) {
         const eventMap = {
-            'ticket_added': 'cart_ticket_added',
-            'ticket_removed': 'cart_ticket_removed',
-            'donation_updated': 'cart_donation_updated',
-            'cart_cleared': 'cart_cleared',
-            'cart_opened': 'cart_panel_opened',
-            'checkout_clicked': 'checkout_button_clicked'
+            ticket_added: 'cart_ticket_added',
+            ticket_removed: 'cart_ticket_removed',
+            donation_updated: 'cart_donation_updated',
+            cart_cleared: 'cart_cleared',
+            cart_opened: 'cart_panel_opened',
+            checkout_clicked: 'checkout_button_clicked'
         };
 
         const analyticsEvent = eventMap[eventType] || `cart_${eventType}`;
@@ -194,8 +200,8 @@ export class AnalyticsTracker {
         ];
 
         const funnel = {};
-        funnelSteps.forEach(step => {
-            funnel[step] = this.events.filter(event => event.event === step).length;
+        funnelSteps.forEach((step) => {
+            funnel[step] = this.events.filter((event) => event.event === step).length;
         });
 
         return funnel;
@@ -228,7 +234,10 @@ export class AnalyticsTracker {
             startTime: this.startTime,
             duration: Date.now() - this.startTime,
             eventCount: this.events.length,
-            lastActivity: this.events.length > 0 ? this.events[this.events.length - 1].timestamp : this.startTime
+            lastActivity:
+        this.events.length > 0
+            ? this.events[this.events.length - 1].timestamp
+            : this.startTime
         };
     }
 
@@ -249,20 +258,19 @@ export class AnalyticsTracker {
     // Environment detection for development-only features
     isDevelopment() {
         return (
-            typeof window !== 'undefined' && (
-                window.location.hostname === 'localhost' ||
-                window.location.hostname === '127.0.0.1' ||
-                window.location.port === '3000' ||
-                window.location.port === '8080' ||
-                window.location.search.includes('debug=true') ||
-                localStorage.getItem('dev_mode') === 'true'
-            )
+            typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.port === '3000' ||
+        window.location.port === '8080' ||
+        window.location.search.includes('debug=true') ||
+        localStorage.getItem('dev_mode') === 'true')
         );
     }
 
     // Event cleanup for page unload
     cleanup() {
-        // Send any remaining events using sendBeacon for reliable transmission
+    // Send any remaining events using sendBeacon for reliable transmission
         if (this.events.length > 0) {
             const sessionEndData = {
                 type: 'session_end',
@@ -285,7 +293,7 @@ export class AnalyticsTracker {
                             // Cleanup failed - continue silently
                         });
                     }
-                } catch (error) {
+                } catch {
                     // sendBeacon failed, try async fetch
                     this.sendToCustomEndpoint(sessionEndData).catch(() => {
                         // Cleanup failed - continue silently

@@ -52,7 +52,7 @@ const STATIC_RESOURCES = [
  * Service Worker Installation
  * Precaches critical static resources
  */
-self.addEventListener('install', event => {
+self.addEventListener('install', (event) => {
     console.log('[SW v2.0.0] Installing advanced service worker...');
 
     event.waitUntil(
@@ -61,7 +61,7 @@ self.addEventListener('install', event => {
                 console.log('[SW] Static resources precached successfully');
                 return self.skipWaiting();
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error('[SW] Failed to precache resources:', error);
             })
     );
@@ -71,14 +71,11 @@ self.addEventListener('install', event => {
  * Service Worker Activation
  * Cleans up old caches and claims clients
  */
-self.addEventListener('activate', event => {
+self.addEventListener('activate', (event) => {
     console.log('[SW v2.0.0] Activating advanced service worker...');
 
     event.waitUntil(
-        Promise.all([
-            cleanupOldCaches(),
-            self.clients.claim()
-        ]).then(() => {
+        Promise.all([cleanupOldCaches(), self.clients.claim()]).then(() => {
             console.log('[SW] Service worker activated and ready');
         })
     );
@@ -88,7 +85,7 @@ self.addEventListener('activate', event => {
  * Fetch Event Handler
  * Routes requests to appropriate cache strategies
  */
-self.addEventListener('fetch', event => {
+self.addEventListener('fetch', (event) => {
     const request = event.request;
     const url = new URL(request.url);
 
@@ -118,7 +115,7 @@ self.addEventListener('fetch', event => {
  * Message Handler
  * Provides interface for cache management and warming
  */
-self.addEventListener('message', event => {
+self.addEventListener('message', (event) => {
     const { type, data } = event.data || {};
 
     switch (type) {
@@ -176,13 +173,12 @@ async function cleanupOldCaches() {
     const cacheNames = await caches.keys();
     const currentCaches = [STATIC_CACHE, IMAGE_CACHE, API_CACHE];
 
-    const oldCaches = cacheNames.filter(name =>
-        name.startsWith('alocubano-') &&
-        !currentCaches.includes(name)
+    const oldCaches = cacheNames.filter(
+        (name) => name.startsWith('alocubano-') && !currentCaches.includes(name)
     );
 
     if (oldCaches.length > 0) {
-        await Promise.all(oldCaches.map(cacheName => caches.delete(cacheName)));
+        await Promise.all(oldCaches.map((cacheName) => caches.delete(cacheName)));
         console.log('[SW] Cleaned up old caches:', oldCaches);
     }
 }
@@ -193,17 +189,17 @@ async function cleanupOldCaches() {
 function isImageRequest(url) {
     return (
         url.pathname.includes('/api/image-proxy/') ||
-        url.hostname.includes('drive.google.com') ||
-        url.hostname.includes('googleapis.com') ||
-        /\.(jpg|jpeg|png|webp|gif|svg)(\?|$)/i.test(url.pathname)
+    url.hostname.includes('drive.google.com') ||
+    url.hostname.includes('googleapis.com') ||
+    /\.(jpg|jpeg|png|webp|gif|svg)(\?|$)/i.test(url.pathname)
     );
 }
 
 function isGalleryAPIRequest(url) {
     return (
         url.pathname === '/api/gallery' ||
-        url.pathname === '/api/featured-photos' ||
-        url.pathname.startsWith('/api/gallery/')
+    url.pathname === '/api/featured-photos' ||
+    url.pathname.startsWith('/api/gallery/')
     );
 }
 
@@ -214,10 +210,10 @@ function isAPIRequest(url) {
 function isStaticAsset(url) {
     return (
         url.pathname.startsWith('/css/') ||
-        url.pathname.startsWith('/js/') ||
-        url.pathname.startsWith('/images/') ||
-        url.pathname.startsWith('/pages/') ||
-        /\.(css|js|woff|woff2|ttf|eot|html)(\?|$)/i.test(url.pathname)
+    url.pathname.startsWith('/js/') ||
+    url.pathname.startsWith('/images/') ||
+    url.pathname.startsWith('/pages/') ||
+    /\.(css|js|woff|woff2|ttf|eot|html)(\?|$)/i.test(url.pathname)
     );
 }
 
@@ -230,7 +226,10 @@ async function handleImageRequest(request) {
     const cachedResponse = await cache.match(request);
 
     // Return cached version if available and valid
-    if (cachedResponse && isCacheEntryValid(cachedResponse, CACHE_CONFIG.imageTTL)) {
+    if (
+        cachedResponse &&
+    isCacheEntryValid(cachedResponse, CACHE_CONFIG.imageTTL)
+    ) {
         console.log('[SW] Image cache hit:', request.url);
 
         // Schedule background update for frequently accessed images
@@ -247,7 +246,10 @@ async function handleImageRequest(request) {
             headers: { 'Cache-Control': 'max-age=3600' }
         };
 
-        if (request.url.includes('drive.google.com') || request.url.includes('lh3.googleusercontent.com')) {
+        if (
+            request.url.includes('drive.google.com') ||
+      request.url.includes('lh3.googleusercontent.com')
+        ) {
             // For Google Drive URLs, try using the image proxy API or no-cors mode
             const driveUrl = encodeURIComponent(request.url);
             const proxyUrl = `/api/image-proxy/drive?url=${driveUrl}`;
@@ -261,12 +263,18 @@ async function handleImageRequest(request) {
                 } else {
                     // Fallback to no-cors mode for opaque response
                     fetchOptions.mode = 'no-cors';
-                    console.log('[SW] Using no-cors mode for Google Drive image:', request.url);
+                    console.log(
+                        '[SW] Using no-cors mode for Google Drive image:',
+                        request.url
+                    );
                 }
             } catch (proxyError) {
                 // Fallback to no-cors mode
                 fetchOptions.mode = 'no-cors';
-                console.log('[SW] Proxy failed, using no-cors mode for Google Drive image:', request.url);
+                console.log(
+                    '[SW] Proxy failed, using no-cors mode for Google Drive image:',
+                    request.url
+                );
             }
         }
 
@@ -377,7 +385,10 @@ async function handleAPIRequest(request) {
         console.error('[SW] API network failed, trying cache:', error);
 
         const cachedResponse = await cache.match(request);
-        if (cachedResponse && isCacheEntryValid(cachedResponse, CACHE_CONFIG.apiTTL)) {
+        if (
+            cachedResponse &&
+      isCacheEntryValid(cachedResponse, CACHE_CONFIG.apiTTL)
+        ) {
             console.log('[SW] API cache fallback:', request.url);
             return cachedResponse;
         }
@@ -591,9 +602,9 @@ async function handleCacheWarm(urls) {
 
 async function handleCacheClear(cacheType) {
     const cacheMap = {
-        'static': STATIC_CACHE,
-        'images': IMAGE_CACHE,
-        'api': API_CACHE
+        static: STATIC_CACHE,
+        images: IMAGE_CACHE,
+        api: API_CACHE
     };
 
     const cacheName = cacheMap[cacheType];
@@ -672,14 +683,20 @@ async function getCacheStats(cacheName, type) {
             }
         }
 
-        return [type, {
-            name: cacheName,
-            entries: keys.length,
-            size: totalSize,
-            sizeFormatted: formatBytes(totalSize)
-        }];
+        return [
+            type,
+            {
+                name: cacheName,
+                entries: keys.length,
+                size: totalSize,
+                sizeFormatted: formatBytes(totalSize)
+            }
+        ];
     } catch (error) {
-        return [type, { name: cacheName, entries: 0, size: 0, error: error.message }];
+        return [
+            type,
+            { name: cacheName, entries: 0, size: 0, error: error.message }
+        ];
     }
 }
 
@@ -693,4 +710,6 @@ function formatBytes(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-console.log(`[SW] Advanced Service Worker v${CACHE_VERSION} initialized with multi-level caching`);
+console.log(
+    `[SW] Advanced Service Worker v${CACHE_VERSION} initialized with multi-level caching`
+);
