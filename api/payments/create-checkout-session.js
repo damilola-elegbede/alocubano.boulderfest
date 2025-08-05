@@ -32,18 +32,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Cart items required" });
     }
 
-    if (
-      !customerInfo?.email ||
-      !customerInfo?.firstName ||
-      !customerInfo?.lastName
-    ) {
-      return res.status(400).json({ error: "Customer information incomplete" });
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(customerInfo.email)) {
-      return res.status(400).json({ error: "Invalid email format" });
+    // Customer info is optional - Stripe Checkout will collect it
+    // Only validate email if provided
+    if (customerInfo?.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(customerInfo.email)) {
+        return res.status(400).json({ error: "Invalid email format" });
+      }
     }
 
     // Calculate total and create line items for Stripe
@@ -129,9 +124,11 @@ export default async function handler(req, res) {
         [
           orderId,
           `checkout_pending_${orderId}`, // Temporary ID until we get the session ID
-          customerInfo.email,
-          `${customerInfo.firstName} ${customerInfo.lastName}`,
-          customerInfo.phone || null,
+          customerInfo?.email || 'pending@stripe.checkout',
+          customerInfo?.firstName && customerInfo?.lastName 
+            ? `${customerInfo.firstName} ${customerInfo.lastName}`
+            : 'Pending Stripe Checkout',
+          customerInfo?.phone || null,
           orderType,
           JSON.stringify({
             items: cartItems,
@@ -143,11 +140,9 @@ export default async function handler(req, res) {
         ],
       );
 
-      console.log(
-        `Preliminary order created: ${orderId} for ${customerInfo.email}`,
-      );
+      // Preliminary order created
     } catch (dbError) {
-      console.error("Database error:", dbError);
+      // Database error occurred
       return res
         .status(500)
         .json({ error: "Failed to create preliminary order" });
@@ -166,24 +161,16 @@ export default async function handler(req, res) {
       mode: "payment",
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/failure?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
-      customer_email: customerInfo.email,
+      // Only include customer_email if provided
+      ...(customerInfo?.email && { customer_email: customerInfo.email }),
       metadata: {
         orderId: orderId,
         orderType: orderType,
-        customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
+        customerName: customerInfo?.firstName && customerInfo?.lastName 
+          ? `${customerInfo.firstName} ${customerInfo.lastName}`
+          : 'Pending',
         environment: process.env.NODE_ENV || "development",
       },
-      // Add custom fields for additional info if needed
-      custom_fields: customerInfo.specialRequests
-        ? [
-            {
-              key: "special_requests",
-              label: { type: "custom", custom: "Special Requests" },
-              type: "text",
-              optional: true,
-            },
-          ]
-        : [],
       // Collect billing address for tax compliance
       billing_address_collection: "required",
       // Set session expiration (24 hours)
@@ -201,9 +188,9 @@ export default async function handler(req, res) {
         [session.id, orderId],
       );
 
-      console.log(`Order ${orderId} updated with session ID: ${session.id}`);
+      // Order updated with session ID
     } catch (dbError) {
-      console.error("Error updating order with session ID:", dbError);
+      // Error updating order
       // Continue anyway - we have the session created
     }
 
@@ -215,7 +202,7 @@ export default async function handler(req, res) {
       totalAmount: totalAmount,
     });
   } catch (error) {
-    console.error("Checkout session creation failed:", error);
+    // Checkout session creation failed
 
     // Handle specific Stripe errors
     if (error.type === "StripeInvalidRequestError") {
@@ -234,7 +221,7 @@ export default async function handler(req, res) {
         message: "Unable to connect to payment service",
       });
     } else if (error.type === "StripeAuthenticationError") {
-      console.error("Stripe authentication error - check API keys");
+      // Stripe authentication error
       return res.status(500).json({
         error: "Configuration error",
         message: "Payment service configuration error",

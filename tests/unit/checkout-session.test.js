@@ -116,7 +116,7 @@ describe("Checkout Session Creation", () => {
       expect(responseData.error).toBe("Cart items required");
     });
 
-    it("should reject incomplete customer information", async () => {
+    it("should accept incomplete customer information (Stripe will collect)", async () => {
       const { req, res } = createMocks({
         method: "POST",
         body: {
@@ -130,16 +130,22 @@ describe("Checkout Session Creation", () => {
           ],
           customerInfo: {
             email: "test@example.com",
-            // Missing firstName and lastName
+            // Missing firstName and lastName - OK, Stripe will collect
           },
         },
       });
 
+      // Mock successful checkout session creation
+      mockStripe.checkout.sessions.create.mockResolvedValue({
+        id: "cs_test_partial_info",
+        url: "https://checkout.stripe.com/pay/cs_test_partial_info",
+      });
+
       await checkoutSessionHandler(req, res);
 
-      expect(res._getStatusCode()).toBe(400);
+      expect(res._getStatusCode()).toBe(200);
       const responseData = JSON.parse(res._getData());
-      expect(responseData.error).toBe("Customer information incomplete");
+      expect(responseData.sessionId).toBe("cs_test_partial_info");
     });
 
     it("should validate email format", async () => {
@@ -515,17 +521,7 @@ describe("Checkout Session Creation", () => {
         ]),
       );
 
-      // Verify custom fields for special requests
-      expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          custom_fields: [
-            expect.objectContaining({
-              key: "special_requests",
-              label: { type: "custom", custom: "Special Requests" },
-            }),
-          ],
-        }),
-      );
+      // Custom fields removed - Stripe handles all customer info
     });
   });
 

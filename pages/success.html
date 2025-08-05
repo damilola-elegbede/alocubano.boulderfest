@@ -108,8 +108,27 @@
         font-family: var(--font-sans);
         font-size: var(--font-size-lg);
         line-height: 1.6;
-        margin-bottom: var(--space-2xl);
+        margin-bottom: var(--space-xl);
         color: var(--color-gray-700);
+      }
+
+      /* Countdown timer */
+      .countdown-timer {
+        font-family: var(--font-code);
+        font-size: var(--font-size-sm);
+        color: var(--color-gray-600);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wider);
+        margin-bottom: var(--space-2xl);
+        padding: var(--space-md) var(--space-lg);
+        background: var(--color-gray-100);
+        border: 1px solid var(--color-gray-200);
+        display: inline-block;
+      }
+
+      .countdown-seconds {
+        font-weight: bold;
+        color: var(--color-red);
       }
 
       .success-details {
@@ -135,6 +154,10 @@
         margin-bottom: var(--space-md);
       }
 
+      .success-details p:last-child {
+        margin-bottom: 0;
+      }
+
       .success-actions {
         display: flex;
         gap: var(--space-lg);
@@ -143,24 +166,28 @@
         margin-top: var(--space-2xl);
       }
 
+      /* Match site button styles */
       .success-btn {
-        padding: var(--space-md) var(--space-xl);
+        display: inline-block;
+        padding: var(--space-md) var(--space-2xl);
         border: 2px solid var(--color-black);
         background: var(--color-black);
         color: var(--color-white);
         font-family: var(--font-display);
         font-size: var(--font-size-base);
         text-transform: uppercase;
-        letter-spacing: 0.1em;
+        letter-spacing: var(--letter-spacing-wider);
         text-decoration: none;
-        transition: all 0.2s ease;
+        transition: all var(--transition-base);
         cursor: pointer;
-        display: inline-block;
+        position: relative;
+        overflow: hidden;
       }
 
       .success-btn:hover {
         background: var(--color-white);
         color: var(--color-black);
+        transform: translateY(-2px);
       }
 
       .success-btn.secondary {
@@ -171,6 +198,18 @@
       .success-btn.secondary:hover {
         background: var(--color-black);
         color: var(--color-white);
+      }
+
+      /* Red accent button */
+      .success-btn.accent {
+        background: var(--color-red);
+        border-color: var(--color-red);
+        color: var(--color-white);
+      }
+
+      .success-btn.accent:hover {
+        background: var(--color-white);
+        color: var(--color-red);
       }
 
       .loading-state {
@@ -202,6 +241,11 @@
 
         .success-message {
           font-size: var(--font-size-base);
+        }
+
+        .countdown-timer {
+          font-size: var(--font-size-xs);
+          padding: var(--space-sm) var(--space-md);
         }
 
         .success-actions {
@@ -381,6 +425,10 @@
             Boulder Fest.
           </p>
 
+          <div class="countdown-timer" id="countdown-timer">
+            This page will redirect in <span class="countdown-seconds" id="countdown-seconds">20</span> seconds...
+          </div>
+
           <div class="success-details" id="order-details" style="display: none">
             <h3>Order Details</h3>
             <p><strong>Order ID:</strong> <span id="order-id"></span></p>
@@ -399,7 +447,7 @@
 
           <div class="success-actions">
             <a href="/home" class="success-btn">Return to Home</a>
-            <a href="/tickets" class="success-btn secondary"
+            <a href="/tickets" class="success-btn accent"
               >Purchase More Tickets</a
             >
           </div>
@@ -501,6 +549,27 @@
       const nextSteps = document.getElementById("next-steps");
       const stepsContent = document.getElementById("steps-content");
 
+      // Countdown timer variables
+      let countdownInterval;
+      let remainingSeconds = 20;
+
+      // Start countdown timer
+      function startCountdown() {
+        const countdownElement = document.getElementById("countdown-seconds");
+        
+        countdownInterval = setInterval(() => {
+          remainingSeconds--;
+          if (countdownElement) {
+            countdownElement.textContent = remainingSeconds;
+          }
+          
+          if (remainingSeconds <= 0) {
+            clearInterval(countdownInterval);
+            window.location.href = "/home";
+          }
+        }, 1000);
+      }
+
       // Verify payment and update UI
       async function verifyPayment() {
         if (!sessionId) {
@@ -519,17 +588,21 @@
 
             // Clear the cart as instructed by the API
             if (data.instructions?.clearCart) {
-              localStorage.removeItem("cart");
-              // Dispatch event to notify cart system
+              localStorage.removeItem("alocubano_cart");
+              // Dispatch storage event for cross-tab sync
+              window.dispatchEvent(new StorageEvent("storage", {
+                key: "alocubano_cart",
+                oldValue: localStorage.getItem("alocubano_cart"),
+                newValue: null,
+                url: window.location.href,
+                storageArea: localStorage
+              }));
+              // Dispatch custom event
               window.dispatchEvent(new Event("cartCleared"));
             }
 
-            // Auto-redirect if specified
-            if (data.instructions?.redirectDelay) {
-              setTimeout(() => {
-                window.location.href = "/home";
-              }, data.instructions.redirectDelay);
-            }
+            // Start the countdown timer
+            startCountdown();
           } else {
             showError();
           }
@@ -573,20 +646,31 @@
 
         // Update next steps based on order type
         if (data.instructions?.nextSteps) {
-          stepsContent.innerHTML = data.instructions.nextSteps
-            .map((step) => `<p>• ${step}</p>`)
-            .join("");
+          // Clear existing content safely
+          stepsContent.textContent = '';
+          // Add each step as a text node
+          data.instructions.nextSteps.forEach(step => {
+            const p = document.createElement('p');
+            p.textContent = `• ${step}`;
+            stepsContent.appendChild(p);
+          });
         } else if (
           data.order?.orderType === "tickets" ||
           hasTickets(data.order?.items)
         ) {
           // If the order contains tickets, show registration reminder
-          stepsContent.innerHTML = `
-                    <p>• Check your email for order confirmation</p>
-                    <p>• Complete your festival registration (link in email)</p>
-                    <p>• Save your confirmation number for check-in</p>
-                    <p>• Join our WhatsApp group for updates</p>
-                `;
+          stepsContent.textContent = '';
+          const steps = [
+            '• Check your email for order confirmation',
+            '• Complete your festival registration (link in email)',
+            '• Save your confirmation number for check-in',
+            '• Join our WhatsApp group for updates'
+          ];
+          steps.forEach(step => {
+            const p = document.createElement('p');
+            p.textContent = step;
+            stepsContent.appendChild(p);
+          });
         }
       }
 
@@ -614,14 +698,6 @@
     <script src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
 
-    <!-- Global Cart System - Hidden on success page but still loads for cart clearing -->
-    <script type="module">
-      import { initializeFloatingCart } from "/js/floating-cart.js";
-      // Initialize but hide cart on success page
-      const cart = initializeFloatingCart();
-      if (cart) {
-        cart.style.display = "none";
-      }
-    </script>
+    <!-- Cart system not needed on success page - cart is cleared after payment -->
   </body>
 </html>

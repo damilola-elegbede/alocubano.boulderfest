@@ -2,6 +2,8 @@
  * Floating Cart UI Component
  * Mobile-first responsive cart interface
  */
+import { getStripePaymentHandler } from './lib/stripe-integration.js';
+
 export function initializeFloatingCart(cartManager) {
     // Check if already initialized
     if (document.querySelector('.floating-cart-container')) {
@@ -241,13 +243,13 @@ async function handleCheckoutClick(cartManager) {
         }
     }
 
-    // Show email collection modal
-    const customerInfo = await showEmailCollectionModal();
-
-    if (!customerInfo) {
-    // User cancelled
-        return;
-    }
+    // Skip email collection modal - Stripe Checkout will collect this information
+    const customerInfo = {
+        email: '', // Stripe will collect this
+        firstName: '',
+        lastName: '',
+        phone: ''
+    };
 
     // Show loading state
     showCheckoutLoadingState();
@@ -302,7 +304,7 @@ async function handleCheckoutClick(cartManager) {
     // Show error
         hideCheckoutLoadingState();
         showCheckoutError('An unexpected error occurred. Please try again.');
-        console.error('Checkout error:', error);
+        // Checkout error handled silently
     }
 }
 
@@ -600,92 +602,6 @@ async function showClearCartConfirmation(cartState) {
     });
 }
 
-// Helper function to show email collection modal
-function showEmailCollectionModal() {
-    return new Promise((resolve) => {
-    // Create modal HTML
-        const modalHTML = `
-      <div class="checkout-email-modal">
-        <div class="checkout-email-backdrop"></div>
-        <div class="checkout-email-content">
-          <h3>Complete Your Purchase</h3>
-          <p>Please provide your contact information to continue to checkout.</p>
-          <form id="checkout-email-form">
-            <div class="checkout-form-row">
-              <input type="text" id="checkout-firstName" placeholder="First Name" required>
-              <input type="text" id="checkout-lastName" placeholder="Last Name" required>
-            </div>
-            <input type="email" id="checkout-email" placeholder="Email Address" required>
-            <input type="tel" id="checkout-phone" placeholder="Phone (optional)">
-            <div class="checkout-form-buttons">
-              <button type="button" class="checkout-cancel-btn">Cancel</button>
-              <button type="submit" class="checkout-continue-btn">Continue to Payment</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-        const modal = document.querySelector('.checkout-email-modal');
-        const form = document.getElementById('checkout-email-form');
-        const cancelBtn = modal.querySelector('.checkout-cancel-btn');
-        const backdrop = modal.querySelector('.checkout-email-backdrop');
-
-        // Focus first input
-        document.getElementById('checkout-firstName').focus();
-
-        // Handle form submission
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-
-            const customerInfo = {
-                firstName: document.getElementById('checkout-firstName').value.trim(),
-                lastName: document.getElementById('checkout-lastName').value.trim(),
-                email: document.getElementById('checkout-email').value.trim(),
-                phone: document.getElementById('checkout-phone').value.trim()
-            };
-
-            // Basic validation
-            if (
-                !customerInfo.firstName ||
-        !customerInfo.lastName ||
-        !customerInfo.email
-            ) {
-                return;
-            }
-
-            // Email validation
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(customerInfo.email)) {
-                alert('Please enter a valid email address');
-                return;
-            }
-
-            modal.remove();
-            resolve(customerInfo);
-        });
-
-        // Handle cancel
-        const handleCancel = () => {
-            modal.remove();
-            resolve(null);
-        };
-
-        cancelBtn.addEventListener('click', handleCancel);
-        backdrop.addEventListener('click', handleCancel);
-
-        // Handle escape key
-        const handleEscape = (e) => {
-            if (e.key === 'Escape') {
-                handleCancel();
-                document.removeEventListener('keydown', handleEscape);
-            }
-        };
-        document.addEventListener('keydown', handleEscape);
-    });
-}
 
 // Show loading state during checkout
 function showCheckoutLoadingState() {

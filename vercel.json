@@ -27,6 +27,12 @@
     },
     "api/config/stripe-public.js": {
       "maxDuration": 5
+    },
+    "api/payments/checkout-success.js": {
+      "maxDuration": 10
+    },
+    "api/payments/checkout-cancel.js": {
+      "maxDuration": 10
     }
   },
   "images": {
@@ -206,6 +212,14 @@
     {
       "source": "/tickets",
       "destination": "/pages/tickets.html"
+    },
+    {
+      "source": "/success",
+      "destination": "/pages/success.html"
+    },
+    {
+      "source": "/failure",
+      "destination": "/pages/failure.html"
     }
   ],
   "redirects": [
