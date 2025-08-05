@@ -197,25 +197,17 @@
         display: none;
       }
 
-      .countdown-timer {
-        background: var(--color-red);
-        color: var(--color-white);
-        padding: var(--space-md) var(--space-lg);
-        text-align: center;
+      .countdown-text {
+        margin-top: var(--space-lg);
         font-family: var(--font-sans);
-        font-size: var(--font-size-sm);
-        letter-spacing: 0.05em;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-        z-index: 1000;
+        font-size: var(--font-size-base);
+        color: var(--color-gray-600);
+        text-align: center;
       }
 
       .countdown-seconds {
         font-weight: bold;
-        font-size: var(--font-size-base);
+        color: var(--color-black);
       }
 
       @media (max-width: 640px) {
@@ -231,9 +223,8 @@
           font-size: var(--font-size-base);
         }
 
-        .countdown-timer {
-          font-size: var(--font-size-xs);
-          padding: var(--space-sm) var(--space-md);
+        .countdown-text {
+          font-size: var(--font-size-sm);
         }
 
         .failure-actions {
@@ -433,6 +424,10 @@
             <a href="/home" class="failure-btn secondary">Return to Home</a>
           </div>
 
+          <p class="countdown-text" id="countdown-text">
+            Redirecting to tickets page in <span class="countdown-seconds" id="countdown-seconds">20</span> seconds...
+          </p>
+
           <div class="contact-info">
             <p>Need help? Contact us:</p>
             <p>
@@ -453,11 +448,6 @@
           </div>
         </div>
       </section>
-
-      <!-- Countdown Timer -->
-      <div class="countdown-timer" id="countdown-timer">
-        This page will redirect in <span class="countdown-seconds" id="countdown-seconds">20</span> seconds...
-      </div>
     </main>
 
     <footer class="footer-typographic">
