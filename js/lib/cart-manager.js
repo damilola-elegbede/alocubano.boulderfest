@@ -200,7 +200,7 @@ export class CartManager extends EventTarget {
         if (this.state.tickets[ticketType]) {
             const ticket = this.state.tickets[ticketType];
             delete this.state.tickets[ticketType];
-            this.saveToStorage();
+            await this.saveToStorage();
 
             // Track analytics
             this.analytics.trackCartEvent('ticket_removed', {
@@ -221,7 +221,7 @@ export class CartManager extends EventTarget {
             } else {
                 this.state.tickets[ticketType].quantity = quantity;
                 this.state.tickets[ticketType].updatedAt = Date.now();
-                this.saveToStorage();
+                await this.saveToStorage();
                 this.emit('cart:ticket:updated', { ticketType, quantity });
                 this.emit('cart:updated', this.getState());
             }
@@ -281,7 +281,7 @@ export class CartManager extends EventTarget {
         };
 
         this.state.donations.push(donation);
-        this.saveToStorage();
+        await this.saveToStorage();
 
         // Track analytics
         this.analytics.trackCartEvent('donation_added', {
@@ -302,7 +302,7 @@ export class CartManager extends EventTarget {
         if (donationIndex !== -1) {
             const donation = this.state.donations[donationIndex];
             this.state.donations.splice(donationIndex, 1);
-            this.saveToStorage();
+            await this.saveToStorage();
 
             // Track analytics
             this.analytics.trackCartEvent('donation_removed', {
@@ -325,7 +325,7 @@ export class CartManager extends EventTarget {
         if (amount > 0) {
             await this.addDonation(amount);
         } else {
-            this.saveToStorage();
+            await this.saveToStorage();
             this.emit('cart:updated', this.getState());
         }
     }
@@ -444,7 +444,7 @@ export class CartManager extends EventTarget {
         }
 
         // Save cleaned state
-        this.saveToStorage();
+        await this.saveToStorage();
     }
 
     // Utility methods
@@ -458,7 +458,7 @@ export class CartManager extends EventTarget {
         return !hasTickets && !hasDonations;
     }
 
-    clear() {
+    async clear() {
         this.state = {
             tickets: {},
             donations: [],
@@ -468,7 +468,7 @@ export class CartManager extends EventTarget {
                 sessionId: this.generateSessionId()
             }
         };
-        this.saveToStorage();
+        await this.saveToStorage();
 
         // Track analytics
         this.analytics.trackCartEvent('cart_cleared', {

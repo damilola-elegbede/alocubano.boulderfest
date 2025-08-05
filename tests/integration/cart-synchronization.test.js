@@ -15,8 +15,11 @@ describe('Cart Synchronization Integration Tests', () => {
     let donationSelectionSource;
     let ticketSelectionSource;
     let cartManagerSource;
+    let registeredListeners;
 
     beforeEach(async () => {
+        // Track all event listeners added during tests
+        registeredListeners = [];
         // For integration tests, we'll use mock implementations that work in JSDOM
         // The real source files have too many dependencies for simple integration testing
         
@@ -307,17 +310,32 @@ describe('Cart Synchronization Integration Tests', () => {
         } catch (scriptError) {
             console.error('Script execution error:', scriptError.message);
         }
+        
+        // Override addEventListener to track listeners
+        const originalDocAddEventListener = document.addEventListener;
+        const originalWinAddEventListener = window.addEventListener;
+        
+        document.addEventListener = function(type, listener, options) {
+            registeredListeners.push({ target: 'document', type, listener });
+            return originalDocAddEventListener.call(this, type, listener, options);
+        };
+        
+        window.addEventListener = function(type, listener, options) {
+            registeredListeners.push({ target: 'window', type, listener });
+            return originalWinAddEventListener.call(this, type, listener, options);
+        };
     });
 
     afterEach(() => {
         // Comprehensive cleanup
         if (dom) {
-            // Remove all event listeners
-            const eventTypes = ['cart:updated', 'cart:cleared', 'donation-amount-changed', 
-                              'ticket-quantity-changed', 'storage'];
-            eventTypes.forEach(type => {
-                document.removeEventListener(type, () => {});
-                window.removeEventListener(type, () => {});
+            // Remove all tracked event listeners
+            registeredListeners.forEach(({ target, type, listener }) => {
+                if (target === 'document' && document) {
+                    document.removeEventListener(type, listener);
+                } else if (target === 'window' && window) {
+                    window.removeEventListener(type, listener);
+                }
             });
             
             // Clean up JSDOM properly

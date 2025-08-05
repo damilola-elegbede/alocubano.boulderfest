@@ -278,7 +278,7 @@ class DropdownManager {
         switch (event.key) {
         case 'ArrowDown':
         case 'Enter':
-        case ' ':
+        case ' ': {
             event.preventDefault();
             this.showDropdown(trigger);
             // Focus first menu item
@@ -290,6 +290,7 @@ class DropdownManager {
                 }
             }, 10);
             break;
+        }
 
         case 'Escape':
             event.preventDefault();
