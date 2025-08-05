@@ -32,8 +32,6 @@ export default defineConfig({
         maxThreads: 2,
         minThreads: 1,
         isolate: true,
-        // Terminate idle workers to free memory
-        terminateTimeout: 500,
         // Use worker threads instead of child processes
         useAtomics: true
       },
