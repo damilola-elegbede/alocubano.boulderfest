@@ -1,13 +1,31 @@
 /**
  * Checkout Cancel API Endpoint
  * Handles cancelled Stripe Checkout returns
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} req.query - Query parameters
+ * @param {string} [req.query.session_id] - Stripe checkout session ID
+ * @param {string} [req.query.order_id] - Internal order ID
+ * @param {Object} res - Express response object
+ * @returns {Object} JSON response with cancellation status and instructions
  */
 
 import { openDb } from "../lib/database.js";
 
 export default async function handler(req, res) {
-  // Set CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  // Set CORS headers with proper security
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
+    'https://alocubano.boulderfest.com',
+    'https://alocubanoboulderfest.vercel.app',
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+    process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : null,
+    process.env.NODE_ENV === 'development' ? 'http://localhost:3001' : null
+  ].filter(Boolean);
+  
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
@@ -54,10 +72,13 @@ export default async function handler(req, res) {
             );
 
             // Order successfully marked as cancelled
+            // This is the expected flow for cancellations
           }
           // Order status is not awaiting_payment, skip update
+          // This occurs when the order has already been processed
         }
         // Order not found in database - this is ok for cancelled checkouts
+        // Some cancellations may occur before order creation completes
       } catch (dbError) {
         // Database error - continue anyway, cancellation isn't critical
         // Continue anyway - cancellation isn't critical for database consistency
