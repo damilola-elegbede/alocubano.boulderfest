@@ -7,27 +7,31 @@ This test framework provides comprehensive link validation for the A Lo Cubano B
 ## Features
 
 ✅ **Comprehensive Link Detection**
+
 - HTML parsing to extract all links from pages
 - Support for `href`, `src`, `srcset`, and `action` attributes
 - Handles complex link structures and query parameters
 
 ✅ **Smart Link Classification**
+
 - Internal pages (routed through Vercel)
 - Internal files (CSS, JS, JSON)
 - Internal images (PNG, JPG, SVG, etc.)
-- API endpoints (/api/*)
+- API endpoints (/api/\*)
 - External HTTP/HTTPS links
 - Email (mailto:) links
 - Fragment links (#section)
 - JavaScript links
 
 ✅ **Server Integration**
+
 - Understands Vercel routing patterns
 - Validates clean URLs (/home → /pages/home.html)
 - Handles special routes like /gallery-2025
 - API endpoint validation
 
 ✅ **Detailed Reporting**
+
 - Success rate statistics
 - Links grouped by type
 - Broken link details with source location
@@ -36,6 +40,7 @@ This test framework provides comprehensive link validation for the A Lo Cubano B
 ## Quick Start
 
 ### Run All Tests
+
 ```bash
 # Simple runner
 python3 tools/link-validation/run_link_tests.py
@@ -45,6 +50,7 @@ python3 tests/unit/link-validation/test_link_validation.py
 ```
 
 ### Test Output
+
 ```
 🔍 A Lo Cubano Boulder Fest - Link Validation Tests
 ============================================================
@@ -85,27 +91,32 @@ The framework can be customized through `link_validation_config.json`:
 ## Link Types Validated
 
 ### Internal Pages
+
 - `/home` → `/pages/home.html`
 - `/about` → `/pages/about.html`
 - Clean URLs handled by Vercel routing
 
 ### Internal Files
+
 - CSS: `/css/base.css`, `/css/typography.css`
 - JavaScript: `/js/main.js`, `/js/navigation.js`
 - JSON: `/public/featured-photos.json`
 - Query parameters: `/js/main.js?v=2025-07-20`
 
 ### Internal Images
+
 - Logo: `/images/logo.png`
 - Favicons: `/images/favicon-*.png`
 - SVG icons: `/images/social/instagram-type.svg`
 
 ### API Endpoints
+
 - Gallery: `/api/gallery?year=2025`
 - Featured Photos: `/api/featured-photos`
 - Image Proxy: `/api/image-proxy/abc123`
 
 ### External Links
+
 - Social Media: `https://instagram.com/alocubanoboulder`
 - Email: `mailto:alocubanoboulderfest@gmail.com`
 - WhatsApp: `https://chat.whatsapp.com/...`
@@ -113,7 +124,9 @@ The framework can be customized through `link_validation_config.json`:
 ## Integration with Development Workflow
 
 ### Pre-commit Testing
+
 Add to your pre-commit hooks:
+
 ```bash
 #!/bin/bash
 python3 tools/link-validation/run_link_tests.py
@@ -124,6 +137,7 @@ fi
 ```
 
 ### CI/CD Integration
+
 ```yaml
 # GitHub Actions example
 - name: Validate Links
@@ -132,7 +146,9 @@ fi
 ```
 
 ### Development Server Testing
+
 The tests understand your Vercel routing, so they work seamlessly with:
+
 ```bash
 npm start  # Start development server
 python3 tools/link-validation/run_link_tests.py  # Test all links
@@ -143,21 +159,26 @@ python3 tools/link-validation/run_link_tests.py  # Test all links
 ### Common Issues
 
 **File Not Found Errors**
+
 - Check if the file exists in the expected location
 - Verify Vercel routing for page links
 - Ensure static files are in correct directories
 
 **Query Parameter Issues**
+
 - Framework ignores query parameters for file validation
 - `/js/main.js?v=123` validates `/js/main.js`
 
 **External Link Validation**
+
 - Framework only validates URL format by default
 - Set `check_external_links: true` for HTTP status validation
 - Consider rate limiting for external checks
 
 ### Debug Mode
+
 Enable verbose logging by modifying the test configuration:
+
 ```json
 {
   "reporting": {
@@ -187,6 +208,7 @@ Enable verbose logging by modifying the test configuration:
 ## Extending the Framework
 
 ### Adding New Link Types
+
 ```python
 class LinkType(Enum):
     CUSTOM_TYPE = "custom_type"
@@ -198,6 +220,7 @@ def _validate_custom_type(self, link: LinkInfo) -> bool:
 ```
 
 ### Custom Validation Rules
+
 ```python
 def _validate_internal_page(self, link: LinkInfo) -> bool:
     # Override default validation
@@ -206,6 +229,7 @@ def _validate_internal_page(self, link: LinkInfo) -> bool:
 ```
 
 ### Custom Reporting
+
 ```python
 def generate_custom_report(self, results: ValidationResults) -> str:
     # Generate custom report format
@@ -215,7 +239,7 @@ def generate_custom_report(self, results: ValidationResults) -> str:
 ## Best Practices
 
 1. **Run Tests Regularly**: Validate links before each deployment
-2. **Fix Broken Links Immediately**: Don't let broken links accumulate  
+2. **Fix Broken Links Immediately**: Don't let broken links accumulate
 3. **Update Route Configuration**: Keep server routes in sync
 4. **Monitor External Links**: Periodically check external link health
 5. **Document Link Changes**: Update tests when adding new link patterns

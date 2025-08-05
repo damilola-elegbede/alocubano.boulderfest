@@ -10,7 +10,8 @@ export class PaymentFormValidator {
                 minLength: 2,
                 maxLength: 100,
                 pattern: /^[a-zA-Z\s\-'\.]+$/,
-                message: 'Please enter a valid full name (letters, spaces, hyphens, and periods only)'
+                message:
+          'Please enter a valid full name (letters, spaces, hyphens, and periods only)'
             },
             email: {
                 required: true,
@@ -73,11 +74,15 @@ export class PaymentFormValidator {
 
             // Length checks
             if (rule.minLength && value.length < rule.minLength) {
-                errors.push(`${this.getFieldLabel(field)} must be at least ${rule.minLength} characters`);
+                errors.push(
+                    `${this.getFieldLabel(field)} must be at least ${rule.minLength} characters`
+                );
             }
 
             if (rule.maxLength && value.length > rule.maxLength) {
-                errors.push(`${this.getFieldLabel(field)} must be no more than ${rule.maxLength} characters`);
+                errors.push(
+                    `${this.getFieldLabel(field)} must be no more than ${rule.maxLength} characters`
+                );
             }
         }
 
@@ -102,10 +107,12 @@ export class PaymentFormValidator {
 
         this.isValidating = true;
         const results = [];
-        const fields = form.querySelectorAll('[data-validate], input[required], textarea[required]');
+        const fields = form.querySelectorAll(
+            '[data-validate], input[required], textarea[required]'
+        );
 
         try {
-            fields.forEach(field => {
+            fields.forEach((field) => {
                 const result = this.validateField(field);
                 results.push({
                     field: field.name || field.id,
@@ -113,13 +120,15 @@ export class PaymentFormValidator {
                 });
             });
 
-            const isFormValid = results.every(result => result.valid);
-            const errors = results.filter(result => !result.valid);
+            const isFormValid = results.every((result) => result.valid);
+            const errors = results.filter((result) => !result.valid);
 
             // Focus first invalid field
             if (!isFormValid && errors.length > 0) {
                 const fieldName = this.escapeCssIdentifier(errors[0].field);
-                const firstErrorField = form.querySelector(`[name="${fieldName}"], #${fieldName}`);
+                const firstErrorField = form.querySelector(
+                    `[name="${fieldName}"], #${fieldName}`
+                );
                 if (firstErrorField) {
                     firstErrorField.focus();
                 }
@@ -129,7 +138,7 @@ export class PaymentFormValidator {
                 valid: isFormValid,
                 errors: errors,
                 fieldCount: fields.length,
-                validFieldCount: results.filter(r => r.valid).length
+                validFieldCount: results.filter((r) => r.valid).length
             };
         } finally {
             this.isValidating = false;
@@ -137,7 +146,8 @@ export class PaymentFormValidator {
     }
 
     showFieldError(field, message) {
-        const container = field.closest('.form-field, .field-container') || field.parentNode;
+        const container =
+      field.closest('.form-field, .field-container') || field.parentNode;
         let errorEl = container.querySelector('.field-error');
 
         if (!errorEl) {
@@ -163,7 +173,8 @@ export class PaymentFormValidator {
     }
 
     clearFieldError(field) {
-        const container = field.closest('.form-field, .field-container') || field.parentNode;
+        const container =
+      field.closest('.form-field, .field-container') || field.parentNode;
         const errorEl = container.querySelector('.field-error');
 
         if (errorEl) {
@@ -178,29 +189,33 @@ export class PaymentFormValidator {
 
     clearFormErrors(form) {
         const fields = form.querySelectorAll('.error');
-        fields.forEach(field => this.clearFieldError(field));
+        fields.forEach((field) => this.clearFieldError(field));
     }
 
     getFieldLabel(field) {
-        // Try to find label
-        const label = field.closest('.form-field')?.querySelector('label') ||
-                     document.querySelector(`label[for="${field.id}"]`) ||
-                     field.previousElementSibling?.matches('label') && field.previousElementSibling;
+    // Try to find label
+        const label =
+      field.closest('.form-field')?.querySelector('label') ||
+      document.querySelector(`label[for="${field.id}"]`) ||
+      (field.previousElementSibling?.matches('label') &&
+        field.previousElementSibling);
 
         if (label) {
             return label.textContent.replace('*', '').trim();
         }
 
         // Fallback to field attributes
-        return field.placeholder ||
-               field.name?.replace(/([A-Z])/g, ' $1').trim() ||
-               field.id?.replace(/([A-Z])/g, ' $1').trim() ||
-               'This field';
+        return (
+            field.placeholder ||
+      field.name?.replace(/([A-Z])/g, ' $1').trim() ||
+      field.id?.replace(/([A-Z])/g, ' $1').trim() ||
+      'This field'
+        );
     }
 
     // Security validation
     performSecurityValidation(fieldType, value) {
-        // Basic XSS prevention patterns
+    // Basic XSS prevention patterns
         const xssPatterns = [
             /<script/i,
             /javascript:/i,
@@ -210,10 +225,11 @@ export class PaymentFormValidator {
         ];
 
         // Check for suspicious patterns
-        if (xssPatterns.some(pattern => pattern.test(value))) {
+        if (xssPatterns.some((pattern) => pattern.test(value))) {
             return {
                 valid: false,
-                message: 'Invalid characters detected. Please remove any HTML or script content.'
+                message:
+          'Invalid characters detected. Please remove any HTML or script content.'
             };
         }
 
@@ -226,7 +242,7 @@ export class PaymentFormValidator {
             /insert\s+into/i
         ];
 
-        if (sqlPatterns.some(pattern => pattern.test(value))) {
+        if (sqlPatterns.some((pattern) => pattern.test(value))) {
             return {
                 valid: false,
                 message: 'Invalid input detected. Please enter valid information.'
@@ -246,9 +262,11 @@ export class PaymentFormValidator {
 
     // Real-time validation setup
     setupRealtimeValidation(form) {
-        const fields = form.querySelectorAll('[data-validate], input[required], textarea[required]');
+        const fields = form.querySelectorAll(
+            '[data-validate], input[required], textarea[required]'
+        );
 
-        fields.forEach(field => {
+        fields.forEach((field) => {
             // Validate on blur
             field.addEventListener('blur', () => {
                 this.validateField(field);
@@ -294,9 +312,12 @@ export class PaymentFormValidator {
         summaryEl.innerHTML = `
             <h3>Please correct the following ${errorCount === 1 ? 'error' : 'errors'}:</h3>
             <ul>
-                ${validationResult.errors.map(error =>
-        `<li>${error.errors?.[0] || 'Please check this field'}</li>`
-    ).join('')}
+                ${validationResult.errors
+        .map(
+            (error) =>
+                `<li>${error.errors?.[0] || 'Please check this field'}</li>`
+        )
+        .join('')}
             </ul>
         `;
 

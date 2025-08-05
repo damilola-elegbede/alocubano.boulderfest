@@ -7,13 +7,22 @@ class ImageCacheManager {
         this.imageCacheKey = 'alocubano_image_data_cache_v3';
         this.defaultImageUrl = '/images/hero-default.jpg';
         this.pageMapping = {
-            '/': 'home', '/home': 'home', 'index.html': 'home', 'home.html': 'home',
-            '/about': 'about', 'about.html': 'about',
-            '/artists': 'artists', 'artists.html': 'artists',
-            '/schedule': 'schedule', 'schedule.html': 'schedule',
-            '/gallery': 'gallery', 'gallery.html': 'gallery',
-            '/tickets': 'tickets', 'tickets.html': 'tickets',
-            '/donations': 'donations', 'donations.html': 'donations'
+            '/': 'home',
+            '/home': 'home',
+            'index.html': 'home',
+            'home.html': 'home',
+            '/about': 'about',
+            'about.html': 'about',
+            '/artists': 'artists',
+            'artists.html': 'artists',
+            '/schedule': 'schedule',
+            'schedule.html': 'schedule',
+            '/gallery': 'gallery',
+            'gallery.html': 'gallery',
+            '/tickets': 'tickets',
+            'tickets.html': 'tickets',
+            '/donations': 'donations',
+            'donations.html': 'donations'
         };
         this.sessionAssignments = null;
         this.imageDataCache = this.loadImageDataCache();
@@ -40,21 +49,24 @@ class ImageCacheManager {
 
     saveImageDataCache() {
         try {
-            localStorage.setItem(this.imageCacheKey, JSON.stringify(this.imageDataCache));
+            localStorage.setItem(
+                this.imageCacheKey,
+                JSON.stringify(this.imageDataCache)
+            );
         } catch (error) {
             console.warn('Failed to save image data cache:', error);
         }
     }
 
     /**
-     * Generate a cache key that includes format and width parameters
-     * @param {string} fileId - The Google Drive file ID
-     * @param {Object} options - Image options
-     * @param {string} options.format - Image format (webp, jpeg, png)
-     * @param {number} options.width - Image width
-     * @param {string} options.quality - Image quality (optional)
-     * @returns {string} Cache key for the specific image variant
-     */
+   * Generate a cache key that includes format and width parameters
+   * @param {string} fileId - The Google Drive file ID
+   * @param {Object} options - Image options
+   * @param {string} options.format - Image format (webp, jpeg, png)
+   * @param {number} options.width - Image width
+   * @param {string} options.quality - Image quality (optional)
+   * @returns {string} Cache key for the specific image variant
+   */
     getCacheKey(fileId, options = {}) {
         const format = options.format || this.defaultFormat;
         const width = options.width || this.defaultWidth;
@@ -64,15 +76,15 @@ class ImageCacheManager {
     }
 
     /**
-     * Generate image URL with format and width parameters
-     * @param {string} fileId - The Google Drive file ID
-     * @param {Object} options - Image options
-     * @param {string} options.format - Image format (webp, jpeg, png)
-     * @param {number} options.width - Image width
-     * @param {string} options.quality - Image quality (default: '85')
-     * @param {string} options.cache - Cache duration (default: '24h')
-     * @returns {string} Complete image URL with query parameters
-     */
+   * Generate image URL with format and width parameters
+   * @param {string} fileId - The Google Drive file ID
+   * @param {Object} options - Image options
+   * @param {string} options.format - Image format (webp, jpeg, png)
+   * @param {number} options.width - Image width
+   * @param {string} options.quality - Image quality (default: '85')
+   * @param {string} options.cache - Cache duration (default: '24h')
+   * @returns {string} Complete image URL with query parameters
+   */
     getImageUrl(fileId, options = {}) {
         let format = options.format || this.defaultFormat;
         let width = options.width || this.defaultWidth;
@@ -81,7 +93,9 @@ class ImageCacheManager {
 
         // Validate format
         if (!this.supportedFormats.includes(format)) {
-            console.warn(`Unsupported format '${format}', falling back to ${this.fallbackFormat}`);
+            console.warn(
+                `Unsupported format '${format}', falling back to ${this.fallbackFormat}`
+            );
             format = this.fallbackFormat;
         }
 
@@ -90,7 +104,9 @@ class ImageCacheManager {
             const closestWidth = this.supportedWidths.reduce((prev, curr) =>
                 Math.abs(curr - width) < Math.abs(prev - width) ? curr : prev
             );
-            console.warn(`Unsupported width '${width}', using closest width ${closestWidth}`);
+            console.warn(
+                `Unsupported width '${width}', using closest width ${closestWidth}`
+            );
             width = closestWidth;
         }
 
@@ -105,11 +121,11 @@ class ImageCacheManager {
     }
 
     /**
-     * Check if a specific image variant is cached
-     * @param {string} fileId - The Google Drive file ID
-     * @param {Object} options - Image options for cache key generation
-     * @returns {boolean} Whether the image variant is cached and valid
-     */
+   * Check if a specific image variant is cached
+   * @param {string} fileId - The Google Drive file ID
+   * @param {Object} options - Image options for cache key generation
+   * @returns {boolean} Whether the image variant is cached and valid
+   */
     isImageVariantCached(fileId, options = {}) {
         const cacheKey = this.getCacheKey(fileId, options);
         const cached = this.imageDataCache[cacheKey];
@@ -127,12 +143,12 @@ class ImageCacheManager {
     }
 
     /**
-     * Cache an image variant with specific format and width
-     * @param {string} fileId - The Google Drive file ID
-     * @param {string} url - The image URL
-     * @param {Object} options - Image options
-     * @param {string} name - Image name for logging
-     */
+   * Cache an image variant with specific format and width
+   * @param {string} fileId - The Google Drive file ID
+   * @param {string} url - The image URL
+   * @param {Object} options - Image options
+   * @param {string} name - Image name for logging
+   */
     cacheImageVariant(fileId, url, options = {}, name = 'Unknown') {
         const cacheKey = this.getCacheKey(fileId, options);
 
@@ -146,15 +162,17 @@ class ImageCacheManager {
         };
 
         this.saveImageDataCache();
-        console.log(`📦 Cached image variant: ${name} (${options.format || this.defaultFormat}, ${options.width || this.defaultWidth}px)`);
+        console.log(
+            `📦 Cached image variant: ${name} (${options.format || this.defaultFormat}, ${options.width || this.defaultWidth}px)`
+        );
     }
 
     /**
-     * Get cached image variant data
-     * @param {string} fileId - The Google Drive file ID
-     * @param {Object} options - Image options for cache key generation
-     * @returns {Object|null} Cached image data or null if not found
-     */
+   * Get cached image variant data
+   * @param {string} fileId - The Google Drive file ID
+   * @param {Object} options - Image options for cache key generation
+   * @returns {Object|null} Cached image data or null if not found
+   */
     getCachedImageVariant(fileId, options = {}) {
         const cacheKey = this.getCacheKey(fileId, options);
         return this.imageDataCache[cacheKey] || null;
@@ -181,7 +199,7 @@ class ImageCacheManager {
         if (timeSinceLastCall < this.minApiInterval) {
             const waitTime = this.minApiInterval - timeSinceLastCall;
             console.log(`⏳ Rate limiting: waiting ${waitTime}ms before API call`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
+            await new Promise((resolve) => setTimeout(resolve, waitTime));
         }
 
         this.lastApiCall = Date.now();
@@ -217,19 +235,20 @@ class ImageCacheManager {
         }
 
         // Check full pathname mapping
-        const pageId = this.pageMapping[pathname] || this.pageMapping[filename] || 'default';
+        const pageId =
+      this.pageMapping[pathname] || this.pageMapping[filename] || 'default';
         console.log(`📍 Detected: ${pageId} (from pathname mapping)`);
         return pageId;
     }
 
     /**
-     * Get optimized image for current page with format and width options
-     * @param {Object} options - Image optimization options
-     * @param {string} options.format - Image format (webp, jpeg, png)
-     * @param {number} options.width - Image width
-     * @param {string} options.quality - Image quality
-     * @returns {Promise<Object>} Image data with optimized URL
-     */
+   * Get optimized image for current page with format and width options
+   * @param {Object} options - Image optimization options
+   * @param {string} options.format - Image format (webp, jpeg, png)
+   * @param {number} options.width - Image width
+   * @param {string} options.quality - Image quality
+   * @returns {Promise<Object>} Image data with optimized URL
+   */
     async getOptimizedImageForPage(options = {}) {
         const pageId = this.getCurrentPageId();
 
@@ -240,7 +259,12 @@ class ImageCacheManager {
         const assignedImage = this.sessionAssignments[pageId];
         if (!assignedImage) {
             console.log(`📷 No assigned image for ${pageId}, using default`);
-            return { id: null, url: this.defaultImageUrl, format: 'jpeg', width: null };
+            return {
+                id: null,
+                url: this.defaultImageUrl,
+                format: 'jpeg',
+                width: null
+            };
         }
 
         const fileId = assignedImage.id;
@@ -248,8 +272,11 @@ class ImageCacheManager {
         // 3. Check if the specific variant is cached
         if (this.isImageVariantCached(fileId, options)) {
             const cachedData = this.getCachedImageVariant(fileId, options);
-            console.log(`📦 Using cached optimized image for ${pageId}:`, assignedImage.name,
-                `(${cachedData.format}, ${cachedData.width}px)`);
+            console.log(
+                `📦 Using cached optimized image for ${pageId}:`,
+                assignedImage.name,
+                `(${cachedData.format}, ${cachedData.width}px)`
+            );
             return {
                 id: fileId,
                 url: cachedData.url,
@@ -261,13 +288,19 @@ class ImageCacheManager {
         }
 
         // 4. Generate new optimized URL and cache it
-        console.log(`🔄 Generating optimized image for ${pageId}:`, assignedImage.name,
-            `(${options.format || this.defaultFormat}, ${options.width || this.defaultWidth}px)`);
+        console.log(
+            `🔄 Generating optimized image for ${pageId}:`,
+            assignedImage.name,
+            `(${options.format || this.defaultFormat}, ${options.width || this.defaultWidth}px)`
+        );
 
         const url = await this.rateLimitedApiCall(fileId, options);
         this.cacheImageVariant(fileId, url, options, assignedImage.name);
 
-        console.log(`🖼️ New optimized image assigned for ${pageId}:`, assignedImage.name);
+        console.log(
+            `🖼️ New optimized image assigned for ${pageId}:`,
+            assignedImage.name
+        );
         return {
             id: fileId,
             url: url,
@@ -279,8 +312,8 @@ class ImageCacheManager {
     }
 
     /**
-     * Ensure session assignments are loaded (extracted for reuse)
-     */
+   * Ensure session assignments are loaded (extracted for reuse)
+   */
     async ensureSessionAssignments() {
         if (this.sessionAssignments) {
             return;
@@ -308,7 +341,10 @@ class ImageCacheManager {
             }
 
             this.sessionAssignments = this.createRandomAssignments(data.items);
-            sessionStorage.setItem(this.cacheKey, JSON.stringify(this.sessionAssignments));
+            sessionStorage.setItem(
+                this.cacheKey,
+                JSON.stringify(this.sessionAssignments)
+            );
             console.log('Created and cached new session assignments.');
         } catch (error) {
             console.error('Failed to get hero image assignments:', error);
@@ -332,7 +368,10 @@ class ImageCacheManager {
                 // Check if legacy image data is already cached locally
                 if (this.isImageCached(fileId)) {
                     const cachedData = this.imageDataCache[fileId];
-                    console.log(`📦 Using cached legacy image for ${pageId}:`, assignedImage.name);
+                    console.log(
+                        `📦 Using cached legacy image for ${pageId}:`,
+                        assignedImage.name
+                    );
                     return {
                         id: fileId,
                         url: cachedData.url,
@@ -342,7 +381,10 @@ class ImageCacheManager {
                 }
 
                 // If not cached, prepare API call with rate limiting (legacy format)
-                console.log(`🔄 Legacy image not cached for ${pageId}, will make API call:`, assignedImage.name);
+                console.log(
+                    `🔄 Legacy image not cached for ${pageId}, will make API call:`,
+                    assignedImage.name
+                );
                 const url = await this.rateLimitedApiCall(fileId);
 
                 // Cache the URL for future use (legacy format)
@@ -353,8 +395,16 @@ class ImageCacheManager {
                 };
                 this.saveImageDataCache();
 
-                console.log(`🖼️ New legacy image assigned for ${pageId}:`, assignedImage.name);
-                return { id: fileId, url: url, name: assignedImage.name, cached: false };
+                console.log(
+                    `🖼️ New legacy image assigned for ${pageId}:`,
+                    assignedImage.name
+                );
+                return {
+                    id: fileId,
+                    url: url,
+                    name: assignedImage.name,
+                    cached: false
+                };
             }
 
             console.log(`📷 No assigned image for ${pageId}, using default`);
@@ -379,29 +429,30 @@ class ImageCacheManager {
     }
 
     /**
-     * Utility method to detect WebP support in the browser
-     * @returns {Promise<boolean>} Whether WebP is supported
-     */
+   * Utility method to detect WebP support in the browser
+   * @returns {Promise<boolean>} Whether WebP is supported
+   */
     async supportsWebP() {
         return new Promise((resolve) => {
             const webP = new Image();
             webP.onload = webP.onerror = () => resolve(webP.height === 2);
-            webP.src = 'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoBAAEALmkwlpYAGiAAgAQAALmkwlpYAGiAAgAQAA==';
+            webP.src =
+        'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoBAAEALmkwlpYAGiAAgAQAALmkwlpYAGiAAgAQAA==';
         });
     }
 
     /**
-     * Get the best supported format for the current browser
-     * @returns {Promise<string>} Best supported format
-     */
+   * Get the best supported format for the current browser
+   * @returns {Promise<string>} Best supported format
+   */
     async getBestFormat() {
         const supportsWebP = await this.supportsWebP();
         return supportsWebP ? 'webp' : this.fallbackFormat;
     }
 
     /**
-     * Clear all cached image variants (useful for debugging or clearing storage)
-     */
+   * Clear all cached image variants (useful for debugging or clearing storage)
+   */
     clearCache() {
         this.imageDataCache = {};
         this.sessionAssignments = null;
@@ -416,12 +467,14 @@ class ImageCacheManager {
     }
 
     /**
-     * Get cache statistics for debugging
-     * @returns {Object} Cache statistics
-     */
+   * Get cache statistics for debugging
+   * @returns {Object} Cache statistics
+   */
     getCacheStats() {
         const totalEntries = Object.keys(this.imageDataCache).length;
-        const variantEntries = Object.keys(this.imageDataCache).filter(key => key.includes('_')).length;
+        const variantEntries = Object.keys(this.imageDataCache).filter((key) =>
+            key.includes('_')
+        ).length;
         const legacyEntries = totalEntries - variantEntries;
 
         const cacheSize = JSON.stringify(this.imageDataCache).length;
@@ -443,4 +496,6 @@ class ImageCacheManager {
 
 // Create global instance
 window.ImageCacheManager = new ImageCacheManager();
-console.log('🚀 ImageCacheManager v3 initialized with format-aware caching support');
+console.log(
+    '🚀 ImageCacheManager v3 initialized with format-aware caching support'
+);

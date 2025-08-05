@@ -1,6 +1,7 @@
 # CI/CD Setup Guide
 
 ## Overview
+
 This project uses GitHub Actions for continuous integration and deployment. All pull requests to the main branch must pass automated tests before merging.
 
 ## Branch Protection Rules
@@ -23,15 +24,18 @@ To enable branch protection on GitHub:
 ## Test Suites
 
 ### 1. Code Quality (`lint`)
+
 - **JavaScript linting (ESLint)**: Ensures code follows style guidelines, catches common errors
 - **HTML linting (HTMLHint)**: Validates HTML structure, attributes, and accessibility basics
 
 ### 2. Build Testing (`build-test`)
+
 - **File structure validation**: Ensures all required files exist
 - **Static server testing**: Verifies all pages load with HTTP 200
 - **CSS loading**: Confirms stylesheets are accessible
 
 ### 3. Security Scan (`security-scan`)
+
 - **Security headers check**: Verifies security headers in vercel.json
 - **Sensitive data scan**: Checks for exposed secrets or API keys
 - **Configuration validation**: Ensures JSON files are valid
@@ -39,11 +43,13 @@ To enable branch protection on GitHub:
 ## Running Tests Locally
 
 ### Quick Test
+
 ```bash
 ./tests/run-all-tests.sh
 ```
 
 ### Individual Test Suites
+
 ```bash
 # Install dependencies first
 npm install
@@ -55,6 +61,7 @@ npm run lint:html      # HTML only
 ```
 
 ### Manual Testing
+
 ```bash
 # Start local server
 npm start
@@ -69,6 +76,7 @@ npm run lint
 ## GitHub Actions Workflow
 
 The CI pipeline (`.github/workflows/ci.yml`) runs on:
+
 - Every push to `main` or `develop`
 - Every pull request to `main`
 
@@ -82,6 +90,7 @@ The CI pipeline (`.github/workflows/ci.yml`) runs on:
 ## Vercel Integration
 
 ### Setup Required
+
 1. Create Vercel account and project
 2. Add GitHub secrets:
    - `VERCEL_TOKEN`
@@ -89,6 +98,7 @@ The CI pipeline (`.github/workflows/ci.yml`) runs on:
    - `VERCEL_PROJECT_ID`
 
 ### Getting Vercel Credentials
+
 ```bash
 # Install Vercel CLI
 npm i -g vercel
@@ -121,18 +131,21 @@ npx husky add .husky/pre-commit "npm run pre-commit"
 ## Troubleshooting
 
 ### Tests Failing Locally
+
 1. Ensure Python 3 is installed
 2. Check if port 8000 is available
 3. Install all npm dependencies
 4. Clear npm cache: `npm cache clean --force`
 
 ### CI Pipeline Issues
+
 1. Check GitHub Actions logs
 2. Verify all secrets are set
 3. Ensure branch protection is configured
 4. Check file permissions (especially for .sh files)
 
 ### Common Fixes
+
 - **HTML validation errors**: Check for unclosed tags or invalid attributes
 - **Accessibility failures**: Add missing alt text or ARIA labels
 - **Performance issues**: Optimize images, minimize CSS/JS
@@ -164,6 +177,7 @@ npx husky add .husky/pre-commit "npm run pre-commit"
 ## Support
 
 For CI/CD issues:
+
 1. Check this documentation
 2. Review GitHub Actions logs
 3. Consult test output

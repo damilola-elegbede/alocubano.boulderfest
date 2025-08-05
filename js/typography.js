@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Typewriter effect
     const typewriterElements = document.querySelectorAll('.typewriter');
 
-    typewriterElements.forEach(element => {
+    typewriterElements.forEach((element) => {
         const text = element.textContent;
         element.textContent = '';
         element.style.visibility = 'visible';
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.addEventListener('scroll', () => {
         const scrolled = window.pageYOffset;
-        verticalTexts.forEach(text => {
+        verticalTexts.forEach((text) => {
             const speed = text.dataset.speed || 0.5;
             text.style.transform = `translateY(${scrolled * speed}px)`;
         });
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Hover effects for gallery items
     const galleryItems = document.querySelectorAll('.gallery-item-type');
 
-    galleryItems.forEach(item => {
+    galleryItems.forEach((item) => {
         item.addEventListener('mouseenter', function() {
             const glitchElement = this.querySelector('.text-glitch');
             if (glitchElement) {
@@ -62,10 +62,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Text reveal on scroll
-    const revealElements = document.querySelectorAll('.text-block-large, .text-block-serif');
+    const revealElements = document.querySelectorAll(
+        '.text-block-large, .text-block-serif'
+    );
 
     const revealOnScroll = () => {
-        revealElements.forEach(element => {
+        revealElements.forEach((element) => {
             const elementTop = element.getBoundingClientRect().top;
             const elementVisible = 150;
 
@@ -81,19 +83,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // Random text effects for glitch elements
     const glitchElements = document.querySelectorAll('.text-glitch');
 
-    glitchElements.forEach(element => {
-        setInterval(() => {
-            element.style.animation = 'none';
-            setTimeout(() => {
-                element.style.animation = '';
-            }, 10);
-        }, 3000 + Math.random() * 2000);
+    glitchElements.forEach((element) => {
+        setInterval(
+            () => {
+                element.style.animation = 'none';
+                setTimeout(() => {
+                    element.style.animation = '';
+                }, 10);
+            },
+            3000 + Math.random() * 2000
+        );
     });
 
     // Circular text animation
     const circularTexts = document.querySelectorAll('.circular-text');
 
-    circularTexts.forEach(text => {
+    circularTexts.forEach((text) => {
         const textPath = text.querySelector('textPath');
         if (textPath) {
             const textContent = textPath.textContent;
@@ -104,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Navigation link hover effect
     const navLinks = document.querySelectorAll('.nav-link');
 
-    navLinks.forEach(link => {
+    navLinks.forEach((link) => {
         link.addEventListener('mouseenter', function() {
             const text = this.textContent;
             this.dataset.text = text;
@@ -112,9 +117,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Form input animations
-    const formInputs = document.querySelectorAll('.form-input-type, .form-textarea-type');
+    const formInputs = document.querySelectorAll(
+        '.form-input-type, .form-textarea-type'
+    );
 
-    formInputs.forEach(input => {
+    formInputs.forEach((input) => {
         input.addEventListener('focus', function() {
             this.parentElement.classList.add('focused');
         });
@@ -125,14 +132,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-
 });
 
 // Add CSS classes dynamically for text animations
 document.addEventListener('DOMContentLoaded', function() {
     // Add stagger animation to lists
     const lists = document.querySelectorAll('.text-composition ul');
-    lists.forEach(list => {
+    lists.forEach((list) => {
         const items = list.querySelectorAll('li');
         items.forEach((item, index) => {
             item.style.animationDelay = `${index * 0.1}s`;

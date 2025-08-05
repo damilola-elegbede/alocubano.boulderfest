@@ -7,7 +7,8 @@
 class MultiYearGalleryManager {
     constructor(options = {}) {
         this.container = options.container;
-        this.defaultYear = options.defaultYear || new Date().getFullYear().toString();
+        this.defaultYear =
+      options.defaultYear || new Date().getFullYear().toString();
         this.preloadAdjacentYears = options.preloadAdjacentYears !== false;
         this.enableKeyboardNavigation = options.enableKeyboardNavigation !== false;
         this.enableUrlStateManagement = options.enableUrlStateManagement !== false;
@@ -40,8 +41,8 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Initialize the multi-year gallery manager
-     */
+   * Initialize the multi-year gallery manager
+   */
     async init() {
         try {
             if (!this.container) {
@@ -70,7 +71,6 @@ class MultiYearGalleryManager {
 
             this.isInitialized = true;
             this.dispatchEvent('initialized', { year: this.currentYear });
-
         } catch (error) {
             console.error('MultiYearGalleryManager initialization failed:', error);
 
@@ -86,8 +86,8 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Create the DOM structure for the multi-year gallery
-     */
+   * Create the DOM structure for the multi-year gallery
+   */
     createDOMStructure() {
         this.container.innerHTML = `
             <div class="multi-year-gallery">
@@ -133,8 +133,8 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Load available years from the API
-     */
+   * Load available years from the API
+   */
     async loadAvailableYears() {
         try {
             const response = await fetch('/api/gallery/years');
@@ -145,7 +145,10 @@ class MultiYearGalleryManager {
             const data = await response.json();
             this.availableYears = data.years || [];
             this.yearStatistics = new Map(
-                Object.entries(data.statistics || {}).map(([year, stats]) => [year, stats])
+                Object.entries(data.statistics || {}).map(([year, stats]) => [
+                    year,
+                    stats
+                ])
             );
 
             if (this.availableYears.length === 0) {
@@ -154,9 +157,11 @@ class MultiYearGalleryManager {
 
             // Create year selector buttons
             this.createYearSelectorButtons();
-
         } catch (error) {
-            console.warn('Failed to load years from API, using fallback data:', error.message);
+            console.warn(
+                'Failed to load years from API, using fallback data:',
+                error.message
+            );
 
             // Use fallback data when API fails
             this.availableYears = ['2025']; // Only show available year
@@ -176,17 +181,20 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Create year selector buttons
-     */
+   * Create year selector buttons
+   */
     createYearSelectorButtons() {
-        // Sort years in descending order (newest first)
-        const sortedYears = [...this.availableYears].sort((a, b) => b.localeCompare(a));
+    // Sort years in descending order (newest first)
+        const sortedYears = [...this.availableYears].sort((a, b) =>
+            b.localeCompare(a)
+        );
 
-        this.yearSelector.innerHTML = sortedYears.map(year => {
-            const stats = this.yearStatistics.get(year);
-            const imageCount = stats ? stats.imageCount : 0;
+        this.yearSelector.innerHTML = sortedYears
+            .map((year) => {
+                const stats = this.yearStatistics.get(year);
+                const imageCount = stats ? stats.imageCount : 0;
 
-            return `
+                return `
                 <button 
                     type="button" 
                     class="year-button" 
@@ -200,15 +208,16 @@ class MultiYearGalleryManager {
                     ${this.showStatistics ? `<span class="year-count">${imageCount}</span>` : ''}
                 </button>
             `;
-        }).join('');
+            })
+            .join('');
 
         // Add click handlers to year buttons
         this.yearSelector.addEventListener('click', this.boundHandlers.yearSelect);
     }
 
     /**
-     * Handle year selection from buttons
-     */
+   * Handle year selection from buttons
+   */
     async handleYearSelect(event) {
         const button = event.target.closest('.year-button');
         if (!button) {
@@ -222,8 +231,8 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Switch to a specific year's gallery
-     */
+   * Switch to a specific year's gallery
+   */
     async switchToYear(year) {
         if (this.isLoading || year === this.currentYear) {
             return;
@@ -271,7 +280,6 @@ class MultiYearGalleryManager {
                 currentYear: year,
                 galleryInstance: this.galleryInstances.get(year)
             });
-
         } catch (error) {
             this.showError(`Failed to load ${year} gallery. Please try again.`);
             // Emit error event for monitoring
@@ -283,10 +291,10 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Load a specific year's gallery
-     */
+   * Load a specific year's gallery
+   */
     async loadYearGallery(year) {
-        // Check if gallery is already loaded
+    // Check if gallery is already loaded
         if (this.galleryInstances.has(year)) {
             return;
         }
@@ -313,7 +321,6 @@ class MultiYearGalleryManager {
             // Store the instance
             this.galleryInstances.set(year, galleryInstance);
             this.preloadedYears.add(year);
-
         } catch (error) {
             // Emit error event for monitoring
             this.dispatchEvent('galleryLoadError', { year, error: error.message });
@@ -322,10 +329,12 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Show a specific year's gallery
-     */
+   * Show a specific year's gallery
+   */
     showGallery(year) {
-        const container = this.galleryContainer.querySelector(`[data-year="${year}"]`);
+        const container = this.galleryContainer.querySelector(
+            `[data-year="${year}"]`
+        );
         if (container) {
             container.style.display = 'block';
             container.setAttribute('aria-hidden', 'false');
@@ -339,10 +348,12 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Hide a specific year's gallery
-     */
+   * Hide a specific year's gallery
+   */
     hideGallery(year) {
-        const container = this.galleryContainer.querySelector(`[data-year="${year}"]`);
+        const container = this.galleryContainer.querySelector(
+            `[data-year="${year}"]`
+        );
         if (container) {
             container.style.display = 'none';
             container.setAttribute('aria-hidden', 'true');
@@ -356,11 +367,11 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Update year selector UI
-     */
+   * Update year selector UI
+   */
     updateYearSelectorUI(selectedYear) {
         const buttons = this.yearSelector.querySelectorAll('.year-button');
-        buttons.forEach(button => {
+        buttons.forEach((button) => {
             const isSelected = button.dataset.year === selectedYear;
             button.classList.toggle('active', isSelected);
             button.setAttribute('aria-selected', isSelected.toString());
@@ -368,8 +379,8 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Update statistics display
-     */
+   * Update statistics display
+   */
     updateStatisticsDisplay(year) {
         if (!this.showStatistics || !this.statisticsDisplay) {
             return;
@@ -398,8 +409,8 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Schedule preloading of adjacent years
-     */
+   * Schedule preloading of adjacent years
+   */
     scheduleAdjacentYearPreloading() {
         if (!this.currentYear || !this.preloadAdjacentYears) {
             return;
@@ -426,7 +437,7 @@ class MultiYearGalleryManager {
         }
 
         // Preload adjacent years that aren't already loaded
-        adjacentYears.forEach(year => {
+        adjacentYears.forEach((year) => {
             if (!this.preloadedYears.has(year)) {
                 schedulePreload(async() => {
                     try {
@@ -435,7 +446,10 @@ class MultiYearGalleryManager {
                         this.dispatchEvent('yearPreloaded', { year });
                     } catch (error) {
                         // Emit preload error event for monitoring
-                        this.dispatchEvent('yearPreloadError', { year, error: error.message });
+                        this.dispatchEvent('yearPreloadError', {
+                            year,
+                            error: error.message
+                        });
                     }
                 });
             }
@@ -443,10 +457,10 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Set up event listeners
-     */
+   * Set up event listeners
+   */
     setupEventListeners() {
-        // Keyboard navigation
+    // Keyboard navigation
         if (this.enableKeyboardNavigation) {
             document.addEventListener('keydown', this.boundHandlers.keydown);
         }
@@ -458,13 +472,13 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Handle keyboard navigation
-     */
+   * Handle keyboard navigation
+   */
     handleKeydown(event) {
-        // Only handle arrow keys when gallery is focused or no specific element is focused
+    // Only handle arrow keys when gallery is focused or no specific element is focused
         const activeElement = document.activeElement;
-        const isGalleryFocused = this.container.contains(activeElement) ||
-                                activeElement === document.body;
+        const isGalleryFocused =
+      this.container.contains(activeElement) || activeElement === document.body;
 
         if (!isGalleryFocused) {
             return;
@@ -476,7 +490,7 @@ class MultiYearGalleryManager {
         switch (event.key) {
         case 'ArrowLeft':
         case 'ArrowUp':
-            // Previous year
+        // Previous year
             if (currentIndex > 0) {
                 targetYear = this.availableYears[currentIndex - 1];
             }
@@ -484,7 +498,7 @@ class MultiYearGalleryManager {
 
         case 'ArrowRight':
         case 'ArrowDown':
-            // Next year
+        // Next year
             if (currentIndex < this.availableYears.length - 1) {
                 targetYear = this.availableYears[currentIndex + 1];
             }
@@ -498,18 +512,22 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Handle browser back/forward navigation
-     */
+   * Handle browser back/forward navigation
+   */
     handlePopState() {
         const year = this.getYearFromUrl();
-        if (year && year !== this.currentYear && this.availableYears.includes(year)) {
+        if (
+            year &&
+      year !== this.currentYear &&
+      this.availableYears.includes(year)
+        ) {
             this.switchToYear(year);
         }
     }
 
     /**
-     * Get initial year from URL or use default
-     */
+   * Get initial year from URL or use default
+   */
     getInitialYear() {
         if (this.enableUrlStateManagement) {
             const urlYear = this.getYearFromUrl();
@@ -525,16 +543,16 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Get year from URL parameters
-     */
+   * Get year from URL parameters
+   */
     getYearFromUrl() {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get('year');
     }
 
     /**
-     * Update URL with current year
-     */
+   * Update URL with current year
+   */
     updateUrl(year) {
         const url = new URL(window.location);
         url.searchParams.set('year', year);
@@ -542,8 +560,8 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Show loading indicator
-     */
+   * Show loading indicator
+   */
     showLoading() {
         if (this.loadingIndicator) {
             this.loadingIndicator.setAttribute('aria-hidden', 'false');
@@ -552,8 +570,8 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Hide loading indicator
-     */
+   * Hide loading indicator
+   */
     hideLoading() {
         if (this.loadingIndicator) {
             this.loadingIndicator.setAttribute('aria-hidden', 'true');
@@ -562,8 +580,8 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Show error message
-     */
+   * Show error message
+   */
     showError(message) {
         if (this.errorDisplay) {
             const messageElement = this.errorDisplay.querySelector('.error-message');
@@ -576,8 +594,8 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Hide error message
-     */
+   * Hide error message
+   */
     hideError() {
         if (this.errorDisplay) {
             this.errorDisplay.setAttribute('aria-hidden', 'true');
@@ -586,8 +604,8 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Retry current operation
-     */
+   * Retry current operation
+   */
     async retryCurrentOperation() {
         this.hideError();
         if (this.currentYear) {
@@ -598,8 +616,8 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Format file size for display
-     */
+   * Format file size for display
+   */
     formatFileSize(bytes) {
         if (!bytes || bytes === 0) {
             return '0 B';
@@ -613,8 +631,8 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Dispatch custom events
-     */
+   * Dispatch custom events
+   */
     dispatchEvent(eventName, detail = {}) {
         const event = new CustomEvent(`multiYearGallery:${eventName}`, {
             detail,
@@ -624,30 +642,30 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Get current gallery instance
-     */
+   * Get current gallery instance
+   */
     getCurrentGalleryInstance() {
         return this.galleryInstances.get(this.currentYear);
     }
 
     /**
-     * Get all available years
-     */
+   * Get all available years
+   */
     getAvailableYears() {
         return [...this.availableYears];
     }
 
     /**
-     * Get statistics for a specific year
-     */
+   * Get statistics for a specific year
+   */
     getYearStatistics(year) {
         return this.yearStatistics.get(year);
     }
 
     /**
-     * Create a virtual gallery instance for a year
-     * Uses VirtualGalleryManager for high-performance gallery display
-     */
+   * Create a virtual gallery instance for a year
+   * Uses VirtualGalleryManager for high-performance gallery display
+   */
     async createVirtualGallery(options) {
         const { container, year, apiEndpoint } = options;
 
@@ -669,10 +687,12 @@ class MultiYearGalleryManager {
                 container.galleryInstance = virtualGallery;
 
                 return virtualGallery;
-
             } catch (error) {
                 // Emit fallback event for monitoring
-                this.dispatchEvent('virtualGalleryFallback', { year, error: error.message });
+                this.dispatchEvent('virtualGalleryFallback', {
+                    year,
+                    error: error.message
+                });
             }
         }
 
@@ -681,8 +701,8 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Create a simple gallery instance as fallback
-     */
+   * Create a simple gallery instance as fallback
+   */
     async createSimpleGallery(options) {
         const { container, year, apiEndpoint } = options;
 
@@ -709,7 +729,7 @@ class MultiYearGalleryManager {
                         // Flatten categories into single array
                         this.images = [];
                         Object.entries(data.categories).forEach(([category, items]) => {
-                            items.forEach(item => {
+                            items.forEach((item) => {
                                 this.images.push({
                                     ...item,
                                     category: category
@@ -725,11 +745,13 @@ class MultiYearGalleryManager {
 
                     this.isInitialized = true;
                     return this;
-
                 } catch (error) {
                     this.renderError(error.message);
                     // Emit error event for monitoring
-                    this.dispatchEvent('simpleGalleryError', { year, error: error.message });
+                    this.dispatchEvent('simpleGalleryError', {
+                        year,
+                        error: error.message
+                    });
                     throw error;
                 }
             },
@@ -745,9 +767,13 @@ class MultiYearGalleryManager {
                 }
 
                 // Create simple grid layout
-                const gridHTML = this.images.map((image, index) => {
-                    const title = (image.name || image.title || '').replace(/\.[^/.]+$/, '');
-                    return `
+                const gridHTML = this.images
+                    .map((image, index) => {
+                        const title = (image.name || image.title || '').replace(
+                            /\.[^/.]+$/,
+                            ''
+                        );
+                        return `
                         <div class="gallery-item" data-index="${index}" data-category="${image.category || ''}">
                             <div class="gallery-item-media">
                                 <img 
@@ -763,7 +789,8 @@ class MultiYearGalleryManager {
                             </div>
                         </div>
                     `;
-                }).join('');
+                    })
+                    .join('');
 
                 this.container.innerHTML = `
                     <div class="gallery-grid">
@@ -803,17 +830,24 @@ class MultiYearGalleryManager {
                             }
 
                             // Prepare items for lightbox
-                            const lightboxItems = this.images.map(item => ({
+                            const lightboxItems = this.images.map((item) => ({
                                 ...item,
                                 url: item.url,
                                 thumbnailUrl: item.thumbnailUrl || item.url,
                                 title: (item.name || item.title || '').replace(/\.[^/.]+$/, '')
                             }));
 
-                            const categories = this.images.map(item => item.category || 'uncategorized');
+                            const categories = this.images.map(
+                                (item) => item.category || 'uncategorized'
+                            );
                             const categoryCounts = this.getCategoryCounts();
 
-                            this.lightbox.openAdvanced(lightboxItems, index, categories, categoryCounts);
+                            this.lightbox.openAdvanced(
+                                lightboxItems,
+                                index,
+                                categories,
+                                categoryCounts
+                            );
                         }
                     });
 
@@ -826,7 +860,7 @@ class MultiYearGalleryManager {
 
             getCategoryCounts() {
                 const counts = {};
-                this.images.forEach(item => {
+                this.images.forEach((item) => {
                     const category = item.category || 'uncategorized';
                     counts[category] = (counts[category] || 0) + 1;
                 });
@@ -863,10 +897,10 @@ class MultiYearGalleryManager {
     }
 
     /**
-     * Destroy the gallery manager and clean up resources
-     */
+   * Destroy the gallery manager and clean up resources
+   */
     destroy() {
-        // Remove event listeners
+    // Remove event listeners
         if (this.enableKeyboardNavigation) {
             document.removeEventListener('keydown', this.boundHandlers.keydown);
         }
@@ -875,7 +909,7 @@ class MultiYearGalleryManager {
         }
 
         // Destroy all gallery instances
-        this.galleryInstances.forEach(instance => {
+        this.galleryInstances.forEach((instance) => {
             if (typeof instance.destroy === 'function') {
                 instance.destroy();
             }

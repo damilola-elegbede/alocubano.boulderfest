@@ -12,11 +12,11 @@ https://alocubanoboulderfest.vercel.app/api
 
 ### API Versions
 
-| Version | Status | Features |
-|---------|--------|----------|
+| Version               | Status | Features                                                |
+| --------------------- | ------ | ------------------------------------------------------- |
 | **Phase 3** (Current) | Active | AVIF support, Performance metrics, Multi-year galleries |
-| Phase 2 | Legacy | Advanced caching, Service workers |
-| Phase 1 | Legacy | Basic gallery, WebP support |
+| Phase 2               | Legacy | Advanced caching, Service workers                       |
+| Phase 1               | Legacy | Basic gallery, WebP support                             |
 
 ### Common Headers
 
@@ -42,12 +42,12 @@ X-Request-ID: req_abc123def456
 
 All API endpoints implement rate limiting to ensure service availability:
 
-| Endpoint | Limit | Window |
-|----------|-------|--------|
-| `/api/gallery*` | 60 requests | 1 minute |
-| `/api/image-proxy/*` | 100 requests | 1 minute |
+| Endpoint                   | Limit        | Window   |
+| -------------------------- | ------------ | -------- |
+| `/api/gallery*`            | 60 requests  | 1 minute |
+| `/api/image-proxy/*`       | 100 requests | 1 minute |
 | `/api/performance-metrics` | 100 requests | 1 minute |
-| `/api/featured-photos` | 30 requests | 1 minute |
+| `/api/featured-photos`     | 30 requests  | 1 minute |
 
 Rate limit headers are included in all responses:
 
@@ -97,9 +97,9 @@ GET /api/gallery
 
 ### Query Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| folderId | string | `GOOGLE_DRIVE_FOLDER_ID` env var | Google Drive folder ID to fetch media from |
+| Parameter | Type   | Default                          | Description                                |
+| --------- | ------ | -------------------------------- | ------------------------------------------ |
+| folderId  | string | `GOOGLE_DRIVE_FOLDER_ID` env var | Google Drive folder ID to fetch media from |
 
 ### Response Format
 
@@ -144,6 +144,7 @@ GET /api/gallery
 #### Error Responses
 
 ##### 400 Bad Request
+
 ```json
 {
   "error": "Folder ID is required"
@@ -151,6 +152,7 @@ GET /api/gallery
 ```
 
 ##### 403 Forbidden
+
 ```json
 {
   "error": "Access denied. Please check folder permissions."
@@ -158,6 +160,7 @@ GET /api/gallery
 ```
 
 ##### 404 Not Found
+
 ```json
 {
   "error": "Folder not found"
@@ -165,6 +168,7 @@ GET /api/gallery
 ```
 
 ##### 500 Internal Server Error
+
 ```json
 {
   "error": "Failed to fetch gallery data",
@@ -194,27 +198,26 @@ The API uses Google Service Account authentication to access Google Drive. No us
 ```javascript
 async function loadGallery() {
   try {
-    const response = await fetch('/api/gallery');
-    
+    const response = await fetch("/api/gallery");
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    
+
     // Display gallery items
-    data.items.forEach(item => {
-      if (item.type === 'image') {
+    data.items.forEach((item) => {
+      if (item.type === "image") {
         console.log(`Image: ${item.name}`);
         // Display image using item.thumbnailUrl or item.viewUrl
-      } else if (item.type === 'video') {
+      } else if (item.type === "video") {
         console.log(`Video: ${item.name}`);
         // Display video using item.viewUrl
       }
     });
-    
   } catch (error) {
-    console.error('Failed to load gallery:', error);
+    console.error("Failed to load gallery:", error);
     // Show fallback content
   }
 }
@@ -297,6 +300,7 @@ Provides a list of all available gallery years with metadata for navigation and 
 #### Error Responses
 
 ##### 500 Internal Server Error
+
 ```json
 {
   "error": "Failed to fetch gallery years",
@@ -311,25 +315,24 @@ Provides a list of all available gallery years with metadata for navigation and 
 ```javascript
 async function loadGalleryYears() {
   try {
-    const response = await fetch('/api/gallery/years');
-    
+    const response = await fetch("/api/gallery/years");
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    
+
     // Build year navigation
-    data.years.forEach(yearInfo => {
+    data.years.forEach((yearInfo) => {
       console.log(`${yearInfo.year}: ${yearInfo.itemCount} photos`);
       // Create navigation buttons for each year
     });
-    
+
     // Load default year gallery
     loadGalleryByYear(data.defaultYear);
-    
   } catch (error) {
-    console.error('Failed to load gallery years:', error);
+    console.error("Failed to load gallery years:", error);
   }
 }
 ```
@@ -353,10 +356,10 @@ Collects and analyzes performance metrics from client-side monitoring.
 
 #### Headers
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| `Content-Type` | Yes | Must be `application/json` |
-| `User-Agent` | No | Browser/client identification |
+| Header         | Required | Description                   |
+| -------------- | -------- | ----------------------------- |
+| `Content-Type` | Yes      | Must be `application/json`    |
+| `User-Agent`   | No       | Browser/client identification |
 
 #### Request Body
 
@@ -459,6 +462,7 @@ Collects and analyzes performance metrics from client-side monitoring.
 #### Error Responses
 
 ##### 400 Bad Request
+
 ```json
 {
   "error": "Invalid metrics data",
@@ -467,6 +471,7 @@ Collects and analyzes performance metrics from client-side monitoring.
 ```
 
 ##### 413 Payload Too Large
+
 ```json
 {
   "error": "Metrics payload too large",
@@ -475,6 +480,7 @@ Collects and analyzes performance metrics from client-side monitoring.
 ```
 
 ##### 429 Too Many Requests
+
 ```json
 {
   "error": "Rate limit exceeded",
@@ -497,20 +503,21 @@ Collects and analyzes performance metrics from client-side monitoring.
 async function sendPerformanceMetrics() {
   try {
     // Collect navigation timing
-    const navigation = performance.getEntriesByType('navigation')[0];
-    
+    const navigation = performance.getEntriesByType("navigation")[0];
+
     // Collect resource timing
-    const resources = performance.getEntriesByType('resource')
-      .filter(entry => entry.name.includes('/api/'))
+    const resources = performance
+      .getEntriesByType("resource")
+      .filter((entry) => entry.name.includes("/api/"))
       .slice(0, 50); // Limit to prevent large payloads
-    
+
     // Collect custom marks and measures
-    const marks = performance.getEntriesByType('mark');
-    const measures = performance.getEntriesByType('measure');
-    
+    const marks = performance.getEntriesByType("mark");
+    const measures = performance.getEntriesByType("measure");
+
     // Get connection info if available
     const connection = navigator.connection || {};
-    
+
     const metricsData = {
       metrics: {
         navigation: {
@@ -530,29 +537,29 @@ async function sendPerformanceMetrics() {
             domContentLoadedEventStart: navigation.domContentLoadedEventStart,
             domContentLoadedEventEnd: navigation.domContentLoadedEventEnd,
             loadEventStart: navigation.loadEventStart,
-            loadEventEnd: navigation.loadEventEnd
-          }
+            loadEventEnd: navigation.loadEventEnd,
+          },
         },
-        resources: resources.map(resource => ({
+        resources: resources.map((resource) => ({
           name: resource.name,
           entryType: resource.entryType,
           startTime: resource.startTime,
           duration: resource.duration,
           transferSize: resource.transferSize,
           encodedBodySize: resource.encodedBodySize,
-          decodedBodySize: resource.decodedBodySize
+          decodedBodySize: resource.decodedBodySize,
         })),
-        marks: marks.map(mark => ({
+        marks: marks.map((mark) => ({
           name: mark.name,
           entryType: mark.entryType,
-          startTime: mark.startTime
+          startTime: mark.startTime,
         })),
-        measures: measures.map(measure => ({
+        measures: measures.map((measure) => ({
           name: measure.name,
           entryType: measure.entryType,
           startTime: measure.startTime,
-          duration: measure.duration
-        }))
+          duration: measure.duration,
+        })),
       },
       context: {
         page: window.location.pathname,
@@ -560,38 +567,37 @@ async function sendPerformanceMetrics() {
         connection: {
           effectiveType: connection.effectiveType,
           downlink: connection.downlink,
-          rtt: connection.rtt
+          rtt: connection.rtt,
         },
         device: {
           memory: navigator.deviceMemory,
-          hardwareConcurrency: navigator.hardwareConcurrency
+          hardwareConcurrency: navigator.hardwareConcurrency,
         },
-        timestamp: new Date().toISOString()
-      }
-    };
-    
-    const response = await fetch('/api/performance-metrics', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
+        timestamp: new Date().toISOString(),
       },
-      body: JSON.stringify(metricsData)
+    };
+
+    const response = await fetch("/api/performance-metrics", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(metricsData),
     });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const result = await response.json();
-    console.log('Performance metrics sent:', result);
-    
+    console.log("Performance metrics sent:", result);
   } catch (error) {
-    console.error('Failed to send performance metrics:', error);
+    console.error("Failed to send performance metrics:", error);
   }
 }
 
 // Send metrics after page load
-window.addEventListener('load', () => {
+window.addEventListener("load", () => {
   // Wait a bit to ensure all resources are loaded
   setTimeout(sendPerformanceMetrics, 1000);
 });
@@ -626,12 +632,12 @@ Returns a curated selection of featured photos optimized for homepage display an
 
 ### Query Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `limit` | integer | 12 | Number of photos to return (max: 50) |
-| `year` | string | current | Filter by specific year (2023, 2024, 2025, etc.) |
-| `format` | string | auto | Preferred image format (avif, webp, jpeg, auto) |
-| `size` | string | medium | Thumbnail size (small=400px, medium=800px, large=1200px) |
+| Parameter | Type    | Default | Description                                              |
+| --------- | ------- | ------- | -------------------------------------------------------- |
+| `limit`   | integer | 12      | Number of photos to return (max: 50)                     |
+| `year`    | string  | current | Filter by specific year (2023, 2024, 2025, etc.)         |
+| `format`  | string  | auto    | Preferred image format (avif, webp, jpeg, auto)          |
+| `size`    | string  | medium  | Thumbnail size (small=400px, medium=800px, large=1200px) |
 
 ### Response Format
 
@@ -664,7 +670,12 @@ Returns a curated selection of featured photos optimized for homepage display an
       },
       "socialMedia": {
         "instagram": "https://www.instagram.com/p/example123",
-        "hashtags": ["#alocubano2025", "#salsadancing", "#boulder", "#cubansalsa"]
+        "hashtags": [
+          "#alocubano2025",
+          "#salsadancing",
+          "#boulder",
+          "#cubansalsa"
+        ]
       }
     }
   ],
@@ -676,7 +687,12 @@ Returns a curated selection of featured photos optimized for homepage display an
   },
   "filters": {
     "year": "2025",
-    "categories": ["workshops", "social-dancing", "performances", "behind-scenes"],
+    "categories": [
+      "workshops",
+      "social-dancing",
+      "performances",
+      "behind-scenes"
+    ],
     "photographers": ["Maria Rodriguez", "Carlos Mendez", "Sofia Hernandez"]
   },
   "lastUpdated": "2025-07-23T08:30:00Z"
@@ -686,6 +702,7 @@ Returns a curated selection of featured photos optimized for homepage display an
 #### Error Responses
 
 ##### 400 Bad Request
+
 ```json
 {
   "error": "Invalid parameters",
@@ -697,6 +714,7 @@ Returns a curated selection of featured photos optimized for homepage display an
 ```
 
 ##### 404 Not Found
+
 ```json
 {
   "error": "No featured photos found",
@@ -716,49 +734,48 @@ Returns a curated selection of featured photos optimized for homepage display an
 // Load featured photos for homepage
 async function loadFeaturedPhotos() {
   try {
-    const response = await fetch('/api/featured-photos?limit=8&size=medium');
-    
+    const response = await fetch("/api/featured-photos?limit=8&size=medium");
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    
+
     // Create responsive image gallery
-    data.photos.forEach(photo => {
+    data.photos.forEach((photo) => {
       const pictureElement = createResponsiveImage(photo);
-      document.querySelector('.featured-gallery').appendChild(pictureElement);
+      document.querySelector(".featured-gallery").appendChild(pictureElement);
     });
-    
   } catch (error) {
-    console.error('Failed to load featured photos:', error);
+    console.error("Failed to load featured photos:", error);
     // Show fallback content
   }
 }
 
 // Create responsive image with modern formats
 function createResponsiveImage(photo) {
-  const picture = document.createElement('picture');
-  
+  const picture = document.createElement("picture");
+
   // AVIF source for modern browsers
-  const avifSource = document.createElement('source');
+  const avifSource = document.createElement("source");
   avifSource.srcset = photo.urls.avif_medium;
-  avifSource.type = 'image/avif';
+  avifSource.type = "image/avif";
   picture.appendChild(avifSource);
-  
+
   // WebP source for broad support
-  const webpSource = document.createElement('source');
+  const webpSource = document.createElement("source");
   webpSource.srcset = photo.urls.medium;
-  webpSource.type = 'image/webp';
+  webpSource.type = "image/webp";
   picture.appendChild(webpSource);
-  
+
   // JPEG fallback
-  const img = document.createElement('img');
-  img.src = photo.urls.medium.replace('format=webp', 'format=jpeg');
+  const img = document.createElement("img");
+  img.src = photo.urls.medium.replace("format=webp", "format=jpeg");
   img.alt = photo.title;
-  img.loading = 'lazy';
+  img.loading = "lazy";
   picture.appendChild(img);
-  
+
   return picture;
 }
 ```
@@ -767,7 +784,7 @@ function createResponsiveImage(photo) {
 
 ```jsx
 // React component for featured photos gallery
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 function FeaturedPhotosGallery({ year, limit = 12 }) {
   const [photos, setPhotos] = useState([]);
@@ -779,15 +796,15 @@ function FeaturedPhotosGallery({ year, limit = 12 }) {
       try {
         const params = new URLSearchParams({
           limit: limit.toString(),
-          ...(year && { year })
+          ...(year && { year }),
         });
-        
+
         const response = await fetch(`/api/featured-photos?${params}`);
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch: ${response.status}`);
         }
-        
+
         const data = await response.json();
         setPhotos(data.photos);
       } catch (err) {
@@ -805,13 +822,13 @@ function FeaturedPhotosGallery({ year, limit = 12 }) {
 
   return (
     <div className="featured-photos-grid">
-      {photos.map(photo => (
+      {photos.map((photo) => (
         <div key={photo.id} className="photo-card">
           <picture>
             <source srcSet={photo.urls.avif_medium} type="image/avif" />
             <source srcSet={photo.urls.medium} type="image/webp" />
-            <img 
-              src={photo.urls.medium.replace('format=webp', 'format=jpeg')}
+            <img
+              src={photo.urls.medium.replace("format=webp", "format=jpeg")}
               alt={photo.title}
               loading="lazy"
             />
@@ -842,14 +859,20 @@ Featured photos include social media metadata for easy sharing:
 
 ```html
 <!-- Open Graph meta tags -->
-<meta property="og:image" content="https://alocubanoboulderfest.vercel.app/api/image-proxy/1abc123def456?w=1200&format=jpeg&q=85">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="800">
-<meta property="og:image:alt" content="Opening Night Dance Floor">
+<meta
+  property="og:image"
+  content="https://alocubanoboulderfest.vercel.app/api/image-proxy/1abc123def456?w=1200&format=jpeg&q=85"
+/>
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="800" />
+<meta property="og:image:alt" content="Opening Night Dance Floor" />
 
 <!-- Twitter Card meta tags -->
-<meta name="twitter:image" content="https://alocubanoboulderfest.vercel.app/api/image-proxy/1abc123def456?w=1200&format=jpeg&q=85">
-<meta name="twitter:card" content="summary_large_image">
+<meta
+  name="twitter:image"
+  content="https://alocubanoboulderfest.vercel.app/api/image-proxy/1abc123def456?w=1200&format=jpeg&q=85"
+/>
+<meta name="twitter:card" content="summary_large_image" />
 ```
 
 ## Hero Image API
@@ -860,12 +883,12 @@ Provides optimized hero images for specific pages with intelligent caching.
 
 #### Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `pageId` | string | required | Page identifier (home, about, gallery, etc.) |
-| `w` | integer | 1200 | Target width in pixels |
-| `format` | string | auto | Target format (webp, jpeg, auto) |
-| `q` | integer | 80 | Quality level (1-100) |
+| Parameter | Type    | Default  | Description                                  |
+| --------- | ------- | -------- | -------------------------------------------- |
+| `pageId`  | string  | required | Page identifier (home, about, gallery, etc.) |
+| `w`       | integer | 1200     | Target width in pixels                       |
+| `format`  | string  | auto     | Target format (webp, jpeg, auto)             |
+| `q`       | integer | 80       | Quality level (1-100)                        |
 
 #### Examples
 
@@ -878,6 +901,7 @@ GET /api/hero-image/gallery?w=1600&q=90
 ```
 
 #### Caching
+
 - **Client Cache**: 1 hour
 - **CDN Cache**: 24 hours
 - **ETag Support**: For conditional requests
@@ -894,19 +918,20 @@ Advanced image processing proxy with support for modern formats, responsive deli
 
 ### Query Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `w` | integer | original | Target width in pixels (max: 4000) |
-| `h` | integer | auto | Target height in pixels (maintains aspect ratio if not specified) |
-| `format` | string | auto | Target format (avif, webp, jpeg, auto) |
-| `q` | integer | 75 | Quality level (1-100) |
-| `fit` | string | cover | Resize mode (cover, contain, fill, inside, outside) |
-| `bg` | string | transparent | Background color for padding (hex without #) |
-| `dpr` | float | 1.0 | Device pixel ratio (1.0-3.0) |
+| Parameter | Type    | Default     | Description                                                       |
+| --------- | ------- | ----------- | ----------------------------------------------------------------- |
+| `w`       | integer | original    | Target width in pixels (max: 4000)                                |
+| `h`       | integer | auto        | Target height in pixels (maintains aspect ratio if not specified) |
+| `format`  | string  | auto        | Target format (avif, webp, jpeg, auto)                            |
+| `q`       | integer | 75          | Quality level (1-100)                                             |
+| `fit`     | string  | cover       | Resize mode (cover, contain, fill, inside, outside)               |
+| `bg`      | string  | transparent | Background color for padding (hex without #)                      |
+| `dpr`     | float   | 1.0         | Device pixel ratio (1.0-3.0)                                      |
 
 ### Format Support and Browser Compatibility
 
 #### AVIF Support (New in Phase 3)
+
 - **Browser Support**: Chrome 85+, Firefox 93+, Safari 16.1+
 - **Compression**: Up to 50% smaller than WebP, 90% smaller than JPEG
 - **Quality**: Superior compression with better visual quality retention
@@ -915,6 +940,7 @@ Advanced image processing proxy with support for modern formats, responsive deli
 #### Format Negotiation
 
 The API automatically selects the optimal format based on:
+
 1. **Accept Header**: Analyzes `Accept: image/*` header capabilities
 2. **User Agent**: Browser-specific format support detection
 3. **Query Parameter**: Explicit format override
@@ -994,6 +1020,7 @@ Cache-Control: no-cache
 ### Error Responses
 
 #### 400 Bad Request
+
 ```json
 {
   "error": "Invalid parameters",
@@ -1005,6 +1032,7 @@ Cache-Control: no-cache
 ```
 
 #### 404 Not Found
+
 ```json
 {
   "error": "Image not found",
@@ -1013,6 +1041,7 @@ Cache-Control: no-cache
 ```
 
 #### 413 Payload Too Large
+
 ```json
 {
   "error": "Source image too large",
@@ -1022,6 +1051,7 @@ Cache-Control: no-cache
 ```
 
 #### 429 Too Many Requests
+
 ```json
 {
   "error": "Rate limit exceeded",
@@ -1031,6 +1061,7 @@ Cache-Control: no-cache
 ```
 
 #### 500 Internal Server Error
+
 ```json
 {
   "error": "Image processing failed",
@@ -1062,22 +1093,31 @@ Cache-Control: no-cache
 ```html
 <!-- Modern browsers with AVIF support -->
 <picture>
-  <source 
-    srcset="/api/image-proxy/1abc123?w=800&format=avif&dpr=1 1x,
-            /api/image-proxy/1abc123?w=800&format=avif&dpr=2 2x"
-    type="image/avif">
-  
-  <source 
-    srcset="/api/image-proxy/1abc123?w=800&format=webp&dpr=1 1x,
-            /api/image-proxy/1abc123?w=800&format=webp&dpr=2 2x"
-    type="image/webp">
-  
-  <img 
+  <source
+    srcset="
+      /api/image-proxy/1abc123?w=800&format=avif&dpr=1 1x,
+      /api/image-proxy/1abc123?w=800&format=avif&dpr=2 2x
+    "
+    type="image/avif"
+  />
+
+  <source
+    srcset="
+      /api/image-proxy/1abc123?w=800&format=webp&dpr=1 1x,
+      /api/image-proxy/1abc123?w=800&format=webp&dpr=2 2x
+    "
+    type="image/webp"
+  />
+
+  <img
     src="/api/image-proxy/1abc123?w=800&format=jpeg"
-    srcset="/api/image-proxy/1abc123?w=800&format=jpeg&dpr=1 1x,
-            /api/image-proxy/1abc123?w=800&format=jpeg&dpr=2 2x"
+    srcset="
+      /api/image-proxy/1abc123?w=800&format=jpeg&dpr=1 1x,
+      /api/image-proxy/1abc123?w=800&format=jpeg&dpr=2 2x
+    "
     alt="Festival photo"
-    loading="lazy">
+    loading="lazy"
+  />
 </picture>
 ```
 
@@ -1088,22 +1128,25 @@ Cache-Control: no-cache
 function getOptimizedImageUrl(fileId, width, options = {}) {
   const params = new URLSearchParams({
     w: width,
-    ...options
+    ...options,
   });
-  
+
   // Let the server negotiate format based on browser capabilities
   return `/api/image-proxy/${fileId}?${params}`;
 }
 
 // Usage examples
-const heroUrl = getOptimizedImageUrl('1abc123', 1600, { q: 85, fit: 'cover' });
-const thumbUrl = getOptimizedImageUrl('1abc123', 400, { q: 70, dpr: window.devicePixelRatio });
+const heroUrl = getOptimizedImageUrl("1abc123", 1600, { q: 85, fit: "cover" });
+const thumbUrl = getOptimizedImageUrl("1abc123", 400, {
+  q: 70,
+  dpr: window.devicePixelRatio,
+});
 
 // Preload critical images
-function preloadImage(fileId, width, format = 'auto') {
-  const link = document.createElement('link');
-  link.rel = 'preload';
-  link.as = 'image';
+function preloadImage(fileId, width, format = "auto") {
+  const link = document.createElement("link");
+  link.rel = "preload";
+  link.as = "image";
   link.href = `/api/image-proxy/${fileId}?w=${width}&format=${format}`;
   document.head.appendChild(link);
 }
@@ -1114,19 +1157,19 @@ function preloadImage(fileId, width, format = 'auto') {
 ```css
 /* Background image with high-DPI support */
 .hero-section {
-  background-image: url('/api/image-proxy/1abc123?w=1600&format=auto&q=80');
+  background-image: url("/api/image-proxy/1abc123?w=1600&format=auto&q=80");
 }
 
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
   .hero-section {
-    background-image: url('/api/image-proxy/1abc123?w=1600&format=auto&q=80&dpr=2');
+    background-image: url("/api/image-proxy/1abc123?w=1600&format=auto&q=80&dpr=2");
   }
 }
 
 /* Mobile-optimized thumbnails */
 @media (max-width: 768px) {
   .gallery-thumb {
-    background-image: url('/api/image-proxy/1abc123?w=400&format=auto&q=70');
+    background-image: url("/api/image-proxy/1abc123?w=400&format=auto&q=70");
   }
 }
 ```
@@ -1192,7 +1235,7 @@ For a full-featured gallery implementation using all Phase 3 APIs:
 ```javascript
 class FestivalGalleryManager {
   constructor(config = {}) {
-    this.baseUrl = config.baseUrl || '/api';
+    this.baseUrl = config.baseUrl || "/api";
     this.cache = new Map();
     this.performanceMetrics = [];
   }
@@ -1201,29 +1244,32 @@ class FestivalGalleryManager {
   async initializeGallery() {
     try {
       // Mark start of gallery initialization
-      performance.mark('gallery-init-start');
-      
+      performance.mark("gallery-init-start");
+
       // Load available years
       const yearsResponse = await fetch(`${this.baseUrl}/gallery/years`);
       const yearsData = await yearsResponse.json();
-      
+
       // Build year navigation
       this.renderYearNavigation(yearsData.years);
-      
+
       // Load default year gallery
       await this.loadGallery(yearsData.defaultYear);
-      
+
       // Load featured photos for hero section
       await this.loadFeaturedPhotos();
-      
-      performance.mark('gallery-init-end');
-      performance.measure('gallery-initialization', 'gallery-init-start', 'gallery-init-end');
-      
+
+      performance.mark("gallery-init-end");
+      performance.measure(
+        "gallery-initialization",
+        "gallery-init-start",
+        "gallery-init-end",
+      );
+
       // Send performance metrics
       this.sendPerformanceMetrics();
-      
     } catch (error) {
-      console.error('Failed to initialize gallery:', error);
+      console.error("Failed to initialize gallery:", error);
       this.showFallbackContent();
     }
   }
@@ -1232,12 +1278,13 @@ class FestivalGalleryManager {
   async loadGallery(year) {
     try {
       const folderId = this.getFolderIdForYear(year);
-      const response = await fetch(`${this.baseUrl}/gallery?folderId=${folderId}`);
+      const response = await fetch(
+        `${this.baseUrl}/gallery?folderId=${folderId}`,
+      );
       const galleryData = await response.json();
-      
+
       this.renderGallery(galleryData.items);
       this.cache.set(`gallery-${year}`, galleryData);
-      
     } catch (error) {
       console.error(`Failed to load gallery for ${year}:`, error);
     }
@@ -1248,78 +1295,77 @@ class FestivalGalleryManager {
     try {
       const params = new URLSearchParams({
         limit: options.limit || 8,
-        size: options.size || 'medium',
-        format: this.getSupportedFormat()
+        size: options.size || "medium",
+        format: this.getSupportedFormat(),
       });
-      
+
       const response = await fetch(`${this.baseUrl}/featured-photos?${params}`);
       const featuredData = await response.json();
-      
+
       this.renderFeaturedPhotos(featuredData.photos);
-      
     } catch (error) {
-      console.error('Failed to load featured photos:', error);
+      console.error("Failed to load featured photos:", error);
     }
   }
 
   // Detect optimal image format for browser
   getSupportedFormat() {
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = 1;
     canvas.height = 1;
-    
+
     // Check AVIF support
-    if (canvas.toDataURL('image/avif').startsWith('data:image/avif')) {
-      return 'avif';
+    if (canvas.toDataURL("image/avif").startsWith("data:image/avif")) {
+      return "avif";
     }
-    
+
     // Check WebP support
-    if (canvas.toDataURL('image/webp').startsWith('data:image/webp')) {
-      return 'webp';
+    if (canvas.toDataURL("image/webp").startsWith("data:image/webp")) {
+      return "webp";
     }
-    
-    return 'jpeg';
+
+    return "jpeg";
   }
 
   // Create responsive image element
-  createResponsiveImage(photo, sizes = '(max-width: 768px) 100vw, 50vw') {
-    const picture = document.createElement('picture');
-    
+  createResponsiveImage(photo, sizes = "(max-width: 768px) 100vw, 50vw") {
+    const picture = document.createElement("picture");
+
     // AVIF source
-    const avifSource = document.createElement('source');
+    const avifSource = document.createElement("source");
     avifSource.srcset = `
-      ${this.getImageUrl(photo.id, { w: 400, format: 'avif' })} 400w,
-      ${this.getImageUrl(photo.id, { w: 800, format: 'avif' })} 800w,
-      ${this.getImageUrl(photo.id, { w: 1200, format: 'avif' })} 1200w
+      ${this.getImageUrl(photo.id, { w: 400, format: "avif" })} 400w,
+      ${this.getImageUrl(photo.id, { w: 800, format: "avif" })} 800w,
+      ${this.getImageUrl(photo.id, { w: 1200, format: "avif" })} 1200w
     `;
     avifSource.sizes = sizes;
-    avifSource.type = 'image/avif';
+    avifSource.type = "image/avif";
     picture.appendChild(avifSource);
-    
+
     // WebP source
-    const webpSource = document.createElement('source');
+    const webpSource = document.createElement("source");
     webpSource.srcset = `
-      ${this.getImageUrl(photo.id, { w: 400, format: 'webp' })} 400w,
-      ${this.getImageUrl(photo.id, { w: 800, format: 'webp' })} 800w,
-      ${this.getImageUrl(photo.id, { w: 1200, format: 'webp' })} 1200w
+      ${this.getImageUrl(photo.id, { w: 400, format: "webp" })} 400w,
+      ${this.getImageUrl(photo.id, { w: 800, format: "webp" })} 800w,
+      ${this.getImageUrl(photo.id, { w: 1200, format: "webp" })} 1200w
     `;
     webpSource.sizes = sizes;
-    webpSource.type = 'image/webp';
+    webpSource.type = "image/webp";
     picture.appendChild(webpSource);
-    
+
     // JPEG fallback
-    const img = document.createElement('img');
+    const img = document.createElement("img");
     img.srcSet = `
-      ${this.getImageUrl(photo.id, { w: 400, format: 'jpeg' })} 400w,
-      ${this.getImageUrl(photo.id, { w: 800, format: 'jpeg' })} 800w,
-      ${this.getImageUrl(photo.id, { w: 1200, format: 'jpeg' })} 1200w
+      ${this.getImageUrl(photo.id, { w: 400, format: "jpeg" })} 400w,
+      ${this.getImageUrl(photo.id, { w: 800, format: "jpeg" })} 800w,
+      ${this.getImageUrl(photo.id, { w: 1200, format: "jpeg" })} 1200w
     `;
-    img.src = this.getImageUrl(photo.id, { w: 800, format: 'jpeg' });
+    img.src = this.getImageUrl(photo.id, { w: 800, format: "jpeg" });
     img.sizes = sizes;
-    img.alt = photo.name || photo.title || 'Festival photo';
-    img.loading = 'lazy';
+    img.alt = photo.name || photo.title || "Festival photo";
+    img.loading = "lazy";
     picture.appendChild(img);
-    
+
     return picture;
   }
 
@@ -1327,48 +1373,48 @@ class FestivalGalleryManager {
   getImageUrl(fileId, options = {}) {
     const params = new URLSearchParams({
       w: options.w || 800,
-      format: options.format || 'auto',
+      format: options.format || "auto",
       q: options.q || 75,
       dpr: options.dpr || window.devicePixelRatio || 1,
-      ...options
+      ...options,
     });
-    
+
     return `${this.baseUrl}/image-proxy/${fileId}?${params}`;
   }
 
   // Send performance metrics
   async sendPerformanceMetrics() {
     try {
-      const navigation = performance.getEntriesByType('navigation')[0];
-      const resources = performance.getEntriesByType('resource')
-        .filter(entry => entry.name.includes('/api/'));
-      const marks = performance.getEntriesByType('mark');
-      const measures = performance.getEntriesByType('measure');
-      
+      const navigation = performance.getEntriesByType("navigation")[0];
+      const resources = performance
+        .getEntriesByType("resource")
+        .filter((entry) => entry.name.includes("/api/"));
+      const marks = performance.getEntriesByType("mark");
+      const measures = performance.getEntriesByType("measure");
+
       const metricsData = {
         metrics: {
           navigation: this.formatNavigationTiming(navigation),
           resources: resources.map(this.formatResourceTiming),
           marks: marks.map(this.formatPerformanceEntry),
-          measures: measures.map(this.formatPerformanceEntry)
+          measures: measures.map(this.formatPerformanceEntry),
         },
         context: {
           page: window.location.pathname,
           userAgent: navigator.userAgent,
           connection: this.getConnectionInfo(),
           device: this.getDeviceInfo(),
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-      
+
       await fetch(`${this.baseUrl}/performance-metrics`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(metricsData)
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(metricsData),
       });
-      
     } catch (error) {
-      console.error('Failed to send performance metrics:', error);
+      console.error("Failed to send performance metrics:", error);
     }
   }
 
@@ -1391,8 +1437,8 @@ class FestivalGalleryManager {
         domContentLoadedEventStart: navigation.domContentLoadedEventStart,
         domContentLoadedEventEnd: navigation.domContentLoadedEventEnd,
         loadEventStart: navigation.loadEventStart,
-        loadEventEnd: navigation.loadEventEnd
-      }
+        loadEventEnd: navigation.loadEventEnd,
+      },
     };
   }
 
@@ -1405,7 +1451,7 @@ class FestivalGalleryManager {
       duration: resource.duration,
       transferSize: resource.transferSize,
       encodedBodySize: resource.encodedBodySize,
-      decodedBodySize: resource.decodedBodySize
+      decodedBodySize: resource.decodedBodySize,
     };
   }
 
@@ -1415,18 +1461,23 @@ class FestivalGalleryManager {
       name: entry.name,
       entryType: entry.entryType,
       startTime: entry.startTime,
-      duration: entry.duration || 0
+      duration: entry.duration || 0,
     };
   }
 
   // Get connection information
   getConnectionInfo() {
-    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-    return connection ? {
-      effectiveType: connection.effectiveType,
-      downlink: connection.downlink,
-      rtt: connection.rtt
-    } : {};
+    const connection =
+      navigator.connection ||
+      navigator.mozConnection ||
+      navigator.webkitConnection;
+    return connection
+      ? {
+          effectiveType: connection.effectiveType,
+          downlink: connection.downlink,
+          rtt: connection.rtt,
+        }
+      : {};
   }
 
   // Get device information
@@ -1435,13 +1486,13 @@ class FestivalGalleryManager {
       memory: navigator.deviceMemory,
       hardwareConcurrency: navigator.hardwareConcurrency,
       platform: navigator.platform,
-      cookieEnabled: navigator.cookieEnabled
+      cookieEnabled: navigator.cookieEnabled,
     };
   }
 }
 
 // Initialize gallery on page load
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   const galleryManager = new FestivalGalleryManager();
   galleryManager.initializeGallery();
 });
@@ -1449,19 +1500,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 ### API Endpoint Summary
 
-| Endpoint | Purpose | Phase | Key Features |
-|----------|---------|-------|--------------|
-| `/api/gallery` | Main gallery data | 1,2,3 | Google Drive integration, caching |
-| `/api/gallery/years` | Multi-year navigation | 3 | Year filtering, metadata |
-| `/api/featured-photos` | Curated highlights | 3 | Social media optimization |
-| `/api/image-proxy/[fileId]` | Image optimization | 1,2,3 | AVIF, WebP, responsive delivery |
-| `/api/performance-metrics` | Performance tracking | 3 | Real-time monitoring |
-| `/api/hero-image/[pageId]` | Page-specific heroes | 2,3 | Context-aware optimization |
+| Endpoint                    | Purpose               | Phase | Key Features                      |
+| --------------------------- | --------------------- | ----- | --------------------------------- |
+| `/api/gallery`              | Main gallery data     | 1,2,3 | Google Drive integration, caching |
+| `/api/gallery/years`        | Multi-year navigation | 3     | Year filtering, metadata          |
+| `/api/featured-photos`      | Curated highlights    | 3     | Social media optimization         |
+| `/api/image-proxy/[fileId]` | Image optimization    | 1,2,3 | AVIF, WebP, responsive delivery   |
+| `/api/performance-metrics`  | Performance tracking  | 3     | Real-time monitoring              |
+| `/api/hero-image/[pageId]`  | Page-specific heroes  | 2,3   | Context-aware optimization        |
 
 ### Best Practices for Integration
 
 1. **Progressive Enhancement**: Always provide fallbacks for modern formats
-2. **Performance Monitoring**: Integrate metrics collection for continuous optimization  
+2. **Performance Monitoring**: Integrate metrics collection for continuous optimization
 3. **Caching Strategy**: Leverage multi-layer caching for optimal performance
 4. **Error Handling**: Implement graceful degradation for network failures
 5. **Accessibility**: Include proper alt text and semantic markup
@@ -1472,11 +1523,13 @@ document.addEventListener('DOMContentLoaded', () => {
 ### Migration from Earlier Phases
 
 #### Phase 1 → Phase 3
+
 - Update image URLs to use enhanced proxy with AVIF support
 - Implement performance metrics collection
 - Add multi-year gallery support
 
-#### Phase 2 → Phase 3  
+#### Phase 2 → Phase 3
+
 - Integrate performance metrics API
 - Update service worker for AVIF format handling
 - Add featured photos endpoint integration
@@ -1505,4 +1558,7 @@ document.addEventListener('DOMContentLoaded', () => {
 - Optimize for 3G and slower connections
 
 This comprehensive API documentation provides developers with everything needed to integrate the Phase 3 features of the A Lo Cubano Boulder Fest website, ensuring optimal performance, modern image formats, and detailed monitoring capabilities.
+
+```
+
 ```

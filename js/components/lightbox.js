@@ -14,7 +14,8 @@ if (typeof Lightbox === 'undefined') {
             this.categoryCounts = {};
             this.lightboxId = options.lightboxId || 'unified-lightbox';
             this.showCaption = options.showCaption || false;
-            this.showCounter = options.showCounter !== undefined ? options.showCounter : true;
+            this.showCounter =
+        options.showCounter !== undefined ? options.showCounter : true;
             this.advanced = options.advanced || false; // Enable advanced features
 
             this.init();
@@ -60,8 +61,11 @@ if (typeof Lightbox === 'undefined') {
                 // Close on background click (improved to handle nested elements)
                 lightbox.addEventListener('click', (e) => {
                     // Close if clicking on lightbox background or lightbox-content (but not on image or controls)
-                    if (e.target === lightbox ||
-                        (e.target.classList.contains('lightbox-content') && !e.target.closest('.lightbox-media-container'))) {
+                    if (
+                        e.target === lightbox ||
+            (e.target.classList.contains('lightbox-content') &&
+              !e.target.closest('.lightbox-media-container'))
+                    ) {
                         this.close();
                     }
                 });
@@ -81,12 +85,20 @@ if (typeof Lightbox === 'undefined') {
             // Keyboard navigation
             document.addEventListener('keydown', (e) => {
                 const lightbox = document.getElementById(this.lightboxId);
-                if (!lightbox || (!lightbox.classList.contains('is-open') && !lightbox.classList.contains('active'))) {
+                if (
+                    !lightbox ||
+          (!lightbox.classList.contains('is-open') &&
+            !lightbox.classList.contains('active'))
+                ) {
                     return;
                 }
 
                 // Prevent default behavior for arrow keys when lightbox is open
-                if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Escape') {
+                if (
+                    e.key === 'ArrowLeft' ||
+          e.key === 'ArrowRight' ||
+          e.key === 'Escape'
+                ) {
                     e.preventDefault();
                 }
 
@@ -225,7 +237,8 @@ if (typeof Lightbox === 'undefined') {
                     this.updateAdvancedContent();
                 }
             } else {
-                this.currentIndex = (this.currentIndex - 1 + this.images.length) % this.images.length;
+                this.currentIndex =
+          (this.currentIndex - 1 + this.images.length) % this.images.length;
                 this.updateSimpleContent();
             }
             this.updateNavigationButtons();
@@ -271,7 +284,9 @@ if (typeof Lightbox === 'undefined') {
             const counter = lightbox.querySelector('.lightbox-counter');
 
             // Update image - check if the original gallery item has an updated src
-            const galleryItem = document.querySelector(`[data-index="${this.currentIndex}"] .lazy-image`);
+            const galleryItem = document.querySelector(
+                `[data-index="${this.currentIndex}"] .lazy-image`
+            );
             let imageSrc = item.viewUrl || item.src;
 
             // If the gallery item has a successfully loaded image, use that src
@@ -287,7 +302,9 @@ if (typeof Lightbox === 'undefined') {
             img.onerror = () => {
                 img.alt = 'Image failed to load';
                 // Try to show a placeholder or retry indicator
-                const existingBtn = img.parentElement.querySelector('.lightbox-retry-btn');
+                const existingBtn = img.parentElement.querySelector(
+                    '.lightbox-retry-btn'
+                );
                 if (existingBtn) {
                     existingBtn.remove();
                 }
@@ -296,7 +313,8 @@ if (typeof Lightbox === 'undefined') {
                 retryBtn.textContent = 'Retry';
                 retryBtn.className = 'lightbox-retry-btn';
                 retryBtn.onclick = () => {
-                    img.src = imageSrc + (imageSrc.includes('?') ? '&' : '?') + 't=' + Date.now();
+                    img.src =
+            imageSrc + (imageSrc.includes('?') ? '&' : '?') + 't=' + Date.now();
                 };
                 img.parentElement.appendChild(retryBtn);
             };
@@ -324,10 +342,12 @@ if (typeof Lightbox === 'undefined') {
             }
 
             if (this.showCounter) {
-                const categoryCount = this.categoryCounts[category] || this.items.length;
-                const categoryLabel = category && typeof category === 'string' ?
-                    category.charAt(0).toUpperCase() + category.slice(1) :
-                    'Gallery';
+                const categoryCount =
+          this.categoryCounts[category] || this.items.length;
+                const categoryLabel =
+          category && typeof category === 'string'
+              ? category.charAt(0).toUpperCase() + category.slice(1)
+              : 'Gallery';
                 counter.textContent = `${categoryLabel}: ${categoryIndex + 1} / ${categoryCount}`;
             }
         }
@@ -339,7 +359,8 @@ if (typeof Lightbox === 'undefined') {
 
             if (this.advanced) {
                 prevBtn.style.display = this.currentIndex > 0 ? 'block' : 'none';
-                nextBtn.style.display = this.currentIndex < this.items.length - 1 ? 'block' : 'none';
+                nextBtn.style.display =
+          this.currentIndex < this.items.length - 1 ? 'block' : 'none';
             } else {
                 // Simple mode shows navigation for circular browsing
                 prevBtn.style.display = 'block';

@@ -3,6 +3,7 @@
 ## Base Button Styles
 
 ### Primary Button
+
 ```css
 .btn-primary {
   display: inline-flex;
@@ -32,6 +33,7 @@
 ```
 
 ### Secondary Button
+
 ```css
 .btn-secondary {
   /* Same as primary but inverted */
@@ -47,6 +49,7 @@
 ```
 
 ### Accent Button
+
 ```css
 .btn-accent {
   color: var(--color-white);
@@ -63,7 +66,9 @@
 ## Typography Buttons
 
 ### Form Button Type
+
 Used in the typographic design system.
+
 ```css
 .form-button-type {
   display: inline-block;
@@ -83,6 +88,7 @@ Used in the typographic design system.
 ```
 
 ### Glitch Button
+
 ```css
 .text-glitch-bg {
   position: relative;
@@ -91,7 +97,7 @@ Used in the typographic design system.
 
 .text-glitch-bg::before,
 .text-glitch-bg::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -115,6 +121,7 @@ Used in the typographic design system.
 ## Button Sizes
 
 ### Large
+
 ```css
 .btn-large {
   padding: var(--space-xl) var(--space-4xl);
@@ -123,6 +130,7 @@ Used in the typographic design system.
 ```
 
 ### Small
+
 ```css
 .btn-small {
   padding: var(--space-sm) var(--space-lg);
@@ -133,6 +141,7 @@ Used in the typographic design system.
 ## Special Effects
 
 ### Hover Slide Effect
+
 ```css
 .btn-slide {
   position: relative;
@@ -140,7 +149,7 @@ Used in the typographic design system.
 }
 
 .btn-slide::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
@@ -157,6 +166,7 @@ Used in the typographic design system.
 ```
 
 ### Loading State
+
 ```css
 .btn-loading {
   color: transparent;
@@ -164,7 +174,7 @@ Used in the typographic design system.
 }
 
 .btn-loading::after {
-  content: '';
+  content: "";
   position: absolute;
   width: 20px;
   height: 20px;
@@ -179,6 +189,7 @@ Used in the typographic design system.
 ```
 
 ## Accessibility
+
 - Minimum touch target of 44x44px
 - Focus states with visible outline
 - Sufficient color contrast (AA compliant)

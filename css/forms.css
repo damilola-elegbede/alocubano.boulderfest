@@ -193,7 +193,7 @@
 }
 
 .form-button-type::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
@@ -228,7 +228,7 @@
   .form-grid-type {
     grid-template-columns: 1fr;
   }
-  
+
   .volunteer-form-typographic {
     padding: var(--space-xl);
   }

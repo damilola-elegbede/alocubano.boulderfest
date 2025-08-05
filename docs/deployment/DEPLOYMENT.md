@@ -1,6 +1,7 @@
 # Deployment Guide - A Lo Cubano Boulder Fest
 
 ## Overview
+
 This is a static website that can be deployed to any static hosting service. The site is optimized for Vercel deployment but works with Netlify, GitHub Pages, or any web server.
 
 ## Pre-Deployment Checklist
@@ -17,6 +18,7 @@ This is a static website that can be deployed to any static hosting service. The
 ## Vercel Deployment (Recommended)
 
 ### 1. Push to GitHub
+
 ```bash
 git add .
 git commit -m "Ready for deployment"
@@ -24,6 +26,7 @@ git push origin main
 ```
 
 ### 2. Import to Vercel
+
 1. Go to [vercel.com](https://vercel.com)
 2. Click "New Project"
 3. Import your GitHub repository
@@ -33,7 +36,9 @@ git push origin main
 7. Click "Deploy"
 
 ### 3. Configuration
+
 The `vercel.json` file handles:
+
 - URL rewrites (clean URLs without .html)
 - Routing to the typographic design pages
 - Security headers
@@ -41,6 +46,7 @@ The `vercel.json` file handles:
 - Serverless function configuration for gallery API
 
 ### 4. Environment Variables
+
 For the Google Drive gallery integration, you need to set up environment variables in Vercel:
 
 1. Go to your project settings in Vercel
@@ -54,6 +60,7 @@ For the Google Drive gallery integration, you need to set up environment variabl
 See `GOOGLE_DRIVE_SETUP.md` for detailed instructions on obtaining these values.
 
 ### 5. Custom Domain (Optional)
+
 1. Go to project settings in Vercel
 2. Navigate to "Domains"
 3. Add your custom domain
@@ -62,16 +69,19 @@ See `GOOGLE_DRIVE_SETUP.md` for detailed instructions on obtaining these values.
 ## Alternative Deployment Options
 
 ### Netlify
+
 1. Drag and drop the project folder to Netlify
 2. Or connect GitHub repository
 3. No build settings needed
 
 ### GitHub Pages
+
 1. Enable Pages in repository settings
 2. Set source to main branch
 3. Note: URLs will include .html extension
 
 ### Traditional Web Hosting
+
 1. Upload all files via FTP
 2. Ensure `index.html` is served as the default home page
 3. Configure .htaccess for clean URLs if needed
@@ -81,7 +91,7 @@ See `GOOGLE_DRIVE_SETUP.md` for detailed instructions on obtaining these values.
 Run these checks after deployment:
 
 1. **Home Page**: `https://yourdomain.com/`
-2. **Direct Pages**: 
+2. **Direct Pages**:
    - `/about`
    - `/artists`
    - `/schedule`
@@ -95,30 +105,36 @@ Run these checks after deployment:
 ## Troubleshooting
 
 ### Pages Not Found
+
 - Check vercel.json rewrites configuration
 - Ensure all HTML files are in `/pages/typographic/`
 
 ### Styles Not Loading
+
 - Verify CSS paths are relative (`../../css/`)
 - Check file names match exactly (case-sensitive)
 
 ### Images Not Showing
+
 - Confirm image paths are correct
 - Check file extensions match references
 
 ### Forms Not Working
+
 - Verify mailto links are properly formatted
 - Test in different email clients
 
 ## Maintenance
 
 ### Updating Content
+
 1. Edit HTML files in `/pages/typographic/`
 2. Follow design patterns from Artists/Schedule pages
 3. Test locally before deploying
 4. Push to GitHub for automatic deployment
 
 ### Adding New Pages
+
 1. Copy existing page as template
 2. Update navigation in all pages
 3. Add to vercel.json if needed
@@ -127,6 +143,7 @@ Run these checks after deployment:
 ## Performance Optimization
 
 The site is already optimized with:
+
 - Minimal CSS/JS
 - Relative paths for all assets
 - Clean semantic HTML
@@ -135,6 +152,7 @@ The site is already optimized with:
 ## Support
 
 For design questions, refer to:
+
 - `/spec/README.md` - Design specifications
 - `/.claude/claude.md` - Development guidelines
 - Artists and Schedule pages as reference

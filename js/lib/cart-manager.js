@@ -7,26 +7,30 @@ import { getAnalyticsTracker } from './analytics-tracker.js';
 // Development-only logging utility
 const devLog = {
     error: (message, ...args) => {
-        if (typeof window !== 'undefined' && (
-            window.location.hostname === 'localhost' ||
-            window.location.hostname === '127.0.0.1' ||
-            window.location.port === '3000' ||
-            window.location.port === '8080' ||
-            window.location.search.includes('debug=true') ||
-            localStorage.getItem('dev_mode') === 'true'
-        )) {
+        if (
+            typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.port === '3000' ||
+        window.location.port === '8080' ||
+        window.location.search.includes('debug=true') ||
+        localStorage.getItem('dev_mode') === 'true')
+        ) {
+            // eslint-disable-next-line no-console
             console.error(message, ...args);
         }
     },
     log: (message, ...args) => {
-        if (typeof window !== 'undefined' && (
-            window.location.hostname === 'localhost' ||
-            window.location.hostname === '127.0.0.1' ||
-            window.location.port === '3000' ||
-            window.location.port === '8080' ||
-            window.location.search.includes('debug=true') ||
-            localStorage.getItem('dev_mode') === 'true'
-        )) {
+        if (
+            typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.port === '3000' ||
+        window.location.port === '8080' ||
+        window.location.search.includes('debug=true') ||
+        localStorage.getItem('dev_mode') === 'true')
+        ) {
+            // eslint-disable-next-line no-console
             console.log(message, ...args);
         }
     }
@@ -125,7 +129,8 @@ export class CartManager extends EventTarget {
         this.isExecutingQueue = true;
 
         while (this.operationQueue.length > 0) {
-            const { operationName, operation, resolve, reject } = this.operationQueue.shift();
+            const { operationName, operation, resolve, reject } =
+        this.operationQueue.shift();
 
             try {
                 const result = await operation();
@@ -297,7 +302,9 @@ export class CartManager extends EventTarget {
     }
 
     async removeDonation(donationId) {
-        const donationIndex = this.state.donations.findIndex(d => d.id === donationId);
+        const donationIndex = this.state.donations.findIndex(
+            (d) => d.id === donationId
+        );
 
         if (donationIndex !== -1) {
             const donation = this.state.donations[donationIndex];
@@ -316,7 +323,7 @@ export class CartManager extends EventTarget {
     }
 
     async updateDonation(amount) {
-        // Kept for backward compatibility, but now clears all donations and adds one
+    // Kept for backward compatibility, but now clears all donations and adds one
         if (amount < 0) {
             throw new Error('Invalid donation amount');
         }
@@ -335,12 +342,15 @@ export class CartManager extends EventTarget {
         let ticketsTotal = 0;
         let ticketCount = 0;
 
-        Object.values(this.state.tickets).forEach(ticket => {
+        Object.values(this.state.tickets).forEach((ticket) => {
             ticketsTotal += ticket.price * ticket.quantity;
             ticketCount += ticket.quantity;
         });
 
-        const donationTotal = this.state.donations.reduce((sum, donation) => sum + donation.amount, 0);
+        const donationTotal = this.state.donations.reduce(
+            (sum, donation) => sum + donation.amount,
+            0
+        );
         const donationCount = this.state.donations.length;
 
         return {
@@ -369,12 +379,14 @@ export class CartManager extends EventTarget {
                     devLog.log('Migrating old donation format to new array format');
                     if (parsed.donations.amount && parsed.donations.amount > 0) {
                         // Convert old single donation to array format
-                        parsed.donations = [{
-                            id: `donation_${Date.now()}_migrated`,
-                            amount: parsed.donations.amount,
-                            name: 'Festival Support',
-                            addedAt: parsed.donations.updatedAt || Date.now()
-                        }];
+                        parsed.donations = [
+                            {
+                                id: `donation_${Date.now()}_migrated`,
+                                amount: parsed.donations.amount,
+                                name: 'Festival Support',
+                                addedAt: parsed.donations.updatedAt || Date.now()
+                            }
+                        ];
                     } else {
                         // No donation amount, use empty array
                         parsed.donations = [];
@@ -393,16 +405,18 @@ export class CartManager extends EventTarget {
     }
 
     isValidStoredCart(data) {
-        return data &&
-               typeof data === 'object' &&
-               data.metadata &&
-               typeof data.tickets === 'object' &&
-               Array.isArray(data.donations);
+        return (
+            data &&
+      typeof data === 'object' &&
+      data.metadata &&
+      typeof data.tickets === 'object' &&
+      Array.isArray(data.donations)
+        );
     }
 
     // Event handling
     setupEventListeners() {
-        // Listen for storage changes from other tabs
+    // Listen for storage changes from other tabs
         window.addEventListener('storage', (event) => {
             if (event.key === this.storageKey) {
                 this.loadFromStorage();
@@ -417,7 +431,7 @@ export class CartManager extends EventTarget {
     }
 
     emit(eventName, detail) {
-        // Dispatch on CartManager instance (for direct listeners)
+    // Dispatch on CartManager instance (for direct listeners)
         this.dispatchEvent(new CustomEvent(eventName, { detail }));
 
         // CRITICAL FIX: Also dispatch on document for cross-component communication
@@ -426,7 +440,7 @@ export class CartManager extends EventTarget {
 
     // Validation
     async validateCart() {
-        // Remove any invalid tickets
+    // Remove any invalid tickets
         for (const [ticketType, ticket] of Object.entries(this.state.tickets)) {
             if (!ticket.price || !ticket.name || ticket.quantity <= 0) {
                 delete this.state.tickets[ticketType];
@@ -435,7 +449,7 @@ export class CartManager extends EventTarget {
 
         // Validate donations array - remove any with negative amounts
         if (Array.isArray(this.state.donations)) {
-            this.state.donations = this.state.donations.filter(donation => {
+            this.state.donations = this.state.donations.filter((donation) => {
                 return donation && typeof donation === 'object' && donation.amount > 0;
             });
         } else {

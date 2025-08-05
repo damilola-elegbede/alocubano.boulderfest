@@ -3,10 +3,16 @@
 ## Display Text Effects
 
 ### Text Gradient
+
 Creates a gradient fill effect for dramatic headlines.
+
 ```css
 .text-gradient {
-  background: linear-gradient(135deg, var(--color-red) 0%, var(--color-black) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-red) 0%,
+    var(--color-black) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -14,7 +20,9 @@ Creates a gradient fill effect for dramatic headlines.
 ```
 
 ### Text Outline
+
 Creates hollow text with visible stroke.
+
 ```css
 .text-outline {
   color: transparent;
@@ -24,7 +32,9 @@ Creates hollow text with visible stroke.
 ```
 
 ### Text Mask
+
 Creates textured or patterned text fills.
+
 ```css
 .text-mask {
   background: repeating-linear-gradient(
@@ -41,7 +51,9 @@ Creates textured or patterned text fills.
 ```
 
 ### Glitch Effect
+
 Animated distortion effect for emphasis.
+
 ```css
 .text-glitch {
   position: relative;
@@ -74,20 +86,24 @@ Animated distortion effect for emphasis.
 ## Typography Compositions
 
 ### Typewriter Effect
+
 Simulates typing animation.
+
 ```css
 .typewriter {
   overflow: hidden;
   border-right: 2px solid var(--color-black);
   white-space: nowrap;
-  animation: 
+  animation:
     typing 3.5s steps(40, end),
     blink-caret 0.75s step-end infinite;
 }
 ```
 
 ### Vertical Text
+
 For decorative sidebar elements.
+
 ```css
 .text-vertical {
   writing-mode: vertical-rl;
@@ -97,18 +113,27 @@ For decorative sidebar elements.
 ```
 
 ### Mixed Size Composition
+
 Creates dynamic text layouts.
+
 ```css
 .text-composition {
-  .text-large { font-size: var(--font-size-4xl); }
-  .text-medium { font-size: var(--font-size-2xl); }
-  .text-small { font-size: var(--font-size-lg); }
+  .text-large {
+    font-size: var(--font-size-4xl);
+  }
+  .text-medium {
+    font-size: var(--font-size-2xl);
+  }
+  .text-small {
+    font-size: var(--font-size-lg);
+  }
 }
 ```
 
 ## Text Animation Patterns
 
 ### Hover Effects
+
 ```css
 .text-hover-slide {
   position: relative;
@@ -129,6 +154,7 @@ Creates dynamic text layouts.
 ```
 
 ### Reveal Animation
+
 ```css
 .text-reveal {
   opacity: 0;
@@ -145,6 +171,7 @@ Creates dynamic text layouts.
 ```
 
 ## Best Practices
+
 1. Use display effects sparingly for maximum impact
 2. Ensure sufficient contrast for readability
 3. Provide fallbacks for webkit-specific properties

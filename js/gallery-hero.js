@@ -2,19 +2,22 @@
 (function() {
     'use strict';
 
-    console.log('🎬 Gallery hero module loading (static version)... DOM state:', document.readyState);
+    console.log(
+        '🎬 Gallery hero module loading (static version)... DOM state:',
+        document.readyState
+    );
 
     // Page-specific hero image mapping
     const HERO_IMAGES = {
-        'home': '/images/hero/home.jpg',
-        'about': '/images/hero/about.jpg',
-        'artists': '/images/hero/boulder-fest-2026-hero.jpg',
-        'schedule': '/images/hero/boulder-fest-2025-hero.jpg',
-        'gallery': '/images/hero/weekender-2026-09-hero.jpg',
-        'tickets': '/images/hero/tickets.jpg',
-        'donations': '/images/hero/donations.jpg',
-        'contact': '/images/hero/contact.jpg',
-        'default': '/images/hero/hero-default.jpg'
+        home: '/images/hero/home.jpg',
+        about: '/images/hero/about.jpg',
+        artists: '/images/hero/boulder-fest-2026-hero.jpg',
+        schedule: '/images/hero/boulder-fest-2025-hero.jpg',
+        gallery: '/images/hero/weekender-2026-09-hero.jpg',
+        tickets: '/images/hero/tickets.jpg',
+        donations: '/images/hero/donations.jpg',
+        contact: '/images/hero/contact.jpg',
+        default: '/images/hero/hero-default.jpg'
     };
 
     // Get current page ID from URL
@@ -40,13 +43,25 @@
         }
 
         // Check for new direct event-specific paths
-        if (path === '/2026-artists' || path === '/2026-schedule' || path === '/2026-gallery') {
+        if (
+            path === '/2026-artists' ||
+      path === '/2026-schedule' ||
+      path === '/2026-gallery'
+        ) {
             return 'boulder-fest-2026';
         }
-        if (path === '/2025-artists' || path === '/2025-schedule' || path === '/2025-gallery') {
+        if (
+            path === '/2025-artists' ||
+      path === '/2025-schedule' ||
+      path === '/2025-gallery'
+        ) {
             return 'boulder-fest-2025';
         }
-        if (path === '/2026-sept-artists' || path === '/2026-sept-schedule' || path === '/2026-sept-gallery') {
+        if (
+            path === '/2026-sept-artists' ||
+      path === '/2026-sept-schedule' ||
+      path === '/2026-sept-gallery'
+        ) {
             return 'weekender-2026-09';
         }
 
@@ -70,7 +85,7 @@
 
     // Get hero image for current page
     function getHeroImagePath(pageId) {
-        // Event-specific hero images
+    // Event-specific hero images
         if (pageId === 'boulder-fest-2026') {
             return '/images/hero/boulder-fest-2026-hero.jpg';
         }
@@ -135,7 +150,7 @@
 
     // Get appropriate alt text for hero image
     function getHeroAltText(pageId) {
-        // Event-specific alt texts
+    // Event-specific alt texts
         if (pageId === 'boulder-fest-2026') {
             const path = window.location.pathname;
             if (path.includes('artists')) {
@@ -179,15 +194,15 @@
         }
 
         const altTexts = {
-            'home': 'A Lo Cubano Boulder Fest - Cuban salsa festival in Boulder, Colorado',
-            'about': 'About A Lo Cubano Boulder Fest - Behind the scenes moments',
-            'artists': 'Featured Artists - Cuban salsa instructors and performers',
-            'schedule': 'Festival Schedule - Workshop sessions and social dancing',
-            'gallery': 'Photo Gallery - Memorable moments from past festivals',
-            'tickets': 'Festival Tickets - Join us for Cuban salsa in Boulder',
-            'donations': 'Support the Festival - Help grow our Cuban salsa community',
-            'contact': 'Contact Us - Connect with the A Lo Cubano team',
-            'default': 'A Lo Cubano Boulder Fest - Authentic Cuban salsa experience'
+            home: 'A Lo Cubano Boulder Fest - Cuban salsa festival in Boulder, Colorado',
+            about: 'About A Lo Cubano Boulder Fest - Behind the scenes moments',
+            artists: 'Featured Artists - Cuban salsa instructors and performers',
+            schedule: 'Festival Schedule - Workshop sessions and social dancing',
+            gallery: 'Photo Gallery - Memorable moments from past festivals',
+            tickets: 'Festival Tickets - Join us for Cuban salsa in Boulder',
+            donations: 'Support the Festival - Help grow our Cuban salsa community',
+            contact: 'Contact Us - Connect with the A Lo Cubano team',
+            default: 'A Lo Cubano Boulder Fest - Authentic Cuban salsa experience'
         };
 
         return altTexts[pageId] || altTexts['default'];
@@ -201,5 +216,4 @@
         console.log('✅ DOM already loaded');
         initializeHero();
     }
-
 })();

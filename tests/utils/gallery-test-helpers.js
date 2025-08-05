@@ -21,19 +21,19 @@ export const mockSavedState = (age = 0, itemCount = 20) => {
       name: `Workshop ${i + 1}`,
       thumbnailUrl: `/api/image-proxy/w${i + 1}`,
       viewUrl: `/api/image-proxy/w${i + 1}`,
-      category: 'workshops',
-      createdAt: new Date(Date.now() - i * 60000).toISOString()
+      category: "workshops",
+      createdAt: new Date(Date.now() - i * 60000).toISOString(),
     };
     workshops.push(item);
-    
+
     const displayItem = {
       ...item,
-      category: 'workshops',
+      category: "workshops",
       displayIndex: displayOrder.length,
-      categoryIndex: i
+      categoryIndex: i,
     };
     displayOrder.push(displayItem);
-    
+
     const itemId = `workshops_${item.id}`;
     loadedItemIds.push(itemId);
     displayedItemIds.push(itemId);
@@ -47,33 +47,35 @@ export const mockSavedState = (age = 0, itemCount = 20) => {
       name: `Social ${i + 1}`,
       thumbnailUrl: `/api/image-proxy/s${i + 1}`,
       viewUrl: `/api/image-proxy/s${i + 1}`,
-      category: 'socials',
-      createdAt: new Date(Date.now() - (workshopCount + i) * 60000).toISOString()
+      category: "socials",
+      createdAt: new Date(
+        Date.now() - (workshopCount + i) * 60000,
+      ).toISOString(),
     };
     socials.push(item);
-    
+
     const displayItem = {
       ...item,
-      category: 'socials',
+      category: "socials",
       displayIndex: displayOrder.length,
-      categoryIndex: i
+      categoryIndex: i,
     };
     displayOrder.push(displayItem);
-    
+
     const itemId = `socials_${item.id}`;
     loadedItemIds.push(itemId);
     displayedItemIds.push(itemId);
   }
 
   return {
-    timestamp: Date.now() - (age * 60 * 1000),
+    timestamp: Date.now() - age * 60 * 1000,
     allCategories: {
       workshops,
-      socials
+      socials,
     },
     categoryCounts: {
       workshops: workshops.length,
-      socials: socials.length
+      socials: socials.length,
     },
     workshopOffset: workshops.length,
     socialOffset: socials.length,
@@ -91,8 +93,8 @@ export const mockSavedState = (age = 0, itemCount = 20) => {
     successfulImages: [],
     categoryItemCounts: {
       workshops: workshops.length,
-      socials: socials.length
-    }
+      socials: socials.length,
+    },
   };
 };
 
@@ -105,7 +107,7 @@ export const mockSavedState = (age = 0, itemCount = 20) => {
 export const createMockGalleryData = (workshops = 10, socials = 5) => {
   const categories = {
     workshops: [],
-    socials: []
+    socials: [],
   };
 
   // Create workshop items
@@ -113,14 +115,14 @@ export const createMockGalleryData = (workshops = 10, socials = 5) => {
     categories.workshops.push({
       id: `w${i + 1}`,
       name: `Workshop ${i + 1}`,
-      type: 'image',
-      mimeType: 'image/jpeg',
-      category: 'workshops',
+      type: "image",
+      mimeType: "image/jpeg",
+      category: "workshops",
       thumbnailUrl: `/api/image-proxy/w${i + 1}`,
       viewUrl: `/api/image-proxy/w${i + 1}`,
       downloadUrl: `/api/image-proxy/w${i + 1}`,
       size: 1024 * 1024 * (1 + Math.random() * 4), // 1-5MB
-      createdAt: new Date(Date.now() - i * 3600000).toISOString()
+      createdAt: new Date(Date.now() - i * 3600000).toISOString(),
     });
   }
 
@@ -129,23 +131,23 @@ export const createMockGalleryData = (workshops = 10, socials = 5) => {
     categories.socials.push({
       id: `s${i + 1}`,
       name: `Social Event ${i + 1}`,
-      type: 'image',
-      mimeType: 'image/jpeg',
-      category: 'socials',
+      type: "image",
+      mimeType: "image/jpeg",
+      category: "socials",
       thumbnailUrl: `/api/image-proxy/s${i + 1}`,
       viewUrl: `/api/image-proxy/s${i + 1}`,
       downloadUrl: `/api/image-proxy/s${i + 1}`,
       size: 1024 * 1024 * (1 + Math.random() * 4), // 1-5MB
-      createdAt: new Date(Date.now() - (workshops + i) * 3600000).toISOString()
+      createdAt: new Date(Date.now() - (workshops + i) * 3600000).toISOString(),
     });
   }
 
   return {
-    year: '2025',
+    year: "2025",
     categories,
     totalCount: workshops + socials,
     cacheTimestamp: new Date().toISOString(),
-    source: 'test-mock'
+    source: "test-mock",
   };
 };
 
@@ -156,19 +158,20 @@ export const createMockGalleryData = (workshops = 10, socials = 5) => {
  */
 export const simulateStateCorruption = (state) => {
   const corrupted = JSON.parse(JSON.stringify(state)); // Deep clone
-  
+
   // Apply random corruption
   const corruptionTypes = [
     () => {
       // Mismatched counts
-      corrupted.categoryCounts.workshops = corrupted.allCategories.workshops.length + 5;
+      corrupted.categoryCounts.workshops =
+        corrupted.allCategories.workshops.length + 5;
     },
     () => {
       // Invalid display order
       corrupted.displayOrder.push({
-        id: 'invalid',
-        category: 'nonexistent',
-        displayIndex: 999
+        id: "invalid",
+        category: "nonexistent",
+        displayIndex: 999,
       });
     },
     () => {
@@ -183,12 +186,13 @@ export const simulateStateCorruption = (state) => {
     },
     () => {
       // Invalid data types
-      corrupted.allCategories = 'not-an-object';
-    }
+      corrupted.allCategories = "not-an-object";
+    },
   ];
 
   // Apply random corruption
-  const corruption = corruptionTypes[Math.floor(Math.random() * corruptionTypes.length)];
+  const corruption =
+    corruptionTypes[Math.floor(Math.random() * corruptionTypes.length)];
   corruption();
 
   return corrupted;
@@ -206,7 +210,7 @@ export const measureRestorationTime = async (scenario) => {
     duration: 0,
     memoryBefore: 0,
     memoryAfter: 0,
-    memoryDelta: 0
+    memoryDelta: 0,
   };
 
   // Measure initial memory if available
@@ -234,7 +238,7 @@ export const measureRestorationTime = async (scenario) => {
  * @returns {Object} DOM elements
  */
 export const createMockGalleryDOM = () => {
-  const container = document.createElement('div');
+  const container = document.createElement("div");
   container.innerHTML = `
     <div id="gallery-detail-loading">Loading...</div>
     <div id="gallery-detail-content" style="display: none;">
@@ -256,15 +260,15 @@ export const createMockGalleryDOM = () => {
 
   return {
     container,
-    loading: container.querySelector('#gallery-detail-loading'),
-    content: container.querySelector('#gallery-detail-content'),
-    static: container.querySelector('#gallery-detail-static'),
-    workshopsSection: container.querySelector('#workshops-section'),
-    workshopsGallery: container.querySelector('#workshops-gallery'),
-    socialsSection: container.querySelector('#socials-section'),
-    socialsGallery: container.querySelector('#socials-gallery'),
-    statsSection: container.querySelector('.gallery-stats'),
-    main: container.querySelector('main')
+    loading: container.querySelector("#gallery-detail-loading"),
+    content: container.querySelector("#gallery-detail-content"),
+    static: container.querySelector("#gallery-detail-static"),
+    workshopsSection: container.querySelector("#workshops-section"),
+    workshopsGallery: container.querySelector("#workshops-gallery"),
+    socialsSection: container.querySelector("#socials-section"),
+    socialsGallery: container.querySelector("#socials-gallery"),
+    statsSection: container.querySelector(".gallery-stats"),
+    main: container.querySelector("main"),
   };
 };
 
@@ -274,7 +278,7 @@ export const createMockGalleryDOM = () => {
  * @returns {Promise} Resolves after delay
  */
 export const waitForDOM = (delay = 0) => {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     if (delay > 0) {
       setTimeout(resolve, delay);
     } else {
@@ -293,33 +297,33 @@ export const waitForDOM = (delay = 0) => {
  */
 export const validateGalleryItem = (item) => {
   const errors = [];
-  
-  if (!item.classList.contains('gallery-item')) {
-    errors.push('Missing gallery-item class');
+
+  if (!item.classList.contains("gallery-item")) {
+    errors.push("Missing gallery-item class");
   }
 
   const index = item.dataset.index;
-  if (index === undefined || index === '') {
-    errors.push('Missing data-index attribute');
+  if (index === undefined || index === "") {
+    errors.push("Missing data-index attribute");
   }
 
   const category = item.dataset.category;
-  if (!['workshops', 'socials'].includes(category)) {
+  if (!["workshops", "socials"].includes(category)) {
     errors.push(`Invalid category: ${category}`);
   }
 
-  const img = item.querySelector('img');
+  const img = item.querySelector("img");
   if (!img) {
-    errors.push('Missing image element');
+    errors.push("Missing image element");
   } else {
     if (!img.dataset.src && !img.src) {
-      errors.push('Missing image source');
+      errors.push("Missing image source");
     }
   }
 
   return {
     valid: errors.length === 0,
-    errors
+    errors,
   };
 };
 
@@ -329,30 +333,28 @@ export const validateGalleryItem = (item) => {
  * @returns {Function} Fetch wrapper
  */
 export const simulateNetwork = (options = {}) => {
-  const {
-    latency = 0,
-    failureRate = 0,
-    bandwidth = Infinity
-  } = options;
+  const { latency = 0, failureRate = 0, bandwidth = Infinity } = options;
 
   return async (url, fetchOptions) => {
     // Simulate latency
     if (latency > 0) {
-      await new Promise(resolve => setTimeout(resolve, latency));
+      await new Promise((resolve) => setTimeout(resolve, latency));
     }
 
     // Simulate failure
     if (Math.random() < failureRate) {
-      throw new Error('Network request failed');
+      throw new Error("Network request failed");
     }
 
     // Simulate bandwidth limit (simplified)
     const response = await fetch(url, fetchOptions);
-    
+
     if (bandwidth < Infinity) {
-      const contentLength = parseInt(response.headers.get('content-length') || '0');
+      const contentLength = parseInt(
+        response.headers.get("content-length") || "0",
+      );
       const downloadTime = (contentLength / bandwidth) * 1000; // Convert to ms
-      await new Promise(resolve => setTimeout(resolve, downloadTime));
+      await new Promise((resolve) => setTimeout(resolve, downloadTime));
     }
 
     return response;
@@ -365,21 +367,25 @@ export const simulateNetwork = (options = {}) => {
  * @returns {Object} Performance summary
  */
 export const generatePerformanceReport = (metrics) => {
-  const durations = metrics.map(m => m.duration);
-  const memoryDeltas = metrics.map(m => m.memoryDelta).filter(d => d !== 0);
+  const durations = metrics.map((m) => m.duration);
+  const memoryDeltas = metrics.map((m) => m.memoryDelta).filter((d) => d !== 0);
 
   return {
     timing: {
       min: Math.min(...durations),
       max: Math.max(...durations),
       average: durations.reduce((a, b) => a + b, 0) / durations.length,
-      median: durations.sort((a, b) => a - b)[Math.floor(durations.length / 2)]
+      median: durations.sort((a, b) => a - b)[Math.floor(durations.length / 2)],
     },
-    memory: memoryDeltas.length > 0 ? {
-      min: Math.min(...memoryDeltas),
-      max: Math.max(...memoryDeltas),
-      average: memoryDeltas.reduce((a, b) => a + b, 0) / memoryDeltas.length
-    } : null,
-    sampleSize: metrics.length
+    memory:
+      memoryDeltas.length > 0
+        ? {
+            min: Math.min(...memoryDeltas),
+            max: Math.max(...memoryDeltas),
+            average:
+              memoryDeltas.reduce((a, b) => a + b, 0) / memoryDeltas.length,
+          }
+        : null,
+    sampleSize: metrics.length,
   };
 };

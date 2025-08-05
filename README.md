@@ -7,10 +7,12 @@ The official website for **A Lo Cubano Boulder Fest**, Boulder's premier Cuban s
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 1. Copy `.env.example` to `.env.local` and add your Google Drive credentials
 2. Install Node.js dependencies: `npm install`
 
 ### Start the server
+
 ```bash
 # Full development server with API support
 npm start
@@ -33,6 +35,7 @@ Then open: **http://localhost:3000**
 ## 🎨 Design Philosophy
 
 The website features a **typographic-forward design** that treats text as art:
+
 - Multiple font families (Bebas Neue, Playfair Display, Space Mono)
 - Creative text animations and effects
 - Experimental typography layouts
@@ -82,6 +85,7 @@ alocubano.boulderfest/
 ## 🎯 Key Features
 
 ### Content
+
 - **Home**: Festival overview with dates and highlights
 - **About**: Festival story, board of directors, and growth timeline
 - **Artists**: 2026 instructor lineup and workshops
@@ -91,6 +95,7 @@ alocubano.boulderfest/
 - **Donations**: Support the festival with floating cart integration
 
 ### Technical
+
 - ✅ Typographic design system
 - ✅ Mobile-responsive layouts with slide-in navigation
 - ✅ Touch-optimized interactions and 44px minimum touch targets
@@ -104,6 +109,8 @@ alocubano.boulderfest/
 - ✅ Lightbox viewer for photos and videos
 - ✅ Serverless functions on Vercel
 - ✅ Floating cart system with intelligent page-specific visibility
+- ✅ Stripe Checkout Sessions for secure, streamlined payments
+- ✅ PCI-compliant payment processing with built-in fraud protection
 
 ## 👥 Board of Directors
 
@@ -122,10 +129,12 @@ alocubano.boulderfest/
 ## 🛠️ Development
 
 ### Requirements
+
 - Node.js 18+ and npm
 - Modern web browser (Chrome, Firefox, Safari, Edge)
 
 ### Running Locally
+
 1. Clone the repository
 2. Navigate to project directory
 3. Run `npm install` to install dependencies
@@ -133,6 +142,7 @@ alocubano.boulderfest/
 5. Open http://localhost:3000 in your browser
 
 ### Available Scripts
+
 - `npm start` - Start Vercel development server with full API support (port 3000)
 - `npm run start-vercel-dev` - Same as npm start
 - `npm run serve:simple` - Simple HTTP server without API functions (port 8000)
@@ -145,6 +155,7 @@ alocubano.boulderfest/
 ## Testing
 
 ### Quick Start
+
 ```bash
 # Run all tests
 npm test
@@ -154,21 +165,25 @@ npm run test:integration
 ```
 
 ### Test Categories
+
 - **Unit Tests**: Core functionality validation
-- **Integration Tests**: Component interaction validation  
+- **Integration Tests**: Component interaction validation
 - **Performance Tests**: Load time and memory usage validation
 - **Accessibility Tests**: WCAG AA compliance validation
 
 ### Quality Gates
+
 - **Pre-commit**: Linting + fast unit tests
 - **Pre-push**: Full test suite + integration tests
 - **CI/CD**: Multi-environment validation + performance benchmarks
 
 ### Documentation
+
 - [Testing Strategy](docs/testing/TESTING_STRATEGY.md)
 - [Troubleshooting Guide](docs/testing/TROUBLESHOOTING.md)
 
 ### Maintenance
+
 ```bash
 # Check test health
 node scripts/test-maintenance.js health
@@ -185,6 +200,7 @@ node scripts/test-maintenance.js flaky
 - Mobile browsers (iOS Safari, Chrome)
 
 ### Mobile Navigation Features
+
 - **Slide-in menu**: Right-side navigation panel with backdrop blur
 - **Touch optimization**: 44px minimum touch targets for accessibility
 - **Gesture support**: Tap outside or ESC key to close menu
@@ -193,6 +209,7 @@ node scripts/test-maintenance.js flaky
 - **Responsive breakpoint**: Activates at 768px and below
 
 ### Floating Cart System
+
 - **Intelligent visibility**: Appears on all pages except 404 and index redirect
 - **Purchase pages**: Always visible on tickets and donations pages
 - **Content pages**: Visible only when cart contains items (about, artists, schedule, gallery)
@@ -209,5 +226,6 @@ Founded by Marcela Lay in 2023, A Lo Cubano Boulder Fest has grown from a single
 This project is licensed under the **Apache License 2.0**. See the `LICENSE` file for details.
 
 ### Third-Party Assets
+
 - The Instagram SVG icon is from [SVGRepo](https://www.svgrepo.com/svg/349410/instagram) and is used under the terms provided by SVGRepo. Please review their terms if you plan to redistribute or modify the icon.
-- All other images and assets are property of their respective owners. 
+- All other images and assets are property of their respective owners.

@@ -29,7 +29,7 @@ class ProgressiveImageLoader {
     setupIntersectionObserver() {
         this.imageObserver = new IntersectionObserver(
             (entries) => {
-                entries.forEach(entry => {
+                entries.forEach((entry) => {
                     if (entry.isIntersecting) {
                         this.loadProgressiveImage(entry.target);
                         this.imageObserver.unobserve(entry.target);
@@ -95,7 +95,7 @@ class ProgressiveImageLoader {
     }
 
     showSkeletonPlaceholder(imageElement, metadata) {
-        // Create skeleton container if it doesn't exist
+    // Create skeleton container if it doesn't exist
         let skeleton = imageElement.nextElementSibling;
         if (!skeleton || !skeleton.classList.contains('image-skeleton')) {
             skeleton = this.createSkeletonElement(metadata);
@@ -151,14 +151,13 @@ class ProgressiveImageLoader {
 
             // Show blurred thumbnail
             this.showBlurredPreview(imageElement, blurredDataUrl);
-
         } catch (error) {
             console.warn('[Progressive] Failed to load thumbnail:', error);
         }
     }
 
     createBlurredVersion(image) {
-        // Scale down for blur effect
+    // Scale down for blur effect
         const scale = 0.1;
         this.canvas.width = image.width * scale;
         this.canvas.height = image.height * scale;
@@ -171,7 +170,7 @@ class ProgressiveImageLoader {
     }
 
     showBlurredPreview(imageElement, blurredDataUrl) {
-        // Create or update blur overlay
+    // Create or update blur overlay
         let blurOverlay = imageElement.parentNode.querySelector('.blur-overlay');
         if (!blurOverlay) {
             blurOverlay = document.createElement('div');
@@ -217,7 +216,6 @@ class ProgressiveImageLoader {
 
             // Transition to full image
             this.transitionToFullImage(imageElement, fullImg);
-
         } catch (error) {
             console.error('[Progressive] Failed to load full image:', error);
             this.handleImageLoadError(imageElement, metadata);
@@ -225,7 +223,7 @@ class ProgressiveImageLoader {
     }
 
     transitionToFullImage(imageElement, fullImg) {
-        // Set the full image source
+    // Set the full image source
         imageElement.src = fullImg.src;
         imageElement.style.opacity = '1';
 
@@ -248,13 +246,15 @@ class ProgressiveImageLoader {
         imageElement.dataset.progressive = 'loaded';
 
         // Dispatch custom event
-        imageElement.dispatchEvent(new CustomEvent('progressiveload', {
-            detail: { url: fullImg.src }
-        }));
+        imageElement.dispatchEvent(
+            new CustomEvent('progressiveload', {
+                detail: { url: fullImg.src }
+            })
+        );
     }
 
     handleImageLoadError(imageElement, metadata) {
-        // Show error placeholder
+    // Show error placeholder
         const errorPlaceholder = this.createErrorPlaceholder(metadata);
         imageElement.src = errorPlaceholder;
         imageElement.style.opacity = '1';
@@ -310,7 +310,6 @@ class ProgressiveImageLoader {
             const rgb = this.calculateAverageColor(imageData.data);
 
             return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
-
         } catch (error) {
             console.warn('[Progressive] Failed to extract dominant color:', error);
             return '#f0f0f0';
@@ -318,7 +317,9 @@ class ProgressiveImageLoader {
     }
 
     calculateAverageColor(data) {
-        let r = 0, g = 0, b = 0;
+        let r = 0,
+            g = 0,
+            b = 0;
         const pixelCount = data.length / 4;
 
         for (let i = 0; i < data.length; i += 4) {
@@ -336,7 +337,7 @@ class ProgressiveImageLoader {
 
     // Public API methods
     preloadImages(imageElements) {
-        imageElements.forEach(img => {
+        imageElements.forEach((img) => {
             if (img.dataset.src && !img.classList.contains('progressive-loaded')) {
                 this.observeImage(img);
             }

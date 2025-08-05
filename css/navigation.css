@@ -8,7 +8,12 @@
   right: 0;
   z-index: 1000;
   padding: var(--space-lg) 0;
-  background: linear-gradient(to bottom, var(--color-white) 0%, var(--color-white) 90%, transparent 100%);
+  background: linear-gradient(
+    to bottom,
+    var(--color-white) 0%,
+    var(--color-white) 90%,
+    transparent 100%
+  );
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--color-gray-200);
 }
@@ -182,7 +187,7 @@
 }
 
 .typographic .nav-link.is-active::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -4px;
   left: 0;
@@ -198,7 +203,7 @@
 }
 
 .typographic .nav-trigger.is-active::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -4px;
   left: 0;
@@ -214,7 +219,7 @@
 }
 
 .typographic .nav-item.is-active .nav-trigger::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -4px;
   left: 0;
@@ -235,7 +240,7 @@
 }
 
 .nav-link::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;
@@ -267,7 +272,7 @@
 }
 
 .nav-trigger.is-active::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;
@@ -283,7 +288,7 @@
 }
 
 .nav-item.is-active .nav-trigger::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;
@@ -409,7 +414,7 @@
     right: var(--space-xl);
     z-index: 1001 !important; /* Always above mobile menu */
   }
-  
+
   /* Mobile navigation - starts off-screen, slides in when opened */
   .typographic .nav-list,
   .nav-list {
@@ -437,7 +442,7 @@
     padding-top: var(--space-4xl);
     padding-bottom: var(--space-xl);
   }
-  
+
   .typographic .nav-list.is-open,
   .nav-list.is-open {
     /* Slide in when opened */
@@ -447,7 +452,7 @@
   /* Mobile menu backdrop */
   .typographic .nav-list.is-open::before,
   .typographic .nav-list.is-active::before {
-    content: '';
+    content: "";
     position: fixed;
     top: 0;
     left: 0;
@@ -457,7 +462,7 @@
     z-index: -1;
     pointer-events: none;
   }
-  
+
   .typographic .nav-list.is-open .nav-link,
   .nav-list.is-open .nav-link,
   .typographic .nav-list.is-open .nav-trigger,
@@ -489,7 +494,7 @@
 
   .typographic .nav-list.is-open .nav-link::before,
   .nav-list.is-open .nav-link::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: -100%;
@@ -499,19 +504,19 @@
     transition: left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
     z-index: -1;
   }
-  
+
   /* Remove background effects for nav-trigger to prevent Events highlighting */
   .typographic .nav-list.is-open .nav-trigger::before,
   .nav-list.is-open .nav-trigger::before {
     display: none;
   }
-  
+
   .typographic .nav-list.is-open .nav-link:hover,
   .nav-list.is-open .nav-link:hover {
     color: var(--color-white) !important;
     transform: translateX(8px) !important;
   }
-  
+
   /* Keep nav-trigger hover behavior minimal - no background changes */
   .typographic .nav-list.is-open .nav-trigger:hover,
   .nav-list.is-open .nav-trigger:hover {
@@ -523,13 +528,13 @@
   .nav-list.is-open .nav-link:hover::before {
     left: 0 !important;
   }
-  
+
   /* Prevent background slide-in for nav-trigger */
   .typographic .nav-list.is-open .nav-trigger:hover::before,
   .nav-list.is-open .nav-trigger:hover::before {
     display: none !important;
   }
-  
+
   .typographic .nav-list.is-open .nav-link.is-active,
   .nav-list.is-open .nav-link.is-active,
   .typographic .nav-list.is-open .nav-trigger.is-active,
@@ -547,11 +552,11 @@
     margin: 0;
     padding: 0;
   }
-  
 }
 
 /* Main content spacing */
-main, .main-content {
+main,
+.main-content {
   margin-top: calc(var(--space-4xl) + var(--space-lg));
 }
 
@@ -564,7 +569,7 @@ main, .main-content {
 :root {
   /* Color RGB Values for rgba() usage */
   --color-red-rgb: 204, 41, 54; /* RGB values for #CC2936 */
-  
+
   /* Dropdown Layout Variables */
   --dropdown-offset-y: var(--space-sm);
   --dropdown-min-width: 200px;
@@ -574,7 +579,7 @@ main, .main-content {
   --dropdown-separator-height: 1px;
   --dropdown-border-radius: 4px;
   --dropdown-backdrop-blur: 20px;
-  
+
   /* Cuban Dance Animation Variables */
   --salsa-spring-easing: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --cuban-rhythm-delay: 0.05s;
@@ -582,18 +587,18 @@ main, .main-content {
   --dance-subtle-rotation: 0.5deg;
   --salsa-fade-timing: 200ms;
   --dropdown-slide-distance: var(--space-sm);
-  
+
   /* Event-Specific Color Themes */
-  --boulder-fest-primary: var(--color-red);    /* #CC2936 */
+  --boulder-fest-primary: var(--color-red); /* #CC2936 */
   --boulder-fest-secondary: var(--color-blue); /* #5B6BB5 */
-  --weekender-primary: var(--color-blue);     /* Blue - on brand */
-  --weekender-secondary: var(--color-red);   /* Red - on brand */
-  
+  --weekender-primary: var(--color-blue); /* Blue - on brand */
+  --weekender-secondary: var(--color-red); /* Red - on brand */
+
   /* Mobile Dropdown Variables */
   --mobile-dropdown-padding: var(--space-lg);
   --mobile-accordion-timing: 0.35s;
   --touch-safe-target: 48px;
-  
+
   /* Z-index Variables */
   --z-dropdown: 1100;
 }
@@ -611,7 +616,7 @@ main, .main-content {
 
 /* Dropdown Arrow Indicator */
 .nav-dropdown-toggle::after {
-  content: '';
+  content: "";
   display: inline-block;
   width: 0;
   height: 0;
@@ -652,11 +657,13 @@ main, .main-content {
 /* Salsa-Inspired Entry Animation */
 @keyframes salsaDropdownEntry {
   0% {
-    transform: translateX(-50%) translateY(var(--dance-bounce-height)) scale(0.95) rotate(-1deg);
+    transform: translateX(-50%) translateY(var(--dance-bounce-height))
+      scale(0.95) rotate(-1deg);
     opacity: 0;
   }
   30% {
-    transform: translateX(-50%) translateY(2px) scale(1.02) rotate(var(--dance-subtle-rotation));
+    transform: translateX(-50%) translateY(2px) scale(1.02)
+      rotate(var(--dance-subtle-rotation));
     opacity: 0.8;
   }
   60% {
@@ -709,11 +716,12 @@ main, .main-content {
 
 /* Cuban Hip Movement Hover Animation */
 @keyframes cubanHipMovement {
-  0%, 100% { 
-    transform: translateX(0) rotate(0deg); 
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
   }
-  50% { 
-    transform: translateX(2px) rotate(var(--dance-subtle-rotation)); 
+  50% {
+    transform: translateX(2px) rotate(var(--dance-subtle-rotation));
   }
 }
 
@@ -725,13 +733,17 @@ main, .main-content {
 
 /* Background Slide Animation */
 .nav-dropdown-link::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, var(--boulder-fest-primary), var(--boulder-fest-secondary));
+  background: linear-gradient(
+    135deg,
+    var(--boulder-fest-primary),
+    var(--boulder-fest-secondary)
+  );
   transition: left var(--transition-base) var(--salsa-spring-easing);
   z-index: -1;
   border-radius: 2px;
@@ -827,12 +839,20 @@ main, .main-content {
 
 /* Boulder Fest Theme (Default - Red/Blue) */
 .nav-dropdown[data-theme="boulder-fest"] .nav-dropdown-link::before {
-  background: linear-gradient(135deg, var(--boulder-fest-primary), var(--boulder-fest-secondary));
+  background: linear-gradient(
+    135deg,
+    var(--boulder-fest-primary),
+    var(--boulder-fest-secondary)
+  );
 }
 
 /* Weekender Theme (Orange/Teal) */
 .nav-dropdown[data-theme="weekender"] .nav-dropdown-link::before {
-  background: linear-gradient(135deg, var(--weekender-primary), var(--weekender-secondary));
+  background: linear-gradient(
+    135deg,
+    var(--weekender-primary),
+    var(--weekender-secondary)
+  );
 }
 
 /* Event-specific toggle colors */
@@ -863,14 +883,15 @@ main, .main-content {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transition: max-height var(--mobile-accordion-timing) var(--salsa-spring-easing);
+    transition: max-height var(--mobile-accordion-timing)
+      var(--salsa-spring-easing);
   }
-  
+
   .nav-dropdown.is-open .nav-dropdown-menu {
     max-height: 400px; /* Adjust based on content */
     padding: var(--mobile-dropdown-padding) 0;
   }
-  
+
   /* Mobile dropdown items styling */
   .nav-dropdown-link {
     padding: var(--space-md) var(--mobile-dropdown-padding);
@@ -881,13 +902,13 @@ main, .main-content {
     backdrop-filter: blur(10px);
     border-radius: var(--dropdown-border-radius);
   }
-  
+
   .nav-dropdown-link:hover {
     border-left-color: var(--boulder-fest-primary);
     background: rgba(255, 255, 255, 0.2);
     transform: translateX(var(--space-xs));
   }
-  
+
   /* Mobile accordion arrow */
   .nav-dropdown-toggle::after {
     border-top-width: 6px;
@@ -895,12 +916,12 @@ main, .main-content {
     border-left-width: 6px;
     margin-left: var(--space-sm);
   }
-  
+
   /* Prevent desktop hover states on mobile */
   .nav-dropdown:hover .nav-dropdown-menu {
     animation: none;
   }
-  
+
   /* Mobile touch optimization */
   .nav-dropdown-toggle {
     min-height: var(--touch-safe-target);
@@ -920,7 +941,7 @@ main, .main-content {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
-  
+
   .nav-dropdown-link {
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
   }
@@ -931,7 +952,7 @@ main, .main-content {
   .nav-dropdown-menu {
     will-change: max-height;
   }
-  
+
   .nav-dropdown-link {
     will-change: transform, background-color;
   }
@@ -966,7 +987,7 @@ main, .main-content {
     background: var(--color-white);
     border: 2px solid var(--color-black);
   }
-  
+
   .nav-dropdown-link {
     border-bottom: 1px solid var(--color-gray-300);
   }
@@ -978,12 +999,12 @@ main, .main-content {
     animation: none;
     transition: opacity var(--transition-fast);
   }
-  
+
   .nav-dropdown-link {
     animation: none;
     transition: color var(--transition-fast);
   }
-  
+
   .nav-dropdown-toggle::after {
     transition: transform var(--transition-fast);
   }
@@ -1003,7 +1024,7 @@ main, .main-content {
 
 /* Critical CSS Strategy - Above the Fold */
 @media (min-width: 769px) {
-  .nav-dropdown:nth-child(-n+3) .nav-dropdown-menu {
+  .nav-dropdown:nth-child(-n + 3) .nav-dropdown-menu {
     will-change: transform, opacity, visibility;
   }
 }
@@ -1185,7 +1206,7 @@ main, .main-content {
   top: 0;
   z-index: 999;
   backdrop-filter: blur(10px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 /* Event Navigation List */
@@ -1243,7 +1264,7 @@ main, .main-content {
 }
 
 .typographic .event-nav-link.is-active::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -4px;
   left: 0;
@@ -1254,7 +1275,7 @@ main, .main-content {
 
 /* Alternative styling for non-typographic theme */
 .event-nav-link::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;
@@ -1281,12 +1302,12 @@ main, .main-content {
     padding: 0 var(--space-md);
     gap: var(--space-md);
   }
-  
+
   .event-nav-link {
     white-space: nowrap;
     font-size: var(--font-size-xs);
   }
-  
+
   .event-subnav {
     position: static;
   }
@@ -1297,7 +1318,7 @@ main, .main-content {
    ================================================================= */
 
 .nav-menu-type a::before {
-  content: '[';
+  content: "[";
   position: absolute;
   left: -1em;
   opacity: 0;
@@ -1305,7 +1326,7 @@ main, .main-content {
 }
 
 .nav-menu-type a::after {
-  content: ']';
+  content: "]";
   position: absolute;
   right: -1em;
   opacity: 0;
@@ -1337,4 +1358,3 @@ main, .main-content {
 .skip-link:focus {
   top: 6px;
 }
-
