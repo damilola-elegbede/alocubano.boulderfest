@@ -68,7 +68,7 @@ describe("Stripe Webhook Handler - Checkout Session Events", () => {
 
     // Import the handler after mocking
     const module = await import(
-      "/Users/damilola/Documents/Projects/alocubano.boulderfest/api/payments/stripe-webhook.js"
+      "../../api/payments/stripe-webhook.js"
     );
     webhookHandler = module.default;
   });
