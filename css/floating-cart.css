@@ -578,6 +578,11 @@
   .checkout-error-content {
     animation: none;
   }
+  
+  /* Stop spinner rotation for reduced motion */
+  .checkout-loading-spinner {
+    animation: none;
+  }
 }
 
 /* Dark mode support */
