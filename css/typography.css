@@ -1,26 +1,26 @@
 /* A Lo Cubano Boulder Fest - Design 4: Typographic */
 
 /* Import base design system */
-@import url('/css/base.css');
-@import url('/css/navigation.css');
-@import url('/css/forms.css');
+@import url("/css/base.css");
+@import url("/css/navigation.css");
+@import url("/css/forms.css");
 
 /* Import Google Fonts for experimental typography */
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap");
 
 /* Custom Font Faces for Display Typography */
 :root {
-  --font-display: 'Bebas Neue', sans-serif;
-  --font-accent: 'Playfair Display', serif;
-  --font-code: 'Space Mono', monospace;
-  
+  --font-display: "Bebas Neue", sans-serif;
+  --font-accent: "Playfair Display", serif;
+  --font-code: "Space Mono", monospace;
+
   /* Typography-specific variables */
   --letter-spacing-tight: -0.05em;
   --letter-spacing-normal: 0;
   --letter-spacing-wide: 0.05em;
   --letter-spacing-wider: 0.1em;
   --letter-spacing-widest: 0.2em;
-  
+
   --line-height-none: 1;
   --line-height-tight: 1.1;
   --line-height-snug: 1.25;
@@ -38,7 +38,9 @@ body {
   color: var(--color-black);
   background-color: var(--color-white);
   text-rendering: optimizeLegibility;
-  font-feature-settings: "kern" 1, "liga" 1;
+  font-feature-settings:
+    "kern" 1,
+    "liga" 1;
 }
 
 /* Typography-based Navigation */
@@ -48,7 +50,6 @@ body {
   margin: 0;
   padding: 0;
 }
-
 
 /* fadeInUp animation - used by other components */
 @keyframes fadeInUp {
@@ -254,7 +255,7 @@ body {
 }
 
 .form-button-type::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
@@ -298,7 +299,8 @@ body {
 }
 
 @keyframes letterDance {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0) rotate(0deg);
   }
   50% {
@@ -338,7 +340,8 @@ body {
 }
 
 @keyframes glitch-1 {
-  0%, 100% {
+  0%,
+  100% {
     clip-path: inset(0 0 0 0);
     transform: translate(0);
   }
@@ -361,7 +364,8 @@ body {
 }
 
 @keyframes glitch-2 {
-  0%, 100% {
+  0%,
+  100% {
     clip-path: inset(0 0 0 0);
     transform: translate(0);
   }
@@ -392,7 +396,7 @@ body {
 }
 
 .text-variable:hover {
-  font-variation-settings: 'wght' 900;
+  font-variation-settings: "wght" 900;
   letter-spacing: var(--letter-spacing-tight);
   color: var(--color-blue);
 }
@@ -488,7 +492,8 @@ body {
 }
 
 @keyframes glitchDivider {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: translate(-50%, -50%) skew(0deg);
   }
@@ -521,8 +526,12 @@ body {
 }
 
 @keyframes rotateText {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .text-circular text {
@@ -648,7 +657,7 @@ body {
 }
 
 .text-glitch-bg::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
@@ -732,7 +741,11 @@ body {
 
 .pricing-card-type.vip {
   border-color: var(--color-red);
-  background: linear-gradient(135deg, var(--color-white) 0%, var(--color-gray-100) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-white) 0%,
+    var(--color-gray-100) 100%
+  );
 }
 
 /* Add-ons layout */
@@ -768,12 +781,12 @@ body {
     font-size: var(--font-size-2xl);
     gap: var(--space-xs);
   }
-  
+
   .typographic .logo-main,
   .typographic .logo-sub {
     font-size: var(--font-size-base);
   }
-  
+
   .typographic .logo-separator {
     font-size: var(--font-size-lg);
   }
@@ -791,32 +804,32 @@ body {
   .nav-menu-type {
     gap: var(--space-lg);
   }
-  
+
   .nav-menu-type a {
     font-size: var(--font-size-xs);
   }
-  
+
   .text-composition {
     grid-template-columns: 1fr;
     gap: var(--space-lg);
   }
-  
+
   .text-block-large,
   .text-block-vertical,
   .text-block-small,
   .text-block-mono {
     grid-column: span 1;
   }
-  
+
   .text-block-vertical {
     writing-mode: horizontal-tb;
     text-align: left;
   }
-  
+
   .text-glitch {
     font-size: var(--font-size-3xl);
   }
-  
+
   /* .footer-wordmark - removed */
 }
 
@@ -824,21 +837,21 @@ body {
   .hero-typographic {
     padding: var(--space-3xl) var(--space-sm);
   }
-  
+
   .hero-subtitle {
     font-size: var(--font-size-sm);
     white-space: normal;
   }
-  
+
   .gallery-typographic {
     grid-template-columns: 1fr;
     gap: var(--space-lg);
   }
-  
+
   .form-input-type {
     font-size: var(--font-size-lg);
   }
-  
+
   /* Mobile logo adjustments */
   .typographic .logo-text {
     font-size: var(--font-size-xl);
@@ -846,20 +859,20 @@ body {
     gap: var(--space-xs);
     text-align: center;
   }
-  
+
   .typographic .logo-main {
     font-size: var(--font-size-sm);
   }
-  
+
   .typographic .logo-separator {
     display: none;
   }
-  
+
   .typographic .logo-sub {
     font-size: var(--font-size-xs);
     opacity: 0.8;
   }
-  
+
   /* Mobile ticket styling */
   .form-button-type {
     padding: var(--space-md) var(--space-xl);
@@ -867,33 +880,33 @@ body {
     width: 100%;
     text-align: center;
   }
-  
+
   .pricing-card-type,
   .addon-card-type {
     padding: var(--space-lg);
   }
-  
+
   /* Mobile pricing layout */
   .pricing-typographic {
     grid-template-columns: 1fr;
     gap: var(--space-xl);
   }
-  
+
   .pricing-card-type.featured {
     transform: none;
     order: -1;
   }
-  
+
   .addons-typographic,
   .group-tiers-typographic {
     grid-template-columns: 1fr;
     gap: var(--space-lg);
   }
-  
+
   .form-grid-type {
     grid-template-columns: 1fr;
   }
-  
+
   .text-outline {
     -webkit-text-stroke: 1px var(--color-black);
     text-stroke: 1px var(--color-black);
@@ -908,22 +921,22 @@ body {
     color: black;
     background: white;
   }
-  
+
   .nav-typographic,
   .text-glitch::before,
   .text-glitch::after {
     display: none;
   }
-  
+
   .hero-title-massive {
     font-size: 48pt;
     page-break-after: avoid;
   }
-  
+
   .text-block-large {
     font-size: 24pt;
   }
-  
+
   .text-mask {
     -webkit-text-fill-color: black;
     text-fill-color: black;
@@ -939,11 +952,11 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  
+
   .text-circular svg {
     animation: none;
   }
-  
+
   .hero-subtitle {
     animation: none;
     max-width: 100%;
@@ -958,11 +971,11 @@ body {
     -webkit-text-fill-color: currentColor;
     text-fill-color: currentColor;
   }
-  
+
   .form-input-type {
     border-bottom-width: 3px;
   }
-  
+
   .gallery-item-type {
     border-width: 2px;
     border-color: var(--color-black);

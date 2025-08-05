@@ -13,11 +13,13 @@ This toolkit provides comprehensive link extraction, categorization, validation,
 ## Features
 
 ### Link Extraction
+
 - Extracts all `href`, `src`, and `action` attributes from HTML files
 - Captures metadata: source file, line number, context, attributes
 - Handles the specific HTML structure used in the A Lo Cubano website
 
 ### Link Categorization
+
 - **Navigation links**: Header/footer navigation (nav, header, footer context)
 - **Content links**: Body content links (main content area)
 - **Asset links**: CSS, JS, images, fonts (by file extension)
@@ -27,6 +29,7 @@ This toolkit provides comprehensive link extraction, categorization, validation,
 - **Anchor links**: Internal page anchors (`#section`)
 
 ### Validation & Analysis
+
 - **Internal link validation**: Check if files/routes exist
 - **External link validation**: HTTP status code checking (optional)
 - **Accessibility checking**: Missing alt text, aria-labels, rel attributes
@@ -105,7 +108,9 @@ project/
 ## Core Classes
 
 ### `LinkInfo`
+
 Data class containing information about a single link:
+
 ```python
 @dataclass
 class LinkInfo:
@@ -122,7 +127,9 @@ class LinkInfo:
 ```
 
 ### `ParseResults`
+
 Container for categorized parsing results:
+
 ```python
 @dataclass
 class ParseResults:
@@ -137,20 +144,26 @@ class ParseResults:
 ```
 
 ### `ALCBFHTMLParser`
+
 Specialized HTML parser for the A Lo Cubano website structure:
+
 - Tracks parsing context (header, nav, main, footer)
 - Extracts links with proper categorization metadata
 - Handles the specific HTML patterns used in the project
 
 ### `LinkCategorizer`
+
 Categorizes extracted links based on:
+
 - URL patterns (internal vs external, social domains)
 - File extensions (assets)
 - HTML context (navigation areas)
 - Link attributes
 
 ### `LinkValidator`
+
 Validates links and checks accessibility:
+
 - Internal link validation (file existence)
 - External link HTTP status checking
 - Accessibility attribute validation
@@ -159,19 +172,25 @@ Validates links and checks accessibility:
 ## Website-Specific Features
 
 ### Navigation Detection
+
 Automatically identifies navigation links based on:
+
 - HTML context (header, nav, footer elements)
 - Known navigation paths (`/home`, `/about`, `/artists`, etc.)
 - CSS classes and ARIA labels
 
 ### Social Media Recognition
+
 Recognizes social media platforms:
+
 - Instagram (`instagram.com/alocubanoboulder`)
 - WhatsApp (`chat.whatsapp.com/...`)
 - Facebook, Twitter, YouTube, etc.
 
 ### Asset Classification
+
 Categorizes assets by extension:
+
 - Stylesheets: `.css`
 - Scripts: `.js`
 - Images: `.png`, `.jpg`, `.svg`, `.webp`
@@ -181,6 +200,7 @@ Categorizes assets by extension:
 ## Sample Output
 
 ### Quick Analysis
+
 ```
 A Lo Cubano Boulder Fest - Quick Link Analysis
 ==================================================
@@ -202,13 +222,15 @@ External domains:
 ```
 
 ### Category Display
+
 ```bash
 python3 tools/link-validation/link_analyzer.py --category social
 ```
+
 ```
 SOCIAL LINKS (16 found)
 ==================================================
-https://instagram.com/alocubanoboulder | home.html     | 
+https://instagram.com/alocubanoboulder | home.html     |
 https://chat.whatsapp.com/...          | home.html     |
 ...
 ```
@@ -224,14 +246,14 @@ def test_all_internal_links_valid():
     results = extractor.parse_project()
     validator = LinkValidator()
     validation = validator.validate_internal_links(results)
-    
+
     assert len(validation['missing']) == 0, f"Missing links: {validation['missing']}"
 
 def test_accessibility_compliance():
     analyzer = LinkAnalyzer()
     results, validation = analyzer.run_full_analysis()
     accessibility_issues = validation['accessibility']
-    
+
     # Check for critical accessibility issues
     assert len(accessibility_issues['missing_aria_label']) < 5
     assert len(accessibility_issues['external_without_rel']) == 0
@@ -254,6 +276,7 @@ def test_accessibility_compliance():
 ## Extending the Parser
 
 ### Adding New Link Categories
+
 ```python
 # In LinkCategorizer.categorize_link()
 if href.endswith('.pdf'):
@@ -261,6 +284,7 @@ if href.endswith('.pdf'):
 ```
 
 ### Custom Validation Rules
+
 ```python
 # In LinkValidator
 def validate_custom_rule(self, link: LinkInfo) -> bool:
@@ -269,6 +293,7 @@ def validate_custom_rule(self, link: LinkInfo) -> bool:
 ```
 
 ### Additional Metadata Extraction
+
 ```python
 # In ALCBFHTMLParser.handle_starttag()
 if 'data-custom' in attrs_dict:
@@ -285,7 +310,9 @@ if 'data-custom' in attrs_dict:
 4. **Memory usage**: For very large sites, consider processing files in batches
 
 ### Debug Mode
+
 Add debug prints in the parser:
+
 ```python
 # In ALCBFHTMLParser
 def handle_starttag(self, tag, attrs):

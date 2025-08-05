@@ -7,11 +7,13 @@ This guide provides a comprehensive walkthrough for migrating from Stripe Paymen
 ## Pre-Migration Checklist
 
 ### Technical Requirements
-- Node.js 16+ 
+
+- Node.js 16+
 - Stripe API version 2023-10-16 or later
 - Updated Stripe library (`stripe@latest`)
 
 ### Preparation Steps
+
 1. Backup current production database
 2. Update Stripe library in `package.json`
 3. Review and update environment configurations
@@ -22,44 +24,46 @@ This guide provides a comprehensive walkthrough for migrating from Stripe Paymen
 ### 1. Backend Changes
 
 #### API Endpoint Updates
+
 - Replace `/api/payments/create-payment-intent.js` with `/api/payments/create-checkout-session.js`
 - Modify `/api/payments/stripe-webhook.js` to handle new Checkout Session events
 
 ```javascript
 // Example Checkout Session Creation
 const session = await stripe.checkout.sessions.create({
-  payment_method_types: ['card'],
-  mode: 'payment',
+  payment_method_types: ["card"],
+  mode: "payment",
   success_url: process.env.STRIPE_SUCCESS_URL,
   cancel_url: process.env.STRIPE_CANCEL_URL,
   line_items: [
     {
       price_data: {
-        currency: 'usd',
+        currency: "usd",
         product_data: {
-          name: 'Event Ticket',
+          name: "Event Ticket",
         },
         unit_amount: orderTotal * 100, // Amount in cents
       },
       quantity: 1,
-    }
+    },
   ],
   metadata: {
     orderId: order.id,
-    customerEmail: order.email
-  }
+    customerEmail: order.email,
+  },
 });
 ```
 
 #### Webhook Handler Changes
+
 ```javascript
 // Updated webhook handler
 switch (event.type) {
-  case 'checkout.session.completed':
+  case "checkout.session.completed":
     const session = event.data.object;
     await processSuccessfulPayment(session.metadata.orderId);
     break;
-  case 'checkout.session.async_payment_succeeded':
+  case "checkout.session.async_payment_succeeded":
     // Handle delayed payment confirmations
     break;
 }
@@ -68,6 +72,7 @@ switch (event.type) {
 ### 2. Frontend Changes
 
 #### Update Checkout Flow
+
 - Remove custom payment modal logic
 - Replace with Stripe Checkout redirection
 
@@ -75,12 +80,12 @@ switch (event.type) {
 // New checkout method
 async function initiateCheckout(orderDetails) {
   try {
-    const response = await fetch('/api/payments/create-checkout-session', {
-      method: 'POST',
-      body: JSON.stringify(orderDetails)
+    const response = await fetch("/api/payments/create-checkout-session", {
+      method: "POST",
+      body: JSON.stringify(orderDetails),
     });
     const { sessionUrl } = await response.json();
-    
+
     // Redirect to Stripe Checkout
     window.location.href = sessionUrl;
   } catch (error) {
@@ -92,6 +97,7 @@ async function initiateCheckout(orderDetails) {
 ### 3. Database Migration
 
 #### Update Order Schema
+
 ```sql
 -- Migration script
 ALTER TABLE orders ADD COLUMN stripe_checkout_session_id TEXT;
@@ -113,16 +119,19 @@ STRIPE_PAYMENT_METHOD_TYPES=card,us_bank_account
 ## Testing Strategies
 
 ### Unit Tests
+
 - Test Checkout Session creation
 - Validate webhook event processing
 - Check order status updates
 
 ### Integration Tests
+
 - Complete full purchase flow
 - Test success and cancellation scenarios
 - Verify email confirmations
 
 ### Manual Testing Scenarios
+
 1. Successful ticket purchase
 2. Donation with different amounts
 3. Payment cancellation
@@ -131,11 +140,13 @@ STRIPE_PAYMENT_METHOD_TYPES=card,us_bank_account
 ## Common Migration Challenges
 
 ### 1. Payment State Management
+
 - Update order status tracking
 - Handle async payment confirmations
 - Manage checkout session lifecycles
 
 ### 2. Error Handling
+
 - Implement robust error catching
 - Provide clear user feedback
 - Log detailed error information
@@ -143,6 +154,7 @@ STRIPE_PAYMENT_METHOD_TYPES=card,us_bank_account
 ## Rollback Procedure
 
 If migration causes issues:
+
 1. Revert Stripe library to previous version
 2. Restore previous API endpoint implementations
 3. Rollback database schema changes

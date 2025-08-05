@@ -7,6 +7,7 @@ The mobile navigation system for A Lo Cubano Boulder Fest uses a slide-in panel 
 ## Architecture
 
 ### HTML Structure
+
 ```html
 <nav class="main-nav">
   <button class="menu-toggle" aria-label="Toggle menu">
@@ -16,7 +17,9 @@ The mobile navigation system for A Lo Cubano Boulder Fest uses a slide-in panel 
     <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
     <li><a href="/about" class="nav-link" data-text="About">About</a></li>
     <li><a href="/artists" class="nav-link" data-text="Artists">Artists</a></li>
-    <li><a href="/schedule" class="nav-link" data-text="Schedule">Schedule</a></li>
+    <li>
+      <a href="/schedule" class="nav-link" data-text="Schedule">Schedule</a>
+    </li>
     <li><a href="/gallery" class="nav-link" data-text="Gallery">Gallery</a></li>
     <li><a href="/tickets" class="nav-link" data-text="Tickets">Tickets</a></li>
   </ul>
@@ -28,6 +31,7 @@ The mobile navigation system for A Lo Cubano Boulder Fest uses a slide-in panel 
 ### CSS Implementation
 
 #### Mobile-Only Display Logic
+
 ```css
 @media (max-width: 768px) {
   /* Show hamburger button on mobile */
@@ -57,7 +61,7 @@ The mobile navigation system for A Lo Cubano Boulder Fest uses a slide-in panel 
     background: rgba(0, 0, 0, 0.5);
     z-index: 9998;
   }
-  
+
   .mobile-menu-overlay.is-open {
     display: block;
   }
@@ -85,6 +89,7 @@ The mobile navigation system for A Lo Cubano Boulder Fest uses a slide-in panel 
 ```
 
 #### Animation Keyframes
+
 ```css
 @keyframes slideInFromRight {
   from {
@@ -99,6 +104,7 @@ The mobile navigation system for A Lo Cubano Boulder Fest uses a slide-in panel 
 ```
 
 #### Hamburger Animation
+
 ```css
 .menu-toggle span {
   display: block;
@@ -111,7 +117,7 @@ The mobile navigation system for A Lo Cubano Boulder Fest uses a slide-in panel 
 
 .menu-toggle span::before,
 .menu-toggle span::after {
-  content: '';
+  content: "";
   position: absolute;
   width: 100%;
   height: 2px;
@@ -146,6 +152,7 @@ The mobile navigation system for A Lo Cubano Boulder Fest uses a slide-in panel 
 ## JavaScript Implementation
 
 ### Class Structure
+
 ```javascript
 class Navigation {
   constructor() {
@@ -159,25 +166,25 @@ class Navigation {
 
   toggleMobileMenu() {
     this.mobileMenuOpen = !this.mobileMenuOpen;
-    const navList = document.querySelector('.nav-list');
-    const menuToggle = document.querySelector('.menu-toggle');
-    const overlay = document.querySelector('.mobile-menu-overlay');
+    const navList = document.querySelector(".nav-list");
+    const menuToggle = document.querySelector(".menu-toggle");
+    const overlay = document.querySelector(".mobile-menu-overlay");
 
     if (this.mobileMenuOpen) {
       // CRITICAL: Use 'is-open' class to match CSS selector
-      navList?.classList.add('is-open');
-      menuToggle?.classList.add('is-active');
-      overlay?.classList.add('is-open');
-      document.body.style.overflow = 'hidden'; // Prevent background scroll
-      
+      navList?.classList.add("is-open");
+      menuToggle?.classList.add("is-active");
+      overlay?.classList.add("is-open");
+      document.body.style.overflow = "hidden"; // Prevent background scroll
+
       // Enable focus trap for accessibility
       this.enableFocusTrap();
     } else {
-      navList?.classList.remove('is-open');
-      menuToggle?.classList.remove('is-active');
-      overlay?.classList.remove('is-open');
-      document.body.style.overflow = ''; // Restore scroll
-      
+      navList?.classList.remove("is-open");
+      menuToggle?.classList.remove("is-active");
+      overlay?.classList.remove("is-open");
+      document.body.style.overflow = ""; // Restore scroll
+
       // Disable focus trap
       this.disableFocusTrap();
     }
@@ -185,15 +192,15 @@ class Navigation {
 
   closeMobileMenu() {
     this.mobileMenuOpen = false;
-    const navList = document.querySelector('.nav-list');
-    const menuToggle = document.querySelector('.menu-toggle');
-    const overlay = document.querySelector('.mobile-menu-overlay');
+    const navList = document.querySelector(".nav-list");
+    const menuToggle = document.querySelector(".menu-toggle");
+    const overlay = document.querySelector(".mobile-menu-overlay");
 
-    navList?.classList.remove('is-open');
-    menuToggle?.classList.remove('is-active');
-    overlay?.classList.remove('is-open');
-    document.body.style.overflow = '';
-    
+    navList?.classList.remove("is-open");
+    menuToggle?.classList.remove("is-active");
+    overlay?.classList.remove("is-open");
+    document.body.style.overflow = "";
+
     // Restore focus and disable focus trap
     this.disableFocusTrap();
   }
@@ -201,19 +208,19 @@ class Navigation {
   // Focus management methods for accessibility
   getFocusableElements(container) {
     const focusableSelectors = [
-      'a[href]',
-      'button:not([disabled])',
-      'input:not([disabled])',
-      'select:not([disabled])',
-      'textarea:not([disabled])',
-      '[tabindex]:not([tabindex="-1"])'
-    ].join(', ');
-    
+      "a[href]",
+      "button:not([disabled])",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(", ");
+
     return container.querySelectorAll(focusableSelectors);
   }
 
   enableFocusTrap() {
-    const navList = document.querySelector('.nav-list');
+    const navList = document.querySelector(".nav-list");
     if (!navList) return;
 
     const focusableElements = this.getFocusableElements(navList);
@@ -241,7 +248,7 @@ class Navigation {
     if (!this.mobileMenuOpen) return;
 
     // Handle Tab key to trap focus within menu
-    if (e.key === 'Tab') {
+    if (e.key === "Tab") {
       if (e.shiftKey) {
         // Shift + Tab: moving backwards
         if (document.activeElement === this.firstFocusableElement) {
@@ -261,6 +268,7 @@ class Navigation {
 ```
 
 ### Event Handlers
+
 ```javascript
 setupEventListeners() {
   // Mobile menu toggle
@@ -274,7 +282,7 @@ setupEventListeners() {
     if (e.key === 'Escape' && this.mobileMenuOpen) {
       this.closeMobileMenu();
     }
-    
+
     // Enable focus trap when menu is open
     this.handleFocusTrap(e);
   });
@@ -282,10 +290,10 @@ setupEventListeners() {
   // Focus trap using focusin event (backup method)
   document.addEventListener('focusin', (e) => {
     if (!this.mobileMenuOpen) return;
-    
+
     const navList = document.querySelector('.nav-list');
     if (!navList || navList.contains(e.target)) return;
-    
+
     // If focus moves outside the menu, redirect it back to the first focusable element
     if (this.firstFocusableElement) {
       e.preventDefault();
@@ -326,20 +334,20 @@ setupEventListeners() {
 
 ### State Classes
 
-| Class | Element | Purpose |
-|-------|---------|---------|
-| `is-open` | `.nav-list` | Shows/hides mobile navigation panel |
+| Class       | Element        | Purpose                                |
+| ----------- | -------------- | -------------------------------------- |
+| `is-open`   | `.nav-list`    | Shows/hides mobile navigation panel    |
 | `is-active` | `.menu-toggle` | Animates hamburger to X transformation |
 
 ### Desktop Protection
 
 ```css
 @media (min-width: 769px) {
-  .menu-toggle { 
-    display: none !important; 
+  .menu-toggle {
+    display: none !important;
   }
-  
-  .nav-list { 
+
+  .nav-list {
     display: flex !important;
     position: static !important;
     width: auto !important;
@@ -356,6 +364,7 @@ setupEventListeners() {
 ## Interaction Behaviors
 
 ### Opening Menu
+
 1. User taps hamburger button
 2. JavaScript adds `is-open` class to `.nav-list`
 3. JavaScript adds `is-active` class to `.menu-toggle`
@@ -363,13 +372,16 @@ setupEventListeners() {
 5. Background scroll is disabled (`body { overflow: hidden }`)
 
 ### Closing Menu
+
 Menu closes via:
+
 - **Hamburger button tap**: Toggle state
 - **Outside click**: Click anywhere outside menu or button
 - **Escape key**: Keyboard accessibility
 - **Navigation link click**: Automatic closure after navigation
 
 ### Animations
+
 - **Slide-in duration**: 0.3s ease-out
 - **Hamburger transformation**: 0.3s ease
 - **Backdrop blur**: 20px for visual depth
@@ -377,16 +389,19 @@ Menu closes via:
 ## Accessibility Features
 
 ### Keyboard Support
+
 - ✅ **Tab navigation**: All menu items accessible
 - ✅ **Escape key**: Closes mobile menu
 - ✅ **Enter/Space**: Activates hamburger button
 
 ### Screen Reader Support
+
 - ✅ **ARIA label**: `aria-label="Toggle menu"` on hamburger button
 - ✅ **Semantic markup**: Proper `<nav>` and `<ul>` structure
 - ✅ **Focus management**: Logical tab order maintained
 
 ### Touch Accessibility
+
 - ✅ **Touch targets**: Minimum 44px x 44px for all interactive elements
 - ✅ **Touch response**: `touch-action: manipulation` for better response
 - ✅ **Visual feedback**: Clear pressed states
@@ -394,6 +409,7 @@ Menu closes via:
 ## Testing Requirements
 
 ### Functional Testing
+
 - [ ] Hamburger button toggles menu
 - [ ] Menu slides in from right on open
 - [ ] Menu slides out on close
@@ -404,12 +420,14 @@ Menu closes via:
 - [ ] Hamburger animates to X and back
 
 ### Device Testing
+
 - [ ] iOS Safari (iPhone)
 - [ ] Chrome Mobile (Android)
 - [ ] Various screen sizes (320px - 768px)
 - [ ] Portrait and landscape orientations
 
 ### Accessibility Testing
+
 - [ ] Keyboard-only navigation
 - [ ] Screen reader compatibility
 - [ ] Touch target sizes (min 44px)
@@ -419,24 +437,27 @@ Menu closes via:
 ## Common Issues & Troubleshooting
 
 ### Menu Not Opening
+
 **Symptom**: Hamburger button click has no effect
 **Cause**: Class mismatch between JavaScript and CSS
 **Solution**: Ensure JavaScript uses `is-open` class, not `mobile-menu`
 
 ```javascript
 // ❌ Wrong - will not work
-navList.classList.add('mobile-menu');
+navList.classList.add("mobile-menu");
 
 // ✅ Correct - matches CSS selector
-navList.classList.add('is-open');
+navList.classList.add("is-open");
 ```
 
 ### Menu Not Sliding
+
 **Symptom**: Menu appears instantly without animation
 **Cause**: Missing CSS animation or transition properties
 **Solution**: Verify `@keyframes slideInFromRight` and animation properties
 
 ### Background Still Scrollable
+
 **Symptom**: Page scrolls behind open menu
 **Cause**: Missing body overflow control
 **Solution**: Ensure `document.body.style.overflow = 'hidden'` on menu open
@@ -444,12 +465,14 @@ navList.classList.add('is-open');
 ## Performance Considerations
 
 ### Optimizations
+
 - **Hardware acceleration**: `transform` properties trigger GPU acceleration
 - **Backdrop filter**: Creates depth without additional DOM elements
 - **Event delegation**: Minimal event listeners for better performance
 - **CSS containment**: `contain: layout style paint` for menu panel
 
 ### Mobile-Specific
+
 - **Reduced animations**: Complex animations disabled on mobile
 - **Touch optimization**: `touch-action: manipulation` prevents delays
 - **Viewport meta**: Proper viewport configuration prevents zoom issues

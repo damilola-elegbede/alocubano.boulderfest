@@ -3,16 +3,16 @@
  * Handles newsletter unsubscribe requests
  */
 
-import { getEmailSubscriberService } from '../lib/email-subscriber-service.js';
+import { getEmailSubscriberService } from "../lib/email-subscriber-service.js";
 
 // HTML escape function to prevent XSS attacks
 function escapeHtml(unsafe) {
-    return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 // Rate limiting storage
@@ -20,136 +20,141 @@ const rateLimitMap = new Map();
 
 // Periodic cleanup to prevent memory leaks
 setInterval(() => {
-    const now = Date.now();
-    for (const [key, value] of rateLimitMap.entries()) {
-        if (now > value.resetTime) {
-            rateLimitMap.delete(key);
-        }
+  const now = Date.now();
+  for (const [key, value] of rateLimitMap.entries()) {
+    if (now > value.resetTime) {
+      rateLimitMap.delete(key);
     }
+  }
 }, 60 * 1000); // Clean up every minute
 
 /**
  * Rate limiting middleware
  */
 function rateLimit(req, res) {
-    const ip = req.headers['x-forwarded-for'] || req.connection?.remoteAddress || '127.0.0.1';
-    const limit = parseInt(process.env.RATE_LIMIT_EMAIL_UNSUBSCRIBE) || 10;
-    const windowMs = 15 * 60 * 1000; // 15 minutes
-    
-    const key = `unsubscribe_${ip}`;
-    const now = Date.now();
-    
-    if (!rateLimitMap.has(key)) {
-        rateLimitMap.set(key, { count: 0, resetTime: now + windowMs });
-    }
-    
-    const rateData = rateLimitMap.get(key);
-    
-    if (now > rateData.resetTime) {
-        rateData.count = 0;
-        rateData.resetTime = now + windowMs;
-    }
-    
-    if (rateData.count >= limit) {
-        return res.status(429).json({
-            error: 'Too many requests. Please try again later.',
-            retryAfter: Math.ceil((rateData.resetTime - now) / 1000)
-        });
-    }
-    
-    rateData.count++;
-    return null;
+  const ip =
+    req.headers["x-forwarded-for"] ||
+    req.connection?.remoteAddress ||
+    "127.0.0.1";
+  const limit = parseInt(process.env.RATE_LIMIT_EMAIL_UNSUBSCRIBE) || 10;
+  const windowMs = 15 * 60 * 1000; // 15 minutes
+
+  const key = `unsubscribe_${ip}`;
+  const now = Date.now();
+
+  if (!rateLimitMap.has(key)) {
+    rateLimitMap.set(key, { count: 0, resetTime: now + windowMs });
+  }
+
+  const rateData = rateLimitMap.get(key);
+
+  if (now > rateData.resetTime) {
+    rateData.count = 0;
+    rateData.resetTime = now + windowMs;
+  }
+
+  if (rateData.count >= limit) {
+    return res.status(429).json({
+      error: "Too many requests. Please try again later.",
+      retryAfter: Math.ceil((rateData.resetTime - now) / 1000),
+    });
+  }
+
+  rateData.count++;
+  return null;
 }
 
 /**
  * Validate email format
  */
 function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
 }
 
 /**
  * Get client IP address
  */
 function getClientIp(req) {
-    return req.headers['x-forwarded-for'] ||
-           req.connection?.remoteAddress ||
-           req.socket?.remoteAddress ||
-           (req.connection?.socket?.remoteAddress) ||
-           '127.0.0.1';
+  return (
+    req.headers["x-forwarded-for"] ||
+    req.connection?.remoteAddress ||
+    req.socket?.remoteAddress ||
+    req.connection?.socket?.remoteAddress ||
+    "127.0.0.1"
+  );
 }
 
 /**
  * Main handler function
  */
 export default async function handler(req, res) {
-    // Set CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    
-    // Handle preflight request
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
+  // Set CORS headers
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  // Handle preflight request
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  try {
+    // Rate limiting
+    const rateLimitResponse = rateLimit(req, res);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
-    
-    try {
-        // Rate limiting
-        const rateLimitResponse = rateLimit(req, res);
-        if (rateLimitResponse) {
-            return rateLimitResponse;
-        }
-        
-        let email, token;
-        
-        // Handle both GET (with query params) and POST requests
-        if (req.method === 'GET') {
-            email = req.query.email;
-            token = req.query.token;
-        } else if (req.method === 'POST') {
-            email = req.body?.email;
-            token = req.body?.token;
-        } else {
-            return res.status(405).json({ 
-                error: 'Method not allowed. Use GET or POST.' 
-            });
-        }
-        
-        // Sanitize token
-        if (token && token !== 'undefined') {
-            token = token.trim();
-        } else if (token === 'undefined') {
-            token = undefined;
-        }
-        
-        // Validate required fields
-        if (!email) {
-            return res.status(400).json({
-                error: 'Email address is required'
-            });
-        }
-        
-        if (!isValidEmail(email)) {
-            return res.status(400).json({
-                error: 'Please enter a valid email address'
-            });
-        }
-        
-        if (!token) {
-            return res.status(400).json({
-                error: 'Unsubscribe token is required'
-            });
-        }
-        
-        // Get service
-        const emailService = getEmailSubscriberService();
-        
-        // Validate unsubscribe token
-        const isValidToken = emailService.validateUnsubscribeToken(email, token);
-        if (!isValidToken) {
-            if (req.method === 'GET') {
-                const html = `
+
+    let email, token;
+
+    // Handle both GET (with query params) and POST requests
+    if (req.method === "GET") {
+      email = req.query.email;
+      token = req.query.token;
+    } else if (req.method === "POST") {
+      email = req.body?.email;
+      token = req.body?.token;
+    } else {
+      return res.status(405).json({
+        error: "Method not allowed. Use GET or POST.",
+      });
+    }
+
+    // Sanitize token
+    if (token && token !== "undefined") {
+      token = token.trim();
+    } else if (token === "undefined") {
+      token = undefined;
+    }
+
+    // Validate required fields
+    if (!email) {
+      return res.status(400).json({
+        error: "Email address is required",
+      });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        error: "Please enter a valid email address",
+      });
+    }
+
+    if (!token) {
+      return res.status(400).json({
+        error: "Unsubscribe token is required",
+      });
+    }
+
+    // Get service
+    const emailService = getEmailSubscriberService();
+
+    // Validate unsubscribe token
+    const isValidToken = emailService.validateUnsubscribeToken(email, token);
+    if (!isValidToken) {
+      if (req.method === "GET") {
+        const html = `
                     <!DOCTYPE html>
                     <html lang="en">
                     <head>
@@ -210,22 +215,25 @@ export default async function handler(req, res) {
                     </body>
                     </html>
                 `;
-                
-                res.setHeader('Content-Type', 'text/html');
-                return res.status(400).send(html);
-            }
-            
-            return res.status(400).json({
-                error: 'Invalid unsubscribe token'
-            });
-        }
-        
-        // Unsubscribe user
-        const result = await emailService.unsubscribeSubscriber(email, 'user_request');
-        
-        // For GET requests, return HTML page
-        if (req.method === 'GET') {
-            const html = `
+
+        res.setHeader("Content-Type", "text/html");
+        return res.status(400).send(html);
+      }
+
+      return res.status(400).json({
+        error: "Invalid unsubscribe token",
+      });
+    }
+
+    // Unsubscribe user
+    const result = await emailService.unsubscribeSubscriber(
+      email,
+      "user_request",
+    );
+
+    // For GET requests, return HTML page
+    if (req.method === "GET") {
+      const html = `
                 <!DOCTYPE html>
                 <html lang="en">
                 <head>
@@ -288,32 +296,31 @@ export default async function handler(req, res) {
                 </body>
                 </html>
             `;
-            
-            res.setHeader('Content-Type', 'text/html');
-            return res.status(200).send(html);
-        }
-        
-        // For POST requests, return JSON
-        return res.status(200).json({
-            success: true,
-            message: 'Successfully unsubscribed from newsletter',
-            email: email
-        });
-        
-    } catch (error) {
-        console.error('Newsletter unsubscribe error:', {
-            error: error.message,
-            email: req.query?.email || req.body?.email,
-            ip: getClientIp(req),
-            timestamp: new Date().toISOString()
-        });
-        
-        // Handle specific errors
-        if (error.message.includes('not found')) {
-            const message = 'Email address not found or already unsubscribed';
-            
-            if (req.method === 'GET') {
-                const html = `
+
+      res.setHeader("Content-Type", "text/html");
+      return res.status(200).send(html);
+    }
+
+    // For POST requests, return JSON
+    return res.status(200).json({
+      success: true,
+      message: "Successfully unsubscribed from newsletter",
+      email: email,
+    });
+  } catch (error) {
+    console.error("Newsletter unsubscribe error:", {
+      error: error.message,
+      email: req.query?.email || req.body?.email,
+      ip: getClientIp(req),
+      timestamp: new Date().toISOString(),
+    });
+
+    // Handle specific errors
+    if (error.message.includes("not found")) {
+      const message = "Email address not found or already unsubscribed";
+
+      if (req.method === "GET") {
+        const html = `
                     <!DOCTYPE html>
                     <html lang="en">
                     <head>
@@ -350,19 +357,20 @@ export default async function handler(req, res) {
                     </body>
                     </html>
                 `;
-                
-                res.setHeader('Content-Type', 'text/html');
-                return res.status(200).send(html);
-            }
-            
-            return res.status(404).json({ error: message });
-        }
-        
-        // Generic error response
-        const errorMessage = 'An error occurred while processing your unsubscribe request. Please try again.';
-        
-        if (req.method === 'GET') {
-            const html = `
+
+        res.setHeader("Content-Type", "text/html");
+        return res.status(200).send(html);
+      }
+
+      return res.status(404).json({ error: message });
+    }
+
+    // Generic error response
+    const errorMessage =
+      "An error occurred while processing your unsubscribe request. Please try again.";
+
+    if (req.method === "GET") {
+      const html = `
                 <!DOCTYPE html>
                 <html lang="en">
                 <head>
@@ -415,11 +423,11 @@ export default async function handler(req, res) {
                 </body>
                 </html>
             `;
-            
-            res.setHeader('Content-Type', 'text/html');
-            return res.status(500).send(html);
-        }
-        
-        return res.status(500).json({ error: errorMessage });
+
+      res.setHeader("Content-Type", "text/html");
+      return res.status(500).send(html);
     }
+
+    return res.status(500).json({ error: errorMessage });
+  }
 }

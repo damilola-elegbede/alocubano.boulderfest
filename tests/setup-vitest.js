@@ -1,5 +1,9 @@
-import { vi } from 'vitest';
-import { EventListenerTracker, cleanupTest, logMemoryUsage } from './utils/cleanup-helpers.js';
+import { vi } from "vitest";
+import {
+  EventListenerTracker,
+  cleanupTest,
+  logMemoryUsage,
+} from "./utils/cleanup-helpers.js";
 
 // Global event listener tracker
 global.__testEventTracker = new EventListenerTracker();
@@ -14,7 +18,7 @@ global.jest = {
   resetAllMocks: vi.resetAllMocks,
   restoreAllMocks: vi.restoreAllMocks,
   mocked: vi.mocked,
-  unstable_mockModule: vi.mock
+  unstable_mockModule: vi.mock,
 };
 
 // Mock global fetch for Node.js environment
@@ -22,21 +26,32 @@ global.fetch = vi.fn();
 
 // Mock browser APIs that are used in real source code
 // IntersectionObserver API
-global.IntersectionObserver = vi.fn().mockImplementation((callback, options) => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-  root: options?.root || null,
-  rootMargin: options?.rootMargin || '0px',
-  thresholds: options?.threshold || [0]
-}));
+global.IntersectionObserver = vi
+  .fn()
+  .mockImplementation((callback, options) => ({
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn(),
+    root: options?.root || null,
+    rootMargin: options?.rootMargin || "0px",
+    thresholds: options?.threshold || [0],
+  }));
 
 // PerformanceObserver API
 global.PerformanceObserver = vi.fn().mockImplementation((callback) => ({
   observe: vi.fn(),
   disconnect: vi.fn(),
   takeRecords: vi.fn(() => []),
-  supportedEntryTypes: ['navigation', 'measure', 'mark', 'resource', 'paint', 'largest-contentful-paint', 'first-input', 'layout-shift']
+  supportedEntryTypes: [
+    "navigation",
+    "measure",
+    "mark",
+    "resource",
+    "paint",
+    "largest-contentful-paint",
+    "first-input",
+    "layout-shift",
+  ],
 }));
 
 // Performance API enhancements
@@ -52,17 +67,20 @@ const performanceMethods = {
   getEntriesByType: vi.fn(() => []),
   getEntriesByName: vi.fn(() => []),
   clearMarks: vi.fn(),
-  clearMeasures: vi.fn()
+  clearMeasures: vi.fn(),
 };
 
 // Define each method individually to handle read-only properties
-Object.keys(performanceMethods).forEach(key => {
+Object.keys(performanceMethods).forEach((key) => {
   try {
-    if (!global.performance[key] || typeof global.performance[key] !== 'function') {
+    if (
+      !global.performance[key] ||
+      typeof global.performance[key] !== "function"
+    ) {
       Object.defineProperty(global.performance, key, {
         value: performanceMethods[key],
         writable: true,
-        configurable: true
+        configurable: true,
       });
     }
   } catch (e) {
@@ -73,14 +91,14 @@ Object.keys(performanceMethods).forEach(key => {
 // Define complex properties separately
 try {
   if (!global.performance.memory) {
-    Object.defineProperty(global.performance, 'memory', {
+    Object.defineProperty(global.performance, "memory", {
       value: {
         usedJSHeapSize: 1024 * 1024,
         totalJSHeapSize: 2 * 1024 * 1024,
-        jsHeapSizeLimit: 4 * 1024 * 1024
+        jsHeapSizeLimit: 4 * 1024 * 1024,
       },
       writable: true,
-      configurable: true
+      configurable: true,
     });
   }
 } catch (e) {
@@ -89,13 +107,13 @@ try {
 
 try {
   if (!global.performance.navigation) {
-    Object.defineProperty(global.performance, 'navigation', {
+    Object.defineProperty(global.performance, "navigation", {
       value: {
         type: 1,
-        redirectCount: 0
+        redirectCount: 0,
       },
       writable: true,
-      configurable: true
+      configurable: true,
     });
   }
 } catch (e) {
@@ -104,13 +122,13 @@ try {
 
 try {
   if (!global.performance.timing) {
-    Object.defineProperty(global.performance, 'timing', {
+    Object.defineProperty(global.performance, "timing", {
       value: {
         navigationStart: Date.now() - 1000,
-        loadEventEnd: Date.now()
+        loadEventEnd: Date.now(),
       },
       writable: true,
-      configurable: true
+      configurable: true,
     });
   }
 } catch (e) {
@@ -122,7 +140,7 @@ global.PageTransition = vi.fn().mockImplementation(() => ({
   init: vi.fn(),
   start: vi.fn(),
   end: vi.fn(),
-  cancel: vi.fn()
+  cancel: vi.fn(),
 }));
 
 // Navigator API enhancements
@@ -131,69 +149,69 @@ if (!global.navigator) {
 }
 
 // Use Object.defineProperty for read-only properties
-Object.defineProperty(global.navigator, 'connection', {
+Object.defineProperty(global.navigator, "connection", {
   value: {
-    effectiveType: '4g',
+    effectiveType: "4g",
     downlink: 10,
     rtt: 50,
     saveData: false,
     addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
+    removeEventListener: vi.fn(),
   },
   writable: true,
-  configurable: true
+  configurable: true,
 });
 
-Object.defineProperty(global.navigator, 'userAgent', {
-  value: 'Mozilla/5.0 (Node.js Test Environment)',
+Object.defineProperty(global.navigator, "userAgent", {
+  value: "Mozilla/5.0 (Node.js Test Environment)",
   writable: true,
-  configurable: true
+  configurable: true,
 });
 
-Object.defineProperty(global.navigator, 'onLine', {
+Object.defineProperty(global.navigator, "onLine", {
   value: true,
   writable: true,
-  configurable: true
+  configurable: true,
 });
 
-Object.defineProperty(global.navigator, 'serviceWorker', {
+Object.defineProperty(global.navigator, "serviceWorker", {
   value: {
     register: vi.fn().mockResolvedValue({
       installing: null,
       waiting: null,
       active: { postMessage: vi.fn() },
       addEventListener: vi.fn(),
-      removeEventListener: vi.fn()
+      removeEventListener: vi.fn(),
     }),
     ready: Promise.resolve({
       active: { postMessage: vi.fn() },
-      addEventListener: vi.fn()
+      addEventListener: vi.fn(),
     }),
     addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
+    removeEventListener: vi.fn(),
   },
   writable: true,
-  configurable: true
+  configurable: true,
 });
 
 // ResizeObserver API
 global.ResizeObserver = vi.fn().mockImplementation((callback) => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
-  disconnect: vi.fn()
+  disconnect: vi.fn(),
 }));
 
-// MutationObserver API  
+// MutationObserver API
 global.MutationObserver = vi.fn().mockImplementation((callback) => ({
   observe: vi.fn(),
   disconnect: vi.fn(),
-  takeRecords: vi.fn(() => [])
+  takeRecords: vi.fn(() => []),
 }));
 
 // Storage APIs with proper implementation
 function createStorageMock() {
   const storage = {};
-  
+
   return {
     getItem: vi.fn((key) => {
       return storage[key] || null;
@@ -205,7 +223,7 @@ function createStorageMock() {
       delete storage[key];
     }),
     clear: vi.fn(() => {
-      Object.keys(storage).forEach(key => delete storage[key]);
+      Object.keys(storage).forEach((key) => delete storage[key]);
     }),
     get length() {
       return Object.keys(storage).length;
@@ -213,7 +231,7 @@ function createStorageMock() {
     key: vi.fn((index) => {
       const keys = Object.keys(storage);
       return keys[index] || null;
-    })
+    }),
   };
 }
 
@@ -223,8 +241,8 @@ global.sessionStorage = createStorageMock();
 // URL API
 if (!global.URL) {
   global.URL = {
-    createObjectURL: vi.fn(() => 'blob:mock-url'),
-    revokeObjectURL: vi.fn()
+    createObjectURL: vi.fn(() => "blob:mock-url"),
+    revokeObjectURL: vi.fn(),
   };
 }
 
@@ -247,14 +265,20 @@ if (!global.window) {
   global.window = global;
 }
 
-Object.defineProperty(global, 'innerWidth', { value: 1024, writable: true });
-Object.defineProperty(global, 'innerHeight', { value: 768, writable: true });
-Object.defineProperty(global, 'outerWidth', { value: 1024, writable: true });
-Object.defineProperty(global, 'outerHeight', { value: 768, writable: true });
+Object.defineProperty(global, "innerWidth", { value: 1024, writable: true });
+Object.defineProperty(global, "innerHeight", { value: 768, writable: true });
+Object.defineProperty(global, "outerWidth", { value: 1024, writable: true });
+Object.defineProperty(global, "outerHeight", { value: 768, writable: true });
 
 // Make sure window has the same properties as global
-Object.defineProperty(global.window, 'innerWidth', { value: 1024, writable: true });
-Object.defineProperty(global.window, 'innerHeight', { value: 768, writable: true });
+Object.defineProperty(global.window, "innerWidth", {
+  value: 1024,
+  writable: true,
+});
+Object.defineProperty(global.window, "innerHeight", {
+  value: 768,
+  writable: true,
+});
 
 // Window event handling
 global.window.addEventListener = vi.fn();
@@ -262,14 +286,14 @@ global.window.removeEventListener = vi.fn();
 
 // Window location
 global.window.location = {
-  pathname: '/test',
-  href: 'http://localhost:3000/test',
-  origin: 'http://localhost:3000',
-  hostname: 'localhost',
-  port: '3000',
-  protocol: 'http:',
-  search: '',
-  hash: ''
+  pathname: "/test",
+  href: "http://localhost:3000/test",
+  origin: "http://localhost:3000",
+  hostname: "localhost",
+  port: "3000",
+  protocol: "http:",
+  search: "",
+  hash: "",
 };
 
 // Screen API
@@ -279,59 +303,63 @@ global.screen = {
   availWidth: 1920,
   availHeight: 1040,
   colorDepth: 24,
-  pixelDepth: 24
+  pixelDepth: 24,
 };
 
 // CSS and styling APIs
 global.getComputedStyle = vi.fn(() => ({
   getPropertyValue: vi.fn(),
-  width: '100px',
-  height: '100px'
+  width: "100px",
+  height: "100px",
 }));
 
 // Image loading
 global.Image = vi.fn().mockImplementation(() => ({
   addEventListener: vi.fn(),
   removeEventListener: vi.fn(),
-  src: '',
+  src: "",
   onload: null,
   onerror: null,
   width: 0,
   height: 0,
   naturalWidth: 0,
   naturalHeight: 0,
-  complete: false
+  complete: false,
 }));
 
 // Mock crypto for Node.js environment (only if not already defined)
 if (!global.crypto) {
   const mockCrypto = {
-    randomBytes: vi.fn(() => Buffer.from('mock-random-bytes-1234567890123456', 'utf8')),
+    randomBytes: vi.fn(() =>
+      Buffer.from("mock-random-bytes-1234567890123456", "utf8"),
+    ),
     createHmac: vi.fn(() => ({
       update: vi.fn(() => ({
-        digest: vi.fn(() => 'mock-hash-digest-1234567890abcdef')
-      }))
-    }))
+        digest: vi.fn(() => "mock-hash-digest-1234567890abcdef"),
+      })),
+    })),
   };
-  
-  Object.defineProperty(global, 'crypto', {
+
+  Object.defineProperty(global, "crypto", {
     value: mockCrypto,
-    writable: true
+    writable: true,
   });
 }
 
 // Mock Node.js crypto module
-vi.mock('crypto', () => ({
-  randomBytes: vi.fn(() => Buffer.from('mock-random-bytes-1234567890123456', 'utf8')),
+vi.mock("crypto", () => ({
+  randomBytes: vi.fn(() =>
+    Buffer.from("mock-random-bytes-1234567890123456", "utf8"),
+  ),
   createHmac: vi.fn(() => ({
     update: vi.fn(() => ({
-      digest: vi.fn(() => 'mock-hash-digest-1234567890abcdef')
-    }))
-  }))
+      digest: vi.fn(() => "mock-hash-digest-1234567890abcdef"),
+    })),
+  })),
 }));
 
 // Mock process.env for tests
-process.env.NODE_ENV = 'test';
+process.env.NODE_ENV = "test";
 
 // Global test utilities
 global.createMockResponse = (data, status = 200) => ({
@@ -339,7 +367,7 @@ global.createMockResponse = (data, status = 200) => ({
   status,
   json: vi.fn().mockResolvedValue(data),
   text: vi.fn().mockResolvedValue(JSON.stringify(data)),
-  headers: new Map()
+  headers: new Map(),
 });
 
 // Reset all mocks before each test
@@ -355,13 +383,15 @@ afterEach(() => {
     clearTimers: true,
     clearStorage: true,
     clearMocks: true,
-    clearDOM: true
+    clearDOM: true,
   });
-  
+
   // Log memory usage if high
-  const memStats = logMemoryUsage('AfterEach');
+  const memStats = logMemoryUsage("AfterEach");
   if (memStats && memStats.heapUsedMB > 500) {
-    console.warn(`Test may have memory leak: ${memStats.heapUsedMB}MB heap used`);
+    console.warn(
+      `Test may have memory leak: ${memStats.heapUsedMB}MB heap used`,
+    );
   }
 });
 
@@ -372,7 +402,7 @@ afterAll(() => {
     global.__testEventTracker.cleanup();
     global.__testEventTracker = null;
   }
-  
+
   // Force final garbage collection
   if (global.gc) {
     try {
@@ -381,7 +411,7 @@ afterAll(() => {
       // Silently ignore
     }
   }
-  
+
   // Log final memory stats
-  logMemoryUsage('AfterAll');
+  logMemoryUsage("AfterAll");
 });

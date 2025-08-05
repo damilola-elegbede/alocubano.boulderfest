@@ -1,10 +1,15 @@
-import { google } from 'googleapis';
-import { processImage, detectOptimalFormat, generateCacheKey, isAVIFSupported } from '../utils/image-processor.js';
+import { google } from "googleapis";
+import {
+  processImage,
+  detectOptimalFormat,
+  generateCacheKey,
+  isAVIFSupported,
+} from "../utils/image-processor.js";
 
 /**
  * Vercel serverless function for authenticated Google Drive image proxy
  * Route: /api/image-proxy/[fileId]
- * 
+ *
  * This function:
  * - Accepts fileId as a dynamic route parameter
  * - Uses Google Drive API with service account credentials
@@ -14,20 +19,20 @@ import { processImage, detectOptimalFormat, generateCacheKey, isAVIFSupported } 
  */
 export default async function handler(req, res) {
   // Set CORS headers for cross-origin requests
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   // Handle preflight requests
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
   // Only allow GET requests
-  if (req.method !== 'GET') {
-    return res.status(405).json({ 
-      error: 'Method not allowed',
-      message: 'Only GET requests are supported'
+  if (req.method !== "GET") {
+    return res.status(405).json({
+      error: "Method not allowed",
+      message: "Only GET requests are supported",
     });
   }
 
@@ -35,9 +40,9 @@ export default async function handler(req, res) {
 
   // Validate required parameters
   if (!fileId) {
-    return res.status(400).json({ 
-      error: 'Bad Request',
-      message: 'File ID is required'
+    return res.status(400).json({
+      error: "Bad Request",
+      message: "File ID is required",
     });
   }
 
@@ -47,8 +52,8 @@ export default async function handler(req, res) {
   // Validate width parameter
   if (w && (isNaN(parseInt(w)) || parseInt(w) <= 0)) {
     return res.status(400).json({
-      error: 'Bad Request',
-      message: 'Width parameter must be a positive integer'
+      error: "Bad Request",
+      message: "Width parameter must be a positive integer",
     });
   }
 
@@ -56,43 +61,55 @@ export default async function handler(req, res) {
   const requiredEnvVars = {
     GOOGLE_SERVICE_ACCOUNT_EMAIL: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
     GOOGLE_PRIVATE_KEY: process.env.GOOGLE_PRIVATE_KEY,
-    GOOGLE_PROJECT_ID: process.env.GOOGLE_PROJECT_ID
+    GOOGLE_PROJECT_ID: process.env.GOOGLE_PROJECT_ID,
   };
 
-  const missingVars = Object.keys(requiredEnvVars).filter(key => !requiredEnvVars[key]);
+  const missingVars = Object.keys(requiredEnvVars).filter(
+    (key) => !requiredEnvVars[key],
+  );
   if (missingVars.length > 0) {
     // Only serve placeholder in development/preview environments
-    const isDevelopment = process.env.NODE_ENV === 'development' || 
-                         process.env.VERCEL_ENV === 'development' || 
-                         process.env.VERCEL_ENV === 'preview';
-    
+    const isDevelopment =
+      process.env.NODE_ENV === "development" ||
+      process.env.VERCEL_ENV === "development" ||
+      process.env.VERCEL_ENV === "preview";
+
     if (isDevelopment) {
-      console.warn('Missing environment variables for Google Drive API:', missingVars);
-      console.log('Serving placeholder image for development/preview environment');
-      
+      console.warn(
+        "Missing environment variables for Google Drive API:",
+        missingVars,
+      );
+      console.log(
+        "Serving placeholder image for development/preview environment",
+      );
+
       // For development/preview, serve a placeholder image instead of failing
       // This allows the gallery to work without Google Drive credentials
       return servePlaceholderImage(res, fileId);
     }
-    
+
     // In production or other environments, fail fast to avoid masking configuration issues
-    console.error('Missing environment variables for Google Drive API:', missingVars);
-    return res.status(500).json({ 
-      error: 'Server Configuration Error',
-      message: 'Required Google Drive API environment variables are not configured',
-      missingVariables: missingVars
+    console.error(
+      "Missing environment variables for Google Drive API:",
+      missingVars,
+    );
+    return res.status(500).json({
+      error: "Server Configuration Error",
+      message:
+        "Required Google Drive API environment variables are not configured",
+      missingVariables: missingVars,
     });
   }
 
   try {
     // Log environment info for debugging
-    console.log('Image proxy request:', {
+    console.log("Image proxy request:", {
       fileId,
       width: w,
       format,
       quality: q,
-      environment: process.env.VERCEL_ENV || process.env.NODE_ENV || 'unknown',
-      hasCredentials: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
+      environment: process.env.VERCEL_ENV || process.env.NODE_ENV || "unknown",
+      hasCredentials: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
     });
 
     // Configure Google Drive API client
@@ -100,75 +117,83 @@ export default async function handler(req, res) {
       credentials: {
         client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
         // Handle private key newlines properly (Vercel replaces \n with \\n)
-        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
         project_id: process.env.GOOGLE_PROJECT_ID,
       },
-      scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+      scopes: ["https://www.googleapis.com/auth/drive.readonly"],
     });
 
-    const drive = google.drive({ version: 'v3', auth });
+    const drive = google.drive({ version: "v3", auth });
 
     // First, get file metadata to check existence and get MIME type
     let fileMetadata;
     try {
       const metadataResponse = await drive.files.get({
         fileId: fileId,
-        fields: 'id,name,mimeType,size'
+        fields: "id,name,mimeType,size",
       });
       fileMetadata = metadataResponse.data;
     } catch (metaError) {
       if (metaError.code === 404) {
-        return res.status(404).json({ 
-          error: 'File Not Found',
-          message: 'The requested image file does not exist or is not accessible'
+        return res.status(404).json({
+          error: "File Not Found",
+          message:
+            "The requested image file does not exist or is not accessible",
         });
       }
       if (metaError.code === 403) {
-        return res.status(403).json({ 
-          error: 'Access Denied',
-          message: 'Permission denied to access the requested file'
+        return res.status(403).json({
+          error: "Access Denied",
+          message: "Permission denied to access the requested file",
         });
       }
       throw metaError;
     }
 
     // Validate that it's an image file
-    if (!fileMetadata.mimeType || !fileMetadata.mimeType.startsWith('image/')) {
-      return res.status(400).json({ 
-        error: 'Invalid File Type',
-        message: 'The requested file is not an image',
-        mimeType: fileMetadata.mimeType
+    if (!fileMetadata.mimeType || !fileMetadata.mimeType.startsWith("image/")) {
+      return res.status(400).json({
+        error: "Invalid File Type",
+        message: "The requested file is not an image",
+        mimeType: fileMetadata.mimeType,
       });
     }
 
     // Determine optimal format based on browser capabilities and request
-    const acceptHeader = req.headers.accept || '';
-    const userAgent = req.headers['user-agent'] || '';
+    const acceptHeader = req.headers.accept || "";
+    const userAgent = req.headers["user-agent"] || "";
     let targetFormat = format || detectOptimalFormat(acceptHeader, userAgent);
     const width = w ? parseInt(w) : null;
 
     // Generate enhanced cache key including format and size
-    const cacheKey = generateCacheKey(fileId, { width, format: targetFormat, quality });
+    const cacheKey = generateCacheKey(fileId, {
+      width,
+      format: targetFormat,
+      quality,
+    });
 
     // Handle conditional requests (304 Not Modified) with enhanced ETag
-    const ifNoneMatch = req.headers['if-none-match'];
+    const ifNoneMatch = req.headers["if-none-match"];
     if (ifNoneMatch && ifNoneMatch === `"${cacheKey}"`) {
       return res.status(304).end();
     }
 
     // Fetch the actual file content
-    const fileResponse = await drive.files.get({
-      fileId: fileId,
-      alt: 'media'
-    }, {
-      responseType: 'arraybuffer'
-    });
+    const fileResponse = await drive.files.get(
+      {
+        fileId: fileId,
+        alt: "media",
+      },
+      {
+        responseType: "arraybuffer",
+      },
+    );
 
     // Validate response
     if (!fileResponse.data) {
-      return res.status(404).json({ 
-        error: 'File Content Not Found',
-        message: 'File exists but content could not be retrieved'
+      return res.status(404).json({
+        error: "File Content Not Found",
+        message: "File exists but content could not be retrieved",
       });
     }
 
@@ -177,117 +202,126 @@ export default async function handler(req, res) {
 
     // Process image if format conversion or resizing is needed
     let processedBuffer = originalBuffer;
-    let finalContentType = fileMetadata.mimeType || 'image/jpeg';
+    let finalContentType = fileMetadata.mimeType || "image/jpeg";
 
     // Only process if we need to resize or change format
-    if (width || targetFormat !== 'jpeg' || (targetFormat === 'jpeg' && fileMetadata.mimeType !== 'image/jpeg')) {
+    if (
+      width ||
+      targetFormat !== "jpeg" ||
+      (targetFormat === "jpeg" && fileMetadata.mimeType !== "image/jpeg")
+    ) {
       try {
         const result = await processImage(originalBuffer, {
           width,
           format: targetFormat,
-          quality
+          quality,
         });
-        
+
         processedBuffer = result.buffer;
-        
+
         // Update content type based on actual format used (may have fallen back)
         switch (result.format) {
-          case 'avif':
-            finalContentType = 'image/avif';
+          case "avif":
+            finalContentType = "image/avif";
             break;
-          case 'webp':
-            finalContentType = 'image/webp';
+          case "webp":
+            finalContentType = "image/webp";
             break;
           default:
-            finalContentType = 'image/jpeg';
+            finalContentType = "image/jpeg";
             break;
         }
-        
+
         // Update target format for header reporting
         targetFormat = result.format;
       } catch (processError) {
-        console.error('Image processing error:', processError);
+        console.error("Image processing error:", processError);
         // Fallback to original image if processing fails
         processedBuffer = originalBuffer;
-        finalContentType = fileMetadata.mimeType || 'image/jpeg';
+        finalContentType = fileMetadata.mimeType || "image/jpeg";
       }
     }
 
     // Set response headers
-    res.setHeader('Content-Type', finalContentType);
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    res.setHeader('ETag', `"${cacheKey}"`);
-    res.setHeader('Vary', 'Accept'); // Important for format negotiation
-    res.setHeader('Accept-Ranges', 'bytes');
-    
+    res.setHeader("Content-Type", finalContentType);
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    res.setHeader("ETag", `"${cacheKey}"`);
+    res.setHeader("Vary", "Accept"); // Important for format negotiation
+    res.setHeader("Accept-Ranges", "bytes");
+
     // Add custom headers for debugging
-    res.setHeader('X-Image-Format', targetFormat);
-    res.setHeader('X-Browser-AVIF-Support', userAgent ? isAVIFSupported(userAgent).toString() : 'false');
+    res.setHeader("X-Image-Format", targetFormat);
+    res.setHeader(
+      "X-Browser-AVIF-Support",
+      userAgent ? isAVIFSupported(userAgent).toString() : "false",
+    );
     if (width) {
-      res.setHeader('X-Image-Width', width.toString());
+      res.setHeader("X-Image-Width", width.toString());
     }
 
     res.status(200).send(processedBuffer);
-
   } catch (error) {
-    console.error('Google Drive API Error:', {
+    console.error("Google Drive API Error:", {
       message: error.message,
       code: error.code,
       status: error.status,
       fileId: fileId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     // Handle specific Google API errors
     if (error.code === 404) {
-      return res.status(404).json({ 
-        error: 'File Not Found',
-        message: 'The requested image file does not exist'
+      return res.status(404).json({
+        error: "File Not Found",
+        message: "The requested image file does not exist",
       });
     }
-    
+
     if (error.code === 403) {
-      return res.status(403).json({ 
-        error: 'Access Denied',
-        message: 'Permission denied to access the requested file'
+      return res.status(403).json({
+        error: "Access Denied",
+        message: "Permission denied to access the requested file",
       });
     }
-    
+
     if (error.code === 429) {
-      return res.status(429).json({ 
-        error: 'Rate Limited',
-        message: 'Too many requests. Please try again later.'
+      return res.status(429).json({
+        error: "Rate Limited",
+        message: "Too many requests. Please try again later.",
       });
     }
 
     // Handle quota exceeded errors
-    if (error.message && error.message.includes('quota')) {
-      return res.status(503).json({ 
-        error: 'Service Unavailable',
-        message: 'API quota exceeded. Please try again later.'
+    if (error.message && error.message.includes("quota")) {
+      return res.status(503).json({
+        error: "Service Unavailable",
+        message: "API quota exceeded. Please try again later.",
       });
     }
 
     // Handle authentication errors
-    if (error.code === 401 || (error.message && error.message.includes('authentication'))) {
-      return res.status(500).json({ 
-        error: 'Authentication Error',
-        message: 'Failed to authenticate with Google Drive API'
+    if (
+      error.code === 401 ||
+      (error.message && error.message.includes("authentication"))
+    ) {
+      return res.status(500).json({
+        error: "Authentication Error",
+        message: "Failed to authenticate with Google Drive API",
       });
     }
 
     // Generic server error
-    return res.status(500).json({ 
-      error: 'Internal Server Error',
-      message: 'An unexpected error occurred while fetching the image',
+    return res.status(500).json({
+      error: "Internal Server Error",
+      message: "An unexpected error occurred while fetching the image",
       // Only include detailed error info in development
-      ...(process.env.NODE_ENV === 'development' && { 
+      ...(process.env.NODE_ENV === "development" && {
         debug: {
           message: error.message,
           code: error.code,
-          status: error.status
-        }
-      })
+          status: error.status,
+        },
+      }),
     });
   }
 }
@@ -313,10 +347,10 @@ function servePlaceholderImage(res, fileId) {
   `;
 
   // Set appropriate headers
-  res.setHeader('Content-Type', 'image/svg+xml');
-  res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  
+  res.setHeader("Content-Type", "image/svg+xml");
+  res.setHeader("Cache-Control", "public, max-age=3600"); // Cache for 1 hour
+  res.setHeader("Access-Control-Allow-Origin", "*");
+
   // Send the SVG
   res.status(200).send(svgContent);
 }
@@ -326,9 +360,9 @@ export const config = {
   api: {
     // Increase body size limit for large images (default is 1mb)
     bodyParser: {
-      sizeLimit: '10mb',
+      sizeLimit: "10mb",
     },
     // Set response size limit for large images
-    responseLimit: '10mb',
+    responseLimit: "10mb",
   },
-}
+};

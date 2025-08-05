@@ -235,9 +235,15 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Link", "value": "<https://fonts.googleapis.com>; rel=dns-prefetch" },
+        {
+          "key": "Link",
+          "value": "<https://fonts.googleapis.com>; rel=dns-prefetch"
+        },
         { "key": "Link", "value": "<https://instagram.com>; rel=dns-prefetch" },
-        { "key": "Link", "value": "<https://drive.google.com>; rel=preconnect; crossorigin" },
+        {
+          "key": "Link",
+          "value": "<https://drive.google.com>; rel=preconnect; crossorigin"
+        },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
         { "key": "X-XSS-Protection", "value": "1; mode=block" },
@@ -247,14 +253,20 @@
     {
       "source": "/(.*)\\.(jpg|jpeg|png|gif|svg|webp)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
         { "key": "Vary", "value": "Accept" }
       ]
     },
     {
       "source": "/(.*)\\.(css|js)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        },
         { "key": "Vary", "value": "Accept-Encoding" }
       ]
     },
@@ -262,14 +274,23 @@
       "source": "/(.*)\\.(json)",
       "headers": [
         { "key": "Content-Type", "value": "application/json" },
-        { "key": "Cache-Control", "value": "public, max-age=3600, stale-while-revalidate=86400" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        }
       ]
     },
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "s-maxage=3600, stale-while-revalidate=86400" },
-        { "key": "Access-Control-Allow-Origin", "value": "https://alocubano.boulderfest.com" },
+        {
+          "key": "Cache-Control",
+          "value": "s-maxage=3600, stale-while-revalidate=86400"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://alocubano.boulderfest.com"
+        },
         { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
         { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
       ]
@@ -277,7 +298,10 @@
     {
       "source": "/js/sw.js",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
         { "key": "Service-Worker-Allowed", "value": "/" }
       ]
     }

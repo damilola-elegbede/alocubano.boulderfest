@@ -1,258 +1,464 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Donations - A Lo Cubano Boulder Fest</title>
-    <meta name="description" content="Support A Lo Cubano Boulder Fest and help preserve authentic Cuban culture in Boulder. Your donations help fund workshops, artist travel, venue costs, and community accessibility programs.">
+    <meta
+      name="description"
+      content="Support A Lo Cubano Boulder Fest and help preserve authentic Cuban culture in Boulder. Your donations help fund workshops, artist travel, venue costs, and community accessibility programs."
+    />
     <!-- Favicons -->
-    <link rel="icon" type="image/png" href="/images/favicons/favicon-32x32.png">
-    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
-    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicons/favicon-16x16.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/images/favicons/favicon-192x192.png">
-    <link rel="apple-touch-icon" sizes="192x192" href="/images/favicons/favicon-192x192.png">
-    
+    <link
+      rel="icon"
+      type="image/png"
+      href="/images/favicons/favicon-32x32.png"
+    />
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/images/favicons/favicon-16x16.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/images/favicons/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+
     <!-- Critical resource preloading -->
     <script>
       // Inline critical path optimization - Event hero images with responsive variants
-      (function() {
+      (function () {
         // Check if optimized variants exist for event heroes
-        const heroPath = '/images/hero/donations.jpg';
+        const heroPath = "/images/hero/donations.jpg";
         const isEventHero = false;
-        
+
         if (isEventHero) {
           // Preload optimized variants for event heroes (WebP first, then JPEG fallback)
           const isMobile = window.innerWidth <= 768;
-          const variant = isMobile ? 'mobile' : 'desktop';
-          const baseName = 'donations';
-          
+          const variant = isMobile ? "mobile" : "desktop";
+          const baseName = "donations";
+
           // Preload WebP variant
-          const webpPreload = document.createElement('link');
-          webpPreload.rel = 'preload';
-          webpPreload.as = 'image';
+          const webpPreload = document.createElement("link");
+          webpPreload.rel = "preload";
+          webpPreload.as = "image";
           webpPreload.href = `/images/hero-optimized/${variant}/${baseName}.webp`;
-          webpPreload.type = 'image/webp';
+          webpPreload.type = "image/webp";
           document.head.appendChild(webpPreload);
-          
+
           // Preload AVIF variant for supported browsers
-          if (typeof window !== 'undefined' && 'OffscreenCanvas' in window) {
-            const avifPreload = document.createElement('link');
-            avifPreload.rel = 'preload';
-            avifPreload.as = 'image';
+          if (typeof window !== "undefined" && "OffscreenCanvas" in window) {
+            const avifPreload = document.createElement("link");
+            avifPreload.rel = "preload";
+            avifPreload.as = "image";
             avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
-            avifPreload.type = 'image/avif';
+            avifPreload.type = "image/avif";
             document.head.appendChild(avifPreload);
           }
-          
+
           // Fallback JPEG preload
-          const jpegPreload = document.createElement('link');
-          jpegPreload.rel = 'preload';
-          jpegPreload.as = 'image';
+          const jpegPreload = document.createElement("link");
+          jpegPreload.rel = "preload";
+          jpegPreload.as = "image";
           jpegPreload.href = `/images/hero-optimized/${variant}/${baseName}.jpg`;
-          jpegPreload.type = 'image/jpeg';
+          jpegPreload.type = "image/jpeg";
           document.head.appendChild(jpegPreload);
         } else {
           // Standard hero image preload for top-level pages
-          const heroPreload = document.createElement('link');
-          heroPreload.rel = 'preload';
-          heroPreload.as = 'image';
+          const heroPreload = document.createElement("link");
+          heroPreload.rel = "preload";
+          heroPreload.as = "image";
           heroPreload.href = heroPath;
           document.head.appendChild(heroPreload);
         }
-        
+
         // Preload gallery data for gallery pages
-        const pageId = window.location.pathname.split('/').pop() || 'home';
-        if (pageId.includes('gallery')) {
-          const year = pageId.includes('2025') ? '2025' : new Date().getFullYear();
-          const galleryDataPreload = document.createElement('link');
-          galleryDataPreload.rel = 'preload';
-          galleryDataPreload.as = 'fetch';
+        const pageId = window.location.pathname.split("/").pop() || "home";
+        if (pageId.includes("gallery")) {
+          const year = pageId.includes("2025")
+            ? "2025"
+            : new Date().getFullYear();
+          const galleryDataPreload = document.createElement("link");
+          galleryDataPreload.rel = "preload";
+          galleryDataPreload.as = "fetch";
           galleryDataPreload.href = `/api/gallery?year=${year}&category=workshops`;
-          galleryDataPreload.crossOrigin = 'anonymous';
+          galleryDataPreload.crossOrigin = "anonymous";
           document.head.appendChild(galleryDataPreload);
         }
       })();
     </script>
 
     <!-- DNS prefetch for external resources -->
-    <link rel="dns-prefetch" href="//fonts.googleapis.com">
-    <link rel="dns-prefetch" href="//fonts.gstatic.com">
-    
-    <link rel="stylesheet" href="/css/base.css">
-    <link rel="stylesheet" href="/css/components.css">
-    <link rel="stylesheet" href="/css/typography.css">
-    <link rel="stylesheet" href="/css/floating-cart.css">
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/floating-cart.css" />
     <!-- payment-modal.css is deprecated - using Stripe Checkout Sessions -->
-    <link rel="stylesheet" href="/css/checkout-loading.css">
-    <link rel="stylesheet" href="/css/mobile-overrides.css">
-</head>
-<body class="typographic">
+    <link rel="stylesheet" href="/css/checkout-loading.css" />
+    <link rel="stylesheet" href="/css/mobile-overrides.css" />
+  </head>
+  <body class="typographic">
     <header class="header">
-        <div class="container">
-            <div class="grid">
-                <div class="header-left">
-                    <a href="/home" class="logo-link" aria-label="Go to home page">
-                        <img src="/images/logo.png" alt="A Lo Cubano Boulder Fest Logo" class="site-logo">
-                        <div class="logo-text">
-                            <span class="logo-main">A LO CUBANO</span>
-                            <span class="logo-separator">|</span>
-                            <span class="logo-sub">Boulder Fest</span>
-                        </div>
-                    </a>
-                </div>
-                <nav class="main-nav">
-                    <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="main-navigation">
-                        <div class="menu-icon">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
-                    </button>
-                    <ul class="nav-list" id="main-navigation">
-                        <li><a href="/home" class="nav-link" data-text="Home">Home</a></li>
-                        <li><a href="/about" class="nav-link" data-text="About">About</a></li>
-                        <li class="nav-item has-dropdown">
-                            <button class="nav-trigger" aria-expanded="false" aria-haspopup="true" data-dropdown="events" data-text="Events">
-                                Events
-                                <span class="dropdown-arrow" aria-hidden="true">▼</span>
-                            </button>
-                            <ul class="dropdown-menu" aria-hidden="true" role="menu" data-dropdown-content="events">
-                                <li class="dropdown-category" role="group">
-                                    <span class="dropdown-category-title" role="presentation">Boulder Fest</span>
-                                    <ul class="dropdown-submenu">
-                                        <li><a href="/boulder-fest-2026" class="dropdown-link" role="menuitem" data-event="boulder-fest-2026" data-event-status="upcoming">2026 Festival</a></li>
-                                        <li><a href="/boulder-fest-2025" class="dropdown-link" role="menuitem" data-event="boulder-fest-2025" data-event-status="current">2025 Festival</a></li>
-                                    </ul>
-                                </li>
-                                <li class="dropdown-category" role="group">
-                                    <span class="dropdown-category-title" role="presentation">Weekend Events</span>
-                                    <ul class="dropdown-submenu">
-                                        <li><a href="/weekender-2026-09" class="dropdown-link" role="menuitem" data-event="weekender-2026-09" data-event-status="upcoming">Sept 2026 Weekender</a></li>
-                                    </ul>
-                                </li>
-                            </ul>
-                        </li>
-                        <li><a href="/tickets" class="nav-link" data-text="Tickets">Tickets</a></li>
-                        <li><a href="/donations" class="nav-link" data-text="Donate">Donate</a></li>
-                        <li><a href="/contact" class="nav-link" data-text="Contact">Contact</a></li>
+      <div class="container">
+        <div class="grid">
+          <div class="header-left">
+            <a href="/home" class="logo-link" aria-label="Go to home page">
+              <img
+                src="/images/logo.png"
+                alt="A Lo Cubano Boulder Fest Logo"
+                class="site-logo"
+              />
+              <div class="logo-text">
+                <span class="logo-main">A LO CUBANO</span>
+                <span class="logo-separator">|</span>
+                <span class="logo-sub">Boulder Fest</span>
+              </div>
+            </a>
+          </div>
+          <nav class="main-nav">
+            <button
+              class="menu-toggle"
+              aria-label="Toggle menu"
+              aria-expanded="false"
+              aria-controls="main-navigation"
+            >
+              <div class="menu-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </button>
+            <ul class="nav-list" id="main-navigation">
+              <li>
+                <a href="/home" class="nav-link" data-text="Home">Home</a>
+              </li>
+              <li>
+                <a href="/about" class="nav-link" data-text="About">About</a>
+              </li>
+              <li class="nav-item has-dropdown">
+                <button
+                  class="nav-trigger"
+                  aria-expanded="false"
+                  aria-haspopup="true"
+                  data-dropdown="events"
+                  data-text="Events"
+                >
+                  Events
+                  <span class="dropdown-arrow" aria-hidden="true">▼</span>
+                </button>
+                <ul
+                  class="dropdown-menu"
+                  aria-hidden="true"
+                  role="menu"
+                  data-dropdown-content="events"
+                >
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Boulder Fest</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/boulder-fest-2026"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="boulder-fest-2026"
+                          data-event-status="upcoming"
+                          >2026 Festival</a
+                        >
+                      </li>
+                      <li>
+                        <a
+                          href="/boulder-fest-2025"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="boulder-fest-2025"
+                          data-event-status="current"
+                          >2025 Festival</a
+                        >
+                      </li>
                     </ul>
-                </nav>
-            </div>
+                  </li>
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Weekend Events</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/weekender-2026-09"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="weekender-2026-09"
+                          data-event-status="upcoming"
+                          >Sept 2026 Weekender</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <a href="/tickets" class="nav-link" data-text="Tickets"
+                  >Tickets</a
+                >
+              </li>
+              <li>
+                <a href="/donations" class="nav-link" data-text="Donate"
+                  >Donate</a
+                >
+              </li>
+              <li>
+                <a href="/contact" class="nav-link" data-text="Contact"
+                  >Contact</a
+                >
+              </li>
+            </ul>
+          </nav>
         </div>
+      </div>
     </header>
 
     <main>
+      <!-- Hero Splash Image -->
+      <section class="gallery-hero-splash">
+        <div class="hero-image-container">
+          <img
+            id="hero-splash-image"
+            src=""
+            alt="Community supporters and volunteers making A Lo Cubano Boulder Fest possible, showing the impact of donations"
+            class="hero-splash-img"
+            style="object-position: top center !important"
+          />
+        </div>
+      </section>
 
-        <!-- Hero Splash Image -->
-        <section class="gallery-hero-splash">
-            <div class="hero-image-container">
-                <img id="hero-splash-image" src="" alt="Community supporters and volunteers making A Lo Cubano Boulder Fest possible, showing the impact of donations" class="hero-splash-img" style="object-position: top center !important;">
-            </div>
-        </section>
+      <!-- Donation Content -->
+      <section class="section-typographic">
+        <div class="container">
+          <!-- Mission Text -->
+          <div
+            style="
+              max-width: 700px;
+              margin: 0 auto var(--space-4xl) auto;
+              text-align: center;
+            "
+          >
+            <p
+              class="font-serif"
+              style="font-size: var(--font-size-lg); line-height: 1.8"
+            >
+              As a non-profit organization, we run and are able to create this
+              festival through ticket sales and the generous donations from our
+              community. Your support helps us bring world-class Cuban artists
+              to Boulder and keep this cultural celebration accessible to all.
+            </p>
+          </div>
 
-        <!-- Donation Content -->
-        <section class="section-typographic">
-            <div class="container">
-                <!-- Mission Text -->
-                <div style="max-width: 700px; margin: 0 auto var(--space-4xl) auto; text-align: center;">
-                    <p class="font-serif" style="font-size: var(--font-size-lg); line-height: 1.8;">
-                        As a non-profit organization, we run and are able to create this festival through ticket sales and the generous donations from our community. Your support helps us bring world-class Cuban artists to Boulder and keep this cultural celebration accessible to all.
-                    </p>
+          <!-- Donation Form -->
+          <div
+            class="donation-form-wrapper donation-form-container"
+            style="max-width: 800px; margin: 0 auto; text-align: center"
+          >
+            <h2
+              id="donation-form-title"
+              class="text-display"
+              style="
+                text-align: center !important;
+                margin-bottom: var(--space-2xl);
+              "
+            >
+              MAKE A DONATION
+            </h2>
+
+            <!-- Donation Selection Interface -->
+            <section class="donation-selection">
+              <h3
+                class="form-label-type font-mono"
+                style="
+                  display: block;
+                  margin-bottom: var(--space-lg);
+                  text-align: center;
+                "
+              >
+                SELECT AMOUNT
+              </h3>
+
+              <div
+                class="donation-amounts"
+                style="
+                  display: flex;
+                  justify-content: center;
+                  flex-wrap: wrap;
+                  gap: var(--space-lg);
+                  margin-bottom: var(--space-xl);
+                "
+              >
+                <div class="donation-card" data-amount="20">
+                  <div class="donation-amount">$20</div>
                 </div>
 
-                <!-- Donation Form -->
-                <div class="donation-form-wrapper donation-form-container" style="max-width: 800px; margin: 0 auto; text-align: center;">
-                    <h2 id="donation-form-title" class="text-display" style="text-align: center !important; margin-bottom: var(--space-2xl);">MAKE A DONATION</h2>
-                    
-                    <!-- Donation Selection Interface -->
-                    <section class="donation-selection">
-                        <h3 class="form-label-type font-mono" style="display: block; margin-bottom: var(--space-lg); text-align: center;">SELECT AMOUNT</h3>
-                        
-                        <div class="donation-amounts" style="display: flex; justify-content: center; flex-wrap: wrap; gap: var(--space-lg); margin-bottom: var(--space-xl);">
-                            <div class="donation-card" data-amount="20">
-                                <div class="donation-amount">$20</div>
-                            </div>
-                            
-                            <div class="donation-card" data-amount="50">
-                                <div class="donation-amount">$50</div>
-                            </div>
-                            
-                            <div class="donation-card" data-amount="100">
-                                <div class="donation-amount">$100</div>
-                            </div>
-                            
-                            <div class="donation-card" data-amount="custom">
-                                <div class="donation-amount">CUSTOM</div>
-                            </div>
-                        </div>
-                        
-                    </section>
-                    
-                    <form class="donation-form" id="donation-form" method="post" novalidate role="form" aria-labelledby="donation-form-title">
-
-
-                        <!-- Submit Button -->
-                        <div style="text-align: center;">
-                            <button type="button" id="donate-button" class="form-button-type" style="padding: var(--space-lg) var(--space-3xl);" disabled>
-                                ADD TO CART
-                            </button>
-                        </div>
-                    </form>
+                <div class="donation-card" data-amount="50">
+                  <div class="donation-amount">$50</div>
                 </div>
 
-
-                <!-- Tax Info -->
-                <div style="margin-top: var(--space-4xl); text-align: center; padding: var(--space-2xl); background: var(--color-gray-50);">
-                    <p class="font-mono" style="font-size: var(--font-size-sm); color: var(--color-gray-600);">
-                        A Lo Cubano Boulder Fest is a registered 501(c)(3) non-profit organization.<br>
-                        All donations are tax-deductible to the extent allowed by law.
-                    </p>
+                <div class="donation-card" data-amount="100">
+                  <div class="donation-amount">$100</div>
                 </div>
-            </div>
-        </section>
+
+                <div class="donation-card" data-amount="custom">
+                  <div class="donation-amount">CUSTOM</div>
+                </div>
+              </div>
+            </section>
+
+            <form
+              class="donation-form"
+              id="donation-form"
+              method="post"
+              novalidate
+              role="form"
+              aria-labelledby="donation-form-title"
+            >
+              <!-- Submit Button -->
+              <div style="text-align: center">
+                <button
+                  type="button"
+                  id="donate-button"
+                  class="form-button-type"
+                  style="padding: var(--space-lg) var(--space-3xl)"
+                  disabled
+                >
+                  ADD TO CART
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Tax Info -->
+          <div
+            style="
+              margin-top: var(--space-4xl);
+              text-align: center;
+              padding: var(--space-2xl);
+              background: var(--color-gray-50);
+            "
+          >
+            <p
+              class="font-mono"
+              style="
+                font-size: var(--font-size-sm);
+                color: var(--color-gray-600);
+              "
+            >
+              A Lo Cubano Boulder Fest is a registered 501(c)(3) non-profit
+              organization.<br />
+              All donations are tax-deductible to the extent allowed by law.
+            </p>
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer class="footer-typographic">
-        <div class="container">
-            <p class="footer-credits">MAY 15-17, 2026 • <a href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry" style="color: inherit; text-decoration: underline;">alocubanoboulderfest@gmail.com</a></p>
-            <div class="footer-social">
-                <a href="https://instagram.com/alocubanoboulder" target="_blank" rel="noopener noreferrer" class="social-link-type" aria-label="Follow us on Instagram">
-                    <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-                    </svg>
-                </a>
-                <a href="https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH" target="_blank" rel="noopener noreferrer" class="social-link-type" aria-label="Join us on WhatsApp">
-                    <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-                    </svg>
-                </a>
-            </div>
+      <div class="container">
+        <p class="footer-credits">
+          MAY 15-17, 2026 •
+          <a
+            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
+            style="color: inherit; text-decoration: underline"
+            >alocubanoboulderfest@gmail.com</a
+          >
+        </p>
+        <div class="footer-social">
+          <a
+            href="https://instagram.com/alocubanoboulder"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-link-type"
+            aria-label="Follow us on Instagram"
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+          </a>
+          <a
+            href="https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-link-type"
+            aria-label="Join us on WhatsApp"
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
+              ></path>
+            </svg>
+          </a>
         </div>
+      </div>
     </footer>
     <!-- Load Stripe.js -->
     <script src="https://js.stripe.com/v3/"></script>
-    
+
     <!-- Add Stripe publishable key to window -->
     <script>
-        // Fetch Stripe publishable key from API
-        (async function() {
-            try {
-                const response = await fetch('/api/config/stripe-public');
-                if (response.ok) {
-                    const data = await response.json();
-                    window.STRIPE_PUBLISHABLE_KEY = data.publishableKey;
-                } else {
-                    console.error('Failed to load payment configuration');
-                }
-            } catch (error) {
-                console.error('Error loading payment configuration:', error);
-            }
-        })();
+      // Fetch Stripe publishable key from API
+      (async function () {
+        try {
+          const response = await fetch("/api/config/stripe-public");
+          if (response.ok) {
+            const data = await response.json();
+            window.STRIPE_PUBLISHABLE_KEY = data.publishableKey;
+          } else {
+            console.error("Failed to load payment configuration");
+          }
+        } catch (error) {
+          console.error("Error loading payment configuration:", error);
+        }
+      })();
     </script>
-    
+
     <script src="/js/navigation.js"></script>
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
@@ -260,8 +466,8 @@
     <script src="/js/typography.js"></script>
     <script src="/js/gallery-hero.js"></script>
     <script type="module" src="/js/donation-selection.js"></script>
-    
+
     <!-- Global Cart System -->
     <script type="module" src="/js/global-cart.js"></script>
-</body>
+  </body>
 </html>

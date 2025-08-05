@@ -12,14 +12,17 @@ if (typeof LazyLoader === 'undefined') {
                 rootMargin: options.rootMargin || '50px 0px',
                 threshold: options.threshold || 0.1,
                 selector: options.selector || 'img[data-src]',
-                advancedSelector: options.advancedSelector || '.lazy-item[data-loaded="false"]',
+                advancedSelector:
+          options.advancedSelector || '.lazy-item[data-loaded="false"]',
                 loadedClass: options.loadedClass || 'loaded',
                 advanced: options.advanced || false,
                 maxRetries: options.maxRetries || 3,
                 // Responsive image options
                 responsive: options.responsive || false,
                 widths: options.widths || [400, 800, 1200],
-                sizes: options.sizes || '(max-width: 400px) 400px, (max-width: 800px) 800px, 1200px',
+                sizes:
+          options.sizes ||
+          '(max-width: 400px) 400px, (max-width: 800px) 800px, 1200px',
                 webpSupport: options.webpSupport !== false // Default to true unless explicitly disabled
             };
 
@@ -47,9 +50,9 @@ if (typeof LazyLoader === 'undefined') {
         }
 
         /**
-         * Detect WebP support using a small test image
-         * @returns {Promise<boolean>} Promise that resolves to WebP support status
-         */
+     * Detect WebP support using a small test image
+     * @returns {Promise<boolean>} Promise that resolves to WebP support status
+     */
         async detectWebPSupport() {
             if (this.webpSupported !== null) {
                 return this.webpSupported;
@@ -58,7 +61,8 @@ if (typeof LazyLoader === 'undefined') {
             return new Promise((resolve) => {
                 const webpTestImage = new Image();
                 webpTestImage.onload = () => {
-                    this.webpSupported = webpTestImage.width > 0 && webpTestImage.height > 0;
+                    this.webpSupported =
+            webpTestImage.width > 0 && webpTestImage.height > 0;
                     resolve(this.webpSupported);
                 };
                 webpTestImage.onerror = () => {
@@ -66,24 +70,27 @@ if (typeof LazyLoader === 'undefined') {
                     resolve(this.webpSupported);
                 };
                 // 1x1 pixel WebP image in base64
-                webpTestImage.src = 'data:image/webp;base64,UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA==';
+                webpTestImage.src =
+          'data:image/webp;base64,UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA==';
             });
         }
 
         /**
-         * Create a responsive picture element with WebP and JPEG sources
-         * @param {string} baseSrc - Base image source path
-         * @param {string} alt - Alt text for the image
-         * @param {string} className - CSS class for the img element
-         * @returns {HTMLPictureElement} Picture element with responsive sources
-         */
+     * Create a responsive picture element with WebP and JPEG sources
+     * @param {string} baseSrc - Base image source path
+     * @param {string} alt - Alt text for the image
+     * @param {string} className - CSS class for the img element
+     * @returns {HTMLPictureElement} Picture element with responsive sources
+     */
         createResponsiveImageElement(baseSrc, alt = '', className = '') {
             const picture = document.createElement('picture');
 
             // Extract file extension and base path
             const lastDotIndex = baseSrc.lastIndexOf('.');
-            const basePath = lastDotIndex !== -1 ? baseSrc.substring(0, lastDotIndex) : baseSrc;
-            const extension = lastDotIndex !== -1 ? baseSrc.substring(lastDotIndex) : '.jpg';
+            const basePath =
+        lastDotIndex !== -1 ? baseSrc.substring(0, lastDotIndex) : baseSrc;
+            const extension =
+        lastDotIndex !== -1 ? baseSrc.substring(lastDotIndex) : '.jpg';
 
             // Create WebP source if supported
             if (this.config.webpSupport && this.webpSupported !== false) {
@@ -92,7 +99,7 @@ if (typeof LazyLoader === 'undefined') {
 
                 // Generate srcset for different widths
                 const webpSrcset = this.config.widths
-                    .map(width => `${basePath}_${width}w.webp ${width}w`)
+                    .map((width) => `${basePath}_${width}w.webp ${width}w`)
                     .join(', ');
 
                 webpSource.srcset = webpSrcset;
@@ -102,11 +109,14 @@ if (typeof LazyLoader === 'undefined') {
 
             // Create JPEG/fallback source
             const jpegSource = document.createElement('source');
-            jpegSource.type = extension === '.jpg' || extension === '.jpeg' ? 'image/jpeg' : `image/${extension.substring(1)}`;
+            jpegSource.type =
+        extension === '.jpg' || extension === '.jpeg'
+            ? 'image/jpeg'
+            : `image/${extension.substring(1)}`;
 
             // Generate srcset for different widths
             const jpegSrcset = this.config.widths
-                .map(width => `${basePath}_${width}w${extension} ${width}w`)
+                .map((width) => `${basePath}_${width}w${extension} ${width}w`)
                 .join(', ');
 
             jpegSource.srcset = jpegSrcset;
@@ -131,19 +141,23 @@ if (typeof LazyLoader === 'undefined') {
         }
 
         /**
-         * Replace an existing img element with a responsive picture element
-         * @param {HTMLImageElement} imgElement - The img element to replace
-         * @returns {HTMLPictureElement} The new picture element
-         */
+     * Replace an existing img element with a responsive picture element
+     * @param {HTMLImageElement} imgElement - The img element to replace
+     * @returns {HTMLPictureElement} The new picture element
+     */
         replaceWithResponsiveImage(imgElement) {
             const baseSrc = imgElement.dataset.src || imgElement.src;
             const alt = imgElement.alt || '';
             const className = imgElement.className || '';
 
-            const picture = this.createResponsiveImageElement(baseSrc, alt, className);
+            const picture = this.createResponsiveImageElement(
+                baseSrc,
+                alt,
+                className
+            );
 
             // Copy any data attributes
-            Array.from(imgElement.attributes).forEach(attr => {
+            Array.from(imgElement.attributes).forEach((attr) => {
                 if (attr.name.startsWith('data-') && attr.name !== 'data-src') {
                     picture.querySelector('img').setAttribute(attr.name, attr.value);
                 }
@@ -156,28 +170,33 @@ if (typeof LazyLoader === 'undefined') {
         }
 
         createObserver() {
-            this.observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        if (this.config.advanced) {
-                            this.loadAdvancedItem(entry.target);
-                        } else {
-                            this.loadSimpleImage(entry.target);
+            this.observer = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            if (this.config.advanced) {
+                                this.loadAdvancedItem(entry.target);
+                            } else {
+                                this.loadSimpleImage(entry.target);
+                            }
+                            this.observer.unobserve(entry.target);
                         }
-                        this.observer.unobserve(entry.target);
-                    }
-                });
-            }, {
-                rootMargin: this.config.rootMargin,
-                threshold: this.config.threshold
-            });
+                    });
+                },
+                {
+                    rootMargin: this.config.rootMargin,
+                    threshold: this.config.threshold
+                }
+            );
         }
 
         observeElements() {
-            const selector = this.config.advanced ? this.config.advancedSelector : this.config.selector;
+            const selector = this.config.advanced
+                ? this.config.advancedSelector
+                : this.config.selector;
             const elements = document.querySelectorAll(selector);
 
-            elements.forEach(element => {
+            elements.forEach((element) => {
                 this.observer.observe(element);
             });
         }
@@ -228,25 +247,34 @@ if (typeof LazyLoader === 'undefined') {
                     // Check if we should retry automatically
                     if (retryInfo.retryCount <= this.config.maxRetries) {
                         // eslint-disable-next-line no-console
-                        console.warn(`Image load failed, retrying (${retryInfo.retryCount}/${this.config.maxRetries}):`, src);
+                        console.warn(
+                            `Image load failed, retrying (${retryInfo.retryCount}/${this.config.maxRetries}):`,
+                            src
+                        );
 
                         // Show loading state during retry
                         img.style.opacity = '0.5';
                         img.alt = `↻ Retrying... (${retryInfo.retryCount}/${this.config.maxRetries})`;
 
                         // Retry after a short delay with exponential backoff
-                        const retryDelay = Math.min(1000 * Math.pow(2, retryInfo.retryCount - 1), 5000);
+                        const retryDelay = Math.min(
+                            1000 * Math.pow(2, retryInfo.retryCount - 1),
+                            5000
+                        );
                         setTimeout(() => {
                             // Add cache buster to force reload
-                            const cacheBuster = src.includes('?') ?
-                                `&retry=${retryInfo.retryCount}&t=${Date.now()}` :
-                                `?retry=${retryInfo.retryCount}&t=${Date.now()}`;
+                            const cacheBuster = src.includes('?')
+                                ? `&retry=${retryInfo.retryCount}&t=${Date.now()}`
+                                : `?retry=${retryInfo.retryCount}&t=${Date.now()}`;
                             img.src = src + cacheBuster;
                         }, retryDelay);
                     } else {
                         // Max retries exceeded - show error state
                         // eslint-disable-next-line no-console
-                        console.error(`Failed to load image after ${this.config.maxRetries} retries:`, src);
+                        console.error(
+                            `Failed to load image after ${this.config.maxRetries} retries:`,
+                            src
+                        );
 
                         img.style.opacity = '1';
                         img.style.cursor = 'pointer';
@@ -273,11 +301,11 @@ if (typeof LazyLoader === 'undefined') {
         }
 
         /**
-         * Load responsive image with WebP support
-         * @param {HTMLImageElement} img - The img element inside the picture
-         * @param {HTMLPictureElement} picture - The picture element
-         * @param {string} originalSrc - Original source URL
-         */
+     * Load responsive image with WebP support
+     * @param {HTMLImageElement} img - The img element inside the picture
+     * @param {HTMLPictureElement} picture - The picture element
+     * @param {string} originalSrc - Original source URL
+     */
         loadResponsiveImage(img, picture, originalSrc) {
             const src = originalSrc || img.dataset.src || img.src;
 
@@ -314,28 +342,37 @@ if (typeof LazyLoader === 'undefined') {
                 // Check if we should retry automatically
                 if (retryInfo.retryCount <= this.config.maxRetries) {
                     // eslint-disable-next-line no-console
-                    console.warn(`Responsive image load failed, retrying (${retryInfo.retryCount}/${this.config.maxRetries}):`, src);
+                    console.warn(
+                        `Responsive image load failed, retrying (${retryInfo.retryCount}/${this.config.maxRetries}):`,
+                        src
+                    );
 
                     // Show loading state during retry
                     img.style.opacity = '0.5';
                     img.alt = `↻ Retrying... (${retryInfo.retryCount}/${this.config.maxRetries})`;
 
                     // Retry after a short delay with exponential backoff
-                    const retryDelay = Math.min(1000 * Math.pow(2, retryInfo.retryCount - 1), 5000);
+                    const retryDelay = Math.min(
+                        1000 * Math.pow(2, retryInfo.retryCount - 1),
+                        5000
+                    );
                     setTimeout(() => {
                         // Add cache buster to all sources
-                        const cacheBuster = src.includes('?') ?
-                            `&retry=${retryInfo.retryCount}&t=${Date.now()}` :
-                            `?retry=${retryInfo.retryCount}&t=${Date.now()}`;
+                        const cacheBuster = src.includes('?')
+                            ? `&retry=${retryInfo.retryCount}&t=${Date.now()}`
+                            : `?retry=${retryInfo.retryCount}&t=${Date.now()}`;
 
                         // Update all source elements
                         const sources = picture.querySelectorAll('source');
-                        sources.forEach(source => {
+                        sources.forEach((source) => {
                             if (source.srcset) {
-                                source.srcset = source.srcset.split(',').map(srcItem => {
-                                    const [url, descriptor] = srcItem.trim().split(' ');
-                                    return `${url}${cacheBuster} ${descriptor || ''}`.trim();
-                                }).join(', ');
+                                source.srcset = source.srcset
+                                    .split(',')
+                                    .map((srcItem) => {
+                                        const [url, descriptor] = srcItem.trim().split(' ');
+                                        return `${url}${cacheBuster} ${descriptor || ''}`.trim();
+                                    })
+                                    .join(', ');
                             }
                         });
 
@@ -345,7 +382,10 @@ if (typeof LazyLoader === 'undefined') {
                 } else {
                     // Max retries exceeded - show error state
                     // eslint-disable-next-line no-console
-                    console.error(`Failed to load responsive image after ${this.config.maxRetries} retries:`, src);
+                    console.error(
+                        `Failed to load responsive image after ${this.config.maxRetries} retries:`,
+                        src
+                    );
 
                     img.style.opacity = '1';
                     img.style.cursor = 'pointer';
@@ -420,7 +460,10 @@ if (typeof LazyLoader === 'undefined') {
                         // Check if we should retry automatically
                         if (retryInfo.retryCount <= this.config.maxRetries) {
                             // eslint-disable-next-line no-console
-                            console.warn(`Image load failed, retrying (${retryInfo.retryCount}/${this.config.maxRetries}):`, src);
+                            console.warn(
+                                `Image load failed, retrying (${retryInfo.retryCount}/${this.config.maxRetries}):`,
+                                src
+                            );
 
                             // Show loading state during retry
                             if (spinner) {
@@ -430,18 +473,24 @@ if (typeof LazyLoader === 'undefined') {
                             }
 
                             // Retry after a short delay with exponential backoff
-                            const retryDelay = Math.min(1000 * Math.pow(2, retryInfo.retryCount - 1), 5000);
+                            const retryDelay = Math.min(
+                                1000 * Math.pow(2, retryInfo.retryCount - 1),
+                                5000
+                            );
                             setTimeout(() => {
                                 // Add cache buster to force reload
-                                const cacheBuster = src.includes('?') ?
-                                    `&retry=${retryInfo.retryCount}&t=${Date.now()}` :
-                                    `?retry=${retryInfo.retryCount}&t=${Date.now()}`;
+                                const cacheBuster = src.includes('?')
+                                    ? `&retry=${retryInfo.retryCount}&t=${Date.now()}`
+                                    : `?retry=${retryInfo.retryCount}&t=${Date.now()}`;
                                 lazyImage.src = src + cacheBuster;
                             }, retryDelay);
                         } else {
                             // Max retries exceeded - show error state
                             // eslint-disable-next-line no-console
-                            console.error(`Failed to load image after ${this.config.maxRetries} retries:`, src);
+                            console.error(
+                                `Failed to load image after ${this.config.maxRetries} retries:`,
+                                src
+                            );
 
                             if (spinner) {
                                 spinner.textContent = '❌';
@@ -474,10 +523,10 @@ if (typeof LazyLoader === 'undefined') {
         fallbackLoad() {
             if (this.config.advanced) {
                 const items = document.querySelectorAll(this.config.advancedSelector);
-                items.forEach(item => this.loadAdvancedItem(item));
+                items.forEach((item) => this.loadAdvancedItem(item));
             } else {
                 const images = document.querySelectorAll(this.config.selector);
-                images.forEach(img => this.loadSimpleImage(img));
+                images.forEach((img) => this.loadSimpleImage(img));
             }
         }
 
@@ -489,7 +538,7 @@ if (typeof LazyLoader === 'undefined') {
 
             if (elements) {
                 // Observe specific elements
-                elements.forEach(element => {
+                elements.forEach((element) => {
                     this.observer.observe(element);
                 });
             } else {
@@ -500,10 +549,12 @@ if (typeof LazyLoader === 'undefined') {
 
         // Method to load all remaining elements immediately
         loadAll() {
-            const selector = this.config.advanced ? this.config.advancedSelector : this.config.selector;
+            const selector = this.config.advanced
+                ? this.config.advancedSelector
+                : this.config.selector;
             const elements = document.querySelectorAll(selector);
 
-            elements.forEach(element => {
+            elements.forEach((element) => {
                 if (this.config.advanced) {
                     this.loadAdvancedItem(element);
                 } else {
@@ -551,7 +602,9 @@ if (typeof LazyLoader === 'undefined') {
                 responsive: true,
                 selector: options.selector || 'img[data-src]',
                 widths: options.widths || [400, 800, 1200],
-                sizes: options.sizes || '(max-width: 400px) 400px, (max-width: 800px) 800px, 1200px',
+                sizes:
+          options.sizes ||
+          '(max-width: 400px) 400px, (max-width: 800px) 800px, 1200px',
                 webpSupport: options.webpSupport !== false
             });
         }
@@ -564,7 +617,9 @@ if (typeof LazyLoader === 'undefined') {
                 advancedSelector: options.selector || '.lazy-item[data-loaded="false"]',
                 rootMargin: options.rootMargin || '100px 0px',
                 widths: options.widths || [400, 800, 1200],
-                sizes: options.sizes || '(max-width: 400px) 400px, (max-width: 800px) 800px, 1200px',
+                sizes:
+          options.sizes ||
+          '(max-width: 400px) 400px, (max-width: 800px) 800px, 1200px',
                 webpSupport: options.webpSupport !== false
             });
         }
@@ -613,13 +668,16 @@ if (typeof LazyLoader === 'undefined') {
                     // Update all sources with cache buster
                     const cacheBuster = `?retry=${retryInfo.retryCount}&t=${Date.now()}`;
                     const sources = picture.querySelectorAll('source');
-                    sources.forEach(source => {
+                    sources.forEach((source) => {
                         if (source.srcset) {
-                            source.srcset = source.srcset.split(',').map(srcItem => {
-                                const [url, descriptor] = srcItem.trim().split(' ');
-                                const cleanUrl = url.split('?')[0]; // Remove existing params
-                                return `${cleanUrl}${cacheBuster} ${descriptor || ''}`.trim();
-                            }).join(', ');
+                            source.srcset = source.srcset
+                                .split(',')
+                                .map((srcItem) => {
+                                    const [url, descriptor] = srcItem.trim().split(' ');
+                                    const cleanUrl = url.split('?')[0]; // Remove existing params
+                                    return `${cleanUrl}${cacheBuster} ${descriptor || ''}`.trim();
+                                })
+                                .join(', ');
                         }
                     });
 
@@ -648,7 +706,10 @@ if (typeof LazyLoader === 'undefined') {
                     };
 
                     // eslint-disable-next-line no-console
-                    console.warn(`Retry ${retryInfo.retryCount} failed for responsive image:`, src);
+                    console.warn(
+                        `Retry ${retryInfo.retryCount} failed for responsive image:`,
+                        src
+                    );
                 };
 
                 // Test loading with cache-busting parameter
@@ -809,7 +870,7 @@ if (typeof LazyLoader === 'undefined') {
             // eslint-disable-next-line no-console
             console.log(`Retrying ${failedItems.length} failed images...`);
 
-            failedItems.forEach(item => {
+            failedItems.forEach((item) => {
                 // Check if it's a simple image, responsive picture, or advanced item
                 if (item.tagName === 'IMG') {
                     this.retrySimpleImage(item);

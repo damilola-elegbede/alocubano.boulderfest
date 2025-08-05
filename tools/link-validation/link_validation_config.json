@@ -4,12 +4,9 @@
     "base_url": "http://localhost:8000",
     "production_url": "https://alocubano.boulderfest.com"
   },
-  
+
   "file_discovery": {
-    "include_patterns": [
-      "*.html",
-      "pages/*.html"
-    ],
+    "include_patterns": ["*.html", "pages/*.html"],
     "exclude_patterns": [
       "**/node_modules/**",
       "**/coverage/**",
@@ -18,7 +15,7 @@
       "**/.*"
     ]
   },
-  
+
   "validation_settings": {
     "check_external_links": false,
     "external_link_timeout": 10,
@@ -39,19 +36,19 @@
     "protocol_relative_pattern": "^//[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}",
     "skip_rel_attributes": ["dns-prefetch", "preconnect", "prefetch"]
   },
-  
+
   "server_routes": {
     "/": "/index.html",
     "/home": "/pages/home.html",
     "/about": "/pages/about.html",
-    "/artists": "/pages/artists.html", 
+    "/artists": "/pages/artists.html",
     "/schedule": "/pages/schedule.html",
     "/gallery": "/pages/gallery.html",
     "/tickets": "/pages/tickets.html",
     "/donations": "/pages/donations.html",
     "/gallery-2025": "/pages/gallery-2025.html"
   },
-  
+
   "api_endpoints": [
     "/api/featured-photos",
     "/api/gallery",
@@ -59,21 +56,24 @@
     "/api/debug-gallery",
     "/api/image-proxy/*"
   ],
-  
-  "static_directories": [
-    "css",
-    "js",
-    "images",
-    "assets", 
-    "public"
-  ],
-  
+
+  "static_directories": ["css", "js", "images", "assets", "public"],
+
   "file_extensions": {
     "internal_files": [".css", ".js", ".json", ".txt", ".xml"],
-    "internal_images": [".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".webp", ".avif"],
+    "internal_images": [
+      ".png",
+      ".jpg",
+      ".jpeg",
+      ".gif",
+      ".svg",
+      ".ico",
+      ".webp",
+      ".avif"
+    ],
     "external_protocols": ["http", "https", "mailto", "tel", "ftp"]
   },
-  
+
   "reporting": {
     "output_file": "link_validation_report.txt",
     "generate_json_report": true,
