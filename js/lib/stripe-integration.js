@@ -3,7 +3,7 @@
  * Handles client-side payment processing with Stripe Elements
  */
 
-import { loadStripe } from 'https://js.stripe.com/v3/';
+// Stripe v3 doesn't support ES modules, so we need to load it globally
 
 class StripePaymentHandler {
     constructor() {
@@ -32,8 +32,11 @@ class StripePaymentHandler {
                 this.publishableKey = await this.waitForPublishableKey();
             }
 
+            // Wait for Stripe.js to load
+            await this.waitForStripe();
+
             // Initialize Stripe
-            this.stripe = await loadStripe(this.publishableKey);
+            this.stripe = window.Stripe(this.publishableKey);
 
             if (!this.stripe) {
                 throw new Error('Failed to initialize Stripe');
@@ -62,6 +65,16 @@ class StripePaymentHandler {
             await new Promise(resolve => setTimeout(resolve, delay));
         }
         throw new Error('Stripe publishable key not found. Payment system may not be configured.');
+    }
+
+    async waitForStripe(maxAttempts = 20, delay = 250) {
+        for (let i = 0; i < maxAttempts; i++) {
+            if (window.Stripe) {
+                return true;
+            }
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        throw new Error('Stripe.js failed to load. Please check your internet connection.');
     }
 
     /**

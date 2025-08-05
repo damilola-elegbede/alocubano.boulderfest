@@ -106,7 +106,9 @@ class TicketSelection {
         });
 
         // Listen for checkout event from floating cart
-        document.addEventListener('cart:checkout', () => {
+        document.addEventListener('cart:checkout', (event) => {
+            // Prevent the default redirect behavior
+            event.preventDefault();
             this.handleCheckout();
         });
     }

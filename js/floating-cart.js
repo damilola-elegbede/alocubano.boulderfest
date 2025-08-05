@@ -241,14 +241,26 @@ function handleCheckoutClick(cartManager) {
     }
   }
 
-  // Store cart state securely in sessionStorage to avoid URL length limits
-  // and prevent exposing sensitive data in URLs
-  try {
-    sessionStorage.setItem("checkout_cart", JSON.stringify(cartState));
-    window.location.href = "/tickets?checkout=true";
-  } catch {
-    // Fallback if sessionStorage is not available - continue without warning
-    window.location.href = "/tickets?checkout=true";
+  // Dispatch a custom event that page-specific handlers can listen to
+  const checkoutEvent = new CustomEvent("cart:checkout", {
+    detail: { cartState },
+    bubbles: true,
+    cancelable: true
+  });
+  
+  document.dispatchEvent(checkoutEvent);
+  
+  // If no handler prevented default, redirect to tickets page
+  if (!checkoutEvent.defaultPrevented) {
+    // Store cart state securely in sessionStorage to avoid URL length limits
+    // and prevent exposing sensitive data in URLs
+    try {
+      sessionStorage.setItem("checkout_cart", JSON.stringify(cartState));
+      window.location.href = "/tickets?checkout=true";
+    } catch {
+      // Fallback if sessionStorage is not available - continue without warning
+      window.location.href = "/tickets?checkout=true";
+    }
   }
 }
 
