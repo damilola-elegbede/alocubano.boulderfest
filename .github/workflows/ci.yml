@@ -115,6 +115,10 @@ jobs:
         run: |
           python3 -m http.server 8000 &
           SERVER_PID=$!
+          
+          # Set up trap to ensure server is killed on exit
+          trap "kill $SERVER_PID 2>/dev/null || true" EXIT
+          
           sleep 5
 
           # Test if server is running
@@ -146,8 +150,8 @@ jobs:
 
           # Test CSS loading
           curl -f http://localhost:8000/css/typography.css || exit 1
-
-          kill $SERVER_PID
+          
+          # Server will be killed by trap on exit
 
   security-scan:
     runs-on: ubuntu-latest
