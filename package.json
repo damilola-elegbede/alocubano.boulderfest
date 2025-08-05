@@ -18,6 +18,8 @@
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:unit:ui": "vitest --ui",
+    "test:memory": "node scripts/test-with-memory.js run",
+    "test:memory:watch": "node scripts/test-with-memory.js",
     "test:coverage": "vitest run --coverage",
     "test:all": "npm run test:unit && npm run test:links",
     "test:links": "node tests/run-link-tests.js",

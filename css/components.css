@@ -1376,10 +1376,11 @@
 }
 
 .donation-amounts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  display: flex;
+  justify-content: center;
   gap: var(--space-lg);
   margin-bottom: var(--space-xl);
+  flex-wrap: wrap;
 }
 
 .donation-card {
@@ -1391,7 +1392,8 @@
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
-  min-height: 120px;
+  width: 120px;
+  height: 120px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1425,50 +1427,213 @@
   color: inherit;
 }
 
-.donation-label {
-  font-family: var(--font-code);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  margin-top: var(--space-xs);
+/* Removed donation-label styles since labels are removed */
+
+/* Custom donation input inside card */
+.custom-amount-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.dollar-sign {
+  font-family: var(--font-display);
+  font-size: var(--font-size-3xl);
+  font-weight: 900;
   color: inherit;
+}
+
+.custom-amount-input {
+  border: none;
+  background: transparent;
+  font-family: var(--font-display);
+  font-size: var(--font-size-3xl);
+  font-weight: 900;
+  color: inherit;
+  text-align: left;
+  width: 60px;
+  padding: 0;
+  outline: none;
+  -moz-appearance: textfield; /* Firefox */
+}
+
+/* Hide number input spinners */
+.custom-amount-input::-webkit-outer-spin-button,
+.custom-amount-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.custom-amount-input::placeholder {
+  color: inherit;
+  opacity: 0.6;
+}
+
+.donation-card.selected .custom-amount-input {
+  color: var(--color-white);
+}
+
+.donation-card.selected .custom-amount-input::placeholder {
+  color: var(--color-white);
   opacity: 0.8;
 }
 
-.custom-amount {
-  margin-top: var(--space-lg);
-  display: none;
+/* Removed donation total styles since total display is removed */
+
+/* Donation celebration animation */
+@keyframes celebrationPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
-.custom-amount input {
-  width: 100%;
-  padding: var(--space-md);
-  border: 2px solid var(--color-gray-200);
-  border-radius: 8px;
-  font-size: var(--font-size-lg);
-  text-align: center;
-  font-family: var(--font-display);
+@keyframes celebrationGlow {
+  0% { box-shadow: 0 8px 25px rgba(91, 107, 181, 0.2); }
+  50% { box-shadow: 0 8px 25px rgba(91, 107, 181, 0.6), 0 0 30px rgba(91, 107, 181, 0.3); }
+  100% { box-shadow: 0 8px 25px rgba(91, 107, 181, 0.2); }
 }
 
-.custom-amount input:focus {
-  outline: none;
-  border-color: var(--color-blue);
-  box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.1);
+.donation-celebration {
+  animation: celebrationPulse 0.6s ease-in-out, celebrationGlow 0.6s ease-in-out;
 }
 
-.donation-total-section {
-  background: var(--color-gray-100);
-  padding: var(--space-xl);
-  border-radius: 12px;
-  text-align: center;
-  margin: var(--space-xl) 0;
-}
-
-.donation-total-amount {
-  font-family: var(--font-display);
-  font-size: var(--font-size-4xl);
-  font-weight: 900;
+.celebration-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--color-white);
   color: var(--color-blue);
-  margin: 0;
+  padding: var(--space-2xl) var(--space-4xl);
+  border-radius: 20px;
+  border: 3px solid var(--color-blue);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  font-family: var(--font-display);
+  font-size: var(--font-size-3xl);
+  font-weight: 900;
+  text-align: center;
+  z-index: 1000;
+  animation: celebrationMessage 2s ease-in-out forwards;
+  pointer-events: none;
+  line-height: 1.2;
+}
+
+@keyframes celebrationMessage {
+  0% { 
+    opacity: 0; 
+    transform: translate(-50%, -50%) scale(0.8); 
+  }
+  20% { 
+    opacity: 1; 
+    transform: translate(-50%, -50%) scale(1.1); 
+  }
+  80% { 
+    opacity: 1; 
+    transform: translate(-50%, -50%) scale(1); 
+  }
+  100% { 
+    opacity: 0; 
+    transform: translate(-50%, -50%) scale(0.9); 
+  }
+}
+
+/* Respect user's preference for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .celebration-message {
+    animation: celebrationMessageReduced 2s ease-in-out forwards;
+  }
+  
+  @keyframes celebrationMessageReduced {
+    0% { 
+      opacity: 0; 
+      transform: translate(-50%, -50%); 
+    }
+    20% { 
+      opacity: 1; 
+      transform: translate(-50%, -50%); 
+    }
+    80% { 
+      opacity: 1; 
+      transform: translate(-50%, -50%); 
+    }
+    100% { 
+      opacity: 0; 
+      transform: translate(-50%, -50%); 
+    }
+  }
+}
+
+/* Confetti Animation */
+.confetti-piece {
+  position: fixed;
+  width: 16px;
+  height: 16px;
+  background: #5B6BB5;
+  top: -20px;
+  z-index: 9999;
+  animation: confettiFall linear forwards;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.confetti-piece:nth-child(odd) {
+  width: 14px;
+  height: 14px;
+  animation-name: confettiFallRotate;
+}
+
+.confetti-piece:nth-child(3n) {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.confetti-piece:nth-child(4n) {
+  width: 20px;
+  height: 8px;
+}
+
+.confetti-piece:nth-child(5n) {
+  width: 18px;
+  height: 6px;
+  border-radius: 3px;
+}
+
+.confetti-piece:nth-child(6n) {
+  width: 10px;
+  height: 10px;
+  transform: rotate(45deg);
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(-100vh) rotateZ(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotateZ(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes confettiFallRotate {
+  0% {
+    transform: translateY(-100vh) rotateZ(0deg) rotateY(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotateZ(360deg) rotateY(720deg);
+    opacity: 0;
+  }
+}
+
+/* Respect user's preference for reduced motion - disable confetti animation */
+@media (prefers-reduced-motion: reduce) {
+  .confetti-piece {
+    animation: none;
+    display: none; /* Hide confetti entirely for users who prefer reduced motion */
+  }
 }
 
 /* TBA Notices */
