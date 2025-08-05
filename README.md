@@ -104,6 +104,8 @@ alocubano.boulderfest/
 - ✅ Lightbox viewer for photos and videos
 - ✅ Serverless functions on Vercel
 - ✅ Floating cart system with intelligent page-specific visibility
+- ✅ Stripe Checkout Sessions for secure, streamlined payments
+- ✅ PCI-compliant payment processing with built-in fraud protection
 
 ## 👥 Board of Directors
 

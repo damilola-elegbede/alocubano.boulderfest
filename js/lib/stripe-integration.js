@@ -16,7 +16,7 @@ class StripePaymentHandler {
     }
 
     async init() {
-        // If already initializing, return the existing promise
+    // If already initializing, return the existing promise
         if (this.initPromise) {
             return this.initPromise;
         }
@@ -46,7 +46,8 @@ class StripePaymentHandler {
             this.elements = this.stripe.elements({
                 fonts: [
                     {
-                        cssSrc: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap'
+                        cssSrc:
+              'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap'
                     }
                 ]
             });
@@ -62,9 +63,11 @@ class StripePaymentHandler {
             if (window.STRIPE_PUBLISHABLE_KEY) {
                 return window.STRIPE_PUBLISHABLE_KEY;
             }
-            await new Promise(resolve => setTimeout(resolve, delay));
+            await new Promise((resolve) => setTimeout(resolve, delay));
         }
-        throw new Error('Stripe publishable key not found. Payment system may not be configured.');
+        throw new Error(
+            'Stripe publishable key not found. Payment system may not be configured.'
+        );
     }
 
     async waitForStripe(maxAttempts = 20, delay = 250) {
@@ -72,14 +75,16 @@ class StripePaymentHandler {
             if (window.Stripe) {
                 return true;
             }
-            await new Promise(resolve => setTimeout(resolve, delay));
+            await new Promise((resolve) => setTimeout(resolve, delay));
         }
-        throw new Error('Stripe.js failed to load. Please check your internet connection.');
+        throw new Error(
+            'Stripe.js failed to load. Please check your internet connection.'
+        );
     }
 
     /**
-     * Create and setup card element
-     */
+   * Create and setup card element
+   */
     async setupCardElement() {
         if (!this.isInitialized) {
             await this.init();
@@ -89,7 +94,8 @@ class StripePaymentHandler {
         const style = {
             base: {
                 fontSize: '16px',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                fontFamily:
+          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 color: '#000000',
                 fontWeight: '300',
                 '::placeholder': {
@@ -115,9 +121,9 @@ class StripePaymentHandler {
     }
 
     /**
-     * Mount card element to container
-     * @param {string} containerId - ID of the container element
-     */
+   * Mount card element to container
+   * @param {string} containerId - ID of the container element
+   */
     async mountCardElement(containerId) {
         if (!this.card) {
             await this.setupCardElement();
@@ -161,10 +167,10 @@ class StripePaymentHandler {
     }
 
     /**
-     * Create payment intent on the server
-     * @param {Object} orderData - Order information
-     * @returns {Promise<Object>} Payment intent response
-     */
+   * Create payment intent on the server
+   * @param {Object} orderData - Order information
+   * @returns {Promise<Object>} Payment intent response
+   */
     async createPaymentIntent(orderData) {
         try {
             const response = await fetch('/api/payments/create-payment-intent', {
@@ -188,11 +194,56 @@ class StripePaymentHandler {
     }
 
     /**
-     * Process payment with customer information
-     * @param {Object} orderData - Order details
-     * @param {Object} customerInfo - Customer information
-     * @returns {Promise<Object>} Payment result
-     */
+   * Create Stripe Checkout Session
+   * @param {Object} checkoutData - Checkout information including cart items and customer info
+   * @returns {Promise<Object>} Checkout session response
+   */
+    async createCheckoutSession(checkoutData) {
+        try {
+            const response = await fetch('/api/payments/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(checkoutData)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                return {
+                    success: false,
+                    error:
+            data.error || data.message || 'Failed to create checkout session'
+                };
+            }
+
+            return {
+                success: true,
+                checkoutUrl: data.checkoutUrl,
+                sessionId: data.sessionId,
+                orderId: data.orderId
+            };
+        } catch (error) {
+            // Log error in development mode only
+            if (typeof window !== 'undefined' &&
+                (window.location.hostname === 'localhost' ||
+                 window.location.hostname === '127.0.0.1')) {
+                console.error('Checkout session creation error:', error);
+            }
+            return {
+                success: false,
+                error: error.message || 'Network error occurred. Please try again.'
+            };
+        }
+    }
+
+    /**
+   * Process payment with customer information
+   * @param {Object} orderData - Order details
+   * @param {Object} customerInfo - Customer information
+   * @returns {Promise<Object>} Payment result
+   */
     async processPayment(orderData, customerInfo) {
         try {
             if (!this.card) {
@@ -240,7 +291,6 @@ class StripePaymentHandler {
                 paymentIntent: result.paymentIntent,
                 orderId: orderId
             };
-
         } catch (error) {
             this.setPaymentLoading(false);
             return {
@@ -251,9 +301,9 @@ class StripePaymentHandler {
     }
 
     /**
-     * Set payment loading state
-     * @param {boolean} isLoading - Loading state
-     */
+   * Set payment loading state
+   * @param {boolean} isLoading - Loading state
+   */
     setPaymentLoading(isLoading) {
         const submitButton = document.getElementById('submit-payment');
         const cardElement = document.getElementById('card-element');
@@ -262,7 +312,10 @@ class StripePaymentHandler {
         if (submitButton) {
             submitButton.disabled = isLoading;
             if (isLoading) {
-                submitButton.setAttribute('data-original-text', submitButton.textContent);
+                submitButton.setAttribute(
+                    'data-original-text',
+                    submitButton.textContent
+                );
                 submitButton.innerHTML = '<span class="spinner"></span> Processing...';
             } else {
                 const originalText = submitButton.getAttribute('data-original-text');
@@ -278,17 +331,17 @@ class StripePaymentHandler {
 
         if (form) {
             const inputs = form.querySelectorAll('input');
-            inputs.forEach(input => {
+            inputs.forEach((input) => {
                 input.disabled = isLoading;
             });
         }
     }
 
     /**
-     * Validate customer information
-     * @param {Object} customerInfo - Customer information to validate
-     * @returns {Object} Validation result
-     */
+   * Validate customer information
+   * @param {Object} customerInfo - Customer information to validate
+   * @returns {Object} Validation result
+   */
     validateCustomerInfo(customerInfo) {
         const errors = {};
 
@@ -326,8 +379,8 @@ class StripePaymentHandler {
     }
 
     /**
-     * Clear card element
-     */
+   * Clear card element
+   */
     clearCard() {
         if (this.card) {
             this.card.clear();
@@ -335,8 +388,8 @@ class StripePaymentHandler {
     }
 
     /**
-     * Destroy Stripe elements
-     */
+   * Destroy Stripe elements
+   */
     destroy() {
         if (this.card) {
             this.card.destroy();
