@@ -87,7 +87,8 @@ alocubano.boulderfest/
 - **Artists**: 2026 instructor lineup and workshops
 - **Schedule**: 3-day workshop and social schedule
 - **Gallery**: Dynamic media gallery with Google Drive integration, festival photos/videos
-- **Tickets**: Pricing tiers and registration
+- **Tickets**: Pricing tiers and registration with floating cart system
+- **Donations**: Support the festival with floating cart integration
 
 ### Technical
 - ✅ Typographic design system
@@ -102,6 +103,7 @@ alocubano.boulderfest/
 - ✅ Google Drive API integration for dynamic gallery
 - ✅ Lightbox viewer for photos and videos
 - ✅ Serverless functions on Vercel
+- ✅ Floating cart system with intelligent page-specific visibility
 
 ## 👥 Board of Directors
 
@@ -189,6 +191,14 @@ node scripts/test-maintenance.js flaky
 - **Smooth animations**: Hardware-accelerated transitions (0.3s ease-out)
 - **Body scroll lock**: Prevents background scrolling when menu is open
 - **Responsive breakpoint**: Activates at 768px and below
+
+### Floating Cart System
+- **Intelligent visibility**: Appears on all pages except 404 and index redirect
+- **Purchase pages**: Always visible on tickets and donations pages
+- **Content pages**: Visible only when cart contains items (about, artists, schedule, gallery)
+- **Persistent state**: Cart contents maintained across page navigation
+- **Touch-optimized**: Mobile-friendly design with smooth animations
+- **Quick checkout**: Direct access to ticket purchasing flow
 
 ## 🎪 About the Festival
 
