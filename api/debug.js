@@ -1,17 +1,22 @@
 // Debug endpoint for Vercel routing troubleshooting
 
 export default async function handler(req, res) {
-  console.log("=== DEBUG ENDPOINT CALLED ===");
-  console.log("Method:", req.method);
-  console.log("URL:", req.url);
-  console.log("Path:", req.path || "undefined");
-  console.log("Headers:", JSON.stringify(req.headers, null, 2));
-  console.log("Query:", JSON.stringify(req.query, null, 2));
-  console.log("Body:", req.body || "empty");
-  console.log("Timestamp:", new Date().toISOString());
-  console.log("Node version:", process.version);
-  console.log("Platform:", process.platform);
-  console.log("=== END DEBUG ===");
+  // Only log debug information in non-production environments
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+  
+  if (!isProduction) {
+    console.log("=== DEBUG ENDPOINT CALLED ===");
+    console.log("Method:", req.method);
+    console.log("URL:", req.url);
+    console.log("Path:", req.path || "undefined");
+    console.log("Headers:", JSON.stringify(req.headers, null, 2));
+    console.log("Query:", JSON.stringify(req.query, null, 2));
+    console.log("Body:", req.body || "empty");
+    console.log("Timestamp:", new Date().toISOString());
+    console.log("Node version:", process.version);
+    console.log("Platform:", process.platform);
+    console.log("=== END DEBUG ===");
+  }
 
   // CORS headers
   const origin = req.headers.origin;
@@ -45,7 +50,11 @@ export default async function handler(req, res) {
   const debugInfo = {
     success: true,
     timestamp: new Date().toISOString(),
-    request: {
+    request: isProduction ? {
+      method: req.method,
+      url: req.url,
+      path: req.path || "undefined",
+    } : {
       method: req.method,
       url: req.url,
       path: req.path || "undefined",

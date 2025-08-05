@@ -219,4 +219,7 @@ export const config = {
   runtime: "nodejs",
   regions: ["iad1"], // Use region closest to Brevo servers
   maxDuration: 10, // 10 seconds max execution time
+  api: {
+    bodyParser: false, // Disable body parser to access raw body for signature verification
+  },
 };

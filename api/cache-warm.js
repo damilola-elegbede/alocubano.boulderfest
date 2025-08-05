@@ -29,10 +29,9 @@ export default async function handler(request) {
     }
   } catch (error) {
     console.error("[Edge] Cache warming failed:", error);
-    return new Response("Cache warming failed", {
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: error.message }),
     });
   }
 }
@@ -120,7 +119,7 @@ async function warmFeaturedCache(limit) {
 
   try {
     // Warm featured photos endpoint
-    const featuredUrl = `${getBaseUrl()}/api/featured-photos.js`;
+    const featuredUrl = `${getBaseUrl()}/api/featured-photos`;
     const featuredResponse = await fetch(featuredUrl);
 
     if (featuredResponse.ok) {
@@ -133,15 +132,15 @@ async function warmFeaturedCache(limit) {
       const featuredData = await featuredResponse.json();
 
       // Warm featured images
-      if (featuredData.photos && featuredData.photos.length > 0) {
-        const imagePromises = featuredData.photos
+      if (featuredData.items && featuredData.items.length > 0) {
+        const imagePromises = featuredData.items
           .slice(0, limit)
           .map((photo) => warmImage(photo.url, "featured"));
 
         const imageResults = await Promise.allSettled(imagePromises);
         warmedItems.push(
           ...imageResults.map((result, index) => ({
-            url: featuredData.photos[index].url,
+            url: featuredData.items[index].url,
             status: result.status === "fulfilled" ? "success" : "failed",
             type: "featured-image",
             error: result.status === "rejected" ? result.reason?.message : null,
