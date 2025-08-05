@@ -55,10 +55,12 @@ class DonationSelection {
     }
 
     // Listen for checkout event from floating cart (for donations)
-    document.addEventListener('cart:checkout', () => {
+    document.addEventListener('cart:checkout', (event) => {
       // Check if cart contains donation
       const cartState = window.cartDebug?.getState() || {};
       if (cartState.donation && cartState.donation.amount > 0) {
+        // Prevent the default redirect behavior
+        event.preventDefault();
         this.handleDonationCheckout();
       }
     });
