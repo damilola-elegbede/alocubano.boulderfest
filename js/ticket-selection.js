@@ -256,10 +256,10 @@ class TicketSelection {
         };
 
         // Show payment form modal
-        this.showPaymentModal(orderData);
+        await this.showPaymentModal(orderData);
     }
 
-    showPaymentModal(orderData) {
+    async showPaymentModal(orderData) {
         // Create payment modal HTML
         const modalHTML = `
             <div id="payment-modal" class="payment-modal">
@@ -312,7 +312,7 @@ class TicketSelection {
         }
         
         // Mount Stripe card element
-        this.stripeHandler.mountCardElement('card-element');
+        await this.stripeHandler.mountCardElement('card-element');
         
         // Handle form submission
         document.getElementById('payment-form').addEventListener('submit', (e) => {

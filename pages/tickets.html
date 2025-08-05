@@ -309,9 +309,20 @@
     </footer>
     <!-- Add Stripe publishable key to window -->
     <script>
-        // Add Stripe publishable key to window
-        // Replace with actual key from environment
-        window.STRIPE_PUBLISHABLE_KEY = 'pk_test_51234567890'; // TODO: Replace with actual test key
+        // Fetch Stripe publishable key from API
+        (async function() {
+            try {
+                const response = await fetch('/api/config/stripe-public');
+                if (response.ok) {
+                    const data = await response.json();
+                    window.STRIPE_PUBLISHABLE_KEY = data.publishableKey;
+                } else {
+                    console.error('Failed to load payment configuration');
+                }
+            } catch (error) {
+                console.error('Error loading payment configuration:', error);
+            }
+        })();
     </script>
     
     <script src="/js/navigation.js"></script>

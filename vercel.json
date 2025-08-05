@@ -24,6 +24,9 @@
     },
     "api/payments/stripe-webhook.js": {
       "maxDuration": 30
+    },
+    "api/config/stripe-public.js": {
+      "maxDuration": 5
     }
   },
   "images": {
