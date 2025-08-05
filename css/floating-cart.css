@@ -1,4 +1,10 @@
 /* Floating Cart Styles */
+:root {
+  /* Define missing color variants for hover states */
+  --color-blue-dark: #4a5a94; /* Darker shade of #5b6bb5 */
+  --color-red-dark: #a3212c; /* Darker shade of #cc2936 */
+}
+
 .floating-cart-container {
   --cart-primary: var(--color-red);
   --cart-secondary: var(--color-blue);
@@ -558,6 +564,19 @@
   .remove-donation,
   .cart-checkout-btn {
     transition: none;
+  }
+  
+  /* Disable animations for checkout overlays */
+  .checkout-email-modal,
+  .checkout-loading-overlay,
+  .checkout-error-message {
+    animation: none;
+  }
+  
+  .checkout-loading-content,
+  .checkout-email-content,
+  .checkout-error-content {
+    animation: none;
   }
 }
 
