@@ -1,0 +1,90 @@
+# CodeRabbit Configuration
+# Auto-resolves outdated comments and waits for CI/CD checks before reviewing
+
+# Review configuration
+reviews:
+  # Automatically resolve outdated comments when code changes
+  auto_resolve_outdated_comments: true
+  
+  # Only perform reviews after CI/CD checks pass
+  # Options: "when_checks_pass" | "immediate"
+  review_status: "when_checks_pass"
+  
+  # Collapse outdated review comments to reduce noise
+  collapse_outdated: true
+  
+  # Skip reviewing draft pull requests
+  review_draft_pr: false
+  
+  # Required CI/CD checks that must pass before review
+  required_checks:
+    - "build"
+    - "test"
+    - "lint"
+    - "Unit Tests"
+    - "Integration Tests"
+    - "E2E Tests"
+
+# Auto-review settings
+settings:
+  auto_review:
+    enabled: true
+    # Trigger review only after successful checks
+    trigger_on: "checks_success"
+
+# Path filters - ignore these paths from reviews
+path_filters:
+  ignored_paths:
+    - "node_modules/**"
+    - "dist/**"
+    - "coverage/**"
+    - ".tmp/**"
+    - "*.log"
+    - "package-lock.json"
+    - ".git/**"
+    - ".vscode/**"
+    - ".idea/**"
+    - "*.min.js"
+    - "*.min.css"
+    - "public/vendor/**"
+    - "static/vendor/**"
+    
+  # Optionally specify paths to always review (overrides ignored_paths)
+  included_paths:
+    - "api/**"
+    - "js/**"
+    - "css/**"
+    - "tests/**"
+    - "*.html"
+    - "*.md"
+    - "package.json"
+    - ".github/**"
+
+# Language-specific settings
+language_settings:
+  javascript:
+    # Enable additional JavaScript/TypeScript specific checks
+    enable_eslint: true
+    enable_prettier: true
+    
+# Review behavior
+review_behavior:
+  # Automatically approve PRs from dependabot for minor/patch updates
+  auto_approve_dependabot_minor: true
+  
+  # Add summary comment with review statistics
+  add_summary_comment: true
+  
+  # Group related comments together
+  group_comments: true
+  
+  # Maximum number of comments per review (to avoid spam)
+  max_comments: 30
+
+# Custom review messages
+messages:
+  # Custom message when review is triggered
+  review_triggered: "🤖 CodeRabbit review triggered after CI/CD checks passed."
+  
+  # Message when outdated comments are resolved
+  outdated_resolved: "✅ This comment has been automatically resolved as the code has been updated."
