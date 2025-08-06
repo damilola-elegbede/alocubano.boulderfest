@@ -254,7 +254,8 @@ export default async function handler(req, res) {
                 UPDATE orders 
                 SET stripe_checkout_session_id = ?,
                     checkout_session_url = ?,
-                    checkout_session_expires_at = ?
+                    checkout_session_expires_at = ?,
+                    updated_at = datetime('now')
                 WHERE id = ?
             `,
         [

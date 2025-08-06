@@ -89,14 +89,11 @@ CREATE INDEX IF NOT EXISTS idx_orders_payment_method ON orders(payment_method);
 CREATE INDEX IF NOT EXISTS idx_orders_checkout_expires ON orders(checkout_session_expires_at) 
     WHERE checkout_session_expires_at IS NOT NULL;
 
--- Step 5: Create update trigger
+-- Step 5: Create update trigger - REMOVED TO PREVENT INFINITE RECURSION
+-- The trigger was causing infinite recursion by updating the same row it triggers on.
+-- Instead, all UPDATE statements on the orders table should explicitly include:
+-- updated_at = datetime('now') in their SET clause.
 DROP TRIGGER IF EXISTS update_orders_updated_at;
-CREATE TRIGGER update_orders_updated_at 
-    AFTER UPDATE ON orders
-    FOR EACH ROW
-    BEGIN
-        UPDATE orders SET updated_at = datetime('now') WHERE id = NEW.id;
-    END;
 
 -- Step 6: Clean up backup table (comment out for safety - can be run manually later)
 -- DROP TABLE IF EXISTS orders_old_backup;
