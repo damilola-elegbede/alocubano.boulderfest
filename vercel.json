@@ -33,6 +33,9 @@
     },
     "api/payments/checkout-cancel.js": {
       "maxDuration": 10
+    },
+    "api/payments/create-checkout-session.js": {
+      "maxDuration": 15
     }
   },
   "images": {
