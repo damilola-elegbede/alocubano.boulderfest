@@ -1,0 +1,58 @@
+# CodeRabbit Configuration
+# Waits for CI/CD checks before reviewing and uses proper path filtering
+
+# Review configuration
+reviews:
+  # Wait for CI/CD checks to pass before reviewing (true = wait, false = immediate)
+  review_status: true
+  
+  # Skip reviewing draft pull requests
+  review_draft_pr: false
+  
+  # Group related comments together
+  group_comments: true
+  
+  # Required CI/CD checks that must pass before review
+  required_checks:
+    - "build"
+    - "test"
+    - "lint"
+    - "Unit Tests"
+    - "Integration Tests"
+    - "E2E Tests"
+  
+  # Auto-review configuration
+  auto_review:
+    enabled: true
+
+# Path filters - use ! prefix to exclude paths
+path_filters:
+  - "!node_modules/**"
+  - "!dist/**"
+  - "!coverage/**"
+  - "!.tmp/**"
+  - "!*.log"
+  - "!package-lock.json"
+  - "!.git/**"
+  - "!.vscode/**"
+  - "!.idea/**"
+  - "!*.min.js"
+  - "!*.min.css"
+  - "!public/vendor/**"
+  - "!static/vendor/**"
+  # Include these paths for review
+  - "api/**"
+  - "js/**"
+  - "css/**"
+  - "tests/**"
+  - "*.html"
+  - "*.md"
+  - "package.json"
+  - ".github/**"
+
+# Tools configuration
+tools:
+  eslint:
+    enabled: true
+  prettier:
+    enabled: true
