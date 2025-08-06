@@ -27,6 +27,17 @@ export default async function handler(req, res) {
   try {
     const { cartItems, customerInfo } = req.body;
 
+    // Log incoming request in development
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Checkout session request:", {
+        cartItems: cartItems,
+        customerInfo: customerInfo,
+        hasCartItems: !!cartItems,
+        isArray: Array.isArray(cartItems),
+        itemCount: cartItems?.length,
+      });
+    }
+
     // Validate required fields
     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
       return res.status(400).json({ error: "Cart items required" });
@@ -204,6 +215,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     // Checkout session creation failed
+    console.error("Checkout session error:", error);
 
     // Handle specific Stripe errors
     if (error.type === "StripeInvalidRequestError") {
@@ -228,9 +240,19 @@ export default async function handler(req, res) {
         message: "Payment service configuration error",
       });
     } else {
+      // Log the full error in development
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Unexpected error details:", {
+          message: error.message,
+          stack: error.stack,
+          type: error.type,
+        });
+      }
       return res.status(500).json({
         error: "Checkout session creation failed",
-        message: "An unexpected error occurred",
+        message: process.env.NODE_ENV !== "production" 
+          ? error.message 
+          : "An unexpected error occurred",
       });
     }
   }

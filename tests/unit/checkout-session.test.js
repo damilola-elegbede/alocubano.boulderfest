@@ -686,7 +686,7 @@ describe("Checkout Session Creation", () => {
       expect(res._getStatusCode()).toBe(500);
       const responseData = JSON.parse(res._getData());
       expect(responseData.error).toBe("Checkout session creation failed");
-      expect(responseData.message).toBe("An unexpected error occurred");
+      expect(responseData.message).toBe("Unknown error");
     });
   });
 
