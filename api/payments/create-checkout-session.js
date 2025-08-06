@@ -136,7 +136,7 @@ export default async function handler(req, res) {
           }),
           Math.round(totalAmount * 100), // Store in cents
           "awaiting_payment",
-          customerInfo.specialRequests || null,
+          customerInfo?.specialRequests || null,
         ],
       );
 
