@@ -67,6 +67,8 @@ async function runMigrations(database) {
   const migrationFiles = [
     "20240130_create_email_subscribers.sql",
     "20250105_add_orders_table.sql",
+    "20250206_add_checkout_session_support.sql",
+    "20250206_add_confirmation_email_tracking.sql",
   ];
 
   // Run pending migrations
