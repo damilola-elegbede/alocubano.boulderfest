@@ -156,7 +156,8 @@ export default async function handler(req, res) {
 
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
+      // Enable all available payment methods including Apple Pay and Google Pay
+      payment_method_types: ["card", "link"],
       line_items: lineItems,
       mode: "payment",
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,

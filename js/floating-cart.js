@@ -3,6 +3,7 @@
  * Mobile-first responsive cart interface
  */
 import { getStripePaymentHandler } from './lib/stripe-integration.js';
+import { getPaymentSelector } from './components/payment-selector.js';
 
 export function initializeFloatingCart(cartManager) {
     // Check if already initialized
@@ -28,6 +29,10 @@ export function initializeFloatingCart(cartManager) {
         checkoutButton: document.querySelector('.cart-checkout-btn'),
         clearButton: document.querySelector('.cart-clear-btn')
     };
+
+    // Initialize payment selector
+    const paymentSelector = getPaymentSelector();
+    paymentSelector.init(cartManager);
 
     // Set up event listeners
     setupEventListeners(elements, cartManager);
@@ -243,68 +248,36 @@ async function handleCheckoutClick(cartManager) {
         }
     }
 
-    // Skip email collection modal - Stripe Checkout will collect this information
-    const customerInfo = {
-        email: '', // Stripe will collect this
-        firstName: '',
-        lastName: '',
-        phone: ''
-    };
-
-    // Show loading state
-    showCheckoutLoadingState();
-
+    // Show payment method selector
+    const paymentSelector = getPaymentSelector();
+    
     try {
-    // Prepare cart items for checkout session
-        const cartItems = [];
-
-        // Add tickets
-        Object.values(cartState.tickets).forEach((ticket) => {
-            cartItems.push({
-                type: 'ticket',
-                ticketType: ticket.ticketType,
-                name: ticket.name,
-                price: ticket.price,
-                quantity: ticket.quantity,
-                eventDate: '2026-05-15'
-            });
-        });
-
-        // Add donations
-        if (cartState.donations && cartState.donations.length > 0) {
-            cartState.donations.forEach((donation) => {
-                cartItems.push({
-                    type: 'donation',
-                    name: donation.name || 'A Lo Cubano Boulder Fest Donation',
-                    price: donation.amount,
-                    quantity: 1,
-                    category: 'general'
-                });
-            });
+        // Close cart panel first for better UX
+        const panel = document.querySelector('.floating-cart-panel');
+        const backdrop = document.querySelector('.cart-backdrop');
+        if (panel && panel.classList.contains('open')) {
+            panel.classList.remove('open');
+            backdrop.classList.remove('active');
+            document.body.style.overflow = '';
         }
-
-        // Create checkout session
-        const stripeHandler = getStripePaymentHandler();
-        const result = await stripeHandler.createCheckoutSession({
-            cartItems,
-            customerInfo
+        
+        // Show payment selector and let it handle the rest
+        await paymentSelector.show((selectedMethod) => {
+            // Track payment method selection
+            if (window.gtag) {
+                try {
+                    window.gtag('event', 'payment_method_selected', {
+                        payment_method: selectedMethod,
+                        value: cartState.totals.total
+                    });
+                } catch {
+                    // Analytics tracking failed - continue silently
+                }
+            }
         });
-
-        if (result.success) {
-            // Redirect to Stripe Checkout
-            window.location.href = result.checkoutUrl;
-        } else {
-            // Show error
-            hideCheckoutLoadingState();
-            showCheckoutError(
-                result.error || 'Unable to create checkout session. Please try again.'
-            );
-        }
     } catch (error) {
-    // Show error
-        hideCheckoutLoadingState();
-        showCheckoutError('An unexpected error occurred. Please try again.');
-        // Checkout error handled silently
+        // Show error if payment selection fails
+        showCheckoutError(error.message || 'Payment processing failed. Please try again.');
     }
 }
 
