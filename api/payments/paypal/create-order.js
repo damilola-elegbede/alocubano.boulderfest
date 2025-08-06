@@ -3,11 +3,28 @@
  * Creates a PayPal order for processing payments
  */
 
-export default async function handler(req, res) {
-  // Set CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+import { withRateLimit } from '../../utils/rate-limiter.js';
+import { setCorsHeaders, isOriginAllowed } from '../../utils/cors.js';
+
+// PayPal API base URL configuration
+const PAYPAL_API_URL = process.env.PAYPAL_API_URL || "https://api-m.sandbox.paypal.com";
+
+// Maximum request body size (100KB)
+const MAX_BODY_SIZE = 100 * 1024;
+
+// Rate limiting configuration
+const RATE_LIMIT_CONFIG = {
+  windowMs: 60000, // 1 minute
+  max: 10, // 10 requests per minute per IP
+  message: 'Too many payment attempts. Please wait a moment before trying again.'
+};
+
+async function createOrderHandler(req, res) {
+  // Set CORS headers with origin validation
+  setCorsHeaders(req, res, {
+    methods: 'POST, OPTIONS',
+    headers: 'Content-Type, Authorization'
+  });
 
   // Handle preflight requests
   if (req.method === "OPTIONS") {
@@ -18,6 +35,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  // Check request body size
+  const contentLength = parseInt(req.headers['content-length'] || '0', 10);
+  if (contentLength > MAX_BODY_SIZE) {
+    return res.status(413).json({ error: "Request body too large" });
+  }
+
   try {
     const { cartItems, customerInfo } = req.body;
 
@@ -26,15 +49,52 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Cart items required" });
     }
 
-    // Calculate total
+    // Validate cart items limit (prevent abuse)
+    if (cartItems.length > 50) {
+      return res.status(400).json({ error: "Too many items in cart (maximum 50)" });
+    }
+
+    // Calculate total and validate items
     let totalAmount = 0;
+    const orderItems = [];
+    
     for (const item of cartItems) {
-      if (!item.name || !item.price || !item.quantity || item.quantity <= 0) {
+      // Comprehensive validation
+      if (!item.name || typeof item.name !== 'string' || item.name.length > 200) {
         return res.status(400).json({
-          error: `Invalid item: ${item.name || "Unknown"}`,
+          error: `Invalid item name: ${item.name || "Unknown"}`,
         });
       }
-      totalAmount += item.price * item.quantity;
+      
+      if (typeof item.price !== 'number' || item.price < 0) {
+        return res.status(400).json({
+          error: `Invalid price for item: ${item.name}`,
+        });
+      }
+      
+      if (!Number.isInteger(item.quantity) || item.quantity <= 0 || item.quantity > 100) {
+        return res.status(400).json({
+          error: `Invalid quantity for item: ${item.name}`,
+        });
+      }
+      
+      const itemTotal = item.price * item.quantity;
+      totalAmount += itemTotal;
+      
+      // Prepare sanitized item for PayPal
+      orderItems.push({
+        name: item.name.substring(0, 127), // PayPal name limit
+        price: item.price,
+        quantity: item.quantity,
+        description: item.description || `A Lo Cubano Boulder Fest - ${item.name}`
+      });
+    }
+    
+    // Validate total amount
+    if (totalAmount <= 0 || totalAmount > 10000) {
+      return res.status(400).json({ 
+        error: "Invalid order total. Amount must be between $0.01 and $10,000" 
+      });
     }
 
     // Check if PayPal credentials are configured
@@ -54,7 +114,7 @@ export default async function handler(req, res) {
     ).toString("base64");
 
     const tokenResponse = await fetch(
-      `${process.env.PAYPAL_API_URL || "https://api-m.sandbox.paypal.com"}/v1/oauth2/token`,
+      `${PAYPAL_API_URL}/v1/oauth2/token`,
       {
         method: "POST",
         headers: {
@@ -71,9 +131,35 @@ export default async function handler(req, res) {
 
     const { access_token } = await tokenResponse.json();
 
+    // Validate and determine return URLs
+    const origin = req.headers.origin;
+    let baseUrl = "https://alocubano.boulderfest.com";
+    
+    if (origin && isOriginAllowed(origin)) {
+      baseUrl = origin;
+    }
+    
+    // Store customer info for order tracking (if provided)
+    const orderMetadata = {};
+    if (customerInfo && typeof customerInfo === 'object') {
+      // Sanitize and store customer info
+      if (customerInfo.email && typeof customerInfo.email === 'string') {
+        orderMetadata.email = customerInfo.email.substring(0, 254);
+      }
+      if (customerInfo.firstName && typeof customerInfo.firstName === 'string') {
+        orderMetadata.firstName = customerInfo.firstName.substring(0, 50);
+      }
+      if (customerInfo.lastName && typeof customerInfo.lastName === 'string') {
+        orderMetadata.lastName = customerInfo.lastName.substring(0, 50);
+      }
+      if (customerInfo.phone && typeof customerInfo.phone === 'string') {
+        orderMetadata.phone = customerInfo.phone.substring(0, 20);
+      }
+    }
+
     // Create PayPal order
     const orderResponse = await fetch(
-      `${process.env.PAYPAL_API_URL || "https://api-m.sandbox.paypal.com"}/v2/checkout/orders`,
+      `${PAYPAL_API_URL}/v2/checkout/orders`,
       {
         method: "POST",
         headers: {
@@ -94,24 +180,27 @@ export default async function handler(req, res) {
                   },
                 },
               },
-              items: cartItems.map((item) => ({
+              items: orderItems.map((item) => ({
                 name: item.name,
                 unit_amount: {
                   currency_code: "USD",
                   value: item.price.toFixed(2),
                 },
                 quantity: item.quantity.toString(),
-                description: item.description || `A Lo Cubano Boulder Fest - ${item.name}`,
+                description: item.description,
               })),
               description: "A Lo Cubano Boulder Fest Purchase",
+              custom_id: orderMetadata.email || undefined, // Store email for reference
+              invoice_id: `ALCBF-${Date.now()}`, // Unique invoice ID
             },
           ],
           application_context: {
             brand_name: "A Lo Cubano Boulder Fest",
             landing_page: "BILLING",
             user_action: "PAY_NOW",
-            return_url: `${req.headers.origin || "https://alocubano.boulderfest.com"}/success`,
-            cancel_url: `${req.headers.origin || "https://alocubano.boulderfest.com"}/failure`,
+            return_url: `${baseUrl}/success`,
+            cancel_url: `${baseUrl}/failure`,
+            shipping_preference: "NO_SHIPPING", // Digital tickets, no shipping needed
           },
         }),
       }
@@ -141,3 +230,6 @@ export default async function handler(req, res) {
     });
   }
 }
+
+// Export handler with rate limiting
+export default withRateLimit(createOrderHandler, RATE_LIMIT_CONFIG);

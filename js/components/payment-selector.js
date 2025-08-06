@@ -14,14 +14,22 @@ class PaymentSelector {
         this.onSelectCallback = null;
         this.cartManager = null;
         this.cssLoaded = false;
+        this.eventListeners = new Map(); // Track event listeners for cleanup
+        this.eventDate = '2026-05-15'; // Default event date
     }
 
     /**
      * Initialize the payment selector
      * @param {Object} cartManager - Cart manager instance
+     * @param {Object} options - Configuration options
      */
-    init(cartManager) {
+    init(cartManager, options = {}) {
         this.cartManager = cartManager;
+
+        // Set event date from options or use default
+        if (options.eventDate) {
+            this.eventDate = options.eventDate;
+        }
 
         // Clear any stored payment method preference to ensure fresh choice
         localStorage.removeItem('lastPaymentMethod');
@@ -142,40 +150,68 @@ class PaymentSelector {
             return;
         }
 
-        // Close button
-        const closeBtn = this.modal.querySelector('.payment-selector-close');
-        closeBtn?.addEventListener('click', () => this.closeModal());
+        // Clear any existing listeners first
+        this.cleanupEventListeners();
 
-        // Backdrop click
+        // Close button handler
+        const closeHandler = () => this.closeModal();
+        const closeBtn = this.modal.querySelector('.payment-selector-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeHandler);
+            this.eventListeners.set('close-button', { element: closeBtn, type: 'click', handler: closeHandler });
+        }
+
+        // Backdrop click handler
+        const backdropHandler = () => this.closeModal();
         const backdrop = this.modal.querySelector('.payment-selector-backdrop');
-        backdrop?.addEventListener('click', () => this.closeModal());
+        if (backdrop) {
+            backdrop.addEventListener('click', backdropHandler);
+            this.eventListeners.set('backdrop', { element: backdrop, type: 'click', handler: backdropHandler });
+        }
 
         // Payment method buttons
         const methodButtons = this.modal.querySelectorAll('.payment-method-option');
-        methodButtons.forEach(button => {
-            button.addEventListener('click', () => {
+        methodButtons.forEach((button, index) => {
+            const clickHandler = () => {
                 const method = button.dataset.method;
                 this.handleSelection(method);
-            });
+            };
+            const mouseEnterHandler = () => button.classList.add('hovering');
+            const mouseLeaveHandler = () => button.classList.remove('hovering');
 
-            // Add hover effect
-            button.addEventListener('mouseenter', () => {
-                button.classList.add('hovering');
-            });
-            button.addEventListener('mouseleave', () => {
-                button.classList.remove('hovering');
-            });
+            button.addEventListener('click', clickHandler);
+            button.addEventListener('mouseenter', mouseEnterHandler);
+            button.addEventListener('mouseleave', mouseLeaveHandler);
+
+            // Store references for cleanup
+            this.eventListeners.set(`method-click-${index}`, { element: button, type: 'click', handler: clickHandler });
+            this.eventListeners.set(`method-enter-${index}`, { element: button, type: 'mouseenter', handler: mouseEnterHandler });
+            this.eventListeners.set(`method-leave-${index}`, { element: button, type: 'mouseleave', handler: mouseLeaveHandler });
         });
 
-        // Keyboard navigation
-        this.modal.addEventListener('keydown', (e) => {
+        // Keyboard navigation handler
+        const keydownHandler = (e) => {
             if (e.key === 'Escape') {
                 this.closeModal();
             }
-        });
+        };
+        this.modal.addEventListener('keydown', keydownHandler);
+        this.eventListeners.set('modal-keydown', { element: this.modal, type: 'keydown', handler: keydownHandler });
 
         // Focus trap
         this.setupFocusTrap();
+    }
+
+    /**
+     * Clean up all event listeners
+     */
+    cleanupEventListeners() {
+        this.eventListeners.forEach((listener) => {
+            if (listener.element && listener.handler) {
+                listener.element.removeEventListener(listener.type, listener.handler);
+            }
+        });
+        this.eventListeners.clear();
     }
 
     /**
@@ -233,6 +269,9 @@ class PaymentSelector {
         this.isOpen = false;
         document.body.style.overflow = '';
 
+        // Clean up event listeners before removing modal
+        this.cleanupEventListeners();
+
         this.modal.classList.add('closing');
 
         setTimeout(() => {
@@ -287,16 +326,14 @@ class PaymentSelector {
         // Prepare cart items for checkout
         const cartItems = this.prepareCartItems(cartState);
 
+        // Get customer info
+        const customerInfo = this.getCustomerInfo();
+
         // Create Stripe checkout session
         const stripeHandler = getStripePaymentHandler();
         const result = await stripeHandler.createCheckoutSession({
             cartItems,
-            customerInfo: {
-                email: '',
-                firstName: '',
-                lastName: '',
-                phone: ''
-            }
+            customerInfo
         });
 
         if (result.success) {
@@ -384,7 +421,7 @@ class PaymentSelector {
                 name: ticket.name,
                 price: ticket.price,
                 quantity: ticket.quantity,
-                eventDate: '2026-05-15'
+                eventDate: this.eventDate
             });
         });
 
@@ -518,6 +555,25 @@ class PaymentSelector {
             paypal: 'PayPal'
         };
         return names[method] || method;
+    }
+
+    /**
+     * Clean up and destroy the payment selector
+     */
+    destroy() {
+        // Clean up event listeners
+        this.cleanupEventListeners();
+
+        // Remove modal if it exists
+        if (this.modal) {
+            this.modal.remove();
+            this.modal = null;
+        }
+
+        // Reset state
+        this.isOpen = false;
+        this.selectedMethod = null;
+        this.onSelectCallback = null;
     }
 }
 
