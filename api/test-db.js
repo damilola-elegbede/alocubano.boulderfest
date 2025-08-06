@@ -5,11 +5,33 @@
  */
 
 import { getEmailSubscriberService } from './lib/email-subscriber-service.js';
+import { getDatabase } from './lib/database.js';
 
 export default async function handler(req, res) {
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  // Define allowed origins for CORS security
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:8080', 
+    'https://alocubano-boulderfest.vercel.app',
+    'https://*.vercel.app'
+  ];
+  
+  // Check origin and set CORS headers securely
+  const origin = req.headers.origin;
+  const isAllowedOrigin = allowedOrigins.some(allowed => {
+    if (allowed.includes('*')) {
+      // Handle wildcard subdomain patterns
+      const pattern = allowed.replace(/\*/g, '.*');
+      return new RegExp(`^${pattern}$`).test(origin);
+    }
+    return allowed === origin;
+  });
+  
+  if (isAllowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   // Handle preflight request
@@ -76,35 +98,39 @@ export default async function handler(req, res) {
     // Test 2: Table Information
     console.log('Testing table information...');
     try {
-      // Get table information - for the simulated version, we'll return expected schema
-      const tableInfo = {
-        email_subscribers: {
-          columns: [
-            'id', 'email', 'first_name', 'last_name', 'phone', 'status', 
-            'brevo_contact_id', 'list_ids', 'attributes', 'consent_date',
-            'consent_source', 'consent_ip', 'verification_token', 'verified_at',
-            'unsubscribed_at', 'created_at', 'updated_at'
-          ],
-          indexes: ['email_unique_idx', 'status_idx', 'created_at_idx'],
-          rowCount: 0 // Simulated - would query actual count in real implementation
-        },
-        email_events: {
-          columns: [
-            'id', 'subscriber_id', 'event_type', 'event_data', 'brevo_event_id',
-            'occurred_at', 'created_at'
-          ],
-          indexes: ['subscriber_id_idx', 'event_type_idx', 'occurred_at_idx'],
-          rowCount: 0
-        },
-        email_audit_log: {
-          columns: [
-            'id', 'entity_type', 'entity_id', 'action', 'actor_type', 'actor_id',
-            'changes', 'ip_address', 'user_agent', 'created_at'
-          ],
-          indexes: ['entity_type_entity_id_idx', 'actor_type_actor_id_idx', 'created_at_idx'],
-          rowCount: 0
-        }
-      };
+      // Query actual database schema information
+      const db = await getDatabase();
+      const tableInfo = {};
+      
+      // Get list of tables
+      const tablesResult = await db.execute(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name NOT LIKE 'sqlite_%'
+        ORDER BY name
+      `);
+      
+      // For each table, get detailed information
+      for (const table of tablesResult.rows) {
+        const tableName = table.name;
+        
+        // Get column information
+        const columnsResult = await db.execute(`PRAGMA table_info(${tableName})`);
+        const columns = columnsResult.rows.map(col => col.name);
+        
+        // Get index information  
+        const indexesResult = await db.execute(`PRAGMA index_list(${tableName})`);
+        const indexes = indexesResult.rows.map(idx => idx.name);
+        
+        // Get row count
+        const countResult = await db.execute(`SELECT COUNT(*) as count FROM ${tableName}`);
+        const rowCount = countResult.rows[0]?.count || 0;
+        
+        tableInfo[tableName] = {
+          columns,
+          indexes,
+          rowCount
+        };
+      }
       
       testResults.tests.tables.status = 'passed';
       testResults.tests.tables.data = tableInfo;
@@ -113,9 +139,9 @@ export default async function handler(req, res) {
     } catch (error) {
       console.error('Table information test failed:', error.message);
       testResults.tests.tables.status = 'failed';
-      testResults.tests.tables.error = error.message;
+      testResults.tests.tables.error = 'Failed to query database schema information';
       testResults.summary.failed++;
-      testResults.summary.errors.push(`Tables: ${error.message}`);
+      testResults.summary.errors.push('Tables: Failed to query database schema information');
     }
 
     // Test 3: Migration Status
@@ -163,12 +189,14 @@ export default async function handler(req, res) {
           fullTextSearch: false,
           jsonSupport: true     // Simulated stores JSON as strings
         },
-        environmentVariables: {
-          NODE_ENV: process.env.NODE_ENV || 'not_set',
-          VERCEL_ENV: process.env.VERCEL_ENV || 'not_set',
-          DATABASE_URL: process.env.DATABASE_URL ? 'configured' : 'not_configured',
-          BREVO_API_KEY: process.env.BREVO_API_KEY ? 'configured' : 'not_configured'
-        }
+        environmentVariables: process.env.NODE_ENV === 'production' 
+          ? { status: 'configuration_hidden_in_production' }
+          : {
+              NODE_ENV: process.env.NODE_ENV || 'not_set',
+              VERCEL_ENV: process.env.VERCEL_ENV || 'not_set',
+              DATABASE_URL: process.env.DATABASE_URL ? 'configured' : 'not_configured',
+              BREVO_API_KEY: process.env.BREVO_API_KEY ? 'configured' : 'not_configured'
+            }
       };
       
       testResults.tests.configuration.status = 'passed';

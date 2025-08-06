@@ -40,8 +40,8 @@ class DatabaseService {
       this.initialized = true;
       return this.client;
     } catch (error) {
-      // Log error without exposing sensitive config details
-      throw new Error(`Failed to initialize database client: ${error.message}`);
+      // Log error without exposing sensitive config details or original error message
+      throw new Error("Failed to initialize database client due to configuration error");
     }
   }
 

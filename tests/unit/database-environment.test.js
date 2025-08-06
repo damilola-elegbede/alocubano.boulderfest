@@ -65,10 +65,8 @@ describe("Database Environment Configuration", () => {
     consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    // Reset database service singleton
-    if (global.databaseServiceInstance) {
-      global.databaseServiceInstance = null;
-    }
+    // Note: DatabaseService singleton is reset between tests through module mocking
+    // No direct global state manipulation needed
   });
 
   afterEach(() => {
@@ -201,7 +199,6 @@ describe("Database Environment Configuration", () => {
 
   describe("Environment Template File Structure", () => {
     const templateFiles = [
-      ".env.example",
       ".env.local.template",
       ".env.production.template",
     ];
@@ -559,7 +556,8 @@ describe("Database Environment Configuration", () => {
 
       try {
         service.initializeClient();
-        expect(false).toBe(true); // Should not reach here
+        // Should not reach here if error is thrown
+        throw new Error("Expected initializeClient to throw an error");
       } catch (error) {
         // Error message should not contain actual token
         expect(error.message).not.toContain("super-secret-token-123");

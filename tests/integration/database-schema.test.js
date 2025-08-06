@@ -12,7 +12,7 @@ import { getDatabase, getDatabaseClient } from "../../api/lib/database.js";
 
 // Mock environment variables for testing
 const MOCK_DATABASE_URL = "file:test.db";
-const originalEnv = process.env;
+const originalEnv = { ...process.env };
 
 describe("Database Schema Integration Tests", () => {
   let databaseService;
@@ -78,8 +78,9 @@ describe("Database Schema Integration Tests", () => {
       }
     }
 
-    // Restore environment
-    process.env = originalEnv;
+    // Restore environment variables
+    Object.keys(process.env).forEach(key => delete process.env[key]);
+    Object.assign(process.env, originalEnv);
   });
 
   beforeEach(() => {
