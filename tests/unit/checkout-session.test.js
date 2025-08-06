@@ -289,7 +289,7 @@ describe("Checkout Session Creation", () => {
       // Verify Stripe session creation
       expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          payment_method_types: ["card"],
+          payment_method_types: ["card", "link"],
           mode: "payment",
           customer_email: "test@example.com",
           line_items: [
