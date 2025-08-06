@@ -7,9 +7,19 @@ const mockEmailSubscriberService = {
   getSubscriberStats: vi.fn(),
 };
 
+// Create mock for database service
+const mockDatabase = {
+  execute: vi.fn(),
+};
+
 // Mock the email subscriber service module
 vi.mock("../../api/lib/email-subscriber-service.js", () => ({
   getEmailSubscriberService: vi.fn(() => mockEmailSubscriberService),
+}));
+
+// Mock the database module
+vi.mock("../../api/lib/database.js", () => ({
+  getDatabase: vi.fn(() => mockDatabase),
 }));
 
 describe("Database API Integration Tests", () => {
@@ -21,6 +31,8 @@ describe("Database API Integration Tests", () => {
     process.env.VERCEL_ENV = "preview";
     process.env.DATABASE_URL = "test://database.url";
     process.env.BREVO_API_KEY = "test-api-key";
+    process.env.TURSO_DATABASE_URL = "file:test.db";
+    process.env.TURSO_AUTH_TOKEN = "test-token";
 
     // Mock successful service response by default
     mockEmailSubscriberService.getSubscriberStats.mockResolvedValue({
@@ -29,6 +41,45 @@ describe("Database API Integration Tests", () => {
       pending: 50,
       unsubscribed: 75,
       bounced: 25,
+    });
+
+    // Mock database responses for the new dynamic queries
+    mockDatabase.execute.mockImplementation((sql) => {
+      if (sql.includes("sqlite_master")) {
+        // Return mock table list
+        return Promise.resolve({
+          rows: [
+            { name: "email_subscribers" },
+            { name: "email_events" },
+            { name: "email_audit_log" }
+          ]
+        });
+      } else if (sql.includes("table_info")) {
+        // Return mock column info including all expected subscriber table columns
+        return Promise.resolve({
+          rows: [
+            { name: "id" },
+            { name: "email" },
+            { name: "status" },
+            { name: "created_at" },
+            { name: "updated_at" } // Add updated_at column that test expects
+          ]
+        });
+      } else if (sql.includes("index_list")) {
+        // Return mock index info
+        return Promise.resolve({
+          rows: [
+            { name: "email_idx" },
+            { name: "created_at_idx" }
+          ]
+        });
+      } else if (sql.includes("COUNT(*)")) {
+        // Return mock row count
+        return Promise.resolve({
+          rows: [{ count: 42 }]
+        });
+      }
+      return Promise.resolve({ rows: [] });
     });
   });
 
@@ -44,14 +95,17 @@ describe("Database API Integration Tests", () => {
     it("should handle OPTIONS request (CORS preflight)", async () => {
       const { req, res } = createMocks({
         method: "OPTIONS",
+        headers: {
+          origin: "http://localhost:3000" // Valid origin for preflight
+        }
       });
 
       await testDbHandler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
       expect(res._getHeaders()).toMatchObject({
-        "access-control-allow-origin": "*",
-        "access-control-allow-methods": "GET, POST, OPTIONS",
+        "access-control-allow-origin": "http://localhost:3000", // Now matches specific origin
+        "access-control-allow-methods": "GET, OPTIONS", // Updated to match security fix
         "access-control-allow-headers": "Content-Type, Authorization",
       });
     });
@@ -436,12 +490,10 @@ describe("Database API Integration Tests", () => {
       expect(responseData.tests.configuration.data.environment).toBe(
         "production",
       );
+      // In production, environment variables are hidden for security
       expect(
-        responseData.tests.configuration.data.environmentVariables.NODE_ENV,
-      ).toBe("production");
-      expect(
-        responseData.tests.configuration.data.environmentVariables.VERCEL_ENV,
-      ).toBe("production");
+        responseData.tests.configuration.data.environmentVariables.status,
+      ).toBe("configuration_hidden_in_production");
     });
   });
 
@@ -574,13 +626,16 @@ describe("Database API Integration Tests", () => {
     it("should set correct CORS headers for GET requests", async () => {
       const { req, res } = createMocks({
         method: "GET",
+        headers: {
+          origin: "http://localhost:3000" // Valid origin
+        }
       });
 
       await testDbHandler(req, res);
 
       expect(res._getHeaders()).toMatchObject({
-        "access-control-allow-origin": "*",
-        "access-control-allow-methods": "GET, POST, OPTIONS",
+        "access-control-allow-origin": "http://localhost:3000", // Now matches specific origin
+        "access-control-allow-methods": "GET, OPTIONS", // Updated to match security fix
         "access-control-allow-headers": "Content-Type, Authorization",
       });
     });
@@ -588,14 +643,17 @@ describe("Database API Integration Tests", () => {
     it("should set correct CORS headers for error responses", async () => {
       const { req, res } = createMocks({
         method: "POST",
+        headers: {
+          origin: "http://localhost:3000" // Valid origin
+        }
       });
 
       await testDbHandler(req, res);
 
       expect(res._getStatusCode()).toBe(405);
       expect(res._getHeaders()).toMatchObject({
-        "access-control-allow-origin": "*",
-        "access-control-allow-methods": "GET, POST, OPTIONS",
+        "access-control-allow-origin": "http://localhost:3000", // Now matches specific origin
+        "access-control-allow-methods": "GET, OPTIONS", // Updated to match security fix
         "access-control-allow-headers": "Content-Type, Authorization",
       });
     });
