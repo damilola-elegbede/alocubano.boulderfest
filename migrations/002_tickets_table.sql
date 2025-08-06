@@ -22,3 +22,12 @@ CREATE TABLE IF NOT EXISTS tickets (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Trigger to automatically update updated_at timestamp when tickets table is modified
+CREATE TRIGGER IF NOT EXISTS update_tickets_updated_at 
+    AFTER UPDATE ON tickets 
+BEGIN
+    UPDATE tickets 
+    SET updated_at = CURRENT_TIMESTAMP 
+    WHERE id = NEW.id;
+END;

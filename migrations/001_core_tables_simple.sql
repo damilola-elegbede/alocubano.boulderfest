@@ -24,3 +24,12 @@ CREATE TABLE IF NOT EXISTS transactions (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP
 );
+
+-- Trigger to automatically update updated_at timestamp when transactions table is modified
+CREATE TRIGGER IF NOT EXISTS update_transactions_updated_at 
+    AFTER UPDATE ON transactions 
+BEGIN
+    UPDATE transactions 
+    SET updated_at = CURRENT_TIMESTAMP 
+    WHERE id = NEW.id;
+END;

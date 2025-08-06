@@ -205,6 +205,9 @@ class MigrationSystem {
   async executeMigration(migration) {
     console.log(`🔄 Executing migration: ${migration.filename}`);
 
+    // Start transaction to ensure atomicity
+    await this.db.execute("BEGIN TRANSACTION");
+
     try {
       // Execute each statement in the migration
       for (const statement of migration.statements) {
@@ -222,8 +225,18 @@ class MigrationSystem {
         [migration.filename, checksum],
       );
 
+      // Commit the transaction on success
+      await this.db.execute("COMMIT");
+
       console.log(`✅ Migration completed: ${migration.filename}`);
     } catch (error) {
+      // Rollback the transaction on failure
+      try {
+        await this.db.execute("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("❌ Failed to rollback transaction:", rollbackError.message);
+      }
+      
       console.error(
         `❌ Migration failed: ${migration.filename}`,
         error.message,

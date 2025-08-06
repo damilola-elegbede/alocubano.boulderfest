@@ -399,7 +399,7 @@ describe("Database API Integration Tests", () => {
       expect(responseData.tests.connection.error).toBe("Service not available");
     });
 
-    it("should return 503 when critical error occurs in handler", async () => {
+    it("should return 500 when critical error occurs in handler", async () => {
       // Mock console.log to throw early in the process
       const originalConsoleLog = console.log;
       let callCount = 0;
