@@ -17,7 +17,8 @@ const mockDb = {
     if (sql.includes("INSERT INTO orders")) {
       const [
         id,
-        stripeId,
+        stripeSessionId,
+        paymentMethod,
         email,
         name,
         phone,
@@ -29,7 +30,8 @@ const mockDb = {
       ] = params;
       mockDbState.orders.set(id, {
         id,
-        stripe_payment_intent_id: stripeId,
+        stripe_checkout_session_id: stripeSessionId,
+        payment_method: paymentMethod,
         customer_email: email,
         customer_name: name,
         customer_phone: phone,
@@ -44,14 +46,16 @@ const mockDb = {
       return Promise.resolve({ changes: 1 });
     } else if (
       sql.includes("UPDATE orders") &&
-      sql.includes("stripe_payment_intent_id") &&
+      sql.includes("stripe_checkout_session_id") &&
       sql.includes("WHERE id = ?")
     ) {
-      const [sessionId, orderId] = params;
+      // Handle the new UPDATE with 4 parameters
+      const [sessionId, sessionUrl, expiresAt, orderId] = params;
       const order = mockDbState.orders.get(orderId);
       if (order) {
-        order.stripe_payment_intent_id = sessionId;
-        order.stripe_checkout_session_id = sessionId; // Also set session ID for lookups
+        order.stripe_checkout_session_id = sessionId;
+        order.checkout_session_url = sessionUrl;
+        order.checkout_session_expires_at = expiresAt;
         order.updated_at = new Date().toISOString();
         return Promise.resolve({ changes: 1 });
       }
@@ -62,10 +66,10 @@ const mockDb = {
     ) {
       const [identifier] = params;
       // Handle different update types
-      if (sql.includes("stripe_payment_intent_id")) {
-        // Webhook updates by payment intent
+      if (sql.includes("stripe_checkout_session_id")) {
+        // Webhook updates by checkout session
         for (const [orderId, order] of mockDbState.orders) {
-          if (order.stripe_payment_intent_id === identifier) {
+          if (order.stripe_checkout_session_id === identifier) {
             if (sql.includes("'paid'")) order.fulfillment_status = "paid";
             else if (sql.includes("'failed'"))
               order.fulfillment_status = "failed";
@@ -104,11 +108,10 @@ const mockDb = {
   get: vi.fn((sql, params = []) => {
     if (sql.includes("SELECT * FROM orders") && params.length === 1) {
       const [identifier] = params;
-      // Find by ID, stripe_payment_intent_id, or stripe_checkout_session_id
+      // Find by ID or stripe_checkout_session_id
       for (const [orderId, order] of mockDbState.orders) {
         if (
           order.id === identifier ||
-          order.stripe_payment_intent_id === identifier ||
           order.stripe_checkout_session_id === identifier
         ) {
           return Promise.resolve(order);
@@ -133,9 +136,9 @@ const mockDb = {
       params.length === 1
     ) {
       const [identifier] = params;
-      // Find by stripe_payment_intent_id
+      // Find by stripe_checkout_session_id
       for (const [orderId, order] of mockDbState.orders) {
-        if (order.stripe_payment_intent_id === identifier) {
+        if (order.stripe_checkout_session_id === identifier) {
           return Promise.resolve({
             customer_email: order.customer_email,
             customer_name: order.customer_name,
@@ -334,7 +337,8 @@ describe("Complete Checkout Flow Integration", () => {
       // Update the order to have this payment intent ID (simulating what Stripe would do)
       const orderInDb = mockDbState.orders.get(orderId);
       if (orderInDb) {
-        orderInDb.stripe_payment_intent_id = paymentIntentId;
+        // Payment intent comes from Stripe, not set directly anymore
+        // Session ID was already set during checkout creation
       }
 
       const webhookEvent = {
@@ -463,7 +467,8 @@ describe("Complete Checkout Flow Integration", () => {
       // Update the order to have this payment intent ID (simulating what Stripe would do)
       const orderInDb = mockDbState.orders.get(orderId);
       if (orderInDb) {
-        orderInDb.stripe_payment_intent_id = paymentIntentId;
+        // Payment intent comes from Stripe, not set directly anymore
+        // Session ID was already set during checkout creation
       }
 
       const webhookEvent = {
@@ -766,7 +771,8 @@ describe("Complete Checkout Flow Integration", () => {
       // Update the order to have this payment intent ID (simulating what Stripe would do)
       const orderInDb = mockDbState.orders.get(orderId);
       if (orderInDb) {
-        orderInDb.stripe_payment_intent_id = paymentIntentId;
+        // Payment intent comes from Stripe, not set directly anymore
+        // Session ID was already set during checkout creation
       }
 
       const webhookEvent = {
@@ -827,7 +833,8 @@ describe("Complete Checkout Flow Integration", () => {
       // Update the order to have this payment intent ID (simulating what Stripe would do)
       const orderInDb = mockDbState.orders.get(orderId);
       if (orderInDb) {
-        orderInDb.stripe_payment_intent_id = paymentIntentId;
+        // Payment intent comes from Stripe, not set directly anymore
+        // Session ID was already set during checkout creation
       }
 
       const webhookEvent = {
@@ -888,7 +895,8 @@ describe("Complete Checkout Flow Integration", () => {
       // Update the order to have this payment intent ID (simulating what Stripe would do)
       const orderInDb = mockDbState.orders.get(orderId);
       if (orderInDb) {
-        orderInDb.stripe_payment_intent_id = paymentIntentId;
+        // Payment intent comes from Stripe, not set directly anymore
+        // Session ID was already set during checkout creation
       }
 
       const webhookEvent = {
