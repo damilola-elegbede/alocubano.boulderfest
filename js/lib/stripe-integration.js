@@ -211,10 +211,19 @@ class StripePaymentHandler {
             const data = await response.json();
 
             if (!response.ok) {
+                // Log the actual error response for debugging
+                // eslint-disable-next-line no-console
+                console.error('Stripe checkout error response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    error: data.error,
+                    message: data.message,
+                    fullResponse: data
+                });
+
                 return {
                     success: false,
-                    error:
-            data.error || data.message || 'Failed to create checkout session'
+                    error: data.error || data.message || 'Failed to create checkout session'
                 };
             }
 

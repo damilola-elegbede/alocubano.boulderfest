@@ -4,12 +4,38 @@
  */
 
 import Stripe from "stripe";
-import { openDb } from "../lib/database.js";
 
 // Initialize Stripe with API key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+let stripe;
+try {
+  // Log environment info for debugging (without exposing secrets)
+  console.log("Environment check:", {
+    NODE_ENV: process.env.NODE_ENV,
+    hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
+    stripeKeyLength: process.env.STRIPE_SECRET_KEY?.length || 0,
+    availableEnvVars: Object.keys(process.env).filter(key => 
+      !key.includes('SECRET') && 
+      !key.includes('KEY') && 
+      !key.includes('TOKEN') &&
+      !key.includes('PASSWORD')
+    ).sort(),
+  });
+  
+  if (!process.env.STRIPE_SECRET_KEY) {
+    console.error("STRIPE_SECRET_KEY is not configured");
+  } else {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    console.log("Stripe initialized successfully");
+  }
+} catch (error) {
+  console.error("Failed to initialize Stripe:", error);
+}
 
 export default async function handler(req, res) {
+  console.log("=== Checkout Session Handler Started ===");
+  console.log("Request method:", req.method);
+  console.log("Request URL:", req.url);
+  
   // Set CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -24,8 +50,38 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  // Check if Stripe is properly initialized
+  if (!stripe) {
+    console.error("Stripe is not initialized - check STRIPE_SECRET_KEY environment variable");
+    return res.status(500).json({ 
+      error: "Payment service not configured",
+      message: "Stripe payment processing is not available. Please check server configuration.",
+      debug: {
+        hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
+        nodeEnv: process.env.NODE_ENV,
+        availableEnvVars: Object.keys(process.env).filter(key => 
+          !key.includes('SECRET') && 
+          !key.includes('KEY') && 
+          !key.includes('TOKEN') &&
+          !key.includes('PASSWORD')
+        ).length
+      }
+    });
+  }
+
   try {
     const { cartItems, customerInfo } = req.body;
+
+    // Log incoming request in development
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Checkout session request:", {
+        cartItems: cartItems,
+        customerInfo: customerInfo,
+        hasCartItems: !!cartItems,
+        isArray: Array.isArray(cartItems),
+        itemCount: cartItems?.length,
+      });
+    }
 
     // Validate required fields
     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
@@ -99,54 +155,10 @@ export default async function handler(req, res) {
       lineItems.push(lineItem);
     }
 
-    // Generate order ID
+    // Generate order ID for tracking (no database storage)
     const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    // Store preliminary order in database with 'awaiting_payment' status
-    const db = await openDb();
-
-    try {
-      await db.run(
-        `
-                INSERT INTO orders (
-                    id, 
-                    stripe_payment_intent_id, 
-                    customer_email, 
-                    customer_name, 
-                    customer_phone, 
-                    order_type, 
-                    order_details, 
-                    order_total,
-                    fulfillment_status,
-                    special_requests
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `,
-        [
-          orderId,
-          `checkout_pending_${orderId}`, // Temporary ID until we get the session ID
-          customerInfo?.email || 'pending@stripe.checkout',
-          customerInfo?.firstName && customerInfo?.lastName 
-            ? `${customerInfo.firstName} ${customerInfo.lastName}`
-            : 'Pending Stripe Checkout',
-          customerInfo?.phone || null,
-          orderType,
-          JSON.stringify({
-            items: cartItems,
-            totalAmount: totalAmount,
-          }),
-          Math.round(totalAmount * 100), // Store in cents
-          "awaiting_payment",
-          customerInfo.specialRequests || null,
-        ],
-      );
-
-      // Preliminary order created
-    } catch (dbError) {
-      // Database error occurred
-      return res
-        .status(500)
-        .json({ error: "Failed to create preliminary order" });
-    }
+    
+    console.log("Creating checkout session for order:", orderId);
 
     // Determine origin from request headers
     const origin =
@@ -178,22 +190,12 @@ export default async function handler(req, res) {
       expires_at: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
     });
 
-    // Update order with actual Checkout Session ID
-    try {
-      await db.run(
-        `
-                UPDATE orders 
-                SET stripe_payment_intent_id = ? 
-                WHERE id = ?
-            `,
-        [session.id, orderId],
-      );
-
-      // Order updated with session ID
-    } catch (dbError) {
-      // Error updating order
-      // Continue anyway - we have the session created
-    }
+    // Log session creation for debugging
+    console.log("Stripe checkout session created:", {
+      sessionId: session.id,
+      orderId: orderId,
+      totalAmount: totalAmount
+    });
 
     // Return checkout URL for redirect
     res.status(200).json({
@@ -204,6 +206,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     // Checkout session creation failed
+    console.error("Checkout session error:", error);
 
     // Handle specific Stripe errors
     if (error.type === "StripeInvalidRequestError") {
@@ -228,9 +231,23 @@ export default async function handler(req, res) {
         message: "Payment service configuration error",
       });
     } else {
+      // Always log the error for debugging
+      console.error("Unexpected error details:", {
+        message: error.message,
+        stack: error.stack,
+        type: error.type,
+        name: error.name,
+      });
+      
+      // Return more detailed error info for debugging
       return res.status(500).json({
         error: "Checkout session creation failed",
-        message: "An unexpected error occurred",
+        message: error.message || "An unexpected error occurred",
+        // Include error details for debugging (remove in production later)
+        details: {
+          errorType: error.name,
+          errorMessage: error.message,
+        }
       });
     }
   }

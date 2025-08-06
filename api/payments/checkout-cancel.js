@@ -1,31 +1,11 @@
 /**
  * Checkout Cancel API Endpoint
  * Handles cancelled Stripe Checkout returns
- * 
- * @param {Object} req - Express request object
- * @param {Object} req.query - Query parameters
- * @param {string} [req.query.session_id] - Stripe checkout session ID
- * @param {string} [req.query.order_id] - Internal order ID
- * @param {Object} res - Express response object
- * @returns {Object} JSON response with cancellation status and instructions
  */
 
-import { openDb } from "../lib/database.js";
-
 export default async function handler(req, res) {
-  // Set CORS headers with proper security
-  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
-    'https://alocubano.boulderfest.com',
-    'https://alocubanoboulderfest.vercel.app',
-    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
-    process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : null,
-    process.env.NODE_ENV === 'development' ? 'http://localhost:3001' : null
-  ].filter(Boolean);
-  
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
+  // Set CORS headers
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
@@ -41,49 +21,11 @@ export default async function handler(req, res) {
   try {
     const { session_id, order_id } = req.query;
 
-    // Track cancellation event
-
-    // If we have an order ID, mark it as cancelled
-    if (order_id) {
-      try {
-        const db = await openDb();
-
-        // Check if order exists and is in awaiting_payment status
-        const existingOrder = await db.get(
-          `
-                    SELECT id, fulfillment_status 
-                    FROM orders 
-                    WHERE id = ?
-                `,
-          [order_id],
-        );
-
-        if (existingOrder) {
-          // Only update if order is still pending payment
-          if (existingOrder.fulfillment_status === "awaiting_payment") {
-            const result = await db.run(
-              `
-                            UPDATE orders 
-                            SET fulfillment_status = 'cancelled',
-                                updated_at = datetime('now')
-                            WHERE id = ? AND fulfillment_status = 'awaiting_payment'
-                        `,
-              [order_id],
-            );
-
-            // Order successfully marked as cancelled
-            // This is the expected flow for cancellations
-          }
-          // Order status is not awaiting_payment, skip update
-          // This occurs when the order has already been processed
-        }
-        // Order not found in database - this is ok for cancelled checkouts
-        // Some cancellations may occur before order creation completes
-      } catch (dbError) {
-        // Database error - continue anyway, cancellation isn't critical
-        // Continue anyway - cancellation isn't critical for database consistency
-      }
-    }
+    console.log("Checkout cancelled:", {
+      sessionId: session_id,
+      orderId: order_id,
+      timestamp: new Date().toISOString(),
+    });
 
     // Return cancellation response with instructions
     res.status(200).json({
@@ -106,7 +48,7 @@ export default async function handler(req, res) {
       },
     });
   } catch (error) {
-    // Error processing cancellation - return graceful response
+    console.error("Error handling checkout cancellation:", error);
 
     // Even if there's an error, we want to handle the cancellation gracefully
     res.status(200).json({
@@ -125,8 +67,6 @@ export default async function handler(req, res) {
         email: "alocubanoboulderfest@gmail.com",
         instagram: "@alocubano.boulderfest",
       },
-      error:
-        "There was an issue processing your cancellation, but your checkout was cancelled successfully.",
     });
   }
 }
