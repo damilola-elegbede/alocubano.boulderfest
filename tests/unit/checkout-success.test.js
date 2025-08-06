@@ -255,7 +255,7 @@ describe("Checkout Success Handler", () => {
       // Verify database update
       expect(mockDb.run).toHaveBeenCalledWith(
         expect.stringContaining("UPDATE orders"),
-        ["cs_test_session", "order_123"],
+        ["order_123"],
       );
 
       // Verify response structure

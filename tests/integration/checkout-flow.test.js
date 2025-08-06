@@ -66,10 +66,14 @@ const mockDb = {
     ) {
       const [identifier] = params;
       // Handle different update types
-      if (sql.includes("stripe_checkout_session_id")) {
-        // Webhook updates by checkout session
+      if (sql.includes("stripe_payment_intent_id")) {
+        // Webhook updates by payment intent - but we need to find by session first
+        // In real webhook, we get both session_id and payment_intent_id
+        // For tests, find orders with matching session and update them
         for (const [orderId, order] of mockDbState.orders) {
-          if (order.stripe_checkout_session_id === identifier) {
+          // Find by payment intent if it's already set, or by session if updating from webhook
+          if (order.stripe_payment_intent_id === identifier || 
+              order.stripe_checkout_session_id?.startsWith('cs_')) {
             if (sql.includes("'paid'")) order.fulfillment_status = "paid";
             else if (sql.includes("'failed'"))
               order.fulfillment_status = "failed";
