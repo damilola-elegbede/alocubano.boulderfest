@@ -14,35 +14,34 @@ console.log("================================================\n");
 
 // Files that should exist for routing to work
 const expectedFiles = {
-  "Root Files": ["index.html", "vercel.json", "404.html"],
+  "Root Files": ["index.html", "vercel.json"],
   "Core Pages": [
+    "pages/404.html",
     "pages/home.html",
     "pages/about.html",
     "pages/contact.html",
     "pages/donations.html",
     "pages/tickets.html",
+    "pages/success.html",
+    "pages/failure.html",
   ],
   "Event Pages - Boulder Fest 2025": [
+    "pages/boulder-fest-2025-index.html",
     "pages/boulder-fest-2025-artists.html",
     "pages/boulder-fest-2025-schedule.html",
     "pages/boulder-fest-2025-gallery.html",
-    "pages/boulder-fest-2025-tickets.html",
   ],
   "Event Pages - Boulder Fest 2026": [
+    "pages/boulder-fest-2026-index.html",
     "pages/boulder-fest-2026-artists.html",
     "pages/boulder-fest-2026-schedule.html",
     "pages/boulder-fest-2026-gallery.html",
-    "pages/boulder-fest-2026-tickets.html",
   ],
   "Event Pages - Weekender 2026-09": [
+    "pages/weekender-2026-09-index.html",
     "pages/weekender-2026-09-artists.html",
     "pages/weekender-2026-09-schedule.html",
     "pages/weekender-2026-09-gallery.html",
-    "pages/weekender-2026-09-tickets.html",
-  ],
-  "Legacy Pages (for backward compatibility)": [
-    "pages/gallery.html",
-    "pages/gallery-2025.html",
   ],
   "API Directory": [
     "api/debug.js",
@@ -71,7 +70,7 @@ function validateEventStructure() {
     "boulder-fest-2026",
     "weekender-2026-09",
   ];
-  const eventPages = ["artists", "schedule", "gallery", "tickets"];
+  const eventPages = ["index", "artists", "schedule", "gallery"];
 
   const heroImagePath = path.join(projectRoot, "images", "hero");
   const heroOptimizedPath = path.join(projectRoot, "images", "hero-optimized");
