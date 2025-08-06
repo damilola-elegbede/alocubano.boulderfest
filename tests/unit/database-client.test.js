@@ -123,7 +123,7 @@ describe("DatabaseService", () => {
         throw error;
       });
 
-      expect(() => databaseService.initializeClient()).toThrow("Failed to initialize database client: Failed to create client");
+      expect(() => databaseService.initializeClient()).toThrow("Failed to initialize database client due to configuration error");
       // Console logging removed for security
       expect(consoleErrorSpy).not.toHaveBeenCalled();
       expect(databaseService.initialized).toBe(false);
@@ -136,7 +136,7 @@ describe("DatabaseService", () => {
         throw error;
       });
 
-      expect(() => databaseService.initializeClient()).toThrow("Failed to initialize database client: Config error");
+      expect(() => databaseService.initializeClient()).toThrow("Failed to initialize database client due to configuration error");
       // Console logging removed for security
       expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
