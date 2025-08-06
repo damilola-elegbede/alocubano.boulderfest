@@ -135,16 +135,16 @@ describe("Stripe Webhook Handler - Checkout Session Events", () => {
 
       await webhookHandler(req, res);
 
-      // Verify order status update (should be called twice - once to update status, once for email flag)
+      // Verify order status update by session ID
       expect(mockDb.run).toHaveBeenCalledWith(
         expect.stringContaining("UPDATE orders"),
-        ["pi_test_intent"],
+        ["cs_test_session"],
       );
 
       // Verify order lookup
       expect(mockDb.get).toHaveBeenCalledWith(
         expect.stringContaining("SELECT * FROM orders"),
-        ["pi_test_intent"],
+        ["cs_test_session"],
       );
 
       // Verify email sent
@@ -240,7 +240,7 @@ describe("Stripe Webhook Handler - Checkout Session Events", () => {
 
       expect(mockDb.run).toHaveBeenCalledWith(
         expect.stringContaining("fulfillment_status = 'paid'"),
-        ["pi_test_intent"],
+        ["cs_test_session"],
       );
       expect(res.status).toHaveBeenCalledWith(200);
     });
@@ -271,7 +271,7 @@ describe("Stripe Webhook Handler - Checkout Session Events", () => {
 
       expect(mockDb.run).toHaveBeenCalledWith(
         expect.stringContaining("fulfillment_status = 'failed'"),
-        ["pi_test_intent"],
+        ["cs_test_session"],
       );
       expect(res.status).toHaveBeenCalledWith(200);
     });
@@ -296,7 +296,7 @@ describe("Stripe Webhook Handler - Checkout Session Events", () => {
 
       expect(mockDb.run).toHaveBeenCalledWith(
         expect.stringContaining("fulfillment_status = 'expired'"),
-        ["pi_test_intent"],
+        ["cs_test_session"],
       );
       expect(res.status).toHaveBeenCalledWith(200);
     });

@@ -61,15 +61,16 @@ export default async function handler(req, res) {
     if (orderId) {
       try {
         // Update order status to paid
+        // Note: This update is typically redundant as the webhook should have already updated it
+        // But it's here as a backup in case the webhook hasn't processed yet
         const result = await db.run(
           `
                     UPDATE orders 
                     SET fulfillment_status = 'paid',
-                        stripe_payment_intent_id = ?,
                         updated_at = datetime('now')
-                    WHERE id = ?
+                    WHERE id = ? AND fulfillment_status != 'paid'
                 `,
-          [session_id, orderId],
+          [orderId],
         );
 
         if (result.changes > 0) {

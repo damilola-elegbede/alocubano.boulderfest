@@ -391,23 +391,14 @@ export default async function handler(req, res) {
           `Checkout session completed: ${sessionId}, payment_intent: ${paymentIntentId}`,
         );
 
-        // Handle both payment_intent and checkout_session based orders
-        if (paymentIntentId) {
-          await handleSuccessfulPayment(
-            db,
-            brevoService,
-            paymentIntentId,
-            "checkout_session_completed",
-          );
-        } else {
-          // For payment methods that don't use payment_intent, look up by session_id
-          await handleSuccessfulPaymentBySession(
-            db,
-            brevoService,
-            sessionId,
-            "checkout_session_completed",
-          );
-        }
+        // Always use session ID for checkout session events
+        // This is the primary identifier for checkout-based orders
+        await handleSuccessfulPaymentBySession(
+          db,
+          brevoService,
+          sessionId,
+          "checkout_session_completed",
+        );
         break;
       }
 
@@ -420,21 +411,13 @@ export default async function handler(req, res) {
           `Checkout session async payment succeeded: ${sessionId}, payment_intent: ${paymentIntentId}`,
         );
 
-        if (paymentIntentId) {
-          await handleSuccessfulPayment(
-            db,
-            brevoService,
-            paymentIntentId,
-            "checkout_session_async_succeeded",
-          );
-        } else {
-          await handleSuccessfulPaymentBySession(
-            db,
-            brevoService,
-            sessionId,
-            "checkout_session_async_succeeded",
-          );
-        }
+        // Always use session ID for checkout session events
+        await handleSuccessfulPaymentBySession(
+          db,
+          brevoService,
+          sessionId,
+          "checkout_session_async_succeeded",
+        );
         break;
       }
 
@@ -447,19 +430,12 @@ export default async function handler(req, res) {
           `Checkout session async payment failed: ${sessionId}, payment_intent: ${paymentIntentId}`,
         );
 
-        if (paymentIntentId) {
-          await handleFailedPayment(
-            db,
-            paymentIntentId,
-            "checkout_session_async_failed",
-          );
-        } else {
-          await handleFailedPaymentBySession(
-            db,
-            sessionId,
-            "checkout_session_async_failed",
-          );
-        }
+        // Always use session ID for checkout session events
+        await handleFailedPaymentBySession(
+          db,
+          sessionId,
+          "checkout_session_async_failed",
+        );
         break;
       }
 
@@ -472,11 +448,8 @@ export default async function handler(req, res) {
           `Checkout session expired: ${sessionId}, payment_intent: ${paymentIntentId}`,
         );
 
-        if (paymentIntentId) {
-          await handleExpiredPayment(db, paymentIntentId);
-        } else {
-          await handleExpiredPaymentBySession(db, sessionId);
-        }
+        // Always use session ID for checkout session events
+        await handleExpiredPaymentBySession(db, sessionId);
         break;
       }
 
