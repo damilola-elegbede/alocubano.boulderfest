@@ -3,10 +3,10 @@
  * Handles automated database schema migrations for A Lo Cubano Boulder Fest
  */
 
-import { promises as fs } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { getDatabase } from '../api/lib/database.js';
+import { promises as fs } from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { getDatabase } from "../api/lib/database.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename);
 class MigrationSystem {
   constructor() {
     this.db = getDatabase();
-    this.migrationsDir = path.join(__dirname, '..', 'migrations');
+    this.migrationsDir = path.join(__dirname, "..", "migrations");
   }
 
   /**
@@ -33,9 +33,9 @@ class MigrationSystem {
 
     try {
       await this.db.execute(createTableSQL);
-      console.log('✅ Migrations table initialized');
+      console.log("✅ Migrations table initialized");
     } catch (error) {
-      console.error('❌ Failed to initialize migrations table:', error.message);
+      console.error("❌ Failed to initialize migrations table:", error.message);
       throw error;
     }
   }
@@ -45,10 +45,12 @@ class MigrationSystem {
    */
   async getExecutedMigrations() {
     try {
-      const result = await this.db.execute('SELECT filename FROM migrations ORDER BY id');
-      return result.rows.map(row => row.filename);
+      const result = await this.db.execute(
+        "SELECT filename FROM migrations ORDER BY id",
+      );
+      return result.rows.map((row) => row.filename);
     } catch (error) {
-      console.error('❌ Failed to get executed migrations:', error.message);
+      console.error("❌ Failed to get executed migrations:", error.message);
       throw error;
     }
   }
@@ -62,19 +64,19 @@ class MigrationSystem {
       try {
         await fs.access(this.migrationsDir);
       } catch {
-        console.log(`📁 Migrations directory doesn't exist: ${this.migrationsDir}`);
+        console.log(
+          `📁 Migrations directory doesn't exist: ${this.migrationsDir}`,
+        );
         return [];
       }
 
       const files = await fs.readdir(this.migrationsDir);
-      const sqlFiles = files
-        .filter(file => file.endsWith('.sql'))
-        .sort(); // Ensure consistent ordering
+      const sqlFiles = files.filter((file) => file.endsWith(".sql")).sort(); // Ensure consistent ordering
 
       console.log(`📂 Found ${sqlFiles.length} migration files`);
       return sqlFiles;
     } catch (error) {
-      console.error('❌ Failed to read migrations directory:', error.message);
+      console.error("❌ Failed to read migrations directory:", error.message);
       throw error;
     }
   }
@@ -84,21 +86,24 @@ class MigrationSystem {
    */
   async readMigrationFile(filename) {
     const filePath = path.join(this.migrationsDir, filename);
-    
+
     try {
-      const content = await fs.readFile(filePath, 'utf8');
-      
+      const content = await fs.readFile(filePath, "utf8");
+
       // Split SQL content into individual statements
       // Handle statements separated by semicolons, but ignore semicolons in strings/comments
       const statements = this.parseSQLStatements(content);
-      
+
       return {
         filename,
         content,
-        statements: statements.filter(stmt => stmt.trim().length > 0)
+        statements: statements.filter((stmt) => stmt.trim().length > 0),
       };
     } catch (error) {
-      console.error(`❌ Failed to read migration file ${filename}:`, error.message);
+      console.error(
+        `❌ Failed to read migration file ${filename}:`,
+        error.message,
+      );
       throw error;
     }
   }
@@ -109,78 +114,88 @@ class MigrationSystem {
    */
   parseSQLStatements(content) {
     const statements = [];
-    let currentStatement = '';
+    let currentStatement = "";
     let inSingleQuote = false;
     let inDoubleQuote = false;
     let inComment = false;
     let inMultiLineComment = false;
-    
+
     for (let i = 0; i < content.length; i++) {
       const char = content[i];
-      const nextChar = content[i + 1] || '';
-      const prevChar = content[i - 1] || '';
-      
+      const nextChar = content[i + 1] || "";
+      const prevChar = content[i - 1] || "";
+
       // Handle multi-line comments /* */
-      if (char === '/' && nextChar === '*' && !inSingleQuote && !inDoubleQuote) {
+      if (
+        char === "/" &&
+        nextChar === "*" &&
+        !inSingleQuote &&
+        !inDoubleQuote
+      ) {
         inMultiLineComment = true;
         currentStatement += char;
         continue;
       }
-      
-      if (char === '*' && nextChar === '/' && inMultiLineComment) {
+
+      if (char === "*" && nextChar === "/" && inMultiLineComment) {
         inMultiLineComment = false;
         currentStatement += char;
         continue;
       }
-      
+
       if (inMultiLineComment) {
         currentStatement += char;
         continue;
       }
-      
+
       // Handle single line comments --
-      if (char === '-' && nextChar === '-' && !inSingleQuote && !inDoubleQuote) {
+      if (
+        char === "-" &&
+        nextChar === "-" &&
+        !inSingleQuote &&
+        !inDoubleQuote
+      ) {
         inComment = true;
         currentStatement += char;
         continue;
       }
-      
-      if (inComment && char === '\n') {
+
+      if (inComment && char === "\n") {
         inComment = false;
         currentStatement += char;
         continue;
       }
-      
+
       if (inComment) {
         currentStatement += char;
         continue;
       }
-      
+
       // Handle string literals
-      if (char === "'" && !inDoubleQuote && prevChar !== '\\') {
+      if (char === "'" && !inDoubleQuote && prevChar !== "\\") {
         inSingleQuote = !inSingleQuote;
       }
-      
-      if (char === '"' && !inSingleQuote && prevChar !== '\\') {
+
+      if (char === '"' && !inSingleQuote && prevChar !== "\\") {
         inDoubleQuote = !inDoubleQuote;
       }
-      
+
       // Handle statement separation
-      if (char === ';' && !inSingleQuote && !inDoubleQuote) {
+      if (char === ";" && !inSingleQuote && !inDoubleQuote) {
         currentStatement += char;
         statements.push(currentStatement.trim());
-        currentStatement = '';
+        currentStatement = "";
         continue;
       }
-      
+
       currentStatement += char;
     }
-    
+
     // Add any remaining statement
     if (currentStatement.trim()) {
       statements.push(currentStatement.trim());
     }
-    
+
     return statements;
   }
 
@@ -189,7 +204,7 @@ class MigrationSystem {
    */
   async executeMigration(migration) {
     console.log(`🔄 Executing migration: ${migration.filename}`);
-    
+
     try {
       // Execute each statement in the migration
       for (const statement of migration.statements) {
@@ -197,19 +212,22 @@ class MigrationSystem {
           await this.db.execute(statement);
         }
       }
-      
+
       // Generate checksum for verification
       const checksum = await this.generateChecksum(migration.content);
-      
+
       // Record migration as executed
       await this.db.execute(
-        'INSERT INTO migrations (filename, checksum) VALUES (?, ?)',
-        [migration.filename, checksum]
+        "INSERT INTO migrations (filename, checksum) VALUES (?, ?)",
+        [migration.filename, checksum],
       );
-      
+
       console.log(`✅ Migration completed: ${migration.filename}`);
     } catch (error) {
-      console.error(`❌ Migration failed: ${migration.filename}`, error.message);
+      console.error(
+        `❌ Migration failed: ${migration.filename}`,
+        error.message,
+      );
       throw error;
     }
   }
@@ -218,39 +236,39 @@ class MigrationSystem {
    * Generate checksum for migration content verification
    */
   async generateChecksum(content) {
-    const crypto = await import('crypto');
-    return crypto.createHash('sha256').update(content).digest('hex');
+    const crypto = await import("crypto");
+    return crypto.createHash("sha256").update(content).digest("hex");
   }
 
   /**
    * Run all pending migrations
    */
   async runMigrations() {
-    console.log('🚀 Starting database migrations...');
-    
+    console.log("🚀 Starting database migrations...");
+
     try {
       // Initialize migrations table
       await this.initializeMigrationsTable();
-      
+
       // Get executed and available migrations
       const [executedMigrations, availableMigrations] = await Promise.all([
         this.getExecutedMigrations(),
-        this.getAvailableMigrations()
+        this.getAvailableMigrations(),
       ]);
-      
+
       // Find pending migrations
       const pendingMigrations = availableMigrations.filter(
-        migration => !executedMigrations.includes(migration)
+        (migration) => !executedMigrations.includes(migration),
       );
-      
+
       if (pendingMigrations.length === 0) {
-        console.log('✨ No pending migrations found');
+        console.log("✨ No pending migrations found");
         return { executed: 0, skipped: availableMigrations.length };
       }
-      
+
       console.log(`📋 Found ${pendingMigrations.length} pending migrations:`);
-      pendingMigrations.forEach(migration => console.log(`  - ${migration}`));
-      
+      pendingMigrations.forEach((migration) => console.log(`  - ${migration}`));
+
       // Execute pending migrations in order
       let executedCount = 0;
       for (const migrationFile of pendingMigrations) {
@@ -258,15 +276,14 @@ class MigrationSystem {
         await this.executeMigration(migration);
         executedCount++;
       }
-      
+
       console.log(`🎉 Successfully executed ${executedCount} migrations`);
-      return { 
-        executed: executedCount, 
-        skipped: availableMigrations.length - pendingMigrations.length 
+      return {
+        executed: executedCount,
+        skipped: availableMigrations.length - pendingMigrations.length,
       };
-      
     } catch (error) {
-      console.error('❌ Migration system failed:', error.message);
+      console.error("❌ Migration system failed:", error.message);
       throw error;
     }
   }
@@ -275,60 +292,67 @@ class MigrationSystem {
    * Verify migration integrity
    */
   async verifyMigrations() {
-    console.log('🔍 Verifying migration integrity...');
-    
+    console.log("🔍 Verifying migration integrity...");
+
     try {
       const [executedMigrations, availableMigrations] = await Promise.all([
         this.getExecutedMigrations(),
-        this.getAvailableMigrations()
+        this.getAvailableMigrations(),
       ]);
-      
+
       // Check for executed migrations that no longer exist
       const missingFiles = executedMigrations.filter(
-        migration => !availableMigrations.includes(migration)
+        (migration) => !availableMigrations.includes(migration),
       );
-      
+
       if (missingFiles.length > 0) {
-        console.warn('⚠️  Warning: Some executed migrations no longer exist:');
-        missingFiles.forEach(file => console.warn(`  - ${file}`));
+        console.warn("⚠️  Warning: Some executed migrations no longer exist:");
+        missingFiles.forEach((file) => console.warn(`  - ${file}`));
       }
-      
+
       // Verify checksums for existing files
       let checksumErrors = 0;
       for (const migrationFile of availableMigrations) {
         if (executedMigrations.includes(migrationFile)) {
           try {
             const migration = await this.readMigrationFile(migrationFile);
-            const currentChecksum = await this.generateChecksum(migration.content);
-            
-            const result = await this.db.execute(
-              'SELECT checksum FROM migrations WHERE filename = ?',
-              [migrationFile]
+            const currentChecksum = await this.generateChecksum(
+              migration.content,
             );
-            
-            if (result.rows.length > 0 && result.rows[0].checksum !== currentChecksum) {
+
+            const result = await this.db.execute(
+              "SELECT checksum FROM migrations WHERE filename = ?",
+              [migrationFile],
+            );
+
+            if (
+              result.rows.length > 0 &&
+              result.rows[0].checksum !== currentChecksum
+            ) {
               console.error(`❌ Checksum mismatch for ${migrationFile}`);
               checksumErrors++;
             }
           } catch (error) {
-            console.error(`❌ Failed to verify ${migrationFile}:`, error.message);
+            console.error(
+              `❌ Failed to verify ${migrationFile}:`,
+              error.message,
+            );
             checksumErrors++;
           }
         }
       }
-      
+
       if (checksumErrors === 0 && missingFiles.length === 0) {
-        console.log('✅ All migrations verified successfully');
+        console.log("✅ All migrations verified successfully");
       }
-      
+
       return {
         verified: true,
         missingFiles,
-        checksumErrors
+        checksumErrors,
       };
-      
     } catch (error) {
-      console.error('❌ Migration verification failed:', error.message);
+      console.error("❌ Migration verification failed:", error.message);
       throw error;
     }
   }
@@ -337,35 +361,38 @@ class MigrationSystem {
    * Show migration status
    */
   async status() {
-    console.log('📊 Migration Status Report');
-    console.log('========================');
-    
+    console.log("📊 Migration Status Report");
+    console.log("========================");
+
     try {
       const [executedMigrations, availableMigrations] = await Promise.all([
         this.getExecutedMigrations(),
-        this.getAvailableMigrations()
+        this.getAvailableMigrations(),
       ]);
-      
+
       console.log(`Available migrations: ${availableMigrations.length}`);
       console.log(`Executed migrations:  ${executedMigrations.length}`);
-      console.log(`Pending migrations:   ${availableMigrations.length - executedMigrations.length}`);
-      
+      console.log(
+        `Pending migrations:   ${availableMigrations.length - executedMigrations.length}`,
+      );
+
       if (availableMigrations.length > 0) {
-        console.log('\nMigration Details:');
+        console.log("\nMigration Details:");
         for (const migration of availableMigrations) {
-          const status = executedMigrations.includes(migration) ? '✅ Executed' : '⏳ Pending';
+          const status = executedMigrations.includes(migration)
+            ? "✅ Executed"
+            : "⏳ Pending";
           console.log(`  ${status} ${migration}`);
         }
       }
-      
+
       return {
         total: availableMigrations.length,
         executed: executedMigrations.length,
-        pending: availableMigrations.length - executedMigrations.length
+        pending: availableMigrations.length - executedMigrations.length,
       };
-      
     } catch (error) {
-      console.error('❌ Failed to get migration status:', error.message);
+      console.error("❌ Failed to get migration status:", error.message);
       throw error;
     }
   }
@@ -376,26 +403,26 @@ class MigrationSystem {
  */
 async function main() {
   const args = process.argv.slice(2);
-  const command = args[0] || 'run';
-  
+  const command = args[0] || "run";
+
   const migration = new MigrationSystem();
-  
+
   try {
     switch (command) {
-      case 'run':
-      case 'migrate':
+      case "run":
+      case "migrate":
         await migration.runMigrations();
         break;
-        
-      case 'status':
+
+      case "status":
         await migration.status();
         break;
-        
-      case 'verify':
+
+      case "verify":
         await migration.verifyMigrations();
         break;
-        
-      case 'help':
+
+      case "help":
         console.log(`
 Database Migration System - A Lo Cubano Boulder Fest
 
@@ -413,16 +440,15 @@ Examples:
   node scripts/migrate.js verify   # Verify migration integrity
         `);
         break;
-        
+
       default:
         console.error(`❌ Unknown command: ${command}`);
         console.log('Run "node scripts/migrate.js help" for usage information');
         process.exit(1);
     }
-    
   } catch (error) {
-    console.error('❌ Migration system error:', error.message);
-    if (process.env.NODE_ENV === 'development') {
+    console.error("❌ Migration system error:", error.message);
+    if (process.env.NODE_ENV === "development") {
       console.error(error.stack);
     }
     process.exit(1);

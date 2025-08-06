@@ -28,7 +28,7 @@ vi.mock("@libsql/client/web", () => {
   };
 
   const createClientMock = vi.fn(() => mockClient);
-  
+
   return {
     createClient: createClientMock,
     __mockClient: mockClient,
@@ -50,14 +50,14 @@ describe("Database Environment Configuration", () => {
   beforeEach(() => {
     // Backup original environment
     originalEnv = { ...process.env };
-    
+
     // Get mock references
     createClientMock = vi.mocked(createClient);
     mockClient = createClient().__mockClient || createClient();
-    
+
     // Clear all mocks
     vi.clearAllMocks();
-    
+
     // Reset the mock to default behavior
     createClientMock.mockImplementation(() => mockClient);
 
@@ -74,7 +74,7 @@ describe("Database Environment Configuration", () => {
   afterEach(() => {
     // Restore original environment
     process.env = originalEnv;
-    
+
     // Restore console methods
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
@@ -87,9 +87,9 @@ describe("Database Environment Configuration", () => {
         delete process.env.TURSO_AUTH_TOKEN;
 
         const service = new DatabaseService();
-        
+
         expect(() => service.initializeClient()).toThrow(
-          "TURSO_DATABASE_URL environment variable is required"
+          "TURSO_DATABASE_URL environment variable is required",
         );
       });
 
@@ -98,9 +98,9 @@ describe("Database Environment Configuration", () => {
         process.env.TURSO_AUTH_TOKEN = "test-token";
 
         const service = new DatabaseService();
-        
+
         expect(() => service.initializeClient()).toThrow(
-          "TURSO_DATABASE_URL environment variable is required"
+          "TURSO_DATABASE_URL environment variable is required",
         );
       });
 
@@ -117,9 +117,9 @@ describe("Database Environment Configuration", () => {
           process.env.TURSO_AUTH_TOKEN = "test-token";
 
           const service = new DatabaseService();
-          
+
           expect(() => service.initializeClient()).not.toThrow();
-          
+
           // Reset for next iteration
           service.client = null;
           service.initialized = false;
@@ -140,10 +140,10 @@ describe("Database Environment Configuration", () => {
           process.env.TURSO_AUTH_TOKEN = "test-token";
 
           const service = new DatabaseService();
-          
+
           if (url === null || url === undefined || url === "") {
             expect(() => service.initializeClient()).toThrow(
-              "TURSO_DATABASE_URL environment variable is required"
+              "TURSO_DATABASE_URL environment variable is required",
             );
           }
         });
@@ -156,7 +156,7 @@ describe("Database Environment Configuration", () => {
         delete process.env.TURSO_AUTH_TOKEN;
 
         const service = new DatabaseService();
-        
+
         expect(() => service.initializeClient()).not.toThrow();
       });
 
@@ -188,9 +188,9 @@ describe("Database Environment Configuration", () => {
           process.env.TURSO_AUTH_TOKEN = token;
 
           const service = new DatabaseService();
-          
+
           expect(() => service.initializeClient()).not.toThrow();
-          
+
           // Reset for next iteration
           service.client = null;
           service.initialized = false;
@@ -202,8 +202,8 @@ describe("Database Environment Configuration", () => {
   describe("Environment Template File Structure", () => {
     const templateFiles = [
       ".env.example",
-      ".env.local.template", 
-      ".env.production.template"
+      ".env.local.template",
+      ".env.production.template",
     ];
 
     describe("Template completeness", () => {
@@ -213,15 +213,15 @@ describe("Database Environment Configuration", () => {
         templateFiles.forEach((templateFile) => {
           // Mock file existence
           fs.existsSync.mockReturnValue(true);
-          
+
           // Mock file content with required variables
           const mockContent = requiredVars
-            .map(varName => `${varName}=placeholder_value`)
+            .map((varName) => `${varName}=placeholder_value`)
             .join("\n");
           fs.readFileSync.mockReturnValue(mockContent);
 
           expect(fs.existsSync(templateFile)).toBe(true);
-          
+
           const content = fs.readFileSync(templateFile, "utf8");
           requiredVars.forEach((varName) => {
             expect(content).toContain(varName);
@@ -239,15 +239,16 @@ describe("Database Environment Configuration", () => {
 
         templateFiles.forEach((templateFile) => {
           fs.existsSync.mockReturnValue(true);
-          
-          const mockContent = expectedComments.join("\n") + "\nTURSO_DATABASE_URL=test";
+
+          const mockContent =
+            expectedComments.join("\n") + "\nTURSO_DATABASE_URL=test";
           fs.readFileSync.mockReturnValue(mockContent);
 
           const content = fs.readFileSync(templateFile, "utf8");
-          
+
           // Should contain at least one documentation comment
-          const hasDocumentation = expectedComments.some(comment => 
-            content.includes(comment)
+          const hasDocumentation = expectedComments.some((comment) =>
+            content.includes(comment),
           );
           expect(hasDocumentation).toBe(true);
         });
@@ -255,14 +256,14 @@ describe("Database Environment Configuration", () => {
 
       it("should verify development vs production template differences", () => {
         fs.existsSync.mockReturnValue(true);
-        
+
         // Mock development template
         const devContent = `
           # Development Database
           TURSO_DATABASE_URL=libsql://dev-db.turso.io
           NODE_ENV=development
         `;
-        
+
         // Mock production template
         const prodContent = `
           # Production Database  
@@ -277,7 +278,10 @@ describe("Database Environment Configuration", () => {
 
         // Test production template
         fs.readFileSync.mockReturnValueOnce(prodContent);
-        const prodTemplate = fs.readFileSync(".env.production.template", "utf8");
+        const prodTemplate = fs.readFileSync(
+          ".env.production.template",
+          "utf8",
+        );
         expect(prodTemplate).toContain("production");
       });
     });
@@ -292,7 +296,7 @@ describe("Database Environment Configuration", () => {
 
         templateFiles.forEach((templateFile) => {
           fs.existsSync.mockReturnValue(true);
-          
+
           const safeContent = `
             TURSO_DATABASE_URL=your_database_url_here
             TURSO_AUTH_TOKEN=your_auth_token_here
@@ -300,7 +304,7 @@ describe("Database Environment Configuration", () => {
           fs.readFileSync.mockReturnValue(safeContent);
 
           const content = fs.readFileSync(templateFile, "utf8");
-          
+
           insecureValues.forEach((insecureValue) => {
             expect(content).not.toContain(insecureValue);
           });
@@ -318,17 +322,17 @@ describe("Database Environment Configuration", () => {
 
         templateFiles.forEach((templateFile) => {
           fs.existsSync.mockReturnValue(true);
-          
+
           const placeholderContent = validPlaceholders
-            .map(placeholder => `TURSO_DATABASE_URL=${placeholder}`)
+            .map((placeholder) => `TURSO_DATABASE_URL=${placeholder}`)
             .join("\n");
           fs.readFileSync.mockReturnValue(placeholderContent);
 
           const content = fs.readFileSync(templateFile, "utf8");
-          
+
           // Should contain at least one valid placeholder pattern
-          const hasValidPlaceholder = validPlaceholders.some(placeholder =>
-            content.includes(placeholder)
+          const hasValidPlaceholder = validPlaceholders.some((placeholder) =>
+            content.includes(placeholder),
           );
           expect(hasValidPlaceholder).toBe(true);
         });
@@ -340,7 +344,7 @@ describe("Database Environment Configuration", () => {
     describe(".env.local validation", () => {
       it("should validate local development configuration", () => {
         fs.existsSync.mockReturnValue(true);
-        
+
         const localEnvContent = `
           NODE_ENV=development
           TURSO_DATABASE_URL=libsql://dev-db.turso.io
@@ -356,7 +360,7 @@ describe("Database Environment Configuration", () => {
 
       it("should handle missing .env.local file gracefully", () => {
         fs.existsSync.mockReturnValue(false);
-        
+
         expect(() => {
           if (fs.existsSync(".env.local")) {
             fs.readFileSync(".env.local", "utf8");
@@ -373,14 +377,14 @@ describe("Database Environment Configuration", () => {
         process.env.TURSO_AUTH_TOKEN = "prod-auth-token";
 
         const service = new DatabaseService();
-        
+
         expect(() => service.initializeClient()).not.toThrow();
         expect(process.env.NODE_ENV).toBe("production");
       });
 
       it("should require stronger validation in production", () => {
         process.env.NODE_ENV = "production";
-        
+
         const weakConfigs = [
           { url: "libsql://test-db.turso.io", token: "test-token" },
           { url: "libsql://dev-db.turso.io", token: "dev-token" },
@@ -391,7 +395,7 @@ describe("Database Environment Configuration", () => {
           process.env.TURSO_AUTH_TOKEN = token;
 
           const service = new DatabaseService();
-          
+
           // Should still work but could warn about weak configs
           expect(() => service.initializeClient()).not.toThrow();
         });
@@ -407,7 +411,7 @@ describe("Database Environment Configuration", () => {
         delete process.env.TURSO_AUTH_TOKEN;
 
         const service = new DatabaseService();
-        
+
         expect(() => service.initializeClient()).not.toThrow();
       });
 
@@ -417,7 +421,7 @@ describe("Database Environment Configuration", () => {
         process.env.TURSO_AUTH_TOKEN = "dev-token";
 
         const service = new DatabaseService();
-        
+
         expect(() => service.initializeClient()).not.toThrow();
       });
     });
@@ -429,7 +433,7 @@ describe("Database Environment Configuration", () => {
         process.env.TURSO_AUTH_TOKEN = "prod-secure-token-123";
 
         const service = new DatabaseService();
-        
+
         expect(() => service.initializeClient()).not.toThrow();
       });
 
@@ -439,7 +443,7 @@ describe("Database Environment Configuration", () => {
         process.env.TURSO_AUTH_TOKEN = "prod-token";
 
         const service = new DatabaseService();
-        
+
         expect(() => service.initializeClient()).not.toThrow();
       });
     });
@@ -451,9 +455,9 @@ describe("Database Environment Configuration", () => {
       delete process.env.TURSO_AUTH_TOKEN;
 
       const service = new DatabaseService();
-      
+
       expect(() => service.initializeClient()).toThrow(
-        "TURSO_DATABASE_URL environment variable is required"
+        "TURSO_DATABASE_URL environment variable is required",
       );
     });
 
@@ -474,7 +478,7 @@ describe("Database Environment Configuration", () => {
       process.env.TURSO_AUTH_TOKEN = "test-token";
 
       const service = new DatabaseService();
-      
+
       try {
         service.initializeClient();
       } catch (error) {
@@ -498,23 +502,18 @@ describe("Database Environment Configuration", () => {
         process.env.TURSO_AUTH_TOKEN = "test-token";
 
         const service = new DatabaseService();
-        
+
         // The service should initialize but might fail on actual connection
         expect(() => service.initializeClient()).not.toThrow();
       });
     });
 
     it("should validate auth token format when provided", () => {
-      const suspiciousTokens = [
-        "definitely-not-a-jwt",
-        "",
-        "   ",
-        null,
-      ];
+      const suspiciousTokens = ["definitely-not-a-jwt", "", "   ", null];
 
       suspiciousTokens.forEach((token) => {
         process.env.TURSO_DATABASE_URL = "libsql://test-db.turso.io";
-        
+
         if (token === null) {
           delete process.env.TURSO_AUTH_TOKEN;
         } else {
@@ -522,7 +521,7 @@ describe("Database Environment Configuration", () => {
         }
 
         const service = new DatabaseService();
-        
+
         // Should not throw during initialization
         expect(() => service.initializeClient()).not.toThrow();
       });
@@ -531,7 +530,7 @@ describe("Database Environment Configuration", () => {
     it("should detect potentially unsafe configuration patterns", () => {
       const unsafePatterns = [
         "libsql://localhost:8080", // Localhost in production
-        "http://insecure-db.com",  // Non-HTTPS
+        "http://insecure-db.com", // Non-HTTPS
       ];
 
       unsafePatterns.forEach((url) => {
@@ -539,7 +538,7 @@ describe("Database Environment Configuration", () => {
         process.env.TURSO_AUTH_TOKEN = "test-token";
 
         const service = new DatabaseService();
-        
+
         // Should initialize but could warn about unsafe patterns
         expect(() => service.initializeClient()).not.toThrow();
       });
@@ -557,20 +556,15 @@ describe("Database Environment Configuration", () => {
       });
 
       const service = new DatabaseService();
-      
+
       try {
         service.initializeClient();
         expect(false).toBe(true); // Should not reach here
       } catch (error) {
         // Error message should not contain actual token
         expect(error.message).not.toContain("super-secret-token-123");
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-          "Failed to initialize database client:",
-          expect.objectContaining({
-            databaseUrl: "configured",
-            authToken: "configured",
-          })
-        );
+        // Console logging removed for security
+        expect(consoleErrorSpy).not.toHaveBeenCalled();
       }
     });
 
@@ -581,21 +575,10 @@ describe("Database Environment Configuration", () => {
       const service = new DatabaseService();
       service.initializeClient();
 
-      // Check that console.log was called for success
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        "Database client initialized successfully"
-      );
+      // Console logging removed for security - just verify no sensitive data logged
+      expect(consoleLogSpy).not.toHaveBeenCalled();
 
-      // Verify no sensitive values were logged
-      const logCalls = consoleLogSpy.mock.calls;
-      logCalls.forEach(call => {
-        call.forEach(arg => {
-          if (typeof arg === "string") {
-            expect(arg).not.toContain("sensitive-production-token");
-            expect(arg).not.toContain("prod-db.turso.io");
-          }
-        });
-      });
+      // No need to check calls since logging was removed for security
     });
 
     it("should detect hardcoded secrets in configuration", () => {
@@ -611,7 +594,7 @@ describe("Database Environment Configuration", () => {
         process.env.TURSO_DATABASE_URL = "libsql://test-db.turso.io";
 
         const service = new DatabaseService();
-        
+
         // Should work but ideally would warn about hardcoded patterns
         expect(() => service.initializeClient()).not.toThrow();
       });
@@ -620,7 +603,7 @@ describe("Database Environment Configuration", () => {
     it("should validate environment variable sources", () => {
       // Simulate reading from different sources
       const originalProcessEnv = process.env;
-      
+
       // Mock environment loaded from .env file
       process.env = {
         ...originalProcessEnv,
@@ -641,12 +624,14 @@ describe("Database Environment Configuration", () => {
       // Test a helper function for validating environment
       function validateDatabaseEnvironment() {
         const required = ["TURSO_DATABASE_URL"];
-        const missing = required.filter(key => !process.env[key]);
-        
+        const missing = required.filter((key) => !process.env[key]);
+
         if (missing.length > 0) {
-          throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
+          throw new Error(
+            `Missing required environment variables: ${missing.join(", ")}`,
+          );
         }
-        
+
         return true;
       }
 
@@ -666,12 +651,12 @@ describe("Database Environment Configuration", () => {
         "NODE_ENV",
       ];
 
-      const allPresent = requiredForProduction.every(key => 
-        process.env[key] && process.env[key] !== ""
+      const allPresent = requiredForProduction.every(
+        (key) => process.env[key] && process.env[key] !== "",
       );
 
       if (!allPresent) {
-        requiredForProduction.forEach(key => {
+        requiredForProduction.forEach((key) => {
           process.env[key] = `test-${key.toLowerCase()}`;
         });
       }
