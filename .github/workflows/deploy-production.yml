@@ -199,18 +199,18 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: 🔗 Pull Vercel Environment Information
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
 
       - name: 🏗️ Build Project Artifacts
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
 
       - name: 🚀 Deploy to Vercel
         id: deploy
         run: |
-          url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
-          echo "deployment_url=$url" >> $GITHUB_OUTPUT
-          echo "### 🚀 Deployment Successful" >> $GITHUB_STEP_SUMMARY
-          echo "**Production URL:** $url" >> $GITHUB_STEP_SUMMARY
+          url=$(vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}")
+          echo "deployment_url=$url" >> "$GITHUB_OUTPUT"
+          echo "### 🚀 Deployment Successful" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Production URL:** $url" >> "$GITHUB_STEP_SUMMARY"
 
       - name: 🏥 Post-Deployment Health Check
         run: |
