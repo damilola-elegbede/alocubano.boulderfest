@@ -3,7 +3,7 @@
  * Handles LibSQL database connections and provides connection management
  */
 
-import { createClient } from '@libsql/client/web';
+import { createClient } from "@libsql/client/web";
 
 class DatabaseService {
   constructor() {
@@ -23,7 +23,7 @@ class DatabaseService {
     const authToken = process.env.TURSO_AUTH_TOKEN;
 
     if (!databaseUrl) {
-      throw new Error('TURSO_DATABASE_URL environment variable is required');
+      throw new Error("TURSO_DATABASE_URL environment variable is required");
     }
 
     const config = {
@@ -38,15 +38,10 @@ class DatabaseService {
     try {
       this.client = createClient(config);
       this.initialized = true;
-      console.log('Database client initialized successfully');
       return this.client;
     } catch (error) {
-      console.error('Failed to initialize database client:', {
-        error: error.message,
-        databaseUrl: databaseUrl ? 'configured' : 'missing',
-        authToken: authToken ? 'configured' : 'missing',
-      });
-      throw error;
+      // Log error without exposing sensitive config details
+      throw new Error(`Failed to initialize database client: ${error.message}`);
     }
   }
 
@@ -67,19 +62,22 @@ class DatabaseService {
   async testConnection() {
     try {
       const client = this.getClient();
-      
+
       // Test connection with a simple query
-      const result = await client.execute('SELECT 1 as test');
-      
+      const result = await client.execute("SELECT 1 as test");
+
       if (result && result.rows && result.rows.length > 0) {
-        console.log('Database connection test successful');
+        console.log("Database connection test successful");
         return true;
       }
-      
-      console.error('Database connection test failed: unexpected result', result);
+
+      console.error(
+        "Database connection test failed: unexpected result",
+        result,
+      );
       return false;
     } catch (error) {
-      console.error('Database connection test failed:', {
+      console.error("Database connection test failed:", {
         error: error.message,
         code: error.code,
         timestamp: new Date().toISOString(),
@@ -96,8 +94,8 @@ class DatabaseService {
       const client = this.getClient();
       return await client.execute({ sql, args: params });
     } catch (error) {
-      console.error('Database query execution failed:', {
-        sql: sql.substring(0, 100) + (sql.length > 100 ? '...' : ''),
+      console.error("Database query execution failed:", {
+        sql: sql.substring(0, 100) + (sql.length > 100 ? "..." : ""),
         error: error.message,
         timestamp: new Date().toISOString(),
       });
@@ -113,7 +111,7 @@ class DatabaseService {
       const client = this.getClient();
       return await client.batch(statements);
     } catch (error) {
-      console.error('Database batch execution failed:', {
+      console.error("Database batch execution failed:", {
         statementCount: statements.length,
         error: error.message,
         timestamp: new Date().toISOString(),
@@ -129,9 +127,9 @@ class DatabaseService {
     if (this.client) {
       try {
         this.client.close();
-        console.log('Database connection closed');
+        console.log("Database connection closed");
       } catch (error) {
-        console.error('Error closing database connection:', error.message);
+        console.error("Error closing database connection:", error.message);
       } finally {
         this.client = null;
         this.initialized = false;
@@ -145,22 +143,22 @@ class DatabaseService {
   async healthCheck() {
     try {
       const isConnected = await this.testConnection();
-      
+
       if (!isConnected) {
         return {
-          status: 'unhealthy',
-          error: 'Connection test failed',
+          status: "unhealthy",
+          error: "Connection test failed",
           timestamp: new Date().toISOString(),
         };
       }
 
       return {
-        status: 'healthy',
+        status: "healthy",
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
       return {
-        status: 'unhealthy',
+        status: "unhealthy",
         error: error.message,
         timestamp: new Date().toISOString(),
       };

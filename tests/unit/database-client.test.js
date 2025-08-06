@@ -18,11 +18,11 @@ vi.mock("@libsql/client/web", () => {
 });
 
 // Import after mocking
-import { 
-  DatabaseService, 
-  getDatabase, 
-  getDatabaseClient, 
-  testConnection 
+import {
+  DatabaseService,
+  getDatabase,
+  getDatabaseClient,
+  testConnection,
 } from "../../api/lib/database.js";
 import { createClient } from "@libsql/client/web";
 
@@ -42,7 +42,7 @@ describe("DatabaseService", () => {
 
     // Get fresh mock client reference
     mockClient = createClient().__mockClient || createClient();
-    
+
     // Set up environment variables
     process.env.TURSO_DATABASE_URL = "https://test-database.turso.io";
     process.env.TURSO_AUTH_TOKEN = "test-auth-token";
@@ -82,7 +82,8 @@ describe("DatabaseService", () => {
       });
       expect(databaseService.client).toBe(client);
       expect(databaseService.initialized).toBe(true);
-      expect(consoleLogSpy).toHaveBeenCalledWith("Database client initialized successfully");
+      // Console logging removed for security - just verify initialization
+      expect(consoleLogSpy).not.toHaveBeenCalled();
     });
 
     it("should initialize client without auth token when not provided", () => {
@@ -101,7 +102,7 @@ describe("DatabaseService", () => {
       delete process.env.TURSO_DATABASE_URL;
 
       expect(() => databaseService.initializeClient()).toThrow(
-        "TURSO_DATABASE_URL environment variable is required"
+        "TURSO_DATABASE_URL environment variable is required",
       );
       expect(databaseService.client).toBeNull();
       expect(databaseService.initialized).toBe(false);
@@ -122,15 +123,9 @@ describe("DatabaseService", () => {
         throw error;
       });
 
-      expect(() => databaseService.initializeClient()).toThrow(error);
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Failed to initialize database client:",
-        {
-          error: "Failed to create client",
-          databaseUrl: "configured",
-          authToken: "configured",
-        }
-      );
+      expect(() => databaseService.initializeClient()).toThrow("Failed to initialize database client: Failed to create client");
+      // Console logging removed for security
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
       expect(databaseService.initialized).toBe(false);
     });
 
@@ -141,15 +136,9 @@ describe("DatabaseService", () => {
         throw error;
       });
 
-      expect(() => databaseService.initializeClient()).toThrow(error);
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Failed to initialize database client:",
-        {
-          error: "Config error",
-          databaseUrl: "configured",
-          authToken: "missing",
-        }
-      );
+      expect(() => databaseService.initializeClient()).toThrow("Failed to initialize database client: Config error");
+      // Console logging removed for security
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -175,7 +164,7 @@ describe("DatabaseService", () => {
       delete process.env.TURSO_DATABASE_URL;
 
       expect(() => databaseService.getClient()).toThrow(
-        "TURSO_DATABASE_URL environment variable is required"
+        "TURSO_DATABASE_URL environment variable is required",
       );
     });
   });
@@ -194,7 +183,9 @@ describe("DatabaseService", () => {
 
       expect(result).toBe(true);
       expect(mockClient.execute).toHaveBeenCalledWith("SELECT 1 as test");
-      expect(consoleLogSpy).toHaveBeenCalledWith("Database connection test successful");
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        "Database connection test successful",
+      );
     });
 
     it("should return false for empty result", async () => {
@@ -208,7 +199,7 @@ describe("DatabaseService", () => {
       expect(result).toBe(false);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "Database connection test failed: unexpected result",
-        { rows: [], columns: ["test"] }
+        { rows: [], columns: ["test"] },
       );
     });
 
@@ -220,7 +211,7 @@ describe("DatabaseService", () => {
       expect(result).toBe(false);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "Database connection test failed: unexpected result",
-        null
+        null,
       );
     });
 
@@ -238,7 +229,7 @@ describe("DatabaseService", () => {
           error: "Connection failed",
           code: "CONNECTION_ERROR",
           timestamp: expect.any(String),
-        }
+        },
       );
     });
 
@@ -255,7 +246,7 @@ describe("DatabaseService", () => {
           error: "Generic error",
           code: undefined,
           timestamp: expect.any(String),
-        }
+        },
       );
     });
 
@@ -328,7 +319,7 @@ describe("DatabaseService", () => {
           sql: "INVALID SQL QUERY",
           error: "Query execution failed",
           timestamp: expect.any(String),
-        }
+        },
       );
     });
 
@@ -344,7 +335,7 @@ describe("DatabaseService", () => {
           sql: longSql.substring(0, 100) + "...",
           error: "Query failed",
           timestamp: expect.any(String),
-        }
+        },
       );
     });
 
@@ -393,7 +384,7 @@ describe("DatabaseService", () => {
           statementCount: 1,
           error: "Batch execution failed",
           timestamp: expect.any(String),
-        }
+        },
       );
     });
 
@@ -410,7 +401,7 @@ describe("DatabaseService", () => {
   describe("close", () => {
     it("should close client connection", () => {
       databaseService.initializeClient();
-      
+
       databaseService.close();
 
       expect(mockClient.close).toHaveBeenCalled();
@@ -430,7 +421,7 @@ describe("DatabaseService", () => {
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "Error closing database connection:",
-        "Close failed"
+        "Close failed",
       );
       expect(databaseService.client).toBeNull();
       expect(databaseService.initialized).toBe(false);
@@ -442,7 +433,9 @@ describe("DatabaseService", () => {
       databaseService.close();
 
       expect(mockClient.close).not.toHaveBeenCalled();
-      expect(consoleLogSpy).not.toHaveBeenCalledWith("Database connection closed");
+      expect(consoleLogSpy).not.toHaveBeenCalledWith(
+        "Database connection closed",
+      );
     });
   });
 
@@ -549,11 +542,11 @@ describe("Singleton Functions", () => {
       // Clear all environment variables for the singleton instance
       delete process.env.TURSO_DATABASE_URL;
       delete process.env.TURSO_AUTH_TOKEN;
-      
+
       // Set them back before calling getDatabaseClient
       process.env.TURSO_DATABASE_URL = "https://test-database.turso.io";
       process.env.TURSO_AUTH_TOKEN = "test-auth-token";
-      
+
       const client = getDatabaseClient();
 
       expect(client).toBeTruthy();
@@ -603,7 +596,7 @@ describe("Environment Variable Edge Cases", () => {
     const service = new DatabaseService();
 
     expect(() => service.initializeClient()).toThrow(
-      "TURSO_DATABASE_URL environment variable is required"
+      "TURSO_DATABASE_URL environment variable is required",
     );
   });
 
@@ -664,14 +657,14 @@ describe("Error Handling Edge Cases", () => {
     // This test demonstrates that the code doesn't handle null errors gracefully
     // It will throw an error when trying to access error.message
     await expect(service.testConnection()).rejects.toThrow(
-      "Cannot read properties of null"
+      "Cannot read properties of null",
     );
   });
 
   it("should handle errors with circular references", async () => {
     const service = new DatabaseService();
     const mockClient = createClient();
-    
+
     const circularError = new Error("Circular error");
     circularError.self = circularError;
     mockClient.execute.mockRejectedValue(circularError);
