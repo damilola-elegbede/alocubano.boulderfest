@@ -269,12 +269,13 @@ describe("Checkout Session Creation", () => {
       expect(responseData.sessionId).toBe(mockSession.id);
       expect(responseData.totalAmount).toBe(50); // 25 * 2
 
-      // Verify database order creation
+      // Verify database order creation with new schema
       expect(mockDb.run).toHaveBeenCalledWith(
         expect.stringContaining("INSERT INTO orders"),
         expect.arrayContaining([
           expect.stringMatching(/^order_/),
-          expect.stringMatching(/^checkout_pending_/),
+          null, // stripe_checkout_session_id (will be updated later)
+          "checkout_session", // payment_method
           "test@example.com",
           "John Doe",
           null, // phone
