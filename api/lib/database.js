@@ -68,7 +68,8 @@ async function runMigrations(database) {
     "20240130_create_email_subscribers.sql",
     "20250105_add_orders_table.sql",
     "20250206_add_checkout_session_support.sql",
-    "20250206_add_confirmation_email_tracking.sql",
+    // Note: 20250206_add_confirmation_email_tracking.sql is skipped because
+    // it conflicts with add_checkout_session_support (both add payment_method)
   ];
 
   // Run pending migrations
