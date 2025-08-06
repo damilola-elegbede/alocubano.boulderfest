@@ -92,9 +92,9 @@ jobs:
         id: deploy
         run: |
           url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
-          echo "preview_url=$url" >> $GITHUB_OUTPUT
-          echo "### 🧪 Preview Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "**Preview URL:** $url" >> $GITHUB_STEP_SUMMARY
+          echo "preview_url=$url" >> "$GITHUB_OUTPUT"
+          echo "### 🧪 Preview Deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Preview URL:** $url" >> "$GITHUB_STEP_SUMMARY"
 
       - name: 🏥 Health Check Preview
         run: |
@@ -102,12 +102,12 @@ jobs:
           sleep 10  # Wait longer for deployment to be ready
           
           # Check if the site responds at all
-          if curl -s -o /dev/null -w "%{http_code}" ${{ steps.deploy.outputs.preview_url }} | grep -q "200"; then
+          if curl -s -o /dev/null -w "%{http_code}" "${{ steps.deploy.outputs.preview_url }}" | grep -q "200"; then
             echo "✅ Site is responding"
             
             # Try database health check if API exists
-            if curl -s ${{ steps.deploy.outputs.preview_url }}/api/test-db > /dev/null 2>&1; then
-              response=$(curl -s ${{ steps.deploy.outputs.preview_url }}/api/test-db || echo '{"status":"error"}')
+            if curl -s "${{ steps.deploy.outputs.preview_url }}/api/test-db" > /dev/null 2>&1; then
+              response=$(curl -s "${{ steps.deploy.outputs.preview_url }}/api/test-db" || echo '{"status":"error"}')
               echo "Database health check response:"
               echo "$response" | jq '.' 2>/dev/null || echo "$response"
               
