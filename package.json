@@ -55,7 +55,12 @@
     "deploy:staging": "npm run deploy:quality-gate && vercel --target preview",
     "deploy:production": "npm run deploy:quality-gate && vercel --target production",
     "migrate:up": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/migrate.js",
-    "migrate:prod": "NODE_ENV=production DOTENV_CONFIG_PATH=.env.production node -r dotenv/config scripts/migrate.js",
+    "migrate:prod": "NODE_ENV=production node scripts/migrate.js",
+    "migrate:prod:deploy": "NODE_ENV=production node scripts/production-migrate.js deploy --force",
+    "migrate:prod:check": "NODE_ENV=production node scripts/production-migrate.js check",
+    "migrate:prod:dry-run": "NODE_ENV=production node scripts/production-migrate.js deploy --dry-run",
+    "migrate:status": "node scripts/migrate.js status",
+    "migrate:verify": "node scripts/migrate.js verify",
     "test:db": "curl -f http://localhost:3000/api/database-health || echo 'Database health check failed'",
     "db:shell": "sqlite3 data/development.db"
   },

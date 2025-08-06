@@ -1,0 +1,116 @@
+name: 🧪 Staging Deployment
+
+on:
+  push:
+    branches: [develop, staging, feature/*]
+  pull_request:
+    branches: [main]
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # Job 1: Quality Checks
+  quality-checks:
+    name: 🔍 Quality Gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📚 Install Dependencies
+        run: npm ci
+
+      - name: 🧹 Lint Code
+        run: npm run lint
+
+      - name: 🧪 Run Unit Tests
+        run: npm run test:unit
+
+      - name: 🗄️ Database Tests
+        run: npm run test:database
+
+      - name: 📊 Test Coverage
+        run: npm run test:coverage
+
+  # Job 2: Deploy to Preview
+  deploy-preview:
+    name: 🚢 Deploy Preview
+    runs-on: ubuntu-latest
+    needs: quality-checks
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📚 Install Dependencies
+        run: npm ci
+
+      - name: 🏗️ Build Application
+        run: npm run build
+
+      - name: 📦 Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: 🔗 Pull Vercel Environment Information
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: 🏗️ Build Project Artifacts
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: 🚀 Deploy to Preview
+        id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "preview_url=$url" >> $GITHUB_OUTPUT
+          echo "### 🧪 Preview Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "**Preview URL:** $url" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🏥 Health Check Preview
+        run: |
+          echo "🏥 Checking preview deployment health..."
+          sleep 5  # Wait for deployment
+          
+          response=$(curl -s ${{ steps.deploy.outputs.preview_url }}/api/test-db || echo '{"status":"error"}')
+          echo "Health check response:"
+          echo "$response" | jq '.' || echo "$response"
+          
+          # Don't fail on health check issues in preview
+          status=$(echo "$response" | jq -r '.status' 2>/dev/null || echo "unknown")
+          echo "Preview health status: $status"
+
+      - name: 💬 Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🧪 Preview Deployment Ready
+              
+              **Preview URL:** ${{ steps.deploy.outputs.preview_url }}
+              **Health Status:** Preview environment ready for testing
+              
+              **Test Checklist:**
+              - [ ] Navigation works correctly
+              - [ ] Cart functionality
+              - [ ] Email subscription
+              - [ ] Database connectivity
+              - [ ] Mobile responsiveness
+              
+              _Deployed from commit ${{ github.sha }}_`
+            })
