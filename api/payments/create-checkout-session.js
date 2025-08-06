@@ -7,7 +7,16 @@ import Stripe from "stripe";
 import { openDb } from "../lib/database.js";
 
 // Initialize Stripe with API key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+let stripe;
+try {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    console.error("STRIPE_SECRET_KEY is not configured");
+  } else {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  }
+} catch (error) {
+  console.error("Failed to initialize Stripe:", error);
+}
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -22,6 +31,15 @@ export default async function handler(req, res) {
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  // Check if Stripe is properly initialized
+  if (!stripe) {
+    console.error("Stripe is not initialized - check STRIPE_SECRET_KEY environment variable");
+    return res.status(500).json({ 
+      error: "Payment service not configured",
+      message: "Stripe payment processing is not available. Please check server configuration."
+    });
   }
 
   try {
