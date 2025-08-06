@@ -9,6 +9,7 @@ import {
   vi,
 } from "vitest";
 import { getDatabase, getDatabaseClient } from "../../api/lib/database.js";
+import { validateTableName } from "../../api/lib/sql-security.js";
 
 // Mock environment variables for testing
 const MOCK_DATABASE_URL = "file:test.db";
@@ -824,7 +825,11 @@ async function cleanupTestData(client) {
 
   for (const table of tables) {
     try {
-      await client.execute(`DELETE FROM ${table} WHERE 1=1`);
+      // Validate table name to prevent SQL injection
+      const validatedTableName = validateTableName(table);
+      
+      // Use quoted identifier for secure deletion
+      await client.execute(`DELETE FROM "${validatedTableName}"`);
     } catch (error) {
       console.warn(`Failed to clean up ${table}:`, error.message);
     }

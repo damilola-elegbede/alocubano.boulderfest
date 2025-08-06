@@ -6,33 +6,28 @@
 
 import { getEmailSubscriberService } from './lib/email-subscriber-service.js';
 import { getDatabase } from './lib/database.js';
+import { getCorsConfig, isOriginAllowed } from './lib/cors-config.js';
+import { 
+  createSecurePragmaQuery, 
+  createSecureCountQuery, 
+  filterApplicationTables 
+} from './lib/sql-security.js';
+import { getMigrationStatus } from './lib/migration-status.js';
 
 export default async function handler(req, res) {
-  // Define allowed origins for CORS security
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:8080', 
-    'https://alocubano-boulderfest.vercel.app',
-    'https://*.vercel.app'
-  ];
+  // Load secure CORS configuration
+  const corsConfig = getCorsConfig();
   
   // Check origin and set CORS headers securely
   const origin = req.headers.origin;
-  const isAllowedOrigin = allowedOrigins.some(allowed => {
-    if (allowed.includes('*')) {
-      // Handle wildcard subdomain patterns
-      const pattern = allowed.replace(/\*/g, '.*');
-      return new RegExp(`^${pattern}$`).test(origin);
-    }
-    return allowed === origin;
-  });
+  const originAllowed = isOriginAllowed(origin, corsConfig);
   
-  if (isAllowedOrigin) {
+  if (originAllowed) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', corsConfig.allowedMethods.join(', '));
+  res.setHeader('Access-Control-Allow-Headers', corsConfig.allowedHeaders.join(', '));
 
   // Handle preflight request
   if (req.method === 'OPTIONS') {
@@ -109,27 +104,42 @@ export default async function handler(req, res) {
         ORDER BY name
       `);
       
-      // For each table, get detailed information
-      for (const table of tablesResult.rows) {
-        const tableName = table.name;
-        
-        // Get column information
-        const columnsResult = await db.execute(`PRAGMA table_info(${tableName})`);
-        const columns = columnsResult.rows.map(col => col.name);
-        
-        // Get index information  
-        const indexesResult = await db.execute(`PRAGMA index_list(${tableName})`);
-        const indexes = indexesResult.rows.map(idx => idx.name);
-        
-        // Get row count
-        const countResult = await db.execute(`SELECT COUNT(*) as count FROM ${tableName}`);
-        const rowCount = countResult.rows[0]?.count || 0;
-        
-        tableInfo[tableName] = {
-          columns,
-          indexes,
-          rowCount
-        };
+      // Filter to only include application tables for security
+      const applicationTables = filterApplicationTables(
+        tablesResult.rows.map(row => row.name)
+      );
+      
+      // For each table, get detailed information using secure queries
+      for (const tableName of applicationTables) {
+        try {
+          // Get column information using secure PRAGMA query
+          const columnsResult = await db.execute(
+            createSecurePragmaQuery('table_info', tableName)
+          );
+          const columns = columnsResult.rows.map(col => col.name);
+          
+          // Get index information using secure PRAGMA query
+          const indexesResult = await db.execute(
+            createSecurePragmaQuery('index_list', tableName)
+          );
+          const indexes = indexesResult.rows.map(idx => idx.name);
+          
+          // Get row count using secure COUNT query
+          const countResult = await db.execute(
+            createSecureCountQuery(tableName)
+          );
+          const rowCount = countResult.rows[0]?.count || 0;
+          
+          tableInfo[tableName] = {
+            columns,
+            indexes,
+            rowCount
+          };
+        } catch (tableError) {
+          console.warn(`Failed to get info for table ${tableName}:`, tableError.message);
+          // Skip this table but continue with others
+          continue;
+        }
       }
       
       testResults.tests.tables.status = 'passed';
@@ -147,20 +157,9 @@ export default async function handler(req, res) {
     // Test 3: Migration Status
     console.log('Testing migration status...');
     try {
-      // For the current implementation, we'll return the expected migration status
-      const migrationStatus = {
-        applied: [
-          '001_create_email_subscribers_table',
-          '002_create_email_events_table', 
-          '003_create_email_audit_log_table',
-          '004_add_verification_columns',
-          '005_add_indexes'
-        ],
-        pending: [],
-        lastMigration: '005_add_indexes',
-        migrationDate: '2024-01-15T00:00:00.000Z',
-        status: 'up_to_date'
-      };
+      // Get real migration status from database
+      const db = await getDatabase();
+      const migrationStatus = await getMigrationStatus(db);
       
       testResults.tests.migrations.status = 'passed';
       testResults.tests.migrations.data = migrationStatus;
