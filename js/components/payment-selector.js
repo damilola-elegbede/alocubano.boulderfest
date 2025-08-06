@@ -308,6 +308,12 @@ class PaymentSelector {
                 this.onSelectCallback(method);
             }
         } catch (error) {
+            // eslint-disable-next-line no-console
+            console.error('Payment processing error:', {
+                method: method,
+                error: error.message,
+                stack: error.stack
+            });
             this.hideProcessingState();
             this.showError(error.message);
         }
