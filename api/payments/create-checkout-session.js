@@ -4,7 +4,6 @@
  */
 
 import Stripe from "stripe";
-import { openDb } from "../lib/database.js";
 
 // Initialize Stripe with API key
 let stripe;
@@ -156,66 +155,10 @@ export default async function handler(req, res) {
       lineItems.push(lineItem);
     }
 
-    // Generate order ID
+    // Generate order ID for tracking (no database storage)
     const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Generate a temporary session ID placeholder
-    const tempSessionId = `pending_${orderId}`;
-
-    // Store preliminary order in database with 'awaiting_payment' status
-    const db = await openDb();
-
-    try {
-      await db.run(
-        `
-                INSERT INTO orders (
-                    id, 
-                    stripe_checkout_session_id,
-                    payment_method,
-                    customer_email, 
-                    customer_name, 
-                    customer_phone, 
-                    order_type, 
-                    order_details, 
-                    order_total,
-                    fulfillment_status,
-                    special_requests
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `,
-        [
-          orderId,
-          tempSessionId, // Temporary placeholder, will be updated after creating checkout session
-          'checkout_session',
-          customerInfo?.email || 'pending@stripe.checkout',
-          customerInfo?.firstName && customerInfo?.lastName 
-            ? `${customerInfo.firstName} ${customerInfo.lastName}`
-            : 'Pending Stripe Checkout',
-          customerInfo?.phone || null,
-          orderType,
-          JSON.stringify({
-            items: cartItems,
-            totalAmount: totalAmount,
-          }),
-          Math.round(totalAmount * 100), // Store in cents
-          "awaiting_payment",
-          customerInfo?.specialRequests || null,
-        ],
-      );
-
-      // Preliminary order created
-      console.log("Preliminary order created successfully:", orderId);
-    } catch (dbError) {
-      // Database error occurred
-      console.error("Database error creating preliminary order:", dbError);
-      console.error("Error details:", {
-        message: dbError.message,
-        stack: dbError.stack,
-        code: dbError.code,
-      });
-      return res
-        .status(500)
-        .json({ error: "Failed to create preliminary order" });
-    }
+    console.log("Creating checkout session for order:", orderId);
 
     // Determine origin from request headers
     const origin =
@@ -247,30 +190,12 @@ export default async function handler(req, res) {
       expires_at: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
     });
 
-    // Update order with actual Checkout Session ID
-    try {
-      await db.run(
-        `
-                UPDATE orders 
-                SET stripe_checkout_session_id = ?,
-                    checkout_session_url = ?,
-                    checkout_session_expires_at = ?,
-                    updated_at = datetime('now')
-                WHERE id = ?
-            `,
-        [
-          session.id, 
-          session.url,
-          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
-          orderId
-        ],
-      );
-
-      // Order updated with session ID
-    } catch (dbError) {
-      // Error updating order
-      // Continue anyway - we have the session created
-    }
+    // Log session creation for debugging
+    console.log("Stripe checkout session created:", {
+      sessionId: session.id,
+      orderId: orderId,
+      totalAmount: totalAmount
+    });
 
     // Return checkout URL for redirect
     res.status(200).json({
