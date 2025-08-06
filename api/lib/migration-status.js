@@ -20,7 +20,7 @@ export async function getMigrationStatus(database) {
     if (!tableExists) {
       return {
         applied: [],
-        pending: await getPendingMigrations(),
+        pending: await getAllMigrationFiles(),
         lastMigration: null,
         migrationDate: null,
         status: 'not_initialized'
@@ -107,13 +107,3 @@ async function getAllMigrationFiles() {
   }
 }
 
-/**
- * Get pending migrations (files that exist but aren't in database)
- */
-async function getPendingMigrations() {
-  try {
-    return await getAllMigrationFiles();
-  } catch (error) {
-    return [];
-  }
-}
