@@ -3,7 +3,8 @@
 
 -- Update existing orders to explicitly set payment_method
 UPDATE orders 
-SET payment_method = 'payment_intent'
+SET payment_method = 'payment_intent',
+    updated_at = datetime('now')
 WHERE payment_method IS NULL 
   AND stripe_payment_intent_id IS NOT NULL;
 
