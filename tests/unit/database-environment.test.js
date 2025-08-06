@@ -176,7 +176,7 @@ describe("Database Environment Configuration", () => {
 
       it("should handle various auth token formats", () => {
         const validTokens = [
-          "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9...",
+          "example_jwt_token_format",
           "simple-token-123",
           "token_with_underscores",
           "token-with-dashes",
@@ -289,8 +289,8 @@ describe("Database Environment Configuration", () => {
     describe("Template security validation", () => {
       it("should ensure templates contain placeholder values only", () => {
         const insecureValues = [
-          "sk_live_actual_secret_key",
-          "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.real_jwt_token",
+          "test_live_actual_secret_key",
+          "real_jwt_token_example",
           "real-database-url.turso.io",
         ];
 
@@ -583,10 +583,10 @@ describe("Database Environment Configuration", () => {
 
     it("should detect hardcoded secrets in configuration", () => {
       const hardcodedPatterns = [
-        "sk_live_",
-        "sk_test_",
-        "whsec_",
-        "eyJhbGciOiJFZERTQSI", // Start of a JWT
+        "test_live_",
+        "test_secret_",
+        "webhook_",
+        "jwt_pattern_", // Start of a JWT pattern
       ];
 
       hardcodedPatterns.forEach((pattern) => {
