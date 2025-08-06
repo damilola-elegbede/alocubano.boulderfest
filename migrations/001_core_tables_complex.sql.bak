@@ -1,0 +1,486 @@
+-- Migration 001: Core Database Tables
+-- Creates the foundational database schema for A Lo Cubano Boulder Fest payment system
+-- Author: Database Administrator
+-- Date: 2025-08-06
+-- SQLite Compatible
+
+BEGIN TRANSACTION;
+
+-- ============================================================================
+-- TRANSACTIONS TABLE
+-- Main payment tracking table - central record for all payment transactions
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS transactions (
+    -- Primary identifiers
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    uuid TEXT NOT NULL UNIQUE, -- UUID for external references
+    
+    -- Order information
+    order_type TEXT NOT NULL CHECK (order_type IN ('tickets', 'donations')),
+    order_details TEXT NOT NULL, -- JSON blob with order specifics
+    
+    -- Financial data
+    total_amount INTEGER NOT NULL, -- Amount in cents (e.g., 2500 = $25.00)
+    currency TEXT NOT NULL DEFAULT 'usd',
+    tax_amount INTEGER DEFAULT 0, -- Tax amount in cents
+    discount_amount INTEGER DEFAULT 0, -- Discount amount in cents
+    
+    -- Customer information
+    customer_email TEXT NOT NULL,
+    customer_name TEXT,
+    customer_phone TEXT,
+    billing_address TEXT, -- JSON blob with address details
+    
+    -- Payment provider details
+    payment_method TEXT NOT NULL CHECK (payment_method IN ('stripe_checkout', 'stripe_payment_intent', 'paypal')),
+    stripe_payment_intent_id TEXT, -- Legacy payment intent ID
+    stripe_checkout_session_id TEXT, -- New checkout session ID
+    stripe_customer_id TEXT, -- Stripe Customer object ID
+    paypal_order_id TEXT, -- PayPal order ID
+    
+    -- Checkout session specific fields
+    checkout_session_url TEXT, -- Hosted checkout URL for recovery
+    checkout_session_expires_at TEXT, -- ISO datetime string
+    
+    -- Status tracking
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN (
+        'pending',           -- Initial state
+        'awaiting_payment',  -- Checkout session created, awaiting payment
+        'processing',        -- Payment being processed
+        'paid',             -- Payment completed successfully
+        'failed',           -- Payment failed
+        'cancelled',        -- Cancelled by customer
+        'expired',          -- Checkout session expired
+        'refunded',         -- Payment refunded
+        'partially_refunded' -- Partial refund issued
+    )),
+    fulfillment_status TEXT NOT NULL DEFAULT 'pending' CHECK (fulfillment_status IN (
+        'pending',          -- Awaiting fulfillment
+        'processing',       -- Being fulfilled
+        'fulfilled',        -- Completed
+        'cancelled',        -- Cancelled
+        'on_hold'          -- Temporarily held
+    )),
+    
+    -- Timestamps
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    paid_at TEXT, -- When payment was completed
+    expires_at TEXT, -- When the transaction expires
+    
+    -- Metadata and notes
+    metadata TEXT, -- JSON blob for additional data
+    notes TEXT, -- Internal admin notes
+    
+    -- Audit fields
+    created_by TEXT DEFAULT 'system',
+    updated_by TEXT DEFAULT 'system'
+);
+
+-- ============================================================================
+-- TICKETS TABLE
+-- Individual ticket records linked to transactions
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS tickets (
+    -- Primary identifiers
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_code TEXT NOT NULL UNIQUE, -- Unique ticket identifier (e.g., ALCB-2026-ABC123)
+    
+    -- Transaction relationship
+    transaction_id INTEGER NOT NULL,
+    
+    -- Ticket details
+    ticket_type TEXT NOT NULL, -- Type of ticket (e.g., 'weekend_pass', 'single_day', 'workshop')
+    event_name TEXT NOT NULL, -- Event this ticket is for
+    event_date TEXT NOT NULL, -- ISO date string
+    
+    -- Pricing information
+    face_value INTEGER NOT NULL, -- Original price in cents
+    paid_amount INTEGER NOT NULL, -- Actual amount paid (may include discounts)
+    fees INTEGER DEFAULT 0, -- Processing fees in cents
+    
+    -- Attendee information
+    attendee_name TEXT NOT NULL,
+    attendee_email TEXT NOT NULL,
+    attendee_phone TEXT,
+    attendee_dietary_restrictions TEXT,
+    attendee_accessibility_needs TEXT,
+    
+    -- Status tracking
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN (
+        'active',           -- Valid ticket
+        'used',            -- Already redeemed
+        'refunded',        -- Refunded ticket
+        'cancelled',       -- Cancelled ticket
+        'transferred',     -- Transferred to another person
+        'expired'          -- Past event date
+    )),
+    
+    -- Check-in tracking
+    checked_in_at TEXT, -- When ticket was scanned/used
+    checked_in_by TEXT, -- Staff member who processed check-in
+    check_in_location TEXT, -- Where the check-in occurred
+    
+    -- Transfer tracking
+    original_attendee_email TEXT, -- If ticket was transferred
+    transferred_at TEXT,
+    transferred_by TEXT,
+    
+    -- Timestamps
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    
+    -- QR code and validation
+    qr_code_data TEXT, -- QR code content for validation
+    validation_hash TEXT, -- Security hash for ticket validation
+    
+    -- Foreign key constraint
+    FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE
+);
+
+-- ============================================================================
+-- TRANSACTION_ITEMS TABLE
+-- Line item details for transactions (supports multiple items per transaction)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS transaction_items (
+    -- Primary identifiers
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    
+    -- Transaction relationship
+    transaction_id INTEGER NOT NULL,
+    
+    -- Item details
+    item_type TEXT NOT NULL CHECK (item_type IN ('ticket', 'donation', 'merchandise', 'fee')),
+    item_name TEXT NOT NULL, -- Display name of the item
+    item_description TEXT, -- Detailed description
+    
+    -- Pricing and quantity
+    quantity INTEGER NOT NULL DEFAULT 1,
+    unit_price INTEGER NOT NULL, -- Price per unit in cents
+    total_price INTEGER NOT NULL, -- quantity * unit_price (before discounts)
+    discount_amount INTEGER DEFAULT 0, -- Discount applied to this line item
+    final_price INTEGER NOT NULL, -- total_price - discount_amount
+    
+    -- Product/SKU information
+    sku TEXT, -- Product SKU if applicable
+    variant_id TEXT, -- Variant identifier
+    
+    -- Event-specific data (for tickets)
+    event_name TEXT,
+    event_date TEXT,
+    session_time TEXT, -- For workshop tickets
+    
+    -- Donation-specific data
+    donation_category TEXT, -- Category for donations
+    donation_dedication TEXT, -- Dedication message if any
+    
+    -- Timestamps
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    
+    -- Metadata
+    metadata TEXT, -- JSON blob for additional item data
+    
+    -- Foreign key constraint
+    FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE
+);
+
+-- ============================================================================
+-- PAYMENT_EVENTS TABLE
+-- Audit trail for all payment-related events and status changes
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS payment_events (
+    -- Primary identifiers
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    
+    -- Transaction relationship
+    transaction_id INTEGER NOT NULL,
+    
+    -- Event details
+    event_type TEXT NOT NULL CHECK (event_type IN (
+        'transaction_created',      -- Transaction initially created
+        'payment_initiated',        -- Payment process started
+        'payment_processing',       -- Payment being processed
+        'payment_succeeded',        -- Payment completed successfully
+        'payment_failed',          -- Payment failed
+        'payment_cancelled',       -- Payment cancelled
+        'session_created',         -- Checkout session created
+        'session_expired',         -- Checkout session expired
+        'refund_initiated',        -- Refund process started
+        'refund_completed',        -- Refund completed
+        'refund_failed',          -- Refund failed
+        'chargeback_received',     -- Chargeback notification
+        'dispute_created',         -- Payment dispute created
+        'webhook_received',        -- Webhook event processed
+        'manual_update',          -- Manual status change
+        'email_sent',             -- Email notification sent
+        'fulfillment_started',    -- Fulfillment process begun
+        'fulfillment_completed'   -- Fulfillment completed
+    )),
+    
+    -- Event data
+    event_data TEXT, -- JSON blob with event-specific information
+    previous_status TEXT, -- Status before this event
+    new_status TEXT, -- Status after this event
+    
+    -- Source information
+    source TEXT NOT NULL DEFAULT 'system' CHECK (source IN (
+        'system',           -- System-generated event
+        'stripe_webhook',   -- Stripe webhook
+        'paypal_webhook',   -- PayPal webhook
+        'admin_manual',     -- Manual admin action
+        'customer_action',  -- Customer-initiated action
+        'cron_job',        -- Scheduled job
+        'api_call'         -- API endpoint call
+    )),
+    source_id TEXT, -- ID from the source system (e.g., webhook event ID)
+    
+    -- Request tracking
+    request_id TEXT, -- Request ID for correlation
+    user_agent TEXT, -- User agent if from web request
+    ip_address TEXT, -- Source IP address
+    
+    -- Processing information
+    processing_time_ms INTEGER, -- Time taken to process event
+    error_message TEXT, -- Error message if event failed
+    retry_count INTEGER DEFAULT 0, -- Number of retry attempts
+    
+    -- Timestamps
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    processed_at TEXT, -- When event processing completed
+    
+    -- Metadata
+    metadata TEXT, -- Additional event metadata as JSON
+    
+    -- Foreign key constraint
+    FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE
+);
+
+-- ============================================================================
+-- INDEXES FOR PERFORMANCE OPTIMIZATION
+-- ============================================================================
+
+-- Transactions table indexes
+CREATE INDEX IF NOT EXISTS idx_transactions_uuid ON transactions(uuid);
+CREATE INDEX IF NOT EXISTS idx_transactions_customer_email ON transactions(customer_email);
+CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
+CREATE INDEX IF NOT EXISTS idx_transactions_payment_method ON transactions(payment_method);
+CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at);
+CREATE INDEX IF NOT EXISTS idx_transactions_stripe_payment_intent ON transactions(stripe_payment_intent_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_stripe_checkout_session ON transactions(stripe_checkout_session_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_stripe_customer ON transactions(stripe_customer_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_paypal_order ON transactions(paypal_order_id);
+
+-- Composite indexes for common queries
+CREATE INDEX IF NOT EXISTS idx_transactions_status_created ON transactions(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_transactions_customer_status ON transactions(customer_email, status);
+CREATE INDEX IF NOT EXISTS idx_transactions_payment_lookup ON transactions(
+    COALESCE(stripe_checkout_session_id, stripe_payment_intent_id, paypal_order_id),
+    payment_method
+);
+
+-- Tickets table indexes
+CREATE INDEX IF NOT EXISTS idx_tickets_ticket_code ON tickets(ticket_code);
+CREATE INDEX IF NOT EXISTS idx_tickets_transaction_id ON tickets(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_attendee_email ON tickets(attendee_email);
+CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
+CREATE INDEX IF NOT EXISTS idx_tickets_event_date ON tickets(event_date);
+CREATE INDEX IF NOT EXISTS idx_tickets_event_name ON tickets(event_name);
+CREATE INDEX IF NOT EXISTS idx_tickets_validation_hash ON tickets(validation_hash);
+
+-- Composite indexes for tickets
+CREATE INDEX IF NOT EXISTS idx_tickets_event_status ON tickets(event_name, status);
+CREATE INDEX IF NOT EXISTS idx_tickets_attendee_event ON tickets(attendee_email, event_name);
+
+-- Transaction items table indexes
+CREATE INDEX IF NOT EXISTS idx_transaction_items_transaction_id ON transaction_items(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_transaction_items_item_type ON transaction_items(item_type);
+CREATE INDEX IF NOT EXISTS idx_transaction_items_sku ON transaction_items(sku);
+CREATE INDEX IF NOT EXISTS idx_transaction_items_event_name ON transaction_items(event_name);
+
+-- Payment events table indexes
+CREATE INDEX IF NOT EXISTS idx_payment_events_transaction_id ON payment_events(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_payment_events_event_type ON payment_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_payment_events_source ON payment_events(source);
+CREATE INDEX IF NOT EXISTS idx_payment_events_created_at ON payment_events(created_at);
+CREATE INDEX IF NOT EXISTS idx_payment_events_source_id ON payment_events(source_id);
+
+-- Composite indexes for payment events
+CREATE INDEX IF NOT EXISTS idx_payment_events_transaction_created ON payment_events(transaction_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_payment_events_type_created ON payment_events(event_type, created_at);
+
+-- ============================================================================
+-- VIEWS FOR COMMON QUERIES
+-- ============================================================================
+
+-- Unified view for transactions with payment information
+CREATE VIEW IF NOT EXISTS transactions_with_payment_info AS
+SELECT 
+    t.*,
+    CASE 
+        WHEN t.stripe_checkout_session_id IS NOT NULL THEN t.stripe_checkout_session_id
+        WHEN t.stripe_payment_intent_id IS NOT NULL THEN t.stripe_payment_intent_id
+        WHEN t.paypal_order_id IS NOT NULL THEN t.paypal_order_id
+        ELSE NULL
+    END AS payment_reference,
+    CASE 
+        WHEN t.status = 'paid' THEN 'completed'
+        WHEN t.status IN ('pending', 'awaiting_payment', 'processing') THEN 'in_progress'
+        WHEN t.status IN ('failed', 'cancelled', 'expired') THEN 'failed'
+        ELSE t.status
+    END AS simplified_status
+FROM transactions t;
+
+-- Summary view for ticket sales
+CREATE VIEW IF NOT EXISTS ticket_sales_summary AS
+SELECT 
+    ti.event_name,
+    ti.item_name as ticket_type,
+    COUNT(*) as tickets_sold,
+    SUM(ti.final_price) as total_revenue,
+    AVG(ti.final_price) as average_price,
+    MIN(ti.created_at) as first_sale,
+    MAX(ti.created_at) as last_sale
+FROM transaction_items ti
+JOIN transactions t ON ti.transaction_id = t.id
+WHERE ti.item_type = 'ticket' 
+    AND t.status = 'paid'
+GROUP BY ti.event_name, ti.item_name;
+
+-- Active tickets view
+CREATE VIEW IF NOT EXISTS active_tickets AS
+SELECT 
+    tk.*,
+    t.status as transaction_status,
+    t.customer_email as buyer_email,
+    ti.event_name,
+    ti.event_date
+FROM tickets tk
+JOIN transactions t ON tk.transaction_id = t.id
+JOIN transaction_items ti ON t.id = ti.transaction_id
+WHERE tk.status = 'active' 
+    AND t.status = 'paid'
+    AND ti.item_type = 'ticket';
+
+-- ============================================================================
+-- TRIGGERS FOR AUTOMATIC TIMESTAMP UPDATES
+-- ============================================================================
+
+-- Update timestamp trigger for transactions
+CREATE TRIGGER IF NOT EXISTS trg_transactions_updated_at 
+AFTER UPDATE ON transactions
+FOR EACH ROW
+BEGIN
+    UPDATE transactions 
+    SET updated_at = datetime('now')
+    WHERE id = NEW.id;
+END;
+
+-- Update timestamp trigger for tickets
+CREATE TRIGGER IF NOT EXISTS trg_tickets_updated_at 
+AFTER UPDATE ON tickets
+FOR EACH ROW
+BEGIN
+    UPDATE tickets 
+    SET updated_at = datetime('now')
+    WHERE id = NEW.id;
+END;
+
+-- Update timestamp trigger for transaction_items
+CREATE TRIGGER IF NOT EXISTS trg_transaction_items_updated_at 
+AFTER UPDATE ON transaction_items
+FOR EACH ROW
+BEGIN
+    UPDATE transaction_items 
+    SET updated_at = datetime('now')
+    WHERE id = NEW.id;
+END;
+
+-- Automatic payment event creation trigger
+CREATE TRIGGER IF NOT EXISTS trg_transaction_status_change 
+AFTER UPDATE OF status ON transactions
+FOR EACH ROW
+WHEN NEW.status != OLD.status
+BEGIN
+    INSERT INTO payment_events (
+        transaction_id,
+        event_type,
+        previous_status,
+        new_status,
+        source,
+        event_data
+    ) VALUES (
+        NEW.id,
+        'manual_update',
+        OLD.status,
+        NEW.status,
+        'system',
+        json_object(
+            'old_status', OLD.status,
+            'new_status', NEW.status,
+            'changed_at', datetime('now')
+        )
+    );
+END;
+
+-- ============================================================================
+-- DATA VALIDATION CONSTRAINTS
+-- ============================================================================
+
+-- Ensure transaction amounts are non-negative
+CREATE TRIGGER IF NOT EXISTS trg_validate_transaction_amounts
+BEFORE INSERT ON transactions
+FOR EACH ROW
+WHEN NEW.total_amount < 0 OR NEW.tax_amount < 0 OR NEW.discount_amount < 0
+BEGIN
+    SELECT RAISE(ABORT, 'Transaction amounts cannot be negative');
+END;
+
+-- Ensure ticket prices are non-negative
+CREATE TRIGGER IF NOT EXISTS trg_validate_ticket_amounts
+BEFORE INSERT ON tickets
+FOR EACH ROW
+WHEN NEW.face_value < 0 OR NEW.paid_amount < 0 OR NEW.fees < 0
+BEGIN
+    SELECT RAISE(ABORT, 'Ticket amounts cannot be negative');
+END;
+
+-- Ensure transaction item prices are consistent
+CREATE TRIGGER IF NOT EXISTS trg_validate_item_pricing
+BEFORE INSERT ON transaction_items
+FOR EACH ROW
+WHEN NEW.total_price != (NEW.quantity * NEW.unit_price) 
+   OR NEW.final_price != (NEW.total_price - COALESCE(NEW.discount_amount, 0))
+BEGIN
+    SELECT RAISE(ABORT, 'Transaction item pricing is inconsistent');
+END;
+
+-- ============================================================================
+-- INITIAL DATA AND CONFIGURATION
+-- ============================================================================
+
+-- Insert initial configuration data (if needed)
+-- This section can be extended for default data
+
+COMMIT;
+
+-- ============================================================================
+-- MIGRATION COMPLETION LOG
+-- ============================================================================
+-- This migration creates the core database schema for A Lo Cubano Boulder Fest
+-- Tables created:
+--   - transactions: Main payment tracking
+--   - tickets: Individual ticket records  
+--   - transaction_items: Line item details
+--   - payment_events: Audit trail
+-- Indexes created: 20+ indexes for optimal query performance
+-- Views created: 3 views for common queries
+-- Triggers created: 7 triggers for data integrity and automation
+-- 
+-- The schema supports:
+--   - Multiple payment methods (Stripe Checkout, Payment Intents, PayPal)
+--   - Comprehensive audit trails
+--   - Ticket management and validation
+--   - Financial reporting and reconciliation
+--   - Zero-downtime migration compatibility
+-- ============================================================================
