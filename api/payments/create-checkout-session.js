@@ -158,6 +158,9 @@ export default async function handler(req, res) {
 
     // Generate order ID
     const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Generate a temporary session ID placeholder
+    const tempSessionId = `pending_${orderId}`;
 
     // Store preliminary order in database with 'awaiting_payment' status
     const db = await openDb();
@@ -181,7 +184,7 @@ export default async function handler(req, res) {
             `,
         [
           orderId,
-          null, // Will be updated after creating checkout session
+          tempSessionId, // Temporary placeholder, will be updated after creating checkout session
           'checkout_session',
           customerInfo?.email || 'pending@stripe.checkout',
           customerInfo?.firstName && customerInfo?.lastName 
@@ -200,8 +203,15 @@ export default async function handler(req, res) {
       );
 
       // Preliminary order created
+      console.log("Preliminary order created successfully:", orderId);
     } catch (dbError) {
       // Database error occurred
+      console.error("Database error creating preliminary order:", dbError);
+      console.error("Error details:", {
+        message: dbError.message,
+        stack: dbError.stack,
+        code: dbError.code,
+      });
       return res
         .status(500)
         .json({ error: "Failed to create preliminary order" });

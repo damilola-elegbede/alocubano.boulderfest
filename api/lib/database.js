@@ -67,10 +67,8 @@ async function runMigrations(database) {
   const migrationFiles = [
     "20240130_create_email_subscribers.sql",
     "20250105_add_orders_table.sql",
-    // TEMPORARILY SKIP: "20250206_add_checkout_session_support.sql",
-    // This migration causes "duplicate column" errors on Vercel
-    // The orders table already has the necessary columns from a previous partial migration
-    // Note: 20250206_add_confirmation_email_tracking.sql is also skipped
+    "20250206_add_checkout_session_support_safe.sql", // Use the safe version that checks for existing columns
+    // Note: 20250206_add_confirmation_email_tracking.sql is skipped if needed
   ];
 
   // Run pending migrations
