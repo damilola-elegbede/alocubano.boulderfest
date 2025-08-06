@@ -139,7 +139,8 @@ export default async function handler(req, res) {
         `
                 INSERT INTO orders (
                     id, 
-                    stripe_payment_intent_id, 
+                    stripe_checkout_session_id,
+                    payment_method,
                     customer_email, 
                     customer_name, 
                     customer_phone, 
@@ -148,11 +149,12 @@ export default async function handler(req, res) {
                     order_total,
                     fulfillment_status,
                     special_requests
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `,
         [
           orderId,
-          `checkout_pending_${orderId}`, // Temporary ID until we get the session ID
+          null, // Will be updated after creating checkout session
+          'checkout_session',
           customerInfo?.email || 'pending@stripe.checkout',
           customerInfo?.firstName && customerInfo?.lastName 
             ? `${customerInfo.firstName} ${customerInfo.lastName}`
@@ -212,10 +214,17 @@ export default async function handler(req, res) {
       await db.run(
         `
                 UPDATE orders 
-                SET stripe_payment_intent_id = ? 
+                SET stripe_checkout_session_id = ?,
+                    checkout_session_url = ?,
+                    checkout_session_expires_at = ?
                 WHERE id = ?
             `,
-        [session.id, orderId],
+        [
+          session.id, 
+          session.url,
+          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+          orderId
+        ],
       );
 
       // Order updated with session ID
@@ -258,19 +267,23 @@ export default async function handler(req, res) {
         message: "Payment service configuration error",
       });
     } else {
-      // Log the full error in development
-      if (process.env.NODE_ENV !== "production") {
-        console.error("Unexpected error details:", {
-          message: error.message,
-          stack: error.stack,
-          type: error.type,
-        });
-      }
+      // Always log the error for debugging
+      console.error("Unexpected error details:", {
+        message: error.message,
+        stack: error.stack,
+        type: error.type,
+        name: error.name,
+      });
+      
+      // Return more detailed error info for debugging
       return res.status(500).json({
         error: "Checkout session creation failed",
-        message: process.env.NODE_ENV !== "production" 
-          ? error.message 
-          : "An unexpected error occurred",
+        message: error.message || "An unexpected error occurred",
+        // Include error details for debugging (remove in production later)
+        details: {
+          errorType: error.name,
+          errorMessage: error.message,
+        }
       });
     }
   }
