@@ -106,7 +106,7 @@ export default async function handler(req, res) {
           console.log(`Created transaction: ${transaction.uuid}`);
           
           // Update the payment event with transaction ID
-          await paymentEventLogger.logStripeEvent(event, transaction.id);
+          await paymentEventLogger.updateEventTransactionId(event.id, transaction.id);
           
           // TODO: In Phase 3, we'll create tickets here
           // TODO: In Phase 4, we'll generate QR codes here
@@ -187,13 +187,10 @@ export default async function handler(req, res) {
         console.log(`Payment failed: ${paymentIntent.id}`);
         
         // Update transaction status if it exists
-        const result = await transactionService.db.execute({
-          sql: 'SELECT * FROM transactions WHERE stripe_payment_intent_id = ?',
-          args: [paymentIntent.id]
-        });
+        const transaction = await transactionService.getByPaymentIntentId(paymentIntent.id);
         
-        if (result.rows.length > 0) {
-          await transactionService.updateStatus(result.rows[0].uuid, 'failed');
+        if (transaction) {
+          await transactionService.updateStatus(transaction.uuid, 'failed');
         }
         
         // Log the event
@@ -207,13 +204,10 @@ export default async function handler(req, res) {
         console.log("Payment intent canceled:", paymentIntent.id);
         
         // Update transaction status if it exists
-        const result = await transactionService.db.execute({
-          sql: 'SELECT * FROM transactions WHERE stripe_payment_intent_id = ?',
-          args: [paymentIntent.id]
-        });
+        const transaction = await transactionService.getByPaymentIntentId(paymentIntent.id);
         
-        if (result.rows.length > 0) {
-          await transactionService.updateStatus(result.rows[0].uuid, 'cancelled');
+        if (transaction) {
+          await transactionService.updateStatus(transaction.uuid, 'cancelled');
         }
         
         break;
@@ -225,14 +219,11 @@ export default async function handler(req, res) {
         
         // Update transaction status based on payment intent
         if (charge.payment_intent) {
-          const result = await transactionService.db.execute({
-            sql: 'SELECT * FROM transactions WHERE stripe_payment_intent_id = ?',
-            args: [charge.payment_intent]
-          });
+          const transaction = await transactionService.getByPaymentIntentId(charge.payment_intent);
           
-          if (result.rows.length > 0) {
+          if (transaction) {
             const status = charge.amount_refunded === charge.amount ? 'refunded' : 'partially_refunded';
-            await transactionService.updateStatus(result.rows[0].uuid, status);
+            await transactionService.updateStatus(transaction.uuid, status);
           }
         }
         

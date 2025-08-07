@@ -23,19 +23,32 @@ export class PaymentEventLogger {
         return { status: 'already_processed', eventId: sourceId };
       }
       
-      // Log the event
+      // Safely stringify event data
+      let eventData;
+      try {
+        eventData = JSON.stringify(event.data.object);
+      } catch (e) {
+        console.warn('Failed to stringify event data, using fallback');
+        eventData = '{"error": "Could not serialize event data"}';
+      }
+      
+      // Use event timestamp if available, otherwise use current time
+      const timestamp = event.created ? new Date(event.created * 1000).toISOString() : new Date().toISOString();
+      
+      // Log the event with initial processing status
       await this.db.execute({
         sql: `INSERT INTO payment_events (
           transaction_id, event_type, event_data, source, source_id,
-          processed_at
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+          processing_status, processed_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         args: [
           transactionId,
           event.type,
-          JSON.stringify(event.data.object),
+          eventData,
           'stripe',
           sourceId,
-          new Date().toISOString()
+          'pending',
+          timestamp
         ]
       });
       
@@ -44,8 +57,25 @@ export class PaymentEventLogger {
     } catch (error) {
       console.error('Failed to log payment event:', error);
       
-      // Try to log the error
-      await this.logError(event, error);
+      // Try to log the error with recursion flag
+      await this.logError(event, error, true);
+      throw error;
+    }
+  }
+
+  /**
+   * Update the transaction ID for an existing event
+   */
+  async updateEventTransactionId(eventId, transactionId) {
+    try {
+      const sourceId = `STRIPE-${eventId}`;
+      await this.db.execute({
+        sql: 'UPDATE payment_events SET transaction_id = ? WHERE source_id = ?',
+        args: [transactionId, sourceId]
+      });
+      console.log(`Updated transaction ID for event ${sourceId}`);
+    } catch (error) {
+      console.error('Failed to update event transaction ID:', error);
       throw error;
     }
   }
@@ -53,21 +83,49 @@ export class PaymentEventLogger {
   /**
    * Log an error that occurred during event processing
    */
-  async logError(event, error) {
+  async logError(event, error, isRecursive = false) {
+    // Prevent infinite recursion
+    if (isRecursive) {
+      console.error('Error logging failed recursively:', error);
+      return;
+    }
+    
     try {
       const sourceId = `ERROR-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      
+      // Safe serialization with circular reference handling
+      const seen = new WeakSet();
+      const safeStringify = (obj) => {
+        return JSON.stringify(obj, (key, value) => {
+          if (typeof value === 'object' && value !== null) {
+            if (seen.has(value)) {
+              return '[Circular Reference]';
+            }
+            seen.add(value);
+          }
+          return value;
+        });
+      };
+      
+      let eventData;
+      try {
+        eventData = safeStringify(event || {});
+      } catch (e) {
+        eventData = '{"error": "Could not serialize event"}';
+      }
       
       await this.db.execute({
         sql: `INSERT INTO payment_events (
           event_type, source, source_id,
-          event_data, error_message
-        ) VALUES (?, ?, ?, ?, ?)`,
+          event_data, error_message, processing_status
+        ) VALUES (?, ?, ?, ?, ?, ?)`,
         args: [
           event?.type || 'unknown',
           'stripe',
           sourceId,
-          JSON.stringify(event || {}),
-          error.message
+          eventData,
+          error.message,
+          'failed'
         ]
       });
     } catch (logError) {
