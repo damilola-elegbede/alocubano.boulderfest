@@ -32,6 +32,7 @@ check_local_env() {
 check_local_env "TURSO_DATABASE_URL"
 check_local_env "TURSO_AUTH_TOKEN"
 check_local_env "MIGRATION_SECRET_KEY"
+check_local_env "VALIDATION_SECRET"
 
 echo ""
 echo "🔑 Required GitHub Secrets:"
@@ -48,6 +49,7 @@ echo "  (These should be set in Vercel Dashboard → Settings → Environment Va
 echo "  • TURSO_DATABASE_URL"
 echo "  • TURSO_AUTH_TOKEN"
 echo "  • MIGRATION_SECRET_KEY"
+echo "  • VALIDATION_SECRET"
 echo "  • BREVO_API_KEY"
 echo "  • NODE_ENV=production"
 

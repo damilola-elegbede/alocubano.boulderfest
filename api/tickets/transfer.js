@@ -23,6 +23,14 @@ export default async function handler(req, res) {
       });
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newAttendee.email)) {
+      return res.status(400).json({ 
+        error: 'Invalid email format' 
+      });
+    }
+
     // Validate action token
     const tokenValidation = await tokenService.validateActionToken(
       actionToken, 
@@ -34,13 +42,16 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: tokenValidation.error });
     }
 
+    // Sanitize and validate inputs
+    const sanitizedAttendee = {
+      firstName: newAttendee.firstName.trim().substring(0, 100),
+      lastName: (newAttendee.lastName || '').trim().substring(0, 100),
+      email: newAttendee.email.trim().toLowerCase(),
+      phone: newAttendee.phone ? newAttendee.phone.trim().substring(0, 20) : null
+    };
+
     // Perform transfer
-    const transferredTicket = await ticketService.transferTicket(ticketId, {
-      firstName: newAttendee.firstName,
-      lastName: newAttendee.lastName || '',
-      email: newAttendee.email,
-      phone: newAttendee.phone || null
-    });
+    const transferredTicket = await ticketService.transferTicket(ticketId, sanitizedAttendee);
 
     return res.status(200).json({ 
       success: true,

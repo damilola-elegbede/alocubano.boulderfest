@@ -79,6 +79,8 @@ export function getEventDate(eventId, ticketType) {
  * Check if an item is a ticket item
  */
 export function isTicketItem(item) {
+  if (!item) return false;
+  
   const description = (item.description || item.price?.product?.name || '').toLowerCase();
   return description.includes('ticket') || 
          description.includes('pass') || 
@@ -90,6 +92,8 @@ export function isTicketItem(item) {
  * Extract ticket type from line item
  */
 export function extractTicketType(item) {
+  if (!item) return 'general-admission';
+  
   const description = (item.description || item.price?.product?.name || '').toLowerCase();
   
   // Check for specific ticket types
