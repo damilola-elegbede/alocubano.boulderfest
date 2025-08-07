@@ -89,13 +89,24 @@ class DatabaseService {
   /**
    * Execute a SQL query
    */
-  async execute(sql, params = []) {
+  async execute(queryOrObject, params = []) {
     try {
       const client = this.getClient();
-      return await client.execute({ sql, args: params });
+      
+      // Handle both string and object formats
+      if (typeof queryOrObject === 'string') {
+        return await client.execute({ sql: queryOrObject, args: params });
+      } else {
+        // queryOrObject is already an object with sql and args
+        return await client.execute(queryOrObject);
+      }
     } catch (error) {
+      const sqlString = typeof queryOrObject === 'string' 
+        ? queryOrObject 
+        : queryOrObject.sql;
+      
       console.error("Database query execution failed:", {
-        sql: sql.substring(0, 100) + (sql.length > 100 ? "..." : ""),
+        sql: sqlString.substring(0, 100) + (sqlString.length > 100 ? "..." : ""),
         error: error.message,
         timestamp: new Date().toISOString(),
       });
