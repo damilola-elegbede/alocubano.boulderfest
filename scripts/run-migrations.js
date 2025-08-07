@@ -22,23 +22,33 @@ async function runMigrations() {
     
     const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
     
-    // Split by semicolons but be careful with triggers
-    const statements = sql
-      .split(/;\s*$(?!\s*END)/gm)
-      .filter(s => s.trim())
-      .map(s => s.trim() + (s.trim().toUpperCase().includes('END') ? '' : ';'));
+    // First remove all comment lines, then split by semicolons
+    const cleanedSql = sql
+      .split('\n')
+      .filter(line => !line.trim().startsWith('--'))
+      .join('\n');
     
+    const statements = cleanedSql
+      .split(';')
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+      .map(s => s + (s.toUpperCase().includes('END') ? '' : ';'));
+    
+    // Execute statements individually (Turso doesn't support transactions)
     for (const statement of statements) {
       if (statement.trim()) {
         try {
           await db.execute(statement);
           console.log(`  ✓ Executed: ${statement.substring(0, 50)}...`);
         } catch (error) {
-          if (error.message.includes('already exists')) {
-            console.log(`  ⚠ Already exists (skipped)`);
+          if (error.message.includes('already exists') || 
+              error.message.includes('duplicate column name')) {
+            console.log(`  ⚠ Already exists (skipped): ${statement.substring(0, 30)}...`);
           } else {
-            console.error(`  ✗ Failed:`, error.message);
-            // Continue with other statements
+            console.error(`  ✗ Failed: ${error.message}`);
+            console.error(`    Statement: ${statement.substring(0, 100)}...`);
+            // For critical errors, continue but log them
+            console.warn(`    Continuing migration despite error in ${file}...`);
           }
         }
       }

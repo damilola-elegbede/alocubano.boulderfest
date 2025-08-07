@@ -1,12 +1,14 @@
 import { getDatabase } from '../lib/database.js';
 import ticketService from '../lib/ticket-service.js';
+import tokenService from '../lib/token-service.js';
+import { formatTicketType } from '../lib/ticket-config.js';
 
 export default async function handler(req, res) {
   const db = getDatabase();
 
   try {
     if (req.method === 'GET') {
-      const { email, ticket_id, transaction_id } = req.query;
+      const { email, ticket_id, transaction_id, token } = req.query;
       
       if (ticket_id) {
         // Get single ticket
@@ -19,10 +21,30 @@ export default async function handler(req, res) {
         return res.status(200).json({ ticket });
       }
       
+      if (token) {
+        // Get tickets by access token (secure method)
+        try {
+          const tickets = await ticketService.getTicketsByAccessToken(token);
+          return res.status(200).json({ 
+            tickets: tickets.map(ticket => ({
+              ...ticket,
+              formatted_type: formatTicketType(ticket.ticket_type)
+            }))
+          });
+        } catch (error) {
+          return res.status(401).json({ error: error.message });
+        }
+      }
+
       if (email) {
-        // Get tickets by email
+        // Get tickets by email (legacy method - consider deprecating)
         const tickets = await ticketService.getTicketsByEmail(email);
-        return res.status(200).json({ tickets });
+        return res.status(200).json({ 
+          tickets: tickets.map(ticket => ({
+            ...ticket,
+            formatted_type: formatTicketType(ticket.ticket_type)
+          }))
+        });
       }
       
       if (transaction_id) {
@@ -40,7 +62,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ tickets });
       }
       
-      return res.status(400).json({ error: 'Email, ticket_id, or transaction_id required' });
+      return res.status(400).json({ error: 'Token, email, ticket_id, or transaction_id required' });
       
     } else if (req.method === 'PUT') {
       // Update ticket attendee information

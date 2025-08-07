@@ -1,4 +1,13 @@
 import { getDatabase } from './database.js';
+import tokenService from './token-service.js';
+import {
+  TICKET_TYPE_MAP,
+  TICKET_STATUS,
+  formatTicketType,
+  getEventDate,
+  isTicketItem,
+  extractTicketType
+} from './ticket-config.js';
 
 export class TicketService {
   constructor() {
@@ -6,13 +15,10 @@ export class TicketService {
   }
 
   /**
-   * Generate a unique ticket ID
+   * Generate a unique ticket ID using cryptographically secure random
    */
   generateTicketId() {
-    const prefix = process.env.TICKET_PREFIX || 'TKT';
-    const timestamp = Date.now().toString(36).toUpperCase();
-    const random = Math.random().toString(36).substring(2, 5).toUpperCase();
-    return `${prefix}-${timestamp}-${random}`;
+    return tokenService.generateTicketId();
   }
 
   /**
@@ -56,11 +62,7 @@ export class TicketService {
    * Check if a line item is a ticket
    */
   isTicketItem(item) {
-    const description = (item.description || item.price?.product?.name || '').toLowerCase();
-    return description.includes('ticket') || 
-           description.includes('pass') || 
-           description.includes('workshop') ||
-           description.includes('registration');
+    return isTicketItem(item);
   }
 
   /**
@@ -133,39 +135,14 @@ export class TicketService {
    * Extract ticket type from line item
    */
   extractTicketType(item) {
-    const description = (item.description || item.price?.product?.name || '').toLowerCase();
-    
-    // Check for specific ticket types
-    if (description.includes('vip')) return 'vip-pass';
-    if (description.includes('weekend')) return 'weekend-pass';
-    if (description.includes('friday')) return 'friday-pass';
-    if (description.includes('saturday')) return 'saturday-pass';
-    if (description.includes('sunday')) return 'sunday-pass';
-    if (description.includes('workshop')) {
-      if (description.includes('beginner')) return 'workshop-beginner';
-      if (description.includes('intermediate')) return 'workshop-intermediate';
-      if (description.includes('advanced')) return 'workshop-advanced';
-      return 'workshop';
-    }
-    if (description.includes('social')) return 'social-dance';
-    
-    return 'general-admission';
+    return extractTicketType(item);
   }
 
   /**
    * Get event date based on event ID and ticket type
    */
   getEventDate(eventId, ticketType) {
-    // Boulder Fest 2026 dates
-    if (eventId === 'boulder-fest-2026') {
-      if (ticketType.includes('friday')) return '2026-05-15';
-      if (ticketType.includes('saturday')) return '2026-05-16';
-      if (ticketType.includes('sunday')) return '2026-05-17';
-      return '2026-05-15'; // Default to first day
-    }
-    
-    // Return null for unknown events
-    return null;
+    return getEventDate(eventId, ticketType);
   }
 
   /**
@@ -248,16 +225,26 @@ export class TicketService {
   }
 
   /**
-   * Cancel a ticket
+   * Cancel a ticket with secure parameter handling
    */
   async cancelTicket(ticketId, reason = null) {
+    const ticket = await this.getByTicketId(ticketId);
+    if (!ticket) {
+      throw new Error('Ticket not found');
+    }
+
+    // Parse existing metadata safely
+    const metadata = JSON.parse(ticket.ticket_metadata || '{}');
+    metadata.cancellation_reason = reason || 'Customer request';
+    metadata.cancelled_at = new Date().toISOString();
+
     await this.db.execute({
       sql: `UPDATE tickets 
-            SET status = 'cancelled', 
+            SET status = ?, 
                 updated_at = CURRENT_TIMESTAMP,
-                ticket_metadata = json_patch(ticket_metadata, '{"cancellation_reason": "' || ? || '"}')
+                ticket_metadata = ?
             WHERE ticket_id = ?`,
-      args: [reason || 'Customer request', ticketId]
+      args: [TICKET_STATUS.CANCELLED, JSON.stringify(metadata), ticketId]
     });
     
     return this.getByTicketId(ticketId);
@@ -289,7 +276,7 @@ export class TicketService {
                 attendee_last_name = ?,
                 attendee_email = ?,
                 attendee_phone = ?,
-                status = 'transferred',
+                status = ?,
                 ticket_metadata = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE ticket_id = ?`,
@@ -298,12 +285,143 @@ export class TicketService {
         newAttendee.lastName,
         newAttendee.email,
         newAttendee.phone || null,
+        TICKET_STATUS.TRANSFERRED,
         JSON.stringify(metadata),
         ticketId
       ]
     });
     
     return this.getByTicketId(ticketId);
+  }
+
+  /**
+   * Generate and store QR code data for ticket validation
+   */
+  async generateQRCode(ticketId) {
+    const ticket = await this.getByTicketId(ticketId);
+    if (!ticket) {
+      throw new Error('Ticket not found');
+    }
+
+    const validation = tokenService.generateValidationToken(
+      ticket.ticket_id,
+      ticket.event_id,
+      ticket.attendee_email
+    );
+
+    await this.db.execute({
+      sql: `UPDATE tickets 
+            SET validation_signature = ?, qr_code_data = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE ticket_id = ?`,
+      args: [validation.signature, validation.qr_data, ticketId]
+    });
+
+    return {
+      ticketId: ticket.ticket_id,
+      qrData: validation.qr_data,
+      signature: validation.signature
+    };
+  }
+
+  /**
+   * Validate QR code and mark ticket as used
+   */
+  async validateAndCheckIn(qrData, checkInLocation = null, checkInBy = null) {
+    const validation = tokenService.validateQRCode(qrData);
+    
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
+
+    const ticket = await this.getByTicketId(validation.ticketId);
+    if (!ticket) {
+      return { success: false, error: 'Ticket not found' };
+    }
+
+    if (ticket.status === TICKET_STATUS.USED) {
+      return { 
+        success: false, 
+        error: 'Ticket already used',
+        checkedInAt: ticket.checked_in_at 
+      };
+    }
+
+    if (ticket.status !== TICKET_STATUS.VALID) {
+      return { 
+        success: false, 
+        error: `Cannot check in ${ticket.status} ticket` 
+      };
+    }
+
+    // Mark ticket as used
+    await this.db.execute({
+      sql: `UPDATE tickets 
+            SET status = ?, 
+                checked_in_at = CURRENT_TIMESTAMP,
+                checked_in_by = ?,
+                check_in_location = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE ticket_id = ?`,
+      args: [TICKET_STATUS.USED, checkInBy, checkInLocation, ticket.ticket_id]
+    });
+
+    const updatedTicket = await this.getByTicketId(ticket.ticket_id);
+    
+    return {
+      success: true,
+      ticket: updatedTicket,
+      attendee: `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
+      ticketType: formatTicketType(ticket.ticket_type)
+    };
+  }
+
+  /**
+   * Get tickets by access token
+   */
+  async getTicketsByAccessToken(accessToken) {
+    const tokenValidation = await tokenService.validateAccessToken(accessToken);
+    
+    if (!tokenValidation.valid) {
+      throw new Error(tokenValidation.error);
+    }
+
+    const tickets = await this.getTransactionTickets(tokenValidation.transactionId);
+    
+    // Enrich with formatted data
+    return tickets.map(ticket => ({
+      ...ticket,
+      formatted_type: formatTicketType(ticket.ticket_type),
+      formatted_date: this.formatEventDate(ticket.event_date)
+    }));
+  }
+
+  /**
+   * Format event date for display
+   */
+  formatEventDate(date) {
+    if (!date) return 'May 15-17, 2026';
+    
+    const d = new Date(date + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  }
+
+  /**
+   * Generate access token for ticket viewing
+   */
+  async generateAccessToken(transactionId, email) {
+    return await tokenService.generateAccessToken(transactionId, email);
+  }
+
+  /**
+   * Generate action token for secure operations
+   */
+  async generateActionToken(action, targetId, email) {
+    return await tokenService.generateActionToken(action, targetId, email);
   }
 }
 

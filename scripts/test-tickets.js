@@ -112,9 +112,9 @@ async function testTickets() {
   
   console.log('\n=== Test Complete ===');
   console.log('\nNext steps:');
-  console.log(`1. Visit http://localhost:8080/my-tickets?email=${transaction.customer_email}`);
+  console.log(`1. Visit http://localhost:8080/my-tickets?email=${encodeURIComponent(transaction.customer_email)}`);
   console.log('2. Check the ticket portal displays correctly');
-  console.log('3. Test the API directly: curl "http://localhost:8080/api/tickets?email=' + transaction.customer_email + '"');
+  console.log('3. Test the API directly: curl "http://localhost:8080/api/tickets?email=' + encodeURIComponent(transaction.customer_email) + '"');
   
   process.exit(0);
 }

@@ -122,6 +122,45 @@
             padding: 20px;
             color: #666;
         }
+
+        .btn-small {
+            display: inline-block;
+            padding: 6px 12px;
+            margin: 0 5px 5px 0;
+            border: none;
+            border-radius: 4px;
+            background: #667eea;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-small:hover {
+            background: #5a67d8;
+        }
+
+        .btn-small.btn-warning {
+            background: #ed8936;
+        }
+
+        .btn-small.btn-warning:hover {
+            background: #dd6b20;
+        }
+
+        .btn-small.btn-danger {
+            background: #e53e3e;
+        }
+
+        .btn-small.btn-danger:hover {
+            background: #c53030;
+        }
+
+        .ticket-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
     </style>
 </head>
 <body>
@@ -148,11 +187,16 @@
     </div>
 
     <script>
-        // Check for email in URL parameters
+        // Check for token or email in URL parameters
         const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
         const emailParam = urlParams.get('email');
         
-        if (emailParam) {
+        if (token) {
+            // Use secure token-based access
+            lookupTicketsByToken(token);
+        } else if (emailParam) {
+            // Fallback to email-based lookup (legacy)
             document.getElementById('emailInput').value = emailParam;
             lookupTickets(emailParam);
         }
@@ -164,6 +208,46 @@
             await lookupTickets(email);
         });
         
+        async function lookupTicketsByToken(token) {
+            const messageContainer = document.getElementById('messageContainer');
+            const ticketContainer = document.getElementById('ticketContainer');
+            
+            // Show loading
+            ticketContainer.innerHTML = '<div class="loading">Loading your tickets...</div>';
+            messageContainer.innerHTML = '';
+            
+            try {
+                const response = await fetch(`/api/tickets?token=${encodeURIComponent(token)}`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to fetch tickets');
+                }
+                
+                if (data.tickets.length === 0) {
+                    messageContainer.innerHTML = `
+                        <div class="message info">
+                            No tickets found. Please contact support if you believe this is an error.
+                        </div>
+                    `;
+                    ticketContainer.innerHTML = '';
+                    return;
+                }
+                
+                // Display tickets with enhanced functionality
+                displayTickets(data.tickets, token);
+                
+            } catch (error) {
+                console.error('Error fetching tickets:', error);
+                messageContainer.innerHTML = `
+                    <div class="message error">
+                        ${error.message || 'Failed to load tickets. Please try again.'}
+                    </div>
+                `;
+                ticketContainer.innerHTML = '';
+            }
+        }
+
         async function lookupTickets(email) {
             const messageContainer = document.getElementById('messageContainer');
             const ticketContainer = document.getElementById('ticketContainer');
@@ -191,7 +275,7 @@
                     return;
                 }
                 
-                // Display tickets
+                // Display tickets (legacy mode without enhanced features)
                 displayTickets(data.tickets);
                 
             } catch (error) {
@@ -205,36 +289,51 @@
             }
         }
         
-        function displayTickets(tickets) {
+        function displayTickets(tickets, accessToken = null) {
             const ticketContainer = document.getElementById('ticketContainer');
             
-            const ticketsHtml = tickets.map(ticket => `
-                <div class="ticket-card">
-                    <h3>${formatTicketType(ticket.ticket_type)}</h3>
-                    <span class="status-badge status-${ticket.status}">${ticket.status}</span>
-                    
-                    <dl class="ticket-details">
-                        <dt>Ticket ID:</dt>
-                        <dd><span class="ticket-id">${ticket.ticket_id}</span></dd>
+            const ticketsHtml = tickets.map(ticket => {
+                const actionsHtml = accessToken ? `
+                    <div class="ticket-actions" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                        <button class="btn-small" onclick="generateQRCode('${ticket.ticket_id}', '${accessToken}')">Generate QR Code</button>
+                        <button class="btn-small btn-warning" onclick="initiateTransfer('${ticket.ticket_id}')">Transfer</button>
+                        <button class="btn-small btn-danger" onclick="initiateCancel('${ticket.ticket_id}')">Cancel</button>
+                    </div>
+                ` : '';
+                
+                return `
+                    <div class="ticket-card" id="ticket-${ticket.ticket_id}">
+                        <h3>${ticket.formatted_type || formatTicketType(ticket.ticket_type)}</h3>
+                        <span class="status-badge status-${ticket.status}">${ticket.status}</span>
                         
-                        <dt>Attendee:</dt>
-                        <dd>${ticket.attendee_first_name || ''} ${ticket.attendee_last_name || ''}</dd>
-                        
-                        <dt>Event:</dt>
-                        <dd>A Lo Cubano Boulder Fest 2026</dd>
-                        
-                        <dt>Date:</dt>
-                        <dd>${formatDate(ticket.event_date)}</dd>
-                        
-                        <dt>Order:</dt>
-                        <dd>${ticket.order_number || 'N/A'}</dd>
-                    </dl>
-                </div>
-            `).join('');
+                        <dl class="ticket-details">
+                            <dt>Ticket ID:</dt>
+                            <dd><span class="ticket-id">${ticket.ticket_id}</span></dd>
+                            
+                            <dt>Attendee:</dt>
+                            <dd>${ticket.attendee_first_name || ''} ${ticket.attendee_last_name || ''}</dd>
+                            
+                            <dt>Event:</dt>
+                            <dd>A Lo Cubano Boulder Fest 2026</dd>
+                            
+                            <dt>Date:</dt>
+                            <dd>${ticket.formatted_date || formatDate(ticket.event_date)}</dd>
+                            
+                            <dt>Order:</dt>
+                            <dd>${ticket.order_number || 'N/A'}</dd>
+                        </dl>
+                        ${actionsHtml}
+                    </div>
+                `;
+            }).join('');
+            
+            const headerText = accessToken ? 
+                `Your Tickets (${tickets.length}) - Secure Access` : 
+                `Your Tickets (${tickets.length})`;
             
             ticketContainer.innerHTML = `
                 <div class="ticket-list">
-                    <h2>Your Tickets (${tickets.length})</h2>
+                    <h2>${headerText}</h2>
                     ${ticketsHtml}
                 </div>
             `;
@@ -255,6 +354,123 @@
                 'general-admission': 'General Admission'
             };
             return typeMap[type] || type;
+        }
+
+        // Enhanced ticket management functions
+        async function generateQRCode(ticketId, accessToken) {
+            try {
+                const response = await fetch('/api/tickets/qr-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticketId, accessToken })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error);
+                }
+                
+                // Display QR code (in production, you'd show this in a modal)
+                alert(`QR Code generated for ticket ${ticketId}. QR Data: ${data.qrData}`);
+                
+            } catch (error) {
+                alert(`Failed to generate QR code: ${error.message}`);
+            }
+        }
+
+        function initiateTransfer(ticketId) {
+            // In production, this would open a modal form
+            const newEmail = prompt('Enter new attendee email:');
+            const newFirstName = prompt('Enter new attendee first name:');
+            const newLastName = prompt('Enter new attendee last name (optional):') || '';
+            
+            if (newEmail && newFirstName) {
+                performTicketTransfer(ticketId, { email: newEmail, firstName: newFirstName, lastName: newLastName });
+            }
+        }
+
+        function initiateCancel(ticketId) {
+            const reason = prompt('Enter cancellation reason (optional):') || 'Customer request';
+            if (confirm(`Are you sure you want to cancel ticket ${ticketId}?`)) {
+                performTicketCancel(ticketId, reason);
+            }
+        }
+
+        async function performTicketTransfer(ticketId, newAttendee) {
+            try {
+                // First get action token
+                const tokenResponse = await fetch('/api/tickets/action-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'transfer', 
+                        targetId: ticketId, 
+                        email: 'user@example.com' // In production, get from current session
+                    })
+                });
+                
+                const tokenData = await tokenResponse.json();
+                if (!tokenResponse.ok) throw new Error(tokenData.error);
+                
+                // Perform transfer
+                const transferResponse = await fetch('/api/tickets/transfer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        ticketId, 
+                        actionToken: tokenData.actionToken, 
+                        newAttendee 
+                    })
+                });
+                
+                const transferData = await transferResponse.json();
+                if (!transferResponse.ok) throw new Error(transferData.error);
+                
+                alert('Ticket transferred successfully!');
+                location.reload();
+                
+            } catch (error) {
+                alert(`Transfer failed: ${error.message}`);
+            }
+        }
+
+        async function performTicketCancel(ticketId, reason) {
+            try {
+                // First get action token
+                const tokenResponse = await fetch('/api/tickets/action-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'cancel', 
+                        targetId: ticketId, 
+                        email: 'user@example.com' // In production, get from current session
+                    })
+                });
+                
+                const tokenData = await tokenResponse.json();
+                if (!tokenResponse.ok) throw new Error(tokenData.error);
+                
+                // Perform cancellation
+                const cancelResponse = await fetch('/api/tickets/cancel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        ticketId, 
+                        actionToken: tokenData.actionToken, 
+                        reason 
+                    })
+                });
+                
+                const cancelData = await cancelResponse.json();
+                if (!cancelResponse.ok) throw new Error(cancelData.error);
+                
+                alert('Ticket cancelled successfully!');
+                location.reload();
+                
+            } catch (error) {
+                alert(`Cancellation failed: ${error.message}`);
+            }
         }
         
         function formatDate(dateStr) {
