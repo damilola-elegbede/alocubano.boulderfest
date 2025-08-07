@@ -1916,11 +1916,13 @@
   pointer-events: none;
 }
 
+/* Disabled state for unavailable ticket options */
 .ticket-card.disabled {
   position: relative;
-  opacity: 0.5;
-  background: #f8f8f8;
+  opacity: 0.7;
+  background: var(--color-gray-200);
   cursor: not-allowed;
+  overflow: hidden;
 }
 
 .ticket-card.disabled:hover {
@@ -1932,24 +1934,27 @@
 .ticket-card.disabled .qty-btn,
 .ticket-card.disabled .quantity-selector {
   pointer-events: none;
-  opacity: 0.4;
+  opacity: 0.3;
 }
 
+/* Diagonal banner overlay for coming soon items */
 .coming-soon-banner {
   position: absolute;
-  top: 20px;
-  right: -30px;
-  background: var(--theme-color);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  background: var(--color-red);
   color: var(--color-white);
-  padding: 8px 40px;
-  font-size: var(--font-size-sm);
+  padding: 12px 0;
+  width: 150%;
+  text-align: center;
+  font-size: var(--font-size-base);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  transform: rotate(45deg);
-  transform-origin: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.2em;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   z-index: 10;
+  will-change: transform;
 }
 
 .coming-soon-overlay {
