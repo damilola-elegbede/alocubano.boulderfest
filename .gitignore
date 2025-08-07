@@ -58,6 +58,19 @@ performance-audit.html
 .env.local
 .env.*.local
 
+# Apple private keys - NEVER commit these!
+*.p8
+AuthKey_*.p8
+
+# Apple Wallet certificates - NEVER commit these!
+certificates/
+*.cer
+*.pem
+*.p12
+*.key
+*.csr
+*_base64.txt
+
 # Temporary files
 *.tmp
 *.temp
