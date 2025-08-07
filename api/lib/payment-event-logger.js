@@ -140,9 +140,9 @@ export class PaymentEventLogger {
     await this.db.execute({
       sql: `UPDATE payment_events 
             SET retry_count = retry_count + 1, 
-                last_retry_at = CURRENT_TIMESTAMP 
-            WHERE event_id = ?`,
-      args: [eventId]
+                processed_at = ? 
+            WHERE source_id = ?`,
+      args: [new Date().toISOString(), eventId]
     });
   }
 

@@ -151,9 +151,14 @@ export default async function handler(req, res) {
         console.log("Async payment failed for session:", session.id);
         
         // Update transaction status if it exists
-        const transaction = await transactionService.getByStripeSessionId(session.id);
-        if (transaction) {
-          await transactionService.updateStatus(transaction.uuid, 'failed');
+        try {
+          const transaction = await transactionService.getByStripeSessionId(session.id);
+          if (transaction) {
+            await transactionService.updateStatus(transaction.uuid, 'failed');
+          }
+        } catch (error) {
+          console.error('Failed to update transaction status for async_payment_failed:', error);
+          // Don't throw - let webhook succeed to prevent Stripe retries
         }
         
         break;
@@ -164,9 +169,14 @@ export default async function handler(req, res) {
         console.log(`Checkout session expired: ${session.id}`);
         
         // Update transaction status if it exists
-        const transaction = await transactionService.getByStripeSessionId(session.id);
-        if (transaction) {
-          await transactionService.updateStatus(transaction.uuid, 'cancelled');
+        try {
+          const transaction = await transactionService.getByStripeSessionId(session.id);
+          if (transaction) {
+            await transactionService.updateStatus(transaction.uuid, 'cancelled');
+          }
+        } catch (error) {
+          console.error('Failed to update transaction status for session.expired:', error);
+          // Don't throw - let webhook succeed to prevent Stripe retries
         }
         
         break;
@@ -176,8 +186,7 @@ export default async function handler(req, res) {
         const paymentIntent = event.data.object;
         console.log(`Payment succeeded: ${paymentIntent.id}`);
         
-        // Log the event
-        await paymentEventLogger.logStripeEvent(event);
+        // Event already logged at line 70
         
         break;
       }
@@ -187,14 +196,18 @@ export default async function handler(req, res) {
         console.log(`Payment failed: ${paymentIntent.id}`);
         
         // Update transaction status if it exists
-        const transaction = await transactionService.getByPaymentIntentId(paymentIntent.id);
-        
-        if (transaction) {
-          await transactionService.updateStatus(transaction.uuid, 'failed');
+        try {
+          const transaction = await transactionService.getByPaymentIntentId(paymentIntent.id);
+          
+          if (transaction) {
+            await transactionService.updateStatus(transaction.uuid, 'failed');
+          }
+        } catch (error) {
+          console.error('Failed to update transaction status for payment_intent.payment_failed:', error);
+          // Don't throw - let webhook succeed to prevent Stripe retries
         }
         
-        // Log the event
-        await paymentEventLogger.logStripeEvent(event);
+        // Event already logged at line 70
         
         break;
       }
@@ -204,10 +217,15 @@ export default async function handler(req, res) {
         console.log("Payment intent canceled:", paymentIntent.id);
         
         // Update transaction status if it exists
-        const transaction = await transactionService.getByPaymentIntentId(paymentIntent.id);
-        
-        if (transaction) {
-          await transactionService.updateStatus(transaction.uuid, 'cancelled');
+        try {
+          const transaction = await transactionService.getByPaymentIntentId(paymentIntent.id);
+          
+          if (transaction) {
+            await transactionService.updateStatus(transaction.uuid, 'cancelled');
+          }
+        } catch (error) {
+          console.error('Failed to update transaction status for payment_intent.canceled:', error);
+          // Don't throw - let webhook succeed to prevent Stripe retries
         }
         
         break;
@@ -219,24 +237,27 @@ export default async function handler(req, res) {
         
         // Update transaction status based on payment intent
         if (charge.payment_intent) {
-          const transaction = await transactionService.getByPaymentIntentId(charge.payment_intent);
-          
-          if (transaction) {
-            const status = charge.amount_refunded === charge.amount ? 'refunded' : 'partially_refunded';
-            await transactionService.updateStatus(transaction.uuid, status);
+          try {
+            const transaction = await transactionService.getByPaymentIntentId(charge.payment_intent);
+            
+            if (transaction) {
+              const status = charge.amount_refunded === charge.amount ? 'refunded' : 'partially_refunded';
+              await transactionService.updateStatus(transaction.uuid, status);
+            }
+          } catch (error) {
+            console.error('Failed to update transaction status for charge.refunded:', error);
+            // Don't throw - let webhook succeed to prevent Stripe retries
           }
         }
         
-        // Log the event
-        await paymentEventLogger.logStripeEvent(event);
+        // Event already logged at line 70
         
         break;
       }
 
       default:
         console.log(`Unhandled event type: ${event.type}`);
-        // Still log unhandled events
-        await paymentEventLogger.logStripeEvent(event);
+        // Event already logged at line 70
     }
 
     // Return a response to acknowledge receipt of the event

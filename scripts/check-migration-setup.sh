@@ -55,6 +55,14 @@ echo ""
 echo "🧪 Testing Migration API (if deployed)..."
 
 if [ -n "$VERCEL_PRODUCTION_URL" ]; then
+    # Validate URL format for security (only allow safe characters)
+    if [[ ! "$VERCEL_PRODUCTION_URL" =~ ^[a-zA-Z0-9.-]+\.vercel\.app$ ]] && \
+       [[ ! "$VERCEL_PRODUCTION_URL" =~ ^[a-zA-Z0-9.-]+\.(com|org|net|io)$ ]]; then
+        echo -e "  ❌ ${RED}Invalid VERCEL_PRODUCTION_URL format - potential security risk${NC}"
+        echo "  Expected format: subdomain.vercel.app or custom-domain.com"
+        exit 1
+    fi
+    
     echo "Testing: https://$VERCEL_PRODUCTION_URL/api/migrate"
     
     if [ -n "$MIGRATION_SECRET_KEY" ]; then
