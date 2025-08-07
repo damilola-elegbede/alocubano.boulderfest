@@ -8,6 +8,8 @@ import {
   isTicketItem,
   extractTicketType
 } from './ticket-config.js';
+import appleWalletService from './apple-wallet-service.js';
+import googleWalletService from './google-wallet-service.js';
 
 export class TicketService {
   constructor() {
@@ -104,6 +106,29 @@ export class TicketService {
         })
       ]
     });
+    
+    // Generate wallet passes if enabled
+    if (process.env.WALLET_ENABLE_GENERATION !== 'false') {
+      // Generate Apple Wallet pass
+      if (appleWalletService.isConfigured()) {
+        try {
+          await appleWalletService.generatePass(ticketId);
+          console.log(`Generated Apple Wallet pass for ticket ${ticketId}`);
+        } catch (error) {
+          console.error(`Failed to generate Apple Wallet pass for ticket ${ticketId}:`, error);
+        }
+      }
+      
+      // Generate Google Wallet pass
+      if (googleWalletService.isConfigured()) {
+        try {
+          await googleWalletService.generatePass(ticketId);
+          console.log(`Generated Google Wallet pass for ticket ${ticketId}`);
+        } catch (error) {
+          console.error(`Failed to generate Google Wallet pass for ticket ${ticketId}:`, error);
+        }
+      }
+    }
     
     // Return the created ticket
     const ticket = await this.getByTicketId(ticketId);
