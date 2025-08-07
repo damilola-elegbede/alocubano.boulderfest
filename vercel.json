@@ -223,6 +223,10 @@
     {
       "source": "/failure",
       "destination": "/pages/failure.html"
+    },
+    {
+      "source": "/my-tickets",
+      "destination": "/pages/my-tickets.html"
     }
   ],
   "redirects": [
