@@ -113,6 +113,22 @@ export class TicketEmailService {
                 <div class="ticket-id">Ticket ID: ${ticket.ticketId}</div>
                 <div>Attendee: ${ticket.attendee}</div>
                 <div>Date: ${ticket.date}</div>
+                
+                <!-- Add wallet buttons -->
+                <div style="text-align: center; margin: 20px 0;">
+                  <a href="${this.baseUrl}/api/tickets/apple-wallet/${ticket.ticketId}"
+                     style="display: inline-block; margin: 5px; padding: 10px 20px; 
+                            background: #000; color: white; text-decoration: none; 
+                            border-radius: 5px; font-size: 14px;">
+                    📱 Add to Apple Wallet
+                  </a>
+                  <a href="${this.baseUrl}/api/tickets/google-wallet/${ticket.ticketId}"
+                     style="display: inline-block; margin: 5px; padding: 10px 20px; 
+                            background: #4285f4; color: white; text-decoration: none; 
+                            border-radius: 5px; font-size: 14px;">
+                    📱 Add to Google Wallet
+                  </a>
+                </div>
               </div>
             `).join('')}
             
