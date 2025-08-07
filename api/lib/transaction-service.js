@@ -18,19 +18,40 @@ export class TransactionService {
    * Create a new transaction from Stripe checkout session
    */
   async createFromStripeSession(session) {
+    // Start transaction for atomicity
+    await this.db.execute('BEGIN');
+    
     try {
       const uuid = this.generateTransactionUUID();
       
       // Determine transaction type from line items or metadata
       const orderType = this.determineTransactionType(session);
       
-      // Prepare order details
-      const orderDetails = {
-        line_items: session.line_items?.data || [],
-        metadata: session.metadata || {},
-        mode: session.mode,
-        payment_status: session.payment_status
-      };
+      // Safely prepare order details
+      let orderDetails;
+      try {
+        orderDetails = JSON.stringify({
+          line_items: session.line_items?.data || [],
+          metadata: session.metadata || {},
+          mode: session.mode,
+          payment_status: session.payment_status
+        });
+      } catch (e) {
+        console.warn('Failed to stringify order details, using minimal data');
+        orderDetails = '{"error": "Could not serialize order details"}';
+      }
+      
+      // Safely prepare billing address
+      let billingAddress;
+      try {
+        billingAddress = JSON.stringify(session.customer_details?.address || {});
+      } catch (e) {
+        billingAddress = '{}';
+      }
+      
+      // Null-safe amount access (Stripe amounts are in cents)
+      const totalAmount = session.amount_total ?? 0;
+      const currency = (session.currency || 'usd').toUpperCase();
       
       // Insert transaction
       const result = await this.db.execute({
@@ -43,15 +64,15 @@ export class TransactionService {
         args: [
           uuid,
           orderType,
-          JSON.stringify(orderDetails),
-          session.amount_total,
-          session.currency.toUpperCase(),
+          orderDetails,
+          totalAmount, // Keep in cents as stored in DB
+          currency,
           session.id,
-          session.payment_intent,
+          session.payment_intent || null,
           session.payment_method_types?.[0] || 'card',
-          session.customer_details?.email || session.customer_email,
+          session.customer_details?.email || session.customer_email || null,
           session.customer_details?.name || null,
-          JSON.stringify(session.customer_details?.address || {}),
+          billingAddress,
           'paid',
           new Date().toISOString()
         ]
@@ -60,12 +81,21 @@ export class TransactionService {
       // Get the inserted transaction
       const transaction = await this.getByUUID(uuid);
       
+      if (!transaction) {
+        throw new Error(`Failed to retrieve created transaction with UUID: ${uuid}`);
+      }
+      
       // Create transaction items
       await this.createTransactionItems(transaction.id, session);
+      
+      // Commit transaction
+      await this.db.execute('COMMIT');
       
       return transaction;
       
     } catch (error) {
+      // Rollback on error
+      await this.db.execute('ROLLBACK');
       console.error('Failed to create transaction:', error);
       throw error;
     }
@@ -101,10 +131,20 @@ export class TransactionService {
     
     for (const item of lineItems) {
       const itemType = this.determineItemType(item);
-      const unitPrice = item.price?.unit_amount || item.amount_total;
       const quantity = item.quantity || 1;
-      const totalPrice = item.amount_total;
+      
+      // Stripe amounts are in cents - keep them as cents in DB
+      const unitPrice = item.price?.unit_amount || item.amount_total || 0;
+      const totalPrice = item.amount_total || 0;
       const finalPrice = totalPrice; // No discount for now
+      
+      // Safely stringify metadata
+      let metadata;
+      try {
+        metadata = JSON.stringify(item.price?.product?.metadata || {});
+      } catch (e) {
+        metadata = '{}';
+      }
       
       await this.db.execute({
         sql: `INSERT INTO transaction_items (
@@ -118,11 +158,11 @@ export class TransactionService {
           item.description || 'Unknown Item',
           item.price?.product?.description || null,
           quantity,
-          unitPrice,
-          totalPrice,
-          finalPrice,
+          unitPrice, // Keep in cents
+          totalPrice, // Keep in cents
+          finalPrice, // Keep in cents
           session.metadata?.event_name || 'Boulder Fest 2026',
-          JSON.stringify(item.price?.product?.metadata || {})
+          metadata
         ]
       });
     }
@@ -177,11 +217,14 @@ export class TransactionService {
    * Update transaction status
    */
   async updateStatus(uuid, status, metadata = {}) {
+    // Use parameterized timestamp for database-agnostic compatibility
+    const updatedAt = new Date().toISOString();
+    
     await this.db.execute({
       sql: `UPDATE transactions 
-            SET status = ?, updated_at = datetime('now') 
+            SET status = ?, updated_at = ? 
             WHERE uuid = ?`,
-      args: [status, uuid]
+      args: [status, updatedAt, uuid]
     });
     
     // Log the status change
@@ -194,6 +237,20 @@ export class TransactionService {
   async logStatusChange(uuid, newStatus, metadata) {
     const transaction = await this.getByUUID(uuid);
     
+    // Check if transaction exists
+    if (!transaction) {
+      console.error(`Cannot log status change: transaction ${uuid} not found`);
+      return;
+    }
+    
+    // Safely stringify metadata
+    let eventData;
+    try {
+      eventData = JSON.stringify({ metadata });
+    } catch (e) {
+      eventData = '{}';
+    }
+    
     await this.db.execute({
       sql: `INSERT INTO payment_events (
         transaction_id, event_type, source, source_id,
@@ -204,12 +261,23 @@ export class TransactionService {
         'status_change',
         'system',
         `EVT-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-        JSON.stringify({ metadata }),
+        eventData,
         transaction.status,
         newStatus,
         new Date().toISOString()
       ]
     });
+  }
+
+  /**
+   * Get transaction by Stripe payment intent ID
+   */
+  async getByPaymentIntentId(paymentIntentId) {
+    const result = await this.db.execute({
+      sql: 'SELECT * FROM transactions WHERE stripe_payment_intent_id = ?',
+      args: [paymentIntentId]
+    });
+    return result.rows[0];
   }
 
   /**
