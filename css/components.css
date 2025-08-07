@@ -1898,39 +1898,26 @@
   margin-bottom: var(--space-md);
 }
 
-/* Unavailable Ticket Styles */
-.ticket-card.unavailable {
-  position: relative;
-  opacity: 0.6;
-  background: #f5f5f5;
-  cursor: not-allowed;
-}
-
-.ticket-card.unavailable:hover {
-  transform: none;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border-color: var(--color-gray-300);
-}
-
-.ticket-card.unavailable * {
-  pointer-events: none;
-}
-
-/* Disabled state for unavailable ticket options */
+/* Consolidated disabled/unavailable ticket styles */
+.ticket-card.unavailable,
 .ticket-card.disabled {
   position: relative;
-  opacity: 0.7;
+  opacity: 0.6;
   background: var(--color-gray-200);
   cursor: not-allowed;
   overflow: hidden;
+  pointer-events: none;
 }
 
+.ticket-card.unavailable:hover,
 .ticket-card.disabled:hover {
   transform: none;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   border-color: var(--color-gray-300);
 }
 
+.ticket-card.unavailable .qty-btn,
+.ticket-card.unavailable .quantity-selector,
 .ticket-card.disabled .qty-btn,
 .ticket-card.disabled .quantity-selector {
   pointer-events: none;
