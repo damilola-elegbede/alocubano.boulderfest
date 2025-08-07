@@ -92,10 +92,25 @@ jobs:
         run: |
           echo "📊 Checking current migration status..."
           
-          response=$(curl -s -X POST "https://${{ secrets.VERCEL_PRODUCTION_URL }}/api/migrate" \
+          # Check migration status with network error handling
+          if ! response=$(curl -s -f --max-time 30 -X POST "https://${{ secrets.VERCEL_PRODUCTION_URL }}/api/migrate" \
             -H "Content-Type: application/json" \
             -H "x-migration-key: ${{ secrets.MIGRATION_SECRET_KEY }}" \
-            -d '{"action": "status"}')
+            -d '{"action": "status"}'); then
+            echo "❌ Failed to connect to migration API (network error or timeout)"
+            echo "Please check:"
+            echo "  - Network connectivity"
+            echo "  - Production URL: ${{ secrets.VERCEL_PRODUCTION_URL }}"
+            echo "  - Migration API availability"
+            exit 1
+          fi
+          
+          # Validate response is valid JSON
+          if ! echo "$response" | jq empty 2>/dev/null; then
+            echo "❌ Invalid JSON response from migration API:"
+            echo "$response"
+            exit 1
+          fi
           
           echo "Migration status response:"
           echo "$response" | jq '.'
@@ -115,11 +130,22 @@ jobs:
         run: |
           echo "🚀 Deploying database migrations to production..."
           
-          # Deploy migrations
-          response=$(curl -s -X POST "https://${{ secrets.VERCEL_PRODUCTION_URL }}/api/migrate" \
+          # Deploy migrations with network error handling
+          if ! response=$(curl -s -f --max-time 60 -X POST "https://${{ secrets.VERCEL_PRODUCTION_URL }}/api/migrate" \
             -H "Content-Type: application/json" \
             -H "x-migration-key: ${{ secrets.MIGRATION_SECRET_KEY }}" \
-            -d '{"action": "run"}')
+            -d '{"action": "run"}'); then
+            echo "❌ Failed to connect to migration API for deployment (network error or timeout)"
+            echo "Migration deployment aborted due to network failure"
+            exit 1
+          fi
+          
+          # Validate response is valid JSON
+          if ! echo "$response" | jq empty 2>/dev/null; then
+            echo "❌ Invalid JSON response from migration deployment API:"
+            echo "$response"
+            exit 1
+          fi
           
           echo "Migration deployment response:"
           echo "$response" | jq '.'
@@ -143,10 +169,22 @@ jobs:
         run: |
           echo "🔍 Verifying migration integrity..."
           
-          response=$(curl -s -X POST "https://${{ secrets.VERCEL_PRODUCTION_URL }}/api/migrate" \
+          # Verify migrations with network error handling
+          if ! response=$(curl -s -f --max-time 30 -X POST "https://${{ secrets.VERCEL_PRODUCTION_URL }}/api/migrate" \
             -H "Content-Type: application/json" \
             -H "x-migration-key: ${{ secrets.MIGRATION_SECRET_KEY }}" \
-            -d '{"action": "verify"}')
+            -d '{"action": "verify"}'); then
+            echo "❌ Failed to connect to migration API for verification (network error or timeout)"
+            echo "Migration verification failed due to network error"
+            exit 1
+          fi
+          
+          # Validate response is valid JSON
+          if ! echo "$response" | jq empty 2>/dev/null; then
+            echo "❌ Invalid JSON response from migration verification API:"
+            echo "$response"
+            exit 1
+          fi
           
           echo "Migration verification response:"
           echo "$response" | jq '.'
