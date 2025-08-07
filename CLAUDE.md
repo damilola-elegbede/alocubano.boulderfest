@@ -95,8 +95,13 @@ BREVO_WEBHOOK_SECRET=webhook-secret
 # Install dependencies
 npm install
 
-# Start development server
+# Start development server (with ngrok by default)
 npm start
+# or
+npm run dev
+
+# Start without ngrok (local only)
+npm run start:local
 
 # Run tests
 npm test
@@ -104,6 +109,31 @@ npm test
 # Run specific test file
 npm run test:unit -- tests/unit/brevo-service.test.js
 ```
+
+### Default Development Environment (ngrok)
+
+The project uses ngrok as the default development environment:
+
+1. **First time setup**:
+   - Install ngrok: `brew install ngrok`
+   - Configure auth token: `ngrok config add-authtoken YOUR_TOKEN`
+   - Copy `.env.local.example` to `.env.local` and add credentials
+
+2. **Start development**:
+   ```bash
+   npm start
+   ```
+
+3. **Access your site** at: `https://alocubanoboulderfest.ngrok.io`
+4. **ngrok dashboard** at: `http://localhost:4040`
+5. **Fallback**: If ngrok isn't installed, automatically starts local server
+
+Benefits of ngrok as default:
+- Test Apple Sign In and other OAuth flows
+- Share development URL with team members
+- Test webhooks from external services
+- Mobile device testing on same network
+- Consistent HTTPS environment
 
 ## Server Logging
 

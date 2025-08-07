@@ -106,9 +106,9 @@ export class AppleWalletService {
     pass.organizationName = this.organizationName;
     pass.serialNumber = serialNumber;
     pass.description = 'A Lo Cubano Boulder Fest Ticket';
-    pass.foregroundColor = 'rgb(255, 255, 255)';
-    pass.backgroundColor = 'rgb(102, 126, 234)';
-    pass.labelColor = 'rgb(255, 255, 255)';
+    pass.foregroundColor = 'rgb(0, 0, 0)';           // Black text
+    pass.backgroundColor = 'rgb(255, 255, 255)';      // White background
+    pass.labelColor = 'rgb(206, 17, 38)';            // Cuban flag red for labels
     pass.logoText = 'A Lo Cubano';
     
     // Pass structure for event ticket
