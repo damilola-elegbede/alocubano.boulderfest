@@ -1,4 +1,5 @@
 import ticketService from './ticket-service.js';
+import { formatTicketType } from './ticket-config.js';
 
 export class TicketEmailService {
   /**
@@ -6,24 +7,28 @@ export class TicketEmailService {
    */
   async sendTicketConfirmation(transaction, tickets) {
     try {
+      // Generate access token for secure ticket viewing
+      const accessToken = await ticketService.generateAccessToken(
+        transaction.id,
+        transaction.customer_email
+      );
+
       // Format ticket details for email
       const ticketDetails = this.formatTicketsForEmail(tickets);
       
-      // Prepare email data
+      // Prepare email data with access token
       const emailData = {
         to: transaction.customer_email,
         subject: 'Your A Lo Cubano Boulder Fest Tickets',
-        html: this.generateTicketEmailHtml(transaction, tickets, ticketDetails),
-        text: this.generateTicketEmailText(transaction, tickets, ticketDetails)
+        html: this.generateTicketEmailHtml(transaction, tickets, ticketDetails, accessToken),
+        text: this.generateTicketEmailText(transaction, tickets, ticketDetails, accessToken)
       };
       
       // TODO: In production, integrate with Brevo
       // For now, log the email
       console.log('Ticket confirmation email:', emailData);
       
-      // In Phase 4, we'll add QR codes here
-      
-      return { success: true, email: emailData.to };
+      return { success: true, email: emailData.to, accessToken };
       
     } catch (error) {
       console.error('Failed to send ticket confirmation:', error);
@@ -47,21 +52,7 @@ export class TicketEmailService {
    * Format ticket type for display
    */
   formatTicketType(type) {
-    const typeMap = {
-      'vip-pass': 'VIP Pass',
-      'weekend-pass': 'Weekend Pass',
-      'friday-pass': 'Friday Pass',
-      'saturday-pass': 'Saturday Pass',
-      'sunday-pass': 'Sunday Pass',
-      'workshop-beginner': 'Beginner Workshop',
-      'workshop-intermediate': 'Intermediate Workshop',
-      'workshop-advanced': 'Advanced Workshop',
-      'workshop': 'Workshop',
-      'social-dance': 'Social Dance',
-      'general-admission': 'General Admission'
-    };
-    
-    return typeMap[type] || type;
+    return formatTicketType(type);
   }
 
   /**
@@ -82,7 +73,7 @@ export class TicketEmailService {
   /**
    * Generate HTML email content
    */
-  generateTicketEmailHtml(transaction, tickets, ticketDetails) {
+  generateTicketEmailHtml(transaction, tickets, ticketDetails, accessToken) {
     return `
       <!DOCTYPE html>
       <html>
@@ -131,7 +122,7 @@ export class TicketEmailService {
             <p><strong>Dates:</strong> May 15-17, 2026</p>
             
             <p style="text-align: center;">
-              <a href="https://alocubano.com/my-tickets?email=${encodeURIComponent(transaction.customer_email)}" class="button">
+              <a href="https://alocubano.com/my-tickets?token=${encodeURIComponent(accessToken)}" class="button">
                 View My Tickets
               </a>
             </p>
@@ -165,7 +156,7 @@ export class TicketEmailService {
   /**
    * Generate plain text email content
    */
-  generateTicketEmailText(transaction, tickets, ticketDetails) {
+  generateTicketEmailText(transaction, tickets, ticketDetails, accessToken) {
     return `
 Your Tickets Are Confirmed!
 A Lo Cubano Boulder Fest 2026
@@ -192,7 +183,7 @@ Address: 6185 Arapahoe Road, Boulder, CO 80303
 Dates: May 15-17, 2026
 
 View your tickets online:
-https://alocubano.com/my-tickets?email=${encodeURIComponent(transaction.customer_email)}
+https://alocubano.com/my-tickets?token=${encodeURIComponent(accessToken)}
 
 WHAT'S NEXT?
 - Save this email for your records
