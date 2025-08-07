@@ -94,15 +94,11 @@ export class GoogleWalletService {
       },
       logo: {
         sourceUri: {
-          uri: `${this.baseUrl}/images/wallet/google-logo.png`
+          uri: `${this.baseUrl}/images/logo.png`
         }
       },
-      heroImage: {
-        sourceUri: {
-          uri: `${this.baseUrl}/images/wallet/google-hero.png`
-        }
-      },
-      hexBackgroundColor: '#667EEA',
+      // No hero image to match Apple Wallet minimalist design
+      hexBackgroundColor: '#FFFFFF',  // White background
       homepageUri: {
         uri: this.baseUrl
       }
@@ -184,7 +180,7 @@ export class GoogleWalletService {
         });
       }
       
-      // Create pass object
+      // Create pass object matching Apple Wallet design
       const passObject = {
         id: objectId,
         classId: `${this.issuerId}.${this.classId}`,
@@ -196,10 +192,11 @@ export class GoogleWalletService {
           value: ticket.qr_token || ticket.ticket_id,
           alternateText: ticket.ticket_id
         },
+        // Ticket type in blue (will be styled via textModulesData)
         ticketType: {
           defaultValue: {
             language: 'en',
-            value: this.formatTicketType(ticket.ticket_type)
+            value: this.formatTicketType(ticket.ticket_type).toUpperCase()
           }
         },
         groupingInfo: {
@@ -215,9 +212,74 @@ export class GoogleWalletService {
             date: '2026-05-18T00:00:00-06:00'
           }
         },
+        // Custom styled fields to match Apple Wallet
+        textModulesData: [
+          {
+            header: 'EVENT',
+            body: 'Boulder Fest 2026',
+            id: 'event'
+          },
+          {
+            header: 'TICKET TYPE',
+            body: this.formatTicketType(ticket.ticket_type).toUpperCase(),
+            id: 'ticket-type'
+          },
+          {
+            header: 'ATTENDEE',
+            body: `${ticket.attendee_first_name || ''} ${ticket.attendee_last_name || ''}`.trim() || 'Guest',
+            id: 'attendee'
+          },
+          {
+            header: 'DATES',
+            body: 'May 15-17, 2026',
+            id: 'dates'
+          },
+          {
+            header: 'ORDER',
+            body: ticket.order_number || ticket.transaction_id,
+            id: 'order'
+          }
+        ],
+        // Info module for back of pass
+        infoModuleData: {
+          labelValueRows: [
+            {
+              columns: [
+                {
+                  label: 'VENUE',
+                  value: 'Avalon Ballroom\n6185 Arapahoe Road\nBoulder, CO 80303'
+                }
+              ]
+            },
+            {
+              columns: [
+                {
+                  label: 'TICKET ID',
+                  value: ticket.ticket_id
+                }
+              ]
+            },
+            {
+              columns: [
+                {
+                  label: 'CHECK-IN INSTRUCTIONS',
+                  value: 'Present this pass at the entrance. Have your ID ready. The QR code will be scanned for entry.'
+                }
+              ]
+            },
+            {
+              columns: [
+                {
+                  label: 'SUPPORT',
+                  value: 'Email: alocubanoboulderfest@gmail.com\nWebsite: alocubano.vercel.app'
+                }
+              ]
+            }
+          ]
+        },
         messages: [
           {
-            header: 'Welcome!',
+            header: 'Welcome to A Lo Cubano!',
             body: 'Show this ticket at the entrance for scanning.',
             displayInterval: {
               start: {
@@ -294,24 +356,24 @@ export class GoogleWalletService {
   }
 
   /**
-   * Format ticket type for display
+   * Format ticket type for display (matching Apple Wallet uppercase style)
    */
   formatTicketType(type) {
     const typeMap = {
-      'vip-pass': 'VIP Pass',
-      'weekend-pass': 'Weekend Pass',
-      'friday-pass': 'Friday Pass',
-      'saturday-pass': 'Saturday Pass',
-      'sunday-pass': 'Sunday Pass',
-      'workshop-beginner': 'Beginner Workshop',
-      'workshop-intermediate': 'Intermediate Workshop',
-      'workshop-advanced': 'Advanced Workshop',
-      'workshop': 'Workshop',
-      'social-dance': 'Social Dance',
-      'general-admission': 'General Admission'
+      'vip-pass': 'VIP PASS',
+      'weekend-pass': 'WEEKEND PASS',
+      'friday-pass': 'FRIDAY PASS',
+      'saturday-pass': 'SATURDAY PASS',
+      'sunday-pass': 'SUNDAY PASS',
+      'workshop-beginner': 'BEGINNER WORKSHOP',
+      'workshop-intermediate': 'INTERMEDIATE WORKSHOP',
+      'workshop-advanced': 'ADVANCED WORKSHOP',
+      'workshop': 'WORKSHOP',
+      'social-dance': 'SOCIAL DANCE',
+      'general-admission': 'GENERAL ADMISSION'
     };
     
-    return typeMap[type] || type;
+    return typeMap[type] || type.toUpperCase();
   }
 
   /**
