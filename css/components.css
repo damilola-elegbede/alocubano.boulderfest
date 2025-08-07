@@ -1916,6 +1916,42 @@
   pointer-events: none;
 }
 
+.ticket-card.disabled {
+  position: relative;
+  opacity: 0.5;
+  background: #f8f8f8;
+  cursor: not-allowed;
+}
+
+.ticket-card.disabled:hover {
+  transform: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-color: var(--color-gray-300);
+}
+
+.ticket-card.disabled .qty-btn,
+.ticket-card.disabled .quantity-selector {
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+.coming-soon-banner {
+  position: absolute;
+  top: 20px;
+  right: -30px;
+  background: var(--theme-color);
+  color: var(--color-white);
+  padding: 8px 40px;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transform: rotate(45deg);
+  transform-origin: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
 .coming-soon-overlay {
   position: absolute;
   top: 50%;
