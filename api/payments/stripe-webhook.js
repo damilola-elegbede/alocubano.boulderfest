@@ -10,9 +10,12 @@
  * - payment_intent.succeeded - Direct Payment Intent success
  * - payment_intent.payment_failed - Payment Intent failure
  * - payment_intent.canceled - Payment Intent cancellation
+ * - charge.refunded - Charge refund event
  */
 
 import Stripe from "stripe";
+import transactionService from '../lib/transaction-service.js';
+import paymentEventLogger from '../lib/payment-event-logger.js';
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -62,73 +65,211 @@ export default async function handler(req, res) {
       type: event.type,
     });
 
+    // Log the event first (for idempotency)
+    try {
+      const logResult = await paymentEventLogger.logStripeEvent(event);
+      
+      if (logResult.status === 'already_processed') {
+        console.log(`Skipping already processed event: ${event.id}`);
+        return res.json({ received: true, status: 'already_processed' });
+      }
+    } catch (error) {
+      console.error('Failed to log event:', error);
+      // Continue processing even if logging fails
+    }
+
     // Handle the event based on type
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object;
-        console.log("Checkout session completed:", {
-          sessionId: session.id,
-          paymentStatus: session.payment_status,
-          customerEmail: session.customer_email || session.customer_details?.email,
-          amount: session.amount_total / 100,
-          orderId: session.metadata?.orderId,
-        });
+        console.log(`Processing checkout.session.completed for ${session.id}`);
         
-        // In a production app, you would:
-        // 1. Send confirmation email
-        // 2. Update your database
-        // 3. Trigger fulfillment
+        try {
+          // Expand the session to get line items
+          const fullSession = await stripe.checkout.sessions.retrieve(
+            session.id,
+            {
+              expand: ['line_items', 'line_items.data.price.product']
+            }
+          );
+          
+          // Check if transaction already exists (idempotency)
+          const existingTransaction = await transactionService.getByStripeSessionId(session.id);
+          
+          if (existingTransaction) {
+            console.log(`Transaction already exists for session ${session.id}`);
+            return res.json({ received: true, status: 'already_exists' });
+          }
+          
+          // Create transaction record
+          const transaction = await transactionService.createFromStripeSession(fullSession);
+          console.log(`Created transaction: ${transaction.uuid}`);
+          
+          // Update the payment event with transaction ID
+          await paymentEventLogger.updateEventTransactionId(event.id, transaction.id);
+          
+          // TODO: In Phase 3, we'll create tickets here
+          // TODO: In Phase 4, we'll generate QR codes here
+          
+        } catch (error) {
+          console.error('Failed to process checkout session:', error);
+          await paymentEventLogger.logError(event, error);
+          // Don't throw - we've logged the error, let Stripe retry if needed
+        }
+        
         break;
       }
 
       case "checkout.session.async_payment_succeeded": {
         const session = event.data.object;
         console.log("Async payment succeeded for session:", session.id);
+        
+        // Process similar to checkout.session.completed
+        try {
+          const fullSession = await stripe.checkout.sessions.retrieve(
+            session.id,
+            {
+              expand: ['line_items', 'line_items.data.price.product']
+            }
+          );
+          
+          const existingTransaction = await transactionService.getByStripeSessionId(session.id);
+          if (!existingTransaction) {
+            const transaction = await transactionService.createFromStripeSession(fullSession);
+            console.log(`Created transaction from async payment: ${transaction.uuid}`);
+          }
+        } catch (error) {
+          console.error('Failed to process async payment:', error);
+          await paymentEventLogger.logError(event, error);
+        }
+        
         break;
       }
 
       case "checkout.session.async_payment_failed": {
         const session = event.data.object;
         console.log("Async payment failed for session:", session.id);
+        
+        // Update transaction status if it exists
+        try {
+          const transaction = await transactionService.getByStripeSessionId(session.id);
+          if (transaction) {
+            await transactionService.updateStatus(transaction.uuid, 'failed');
+          }
+        } catch (error) {
+          console.error('Failed to update transaction status for async_payment_failed:', error);
+          // Don't throw - let webhook succeed to prevent Stripe retries
+        }
+        
         break;
       }
 
       case "checkout.session.expired": {
         const session = event.data.object;
-        console.log("Checkout session expired:", session.id);
+        console.log(`Checkout session expired: ${session.id}`);
+        
+        // Update transaction status if it exists
+        try {
+          const transaction = await transactionService.getByStripeSessionId(session.id);
+          if (transaction) {
+            await transactionService.updateStatus(transaction.uuid, 'cancelled');
+          }
+        } catch (error) {
+          console.error('Failed to update transaction status for session.expired:', error);
+          // Don't throw - let webhook succeed to prevent Stripe retries
+        }
+        
         break;
       }
 
       case "payment_intent.succeeded": {
         const paymentIntent = event.data.object;
-        console.log("Payment intent succeeded:", {
-          paymentIntentId: paymentIntent.id,
-          amount: paymentIntent.amount / 100,
-          customerEmail: paymentIntent.receipt_email,
-        });
+        console.log(`Payment succeeded: ${paymentIntent.id}`);
+        
+        // Event already logged at line 70
+        
         break;
       }
 
       case "payment_intent.payment_failed": {
         const paymentIntent = event.data.object;
-        console.log("Payment intent failed:", paymentIntent.id);
+        console.log(`Payment failed: ${paymentIntent.id}`);
+        
+        // Update transaction status if it exists
+        try {
+          const transaction = await transactionService.getByPaymentIntentId(paymentIntent.id);
+          
+          if (transaction) {
+            await transactionService.updateStatus(transaction.uuid, 'failed');
+          }
+        } catch (error) {
+          console.error('Failed to update transaction status for payment_intent.payment_failed:', error);
+          // Don't throw - let webhook succeed to prevent Stripe retries
+        }
+        
+        // Event already logged at line 70
+        
         break;
       }
 
       case "payment_intent.canceled": {
         const paymentIntent = event.data.object;
         console.log("Payment intent canceled:", paymentIntent.id);
+        
+        // Update transaction status if it exists
+        try {
+          const transaction = await transactionService.getByPaymentIntentId(paymentIntent.id);
+          
+          if (transaction) {
+            await transactionService.updateStatus(transaction.uuid, 'cancelled');
+          }
+        } catch (error) {
+          console.error('Failed to update transaction status for payment_intent.canceled:', error);
+          // Don't throw - let webhook succeed to prevent Stripe retries
+        }
+        
+        break;
+      }
+      
+      case "charge.refunded": {
+        const charge = event.data.object;
+        console.log(`Charge refunded: ${charge.id}`);
+        
+        // Update transaction status based on payment intent
+        if (charge.payment_intent) {
+          try {
+            const transaction = await transactionService.getByPaymentIntentId(charge.payment_intent);
+            
+            if (transaction) {
+              const status = charge.amount_refunded === charge.amount ? 'refunded' : 'partially_refunded';
+              await transactionService.updateStatus(transaction.uuid, status);
+            }
+          } catch (error) {
+            console.error('Failed to update transaction status for charge.refunded:', error);
+            // Don't throw - let webhook succeed to prevent Stripe retries
+          }
+        }
+        
+        // Event already logged at line 70
+        
         break;
       }
 
       default:
         console.log(`Unhandled event type: ${event.type}`);
+        // Event already logged at line 70
     }
 
     // Return a response to acknowledge receipt of the event
     res.status(200).json({ received: true });
   } catch (err) {
     console.error("Webhook error:", err.message);
+    
+    // Try to log the error
+    if (event) {
+      await paymentEventLogger.logError(event, err);
+    }
+    
     return res.status(400).json({ error: `Webhook Error: ${err.message}` });
   }
 }
