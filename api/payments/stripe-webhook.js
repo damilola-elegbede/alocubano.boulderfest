@@ -16,6 +16,8 @@
 import Stripe from "stripe";
 import transactionService from '../lib/transaction-service.js';
 import paymentEventLogger from '../lib/payment-event-logger.js';
+import ticketService from '../lib/ticket-service.js';
+import ticketEmailService from '../lib/ticket-email-service.js';
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -108,7 +110,25 @@ export default async function handler(req, res) {
           // Update the payment event with transaction ID
           await paymentEventLogger.updateEventTransactionId(event.id, transaction.id);
           
-          // TODO: In Phase 3, we'll create tickets here
+          // Create tickets from the transaction
+          try {
+            const tickets = await ticketService.createTicketsFromTransaction(
+              transaction,
+              fullSession.line_items?.data || []
+            );
+            console.log(`Created ${tickets.length} tickets for transaction ${transaction.uuid}`);
+            
+            // Send confirmation email with tickets
+            if (tickets.length > 0) {
+              await ticketEmailService.sendTicketConfirmation(transaction, tickets);
+              console.log(`Sent ticket confirmation to ${transaction.customer_email}`);
+            }
+          } catch (ticketError) {
+            console.error('Failed to create tickets:', ticketError);
+            // Log the error but don't fail the webhook
+            await paymentEventLogger.logError(event, ticketError);
+          }
+          
           // TODO: In Phase 4, we'll generate QR codes here
           
         } catch (error) {
@@ -137,6 +157,24 @@ export default async function handler(req, res) {
           if (!existingTransaction) {
             const transaction = await transactionService.createFromStripeSession(fullSession);
             console.log(`Created transaction from async payment: ${transaction.uuid}`);
+            
+            // Create tickets from the transaction
+            try {
+              const tickets = await ticketService.createTicketsFromTransaction(
+                transaction,
+                fullSession.line_items?.data || []
+              );
+              console.log(`Created ${tickets.length} tickets for async payment transaction ${transaction.uuid}`);
+              
+              // Send confirmation email with tickets
+              if (tickets.length > 0) {
+                await ticketEmailService.sendTicketConfirmation(transaction, tickets);
+                console.log(`Sent ticket confirmation to ${transaction.customer_email}`);
+              }
+            } catch (ticketError) {
+              console.error('Failed to create tickets for async payment:', ticketError);
+              await paymentEventLogger.logError(event, ticketError);
+            }
           }
         } catch (error) {
           console.error('Failed to process async payment:', error);
