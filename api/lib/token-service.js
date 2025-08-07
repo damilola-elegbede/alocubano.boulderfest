@@ -79,7 +79,10 @@ export class TokenService {
    * Cryptographically signed for offline verification
    */
   generateValidationToken(ticketId, eventId, attendeeEmail) {
-    const secret = process.env.VALIDATION_SECRET || 'default-secret-change-in-production';
+    const secret = process.env.VALIDATION_SECRET;
+    if (!secret) {
+      throw new Error('VALIDATION_SECRET environment variable is required');
+    }
     const payload = {
       ticket_id: ticketId,
       event_id: eventId,
@@ -174,7 +177,10 @@ export class TokenService {
    */
   validateQRCode(qrData, expectedTicketId = null) {
     try {
-      const secret = process.env.VALIDATION_SECRET || 'default-secret-change-in-production';
+      const secret = process.env.VALIDATION_SECRET;
+      if (!secret) {
+        throw new Error('VALIDATION_SECRET environment variable is required');
+      }
       const decoded = Buffer.from(qrData, 'base64').toString('utf-8');
       const [payloadString, signature] = decoded.split('.');
 
@@ -286,13 +292,17 @@ export class TokenService {
   async checkRateLimit(email, tokenType = 'access', windowMinutes = 60, maxRequests = 10) {
     const since = new Date(Date.now() - (windowMinutes * 60 * 1000));
     
-    let table = tokenType === 'access' ? 'access_tokens' : 'action_tokens';
+    // Use parameterized queries to prevent SQL injection
+    let sql, args;
+    if (tokenType === 'access') {
+      sql = 'SELECT COUNT(*) as count FROM access_tokens WHERE email = ? AND created_at > ?';
+      args = [email, since.toISOString()];
+    } else {
+      sql = 'SELECT COUNT(*) as count FROM action_tokens WHERE email = ? AND created_at > ?';
+      args = [email, since.toISOString()];
+    }
     
-    const result = await this.db.execute({
-      sql: `SELECT COUNT(*) as count FROM ${table} 
-            WHERE email = ? AND created_at > ?`,
-      args: [email, since.toISOString()]
-    });
+    const result = await this.db.execute({ sql, args });
 
     const count = result.rows[0]?.count || 0;
     

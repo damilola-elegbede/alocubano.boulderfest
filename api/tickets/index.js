@@ -1,7 +1,7 @@
 import { getDatabase } from '../lib/database.js';
 import ticketService from '../lib/ticket-service.js';
 import tokenService from '../lib/token-service.js';
-import { formatTicketType } from '../lib/ticket-config.js';
+import { formatTicketType, TOKEN_ACTIONS } from '../lib/ticket-config.js';
 
 export default async function handler(req, res) {
   const db = getDatabase();
@@ -88,15 +88,32 @@ export default async function handler(req, res) {
       
     } else if (req.method === 'POST') {
       // Handle ticket actions
-      const { action, ticket_id } = req.body;
+      const { action, ticket_id, actionToken } = req.body;
       
       if (!ticket_id) {
         return res.status(400).json({ error: 'Ticket ID required' });
       }
       
+      // Action token is required for security-critical operations
+      if (!actionToken && (action === 'cancel' || action === 'transfer')) {
+        return res.status(400).json({ error: 'Action token required for security-critical operations' });
+      }
+      
       switch (action) {
         case 'cancel': {
           const { reason } = req.body;
+          
+          // Validate action token
+          const tokenValidation = await tokenService.validateActionToken(
+            actionToken, 
+            TOKEN_ACTIONS.CANCEL, 
+            ticket_id
+          );
+
+          if (!tokenValidation.valid) {
+            return res.status(401).json({ error: tokenValidation.error });
+          }
+          
           const cancelledTicket = await ticketService.cancelTicket(ticket_id, reason);
           return res.status(200).json({ ticket: cancelledTicket });
         }
@@ -106,6 +123,17 @@ export default async function handler(req, res) {
           
           if (!email) {
             return res.status(400).json({ error: 'New attendee email required' });
+          }
+          
+          // Validate action token
+          const tokenValidation = await tokenService.validateActionToken(
+            actionToken, 
+            TOKEN_ACTIONS.TRANSFER, 
+            ticket_id
+          );
+
+          if (!tokenValidation.valid) {
+            return res.status(401).json({ error: tokenValidation.error });
           }
           
           const transferredTicket = await ticketService.transferTicket(ticket_id, {

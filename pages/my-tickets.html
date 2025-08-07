@@ -161,6 +161,108 @@
             flex-wrap: wrap;
             gap: 8px;
         }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .qr-code-display {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .qr-code-data {
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 10px;
+            margin-top: 10px;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -184,6 +286,76 @@
         
         <div id="messageContainer"></div>
         <div id="ticketContainer"></div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="qrModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Ticket QR Code</h2>
+                <button class="close" onclick="closeModal('qrModal')">&times;</button>
+            </div>
+            <div class="qr-code-display">
+                <div id="qrCodeContainer">
+                    <p>QR Code will appear here</p>
+                </div>
+                <div class="qr-code-data" id="qrCodeData"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal('qrModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transfer Modal -->
+    <div id="transferModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Transfer Ticket</h2>
+                <button class="close" onclick="closeModal('transferModal')">&times;</button>
+            </div>
+            <form id="transferForm">
+                <div class="form-group">
+                    <label for="transferEmail">New Attendee Email *</label>
+                    <input type="email" id="transferEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="transferFirstName">First Name *</label>
+                    <input type="text" id="transferFirstName" required>
+                </div>
+                <div class="form-group">
+                    <label for="transferLastName">Last Name</label>
+                    <input type="text" id="transferLastName">
+                </div>
+                <div class="form-group">
+                    <label for="transferPhone">Phone</label>
+                    <input type="tel" id="transferPhone">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('transferModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Transfer Ticket</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Cancel Modal -->
+    <div id="cancelModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Cancel Ticket</h2>
+                <button class="close" onclick="closeModal('cancelModal')">&times;</button>
+            </div>
+            <p>Are you sure you want to cancel this ticket?</p>
+            <div class="form-group">
+                <label for="cancelReason">Cancellation Reason (optional)</label>
+                <input type="text" id="cancelReason" placeholder="e.g., Unable to attend">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" onclick="closeModal('cancelModal')">No, Keep Ticket</button>
+                <button type="button" class="btn-primary" onclick="confirmCancel()">Yes, Cancel Ticket</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -234,6 +406,11 @@
                     return;
                 }
                 
+                // Try to extract email from first ticket for session management
+                if (data.tickets && data.tickets.length > 0) {
+                    currentUserEmail = data.tickets[0].attendee_email || data.tickets[0].email;
+                }
+                
                 // Display tickets with enhanced functionality
                 displayTickets(data.tickets, token);
                 
@@ -274,6 +451,9 @@
                     ticketContainer.innerHTML = '';
                     return;
                 }
+                
+                // Store current user email for token operations
+                currentUserEmail = email;
                 
                 // Display tickets (legacy mode without enhanced features)
                 displayTickets(data.tickets);
@@ -356,6 +536,75 @@
             return typeMap[type] || type;
         }
 
+        // Modal management
+        let currentTicketId = null;
+        let currentAccessToken = null;
+        let currentUserEmail = null;
+
+        function getCurrentUserEmail() {
+            // Try to get from URL parameter first
+            const urlParams = new URLSearchParams(window.location.search);
+            const emailFromUrl = urlParams.get('email');
+            if (emailFromUrl) return emailFromUrl;
+
+            // Try to get from the email input field
+            const emailInput = document.getElementById('emailInput');
+            if (emailInput && emailInput.value) return emailInput.value;
+
+            // If we've stored it globally
+            if (currentUserEmail) return currentUserEmail;
+
+            return null;
+        }
+
+        function showError(message) {
+            const messageContainer = document.getElementById('messageContainer');
+            messageContainer.innerHTML = `
+                <div class="message error">
+                    ${message}
+                </div>
+            `;
+            setTimeout(() => {
+                messageContainer.innerHTML = '';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const messageContainer = document.getElementById('messageContainer');
+            messageContainer.innerHTML = `
+                <div class="message" style="background: #d4edda; color: #155724;">
+                    ${message}
+                </div>
+            `;
+            setTimeout(() => {
+                messageContainer.innerHTML = '';
+            }, 5000);
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            if (modalId === 'transferModal') {
+                document.getElementById('transferForm').reset();
+            }
+            if (modalId === 'cancelModal') {
+                document.getElementById('cancelReason').value = '';
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        };
+
         // Enhanced ticket management functions
         async function generateQRCode(ticketId, accessToken) {
             try {
@@ -371,34 +620,60 @@
                     throw new Error(data.error);
                 }
                 
-                // Display QR code (in production, you'd show this in a modal)
-                alert(`QR Code generated for ticket ${ticketId}. QR Data: ${data.qrData}`);
+                // Display QR code in modal
+                document.getElementById('qrCodeContainer').innerHTML = `
+                    <h3>Ticket ${ticketId}</h3>
+                    <p>Show this QR code at the event entrance</p>
+                    <div style="background: white; padding: 20px; border-radius: 8px; border: 2px solid #ddd;">
+                        <p style="font-size: 18px; margin: 0;">📱 QR Code Generated</p>
+                        <p style="font-size: 14px; color: #666; margin: 5px 0 0 0;">Ready for scanning</p>
+                    </div>
+                `;
+                document.getElementById('qrCodeData').textContent = data.qrData;
+                openModal('qrModal');
                 
             } catch (error) {
-                alert(`Failed to generate QR code: ${error.message}`);
+                showError(`Failed to generate QR code: ${error.message}`);
             }
         }
 
         function initiateTransfer(ticketId) {
-            // In production, this would open a modal form
-            const newEmail = prompt('Enter new attendee email:');
-            const newFirstName = prompt('Enter new attendee first name:');
-            const newLastName = prompt('Enter new attendee last name (optional):') || '';
-            
-            if (newEmail && newFirstName) {
-                performTicketTransfer(ticketId, { email: newEmail, firstName: newFirstName, lastName: newLastName });
-            }
+            currentTicketId = ticketId;
+            openModal('transferModal');
         }
 
         function initiateCancel(ticketId) {
-            const reason = prompt('Enter cancellation reason (optional):') || 'Customer request';
-            if (confirm(`Are you sure you want to cancel ticket ${ticketId}?`)) {
-                performTicketCancel(ticketId, reason);
-            }
+            currentTicketId = ticketId;
+            openModal('cancelModal');
         }
+
+        function confirmCancel() {
+            const reason = document.getElementById('cancelReason').value || 'Customer request';
+            performTicketCancel(currentTicketId, reason);
+            closeModal('cancelModal');
+        }
+
+        // Handle transfer form submission
+        document.getElementById('transferForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const newAttendee = {
+                email: document.getElementById('transferEmail').value,
+                firstName: document.getElementById('transferFirstName').value,
+                lastName: document.getElementById('transferLastName').value,
+                phone: document.getElementById('transferPhone').value
+            };
+            performTicketTransfer(currentTicketId, newAttendee);
+            closeModal('transferModal');
+        });
 
         async function performTicketTransfer(ticketId, newAttendee) {
             try {
+                // Get current user email from the lookup
+                const userEmail = getCurrentUserEmail();
+                if (!userEmail) {
+                    throw new Error('Unable to determine current user. Please refresh the page and try again.');
+                }
+
                 // First get action token
                 const tokenResponse = await fetch('/api/tickets/action-token', {
                     method: 'POST',
@@ -406,7 +681,7 @@
                     body: JSON.stringify({ 
                         action: 'transfer', 
                         targetId: ticketId, 
-                        email: 'user@example.com' // In production, get from current session
+                        email: userEmail
                     })
                 });
                 
@@ -427,16 +702,22 @@
                 const transferData = await transferResponse.json();
                 if (!transferResponse.ok) throw new Error(transferData.error);
                 
-                alert('Ticket transferred successfully!');
-                location.reload();
+                showSuccess('Ticket transferred successfully!');
+                setTimeout(() => location.reload(), 2000);
                 
             } catch (error) {
-                alert(`Transfer failed: ${error.message}`);
+                showError(`Transfer failed: ${error.message}`);
             }
         }
 
         async function performTicketCancel(ticketId, reason) {
             try {
+                // Get current user email from the lookup
+                const userEmail = getCurrentUserEmail();
+                if (!userEmail) {
+                    throw new Error('Unable to determine current user. Please refresh the page and try again.');
+                }
+
                 // First get action token
                 const tokenResponse = await fetch('/api/tickets/action-token', {
                     method: 'POST',
@@ -444,7 +725,7 @@
                     body: JSON.stringify({ 
                         action: 'cancel', 
                         targetId: ticketId, 
-                        email: 'user@example.com' // In production, get from current session
+                        email: userEmail
                     })
                 });
                 
@@ -465,11 +746,11 @@
                 const cancelData = await cancelResponse.json();
                 if (!cancelResponse.ok) throw new Error(cancelData.error);
                 
-                alert('Ticket cancelled successfully!');
-                location.reload();
+                showSuccess('Ticket cancelled successfully!');
+                setTimeout(() => location.reload(), 2000);
                 
             } catch (error) {
-                alert(`Cancellation failed: ${error.message}`);
+                showError(`Cancellation failed: ${error.message}`);
             }
         }
         
