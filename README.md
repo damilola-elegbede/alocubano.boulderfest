@@ -132,6 +132,8 @@ alocubano.boulderfest/
 
 - Node.js 18+ and npm
 - Modern web browser (Chrome, Firefox, Safari, Edge)
+- SQLite 3.9.0+ (for database migrations with JSON support)
+  - JSON1 extension required for SQLite versions below 3.38.0
 
 ### Running Locally
 

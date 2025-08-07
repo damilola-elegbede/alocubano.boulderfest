@@ -1,0 +1,12 @@
+{
+  "allowedOrigins": [
+    "http://localhost:3000",
+    "http://localhost:8080",
+    "https://alocubano-boulderfest.vercel.app",
+    "https://alocubano-boulderfest-preview.vercel.app",
+    "https://alocubano-boulderfest-staging.vercel.app"
+  ],
+  "allowCredentials": false,
+  "allowedMethods": ["GET", "OPTIONS"],
+  "allowedHeaders": ["Content-Type", "Authorization"]
+}

@@ -1,0 +1,353 @@
+name: 🚀 Production Deployment with Migrations
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Allow manual triggering
+    inputs:
+      run_migrations:
+        description: 'Run database migrations'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+        - 'auto'    # Check for pending, run if needed
+        - 'force'   # Run migration check and deploy any pending
+        - 'skip'    # Skip migrations entirely
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # Job 1: Run Quality Gates
+  quality-checks:
+    name: 🔍 Quality Gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📚 Install Dependencies
+        run: npm ci
+
+      - name: 🧹 Lint Code
+        run: npm run lint
+
+      - name: 🧪 Run Tests
+        run: npm run test:all
+
+      - name: 🗄️ Database Tests
+        run: npm run test:database
+
+      - name: ⚡ Performance Tests
+        run: npm run test:performance
+
+  # Job 2: Database Migrations
+  migrate-database:
+    name: 🗄️ Database Migrations
+    runs-on: ubuntu-latest
+    needs: quality-checks
+    if: github.event.inputs.run_migrations != 'skip'
+    outputs:
+      migration_status: ${{ steps.migrate.outputs.status }}
+      migrations_applied: ${{ steps.migrate.outputs.applied }}
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📚 Install Dependencies
+        run: npm ci
+
+      - name: 🔍 Pre-Migration Health Check
+        id: pre_check
+        run: |
+          echo "🏥 Checking application health before migrations..."
+          
+          # Check if app is accessible
+          response=$(curl -s -o /dev/null -w "%{http_code}" "https://${{ secrets.VERCEL_PRODUCTION_URL }}/api/test-db" || echo "000")
+          
+          if [ "$response" -eq "200" ] || [ "$response" -eq "207" ]; then
+            echo "✅ Application is healthy (HTTP $response)"
+            echo "healthy=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ Application health check returned HTTP $response"
+            echo "healthy=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📊 Check Migration Status
+        id: status
+        run: |
+          echo "📊 Checking current migration status..."
+          
+          # Check migration status with network error handling
+          if ! response=$(curl -s -f --max-time 30 -X POST "https://${{ secrets.VERCEL_PRODUCTION_URL }}/api/migrate" \
+            -H "Content-Type: application/json" \
+            -H "x-migration-key: ${{ secrets.MIGRATION_SECRET_KEY }}" \
+            -d '{"action": "status"}'); then
+            echo "❌ Failed to connect to migration API (network error or timeout)"
+            echo "Please check:"
+            echo "  - Network connectivity"
+            echo "  - Production URL: ${{ secrets.VERCEL_PRODUCTION_URL }}"
+            echo "  - Migration API availability"
+            exit 1
+          fi
+          
+          # Validate response is valid JSON
+          if ! echo "$response" | jq empty 2>/dev/null; then
+            echo "❌ Invalid JSON response from migration API:"
+            echo "$response"
+            exit 1
+          fi
+          
+          echo "Migration status response:"
+          echo "$response" | jq '.'
+          
+          pending=$(echo "$response" | jq -r '.result.pending // 0')
+          echo "pending_migrations=$pending" >> $GITHUB_OUTPUT
+          
+          if [ "$pending" -gt "0" ]; then
+            echo "📋 Found $pending pending migrations"
+          else
+            echo "✨ No pending migrations"
+          fi
+
+      - name: 🚀 Deploy Database Migrations
+        id: migrate
+        if: steps.status.outputs.pending_migrations > 0 || github.event.inputs.run_migrations == 'force'
+        run: |
+          echo "🚀 Deploying database migrations to production..."
+          
+          # Deploy migrations with network error handling
+          if ! response=$(curl -s -f --max-time 60 -X POST "https://${{ secrets.VERCEL_PRODUCTION_URL }}/api/migrate" \
+            -H "Content-Type: application/json" \
+            -H "x-migration-key: ${{ secrets.MIGRATION_SECRET_KEY }}" \
+            -d '{"action": "run"}'); then
+            echo "❌ Failed to connect to migration API for deployment (network error or timeout)"
+            echo "Migration deployment aborted due to network failure"
+            exit 1
+          fi
+          
+          # Validate response is valid JSON
+          if ! echo "$response" | jq empty 2>/dev/null; then
+            echo "❌ Invalid JSON response from migration deployment API:"
+            echo "$response"
+            exit 1
+          fi
+          
+          echo "Migration deployment response:"
+          echo "$response" | jq '.'
+          
+          success=$(echo "$response" | jq -r '.success')
+          applied=$(echo "$response" | jq -r '.result.deployed // 0')
+          
+          if [ "$success" = "true" ]; then
+            echo "✅ Successfully applied $applied migrations"
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "applied=$applied" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Migration deployment failed"
+            echo "$response" | jq -r '.error'
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: 🔍 Verify Migrations
+        if: steps.migrate.outputs.status == 'success'
+        run: |
+          echo "🔍 Verifying migration integrity..."
+          
+          # Verify migrations with network error handling
+          if ! response=$(curl -s -f --max-time 30 -X POST "https://${{ secrets.VERCEL_PRODUCTION_URL }}/api/migrate" \
+            -H "Content-Type: application/json" \
+            -H "x-migration-key: ${{ secrets.MIGRATION_SECRET_KEY }}" \
+            -d '{"action": "verify"}'); then
+            echo "❌ Failed to connect to migration API for verification (network error or timeout)"
+            echo "Migration verification failed due to network error"
+            exit 1
+          fi
+          
+          # Validate response is valid JSON
+          if ! echo "$response" | jq empty 2>/dev/null; then
+            echo "❌ Invalid JSON response from migration verification API:"
+            echo "$response"
+            exit 1
+          fi
+          
+          echo "Migration verification response:"
+          echo "$response" | jq '.'
+          
+          success=$(echo "$response" | jq -r '.success')
+          
+          if [ "$success" = "true" ]; then
+            echo "✅ Migration verification passed"
+          else
+            echo "❌ Migration verification failed"
+            echo "$response" | jq -r '.error'
+            exit 1
+          fi
+
+      - name: 📊 Migration Summary
+        run: |
+          pending_migrations="${{ steps.status.outputs.pending_migrations }}"
+          if [ "${pending_migrations:-0}" -eq "0" ]; then
+            echo "### 📊 Migration Summary" >> $GITHUB_STEP_SUMMARY
+            echo "✨ No pending migrations found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### 📊 Migration Summary" >> $GITHUB_STEP_SUMMARY
+            echo "🚀 Successfully applied **${{ steps.migrate.outputs.applied }}** migrations" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Migration verification passed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Job 3: Deploy Application
+  deploy-application:
+    name: 🚢 Deploy Application
+    runs-on: ubuntu-latest
+    needs: [quality-checks, migrate-database]
+    if: always() && (needs.quality-checks.result == 'success') && (needs.migrate-database.result == 'success' || needs.migrate-database.result == 'skipped')
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📚 Install Dependencies
+        run: npm ci
+
+      - name: 🏗️ Build Application
+        run: npm run build
+
+      - name: 📦 Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: 🔗 Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: 🏗️ Build Project Artifacts
+        run: vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: 🚀 Deploy to Vercel
+        id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}")
+          echo "deployment_url=$url" >> "$GITHUB_OUTPUT"
+          echo "### 🚀 Deployment Successful" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Production URL:** $url" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 🏥 Post-Deployment Health Check
+        run: |
+          echo "🏥 Running post-deployment health check..."
+          sleep 10  # Wait for deployment to be fully available
+          
+          response=$(curl -s "https://${{ secrets.VERCEL_PRODUCTION_URL }}/api/test-db")
+          echo "Health check response:"
+          echo "$response" | jq '.'
+          
+          status=$(echo "$response" | jq -r '.status')
+          success_rate=$(echo "$response" | jq -r '.summary.successRate')
+          
+          if [ "$status" = "healthy" ]; then
+            echo "✅ Application is healthy - $success_rate success rate"
+            echo "### 🏥 Health Check Results" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Status:** Healthy" >> $GITHUB_STEP_SUMMARY
+            echo "📊 **Success Rate:** $success_rate" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Application health check shows: $status"
+            echo "### 🏥 Health Check Results" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Status:** $status" >> $GITHUB_STEP_SUMMARY
+            echo "📊 **Success Rate:** $success_rate" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Job 4: Notify Success
+  notify-success:
+    name: 🎉 Deployment Complete
+    runs-on: ubuntu-latest
+    needs: [migrate-database, deploy-application]
+    if: success()
+    steps:
+      - name: 🎉 Success Notification
+        run: |
+          echo "### 🎉 Production Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Details:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔗 **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 👤 **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 📅 **Deployed at:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "- 🗄️ **Migrations:** ${{ needs.migrate-database.outputs.migrations_applied || '0' }} applied" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Next Steps:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Monitor application performance" >> $GITHUB_STEP_SUMMARY
+          echo "- Check user feedback" >> $GITHUB_STEP_SUMMARY
+          echo "- Review deployment metrics" >> $GITHUB_STEP_SUMMARY
+
+  # Job 5: Rollback on Failure
+  rollback-on-failure:
+    name: 🚨 Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: [migrate-database, deploy-application]
+    if: failure()
+    steps:
+      - name: 🚨 Failure Notification
+        run: |
+          echo "### 🚨 Deployment Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Failed Jobs:**" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.migrate-database.result }}" = "failure" ]; then
+            echo "- ❌ Database migrations failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ needs.deploy-application.result }}" = "failure" ]; then
+            echo "- ❌ Application deployment failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Recovery Steps:**" >> $GITHUB_STEP_SUMMARY
+          echo "1. Review error logs above" >> $GITHUB_STEP_SUMMARY
+          echo "2. Fix identified issues" >> $GITHUB_STEP_SUMMARY
+          echo "3. Consider database rollback if needed" >> $GITHUB_STEP_SUMMARY
+          echo "4. Re-run deployment" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔔 Create Issue on Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Production Deployment Failed',
+              body: `
+              ## 🚨 Production Deployment Failure
+              
+              **Commit:** ${{ github.sha }}
+              **Triggered by:** ${{ github.actor }}
+              **Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              
+              **Failed Jobs:**
+              - Migration Status: ${{ needs.migrate-database.result }}
+              - Deployment Status: ${{ needs.deploy-application.result }}
+              
+              Please review the workflow logs and take appropriate action.
+              
+              **Possible Actions:**
+              - [ ] Review error logs
+              - [ ] Fix code issues
+              - [ ] Consider database rollback
+              - [ ] Re-run deployment
+              `,
+              labels: ['bug', 'production', 'urgent']
+            })
