@@ -12,6 +12,9 @@ requirements.txt
 .env
 .env.local
 .env.example
+.env.local.example
+.env.production.template
+.env.local.template
 
 # Test files
 tests/
@@ -33,3 +36,38 @@ node_modules/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Temporary files and build artifacts
+.tmp/
+*.log
+*.tmp
+tmp/
+
+# Documentation
+docs/
+*.md
+LICENSE
+
+# Scripts and migrations
+scripts/
+migrations/
+config/
+
+# Apple Wallet certificates and assets (sensitive)
+api/lib/apple-wallet-assets/
+*.p12
+*.pem
+*.key
+*.cert
+
+# Test data
+test-data/
+fixtures/
+
+# GitHub
+.github/
+
+# Package files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

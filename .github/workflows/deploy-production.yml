@@ -245,7 +245,7 @@ jobs:
       - name: 🚀 Deploy to Vercel
         id: deploy
         run: |
-          url=$(vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}")
+          url=$(vercel deploy --prebuilt --prod --archive=tgz --token="${{ secrets.VERCEL_TOKEN }}")
           echo "deployment_url=$url" >> "$GITHUB_OUTPUT"
           echo "### 🚀 Deployment Successful" >> "$GITHUB_STEP_SUMMARY"
           echo "**Production URL:** $url" >> "$GITHUB_STEP_SUMMARY"
