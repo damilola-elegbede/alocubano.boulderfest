@@ -269,7 +269,8 @@ describe("Build Scripts and ES Module Compatibility", () => {
 
       // Should have minimal build configuration for static site deployment
       expect(vercelConfig).toHaveProperty("buildCommand");
-      expect(vercelConfig.buildCommand).toContain("prebuild");
+      // Build command should be minimal since prebuild runs locally
+      expect(vercelConfig.buildCommand).toBe("echo 'Static site ready'");
       expect(vercelConfig).toHaveProperty("outputDirectory");
       expect(vercelConfig.outputDirectory).toBe(".");
       expect(vercelConfig).toHaveProperty("framework");
