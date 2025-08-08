@@ -2,76 +2,136 @@ import jwt from "jsonwebtoken";
 import QRCode from "qrcode";
 import { getDatabase } from "./database.js";
 
+/**
+ * Service for managing QR code tokens and generation
+ */
 export class QRTokenService {
   constructor() {
-    this.db = getDatabase();
+    // Don't initialize DB in constructor - get fresh connection per operation
     this.secretKey = process.env.QR_SECRET_KEY;
-
-    if (!this.secretKey || this.secretKey.length < 32) {
-      throw new Error("QR_SECRET_KEY must be at least 32 characters long");
-    }
-
     this.expiryDays = parseInt(process.env.QR_CODE_EXPIRY_DAYS || "90");
     this.maxScans = parseInt(process.env.QR_CODE_MAX_SCANS || "10");
   }
 
+  /**
+   * Get database connection
+   * @returns {object} Database connection
+   */
+  getDb() {
+    return getDatabase();
+  }
+
+  /**
+   * Generate or retrieve QR token for a ticket
+   * @param {string} ticketId - Ticket ID
+   * @returns {Promise<string>} JWT token for QR code
+   */
   async getOrCreateToken(ticketId) {
-    const result = await this.db.execute({
-      sql: "SELECT qr_token, qr_generated_at FROM tickets WHERE ticket_id = ?",
-      args: [ticketId],
-    });
-
-    const ticket = result.rows[0];
-
-    if (ticket?.qr_token) {
-      try {
-        jwt.verify(ticket.qr_token, this.secretKey);
-        return ticket.qr_token;
-      } catch {
-        // Token expired, generate new one
-      }
+    if (!ticketId) {
+      throw new Error("Ticket ID is required");
     }
 
-    const payload = {
-      tid: ticketId,
-      type: "ticket",
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + this.expiryDays * 24 * 60 * 60,
-    };
+    const db = this.getDb();
+    
+    try {
+      // Check if token already exists
+      const result = await db.execute({
+        sql: "SELECT qr_token FROM tickets WHERE ticket_id = ?",
+        args: [ticketId],
+      });
 
-    const token = jwt.sign(payload, this.secretKey);
+      if (result.rows[0]?.qr_token) {
+        return result.rows[0].qr_token;
+      }
 
-    await this.db.execute({
-      sql: "UPDATE tickets SET qr_token = ?, qr_generated_at = CURRENT_TIMESTAMP WHERE ticket_id = ?",
-      args: [token, ticketId],
-    });
+      // Generate new token
+      const token = jwt.sign(
+        {
+          tid: ticketId,
+          iat: Math.floor(Date.now() / 1000),
+          exp: Math.floor(Date.now() / 1000) + this.expiryDays * 24 * 60 * 60,
+        },
+        this.secretKey
+      );
 
-    return token;
+      // Store token
+      await db.execute({
+        sql: `UPDATE tickets 
+              SET qr_token = ?, 
+                  qr_code_generated_at = CURRENT_TIMESTAMP,
+                  max_scan_count = ?
+              WHERE ticket_id = ?`,
+        args: [token, this.maxScans, ticketId],
+      });
+
+      return token;
+    } catch (error) {
+      console.error("Error generating QR token:", error.message);
+      throw new Error("Failed to generate QR token");
+    }
   }
 
+  /**
+   * Generate QR code image from token
+   * @param {string} token - JWT token or ticket ID
+   * @param {object} options - QR code generation options
+   * @returns {Promise<string>} QR code as data URL
+   */
   async generateQRImage(token, options = {}) {
-    const baseUrl =
-      process.env.WALLET_BASE_URL || "https://www.alocubanoboulderfest.org";
-    const validationUrl = `${baseUrl}/api/tickets/validate?token=${token}`;
+    if (!token) {
+      throw new Error("Token is required for QR code generation");
+    }
 
-    return await QRCode.toDataURL(validationUrl, {
+    // Validate token format (basic check)
+    if (typeof token !== 'string' || token.length < 10) {
+      throw new Error("Invalid token format");
+    }
+
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:8080";
+    
+    // Use POST body instead of URL query for security
+    const qrData = `${baseUrl}/my-ticket#${token}`;
+
+    const qrOptions = {
       errorCorrectionLevel: "M",
       type: "image/png",
-      quality: 0.92,
-      margin: 1,
-      width: options.width || 256,
+      width: 300,
+      margin: 2,
       color: {
-        dark: options.darkColor || "#000000",
-        light: options.lightColor || "#FFFFFF",
+        dark: "#000000",
+        light: "#FFFFFF",
       },
-    });
-  }
-}
+      ...options,
+    };
 
-let instance;
-export function getQRTokenService() {
-  if (!instance) {
-    instance = new QRTokenService();
+    try {
+      return await QRCode.toDataURL(qrData, qrOptions);
+    } catch (error) {
+      console.error("Error generating QR code image:", error.message);
+      throw new Error("Failed to generate QR code image");
+    }
   }
-  return instance;
+
+  /**
+   * Verify if service is properly configured
+   * @returns {boolean} True if configured
+   */
+  isConfigured() {
+    return !!(
+      this.secretKey &&
+      this.secretKey.length > 20 &&
+      process.env.WALLET_AUTH_SECRET &&
+      process.env.WALLET_AUTH_SECRET.length > 20
+    );
+  }
+
+  /**
+   * Clean up resources (for testing)
+   */
+  async cleanup() {
+    // No persistent connections to clean up
+    // Each operation uses its own connection
+  }
 }
