@@ -120,14 +120,14 @@ describe("Build Scripts and ES Module Compatibility", () => {
           // Should complete successfully
           expect(code).toBe(0);
 
-          // Should generate expected output (either real data or placeholders)
+          // Should generate expected output (either real data or skip in CI)
           const hasCredentials =
             stdout.includes("Fetching") && stdout.includes("gallery data");
-          const hasPlaceholders =
-            stdout.includes("placeholder") ||
-            stdout.includes("Missing Google service account credentials");
+          const skippedInCI =
+            stdout.includes("Skipping") ||
+            stdout.includes("Google credentials not found");
 
-          expect(hasCredentials || hasPlaceholders).toBe(true);
+          expect(hasCredentials || skippedInCI).toBe(true);
 
           if (hasCredentials) {
             // Normal operation with credentials
@@ -135,9 +135,9 @@ describe("Build Scripts and ES Module Compatibility", () => {
             expect(stdout).toMatch(/Fetching featured photos/);
             expect(stdout).toMatch(/saved to/);
           } else {
-            // CI/placeholder mode without credentials
-            expect(stdout).toMatch(/placeholder|Missing.*credentials/i);
-            expect(stdout).toMatch(/Created placeholder|Placeholder.*created/i);
+            // CI mode without credentials - scripts should skip gracefully
+            expect(stdout).toMatch(/Skipping.*generation/i);
+            expect(stdout).toMatch(/Google credentials not found/i);
           }
 
           resolve();
