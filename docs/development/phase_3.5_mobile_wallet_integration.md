@@ -38,16 +38,100 @@
 
 ## Implementation Details
 
-### Wallet Token Generation
+### Apple Wallet Pass Generation
 ```javascript
-// Pseudo-code demonstrating token conversion
-function generateWalletToken(validationToken) {
-  const signedToken = hmacSign(validationToken, process.env.VALIDATION_SECRET);
-  return {
-    id: signedToken,
-    eventDetails: getEventMetadata(),
-    securitySignature: signedToken
+import * as PKPass from 'passkit-generator';
+import * as jwt from 'jsonwebtoken';
+
+async function generateAppleWalletPass(ticketData, userProfile) {
+  // Validate input data
+  if (!ticketData || !userProfile) {
+    throw new Error('Missing required ticket or user information');
+  }
+
+  // Generate cryptographically secure serial number
+  const serialNumber = crypto.randomUUID();
+
+  // Create Apple Wallet Pass with enhanced security
+  const pass = await PKPass.generate({
+    model: './templates/ticket-pass.pass',
+    certificates: {
+      wwdr: process.env.APPLE_WWDR_CERT,
+      signerCert: process.env.APPLE_SIGNER_CERT,
+      signerKey: process.env.APPLE_SIGNER_KEY,
+      signerKeyPassphrase: process.env.APPLE_SIGNER_PASSPHRASE
+    },
+    overrides: {
+      serialNumber: serialNumber,
+      description: 'A Lo Cubano Boulder Fest Ticket',
+      organizationName: 'A Lo Cubano Events',
+      logoText: 'Boulder Fest 2026',
+      relevantDate: ticketData.eventDate
+    },
+    // Dynamic pass data
+    fields: {
+      primaryFields: [
+        { key: 'event', label: 'Event', value: ticketData.eventName }
+      ],
+      secondaryFields: [
+        { key: 'name', label: 'Name', value: userProfile.fullName },
+        { key: 'ticket-type', label: 'Type', value: ticketData.ticketType }
+      ],
+      auxiliaryFields: [
+        { key: 'ticket-id', label: 'Ticket #', value: ticketData.ticketId }
+      ]
+    }
+  });
+
+  return { pass, serialNumber };
+}
+```
+
+### Google Wallet JWT Token Generation
+```javascript
+import * as jwt from 'jsonwebtoken';
+
+function generateGoogleWalletJWT(ticketData, userProfile) {
+  // Validate input data
+  if (!ticketData || !userProfile) {
+    throw new Error('Missing required ticket or user information');
+  }
+
+  // JWT Payload with enhanced event ticket details
+  const payload = {
+    iss: process.env.GOOGLE_SERVICE_ACCOUNT,
+    aud: 'google',
+    typ: 'savetobuttonjwt',
+    payload: {
+      eventTicketClass: {
+        id: `${process.env.ISSUER_ID}.${ticketData.ticketId}`,
+        eventName: ticketData.eventName,
+        venue: ticketData.venue,
+        datesAndTimes: {
+          start: ticketData.startDateTime,
+          end: ticketData.endDateTime
+        },
+        ticketType: ticketData.ticketType
+      },
+      eventTicketObject: {
+        id: `${process.env.ISSUER_ID}.${ticketData.ticketId}`,
+        classId: `${process.env.ISSUER_ID}.${ticketData.eventName}`,
+        state: 'active',
+        holder: {
+          name: userProfile.fullName,
+          emailAddress: userProfile.email
+        }
+      }
+    }
   };
+
+  // Sign JWT with secure key
+  const token = jwt.sign(payload, process.env.GOOGLE_PRIVATE_KEY, {
+    algorithm: 'RS256',
+    expiresIn: '1h'  // Short-lived token
+  });
+
+  return token;
 }
 ```
 
@@ -67,6 +151,8 @@ Total Estimated Time: 6 weeks
 - Maintain existing token validation mechanisms
 - Prevent token duplication or transfer
 - Implement additional wallet-specific revocation methods
+- Short-lived JWT tokens with strict validation
+- Cryptographic signing of passes
 
 ## Success Criteria
 - 100% compatibility with Apple Wallet and Google Pay

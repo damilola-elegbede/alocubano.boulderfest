@@ -258,7 +258,13 @@ export class AppleWalletService {
       const strip2xBuffer = await fs.readFile(strip2xPath);
       pass.addBuffer('strip@2x.png', strip2xBuffer);
     } catch (error) {
-      console.log('Wallet images not found, using defaults');
+      if (error.code === 'ENOENT') {
+        console.log('Wallet images not found, using defaults');
+      } else {
+        // Re-throw unexpected errors for proper error handling
+        console.error('Unexpected error loading wallet images:', error);
+        throw error;
+      }
     }
     
     return await pass.generate();

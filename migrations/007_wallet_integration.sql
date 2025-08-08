@@ -19,9 +19,7 @@ CREATE TABLE IF NOT EXISTS wallet_pass_events (
     event_data TEXT, -- JSON
     device_info TEXT,
     ip_address TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (ticket_id) REFERENCES tickets(id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create indexes for performance (including uniqueness)
