@@ -10,6 +10,128 @@ const __dirname = dirname(__filename);
 // Load environment variables
 dotenv.config({ path: join(dirname(__dirname), ".env.local") });
 
+/**
+ * Splits SQL statements intelligently, handling:
+ * - Strings with embedded semicolons
+ * - Triggers, stored procedures, and other blocks
+ * - Comments (both line and block style)
+ * - Custom delimiter: -- migrate:break
+ */
+function splitSqlStatements(sql) {
+  // First check for custom delimiter approach
+  if (sql.includes("-- migrate:break")) {
+    return sql
+      .split(/--\s*migrate:break/i)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+  }
+
+  // Otherwise use SQL-aware splitting
+  const statements = [];
+  let currentStatement = "";
+  let inString = false;
+  let stringDelimiter = null;
+  let inLineComment = false;
+  let inBlockComment = false;
+  let inTrigger = false;
+  
+  const lines = sql.split("\n");
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    let j = 0;
+    
+    while (j < line.length) {
+      const char = line[j];
+      const nextChar = line[j + 1];
+      
+      // Handle line comments
+      if (!inString && !inBlockComment && char === "-" && nextChar === "-") {
+        inLineComment = true;
+        currentStatement += line.substring(j);
+        j = line.length;
+        continue;
+      }
+      
+      // Handle block comments
+      if (!inString && !inLineComment && char === "/" && nextChar === "*") {
+        inBlockComment = true;
+        currentStatement += char + nextChar;
+        j += 2;
+        continue;
+      }
+      
+      if (inBlockComment && char === "*" && nextChar === "/") {
+        inBlockComment = false;
+        currentStatement += char + nextChar;
+        j += 2;
+        continue;
+      }
+      
+      // Handle strings
+      if (!inLineComment && !inBlockComment) {
+        if ((char === "'" || char === '"') && !inString) {
+          inString = true;
+          stringDelimiter = char;
+        } else if (inString && char === stringDelimiter) {
+          // Check for escaped quotes
+          if (nextChar === stringDelimiter) {
+            currentStatement += char + nextChar;
+            j += 2;
+            continue;
+          }
+          inString = false;
+          stringDelimiter = null;
+        }
+      }
+      
+      // Check for trigger/procedure keywords (case-insensitive)
+      if (!inString && !inLineComment && !inBlockComment) {
+        const upperLine = line.toUpperCase();
+        const remainingLine = upperLine.substring(j);
+        
+        if (remainingLine.startsWith("CREATE TRIGGER") || 
+            remainingLine.startsWith("CREATE PROCEDURE") ||
+            remainingLine.startsWith("CREATE FUNCTION")) {
+          inTrigger = true;
+        } else if (inTrigger && remainingLine.startsWith("END;")) {
+          inTrigger = false;
+        }
+      }
+      
+      // Handle statement terminator
+      if (!inString && !inLineComment && !inBlockComment && !inTrigger && char === ";") {
+        currentStatement = currentStatement.trim();
+        if (currentStatement.length > 0) {
+          statements.push(currentStatement);
+        }
+        currentStatement = "";
+        j++;
+        continue;
+      }
+      
+      currentStatement += char;
+      j++;
+    }
+    
+    // Add newline if not at end
+    if (i < lines.length - 1) {
+      currentStatement += "\n";
+    }
+    
+    // Reset line comment flag at end of line
+    inLineComment = false;
+  }
+  
+  // Add any remaining statement
+  currentStatement = currentStatement.trim();
+  if (currentStatement.length > 0) {
+    statements.push(currentStatement);
+  }
+  
+  return statements;
+}
+
 async function runMigrations() {
   const db = getDatabase();
 
@@ -46,11 +168,9 @@ async function runMigrations() {
       // Read and execute migration
       const sql = readFileSync(join(migrationsDir, file), "utf-8");
 
-      // Split by semicolon and execute each statement
-      const statements = sql
-        .split(";")
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0);
+      // Smart SQL statement splitting that handles complex cases
+      // Uses a custom delimiter approach for safety
+      const statements = splitSqlStatements(sql);
 
       console.log(
         `Running migration: ${file} (${statements.length} statements)`,
