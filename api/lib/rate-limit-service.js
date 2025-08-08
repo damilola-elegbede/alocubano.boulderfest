@@ -1,269 +1,149 @@
 /**
- * Rate Limiting Service
- * Provides database-backed rate limiting for authentication and API endpoints
+ * Rate limiting service for API endpoints
+ * Prevents brute force attacks and abuse
  */
 
-import { getDatabase } from "./database.js";
+// In-memory storage for rate limits (use Redis in production)
+const rateLimitMap = new Map();
+const failedAttemptsMap = new Map();
 
-class RateLimitService {
+export class RateLimitService {
   constructor() {
-    // Default configuration - can be overridden by environment variables
-    this.defaultConfig = {
-      maxAttempts: 5,
-      lockoutDuration: 30 * 60 * 1000, // 30 minutes in milliseconds
-      cleanupInterval: 60 * 60 * 1000, // 1 hour in milliseconds
-    };
+    // Configuration
+    this.windowMs = 60000; // 1 minute window
+    this.maxRequests = 100; // Max requests per window
+    this.loginMaxAttempts = 5; // Max login attempts before lockout
+    this.lockoutDuration = 900000; // 15 minutes lockout
   }
 
   /**
-   * Get configuration from environment variables with fallbacks
+   * Get client identifier from request
    */
-  getConfig() {
-    const maxAttempts = parseInt(process.env.ADMIN_MAX_LOGIN_ATTEMPTS || this.defaultConfig.maxAttempts);
-    const lockoutDuration = parseInt(process.env.ADMIN_LOCKOUT_DURATION_MS || this.defaultConfig.lockoutDuration);
-    const cleanupInterval = parseInt(process.env.ADMIN_CLEANUP_INTERVAL_MS || this.defaultConfig.cleanupInterval);
+  getClientId(req) {
+    return req.headers['x-forwarded-for']?.split(',')[0] || 
+           req.connection?.remoteAddress || 
+           'unknown';
+  }
+
+  /**
+   * Check if request should be rate limited
+   */
+  async checkRateLimit(req, customLimit = null) {
+    const clientId = this.getClientId(req);
+    const limit = customLimit || this.maxRequests;
+    const now = Date.now();
     
-    return {
-      maxAttempts: isNaN(maxAttempts) ? this.defaultConfig.maxAttempts : maxAttempts,
-      lockoutDuration: isNaN(lockoutDuration) ? this.defaultConfig.lockoutDuration : lockoutDuration,
-      cleanupInterval: isNaN(cleanupInterval) ? this.defaultConfig.cleanupInterval : cleanupInterval,
+    const record = rateLimitMap.get(clientId);
+    
+    if (!record) {
+      rateLimitMap.set(clientId, {
+        count: 1,
+        resetTime: now + this.windowMs
+      });
+      return false;
+    }
+    
+    if (now > record.resetTime) {
+      rateLimitMap.set(clientId, {
+        count: 1,
+        resetTime: now + this.windowMs
+      });
+      return false;
+    }
+    
+    record.count++;
+    return record.count > limit;
+  }
+
+  /**
+   * Record failed login attempt
+   */
+  recordFailedAttempt(clientId) {
+    const now = Date.now();
+    const record = failedAttemptsMap.get(clientId) || {
+      attempts: 0,
+      lastAttempt: now,
+      lockedUntil: 0
     };
+    
+    record.attempts++;
+    record.lastAttempt = now;
+    
+    if (record.attempts >= this.loginMaxAttempts) {
+      record.lockedUntil = now + this.lockoutDuration;
+    }
+    
+    failedAttemptsMap.set(clientId, record);
   }
 
   /**
-   * Check if IP address is rate limited
-   * @param {string} ipAddress - Client IP address
-   * @returns {Promise<{isLocked: boolean, remainingTime?: number, attemptsRemaining?: number}>}
+   * Check if client is locked out
    */
-  async checkRateLimit(ipAddress) {
-    const db = getDatabase();
-    const config = this.getConfig();
+  isLockedOut(clientId) {
+    const record = failedAttemptsMap.get(clientId);
+    if (!record) return false;
+    
+    const now = Date.now();
+    if (now > record.lockedUntil) {
+      // Reset after lockout expires
+      failedAttemptsMap.delete(clientId);
+      return false;
+    }
+    
+    return record.lockedUntil > now;
+  }
 
-    try {
-      // First, clean up expired attempts
-      await this.cleanupExpiredAttempts();
+  /**
+   * Get remaining lockout time
+   */
+  getRemainingLockoutTime(clientId) {
+    const record = failedAttemptsMap.get(clientId);
+    if (!record || !record.lockedUntil) return 0;
+    
+    const remaining = record.lockedUntil - Date.now();
+    return Math.max(0, Math.ceil(remaining / 1000)); // Return seconds
+  }
 
-      // Get current attempts for this IP
-      const result = await db.execute({
-        sql: `SELECT attempt_count, locked_until, last_attempt_at 
-              FROM login_attempts 
-              WHERE ip_address = ? AND (locked_until IS NULL OR locked_until > CURRENT_TIMESTAMP)`,
-        args: [ipAddress]
-      });
+  /**
+   * Clear failed attempts for client
+   */
+  clearFailedAttempts(clientId) {
+    failedAttemptsMap.delete(clientId);
+  }
 
-      if (result.rows.length === 0) {
-        // No current attempts, IP is not rate limited
-        return {
-          isLocked: false,
-          attemptsRemaining: config.maxAttempts
-        };
+  /**
+   * Clean up old records (run periodically)
+   */
+  cleanup() {
+    const now = Date.now();
+    
+    // Clean rate limits
+    for (const [clientId, record] of rateLimitMap.entries()) {
+      if (now > record.resetTime) {
+        rateLimitMap.delete(clientId);
       }
-
-      const attemptRecord = result.rows[0];
-      const lockedUntil = attemptRecord.locked_until ? new Date(attemptRecord.locked_until) : null;
-      const now = new Date();
-
-      // Check if currently locked
-      if (lockedUntil && lockedUntil > now) {
-        const remainingTime = Math.ceil((lockedUntil - now) / 1000 / 60); // minutes
-        return {
-          isLocked: true,
-          remainingTime
-        };
+    }
+    
+    // Clean failed attempts
+    for (const [clientId, record] of failedAttemptsMap.entries()) {
+      if (now > record.lockedUntil && record.lockedUntil > 0) {
+        failedAttemptsMap.delete(clientId);
       }
-
-      // Check if max attempts reached but not yet locked
-      if (attemptRecord.attempt_count >= config.maxAttempts) {
-        // Lock the IP
-        await this.lockIP(ipAddress);
-        const remainingTime = Math.ceil(config.lockoutDuration / 1000 / 60);
-        return {
-          isLocked: true,
-          remainingTime
-        };
-      }
-
-      // IP is not locked, return remaining attempts
-      return {
-        isLocked: false,
-        attemptsRemaining: config.maxAttempts - attemptRecord.attempt_count
-      };
-
-    } catch (error) {
-      console.error('Rate limit check failed:', error);
-      // In case of database error, allow the request but log the issue
-      return {
-        isLocked: false,
-        attemptsRemaining: config.maxAttempts,
-        error: 'Rate limit check failed'
-      };
-    }
-  }
-
-  /**
-   * Record a failed login attempt
-   * @param {string} ipAddress - Client IP address
-   * @returns {Promise<{attemptsRemaining: number, isLocked: boolean}>}
-   */
-  async recordFailedAttempt(ipAddress) {
-    const db = getDatabase();
-    const config = this.getConfig();
-
-    try {
-      // Use INSERT OR REPLACE for SQLite UPSERT behavior
-      await db.execute({
-        sql: `INSERT OR REPLACE INTO login_attempts (ip_address, attempt_count, last_attempt_at, updated_at, first_attempt_at)
-              VALUES (?, 
-                      COALESCE((SELECT attempt_count + 1 FROM login_attempts WHERE ip_address = ? AND (locked_until IS NULL OR locked_until <= CURRENT_TIMESTAMP)), 1),
-                      CURRENT_TIMESTAMP, 
-                      CURRENT_TIMESTAMP,
-                      COALESCE((SELECT first_attempt_at FROM login_attempts WHERE ip_address = ?), CURRENT_TIMESTAMP))`,
-        args: [ipAddress, ipAddress, ipAddress]
-      });
-
-      // Get updated attempt count
-      const result = await db.execute({
-        sql: `SELECT attempt_count FROM login_attempts WHERE ip_address = ?`,
-        args: [ipAddress]
-      });
-
-      const attemptCount = result.rows[0]?.attempt_count || 0;
-      const attemptsRemaining = Math.max(0, config.maxAttempts - attemptCount);
-
-      // Check if we need to lock the IP
-      if (attemptCount >= config.maxAttempts) {
-        await this.lockIP(ipAddress);
-        return {
-          attemptsRemaining: 0,
-          isLocked: true
-        };
-      }
-
-      return {
-        attemptsRemaining,
-        isLocked: false
-      };
-
-    } catch (error) {
-      console.error('Failed to record login attempt:', error);
-      throw new Error('Rate limiting service unavailable');
-    }
-  }
-
-  /**
-   * Lock an IP address
-   * @param {string} ipAddress - Client IP address
-   */
-  async lockIP(ipAddress) {
-    const db = getDatabase();
-    const config = this.getConfig();
-
-    try {
-      const lockedUntil = new Date(Date.now() + config.lockoutDuration).toISOString();
-
-      await db.execute({
-        sql: `UPDATE login_attempts 
-              SET locked_until = ?, updated_at = CURRENT_TIMESTAMP
-              WHERE ip_address = ?`,
-        args: [lockedUntil, ipAddress]
-      });
-
-      console.log(`IP ${ipAddress} locked until ${lockedUntil}`);
-    } catch (error) {
-      console.error('Failed to lock IP:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Clear attempts for an IP (e.g., after successful login)
-   * @param {string} ipAddress - Client IP address
-   */
-  async clearAttempts(ipAddress) {
-    const db = getDatabase();
-
-    try {
-      await db.execute({
-        sql: `DELETE FROM login_attempts WHERE ip_address = ?`,
-        args: [ipAddress]
-      });
-    } catch (error) {
-      console.error('Failed to clear login attempts:', error);
-      // Don't throw - this is not critical for functionality
-    }
-  }
-
-  /**
-   * Clean up expired login attempts and locks
-   */
-  async cleanupExpiredAttempts() {
-    const db = getDatabase();
-
-    try {
-      // Remove expired locks and old attempts (older than 24 hours)
-      await db.execute({
-        sql: `DELETE FROM login_attempts 
-              WHERE (locked_until IS NOT NULL AND locked_until <= CURRENT_TIMESTAMP)
-                 OR (last_attempt_at <= datetime('now', '-24 hours'))`,
-        args: []
-      });
-    } catch (error) {
-      console.error('Failed to cleanup expired attempts:', error);
-      // Don't throw - this is maintenance, not critical
-    }
-  }
-
-  /**
-   * Get rate limiting statistics (for monitoring)
-   * @returns {Promise<Object>} Statistics object
-   */
-  async getStats() {
-    const db = getDatabase();
-
-    try {
-      const results = await db.batch([
-        {
-          sql: `SELECT COUNT(*) as total_attempts FROM login_attempts`,
-          args: []
-        },
-        {
-          sql: `SELECT COUNT(*) as locked_ips FROM login_attempts WHERE locked_until > CURRENT_TIMESTAMP`,
-          args: []
-        },
-        {
-          sql: `SELECT COUNT(*) as expired_locks FROM login_attempts WHERE locked_until <= CURRENT_TIMESTAMP AND locked_until IS NOT NULL`,
-          args: []
-        }
-      ]);
-
-      return {
-        totalAttempts: results[0].rows[0]?.total_attempts || 0,
-        lockedIPs: results[1].rows[0]?.locked_ips || 0,
-        expiredLocks: results[2].rows[0]?.expired_locks || 0,
-        timestamp: new Date().toISOString()
-      };
-    } catch (error) {
-      console.error('Failed to get rate limiting stats:', error);
-      return {
-        error: 'Failed to retrieve stats',
-        timestamp: new Date().toISOString()
-      };
     }
   }
 }
 
-// Export singleton instance
-let rateLimitServiceInstance = null;
+// Singleton instance
+let rateLimitInstance;
 
-/**
- * Get rate limit service singleton instance
- * @returns {RateLimitService} Rate limit service instance
- */
 export function getRateLimitService() {
-  if (!rateLimitServiceInstance) {
-    rateLimitServiceInstance = new RateLimitService();
+  if (!rateLimitInstance) {
+    rateLimitInstance = new RateLimitService();
+    
+    // Run cleanup every 5 minutes
+    setInterval(() => {
+      rateLimitInstance.cleanup();
+    }, 300000);
   }
-  return rateLimitServiceInstance;
+  return rateLimitInstance;
 }
-
-export { RateLimitService };
