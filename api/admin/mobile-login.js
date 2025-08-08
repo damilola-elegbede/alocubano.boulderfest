@@ -2,6 +2,7 @@ import { getMobileAuthService } from "../lib/mobile-auth-service.js";
 import { getCsrfService } from "../lib/csrf-service.js";
 import { validateInput } from "../lib/validation-service.js";
 import { applySecurityHeaders } from "../lib/security-headers.js";
+import { getRateLimitService } from "../lib/rate-limit-service.js";
 
 /**
  * Mobile check-in login endpoint with extended 72-hour sessions
@@ -22,6 +23,19 @@ export default async function handler(req, res) {
   try {
     const mobileAuth = getMobileAuthService();
     const csrfService = getCsrfService();
+    const rateLimitService = getRateLimitService();
+
+    // Get client IP address for rate limiting
+    const clientIP = req.headers["x-forwarded-for"] || req.connection.remoteAddress || req.ip;
+
+    // Check rate limiting
+    const rateLimitCheck = await rateLimitService.checkRateLimit(clientIP);
+    if (rateLimitCheck.isLocked) {
+      return res.status(429).json({
+        error: "Too many login attempts",
+        details: `Account locked. Try again in ${rateLimitCheck.remainingTime} minutes.`
+      });
+    }
 
     // Parse request body
     const { password, csrfToken } = req.body;
@@ -53,13 +67,19 @@ export default async function handler(req, res) {
     const isValidPassword = await mobileAuth.verifyStaffPassword(password);
 
     if (!isValidPassword) {
+      // Record failed attempt for rate limiting
+      await rateLimitService.recordFailedAttempt(clientIP);
+      
       // Log failed attempt
-      console.log("Failed mobile login attempt from:", req.headers["x-forwarded-for"] || req.connection.remoteAddress);
+      console.log("Failed mobile login attempt from:", clientIP);
       
       return res.status(401).json({
         error: "Invalid password",
       });
     }
+
+    // Clear rate limit attempts on successful login
+    await rateLimitService.clearAttempts(clientIP);
 
     // Create extended 72-hour session token for mobile check-in
     const sessionToken = mobileAuth.createMobileSessionToken(
@@ -79,12 +99,15 @@ export default async function handler(req, res) {
     // Log successful login
     console.log("Mobile check-in staff logged in successfully");
 
+    // Get the configured session duration
+    const sessionDuration = mobileAuth.roleDurations.checkin_staff || mobileAuth.sessionDuration;
+    
     return res.status(200).json({
       success: true,
       message: "Login successful",
       role: "checkin_staff",
       sessionDuration: "72 hours",
-      expiresAt: new Date(Date.now() + 259200000).toISOString(), // 72 hours from now
+      expiresAt: new Date(Date.now() + sessionDuration).toISOString(),
     });
   } catch (error) {
     console.error("Mobile login error:", error);

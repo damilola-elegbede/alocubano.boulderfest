@@ -532,7 +532,7 @@
                 // Detect wallet tokens (JWT format)
                 const isWalletToken = token.includes('.') && token.length > 100;
                 
-                const response = await fetch('/api/tickets/validate-qr', {
+                const response = await fetch('/api/tickets/validate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
