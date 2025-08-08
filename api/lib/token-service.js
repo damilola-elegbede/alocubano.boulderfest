@@ -1,6 +1,6 @@
-import crypto from 'crypto';
-import { getDatabase } from './database.js';
-import { TOKEN_EXPIRY, TOKEN_ACTIONS } from './ticket-config.js';
+import crypto from "crypto";
+import { getDatabase } from "./database.js";
+import { TOKEN_EXPIRY, TOKEN_ACTIONS } from "./ticket-config.js";
 
 export class TokenService {
   constructor() {
@@ -10,18 +10,20 @@ export class TokenService {
   /**
    * Generate cryptographically secure random ID
    */
-  generateSecureId(prefix = '', length = 8) {
+  generateSecureId(prefix = "", length = 8) {
     const randomBytes = crypto.randomBytes(length);
     const timestamp = Date.now().toString(36).toUpperCase();
-    const random = randomBytes.toString('hex').toUpperCase();
-    return prefix ? `${prefix}-${timestamp}-${random.substring(0, length)}` : `${timestamp}-${random.substring(0, length)}`;
+    const random = randomBytes.toString("hex").toUpperCase();
+    return prefix
+      ? `${prefix}-${timestamp}-${random.substring(0, length)}`
+      : `${timestamp}-${random.substring(0, length)}`;
   }
 
   /**
    * Generate secure ticket ID
    */
   generateTicketId() {
-    const prefix = process.env.TICKET_PREFIX || 'TKT';
+    const prefix = process.env.TICKET_PREFIX || "TKT";
     return this.generateSecureId(prefix, 6);
   }
 
@@ -29,7 +31,7 @@ export class TokenService {
    * Hash token for storage
    */
   hashToken(token) {
-    return crypto.createHash('sha256').update(token).digest('hex');
+    return crypto.createHash("sha256").update(token).digest("hex");
   }
 
   /**
@@ -37,7 +39,7 @@ export class TokenService {
    * Long-lived (3-6 months), read-only operations
    */
   async generateAccessToken(transactionId, email) {
-    const token = crypto.randomBytes(32).toString('hex');
+    const token = crypto.randomBytes(32).toString("hex");
     const tokenHash = this.hashToken(token);
     const expiresAt = new Date(Date.now() + TOKEN_EXPIRY.ACCESS);
 
@@ -45,7 +47,7 @@ export class TokenService {
       sql: `INSERT INTO access_tokens (
         token_hash, transaction_id, email, expires_at
       ) VALUES (?, ?, ?, ?)`,
-      args: [tokenHash, transactionId, email, expiresAt.toISOString()]
+      args: [tokenHash, transactionId, email, expiresAt.toISOString()],
     });
 
     return token;
@@ -60,7 +62,7 @@ export class TokenService {
       throw new Error(`Invalid action type: ${actionType}`);
     }
 
-    const token = crypto.randomBytes(24).toString('hex');
+    const token = crypto.randomBytes(24).toString("hex");
     const tokenHash = this.hashToken(token);
     const expiresAt = new Date(Date.now() + TOKEN_EXPIRY.ACTION);
 
@@ -68,7 +70,7 @@ export class TokenService {
       sql: `INSERT INTO action_tokens (
         token_hash, action_type, target_id, email, expires_at
       ) VALUES (?, ?, ?, ?, ?)`,
-      args: [tokenHash, actionType, targetId, email, expiresAt.toISOString()]
+      args: [tokenHash, actionType, targetId, email, expiresAt.toISOString()],
     });
 
     return token;
@@ -81,25 +83,25 @@ export class TokenService {
   generateValidationToken(ticketId, eventId, attendeeEmail) {
     const secret = process.env.VALIDATION_SECRET;
     if (!secret) {
-      throw new Error('VALIDATION_SECRET environment variable is required');
+      throw new Error("VALIDATION_SECRET environment variable is required");
     }
     const payload = {
       ticket_id: ticketId,
       event_id: eventId,
       email: attendeeEmail,
-      issued_at: Date.now()
+      issued_at: Date.now(),
     };
 
     const payloadString = JSON.stringify(payload);
     const signature = crypto
-      .createHmac('sha256', secret)
+      .createHmac("sha256", secret)
       .update(payloadString)
-      .digest('hex');
+      .digest("hex");
 
     return {
       payload: payloadString,
       signature,
-      qr_data: Buffer.from(`${payloadString}.${signature}`).toString('base64')
+      qr_data: Buffer.from(`${payloadString}.${signature}`).toString("base64"),
     };
   }
 
@@ -108,15 +110,15 @@ export class TokenService {
    */
   async validateAccessToken(token) {
     const tokenHash = this.hashToken(token);
-    
+
     const result = await this.db.execute({
       sql: `SELECT * FROM access_tokens 
             WHERE token_hash = ? AND (expires_at IS NULL OR expires_at > datetime('now'))`,
-      args: [tokenHash]
+      args: [tokenHash],
     });
 
     if (result.rows.length === 0) {
-      return { valid: false, error: 'Invalid or expired access token' };
+      return { valid: false, error: "Invalid or expired access token" };
     }
 
     const tokenRecord = result.rows[0];
@@ -126,13 +128,13 @@ export class TokenService {
       sql: `UPDATE access_tokens 
             SET last_used_at = CURRENT_TIMESTAMP, use_count = use_count + 1 
             WHERE id = ?`,
-      args: [tokenRecord.id]
+      args: [tokenRecord.id],
     });
 
     return {
       valid: true,
       transactionId: tokenRecord.transaction_id,
-      email: tokenRecord.email
+      email: tokenRecord.email,
     };
   }
 
@@ -141,7 +143,7 @@ export class TokenService {
    */
   async validateActionToken(token, expectedAction, targetId) {
     const tokenHash = this.hashToken(token);
-    
+
     const result = await this.db.execute({
       sql: `SELECT * FROM action_tokens 
             WHERE token_hash = ? 
@@ -149,11 +151,14 @@ export class TokenService {
             AND target_id = ? 
             AND used_at IS NULL 
             AND expires_at > datetime('now')`,
-      args: [tokenHash, expectedAction, targetId]
+      args: [tokenHash, expectedAction, targetId],
     });
 
     if (result.rows.length === 0) {
-      return { valid: false, error: 'Invalid, expired, or already used action token' };
+      return {
+        valid: false,
+        error: "Invalid, expired, or already used action token",
+      };
     }
 
     const tokenRecord = result.rows[0];
@@ -161,14 +166,14 @@ export class TokenService {
     // Mark as used
     await this.db.execute({
       sql: `UPDATE action_tokens SET used_at = CURRENT_TIMESTAMP WHERE id = ?`,
-      args: [tokenRecord.id]
+      args: [tokenRecord.id],
     });
 
     return {
       valid: true,
       email: tokenRecord.email,
       actionType: tokenRecord.action_type,
-      targetId: tokenRecord.target_id
+      targetId: tokenRecord.target_id,
     };
   }
 
@@ -179,36 +184,39 @@ export class TokenService {
     try {
       const secret = process.env.VALIDATION_SECRET;
       if (!secret) {
-        throw new Error('VALIDATION_SECRET environment variable is required');
+        throw new Error("VALIDATION_SECRET environment variable is required");
       }
-      const decoded = Buffer.from(qrData, 'base64').toString('utf-8');
-      const [payloadString, signature] = decoded.split('.');
+      const decoded = Buffer.from(qrData, "base64").toString("utf-8");
+      const [payloadString, signature] = decoded.split(".");
 
       if (!payloadString || !signature) {
-        return { valid: false, error: 'Malformed QR code' };
+        return { valid: false, error: "Malformed QR code" };
       }
 
       // Verify signature
       const expectedSignature = crypto
-        .createHmac('sha256', secret)
+        .createHmac("sha256", secret)
         .update(payloadString)
-        .digest('hex');
+        .digest("hex");
 
       if (signature !== expectedSignature) {
-        return { valid: false, error: 'Invalid QR code signature' };
+        return { valid: false, error: "Invalid QR code signature" };
       }
 
       const payload = JSON.parse(payloadString);
 
       // Check if ticket ID matches expected (if provided)
       if (expectedTicketId && payload.ticket_id !== expectedTicketId) {
-        return { valid: false, error: 'Ticket ID mismatch' };
+        return { valid: false, error: "Ticket ID mismatch" };
       }
 
       // Check if QR code is too old (prevent replay attacks)
       const maxAge = 24 * 60 * 60 * 1000; // 24 hours
       if (Date.now() - payload.issued_at > maxAge) {
-        return { valid: false, error: 'QR code expired (regenerate from ticket)' };
+        return {
+          valid: false,
+          error: "QR code expired (regenerate from ticket)",
+        };
       }
 
       return {
@@ -216,11 +224,10 @@ export class TokenService {
         ticketId: payload.ticket_id,
         eventId: payload.event_id,
         email: payload.email,
-        issuedAt: new Date(payload.issued_at)
+        issuedAt: new Date(payload.issued_at),
       };
-
     } catch (error) {
-      return { valid: false, error: 'Failed to validate QR code' };
+      return { valid: false, error: "Failed to validate QR code" };
     }
   }
 
@@ -230,16 +237,16 @@ export class TokenService {
   async cleanupExpiredTokens() {
     const results = await Promise.all([
       this.db.execute({
-        sql: `DELETE FROM access_tokens WHERE expires_at <= datetime('now')`
+        sql: `DELETE FROM access_tokens WHERE expires_at <= datetime('now')`,
       }),
       this.db.execute({
-        sql: `DELETE FROM action_tokens WHERE expires_at <= datetime('now')`
-      })
+        sql: `DELETE FROM action_tokens WHERE expires_at <= datetime('now')`,
+      }),
     ]);
 
     return {
       accessTokensDeleted: results[0].changes || 0,
-      actionTokensDeleted: results[1].changes || 0
+      actionTokensDeleted: results[1].changes || 0,
     };
   }
 
@@ -253,20 +260,20 @@ export class TokenService {
                 COUNT(*) as total,
                 COUNT(CASE WHEN expires_at > datetime('now') THEN 1 END) as valid,
                 COUNT(CASE WHEN last_used_at IS NOT NULL THEN 1 END) as used
-              FROM access_tokens`
+              FROM access_tokens`,
       }),
       this.db.execute({
         sql: `SELECT 
                 COUNT(*) as total,
                 COUNT(CASE WHEN used_at IS NULL AND expires_at > datetime('now') THEN 1 END) as valid,
                 COUNT(CASE WHEN used_at IS NOT NULL THEN 1 END) as used
-              FROM action_tokens`
-      })
+              FROM action_tokens`,
+      }),
     ]);
 
     return {
       accessTokens: accessStats.rows[0],
-      actionTokens: actionStats.rows[0]
+      actionTokens: actionStats.rows[0],
     };
   }
 
@@ -277,40 +284,47 @@ export class TokenService {
     await Promise.all([
       this.db.execute({
         sql: `UPDATE access_tokens SET expires_at = datetime('now') WHERE transaction_id = ?`,
-        args: [transactionId]
+        args: [transactionId],
       }),
       this.db.execute({
         sql: `UPDATE action_tokens SET expires_at = datetime('now') WHERE target_id = ?`,
-        args: [transactionId.toString()]
-      })
+        args: [transactionId.toString()],
+      }),
     ]);
   }
 
   /**
    * Rate limiting check for token generation
    */
-  async checkRateLimit(email, tokenType = 'access', windowMinutes = 60, maxRequests = 10) {
-    const since = new Date(Date.now() - (windowMinutes * 60 * 1000));
-    
+  async checkRateLimit(
+    email,
+    tokenType = "access",
+    windowMinutes = 60,
+    maxRequests = 10,
+  ) {
+    const since = new Date(Date.now() - windowMinutes * 60 * 1000);
+
     // Use parameterized queries to prevent SQL injection
     let sql, args;
-    if (tokenType === 'access') {
-      sql = 'SELECT COUNT(*) as count FROM access_tokens WHERE email = ? AND created_at > ?';
+    if (tokenType === "access") {
+      sql =
+        "SELECT COUNT(*) as count FROM access_tokens WHERE email = ? AND created_at > ?";
       args = [email, since.toISOString()];
     } else {
-      sql = 'SELECT COUNT(*) as count FROM action_tokens WHERE email = ? AND created_at > ?';
+      sql =
+        "SELECT COUNT(*) as count FROM action_tokens WHERE email = ? AND created_at > ?";
       args = [email, since.toISOString()];
     }
-    
+
     const result = await this.db.execute({ sql, args });
 
     const count = result.rows[0]?.count || 0;
-    
+
     return {
       allowed: count < maxRequests,
       count,
       remaining: Math.max(0, maxRequests - count),
-      resetAt: new Date(Date.now() + (windowMinutes * 60 * 1000))
+      resetAt: new Date(Date.now() + windowMinutes * 60 * 1000),
     };
   }
 }

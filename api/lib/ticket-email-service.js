@@ -1,12 +1,15 @@
-import ticketService from './ticket-service.js';
-import { formatTicketType } from './ticket-config.js';
+import ticketService from "./ticket-service.js";
+import { formatTicketType } from "./ticket-config.js";
+import { getQRTokenService } from "./qr-token-service.js";
 
 export class TicketEmailService {
   constructor() {
-    this.baseUrl = process.env.BASE_URL || 'https://alocubano.com';
-    this.eventDatesDisplay = process.env.EVENT_DATES_DISPLAY || 'May 15-17, 2026';
-    this.venueName = process.env.VENUE_NAME || 'Avalon Ballroom';
-    this.venueAddress = process.env.VENUE_ADDRESS || '6185 Arapahoe Road, Boulder, CO 80303';
+    this.baseUrl = process.env.BASE_URL || "https://alocubano.com";
+    this.eventDatesDisplay =
+      process.env.EVENT_DATES_DISPLAY || "May 15-17, 2026";
+    this.venueName = process.env.VENUE_NAME || "Avalon Ballroom";
+    this.venueAddress =
+      process.env.VENUE_ADDRESS || "6185 Arapahoe Road, Boulder, CO 80303";
   }
   /**
    * Send ticket confirmation email
@@ -16,28 +19,37 @@ export class TicketEmailService {
       // Generate access token for secure ticket viewing
       const accessToken = await ticketService.generateAccessToken(
         transaction.id,
-        transaction.customer_email
+        transaction.customer_email,
       );
 
       // Format ticket details for email
-      const ticketDetails = this.formatTicketsForEmail(tickets);
-      
+      const ticketDetails = await this.formatTicketsForEmail(tickets);
+
       // Prepare email data with access token
       const emailData = {
         to: transaction.customer_email,
-        subject: 'Your A Lo Cubano Boulder Fest Tickets',
-        html: this.generateTicketEmailHtml(transaction, tickets, ticketDetails, accessToken),
-        text: this.generateTicketEmailText(transaction, tickets, ticketDetails, accessToken)
+        subject: "Your A Lo Cubano Boulder Fest Tickets",
+        html: this.generateTicketEmailHtml(
+          transaction,
+          tickets,
+          ticketDetails,
+          accessToken,
+        ),
+        text: this.generateTicketEmailText(
+          transaction,
+          tickets,
+          ticketDetails,
+          accessToken,
+        ),
       };
-      
+
       // TODO: In production, integrate with Brevo
       // For now, log the email
-      console.log('Ticket confirmation email:', emailData);
-      
+      console.log("Ticket confirmation email:", emailData);
+
       return { success: true, email: emailData.to, accessToken };
-      
     } catch (error) {
-      console.error('Failed to send ticket confirmation:', error);
+      console.error("Failed to send ticket confirmation:", error);
       throw error;
     }
   }
@@ -45,13 +57,27 @@ export class TicketEmailService {
   /**
    * Format tickets for email display
    */
-  formatTicketsForEmail(tickets) {
-    return tickets.map(ticket => ({
-      ticketId: ticket.ticket_id,
-      type: this.formatTicketType(ticket.ticket_type),
-      attendee: `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim() || 'Guest',
-      date: this.formatEventDate(ticket.event_date)
-    }));
+  async formatTicketsForEmail(tickets) {
+    const qrService = getQRTokenService();
+
+    return Promise.all(
+      tickets.map(async (ticket) => {
+        const qrToken = await qrService.getOrCreateToken(ticket.ticket_id);
+        const qrDataUrl = await qrService.generateQRImage(qrToken);
+
+        return {
+          ticketId: ticket.ticket_id,
+          type: this.formatTicketType(ticket.ticket_type),
+          attendee:
+            `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim() ||
+            "Guest",
+          date: this.formatEventDate(ticket.event_date),
+          qrCodeImage: qrDataUrl,
+          qrToken: qrToken,
+          webTicketUrl: `${this.baseUrl}/pages/my-ticket?id=${ticket.ticket_id}&token=${qrToken}`,
+        };
+      }),
+    );
   }
 
   /**
@@ -66,13 +92,13 @@ export class TicketEmailService {
    */
   formatEventDate(date) {
     if (!date) return this.eventDatesDisplay;
-    
-    const d = new Date(date + 'T00:00:00');
-    return d.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+
+    const d = new Date(date + "T00:00:00");
+    return d.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   }
 
@@ -89,10 +115,14 @@ export class TicketEmailService {
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: white; padding: 30px; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px; }
-          .ticket { background: #f8f9fa; border-left: 4px solid #667eea; padding: 15px; margin: 15px 0; }
+          .ticket { background: #f8f9fa; border: 2px solid #CE1126; border-radius: 12px; padding: 20px; margin: 20px 0; }
           .ticket-id { font-size: 12px; color: #666; }
-          .ticket-type { font-weight: bold; color: #333; }
+          .ticket-type { font-weight: bold; color: #333; font-size: 18px; }
+          .qr-container { text-align: center; margin: 20px 0; padding: 20px; background: white; border-radius: 8px; }
+          .qr-code { width: 200px; height: 200px; padding: 10px; background: white; border: 1px solid #ddd; }
           .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .wallet-buttons { text-align: center; margin: 15px 0; }
+          .wallet-button { display: inline-block; margin: 5px; }
           .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
         </style>
       </head>
@@ -104,7 +134,7 @@ export class TicketEmailService {
           </div>
           
           <div class="content">
-            <p>Hello ${transaction.customer_name || 'Dance Enthusiast'},</p>
+            <p>Hello ${transaction.customer_name || "Dance Enthusiast"},</p>
             
             <p>Thank you for your purchase! Your tickets for A Lo Cubano Boulder Fest are confirmed.</p>
             
@@ -113,30 +143,47 @@ export class TicketEmailService {
             <p><strong>Total Amount:</strong> $${(transaction.total_amount / 100).toFixed(2)}</p>
             
             <h2>Your Tickets</h2>
-            ${ticketDetails.map(ticket => `
+            ${ticketDetails
+              .map(
+                (ticket) => `
               <div class="ticket">
                 <div class="ticket-type">${ticket.type}</div>
                 <div class="ticket-id">Ticket ID: ${ticket.ticketId}</div>
                 <div>Attendee: ${ticket.attendee}</div>
                 <div>Date: ${ticket.date}</div>
                 
-                <!-- Add wallet buttons -->
-                <div style="text-align: center; margin: 20px 0;">
-                  <a href="${this.baseUrl}/api/tickets/apple-wallet/${ticket.ticketId}"
-                     style="display: inline-block; margin: 5px; padding: 10px 20px; 
-                            background: #000; color: white; text-decoration: none; 
-                            border-radius: 5px; font-size: 14px;">
-                    📱 Add to Apple Wallet
-                  </a>
-                  <a href="${this.baseUrl}/api/tickets/google-wallet/${ticket.ticketId}"
-                     style="display: inline-block; margin: 5px; padding: 10px 20px; 
-                            background: #4285f4; color: white; text-decoration: none; 
-                            border-radius: 5px; font-size: 14px;">
-                    📱 Add to Google Wallet
+                <!-- QR Code -->
+                <div class="qr-container">
+                  <img src="${ticket.qrCodeImage}" alt="QR Code" class="qr-code" />
+                  <p style="font-size: 14px; color: #666; margin-top: 10px;">
+                    Show this QR code at the event entrance
+                  </p>
+                  <a href="${ticket.webTicketUrl}" 
+                     style="display: inline-block; margin-top: 10px; color: #002868; text-decoration: underline;">
+                    View ticket online →
                   </a>
                 </div>
+                
+                <!-- Wallet buttons -->
+                <div class="wallet-buttons">
+                  <p style="margin-bottom: 10px; font-size: 14px;">Add to your phone's wallet:</p>
+                  <div class="wallet-button">
+                    <a href="${this.baseUrl}/api/tickets/apple-wallet/${ticket.ticketId}">
+                      <img src="https://developer.apple.com/wallet/add-to-apple-wallet-badge.svg" 
+                           alt="Add to Apple Wallet" height="40" />
+                    </a>
+                  </div>
+                  <div class="wallet-button">
+                    <a href="${this.baseUrl}/api/tickets/google-wallet/${ticket.ticketId}">
+                      <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" 
+                           alt="Add to Google Wallet" height="60" />
+                    </a>
+                  </div>
+                </div>
               </div>
-            `).join('')}
+            `,
+              )
+              .join("")}
             
             <h2>Event Information</h2>
             <p><strong>Venue:</strong> ${this.venueName}</p>
@@ -149,12 +196,19 @@ export class TicketEmailService {
               </a>
             </p>
             
-            <h2>What's Next?</h2>
+            <h2>How to Use Your Tickets</h2>
             <ul>
-              <li>Save this email for your records</li>
-              <li>Each ticket has a unique ID for entry</li>
-              <li>Tickets will be scanned at the door</li>
-              <li>Bring a valid photo ID</li>
+              <li><strong>Option 1:</strong> Show this email with QR codes at the entrance</li>
+              <li><strong>Option 2:</strong> Add tickets to Apple/Google Wallet for easy access</li>
+              <li><strong>Option 3:</strong> Screenshot or print the QR codes</li>
+              <li><strong>Option 4:</strong> View tickets online using the link above</li>
+            </ul>
+            
+            <h2>What to Bring</h2>
+            <ul>
+              <li>Your ticket QR code (email, wallet, or printed)</li>
+              <li>Valid photo ID (21+ event)</li>
+              <li>Dancing shoes!</li>
             </ul>
             
             <p>Questions? Reply to this email or contact us at alocubanoboulderfest@gmail.com</p>
@@ -183,7 +237,7 @@ export class TicketEmailService {
 Your Tickets Are Confirmed!
 A Lo Cubano Boulder Fest 2026
 
-Hello ${transaction.customer_name || 'Dance Enthusiast'},
+Hello ${transaction.customer_name || "Dance Enthusiast"},
 
 Thank you for your purchase! Your tickets for A Lo Cubano Boulder Fest are confirmed.
 
@@ -192,12 +246,16 @@ Order Number: ${transaction.uuid}
 Total Amount: $${(transaction.total_amount / 100).toFixed(2)}
 
 YOUR TICKETS
-${ticketDetails.map(ticket => `
+${ticketDetails
+  .map(
+    (ticket) => `
 - ${ticket.type}
   Ticket ID: ${ticket.ticketId}
   Attendee: ${ticket.attendee}
   Date: ${ticket.date}
-`).join('\n')}
+`,
+  )
+  .join("\n")}
 
 EVENT INFORMATION
 Venue: ${this.venueName}

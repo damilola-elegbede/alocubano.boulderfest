@@ -342,7 +342,6 @@
                       </li>
                     </ul>
                   </li>
-                  
                 </ul>
               </li>
               <li>
@@ -410,7 +409,9 @@
           </p>
 
           <div class="countdown-timer" id="countdown-timer">
-            This page will redirect in <span class="countdown-seconds" id="countdown-seconds">20</span> seconds...
+            This page will redirect in
+            <span class="countdown-seconds" id="countdown-seconds">20</span>
+            seconds...
           </div>
 
           <div class="success-details" id="order-details" style="display: none">
@@ -540,13 +541,13 @@
       // Start countdown timer
       function startCountdown() {
         const countdownElement = document.getElementById("countdown-seconds");
-        
+
         countdownInterval = setInterval(() => {
           remainingSeconds--;
           if (countdownElement) {
             countdownElement.textContent = remainingSeconds;
           }
-          
+
           if (remainingSeconds <= 0) {
             clearInterval(countdownInterval);
             window.location.href = "/home";
@@ -574,13 +575,15 @@
             if (data.instructions?.clearCart) {
               localStorage.removeItem("alocubano_cart");
               // Dispatch storage event for cross-tab sync
-              window.dispatchEvent(new StorageEvent("storage", {
-                key: "alocubano_cart",
-                oldValue: localStorage.getItem("alocubano_cart"),
-                newValue: null,
-                url: window.location.href,
-                storageArea: localStorage
-              }));
+              window.dispatchEvent(
+                new StorageEvent("storage", {
+                  key: "alocubano_cart",
+                  oldValue: localStorage.getItem("alocubano_cart"),
+                  newValue: null,
+                  url: window.location.href,
+                  storageArea: localStorage,
+                }),
+              );
               // Dispatch custom event
               window.dispatchEvent(new Event("cartCleared"));
             }
@@ -631,10 +634,10 @@
         // Update next steps based on order type
         if (data.instructions?.nextSteps) {
           // Clear existing content safely
-          stepsContent.textContent = '';
+          stepsContent.textContent = "";
           // Add each step as a text node
-          data.instructions.nextSteps.forEach(step => {
-            const p = document.createElement('p');
+          data.instructions.nextSteps.forEach((step) => {
+            const p = document.createElement("p");
             p.textContent = `• ${step}`;
             stepsContent.appendChild(p);
           });
@@ -643,15 +646,15 @@
           hasTickets(data.order?.items)
         ) {
           // If the order contains tickets, show registration reminder
-          stepsContent.textContent = '';
+          stepsContent.textContent = "";
           const steps = [
-            '• Check your email for order confirmation',
-            '• Complete your festival registration (link in email)',
-            '• Save your confirmation number for check-in',
-            '• Join our WhatsApp group for updates'
+            "• Check your email for order confirmation",
+            "• Complete your festival registration (link in email)",
+            "• Save your confirmation number for check-in",
+            "• Join our WhatsApp group for updates",
           ];
-          steps.forEach(step => {
-            const p = document.createElement('p');
+          steps.forEach((step) => {
+            const p = document.createElement("p");
             p.textContent = step;
             stepsContent.appendChild(p);
           });
