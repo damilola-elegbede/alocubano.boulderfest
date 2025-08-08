@@ -502,6 +502,25 @@
                             <dt>Order:</dt>
                             <dd>${ticket.order_number || 'N/A'}</dd>
                         </dl>
+                        
+                        <!-- Add wallet buttons -->
+                        <div style="margin-top: 20px; text-align: center;">
+                            <a href="/api/tickets/apple-wallet/${ticket.ticket_id}" 
+                               class="wallet-button apple-wallet"
+                               style="display: inline-block; margin: 5px; padding: 10px 20px; 
+                                      background: #000; color: white; text-decoration: none; 
+                                      border-radius: 5px;">
+                              📱 Apple Wallet
+                            </a>
+                            <a href="/api/tickets/google-wallet/${ticket.ticket_id}" 
+                               class="wallet-button google-wallet"
+                               style="display: inline-block; margin: 5px; padding: 10px 20px; 
+                                      background: #4285f4; color: white; text-decoration: none; 
+                                      border-radius: 5px;">
+                              📱 Google Wallet
+                            </a>
+                        </div>
+                        
                         ${actionsHtml}
                     </div>
                 `;

@@ -2,6 +2,12 @@ import ticketService from './ticket-service.js';
 import { formatTicketType } from './ticket-config.js';
 
 export class TicketEmailService {
+  constructor() {
+    this.baseUrl = process.env.BASE_URL || 'https://alocubano.com';
+    this.eventDatesDisplay = process.env.EVENT_DATES_DISPLAY || 'May 15-17, 2026';
+    this.venueName = process.env.VENUE_NAME || 'Avalon Ballroom';
+    this.venueAddress = process.env.VENUE_ADDRESS || '6185 Arapahoe Road, Boulder, CO 80303';
+  }
   /**
    * Send ticket confirmation email
    */
@@ -59,7 +65,7 @@ export class TicketEmailService {
    * Format event date for display
    */
   formatEventDate(date) {
-    if (!date) return 'May 15-17, 2026';
+    if (!date) return this.eventDatesDisplay;
     
     const d = new Date(date + 'T00:00:00');
     return d.toLocaleDateString('en-US', { 
@@ -113,16 +119,32 @@ export class TicketEmailService {
                 <div class="ticket-id">Ticket ID: ${ticket.ticketId}</div>
                 <div>Attendee: ${ticket.attendee}</div>
                 <div>Date: ${ticket.date}</div>
+                
+                <!-- Add wallet buttons -->
+                <div style="text-align: center; margin: 20px 0;">
+                  <a href="${this.baseUrl}/api/tickets/apple-wallet/${ticket.ticketId}"
+                     style="display: inline-block; margin: 5px; padding: 10px 20px; 
+                            background: #000; color: white; text-decoration: none; 
+                            border-radius: 5px; font-size: 14px;">
+                    📱 Add to Apple Wallet
+                  </a>
+                  <a href="${this.baseUrl}/api/tickets/google-wallet/${ticket.ticketId}"
+                     style="display: inline-block; margin: 5px; padding: 10px 20px; 
+                            background: #4285f4; color: white; text-decoration: none; 
+                            border-radius: 5px; font-size: 14px;">
+                    📱 Add to Google Wallet
+                  </a>
+                </div>
               </div>
             `).join('')}
             
             <h2>Event Information</h2>
-            <p><strong>Venue:</strong> Avalon Ballroom</p>
-            <p><strong>Address:</strong> 6185 Arapahoe Road, Boulder, CO 80303</p>
-            <p><strong>Dates:</strong> May 15-17, 2026</p>
+            <p><strong>Venue:</strong> ${this.venueName}</p>
+            <p><strong>Address:</strong> ${this.venueAddress}</p>
+            <p><strong>Dates:</strong> ${this.eventDatesDisplay}</p>
             
             <p style="text-align: center;">
-              <a href="https://alocubano.com/my-tickets?token=${encodeURIComponent(accessToken)}" class="button">
+              <a href="${this.baseUrl}/my-tickets?token=${encodeURIComponent(accessToken)}" class="button">
                 View My Tickets
               </a>
             </p>
@@ -178,12 +200,12 @@ ${ticketDetails.map(ticket => `
 `).join('\n')}
 
 EVENT INFORMATION
-Venue: Avalon Ballroom
-Address: 6185 Arapahoe Road, Boulder, CO 80303
-Dates: May 15-17, 2026
+Venue: ${this.venueName}
+Address: ${this.venueAddress}
+Dates: ${this.eventDatesDisplay}
 
 View your tickets online:
-https://alocubano.com/my-tickets?token=${encodeURIComponent(accessToken)}
+${this.baseUrl}/my-tickets?token=${encodeURIComponent(accessToken)}
 
 WHAT'S NEXT?
 - Save this email for your records

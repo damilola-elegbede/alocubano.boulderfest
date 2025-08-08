@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run prebuild && echo 'Static site ready'",
+  "buildCommand": "echo 'Static site ready'",
   "outputDirectory": ".",
   "framework": null,
   "devCommand": "npx http-server . --cors",
@@ -36,6 +36,39 @@
     },
     "api/payments/create-checkout-session.js": {
       "maxDuration": 15
+    },
+    "api/tickets/index.js": {
+      "maxDuration": 10
+    },
+    "api/tickets/action-token.js": {
+      "maxDuration": 10
+    },
+    "api/tickets/cancel.js": {
+      "maxDuration": 10
+    },
+    "api/tickets/qr-code.js": {
+      "maxDuration": 5
+    },
+    "api/tickets/transfer.js": {
+      "maxDuration": 10
+    },
+    "api/tickets/validate.js": {
+      "maxDuration": 10
+    },
+    "api/tickets/apple-wallet/[ticketId].js": {
+      "maxDuration": 10
+    },
+    "api/tickets/google-wallet/[ticketId].js": {
+      "maxDuration": 10
+    },
+    "api/wallet/[ticketId].js": {
+      "maxDuration": 10
+    },
+    "api/wallet/apple/[ticketId].js": {
+      "maxDuration": 10
+    },
+    "api/wallet/google/[ticketId].js": {
+      "maxDuration": 10
     }
   },
   "images": {
