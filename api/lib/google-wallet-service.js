@@ -158,9 +158,9 @@ export class GoogleWalletService {
       // Ensure class exists
       await this.createOrUpdateClass();
       
-      // Get ticket details
+      // Get ticket details with validation
       const result = await this.db.execute({
-        sql: `SELECT t.*, tr.transaction_id as order_number, tr.amount_cents
+        sql: `SELECT t.*, tr.transaction_id as order_number, tr.amount_cents, tr.status as transaction_status
               FROM tickets t
               JOIN transactions tr ON t.transaction_id = tr.id
               WHERE t.ticket_id = ?`,
@@ -173,20 +173,33 @@ export class GoogleWalletService {
       
       const ticket = result.rows[0];
       
+      // Validate ticket status before generating pass
+      if (ticket.status === 'cancelled') {
+        throw new Error('Cannot generate pass for cancelled ticket');
+      }
+      if (ticket.status === 'refunded') {
+        throw new Error('Cannot generate pass for refunded ticket');
+      }
+      if (ticket.transaction_status === 'pending' || ticket.transaction_status === 'failed') {
+        throw new Error('Cannot generate pass for unpaid ticket');
+      }
+      
       // Check if pass already exists
       let objectId = ticket.google_pass_id;
       if (!objectId) {
         objectId = `${this.issuerId}.${uuidv4()}`;
         
-        // Save pass ID to database
-        await this.db.execute({
-          sql: `UPDATE tickets 
-                SET google_pass_id = ?, 
-                    wallet_pass_generated_at = CURRENT_TIMESTAMP,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE ticket_id = ?`,
-          args: [objectId, ticketId]
-        });
+        // Save pass ID to database with transaction support
+        await this.db.batch([
+          {
+            sql: `UPDATE tickets 
+                  SET google_pass_id = ?, 
+                      wallet_pass_generated_at = CURRENT_TIMESTAMP,
+                      updated_at = CURRENT_TIMESTAMP
+                  WHERE ticket_id = ?`,
+            args: [objectId, ticketId]
+          }
+        ], 'write');
       }
       
       // Create pass object matching Apple Wallet design
@@ -198,7 +211,7 @@ export class GoogleWalletService {
         ticketNumber: ticket.ticket_id,
         barcode: {
           type: 'QR_CODE',
-          value: ticket.qr_token || ticket.ticket_id,
+          value: ticket.qr_code_data || ticket.ticket_id,
           alternateText: ticket.ticket_id
         },
         // Ticket type in blue (will be styled via textModulesData)
@@ -402,12 +415,14 @@ export class GoogleWalletService {
         data: updates
       });
       
-      await this.db.execute({
-        sql: `UPDATE tickets 
-              SET wallet_pass_updated_at = CURRENT_TIMESTAMP 
-              WHERE google_pass_id = ?`,
-        args: [objectId]
-      });
+      await this.db.batch([
+        {
+          sql: `UPDATE tickets 
+                SET wallet_pass_updated_at = CURRENT_TIMESTAMP 
+                WHERE google_pass_id = ?`,
+          args: [objectId]
+        }
+      ], 'write');
       
       console.log(`Google Wallet pass updated: ${objectId}`);
     } catch (error) {
@@ -438,13 +453,15 @@ export class GoogleWalletService {
       });
     }
     
-    await this.db.execute({
-      sql: `UPDATE tickets 
-            SET wallet_pass_revoked_at = CURRENT_TIMESTAMP,
-                wallet_pass_revoked_reason = ?
-            WHERE ticket_id = ?`,
-      args: [reason, ticketId]
-    });
+    await this.db.batch([
+      {
+        sql: `UPDATE tickets 
+              SET wallet_pass_revoked_at = CURRENT_TIMESTAMP,
+                  wallet_pass_revoked_reason = ?
+              WHERE ticket_id = ?`,
+        args: [reason, ticketId]
+      }
+    ], 'write');
     
     await this.logPassEvent(ticket.id, 'revoked', { reason });
   }
@@ -453,17 +470,19 @@ export class GoogleWalletService {
    * Log wallet pass event
    */
   async logPassEvent(ticketId, eventType, eventData = {}) {
-    await this.db.execute({
-      sql: `INSERT INTO wallet_pass_events (
-        ticket_id, pass_type, event_type, event_data
-      ) VALUES (?, ?, ?, ?)`,
-      args: [
-        ticketId,
-        'google',
-        eventType,
-        JSON.stringify(eventData)
-      ]
-    });
+    await this.db.batch([
+      {
+        sql: `INSERT INTO wallet_pass_events (
+          ticket_id, pass_type, event_type, event_data
+        ) VALUES (?, ?, ?, ?)`,
+        args: [
+          ticketId,
+          'google',
+          eventType,
+          JSON.stringify(eventData)
+        ]
+      }
+    ], 'write');
   }
 }
 
