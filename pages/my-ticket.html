@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Ticket - A Lo Cubano Boulder Fest</title>
+    <link rel="stylesheet" href="/css/main.css" />
+    <style>
+      body {
+        background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .ticket-container {
+        max-width: 400px;
+        margin: 20px auto;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .ticket-header {
+        background: linear-gradient(135deg, #ce1126, #002868);
+        color: white;
+        padding: 30px 20px;
+        text-align: center;
+        position: relative;
+      }
+
+      .ticket-header h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+      }
+
+      .ticket-header p {
+        margin: 10px 0 0;
+        opacity: 0.9;
+      }
+
+      .ticket-body {
+        padding: 20px;
+      }
+
+      .qr-code-container {
+        text-align: center;
+        padding: 30px 20px;
+        background: #f8f9fa;
+        margin: 0 -20px 20px;
+        position: relative;
+      }
+
+      .qr-code-container img {
+        width: 220px;
+        height: 220px;
+        padding: 10px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .qr-instructions {
+        margin-top: 15px;
+        font-size: 14px;
+        color: #666;
+      }
+
+      .ticket-details {
+        margin: 20px 0;
+      }
+
+      .ticket-details dt {
+        font-weight: 600;
+        color: #ce1126;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 15px;
+      }
+
+      .ticket-details dd {
+        margin: 5px 0;
+        font-size: 16px;
+        color: #333;
+      }
+
+      .wallet-section {
+        margin: 30px 0 20px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-left: -20px;
+        margin-right: -20px;
+      }
+
+      .wallet-section h3 {
+        font-size: 16px;
+        margin: 0 0 15px;
+        text-align: center;
+        color: #333;
+      }
+
+      .wallet-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .wallet-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s;
+        font-size: 15px;
+      }
+
+      .wallet-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .wallet-button.apple {
+        background: #000;
+        color: white;
+      }
+
+      .wallet-button.google {
+        background: #4285f4;
+        color: white;
+      }
+
+      .action-buttons {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin: 20px 0;
+      }
+
+      .action-button {
+        padding: 12px 8px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background: white;
+        cursor: pointer;
+        text-align: center;
+        font-size: 13px;
+        transition: all 0.2s;
+      }
+
+      .action-button:hover {
+        background: #f8f9fa;
+        border-color: #ce1126;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+      }
+
+      .error {
+        text-align: center;
+        padding: 40px;
+        color: #d32f2f;
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+
+        .wallet-section,
+        .action-buttons {
+          display: none;
+        }
+
+        .ticket-container {
+          box-shadow: none;
+          border: 2px solid #000;
+          max-width: 100%;
+        }
+
+        .qr-code-container {
+          background: white;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ticket-container">
+      <div class="loading" id="loading-state">Loading your ticket...</div>
+
+      <div class="error" id="error-state" style="display: none">
+        Error loading ticket. Please check your link and try again.
+      </div>
+
+      <div id="ticket-content" style="display: none">
+        <div class="ticket-header">
+          <h1>A Lo Cubano Boulder Fest</h1>
+          <p>May 15-17, 2026 • Boulder, CO</p>
+        </div>
+
+        <div class="ticket-body">
+          <div class="qr-code-container">
+            <img id="qr-code" src="" alt="Ticket QR Code" />
+            <div class="qr-instructions">
+              Show this code at the event entrance
+            </div>
+          </div>
+
+          <dl class="ticket-details">
+            <dt>Ticket ID</dt>
+            <dd id="ticket-id">—</dd>
+
+            <dt>Ticket Type</dt>
+            <dd id="ticket-type">—</dd>
+
+            <dt>Attendee Name</dt>
+            <dd id="attendee-name">—</dd>
+
+            <dt>Event Dates</dt>
+            <dd>May 15-17, 2026</dd>
+
+            <dt>Venue</dt>
+            <dd>Avalon Ballroom<br />1320 Pearl Street, Boulder, CO</dd>
+          </dl>
+
+          <div class="wallet-section">
+            <h3>Add to Phone Wallet</h3>
+            <div class="wallet-buttons">
+              <a href="#" id="apple-wallet-link" class="wallet-button apple">
+                <span>📱 Add to Apple Wallet</span>
+              </a>
+              <a href="#" id="google-wallet-link" class="wallet-button google">
+                <span>📱 Add to Google Wallet</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button class="action-button" onclick="printTicket()">
+              🖨️ Print
+            </button>
+            <button class="action-button" onclick="downloadTicket()">
+              💾 Save
+            </button>
+            <button class="action-button" onclick="shareTicket()">
+              📤 Share
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const ticketId = urlParams.get("id");
+      const token = urlParams.get("token");
+
+      async function loadTicket() {
+        if (!ticketId || !token) {
+          showError();
+          return;
+        }
+
+        try {
+          // Verify token and get ticket details
+          const response = await fetch("/api/tickets/validate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              token,
+              validateOnly: true, // Don't increment scan count
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Invalid ticket");
+          }
+
+          const data = await response.json();
+
+          // Update UI with ticket details
+          document.getElementById("ticket-id").textContent = ticketId;
+          document.getElementById("ticket-type").textContent = data.ticket.type;
+          document.getElementById("attendee-name").textContent =
+            data.ticket.attendeeName;
+
+          // Generate QR code image
+          const qrService = await fetch("/api/tickets/qr-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token }),
+          });
+
+          const qrData = await qrService.json();
+          document.getElementById("qr-code").src = qrData.qrImage;
+
+          // Update wallet links
+          document.getElementById("apple-wallet-link").href =
+            `/api/tickets/apple-wallet/${ticketId}`;
+          document.getElementById("google-wallet-link").href =
+            `/api/tickets/google-wallet/${ticketId}`;
+
+          // Show ticket content
+          document.getElementById("loading-state").style.display = "none";
+          document.getElementById("ticket-content").style.display = "block";
+        } catch (error) {
+          console.error("Error loading ticket:", error);
+          showError();
+        }
+      }
+
+      function showError() {
+        document.getElementById("loading-state").style.display = "none";
+        document.getElementById("error-state").style.display = "block";
+      }
+
+      function printTicket() {
+        window.print();
+      }
+
+      async function downloadTicket() {
+        // Convert ticket to image
+        const ticketElement = document.getElementById("ticket-content");
+
+        if (window.html2canvas) {
+          const canvas = await html2canvas(ticketElement);
+          const link = document.createElement("a");
+          link.download = `ticket-${ticketId}.png`;
+          link.href = canvas.toDataURL();
+          link.click();
+        } else {
+          // Fallback: download QR code only
+          const qrImg = document.getElementById("qr-code");
+          const link = document.createElement("a");
+          link.download = `ticket-qr-${ticketId}.png`;
+          link.href = qrImg.src;
+          link.click();
+        }
+      }
+
+      function shareTicket() {
+        const shareData = {
+          title: "My A Lo Cubano Boulder Fest Ticket",
+          text: `Ticket for A Lo Cubano Boulder Fest 2026!`,
+          url: window.location.href,
+        };
+
+        if (navigator.share && navigator.canShare(shareData)) {
+          navigator.share(shareData);
+        } else {
+          // Fallback: copy to clipboard
+          navigator.clipboard.writeText(window.location.href);
+          alert("Ticket link copied to clipboard!");
+        }
+      }
+
+      // Load ticket on page load
+      loadTicket();
+    </script>
+
+    <!-- Optional: Include html2canvas for better download functionality -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+      integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+  </body>
+</html>

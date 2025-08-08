@@ -198,10 +198,7 @@ describe("Database Environment Configuration", () => {
   });
 
   describe("Environment Template File Structure", () => {
-    const templateFiles = [
-      ".env.local.template",
-      ".env.production.template",
-    ];
+    const templateFiles = [".env.local.template", ".env.production.template"];
 
     describe("Template completeness", () => {
       it("should verify all template files contain required database variables", () => {
