@@ -70,6 +70,8 @@
     "@libsql/client": "^0.15.10",
     "@stripe/stripe-js": "^7.8.0",
     "@types/node": "^24.2.0",
+    "bcryptjs": "^3.0.2",
+    "cookie": "^1.0.2",
     "dotenv": "^17.2.0",
     "dotenv-cli": "^10.0.0",
     "google-auth-library": "^10.2.1",

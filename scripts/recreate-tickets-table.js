@@ -1,16 +1,30 @@
-import { getDatabase } from '../api/lib/database.js';
+import { getDatabase } from "../api/lib/database.js";
 
 async function recreateTicketsTable() {
   const db = getDatabase();
+
+  console.log("=== Recreating Tickets Table ===\n");
+
+  // Confirm destructive operation
+  console.log("⚠️  WARNING: This will permanently delete the existing tickets table and all data!");
+  console.log("Press Ctrl+C to cancel, or any other key to continue...");
   
-  console.log('=== Recreating Tickets Table ===\n');
-  
+  // Wait for user input (in a real environment, you might use readline)
+  await new Promise((resolve) => {
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.on('data', () => {
+      process.stdin.pause();
+      resolve();
+    });
+  });
+
   // Drop the existing tickets table
-  console.log('Dropping existing tickets table...');
-  await db.execute('DROP TABLE IF EXISTS tickets');
-  
+  console.log("Dropping existing tickets table...");
+  await db.execute("DROP TABLE IF EXISTS tickets");
+
   // Create the new tickets table with the correct schema
-  console.log('Creating new tickets table...');
+  console.log("Creating new tickets table...");
   await db.execute(`
     CREATE TABLE tickets (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,8 +50,8 @@ async function recreateTicketsTable() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  
-  console.log('Creating trigger for updated_at...');
+
+  console.log("Creating trigger for updated_at...");
   await db.execute(`
     CREATE TRIGGER update_tickets_updated_at 
       AFTER UPDATE ON tickets 
@@ -47,27 +61,31 @@ async function recreateTicketsTable() {
       WHERE id = NEW.id;
     END
   `);
-  
+
   // Create indexes
-  console.log('Creating indexes...');
-  await db.execute('CREATE INDEX idx_tickets_transaction_id ON tickets(transaction_id)');
-  await db.execute('CREATE INDEX idx_tickets_event_id ON tickets(event_id)');
-  await db.execute('CREATE INDEX idx_tickets_status ON tickets(status)');
-  await db.execute('CREATE INDEX idx_tickets_attendee_email ON tickets(attendee_email)');
-  
+  console.log("Creating indexes...");
+  await db.execute(
+    "CREATE INDEX idx_tickets_transaction_id ON tickets(transaction_id)",
+  );
+  await db.execute("CREATE INDEX idx_tickets_event_id ON tickets(event_id)");
+  await db.execute("CREATE INDEX idx_tickets_status ON tickets(status)");
+  await db.execute(
+    "CREATE INDEX idx_tickets_attendee_email ON tickets(attendee_email)",
+  );
+
   // Verify the new schema
   const pragma = await db.execute("PRAGMA table_info(tickets)");
-  console.log('\n=== New Table Columns ===');
-  pragma.rows.forEach(col => {
+  console.log("\n=== New Table Columns ===");
+  pragma.rows.forEach((col) => {
     console.log(`  - ${col.name} (${col.type})`);
   });
-  
-  console.log('\n✅ Tickets table recreated successfully!');
-  
+
+  console.log("\n✅ Tickets table recreated successfully!");
+
   process.exit(0);
 }
 
-recreateTicketsTable().catch(error => {
-  console.error('Recreation failed:', error);
+recreateTicketsTable().catch((error) => {
+  console.error("Recreation failed:", error);
   process.exit(1);
 });
