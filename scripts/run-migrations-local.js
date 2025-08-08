@@ -57,18 +57,13 @@ async function runMigrations() {
       );
 
       // Use transaction for atomic migration execution
+      let transactionStarted = false;
       try {
         await db.execute("BEGIN TRANSACTION");
+        transactionStarted = true;
         
         for (const statement of statements) {
-          try {
-            await db.execute(statement);
-          } catch (error) {
-            console.error(`Error executing statement in ${file}:`, error.message);
-            console.error("Statement:", statement.substring(0, 100) + "...");
-            await db.execute("ROLLBACK");
-            throw error;
-          }
+          await db.execute(statement);
         }
         
         // Record migration as executed within transaction
@@ -78,13 +73,25 @@ async function runMigrations() {
         });
         
         await db.execute("COMMIT");
+        transactionStarted = false;
         console.log(`✅ Migration ${file} completed successfully`);
         
       } catch (error) {
-        // Rollback already handled above for statement errors
-        if (!error.message.includes("Error executing statement")) {
-          await db.execute("ROLLBACK").catch(() => {});
+        console.error(`Error executing migration ${file}:`, error.message);
+        if (error.statement) {
+          console.error("Statement:", error.statement.substring(0, 100) + "...");
         }
+        
+        // Always attempt rollback if transaction was started
+        if (transactionStarted) {
+          try {
+            await db.execute("ROLLBACK");
+            console.log("Transaction rolled back successfully");
+          } catch (rollbackError) {
+            console.error("Failed to rollback transaction:", rollbackError.message);
+          }
+        }
+        
         throw error;
       }
     }

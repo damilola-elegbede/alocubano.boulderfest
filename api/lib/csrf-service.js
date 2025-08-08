@@ -10,13 +10,13 @@ export class CSRFService {
     }
     // Use a placeholder that clearly indicates configuration is needed
     if (!this.secret || this.secret.length < 32) {
-      // In development/test, use a generated secret based on NODE_ENV
-      // This avoids hardcoded secrets while still allowing development
+      // In development/test, use a truly random secret generated at startup
+      // This ensures each dev environment has a unique, non-forgeable secret
       const isDev = process.env.NODE_ENV !== 'production';
       if (isDev) {
-        // Generate a development secret from environment name
-        // This is not a hardcoded secret, but a generated one
-        this.secret = Buffer.from(`csrf-${process.env.NODE_ENV || 'dev'}-environment`).toString('base64').padEnd(32, 'x');
+        // Generate a truly random secret for development (48 bytes = ~64 chars base64)
+        // This prevents token reuse across different development machines
+        this.secret = randomBytes(48).toString('base64');
       } else {
         throw new Error('CSRF secret must be configured in production');
       }
