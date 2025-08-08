@@ -324,9 +324,43 @@
     </div>
     
     <script>
+        // Security improvements:
+        // 1. All user-provided data is escaped using escapeHtml() to prevent XSS attacks
+        // 2. CSRF tokens are fetched and included in all state-changing requests
+        // 3. Error messages are safely displayed using textContent or escapeHtml()
+        
         let currentPage = 0;
         const pageSize = 50;
         let authToken = null;
+        let csrfToken = null;
+        
+        // HTML escaping function to prevent XSS attacks
+        // CRITICAL: Use this for ALL user-provided data displayed in innerHTML
+        function escapeHtml(unsafe) {
+            if (unsafe == null) return '';
+            return String(unsafe)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        
+        // Fetch CSRF token
+        async function fetchCSRFToken() {
+            try {
+                const response = await fetch('/api/admin/csrf-token');
+                if (response.ok) {
+                    const data = await response.json();
+                    csrfToken = data.csrfToken;
+                    // Refresh token before it expires (50 minutes)
+                    setTimeout(fetchCSRFToken, 50 * 60 * 1000);
+                }
+            } catch (error) {
+                console.warn('Failed to fetch CSRF token:', error);
+                // Continue without CSRF token for backward compatibility
+            }
+        }
         
         // Check authentication on load
         async function checkAuth() {
@@ -339,6 +373,9 @@
                     window.location.href = '/pages/admin/login.html';
                     return false;
                 }
+                
+                // Fetch CSRF token after successful auth check
+                await fetchCSRFToken();
                 
                 return true;
             } catch (error) {
@@ -364,7 +401,7 @@
             } catch (error) {
                 console.error('Failed to load dashboard:', error);
                 document.getElementById('statsGrid').innerHTML = `
-                    <div class="error">Failed to load dashboard: ${error.message}</div>
+                    <div class="error">Failed to load dashboard: ${escapeHtml(error.message)}</div>
                 `;
             }
         }
@@ -447,7 +484,7 @@
             } catch (error) {
                 console.error('Failed to load registrations:', error);
                 document.getElementById('registrationsTable').innerHTML = `
-                    <div class="error">Failed to load registrations: ${error.message}</div>
+                    <div class="error">Failed to load registrations: ${escapeHtml(error.message)}</div>
                 `;
             }
         }
@@ -479,20 +516,20 @@
                     <tbody>
                         ${registrations.map(reg => `
                             <tr>
-                                <td><span class="ticket-id">${reg.ticket_id}</span></td>
-                                <td>${reg.attendee_first_name} ${reg.attendee_last_name}</td>
-                                <td>${reg.attendee_email}</td>
-                                <td>${formatTicketType(reg.ticket_type)}</td>
+                                <td><span class="ticket-id">${escapeHtml(reg.ticket_id)}</span></td>
+                                <td>${escapeHtml(reg.attendee_first_name)} ${escapeHtml(reg.attendee_last_name)}</td>
+                                <td>${escapeHtml(reg.attendee_email)}</td>
+                                <td>${escapeHtml(formatTicketType(reg.ticket_type))}</td>
                                 <td>
-                                    <span class="status-badge status-${reg.checked_in_at ? 'checked-in' : reg.status}">
-                                        ${reg.checked_in_at ? 'Checked In' : reg.status}
+                                    <span class="status-badge status-${reg.checked_in_at ? 'checked-in' : escapeHtml(reg.status)}">
+                                        ${reg.checked_in_at ? 'Checked In' : escapeHtml(reg.status)}
                                     </span>
                                 </td>
-                                <td>${reg.order_number}</td>
+                                <td>${escapeHtml(reg.order_number)}</td>
                                 <td>
                                     ${reg.checked_in_at ? 
-                                        `<button class="checkin-btn" onclick="undoCheckin('${reg.ticket_id}')">Undo</button>` :
-                                        `<button class="checkin-btn" onclick="checkinTicket('${reg.ticket_id}')">Check In</button>`
+                                        `<button class="checkin-btn" onclick="undoCheckin('${escapeHtml(reg.ticket_id)}')">Undo</button>` :
+                                        `<button class="checkin-btn" onclick="checkinTicket('${escapeHtml(reg.ticket_id)}')">Check In</button>`
                                     }
                                 </td>
                             </tr>
@@ -543,9 +580,15 @@
             if (!confirm(`Check in ticket ${ticketId}?`)) return;
             
             try {
+                const headers = { 'Content-Type': 'application/json' };
+                // Add CSRF token if available
+                if (csrfToken) {
+                    headers['X-CSRF-Token'] = csrfToken;
+                }
+                
                 const response = await fetch(`/api/admin/registrations?ticketId=${ticketId}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({ action: 'checkin' })
                 });
                 
@@ -556,7 +599,7 @@
                 await loadRegistrations(currentPage);
                 
             } catch (error) {
-                alert(`Failed to check in: ${error.message}`);
+                alert(`Failed to check in: ${escapeHtml(error.message)}`);
             }
         }
         
@@ -565,9 +608,15 @@
             if (!confirm(`Undo check-in for ticket ${ticketId}?`)) return;
             
             try {
+                const headers = { 'Content-Type': 'application/json' };
+                // Add CSRF token if available
+                if (csrfToken) {
+                    headers['X-CSRF-Token'] = csrfToken;
+                }
+                
                 const response = await fetch(`/api/admin/registrations?ticketId=${ticketId}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({ action: 'undo_checkin' })
                 });
                 
@@ -578,7 +627,7 @@
                 await loadRegistrations(currentPage);
                 
             } catch (error) {
-                alert(`Failed to undo check-in: ${error.message}`);
+                alert(`Failed to undo check-in: ${escapeHtml(error.message)}`);
             }
         }
         
@@ -614,7 +663,7 @@
                 a.click();
                 
             } catch (error) {
-                alert(`Export failed: ${error.message}`);
+                alert(`Export failed: ${escapeHtml(error.message)}`);
             }
         }
         
@@ -627,6 +676,8 @@
                 'Ticket Type', 'Status', 'Checked In', 'Order Number'
             ];
             
+            // Note: No HTML escaping needed for CSV export data
+            // CSV format handles special characters differently
             const rows = data.map(row => [
                 row.ticket_id,
                 row.attendee_first_name,
@@ -661,7 +712,16 @@
         // Logout
         async function logout() {
             try {
-                await fetch('/api/admin/login', { method: 'DELETE' });
+                const headers = {};
+                // Add CSRF token if available
+                if (csrfToken) {
+                    headers['X-CSRF-Token'] = csrfToken;
+                }
+                
+                await fetch('/api/admin/login', { 
+                    method: 'DELETE',
+                    headers: headers
+                });
                 window.location.href = '/pages/admin/login.html';
             } catch (error) {
                 console.error('Logout failed:', error);

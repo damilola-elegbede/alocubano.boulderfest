@@ -1,5 +1,6 @@
 import authService from "../lib/auth-service.js";
 import { getDatabase } from "../lib/database.js";
+import { withSecurityHeaders } from "../lib/security-headers.js";
 
 async function handler(req, res) {
   const db = getDatabase();
@@ -80,4 +81,4 @@ async function handler(req, res) {
 }
 
 // Wrap with auth middleware
-export default authService.requireAuth(handler);
+export default withSecurityHeaders(authService.requireAuth(handler));

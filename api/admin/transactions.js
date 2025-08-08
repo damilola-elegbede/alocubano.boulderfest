@@ -1,13 +1,26 @@
 import authService from "../lib/auth-service.js";
 import { getDatabase } from "../lib/database.js";
+import { getValidationService } from "../lib/validation-service.js";
+import { withSecurityHeaders } from "../lib/security-headers.js";
 
 async function handler(req, res) {
   const db = getDatabase();
 
   try {
     if (req.method === "GET") {
-      // Get query parameters
-      const { email, status, limit = 50, offset = 0 } = req.query;
+      const validationService = getValidationService();
+
+      // Validate all search parameters
+      const validation = validationService.validateTransactionSearchParams(req.query);
+      
+      if (!validation.isValid) {
+        return res.status(400).json({ 
+          error: 'Validation failed',
+          details: validation.errors
+        });
+      }
+
+      const { sanitized } = validation;
 
       // Build query
       let sql = `
@@ -22,18 +35,18 @@ async function handler(req, res) {
 
       const args = [];
 
-      if (email) {
+      if (sanitized.email) {
         sql += " AND t.customer_email = ?";
-        args.push(email);
+        args.push(sanitized.email);
       }
 
-      if (status) {
+      if (sanitized.status) {
         sql += " AND t.status = ?";
-        args.push(status);
+        args.push(sanitized.status);
       }
 
       sql += " GROUP BY t.id ORDER BY t.created_at DESC LIMIT ? OFFSET ?";
-      args.push(parseInt(limit), parseInt(offset));
+      args.push(sanitized.limit, sanitized.offset);
 
       const result = await db.execute({ sql, args });
 
@@ -41,14 +54,14 @@ async function handler(req, res) {
       let countSql = "SELECT COUNT(*) as total FROM transactions WHERE 1=1";
       const countArgs = [];
 
-      if (email) {
+      if (sanitized.email) {
         countSql += " AND customer_email = ?";
-        countArgs.push(email);
+        countArgs.push(sanitized.email);
       }
 
-      if (status) {
+      if (sanitized.status) {
         countSql += " AND status = ?";
-        countArgs.push(status);
+        countArgs.push(sanitized.status);
       }
 
       const countResult = await db.execute({ sql: countSql, args: countArgs });
@@ -56,16 +69,54 @@ async function handler(req, res) {
       res.status(200).json({
         transactions: result.rows,
         total: countResult.rows[0].total,
-        limit: parseInt(limit),
-        offset: parseInt(offset),
+        limit: sanitized.limit,
+        offset: sanitized.offset,
+        hasMore: sanitized.offset + sanitized.limit < countResult.rows[0].total,
       });
     } else if (req.method === "POST") {
       // Manual transaction creation (for testing)
       const { amount, email, name, type = "tickets" } = req.body;
+      const validationService = getValidationService();
 
-      if (!amount || !email) {
-        return res.status(400).json({ error: "Amount and email are required" });
+      // Validate all required fields
+      const errors = [];
+
+      // Validate amount
+      const amountValidation = validationService.validateAmount(amount);
+      if (!amountValidation.isValid) {
+        errors.push(amountValidation.error);
       }
+
+      // Validate email
+      const emailValidation = validationService.validateEmail(email);
+      if (!emailValidation.isValid) {
+        errors.push(emailValidation.error);
+      }
+
+      // Validate name if provided
+      const nameValidation = validationService.validateName(name, 'Customer name');
+      if (!nameValidation.isValid) {
+        errors.push(nameValidation.error);
+      }
+
+      // Validate type
+      const typeValidation = validationService.validateEnum(type, 'transaction type', 'transactionTypes');
+      if (!typeValidation.isValid) {
+        return res.status(400).json({ 
+          error: typeValidation.error,
+          allowedValues: typeValidation.allowedValues
+        });
+      }
+
+      // Return validation errors if any
+      if (errors.length > 0) {
+        return res.status(400).json({ 
+          error: 'Validation failed',
+          details: errors
+        });
+      }
+
+      const numAmount = amountValidation.amount;
 
       const uuid = `MANUAL-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
@@ -78,7 +129,7 @@ async function handler(req, res) {
           uuid,
           type,
           "paid", // Use valid status
-          Math.round(amount * 100),
+          Math.round(numAmount * 100),
           "USD",
           email,
           name || null,
@@ -101,4 +152,4 @@ async function handler(req, res) {
   }
 }
 
-export default authService.requireAuth(handler);
+export default withSecurityHeaders(authService.requireAuth(handler));
