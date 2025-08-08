@@ -1,12 +1,34 @@
 #!/usr/bin/env node
 import bcrypt from 'bcryptjs';
+import { createInterface } from 'readline';
 
 /**
  * Generate bcrypt hash for check-in staff password
- * Password: $ALC4Bitb!
+ * Uses environment variable or prompts for password input
  */
 async function generateStaffPasswordHash() {
-  const staffPassword = '$ALC4Bitb!';
+  let staffPassword = process.env.CHECKIN_STAFF_PLAINTEXT_PASSWORD;
+  
+  // If no environment variable, prompt for password
+  if (!staffPassword) {
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    
+    staffPassword = await new Promise((resolve) => {
+      rl.question('Enter check-in staff password: ', (answer) => {
+        rl.close();
+        resolve(answer);
+      });
+    });
+  }
+  
+  if (!staffPassword) {
+    console.error('❌ No password provided');
+    process.exit(1);
+  }
+  
   const saltRounds = 10;
   
   try {
@@ -14,7 +36,7 @@ async function generateStaffPasswordHash() {
     
     console.log('Check-in Staff Password Configuration');
     console.log('=====================================');
-    console.log('Password: $ALC4Bitb!');
+    console.log('Password: [SECURED - NOT DISPLAYED]');
     console.log('');
     console.log('Add this to your .env file:');
     console.log('CHECKIN_STAFF_PASSWORD=' + hash);
