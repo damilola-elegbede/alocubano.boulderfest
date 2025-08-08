@@ -4,7 +4,7 @@
 
 -- Add check-in fields to tickets table
 ALTER TABLE tickets ADD COLUMN IF NOT EXISTS checked_in_at TIMESTAMP;
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS checked_in_by VARCHAR(255);
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS checked_in_by INTEGER;
 
 -- Create index for check-in queries
 CREATE INDEX IF NOT EXISTS idx_tickets_checked_in ON tickets(checked_in_at);

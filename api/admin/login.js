@@ -81,7 +81,6 @@ async function loginHandler(req, res) {
       res.setHeader("Set-Cookie", cookie);
       res.status(200).json({
         success: true,
-        token, // Also return token for API usage
         expiresIn: authService.sessionDuration,
       });
 
@@ -90,6 +89,7 @@ async function loginHandler(req, res) {
       
       // Try to record the failed attempt even if other errors occurred
       try {
+        const rateLimitService = getRateLimitService();
         await rateLimitService.recordFailedAttempt(clientIP);
       } catch (rateLimitError) {
         console.error("Failed to record rate limit attempt:", rateLimitError);

@@ -17,8 +17,8 @@ console.log("========================================\n");
 const requiredVars = {
   APPLE_TEAM_ID: process.env.APPLE_TEAM_ID,
   APPLE_PASS_TYPE_ID: process.env.APPLE_PASS_TYPE_ID,
-  APPLE_PASS_CERT: process.env.APPLE_PASS_CERT?.substring(0, 50) + "...",
-  APPLE_WWDR_CERT: process.env.APPLE_WWDR_CERT?.substring(0, 50) + "...",
+  APPLE_PASS_CERT: process.env.APPLE_PASS_CERT ? process.env.APPLE_PASS_CERT.substring(0, 50) + "..." : undefined,
+  APPLE_WWDR_CERT: process.env.APPLE_WWDR_CERT ? process.env.APPLE_WWDR_CERT.substring(0, 50) + "..." : undefined,
   APPLE_PASS_ORGANIZATION: process.env.APPLE_PASS_ORGANIZATION,
   WALLET_BASE_URL: process.env.WALLET_BASE_URL,
 };

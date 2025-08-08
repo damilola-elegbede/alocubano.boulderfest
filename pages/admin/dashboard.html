@@ -528,8 +528,8 @@
                                 <td>${escapeHtml(reg.order_number)}</td>
                                 <td>
                                     ${reg.checked_in_at ? 
-                                        `<button class="checkin-btn" onclick="undoCheckin('${escapeHtml(reg.ticket_id)}')">Undo</button>` :
-                                        `<button class="checkin-btn" onclick="checkinTicket('${escapeHtml(reg.ticket_id)}')">Check In</button>`
+                                        `<button class="checkin-btn" data-action="undo" data-ticket-id="${escapeHtml(reg.ticket_id)}">Undo</button>` :
+                                        `<button class="checkin-btn" data-action="checkin" data-ticket-id="${escapeHtml(reg.ticket_id)}">Check In</button>`
                                     }
                                 </td>
                             </tr>
@@ -586,7 +586,7 @@
                     headers['X-CSRF-Token'] = csrfToken;
                 }
                 
-                const response = await fetch(`/api/admin/registrations?ticketId=${ticketId}`, {
+                const response = await fetch(`/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`, {
                     method: 'PUT',
                     headers: headers,
                     body: JSON.stringify({ action: 'checkin' })
@@ -614,7 +614,7 @@
                     headers['X-CSRF-Token'] = csrfToken;
                 }
                 
-                const response = await fetch(`/api/admin/registrations?ticketId=${ticketId}`, {
+                const response = await fetch(`/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`, {
                     method: 'PUT',
                     headers: headers,
                     body: JSON.stringify({ action: 'undo_checkin' })
@@ -691,7 +691,7 @@
             
             return [
                 headers.join(','),
-                ...rows.map(row => row.map(cell => `"${cell || ''}"`).join(','))
+                ...rows.map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(','))
             ].join('\n');
         }
         
@@ -729,6 +729,20 @@
             }
         }
         
+        // Add event delegation for check-in buttons
+        document.getElementById('registrationsTable').addEventListener('click', function(event) {
+            if (event.target.matches('.checkin-btn[data-action]')) {
+                const action = event.target.getAttribute('data-action');
+                const ticketId = event.target.getAttribute('data-ticket-id');
+                
+                if (action === 'checkin') {
+                    checkinTicket(ticketId);
+                } else if (action === 'undo') {
+                    undoCheckin(ticketId);
+                }
+            }
+        });
+
         // Initialize dashboard
         loadDashboard();
         

@@ -19,10 +19,14 @@ class RateLimitService {
    * Get configuration from environment variables with fallbacks
    */
   getConfig() {
+    const maxAttempts = parseInt(process.env.ADMIN_MAX_LOGIN_ATTEMPTS || this.defaultConfig.maxAttempts);
+    const lockoutDuration = parseInt(process.env.ADMIN_LOCKOUT_DURATION_MS || this.defaultConfig.lockoutDuration);
+    const cleanupInterval = parseInt(process.env.ADMIN_CLEANUP_INTERVAL_MS || this.defaultConfig.cleanupInterval);
+    
     return {
-      maxAttempts: parseInt(process.env.ADMIN_MAX_LOGIN_ATTEMPTS || this.defaultConfig.maxAttempts),
-      lockoutDuration: parseInt(process.env.ADMIN_LOCKOUT_DURATION_MS || this.defaultConfig.lockoutDuration),
-      cleanupInterval: parseInt(process.env.ADMIN_CLEANUP_INTERVAL_MS || this.defaultConfig.cleanupInterval),
+      maxAttempts: isNaN(maxAttempts) ? this.defaultConfig.maxAttempts : maxAttempts,
+      lockoutDuration: isNaN(lockoutDuration) ? this.defaultConfig.lockoutDuration : lockoutDuration,
+      cleanupInterval: isNaN(cleanupInterval) ? this.defaultConfig.cleanupInterval : cleanupInterval,
     };
   }
 

@@ -33,7 +33,13 @@ async function runMigrations() {
       .split(";")
       .map((s) => s.trim())
       .filter((s) => s.length > 0)
-      .map((s) => s + (s.toUpperCase().includes("END") ? "" : ";"));
+      .map((s) => {
+        // Don't add semicolon if statement already ends with one or contains END
+        if (s.endsWith(";") || s.toUpperCase().includes("END")) {
+          return s;
+        }
+        return s + ";";
+      });
 
     // Execute statements individually (Turso doesn't support transactions)
     for (const statement of statements) {
