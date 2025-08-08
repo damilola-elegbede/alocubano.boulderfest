@@ -1,22 +1,26 @@
 import authService from "../lib/auth-service.js";
 import { getDatabase } from "../lib/database.js";
 import ticketService from "../lib/ticket-service.js";
+import { getValidationService } from "../lib/validation-service.js";
+import { withSecurityHeaders } from "../lib/security-headers.js";
 
 async function handler(req, res) {
   const db = getDatabase();
 
   if (req.method === "GET") {
-    // Search and filter registrations
-    const {
-      search,
-      status,
-      ticketType,
-      checkedIn,
-      limit = 50,
-      offset = 0,
-      sortBy = "created_at",
-      sortOrder = "DESC",
-    } = req.query;
+    const validationService = getValidationService();
+
+    // Validate all search parameters
+    const validation = validationService.validateRegistrationSearchParams(req.query);
+    
+    if (!validation.isValid) {
+      return res.status(400).json({ 
+        error: 'Validation failed',
+        details: validation.errors
+      });
+    }
+
+    const { sanitized } = validation;
 
     let sql = `
       SELECT 
@@ -31,49 +35,36 @@ async function handler(req, res) {
 
     const args = [];
 
-    if (search) {
+    if (sanitized.searchTerm) {
       sql += ` AND (
-        t.attendee_email LIKE ? OR 
-        t.attendee_first_name LIKE ? OR 
-        t.attendee_last_name LIKE ? OR
-        t.ticket_id LIKE ? OR
-        tr.customer_email LIKE ?
+        t.attendee_email LIKE ? ESCAPE '\\' OR 
+        t.attendee_first_name LIKE ? ESCAPE '\\' OR 
+        t.attendee_last_name LIKE ? ESCAPE '\\' OR
+        t.ticket_id LIKE ? ESCAPE '\\' OR
+        tr.customer_email LIKE ? ESCAPE '\\'
       )`;
-      const searchTerm = `%${search}%`;
-      args.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+      args.push(sanitized.searchTerm, sanitized.searchTerm, sanitized.searchTerm, sanitized.searchTerm, sanitized.searchTerm);
     }
 
-    if (status) {
+    if (sanitized.status) {
       sql += ` AND t.status = ?`;
-      args.push(status);
+      args.push(sanitized.status);
     }
 
-    if (ticketType) {
+    if (sanitized.ticketType) {
       sql += ` AND t.ticket_type = ?`;
-      args.push(ticketType);
+      args.push(sanitized.ticketType);
     }
 
-    if (checkedIn === "true") {
+    if (sanitized.checkedIn === "true") {
       sql += ` AND t.checked_in_at IS NOT NULL`;
-    } else if (checkedIn === "false") {
+    } else if (sanitized.checkedIn === "false") {
       sql += ` AND t.checked_in_at IS NULL`;
     }
 
-    // Validate sort column
-    const allowedSortColumns = [
-      "created_at",
-      "attendee_last_name",
-      "ticket_type",
-      "checked_in_at",
-    ];
-    const sortColumn = allowedSortColumns.includes(sortBy)
-      ? sortBy
-      : "created_at";
-    const sortDirection = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
-
-    sql += ` ORDER BY t.${sortColumn} ${sortDirection}`;
+    sql += ` ORDER BY t.${sanitized.sortBy} ${sanitized.sortOrder}`;
     sql += ` LIMIT ? OFFSET ?`;
-    args.push(parseInt(limit), parseInt(offset));
+    args.push(sanitized.limit, sanitized.offset);
 
     try {
       const result = await db.execute({ sql, args });
@@ -88,20 +79,20 @@ async function handler(req, res) {
 
       const countArgs = args.slice(0, -2); // Remove limit and offset
 
-      if (search) {
+      if (sanitized.searchTerm) {
         countSql += ` AND (
-          t.attendee_email LIKE ? OR 
-          t.attendee_first_name LIKE ? OR 
-          t.attendee_last_name LIKE ? OR
-          t.ticket_id LIKE ? OR
-          tr.customer_email LIKE ?
+          t.attendee_email LIKE ? ESCAPE '\\' OR 
+          t.attendee_first_name LIKE ? ESCAPE '\\' OR 
+          t.attendee_last_name LIKE ? ESCAPE '\\' OR
+          t.ticket_id LIKE ? ESCAPE '\\' OR
+          tr.customer_email LIKE ? ESCAPE '\\'
         )`;
       }
 
-      if (status) countSql += ` AND t.status = ?`;
-      if (ticketType) countSql += ` AND t.ticket_type = ?`;
-      if (checkedIn === "true") countSql += ` AND t.checked_in_at IS NOT NULL`;
-      else if (checkedIn === "false")
+      if (sanitized.status) countSql += ` AND t.status = ?`;
+      if (sanitized.ticketType) countSql += ` AND t.ticket_type = ?`;
+      if (sanitized.checkedIn === "true") countSql += ` AND t.checked_in_at IS NOT NULL`;
+      else if (sanitized.checkedIn === "false")
         countSql += ` AND t.checked_in_at IS NULL`;
 
       const countResult = await db.execute({ sql: countSql, args: countArgs });
@@ -109,8 +100,9 @@ async function handler(req, res) {
       res.status(200).json({
         registrations: result.rows,
         total: countResult.rows[0].total,
-        limit: parseInt(limit),
-        offset: parseInt(offset),
+        limit: sanitized.limit,
+        offset: sanitized.offset,
+        hasMore: sanitized.offset + sanitized.limit < countResult.rows[0].total,
       });
     } catch (error) {
       console.error("Registration search error:", error);
@@ -120,9 +112,21 @@ async function handler(req, res) {
     // Update registration (check-in, edit details)
     const { ticketId } = req.query;
     const { action, ...data } = req.body;
+    const validationService = getValidationService();
 
-    if (!ticketId) {
-      return res.status(400).json({ error: "Ticket ID required" });
+    // Validate ticket ID
+    const ticketIdValidation = validationService.validateTicketId(ticketId);
+    if (!ticketIdValidation.isValid) {
+      return res.status(400).json({ error: ticketIdValidation.error });
+    }
+
+    // Validate action
+    const actionValidation = validationService.validateAdminAction(action);
+    if (!actionValidation.isValid) {
+      return res.status(400).json({ 
+        error: actionValidation.error,
+        allowedValues: actionValidation.allowedValues 
+      });
     }
 
     try {
@@ -188,4 +192,4 @@ async function handler(req, res) {
   }
 }
 
-export default authService.requireAuth(handler);
+export default withSecurityHeaders(authService.requireAuth(handler));

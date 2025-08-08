@@ -1,83 +1,102 @@
 import authService from "../lib/auth-service.js";
 import { getDatabase } from "../lib/database.js";
+import { getRateLimitService } from "../lib/rate-limit-service.js";
+import { withSecurityHeaders } from "../lib/security-headers.js";
 
-// Track login attempts (in production, use database or Redis)
-const loginAttempts = new Map();
-const MAX_ATTEMPTS = parseInt(process.env.ADMIN_MAX_LOGIN_ATTEMPTS || "5");
-const LOCKOUT_DURATION = 30 * 60 * 1000; // 30 minutes
-
-export default async function handler(req, res) {
+async function loginHandler(req, res) {
   if (req.method === "POST") {
     const { password } = req.body;
     const clientIP =
       req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
 
-    // Check login attempts
-    const attempts = loginAttempts.get(clientIP) || {
-      count: 0,
-      lockedUntil: 0,
-    };
-
-    if (Date.now() < attempts.lockedUntil) {
-      const remainingTime = Math.ceil(
-        (attempts.lockedUntil - Date.now()) / 1000 / 60,
-      );
-      return res.status(429).json({
-        error: `Too many failed attempts. Try again in ${remainingTime} minutes.`,
-      });
+    if (!clientIP) {
+      return res.status(400).json({ error: "Unable to identify client" });
     }
 
-    // Verify password
-    const isValid = await authService.verifyPassword(password);
+    if (!password || typeof password !== 'string' || password.length > 200) {
+      return res.status(400).json({ error: "Invalid password format" });
+    }
 
-    if (!isValid) {
-      // Increment failed attempts
-      attempts.count++;
+    const rateLimitService = getRateLimitService();
 
-      if (attempts.count >= MAX_ATTEMPTS) {
-        attempts.lockedUntil = Date.now() + LOCKOUT_DURATION;
+    try {
+      // Check rate limiting
+      const rateLimitResult = await rateLimitService.checkRateLimit(clientIP);
+
+      if (rateLimitResult.isLocked) {
+        return res.status(429).json({
+          error: `Too many failed attempts. Try again in ${rateLimitResult.remainingTime} minutes.`,
+          remainingTime: rateLimitResult.remainingTime
+        });
       }
 
-      loginAttempts.set(clientIP, attempts);
+      // Verify password
+      const isValid = await authService.verifyPassword(password);
 
-      return res.status(401).json({
-        error: "Invalid password",
-        attemptsRemaining: Math.max(0, MAX_ATTEMPTS - attempts.count),
+      if (!isValid) {
+        // Record failed attempt
+        const attemptResult = await rateLimitService.recordFailedAttempt(clientIP);
+
+        const response = {
+          error: "Invalid password",
+          attemptsRemaining: attemptResult.attemptsRemaining,
+        };
+
+        if (attemptResult.isLocked) {
+          response.error = "Too many failed attempts. Account temporarily locked.";
+          return res.status(429).json(response);
+        }
+
+        return res.status(401).json(response);
+      }
+
+      // Clear login attempts on success
+      await rateLimitService.clearAttempts(clientIP);
+
+      // Create session
+      const token = authService.createSessionToken();
+      const cookie = authService.createSessionCookie(token);
+
+      // Log successful login
+      try {
+        const db = getDatabase();
+        await db.execute({
+          sql: `INSERT INTO admin_activity_log (
+            session_token, action, ip_address, user_agent, request_details, success
+          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          args: [
+            token,
+            "login",
+            clientIP,
+            req.headers["user-agent"] || null,
+            JSON.stringify({ timestamp: new Date().toISOString() }),
+            true,
+          ],
+        });
+      } catch (error) {
+        console.error("Failed to log admin login:", error);
+        // Don't fail the login if logging fails
+      }
+
+      res.setHeader("Set-Cookie", cookie);
+      res.status(200).json({
+        success: true,
+        token, // Also return token for API usage
+        expiresIn: authService.sessionDuration,
       });
-    }
 
-    // Clear login attempts on success
-    loginAttempts.delete(clientIP);
-
-    // Create session
-    const token = authService.createSessionToken();
-    const cookie = authService.createSessionCookie(token);
-
-    // Log successful login
-    try {
-      const db = getDatabase();
-      await db.execute({
-        sql: `INSERT INTO payment_events (
-          event_id, event_type, event_source, event_data, processing_status
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: [
-          `LOGIN-${Date.now()}`,
-          "admin_login",
-          "admin",
-          JSON.stringify({ ip: clientIP, timestamp: new Date().toISOString() }),
-          "processed",
-        ],
-      });
     } catch (error) {
-      console.error("Failed to log admin login:", error);
-    }
+      console.error("Login process failed:", error);
+      
+      // Try to record the failed attempt even if other errors occurred
+      try {
+        await rateLimitService.recordFailedAttempt(clientIP);
+      } catch (rateLimitError) {
+        console.error("Failed to record rate limit attempt:", rateLimitError);
+      }
 
-    res.setHeader("Set-Cookie", cookie);
-    res.status(200).json({
-      success: true,
-      token, // Also return token for API usage
-      expiresIn: authService.sessionDuration,
-    });
+      res.status(500).json({ error: "Internal server error" });
+    }
   } else if (req.method === "DELETE") {
     // Logout
     const cookie = authService.clearSessionCookie();
@@ -88,3 +107,5 @@ export default async function handler(req, res) {
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
+
+export default withSecurityHeaders(loginHandler);
