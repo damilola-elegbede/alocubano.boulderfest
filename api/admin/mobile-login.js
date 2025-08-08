@@ -1,6 +1,5 @@
 import { getMobileAuthService } from "../lib/mobile-auth-service.js";
 import { getCsrfService } from "../lib/csrf-service.js";
-import { validateInput } from "../lib/validation-service.js";
 import { applySecurityHeaders } from "../lib/security-headers.js";
 import { getRateLimitService } from "../lib/rate-limit-service.js";
 
@@ -26,14 +25,15 @@ export default async function handler(req, res) {
     const rateLimitService = getRateLimitService();
 
     // Get client IP address for rate limiting
-    const clientIP = req.headers["x-forwarded-for"] || req.connection.remoteAddress || req.ip;
+    const clientId = rateLimitService.getClientId(req);
 
-    // Check rate limiting
-    const rateLimitCheck = await rateLimitService.checkRateLimit(clientIP);
-    if (rateLimitCheck.isLocked) {
+    // Check if client is locked out
+    if (rateLimitService.isLockedOut(clientId)) {
+      const remainingSeconds = rateLimitService.getRemainingLockoutTime(clientId);
+      const remainingMinutes = Math.ceil(remainingSeconds / 60);
       return res.status(429).json({
         error: "Too many login attempts",
-        details: `Account locked. Try again in ${rateLimitCheck.remainingTime} minutes.`
+        details: `Account locked. Try again in ${remainingMinutes} minutes.`
       });
     }
 
@@ -53,13 +53,19 @@ export default async function handler(req, res) {
       });
     }
 
-    // Validate input
-    const validation = validateInput({ password }, { password: "password" });
-
-    if (!validation.isValid) {
+    // Validate input - ensure password is provided and is a string
+    if (!password || typeof password !== 'string' || password.length === 0) {
       return res.status(400).json({
         error: "Invalid input",
-        details: validation.errors,
+        details: "Password is required",
+      });
+    }
+    
+    // Additional password validation
+    if (password.length > 100) {
+      return res.status(400).json({
+        error: "Invalid input", 
+        details: "Password is too long",
       });
     }
 
@@ -68,10 +74,10 @@ export default async function handler(req, res) {
 
     if (!isValidPassword) {
       // Record failed attempt for rate limiting
-      await rateLimitService.recordFailedAttempt(clientIP);
+      rateLimitService.recordFailedAttempt(clientId);
       
       // Log failed attempt
-      console.log("Failed mobile login attempt from:", clientIP);
+      console.log("Failed mobile login attempt from:", clientId);
       
       return res.status(401).json({
         error: "Invalid password",
@@ -79,7 +85,7 @@ export default async function handler(req, res) {
     }
 
     // Clear rate limit attempts on successful login
-    await rateLimitService.clearAttempts(clientIP);
+    rateLimitService.clearFailedAttempts(clientId);
 
     // Create extended 72-hour session token for mobile check-in
     const sessionToken = mobileAuth.createMobileSessionToken(
