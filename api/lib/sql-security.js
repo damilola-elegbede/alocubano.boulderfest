@@ -75,6 +75,10 @@ const EXPECTED_TABLE_NAMES = [
   "tickets",
   "transaction_items",
   "payment_events",
+  "qr_validations",
+  "wallet_pass_events",
+  "access_tokens",
+  "action_tokens",
   "migrations",
   "test_table",
 ];
