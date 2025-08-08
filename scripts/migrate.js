@@ -234,9 +234,12 @@ class MigrationSystem {
       try {
         await this.db.execute("ROLLBACK");
       } catch (rollbackError) {
-        console.error("❌ Failed to rollback transaction:", rollbackError.message);
+        console.error(
+          "❌ Failed to rollback transaction:",
+          rollbackError.message,
+        );
       }
-      
+
       console.error(
         `❌ Migration failed: ${migration.filename}`,
         error.message,
