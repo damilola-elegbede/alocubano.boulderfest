@@ -56,23 +56,37 @@ async function runMigrations() {
         `Running migration: ${file} (${statements.length} statements)`,
       );
 
-      for (const statement of statements) {
-        try {
-          await db.execute(statement);
-        } catch (error) {
-          console.error(`Error executing statement in ${file}:`, error.message);
-          console.error("Statement:", statement.substring(0, 100) + "...");
-          throw error;
+      // Use transaction for atomic migration execution
+      try {
+        await db.execute("BEGIN TRANSACTION");
+        
+        for (const statement of statements) {
+          try {
+            await db.execute(statement);
+          } catch (error) {
+            console.error(`Error executing statement in ${file}:`, error.message);
+            console.error("Statement:", statement.substring(0, 100) + "...");
+            await db.execute("ROLLBACK");
+            throw error;
+          }
         }
+        
+        // Record migration as executed within transaction
+        await db.execute({
+          sql: `INSERT OR IGNORE INTO migrations (filename, executed_at) VALUES (?, CURRENT_TIMESTAMP)`,
+          args: [file],
+        });
+        
+        await db.execute("COMMIT");
+        console.log(`✅ Migration ${file} completed successfully`);
+        
+      } catch (error) {
+        // Rollback already handled above for statement errors
+        if (!error.message.includes("Error executing statement")) {
+          await db.execute("ROLLBACK").catch(() => {});
+        }
+        throw error;
       }
-
-      // Record migration as executed
-      await db.execute({
-        sql: "INSERT INTO migrations (filename) VALUES (?)",
-        args: [file],
-      });
-
-      console.log(`✓ Completed: ${file}`);
     }
 
     console.log("\n✅ All migrations completed successfully");

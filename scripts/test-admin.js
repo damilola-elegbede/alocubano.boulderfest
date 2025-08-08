@@ -47,12 +47,17 @@ async function generateAdminCredentials() {
 }
 
 async function hashPassword(password) {
-  const hash = await bcrypt.hash(password, 10);
-  console.log("\n=== Password Hash Generated ===");
-  console.log(`Password: [hidden]`);
-  console.log(`Hash: ${hash}`);
-  console.log("\nAdd to environment variables:");
-  console.log(`ADMIN_PASSWORD=${hash}\n`);
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    console.log("\n=== Password Hash Generated ===");
+    console.log(`Password: [hidden]`);
+    console.log(`Hash: ${hash}`);
+    console.log("\nAdd to environment variables:");
+    console.log(`ADMIN_PASSWORD=${hash}\n`);
+  } catch (error) {
+    console.error("Error hashing password:", error);
+    throw error;
+  }
 }
 
 async function testAuthService() {

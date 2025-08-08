@@ -49,6 +49,7 @@ export class CSRFService {
     try {
       const decoded = jwt.verify(token, this.secret, {
         issuer: "alocubano-csrf",
+        algorithms: ["HS256"],
       });
 
       // Verify session ID matches
@@ -107,16 +108,12 @@ export class CSRFService {
         req.body?.csrfToken;
 
       if (!csrfToken) {
-        // For now, we'll allow requests without CSRF tokens but log a warning
-        // This prevents breaking existing functionality while we transition
-        console.warn("CSRF token missing for state-changing request:", {
+        console.error("CSRF token missing for state-changing request:", {
           method: req.method,
           url: req.url,
           ip: req.headers["x-forwarded-for"] || req.connection?.remoteAddress,
         });
-        // In production, you should return an error:
-        // return res.status(403).json({ error: "CSRF token required" });
-        return handler(req, res);
+        return res.status(403).json({ error: "CSRF token required" });
       }
 
       // Get session ID from the request (from JWT in cookie or auth header)
@@ -126,9 +123,7 @@ export class CSRFService {
 
       if (!result.valid) {
         console.error("Invalid CSRF token:", result.error);
-        // For now, just log but don't block
-        // In production, you should return an error:
-        // return res.status(403).json({ error: "Invalid CSRF token" });
+        return res.status(403).json({ error: "Invalid CSRF token" });
       }
 
       // Add CSRF validation result to request

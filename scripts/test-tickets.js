@@ -50,8 +50,17 @@ async function testTickets() {
     console.log("No tickets found for this transaction. Creating tickets...\n");
 
     // Parse line items from order data
-    const orderData = JSON.parse(transaction.order_details || "{}");
-    const lineItems = orderData.line_items || [];
+    let orderData = {};
+    let lineItems = [];
+    
+    try {
+      orderData = JSON.parse(transaction.order_details || "{}");
+      lineItems = orderData.line_items || [];
+    } catch (error) {
+      console.error("Error parsing order details JSON:", error);
+      console.log("Invalid order_details:", transaction.order_details);
+      lineItems = [];
+    }
 
     if (lineItems.length === 0) {
       console.log("No line items found in transaction order data.");

@@ -4,9 +4,9 @@ async function markMigrationComplete() {
   const db = getDatabase();
 
   try {
-    // Mark migration 006 as complete
+    // Mark migration 006 as complete (idempotent insert)
     await db.execute({
-      sql: `INSERT INTO migrations (filename, executed_at) VALUES (?, CURRENT_TIMESTAMP)`,
+      sql: `INSERT OR IGNORE INTO migrations (filename, executed_at) VALUES (?, CURRENT_TIMESTAMP)`,
       args: ["006_token_system.sql"],
     });
 
@@ -22,10 +22,14 @@ async function markMigrationComplete() {
     });
   } catch (error) {
     console.error("Error:", error);
-    process.exit(1);
+  } finally {
+    // Close database connection
+    try {
+      await db.close();
+    } catch (closeError) {
+      console.error("Error closing database:", closeError);
+    }
   }
-
-  process.exit(0);
 }
 
 markMigrationComplete();

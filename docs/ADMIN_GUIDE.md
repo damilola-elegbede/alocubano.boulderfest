@@ -17,7 +17,8 @@
    # Admin Dashboard Configuration
    ADMIN_PASSWORD=$2a$10$[your-generated-hash]
    ADMIN_SECRET=[your-generated-secret]
-   ADMIN_SESSION_DURATION=3600000  # 1 hour in milliseconds
+   # 1 hour in milliseconds
+   ADMIN_SESSION_DURATION=3600000
    ADMIN_MAX_LOGIN_ATTEMPTS=5
    ```
 

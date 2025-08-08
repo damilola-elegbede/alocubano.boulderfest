@@ -12,18 +12,18 @@ const __dirname = path.dirname(__filename);
 // Load credentials from .env.local
 dotenv.config({ path: ".env.local" });
 
-// Skip if no Google credentials are available (e.g., in CI/CD)
+// Check if Google credentials are available
 if (
   !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ||
   !process.env.GOOGLE_PRIVATE_KEY
 ) {
-  console.log(
-    "Skipping featured photos generation: Google credentials not found",
+  console.warn(
+    "Warning: Google credentials not found. Featured photos generation may fail.",
   );
-  console.log(
+  console.warn(
     "This is expected in CI/CD environments where credentials aren't available",
   );
-  process.exit(0);
+  // Continue execution instead of exiting
 }
 
 // --- Configuration ---

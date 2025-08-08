@@ -1,4 +1,5 @@
 import authService from "../lib/auth-service.js";
+import csrfService from "../lib/csrf-service.js";
 import { getDatabase } from "../lib/database.js";
 import { getValidationService } from "../lib/validation-service.js";
 import { withSecurityHeaders } from "../lib/security-headers.js";
@@ -75,6 +76,28 @@ async function handler(req, res) {
       });
     } else if (req.method === "POST") {
       // Manual transaction creation (for testing)
+      // Verify CSRF token for POST requests
+      const csrfToken = req.headers['x-csrf-token'] || req.body?.csrfToken;
+      if (!csrfToken) {
+        return res.status(403).json({ error: "CSRF token required" });
+      }
+
+      // Get session ID from authenticated user
+      const sessionToken = authService.getSessionFromRequest(req);
+      if (!sessionToken) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const session = authService.verifySessionToken(sessionToken);
+      if (!session.valid) {
+        return res.status(401).json({ error: "Invalid session" });
+      }
+
+      const csrfVerification = csrfService.verifyToken(csrfToken, session.admin.id);
+      if (!csrfVerification.valid) {
+        return res.status(403).json({ error: "Invalid CSRF token" });
+      }
+
       const { amount, email, name, type = "tickets" } = req.body;
       const validationService = getValidationService();
 

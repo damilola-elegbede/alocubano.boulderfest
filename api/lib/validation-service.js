@@ -8,9 +8,9 @@ class ValidationService {
     this.config = {
       maxEmailLength: 254,
       maxNameLength: 100,
-      maxSearchLength: parseInt(process.env.ADMIN_MAX_SEARCH_LENGTH || "100"),
-      maxQueryLimit: parseInt(process.env.ADMIN_MAX_QUERY_LIMIT || "1000"),
-      maxQueryOffset: parseInt(process.env.ADMIN_MAX_QUERY_OFFSET || "10000"),
+      maxSearchLength: parseInt(process.env.ADMIN_MAX_SEARCH_LENGTH) || 100,
+      maxQueryLimit: parseInt(process.env.ADMIN_MAX_QUERY_LIMIT) || 1000,
+      maxQueryOffset: parseInt(process.env.ADMIN_MAX_QUERY_OFFSET) || 10000,
       minAmount: 0.01,
       maxAmount: 10000,
     };
@@ -294,7 +294,8 @@ class ValidationService {
     if (!checkedInValidation.isValid) {
       errors.push(checkedInValidation.error);
     } else if (params.checkedIn) {
-      sanitized.checkedIn = params.checkedIn;
+      // Convert string to boolean
+      sanitized.checkedIn = params.checkedIn === 'true';
     }
 
     // Validate sort parameters
