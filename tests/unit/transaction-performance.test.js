@@ -28,13 +28,12 @@ describe('Transaction Service Performance Optimizations', () => {
   });
 
   it('should use BEGIN IMMEDIATE for transaction locking', async () => {
-    // Setup mocks for successful transaction
+    // Setup mocks for successful transaction - exact sequence verification
     mockDb.execute
       .mockResolvedValueOnce() // BEGIN IMMEDIATE
       .mockResolvedValueOnce({ insertId: 1 }) // INSERT transaction
       .mockResolvedValueOnce({ rows: [{ id: 1, uuid: 'test-uuid' }] }) // SELECT transaction
-      .mockResolvedValueOnce() // COMMIT
-      .mockResolvedValue(); // Any other calls
+      .mockResolvedValueOnce(); // COMMIT
     
     const transactionService = new TransactionService();
     
@@ -77,9 +76,20 @@ describe('Transaction Service Performance Optimizations', () => {
     // Call createFromStripeSession
     await transactionService.createFromStripeSession(mockSession);
 
-    // Verify BEGIN IMMEDIATE was called instead of just BEGIN
-    expect(mockDb.execute).toHaveBeenCalledWith("BEGIN IMMEDIATE");
+    // Verify exact transaction sequence: BEGIN IMMEDIATE → INSERT → COMMIT
+    expect(mockDb.execute).toHaveBeenNthCalledWith(1, "BEGIN IMMEDIATE");
+    expect(mockDb.execute).toHaveBeenCalledWith(expect.objectContaining({
+      sql: expect.stringContaining("INSERT INTO transactions")
+    }));
+    expect(mockDb.execute).toHaveBeenCalledWith("COMMIT");
     expect(mockDb.execute).not.toHaveBeenCalledWith("BEGIN");
+    expect(mockDb.execute).not.toHaveBeenCalledWith("ROLLBACK");
+    
+    // Verify createTransactionItems was called with correct parameters
+    expect(transactionService.createTransactionItems).toHaveBeenCalledWith(
+      1, // transaction ID from insertId
+      mockSession // session object, not line items array
+    );
   });
 
   it('should rollback transaction on error with BEGIN IMMEDIATE', async () => {
@@ -109,9 +119,10 @@ describe('Transaction Service Performance Optimizations', () => {
     await expect(transactionService.createFromStripeSession(mockSession))
       .rejects.toThrow('Insert failed');
 
-    // Verify transaction sequence: BEGIN IMMEDIATE -> failed operation -> ROLLBACK
+    // Verify transaction sequence: BEGIN IMMEDIATE → failed operation → ROLLBACK
     expect(mockDb.execute).toHaveBeenNthCalledWith(1, "BEGIN IMMEDIATE");
-    expect(mockDb.execute).toHaveBeenCalledWith("ROLLBACK");
+    expect(mockDb.execute).toHaveBeenNthCalledWith(3, "ROLLBACK");
+    expect(mockDb.execute).not.toHaveBeenCalledWith("COMMIT");
   });
 
   it('should handle concurrent transaction creation with write-lock', async () => {
@@ -120,16 +131,16 @@ describe('Transaction Service Performance Optimizations', () => {
     
     const transactionService = new TransactionService();
     
-    // Mock successful transaction flow for both calls
+    // Mock successful transaction flow for both calls - remove unused mocks
     mockDb.execute
-      .mockResolvedValue() // All database calls succeed
-      .mockResolvedValue({ insertId: 1 })
-      .mockResolvedValue({ rows: [{ id: 1, uuid: 'uuid1' }] })
-      .mockResolvedValue()
-      .mockResolvedValue()
-      .mockResolvedValue({ insertId: 2 })
-      .mockResolvedValue({ rows: [{ id: 2, uuid: 'uuid2' }] })
-      .mockResolvedValue();
+      .mockResolvedValueOnce() // BEGIN IMMEDIATE (transaction 1)
+      .mockResolvedValueOnce({ insertId: 1 }) // INSERT (transaction 1)
+      .mockResolvedValueOnce({ rows: [{ id: 1, uuid: 'uuid1' }] }) // SELECT (transaction 1)
+      .mockResolvedValueOnce() // COMMIT (transaction 1)
+      .mockResolvedValueOnce() // BEGIN IMMEDIATE (transaction 2)
+      .mockResolvedValueOnce({ insertId: 2 }) // INSERT (transaction 2)
+      .mockResolvedValueOnce({ rows: [{ id: 2, uuid: 'uuid2' }] }) // SELECT (transaction 2)
+      .mockResolvedValueOnce(); // COMMIT (transaction 2)
     
     // Mock methods
     vi.spyOn(transactionService, 'getByUUID')
