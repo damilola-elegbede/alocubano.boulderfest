@@ -95,8 +95,13 @@ BREVO_WEBHOOK_SECRET=webhook-secret
 # Install dependencies
 npm install
 
-# Start development server
+# Start development server (with ngrok by default)
 npm start
+# or
+npm run dev
+
+# Start without ngrok (local only)
+npm run start:local
 
 # Run tests
 npm test
@@ -104,6 +109,31 @@ npm test
 # Run specific test file
 npm run test:unit -- tests/unit/brevo-service.test.js
 ```
+
+### Default Development Environment (ngrok)
+
+The project uses ngrok as the default development environment:
+
+1. **First time setup**:
+   - Install ngrok: `brew install ngrok`
+   - Configure auth token: `ngrok config add-authtoken YOUR_TOKEN`
+   - Copy `.env.local.example` to `.env.local` and add credentials
+
+2. **Start development**:
+   ```bash
+   npm start
+   ```
+
+3. **Access your site** at: `https://alocubanoboulderfest.ngrok.io`
+4. **ngrok dashboard** at: `http://localhost:4040`
+5. **Fallback**: If ngrok isn't installed, automatically starts local server
+
+Benefits of ngrok as default:
+- Test Apple Sign In and other OAuth flows
+- Share development URL with team members
+- Test webhooks from external services
+- Mobile device testing on same network
+- Consistent HTTPS environment
 
 ## Server Logging
 
@@ -393,6 +423,45 @@ if (window.cartManager) {
 ├── config/           # Configuration files
 └── migrations/       # Database migrations
 ```
+
+## Apple Wallet Security Updates
+
+### Critical Security Fixes Applied (Phase 3)
+
+**Certificate Handling Fix**:
+- **Issue**: `signerKey` incorrectly contained password instead of private key certificate
+- **Fix**: Separated `APPLE_PASS_KEY` (private key) from `APPLE_PASS_PASSWORD` (passphrase)
+- **Impact**: Proper certificate validation and PKPass generation
+
+**PKPass Constructor Fix**:
+- **Issue**: Incorrect parameter mapping - `signerKey` used for `signerKeyPassphrase`
+- **Fix**: Correct parameter mapping with dedicated `signerKeyPassphrase` property
+- **Impact**: Proper certificate signing during pass generation
+
+**JWT Authentication Implementation**:
+- **Issue**: Weak base64 authentication token vulnerable to tampering
+- **Fix**: Proper JWT implementation using `jsonwebtoken` library with HMAC-SHA256
+- **Impact**: Cryptographically secure authentication for wallet pass updates
+
+**Serial Number Security**:
+- **Issue**: Collision-prone serial numbers using timestamp + partial UUID
+- **Fix**: Full UUID implementation for cryptographically secure uniqueness
+- **Impact**: Eliminates potential serial number collisions
+
+**Configuration Validation**:
+- **Issue**: Incomplete certificate validation in `isConfigured()` check
+- **Fix**: Comprehensive validation including passphrase and auth secret verification
+- **Impact**: Prevents runtime failures due to incomplete configuration
+
+### Environment Variables Added
+
+```bash
+# New secure wallet configuration
+APPLE_PASS_KEY=base64-encoded-private-key  # Separated from password
+WALLET_AUTH_SECRET=secure-random-string    # For JWT signing
+```
+
+All environment template files updated with secure configuration examples.
 
 ## Contact & Resources
 

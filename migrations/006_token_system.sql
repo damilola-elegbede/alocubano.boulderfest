@@ -27,7 +27,6 @@ CREATE TABLE IF NOT EXISTS action_tokens (
 );
 
 -- Phase 3: Add validation fields to existing tickets table for QR codes
--- Only add columns if they don't exist
 ALTER TABLE tickets ADD COLUMN IF NOT EXISTS validation_signature TEXT;
 ALTER TABLE tickets ADD COLUMN IF NOT EXISTS qr_code_data TEXT;
 

@@ -24,6 +24,27 @@ reviews:
   # Auto-review configuration
   auto_review:
     enabled: true
+  
+  # Custom instructions for AI reviewer - specific to A Lo Cubano Boulder Fest
+  instructions: |
+    As the AI code reviewer for the 'A Lo Cubano Boulder Fest' project, maintain high quality, performance, security, and testability for this Cuban salsa festival website.
+    
+    Key review principles:
+    1. **Follow Existing Conventions**: Match the style, formatting, and structure of surrounding code. The project has consistent HTML, CSS, and JavaScript patterns.
+    2. **Performance is Key**: Scrutinize for performance bottlenecks. Ensure lazy-loading, efficient CSS, and fast page loads. Pay special attention to mobile performance.
+    3. **Testing Quality Focus**: Ensure tests import and test actual source code (not mocks). Flag mock implementations. Promote high-coverage, reliable testing.
+    4. **Security and API Safety**: Focus on serverless functions (/api/). Ensure input validation, sanitization, error handling. Review integrations for security best practices.
+    5. **Accessibility and Mobile-First**: Support keyboard navigation, screen readers, WCAG compliance. Prioritize mobile-responsive design.
+    6. **Cultural Brand Integrity**: Preserve the warm, vibrant Cuban cultural aesthetic and typography-forward design philosophy.
+    7. **Vercel Configuration**: Ensure routing rules are simple and efficient. Review serverless function configurations for optimization.
+
+# Chat configuration - enable PR discussions
+chat:
+  enabled: true
+
+# Summaries configuration - enable PR summaries
+summaries:
+  enabled: true
 
 # Path filters - use ! prefix to exclude paths
 path_filters:
@@ -40,6 +61,12 @@ path_filters:
   - "!*.min.css"
   - "!public/vendor/**"
   - "!static/vendor/**"
+  - "!**/*.svg"
+  - "!**/*.png"
+  - "!**/*.jpg"
+  - "!**/*.ico"
+  - "!venv/**"
+  - "!__pycache__/**"
   # Include these paths for review
   - "api/**"
   - "js/**"
