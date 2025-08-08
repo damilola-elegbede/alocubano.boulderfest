@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run prebuild && echo 'Static site ready'",
+  "buildCommand": "echo 'Static site ready'",
   "outputDirectory": ".",
   "framework": null,
   "devCommand": "npx http-server . --cors",

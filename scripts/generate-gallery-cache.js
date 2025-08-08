@@ -12,6 +12,13 @@ const __dirname = path.dirname(__filename);
 // Load credentials from .env.local
 dotenv.config({ path: ".env.local" });
 
+// Skip if no Google credentials are available (e.g., in CI/CD)
+if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+  console.log("Skipping gallery cache generation: Google credentials not found");
+  console.log("This is expected in CI/CD environments where credentials aren't available");
+  process.exit(0);
+}
+
 // --- Configuration ---
 // Event-based gallery configuration - maps event IDs to Google Drive folder IDs
 const EVENT_GALLERY_CONFIG = {
