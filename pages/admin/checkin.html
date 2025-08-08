@@ -731,18 +731,131 @@
             }
         }
         
-        // Check authentication
+        // Check authentication (mobile sessions last 72 hours)
         async function checkAuth() {
             try {
+                // First check if we have a mobile session
                 const response = await fetch('/api/admin/dashboard');
                 if (!response.ok) {
-                    window.location.href = '/pages/admin/login.html';
+                    // Show mobile login screen instead of redirecting
+                    showMobileLogin();
                     return false;
                 }
                 return true;
             } catch (error) {
-                window.location.href = '/pages/admin/login.html';
+                showMobileLogin();
                 return false;
+            }
+        }
+        
+        // Show mobile login UI
+        function showMobileLogin() {
+            document.body.innerHTML = `
+                <div style="
+                    height: 100vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                ">
+                    <div style="
+                        background: white;
+                        padding: 40px;
+                        border-radius: 20px;
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                        max-width: 90%;
+                        width: 350px;
+                    ">
+                        <h2 style="color: #2c3e50; margin-bottom: 10px; text-align: center;">
+                            🎫 Check-in Staff Login
+                        </h2>
+                        <p style="color: #7f8c8d; text-align: center; margin-bottom: 30px; font-size: 14px;">
+                            Session lasts 72 hours
+                        </p>
+                        <form id="mobileLoginForm" onsubmit="handleMobileLogin(event)">
+                            <input 
+                                type="password" 
+                                id="staffPassword"
+                                placeholder="Enter staff password"
+                                required
+                                style="
+                                    width: 100%;
+                                    padding: 15px;
+                                    border: 1px solid #ddd;
+                                    border-radius: 10px;
+                                    font-size: 16px;
+                                    margin-bottom: 20px;
+                                "
+                            >
+                            <button type="submit" style="
+                                width: 100%;
+                                padding: 15px;
+                                background: #667eea;
+                                color: white;
+                                border: none;
+                                border-radius: 10px;
+                                font-size: 18px;
+                                font-weight: 600;
+                                cursor: pointer;
+                            ">
+                                Login to Scanner
+                            </button>
+                            <div id="loginError" style="
+                                color: #e74c3c;
+                                text-align: center;
+                                margin-top: 15px;
+                                display: none;
+                            "></div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            // Focus password field
+            setTimeout(() => {
+                document.getElementById('staffPassword').focus();
+            }, 100);
+        }
+        
+        // Handle mobile login
+        async function handleMobileLogin(event) {
+            event.preventDefault();
+            
+            const password = document.getElementById('staffPassword').value;
+            const errorDiv = document.getElementById('loginError');
+            
+            try {
+                // Get CSRF token first
+                const csrfResponse = await fetch('/api/admin/csrf-token');
+                const csrfData = await csrfResponse.json();
+                
+                // Attempt login with mobile endpoint
+                const response = await fetch('/api/admin/mobile-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfData.token
+                    },
+                    body: JSON.stringify({
+                        password: password,
+                        csrfToken: csrfData.token
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Login successful, reload page
+                    location.reload();
+                } else {
+                    errorDiv.textContent = data.error || 'Invalid password';
+                    errorDiv.style.display = 'block';
+                    document.getElementById('staffPassword').value = '';
+                    document.getElementById('staffPassword').focus();
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Connection error. Please try again.';
+                errorDiv.style.display = 'block';
             }
         }
         
