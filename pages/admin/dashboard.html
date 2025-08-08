@@ -46,6 +46,31 @@
             background: #c0392b;
         }
         
+        .sync-btn {
+            background: #0f9d58;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .sync-btn:hover {
+            background: #0b7938;
+        }
+        
+        .sync-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
         .dashboard-container {
             max-width: 1400px;
             margin: 0 auto;
@@ -278,7 +303,10 @@
 <body>
     <div class="admin-header">
         <h1>Admin Dashboard</h1>
-        <button class="logout-btn" onclick="logout()">Logout</button>
+        <div class="header-actions">
+            <button class="sync-btn" onclick="syncToSheets()">📊 Sync to Sheets</button>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
     </div>
     
     <div class="dashboard-container">
@@ -726,6 +754,41 @@
             } catch (error) {
                 console.error('Logout failed:', error);
                 window.location.href = '/pages/admin/login.html';
+            }
+        }
+        
+        // Sync to Google Sheets
+        async function syncToSheets() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            
+            btn.disabled = true;
+            btn.textContent = 'Syncing...';
+            
+            try {
+                const response = await fetch('/api/sheets/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    if (data.sheetUrl) {
+                        alert(`✅ Sync completed!\n\nView your data at:\n${data.sheetUrl}`);
+                    } else {
+                        alert(`✅ Sync completed at ${data.timestamp}`);
+                    }
+                } else {
+                    alert(`❌ Sync failed: ${data.message || data.error}`);
+                }
+            } catch (error) {
+                alert(`❌ Sync failed: ${error.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
             }
         }
         
