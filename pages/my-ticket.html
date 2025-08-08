@@ -259,18 +259,27 @@
     </div>
 
     <script>
-      const urlParams = new URLSearchParams(window.location.search);
-      const ticketId = urlParams.get("id");
-      const token = urlParams.get("token");
+      // Get token from URL hash (fragment) for security
+      function getTokenFromURL() {
+        // Check hash first (preferred for security)
+        if (window.location.hash) {
+          return window.location.hash.substring(1); // Remove the #
+        }
+        // Fallback to query params for backward compatibility
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get("token");
+      }
+
+      const token = getTokenFromURL();
 
       async function loadTicket() {
-        if (!ticketId || !token) {
-          showError();
+        if (!token) {
+          showError("No ticket token provided");
           return;
         }
 
         try {
-          // Verify token and get ticket details
+          // Verify token and get ticket details using POST
           const response = await fetch("/api/tickets/validate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -281,28 +290,24 @@
           });
 
           if (!response.ok) {
-            throw new Error("Invalid ticket");
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Invalid ticket");
           }
 
           const data = await response.json();
 
           // Update UI with ticket details
-          document.getElementById("ticket-id").textContent = ticketId;
+          document.getElementById("ticket-id").textContent = data.ticket.id;
           document.getElementById("ticket-type").textContent = data.ticket.type;
           document.getElementById("attendee-name").textContent =
             data.ticket.attendeeName;
 
-          // Generate QR code image
-          const qrService = await fetch("/api/tickets/qr-image", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token }),
-          });
-
-          const qrData = await qrService.json();
-          document.getElementById("qr-code").src = qrData.qrImage;
+          // Generate QR code image URL (using GET with token parameter)
+          const qrImageUrl = `/api/tickets/qr-image?token=${encodeURIComponent(token)}`;
+          document.getElementById("qr-code").src = qrImageUrl;
 
           // Update wallet links
+          const ticketId = data.ticket.id;
           document.getElementById("apple-wallet-link").href =
             `/api/tickets/apple-wallet/${ticketId}`;
           document.getElementById("google-wallet-link").href =
@@ -313,13 +318,18 @@
           document.getElementById("ticket-content").style.display = "block";
         } catch (error) {
           console.error("Error loading ticket:", error);
-          showError();
+          showError(error.message);
         }
       }
 
-      function showError() {
+      function showError(message = "Unable to load ticket") {
         document.getElementById("loading-state").style.display = "none";
         document.getElementById("error-state").style.display = "block";
+        // Optionally update error message if element exists
+        const errorMsg = document.querySelector("#error-state p");
+        if (errorMsg) {
+          errorMsg.textContent = message;
+        }
       }
 
       function printTicket() {
