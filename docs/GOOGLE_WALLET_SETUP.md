@@ -110,7 +110,7 @@ curl http://localhost:3000/api/wallet/google/TEST-TICKET-ID
 ## API Endpoints
 
 ### Generate Google Wallet Pass
-```
+```http
 GET /api/wallet/google/{ticketId}
 ```
 
@@ -124,7 +124,7 @@ Returns:
 ```
 
 ### Generate Both Wallet Passes
-```
+```http
 GET /api/wallet/{ticketId}
 ```
 
@@ -145,7 +145,7 @@ Returns:
 ```
 
 ### Revoke Pass
-```
+```http
 DELETE /api/wallet/google/{ticketId}
 ```
 

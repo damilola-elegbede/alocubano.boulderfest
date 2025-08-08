@@ -73,13 +73,13 @@ export const passTemplate = {
     {
       key: 'date',
       label: 'DATES',
-      value: 'May 15-17, 2026',
+      value: process.env.EVENT_DATES_DISPLAY || 'May 15-17, 2026',
       dateStyle: 'PKDateStyleMedium', // For date formatting
     },
     {
       key: 'location',
       label: 'VENUE',
-      value: 'Avalon Ballroom',
+      value: process.env.VENUE_NAME || 'Avalon Ballroom',
     }
   ],
 
@@ -123,13 +123,13 @@ export const passTemplate = {
   // ==========================================
   features: {
     // Relevance (when/where to show on lock screen)
-    relevantDate: '2026-05-15T10:00:00-07:00', // Festival start
+    relevantDate: process.env.EVENT_START_DATE || '2026-05-15T10:00:00-07:00', // Festival start
     
     // Location-based relevance (shows when near venue)
     locations: [
       {
-        latitude: 40.0150,    // Avalon Ballroom
-        longitude: -105.2705,
+        latitude: parseFloat(process.env.VENUE_LATITUDE || '40.014984'),    // Venue location
+        longitude: parseFloat(process.env.VENUE_LONGITUDE || '-105.219544'),
         altitude: 1624,
         relevantText: 'Welcome to A Lo Cubano Boulder Fest!',
         maxDistance: 500, // meters
@@ -189,7 +189,30 @@ export function getTicketTypeConfig(ticketType) {
  * Format date for display
  */
 export function formatEventDates() {
-  return 'May 15-17, 2026';
+  return process.env.EVENT_DATES_DISPLAY || 'May 15-17, 2026';
+}
+
+/**
+ * Get venue information
+ */
+export function getVenueInfo() {
+  return {
+    name: process.env.VENUE_NAME || 'Avalon Ballroom',
+    address: process.env.VENUE_ADDRESS || '6185 Arapahoe Road, Boulder, CO 80303',
+    latitude: parseFloat(process.env.VENUE_LATITUDE || '40.014984'),
+    longitude: parseFloat(process.env.VENUE_LONGITUDE || '-105.219544')
+  };
+}
+
+/**
+ * Get event dates configuration
+ */
+export function getEventDates() {
+  return {
+    startDate: process.env.EVENT_START_DATE || '2026-05-15T10:00:00-06:00',
+    endDate: process.env.EVENT_END_DATE || '2026-05-17T23:00:00-06:00',
+    displayText: process.env.EVENT_DATES_DISPLAY || 'May 15-17, 2026'
+  };
 }
 
 /**

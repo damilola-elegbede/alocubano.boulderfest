@@ -424,6 +424,45 @@ if (window.cartManager) {
 └── migrations/       # Database migrations
 ```
 
+## Apple Wallet Security Updates
+
+### Critical Security Fixes Applied (Phase 3)
+
+**Certificate Handling Fix**:
+- **Issue**: `signerKey` incorrectly contained password instead of private key certificate
+- **Fix**: Separated `APPLE_PASS_KEY` (private key) from `APPLE_PASS_PASSWORD` (passphrase)
+- **Impact**: Proper certificate validation and PKPass generation
+
+**PKPass Constructor Fix**:
+- **Issue**: Incorrect parameter mapping - `signerKey` used for `signerKeyPassphrase`
+- **Fix**: Correct parameter mapping with dedicated `signerKeyPassphrase` property
+- **Impact**: Proper certificate signing during pass generation
+
+**JWT Authentication Implementation**:
+- **Issue**: Weak base64 authentication token vulnerable to tampering
+- **Fix**: Proper JWT implementation using `jsonwebtoken` library with HMAC-SHA256
+- **Impact**: Cryptographically secure authentication for wallet pass updates
+
+**Serial Number Security**:
+- **Issue**: Collision-prone serial numbers using timestamp + partial UUID
+- **Fix**: Full UUID implementation for cryptographically secure uniqueness
+- **Impact**: Eliminates potential serial number collisions
+
+**Configuration Validation**:
+- **Issue**: Incomplete certificate validation in `isConfigured()` check
+- **Fix**: Comprehensive validation including passphrase and auth secret verification
+- **Impact**: Prevents runtime failures due to incomplete configuration
+
+### Environment Variables Added
+
+```bash
+# New secure wallet configuration
+APPLE_PASS_KEY=base64-encoded-private-key  # Separated from password
+WALLET_AUTH_SECRET=secure-random-string    # For JWT signing
+```
+
+All environment template files updated with secure configuration examples.
+
 ## Contact & Resources
 
 **Project**: A Lo Cubano Boulder Fest  

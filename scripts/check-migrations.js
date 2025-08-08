@@ -31,6 +31,7 @@ async function checkMigrations() {
     
   } catch (error) {
     console.error('Error checking migrations:', error);
+    process.exit(1);
   }
   
   process.exit(0);
