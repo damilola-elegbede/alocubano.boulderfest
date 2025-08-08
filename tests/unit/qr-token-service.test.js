@@ -1,14 +1,23 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import jwt from "jsonwebtoken";
 import QRCode from "qrcode";
+import { randomBytes } from "crypto";
 
-// Mock environment variables
-process.env.QR_SECRET_KEY =
-  "test-secret-key-that-is-at-least-32-characters-long";
-process.env.QR_CODE_EXPIRY_DAYS = "90";
-process.env.QR_CODE_MAX_SCANS = "10";
-process.env.WALLET_BASE_URL = "https://test.example.com";
-process.env.WALLET_AUTH_SECRET = "test-wallet-auth-secret-at-least-32-chars";
+// Generate secure random secrets for testing
+const originalEnv = {};
+const testSecrets = {
+  QR_SECRET_KEY: randomBytes(32).toString('hex'),
+  QR_CODE_EXPIRY_DAYS: "90",
+  QR_CODE_MAX_SCANS: "10",
+  VERCEL_URL: "test.example.com", // Match implementation usage
+  WALLET_AUTH_SECRET: randomBytes(32).toString('hex')
+};
+
+// Store original values and set test values
+Object.keys(testSecrets).forEach(key => {
+  originalEnv[key] = process.env[key];
+  process.env[key] = testSecrets[key];
+});
 
 // Create a mock database with execute function
 const mockExecute = vi.fn();
@@ -33,6 +42,14 @@ describe("QRTokenService", () => {
 
   afterAll(() => {
     vi.clearAllMocks();
+    // Restore original environment variables
+    Object.keys(testSecrets).forEach(key => {
+      if (originalEnv[key] !== undefined) {
+        process.env[key] = originalEnv[key];
+      } else {
+        delete process.env[key];
+      }
+    });
   });
 
   beforeEach(() => {
@@ -42,9 +59,7 @@ describe("QRTokenService", () => {
   describe("constructor", () => {
     it("should initialize with correct default values", () => {
       const service = new QRTokenService();
-      expect(service.secretKey).toBe(
-        "test-secret-key-that-is-at-least-32-characters-long",
-      );
+      expect(service.secretKey).toBe(testSecrets.QR_SECRET_KEY);
       expect(service.expiryDays).toBe(90);
       expect(service.maxScans).toBe(10);
     });
@@ -74,7 +89,7 @@ describe("QRTokenService", () => {
       const ticketId = "TEST-123";
       const existingToken = jwt.sign(
         { tid: ticketId, type: "ticket" },
-        process.env.QR_SECRET_KEY,
+        testSecrets.QR_SECRET_KEY,
         { expiresIn: "90d" },
       );
 
@@ -101,7 +116,7 @@ describe("QRTokenService", () => {
       const token = await service.getOrCreateToken(ticketId);
 
       // Verify token structure
-      const decoded = jwt.verify(token, process.env.QR_SECRET_KEY);
+      const decoded = jwt.verify(token, testSecrets.QR_SECRET_KEY);
       expect(decoded.tid).toBe(ticketId);
       expect(decoded.iat).toBeDefined();
       expect(decoded.exp).toBeGreaterThan(decoded.iat);
@@ -119,7 +134,7 @@ describe("QRTokenService", () => {
       const ticketId = "TEST-789";
       const expiredToken = jwt.sign(
         { tid: ticketId },
-        process.env.QR_SECRET_KEY,
+        testSecrets.QR_SECRET_KEY,
         { expiresIn: "-1d" }, // Already expired
       );
 
@@ -170,9 +185,9 @@ describe("QRTokenService", () => {
 
       await service.generateQRImage(token);
 
-      // Now uses URL fragment instead of query for security
+      // Now uses VERCEL_URL for base URL, URL fragment instead of query for security
       expect(spy).toHaveBeenCalledWith(
-        "http://localhost:8080/my-ticket#test-token-789",
+        "https://test.example.com/my-ticket#test-token-789",
         expect.any(Object),
       );
 
@@ -193,8 +208,8 @@ describe("QRTokenService", () => {
     it("should get fresh database connection per operation", async () => {
       const service = new QRTokenService();
       
-      // Mock getDb to track calls
-      const getDbSpy = vi.spyOn(service, "getDb");
+      // Mock getDb to track calls - spy on prototype, not instance
+      const getDbSpy = vi.spyOn(QRTokenService.prototype, "getDb");
       
       // Mock responses for both operations
       mockExecute
@@ -224,7 +239,7 @@ describe("QRTokenService", () => {
         .mockResolvedValueOnce({ rows: [] });
 
       const token = await service.getOrCreateToken(ticketId);
-      const decoded = jwt.verify(token, process.env.QR_SECRET_KEY);
+      const decoded = jwt.verify(token, testSecrets.QR_SECRET_KEY);
 
       const expectedExpiry = decoded.iat + 30 * 24 * 60 * 60;
       expect(decoded.exp).toBe(expectedExpiry);
