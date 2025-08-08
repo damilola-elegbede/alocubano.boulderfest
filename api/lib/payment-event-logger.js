@@ -1,4 +1,4 @@
-import { getDatabase } from './database.js';
+import { getDatabase } from "./database.js";
 
 export class PaymentEventLogger {
   constructor() {
@@ -11,30 +11,32 @@ export class PaymentEventLogger {
   async logStripeEvent(event, transactionId = null) {
     try {
       const sourceId = `STRIPE-${event.id}`;
-      
+
       // Check if event was already processed (idempotency)
       const existing = await this.db.execute({
-        sql: 'SELECT id FROM payment_events WHERE source_id = ?',
-        args: [sourceId]
+        sql: "SELECT id FROM payment_events WHERE source_id = ?",
+        args: [sourceId],
       });
-      
+
       if (existing.rows.length > 0) {
         console.log(`Event ${sourceId} already processed`);
-        return { status: 'already_processed', eventId: sourceId };
+        return { status: "already_processed", eventId: sourceId };
       }
-      
+
       // Safely stringify event data
       let eventData;
       try {
         eventData = JSON.stringify(event.data.object);
       } catch (e) {
-        console.warn('Failed to stringify event data, using fallback');
+        console.warn("Failed to stringify event data, using fallback");
         eventData = '{"error": "Could not serialize event data"}';
       }
-      
+
       // Use event timestamp if available, otherwise use current time
-      const timestamp = event.created ? new Date(event.created * 1000).toISOString() : new Date().toISOString();
-      
+      const timestamp = event.created
+        ? new Date(event.created * 1000).toISOString()
+        : new Date().toISOString();
+
       // Log the event with initial processing status
       await this.db.execute({
         sql: `INSERT INTO payment_events (
@@ -45,18 +47,17 @@ export class PaymentEventLogger {
           transactionId,
           event.type,
           eventData,
-          'stripe',
+          "stripe",
           sourceId,
-          'pending',
-          timestamp
-        ]
+          "pending",
+          timestamp,
+        ],
       });
-      
-      return { status: 'logged', eventId: sourceId };
-      
+
+      return { status: "logged", eventId: sourceId };
     } catch (error) {
-      console.error('Failed to log payment event:', error);
-      
+      console.error("Failed to log payment event:", error);
+
       // Try to log the error with recursion flag
       await this.logError(event, error, true);
       throw error;
@@ -70,12 +71,12 @@ export class PaymentEventLogger {
     try {
       const sourceId = `STRIPE-${eventId}`;
       await this.db.execute({
-        sql: 'UPDATE payment_events SET transaction_id = ? WHERE source_id = ?',
-        args: [transactionId, sourceId]
+        sql: "UPDATE payment_events SET transaction_id = ? WHERE source_id = ?",
+        args: [transactionId, sourceId],
       });
       console.log(`Updated transaction ID for event ${sourceId}`);
     } catch (error) {
-      console.error('Failed to update event transaction ID:', error);
+      console.error("Failed to update event transaction ID:", error);
       throw error;
     }
   }
@@ -86,50 +87,50 @@ export class PaymentEventLogger {
   async logError(event, error, isRecursive = false) {
     // Prevent infinite recursion
     if (isRecursive) {
-      console.error('Error logging failed recursively:', error);
+      console.error("Error logging failed recursively:", error);
       return;
     }
-    
+
     try {
       const sourceId = `ERROR-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      
+
       // Safe serialization with circular reference handling
       const seen = new WeakSet();
       const safeStringify = (obj) => {
         return JSON.stringify(obj, (key, value) => {
-          if (typeof value === 'object' && value !== null) {
+          if (typeof value === "object" && value !== null) {
             if (seen.has(value)) {
-              return '[Circular Reference]';
+              return "[Circular Reference]";
             }
             seen.add(value);
           }
           return value;
         });
       };
-      
+
       let eventData;
       try {
         eventData = safeStringify(event || {});
       } catch (e) {
         eventData = '{"error": "Could not serialize event"}';
       }
-      
+
       await this.db.execute({
         sql: `INSERT INTO payment_events (
           event_type, source, source_id,
           event_data, error_message, processing_status
         ) VALUES (?, ?, ?, ?, ?, ?)`,
         args: [
-          event?.type || 'unknown',
-          'stripe',
+          event?.type || "unknown",
+          "stripe",
           sourceId,
           eventData,
           error.message,
-          'failed'
-        ]
+          "failed",
+        ],
       });
     } catch (logError) {
-      console.error('Failed to log error:', logError);
+      console.error("Failed to log error:", logError);
     }
   }
 
@@ -142,7 +143,7 @@ export class PaymentEventLogger {
             SET retry_count = retry_count + 1, 
                 processed_at = ? 
             WHERE source_id = ?`,
-      args: [new Date().toISOString(), eventId]
+      args: [new Date().toISOString(), eventId],
     });
   }
 
@@ -156,7 +157,7 @@ export class PaymentEventLogger {
               AND retry_count < 5 
             ORDER BY created_at ASC 
             LIMIT ?`,
-      args: [limit]
+      args: [limit],
     });
     return result.rows;
   }

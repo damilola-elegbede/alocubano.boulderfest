@@ -41,7 +41,9 @@ class DatabaseService {
       return this.client;
     } catch (error) {
       // Log error without exposing sensitive config details or original error message
-      throw new Error("Failed to initialize database client due to configuration error");
+      throw new Error(
+        "Failed to initialize database client due to configuration error",
+      );
     }
   }
 
@@ -92,21 +94,21 @@ class DatabaseService {
   async execute(queryOrObject, params = []) {
     try {
       const client = this.getClient();
-      
+
       // Handle both string and object formats
-      if (typeof queryOrObject === 'string') {
+      if (typeof queryOrObject === "string") {
         return await client.execute({ sql: queryOrObject, args: params });
       } else {
         // queryOrObject is already an object with sql and args
         return await client.execute(queryOrObject);
       }
     } catch (error) {
-      const sqlString = typeof queryOrObject === 'string' 
-        ? queryOrObject 
-        : queryOrObject.sql;
-      
+      const sqlString =
+        typeof queryOrObject === "string" ? queryOrObject : queryOrObject.sql;
+
       console.error("Database query execution failed:", {
-        sql: sqlString.substring(0, 100) + (sqlString.length > 100 ? "..." : ""),
+        sql:
+          sqlString.substring(0, 100) + (sqlString.length > 100 ? "..." : ""),
         error: error.message,
         timestamp: new Date().toISOString(),
       });

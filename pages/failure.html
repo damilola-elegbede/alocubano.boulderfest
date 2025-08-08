@@ -321,7 +321,6 @@
                       </li>
                     </ul>
                   </li>
-                  
                 </ul>
               </li>
               <li>
@@ -382,7 +381,9 @@
           <h1 class="failure-title">Payment Cancelled</h1>
 
           <p class="countdown-text" id="countdown-text">
-            Redirecting to tickets page in <span class="countdown-seconds" id="countdown-seconds">20</span> seconds...
+            Redirecting to tickets page in
+            <span class="countdown-seconds" id="countdown-seconds">20</span>
+            seconds...
           </p>
 
           <p class="failure-message" id="main-message">
@@ -506,7 +507,7 @@
       const mainMessage = document.getElementById("main-message");
       const detailsMessage = document.getElementById("details-message");
       const stepsContent = document.getElementById("steps-content");
-      
+
       // Countdown timer variables
       let countdownInterval;
       let remainingSeconds = 20;
@@ -517,13 +518,13 @@
        */
       function startCountdown() {
         const countdownElement = document.getElementById("countdown-seconds");
-        
+
         countdownInterval = setInterval(() => {
           remainingSeconds--;
           if (countdownElement) {
             countdownElement.textContent = remainingSeconds;
           }
-          
+
           if (remainingSeconds <= 0) {
             clearInterval(countdownInterval);
             window.location.href = "/tickets";
@@ -558,11 +559,11 @@
 
             if (data.instructions?.nextSteps) {
               // Clear existing content safely
-              stepsContent.textContent = '';
-              
+              stepsContent.textContent = "";
+
               // Add each step safely to prevent XSS
-              data.instructions.nextSteps.forEach(step => {
-                const p = document.createElement('p');
+              data.instructions.nextSteps.forEach((step) => {
+                const p = document.createElement("p");
                 p.textContent = `• ${step}`;
                 stepsContent.appendChild(p);
               });
@@ -571,7 +572,8 @@
             // Don't use the API's redirect - we're controlling it locally
           } catch (error) {
             // Update UI to inform user of error
-            mainMessage.textContent = "We couldn't process your cancellation request, but your cart is still saved.";
+            mainMessage.textContent =
+              "We couldn't process your cancellation request, but your cart is still saved.";
             // Continue with default behavior
           }
         }
