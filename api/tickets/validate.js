@@ -1,101 +1,143 @@
-import ticketService from '../lib/ticket-service.js';
-import tokenService from '../lib/token-service.js';
+import { getDatabase } from "../lib/database.js";
+import jwt from "jsonwebtoken";
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST']);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
+  if (req.method !== "POST" && req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
+  const { token, validateOnly } = req.method === "GET" ? req.query : req.body;
+
+  // Detect source from headers or query
+  let source = "web";
+  if (req.headers["x-wallet-source"]) {
+    source = req.headers["x-wallet-source"];
+  } else if (req.headers["user-agent"]?.includes("Apple")) {
+    source = "apple_wallet";
+  } else if (req.headers["user-agent"]?.includes("Google")) {
+    source = "google_wallet";
+  }
+
+  if (!token) {
+    return res.status(400).json({ error: "Token required" });
+  }
+
+  const db = getDatabase();
+
   try {
-    const { qrData, checkInLocation, checkInBy } = req.body;
+    let ticketId;
 
-    if (!qrData) {
-      return res.status(400).json({ 
-        error: 'QR code data is required' 
-      });
-    }
-
-    // Validate QR data format (base64 encoded string)
-    if (typeof qrData !== 'string' || qrData.length < 10 || qrData.length > 2000) {
-      return res.status(400).json({ 
-        error: 'Invalid QR code format' 
-      });
-    }
-
-    // Check if string is valid base64
+    // Try JWT token first
     try {
-      const decoded = Buffer.from(qrData, 'base64').toString('utf-8');
-      if (!decoded.includes('.') || decoded.split('.').length !== 2) {
-        throw new Error('Invalid QR structure');
-      }
-    } catch (decodeError) {
-      return res.status(400).json({ 
-        error: 'Malformed QR code data' 
-      });
+      const decoded = jwt.verify(token, process.env.QR_SECRET_KEY);
+      ticketId = decoded.tid;
+    } catch {
+      // Fallback to direct ticket ID for backward compatibility
+      ticketId = token;
     }
 
-    // Rate limiting - prevent brute force attacks
-    const clientIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.connection.remoteAddress || 'unknown';
-    const rateLimitKey = `qr_validation_${clientIp.replace(/[^a-zA-Z0-9]/g, '')}`;
-    
-    // Simple rate limiting (in production, use Redis or similar)
-    if (!global.rateLimitCache) global.rateLimitCache = new Map();
-    const now = Date.now();
-    const windowMs = 60 * 1000; // 1 minute window
-    const maxAttempts = 10; // 10 attempts per minute per IP
-    
-    const attempts = global.rateLimitCache.get(rateLimitKey) || [];
-    const recentAttempts = attempts.filter(time => now - time < windowMs);
-    
-    if (recentAttempts.length >= maxAttempts) {
-      return res.status(429).json({ 
-        error: 'Too many validation attempts. Please try again later.' 
-      });
-    }
-    
-    recentAttempts.push(now);
-    global.rateLimitCache.set(rateLimitKey, recentAttempts);
-    
-    // Clean up old entries periodically
-    if (Math.random() < 0.01) { // 1% chance
-      const cutoff = now - windowMs;
-      for (const [key, times] of global.rateLimitCache.entries()) {
-        const validTimes = times.filter(time => time > cutoff);
-        if (validTimes.length === 0) {
-          global.rateLimitCache.delete(key);
-        } else {
-          global.rateLimitCache.set(key, validTimes);
-        }
-      }
-    }
-
-    // Validate and check in
-    const result = await ticketService.validateAndCheckIn(
-      qrData, 
-      checkInLocation || 'Main Entry',
-      checkInBy || 'Scanner'
-    );
-
-    if (!result.success) {
-      return res.status(400).json({ 
-        success: false,
-        error: result.error,
-        checkedInAt: result.checkedInAt // For already used tickets
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: 'Ticket successfully validated and checked in',
-      attendee: result.attendee,
-      ticketType: result.ticketType,
-      ticketId: result.ticket.ticket_id,
-      checkedInAt: result.ticket.checked_in_at
+    // Get ticket details
+    const result = await db.execute({
+      sql: `
+        SELECT t.*, e.name as event_name, e.date as event_date
+        FROM tickets t
+        JOIN events e ON t.event_id = e.id
+        WHERE t.ticket_id = ?
+      `,
+      args: [ticketId],
     });
 
+    const ticket = result.rows[0];
+
+    if (!ticket) {
+      throw new Error("Ticket not found");
+    }
+
+    if (ticket.status !== "valid") {
+      throw new Error(`Ticket is ${ticket.status}`);
+    }
+
+    // For web preview, don't increment scan count
+    if (!validateOnly) {
+      if (ticket.scan_count >= ticket.max_scan_count) {
+        throw new Error("Maximum scans exceeded");
+      }
+
+      // Update scan count and track access method
+      await db.execute({
+        sql: `
+          UPDATE tickets 
+          SET scan_count = scan_count + 1,
+              qr_access_method = ?,
+              first_scanned_at = COALESCE(first_scanned_at, CURRENT_TIMESTAMP),
+              last_scanned_at = CURRENT_TIMESTAMP
+          WHERE ticket_id = ?
+        `,
+        args: [source, ticketId],
+      });
+
+      // Log validation
+      await db.execute({
+        sql: `
+          INSERT INTO qr_validations (
+            ticket_id, validation_token, validation_result, 
+            validation_source, ip_address, device_info
+          ) VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        args: [
+          ticket.id,
+          token,
+          "success",
+          source,
+          req.headers["x-forwarded-for"] || req.connection.remoteAddress,
+          req.headers["user-agent"],
+        ],
+      });
+    }
+
+    // Return success
+    res.status(200).json({
+      valid: true,
+      ticket: {
+        id: ticketId,
+        type: ticket.ticket_type,
+        eventName: ticket.event_name,
+        eventDate: ticket.event_date,
+        attendeeName:
+          `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
+        scanCount: ticket.scan_count + (validateOnly ? 0 : 1),
+        maxScans: ticket.max_scan_count,
+        source: source,
+      },
+      message: validateOnly
+        ? "Ticket verified"
+        : `Welcome ${ticket.attendee_first_name}!`,
+    });
   } catch (error) {
-    console.error('Ticket validation error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("Validation error:", error);
+
+    // Log failed validation
+    await db
+      .execute({
+        sql: `
+        INSERT INTO qr_validations (
+          validation_token, validation_result, failure_reason,
+          validation_source, ip_address
+        ) VALUES (?, ?, ?, ?, ?)
+      `,
+        args: [
+          token,
+          "failed",
+          error.message,
+          source,
+          req.headers["x-forwarded-for"] || req.connection.remoteAddress,
+        ],
+      })
+      .catch(console.error);
+
+    res.status(400).json({
+      valid: false,
+      error: error.message || "Invalid token",
+    });
   }
 }
