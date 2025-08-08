@@ -304,7 +304,7 @@
           document.getElementById("attendee-name").textContent =
             data.ticket.attendeeName;
 
-          // Generate QR code image URL (using GET with token parameter)
+          // Generate QR code image URL with token parameter
           const qrImageUrl = `/api/tickets/qr-image?token=${encodeURIComponent(token)}`;
           document.getElementById("qr-code").src = qrImageUrl;
 
