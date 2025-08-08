@@ -260,6 +260,14 @@
     {
       "source": "/my-tickets",
       "destination": "/pages/my-tickets.html"
+    },
+    {
+      "source": "/admin/checkin",
+      "destination": "/pages/admin/checkin.html"
+    },
+    {
+      "source": "/manifest.json",
+      "destination": "/public/manifest.json"
     }
   ],
   "redirects": [

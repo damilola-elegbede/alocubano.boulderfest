@@ -15,6 +15,10 @@ const CACHE_VERSION = 'v2.0.0';
 const STATIC_CACHE = `alocubano-static-${CACHE_VERSION}`;
 const IMAGE_CACHE = `alocubano-images-${CACHE_VERSION}`;
 const API_CACHE = `alocubano-api-${CACHE_VERSION}`;
+const OFFLINE_CACHE = `alocubano-offline-${CACHE_VERSION}`;
+
+// Offline queue for check-ins
+let offlineQueue = [];
 
 // Cache configuration
 const CACHE_CONFIG = {
@@ -75,7 +79,7 @@ self.addEventListener('activate', (event) => {
     console.log('[SW v2.0.0] Activating advanced service worker...');
 
     event.waitUntil(
-        Promise.all([cleanupOldCaches(), self.clients.claim()]).then(() => {
+        Promise.all([cleanupOldCaches(), self.clients.claim(), loadOfflineQueue()]).then(() => {
             console.log('[SW] Service worker activated and ready');
         })
     );
@@ -88,6 +92,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const request = event.request;
     const url = new URL(request.url);
+
+    // Handle QR validation requests for offline check-ins
+    if (url.pathname === '/api/tickets/validate-qr' && request.method === 'POST') {
+        event.respondWith(handleOfflineCheckin(request));
+        return;
+    }
 
     // Only handle GET requests
     if (request.method !== 'GET') {
@@ -141,6 +151,19 @@ self.addEventListener('message', (event) => {
 
     default:
         console.warn('[SW] Unknown message type:', type);
+    }
+});
+
+/**
+ * Sync Event Handler
+ * Syncs offline check-ins when back online
+ */
+self.addEventListener('sync', async (event) => {
+    if (event.tag === 'sync-checkins') {
+        event.waitUntil(syncOfflineCheckins());
+    }
+    if (event.tag === 'sync-wallet-tokens') {
+        event.waitUntil(syncOfflineWalletTokens());
     }
 });
 
@@ -710,6 +733,142 @@ function formatBytes(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
+/**
+ * Handle offline check-in requests
+ */
+async function handleOfflineCheckin(request) {
+    try {
+        // Try network first
+        const response = await fetch(request);
+        return response;
+    } catch (error) {
+        // If offline, queue the check-in
+        const data = await request.json();
+        
+        offlineQueue.push({
+            ...data,
+            queuedAt: Date.now(),
+            // Add wallet detection for JWT tokens
+            wallet_source: data.token && data.token.length > 100 ? 'jwt' : null,
+            qr_access_method: data.token && data.token.length > 100 ? 'wallet' : 'qr_code'
+        });
+        
+        await saveOfflineQueue();
+        
+        // Register sync event for when back online
+        if ('sync' in self.registration) {
+            await self.registration.sync.register('sync-checkins');
+        }
+        
+        // Return success response to app
+        return new Response(JSON.stringify({
+            valid: true,
+            offline: true,
+            message: 'Check-in queued for sync',
+            queuedCount: offlineQueue.length
+        }), {
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+}
+
+/**
+ * Sync offline check-ins when back online
+ */
+async function syncOfflineCheckins() {
+    console.log('[SW] Syncing offline check-ins...');
+    
+    if (offlineQueue.length === 0) return;
+    
+    const queue = [...offlineQueue];
+    offlineQueue = [];
+    
+    for (const checkin of queue) {
+        try {
+            const response = await fetch('/api/tickets/validate-qr', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(checkin)
+            });
+            
+            if (!response.ok) {
+                // Re-queue if failed
+                offlineQueue.push(checkin);
+            }
+        } catch (error) {
+            // Re-queue if network error
+            offlineQueue.push(checkin);
+        }
+    }
+    
+    // Save remaining queue to IndexedDB
+    await saveOfflineQueue();
+}
+
+/**
+ * Sync offline wallet tokens
+ */
+async function syncOfflineWalletTokens() {
+    const cache = await caches.open(OFFLINE_CACHE);
+    const response = await cache.match('wallet-tokens-queue');
+    
+    if (response) {
+        const walletTokens = await response.json();
+        console.log('[SW] Syncing', walletTokens.length, 'wallet tokens');
+        
+        for (const token of walletTokens) {
+            try {
+                await fetch('/api/tickets/validate-qr', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(token)
+                });
+            } catch (error) {
+                console.error('[SW] Failed to sync wallet token:', error);
+            }
+        }
+        
+        // Clear the wallet tokens queue after sync
+        await cache.delete('wallet-tokens-queue');
+    }
+}
+
+/**
+ * Save offline queue to cache
+ */
+async function saveOfflineQueue() {
+    const cache = await caches.open(OFFLINE_CACHE);
+    await cache.put(
+        new Request('offline-queue'),
+        new Response(JSON.stringify(offlineQueue))
+    );
+    
+    // Also save wallet tokens if present
+    const walletTokens = offlineQueue.filter(item => item.wallet_source);
+    if (walletTokens.length > 0) {
+        await cache.put(
+            new Request('wallet-tokens-queue'),
+            new Response(JSON.stringify(walletTokens))
+        );
+    }
+}
+
+/**
+ * Load offline queue from cache
+ */
+async function loadOfflineQueue() {
+    try {
+        const cache = await caches.open(OFFLINE_CACHE);
+        const response = await cache.match('offline-queue');
+        if (response) {
+            offlineQueue = await response.json();
+            console.log('[SW] Loaded', offlineQueue.length, 'queued check-ins');
+        }
+    } catch (error) {
+        console.error('[SW] Failed to load offline queue:', error);
+    }
+}
+
 console.log(
-    `[SW] Advanced Service Worker v${CACHE_VERSION} initialized with multi-level caching`
+    `[SW] Advanced Service Worker v${CACHE_VERSION} initialized with multi-level caching and offline check-in support`
 );
