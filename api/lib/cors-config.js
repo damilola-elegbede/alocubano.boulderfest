@@ -10,11 +10,23 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Module-level cache to avoid repeated disk I/O
+let configCache = null;
+let envCacheKey = null;
+
 /**
- * Load CORS configuration from secure sources
+ * Load CORS configuration from secure sources with caching
  * Priority: Environment variables -> JSON config file -> defaults
  */
 export function getCorsConfig() {
+  // Create cache key from environment variable to detect changes
+  const currentEnvKey = process.env.CORS_ALLOWED_ORIGINS || '';
+  
+  // Return cached config if available and environment hasn't changed
+  if (configCache && envCacheKey === currentEnvKey) {
+    return configCache;
+  }
+
   try {
     // Load base configuration from JSON file
     const configPath = path.join(__dirname, "../config/cors-config.json");
@@ -31,15 +43,21 @@ export function getCorsConfig() {
         .filter((origin) => origin.length > 0);
     }
 
-    return {
+    const config = {
       ...baseConfig,
       allowedOrigins: validateOrigins(allowedOrigins),
     };
+
+    // Cache the configuration and environment key
+    configCache = config;
+    envCacheKey = currentEnvKey;
+
+    return config;
   } catch (error) {
     console.error("Failed to load CORS configuration:", error.message);
 
     // Fallback to minimal secure defaults
-    return {
+    const fallbackConfig = {
       allowedOrigins: [
         "http://localhost:3000",
         "https://alocubano-boulderfest.vercel.app",
@@ -48,6 +66,12 @@ export function getCorsConfig() {
       allowedMethods: ["GET", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
     };
+
+    // Cache fallback configuration
+    configCache = fallbackConfig;
+    envCacheKey = currentEnvKey;
+
+    return fallbackConfig;
   }
 }
 
@@ -92,4 +116,12 @@ export function isOriginAllowed(origin, config) {
   }
 
   return config.allowedOrigins.includes(origin);
+}
+
+/**
+ * Clear the configuration cache (useful for testing)
+ */
+export function clearConfigCache() {
+  configCache = null;
+  envCacheKey = null;
 }

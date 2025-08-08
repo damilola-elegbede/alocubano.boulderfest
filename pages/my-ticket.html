@@ -339,6 +339,7 @@
       async function downloadTicket() {
         // Convert ticket to image
         const ticketElement = document.getElementById("ticket-content");
+        const ticketId = document.getElementById("ticket-id").textContent;
 
         if (window.html2canvas) {
           const canvas = await html2canvas(ticketElement);

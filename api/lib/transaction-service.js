@@ -18,8 +18,8 @@ export class TransactionService {
    * Create a new transaction from Stripe checkout session
    */
   async createFromStripeSession(session) {
-    // Start transaction for atomicity
-    await this.db.execute("BEGIN");
+    // Start transaction with immediate write-lock to prevent race conditions
+    await this.db.execute("BEGIN IMMEDIATE");
 
     try {
       const uuid = this.generateTransactionUUID();
