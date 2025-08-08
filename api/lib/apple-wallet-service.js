@@ -1,6 +1,7 @@
 import { PKPass } from 'passkit-generator';
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from './database.js';
+import jwt from 'jsonwebtoken';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -16,19 +17,37 @@ export class AppleWalletService {
     this.organizationName = process.env.APPLE_PASS_ORGANIZATION || 'A Lo Cubano Boulder Fest';
     this.baseUrl = process.env.WALLET_BASE_URL || 'https://alocubano.vercel.app';
     
+    // Event and venue configuration
+    this.eventStartDate = process.env.EVENT_START_DATE || '2026-05-15T10:00:00-06:00';
+    this.eventEndDate = process.env.EVENT_END_DATE || '2026-05-17T23:00:00-06:00';
+    this.eventDatesDisplay = process.env.EVENT_DATES_DISPLAY || 'May 15-17, 2026';
+    this.venueName = process.env.VENUE_NAME || 'Avalon Ballroom';
+    this.venueAddress = process.env.VENUE_ADDRESS || '6185 Arapahoe Road, Boulder, CO 80303';
+    this.venueLatitude = parseFloat(process.env.VENUE_LATITUDE || '40.014984');
+    this.venueLongitude = parseFloat(process.env.VENUE_LONGITUDE || '-105.219544');
+    
     // Decode certificates from base64
     this.signerCert = process.env.APPLE_PASS_CERT ? 
       Buffer.from(process.env.APPLE_PASS_CERT, 'base64') : null;
-    this.signerKey = process.env.APPLE_PASS_PASSWORD;
+    this.signerKey = process.env.APPLE_PASS_KEY ? 
+      Buffer.from(process.env.APPLE_PASS_KEY, 'base64') : null;
+    this.signerKeyPassphrase = process.env.APPLE_PASS_PASSWORD;
     this.wwdrCert = process.env.APPLE_WWDR_CERT ? 
       Buffer.from(process.env.APPLE_WWDR_CERT, 'base64') : null;
+    
+    // JWT authentication secret for wallet updates
+    this.walletAuthSecret = process.env.WALLET_AUTH_SECRET;
   }
 
   /**
    * Check if Apple Wallet is configured
    */
   isConfigured() {
-    return !!(this.passTypeId && this.teamId && this.signerCert && this.signerKey && this.wwdrCert);
+    const hasCertificates = !!(this.passTypeId && this.teamId && this.signerCert && this.signerKey && this.wwdrCert);
+    const hasValidPassphrase = this.signerKeyPassphrase !== undefined; // Allow empty passphrase
+    const hasWalletAuthSecret = !!this.walletAuthSecret;
+    
+    return hasCertificates && hasValidPassphrase && hasWalletAuthSecret;
   }
 
   /**
@@ -62,8 +81,8 @@ export class AppleWalletService {
         return await this.createPassFile(ticket, ticket.apple_pass_serial);
       }
       
-      // Generate new serial number
-      const serialNumber = `ALO26-${Date.now()}-${uuidv4().substring(0, 8).toUpperCase()}`;
+      // Generate cryptographically secure serial number using full UUID
+      const serialNumber = `ALO26-${uuidv4().toUpperCase()}`;
       
       // Create the pass
       const passBuffer = await this.createPassFile(ticket, serialNumber);
@@ -96,7 +115,7 @@ export class AppleWalletService {
     const pass = new PKPass({}, {
       signerCert: this.signerCert,
       signerKey: this.signerKey,
-      signerKeyPassphrase: this.signerKey,
+      signerKeyPassphrase: this.signerKeyPassphrase,
       wwdr: this.wwdrCert
     });
 
@@ -141,7 +160,7 @@ export class AppleWalletService {
         {
           key: 'date',
           label: 'DATES',
-          value: 'May 15-17, 2026'
+          value: this.eventDatesDisplay
         },
         {
           key: 'order',
@@ -155,7 +174,7 @@ export class AppleWalletService {
         {
           key: 'venue',
           label: 'VENUE',
-          value: 'Avalon Ballroom\n6185 Arapahoe Road\nBoulder, CO 80303'
+          value: `${this.venueName}\n${this.venueAddress}`
         },
         {
           key: 'ticket-id',
@@ -192,11 +211,11 @@ export class AppleWalletService {
     ];
     
     // Relevance information
-    pass.relevantDate = '2026-05-15T10:00:00-06:00';
+    pass.relevantDate = this.eventStartDate;
     pass.locations = [
       {
-        latitude: 40.014984,
-        longitude: -105.219544,
+        latitude: this.venueLatitude,
+        longitude: this.venueLongitude,
         relevantText: 'Welcome to A Lo Cubano Boulder Fest!'
       }
     ];
@@ -267,11 +286,45 @@ export class AppleWalletService {
   }
 
   /**
-   * Generate authentication token for pass updates
+   * Generate JWT authentication token for pass updates
    */
   generateAuthToken(ticketId) {
-    // Simple token for now, could use JWT
-    return Buffer.from(`${ticketId}:${Date.now()}`).toString('base64');
+    if (!this.walletAuthSecret) {
+      throw new Error('WALLET_AUTH_SECRET not configured');
+    }
+    
+    const payload = {
+      ticketId,
+      type: 'wallet_pass',
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60) // 1 year expiry
+    };
+    
+    return jwt.sign(payload, this.walletAuthSecret, { 
+      algorithm: 'HS256',
+      issuer: 'alocubano-boulderfest',
+      audience: 'apple-wallet'
+    });
+  }
+
+  /**
+   * Verify JWT authentication token
+   */
+  verifyAuthToken(token) {
+    if (!this.walletAuthSecret) {
+      throw new Error('WALLET_AUTH_SECRET not configured');
+    }
+    
+    try {
+      return jwt.verify(token, this.walletAuthSecret, {
+        algorithms: ['HS256'],
+        issuer: 'alocubano-boulderfest',
+        audience: 'apple-wallet'
+      });
+    } catch (error) {
+      console.error('JWT verification failed:', error.message);
+      return null;
+    }
   }
 
   /**
@@ -294,7 +347,18 @@ export class AppleWalletService {
    * Revoke a pass
    */
   async revokePass(ticketId, reason) {
-    const result = await this.db.execute({
+    // First get the ticket id for logging
+    const ticket = await this.db.execute({
+      sql: 'SELECT id FROM tickets WHERE ticket_id = ?',
+      args: [ticketId]
+    });
+    
+    if (ticket.rows.length === 0) {
+      throw new Error('Ticket not found');
+    }
+    
+    // Update the ticket with revocation info
+    await this.db.execute({
       sql: `UPDATE tickets 
             SET wallet_pass_revoked_at = CURRENT_TIMESTAMP,
                 wallet_pass_revoked_reason = ?
@@ -302,14 +366,8 @@ export class AppleWalletService {
       args: [reason, ticketId]
     });
     
-    const ticket = await this.db.execute({
-      sql: 'SELECT * FROM tickets WHERE ticket_id = ?',
-      args: [ticketId]
-    });
-    
-    if (ticket.rows.length > 0) {
-      await this.logPassEvent(ticket.rows[0].id, 'revoked', { reason });
-    }
+    // Log the revocation event
+    await this.logPassEvent(ticket.rows[0].id, 'revoked', { reason });
   }
 
   /**

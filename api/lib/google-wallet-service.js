@@ -10,6 +10,15 @@ export class GoogleWalletService {
     this.classId = process.env.GOOGLE_WALLET_CLASS_ID || 'alocubano_tickets_2026';
     this.baseUrl = process.env.WALLET_BASE_URL || 'https://alocubano.vercel.app';
     
+    // Event and venue configuration
+    this.eventStartDate = process.env.EVENT_START_DATE || '2026-05-15T10:00:00-06:00';
+    this.eventEndDate = process.env.EVENT_END_DATE || '2026-05-17T23:00:00-06:00';
+    this.eventDatesDisplay = process.env.EVENT_DATES_DISPLAY || 'May 15-17, 2026';
+    this.venueName = process.env.VENUE_NAME || 'Avalon Ballroom';
+    this.venueAddress = process.env.VENUE_ADDRESS || '6185 Arapahoe Road, Boulder, CO 80303';
+    this.venueLatitude = parseFloat(process.env.VENUE_LATITUDE || '40.014984');
+    this.venueLongitude = parseFloat(process.env.VENUE_LONGITUDE || '-105.219544');
+    
     // Initialize Google Auth
     if (process.env.GOOGLE_WALLET_SERVICE_ACCOUNT) {
       try {
@@ -78,19 +87,19 @@ export class GoogleWalletService {
         name: {
           defaultValue: {
             language: 'en',
-            value: 'Avalon Ballroom'
+            value: this.venueName
           }
         },
         address: {
           defaultValue: {
             language: 'en',
-            value: '6185 Arapahoe Road, Boulder, CO 80303'
+            value: this.venueAddress
           }
         }
       },
       dateTime: {
-        start: '2026-05-15T10:00:00-06:00',
-        end: '2026-05-17T23:00:00-06:00'
+        start: this.eventStartDate,
+        end: this.eventEndDate
       },
       logo: {
         sourceUri: {
@@ -206,10 +215,10 @@ export class GoogleWalletService {
         linkedOfferIds: [],
         validTimeInterval: {
           start: {
-            date: '2026-05-15T00:00:00-06:00'
+            date: this.eventStartDate
           },
           end: {
-            date: '2026-05-18T00:00:00-06:00'
+            date: this.eventEndDate
           }
         },
         // Custom styled fields to match Apple Wallet
@@ -231,7 +240,7 @@ export class GoogleWalletService {
           },
           {
             header: 'DATES',
-            body: 'May 15-17, 2026',
+            body: this.eventDatesDisplay,
             id: 'dates'
           },
           {
@@ -247,7 +256,7 @@ export class GoogleWalletService {
               columns: [
                 {
                   label: 'VENUE',
-                  value: 'Avalon Ballroom\n6185 Arapahoe Road\nBoulder, CO 80303'
+                  value: `${this.venueName}\n${this.venueAddress}`
                 }
               ]
             },
@@ -283,7 +292,7 @@ export class GoogleWalletService {
             body: 'Show this ticket at the entrance for scanning.',
             displayInterval: {
               start: {
-                date: '2026-05-15T00:00:00-06:00'
+                date: this.eventStartDate
               }
             }
           }

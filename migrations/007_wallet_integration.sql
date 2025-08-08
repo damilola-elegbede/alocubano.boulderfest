@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS wallet_pass_events (
 );
 
 -- Create indexes for performance (including uniqueness)
-CREATE UNIQUE INDEX idx_tickets_apple_pass_serial ON tickets(apple_pass_serial);
-CREATE UNIQUE INDEX idx_tickets_google_pass_id ON tickets(google_pass_id);
+-- Use WHERE clause to allow multiple NULL values in unique indexes
+CREATE UNIQUE INDEX idx_tickets_apple_pass_serial ON tickets(apple_pass_serial) WHERE apple_pass_serial IS NOT NULL;
+CREATE UNIQUE INDEX idx_tickets_google_pass_id ON tickets(google_pass_id) WHERE google_pass_id IS NOT NULL;
 CREATE INDEX idx_wallet_pass_events_ticket_id ON wallet_pass_events(ticket_id);
 CREATE INDEX idx_wallet_pass_events_type ON wallet_pass_events(pass_type, event_type);
