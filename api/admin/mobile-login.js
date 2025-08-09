@@ -29,11 +29,12 @@ export default async function handler(req, res) {
 
     // Check if client is locked out
     if (rateLimitService.isLockedOut(clientId)) {
-      const remainingSeconds = rateLimitService.getRemainingLockoutTime(clientId);
+      const remainingSeconds =
+        rateLimitService.getRemainingLockoutTime(clientId);
       const remainingMinutes = Math.ceil(remainingSeconds / 60);
       return res.status(429).json({
         error: "Too many login attempts",
-        details: `Account locked. Try again in ${remainingMinutes} minutes.`
+        details: `Account locked. Try again in ${remainingMinutes} minutes.`,
       });
     }
 
@@ -54,17 +55,17 @@ export default async function handler(req, res) {
     }
 
     // Validate input - ensure password is provided and is a string
-    if (!password || typeof password !== 'string' || password.length === 0) {
+    if (!password || typeof password !== "string" || password.length === 0) {
       return res.status(400).json({
         error: "Invalid input",
         details: "Password is required",
       });
     }
-    
+
     // Additional password validation
     if (password.length > 100) {
       return res.status(400).json({
-        error: "Invalid input", 
+        error: "Invalid input",
         details: "Password is too long",
       });
     }
@@ -75,10 +76,10 @@ export default async function handler(req, res) {
     if (!isValidPassword) {
       // Record failed attempt for rate limiting
       rateLimitService.recordFailedAttempt(clientId);
-      
+
       // Log failed attempt
       console.log("Failed mobile login attempt from:", clientId);
-      
+
       return res.status(401).json({
         error: "Invalid password",
       });
@@ -90,13 +91,13 @@ export default async function handler(req, res) {
     // Create extended 72-hour session token for mobile check-in
     const sessionToken = mobileAuth.createMobileSessionToken(
       "checkin_staff",
-      "checkin_staff"
+      "checkin_staff",
     );
 
     // Create session cookie
     const sessionCookie = mobileAuth.createMobileSessionCookie(
       sessionToken,
-      "checkin_staff"
+      "checkin_staff",
     );
 
     // Set cookie
@@ -106,8 +107,9 @@ export default async function handler(req, res) {
     console.log("Mobile check-in staff logged in successfully");
 
     // Get the configured session duration
-    const sessionDuration = mobileAuth.roleDurations.checkin_staff || mobileAuth.sessionDuration;
-    
+    const sessionDuration =
+      mobileAuth.roleDurations.checkin_staff || mobileAuth.sessionDuration;
+
     return res.status(200).json({
       success: true,
       message: "Login successful",
@@ -119,7 +121,8 @@ export default async function handler(req, res) {
     console.error("Mobile login error:", error);
     return res.status(500).json({
       error: "Login failed",
-      details: process.env.NODE_ENV === "development" ? error.message : undefined,
+      details:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 }

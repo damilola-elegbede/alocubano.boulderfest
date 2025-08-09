@@ -11,12 +11,14 @@ async function handler(req, res) {
     const validationService = getValidationService();
 
     // Validate all search parameters
-    const validation = validationService.validateRegistrationSearchParams(req.query);
-    
+    const validation = validationService.validateRegistrationSearchParams(
+      req.query,
+    );
+
     if (!validation.isValid) {
-      return res.status(400).json({ 
-        error: 'Validation failed',
-        details: validation.errors
+      return res.status(400).json({
+        error: "Validation failed",
+        details: validation.errors,
       });
     }
 
@@ -43,7 +45,13 @@ async function handler(req, res) {
         t.ticket_id LIKE ? ESCAPE '\\' OR
         tr.customer_email LIKE ? ESCAPE '\\'
       )`;
-      args.push(sanitized.searchTerm, sanitized.searchTerm, sanitized.searchTerm, sanitized.searchTerm, sanitized.searchTerm);
+      args.push(
+        sanitized.searchTerm,
+        sanitized.searchTerm,
+        sanitized.searchTerm,
+        sanitized.searchTerm,
+        sanitized.searchTerm,
+      );
     }
 
     if (sanitized.status) {
@@ -91,7 +99,8 @@ async function handler(req, res) {
 
       if (sanitized.status) countSql += ` AND t.status = ?`;
       if (sanitized.ticketType) countSql += ` AND t.ticket_type = ?`;
-      if (sanitized.checkedIn === "true") countSql += ` AND t.checked_in_at IS NOT NULL`;
+      if (sanitized.checkedIn === "true")
+        countSql += ` AND t.checked_in_at IS NOT NULL`;
       else if (sanitized.checkedIn === "false")
         countSql += ` AND t.checked_in_at IS NULL`;
 
@@ -123,9 +132,9 @@ async function handler(req, res) {
     // Validate action
     const actionValidation = validationService.validateAdminAction(action);
     if (!actionValidation.isValid) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: actionValidation.error,
-        allowedValues: actionValidation.allowedValues 
+        allowedValues: actionValidation.allowedValues,
       });
     }
 

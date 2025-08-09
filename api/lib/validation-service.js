@@ -17,18 +17,50 @@ class ValidationService {
 
     // Define allowed values for enum-like fields
     this.allowedValues = {
-      ticketStatuses: ['active', 'cancelled', 'refunded', 'pending', 'valid', 'used', 'transferred'],
-      ticketTypes: ['full_pass', 'workshop_only', 'social_only', 'single_workshop'],
-      transactionStatuses: ['pending', 'paid', 'failed', 'cancelled', 'refunded', 'completed'],
-      transactionTypes: ['tickets', 'donations', 'merchandise', 'donation'],
-      sortDirections: ['ASC', 'DESC'],
-      adminActions: ['checkin', 'undo_checkin', 'update', 'cancel'],
-      booleanStrings: ['true', 'false']
+      ticketStatuses: [
+        "active",
+        "cancelled",
+        "refunded",
+        "pending",
+        "valid",
+        "used",
+        "transferred",
+      ],
+      ticketTypes: [
+        "full_pass",
+        "workshop_only",
+        "social_only",
+        "single_workshop",
+      ],
+      transactionStatuses: [
+        "pending",
+        "paid",
+        "failed",
+        "cancelled",
+        "refunded",
+        "completed",
+      ],
+      transactionTypes: ["tickets", "donations", "merchandise", "donation"],
+      sortDirections: ["ASC", "DESC"],
+      adminActions: ["checkin", "undo_checkin", "update", "cancel"],
+      booleanStrings: ["true", "false"],
     };
 
     this.allowedSortColumns = {
-      registrations: ['created_at', 'attendee_last_name', 'ticket_type', 'checked_in_at', 'status'],
-      transactions: ['created_at', 'customer_email', 'amount_cents', 'status', 'type']
+      registrations: [
+        "created_at",
+        "attendee_last_name",
+        "ticket_type",
+        "checked_in_at",
+        "status",
+      ],
+      transactions: [
+        "created_at",
+        "customer_email",
+        "amount_cents",
+        "status",
+        "type",
+      ],
     };
   }
 
@@ -39,10 +71,16 @@ class ValidationService {
    */
   validatePagination(params) {
     const { limit = 50, offset = 0 } = params;
-    
+
     return {
-      limit: Math.min(Math.max(parseInt(limit) || 50, 1), this.config.maxQueryLimit),
-      offset: Math.min(Math.max(parseInt(offset) || 0, 0), this.config.maxQueryOffset)
+      limit: Math.min(
+        Math.max(parseInt(limit) || 50, 1),
+        this.config.maxQueryLimit,
+      ),
+      offset: Math.min(
+        Math.max(parseInt(offset) || 0, 0),
+        this.config.maxQueryOffset,
+      ),
     };
   }
 
@@ -56,17 +94,20 @@ class ValidationService {
       return { isValid: true }; // Email is optional in many contexts
     }
 
-    if (typeof email !== 'string') {
-      return { isValid: false, error: 'Email must be a string' };
+    if (typeof email !== "string") {
+      return { isValid: false, error: "Email must be a string" };
     }
 
     if (email.length > this.config.maxEmailLength) {
-      return { isValid: false, error: `Email must be ${this.config.maxEmailLength} characters or less` };
+      return {
+        isValid: false,
+        error: `Email must be ${this.config.maxEmailLength} characters or less`,
+      };
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return { isValid: false, error: 'Invalid email format' };
+      return { isValid: false, error: "Invalid email format" };
     }
 
     return { isValid: true };
@@ -82,14 +123,14 @@ class ValidationService {
       return { isValid: true }; // Search is optional
     }
 
-    if (typeof search !== 'string') {
-      return { isValid: false, error: 'Search term must be a string' };
+    if (typeof search !== "string") {
+      return { isValid: false, error: "Search term must be a string" };
     }
 
     if (search.length > this.config.maxSearchLength) {
-      return { 
-        isValid: false, 
-        error: `Search term must be ${this.config.maxSearchLength} characters or less` 
+      return {
+        isValid: false,
+        error: `Search term must be ${this.config.maxSearchLength} characters or less`,
       };
     }
 
@@ -104,7 +145,7 @@ class ValidationService {
   sanitizeSearchTerm(search) {
     if (!search) return null;
     // Escape SQL LIKE special characters
-    return `%${search.replace(/[%_]/g, '\\$&')}%`;
+    return `%${search.replace(/[%_]/g, "\\$&")}%`;
   }
 
   /**
@@ -125,10 +166,10 @@ class ValidationService {
     }
 
     if (!allowedValues.includes(value)) {
-      return { 
-        isValid: false, 
+      return {
+        isValid: false,
         error: `Invalid ${fieldName} value`,
-        allowedValues: allowedValues
+        allowedValues: allowedValues,
       };
     }
 
@@ -142,14 +183,14 @@ class ValidationService {
    * @param {string} context - Context for allowed columns (registrations, transactions)
    * @returns {Object} Validation result
    */
-  validateSort(sortBy = 'created_at', sortOrder = 'DESC', context) {
-    const allowedColumns = this.allowedSortColumns[context] || ['created_at'];
-    
+  validateSort(sortBy = "created_at", sortOrder = "DESC", context) {
+    const allowedColumns = this.allowedSortColumns[context] || ["created_at"];
+
     if (!allowedColumns.includes(sortBy)) {
       return {
         isValid: false,
-        error: 'Invalid sort column',
-        allowedValues: allowedColumns
+        error: "Invalid sort column",
+        allowedValues: allowedColumns,
       };
     }
 
@@ -157,15 +198,15 @@ class ValidationService {
     if (!this.allowedValues.sortDirections.includes(normalizedOrder)) {
       return {
         isValid: false,
-        error: 'Invalid sort direction',
-        allowedValues: this.allowedValues.sortDirections
+        error: "Invalid sort direction",
+        allowedValues: this.allowedValues.sortDirections,
       };
     }
 
     return {
       isValid: true,
       sortBy,
-      sortOrder: normalizedOrder
+      sortOrder: normalizedOrder,
     };
   }
 
@@ -176,18 +217,21 @@ class ValidationService {
    */
   validateAmount(amount) {
     if (amount === undefined || amount === null) {
-      return { isValid: false, error: 'Amount is required' };
+      return { isValid: false, error: "Amount is required" };
     }
 
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount)) {
-      return { isValid: false, error: 'Amount must be a valid number' };
+      return { isValid: false, error: "Amount must be a valid number" };
     }
 
-    if (numAmount < this.config.minAmount || numAmount > this.config.maxAmount) {
-      return { 
-        isValid: false, 
-        error: `Amount must be between ${this.config.minAmount} and ${this.config.maxAmount}` 
+    if (
+      numAmount < this.config.minAmount ||
+      numAmount > this.config.maxAmount
+    ) {
+      return {
+        isValid: false,
+        error: `Amount must be between ${this.config.minAmount} and ${this.config.maxAmount}`,
       };
     }
 
@@ -200,19 +244,19 @@ class ValidationService {
    * @param {string} fieldName - Field name for error messages
    * @returns {Object} Validation result
    */
-  validateName(name, fieldName = 'Name') {
+  validateName(name, fieldName = "Name") {
     if (!name) {
       return { isValid: true }; // Names are usually optional
     }
 
-    if (typeof name !== 'string') {
+    if (typeof name !== "string") {
       return { isValid: false, error: `${fieldName} must be a string` };
     }
 
     if (name.length > this.config.maxNameLength) {
-      return { 
-        isValid: false, 
-        error: `${fieldName} must be ${this.config.maxNameLength} characters or less` 
+      return {
+        isValid: false,
+        error: `${fieldName} must be ${this.config.maxNameLength} characters or less`,
       };
     }
 
@@ -226,16 +270,16 @@ class ValidationService {
    */
   validateTicketId(ticketId) {
     if (!ticketId) {
-      return { isValid: false, error: 'Ticket ID is required' };
+      return { isValid: false, error: "Ticket ID is required" };
     }
 
-    if (typeof ticketId !== 'string') {
-      return { isValid: false, error: 'Ticket ID must be a string' };
+    if (typeof ticketId !== "string") {
+      return { isValid: false, error: "Ticket ID must be a string" };
     }
 
     // Ticket IDs should be reasonable length (adjust based on your format)
     if (ticketId.length < 5 || ticketId.length > 50) {
-      return { isValid: false, error: 'Invalid ticket ID format' };
+      return { isValid: false, error: "Invalid ticket ID format" };
     }
 
     return { isValid: true };
@@ -247,7 +291,7 @@ class ValidationService {
    * @returns {Object} Validation result
    */
   validateAdminAction(action) {
-    return this.validateEnum(action, 'action', 'adminActions');
+    return this.validateEnum(action, "action", "adminActions");
   }
 
   /**
@@ -274,7 +318,11 @@ class ValidationService {
     }
 
     // Validate status
-    const statusValidation = this.validateEnum(params.status, 'status', 'ticketStatuses');
+    const statusValidation = this.validateEnum(
+      params.status,
+      "status",
+      "ticketStatuses",
+    );
     if (!statusValidation.isValid) {
       errors.push(statusValidation.error);
     } else if (params.status) {
@@ -282,7 +330,11 @@ class ValidationService {
     }
 
     // Validate ticket type
-    const typeValidation = this.validateEnum(params.ticketType, 'ticket type', 'ticketTypes');
+    const typeValidation = this.validateEnum(
+      params.ticketType,
+      "ticket type",
+      "ticketTypes",
+    );
     if (!typeValidation.isValid) {
       errors.push(typeValidation.error);
     } else if (params.ticketType) {
@@ -290,16 +342,24 @@ class ValidationService {
     }
 
     // Validate checkedIn boolean
-    const checkedInValidation = this.validateEnum(params.checkedIn, 'checkedIn', 'booleanStrings');
+    const checkedInValidation = this.validateEnum(
+      params.checkedIn,
+      "checkedIn",
+      "booleanStrings",
+    );
     if (!checkedInValidation.isValid) {
       errors.push(checkedInValidation.error);
     } else if (params.checkedIn) {
       // Convert string to boolean
-      sanitized.checkedIn = params.checkedIn === 'true';
+      sanitized.checkedIn = params.checkedIn === "true";
     }
 
     // Validate sort parameters
-    const sortValidation = this.validateSort(params.sortBy, params.sortOrder, 'registrations');
+    const sortValidation = this.validateSort(
+      params.sortBy,
+      params.sortOrder,
+      "registrations",
+    );
     if (!sortValidation.isValid) {
       errors.push(sortValidation.error);
     } else {
@@ -310,7 +370,7 @@ class ValidationService {
     return {
       isValid: errors.length === 0,
       errors,
-      sanitized
+      sanitized,
     };
   }
 
@@ -339,7 +399,11 @@ class ValidationService {
     }
 
     // Validate status
-    const statusValidation = this.validateEnum(params.status, 'status', 'transactionStatuses');
+    const statusValidation = this.validateEnum(
+      params.status,
+      "status",
+      "transactionStatuses",
+    );
     if (!statusValidation.isValid) {
       errors.push(statusValidation.error);
     } else if (params.status) {
@@ -349,7 +413,7 @@ class ValidationService {
     return {
       isValid: errors.length === 0,
       errors,
-      sanitized
+      sanitized,
     };
   }
 }

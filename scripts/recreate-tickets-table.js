@@ -6,14 +6,16 @@ async function recreateTicketsTable() {
   console.log("=== Recreating Tickets Table ===\n");
 
   // Confirm destructive operation
-  console.log("⚠️  WARNING: This will permanently delete the existing tickets table and all data!");
+  console.log(
+    "⚠️  WARNING: This will permanently delete the existing tickets table and all data!",
+  );
   console.log("Press Ctrl+C to cancel, or any other key to continue...");
-  
+
   // Wait for user input (in a real environment, you might use readline)
   await new Promise((resolve) => {
     process.stdin.setRawMode(true);
     process.stdin.resume();
-    process.stdin.on('data', () => {
+    process.stdin.on("data", () => {
       process.stdin.pause();
       resolve();
     });

@@ -59,7 +59,8 @@ export default async function handler(req, res) {
         id: session.id,
         amount: session.amount_total / 100,
         currency: session.currency,
-        customer_email: session.customer_email || session.customer_details?.email,
+        customer_email:
+          session.customer_email || session.customer_details?.email,
         metadata: session.metadata,
       },
     });

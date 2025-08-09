@@ -95,11 +95,9 @@ export default async function handler(req, res) {
     const year = yearParam.match(/^\d{4}$/) ? yearParam : "2025";
     const yearNum = parseInt(year);
     if (!yearParam.match(/^\d{4}$/) || yearNum < 2020 || yearNum > 2030) {
-      return res
-        .status(400)
-        .json({
-          error: "Invalid year. Must be 4-digit year between 2020-2030.",
-        });
+      return res.status(400).json({
+        error: "Invalid year. Must be 4-digit year between 2020-2030.",
+      });
     }
 
     // Validate category (only allowed values)
@@ -340,11 +338,9 @@ export default async function handler(req, res) {
     }
 
     if (error.code === 403) {
-      return res
-        .status(403)
-        .json({
-          error: "Access denied. Please check gallery folder permissions.",
-        });
+      return res.status(403).json({
+        error: "Access denied. Please check gallery folder permissions.",
+      });
     }
 
     // Generic error response

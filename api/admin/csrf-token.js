@@ -27,7 +27,7 @@ async function csrfTokenHandler(req, res) {
     const csrfToken = await csrfService.generateToken(session.admin.id);
 
     // Set Cache-Control header to prevent caching
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
 
     // Return CSRF token
     res.status(200).json({

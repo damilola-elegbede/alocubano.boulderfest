@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  vi,
+} from "vitest";
 import jwt from "jsonwebtoken";
 import QRCode from "qrcode";
 import { randomBytes } from "crypto";
@@ -6,15 +14,15 @@ import { randomBytes } from "crypto";
 // Generate secure random secrets for testing
 const originalEnv = {};
 const testSecrets = {
-  QR_SECRET_KEY: randomBytes(32).toString('hex'),
+  QR_SECRET_KEY: randomBytes(32).toString("hex"),
   QR_CODE_EXPIRY_DAYS: "90",
   QR_CODE_MAX_SCANS: "10",
   VERCEL_URL: "test.example.com", // Match implementation usage
-  WALLET_AUTH_SECRET: randomBytes(32).toString('hex')
+  WALLET_AUTH_SECRET: randomBytes(32).toString("hex"),
 };
 
 // Store original values and set test values
-Object.keys(testSecrets).forEach(key => {
+Object.keys(testSecrets).forEach((key) => {
   originalEnv[key] = process.env[key];
   process.env[key] = testSecrets[key];
 });
@@ -43,7 +51,7 @@ describe("QRTokenService", () => {
   afterAll(() => {
     vi.clearAllMocks();
     // Restore original environment variables
-    Object.keys(testSecrets).forEach(key => {
+    Object.keys(testSecrets).forEach((key) => {
       if (originalEnv[key] !== undefined) {
         process.env[key] = originalEnv[key];
       } else {
@@ -73,7 +81,7 @@ describe("QRTokenService", () => {
     it("should have isConfigured method", () => {
       const service = new QRTokenService();
       expect(service.isConfigured()).toBe(true);
-      
+
       // Test with missing secret
       const originalSecret = process.env.QR_SECRET_KEY;
       delete process.env.QR_SECRET_KEY;
@@ -138,10 +146,9 @@ describe("QRTokenService", () => {
         { expiresIn: "-1d" }, // Already expired
       );
 
-      mockExecute
-        .mockResolvedValueOnce({
-          rows: [{ qr_token: expiredToken }],
-        });
+      mockExecute.mockResolvedValueOnce({
+        rows: [{ qr_token: expiredToken }],
+      });
 
       const token = await service.getOrCreateToken(ticketId);
 
@@ -196,31 +203,37 @@ describe("QRTokenService", () => {
 
     it("should validate token format", async () => {
       const service = new QRTokenService();
-      
+
       // Should reject invalid tokens
-      await expect(service.generateQRImage(null)).rejects.toThrow("Token is required");
-      await expect(service.generateQRImage("")).rejects.toThrow("Token is required");
-      await expect(service.generateQRImage("short")).rejects.toThrow("Invalid token format");
+      await expect(service.generateQRImage(null)).rejects.toThrow(
+        "Token is required",
+      );
+      await expect(service.generateQRImage("")).rejects.toThrow(
+        "Token is required",
+      );
+      await expect(service.generateQRImage("short")).rejects.toThrow(
+        "Invalid token format",
+      );
     });
   });
 
   describe("database connection management", () => {
     it("should get fresh database connection per operation", async () => {
       const service = new QRTokenService();
-      
+
       // Mock getDb to track calls - spy on prototype, not instance
       const getDbSpy = vi.spyOn(QRTokenService.prototype, "getDb");
-      
+
       // Mock responses for both operations
       mockExecute
-        .mockResolvedValueOnce({ rows: [] })  // First getOrCreateToken - check existing
-        .mockResolvedValueOnce({ rows: [] })  // First getOrCreateToken - update
-        .mockResolvedValueOnce({ rows: [] })  // Second getOrCreateToken - check existing
+        .mockResolvedValueOnce({ rows: [] }) // First getOrCreateToken - check existing
+        .mockResolvedValueOnce({ rows: [] }) // First getOrCreateToken - update
+        .mockResolvedValueOnce({ rows: [] }) // Second getOrCreateToken - check existing
         .mockResolvedValueOnce({ rows: [] }); // Second getOrCreateToken - update
-      
+
       await service.getOrCreateToken("TICKET-001");
       await service.getOrCreateToken("TICKET-002");
-      
+
       // Should call getDb for each operation
       expect(getDbSpy).toHaveBeenCalledTimes(2);
     });

@@ -52,7 +52,7 @@ async function testTickets() {
     // Parse line items from order data
     let orderData = {};
     let lineItems = [];
-    
+
     try {
       orderData = JSON.parse(transaction.order_details || "{}");
       lineItems = orderData.line_items || [];

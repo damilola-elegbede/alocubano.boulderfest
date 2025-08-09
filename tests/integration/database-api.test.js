@@ -51,8 +51,8 @@ describe("Database API Integration Tests", () => {
           rows: [
             { name: "email_subscribers" },
             { name: "email_events" },
-            { name: "email_audit_log" }
-          ]
+            { name: "email_audit_log" },
+          ],
         });
       } else if (sql.includes("table_info")) {
         // Return mock column info including all expected subscriber table columns
@@ -62,21 +62,18 @@ describe("Database API Integration Tests", () => {
             { name: "email" },
             { name: "status" },
             { name: "created_at" },
-            { name: "updated_at" } // Add updated_at column that test expects
-          ]
+            { name: "updated_at" }, // Add updated_at column that test expects
+          ],
         });
       } else if (sql.includes("index_list")) {
         // Return mock index info
         return Promise.resolve({
-          rows: [
-            { name: "email_idx" },
-            { name: "created_at_idx" }
-          ]
+          rows: [{ name: "email_idx" }, { name: "created_at_idx" }],
         });
       } else if (sql.includes("COUNT(*)")) {
         // Return mock row count
         return Promise.resolve({
-          rows: [{ count: 42 }]
+          rows: [{ count: 42 }],
         });
       }
       return Promise.resolve({ rows: [] });
@@ -96,8 +93,8 @@ describe("Database API Integration Tests", () => {
       const { req, res } = createMocks({
         method: "OPTIONS",
         headers: {
-          origin: "http://localhost:3000" // Valid origin for preflight
-        }
+          origin: "http://localhost:3000", // Valid origin for preflight
+        },
       });
 
       await testDbHandler(req, res);
@@ -284,17 +281,23 @@ describe("Database API Integration Tests", () => {
       expect(Array.isArray(migrationData.applied)).toBe(true);
       expect(Array.isArray(migrationData.pending)).toBe(true);
       // Migration status should be a valid status (dynamic based on actual database state)
-      expect(['up_to_date', 'pending_migrations', 'not_initialized']).toContain(migrationData.status);
+      expect(["up_to_date", "pending_migrations", "not_initialized"]).toContain(
+        migrationData.status,
+      );
 
       // Migration data should have valid structure (content is dynamic based on actual files)
       if (migrationData.applied.length > 0) {
         // If there are applied migrations, check they have valid format
-        expect(migrationData.applied.every(name => typeof name === 'string')).toBe(true);
+        expect(
+          migrationData.applied.every((name) => typeof name === "string"),
+        ).toBe(true);
       }
-      
+
       if (migrationData.pending.length > 0) {
-        // If there are pending migrations, check they have valid format  
-        expect(migrationData.pending.every(name => typeof name === 'string')).toBe(true);
+        // If there are pending migrations, check they have valid format
+        expect(
+          migrationData.pending.every((name) => typeof name === "string"),
+        ).toBe(true);
       }
     });
 
@@ -630,8 +633,8 @@ describe("Database API Integration Tests", () => {
       const { req, res } = createMocks({
         method: "GET",
         headers: {
-          origin: "http://localhost:3000" // Valid origin
-        }
+          origin: "http://localhost:3000", // Valid origin
+        },
       });
 
       await testDbHandler(req, res);
@@ -647,8 +650,8 @@ describe("Database API Integration Tests", () => {
       const { req, res } = createMocks({
         method: "POST",
         headers: {
-          origin: "http://localhost:3000" // Valid origin
-        }
+          origin: "http://localhost:3000", // Valid origin
+        },
       });
 
       await testDbHandler(req, res);

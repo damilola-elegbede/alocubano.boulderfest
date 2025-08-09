@@ -2,8 +2,10 @@
 
 export default async function handler(req, res) {
   // Only log debug information in non-production environments
-  const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
-  
+  const isProduction =
+    process.env.NODE_ENV === "production" ||
+    process.env.VERCEL_ENV === "production";
+
   if (!isProduction) {
     console.log("=== DEBUG ENDPOINT CALLED ===");
     console.log("Method:", req.method);
@@ -50,18 +52,20 @@ export default async function handler(req, res) {
   const debugInfo = {
     success: true,
     timestamp: new Date().toISOString(),
-    request: isProduction ? {
-      method: req.method,
-      url: req.url,
-      path: req.path || "undefined",
-    } : {
-      method: req.method,
-      url: req.url,
-      path: req.path || "undefined",
-      headers: req.headers,
-      query: req.query,
-      body: req.body,
-    },
+    request: isProduction
+      ? {
+          method: req.method,
+          url: req.url,
+          path: req.path || "undefined",
+        }
+      : {
+          method: req.method,
+          url: req.url,
+          path: req.path || "undefined",
+          headers: req.headers,
+          query: req.query,
+          body: req.body,
+        },
     environment: {
       nodeVersion: process.version,
       platform: process.platform,

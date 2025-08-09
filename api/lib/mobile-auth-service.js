@@ -9,18 +9,18 @@ import { serialize, parse } from "cookie";
 export class MobileAuthService {
   constructor() {
     this.sessionSecret = process.env.ADMIN_SECRET;
-    
+
     // Mobile check-in sessions: 72 hours for event weekend
     // Default: 259200000ms = 72 hours (3 days)
     this.sessionDuration = parseInt(
       process.env.MOBILE_CHECKIN_SESSION_DURATION || "259200000",
     );
-    
+
     // Alternative: Use different duration based on role
     this.roleDurations = {
-      'checkin_staff': 259200000,  // 72 hours for check-in staff
-      'admin': 3600000,             // 1 hour for full admins
-      'volunteer': 43200000,        // 12 hours for volunteers
+      checkin_staff: 259200000, // 72 hours for check-in staff
+      admin: 3600000, // 1 hour for full admins
+      volunteer: 43200000, // 12 hours for volunteers
     };
 
     if (!this.sessionSecret || this.sessionSecret.length < 32) {
@@ -35,10 +35,11 @@ export class MobileAuthService {
   async verifyStaffPassword(password) {
     // Option 1: Same admin password
     const adminPasswordHash = process.env.ADMIN_PASSWORD;
-    
+
     // Option 2: Separate staff password (recommended)
-    const staffPasswordHash = process.env.CHECKIN_STAFF_PASSWORD || adminPasswordHash;
-    
+    const staffPasswordHash =
+      process.env.CHECKIN_STAFF_PASSWORD || adminPasswordHash;
+
     if (!staffPasswordHash) {
       return false;
     }
@@ -51,13 +52,13 @@ export class MobileAuthService {
    */
   createMobileSessionToken(staffId = "checkin_staff", role = "checkin_staff") {
     const duration = this.roleDurations[role] || this.sessionDuration;
-    
+
     return jwt.sign(
       {
         id: staffId,
         role: role,
         loginTime: Date.now(),
-        isMobileCheckIn: true,  // Flag to identify mobile sessions
+        isMobileCheckIn: true, // Flag to identify mobile sessions
         expiresAt: Date.now() + duration,
       },
       this.sessionSecret,
@@ -102,7 +103,7 @@ export class MobileAuthService {
    */
   createMobileSessionCookie(token, role = "checkin_staff") {
     const duration = this.roleDurations[role] || this.sessionDuration;
-    
+
     return serialize("mobile_checkin_session", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -140,7 +141,7 @@ export class MobileAuthService {
    * Check if user has check-in permissions
    */
   canCheckInTickets(decodedToken) {
-    const allowedRoles = ['admin', 'checkin_staff', 'volunteer'];
+    const allowedRoles = ["admin", "checkin_staff", "volunteer"];
     return allowedRoles.includes(decodedToken.role);
   }
 
@@ -150,7 +151,7 @@ export class MobileAuthService {
   shouldRefreshToken(decodedToken) {
     const timeLeft = decodedToken.expiresAt - Date.now();
     const oneDay = 86400000; // 24 hours in ms
-    
+
     // Refresh if less than 24 hours left
     return timeLeft < oneDay;
   }

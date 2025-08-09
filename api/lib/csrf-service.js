@@ -5,20 +5,23 @@ export class CSRFService {
   constructor() {
     this.secret = process.env.ADMIN_SECRET || process.env.JWT_SECRET;
     // Only throw error in production or if explicitly configured
-    if (process.env.NODE_ENV === "production" && (!this.secret || this.secret.length < 32)) {
+    if (
+      process.env.NODE_ENV === "production" &&
+      (!this.secret || this.secret.length < 32)
+    ) {
       throw new Error("CSRF secret must be at least 32 characters long");
     }
     // Use a placeholder that clearly indicates configuration is needed
     if (!this.secret || this.secret.length < 32) {
       // In development/test, use a truly random secret generated at startup
       // This ensures each dev environment has a unique, non-forgeable secret
-      const isDev = process.env.NODE_ENV !== 'production';
+      const isDev = process.env.NODE_ENV !== "production";
       if (isDev) {
         // Generate a truly random secret for development (48 bytes = ~64 chars base64)
         // This prevents token reuse across different development machines
-        this.secret = randomBytes(48).toString('base64');
+        this.secret = randomBytes(48).toString("base64");
       } else {
-        throw new Error('CSRF secret must be configured in production');
+        throw new Error("CSRF secret must be configured in production");
       }
     }
   }
@@ -37,7 +40,7 @@ export class CSRFService {
       {
         expiresIn: "1h",
         issuer: "alocubano-csrf",
-      }
+      },
     );
     return token;
   }

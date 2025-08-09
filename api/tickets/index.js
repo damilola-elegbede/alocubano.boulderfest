@@ -98,11 +98,9 @@ export default async function handler(req, res) {
 
       // Action token is required for security-critical operations
       if (!actionToken && (action === "cancel" || action === "transfer")) {
-        return res
-          .status(400)
-          .json({
-            error: "Action token required for security-critical operations",
-          });
+        return res.status(400).json({
+          error: "Action token required for security-critical operations",
+        });
       }
 
       switch (action) {

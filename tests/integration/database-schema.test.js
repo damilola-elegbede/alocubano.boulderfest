@@ -80,7 +80,7 @@ describe("Database Schema Integration Tests", () => {
     }
 
     // Restore environment variables
-    Object.keys(process.env).forEach(key => delete process.env[key]);
+    Object.keys(process.env).forEach((key) => delete process.env[key]);
     Object.assign(process.env, originalEnv);
   });
 
@@ -827,7 +827,7 @@ async function cleanupTestData(client) {
     try {
       // Validate table name to prevent SQL injection
       const validatedTableName = validateTableName(table);
-      
+
       // Use quoted identifier for secure deletion
       await client.execute(`DELETE FROM "${validatedTableName}"`);
     } catch (error) {

@@ -11,7 +11,6 @@ const __dirname = dirname(__filename);
 // Load environment variables
 dotenv.config({ path: join(dirname(__dirname), ".env.local") });
 
-
 async function runMigrations() {
   const db = getDatabase();
 
@@ -61,39 +60,44 @@ async function runMigrations() {
       try {
         await db.execute("BEGIN TRANSACTION");
         transactionStarted = true;
-        
+
         for (const statement of statements) {
           await db.execute(statement);
         }
-        
+
         // Record migration as executed within transaction
         await db.execute({
           sql: `INSERT OR IGNORE INTO migrations (filename, executed_at) VALUES (?, CURRENT_TIMESTAMP)`,
           args: [file],
         });
-        
+
         await db.execute("COMMIT");
         // Only set transactionStarted to false after successful COMMIT
         // This ensures rollback is attempted if COMMIT fails
         transactionStarted = false;
         console.log(`✅ Migration ${file} completed successfully`);
-        
       } catch (error) {
         console.error(`Error executing migration ${file}:`, error.message);
         if (error.statement) {
-          console.error("Statement:", error.statement.substring(0, 100) + "...");
+          console.error(
+            "Statement:",
+            error.statement.substring(0, 100) + "...",
+          );
         }
-        
+
         // Always attempt rollback if transaction was started
         if (transactionStarted) {
           try {
             await db.execute("ROLLBACK");
             console.log("Transaction rolled back successfully");
           } catch (rollbackError) {
-            console.error("Failed to rollback transaction:", rollbackError.message);
+            console.error(
+              "Failed to rollback transaction:",
+              rollbackError.message,
+            );
           }
         }
-        
+
         throw error;
       }
     }

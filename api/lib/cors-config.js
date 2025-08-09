@@ -20,8 +20,8 @@ let envCacheKey = null;
  */
 export function getCorsConfig() {
   // Create cache key from environment variable to detect changes
-  const currentEnvKey = process.env.CORS_ALLOWED_ORIGINS || '';
-  
+  const currentEnvKey = process.env.CORS_ALLOWED_ORIGINS || "";
+
   // Return cached config if available and environment hasn't changed
   if (configCache && envCacheKey === currentEnvKey) {
     return configCache;
