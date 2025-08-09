@@ -6,7 +6,23 @@ const BASE_URL = process.env.TEST_URL || 'http://localhost:3000';
 const METRICS_API_KEY = process.env.METRICS_API_KEY || 'test-key';
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || 'admin-test-key';
 
-describe('Production Monitoring System', () => {
+// Check if server is available before running tests
+async function checkServerAvailable() {
+  try {
+    const response = await fetch(BASE_URL, { 
+      method: 'HEAD',
+      timeout: 1000 
+    });
+    return true;
+  } catch (error) {
+    console.log('⚠️  Server not available at', BASE_URL, '- skipping integration tests');
+    return false;
+  }
+}
+
+const serverAvailable = await checkServerAvailable();
+
+describe.skipIf(!serverAvailable)('Production Monitoring System', () => {
   
   describe('Health Check Endpoint', () => {
     it('should return healthy status when all services are operational', async () => {
