@@ -32,7 +32,7 @@ export class QRTokenService {
     }
 
     const db = this.getDb();
-    
+
     try {
       // Check if token already exists
       const result = await db.execute({
@@ -51,7 +51,7 @@ export class QRTokenService {
           iat: Math.floor(Date.now() / 1000),
           exp: Math.floor(Date.now() / 1000) + this.expiryDays * 24 * 60 * 60,
         },
-        this.secretKey
+        this.secretKey,
       );
 
       // Store token
@@ -83,14 +83,14 @@ export class QRTokenService {
     }
 
     // Validate token format (basic check)
-    if (typeof token !== 'string' || token.length < 10) {
+    if (typeof token !== "string" || token.length < 10) {
       throw new Error("Invalid token format");
     }
 
-    const baseUrl = process.env.VERCEL_URL 
+    const baseUrl = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
       : "http://localhost:8080";
-    
+
     // Use POST body instead of URL query for security
     const qrData = `${baseUrl}/my-ticket#${token}`;
 

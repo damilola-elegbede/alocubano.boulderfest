@@ -10,8 +10,8 @@ export function splitSqlStatements(sql) {
   if (sql.includes("-- migrate:break")) {
     return sql
       .split(/--\s*migrate:break/i)
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
   }
 
   // Otherwise use SQL-aware splitting
@@ -22,17 +22,17 @@ export function splitSqlStatements(sql) {
   let inLineComment = false;
   let inBlockComment = false;
   let inTrigger = false;
-  
+
   const lines = sql.split("\n");
-  
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     let j = 0;
-    
+
     while (j < line.length) {
       const char = line[j];
       const nextChar = line[j + 1];
-      
+
       // Handle line comments
       if (!inString && !inBlockComment && char === "-" && nextChar === "-") {
         inLineComment = true;
@@ -40,7 +40,7 @@ export function splitSqlStatements(sql) {
         j = line.length;
         continue;
       }
-      
+
       // Handle block comments
       if (!inString && !inLineComment && char === "/" && nextChar === "*") {
         inBlockComment = true;
@@ -48,20 +48,20 @@ export function splitSqlStatements(sql) {
         j += 2;
         continue;
       }
-      
+
       if (inBlockComment && char === "*" && nextChar === "/") {
         inBlockComment = false;
         // Skip block comment end
         j += 2;
         continue;
       }
-      
+
       // Skip content inside block comments
       if (inBlockComment) {
         j++;
         continue;
       }
-      
+
       // Handle strings
       if (!inLineComment && !inBlockComment) {
         if ((char === "'" || char === '"') && !inString) {
@@ -78,53 +78,65 @@ export function splitSqlStatements(sql) {
           stringDelimiter = null;
         }
       }
-      
+
       // Check for trigger/procedure keywords (case-insensitive)
       if (!inString && !inLineComment && !inBlockComment) {
         const upperLine = line.toUpperCase();
         const remainingLine = upperLine.substring(j);
-        
-        if (remainingLine.startsWith("CREATE TRIGGER") || 
-            remainingLine.startsWith("CREATE PROCEDURE") ||
-            remainingLine.startsWith("CREATE FUNCTION")) {
+
+        if (
+          remainingLine.startsWith("CREATE TRIGGER") ||
+          remainingLine.startsWith("CREATE PROCEDURE") ||
+          remainingLine.startsWith("CREATE FUNCTION")
+        ) {
           inTrigger = true;
         } else if (inTrigger && remainingLine.startsWith("END;")) {
           inTrigger = false;
         }
       }
-      
+
       // Handle statement terminator
-      if (char === ";" && !inString && !inLineComment && !inBlockComment && !inTrigger) {
+      if (
+        char === ";" &&
+        !inString &&
+        !inLineComment &&
+        !inBlockComment &&
+        !inTrigger
+      ) {
         const trimmed = currentStatement.trim();
-        if (trimmed.length > 0 && 
-            !trimmed.startsWith("--") && 
-            !trimmed.startsWith("/*")) {
+        if (
+          trimmed.length > 0 &&
+          !trimmed.startsWith("--") &&
+          !trimmed.startsWith("/*")
+        ) {
           statements.push(trimmed);
         }
         currentStatement = "";
       } else {
         currentStatement += char;
       }
-      
+
       j++;
     }
-    
+
     // Add newline at end of line (except last line)
     if (i < lines.length - 1) {
       currentStatement += "\n";
     }
-    
+
     // Reset line comment flag at end of line
     inLineComment = false;
   }
-  
+
   // Add any remaining statement
   const trimmed = currentStatement.trim();
-  if (trimmed.length > 0 && 
-      !trimmed.startsWith("--") && 
-      !trimmed.startsWith("/*")) {
+  if (
+    trimmed.length > 0 &&
+    !trimmed.startsWith("--") &&
+    !trimmed.startsWith("/*")
+  ) {
     statements.push(trimmed);
   }
-  
+
   return statements;
 }

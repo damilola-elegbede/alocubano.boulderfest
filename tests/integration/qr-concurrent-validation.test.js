@@ -32,7 +32,7 @@ describe("QR Code Concurrent Validation Tests", () => {
       QR_CODE_EXPIRY_DAYS: "180",
       QR_CODE_MAX_SCANS: "5",
     };
-    
+
     // Setup transaction mock
     mockDb.transaction.mockResolvedValue(mockTx);
   });
@@ -45,7 +45,7 @@ describe("QR Code Concurrent Validation Tests", () => {
     it("should handle concurrent validation attempts without race conditions", async () => {
       const ticketId = "TEST-TICKET-001";
       const token = "test-token";
-      
+
       // Mock ticket data
       const mockTicket = {
         id: 1,
@@ -90,11 +90,13 @@ describe("QR Code Concurrent Validation Tests", () => {
       });
 
       // Simulate 5 concurrent validation attempts
-      const requests = Array(5).fill(null).map(() => {
-        const req = createMockReq();
-        const res = createMockRes();
-        return handler(req, res).then(() => ({ req, res }));
-      });
+      const requests = Array(5)
+        .fill(null)
+        .map(() => {
+          const req = createMockReq();
+          const res = createMockRes();
+          return handler(req, res).then(() => ({ req, res }));
+        });
 
       const results = await Promise.all(requests);
 
@@ -106,13 +108,13 @@ describe("QR Code Concurrent Validation Tests", () => {
       expect(mockTx.commit).toHaveBeenCalledTimes(5);
 
       // Verify atomic updates were attempted
-      const updateCalls = mockTx.execute.mock.calls.filter(call => 
-        call[0].sql.includes("UPDATE tickets")
+      const updateCalls = mockTx.execute.mock.calls.filter((call) =>
+        call[0].sql.includes("UPDATE tickets"),
       );
       expect(updateCalls).toHaveLength(5);
 
       // Verify each update has the safety conditions
-      updateCalls.forEach(call => {
+      updateCalls.forEach((call) => {
         expect(call[0].sql).toContain("scan_count < max_scan_count");
         expect(call[0].sql).toContain("status = 'valid'");
       });
@@ -121,7 +123,7 @@ describe("QR Code Concurrent Validation Tests", () => {
     it("should reject validation when max scans reached during concurrent attempts", async () => {
       const ticketId = "TEST-TICKET-002";
       const token = "test-token-2";
-      
+
       // Mock ticket at max scan count
       const mockTicket = {
         id: 2,
@@ -159,22 +161,24 @@ describe("QR Code Concurrent Validation Tests", () => {
 
       // Verify rollback was called due to max scans
       expect(mockTx.rollback).toHaveBeenCalled();
-      
+
       // Verify error response
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           valid: false,
           error: expect.stringContaining("Maximum scans exceeded"),
-        })
+        }),
       );
     });
 
     it("should handle database transaction failures gracefully", async () => {
       const token = "test-token-3";
-      
+
       // Mock transaction failure
-      mockDb.transaction.mockRejectedValue(new Error("Database connection failed"));
+      mockDb.transaction.mockRejectedValue(
+        new Error("Database connection failed"),
+      );
 
       const req = {
         method: "POST",
@@ -196,7 +200,7 @@ describe("QR Code Concurrent Validation Tests", () => {
         expect.objectContaining({
           valid: false,
           error: expect.any(String),
-        })
+        }),
       );
     });
   });
@@ -205,30 +209,34 @@ describe("QR Code Concurrent Validation Tests", () => {
     it("should enforce rate limiting on validation endpoint", async () => {
       const token = "test-token-rate";
       const ip = "192.168.1.100";
-      
+
       // Create many requests from same IP
-      const requests = Array(150).fill(null).map(() => ({
-        method: "POST",
-        body: { token, validateOnly: true },
-        headers: { "x-forwarded-for": ip },
-        connection: { remoteAddress: ip },
-      }));
+      const requests = Array(150)
+        .fill(null)
+        .map(() => ({
+          method: "POST",
+          body: { token, validateOnly: true },
+          headers: { "x-forwarded-for": ip },
+          connection: { remoteAddress: ip },
+        }));
 
       const responses = [];
-      
+
       // Mock successful ticket lookup
       mockDb.execute.mockResolvedValue({
-        rows: [{
-          ticket_id: "TEST-001",
-          status: "valid",
-          scan_count: 0,
-          max_scan_count: 5,
-          attendee_first_name: "Test",
-          attendee_last_name: "User",
-          ticket_type: "Full Pass",
-          event_name: "Test Event",
-          event_date: "2026-05-15",
-        }],
+        rows: [
+          {
+            ticket_id: "TEST-001",
+            status: "valid",
+            scan_count: 0,
+            max_scan_count: 5,
+            attendee_first_name: "Test",
+            attendee_last_name: "User",
+            ticket_type: "Full Pass",
+            event_name: "Test Event",
+            event_date: "2026-05-15",
+          },
+        ],
       });
 
       // Process requests sequentially to test rate limiting
@@ -242,15 +250,15 @@ describe("QR Code Concurrent Validation Tests", () => {
       }
 
       // Check that some requests were rate limited (429 status)
-      const rateLimited = responses.filter(res => 
-        res.status.mock.calls[0]?.[0] === 429
+      const rateLimited = responses.filter(
+        (res) => res.status.mock.calls[0]?.[0] === 429,
       );
-      
+
       expect(rateLimited.length).toBeGreaterThan(0);
       expect(rateLimited[0].json).toHaveBeenCalledWith(
         expect.objectContaining({
           error: expect.stringContaining("Rate limit exceeded"),
-        })
+        }),
       );
     });
   });
@@ -275,7 +283,7 @@ describe("QR Code Concurrent Validation Tests", () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           error: expect.stringContaining("Method not allowed"),
-        })
+        }),
       );
     });
 
@@ -298,16 +306,16 @@ describe("QR Code Concurrent Validation Tests", () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           error: expect.stringContaining("Token required"),
-        })
+        }),
       );
     });
 
     it("should sanitize error messages and not leak sensitive data", async () => {
       const token = "invalid-token";
-      
+
       // Mock database error with sensitive info
       mockDb.execute.mockRejectedValue(
-        new Error("Database error: password=secret123 at table users")
+        new Error("Database error: password=secret123 at table users"),
       );
 
       const req = {
@@ -329,9 +337,9 @@ describe("QR Code Concurrent Validation Tests", () => {
         expect.objectContaining({
           valid: false,
           error: expect.any(String),
-        })
+        }),
       );
-      
+
       // Check that password is not in error message
       const errorCall = res.json.mock.calls[0][0];
       expect(errorCall.error).not.toContain("password");
@@ -342,22 +350,22 @@ describe("QR Code Concurrent Validation Tests", () => {
   describe("Database Connection Management", () => {
     it("should use fresh database connections for each request", async () => {
       const service = new QRTokenService();
-      
+
       // Verify no persistent connection in constructor
       expect(service.db).toBeUndefined();
-      
+
       // Mock getDatabase to track calls
       const getDbSpy = vi.spyOn(service, "getDb");
-      
+
       // Mock database response
       mockDb.execute.mockResolvedValue({
         rows: [{ qr_token: "existing-token" }],
       });
-      
+
       // Make multiple token requests
       await service.getOrCreateToken("TICKET-001");
       await service.getOrCreateToken("TICKET-002");
-      
+
       // Verify fresh connection for each operation
       expect(getDbSpy).toHaveBeenCalledTimes(2);
     });

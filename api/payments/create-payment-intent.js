@@ -35,8 +35,8 @@ export default async function handler(req, res) {
 
     // Validate amount
     if (!amount || amount < 100) {
-      return res.status(400).json({ 
-        error: "Invalid amount. Minimum charge is $1.00" 
+      return res.status(400).json({
+        error: "Invalid amount. Minimum charge is $1.00",
       });
     }
 
@@ -69,9 +69,9 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error("Error creating payment intent:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to create payment intent",
-      message: error.message 
+      message: error.message,
     });
   }
 }

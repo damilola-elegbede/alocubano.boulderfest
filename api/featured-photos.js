@@ -108,12 +108,10 @@ export default async function handler(req, res) {
     }
 
     if (error.code === 403) {
-      return res
-        .status(403)
-        .json({
-          error:
-            "Access denied. Please check featured photos folder permissions.",
-        });
+      return res.status(403).json({
+        error:
+          "Access denied. Please check featured photos folder permissions.",
+      });
     }
 
     // Generic error response

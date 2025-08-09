@@ -11,10 +11,13 @@ describe("SQL Statement Splitter", () => {
   });
 
   it("should handle semicolons inside strings", () => {
-    const sql = "INSERT INTO messages (text) VALUES ('Hello; World'); SELECT * FROM messages;";
+    const sql =
+      "INSERT INTO messages (text) VALUES ('Hello; World'); SELECT * FROM messages;";
     const statements = splitSqlStatements(sql);
     expect(statements).toHaveLength(2);
-    expect(statements[0]).toBe("INSERT INTO messages (text) VALUES ('Hello; World')");
+    expect(statements[0]).toBe(
+      "INSERT INTO messages (text) VALUES ('Hello; World')",
+    );
     expect(statements[1]).toBe("SELECT * FROM messages");
   });
 
