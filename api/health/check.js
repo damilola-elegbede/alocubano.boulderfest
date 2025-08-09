@@ -85,7 +85,7 @@ function calculateHealthScore(health) {
   });
   
   // Additional deductions for performance issues
-  const avgResponseTime = parseInt(health.performance?.avg_response_time) || 0;
+  const avgResponseTime = parseFloat(health.performance?.avg_response_time) || 0;
   if (avgResponseTime > 2000) {
     score -= 5;
   } else if (avgResponseTime > 1000) {
@@ -148,7 +148,7 @@ function getHealthRecommendations(health) {
   }
   
   // Performance recommendations
-  const avgResponseTime = parseInt(health.performance?.avg_response_time) || 0;
+  const avgResponseTime = parseFloat(health.performance?.avg_response_time) || 0;
   if (avgResponseTime > 2000) {
     recommendations.push({
       severity: 'warning',
@@ -239,7 +239,7 @@ export default async function handler(req, res) {
     });
     
     // Add custom headers
-    res.setHeader('X-Health-Score', health.health_score || 'N/A');
+    res.setHeader('X-Health-Score', health.health_score ?? 'N/A');
     res.setHeader('X-Health-Status', health.status);
     
     // Log health check result

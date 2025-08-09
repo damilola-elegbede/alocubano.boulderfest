@@ -111,11 +111,16 @@ async function testHealthChecks() {
       const url = `${baseUrl}${endpoint}`;
       print(`  Testing ${endpoint}...`, 'blue');
       
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
       const response = await fetch(url, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
-        timeout: 10000
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       const data = await response.json();
       
@@ -176,6 +181,9 @@ async function validateAlertConfig() {
   if (process.env.ALERT_WEBHOOK_URL) {
     try {
       print('  Testing webhook connectivity...', 'blue');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
       const response = await fetch(process.env.ALERT_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -184,8 +192,10 @@ async function validateAlertConfig() {
           username: 'Monitoring Setup',
           icon_emoji: ':white_check_mark:'
         }),
-        timeout: 5000
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (response.ok) {
         print('    ✅ Webhook test successful', 'green');

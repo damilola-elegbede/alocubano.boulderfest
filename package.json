@@ -71,12 +71,18 @@
     "health:database": "curl -f http://localhost:3000/api/health/database | jq '.' || echo 'Database health check failed'",
     "health:stripe": "curl -f http://localhost:3000/api/health/stripe | jq '.' || echo 'Stripe health check failed'",
     "health:brevo": "curl -f http://localhost:3000/api/health/brevo | jq '.' || echo 'Brevo health check failed'",
-    "health:analytics": "curl -f http://localhost:3000/api/health/analytics | jq '.' || echo 'Analytics health check failed'"
+    "health:analytics": "curl -f http://localhost:3000/api/health/analytics | jq '.' || echo 'Analytics health check failed'",
+    "monitoring:uptime": "curl -f http://localhost:3000/api/monitoring/uptime | jq '.' || echo 'Uptime check failed'",
+    "monitoring:metrics": "curl -f 'http://localhost:3000/api/monitoring/metrics?api_key=${METRICS_API_KEY}' | jq '.' || echo 'Metrics fetch failed'",
+    "monitoring:alerts": "curl -f http://localhost:3000/api/monitoring/alerts | jq '.' || echo 'Alerts check failed'",
+    "monitoring:dashboard": "open http://localhost:3000/api/monitoring/dashboard?format=html",
+    "monitoring:test": "npm run test:integration -- monitoring.test.js",
+    "alert:test": "curl -X POST http://localhost:3000/api/monitoring/alerts -H 'X-Admin-Key: ${ADMIN_API_KEY}' -H 'Content-Type: application/json' -d '{\"action\":\"test\"}' | jq '.'",
+    "alert:trigger": "curl -X POST http://localhost:3000/api/monitoring/alerts -H 'X-Admin-Key: ${ADMIN_API_KEY}' -H 'Content-Type: application/json' -d '{\"action\":\"trigger\",\"severity\":\"info\",\"description\":\"Manual test alert\"}' | jq '.'"
   },
   "dependencies": {
     "@libsql/client": "^0.15.10",
     "@sentry/node": "^7.84.0",
-    "@sentry/tracing": "^7.84.0",
     "@stripe/stripe-js": "^7.8.0",
     "@types/node": "^24.2.0",
     "bcryptjs": "^3.0.2",

@@ -23,12 +23,20 @@ async function getGoogleSheetsClient() {
         credentials,
         scopes: ['https://www.googleapis.com/auth/spreadsheets']
       });
+    } else if (process.env.GOOGLE_SHEETS_API_KEY) {
+      // Fallback to API key (read-only) - don't pass as auth parameter
+      auth = null;
     } else {
-      // Fallback to API key (read-only)
-      auth = process.env.GOOGLE_SHEETS_API_KEY;
+      throw new Error('No valid Google Sheets credentials found');
     }
     
-    return google.sheets({ version: 'v4', auth });
+    // Initialize sheets client
+    const sheetsConfig = { version: 'v4' };
+    if (auth) {
+      sheetsConfig.auth = auth;
+    }
+    
+    return google.sheets(sheetsConfig);
   } catch (error) {
     throw new Error(`Failed to initialize Google Sheets client: ${error.message}`);
   }
@@ -49,10 +57,17 @@ async function checkSpreadsheetAccess(sheets) {
     }
     
     // Try to get spreadsheet metadata
-    const response = await sheets.spreadsheets.get({
+    const requestParams = {
       spreadsheetId,
       fields: 'spreadsheetId,properties.title,sheets.properties'
-    });
+    };
+    
+    // Add API key for API key authentication
+    if (!process.env.GOOGLE_SERVICE_ACCOUNT_KEY && process.env.GOOGLE_SHEETS_API_KEY) {
+      requestParams.key = process.env.GOOGLE_SHEETS_API_KEY;
+    }
+    
+    const response = await sheets.spreadsheets.get(requestParams);
     
     const spreadsheet = response.data;
     const sheetNames = spreadsheet.sheets?.map(s => s.properties?.title) || [];
@@ -93,10 +108,17 @@ async function checkQuotaUsage(sheets) {
     
     // Attempt to read a small range
     const testRange = 'A1:A1';
-    const response = await sheets.spreadsheets.values.get({
+    const requestParams = {
       spreadsheetId,
       range: testRange
-    });
+    };
+    
+    // Add API key for API key authentication
+    if (!process.env.GOOGLE_SERVICE_ACCOUNT_KEY && process.env.GOOGLE_SHEETS_API_KEY) {
+      requestParams.key = process.env.GOOGLE_SHEETS_API_KEY;
+    }
+    
+    const response = await sheets.spreadsheets.values.get(requestParams);
     
     // If we get here, we have quota available
     return {
@@ -168,7 +190,7 @@ async function testWriteCapability(sheets) {
       
       try {
         // Append test data
-        await sheets.spreadsheets.values.append({
+        const appendParams = {
           spreadsheetId,
           range: 'HealthCheck!A:B', // Use a dedicated health check sheet
           valueInputOption: 'USER_ENTERED',
@@ -176,13 +198,27 @@ async function testWriteCapability(sheets) {
           requestBody: {
             values: testData
           }
-        });
+        };
+        
+        // Add API key for API key authentication (though write won't work with API key)
+        if (!process.env.GOOGLE_SERVICE_ACCOUNT_KEY && process.env.GOOGLE_SHEETS_API_KEY) {
+          appendParams.key = process.env.GOOGLE_SHEETS_API_KEY;
+        }
+        
+        await sheets.spreadsheets.values.append(appendParams);
         
         // Clear test data
-        await sheets.spreadsheets.values.clear({
+        const clearParams = {
           spreadsheetId,
           range: 'HealthCheck!A:B'
-        });
+        };
+        
+        // Add API key for API key authentication (though write won't work with API key)
+        if (!process.env.GOOGLE_SERVICE_ACCOUNT_KEY && process.env.GOOGLE_SHEETS_API_KEY) {
+          clearParams.key = process.env.GOOGLE_SHEETS_API_KEY;
+        }
+        
+        await sheets.spreadsheets.values.clear(clearParams);
         
         return {
           writable: true,

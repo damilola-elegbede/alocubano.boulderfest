@@ -73,7 +73,11 @@ async function getDatabaseStats(db) {
       PRAGMA page_size
     `).get();
     
-    const dbSize = (pageCount.page_count * pageSize.page_size) / (1024 * 1024); // MB
+    // Guard against NaN when computing DB size
+    const pageCountVal = pageCount?.page_count || 0;
+    const pageSizeVal = pageSize?.page_size || 0;
+    const dbSize = (pageCountVal && pageSizeVal) ? 
+      (pageCountVal * pageSizeVal) / (1024 * 1024) : 0; // MB
     
     // Get recent activity
     const recentTickets = await db.prepare(`
@@ -142,10 +146,11 @@ async function getMigrationStatus(db) {
  */
 export const checkDatabaseHealth = async () => {
   const startTime = Date.now();
+  let db = null;
   
   try {
     // Get database connection
-    const db = await getDatabaseConnection();
+    db = await getDatabaseConnection();
     
     // Test basic connectivity with a simple query
     const testQuery = await db.prepare("SELECT datetime('now') as now").get();
@@ -179,6 +184,9 @@ export const checkDatabaseHealth = async () => {
     // Clean up temp table
     await db.prepare("DROP TABLE IF EXISTS health_check_temp").run();
     
+    // Close database connection to prevent handle leaks
+    await db.close();
+    
     // Determine health status
     let status = HealthStatus.HEALTHY;
     let details = {
@@ -204,6 +212,16 @@ export const checkDatabaseHealth = async () => {
       details
     };
   } catch (error) {
+    // Attempt to close database connection if it exists
+    try {
+      if (db) {
+        await db.close();
+      }
+    } catch (closeError) {
+      // Log but don't throw - original error is more important
+      console.warn('Failed to close database connection:', closeError.message);
+    }
+    
     return {
       status: HealthStatus.UNHEALTHY,
       response_time: `${Date.now() - startTime}ms`,

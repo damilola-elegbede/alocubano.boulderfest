@@ -231,13 +231,13 @@ export const checkBrevoHealth = async () => {
     const warnings = [];
     const errors = [];
     
-    // Check quota usage
-    if (accountInfo.quota_usage_percent > 90) {
-      status = HealthStatus.DEGRADED;
-      warnings.push(`Email quota usage high: ${accountInfo.quota_usage_percent}%`);
-    } else if (accountInfo.quota_usage_percent > 95) {
+    // Check quota usage - check critical threshold first
+    if (accountInfo.quota_usage_percent > 95) {
       status = HealthStatus.UNHEALTHY;
       errors.push(`Email quota critical: ${accountInfo.quota_usage_percent}%`);
+    } else if (accountInfo.quota_usage_percent > 90) {
+      status = HealthStatus.DEGRADED;
+      warnings.push(`Email quota usage high: ${accountInfo.quota_usage_percent}%`);
     }
     
     // Check for missing configurations
