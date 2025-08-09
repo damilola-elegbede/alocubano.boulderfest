@@ -12,12 +12,14 @@ async function handler(req, res) {
       const validationService = getValidationService();
 
       // Validate all search parameters
-      const validation = validationService.validateTransactionSearchParams(req.query);
-      
+      const validation = validationService.validateTransactionSearchParams(
+        req.query,
+      );
+
       if (!validation.isValid) {
-        return res.status(400).json({ 
-          error: 'Validation failed',
-          details: validation.errors
+        return res.status(400).json({
+          error: "Validation failed",
+          details: validation.errors,
         });
       }
 
@@ -77,7 +79,7 @@ async function handler(req, res) {
     } else if (req.method === "POST") {
       // Manual transaction creation (for testing)
       // Verify CSRF token for POST requests
-      const csrfToken = req.headers['x-csrf-token'] || req.body?.csrfToken;
+      const csrfToken = req.headers["x-csrf-token"] || req.body?.csrfToken;
       if (!csrfToken) {
         return res.status(403).json({ error: "CSRF token required" });
       }
@@ -93,7 +95,10 @@ async function handler(req, res) {
         return res.status(401).json({ error: "Invalid session" });
       }
 
-      const csrfVerification = csrfService.verifyToken(csrfToken, session.admin.id);
+      const csrfVerification = csrfService.verifyToken(
+        csrfToken,
+        session.admin.id,
+      );
       if (!csrfVerification.valid) {
         return res.status(403).json({ error: "Invalid CSRF token" });
       }
@@ -117,25 +122,32 @@ async function handler(req, res) {
       }
 
       // Validate name if provided
-      const nameValidation = validationService.validateName(name, 'Customer name');
+      const nameValidation = validationService.validateName(
+        name,
+        "Customer name",
+      );
       if (!nameValidation.isValid) {
         errors.push(nameValidation.error);
       }
 
       // Validate type
-      const typeValidation = validationService.validateEnum(type, 'transaction type', 'transactionTypes');
+      const typeValidation = validationService.validateEnum(
+        type,
+        "transaction type",
+        "transactionTypes",
+      );
       if (!typeValidation.isValid) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: typeValidation.error,
-          allowedValues: typeValidation.allowedValues
+          allowedValues: typeValidation.allowedValues,
         });
       }
 
       // Return validation errors if any
       if (errors.length > 0) {
-        return res.status(400).json({ 
-          error: 'Validation failed',
-          details: errors
+        return res.status(400).json({
+          error: "Validation failed",
+          details: errors,
         });
       }
 

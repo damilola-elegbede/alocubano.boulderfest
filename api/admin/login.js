@@ -13,7 +13,7 @@ async function loginHandler(req, res) {
       return res.status(400).json({ error: "Unable to identify client" });
     }
 
-    if (!password || typeof password !== 'string' || password.length > 200) {
+    if (!password || typeof password !== "string" || password.length > 200) {
       return res.status(400).json({ error: "Invalid password format" });
     }
 
@@ -26,7 +26,7 @@ async function loginHandler(req, res) {
       if (rateLimitResult.isLocked) {
         return res.status(429).json({
           error: `Too many failed attempts. Try again in ${rateLimitResult.remainingTime} minutes.`,
-          remainingTime: rateLimitResult.remainingTime
+          remainingTime: rateLimitResult.remainingTime,
         });
       }
 
@@ -35,7 +35,8 @@ async function loginHandler(req, res) {
 
       if (!isValid) {
         // Record failed attempt
-        const attemptResult = await rateLimitService.recordFailedAttempt(clientIP);
+        const attemptResult =
+          await rateLimitService.recordFailedAttempt(clientIP);
 
         const response = {
           error: "Invalid password",
@@ -43,7 +44,8 @@ async function loginHandler(req, res) {
         };
 
         if (attemptResult.isLocked) {
-          response.error = "Too many failed attempts. Account temporarily locked.";
+          response.error =
+            "Too many failed attempts. Account temporarily locked.";
           return res.status(429).json(response);
         }
 
@@ -83,10 +85,9 @@ async function loginHandler(req, res) {
         success: true,
         expiresIn: authService.sessionDuration,
       });
-
     } catch (error) {
       console.error("Login process failed:", error);
-      
+
       // Try to record the failed attempt even if other errors occurred
       try {
         const rateLimitService = getRateLimitService();

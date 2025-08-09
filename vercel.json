@@ -3,6 +3,12 @@
   "outputDirectory": ".",
   "framework": null,
   "devCommand": "npx http-server . --cors",
+  "crons": [
+    {
+      "path": "/api/sheets/scheduled-sync",
+      "schedule": "*/15 * * * *"
+    }
+  ],
   "functions": {
     "api/gallery.js": {
       "maxDuration": 10

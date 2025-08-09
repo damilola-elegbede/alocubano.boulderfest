@@ -40,13 +40,13 @@ async function main() {
     rl.close();
     process.exit(1);
   }
-  
+
   // Check password complexity
   const hasUpperCase = /[A-Z]/.test(password);
   const hasLowerCase = /[a-z]/.test(password);
   const hasNumbers = /\d/.test(password);
   const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-  
+
   if (!(hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar)) {
     console.log("\n❌ Password must contain:");
     console.log("   - At least one uppercase letter");

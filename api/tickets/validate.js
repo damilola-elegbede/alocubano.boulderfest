@@ -14,17 +14,17 @@ const RATE_LIMIT_MAX = 100; // 100 requests per minute
 function checkRateLimit(ip) {
   const now = Date.now();
   const record = rateLimitMap.get(ip);
-  
+
   if (!record) {
     rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
     return false;
   }
-  
+
   if (now > record.resetTime) {
     rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
     return false;
   }
-  
+
   record.count++;
   return record.count > RATE_LIMIT_MAX;
 }
@@ -70,7 +70,7 @@ function detectSource(req) {
 async function validateTicket(db, ticketId, source) {
   // Start transaction for atomic operations
   const tx = await db.transaction();
-  
+
   try {
     // Get ticket with lock for update (prevents race conditions)
     const result = await tx.execute({
@@ -124,8 +124,8 @@ async function validateTicket(db, ticketId, source) {
       success: true,
       ticket: {
         ...ticket,
-        scan_count: ticket.scan_count + 1
-      }
+        scan_count: ticket.scan_count + 1,
+      },
     };
   } catch (error) {
     await tx.rollback();
@@ -154,7 +154,7 @@ async function logValidation(db, params) {
         params.source,
         params.ip,
         params.deviceInfo || null,
-        params.failureReason || null
+        params.failureReason || null,
       ],
     });
   } catch (error) {
@@ -175,14 +175,15 @@ export default async function handler(req, res) {
   }
 
   // Extract IP for rate limiting
-  const ip = req.headers["x-forwarded-for"]?.split(',')[0] || 
-             req.connection.remoteAddress || 
-             'unknown';
+  const ip =
+    req.headers["x-forwarded-for"]?.split(",")[0] ||
+    req.connection.remoteAddress ||
+    "unknown";
 
   // Check rate limit
   if (checkRateLimit(ip)) {
-    return res.status(429).json({ 
-      error: "Rate limit exceeded. Please try again later." 
+    return res.status(429).json({
+      error: "Rate limit exceeded. Please try again later.",
     });
   }
 
@@ -227,7 +228,8 @@ export default async function handler(req, res) {
           type: ticket.ticket_type,
           eventName: ticket.event_name,
           eventDate: ticket.event_date,
-          attendeeName: `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
+          attendeeName:
+            `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
           scanCount: ticket.scan_count,
           maxScans: ticket.max_scan_count,
           source: source,
@@ -243,11 +245,11 @@ export default async function handler(req, res) {
     // Log successful validation
     await logValidation(db, {
       ticketId: ticket.id,
-      token: token.substring(0, 10) + '...', // Don't log full token
+      token: token.substring(0, 10) + "...", // Don't log full token
       result: "success",
       source: source,
       ip: ip,
-      deviceInfo: req.headers["user-agent"]
+      deviceInfo: req.headers["user-agent"],
     });
 
     res.status(200).json({
@@ -257,7 +259,8 @@ export default async function handler(req, res) {
         type: ticket.ticket_type,
         eventName: ticket.event_name,
         eventDate: ticket.event_date,
-        attendeeName: `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
+        attendeeName:
+          `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
         scanCount: ticket.scan_count,
         maxScans: ticket.max_scan_count,
         source: source,
@@ -268,17 +271,17 @@ export default async function handler(req, res) {
     // Sanitize error for logging
     const safeError = {
       message: error.message || "Validation failed",
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
     console.error("Validation error:", safeError);
 
     // Log failed validation
     await logValidation(db, {
-      token: token ? token.substring(0, 10) + '...' : 'invalid',
+      token: token ? token.substring(0, 10) + "..." : "invalid",
       result: "failed",
       failureReason: error.message,
       source: source,
-      ip: ip
+      ip: ip,
     });
 
     res.status(400).json({

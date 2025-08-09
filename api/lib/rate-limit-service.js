@@ -20,9 +20,11 @@ export class RateLimitService {
    * Get client identifier from request
    */
   getClientId(req) {
-    return req.headers['x-forwarded-for']?.split(',')[0] || 
-           req.connection?.remoteAddress || 
-           'unknown';
+    return (
+      req.headers["x-forwarded-for"]?.split(",")[0] ||
+      req.connection?.remoteAddress ||
+      "unknown"
+    );
   }
 
   /**
@@ -32,25 +34,25 @@ export class RateLimitService {
     const clientId = this.getClientId(req);
     const limit = customLimit || this.maxRequests;
     const now = Date.now();
-    
+
     const record = rateLimitMap.get(clientId);
-    
+
     if (!record) {
       rateLimitMap.set(clientId, {
         count: 1,
-        resetTime: now + this.windowMs
+        resetTime: now + this.windowMs,
       });
       return false;
     }
-    
+
     if (now > record.resetTime) {
       rateLimitMap.set(clientId, {
         count: 1,
-        resetTime: now + this.windowMs
+        resetTime: now + this.windowMs,
       });
       return false;
     }
-    
+
     record.count++;
     return record.count > limit;
   }
@@ -63,16 +65,16 @@ export class RateLimitService {
     const record = failedAttemptsMap.get(clientId) || {
       attempts: 0,
       lastAttempt: now,
-      lockedUntil: 0
+      lockedUntil: 0,
     };
-    
+
     record.attempts++;
     record.lastAttempt = now;
-    
+
     if (record.attempts >= this.loginMaxAttempts) {
       record.lockedUntil = now + this.lockoutDuration;
     }
-    
+
     failedAttemptsMap.set(clientId, record);
   }
 
@@ -82,14 +84,14 @@ export class RateLimitService {
   isLockedOut(clientId) {
     const record = failedAttemptsMap.get(clientId);
     if (!record) return false;
-    
+
     const now = Date.now();
     if (now > record.lockedUntil) {
       // Reset after lockout expires
       failedAttemptsMap.delete(clientId);
       return false;
     }
-    
+
     return record.lockedUntil > now;
   }
 
@@ -99,7 +101,7 @@ export class RateLimitService {
   getRemainingLockoutTime(clientId) {
     const record = failedAttemptsMap.get(clientId);
     if (!record || !record.lockedUntil) return 0;
-    
+
     const remaining = record.lockedUntil - Date.now();
     return Math.max(0, Math.ceil(remaining / 1000)); // Return seconds
   }
@@ -116,14 +118,14 @@ export class RateLimitService {
    */
   cleanup() {
     const now = Date.now();
-    
+
     // Clean rate limits
     for (const [clientId, record] of rateLimitMap.entries()) {
       if (now > record.resetTime) {
         rateLimitMap.delete(clientId);
       }
     }
-    
+
     // Clean failed attempts
     for (const [clientId, record] of failedAttemptsMap.entries()) {
       if (now > record.lockedUntil && record.lockedUntil > 0) {
@@ -139,7 +141,7 @@ let rateLimitInstance;
 export function getRateLimitService() {
   if (!rateLimitInstance) {
     rateLimitInstance = new RateLimitService();
-    
+
     // Run cleanup every 5 minutes
     setInterval(() => {
       rateLimitInstance.cleanup();
