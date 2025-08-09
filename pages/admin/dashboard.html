@@ -46,6 +46,21 @@
             background: #c0392b;
         }
         
+        .portal-btn {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        
+        .portal-btn:hover {
+            background: #138496;
+        }
+        
         .analytics-btn {
             background: #9c27b0;
             color: white;
@@ -320,6 +335,7 @@
     <div class="admin-header">
         <h1>Admin Dashboard</h1>
         <div class="header-actions">
+            <button class="portal-btn" onclick="location.href='/pages/admin/index.html'">🎯 Portal</button>
             <button class="analytics-btn" onclick="location.href='/pages/admin/analytics.html'">📈 Analytics</button>
             <button class="sync-btn" onclick="syncToSheets()">📊 Sync to Sheets</button>
             <button class="logout-btn" onclick="logout()">Logout</button>
