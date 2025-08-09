@@ -248,7 +248,7 @@ describe("DatabaseService", () => {
         "Database connection test failed:",
         {
           error: "Generic error",
-          code: undefined,
+          code: "UNKNOWN",
           timestamp: expect.any(String),
         },
       );
@@ -632,8 +632,11 @@ describe("Environment Variable Edge Cases", () => {
 });
 
 describe("Error Handling Edge Cases", () => {
+  let consoleErrorSpy;
+  
   beforeEach(() => {
     vi.clearAllMocks();
+    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     process.env.TURSO_DATABASE_URL = "https://test-database.turso.io";
     process.env.TURSO_AUTH_TOKEN = "test-token";
   });
@@ -641,6 +644,7 @@ describe("Error Handling Edge Cases", () => {
   afterEach(() => {
     delete process.env.TURSO_DATABASE_URL;
     delete process.env.TURSO_AUTH_TOKEN;
+    consoleErrorSpy?.mockRestore();
   });
 
   it("should handle non-Error objects being thrown", async () => {
@@ -658,10 +662,18 @@ describe("Error Handling Edge Cases", () => {
     const mockClient = createClient();
     mockClient.execute.mockRejectedValue(null);
 
-    // This test demonstrates that the code doesn't handle null errors gracefully
-    // It will throw an error when trying to access error.message
-    await expect(service.testConnection()).rejects.toThrow(
-      "Cannot read properties of null",
+    // Now the code handles null errors gracefully
+    const result = await service.testConnection();
+    expect(result).toBe(false);
+    
+    // Verify error was logged with proper handling
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "Database connection test failed:",
+      expect.objectContaining({
+        error: "null",
+        code: "UNKNOWN",
+        timestamp: expect.any(String),
+      })
     );
   });
 

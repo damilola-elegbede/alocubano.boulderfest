@@ -80,8 +80,8 @@ class DatabaseService {
       return false;
     } catch (error) {
       console.error("Database connection test failed:", {
-        error: error.message,
-        code: error.code,
+        error: error?.message || String(error) || "Unknown error",
+        code: error?.code || "UNKNOWN",
         timestamp: new Date().toISOString(),
       });
       return false;
@@ -109,7 +109,7 @@ class DatabaseService {
       console.error("Database query execution failed:", {
         sql:
           sqlString.substring(0, 100) + (sqlString.length > 100 ? "..." : ""),
-        error: error.message,
+        error: error?.message || String(error) || "Unknown error",
         timestamp: new Date().toISOString(),
       });
       throw error;
@@ -126,7 +126,7 @@ class DatabaseService {
     } catch (error) {
       console.error("Database batch execution failed:", {
         statementCount: statements.length,
-        error: error.message,
+        error: error?.message || String(error) || "Unknown error",
         timestamp: new Date().toISOString(),
       });
       throw error;
@@ -142,7 +142,7 @@ class DatabaseService {
         this.client.close();
         console.log("Database connection closed");
       } catch (error) {
-        console.error("Error closing database connection:", error.message);
+        console.error("Error closing database connection:", error?.message || String(error) || "Unknown error");
       } finally {
         this.client = null;
         this.initialized = false;
@@ -172,7 +172,7 @@ class DatabaseService {
     } catch (error) {
       return {
         status: "unhealthy",
-        error: error.message,
+        error: error?.message || String(error) || "Unknown error",
         timestamp: new Date().toISOString(),
       };
     }

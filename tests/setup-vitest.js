@@ -405,6 +405,10 @@ process.env.BREVO_VERIFICATION_TEMPLATE_ID = process.env.BREVO_VERIFICATION_TEMP
 process.env.UNSUBSCRIBE_SECRET = process.env.UNSUBSCRIBE_SECRET || "test-unsubscribe-secret";
 process.env.BREVO_WEBHOOK_SECRET = process.env.BREVO_WEBHOOK_SECRET || "test-webhook-secret";
 
+// Add database environment variables for tests
+process.env.TURSO_DATABASE_URL = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || "file:test.db";
+process.env.TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN || "";
+
 // Global test utilities
 global.createMockResponse = (data, status = 200) => ({
   ok: status >= 200 && status < 300,

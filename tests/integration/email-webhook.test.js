@@ -59,6 +59,9 @@ describe("Brevo Webhook Integration Tests", () => {
 
   describe("POST /api/email/brevo-webhook", () => {
     it("should process valid webhook event", async () => {
+      // Ensure no webhook secret is configured for this test
+      delete process.env.BREVO_WEBHOOK_SECRET;
+      
       const webhookData = {
         event: "delivered",
         email: "test@example.com",
