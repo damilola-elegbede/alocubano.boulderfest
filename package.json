@@ -64,10 +64,19 @@
     "migrate:status": "node scripts/migrate.js status",
     "migrate:verify": "node scripts/migrate.js verify",
     "test:db": "curl -f http://localhost:3000/api/database-health || echo 'Database health check failed'",
-    "db:shell": "sqlite3 data/development.db"
+    "db:shell": "sqlite3 data/development.db",
+    "monitoring:setup": "node scripts/monitoring-setup.js",
+    "monitoring:validate": "node scripts/monitoring-setup.js --test-health",
+    "health:check": "curl -f http://localhost:3000/api/health/check | jq '.' || echo 'Health check failed'",
+    "health:database": "curl -f http://localhost:3000/api/health/database | jq '.' || echo 'Database health check failed'",
+    "health:stripe": "curl -f http://localhost:3000/api/health/stripe | jq '.' || echo 'Stripe health check failed'",
+    "health:brevo": "curl -f http://localhost:3000/api/health/brevo | jq '.' || echo 'Brevo health check failed'",
+    "health:analytics": "curl -f http://localhost:3000/api/health/analytics | jq '.' || echo 'Analytics health check failed'"
   },
   "dependencies": {
     "@libsql/client": "^0.15.10",
+    "@sentry/node": "^7.84.0",
+    "@sentry/tracing": "^7.84.0",
     "@stripe/stripe-js": "^7.8.0",
     "@types/node": "^24.2.0",
     "bcryptjs": "^3.0.2",
@@ -79,6 +88,7 @@
     "html5-qrcode": "^2.3.8",
     "ip-range-check": "^0.2.0",
     "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^3.3.2",
     "passkit-generator": "^3.4.0",
     "qrcode": "^1.5.4",
     "sharp": "^0.34.3",
