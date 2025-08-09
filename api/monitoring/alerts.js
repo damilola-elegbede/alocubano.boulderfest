@@ -246,6 +246,11 @@ export default async function handler(req, res) {
         
         switch (action) {
           case 'status': {
+            // Admin access required for sensitive statistics
+            if (!validateAdminAccess(req)) {
+              return res.status(401).json({ error: 'Unauthorized' });
+            }
+            
             // Get current alert status
             const status = alertManager.getStatistics();
             return res.status(200).json({
