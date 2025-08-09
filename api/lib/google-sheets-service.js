@@ -1,14 +1,14 @@
-import { google } from 'googleapis';
-import { getDatabase } from './database.js';
+import { google } from "googleapis";
+import { getDatabase } from "./database.js";
 
 export class GoogleSheetsService {
   constructor() {
     this.sheets = null;
     this.auth = null;
     this.sheetId = process.env.GOOGLE_SHEET_ID;
-    
+
     if (!this.sheetId) {
-      throw new Error('GOOGLE_SHEET_ID environment variable is required');
+      throw new Error("GOOGLE_SHEET_ID environment variable is required");
     }
   }
 
@@ -17,23 +17,26 @@ export class GoogleSheetsService {
    */
   async initialize() {
     if (this.sheets) return;
-    
+
     try {
-      // Create auth client
+      // Create auth client (using Sheets-specific env vars to avoid conflicts with Drive)
       this.auth = new google.auth.GoogleAuth({
         credentials: {
-          client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-          private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+          client_email: process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL,
+          private_key: process.env.GOOGLE_SHEETS_PRIVATE_KEY?.replace(
+            /\\n/g,
+            "\n",
+          ),
         },
-        scopes: ['https://www.googleapis.com/auth/spreadsheets']
+        scopes: ["https://www.googleapis.com/auth/spreadsheets"],
       });
-      
+
       // Create sheets client
-      this.sheets = google.sheets({ version: 'v4', auth: this.auth });
-      
-      console.log('Google Sheets client initialized');
+      this.sheets = google.sheets({ version: "v4", auth: this.auth });
+
+      console.log("Google Sheets client initialized");
     } catch (error) {
-      console.error('Failed to initialize Google Sheets:', error);
+      console.error("Failed to initialize Google Sheets:", error);
       throw error;
     }
   }
@@ -43,52 +46,77 @@ export class GoogleSheetsService {
    */
   async setupSheets() {
     await this.initialize();
-    
+
     const sheets = [
       {
-        name: 'Overview',
-        headers: ['Metric', 'Value', 'Last Updated']
+        name: "Overview",
+        headers: ["Metric", "Value", "Last Updated"],
       },
       {
-        name: 'All Registrations',
+        name: "All Registrations",
         headers: [
-          'Ticket ID', 'Order Number', 'First Name', 'Last Name', 
-          'Email', 'Phone', 'Ticket Type', 'Event Date', 
-          'Status', 'Checked In', 'Check-in Time', 'Purchase Date', 
-          'Price', 'Purchaser Email', 'Wallet Source', 'QR Access Method'
-        ]
+          "Ticket ID",
+          "Order Number",
+          "First Name",
+          "Last Name",
+          "Email",
+          "Phone",
+          "Ticket Type",
+          "Event Date",
+          "Status",
+          "Checked In",
+          "Check-in Time",
+          "Purchase Date",
+          "Price",
+          "Purchaser Email",
+          "Wallet Source",
+          "QR Access Method",
+        ],
       },
       {
-        name: 'Check-in Status',
+        name: "Check-in Status",
         headers: [
-          'Ticket ID', 'Name', 'Email', 'Ticket Type', 
-          'Checked In?', 'Check-in Time', 'Checked By', 'Wallet Source'
-        ]
+          "Ticket ID",
+          "Name",
+          "Email",
+          "Ticket Type",
+          "Checked In?",
+          "Check-in Time",
+          "Checked By",
+          "Wallet Source",
+        ],
       },
       {
-        name: 'Summary by Type',
-        headers: ['Ticket Type', 'Total Sold', 'Checked In', 'Revenue']
+        name: "Summary by Type",
+        headers: ["Ticket Type", "Total Sold", "Checked In", "Revenue"],
       },
       {
-        name: 'Daily Sales',
-        headers: ['Date', 'Tickets Sold', 'Revenue', 'Running Total']
+        name: "Daily Sales",
+        headers: ["Date", "Tickets Sold", "Revenue", "Running Total"],
       },
       {
-        name: 'Wallet Analytics',
+        name: "Wallet Analytics",
         headers: [
-          'Date', 'Total Check-ins', 'Wallet Check-ins', 'QR Check-ins', 
-          'Wallet Adoption %', 'JWT Tokens', 'Traditional QR'
-        ]
-      }
+          "Date",
+          "Total Check-ins",
+          "Wallet Check-ins",
+          "QR Check-ins",
+          "Wallet Adoption %",
+          "JWT Tokens",
+          "Traditional QR",
+        ],
+      },
     ];
-    
+
     // Get existing sheets
     const spreadsheet = await this.sheets.spreadsheets.get({
-      spreadsheetId: this.sheetId
+      spreadsheetId: this.sheetId,
     });
-    
-    const existingSheets = spreadsheet.data.sheets.map(s => s.properties.title);
-    
+
+    const existingSheets = spreadsheet.data.sheets.map(
+      (s) => s.properties.title,
+    );
+
     // Create missing sheets
     const requests = [];
     for (const sheet of sheets) {
@@ -98,42 +126,42 @@ export class GoogleSheetsService {
             properties: {
               title: sheet.name,
               gridProperties: {
-                frozenRowCount: 1
-              }
-            }
-          }
+                frozenRowCount: 1,
+              },
+            },
+          },
         });
       }
     }
-    
+
     if (requests.length > 0) {
       await this.sheets.spreadsheets.batchUpdate({
         spreadsheetId: this.sheetId,
-        requestBody: { requests }
+        requestBody: { requests },
       });
     }
-    
+
     // Set headers for each sheet
     for (const sheet of sheets) {
-      await this.updateSheetData(sheet.name, [sheet.headers], 'A1');
+      await this.updateSheetData(sheet.name, [sheet.headers], "A1");
     }
-    
+
     return true;
   }
 
   /**
    * Update sheet data
    */
-  async updateSheetData(sheetName, values, range = 'A1') {
+  async updateSheetData(sheetName, values, range = "A1") {
     await this.initialize();
-    
+
     const fullRange = `${sheetName}!${range}`;
-    
+
     await this.sheets.spreadsheets.values.update({
       spreadsheetId: this.sheetId,
       range: fullRange,
-      valueInputOption: 'RAW',
-      requestBody: { values }
+      valueInputOption: "RAW",
+      requestBody: { values },
     });
   }
 
@@ -142,16 +170,16 @@ export class GoogleSheetsService {
    */
   async replaceSheetData(sheetName, values) {
     await this.initialize();
-    
+
     // Clear existing data (keep headers)
     await this.sheets.spreadsheets.values.clear({
       spreadsheetId: this.sheetId,
-      range: `${sheetName}!A2:Z`
+      range: `${sheetName}!A2:Z`,
     });
-    
+
     // Update with new data
     if (values.length > 0) {
-      await this.updateSheetData(sheetName, values, 'A2');
+      await this.updateSheetData(sheetName, values, "A2");
     }
   }
 
@@ -160,36 +188,35 @@ export class GoogleSheetsService {
    */
   async syncAllData() {
     const db = getDatabase();
-    const timestamp = new Date().toLocaleString('en-US', { 
-      timeZone: process.env.SHEETS_TIMEZONE || 'America/Denver' 
+    const timestamp = new Date().toLocaleString("en-US", {
+      timeZone: process.env.SHEETS_TIMEZONE || "America/Denver",
     });
-    
+
     try {
-      console.log('Starting Google Sheets sync...');
-      
+      console.log("Starting Google Sheets sync...");
+
       // 1. Update Overview
       await this.syncOverview(db, timestamp);
-      
+
       // 2. Update All Registrations
       await this.syncRegistrations(db);
-      
+
       // 3. Update Check-in Status
       await this.syncCheckinStatus(db);
-      
+
       // 4. Update Summary by Type
       await this.syncSummaryByType(db);
-      
+
       // 5. Update Daily Sales
       await this.syncDailySales(db);
-      
+
       // 6. Update Wallet Analytics
       await this.syncWalletAnalytics(db);
-      
-      console.log('Google Sheets sync completed');
+
+      console.log("Google Sheets sync completed");
       return { success: true, timestamp };
-      
     } catch (error) {
-      console.error('Google Sheets sync failed:', error);
+      console.error("Google Sheets sync failed:", error);
       throw error;
     }
   }
@@ -207,9 +234,9 @@ export class GoogleSheetsService {
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%workshop%') as workshop_tickets,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%vip%') as vip_tickets
     `);
-    
+
     const data = stats.rows[0];
-    
+
     // Get wallet statistics (columns may not exist yet)
     let walletStats;
     try {
@@ -222,27 +249,35 @@ export class GoogleSheetsService {
       `);
     } catch (e) {
       // Columns don't exist yet - use default values
-      walletStats = { rows: [{ wallet_checkins: 0, wallet_access: 0, qr_access: 0 }] };
+      walletStats = {
+        rows: [{ wallet_checkins: 0, wallet_access: 0, qr_access: 0 }],
+      };
     }
-    
+
     const walletData = walletStats.rows[0];
-    const walletAdoption = data.checked_in > 0 ? 
-      Math.round((walletData.wallet_checkins / data.checked_in) * 100) : 0;
-    
+    const walletAdoption =
+      data.checked_in > 0
+        ? Math.round((walletData.wallet_checkins / data.checked_in) * 100)
+        : 0;
+
     const overviewData = [
-      ['Total Tickets Sold', data.total_tickets || 0, timestamp],
-      ['Tickets Checked In', data.checked_in || 0, timestamp],
-      ['Check-in Percentage', `${Math.round((data.checked_in / data.total_tickets) * 100) || 0}%`, timestamp],
-      ['Total Orders', data.total_orders || 0, timestamp],
-      ['Total Revenue', `$${(data.total_revenue || 0).toFixed(2)}`, timestamp],
-      ['Workshop Tickets', data.workshop_tickets || 0, timestamp],
-      ['VIP Tickets', data.vip_tickets || 0, timestamp],
-      ['Wallet Check-ins', walletData.wallet_checkins || 0, timestamp],
-      ['Wallet Adoption Rate', `${walletAdoption}%`, timestamp],
-      ['Last Sync', timestamp, '']
+      ["Total Tickets Sold", data.total_tickets || 0, timestamp],
+      ["Tickets Checked In", data.checked_in || 0, timestamp],
+      [
+        "Check-in Percentage",
+        `${Math.round((data.checked_in / data.total_tickets) * 100) || 0}%`,
+        timestamp,
+      ],
+      ["Total Orders", data.total_orders || 0, timestamp],
+      ["Total Revenue", `$${(data.total_revenue || 0).toFixed(2)}`, timestamp],
+      ["Workshop Tickets", data.workshop_tickets || 0, timestamp],
+      ["VIP Tickets", data.vip_tickets || 0, timestamp],
+      ["Wallet Check-ins", walletData.wallet_checkins || 0, timestamp],
+      ["Wallet Adoption Rate", `${walletAdoption}%`, timestamp],
+      ["Last Sync", timestamp, ""],
     ];
-    
-    await this.replaceSheetData('Overview', overviewData);
+
+    await this.replaceSheetData("Overview", overviewData);
   }
 
   /**
@@ -271,14 +306,14 @@ export class GoogleSheetsService {
       JOIN transactions tr ON t.transaction_id = tr.id
       ORDER BY t.created_at DESC
     `);
-    
-    const data = registrations.rows.map(row => [
+
+    const data = registrations.rows.map((row) => [
       row.ticket_id,
       row.order_number,
-      row.attendee_first_name || '',
-      row.attendee_last_name || '',
-      row.attendee_email || '',
-      row.attendee_phone || '',
+      row.attendee_first_name || "",
+      row.attendee_last_name || "",
+      row.attendee_email || "",
+      row.attendee_phone || "",
       this.formatTicketType(row.ticket_type),
       this.formatDate(row.event_date),
       row.status,
@@ -286,12 +321,12 @@ export class GoogleSheetsService {
       this.formatDateTime(row.checked_in_at),
       this.formatDateTime(row.purchase_date),
       `$${(row.price || 0).toFixed(2)}`,
-      row.purchaser_email || '',
-      row.wallet_source || 'N/A',
-      row.qr_access_method || 'N/A'
+      row.purchaser_email || "",
+      row.wallet_source || "N/A",
+      row.qr_access_method || "N/A",
     ]);
-    
-    await this.replaceSheetData('All Registrations', data);
+
+    await this.replaceSheetData("All Registrations", data);
   }
 
   /**
@@ -312,19 +347,19 @@ export class GoogleSheetsService {
       WHERE status = 'valid'
       ORDER BY checked_in_at DESC NULLS LAST, ticket_id
     `);
-    
-    const data = checkins.rows.map(row => [
+
+    const data = checkins.rows.map((row) => [
       row.ticket_id,
-      row.name.trim() || 'N/A',
-      row.attendee_email || '',
+      row.name.trim() || "N/A",
+      row.attendee_email || "",
       this.formatTicketType(row.ticket_type),
       row.checked_in,
       this.formatDateTime(row.checked_in_at),
-      row.checked_in_by || '',
-      row.wallet_source || 'N/A'
+      row.checked_in_by || "",
+      row.wallet_source || "N/A",
     ]);
-    
-    await this.replaceSheetData('Check-in Status', data);
+
+    await this.replaceSheetData("Check-in Status", data);
   }
 
   /**
@@ -342,15 +377,15 @@ export class GoogleSheetsService {
       GROUP BY ticket_type
       ORDER BY total_sold DESC
     `);
-    
-    const data = summary.rows.map(row => [
+
+    const data = summary.rows.map((row) => [
       this.formatTicketType(row.ticket_type),
       row.total_sold,
       row.checked_in,
-      `$${(row.revenue || 0).toFixed(2)}`
+      `$${(row.revenue || 0).toFixed(2)}`,
     ]);
-    
-    await this.replaceSheetData('Summary by Type', data);
+
+    await this.replaceSheetData("Summary by Type", data);
   }
 
   /**
@@ -367,19 +402,22 @@ export class GoogleSheetsService {
       GROUP BY date(created_at)
       ORDER BY sale_date DESC
     `);
-    
+
     let runningTotal = 0;
-    const data = sales.rows.reverse().map(row => {
-      runningTotal += row.revenue || 0;
-      return [
-        this.formatDate(row.sale_date),
-        row.tickets_sold,
-        `$${(row.revenue || 0).toFixed(2)}`,
-        `$${runningTotal.toFixed(2)}`
-      ];
-    }).reverse();
-    
-    await this.replaceSheetData('Daily Sales', data);
+    const data = sales.rows
+      .reverse()
+      .map((row) => {
+        runningTotal += row.revenue || 0;
+        return [
+          this.formatDate(row.sale_date),
+          row.tickets_sold,
+          `$${(row.revenue || 0).toFixed(2)}`,
+          `$${runningTotal.toFixed(2)}`,
+        ];
+      })
+      .reverse();
+
+    await this.replaceSheetData("Daily Sales", data);
   }
 
   /**
@@ -388,7 +426,7 @@ export class GoogleSheetsService {
   async syncWalletAnalytics(db) {
     // For now, return empty data since wallet columns don't exist yet
     const analytics = { rows: [] };
-    
+
     try {
       // Try to get wallet analytics if columns exist
       const result = await db.execute(`
@@ -422,11 +460,13 @@ export class GoogleSheetsService {
       `);
       analytics.rows = result.rows;
     }
-    
-    const data = analytics.rows.map(row => {
-      const walletAdoption = row.total_checkins > 0 ? 
-        Math.round((row.wallet_checkins / row.total_checkins) * 100) : 0;
-      
+
+    const data = analytics.rows.map((row) => {
+      const walletAdoption =
+        row.total_checkins > 0
+          ? Math.round((row.wallet_checkins / row.total_checkins) * 100)
+          : 0;
+
       return [
         this.formatDate(row.checkin_date),
         row.total_checkins,
@@ -434,11 +474,11 @@ export class GoogleSheetsService {
         row.qr_checkins,
         `${walletAdoption}%`,
         row.jwt_tokens,
-        row.traditional_qr
+        row.traditional_qr,
       ];
     });
-    
-    await this.replaceSheetData('Wallet Analytics', data);
+
+    await this.replaceSheetData("Wallet Analytics", data);
   }
 
   /**
@@ -446,35 +486,35 @@ export class GoogleSheetsService {
    */
   formatTicketType(type) {
     const typeMap = {
-      'vip-pass': 'VIP Pass',
-      'weekend-pass': 'Weekend Pass',
-      'friday-pass': 'Friday Pass',
-      'saturday-pass': 'Saturday Pass',
-      'sunday-pass': 'Sunday Pass',
-      'workshop-beginner': 'Beginner Workshop',
-      'workshop-intermediate': 'Intermediate Workshop',
-      'workshop-advanced': 'Advanced Workshop',
-      'workshop': 'Workshop',
-      'social-dance': 'Social Dance',
-      'general-admission': 'General Admission'
+      "vip-pass": "VIP Pass",
+      "weekend-pass": "Weekend Pass",
+      "friday-pass": "Friday Pass",
+      "saturday-pass": "Saturday Pass",
+      "sunday-pass": "Sunday Pass",
+      "workshop-beginner": "Beginner Workshop",
+      "workshop-intermediate": "Intermediate Workshop",
+      "workshop-advanced": "Advanced Workshop",
+      workshop: "Workshop",
+      "social-dance": "Social Dance",
+      "general-admission": "General Admission",
     };
-    
-    return typeMap[type] || type || 'Unknown';
+
+    return typeMap[type] || type || "Unknown";
   }
 
   /**
    * Format date for display
    */
   formatDate(dateStr) {
-    if (!dateStr) return '';
-    
+    if (!dateStr) return "";
+
     try {
-      const date = new Date(dateStr + 'T00:00:00');
-      return date.toLocaleDateString('en-US', {
-        timeZone: process.env.SHEETS_TIMEZONE || 'America/Denver',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
+      const date = new Date(dateStr + "T00:00:00");
+      return date.toLocaleDateString("en-US", {
+        timeZone: process.env.SHEETS_TIMEZONE || "America/Denver",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
       });
     } catch (error) {
       return dateStr;
@@ -485,17 +525,17 @@ export class GoogleSheetsService {
    * Format datetime for display
    */
   formatDateTime(dateTimeStr) {
-    if (!dateTimeStr) return '';
-    
+    if (!dateTimeStr) return "";
+
     try {
       const date = new Date(dateTimeStr);
-      return date.toLocaleString('en-US', {
-        timeZone: process.env.SHEETS_TIMEZONE || 'America/Denver',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
+      return date.toLocaleString("en-US", {
+        timeZone: process.env.SHEETS_TIMEZONE || "America/Denver",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
       });
     } catch (error) {
       return dateTimeStr;
@@ -507,7 +547,7 @@ export class GoogleSheetsService {
    */
   async applyFormatting() {
     await this.initialize();
-    
+
     const requests = [
       // Bold headers
       {
@@ -515,33 +555,33 @@ export class GoogleSheetsService {
           range: {
             sheetId: 0,
             startRowIndex: 0,
-            endRowIndex: 1
+            endRowIndex: 1,
           },
           cell: {
             userEnteredFormat: {
               textFormat: { bold: true },
-              backgroundColor: { red: 0.9, green: 0.9, blue: 0.9 }
-            }
+              backgroundColor: { red: 0.9, green: 0.9, blue: 0.9 },
+            },
           },
-          fields: 'userEnteredFormat(textFormat,backgroundColor)'
-        }
+          fields: "userEnteredFormat(textFormat,backgroundColor)",
+        },
       },
       // Auto-resize columns
       {
         autoResizeDimensions: {
           dimensions: {
             sheetId: 0,
-            dimension: 'COLUMNS',
+            dimension: "COLUMNS",
             startIndex: 0,
-            endIndex: 20
-          }
-        }
-      }
+            endIndex: 20,
+          },
+        },
+      },
     ];
-    
+
     await this.sheets.spreadsheets.batchUpdate({
       spreadsheetId: this.sheetId,
-      requestBody: { requests }
+      requestBody: { requests },
     });
   }
 }
