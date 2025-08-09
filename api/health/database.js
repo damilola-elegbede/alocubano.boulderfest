@@ -77,7 +77,7 @@ async function getDatabaseStats(db) {
     const pageCountVal = pageCount?.page_count || 0;
     const pageSizeVal = pageSize?.page_size || 0;
     const dbSize = (pageCountVal && pageSizeVal) ? 
-      (pageCountVal * pageSizeVal) / (1024 * 1024) : 0; // MB
+      (pageCountVal * pageSizeVal) / (1024 * 1024) : null; // MB
     
     // Get recent activity
     const recentTickets = await db.prepare(`
@@ -89,7 +89,7 @@ async function getDatabaseStats(db) {
     return {
       total_tickets: ticketCount.count,
       total_subscribers: subscriberCount.count,
-      database_size: `${dbSize.toFixed(2)}MB`,
+      database_size: dbSize !== null ? `${dbSize.toFixed(2)}MB` : 'unknown',
       recent_tickets_1h: recentTickets.count
     };
   } catch (error) {

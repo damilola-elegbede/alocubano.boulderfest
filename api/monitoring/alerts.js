@@ -245,15 +245,16 @@ export default async function handler(req, res) {
         const { action } = req.query;
         
         switch (action) {
-          case 'status':
+          case 'status': {
             // Get current alert status
             const status = alertManager.getStatistics();
             return res.status(200).json({
               success: true,
               data: status
             });
+          }
             
-          case 'active':
+          case 'active': {
             // Get active alerts
             const activeAlerts = alertManager.getActiveAlerts();
             return res.status(200).json({
@@ -261,16 +262,18 @@ export default async function handler(req, res) {
               count: activeAlerts.length,
               alerts: activeAlerts
             });
+          }
             
-          case 'templates':
+          case 'templates': {
             // Get alert templates
             const templates = getAlertTemplates();
             return res.status(200).json({
               success: true,
               templates
             });
+          }
             
-          case 'configuration':
+          case 'configuration': {
             // Get current configuration (admin only)
             if (!validateAdminAccess(req)) {
               return res.status(401).json({ error: 'Unauthorized' });
@@ -288,8 +291,9 @@ export default async function handler(req, res) {
                 enabled: alertManager.enabled
               }
             });
+          }
             
-          default:
+          default: {
             // Get alert statistics
             const statistics = alertManager.getStatistics();
             return res.status(200).json({
@@ -297,6 +301,7 @@ export default async function handler(req, res) {
               statistics,
               available_actions: ['status', 'active', 'templates', 'configuration']
             });
+          }
         }
       }
       
@@ -306,10 +311,10 @@ export default async function handler(req, res) {
           return res.status(401).json({ error: 'Unauthorized' });
         }
         
-        const { action, ...body } = req.body;
+        const { action, ...body } = req.body || {};
         
         switch (action) {
-          case 'test':
+          case 'test': {
             // Test alert configuration
             const testResult = await testAlertConfiguration(
               alertManager,
@@ -326,8 +331,9 @@ export default async function handler(req, res) {
               success: true,
               test: testResult
             });
+          }
             
-          case 'trigger':
+          case 'trigger': {
             // Manually trigger an alert
             const alertData = {
               category: body.category || AlertCategory.EXTERNAL_SERVICE,
@@ -345,8 +351,9 @@ export default async function handler(req, res) {
               alert: result.alert,
               channels: result.channels
             });
+          }
             
-          case 'create_rule':
+          case 'create_rule': {
             // Create a new alert rule
             const validationErrors = validateAlertRule(body);
             if (validationErrors.length > 0) {
@@ -365,8 +372,9 @@ export default async function handler(req, res) {
               rule,
               message: 'Alert rule created (not persisted in this version)'
             });
+          }
             
-          case 'clear':
+          case 'clear': {
             // Clear a specific alert
             if (body.alertKey) {
               alertManager.clearAlert(body.alertKey);
@@ -379,8 +387,9 @@ export default async function handler(req, res) {
               success: false,
               error: 'Alert key required'
             });
+          }
             
-          case 'update_config':
+          case 'update_config': {
             // Update alert configuration
             alertManager.updateConfiguration(body.configuration || {});
             
@@ -388,8 +397,9 @@ export default async function handler(req, res) {
               success: true,
               message: 'Alert configuration updated'
             });
+          }
             
-          case 'maintenance':
+          case 'maintenance': {
             // Set maintenance window
             const maintenanceWindow = {
               start: body.start || new Date().toISOString(),
@@ -406,13 +416,15 @@ export default async function handler(req, res) {
               maintenanceWindow,
               message: 'Maintenance window set'
             });
+          }
             
-          default:
+          default: {
             return res.status(400).json({
               success: false,
               error: 'Invalid action',
               available_actions: ['test', 'trigger', 'create_rule', 'clear', 'update_config', 'maintenance']
             });
+          }
         }
       }
       

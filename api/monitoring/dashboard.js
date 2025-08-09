@@ -192,7 +192,7 @@ function calculateTrend(history) {
   const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
   const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
   
-  const change = ((secondAvg - firstAvg) / firstAvg) * 100;
+  const change = firstAvg === 0 ? 0 : ((secondAvg - firstAvg) / firstAvg) * 100;
   
   if (change > 10) return 'increasing';
   if (change < -10) return 'decreasing';

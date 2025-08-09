@@ -210,7 +210,8 @@ async function testWriteCapability(sheets) {
         // Clear test data
         const clearParams = {
           spreadsheetId,
-          range: 'HealthCheck!A:B'
+          range: 'HealthCheck!A:B',
+          requestBody: {}
         };
         
         // Add API key for API key authentication (though write won't work with API key)

@@ -32,8 +32,9 @@ async function getDetailedMetrics(category) {
           heap_used: metrics.system['gauge.system.memory.heap_used'],
           heap_total: metrics.system['gauge.system.memory.heap_total'],
           rss: metrics.system['gauge.system.memory.rss'],
-          usage_percent: metrics.system['gauge.system.memory.heap_used'] / 
-                        metrics.system['gauge.system.memory.heap_total'] * 100
+          usage_percent: (metrics.system['gauge.system.memory.heap_total'] || 0) === 0 ? 0 : 
+                        (metrics.system['gauge.system.memory.heap_used'] / 
+                        metrics.system['gauge.system.memory.heap_total'] * 100)
         },
         cpu: {
           user: metrics.system['gauge.system.cpu.user'],
