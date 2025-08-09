@@ -20,9 +20,13 @@ export class RateLimitService {
    * Get client identifier from request
    */
   getClientId(req) {
+    // Handle both req object and headers directly
+    const headers = req.headers || req;
+    
     return (
-      req.headers["x-forwarded-for"]?.split(",")[0] ||
+      headers["x-forwarded-for"]?.split(",")[0] ||
       req.connection?.remoteAddress ||
+      req.socket?.remoteAddress ||
       "unknown"
     );
   }
@@ -76,6 +80,11 @@ export class RateLimitService {
     }
 
     failedAttemptsMap.set(clientId, record);
+    
+    return {
+      attemptsRemaining: Math.max(0, this.loginMaxAttempts - record.attempts),
+      isLocked: record.lockedUntil > now
+    };
   }
 
   /**
@@ -111,6 +120,13 @@ export class RateLimitService {
    */
   clearFailedAttempts(clientId) {
     failedAttemptsMap.delete(clientId);
+  }
+  
+  /**
+   * Clear attempts (alias for clearFailedAttempts)
+   */
+  clearAttempts(clientId) {
+    return this.clearFailedAttempts(clientId);
   }
 
   /**
