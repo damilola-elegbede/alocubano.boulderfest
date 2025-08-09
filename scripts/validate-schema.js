@@ -454,6 +454,13 @@ class SchemaValidator {
       details: `Performance tests. Failed: ${performanceResults.tests.filter(t => !t.passed).length}`
     });
     
+    // Update overall report status if performance tests fail
+    if (performanceResults.status === 'FAIL') {
+      report.status = 'FAIL';
+    } else if (performanceResults.status === 'WARN' && report.status === 'PASS') {
+      report.status = 'WARN';
+    }
+    
     report.performance_metrics = {
       avg_query_time: Math.round(
         performanceResults.tests.reduce((sum, t) => sum + (t.executionTime || 0), 0) / 

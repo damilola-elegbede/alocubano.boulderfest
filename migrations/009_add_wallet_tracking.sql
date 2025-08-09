@@ -65,6 +65,7 @@ BEGIN TRANSACTION;
 
 -- Drop the indexes created by this migration
 DROP INDEX IF EXISTS idx_tickets_wallet_source;
+DROP INDEX IF EXISTS idx_tickets_qr_access_method;
 DROP INDEX IF EXISTS idx_tickets_wallet_analytics;
 
 -- Remove the wallet_source column

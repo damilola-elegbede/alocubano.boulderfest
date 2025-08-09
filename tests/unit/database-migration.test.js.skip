@@ -25,25 +25,21 @@ vi.mock('../../api/lib/database.js', () => ({
 
 // Mock file system for backup operations
 vi.mock('fs/promises', () => ({
-  default: {
-    mkdir: vi.fn(),
-    readFile: vi.fn(),
-    writeFile: vi.fn(),
-    unlink: vi.fn(),
-    readdir: vi.fn(),
-    stat: vi.fn(),
-    appendFile: vi.fn()
-  }
+  mkdir: vi.fn(),
+  readFile: vi.fn(),
+  writeFile: vi.fn(),
+  unlink: vi.fn(),
+  readdir: vi.fn(),
+  stat: vi.fn(),
+  appendFile: vi.fn()
 }));
 
 // Mock crypto module
 vi.mock('crypto', () => ({
-  default: {
-    createHash: vi.fn(() => ({
-      update: vi.fn().mockReturnThis(),
-      digest: vi.fn(() => 'mocked_hash')
-    }))
-  }
+  createHash: vi.fn(() => ({
+    update: vi.fn().mockReturnThis(),
+    digest: vi.fn(() => 'mocked_hash')
+  }))
 }));
 
 // Mock glob for file scanning
@@ -223,8 +219,8 @@ describe('Database Migration Test Suite', () => {
       const compressedData = Buffer.from(JSON.stringify(backupData));
       const metadata = {
         checksums: {
-          compressed: require('crypto').createHash('sha256').update(compressedData).digest('hex'),
-          original: require('crypto').createHash('sha256').update(Buffer.from(JSON.stringify(backupData))).digest('hex')
+          compressed: 'mocked_hash',
+          original: 'mocked_hash'
         }
       };
       

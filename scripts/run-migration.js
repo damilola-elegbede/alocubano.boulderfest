@@ -60,8 +60,12 @@ async function runMigration() {
         schemaIntegrity.issues.forEach(issue => log.warning(`  - ${issue}`));
         
         // Ask for confirmation to force re-apply
-        log.warning('Consider running with --force flag to reapply migration');
-        return { success: false, needsForce: true };
+        if (!flags.force) {
+          log.warning('Consider running with --force flag to reapply migration');
+          return { success: false, needsForce: true };
+        } else {
+          log.info('Force flag detected - proceeding with migration reapplication');
+        }
       }
     }
     
@@ -74,23 +78,28 @@ async function runMigration() {
       pendingMigrations.forEach(m => log.info(`  - ${m.name}`));
     }
     
-    // Step 2: Create backup
-    log.info('\nStep 2: Creating database backup...');
-    
-    const backupMetadata = await backupManager.createBackup('pre_migration_009_wallet_tracking');
-    log.success(`Backup created: ${backupMetadata.filename}`);
-    log.info(`  - Original size: ${(backupMetadata.originalSize / 1024).toFixed(2)} KB`);
-    log.info(`  - Compressed size: ${(backupMetadata.compressedSize / 1024).toFixed(2)} KB`);
-    log.info(`  - Compression ratio: ${backupMetadata.compressionRatio}`);
-    
-    // Verify backup integrity
-    log.info('Verifying backup integrity...');
-    const backupIntegrity = await backupManager.verifyBackupIntegrity(backupMetadata.path);
-    
-    if (!backupIntegrity.valid) {
-      throw new Error('Backup integrity verification failed');
+    // Step 2: Create backup (unless skipped)
+    let backupMetadata = null;
+    if (!flags.skipBackup) {
+      log.info('\nStep 2: Creating database backup...');
+      
+      backupMetadata = await backupManager.createBackup('pre_migration_009_wallet_tracking');
+      log.success(`Backup created: ${backupMetadata.filename}`);
+      log.info(`  - Original size: ${(backupMetadata.originalSize / 1024).toFixed(2)} KB`);
+      log.info(`  - Compressed size: ${(backupMetadata.compressedSize / 1024).toFixed(2)} KB`);
+      log.info(`  - Compression ratio: ${backupMetadata.compressionRatio}`);
+      
+      // Verify backup integrity
+      log.info('Verifying backup integrity...');
+      const backupIntegrity = await backupManager.verifyBackupIntegrity(backupMetadata.path);
+      
+      if (!backupIntegrity.valid) {
+        throw new Error('Backup integrity verification failed');
+      }
+      log.success('Backup integrity verified');
+    } else {
+      log.warning('Backup creation skipped (--skip-backup flag)');
     }
-    log.success('Backup integrity verified');
     
     // Step 3: Dry run migration
     log.info('\nStep 3: Running migration dry run...');
@@ -99,14 +108,38 @@ async function runMigration() {
     
     if (dryRunResult.success && dryRunResult.dryRun) {
       log.success(`Dry run successful - would execute ${dryRunResult.statements} statements`);
+      
+      // Exit early if this is a dry run
+      if (flags.dryRun) {
+        log.header('Dry Run Complete - No Changes Applied');
+        return {
+          success: true,
+          dryRun: true,
+          backup: backupMetadata,
+          dryRunResult
+        };
+      }
     } else {
       throw new Error('Dry run failed');
     }
     
-    // Step 4: Execute migration
+    // Step 4: Execute migration (skip if dry run already completed)
+    if (flags.dryRun) {
+      // This should not be reached due to early exit above, but guard against it
+      return {
+        success: true,
+        dryRun: true,
+        backup: backupMetadata,
+        dryRunResult
+      };
+    }
+    
     log.info('\nStep 4: Executing migration...');
     
-    const migrationResult = await migrationRunner.runMigration('009_add_wallet_tracking.sql');
+    const migrationResult = await migrationRunner.runMigration('009_add_wallet_tracking.sql', {
+      skipBackup: flags.skipBackup,
+      force: flags.force
+    });
     
     if (!migrationResult.success) {
       log.error('Migration failed!');
@@ -116,7 +149,11 @@ async function runMigration() {
       } else if (migrationResult.rollbackSuccess === false) {
         log.error('Automatic rollback failed!');
         log.error(`Rollback error: ${migrationResult.rollbackError}`);
-        log.warning(`Manual restoration may be required from backup: ${migrationResult.backup.filename}`);
+        if (migrationResult.backup && migrationResult.backup.filename) {
+          log.warning(`Manual restoration may be required from backup: ${migrationResult.backup.filename}`);
+        } else {
+          log.warning('No backup available for manual restoration');
+        }
       }
       
       throw new Error(migrationResult.error || 'Migration execution failed');
@@ -235,7 +272,11 @@ async function runMigration() {
     
     log.success('Migration 009_add_wallet_tracking completed successfully');
     log.info('Summary:');
-    log.info(`  - Backup created: ${backupMetadata.filename}`);
+    if (backupMetadata && backupMetadata.filename) {
+      log.info(`  - Backup created: ${backupMetadata.filename}`);
+    } else {
+      log.info('  - Backup: Skipped');
+    }
     log.info(`  - Migration applied at: ${migrationResult.appliedAt}`);
     log.info(`  - Schema validation: ${validationResult.valid ? 'PASSED' : 'FAILED'}`);
     log.info(`  - Performance status: ${performanceTests.status}`);

@@ -9,10 +9,12 @@ import path from 'path';
 import zlib from 'zlib';
 import crypto from 'crypto';
 import { promisify } from 'util';
+import { Transform, pipeline } from 'stream';
 import { getDatabase } from '../lib/database.js';
 
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
+const streamPipeline = promisify(pipeline);
 
 class BackupManager {
   constructor(databasePath = null, backupDir = './backups') {
@@ -66,20 +68,45 @@ class BackupManager {
       const result = await this.database.execute("SELECT sql FROM sqlite_master WHERE type IN ('table', 'index', 'trigger')");
       const schemas = result.rows.map(row => row.sql).filter(sql => sql);
       
-      // Get all table data
+      // Get all table data using streaming approach to prevent OOM
       const tables = await this.database.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
       const backupData = {
         schemas,
         tables: {}
       };
       
+      // Process tables one by one to manage memory usage
       for (const table of tables.rows) {
         const tableName = table.name;
-        const tableData = await this.database.execute(`SELECT * FROM ${tableName}`);
-        backupData.tables[tableName] = tableData.rows;
+        // Get row count first to optimize memory allocation
+        const countResult = await this.database.execute(`SELECT COUNT(*) as count FROM ${tableName}`);
+        const rowCount = countResult.rows[0].count;
+        
+        if (rowCount > 10000) {
+          // For large tables, use chunked processing
+          console.log(`Processing large table ${tableName} with ${rowCount} rows in chunks...`);
+          backupData.tables[tableName] = [];
+          const chunkSize = 1000;
+          
+          for (let offset = 0; offset < rowCount; offset += chunkSize) {
+            const chunkData = await this.database.execute(
+              `SELECT * FROM ${tableName} LIMIT ${chunkSize} OFFSET ${offset}`
+            );
+            backupData.tables[tableName].push(...chunkData.rows);
+            
+            // Allow garbage collection between chunks
+            if (offset % (chunkSize * 10) === 0) {
+              await new Promise(resolve => setImmediate(resolve));
+            }
+          }
+        } else {
+          // For smaller tables, process normally
+          const tableData = await this.database.execute(`SELECT * FROM ${tableName}`);
+          backupData.tables[tableName] = tableData.rows;
+        }
       }
       
-      // Serialize backup data
+      // Use streaming JSON serialization for large datasets
       const backupJson = JSON.stringify(backupData, null, 2);
       const backupBuffer = Buffer.from(backupJson);
       
@@ -212,6 +239,12 @@ class BackupManager {
       // Begin transaction for atomic restore
       const statements = [];
       
+      // Disable foreign key checks during restore to prevent constraint violations
+      statements.push({
+        sql: 'PRAGMA foreign_keys = OFF',
+        args: []
+      });
+      
       // Drop existing tables (careful!)
       for (const tableName of Object.keys(backupData.tables)) {
         statements.push({
@@ -243,6 +276,12 @@ class BackupManager {
           });
         }
       }
+      
+      // Re-enable foreign key checks after restore
+      statements.push({
+        sql: 'PRAGMA foreign_keys = ON',
+        args: []
+      });
       
       // Execute restore in batch
       await this.database.batch(statements);

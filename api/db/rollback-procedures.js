@@ -12,8 +12,8 @@ class MigrationRunner {
   constructor(database = null, backupManager = null) {
     this.database = database || getDatabase();
     this.backupManager = backupManager || new BackupManager();
-    this.migrationsDir = './migrations';
-    this.logFile = './migration.log';
+    this.migrationsDir = path.resolve(process.cwd(), 'migrations');
+    this.logFile = path.resolve(process.cwd(), 'migration.log');
   }
 
   /**
@@ -107,7 +107,7 @@ class MigrationRunner {
     
     const migrationPath = path.isAbsolute(migrationFile) 
       ? migrationFile 
-      : path.join(this.migrationsDir, migrationFile);
+      : path.resolve(this.migrationsDir, migrationFile);
     
     const migrationName = path.basename(migrationFile);
     const version = migrationName.split('_')[0];
@@ -165,8 +165,18 @@ class MigrationRunner {
       await this.log('Executing migration statements...', 'INFO');
       
       try {
-        // Execute the entire migration file as a single transaction
-        await this.database.execute(fileContent);
+        // Parse migration file into atomic statements for better error handling
+        const statements = await this.parseMigrationFile(migrationPath);
+        
+        if (statements.length === 0) {
+          throw new Error('No valid statements found in migration file');
+        }
+        
+        await this.log(`Executing ${statements.length} statements...`, 'INFO');
+        
+        // Execute statements atomically within a transaction
+        const batchStatements = statements.map(sql => ({ sql, args: [] }));
+        await this.database.batch(batchStatements);
         
         await this.log(`Migration ${version} completed successfully`, 'INFO');
         
@@ -296,9 +306,9 @@ class MigrationRunner {
       
       // Special validation for migration 009 (wallet tracking)
       if (migrationVersion === '009') {
-        // Check wallet_source column exists
+        // Check wallet_source column exists using correct PRAGMA syntax
         const walletSourceCheck = await this.database.execute(
-          "SELECT COUNT(*) as count FROM pragma_table_info('tickets') WHERE name = 'wallet_source'"
+          "SELECT COUNT(*) as count FROM PRAGMA_TABLE_INFO('tickets') WHERE name = 'wallet_source'"
         );
         
         const walletSourceExists = walletSourceCheck.rows[0].count > 0;
@@ -414,9 +424,9 @@ class MigrationRunner {
       for (const table of tables.rows) {
         const tableName = table.name;
         
-        // Get table info
+        // Get table info using correct PRAGMA syntax
         const columns = await this.database.execute(
-          `SELECT * FROM pragma_table_info('${tableName}')`
+          `PRAGMA table_info('${tableName}')`
         );
         
         // Get row count
@@ -491,7 +501,7 @@ class MigrationRunner {
       const appliedVersions = status.appliedMigrations.map(m => m.version);
       
       // Get all migration files
-      const files = await fs.readdir(this.migrationsDir);
+      const files = await fs.readdir(path.resolve(this.migrationsDir));
       const migrationFiles = files
         .filter(f => f.endsWith('.sql'))
         .sort();
