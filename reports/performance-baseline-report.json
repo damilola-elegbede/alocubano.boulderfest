@@ -1,0 +1,145 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2024-01-09T20:00:00.000Z",
+  "environment": "development",
+  "description": "Performance baseline for A Lo Cubano Boulder Fest ticketing system",
+  "baselines": {
+    "Ticket Sales Peak Load": {
+      "metrics": {
+        "http_req_duration_p95": 450,
+        "http_req_duration_p99": 800,
+        "http_req_duration_avg": 200,
+        "ticket_purchase_success_rate": 0.97,
+        "payment_processing_duration_avg": 180,
+        "payment_processing_duration_p95": 350,
+        "cart_operation_duration_avg": 50,
+        "page_load_duration_avg": 300,
+        "error_rate": 0.008,
+        "purchases_completed": 1200,
+        "carts_abandoned": 45
+      },
+      "thresholds": {
+        "successRate": 0.95,
+        "p95ResponseTime": 500,
+        "errorRate": 0.01
+      },
+      "timestamp": "2024-01-09T20:00:00.000Z"
+    },
+    "Check-in Rush": {
+      "metrics": {
+        "http_req_duration_p95": 75,
+        "http_req_duration_p99": 150,
+        "http_req_duration_avg": 40,
+        "checkin_success_rate": 0.99,
+        "qr_validation_duration_avg": 35,
+        "qr_validation_duration_p95": 60,
+        "database_write_duration_avg": 25,
+        "database_write_duration_p95": 40,
+        "duplicate_scan_rate": 0.015,
+        "invalid_qr_rate": 0.005,
+        "total_checkins": 13500,
+        "checkin_errors": 135
+      },
+      "thresholds": {
+        "successRate": 0.98,
+        "avgValidationTime": 50,
+        "checkinsPerSecond": 15
+      },
+      "timestamp": "2024-01-09T20:00:00.000Z"
+    },
+    "Sustained Load": {
+      "metrics": {
+        "http_req_duration_p95": 400,
+        "http_req_duration_p99": 750,
+        "http_req_duration_avg": 180,
+        "sustained_success_rate": 0.995,
+        "sustained_error_rate": 0.005,
+        "sustained_response_time_avg": 250,
+        "sustained_response_time_p95": 450,
+        "requests_per_second": 125,
+        "total_requests": 225000
+      },
+      "thresholds": {
+        "successRate": 0.99,
+        "avgResponseTime": 300,
+        "errorRate": 0.01
+      },
+      "timestamp": "2024-01-09T20:00:00.000Z"
+    },
+    "Stress Test": {
+      "metrics": {
+        "http_req_duration_p95": 1500,
+        "http_req_duration_p99": 3000,
+        "http_req_duration_avg": 600,
+        "stress_success_rate": 0.96,
+        "stress_error_rate": 0.04,
+        "stress_response_time_avg": 800,
+        "stress_response_time_p95": 1800,
+        "stress_response_time_p99": 4000,
+        "critical_errors": 75,
+        "system_breaking_point": 280,
+        "recovery_time_seconds": 45
+      },
+      "thresholds": {
+        "maxErrors": 0.05,
+        "gracefulDegradation": true,
+        "recovery": true
+      },
+      "timestamp": "2024-01-09T20:00:00.000Z"
+    }
+  },
+  "systemCapacity": {
+    "normalLoad": {
+      "concurrentUsers": 75,
+      "requestsPerSecond": 125,
+      "avgResponseTime": 180,
+      "errorRate": 0.005
+    },
+    "peakLoad": {
+      "concurrentUsers": 150,
+      "requestsPerSecond": 250,
+      "avgResponseTime": 300,
+      "errorRate": 0.01
+    },
+    "maxCapacity": {
+      "concurrentUsers": 280,
+      "requestsPerSecond": 400,
+      "avgResponseTime": 800,
+      "errorRate": 0.04
+    }
+  },
+  "recommendations": [
+    {
+      "area": "Caching",
+      "priority": "HIGH",
+      "description": "Implement Redis caching for frequently accessed data to reduce database load"
+    },
+    {
+      "area": "Database",
+      "priority": "HIGH",
+      "description": "Add indexes on qr_code and user_id columns for faster queries"
+    },
+    {
+      "area": "Payment Processing",
+      "priority": "MEDIUM",
+      "description": "Implement payment request queuing for better handling during peak loads"
+    },
+    {
+      "area": "Connection Pooling",
+      "priority": "MEDIUM",
+      "description": "Optimize database connection pool size for concurrent operations"
+    },
+    {
+      "area": "Rate Limiting",
+      "priority": "LOW",
+      "description": "Implement rate limiting to prevent abuse and ensure fair resource usage"
+    }
+  ],
+  "nextSteps": [
+    "Run performance tests weekly to track improvements",
+    "Monitor production metrics against these baselines",
+    "Set up alerts for performance regression",
+    "Implement recommended optimizations",
+    "Re-baseline after major changes"
+  ]
+}
