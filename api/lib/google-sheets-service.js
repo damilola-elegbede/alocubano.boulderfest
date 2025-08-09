@@ -203,21 +203,27 @@ export class GoogleSheetsService {
         (SELECT COUNT(*) FROM tickets WHERE status = 'valid') as total_tickets,
         (SELECT COUNT(*) FROM tickets WHERE checked_in_at IS NOT NULL) as checked_in,
         (SELECT COUNT(DISTINCT transaction_id) FROM tickets) as total_orders,
-        (SELECT SUM(amount_cents) / 100.0 FROM transactions WHERE status = 'completed') as total_revenue,
+        (SELECT SUM(total_amount) / 100.0 FROM transactions WHERE status = 'completed') as total_revenue,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%workshop%') as workshop_tickets,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%vip%') as vip_tickets
     `);
     
     const data = stats.rows[0];
     
-    // Get wallet statistics
-    const walletStats = await db.execute(`
-      SELECT 
-        COUNT(CASE WHEN wallet_source IS NOT NULL THEN 1 END) as wallet_checkins,
-        COUNT(CASE WHEN qr_access_method = 'wallet' THEN 1 END) as wallet_access,
-        COUNT(CASE WHEN qr_access_method = 'qr_code' THEN 1 END) as qr_access
-      FROM tickets WHERE checked_in_at IS NOT NULL
-    `);
+    // Get wallet statistics (columns may not exist yet)
+    let walletStats;
+    try {
+      walletStats = await db.execute(`
+        SELECT 
+          COUNT(CASE WHEN wallet_source IS NOT NULL THEN 1 END) as wallet_checkins,
+          COUNT(CASE WHEN qr_access_method = 'wallet' THEN 1 END) as wallet_access,
+          COUNT(CASE WHEN qr_access_method = 'qr_code' THEN 1 END) as qr_access
+        FROM tickets WHERE checked_in_at IS NOT NULL
+      `);
+    } catch (e) {
+      // Columns don't exist yet - use default values
+      walletStats = { rows: [{ wallet_checkins: 0, wallet_access: 0, qr_access: 0 }] };
+    }
     
     const walletData = walletStats.rows[0];
     const walletAdoption = data.checked_in > 0 ? 
@@ -246,7 +252,7 @@ export class GoogleSheetsService {
     const registrations = await db.execute(`
       SELECT 
         t.ticket_id,
-        tr.transaction_id as order_number,
+        tr.uuid as order_number,
         t.attendee_first_name,
         t.attendee_last_name,
         t.attendee_email,
@@ -259,8 +265,8 @@ export class GoogleSheetsService {
         t.created_at as purchase_date,
         t.price_cents / 100.0 as price,
         tr.customer_email as purchaser_email,
-        t.wallet_source,
-        t.qr_access_method
+        NULL as wallet_source,
+        NULL as qr_access_method
       FROM tickets t
       JOIN transactions tr ON t.transaction_id = tr.id
       ORDER BY t.created_at DESC
@@ -301,7 +307,7 @@ export class GoogleSheetsService {
         CASE WHEN checked_in_at IS NOT NULL THEN 'Yes' ELSE 'No' END as checked_in,
         checked_in_at,
         checked_in_by,
-        wallet_source
+        NULL as wallet_source
       FROM tickets
       WHERE status = 'valid'
       ORDER BY checked_in_at DESC NULLS LAST, ticket_id
@@ -380,19 +386,42 @@ export class GoogleSheetsService {
    * Sync wallet analytics
    */
   async syncWalletAnalytics(db) {
-    const analytics = await db.execute(`
-      SELECT 
-        date(checked_in_at) as checkin_date,
-        COUNT(*) as total_checkins,
-        COUNT(CASE WHEN wallet_source IS NOT NULL THEN 1 END) as wallet_checkins,
-        COUNT(CASE WHEN wallet_source IS NULL THEN 1 END) as qr_checkins,
-        COUNT(CASE WHEN qr_access_method = 'wallet' THEN 1 END) as jwt_tokens,
-        COUNT(CASE WHEN qr_access_method = 'qr_code' THEN 1 END) as traditional_qr
-      FROM tickets
-      WHERE checked_in_at IS NOT NULL
-      GROUP BY date(checked_in_at)
-      ORDER BY checkin_date DESC
-    `);
+    // For now, return empty data since wallet columns don't exist yet
+    const analytics = { rows: [] };
+    
+    try {
+      // Try to get wallet analytics if columns exist
+      const result = await db.execute(`
+        SELECT 
+          date(checked_in_at) as checkin_date,
+          COUNT(*) as total_checkins,
+          COUNT(CASE WHEN wallet_source IS NOT NULL THEN 1 END) as wallet_checkins,
+          COUNT(CASE WHEN wallet_source IS NULL THEN 1 END) as qr_checkins,
+          COUNT(CASE WHEN qr_access_method = 'wallet' THEN 1 END) as jwt_tokens,
+          COUNT(CASE WHEN qr_access_method = 'qr_code' THEN 1 END) as traditional_qr
+        FROM tickets
+        WHERE checked_in_at IS NOT NULL
+        GROUP BY date(checked_in_at)
+        ORDER BY checkin_date DESC
+      `);
+      analytics.rows = result.rows;
+    } catch (e) {
+      // Columns don't exist, use fallback query
+      const result = await db.execute(`
+        SELECT 
+          date(checked_in_at) as checkin_date,
+          COUNT(*) as total_checkins,
+          0 as wallet_checkins,
+          COUNT(*) as qr_checkins,
+          0 as jwt_tokens,
+          0 as traditional_qr
+        FROM tickets
+        WHERE checked_in_at IS NOT NULL
+        GROUP BY date(checked_in_at)
+        ORDER BY checkin_date DESC
+      `);
+      analytics.rows = result.rows;
+    }
     
     const data = analytics.rows.map(row => {
       const walletAdoption = row.total_checkins > 0 ? 

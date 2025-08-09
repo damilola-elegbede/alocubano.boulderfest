@@ -40,7 +40,7 @@ async function testSheets() {
     const db = getDatabase();
     const stats = await db.execute('SELECT COUNT(*) as count FROM tickets');
     const checkedIn = await db.execute('SELECT COUNT(*) as count FROM tickets WHERE checked_in_at IS NOT NULL');
-    const revenue = await db.execute('SELECT SUM(amount_cents) / 100.0 as total FROM transactions WHERE status = "completed"');
+    const revenue = await db.execute('SELECT SUM(total_amount) / 100.0 as total FROM transactions WHERE status = "completed"');
     
     console.log(`4. Summary:`);
     console.log(`   - Tickets in database: ${stats.rows[0].count}`);
