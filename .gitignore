@@ -83,3 +83,5 @@ certificates/
 .githooks/
 .githooks/
 .vercel
+*-tickets-*.json
+*.serviceaccount.json
