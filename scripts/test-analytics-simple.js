@@ -7,13 +7,20 @@
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { existsSync } from 'fs';
 import analyticsService from '../api/lib/analytics-service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment variables
-dotenv.config({ path: join(__dirname, '..', '.env.local') });
+// Load environment variables with graceful fallback
+const envPath = join(__dirname, '..', '.env.local');
+if (existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+} else {
+  // Silently continue without .env.local - service may use defaults or .env
+  dotenv.config();
+}
 
 const colors = {
   reset: '\x1b[0m',

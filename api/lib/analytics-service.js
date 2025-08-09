@@ -3,7 +3,6 @@ import { getDatabase } from "./database.js";
 export class AnalyticsService {
   constructor() {
     this.db = getDatabase();
-    this.timezone = process.env.REPORT_TIMEZONE || "America/Denver";
   }
 
   /**
@@ -273,66 +272,69 @@ export class AnalyticsService {
    * Get wallet adoption analytics
    */
   async getWalletAnalytics(eventId = "boulder-fest-2026") {
-    const analytics = await this.db.execute({
-      sql: `
-        SELECT 
-          date(checked_in_at) as checkin_date,
-          COUNT(*) as total_checkins,
-          COUNT(CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN 1 END) as wallet_checkins,
-          COUNT(CASE WHEN (apple_pass_serial IS NULL AND google_pass_id IS NULL) THEN 1 END) as traditional_checkins,
-          COUNT(CASE WHEN apple_pass_serial IS NOT NULL THEN 1 END) as apple_wallet_checkins,
-          COUNT(CASE WHEN google_pass_id IS NOT NULL THEN 1 END) as google_wallet_checkins,
-          ROUND(
-            COUNT(CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN 1 END) * 100.0 / COUNT(*), 2
-          ) as wallet_adoption_rate
-        FROM tickets
-        WHERE checked_in_at IS NOT NULL
-          AND event_id = ?
-        GROUP BY date(checked_in_at)
-        ORDER BY checkin_date DESC
-      `,
-      args: [eventId],
-    });
+    // Run all three wallet queries in parallel for better performance
+    const [analytics, summary, roi] = await Promise.all([
+      this.db.execute({
+        sql: `
+          SELECT 
+            date(checked_in_at) as checkin_date,
+            COUNT(*) as total_checkins,
+            COUNT(CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN 1 END) as wallet_checkins,
+            COUNT(CASE WHEN (apple_pass_serial IS NULL AND google_pass_id IS NULL) THEN 1 END) as traditional_checkins,
+            COUNT(CASE WHEN apple_pass_serial IS NOT NULL THEN 1 END) as apple_wallet_checkins,
+            COUNT(CASE WHEN google_pass_id IS NOT NULL THEN 1 END) as google_wallet_checkins,
+            ROUND(
+              COUNT(CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN 1 END) * 100.0 / COUNT(*), 2
+            ) as wallet_adoption_rate
+          FROM tickets
+          WHERE checked_in_at IS NOT NULL
+            AND event_id = ?
+          GROUP BY date(checked_in_at)
+          ORDER BY checkin_date DESC
+        `,
+        args: [eventId],
+      }),
 
-    // Overall wallet statistics
-    const summary = await this.db.execute({
-      sql: `
-        SELECT 
-          COUNT(CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN 1 END) as total_wallet_users,
-          COUNT(*) as total_checkins,
-          ROUND(
-            COUNT(CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN 1 END) * 100.0 / COUNT(*), 2
-          ) as overall_adoption_rate,
-          COUNT(DISTINCT CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN attendee_email END) as unique_wallet_users,
-          COUNT(CASE WHEN apple_pass_serial IS NOT NULL THEN 1 END) as apple_wallet_users,
-          COUNT(CASE WHEN google_pass_id IS NOT NULL THEN 1 END) as google_wallet_users,
-          AVG(CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN price_cents ELSE NULL END) / 100.0 as avg_wallet_ticket_price,
-          AVG(CASE WHEN (apple_pass_serial IS NULL AND google_pass_id IS NULL) THEN price_cents ELSE NULL END) / 100.0 as avg_traditional_ticket_price
-        FROM tickets
-        WHERE checked_in_at IS NOT NULL
-          AND event_id = ?
-      `,
-      args: [eventId],
-    });
+      // Overall wallet statistics
+      this.db.execute({
+        sql: `
+          SELECT 
+            COUNT(CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN 1 END) as total_wallet_users,
+            COUNT(*) as total_checkins,
+            ROUND(
+              COUNT(CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN 1 END) * 100.0 / COUNT(*), 2
+            ) as overall_adoption_rate,
+            COUNT(DISTINCT CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN attendee_email END) as unique_wallet_users,
+            COUNT(CASE WHEN apple_pass_serial IS NOT NULL THEN 1 END) as apple_wallet_users,
+            COUNT(CASE WHEN google_pass_id IS NOT NULL THEN 1 END) as google_wallet_users,
+            AVG(CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN price_cents ELSE NULL END) / 100.0 as avg_wallet_ticket_price,
+            AVG(CASE WHEN (apple_pass_serial IS NULL AND google_pass_id IS NULL) THEN price_cents ELSE NULL END) / 100.0 as avg_traditional_ticket_price
+          FROM tickets
+          WHERE checked_in_at IS NOT NULL
+            AND event_id = ?
+        `,
+        args: [eventId],
+      }),
 
-    // Wallet ROI calculation
-    const roi = await this.db.execute({
-      sql: `
-        SELECT 
-          COUNT(CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN 1 END) as wallet_sales,
-          COUNT(CASE WHEN (apple_pass_serial IS NULL AND google_pass_id IS NULL) THEN 1 END) as traditional_sales,
-          SUM(CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN price_cents ELSE 0 END) / 100.0 as wallet_revenue,
-          SUM(CASE WHEN (apple_pass_serial IS NULL AND google_pass_id IS NULL) THEN price_cents ELSE 0 END) / 100.0 as traditional_revenue,
-          COUNT(CASE WHEN apple_pass_serial IS NOT NULL THEN 1 END) as apple_wallet_sales,
-          COUNT(CASE WHEN google_pass_id IS NOT NULL THEN 1 END) as google_wallet_sales,
-          SUM(CASE WHEN apple_pass_serial IS NOT NULL THEN price_cents ELSE 0 END) / 100.0 as apple_wallet_revenue,
-          SUM(CASE WHEN google_pass_id IS NOT NULL THEN price_cents ELSE 0 END) / 100.0 as google_wallet_revenue
-        FROM tickets
-        WHERE status = 'valid'
-          AND event_id = ?
-      `,
-      args: [eventId],
-    });
+      // Wallet ROI calculation
+      this.db.execute({
+        sql: `
+          SELECT 
+            COUNT(CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN 1 END) as wallet_sales,
+            COUNT(CASE WHEN (apple_pass_serial IS NULL AND google_pass_id IS NULL) THEN 1 END) as traditional_sales,
+            SUM(CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN price_cents ELSE 0 END) / 100.0 as wallet_revenue,
+            SUM(CASE WHEN (apple_pass_serial IS NULL AND google_pass_id IS NULL) THEN price_cents ELSE 0 END) / 100.0 as traditional_revenue,
+            COUNT(CASE WHEN apple_pass_serial IS NOT NULL THEN 1 END) as apple_wallet_sales,
+            COUNT(CASE WHEN google_pass_id IS NOT NULL THEN 1 END) as google_wallet_sales,
+            SUM(CASE WHEN apple_pass_serial IS NOT NULL THEN price_cents ELSE 0 END) / 100.0 as apple_wallet_revenue,
+            SUM(CASE WHEN google_pass_id IS NOT NULL THEN price_cents ELSE 0 END) / 100.0 as google_wallet_revenue
+          FROM tickets
+          WHERE status = 'valid'
+            AND event_id = ?
+        `,
+        args: [eventId],
+      })
+    ]);
 
     return {
       timeline: analytics.rows,
@@ -344,7 +346,7 @@ export class AnalyticsService {
   /**
    * Get conversion funnel
    */
-  async getConversionFunnel(days = 30) {
+  async getConversionFunnel(days = 30, eventId = "boulder-fest-2026") {
     // This would require tracking page views and cart abandonment
     // For now, we'll show transaction funnel
     const funnel = await this.db.execute({
@@ -356,8 +358,9 @@ export class AnalyticsService {
           COUNT(DISTINCT CASE WHEN status = 'refunded' THEN id END) as refunded
         FROM transactions
         WHERE created_at >= date('now', '-' || ? || ' days')
+          AND (event_id = ? OR event_id IS NULL)
       `,
-      args: [days],
+      args: [days, eventId],
     });
 
     const data = funnel.rows[0];
@@ -388,7 +391,7 @@ export class AnalyticsService {
         this.getSalesTrend(7, eventId),
         this.getCustomerAnalytics(eventId),
         this.getRevenueBreakdown(eventId),
-        this.getConversionFunnel(30),
+        this.getConversionFunnel(30, eventId),
         this.getWalletAnalytics(eventId),
       ]);
 

@@ -23,8 +23,13 @@ export class RateLimitService {
     // Handle both req object and headers directly
     const headers = req.headers || req;
     
+    // Handle case-insensitive header lookup for x-forwarded-for
+    const forwardedFor = headers["x-forwarded-for"] || 
+                        headers["X-Forwarded-For"] || 
+                        headers["X-FORWARDED-FOR"];
+    
     return (
-      headers["x-forwarded-for"]?.split(",")[0] ||
+      forwardedFor?.split(",")[0]?.trim() ||
       req.connection?.remoteAddress ||
       req.socket?.remoteAddress ||
       "unknown"
@@ -130,6 +135,50 @@ export class RateLimitService {
   }
 
   /**
+   * Check rate limit with configurable options
+   * Used by analytics and other endpoints
+   */
+  async checkLimit(req, type = "general", options = {}) {
+    const {
+      maxAttempts = 100,
+      windowMs = 60000, // 1 minute default
+    } = options;
+
+    const clientId = this.getClientId(req);
+    const key = `${type}_${clientId}`;
+    const now = Date.now();
+
+    const record = rateLimitMap.get(key);
+
+    if (!record) {
+      rateLimitMap.set(key, {
+        count: 1,
+        resetTime: now + windowMs,
+      });
+      return { allowed: true, remaining: maxAttempts - 1 };
+    }
+
+    if (now > record.resetTime) {
+      rateLimitMap.set(key, {
+        count: 1,
+        resetTime: now + windowMs,
+      });
+      return { allowed: true, remaining: maxAttempts - 1 };
+    }
+
+    record.count++;
+    const isAllowed = record.count <= maxAttempts;
+    const remaining = Math.max(0, maxAttempts - record.count);
+    const retryAfter = Math.ceil((record.resetTime - now) / 1000);
+
+    return {
+      allowed: isAllowed,
+      remaining,
+      retryAfter: isAllowed ? null : retryAfter,
+    };
+  }
+
+  /**
    * Clean up old records (run periodically)
    */
   cleanup() {
@@ -165,3 +214,6 @@ export function getRateLimitService() {
   }
   return rateLimitInstance;
 }
+
+// Export default instance for convenience
+export default getRateLimitService();

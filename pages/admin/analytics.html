@@ -673,7 +673,9 @@
         if (!element || change === undefined) return;
 
         const isPositive = change >= 0;
-        element.className = `metric-change ${isPositive ? "positive" : "negative"}`;
+        // Remove old positive/negative classes before adding new one
+        element.classList.remove('positive', 'negative');
+        element.classList.add(isPositive ? 'positive' : 'negative');
         // Use textContent for safe display
         element.textContent = `${isPositive ? "↑" : "↓"} ${Math.abs(change).toFixed(1)}%`;
       }

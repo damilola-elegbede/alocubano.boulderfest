@@ -102,7 +102,7 @@ async function handler(req, res) {
             error: "Days parameter must be between 1 and 365",
           });
         }
-        data = await analyticsService.getConversionFunnel(funnelDays);
+        data = await analyticsService.getConversionFunnel(funnelDays, validEventId);
         break;
       }
 

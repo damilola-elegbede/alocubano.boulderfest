@@ -98,6 +98,32 @@ async function testAnalyticsEndpoint(token, type, days = 30) {
       console.log(`  - Adoption Rate: ${data.data.summary?.overall_adoption_rate || 0}%`);
       console.log(`  - Wallet Revenue: $${data.data.roi?.wallet_revenue || 0}`);
       break;
+    case 'hourly':
+      console.log(`  - Hourly Data Points: ${data.data?.length || 0}`);
+      if (data.data?.length > 0) {
+        const latest = data.data[data.data.length - 1];
+        console.log(`  - Latest Hour: ${latest.hour || 'N/A'}`);
+        console.log(`  - Sales in Hour: ${latest.sales || 0}`);
+      }
+      break;
+    case 'customers':
+      console.log(`  - Total Customers: ${data.data?.total_customers || 0}`);
+      console.log(`  - New Customers: ${data.data?.new_customers || 0}`);
+      console.log(`  - Returning Customers: ${data.data?.returning_customers || 0}`);
+      break;
+    case 'checkins':
+      console.log(`  - Total Check-ins: ${data.data?.total_checkins || 0}`);
+      console.log(`  - Check-in Rate: ${data.data?.checkin_rate || 0}%`);
+      console.log(`  - Peak Hour: ${data.data?.peak_hour || 'N/A'}`);
+      break;
+    case 'funnel':
+      console.log(`  - Funnel Stages: ${data.data?.stages?.length || 0}`);
+      if (data.data?.stages?.length > 0) {
+        data.data.stages.slice(0, 3).forEach(stage => {
+          console.log(`    • ${stage.name || 'Unknown'}: ${stage.count || 0} (${stage.conversion_rate || 0}%)`);
+        });
+      }
+      break;
   }
   
   return data;

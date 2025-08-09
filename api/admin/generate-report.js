@@ -6,8 +6,6 @@ import { withSecurityHeaders } from "../lib/security-headers.js";
  * Convert analytics data to CSV format
  */
 function convertToCSV(data, type) {
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-
   let csvContent = `# A Lo Cubano Boulder Fest - ${type} Report\n`;
   csvContent += `# Generated: ${new Date().toISOString()}\n\n`;
 
@@ -150,7 +148,7 @@ async function handler(req, res) {
           data = await analyticsService.getRevenueBreakdown(eventId);
           break;
         case "funnel":
-          data = await analyticsService.getConversionFunnel(30);
+          data = await analyticsService.getConversionFunnel(30, eventId);
           break;
         case "wallet":
           data = await analyticsService.getWalletAnalytics(eventId);
