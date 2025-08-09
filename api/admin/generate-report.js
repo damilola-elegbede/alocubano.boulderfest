@@ -6,8 +6,8 @@ import { withSecurityHeaders } from "../lib/security-headers.js";
  * Convert analytics data to CSV format
  */
 function convertToCSV(data, type) {
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
   let csvContent = `# A Lo Cubano Boulder Fest - ${type} Report\n`;
   csvContent += `# Generated: ${new Date().toISOString()}\n\n`;
 
@@ -28,7 +28,7 @@ function convertToCSV(data, type) {
 
     case "trend": {
       csvContent += `Date,Tickets Sold,Revenue,Orders,Average Price,Cumulative Tickets,Cumulative Revenue\n`;
-      data.forEach(row => {
+      data.forEach((row) => {
         csvContent += `${row.sale_date},${row.tickets_sold},${row.revenue},${row.orders},${row.avg_price},${row.cumulative_tickets},${row.cumulative_revenue}\n`;
       });
       break;
@@ -36,7 +36,7 @@ function convertToCSV(data, type) {
 
     case "revenue": {
       csvContent += `Ticket Type,Quantity Sold,Average Price,Total Revenue,Revenue Percentage\n`;
-      data.forEach(row => {
+      data.forEach((row) => {
         csvContent += `${row.ticket_type},${row.quantity_sold},$${row.avg_price},$${row.total_revenue},${row.revenue_percentage}%\n`;
       });
       break;
@@ -51,10 +51,10 @@ function convertToCSV(data, type) {
       csvContent += `Repeat Customers,${data.summary.repeat_customers}\n`;
       csvContent += `Single Ticket Customers,${data.summary.single_ticket_customers}\n`;
       csvContent += `High Value Customers,${data.summary.high_value_customers}\n\n`;
-      
+
       csvContent += `Top Customers\n`;
       csvContent += `Email,Name,Tickets Purchased,Total Spent,Ticket Types\n`;
-      data.topCustomers.forEach(customer => {
+      data.topCustomers.forEach((customer) => {
         csvContent += `${customer.customer_email},"${customer.customer_name}",${customer.tickets_purchased},$${customer.total_spent},"${customer.ticket_types}"\n`;
       });
       break;
@@ -75,28 +75,38 @@ async function handler(req, res) {
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
-  const { 
-    format = 'json', 
-    eventId = 'boulder-fest-2026',
-    types = 'summary,statistics,trend,revenue,customers'
+  const {
+    format = "json",
+    eventId = "boulder-fest-2026",
+    types = "summary,statistics,trend,revenue,customers",
   } = req.query;
 
   // Validate format
-  if (!['json', 'csv'].includes(format.toLowerCase())) {
-    return res.status(400).json({ 
-      error: "Invalid format. Supported formats: json, csv" 
+  if (!["json", "csv"].includes(format.toLowerCase())) {
+    return res.status(400).json({
+      error: "Invalid format. Supported formats: json, csv",
     });
   }
 
   // Parse requested types
-  const requestedTypes = types.split(',').map(t => t.trim());
-  const validTypes = ['summary', 'statistics', 'trend', 'hourly', 'customers', 'checkins', 'revenue', 'funnel', 'wallet'];
-  
-  const invalidTypes = requestedTypes.filter(t => !validTypes.includes(t));
+  const requestedTypes = types.split(",").map((t) => t.trim());
+  const validTypes = [
+    "summary",
+    "statistics",
+    "trend",
+    "hourly",
+    "customers",
+    "checkins",
+    "revenue",
+    "funnel",
+    "wallet",
+  ];
+
+  const invalidTypes = requestedTypes.filter((t) => !validTypes.includes(t));
   if (invalidTypes.length > 0) {
-    return res.status(400).json({ 
-      error: `Invalid analytics types: ${invalidTypes.join(', ')}`,
-      validTypes 
+    return res.status(400).json({
+      error: `Invalid analytics types: ${invalidTypes.join(", ")}`,
+      validTypes,
     });
   }
 
@@ -108,15 +118,15 @@ async function handler(req, res) {
         generatedAt: new Date().toISOString(),
         generatedBy: req.admin.id,
         requestedTypes,
-        format: format.toLowerCase()
+        format: format.toLowerCase(),
       },
-      analytics: {}
+      analytics: {},
     };
 
     // Fetch all requested analytics in parallel
     const analyticsPromises = requestedTypes.map(async (type) => {
       let data;
-      
+
       switch (type) {
         case "summary":
           data = await analyticsService.generateExecutiveSummary(eventId);
@@ -148,39 +158,41 @@ async function handler(req, res) {
         default:
           throw new Error(`Unknown analytics type: ${type}`);
       }
-      
+
       return { type, data };
     });
 
     const results = await Promise.all(analyticsPromises);
-    
+
     // Organize results by type
     results.forEach(({ type, data }) => {
       report.analytics[type] = data;
     });
 
     // Return appropriate format
-    if (format.toLowerCase() === 'csv') {
+    if (format.toLowerCase() === "csv") {
       // For CSV, we'll focus on the most important data
       const primaryType = requestedTypes[0];
       const csvData = convertToCSV(report.analytics[primaryType], primaryType);
-      
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       const filename = `alocubano-${primaryType}-report-${timestamp}.csv`;
-      
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`,
+      );
       return res.status(200).send(csvData);
     } else {
       // JSON response
       res.status(200).json(report);
     }
-
   } catch (error) {
     console.error("Report generation error:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to generate analytics report",
-      details: error.message 
+      details: error.message,
     });
   }
 }

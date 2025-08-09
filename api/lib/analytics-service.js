@@ -1,16 +1,17 @@
-import { getDatabase } from './database.js';
+import { getDatabase } from "./database.js";
 
 export class AnalyticsService {
   constructor() {
     this.db = getDatabase();
-    this.timezone = process.env.REPORT_TIMEZONE || 'America/Denver';
+    this.timezone = process.env.REPORT_TIMEZONE || "America/Denver";
   }
 
   /**
    * Get comprehensive event statistics
    */
-  async getEventStatistics(eventId = 'boulder-fest-2026') {
-    const stats = await this.db.execute({
+  async getEventStatistics(eventId = "boulder-fest-2026") {
+    try {
+      const stats = await this.db.execute({
       sql: `
         SELECT 
           -- Ticket Stats
@@ -47,17 +48,22 @@ export class AnalyticsService {
         FROM tickets t
         WHERE t.event_id = ?
       `,
-      args: [eventId]
+      args: [eventId],
     });
-    
-    return stats.rows[0];
+
+      return stats.rows[0] || {};
+    } catch (error) {
+      console.error('Error getting event statistics:', error);
+      throw new Error('Failed to retrieve event statistics');
+    }
   }
 
   /**
    * Get sales trend data
    */
-  async getSalesTrend(days = 30, eventId = 'boulder-fest-2026') {
-    const trend = await this.db.execute({
+  async getSalesTrend(days = 30, eventId = "boulder-fest-2026") {
+    try {
+      const trend = await this.db.execute({
       sql: `
         SELECT 
           date(created_at) as sale_date,
@@ -72,29 +78,33 @@ export class AnalyticsService {
         GROUP BY date(created_at)
         ORDER BY sale_date ASC
       `,
-      args: [eventId, days]
+      args: [eventId, days],
     });
-    
+
     // Calculate cumulative totals
     let cumulativeTickets = 0;
     let cumulativeRevenue = 0;
-    
-    return trend.rows.map(row => {
+
+    return trend.rows.map((row) => {
       cumulativeTickets += row.tickets_sold;
       cumulativeRevenue += row.revenue;
-      
-      return {
-        ...row,
-        cumulative_tickets: cumulativeTickets,
-        cumulative_revenue: cumulativeRevenue
-      };
-    });
+
+        return {
+          ...row,
+          cumulative_tickets: cumulativeTickets,
+          cumulative_revenue: cumulativeRevenue,
+        };
+      });
+    } catch (error) {
+      console.error('Error getting sales trend:', error);
+      throw new Error('Failed to retrieve sales trend data');
+    }
   }
 
   /**
    * Get hourly sales pattern
    */
-  async getHourlySalesPattern(eventId = 'boulder-fest-2026') {
+  async getHourlySalesPattern(eventId = "boulder-fest-2026") {
     const pattern = await this.db.execute({
       sql: `
         SELECT 
@@ -107,29 +117,31 @@ export class AnalyticsService {
         GROUP BY strftime('%H', created_at)
         ORDER BY hour
       `,
-      args: [eventId]
+      args: [eventId],
     });
-    
+
     // Fill in missing hours with zeros
-    const hourlyData = Array(24).fill(null).map((_, hour) => {
-      const hourStr = hour.toString().padStart(2, '0');
-      const data = pattern.rows.find(r => r.hour === hourStr);
-      
-      return {
-        hour: hourStr,
-        hour_label: `${hour}:00`,
-        tickets_sold: data?.tickets_sold || 0,
-        revenue: data?.revenue || 0
-      };
-    });
-    
+    const hourlyData = Array(24)
+      .fill(null)
+      .map((_, hour) => {
+        const hourStr = hour.toString().padStart(2, "0");
+        const data = pattern.rows.find((r) => r.hour === hourStr);
+
+        return {
+          hour: hourStr,
+          hour_label: `${hour}:00`,
+          tickets_sold: data?.tickets_sold || 0,
+          revenue: data?.revenue || 0,
+        };
+      });
+
     return hourlyData;
   }
 
   /**
    * Get customer analytics
    */
-  async getCustomerAnalytics(eventId = 'boulder-fest-2026') {
+  async getCustomerAnalytics(eventId = "boulder-fest-2026") {
     const analytics = await this.db.execute({
       sql: `
         WITH customer_stats AS (
@@ -156,9 +168,9 @@ export class AnalyticsService {
           COUNT(CASE WHEN total_spent > 200 THEN 1 END) as high_value_customers
         FROM customer_stats
       `,
-      args: [eventId]
+      args: [eventId],
     });
-    
+
     // Get top customers
     const topCustomers = await this.db.execute({
       sql: `
@@ -176,19 +188,19 @@ export class AnalyticsService {
         ORDER BY total_spent DESC
         LIMIT 10
       `,
-      args: [eventId]
+      args: [eventId],
     });
-    
+
     return {
       summary: analytics.rows[0],
-      topCustomers: topCustomers.rows
+      topCustomers: topCustomers.rows,
     };
   }
 
   /**
    * Get check-in analytics
    */
-  async getCheckinAnalytics(eventId = 'boulder-fest-2026') {
+  async getCheckinAnalytics(eventId = "boulder-fest-2026") {
     const checkins = await this.db.execute({
       sql: `
         SELECT 
@@ -203,9 +215,9 @@ export class AnalyticsService {
         GROUP BY date(checked_in_at), strftime('%H', checked_in_at), ticket_type
         ORDER BY checkin_date, checkin_hour
       `,
-      args: [eventId]
+      args: [eventId],
     });
-    
+
     // Get check-in rate by ticket type
     const checkinRates = await this.db.execute({
       sql: `
@@ -220,19 +232,19 @@ export class AnalyticsService {
         GROUP BY ticket_type
         ORDER BY total_tickets DESC
       `,
-      args: [eventId]
+      args: [eventId],
     });
-    
+
     return {
       timeline: checkins.rows,
-      rates: checkinRates.rows
+      rates: checkinRates.rows,
     };
   }
 
   /**
    * Get revenue breakdown
    */
-  async getRevenueBreakdown(eventId = 'boulder-fest-2026') {
+  async getRevenueBreakdown(eventId = "boulder-fest-2026") {
     const breakdown = await this.db.execute({
       sql: `
         SELECT 
@@ -251,16 +263,16 @@ export class AnalyticsService {
         GROUP BY ticket_type
         ORDER BY total_revenue DESC
       `,
-      args: [eventId, eventId]
+      args: [eventId, eventId],
     });
-    
+
     return breakdown.rows;
   }
 
   /**
    * Get wallet adoption analytics
    */
-  async getWalletAnalytics(eventId = 'boulder-fest-2026') {
+  async getWalletAnalytics(eventId = "boulder-fest-2026") {
     const analytics = await this.db.execute({
       sql: `
         SELECT 
@@ -279,9 +291,9 @@ export class AnalyticsService {
         GROUP BY date(checked_in_at)
         ORDER BY checkin_date DESC
       `,
-      args: [eventId]
+      args: [eventId],
     });
-    
+
     // Overall wallet statistics
     const summary = await this.db.execute({
       sql: `
@@ -300,9 +312,9 @@ export class AnalyticsService {
         WHERE checked_in_at IS NOT NULL
           AND event_id = ?
       `,
-      args: [eventId]
+      args: [eventId],
     });
-    
+
     // Wallet ROI calculation
     const roi = await this.db.execute({
       sql: `
@@ -319,13 +331,13 @@ export class AnalyticsService {
         WHERE status = 'valid'
           AND event_id = ?
       `,
-      args: [eventId]
+      args: [eventId],
     });
-    
+
     return {
       timeline: analytics.rows,
       summary: summary.rows[0],
-      roi: roi.rows[0]
+      roi: roi.rows[0],
     };
   }
 
@@ -345,72 +357,90 @@ export class AnalyticsService {
         FROM transactions
         WHERE created_at >= date('now', '-' || ? || ' days')
       `,
-      args: [days]
+      args: [days],
     });
-    
+
     const data = funnel.rows[0];
-    
+
     return {
       initiated: data.initiated,
       completed: data.completed,
       failed: data.failed,
       refunded: data.refunded,
-      completion_rate: data.initiated > 0 ? 
-        Math.round((data.completed / data.initiated) * 100) : 0,
-      failure_rate: data.initiated > 0 ? 
-        Math.round((data.failed / data.initiated) * 100) : 0
+      completion_rate:
+        data.initiated > 0
+          ? Math.round((data.completed / data.initiated) * 100)
+          : 0,
+      failure_rate:
+        data.initiated > 0
+          ? Math.round((data.failed / data.initiated) * 100)
+          : 0,
     };
   }
 
   /**
    * Generate executive summary
    */
-  async generateExecutiveSummary(eventId = 'boulder-fest-2026') {
-    const [stats, trend, customers, revenue, funnel, walletAnalytics] = await Promise.all([
-      this.getEventStatistics(eventId),
-      this.getSalesTrend(7, eventId),
-      this.getCustomerAnalytics(eventId),
-      this.getRevenueBreakdown(eventId),
-      this.getConversionFunnel(30),
-      this.getWalletAnalytics(eventId)
-    ]);
-    
+  async generateExecutiveSummary(eventId = "boulder-fest-2026") {
+    const [stats, trend, customers, revenue, funnel, walletAnalytics] =
+      await Promise.all([
+        this.getEventStatistics(eventId),
+        this.getSalesTrend(7, eventId),
+        this.getCustomerAnalytics(eventId),
+        this.getRevenueBreakdown(eventId),
+        this.getConversionFunnel(30),
+        this.getWalletAnalytics(eventId),
+      ]);
+
     // Calculate key metrics
     const daysUntilEvent = Math.ceil(
-      (new Date('2026-05-15') - new Date()) / (1000 * 60 * 60 * 24)
+      (new Date("2026-05-15") - new Date()) / (1000 * 60 * 60 * 24),
     );
-    
-    const salesVelocity = trend.length > 0 ? 
-      trend.reduce((sum, day) => sum + day.tickets_sold, 0) / trend.length : 0;
-    
-    const projectedTotal = stats.valid_tickets + (salesVelocity * daysUntilEvent);
-    
+
+    const salesVelocity =
+      trend.length > 0
+        ? trend.reduce((sum, day) => sum + day.tickets_sold, 0) / trend.length
+        : 0;
+
+    const projectedTotal = stats.valid_tickets + salesVelocity * daysUntilEvent;
+
     return {
       overview: {
         tickets_sold: stats.valid_tickets,
         gross_revenue: stats.gross_revenue,
         unique_customers: customers.summary.unique_customers,
-        check_in_rate: stats.valid_tickets > 0 ? 
-          Math.round((stats.checked_in / stats.valid_tickets) * 100) : 0,
-        days_until_event: daysUntilEvent
+        check_in_rate:
+          stats.valid_tickets > 0
+            ? Math.round((stats.checked_in / stats.valid_tickets) * 100)
+            : 0,
+        days_until_event: daysUntilEvent,
       },
       performance: {
         daily_average: salesVelocity.toFixed(1),
         projected_total: Math.round(projectedTotal),
-        top_ticket_type: revenue[0]?.ticket_type || 'N/A',
-        conversion_rate: funnel.completion_rate
+        top_ticket_type: revenue[0]?.ticket_type || "N/A",
+        conversion_rate: funnel.completion_rate,
       },
       trends: {
         last_7_days: stats.week_sales,
         last_30_days: stats.month_sales,
-        today: stats.today_sales
+        today: stats.today_sales,
       },
       wallet: {
         adoption_rate: walletAnalytics.summary.overall_adoption_rate,
         total_users: walletAnalytics.summary.total_wallet_users,
-        revenue_share: walletAnalytics.roi.wallet_revenue / (walletAnalytics.roi.wallet_revenue + walletAnalytics.roi.traditional_revenue) * 100
+        revenue_share:
+          (walletAnalytics.roi.wallet_revenue /
+            (walletAnalytics.roi.wallet_revenue +
+              walletAnalytics.roi.traditional_revenue)) *
+          100,
       },
-      recommendations: this.generateRecommendations(stats, customers, revenue, walletAnalytics)
+      recommendations: this.generateRecommendations(
+        stats,
+        customers,
+        revenue,
+        walletAnalytics,
+      ),
     };
   }
 
@@ -419,69 +449,86 @@ export class AnalyticsService {
    */
   generateRecommendations(stats, customers, revenue, walletAnalytics) {
     const recommendations = [];
-    
+
     // Check-in rate recommendation
     if (stats.valid_tickets > 0) {
       const checkinRate = (stats.checked_in / stats.valid_tickets) * 100;
       if (checkinRate < 50 && stats.checked_in > 0) {
         recommendations.push({
-          type: 'warning',
-          message: `Low check-in rate (${checkinRate.toFixed(1)}%). Consider sending reminder emails.`
+          type: "warning",
+          message: `Low check-in rate (${checkinRate.toFixed(1)}%). Consider sending reminder emails.`,
         });
       }
     }
-    
+
     // Sales velocity recommendation
     const daysUntilEvent = Math.ceil(
-      (new Date('2026-05-15') - new Date()) / (1000 * 60 * 60 * 24)
+      (new Date("2026-05-15") - new Date()) / (1000 * 60 * 60 * 24),
     );
-    
+
     if (daysUntilEvent < 30 && stats.week_sales < 10) {
       recommendations.push({
-        type: 'action',
-        message: 'Sales slowing down close to event. Consider promotional campaign.'
+        type: "action",
+        message:
+          "Sales slowing down close to event. Consider promotional campaign.",
       });
     }
-    
+
     // Customer concentration
-    if (customers.summary.repeat_customers > customers.summary.single_ticket_customers) {
+    if (
+      customers.summary.repeat_customers >
+      customers.summary.single_ticket_customers
+    ) {
       recommendations.push({
-        type: 'success',
-        message: 'High repeat customer rate indicates strong engagement.'
+        type: "success",
+        message: "High repeat customer rate indicates strong engagement.",
       });
     }
-    
+
     // Revenue optimization
-    const vipRevenue = revenue.find(r => r.ticket_type === 'vip-pass');
+    const vipRevenue = revenue.find((r) => r.ticket_type === "vip-pass");
     if (vipRevenue && vipRevenue.revenue_percentage < 20) {
       recommendations.push({
-        type: 'opportunity',
-        message: 'VIP tickets underperforming. Consider enhanced VIP benefits or marketing.'
+        type: "opportunity",
+        message:
+          "VIP tickets underperforming. Consider enhanced VIP benefits or marketing.",
       });
     }
-    
+
     // Wallet adoption recommendations
     if (walletAnalytics && walletAnalytics.summary.overall_adoption_rate < 30) {
       recommendations.push({
-        type: 'opportunity',
-        message: `Wallet adoption at ${walletAnalytics.summary.overall_adoption_rate}%. Promote digital wallet benefits to increase mobile engagement.`
+        type: "opportunity",
+        message: `Wallet adoption at ${walletAnalytics.summary.overall_adoption_rate}%. Promote digital wallet benefits to increase mobile engagement.`,
       });
-    } else if (walletAnalytics && walletAnalytics.summary.overall_adoption_rate > 60) {
+    } else if (
+      walletAnalytics &&
+      walletAnalytics.summary.overall_adoption_rate > 60
+    ) {
       recommendations.push({
-        type: 'success',
-        message: `Excellent wallet adoption (${walletAnalytics.summary.overall_adoption_rate}%). Consider expanding digital-first features.`
+        type: "success",
+        message: `Excellent wallet adoption (${walletAnalytics.summary.overall_adoption_rate}%). Consider expanding digital-first features.`,
       });
     }
-    
+
     // Wallet ROI analysis
-    if (walletAnalytics && walletAnalytics.summary.avg_wallet_ticket_price > walletAnalytics.summary.avg_traditional_ticket_price) {
-      const priceDiff = ((walletAnalytics.summary.avg_wallet_ticket_price / walletAnalytics.summary.avg_traditional_ticket_price - 1) * 100).toFixed(1);
+    if (
+      walletAnalytics &&
+      walletAnalytics.summary.avg_wallet_ticket_price >
+        walletAnalytics.summary.avg_traditional_ticket_price
+    ) {
+      const priceDiff = (
+        (walletAnalytics.summary.avg_wallet_ticket_price /
+          walletAnalytics.summary.avg_traditional_ticket_price -
+          1) *
+        100
+      ).toFixed(1);
       recommendations.push({
-        type: 'success',
-        message: `Wallet users spend ${priceDiff}% more on average. Strong ROI on digital initiatives.`
+        type: "success",
+        message: `Wallet users spend ${priceDiff}% more on average. Strong ROI on digital initiatives.`,
       });
     }
-    
+
     return recommendations;
   }
 }

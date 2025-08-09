@@ -1,756 +1,805 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#667eea">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="theme-color" content="#667eea" />
     <title>Check-in Scanner - A Lo Cubano</title>
-    <link rel="manifest" href="/public/manifest.json">
-    <link rel="apple-touch-icon" href="/public/images/icons/icon-192x192.png">
+    <link rel="manifest" href="/public/manifest.json" />
+    <link rel="apple-touch-icon" href="/public/images/icons/icon-192x192.png" />
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #1a1a2e;
-            color: white;
-            height: 100vh;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .app-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            position: relative;
-            z-index: 100;
-        }
-        
-        .app-title {
-            font-size: 20px;
-            font-weight: 600;
-        }
-        
-        .menu-btn {
-            background: rgba(255,255,255,0.2);
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: white;
-            font-size: 20px;
-        }
-        
-        .menu-btn:active {
-            background: rgba(255,255,255,0.3);
-        }
-        
-        .scanner-container {
-            height: calc(100vh - 70px);
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .scanner-viewport {
-            flex: 1;
-            position: relative;
-            background: #000;
-            overflow: hidden;
-        }
-        
-        #reader {
-            width: 100%;
-            height: 100%;
-        }
-        
-        .scanner-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .scan-region {
-            width: 250px;
-            height: 250px;
-            border: 3px solid #667eea;
-            border-radius: 20px;
-            position: relative;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { border-color: #667eea; }
-            50% { border-color: #764ba2; }
-            100% { border-color: #667eea; }
-        }
-        
-        .scan-corners {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            border: 4px solid #fff;
-        }
-        
-        .scan-corners.tl {
-            top: -2px;
-            left: -2px;
-            border-right: none;
-            border-bottom: none;
-            border-top-left-radius: 10px;
-        }
-        
-        .scan-corners.tr {
-            top: -2px;
-            right: -2px;
-            border-left: none;
-            border-bottom: none;
-            border-top-right-radius: 10px;
-        }
-        
-        .scan-corners.bl {
-            bottom: -2px;
-            left: -2px;
-            border-right: none;
-            border-top: none;
-            border-bottom-left-radius: 10px;
-        }
-        
-        .scan-corners.br {
-            bottom: -2px;
-            right: -2px;
-            border-left: none;
-            border-top: none;
-            border-bottom-right-radius: 10px;
-        }
-        
-        .controls {
-            background: #2c3e50;
-            padding: 20px;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
-        }
-        
-        .control-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        
-        .control-btn:active {
-            transform: scale(0.95);
-        }
-        
-        .control-btn.torch {
-            background: #f39c12;
-        }
-        
-        .control-btn.manual {
-            background: #3498db;
-        }
-        
-        .stats-bar {
-            background: rgba(0,0,0,0.8);
-            padding: 10px 20px;
-            display: flex;
-            justify-content: space-around;
-            font-size: 14px;
-        }
-        
-        .stat-item {
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 20px;
-            font-weight: bold;
-            color: #667eea;
-        }
-        
-        .stat-label {
-            color: #95a5a6;
-            font-size: 11px;
-            text-transform: uppercase;
-            margin-top: 2px;
-        }
-        
-        .result-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.9);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            animation: fadeIn 0.3s;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        .result-modal.show {
-            display: flex;
-        }
-        
-        .result-content {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 90%;
-            width: 350px;
-            text-align: center;
-            animation: slideUp 0.3s;
-        }
-        
-        @keyframes slideUp {
-            from { transform: translateY(50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        .result-content.success {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        }
-        
-        .result-content.error {
-            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
-        }
-        
-        .result-icon {
-            font-size: 60px;
-            margin-bottom: 20px;
-        }
-        
-        .result-title {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        
-        .result-details {
-            font-size: 16px;
-            opacity: 0.9;
-            margin-bottom: 20px;
-            white-space: pre-line;
-        }
-        
-        .result-btn {
-            background: rgba(255,255,255,0.3);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 25px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        
-        .offline-indicator {
-            position: absolute;
-            top: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #e74c3c;
-            color: white;
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-size: 12px;
-            display: none;
-            z-index: 200;
-            animation: slideDown 0.3s;
-        }
-        
-        @keyframes slideDown {
-            from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
-            to { transform: translateX(-50%) translateY(0); opacity: 1; }
-        }
-        
-        .offline-indicator.show {
-            display: block;
-        }
-        
-        .manual-input {
-            position: fixed;
-            bottom: -100%;
-            left: 0;
-            right: 0;
-            background: white;
-            color: #333;
-            padding: 20px;
-            border-radius: 20px 20px 0 0;
-            transition: bottom 0.3s;
-            z-index: 500;
-        }
-        
-        .manual-input.show {
-            bottom: 0;
-        }
-        
-        .manual-input h3 {
-            margin-bottom: 15px;
-            color: #2c3e50;
-        }
-        
-        .manual-input input {
-            width: 100%;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            font-size: 16px;
-            margin-bottom: 15px;
-        }
-        
-        .manual-input-buttons {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .manual-input button {
-            flex: 1;
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        
-        .manual-input .submit {
-            background: #667eea;
-            color: white;
-        }
-        
-        .manual-input .cancel {
-            background: #ecf0f1;
-            color: #7f8c8d;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
 
-        /* Hide HTML5 QR Code default UI elements */
-        #reader__dashboard_section_csr,
-        #reader__dashboard_section_fsr {
-            display: none !important;
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #1a1a2e;
+        color: white;
+        height: 100vh;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .app-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        position: relative;
+        z-index: 100;
+      }
+
+      .app-title {
+        font-size: 20px;
+        font-weight: 600;
+      }
+
+      .menu-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: white;
+        font-size: 20px;
+      }
+
+      .menu-btn:active {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      .scanner-container {
+        height: calc(100vh - 70px);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .scanner-viewport {
+        flex: 1;
+        position: relative;
+        background: #000;
+        overflow: hidden;
+      }
+
+      #reader {
+        width: 100%;
+        height: 100%;
+      }
+
+      .scanner-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .scan-region {
+        width: 250px;
+        height: 250px;
+        border: 3px solid #667eea;
+        border-radius: 20px;
+        position: relative;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          border-color: #667eea;
         }
-        
-        #reader__scan_region {
-            border: none !important;
+        50% {
+          border-color: #764ba2;
         }
-        
-        #reader video {
-            object-fit: cover !important;
+        100% {
+          border-color: #667eea;
         }
+      }
+
+      .scan-corners {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        border: 4px solid #fff;
+      }
+
+      .scan-corners.tl {
+        top: -2px;
+        left: -2px;
+        border-right: none;
+        border-bottom: none;
+        border-top-left-radius: 10px;
+      }
+
+      .scan-corners.tr {
+        top: -2px;
+        right: -2px;
+        border-left: none;
+        border-bottom: none;
+        border-top-right-radius: 10px;
+      }
+
+      .scan-corners.bl {
+        bottom: -2px;
+        left: -2px;
+        border-right: none;
+        border-top: none;
+        border-bottom-left-radius: 10px;
+      }
+
+      .scan-corners.br {
+        bottom: -2px;
+        right: -2px;
+        border-left: none;
+        border-top: none;
+        border-bottom-right-radius: 10px;
+      }
+
+      .controls {
+        background: #2c3e50;
+        padding: 20px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+      }
+
+      .control-btn {
+        background: #667eea;
+        color: white;
+        border: none;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+
+      .control-btn:active {
+        transform: scale(0.95);
+      }
+
+      .control-btn.torch {
+        background: #f39c12;
+      }
+
+      .control-btn.manual {
+        background: #3498db;
+      }
+
+      .stats-bar {
+        background: rgba(0, 0, 0, 0.8);
+        padding: 10px 20px;
+        display: flex;
+        justify-content: space-around;
+        font-size: 14px;
+      }
+
+      .stat-item {
+        text-align: center;
+      }
+
+      .stat-value {
+        font-size: 20px;
+        font-weight: bold;
+        color: #667eea;
+      }
+
+      .stat-label {
+        color: #95a5a6;
+        font-size: 11px;
+        text-transform: uppercase;
+        margin-top: 2px;
+      }
+
+      .result-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.9);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        animation: fadeIn 0.3s;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .result-modal.show {
+        display: flex;
+      }
+
+      .result-content {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        max-width: 90%;
+        width: 350px;
+        text-align: center;
+        animation: slideUp 0.3s;
+      }
+
+      @keyframes slideUp {
+        from {
+          transform: translateY(50px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .result-content.success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      }
+
+      .result-content.error {
+        background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+      }
+
+      .result-icon {
+        font-size: 60px;
+        margin-bottom: 20px;
+      }
+
+      .result-title {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+
+      .result-details {
+        font-size: 16px;
+        opacity: 0.9;
+        margin-bottom: 20px;
+        white-space: pre-line;
+      }
+
+      .result-btn {
+        background: rgba(255, 255, 255, 0.3);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+      .offline-indicator {
+        position: absolute;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #e74c3c;
+        color: white;
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-size: 12px;
+        display: none;
+        z-index: 200;
+        animation: slideDown 0.3s;
+      }
+
+      @keyframes slideDown {
+        from {
+          transform: translateX(-50%) translateY(-20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(-50%) translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .offline-indicator.show {
+        display: block;
+      }
+
+      .manual-input {
+        position: fixed;
+        bottom: -100%;
+        left: 0;
+        right: 0;
+        background: white;
+        color: #333;
+        padding: 20px;
+        border-radius: 20px 20px 0 0;
+        transition: bottom 0.3s;
+        z-index: 500;
+      }
+
+      .manual-input.show {
+        bottom: 0;
+      }
+
+      .manual-input h3 {
+        margin-bottom: 15px;
+        color: #2c3e50;
+      }
+
+      .manual-input input {
+        width: 100%;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        font-size: 16px;
+        margin-bottom: 15px;
+      }
+
+      .manual-input-buttons {
+        display: flex;
+        gap: 10px;
+      }
+
+      .manual-input button {
+        flex: 1;
+        padding: 15px;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+      .manual-input .submit {
+        background: #667eea;
+        color: white;
+      }
+
+      .manual-input .cancel {
+        background: #ecf0f1;
+        color: #7f8c8d;
+      }
+
+      /* Hide HTML5 QR Code default UI elements */
+      #reader__dashboard_section_csr,
+      #reader__dashboard_section_fsr {
+        display: none !important;
+      }
+
+      #reader__scan_region {
+        border: none !important;
+      }
+
+      #reader video {
+        object-fit: cover !important;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="app-header">
-        <div class="app-title">🎫 Check-in Scanner</div>
-        <button class="menu-btn" onclick="showMenu()">☰</button>
+      <div class="app-title">🎫 Check-in Scanner</div>
+      <button class="menu-btn" onclick="showMenu()">☰</button>
     </div>
-    
+
     <div class="offline-indicator" id="offlineIndicator">
-        📵 Offline - Check-ins will sync when connected
+      📵 Offline - Check-ins will sync when connected
     </div>
-    
+
     <div class="scanner-container">
-        <div class="stats-bar">
-            <div class="stat-item">
-                <div class="stat-value" id="todayCount">0</div>
-                <div class="stat-label">Today</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="sessionCount">0</div>
-                <div class="stat-label">Session</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="queueCount">0</div>
-                <div class="stat-label">Queued</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="walletCount">0</div>
-                <div class="stat-label">Wallet</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="totalCount">0</div>
-                <div class="stat-label">Total</div>
-            </div>
+      <div class="stats-bar">
+        <div class="stat-item">
+          <div class="stat-value" id="todayCount">0</div>
+          <div class="stat-label">Today</div>
         </div>
-        
-        <div class="scanner-viewport">
-            <div id="reader"></div>
-            <div class="scanner-overlay">
-                <div class="scan-region">
-                    <div class="scan-corners tl"></div>
-                    <div class="scan-corners tr"></div>
-                    <div class="scan-corners bl"></div>
-                    <div class="scan-corners br"></div>
-                </div>
-            </div>
+        <div class="stat-item">
+          <div class="stat-value" id="sessionCount">0</div>
+          <div class="stat-label">Session</div>
         </div>
-        
-        <div class="controls">
-            <button class="control-btn torch" onclick="toggleTorch()" id="torchBtn">
-                🔦
-            </button>
-            <button class="control-btn manual" onclick="showManualInput()">
-                ⌨️
-            </button>
-            <button class="control-btn" onclick="location.reload()">
-                🔄
-            </button>
+        <div class="stat-item">
+          <div class="stat-value" id="queueCount">0</div>
+          <div class="stat-label">Queued</div>
         </div>
+        <div class="stat-item">
+          <div class="stat-value" id="walletCount">0</div>
+          <div class="stat-label">Wallet</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="totalCount">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+      </div>
+
+      <div class="scanner-viewport">
+        <div id="reader"></div>
+        <div class="scanner-overlay">
+          <div class="scan-region">
+            <div class="scan-corners tl"></div>
+            <div class="scan-corners tr"></div>
+            <div class="scan-corners bl"></div>
+            <div class="scan-corners br"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="control-btn torch" onclick="toggleTorch()" id="torchBtn">
+          🔦
+        </button>
+        <button class="control-btn manual" onclick="showManualInput()">
+          ⌨️
+        </button>
+        <button class="control-btn" onclick="location.reload()">🔄</button>
+      </div>
     </div>
-    
+
     <div class="result-modal" id="resultModal">
-        <div class="result-content" id="resultContent">
-            <div class="result-icon" id="resultIcon"></div>
-            <div class="result-title" id="resultTitle"></div>
-            <div class="result-details" id="resultDetails"></div>
-            <button class="result-btn" onclick="closeResult()">Continue Scanning</button>
-        </div>
+      <div class="result-content" id="resultContent">
+        <div class="result-icon" id="resultIcon"></div>
+        <div class="result-title" id="resultTitle"></div>
+        <div class="result-details" id="resultDetails"></div>
+        <button class="result-btn" onclick="closeResult()">
+          Continue Scanning
+        </button>
+      </div>
     </div>
-    
+
     <div class="manual-input" id="manualInput">
-        <h3>Manual Ticket Entry</h3>
-        <input 
-            type="text" 
-            id="manualTicketId" 
-            placeholder="Enter ticket ID..."
-            autocomplete="off"
-        >
-        <div class="manual-input-buttons">
-            <button class="submit" onclick="submitManualTicket()">Check In</button>
-            <button class="cancel" onclick="hideManualInput()">Cancel</button>
-        </div>
+      <h3>Manual Ticket Entry</h3>
+      <input
+        type="text"
+        id="manualTicketId"
+        placeholder="Enter ticket ID..."
+        autocomplete="off"
+      />
+      <div class="manual-input-buttons">
+        <button class="submit" onclick="submitManualTicket()">Check In</button>
+        <button class="cancel" onclick="hideManualInput()">Cancel</button>
+      </div>
     </div>
-    
+
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
-        let scanner = null;
-        let sessionCount = 0;
-        let isScanning = false;
-        let torchOn = false;
-        
-        // Statistics
-        const stats = {
-            today: 0,
-            session: 0,
-            queued: 0,
-            wallet: 0,
-            total: 0
-        };
-        
-        // Initialize scanner
-        async function initScanner() {
-            try {
-                scanner = new Html5Qrcode("reader");
-                
-                const config = {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
-                    aspectRatio: 1.0,
-                    experimentalFeatures: {
-                        useBarCodeDetectorIfSupported: true
-                    }
-                };
-                
-                await scanner.start(
-                    { facingMode: "environment" },
-                    config,
-                    onScanSuccess,
-                    onScanError
-                );
-                
-                isScanning = true;
-                
-            } catch (error) {
-                console.error('Failed to start scanner:', error);
-                alert('Camera access denied or not available');
-            }
+      let scanner = null;
+      let sessionCount = 0;
+      let isScanning = false;
+      let torchOn = false;
+
+      // Statistics
+      const stats = {
+        today: 0,
+        session: 0,
+        queued: 0,
+        wallet: 0,
+        total: 0,
+      };
+
+      // Initialize scanner
+      async function initScanner() {
+        try {
+          scanner = new Html5Qrcode("reader");
+
+          const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+            experimentalFeatures: {
+              useBarCodeDetectorIfSupported: true,
+            },
+          };
+
+          await scanner.start(
+            { facingMode: "environment" },
+            config,
+            onScanSuccess,
+            onScanError,
+          );
+
+          isScanning = true;
+        } catch (error) {
+          console.error("Failed to start scanner:", error);
+          alert("Camera access denied or not available");
         }
-        
-        // Handle successful scan
-        async function onScanSuccess(decodedText) {
-            if (!isScanning) return;
-            
-            // Prevent multiple scans
-            isScanning = false;
-            
-            // Haptic feedback
-            if (navigator.vibrate) {
-                navigator.vibrate(200);
-            }
-            
-            // Validate QR code
-            await validateTicket(decodedText);
-            
-            // Resume scanning after delay
-            setTimeout(() => {
-                isScanning = true;
-            }, 2000);
+      }
+
+      // Handle successful scan
+      async function onScanSuccess(decodedText) {
+        if (!isScanning) return;
+
+        // Prevent multiple scans
+        isScanning = false;
+
+        // Haptic feedback
+        if (navigator.vibrate) {
+          navigator.vibrate(200);
         }
-        
-        // Handle scan errors (ignore)
-        function onScanError(error) {
-            // Ignore scan errors
-        }
-        
-        // Validate ticket (QR code or JWT wallet token)
-        async function validateTicket(token) {
-            try {
-                // Detect wallet tokens (JWT format)
-                const isWalletToken = token.includes('.') && token.length > 100;
-                
-                const response = await fetch('/api/tickets/validate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        token: token,
-                        validatedBy: 'mobile-scanner',
-                        location: 'entrance',
-                        wallet_source: isWalletToken ? 'jwt' : null,
-                        qr_access_method: isWalletToken ? 'wallet' : 'qr_code'
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.offline) {
-                    // Offline check-in
-                    stats.queued++;
-                    updateStats();
-                    showResult('queued', 'Queued for Sync', `Check-in saved offline (${stats.queued} in queue)`);
-                } else if (data.valid) {
-                    // Success
-                    stats.session++;
-                    stats.today++;
-                    if (data.ticket && data.ticket.wallet_source) stats.wallet++;
-                    updateStats();
-                    
-                    // Show wallet badge if from wallet
-                    const walletBadge = data.ticket && data.ticket.wallet_source ? '📱 ' : '🎫 ';
-                    const accessMethod = data.ticket && data.ticket.qr_access_method === 'wallet' ? ' (Wallet)' : '';
-                    
-                    if (data.ticket) {
-                        showResult('success', `${walletBadge}Valid Ticket!`, 
-                            `${data.ticket.attendeeName}\n${data.ticket.type}${accessMethod}\nScan ${data.ticket.scanCount}/${data.ticket.maxScans}`);
-                    } else {
-                        showResult('success', 'Valid Ticket!', 'Check-in successful');
-                    }
-                } else {
-                    // Error
-                    showResult('error', 'Invalid Ticket', data.error || 'This ticket cannot be validated');
-                }
-                
-            } catch (error) {
-                console.error('Validation error:', error);
-                
-                // Queue for offline sync
-                stats.queued++;
-                updateStats();
-                showResult('queued', 'Queued for Sync', 'No connection - check-in saved');
-            }
-        }
-        
-        // Show result modal
-        function showResult(type, title, details) {
-            const modal = document.getElementById('resultModal');
-            const content = document.getElementById('resultContent');
-            const icon = document.getElementById('resultIcon');
-            const titleEl = document.getElementById('resultTitle');
-            const detailsEl = document.getElementById('resultDetails');
-            
-            // Set content
-            if (type === 'success') {
-                content.className = 'result-content success';
-                icon.textContent = '✅';
-            } else if (type === 'error') {
-                content.className = 'result-content error';
-                icon.textContent = '❌';
-            } else if (type === 'queued') {
-                content.className = 'result-content';
-                icon.textContent = '📥';
-            }
-            
-            titleEl.textContent = title;
-            detailsEl.textContent = details;
-            
-            // Show modal
-            modal.classList.add('show');
-            
-            // Auto-close after 3 seconds
-            setTimeout(() => {
-                closeResult();
-            }, 3000);
-        }
-        
-        // Close result modal
-        function closeResult() {
-            document.getElementById('resultModal').classList.remove('show');
-        }
-        
-        // Toggle torch/flashlight
-        async function toggleTorch() {
-            if (!scanner) return;
-            
-            try {
-                const track = scanner.getRunningTrackCameraCapabilities();
-                
-                if (track && track.torchFeature) {
-                    torchOn = !torchOn;
-                    await track.applyTorch(torchOn);
-                    
-                    document.getElementById('torchBtn').style.background = 
-                        torchOn ? '#f1c40f' : '#f39c12';
-                } else {
-                    alert('Torch not available on this device');
-                }
-            } catch (error) {
-                console.error('Torch error:', error);
-                alert('Torch control not supported');
-            }
-        }
-        
-        // Show manual input
-        function showManualInput() {
-            document.getElementById('manualInput').classList.add('show');
-            document.getElementById('manualTicketId').focus();
-        }
-        
-        // Hide manual input
-        function hideManualInput() {
-            document.getElementById('manualInput').classList.remove('show');
-            document.getElementById('manualTicketId').value = '';
-        }
-        
-        // Submit manual ticket
-        async function submitManualTicket() {
-            const ticketId = document.getElementById('manualTicketId').value.trim();
-            
-            if (!ticketId) {
-                alert('Please enter a ticket ID');
-                return;
-            }
-            
-            hideManualInput();
-            
-            // For manual entry, we need to look up the ticket first
-            try {
-                const response = await fetch(`/api/tickets?ticket_id=${encodeURIComponent(ticketId)}`);
-                const data = await response.json();
-                
-                if (data.ticket && data.ticket.qr_token) {
-                    await validateTicket(data.ticket.qr_token);
-                } else {
-                    showResult('error', 'Not Found', 'Ticket ID not found');
-                }
-            } catch (error) {
-                showResult('error', 'Error', 'Failed to lookup ticket');
-            }
-        }
-        
-        // Update statistics display
-        function updateStats() {
-            document.getElementById('todayCount').textContent = stats.today;
-            document.getElementById('sessionCount').textContent = stats.session;
-            document.getElementById('queueCount').textContent = stats.queued;
-            document.getElementById('walletCount').textContent = stats.wallet;
-            document.getElementById('totalCount').textContent = stats.total;
-        }
-        
-        // Load statistics
-        async function loadStats() {
-            try {
-                const response = await fetch('/api/admin/dashboard');
-                const data = await response.json();
-                
-                if (data.stats) {
-                    stats.today = data.stats.today_sales || 0;
-                    stats.total = data.stats.checked_in || 0;
-                    stats.wallet = data.stats.wallet_checkins || 0;
-                    updateStats();
-                }
-            } catch (error) {
-                console.error('Failed to load stats:', error);
-            }
-        }
-        
-        // Check online status
-        function updateOnlineStatus() {
-            const indicator = document.getElementById('offlineIndicator');
-            
-            if (navigator.onLine) {
-                indicator.classList.remove('show');
-                
-                // Trigger sync if we have queued items
-                if (stats.queued > 0 && 'serviceWorker' in navigator) {
-                    navigator.serviceWorker.ready.then((registration) => {
-                        return registration.sync.register('sync-checkins');
-                    });
-                }
+
+        // Validate QR code
+        await validateTicket(decodedText);
+
+        // Resume scanning after delay
+        setTimeout(() => {
+          isScanning = true;
+        }, 2000);
+      }
+
+      // Handle scan errors (ignore)
+      function onScanError(error) {
+        // Ignore scan errors
+      }
+
+      // Validate ticket (QR code or JWT wallet token)
+      async function validateTicket(token) {
+        try {
+          // Detect wallet tokens (JWT format)
+          const isWalletToken = token.includes(".") && token.length > 100;
+
+          const response = await fetch("/api/tickets/validate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              token: token,
+              validatedBy: "mobile-scanner",
+              location: "entrance",
+              wallet_source: isWalletToken ? "jwt" : null,
+              qr_access_method: isWalletToken ? "wallet" : "qr_code",
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.offline) {
+            // Offline check-in
+            stats.queued++;
+            updateStats();
+            showResult(
+              "queued",
+              "Queued for Sync",
+              `Check-in saved offline (${stats.queued} in queue)`,
+            );
+          } else if (data.valid) {
+            // Success
+            stats.session++;
+            stats.today++;
+            if (data.ticket && data.ticket.wallet_source) stats.wallet++;
+            updateStats();
+
+            // Show wallet badge if from wallet
+            const walletBadge =
+              data.ticket && data.ticket.wallet_source ? "📱 " : "🎫 ";
+            const accessMethod =
+              data.ticket && data.ticket.qr_access_method === "wallet"
+                ? " (Wallet)"
+                : "";
+
+            if (data.ticket) {
+              showResult(
+                "success",
+                `${walletBadge}Valid Ticket!`,
+                `${data.ticket.attendeeName}\n${data.ticket.type}${accessMethod}\nScan ${data.ticket.scanCount}/${data.ticket.maxScans}`,
+              );
             } else {
-                indicator.classList.add('show');
+              showResult("success", "Valid Ticket!", "Check-in successful");
             }
+          } else {
+            // Error
+            showResult(
+              "error",
+              "Invalid Ticket",
+              data.error || "This ticket cannot be validated",
+            );
+          }
+        } catch (error) {
+          console.error("Validation error:", error);
+
+          // Queue for offline sync
+          stats.queued++;
+          updateStats();
+          showResult(
+            "queued",
+            "Queued for Sync",
+            "No connection - check-in saved",
+          );
         }
-        
-        // Show menu (placeholder)
-        function showMenu() {
-            if (confirm('Return to dashboard?')) {
-                window.location.href = '/pages/admin/dashboard.html';
-            }
+      }
+
+      // Show result modal
+      function showResult(type, title, details) {
+        const modal = document.getElementById("resultModal");
+        const content = document.getElementById("resultContent");
+        const icon = document.getElementById("resultIcon");
+        const titleEl = document.getElementById("resultTitle");
+        const detailsEl = document.getElementById("resultDetails");
+
+        // Set content
+        if (type === "success") {
+          content.className = "result-content success";
+          icon.textContent = "✅";
+        } else if (type === "error") {
+          content.className = "result-content error";
+          icon.textContent = "❌";
+        } else if (type === "queued") {
+          content.className = "result-content";
+          icon.textContent = "📥";
         }
-        
-        // Check authentication (mobile sessions last 72 hours)
-        async function checkAuth() {
-            try {
-                // First check if we have a mobile session
-                const response = await fetch('/api/admin/dashboard');
-                if (!response.ok) {
-                    // Show mobile login screen instead of redirecting
-                    showMobileLogin();
-                    return false;
-                }
-                return true;
-            } catch (error) {
-                showMobileLogin();
-                return false;
-            }
+
+        titleEl.textContent = title;
+        detailsEl.textContent = details;
+
+        // Show modal
+        modal.classList.add("show");
+
+        // Auto-close after 3 seconds
+        setTimeout(() => {
+          closeResult();
+        }, 3000);
+      }
+
+      // Close result modal
+      function closeResult() {
+        document.getElementById("resultModal").classList.remove("show");
+      }
+
+      // Toggle torch/flashlight
+      async function toggleTorch() {
+        if (!scanner) return;
+
+        try {
+          const track = scanner.getRunningTrackCameraCapabilities();
+
+          if (track && track.torchFeature) {
+            torchOn = !torchOn;
+            await track.applyTorch(torchOn);
+
+            document.getElementById("torchBtn").style.background = torchOn
+              ? "#f1c40f"
+              : "#f39c12";
+          } else {
+            alert("Torch not available on this device");
+          }
+        } catch (error) {
+          console.error("Torch error:", error);
+          alert("Torch control not supported");
         }
-        
-        // Show mobile login UI
-        function showMobileLogin() {
-            document.body.innerHTML = `
+      }
+
+      // Show manual input
+      function showManualInput() {
+        document.getElementById("manualInput").classList.add("show");
+        document.getElementById("manualTicketId").focus();
+      }
+
+      // Hide manual input
+      function hideManualInput() {
+        document.getElementById("manualInput").classList.remove("show");
+        document.getElementById("manualTicketId").value = "";
+      }
+
+      // Submit manual ticket
+      async function submitManualTicket() {
+        const ticketId = document.getElementById("manualTicketId").value.trim();
+
+        if (!ticketId) {
+          alert("Please enter a ticket ID");
+          return;
+        }
+
+        hideManualInput();
+
+        // For manual entry, we need to look up the ticket first
+        try {
+          const response = await fetch(
+            `/api/tickets?ticket_id=${encodeURIComponent(ticketId)}`,
+          );
+          const data = await response.json();
+
+          if (data.ticket && data.ticket.qr_token) {
+            await validateTicket(data.ticket.qr_token);
+          } else {
+            showResult("error", "Not Found", "Ticket ID not found");
+          }
+        } catch (error) {
+          showResult("error", "Error", "Failed to lookup ticket");
+        }
+      }
+
+      // Update statistics display
+      function updateStats() {
+        document.getElementById("todayCount").textContent = stats.today;
+        document.getElementById("sessionCount").textContent = stats.session;
+        document.getElementById("queueCount").textContent = stats.queued;
+        document.getElementById("walletCount").textContent = stats.wallet;
+        document.getElementById("totalCount").textContent = stats.total;
+      }
+
+      // Load statistics
+      async function loadStats() {
+        try {
+          const response = await fetch("/api/admin/dashboard");
+          const data = await response.json();
+
+          if (data.stats) {
+            stats.today = data.stats.today_sales || 0;
+            stats.total = data.stats.checked_in || 0;
+            stats.wallet = data.stats.wallet_checkins || 0;
+            updateStats();
+          }
+        } catch (error) {
+          console.error("Failed to load stats:", error);
+        }
+      }
+
+      // Check online status
+      function updateOnlineStatus() {
+        const indicator = document.getElementById("offlineIndicator");
+
+        if (navigator.onLine) {
+          indicator.classList.remove("show");
+
+          // Trigger sync if we have queued items
+          if (stats.queued > 0 && "serviceWorker" in navigator) {
+            navigator.serviceWorker.ready.then((registration) => {
+              return registration.sync.register("sync-checkins");
+            });
+          }
+        } else {
+          indicator.classList.add("show");
+        }
+      }
+
+      // Show menu (placeholder)
+      function showMenu() {
+        if (confirm("Return to dashboard?")) {
+          window.location.href = "/pages/admin/dashboard.html";
+        }
+      }
+
+      // Check authentication (mobile sessions last 72 hours)
+      async function checkAuth() {
+        try {
+          // First check if we have a mobile session
+          const response = await fetch("/api/admin/dashboard");
+          if (!response.ok) {
+            // Show mobile login screen instead of redirecting
+            showMobileLogin();
+            return false;
+          }
+          return true;
+        } catch (error) {
+          showMobileLogin();
+          return false;
+        }
+      }
+
+      // Show mobile login UI
+      function showMobileLogin() {
+        document.body.innerHTML = `
                 <div style="
                     height: 100vh;
                     display: flex;
@@ -810,87 +859,87 @@
                     </div>
                 </div>
             `;
-            
-            // Focus password field
-            setTimeout(() => {
-                document.getElementById('staffPassword').focus();
-            }, 100);
+
+        // Focus password field
+        setTimeout(() => {
+          document.getElementById("staffPassword").focus();
+        }, 100);
+      }
+
+      // Handle mobile login
+      async function handleMobileLogin(event) {
+        event.preventDefault();
+
+        const password = document.getElementById("staffPassword").value;
+        const errorDiv = document.getElementById("loginError");
+
+        try {
+          // Get CSRF token first
+          const csrfResponse = await fetch("/api/admin/csrf-token");
+          const csrfData = await csrfResponse.json();
+
+          // Attempt login with mobile endpoint
+          const response = await fetch("/api/admin/mobile-login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRF-Token": csrfData.token,
+            },
+            body: JSON.stringify({
+              password: password,
+              csrfToken: csrfData.token,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            // Login successful, reload page
+            location.reload();
+          } else {
+            errorDiv.textContent = data.error || "Invalid password";
+            errorDiv.style.display = "block";
+            document.getElementById("staffPassword").value = "";
+            document.getElementById("staffPassword").focus();
+          }
+        } catch (error) {
+          errorDiv.textContent = "Connection error. Please try again.";
+          errorDiv.style.display = "block";
         }
-        
-        // Handle mobile login
-        async function handleMobileLogin(event) {
-            event.preventDefault();
-            
-            const password = document.getElementById('staffPassword').value;
-            const errorDiv = document.getElementById('loginError');
-            
-            try {
-                // Get CSRF token first
-                const csrfResponse = await fetch('/api/admin/csrf-token');
-                const csrfData = await csrfResponse.json();
-                
-                // Attempt login with mobile endpoint
-                const response = await fetch('/api/admin/mobile-login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrfData.token
-                    },
-                    body: JSON.stringify({
-                        password: password,
-                        csrfToken: csrfData.token
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    // Login successful, reload page
-                    location.reload();
-                } else {
-                    errorDiv.textContent = data.error || 'Invalid password';
-                    errorDiv.style.display = 'block';
-                    document.getElementById('staffPassword').value = '';
-                    document.getElementById('staffPassword').focus();
-                }
-            } catch (error) {
-                errorDiv.textContent = 'Connection error. Please try again.';
-                errorDiv.style.display = 'block';
-            }
+      }
+
+      // Initialize app
+      async function init() {
+        // Check authentication
+        if (!(await checkAuth())) return;
+
+        // Register service worker
+        if ("serviceWorker" in navigator) {
+          try {
+            await navigator.serviceWorker.register("/js/sw.js");
+            console.log("Service worker registered");
+          } catch (error) {
+            console.error("Service worker registration failed:", error);
+          }
         }
-        
-        // Initialize app
-        async function init() {
-            // Check authentication
-            if (!await checkAuth()) return;
-            
-            // Register service worker
-            if ('serviceWorker' in navigator) {
-                try {
-                    await navigator.serviceWorker.register('/js/sw.js');
-                    console.log('Service worker registered');
-                } catch (error) {
-                    console.error('Service worker registration failed:', error);
-                }
-            }
-            
-            // Initialize scanner
-            await initScanner();
-            
-            // Load statistics
-            await loadStats();
-            
-            // Monitor online status
-            updateOnlineStatus();
-            window.addEventListener('online', updateOnlineStatus);
-            window.addEventListener('offline', updateOnlineStatus);
-            
-            // Refresh stats periodically
-            setInterval(loadStats, 30000);
-        }
-        
-        // Start app
-        init();
+
+        // Initialize scanner
+        await initScanner();
+
+        // Load statistics
+        await loadStats();
+
+        // Monitor online status
+        updateOnlineStatus();
+        window.addEventListener("online", updateOnlineStatus);
+        window.addEventListener("offline", updateOnlineStatus);
+
+        // Refresh stats periodically
+        setInterval(loadStats, 30000);
+      }
+
+      // Start app
+      init();
     </script>
-</body>
+  </body>
 </html>
