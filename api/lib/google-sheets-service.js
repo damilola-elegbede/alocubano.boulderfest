@@ -509,7 +509,8 @@ export class GoogleSheetsService {
     if (!dateStr) return "";
 
     try {
-      const date = new Date(dateStr + "T00:00:00");
+      // Parse the date string and create a date at noon to avoid timezone shifts
+      const date = new Date(dateStr + "T12:00:00");
       return date.toLocaleDateString("en-US", {
         timeZone: process.env.SHEETS_TIMEZONE || "America/Denver",
         year: "numeric",
