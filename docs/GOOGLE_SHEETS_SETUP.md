@@ -88,10 +88,10 @@ Open the downloaded JSON file and find these values:
 Add these to your `.env.local` file for local testing:
 
 ```bash
-# Google Sheets Configuration
+# Google Sheets Configuration (separate from Drive API)
 GOOGLE_SHEET_ID=your-sheet-id-from-step-6
-GOOGLE_SERVICE_ACCOUNT_EMAIL=service-account-email-from-step-5
-GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
+GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL=service-account-email-from-step-5
+GOOGLE_SHEETS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
 your-private-key-from-step-5
 -----END PRIVATE KEY-----"
 SHEETS_TIMEZONE=America/Denver
