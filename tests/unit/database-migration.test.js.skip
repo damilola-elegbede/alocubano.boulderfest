@@ -1,0 +1,664 @@
+/**
+ * Database Migration Test Suite
+ * Tests migration functionality, backup procedures, and rollback capabilities
+ */
+
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import fs from 'fs/promises';
+import path from 'path';
+import { BackupManager } from '../../api/db/backup-manager.js';
+import { MigrationRunner } from '../../api/db/rollback-procedures.js';
+import { SchemaValidator } from '../../scripts/validate-schema.js';
+
+// Mock the database module
+vi.mock('../../api/lib/database.js', () => ({
+  getDatabase: vi.fn(() => ({
+    execute: vi.fn(),
+    batch: vi.fn(),
+    testConnection: vi.fn().mockResolvedValue(true)
+  })),
+  getDatabaseClient: vi.fn(() => ({
+    execute: vi.fn(),
+    batch: vi.fn()
+  }))
+}));
+
+// Mock file system for backup operations
+vi.mock('fs/promises', () => ({
+  default: {
+    mkdir: vi.fn(),
+    readFile: vi.fn(),
+    writeFile: vi.fn(),
+    unlink: vi.fn(),
+    readdir: vi.fn(),
+    stat: vi.fn(),
+    appendFile: vi.fn()
+  }
+}));
+
+// Mock crypto module
+vi.mock('crypto', () => ({
+  default: {
+    createHash: vi.fn(() => ({
+      update: vi.fn().mockReturnThis(),
+      digest: vi.fn(() => 'mocked_hash')
+    }))
+  }
+}));
+
+// Mock glob for file scanning
+vi.mock('glob', () => ({
+  glob: vi.fn().mockResolvedValue([])
+}));
+
+describe('Database Migration Test Suite', () => {
+  let backupManager;
+  let migrationRunner;
+  let mockDatabase;
+  
+  beforeEach(() => {
+    // Reset all mocks
+    vi.clearAllMocks();
+    
+    // Create mock database
+    mockDatabase = {
+      execute: vi.fn(),
+      batch: vi.fn(),
+      testConnection: vi.fn().mockResolvedValue(true)
+    };
+    
+    // Initialize managers
+    backupManager = new BackupManager();
+    migrationRunner = new MigrationRunner(mockDatabase, backupManager);
+    
+    // Setup default mock responses
+    fs.mkdir.mockResolvedValue();
+    fs.readdir.mockResolvedValue([]);
+    fs.stat.mockResolvedValue({
+      size: 1024,
+      mtime: new Date()
+    });
+  });
+  
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+  
+  describe('Migration Success Path', () => {
+    it('should successfully migrate on empty database', async () => {
+      // Mock empty database
+      mockDatabase.execute.mockImplementation((query) => {
+        if (query.includes('schema_migrations')) {
+          return { rows: [] };
+        }
+        if (query.includes('sqlite_master')) {
+          return { rows: [] };
+        }
+        return { rows: [] };
+      });
+      
+      // Mock migration file
+      const migrationContent = `
+        BEGIN TRANSACTION;
+        ALTER TABLE tickets ADD COLUMN wallet_source TEXT;
+        COMMIT;
+      `;
+      fs.readFile.mockResolvedValue(migrationContent);
+      
+      // Run migration
+      const result = await migrationRunner.runMigration('009_add_wallet_tracking.sql', {
+        skipBackup: true
+      });
+      
+      expect(result.success).toBe(true);
+      expect(result.version).toBe('009');
+      expect(mockDatabase.execute).toHaveBeenCalledWith(migrationContent);
+    });
+    
+    it('should preserve existing data during migration', async () => {
+      // Mock database with existing data
+      mockDatabase.execute.mockImplementation((query) => {
+        if (query.includes('SELECT COUNT(*)')) {
+          return { rows: [{ count: 100 }] };
+        }
+        if (query.includes('schema_migrations')) {
+          return { rows: [] };
+        }
+        return { rows: [] };
+      });
+      
+      // Mock migration file
+      const migrationContent = `
+        BEGIN TRANSACTION;
+        ALTER TABLE tickets ADD COLUMN wallet_source TEXT;
+        UPDATE tickets SET qr_access_method = 'qr_code' WHERE qr_access_method IS NULL;
+        COMMIT;
+      `;
+      fs.readFile.mockResolvedValue(migrationContent);
+      
+      // Run migration
+      const result = await migrationRunner.runMigration('009_add_wallet_tracking.sql', {
+        skipBackup: true
+      });
+      
+      expect(result.success).toBe(true);
+      expect(mockDatabase.execute).toHaveBeenCalled();
+    });
+    
+    it('should validate schema after successful migration', async () => {
+      // Mock successful migration
+      mockDatabase.execute.mockImplementation((query) => {
+        if (query.includes('pragma_table_info')) {
+          return {
+            rows: [
+              { name: 'id', type: 'INTEGER' },
+              { name: 'wallet_source', type: 'TEXT' },
+              { name: 'qr_access_method', type: 'TEXT' }
+            ]
+          };
+        }
+        if (query.includes('schema_migrations')) {
+          return {
+            rows: [
+              { version: '009', applied_at: new Date().toISOString() }
+            ]
+          };
+        }
+        return { rows: [] };
+      });
+      
+      // Validate migration
+      const validationResult = await migrationRunner.validateMigration('009');
+      
+      expect(validationResult.valid).toBe(true);
+      expect(validationResult.checks).toContainEqual(
+        expect.objectContaining({
+          check: 'migration_recorded',
+          passed: true
+        })
+      );
+    });
+  });
+  
+  describe('Backup System Tests', () => {
+    it('should create and compress backup', async () => {
+      // Mock database data
+      mockDatabase.execute.mockImplementation((query) => {
+        if (query.includes('sqlite_master')) {
+          return {
+            rows: [
+              { name: 'tickets', sql: 'CREATE TABLE tickets (id INTEGER)' }
+            ]
+          };
+        }
+        if (query.includes('SELECT * FROM')) {
+          return {
+            rows: [
+              { id: 1, ticket_id: 'TEST001' },
+              { id: 2, ticket_id: 'TEST002' }
+            ]
+          };
+        }
+        return { rows: [] };
+      });
+      
+      // Create backup
+      const backupMetadata = await backupManager.createBackup('test_backup');
+      
+      expect(fs.writeFile).toHaveBeenCalledTimes(2); // Backup + metadata
+      expect(backupMetadata).toHaveProperty('filename');
+      expect(backupMetadata).toHaveProperty('compressionRatio');
+      expect(backupMetadata.tableCount).toBeGreaterThan(0);
+    });
+    
+    it('should verify backup integrity', async () => {
+      // Mock backup files
+      const backupData = {
+        schemas: ['CREATE TABLE tickets (id INTEGER)'],
+        tables: {
+          tickets: [{ id: 1 }, { id: 2 }]
+        }
+      };
+      
+      const compressedData = Buffer.from(JSON.stringify(backupData));
+      const metadata = {
+        checksums: {
+          compressed: require('crypto').createHash('sha256').update(compressedData).digest('hex'),
+          original: require('crypto').createHash('sha256').update(Buffer.from(JSON.stringify(backupData))).digest('hex')
+        }
+      };
+      
+      fs.readFile.mockImplementation((path) => {
+        if (path.endsWith('.json')) {
+          return JSON.stringify(metadata);
+        }
+        return compressedData;
+      });
+      
+      // Verify integrity
+      const result = await backupManager.verifyBackupIntegrity('backup.db.gz');
+      
+      expect(result.valid).toBe(true);
+      expect(result.tableCount).toBe(1);
+    });
+    
+    it('should restore from backup', async () => {
+      // Mock backup data
+      const backupData = {
+        schemas: ['CREATE TABLE tickets (id INTEGER, wallet_source TEXT)'],
+        tables: {
+          tickets: [
+            { id: 1, wallet_source: 'apple_wallet' },
+            { id: 2, wallet_source: null }
+          ]
+        }
+      };
+      
+      fs.readFile.mockResolvedValue(Buffer.from(JSON.stringify(backupData)));
+      
+      // Mock batch execution
+      mockDatabase.batch.mockResolvedValue();
+      mockDatabase.execute.mockResolvedValue({ rows: [{ table_count: 1 }] });
+      
+      // Restore from backup
+      const result = await backupManager.restoreFromBackup('backup.db.gz');
+      
+      expect(result.success).toBe(true);
+      expect(result.restoredTables).toBe(1);
+      expect(result.restoredRows).toBe(2);
+      expect(mockDatabase.batch).toHaveBeenCalled();
+    });
+  });
+  
+  describe('Failure Recovery Tests', () => {
+    it('should rollback on migration failure', async () => {
+      // Mock migration failure
+      mockDatabase.execute.mockImplementation((query) => {
+        if (query.includes('ALTER TABLE')) {
+          throw new Error('Column already exists');
+        }
+        return { rows: [] };
+      });
+      
+      // Mock backup
+      const backupMetadata = {
+        path: 'backup.db.gz',
+        filename: 'backup_test.db.gz'
+      };
+      
+      vi.spyOn(backupManager, 'createBackup').mockResolvedValue(backupMetadata);
+      vi.spyOn(backupManager, 'restoreFromBackup').mockResolvedValue({
+        success: true,
+        restoredTables: 1
+      });
+      
+      // Run migration with expected failure
+      const result = await migrationRunner.runMigration('009_add_wallet_tracking.sql');
+      
+      expect(result.success).toBe(false);
+      expect(result.rollbackSuccess).toBe(true);
+      expect(backupManager.restoreFromBackup).toHaveBeenCalledWith(backupMetadata.path);
+    });
+    
+    it('should recover from partial migration', async () => {
+      // Mock available backups
+      const backups = [
+        {
+          filename: 'backup_latest.db.gz',
+          path: '/backups/backup_latest.db.gz',
+          created: new Date().toISOString()
+        }
+      ];
+      
+      vi.spyOn(backupManager, 'listAvailableBackups').mockResolvedValue(backups);
+      vi.spyOn(backupManager, 'verifyBackupIntegrity').mockResolvedValue({
+        valid: true
+      });
+      vi.spyOn(backupManager, 'restoreFromBackup').mockResolvedValue({
+        success: true,
+        restoredTables: 3,
+        restoredRows: 150
+      });
+      
+      // Recover from partial migration
+      const result = await migrationRunner.recoverFromPartialMigration();
+      
+      expect(result.success).toBe(true);
+      expect(result.recoveredFrom).toBe('backup_latest.db.gz');
+      expect(backupManager.restoreFromBackup).toHaveBeenCalled();
+    });
+    
+    it('should detect data corruption', async () => {
+      // Mock corrupted backup
+      const metadata = {
+        checksums: {
+          compressed: 'invalid_checksum',
+          original: 'invalid_checksum'
+        }
+      };
+      
+      fs.readFile.mockImplementation((path) => {
+        if (path.endsWith('.json')) {
+          return JSON.stringify(metadata);
+        }
+        return Buffer.from('corrupted_data');
+      });
+      
+      // Verify should fail
+      await expect(
+        backupManager.verifyBackupIntegrity('corrupted_backup.db.gz')
+      ).rejects.toThrow('Compressed backup checksum mismatch');
+    });
+  });
+  
+  describe('Performance Tests', () => {
+    it('should complete migration within time limits', async () => {
+      const startTime = Date.now();
+      
+      // Mock fast execution
+      mockDatabase.execute.mockResolvedValue({ rows: [] });
+      fs.readFile.mockResolvedValue('ALTER TABLE tickets ADD COLUMN test TEXT;');
+      
+      // Run migration
+      await migrationRunner.runMigration('test.sql', { skipBackup: true });
+      
+      const executionTime = Date.now() - startTime;
+      expect(executionTime).toBeLessThan(1000); // Should complete in under 1 second
+    });
+    
+    it('should handle large datasets efficiently', async () => {
+      // Mock large dataset
+      const largeDataset = Array(10000).fill(null).map((_, i) => ({
+        id: i,
+        ticket_id: `TICKET${i}`,
+        wallet_source: i % 2 === 0 ? 'apple_wallet' : null
+      }));
+      
+      mockDatabase.execute.mockImplementation((query) => {
+        if (query.includes('SELECT * FROM tickets')) {
+          return { rows: largeDataset };
+        }
+        return { rows: [] };
+      });
+      
+      // Create backup with large dataset
+      const startTime = Date.now();
+      await backupManager.createBackup('large_dataset');
+      const backupTime = Date.now() - startTime;
+      
+      expect(backupTime).toBeLessThan(5000); // Should handle 10k records in under 5 seconds
+      expect(fs.writeFile).toHaveBeenCalled();
+    });
+    
+    it('should optimize index creation', async () => {
+      // Mock index creation
+      mockDatabase.execute.mockImplementation((query) => {
+        if (query.includes('CREATE INDEX')) {
+          // Simulate index creation delay
+          return new Promise(resolve => setTimeout(() => resolve({ rows: [] }), 10));
+        }
+        return { rows: [] };
+      });
+      
+      const migrationContent = `
+        CREATE INDEX idx_test1 ON tickets(wallet_source);
+        CREATE INDEX idx_test2 ON tickets(qr_access_method);
+      `;
+      fs.readFile.mockResolvedValue(migrationContent);
+      
+      // Run migration with indexes
+      const startTime = Date.now();
+      await migrationRunner.runMigration('index_test.sql', { skipBackup: true });
+      const indexTime = Date.now() - startTime;
+      
+      expect(indexTime).toBeLessThan(100); // Indexes should be created quickly
+    });
+  });
+  
+  describe('Edge Cases', () => {
+    it('should handle concurrent access during migration', async () => {
+      let executionCount = 0;
+      
+      // Simulate concurrent access
+      mockDatabase.execute.mockImplementation(() => {
+        executionCount++;
+        if (executionCount === 2) {
+          throw new Error('Database is locked');
+        }
+        return { rows: [] };
+      });
+      
+      // First migration should succeed
+      fs.readFile.mockResolvedValue('SELECT 1;');
+      const result1 = await migrationRunner.runMigration('test1.sql', { skipBackup: true });
+      
+      // Second concurrent migration should fail with database lock error
+      await expect(
+        migrationRunner.runMigration('test2.sql', { skipBackup: true })
+      ).rejects.toThrow('Database is locked');
+      
+      expect(result1.success).toBe(true);
+    });
+    
+    it('should handle missing migration files gracefully', async () => {
+      // Mock file not found
+      fs.readFile.mockRejectedValue(new Error('ENOENT: no such file'));
+      
+      // Attempt migration
+      await expect(
+        migrationRunner.runMigration('nonexistent.sql', { skipBackup: true })
+      ).rejects.toThrow('Migration nonexistent.sql failed');
+    });
+    
+    it('should handle network failures during backup', async () => {
+      // Mock network failure during backup write
+      fs.writeFile.mockRejectedValueOnce(new Error('Network error'));
+      
+      // Attempt backup
+      await expect(
+        backupManager.createBackup('network_test')
+      ).rejects.toThrow('Backup creation failed');
+      
+      // Verify cleanup attempted
+      expect(fs.unlink).toHaveBeenCalled();
+    });
+    
+    it('should validate migration idempotency', async () => {
+      // Mock migration already applied
+      mockDatabase.execute.mockImplementation((query) => {
+        if (query.includes('schema_migrations')) {
+          return {
+            rows: [{ version: '009', applied_at: '2025-01-09' }]
+          };
+        }
+        return { rows: [] };
+      });
+      
+      // Attempt to reapply migration
+      const result = await migrationRunner.runMigration('009_add_wallet_tracking.sql');
+      
+      expect(result.success).toBe(false);
+      expect(result.reason).toBe('already_applied');
+    });
+  });
+  
+  describe('Schema Validation', () => {
+    it('should detect missing columns', async () => {
+      const validator = new SchemaValidator();
+      
+      // Mock missing columns
+      mockDatabase.execute.mockImplementation((query) => {
+        if (query.includes('pragma_table_info')) {
+          return {
+            rows: [
+              { name: 'id', type: 'INTEGER' },
+              { name: 'ticket_id', type: 'TEXT' }
+              // wallet_source and qr_access_method missing
+            ]
+          };
+        }
+        return { rows: [] };
+      });
+      
+      const validation = await validator.validateColumnExistence();
+      
+      expect(validation.status).toBe('FAIL');
+      expect(validation.missingColumns).toContainEqual(
+        expect.objectContaining({
+          table: 'tickets',
+          columns: expect.arrayContaining(['wallet_source', 'qr_access_method'])
+        })
+      );
+    });
+    
+    it('should validate data types', async () => {
+      const validator = new SchemaValidator();
+      
+      // Mock incorrect data types
+      mockDatabase.execute.mockImplementation((query) => {
+        if (query.includes('pragma_table_info')) {
+          return {
+            rows: [
+              { name: 'wallet_source', type: 'INTEGER' }, // Should be TEXT
+              { name: 'qr_access_method', type: 'TEXT' }
+            ]
+          };
+        }
+        return { rows: [] };
+      });
+      
+      const validation = await validator.validateDataTypes();
+      
+      expect(validation.status).toBe('FAIL');
+      expect(validation.issues).toContainEqual(
+        expect.objectContaining({
+          column: 'wallet_source',
+          expected: 'TEXT',
+          actual: 'INTEGER'
+        })
+      );
+    });
+    
+    it('should check index performance', async () => {
+      const validator = new SchemaValidator();
+      
+      // Mock query execution times
+      let queryCount = 0;
+      mockDatabase.execute.mockImplementation(() => {
+        queryCount++;
+        // Simulate slow query without index
+        if (queryCount === 1) {
+          return new Promise(resolve => 
+            setTimeout(() => resolve({ rows: [] }), 100)
+          );
+        }
+        return { rows: [] };
+      });
+      
+      const performance = await validator.testQueryPerformance();
+      
+      expect(performance.status).toBe('WARN');
+      expect(performance.tests[0].passed).toBe(false);
+    });
+  });
+  
+  describe('Cleanup Operations', () => {
+    it('should cleanup old backups based on retention', async () => {
+      // Mock old backup files
+      const oldDate = new Date();
+      oldDate.setDate(oldDate.getDate() - 40); // 40 days old
+      
+      fs.readdir.mockResolvedValue([
+        'backup_old.db.gz',
+        'backup_recent.db.gz'
+      ]);
+      
+      fs.stat.mockImplementation((path) => {
+        if (path.includes('old')) {
+          return { mtime: oldDate, size: 1024 };
+        }
+        return { mtime: new Date(), size: 1024 };
+      });
+      
+      // Run cleanup
+      const result = await backupManager.cleanupOldBackups(30);
+      
+      expect(result.deletedCount).toBe(1);
+      expect(fs.unlink).toHaveBeenCalledWith(
+        expect.stringContaining('backup_old.db.gz')
+      );
+    });
+    
+    it('should list available backups sorted by date', async () => {
+      // Mock backup files
+      fs.readdir.mockResolvedValue([
+        'backup_2025_01_09.db.gz',
+        'backup_2025_01_08.db.gz',
+        'backup_2025_01_10.db.gz'
+      ]);
+      
+      fs.stat.mockImplementation((path) => {
+        const dateMap = {
+          '09': new Date('2025-01-09'),
+          '08': new Date('2025-01-08'),
+          '10': new Date('2025-01-10')
+        };
+        const day = path.match(/01_(\d+)/)[1];
+        return { mtime: dateMap[day], size: 1024 };
+      });
+      
+      // List backups
+      const backups = await backupManager.listAvailableBackups();
+      
+      expect(backups).toHaveLength(3);
+      expect(backups[0].filename).toContain('2025_01_10'); // Newest first
+      expect(backups[2].filename).toContain('2025_01_08'); // Oldest last
+    });
+  });
+});
+
+describe('Integration Tests', () => {
+  it('should complete full migration workflow', async () => {
+    const backupManager = new BackupManager();
+    const migrationRunner = new MigrationRunner(null, backupManager);
+    const validator = new SchemaValidator();
+    
+    // Mock complete workflow
+    const mockDatabase = {
+      execute: vi.fn().mockResolvedValue({ rows: [] }),
+      batch: vi.fn().mockResolvedValue()
+    };
+    
+    migrationRunner.database = mockDatabase;
+    validator.database = mockDatabase;
+    
+    // 1. Create backup
+    vi.spyOn(backupManager, 'createBackup').mockResolvedValue({
+      filename: 'backup_test.db.gz',
+      path: '/backups/backup_test.db.gz'
+    });
+    
+    // 2. Run migration
+    fs.readFile.mockResolvedValue('ALTER TABLE tickets ADD COLUMN wallet_source TEXT;');
+    const migrationResult = await migrationRunner.runMigration('009_add_wallet_tracking.sql');
+    
+    // 3. Validate schema
+    mockDatabase.execute.mockImplementation((query) => {
+      if (query.includes('pragma_table_info')) {
+        return {
+          rows: [
+            { name: 'wallet_source', type: 'TEXT' },
+            { name: 'qr_access_method', type: 'TEXT' }
+          ]
+        };
+      }
+      return { rows: [] };
+    });
+    
+    const validation = await validator.validateColumnExistence();
+    
+    // Assertions
+    expect(migrationResult.success).toBe(true);
+    expect(validation.status).toBe('PASS');
+  });
+});
