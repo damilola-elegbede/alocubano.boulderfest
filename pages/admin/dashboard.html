@@ -46,6 +46,21 @@
             background: #c0392b;
         }
         
+        .analytics-btn {
+            background: #9c27b0;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        
+        .analytics-btn:hover {
+            background: #7b1fa2;
+        }
+        
         .sync-btn {
             background: #0f9d58;
             color: white;
@@ -54,6 +69,7 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
+            margin-right: 10px;
         }
         
         .sync-btn:hover {
@@ -304,6 +320,7 @@
     <div class="admin-header">
         <h1>Admin Dashboard</h1>
         <div class="header-actions">
+            <button class="analytics-btn" onclick="location.href='/pages/admin/analytics.html'">📈 Analytics</button>
             <button class="sync-btn" onclick="syncToSheets()">📊 Sync to Sheets</button>
             <button class="logout-btn" onclick="logout()">Logout</button>
         </div>
