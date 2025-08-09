@@ -15,26 +15,26 @@ export default defineConfig({
       "node_modules/**",
     ],
 
-    // Memory-conscious performance settings
-    threads: true,
-    maxConcurrency: 2, // Reduced from 8 to prevent memory exhaustion
+    // Memory-conscious performance settings for CI
+    threads: process.env.CI ? false : true, // Disable threading in CI for stability
+    maxConcurrency: process.env.CI ? 1 : 2, // Single thread in CI
     minThreads: 1,
-    maxThreads: 2,
-    testTimeout: 10000,
+    maxThreads: process.env.CI ? 1 : 2,
+    testTimeout: process.env.CI ? 30000 : 10000, // Longer timeout for CI
 
     // Pool options for memory management
     poolOptions: {
       threads: {
-        singleThread: false,
-        maxThreads: 2,
+        singleThread: process.env.CI ? true : false,
+        maxThreads: process.env.CI ? 1 : 2,
         minThreads: 1,
         isolate: true,
         // Use worker threads instead of child processes
-        useAtomics: true,
+        useAtomics: process.env.CI ? false : true,
       },
       forks: {
-        singleFork: false,
-        maxForks: 2,
+        singleFork: process.env.CI ? true : false,
+        maxForks: process.env.CI ? 1 : 2,
         minForks: 1,
         isolate: true,
       },

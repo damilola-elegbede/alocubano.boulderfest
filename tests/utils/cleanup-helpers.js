@@ -5,6 +5,103 @@
 import { vi } from "vitest";
 
 /**
+ * Monitor-specific cleanup utilities
+ */
+export class MonitoringCleanupHelper {
+  constructor() {
+    this.monitoringInstances = new Set();
+    this.performanceObservers = new Set();
+    this.intervals = new Set();
+    this.timeouts = new Set();
+  }
+
+  /**
+   * Register a monitoring instance for cleanup
+   */
+  registerMonitoringInstance(instance) {
+    this.monitoringInstances.add(instance);
+  }
+
+  /**
+   * Register a performance observer for cleanup
+   */
+  registerPerformanceObserver(observer) {
+    this.performanceObservers.add(observer);
+  }
+
+  /**
+   * Register interval for cleanup
+   */
+  registerInterval(intervalId) {
+    this.intervals.add(intervalId);
+  }
+
+  /**
+   * Register timeout for cleanup
+   */
+  registerTimeout(timeoutId) {
+    this.timeouts.add(timeoutId);
+  }
+
+  /**
+   * Clean up all monitoring resources
+   */
+  cleanup() {
+    // Clean up monitoring instances
+    this.monitoringInstances.forEach((instance) => {
+      try {
+        if (instance.stopMonitoring) {
+          instance.stopMonitoring();
+        }
+        if (instance.disconnect) {
+          instance.disconnect();
+        }
+        if (instance.cleanup) {
+          instance.cleanup();
+        }
+      } catch (error) {
+        // Silently handle cleanup errors
+      }
+    });
+
+    // Clean up performance observers
+    this.performanceObservers.forEach((observer) => {
+      try {
+        if (observer.disconnect) {
+          observer.disconnect();
+        }
+      } catch (error) {
+        // Silently handle cleanup errors
+      }
+    });
+
+    // Clear intervals
+    this.intervals.forEach((intervalId) => {
+      try {
+        clearInterval(intervalId);
+      } catch (error) {
+        // Silently handle cleanup errors
+      }
+    });
+
+    // Clear timeouts
+    this.timeouts.forEach((timeoutId) => {
+      try {
+        clearTimeout(timeoutId);
+      } catch (error) {
+        // Silently handle cleanup errors
+      }
+    });
+
+    // Clear all sets
+    this.monitoringInstances.clear();
+    this.performanceObservers.clear();
+    this.intervals.clear();
+    this.timeouts.clear();
+  }
+}
+
+/**
  * Tracks all event listeners added during tests for cleanup
  */
 export class EventListenerTracker {
@@ -205,6 +302,7 @@ export function cleanupTest(options = {}) {
   const {
     dom = null,
     eventTracker = null,
+    monitoringHelper = null,
     clearTimers = true,
     clearStorage = true,
     clearMocks = true,
@@ -214,6 +312,11 @@ export function cleanupTest(options = {}) {
   // Clean up event tracker
   if (eventTracker) {
     eventTracker.cleanup();
+  }
+
+  // Clean up monitoring instances
+  if (monitoringHelper) {
+    monitoringHelper.cleanup();
   }
 
   // Clean up JSDOM

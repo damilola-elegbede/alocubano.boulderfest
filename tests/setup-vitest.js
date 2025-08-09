@@ -1,6 +1,7 @@
 import { vi } from "vitest";
 import {
   EventListenerTracker,
+  MonitoringCleanupHelper,
   cleanupTest,
   logMemoryUsage,
 } from "./utils/cleanup-helpers.js";
@@ -8,6 +9,9 @@ import {
 // Global event listener tracker
 global.__testEventTracker = new EventListenerTracker();
 global.__testEventTracker.start();
+
+// Global monitoring cleanup helper
+global.__testMonitoringHelper = new MonitoringCleanupHelper();
 
 // Jest compatibility layer - provide jest global for legacy tests
 global.jest = {
@@ -284,17 +288,32 @@ Object.defineProperty(global.window, "innerHeight", {
 global.window.addEventListener = vi.fn();
 global.window.removeEventListener = vi.fn();
 
-// Window location
-global.window.location = {
-  pathname: "/test",
-  href: "http://localhost:3000/test",
-  origin: "http://localhost:3000",
-  hostname: "localhost",
-  port: "3000",
-  protocol: "http:",
-  search: "",
-  hash: "",
-};
+// Window location - jsdom provides this automatically
+// We'll only set it up if window exists but location doesn't
+try {
+  if (global.window && !global.window.location) {
+    // For non-jsdom environments, create a mock
+    Object.defineProperty(global.window, 'location', {
+      value: {
+        pathname: "/test",
+        href: "http://localhost:3000/test",
+        origin: "http://localhost:3000",
+        hostname: "localhost",
+        port: "3000",
+        protocol: "http:",
+        search: "",
+        hash: "",
+        assign: vi.fn(),
+        reload: vi.fn(),
+        replace: vi.fn(),
+      },
+      writable: true,
+      configurable: true,
+    });
+  }
+} catch (e) {
+  // jsdom handles location automatically, so we can skip
+}
 
 // Screen API
 global.screen = {
@@ -358,8 +377,33 @@ vi.mock("crypto", () => ({
   })),
 }));
 
+// Mock Node.js perf_hooks module
+vi.mock("perf_hooks", () => ({
+  performance: {
+    now: vi.fn(() => Date.now()),
+    mark: vi.fn(),
+    measure: vi.fn(),
+    getEntriesByType: vi.fn(() => []),
+    getEntriesByName: vi.fn(() => []),
+    clearMarks: vi.fn(),
+    clearMeasures: vi.fn(),
+    timeOrigin: Date.now(),
+  },
+}));
+
 // Mock process.env for tests
 process.env.NODE_ENV = "test";
+
+// Add monitoring-related environment variables for tests
+process.env.METRICS_API_KEY = process.env.METRICS_API_KEY || "test-metrics-key";
+process.env.ADMIN_API_KEY = process.env.ADMIN_API_KEY || "admin-test-key";
+process.env.SENTRY_DSN = process.env.SENTRY_DSN || "";
+process.env.BREVO_API_KEY = process.env.BREVO_API_KEY || "test-brevo-key";
+process.env.BREVO_NEWSLETTER_LIST_ID = process.env.BREVO_NEWSLETTER_LIST_ID || "1";
+process.env.BREVO_WELCOME_TEMPLATE_ID = process.env.BREVO_WELCOME_TEMPLATE_ID || "1";
+process.env.BREVO_VERIFICATION_TEMPLATE_ID = process.env.BREVO_VERIFICATION_TEMPLATE_ID || "1";
+process.env.UNSUBSCRIBE_SECRET = process.env.UNSUBSCRIBE_SECRET || "test-unsubscribe-secret";
+process.env.BREVO_WEBHOOK_SECRET = process.env.BREVO_WEBHOOK_SECRET || "test-webhook-secret";
 
 // Global test utilities
 global.createMockResponse = (data, status = 200) => ({
@@ -380,6 +424,7 @@ afterEach(() => {
   // Use comprehensive cleanup utility
   cleanupTest({
     eventTracker: global.__testEventTracker,
+    monitoringHelper: global.__testMonitoringHelper,
     clearTimers: true,
     clearStorage: true,
     clearMocks: true,
@@ -401,6 +446,11 @@ afterAll(() => {
   if (global.__testEventTracker) {
     global.__testEventTracker.cleanup();
     global.__testEventTracker = null;
+  }
+
+  if (global.__testMonitoringHelper) {
+    global.__testMonitoringHelper.cleanup();
+    global.__testMonitoringHelper = null;
   }
 
   // Force final garbage collection

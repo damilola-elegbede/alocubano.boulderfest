@@ -38,14 +38,35 @@ jobs:
 
       - name: 🧪 Run Unit Tests
         run: npm run test:unit
+        env:
+          NODE_ENV: test
+          CI: true
+          METRICS_API_KEY: test-metrics-key
+          ADMIN_API_KEY: test-admin-key
+          SENTRY_DSN: https://test@sentry.io/test
+          VERCEL_URL: http://localhost:3000
 
       - name: 🗄️ Database Tests
         run: npm run test:database
         continue-on-error: true
+        env:
+          NODE_ENV: test
+          CI: true
+          METRICS_API_KEY: test-metrics-key
+          ADMIN_API_KEY: test-admin-key
+          SENTRY_DSN: https://test@sentry.io/test
+          VERCEL_URL: http://localhost:3000
 
       - name: 📊 Test Coverage
         run: npm run test:coverage
         continue-on-error: true
+        env:
+          NODE_ENV: test
+          CI: true
+          METRICS_API_KEY: test-metrics-key
+          ADMIN_API_KEY: test-admin-key
+          SENTRY_DSN: https://test@sentry.io/test
+          VERCEL_URL: http://localhost:3000
 
   # Job 2: Deploy to Preview
   deploy-preview:

@@ -42,12 +42,33 @@ jobs:
 
       - name: 🧪 Run Tests
         run: npm run test:all
+        env:
+          NODE_ENV: test
+          CI: true
+          METRICS_API_KEY: test-metrics-key
+          ADMIN_API_KEY: test-admin-key
+          SENTRY_DSN: https://test@sentry.io/test
+          VERCEL_URL: http://localhost:3000
 
       - name: 🗄️ Database Tests
         run: npm run test:database
+        env:
+          NODE_ENV: test
+          CI: true
+          METRICS_API_KEY: test-metrics-key
+          ADMIN_API_KEY: test-admin-key
+          SENTRY_DSN: https://test@sentry.io/test
+          VERCEL_URL: http://localhost:3000
 
       - name: ⚡ Performance Tests
         run: npm run test:performance
+        env:
+          NODE_ENV: test
+          CI: true
+          METRICS_API_KEY: test-metrics-key
+          ADMIN_API_KEY: test-admin-key
+          SENTRY_DSN: https://test@sentry.io/test
+          VERCEL_URL: http://localhost:3000
 
   # Job 2: Database Migrations
   migrate-database:

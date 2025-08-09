@@ -37,6 +37,17 @@ jobs:
         env:
           NODE_ENV: test
           CI: true
+          METRICS_API_KEY: test-metrics-key
+          ADMIN_API_KEY: test-admin-key
+          SENTRY_DSN: https://test@sentry.io/test
+          VERCEL_URL: http://localhost:3000
+          # Mock environment variables for testing
+          BREVO_API_KEY: mock-test-key
+          STRIPE_PUBLISHABLE_KEY: pk_test_mock
+          STRIPE_SECRET_KEY: sk_test_mock
+          DATABASE_URL: file::memory:?cache=shared
+          ADMIN_API_KEY: test-admin-key
+          METRICS_API_KEY: test-metrics-key
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -59,11 +70,37 @@ jobs:
         run: npm run test:integration
         env:
           NODE_ENV: test
+          CI: true
+          METRICS_API_KEY: test-metrics-key
+          ADMIN_API_KEY: test-admin-key
+          SENTRY_DSN: https://test@sentry.io/test
+          VERCEL_URL: http://localhost:3000
+          CI: true
+          # Mock environment variables for testing
+          BREVO_API_KEY: mock-test-key
+          STRIPE_PUBLISHABLE_KEY: pk_test_mock
+          STRIPE_SECRET_KEY: sk_test_mock
+          DATABASE_URL: file::memory:?cache=shared
+          ADMIN_API_KEY: test-admin-key
+          METRICS_API_KEY: test-metrics-key
 
       - name: Run performance tests
         run: npm run test:performance
         env:
           NODE_ENV: test
+          CI: true
+          METRICS_API_KEY: test-metrics-key
+          ADMIN_API_KEY: test-admin-key
+          SENTRY_DSN: https://test@sentry.io/test
+          VERCEL_URL: http://localhost:3000
+          CI: true
+          # Mock environment variables for testing
+          BREVO_API_KEY: mock-test-key
+          STRIPE_PUBLISHABLE_KEY: pk_test_mock
+          STRIPE_SECRET_KEY: sk_test_mock
+          DATABASE_URL: file::memory:?cache=shared
+          ADMIN_API_KEY: test-admin-key
+          METRICS_API_KEY: test-metrics-key
 
   accessibility-tests:
     runs-on: ubuntu-latest
@@ -86,6 +123,19 @@ jobs:
         run: npm test -- --testPathPattern="accessibility" --passWithNoTests
         env:
           NODE_ENV: test
+          CI: true
+          METRICS_API_KEY: test-metrics-key
+          ADMIN_API_KEY: test-admin-key
+          SENTRY_DSN: https://test@sentry.io/test
+          VERCEL_URL: http://localhost:3000
+          CI: true
+          # Mock environment variables for testing
+          BREVO_API_KEY: mock-test-key
+          STRIPE_PUBLISHABLE_KEY: pk_test_mock
+          STRIPE_SECRET_KEY: sk_test_mock
+          DATABASE_URL: file::memory:?cache=shared
+          ADMIN_API_KEY: test-admin-key
+          METRICS_API_KEY: test-metrics-key
 
   test-quality-gates:
     runs-on: ubuntu-latest
@@ -109,6 +159,17 @@ jobs:
         env:
           NODE_ENV: test
           CI: true
+          METRICS_API_KEY: test-metrics-key
+          ADMIN_API_KEY: test-admin-key
+          SENTRY_DSN: https://test@sentry.io/test
+          VERCEL_URL: http://localhost:3000
+          # Mock environment variables for testing
+          BREVO_API_KEY: mock-test-key
+          STRIPE_PUBLISHABLE_KEY: pk_test_mock
+          STRIPE_SECRET_KEY: sk_test_mock
+          DATABASE_URL: file::memory:?cache=shared
+          ADMIN_API_KEY: test-admin-key
+          METRICS_API_KEY: test-metrics-key
 
       # Skip health check - it runs tests 3 times which may cause timeouts
       # - name: Run test health check
@@ -121,3 +182,14 @@ jobs:
         env:
           NODE_ENV: test
           CI: true
+          METRICS_API_KEY: test-metrics-key
+          ADMIN_API_KEY: test-admin-key
+          SENTRY_DSN: https://test@sentry.io/test
+          VERCEL_URL: http://localhost:3000
+          # Mock environment variables for testing
+          BREVO_API_KEY: mock-test-key
+          STRIPE_PUBLISHABLE_KEY: pk_test_mock
+          STRIPE_SECRET_KEY: sk_test_mock
+          DATABASE_URL: file::memory:?cache=shared
+          ADMIN_API_KEY: test-admin-key
+          METRICS_API_KEY: test-metrics-key
