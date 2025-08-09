@@ -426,8 +426,8 @@ class LinkChecker {
    */
   async checkInternalUrl(url, currentFilePath) {
     try {
-      // Strip query parameters for file checking
-      const cleanUrl = url.split("?")[0];
+      // Strip query parameters and anchors for file checking
+      const cleanUrl = url.split("?")[0].split("#")[0];
 
       // Handle Vercel clean URL routing
       const routingResult = this.checkServerRouting(cleanUrl, new Set(), 0);

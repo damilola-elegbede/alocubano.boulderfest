@@ -1,0 +1,6 @@
+# Link validation ignore patterns
+# These are false positives from the link checker not properly handling anchors
+
+# Admin dashboard anchors - these are valid anchors in the HTML
+/pages/admin/dashboard.html#registrations
+/pages/admin/dashboard.html#transactions
