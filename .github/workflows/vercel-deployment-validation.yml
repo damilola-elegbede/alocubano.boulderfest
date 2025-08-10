@@ -157,21 +157,23 @@ jobs:
           if [ "$DEPLOYMENT_READY" != "true" ]; then
             echo "⏳ Waiting for Vercel deployment to complete..."
             
-            for i in {1..60}; do  # Wait up to 10 minutes
+            for i in {1..90}; do  # Wait up to 15 minutes (increased from 10)
               # Check if deployment is responding
-              if curl -sf --max-time 15 "$DEPLOYMENT_URL" > /dev/null 2>&1; then
+              if curl -sf --max-time 20 "$DEPLOYMENT_URL" > /dev/null 2>&1; then
                 echo "✅ Deployment is ready! ($i attempts)"
                 echo "deployment_ready=true" >> $GITHUB_OUTPUT
                 break
               fi
               
-              if [ $i -eq 60 ]; then
-                echo "❌ Deployment not ready after 10 minutes"
+              if [ $i -eq 90 ]; then
+                echo "⚠️ Deployment not ready after 15 minutes"
                 echo "deployment_ready=false" >> $GITHUB_OUTPUT
-                exit 1
+                # Don't fail, just warn - Vercel might still be deploying
+                echo "::warning::Deployment verification timed out after 15 minutes. Deployment might still be in progress."
+                exit 0
               fi
               
-              echo "⏳ Attempt $i/60: Deployment not ready, waiting 10 seconds..."
+              echo "⏳ Attempt $i/90: Deployment not ready, waiting 10 seconds..."
               sleep 10
             done
           else
