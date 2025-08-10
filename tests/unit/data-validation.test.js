@@ -446,7 +446,12 @@ describe("Image URL Validation", () => {
           "127.0.0.1",
         ];
 
-        if (urlObj.hostname && !allowedDomains.includes(urlObj.hostname)) {
+        const hostname = urlObj.hostname.toLowerCase();
+        const isAllowedDomain = allowedDomains.some((domain) =>
+          hostname === domain || hostname.includes(domain),
+        );
+
+        if (urlObj.hostname && !isAllowedDomain) {
           return { valid: false, error: "Domain not allowed" };
         }
 

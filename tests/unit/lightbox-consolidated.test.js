@@ -100,9 +100,25 @@ const mockLightboxElement = createMockLightboxElement();
 if (!global.document) global.document = {};
 if (!global.document.body) global.document.body = {};
 
+// Add style object to document.body
+global.document.body.style = {
+  overflow: ''
+};
+
 global.document.body.insertAdjacentHTML = vi.fn();
 global.document.getElementById = vi.fn((id) => {
   if (id.includes("lightbox")) return mockLightboxElement;
+  return null;
+});
+
+global.document.querySelector = vi.fn((selector) => {
+  // Handle selectors for single element queries
+  if (selector === "#unified-lightbox") {
+    return mockLightboxElement;
+  }
+  if (selector.includes("lightbox")) {
+    return mockLightboxElement;
+  }
   return null;
 });
 
@@ -327,6 +343,11 @@ describe("Lightbox Component", () => {
   beforeEach(() => {
     // Clear the document body
     document.body.innerHTML = "";
+    
+    // Ensure document.body.style exists
+    if (!document.body.style) {
+      document.body.style = { overflow: '' };
+    }
 
     // Reset jest mocks
     vi.clearAllMocks();
@@ -461,6 +482,12 @@ describe("Lightbox Navigation", () => {
 
   beforeEach(() => {
     document.body.innerHTML = "";
+    
+    // Ensure document.body.style exists
+    if (!document.body.style) {
+      document.body.style = { overflow: '' };
+    }
+    
     vi.clearAllMocks();
 
     // Create a fresh mock lightbox element for each test
@@ -698,6 +725,12 @@ describe("Lightbox Counter", () => {
 
   beforeEach(() => {
     document.body.innerHTML = "";
+    
+    // Ensure document.body.style exists
+    if (!document.body.style) {
+      document.body.style = { overflow: '' };
+    }
+    
     vi.clearAllMocks();
 
     // Create a fresh mock lightbox element for each test
