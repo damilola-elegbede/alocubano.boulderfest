@@ -62,9 +62,9 @@ runs:
         DEPLOYMENT_ID=""
         ENVIRONMENT="Preview"
         
-        # Try up to 12 times (3 minutes) for deployment to appear
-        for attempt in {1..12}; do
-          echo "🔍 Attempt $attempt/12: Looking for deployment..."
+        # Try up to 40 times (10 minutes) for deployment to appear
+        for attempt in {1..40}; do
+          echo "🔍 Attempt $attempt/40: Looking for deployment..."
           
           # Query GitHub Deployments API for this specific commit
           DEPLOYMENTS=$(gh api "repos/${{ github.repository }}/deployments?ref=${REF}&per_page=10" \
@@ -127,7 +127,7 @@ runs:
           fi
           
           # If deployment not found yet, wait before trying again
-          if [ "$DEPLOYMENT_FOUND" = "false" ] && [ $attempt -lt 12 ]; then
+          if [ "$DEPLOYMENT_FOUND" = "false" ] && [ $attempt -lt 40 ]; then
             echo "  No deployment found yet, waiting 15 seconds..."
             sleep 15
           fi
@@ -135,7 +135,7 @@ runs:
         
         # If we still don't have a deployment URL, try fallback strategies
         if [ -z "$DEPLOYMENT_URL" ] || [ "$DEPLOYMENT_URL" = "null" ]; then
-          echo "⚠️ No deployment found via API after 3 minutes, trying fallback strategies..."
+          echo "⚠️ No deployment found via API after 10 minutes, trying fallback strategies..."
           
           # Check for ANY recent Vercel deployment (might be from a previous commit)
           RECENT_DEPLOYMENT=$(gh api "repos/${{ github.repository }}/deployments?per_page=5" \
