@@ -8,13 +8,13 @@ async function handler(req, res) {
     res.setHeader("Allow", ["GET"]);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
-  
+
   // Apply rate limiting
   const rateLimitResult = await rateLimitService.checkLimit(req, "analytics", {
     maxAttempts: 100,
     windowMs: 60000, // 100 requests per minute
   });
-  
+
   if (!rateLimitResult.allowed) {
     return res.status(429).json({
       error: "Too many requests. Please try again later.",
@@ -24,12 +24,15 @@ async function handler(req, res) {
 
   // Input validation and sanitization
   const { type, eventId = "boulder-fest-2026", days = 30 } = req.query;
-  
+
   // Validate eventId to prevent injection
-  const validEventId = /^[a-zA-Z0-9-_]+$/.test(eventId) ? eventId : "boulder-fest-2026";
+  const validEventId = /^[a-zA-Z0-9-_]+$/.test(eventId)
+    ? eventId
+    : "boulder-fest-2026";
   if (validEventId !== eventId) {
     return res.status(400).json({
-      error: "Invalid eventId format. Only alphanumeric characters, hyphens and underscores allowed."
+      error:
+        "Invalid eventId format. Only alphanumeric characters, hyphens and underscores allowed.",
     });
   }
 
@@ -102,7 +105,10 @@ async function handler(req, res) {
             error: "Days parameter must be between 1 and 365",
           });
         }
-        data = await analyticsService.getConversionFunnel(funnelDays, validEventId);
+        data = await analyticsService.getConversionFunnel(
+          funnelDays,
+          validEventId,
+        );
         break;
       }
 

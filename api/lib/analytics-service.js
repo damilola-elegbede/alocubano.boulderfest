@@ -11,7 +11,7 @@ export class AnalyticsService {
   async getEventStatistics(eventId = "boulder-fest-2026") {
     try {
       const stats = await this.db.execute({
-      sql: `
+        sql: `
         SELECT 
           -- Ticket Stats
           COUNT(DISTINCT t.id) as total_tickets,
@@ -47,13 +47,13 @@ export class AnalyticsService {
         FROM tickets t
         WHERE t.event_id = ?
       `,
-      args: [eventId],
-    });
+        args: [eventId],
+      });
 
       return stats.rows[0] || {};
     } catch (error) {
-      console.error('Error getting event statistics:', error);
-      throw new Error('Failed to retrieve event statistics');
+      console.error("Error getting event statistics:", error);
+      throw new Error("Failed to retrieve event statistics");
     }
   }
 
@@ -63,7 +63,7 @@ export class AnalyticsService {
   async getSalesTrend(days = 30, eventId = "boulder-fest-2026") {
     try {
       const trend = await this.db.execute({
-      sql: `
+        sql: `
         SELECT 
           date(created_at) as sale_date,
           COUNT(*) as tickets_sold,
@@ -77,16 +77,16 @@ export class AnalyticsService {
         GROUP BY date(created_at)
         ORDER BY sale_date ASC
       `,
-      args: [eventId, days],
-    });
+        args: [eventId, days],
+      });
 
-    // Calculate cumulative totals
-    let cumulativeTickets = 0;
-    let cumulativeRevenue = 0;
+      // Calculate cumulative totals
+      let cumulativeTickets = 0;
+      let cumulativeRevenue = 0;
 
-    return trend.rows.map((row) => {
-      cumulativeTickets += row.tickets_sold;
-      cumulativeRevenue += row.revenue;
+      return trend.rows.map((row) => {
+        cumulativeTickets += row.tickets_sold;
+        cumulativeRevenue += row.revenue;
 
         return {
           ...row,
@@ -95,8 +95,8 @@ export class AnalyticsService {
         };
       });
     } catch (error) {
-      console.error('Error getting sales trend:', error);
-      throw new Error('Failed to retrieve sales trend data');
+      console.error("Error getting sales trend:", error);
+      throw new Error("Failed to retrieve sales trend data");
     }
   }
 
@@ -333,7 +333,7 @@ export class AnalyticsService {
             AND event_id = ?
         `,
         args: [eventId],
-      })
+      }),
     ]);
 
     return {
