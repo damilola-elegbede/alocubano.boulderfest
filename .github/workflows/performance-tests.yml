@@ -1,15 +1,11 @@
 name: Performance Testing Pipeline
 
 on:
-  # Run on pull requests to main
-  pull_request:
-    branches: [ main ]
-    types: [ opened, synchronize, reopened ]
+  # UNIQUE PURPOSE: Comprehensive performance testing pipeline
+  # Focuses on K6 load testing and performance analysis
+  # Removed PR trigger to eliminate redundancy with deployment health monitor
   
-  # Note: Push to main baseline updates moved to separate workflow
-  # to avoid duplicate runs on PRs
-  
-  # Allow manual triggering
+  # Allow manual triggering for performance testing
   workflow_dispatch:
     inputs:
       tests_to_run:
@@ -36,6 +32,7 @@ on:
         type: boolean
   
   # Schedule regular performance checks (daily at 2 AM UTC)
+  # This provides automated performance regression detection
   schedule:
     - cron: '0 2 * * *'
 
@@ -169,13 +166,14 @@ jobs:
           
           echo "✅ All configurations validated"
 
-  # Wait for deployment (for PR previews)
+  # Wait for deployment (for manual runs against specific environments)
   wait-for-deployment:
     name: Wait for Deployment
     runs-on: ubuntu-latest
     timeout-minutes: 20  # Prevent indefinite hanging
     needs: setup
-    if: github.event_name == 'pull_request'
+    # Only wait for deployment for manual workflow runs against preview environments
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging'
     
     outputs:
       deployment-url: ${{ steps.wait-for-deployment.outputs.url || steps.fallback-deployment.outputs.url }}

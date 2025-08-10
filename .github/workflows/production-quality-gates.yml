@@ -1,12 +1,13 @@
 name: 🚀 Production Quality Gates
 
-# This workflow waits for Vercel's native deployment and validates it
-# Eliminates duplicate deployment logic while ensuring quality
+# UNIQUE PURPOSE: Production quality validation after main branch pushes
+# Comprehensive production readiness checks and quality gates
+# No overlap with PR workflows - focused only on production deployments
 
 on:
   push:
-    branches: [main]
-  deployment_status:  # Triggered by Vercel deployments
+    branches: [main]  # Only main branch pushes trigger production validation
+  # Removed deployment_status to avoid duplicate triggers
 
 permissions:
   contents: read
@@ -22,7 +23,8 @@ jobs:
   pre-deployment-checks:
     name: 🧪 Pre-deployment Quality
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    # Only run on main branch pushes to avoid duplicate runs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
       - name: 📥 Checkout Code
@@ -219,22 +221,49 @@ jobs:
           curl -s -L https://github.com/grafana/k6/releases/latest/download/k6-linux-amd64.tar.gz | tar -xz --strip-components=1
           chmod +x k6
           
-          # Create production performance test
+          # Create production performance test with dynamic thresholds
           cat > production-perf-test.js << 'EOF'
           import http from 'k6/http';
           import { check, sleep } from 'k6';
           
+          // Environment-aware threshold selection
+          function getThresholds() {
+            const isProduction = __ENV.DEPLOYMENT_URL && __ENV.DEPLOYMENT_URL.includes('alocubanoboulderfest.vercel.app');
+            const isCI = __ENV.GITHUB_ACTIONS || __ENV.CI;
+            
+            if (isProduction) {
+              return {
+                'http_req_duration': ['p(95)<1000', 'p(99)<2000'],
+                'http_req_failed': ['rate<0.02'],
+                'http_req_duration{page:api}': ['p(95)<500'],
+              };
+            } else if (isCI) {
+              return {
+                'http_req_duration': ['p(95)<2000', 'p(99)<5000'],
+                'http_req_failed': ['rate<0.05'],
+                'http_req_duration{page:api}': ['p(95)<1500'],
+              };
+            } else {
+              // Staging/Preview
+              return {
+                'http_req_duration': ['p(95)<1500', 'p(99)<3000'],
+                'http_req_failed': ['rate<0.03'],
+                'http_req_duration{page:api}': ['p(95)<800'],
+              };
+            }
+          }
+          
           export let options = {
             stages: [
-              { duration: '30s', target: 5 },   // Ramp up to 5 users (reduced for CI)
+              { duration: '30s', target: 5 },   // Ramp up to 5 users
               { duration: '1m', target: 5 },    // Stay at 5 users  
               { duration: '30s', target: 0 },   // Ramp down
             ],
-            thresholds: {
-              'http_req_duration': ['p(95)<5000'], // 95% under 5s for CI (more lenient)
-              'http_req_failed': ['rate<0.10'],    // Error rate under 10% for CI
-              'http_req_duration{page:api}': ['p(95)<2000'], // API under 2s for CI
-            },
+            thresholds: getThresholds(),
+            tags: {
+              environment: __ENV.GITHUB_ACTIONS ? 'ci' : 'production',
+              deployment_url: __ENV.DEPLOYMENT_URL || 'unknown'
+            }
           };
           
           const BASE_URL = __ENV.DEPLOYMENT_URL;
@@ -244,7 +273,11 @@ jobs:
             let response = http.get(BASE_URL);
             check(response, {
               'homepage status 200': (r) => r.status === 200,
-              'homepage loads fast': (r) => r.timings.duration < 2000,
+              'homepage loads within threshold': (r) => {
+                const isProduction = BASE_URL.includes('alocubanoboulderfest.vercel.app');
+                const threshold = isProduction ? 1000 : 2000;
+                return r.timings.duration < threshold;
+              },
             });
             
             // Test critical pages
@@ -254,14 +287,22 @@ jobs:
             response = http.get(BASE_URL + page);
             check(response, {
               'page status 200': (r) => r.status === 200,
-              'page loads reasonably': (r) => r.timings.duration < 3000,
+              'page loads within threshold': (r) => {
+                const isProduction = BASE_URL.includes('alocubanoboulderfest.vercel.app');
+                const threshold = isProduction ? 1500 : 3000;
+                return r.timings.duration < threshold;
+              },
             });
             
             // Test API if available
             response = http.get(BASE_URL + '/api/featured-photos', { tags: { page: 'api' } });
             if (response.status === 200) {
               check(response, {
-                'api responds fast': (r) => r.timings.duration < 1000,
+                'api responds within threshold': (r) => {
+                  const isProduction = BASE_URL.includes('alocubanoboulderfest.vercel.app');
+                  const threshold = isProduction ? 500 : 1000;
+                  return r.timings.duration < threshold;
+                },
               });
             }
             

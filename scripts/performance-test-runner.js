@@ -37,6 +37,8 @@ const REPORTS_DIR = join(projectRoot, 'reports', 'load-test-results');
 const BASELINES_DIR = join(projectRoot, 'reports', 'performance-baselines');
 const TESTS_DIR = join(projectRoot, 'tests', 'load');
 const CONFIG_FILE = join(projectRoot, 'config', 'performance-thresholds.json');
+const ENVIRONMENT_THRESHOLDS = join(projectRoot, 'config', 'environment-thresholds.json');
+const THRESHOLD_SELECTOR = join(projectRoot, 'scripts', 'threshold-selector.js');
 
 // Color codes for terminal output
 const colors = {
@@ -152,6 +154,71 @@ function formatDuration(milliseconds) {
     return `${minutes}m ${seconds % 60}s`;
   } else {
     return `${seconds}s`;
+  }
+}
+
+/**
+ * Environment Detection and Threshold Management
+ */
+function detectEnvironment() {
+  // Check explicit override
+  if (process.env.PERF_TEST_ENV) {
+    return process.env.PERF_TEST_ENV;
+  }
+
+  // Check CI indicators
+  if (process.env.GITHUB_ACTIONS || process.env.CI || process.env.CONTINUOUS_INTEGRATION) {
+    return 'ci';
+  }
+
+  // Check URL patterns
+  const baseUrl = process.env.LOAD_TEST_BASE_URL || '';
+  if (baseUrl.includes('staging') || baseUrl.includes('preview') || baseUrl.includes('dev')) {
+    return 'staging';
+  }
+
+  if (baseUrl.includes('production') || baseUrl.includes('prod') || 
+      baseUrl.includes('alocubanoboulderfest.vercel.app')) {
+    return 'production';
+  }
+
+  // Default fallback
+  return 'ci';
+}
+
+function validateThresholds(testName) {
+  try {
+    const environment = detectEnvironment();
+    print(`🎯 Environment detected: ${environment}`, 'cyan');
+    
+    // Run threshold selector to validate
+    const result = execSync(`node "${THRESHOLD_SELECTOR}" validate ${testName}`, {
+      encoding: 'utf8',
+      cwd: projectRoot,
+      env: { ...process.env, PERF_TEST_ENV: environment }
+    });
+    
+    print(`✅ Thresholds validated for ${testName} in ${environment}`, 'green');
+    return true;
+  } catch (error) {
+    print(`⚠️ Threshold validation warning: ${error.message}`, 'yellow');
+    return false; // Don't fail, just warn
+  }
+}
+
+function getThresholdInfo(testName) {
+  try {
+    const environment = detectEnvironment();
+    const result = execSync(`node "${THRESHOLD_SELECTOR}" get ${testName} ${environment}`, {
+      encoding: 'utf8',
+      cwd: projectRoot,
+      env: { ...process.env, PERF_TEST_ENV: environment }
+    });
+    
+    return JSON.parse(result);
+  } catch (error) {
+    print(`❌ Failed to get threshold info: ${error.message}`, 'red');
+    return null;
   }
 }
 
@@ -1474,13 +1541,24 @@ async function main() {
   // Parse CLI options
   const options = {
     baseUrl: process.env.LOAD_TEST_BASE_URL || 'http://localhost:3000',
-    environment: process.env.NODE_ENV || 'test',
+    environment: detectEnvironment(), // Use environment detection
     parallel: args.includes('--parallel'),
     updateBaselines: args.includes('--update-baselines'),
     verbose: args.includes('--verbose') || args.includes('-v'),
     skipHealthCheck: args.includes('--skip-health-check'),
     testsToRun: Object.keys(TEST_CONFIGURATIONS)
   };
+  
+  // Display environment and threshold information
+  print('\n🎯 Performance Test Configuration', 'cyan', true);
+  print(`Environment: ${options.environment}`, 'blue');
+  print(`Base URL: ${options.baseUrl}`, 'blue');
+  
+  // Validate thresholds for all tests
+  print('\n🔍 Validating Dynamic Thresholds...', 'cyan');
+  for (const testName of options.testsToRun) {
+    validateThresholds(testName);
+  }
   
   // Parse specific tests to run
   const testArg = args.find(arg => arg.startsWith('--tests='));

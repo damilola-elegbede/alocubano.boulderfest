@@ -33,6 +33,18 @@ const databaseOverload = new Rate('database_overload_rate');
 const cacheEvictionRate = new Rate('cache_eviction_rate');
 const emergencyThrottling = new Rate('emergency_throttling_activated');
 
+// Import threshold selector for dynamic configuration
+import { getThresholds, getTimeoutConfig, isTestTypeSupported } from '../utils/threshold-loader.js';
+
+// Get environment-aware configuration
+const thresholdConfig = getThresholds('stress');
+const timeoutConfig = getTimeoutConfig();
+
+// Check if stress testing is supported in current environment
+if (!isTestTypeSupported('stress')) {
+  console.log('⚠️ Stress testing disabled for current environment');
+}
+
 // Stress test configuration
 export let options = {
   stages: [
@@ -52,41 +64,20 @@ export let options = {
     { duration: '30s', target: 0 },     // Complete ramp down
   ],
   
-  thresholds: {
-    // Stress test expectations (optimized for Vercel serverless limits)
-    'http_req_duration': ['p(95)<3000', 'p(99)<8000'], // Account for serverless scaling
-    'http_req_failed': ['rate<0.15'],  // Higher tolerance for serverless cold starts
-    
-    // Breaking point detection (serverless-aware)
-    'failure_rate': ['rate<0.20'],     // Serverless functions may fail under extreme load
-    'timeout_rate': ['rate<0.10'],     // Vercel has 10-30s timeouts
-    'connection_refusal_rate': ['rate<0.12'], // Rate limiting more aggressive
-    
-    // Resource exhaustion monitoring (serverless constraints)
-    'resource_exhaustion_rate': ['rate<0.30'], // Vercel memory/CPU limits
-    'database_overload_rate': ['rate<0.15'],   // Connection pooling stressed
-    'cache_eviction_rate': ['rate<0.50'],      // Edge cache under extreme load
-    
-    // System stability under stress (serverless resilience)
-    'cascade_failure_rate': ['rate<0.10'],     // Isolated function failures expected
-    'emergency_throttling_activated': ['rate<0.70'], // Vercel auto-throttling
-    
-    // Recovery requirements (serverless scaling time)
-    'recovery_time_ms': ['p(95)<60000'],       // 60s for serverless auto-scaling
-  },
+  // Dynamic thresholds based on environment
+  thresholds: thresholdConfig.thresholds,
   
-  // Optimized timeouts for Vercel serverless limits
-  httpTimeout: '25s', // Match Vercel function timeout
+  // Environment-specific timeouts optimized for Vercel serverless
+  httpTimeout: timeoutConfig.httpTimeout,
+  setupTimeout: timeoutConfig.setupTimeout,
+  teardownTimeout: timeoutConfig.teardownTimeout,
   noConnectionReuse: false, // Allow connection reuse for efficiency
-  
-  // Serverless-specific options
-  setupTimeout: '60s',
-  teardownTimeout: '60s',
   
   tags: {
     testType: 'stress-test',
-    environment: __ENV.TEST_ENV || 'staging',
+    environment: thresholdConfig.environment,
     maxConcurrentUsers: '400',
+    thresholdVersion: thresholdConfig.metadata?.timestamp || 'unknown',
   },
 };
 

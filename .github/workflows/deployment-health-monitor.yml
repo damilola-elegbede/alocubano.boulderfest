@@ -1,10 +1,12 @@
 name: 🏥 Deployment Health Monitor
 
 # Vercel-native deployment health monitoring
-# Waits for Vercel bot deployment completion and validates critical service health
+# UNIQUE PURPOSE: Monitors PR preview deployments for immediate feedback
+# Focused on health validation and PR comments for development workflow
 on:
   pull_request:
     branches: [main]  # Only monitor PRs to main branch
+    types: [opened, synchronize, reopened]  # Explicit PR events
 
 permissions:
   contents: read
@@ -18,6 +20,8 @@ jobs:
     name: 🔍 Watch Vercel Deployment
     runs-on: ubuntu-latest
     timeout-minutes: 20  # Prevent indefinite hanging
+    # Conditional logic to prevent duplicate runs
+    if: github.event_name == 'pull_request'
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4

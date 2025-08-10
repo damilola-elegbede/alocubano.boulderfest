@@ -50,25 +50,43 @@ graph LR
 
 ## Implementation Files
 
-### Core Workflows
+### Core Workflows (Consolidated for Efficiency)
 
-#### `vercel-deployment-validation.yml`
-- **Purpose**: Universal deployment validation for all environments
-- **Triggers**: `deployment_status`, `pull_request`, `push`
+#### `deployment-health-monitor.yml`
+- **Purpose**: PR preview deployment health monitoring and developer feedback
+- **Triggers**: `pull_request` to main (opened, synchronize, reopened)
 - **Features**:
-  - Waits for Vercel deployment completion
-  - Runs quality gates against live deployment
-  - Comments results on PRs
-  - Updates deployment status
+  - Waits for Vercel preview deployment completion
+  - Runs health checks and basic validation
+  - Comments results on PRs for immediate developer feedback
+  - Focused on development workflow optimization
 
 #### `production-quality-gates.yml`
-- **Purpose**: Production-specific comprehensive validation
-- **Triggers**: `push` to main, `deployment_status`
+- **Purpose**: Production-specific comprehensive validation after main pushes
+- **Triggers**: `push` to main only
 - **Features**:
   - Pre-deployment quality checks (fast feedback)
   - Post-deployment validation (comprehensive)
   - Database migrations coordination
   - Production monitoring setup
+  - Security and performance validation
+
+#### `performance-tests.yml`
+- **Purpose**: Dedicated K6 performance testing pipeline
+- **Triggers**: `workflow_dispatch`, `schedule` (daily)
+- **Features**:
+  - Manual performance testing on-demand
+  - Scheduled performance regression monitoring
+  - Comprehensive load testing with K6
+  - Performance baseline management
+
+#### `ci.yml`
+- **Purpose**: Core CI pipeline for code quality validation
+- **Triggers**: `push` to main/develop, `pull_request` to main/develop
+- **Features**:
+  - Linting, unit tests, integration tests
+  - Security scanning and dependency checks
+  - Build verification and file structure validation
 
 ### Support Components
 

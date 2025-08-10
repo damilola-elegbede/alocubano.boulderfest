@@ -28,6 +28,13 @@ const concurrentValidations = new Gauge('concurrent_validations');
 const offlineSyncTime = new Trend('offline_sync_duration');
 const devicePerformance = new Trend('device_response_time');
 
+// Import threshold selector for dynamic configuration
+import { getThresholds, getTimeoutConfig } from '../utils/threshold-loader.js';
+
+// Get environment-aware thresholds and timeouts
+const thresholdConfig = getThresholds('check-in');
+const timeoutConfig = getTimeoutConfig();
+
 // Test configuration for sustained high-frequency validation
 export let options = {
   scenarios: {
@@ -65,27 +72,18 @@ export let options = {
     },
   },
   
-  thresholds: {
-    // Response time requirements (optimized for Vercel serverless)
-    'http_req_duration{scenario:checkin_rush}': ['p(95)<200', 'p(99)<500'], // Account for cold starts
-    'qr_validation_duration': ['avg<100', 'p(95)<250'], // Serverless processing time
-    'database_write_duration': ['avg<75', 'p(95)<150'], // Database connection overhead
-    
-    // Success rate requirements (serverless-adjusted)
-    'checkin_success_rate': ['rate>0.95'], // More realistic for serverless
-    'duplicate_scan_rate': ['rate<0.08'],   // Higher tolerance for edge cases
-    'invalid_qr_rate': ['rate<0.03'],       // Slightly more lenient
-    
-    // Error handling (serverless failures)
-    'http_req_failed{scenario:checkin_rush}': ['rate<0.03'], // Cold start failures
-    
-    // Device performance (including serverless latency)
-    'device_response_time': ['avg<300', 'p(95)<600'], // Account for function startup
-  },
+  // Dynamic thresholds based on environment
+  thresholds: thresholdConfig.thresholds,
+  
+  // Environment-specific timeouts
+  httpTimeout: timeoutConfig.httpTimeout,
+  setupTimeout: timeoutConfig.setupTimeout,
+  teardownTimeout: timeoutConfig.teardownTimeout,
   
   tags: {
     testType: 'check-in-validation',
-    environment: __ENV.TEST_ENV || 'staging',
+    environment: thresholdConfig.environment,
+    thresholdVersion: thresholdConfig.metadata?.timestamp || 'unknown',
   },
 };
 

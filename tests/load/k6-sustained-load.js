@@ -26,6 +26,14 @@ const apiResponseTime = new Trend('api_response_time');
 const errorRate = new Rate('error_rate');
 const activeOperations = new Gauge('active_operations');
 
+// Import threshold selector for dynamic configuration
+import { getThresholds, getTimeoutConfig, getExecutionParams } from '../utils/threshold-loader.js';
+
+// Get environment-aware configuration
+const thresholdConfig = getThresholds('sustained');
+const timeoutConfig = getTimeoutConfig();
+const execParams = getExecutionParams('sustained');
+
 // Test configuration for sustained load
 export let options = {
   stages: [
@@ -34,25 +42,19 @@ export let options = {
     { duration: '2m', target: 0 },    // Ramp down
   ],
   
-  thresholds: {
-    // Performance requirements
-    'http_req_duration': ['p(95)<500', 'p(99)<1000'],
-    'api_response_time': ['avg<200', 'p(95)<500'],
-    
-    // Stability requirements
-    'operation_success_rate': ['rate>0.98'],
-    'error_rate': ['rate<0.02'],
-    'cache_hit_rate': ['rate>0.70'],
-    
-    // Resource requirements
-    'memory_usage_mb': ['avg<512', 'max<1024'],
-    'cpu_usage_percent': ['avg<70', 'max<90'],
-    'database_connections': ['avg<50', 'max<100'],
-  },
+  // Dynamic thresholds based on environment
+  thresholds: thresholdConfig.thresholds,
+  
+  // Environment-specific timeouts
+  httpTimeout: timeoutConfig.httpTimeout,
+  setupTimeout: timeoutConfig.setupTimeout,
+  teardownTimeout: timeoutConfig.teardownTimeout,
   
   tags: {
     testType: 'sustained-load',
-    environment: __ENV.TEST_ENV || 'staging',
+    environment: thresholdConfig.environment,
+    maxDuration: execParams.maxDuration,
+    thresholdVersion: thresholdConfig.metadata?.timestamp || 'unknown',
   },
 };
 

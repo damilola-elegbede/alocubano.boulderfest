@@ -1,480 +1,295 @@
-# A Lo Cubano Boulder Fest - Development Guide
+# CLAUDE.md
 
-## Project Overview
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-A Cuban salsa festival website featuring workshops, social dancing, and community celebration in Boulder, Colorado.
+## A Lo Cubano Boulder Fest - Development Guide
+
+Cuban salsa festival website for Boulder, Colorado with workshops, social dancing, and community celebration.
 
 **Festival Dates**: May 15-17, 2026  
-**Location**: Avalon Ballroom, Boulder, CO  
-**Website**: Typography-forward design celebrating Cuban culture
+**Location**: Avalon Ballroom, Boulder, CO
 
-## Development Standards
+## Critical Development Rules
 
-### Critical Rules
-
-**NEVER use --no-verify**
+**NEVER use --no-verify** - Test failures are always real problems that need investigation.
 
 ```bash
-# ❌ FORBIDDEN - Test failures are ALWAYS real
-git commit --no-verify  # NEVER DO THIS
-git push --no-verify    # NEVER DO THIS
+# ❌ FORBIDDEN - Fix test failures first
+git commit --no-verify  # NEVER
+git push --no-verify    # NEVER
 
-# ✅ REQUIRED - Fix all test failures first
+# ✅ REQUIRED - Fix all failures
 npm test && git commit
 npm test && git push
 ```
 
-When tests fail, it means something is broken. Always investigate and fix the root cause.
+## Common Commands
 
-### Code Quality
-
-- **Tests**: Maintain 80%+ coverage on critical paths
-- **Memory**: Vitest limited to 2 concurrent threads (prevents 40GB+ usage)
-- **Performance**: <100ms API responses, Core Web Vitals green
-- **Security**: Escape HTML, validate inputs, use environment variables
-
-### Git Workflow
-
+### Development
 ```bash
-# Branch naming
-feature/brevo-email-integration
-fix/memory-leak-in-tests
+# Start development server with ngrok (default)
+npm start
+# Starts at https://alocubanoboulderfest.ngrok.io
 
-# Commit messages (with Co-Authored-By)
-fix: resolve memory leaks in test suite
+# Local development without ngrok
+npm run start:local
+# Starts at http://localhost:3000
 
-- Reduce concurrency from 8 to 2 threads
-- Add cleanup in afterEach hooks
-- Tests now use <10GB memory total
-
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
+# Simple HTTP server (no API functions)
+npm run serve:simple
 ```
-
-## Technical Stack
-
-### Frontend
-
-- Vanilla JavaScript (ES6 modules)
-- CSS3 with mobile-first responsive design
-- Virtual gallery with lazy loading
-- Service worker for offline support
-- Floating cart system with intelligent visibility
-
-### Backend
-
-- Vercel serverless functions
-- Brevo (SendinBlue) email integration
-- SQLite database for subscribers
-- Token-based authentication
 
 ### Testing
-
-- Vitest with jsdom environment
-- Unit, integration, and E2E tests
-- Pre-commit hooks with Husky
-- CI/CD via GitHub Actions
-
-## Environment Setup
-
-### Required Environment Variables
-
 ```bash
-BREVO_API_KEY=your-api-key
-BREVO_NEWSLETTER_LIST_ID=1
-BREVO_WELCOME_TEMPLATE_ID=1
-BREVO_VERIFICATION_TEMPLATE_ID=1
-UNSUBSCRIBE_SECRET=your-secret
-BREVO_WEBHOOK_SECRET=webhook-secret
-```
-
-### Local Development
-
-```bash
-# Install dependencies
-npm install
-
-# Start development server (with ngrok by default)
-npm start
-# or
-npm run dev
-
-# Start without ngrok (local only)
-npm run start:local
-
-# Run tests
+# Run unit tests (configured with 2 concurrent threads to prevent memory issues)
 npm test
+npm run test:unit
 
 # Run specific test file
 npm run test:unit -- tests/unit/brevo-service.test.js
-```
 
-### Default Development Environment (ngrok)
-
-The project uses ngrok as the default development environment:
-
-1. **First time setup**:
-   - Install ngrok: `brew install ngrok`
-   - Configure auth token: `ngrok config add-authtoken YOUR_TOKEN`
-   - Copy `.env.local.example` to `.env.local` and add credentials
-
-2. **Start development**:
-   ```bash
-   npm start
-   ```
-
-3. **Access your site** at: `https://alocubanoboulderfest.ngrok.io`
-4. **ngrok dashboard** at: `http://localhost:4040`
-5. **Fallback**: If ngrok isn't installed, automatically starts local server
-
-Benefits of ngrok as default:
-- Test Apple Sign In and other OAuth flows
-- Share development URL with team members
-- Test webhooks from external services
-- Mobile device testing on same network
-- Consistent HTTPS environment
-
-## Server Logging
-
-When starting the server using `npm start`, pipe the output to a log file in `./.tmp/` directory:
-
-```bash
-# First run
-npm start > ./.tmp/server.log 2>&1
-
-# Subsequent runs (if file exists)
-npm start > ./.tmp/server_1.log 2>&1
-npm start > ./.tmp/server_2.log 2>&1
-```
-
-## Common Tasks
-
-### Running Tests
-
-```bash
-# All tests
-npm test
-
-# Unit tests only
-npm run test:unit
-
-# With coverage
+# Run with coverage
 npm run test:coverage
 
 # Watch mode
 npm run test:unit:watch
+
+# Integration tests
+npm run test:integration
+
+# Database tests
+npm run test:database
+
+# Performance tests  
+npm run test:performance
+
+# Pre-push validation (full suite)
+npm run test:pre-push
 ```
 
-### Debugging Test Issues
-
+### Database Management
 ```bash
-# If tests hang or use too much memory
-NODE_OPTIONS="--max-old-space-size=4096" npm test
+# Run migrations
+npm run migrate:up
 
-# Check memory usage
-npm run test:unit -- --reporter=verbose
+# Check migration status
+npm run migrate:status
 
-# Run single test file
-npm run test:unit -- --run path/to/test.js
+# Verify migrations
+npm run migrate:verify
+
+# Database shell
+npm run db:shell
+
+# Health checks
+npm run health:database
 ```
 
 ### Deployment
-
 ```bash
-# Check before deploy
+# Pre-deployment validation
 npm run deploy:check
 
-# Deploy to staging
-vercel --target preview
+# Deploy to staging (with quality gates)
+npm run deploy:staging
 
-# Production (automatic on merge to main)
+# Production deployment (automatic on main branch)
 git push origin main
 ```
 
-## API Development
+### Monitoring & Health
+```bash
+# Health checks
+npm run health:check      # Overall health
+npm run health:database   # Database health
+npm run health:stripe     # Stripe integration
+npm run health:brevo      # Email service
 
-### Email Subscribe Endpoint
-
-```javascript
-// POST /api/email/subscribe
-{
-  "email": "user@example.com",
-  "firstName": "John",
-  "lastName": "Doe",
-  "marketingConsent": true,
-  "dataProcessingConsent": true
-}
+# Monitoring
+npm run monitoring:metrics
+npm run monitoring:uptime
+npm run monitoring:dashboard
 ```
 
-### Email Unsubscribe
+## Architecture Overview
 
-```javascript
-// GET/POST /api/email/unsubscribe
-// Requires: email and token parameters
-// Returns: HTML confirmation page
+### Frontend Architecture
+- **Vanilla JavaScript** with ES6 modules
+- **Typography-forward design** using multiple font families
+- **Virtual gallery** with lazy loading and Google Drive integration
+- **Floating cart system** with intelligent page-specific visibility
+- **Service worker** for offline support and caching
+- **Mobile-first responsive** with slide-in navigation
+
+### Backend Architecture  
+- **Vercel serverless functions** for API endpoints
+- **SQLite database** with automated migration system
+- **Brevo (SendinBlue)** for email marketing integration
+- **Stripe Checkout** for payment processing
+- **Apple/Google Wallet** pass generation
+- **JWT-based authentication** for admin and wallet passes
+
+### Testing Architecture
+- **Vitest** with jsdom for browser-based testing
+- **2 concurrent threads max** to prevent memory exhaustion
+- **Pre-commit hooks** with Husky
+- **CI/CD via GitHub Actions** on main/develop branches
+- **80% coverage target** on critical paths
+
+## Key API Endpoints
+
+### Email System
+- `POST /api/email/subscribe` - Newsletter subscription
+- `GET/POST /api/email/unsubscribe` - Unsubscribe with token
+- `POST /api/email/brevo-webhook` - Webhook processing
+
+### Payment System
+- `POST /api/payments/create-checkout-session` - Stripe checkout
+- `POST /api/payments/stripe-webhook` - Payment webhooks
+- `GET /api/payments/checkout-success` - Success handler
+
+### Ticket System
+- `GET /api/tickets/[ticketId]` - Ticket details
+- `POST /api/tickets/validate` - QR code validation
+- `GET /api/tickets/apple-wallet/[ticketId]` - Apple pass
+- `GET /api/tickets/google-wallet/[ticketId]` - Google pass
+
+### Admin System
+- `POST /api/admin/login` - Admin authentication
+- `GET /api/admin/dashboard` - Dashboard data
+- `GET /api/admin/registrations` - Registration data
+
+## Environment Variables
+
+Required variables in `.env.local`:
+
+```bash
+# Email Service
+BREVO_API_KEY=
+BREVO_NEWSLETTER_LIST_ID=
+BREVO_WEBHOOK_SECRET=
+
+# Payment Processing
+STRIPE_PUBLISHABLE_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+
+# Database (Production)
+TURSO_DATABASE_URL=
+TURSO_AUTH_TOKEN=
+
+# Admin
+ADMIN_PASSWORD=  # bcrypt hash
+ADMIN_SECRET=     # min 32 chars
+
+# Wallet Passes
+APPLE_PASS_KEY=   # base64 private key
+WALLET_AUTH_SECRET=  # JWT signing
 ```
 
-### Webhook Processing
+## Database Migrations
 
-```javascript
-// POST /api/email/brevo-webhook
-// Validates signature if BREVO_WEBHOOK_SECRET is set
-// Processes: delivered, opened, clicked, bounced, etc.
-```
+Migrations are in `/migrations/*.sql` and run automatically on deployment.
 
-## Cart System Architecture
+Migration system features:
+- Transactional execution with automatic rollback
+- Checksum verification for integrity
+- SQL statement parsing handles comments and strings
+- Status tracking in migrations table
 
-### Floating Cart Implementation
+## Cart System Visibility Rules
 
-The floating cart system provides a persistent shopping experience across all pages with intelligent visibility rules.
+The floating cart has intelligent page-specific behavior:
 
-#### Core Components
+- **Always visible**: `/tickets`, `/donations`
+- **Visible with items**: `/about`, `/artists`, `/schedule`, `/gallery`
+- **Never visible**: `/404`, `/index.html`
 
-- **floating-cart.js**: Main cart management and UI logic
-- **cart-manager.js**: State management and data persistence
-- **CSS components**: Responsive styling and animations
-
-#### Visibility Logic (determineCartVisibility function)
-
-```javascript
-function determineCartVisibility(hasItems) {
-  const currentPath = window.location.pathname;
-
-  // Page behavior configuration
-  const pageConfig = {
-    // Always visible on purchase pages
-    alwaysShow: ["/tickets", "/donations"],
-    // Never visible on error/redirect pages
-    neverShow: ["/404", "/index.html"],
-    // Other pages: show only when cart has items
-    showWhenHasItems: true,
-  };
-}
-```
-
-#### Page-Specific Behavior
-
-- **Purchase Pages** (`/tickets`, `/donations`): Always visible to encourage purchases
-- **Content Pages** (`/about`, `/artists`, `/schedule`, `/gallery`): Visible only when cart contains items
-- **System Pages** (`/404`, `/index.html`): Never visible to avoid UI conflicts
-
-#### State Management
-
-- **LocalStorage persistence**: Cart contents survive page refreshes and navigation
-- **Real-time updates**: Cart UI updates immediately when items are added/removed
-- **Cross-page synchronization**: Cart state maintained across all pages
-
-#### Performance Considerations
-
-- **Lazy initialization**: Cart elements created only when needed
-- **Event delegation**: Efficient event handling for dynamic content
-- **CSS animations**: Hardware-accelerated transitions for smooth UX
-- **Memory management**: Proper cleanup of event listeners and timers
+Managed by `determineCartVisibility()` in `floating-cart.js`.
 
 ## Performance Guidelines
 
-### Gallery Optimization
+- **Gallery**: Virtual scrolling for 1000+ images
+- **Images**: Progressive loading (AVIF → WebP → JPEG)
+- **API**: <100ms response target
+- **Caching**: 24-hour browser cache for static assets
+- **Memory**: Tests limited to 2 concurrent threads
 
-- Virtual scrolling for 1000+ images
-- Progressive image loading (AVIF → WebP → JPEG)
-- 24-hour browser cache for static assets
-- Lazy loading with Intersection Observer
+## Security Practices
 
-### Cart System Performance
+- **Input validation** on all user inputs
+- **HTML escaping** for XSS prevention
+- **Environment variables** for secrets (never hardcode)
+- **JWT authentication** with HMAC-SHA256
+- **Rate limiting** on API endpoints
+- **CORS configuration** for API security
 
-- **State persistence**: localStorage with JSON serialization
-- **UI updates**: Debounced rendering for smooth interactions
-- **Memory efficiency**: Event listener cleanup and DOM management
-- **Animation performance**: CSS transforms and opacity changes only
-
-### API Performance
-
-- Cache-first strategy with fallback
-- Rate limiting: 100 requests/minute
-- Response compression enabled
-- Error responses don't leak internal details
-
-## Security Best Practices
-
-### Input Validation
+## Debugging
 
 ```javascript
-// Always escape HTML
-function escapeHtml(unsafe) {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+// Browser console commands
 
-// Note: For production use, consider using a well-maintained sanitization library
-// like DOMPurify (https://github.com/cure53/DOMPurify) or the xss npm package
-// (https://www.npmjs.com/package/xss). These libraries provide more robust and
-// secure HTML sanitization than handcrafted helpers, handling edge cases and
-// staying updated with emerging security threats.
-
-// Validate emails
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-if (!emailRegex.test(email)) {
-  return res.status(400).json({ error: "Invalid email" });
-}
-```
-
-### Environment Variables
-
-```javascript
-// ✅ CORRECT
-const apiKey = process.env.BREVO_API_KEY;
-
-// ❌ NEVER hardcode secrets
-const apiKey = "actual-key-here"; // FORBIDDEN
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**Tests Failing with Memory Errors**
-
-- Vitest is configured for max 2 concurrent threads
-- Check for memory leaks in test cleanup
-- Run `npm run test:unit -- --run` for single-threaded
-
-**CI/CD Pipeline Not Triggering**
-
-- Ensure branch matches pattern in `.github/workflows/ci.yml`
-- Feature branches need `feature/**` pattern
-- Check GitHub Actions logs for details
-
-**Deploy Preview Not Created**
-
-- Deploy previews only trigger on pull requests
-- Direct pushes to feature branches skip preview
-- Create PR to see preview deployment
-
-**API Rate Limiting**
-
-- Check request patterns in logs
-- Implement exponential backoff
-- Cache responses when possible
-
-## Quick Debug Commands
-
-```javascript
-// In browser console
-
-// Enable gallery debug mode
+// Gallery debugging
 window.enableGalleryDebug();
-
-// Check cache statistics
 window.galleryDebugAPI.getCacheStats();
-
-// Clear all caches
 window.galleryDebugAPI.clearCache();
 
-// View current gallery state
-window.galleryDebugAPI.getState();
-
-// Cart system debugging
-// Check cart visibility logic
-console.log("Cart should be visible:", determineCartVisibility(true));
-console.log("Current page path:", window.location.pathname);
-
-// View cart state
+// Cart debugging  
+console.log("Cart visibility:", determineCartVisibility(true));
 console.log("Cart contents:", JSON.parse(localStorage.getItem("cart") || "[]"));
 
-// Force cart visibility (for testing)
+// Force cart visibility
 document.querySelector(".floating-cart").style.display = "block";
-
-// Check cart manager instance
-if (window.cartManager) {
-  console.log("Cart items:", window.cartManager.getItems());
-  console.log("Cart total:", window.cartManager.getTotal());
-}
 ```
+
+## CI/CD Pipeline
+
+GitHub Actions workflow triggers:
+- **Push to main/develop**: Full test suite
+- **Pull requests**: Linting + tests + build verification
+- **Deployment**: Automatic to Vercel on main branch
+
+Pipeline includes:
+- ESLint + HTMLHint validation
+- Unit tests with Vitest
+- Link validation
+- Security scanning
+- Multi-node version testing (18, 20)
 
 ## Project Structure
 
 ```
 /
 ├── api/               # Serverless functions
+│   ├── lib/          # Shared services
+│   ├── admin/        # Admin endpoints
+│   ├── payments/     # Payment processing
+│   └── tickets/      # Ticket management
 ├── css/              # Stylesheets
 ├── js/               # Frontend JavaScript
-│   ├── floating-cart.js    # Cart UI and visibility logic
-│   ├── cart-manager.js     # Cart state management
-│   ├── navigation.js       # Menu & transitions
-│   ├── main.js            # Core functionality
-│   ├── typography.js      # Typography effects
-│   └── gallery.js         # Google Drive media integration
-├── pages/            # HTML pages
-│   ├── tickets.html       # Cart always visible
-│   ├── donations.html     # Cart always visible
-│   ├── about.html         # Cart visible when has items
-│   ├── artists.html       # Cart visible when has items
-│   ├── schedule.html      # Cart visible when has items
-│   └── gallery.html       # Cart visible when has items
+├── pages/            # HTML pages (multi-event support)
 ├── tests/            # Test suites
-│   ├── unit/        # Unit tests
-│   └── integration/ # Integration tests
-├── scripts/          # Build scripts
-├── config/           # Configuration files
-└── migrations/       # Database migrations
+│   ├── unit/         # Unit tests
+│   └── integration/  # Integration tests
+├── migrations/       # Database migrations
+├── scripts/          # Build and utility scripts
+└── config/           # Configuration files
 ```
 
-## Apple Wallet Security Updates
+## Apple Wallet Security (Phase 3 Completed)
 
-### Critical Security Fixes Applied (Phase 3)
-
-**Certificate Handling Fix**:
-- **Issue**: `signerKey` incorrectly contained password instead of private key certificate
-- **Fix**: Separated `APPLE_PASS_KEY` (private key) from `APPLE_PASS_PASSWORD` (passphrase)
-- **Impact**: Proper certificate validation and PKPass generation
-
-**PKPass Constructor Fix**:
-- **Issue**: Incorrect parameter mapping - `signerKey` used for `signerKeyPassphrase`
-- **Fix**: Correct parameter mapping with dedicated `signerKeyPassphrase` property
-- **Impact**: Proper certificate signing during pass generation
-
-**JWT Authentication Implementation**:
-- **Issue**: Weak base64 authentication token vulnerable to tampering
-- **Fix**: Proper JWT implementation using `jsonwebtoken` library with HMAC-SHA256
-- **Impact**: Cryptographically secure authentication for wallet pass updates
-
-**Serial Number Security**:
-- **Issue**: Collision-prone serial numbers using timestamp + partial UUID
-- **Fix**: Full UUID implementation for cryptographically secure uniqueness
-- **Impact**: Eliminates potential serial number collisions
-
-**Configuration Validation**:
-- **Issue**: Incomplete certificate validation in `isConfigured()` check
-- **Fix**: Comprehensive validation including passphrase and auth secret verification
-- **Impact**: Prevents runtime failures due to incomplete configuration
-
-### Environment Variables Added
-
-```bash
-# New secure wallet configuration
-APPLE_PASS_KEY=base64-encoded-private-key  # Separated from password
-WALLET_AUTH_SECRET=secure-random-string    # For JWT signing
-```
-
-All environment template files updated with secure configuration examples.
+Recent security fixes applied:
+- Separated `APPLE_PASS_KEY` from `APPLE_PASS_PASSWORD`
+- Implemented proper JWT authentication with `WALLET_AUTH_SECRET`
+- Full UUID serial numbers for uniqueness
+- Comprehensive certificate validation
 
 ## Contact & Resources
 
-**Project**: A Lo Cubano Boulder Fest  
 **Email**: alocubanoboulderfest@gmail.com  
 **Instagram**: [@alocubano.boulderfest](https://www.instagram.com/alocubano.boulderfest/)
 
 **Documentation**:
-
 - [Vercel Deployment](https://vercel.com/docs)
-- [Brevo API Docs](https://developers.brevo.com)
-- [Vitest Testing](https://vitest.dev)
-
----
-
-Remember: **NEVER use --no-verify**. Test failures are real problems that need real solutions.
+- [Brevo API](https://developers.brevo.com)
+- [Vitest](https://vitest.dev)

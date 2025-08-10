@@ -540,7 +540,7 @@ class LinkChecker {
 
     // Define exact Vercel rewrites from vercel.json
     const vercelRewrites = {
-      "/": "/index.html",
+      "/": "/pages/index.html",
       "/home": "/pages/home.html",
       "/about": "/pages/about.html",
       "/boulder-fest-2026/home": "/pages/home.html",

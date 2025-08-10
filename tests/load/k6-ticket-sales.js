@@ -25,6 +25,12 @@ const apiErrorRate = new Rate('api_errors');
 const purchaseAbandonment = new Counter('purchase_abandonment');
 const activeUsers = new Gauge('active_users');
 
+// Import threshold selector for dynamic configuration
+import { getThresholds } from '../utils/threshold-loader.js';
+
+// Get environment-aware thresholds
+const thresholdConfig = getThresholds('ticket-sales');
+
 // Test configuration with realistic load patterns
 export let options = {
   stages: [
@@ -33,24 +39,14 @@ export let options = {
     { duration: '5m', target: 150 },  // Sustain peak load
     { duration: '2m', target: 0 },    // Gradual ramp down
   ],
-  thresholds: {
-    // Response time requirements (optimized for Vercel serverless)
-    'http_req_duration': ['p(95)<800', 'p(99)<2000'], // Adjusted for cold starts
-    'http_req_duration{name:payment}': ['p(95)<500'], // Adjusted for serverless payment processing
-    'http_req_duration{name:cart}': ['p(95)<300'],   // Adjusted for database operations
-    
-    // Error rate requirements (more lenient for serverless)
-    'http_req_failed': ['rate<0.02'],  // Account for cold start failures
-    'api_errors': ['rate<0.02'],
-    
-    // Business metrics (adjusted for serverless reliability)
-    'ticket_purchase_success': ['rate>0.90'], // More realistic for serverless
-    'checkout_completion': ['rate>0.85'],     // Account for potential timeouts
-    'payment_processing_duration': ['avg<500', 'p(95)<1000'], // Serverless function limits
-  },
+  
+  // Dynamic thresholds based on environment
+  thresholds: thresholdConfig.thresholds,
+  
   tags: {
     testType: 'ticket-sales',
-    environment: __ENV.TEST_ENV || 'staging',
+    environment: thresholdConfig.environment,
+    thresholdVersion: thresholdConfig.metadata?.timestamp || 'unknown',
   },
 };
 
