@@ -1,12 +1,15 @@
 /**
-
-import { vi } from 'vitest';
  * Gallery-Lightbox Integration Tests
  * Testing actual component interaction between Gallery and Lightbox
  */
 
-const fs = require("fs");
-const path = require("path");
+import { vi } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load actual source code for integration testing
 let gallerySource, lightboxSource;

@@ -4,8 +4,12 @@
  */
 
 import { vi } from "vitest";
-const fs = require("fs");
-const path = require("path");
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load actual source code for compatibility testing
 let gallerySource, lightboxSource, lazyLoadingSource;

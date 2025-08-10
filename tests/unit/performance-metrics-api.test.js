@@ -1,20 +1,36 @@
 /**
-
-import { vi } from 'vitest';
  * Performance Metrics API Unit Tests
  * Comprehensive test suite for the serverless performance metrics endpoint
  */
 
-// Mock crypto module for Node.js environment
-const crypto = require("crypto");
+import { vi } from 'vitest';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+// Mock crypto module for test environment
+const crypto = {
+  randomBytes: (size) => ({
+    toString: (encoding) => {
+      // Generate a unique hex string for each call
+      const randomHex = Array.from({ length: size * 2 }, () => 
+        Math.floor(Math.random() * 16).toString(16)
+      ).join('');
+      return randomHex;
+    }
+  })
+};
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Mock the performance metrics API handler
 let performanceMetricsHandler;
 
 beforeAll(async () => {
-  // Mock the API handler by requiring it
+  // Mock the API handler by importing it
   try {
-    performanceMetricsHandler = require("../../api/performance-metrics.js");
+    const module = await import("../../api/performance-metrics.js");
+    performanceMetricsHandler = module.default || module;
   } catch (error) {
     // If the file doesn't exist, create a mock implementation
     performanceMetricsHandler = {
