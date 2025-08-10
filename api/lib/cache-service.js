@@ -225,9 +225,17 @@ class CacheService {
   async cacheApiResponse(endpoint, method, params, response) {
     const cache = await this.ensureInitialized();
 
-    // Sort params keys for stable cache keys
+    // Create stable cache key by sorting all object keys recursively
     const sortedParams = params 
-      ? JSON.stringify(params, Object.keys(params).sort())
+      ? JSON.stringify(params, (key, value) => {
+          if (value && typeof value === 'object' && !Array.isArray(value)) {
+            return Object.keys(value).sort().reduce((sorted, k) => {
+              sorted[k] = value[k];
+              return sorted;
+            }, {});
+          }
+          return value;
+        })
       : '{}';
     const cacheKey = `${method}:${endpoint}:${sortedParams}`;
 
@@ -243,9 +251,17 @@ class CacheService {
   async getCachedApiResponse(endpoint, method, params) {
     const cache = await this.ensureInitialized();
 
-    // Sort params keys for stable cache keys
+    // Create stable cache key by sorting all object keys recursively
     const sortedParams = params 
-      ? JSON.stringify(params, Object.keys(params).sort())
+      ? JSON.stringify(params, (key, value) => {
+          if (value && typeof value === 'object' && !Array.isArray(value)) {
+            return Object.keys(value).sort().reduce((sorted, k) => {
+              sorted[k] = value[k];
+              return sorted;
+            }, {});
+          }
+          return value;
+        })
       : '{}';
     const cacheKey = `${method}:${endpoint}:${sortedParams}`;
 

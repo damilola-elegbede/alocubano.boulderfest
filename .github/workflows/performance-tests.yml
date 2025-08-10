@@ -47,9 +47,9 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      tests-to-run: ${{ steps.determine-tests.outputs.tests }}
-      target-url: ${{ steps.determine-url.outputs.url }}
-      should-update-baselines: ${{ steps.determine-baselines.outputs.update }}
+      tests_to_run: ${{ steps.determine-tests.outputs.tests }}
+      target_url: ${{ steps.determine-url.outputs.url }}
+      should_update_baselines: ${{ steps.determine-baselines.outputs.update }}
 
     steps:
       - name: Checkout code
@@ -236,7 +236,7 @@ jobs:
           echo "🔍 Debug: Deployment URL information"
           echo "Vercel action output URL: ${{ steps.wait-for-deployment.outputs.url }}"
           echo "Fallback detection URL: ${{ steps.fallback-deployment.outputs.url }}"
-          echo "Constructed fallback URL: ${{ needs.setup.outputs.target-url }}"
+          echo "Constructed fallback URL: ${{ needs.setup.outputs.target_url }}"
           echo "GitHub context - head_ref: ${{ github.head_ref }}"
           echo "GitHub context - ref: ${{ github.ref }}"
           echo "Wait action outcome: ${{ steps.wait-for-deployment.outcome }}"
@@ -258,7 +258,7 @@ jobs:
 
           if [ -z "$DEPLOYMENT_URL" ]; then
             echo "⚠️ No deployment URL found, falling back to constructed URL"
-            DEPLOYMENT_URL="${{ needs.setup.outputs.target-url }}"
+            DEPLOYMENT_URL="${{ needs.setup.outputs.target_url }}"
           fi
 
           # Validate URL format
@@ -309,7 +309,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30  # Allow more time for performance tests
     needs: [setup, wait-for-deployment]
-    if: always() && needs.setup.result == 'success' && (needs.wait-for-deployment.result == 'success' || needs.wait-for-deployment.result == 'skipped' || needs.wait-for-deployment.outputs.deployment-found == 'true')
+    if: always() && needs.setup.result == 'success' && (needs.wait-for-deployment.result == 'success' || needs.wait-for-deployment.result == 'skipped' || needs.wait-for-deployment.outputs.deployment_found == 'true')
 
     strategy:
       fail-fast: false
@@ -342,7 +342,7 @@ jobs:
         run: mkdir -p reports/load-test-results reports/performance-baselines
 
       - name: Download existing baselines
-        if: needs.setup.outputs.should-update-baselines == 'true'
+        if: needs.setup.outputs.should_update_baselines == 'true'
         continue-on-error: true
         run: |
           echo "📥 Downloading existing baselines..."
@@ -358,7 +358,7 @@ jobs:
           echo "🚀 Starting performance tests..."
 
           # Use the actual deployment URL from Vercel for PR previews, fallback to constructed URL
-          TARGET_URL="${{ needs.wait-for-deployment.outputs.deployment_url || needs.setup.outputs.target-url }}"
+          TARGET_URL="${{ needs.wait-for-deployment.outputs.deployment_url || needs.setup.outputs.target_url }}"
 
           echo "Target URL: $TARGET_URL"
           echo "Tests to run: ${{ matrix.test_group.tests }}"
@@ -369,7 +369,7 @@ jobs:
           fi
 
           BASELINE_FLAG=""
-          if [ "${{ needs.setup.outputs.should-update-baselines }}" = "true" ]; then
+          if [ "${{ needs.setup.outputs.should_update_baselines }}" = "true" ]; then
             BASELINE_FLAG="--update-baselines"
           fi
 
@@ -380,7 +380,7 @@ jobs:
             $BASELINE_FLAG \
             --verbose
         env:
-          LOAD_TEST_BASE_URL: ${{ needs.wait-for-deployment.outputs.deployment_url || needs.setup.outputs.target-url }}
+          LOAD_TEST_BASE_URL: ${{ needs.wait-for-deployment.outputs.deployment_url || needs.setup.outputs.target_url }}
           NODE_ENV: ${{ github.event.inputs.environment || 'staging' }}
           ALERT_WEBHOOK_URL: ${{ secrets.PERFORMANCE_ALERT_WEBHOOK }}
           ESCALATION_WEBHOOK_URL: ${{ secrets.PERFORMANCE_ESCALATION_WEBHOOK }}
@@ -396,7 +396,7 @@ jobs:
           retention-days: 30
 
       - name: Upload baselines
-        if: needs.setup.outputs.should-update-baselines == 'true'
+        if: needs.setup.outputs.should_update_baselines == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: performance-baselines
@@ -506,7 +506,7 @@ jobs:
             **Test Reports:**
             ${summary.reports.map(report => `- 📋 [${report}](../actions/runs/${{ github.run_id }})`).join('\n')}
 
-            **Target Environment:** ${{ needs.wait-for-deployment.outputs.deployment_url || needs.setup.outputs.target-url }}
+            **Target Environment:** ${{ needs.wait-for-deployment.outputs.deployment_url || needs.setup.outputs.target_url }}
 
             ${summary.criticalIssues > 0 ?
               '⚠️ **Action Required:** Critical performance issues detected. Review test results before merging.' :
@@ -558,7 +558,7 @@ jobs:
     if: |
       always() &&
       needs.setup.result == 'success' &&
-      (needs.wait-for-deployment.result == 'success' || needs.wait-for-deployment.result == 'skipped' || needs.wait-for-deployment.outputs.deployment-found == 'true') &&
+      (needs.wait-for-deployment.result == 'success' || needs.wait-for-deployment.result == 'skipped' || needs.wait-for-deployment.outputs.deployment_found == 'true') &&
       (github.event_name == 'schedule' ||
        github.event_name == 'workflow_dispatch' ||
        (github.event_name == 'push' && github.ref == 'refs/heads/main'))
@@ -586,7 +586,7 @@ jobs:
           echo "💪 Running stress tests..."
 
           # Use the actual deployment URL from Vercel for PR previews, fallback to constructed URL
-          TARGET_URL="${{ needs.wait-for-deployment.outputs.deployment_url || needs.setup.outputs.target-url }}"
+          TARGET_URL="${{ needs.wait-for-deployment.outputs.deployment_url || needs.setup.outputs.target_url }}"
 
           echo "Target URL: $TARGET_URL"
 
@@ -595,7 +595,7 @@ jobs:
             --url="$TARGET_URL" \
             --verbose
         env:
-          LOAD_TEST_BASE_URL: ${{ needs.wait-for-deployment.outputs.deployment_url || needs.setup.outputs.target-url }}
+          LOAD_TEST_BASE_URL: ${{ needs.wait-for-deployment.outputs.deployment_url || needs.setup.outputs.target_url }}
           NODE_ENV: ${{ github.event.inputs.environment || 'staging' }}
           ALERT_WEBHOOK_URL: ${{ secrets.PERFORMANCE_ALERT_WEBHOOK }}
 

@@ -58,7 +58,7 @@ runs:
         # Query GitHub Deployments API
         # Note: Using URL parameters for GET request, not --field which creates POST
         DEPLOYMENTS=$(gh api "repos/${{ github.repository }}/deployments?ref=${REF}&per_page=20" \
-          --jq '[.[] | select(.creator.login == "vercel[bot]")] | .[0] // null' \
+          --jq '[.[] | select(.creator.login == "vercel[bot]")] | sort_by(.created_at) | reverse | .[0] // null' \
           || echo "null")
         
         if [ "$DEPLOYMENTS" != "null" ] && [ -n "$DEPLOYMENTS" ]; then
@@ -87,7 +87,7 @@ runs:
           
           # Get recent deployments without ref filter
           RECENT_DEPLOYMENT=$(gh api "repos/${{ github.repository }}/deployments?per_page=10" \
-            --jq '[.[] | select(.creator.login == "vercel[bot]")] | .[0] // null' \
+            --jq '[.[] | select(.creator.login == "vercel[bot]")] | sort_by(.created_at) | reverse | .[0] // null' \
             || echo "null")
           
           if [ "$RECENT_DEPLOYMENT" != "null" ] && [ -n "$RECENT_DEPLOYMENT" ]; then
