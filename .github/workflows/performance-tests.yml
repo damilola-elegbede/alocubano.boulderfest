@@ -1,0 +1,608 @@
+name: Performance Testing Pipeline
+
+on:
+  # UNIQUE PURPOSE: Comprehensive performance testing pipeline
+  # Focuses on K6 load testing and performance analysis
+  # Removed PR trigger to eliminate redundancy with deployment health monitor
+
+  # Allow manual triggering for performance testing
+  workflow_dispatch:
+    inputs:
+      tests_to_run:
+        description: 'Comma-separated list of tests to run (ticket-sales,check-in,sustained,stress)'
+        required: false
+        default: 'ticket-sales,check-in'
+      environment:
+        description: 'Target environment'
+        required: false
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      update_baselines:
+        description: 'Update performance baselines'
+        required: false
+        default: false
+        type: boolean
+      run_parallel:
+        description: 'Run tests in parallel'
+        required: false
+        default: false
+        type: boolean
+
+  # Schedule regular performance checks (daily at 2 AM UTC)
+  # This provides automated performance regression detection
+  schedule:
+    - cron: '0 2 * * *'
+
+env:
+  NODE_VERSION: '18'
+  K6_VERSION: '0.47.0'
+
+jobs:
+  # Setup and validation job
+  setup:
+    name: Setup and Validation
+    runs-on: ubuntu-latest
+
+    outputs:
+      tests_to_run: ${{ steps.determine-tests.outputs.tests }}
+      target_url: ${{ steps.determine-url.outputs.url }}
+      should_update_baselines: ${{ steps.determine-baselines.outputs.update }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Determine tests to run
+        id: determine-tests
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TESTS="${{ github.event.inputs.tests_to_run }}"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            TESTS="ticket-sales,check-in,sustained"
+          elif [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            TESTS="ticket-sales,check-in"
+          else
+            # Pull request - run lightweight tests
+            TESTS="ticket-sales"
+          fi
+          echo "tests=${TESTS:-ticket-sales,check-in}" >> $GITHUB_OUTPUT
+
+      - name: Determine target URL
+        id: determine-url
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "production" ]; then
+            URL="https://alocubanoboulderfest.vercel.app"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            URL="https://alocubanoboulderfest.vercel.app"
+          else
+            # For PR previews, create a fallback URL (actual URL will come from wait-for-deployment)
+            # Vercel format: project-git-branch-team.vercel.app
+            BRANCH_NAME="${{ github.head_ref || 'main' }}"
+            # Replace invalid URL characters and limit length
+            SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-50 | sed 's/-*$//')
+            URL="https://alocubanoboulderfest-git-${SAFE_BRANCH}.vercel.app"
+            echo "⚠️ Using fallback constructed URL: $URL"
+            echo "📋 Actual deployment URL will be determined by Vercel preview action"
+          fi
+          echo "url=${URL}" >> $GITHUB_OUTPUT
+
+      - name: Determine baseline updates
+        id: determine-baselines
+        run: |
+          if [ "${{ github.event.inputs.update_baselines }}" = "true" ]; then
+            UPDATE="true"
+          elif [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            UPDATE="true"
+          else
+            UPDATE="false"
+          fi
+          echo "update=${UPDATE}" >> $GITHUB_OUTPUT
+
+      - name: Validate configuration
+        run: |
+          echo "🔍 Validating performance test configuration..."
+          if [ ! -f "config/performance-thresholds.json" ]; then
+            echo "❌ Performance thresholds configuration not found"
+            exit 1
+          fi
+
+          if [ ! -f "scripts/performance-test-runner.js" ]; then
+            echo "❌ Performance test runner not found"
+            exit 1
+          fi
+
+          # Check if test files exist
+          TESTS_LIST="${{ steps.determine-tests.outputs.tests }}"
+          echo "🔍 Processing tests: '$TESTS_LIST'"
+
+          # Handle empty or whitespace-only test lists
+          if [ -z "$TESTS_LIST" ] || [ "$TESTS_LIST" = " " ]; then
+            echo "❌ No tests specified"
+            exit 1
+          fi
+
+          for test in $(echo "$TESTS_LIST" | tr ',' ' ' | sed 's/  */ /g' | sed 's/^ *//; s/ *$//'); do
+            # Skip empty test names (from trailing commas, etc.)
+            if [ -z "$test" ] || [ "$test" = " " ]; then
+              continue
+            fi
+
+            echo "🔍 Validating test: '$test'"
+            case $test in
+              "ticket-sales") file="tests/load/k6-ticket-sales.js" ;;
+              "check-in") file="tests/load/k6-check-in-rush.js" ;;
+              "sustained") file="tests/load/k6-sustained-load.js" ;;
+              "stress") file="tests/load/k6-stress-test.js" ;;
+              *) echo "❌ Unknown test: '$test'"; exit 1 ;;
+            esac
+
+            if [ ! -f "$file" ]; then
+              echo "❌ Test file not found: $file"
+              exit 1
+            else
+              echo "✅ Test file validated: $file"
+            fi
+          done
+
+          # Validate health endpoint consistency in K6 tests
+          echo "🔍 Validating health endpoint consistency..."
+          if grep -r "api/health[^/]" tests/load/; then
+            echo "❌ Found incorrect health endpoint URLs in K6 tests"
+            echo "Use '/api/health/check' instead of '/api/health'"
+            exit 1
+          fi
+
+          echo "✅ All configurations validated"
+
+  # Wait for deployment (for manual runs against specific environments)
+  wait-for-deployment:
+    name: Wait for Deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 20  # Prevent indefinite hanging
+    needs: setup
+    # Only wait for deployment for manual workflow runs against preview environments
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging'
+
+    outputs:
+      deployment_url: ${{ steps.wait-for-deployment.outputs.url || steps.fallback-deployment.outputs.url }}
+      deployment_found: ${{ steps.wait-for-deployment.outputs.url != '' || steps.fallback-deployment.outputs.deployment_found == 'true' }}
+
+    steps:
+      - name: Wait for Vercel deployment
+        uses: patrickedqvist/wait-for-vercel-preview@v1.3.1
+        id: wait-for-deployment
+        continue-on-error: true
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          max_timeout: 600  # Increased from 300s (5min) to 600s (10min) for larger deployments
+          check_interval: 15  # Increased from 10s to 15s to reduce API pressure
+
+      - name: Fallback deployment detection
+        id: fallback-deployment
+        if: steps.wait-for-deployment.outcome == 'failure'
+        run: |
+          echo "⚠️ Wait action timed out, attempting manual deployment detection..."
+
+          # Get PR number and construct expected deployment URL
+          PR_NUMBER="${{ github.event.number }}"
+          BRANCH_NAME="${{ github.head_ref }}"
+          SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-50 | sed 's/-*$//')
+
+          # Try multiple common Vercel URL patterns
+          POSSIBLE_URLS=(
+            "https://alocubanoboulderfest-git-${SAFE_BRANCH}.vercel.app"
+            "https://alocubanoboulderfest-${SAFE_BRANCH}.vercel.app"
+            "https://alocubanoboulderfest-pr-${PR_NUMBER}.vercel.app"
+            "https://alocubano-boulderfest-git-${SAFE_BRANCH}.vercel.app"
+          )
+
+          echo "Testing potential deployment URLs..."
+          FOUND_URL=""
+
+          for url in "${POSSIBLE_URLS[@]}"; do
+            echo "Testing: $url"
+            if curl -f -s --connect-timeout 10 --max-time 30 "$url" > /dev/null; then
+              echo "✅ Found working deployment: $url"
+              FOUND_URL="$url"
+              break
+            else
+              echo "❌ Not found: $url"
+            fi
+          done
+
+          if [ -n "$FOUND_URL" ]; then
+            echo "url=$FOUND_URL" >> $GITHUB_OUTPUT
+            echo "deployment_found=true" >> $GITHUB_OUTPUT
+            echo "🎉 Deployment detected manually: $FOUND_URL"
+          else
+            echo "deployment_found=false" >> $GITHUB_OUTPUT
+            echo "❌ Could not detect deployment URL manually"
+          fi
+
+      - name: Debug deployment URLs
+        run: |
+          echo "🔍 Debug: Deployment URL information"
+          echo "Vercel action output URL: ${{ steps.wait-for-deployment.outputs.url }}"
+          echo "Fallback detection URL: ${{ steps.fallback-deployment.outputs.url }}"
+          echo "Constructed fallback URL: ${{ needs.setup.outputs.target_url }}"
+          echo "GitHub context - head_ref: ${{ github.head_ref }}"
+          echo "GitHub context - ref: ${{ github.ref }}"
+          echo "Wait action outcome: ${{ steps.wait-for-deployment.outcome }}"
+          echo "Fallback found deployment: ${{ steps.fallback-deployment.outputs.deployment_found }}"
+
+      - name: Verify deployment health
+        run: |
+          echo "🏥 Checking deployment health..."
+
+          # Use the actual deployment URL with proper fallback chain
+          DEPLOYMENT_URL="${{ steps.wait-for-deployment.outputs.url }}"
+
+          if [ -z "$DEPLOYMENT_URL" ]; then
+            DEPLOYMENT_URL="${{ steps.fallback-deployment.outputs.url }}"
+            if [ -n "$DEPLOYMENT_URL" ]; then
+              echo "✅ Using fallback detected URL: $DEPLOYMENT_URL"
+            fi
+          fi
+
+          if [ -z "$DEPLOYMENT_URL" ]; then
+            echo "⚠️ No deployment URL found, falling back to constructed URL"
+            DEPLOYMENT_URL="${{ needs.setup.outputs.target_url }}"
+          fi
+
+          # Validate URL format
+          if [[ ! "$DEPLOYMENT_URL" =~ ^https?:// ]]; then
+            echo "❌ Invalid URL format: $DEPLOYMENT_URL"
+            exit 1
+          fi
+
+          HEALTH_URL="${DEPLOYMENT_URL}/api/health/check"
+
+          echo "Deployment URL: $DEPLOYMENT_URL"
+          echo "Health Check URL: $HEALTH_URL"
+
+          # Test URL reachability first
+          echo "Testing URL reachability..."
+          if ! curl -f -s --connect-timeout 10 "$DEPLOYMENT_URL" > /dev/null; then
+            echo "⚠️ Base URL not reachable, waiting for deployment..."
+          fi
+
+          # Wait up to 2 minutes for health check to pass
+          for i in {1..12}; do
+            echo "Health check attempt $i/12..."
+
+            if curl -f -s --connect-timeout 30 --max-time 60 "$HEALTH_URL" > /dev/null; then
+              echo "✅ Deployment is healthy"
+
+              # Get health details for logging
+              HEALTH_RESPONSE=$(curl -s "$HEALTH_URL" || echo "Could not fetch health details")
+              echo "Health response: $HEALTH_RESPONSE"
+              exit 0
+            fi
+
+            if [ $i -eq 12 ]; then
+              echo "❌ Deployment health check failed after 2 minutes"
+              echo "URL: $HEALTH_URL"
+              echo "Final attempt with verbose output:"
+              curl -v --connect-timeout 30 --max-time 60 "$HEALTH_URL" || true
+              exit 1
+            fi
+
+            echo "Waiting 10 seconds before retry..."
+            sleep 10
+          done
+
+  # Performance testing job
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30  # Allow more time for performance tests
+    needs: [setup, wait-for-deployment]
+    if: always() && needs.setup.result == 'success' && (needs.wait-for-deployment.result == 'success' || needs.wait-for-deployment.result == 'skipped' || needs.wait-for-deployment.outputs.deployment_found == 'true')
+
+    strategy:
+      fail-fast: false
+      matrix:
+        test_group:
+          - {name: "critical", tests: "ticket-sales,check-in"}
+          - {name: "extended", tests: "sustained"}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install K6
+        run: |
+          echo "📦 Installing K6 v${{ env.K6_VERSION }}..."
+          curl -L "https://github.com/grafana/k6/releases/download/v${{ env.K6_VERSION }}/k6-v${{ env.K6_VERSION }}-linux-amd64.tar.gz" | tar xvz
+          sudo mv k6-v${{ env.K6_VERSION }}-linux-amd64/k6 /usr/local/bin/
+          k6 version
+
+      - name: Create reports directory
+        run: mkdir -p reports/load-test-results reports/performance-baselines
+
+      - name: Download existing baselines
+        if: needs.setup.outputs.should_update_baselines == 'true'
+        continue-on-error: true
+        run: |
+          echo "📥 Downloading existing baselines..."
+          # Try to download from previous workflow runs
+          gh run list --workflow="performance-tests.yml" --status=success --limit=1 --json databaseId | \
+            jq -r '.[0].databaseId' | \
+            xargs -I {} gh run download {} --name performance-baselines || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run performance tests
+        run: |
+          echo "🚀 Starting performance tests..."
+
+          # Use the actual deployment URL from Vercel for PR previews, fallback to constructed URL
+          TARGET_URL="${{ needs.wait-for-deployment.outputs.deployment_url || needs.setup.outputs.target_url }}"
+
+          echo "Target URL: $TARGET_URL"
+          echo "Tests to run: ${{ matrix.test_group.tests }}"
+
+          PARALLEL_FLAG=""
+          if [ "${{ github.event.inputs.run_parallel }}" = "true" ]; then
+            PARALLEL_FLAG="--parallel"
+          fi
+
+          BASELINE_FLAG=""
+          if [ "${{ needs.setup.outputs.should_update_baselines }}" = "true" ]; then
+            BASELINE_FLAG="--update-baselines"
+          fi
+
+          node scripts/performance-test-runner.js \
+            --tests=${{ matrix.test_group.tests }} \
+            --url="$TARGET_URL" \
+            $PARALLEL_FLAG \
+            $BASELINE_FLAG \
+            --verbose
+        env:
+          LOAD_TEST_BASE_URL: ${{ needs.wait-for-deployment.outputs.deployment_url || needs.setup.outputs.target_url }}
+          NODE_ENV: ${{ github.event.inputs.environment || 'staging' }}
+          ALERT_WEBHOOK_URL: ${{ secrets.PERFORMANCE_ALERT_WEBHOOK }}
+          ESCALATION_WEBHOOK_URL: ${{ secrets.PERFORMANCE_ESCALATION_WEBHOOK }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results-${{ matrix.test_group.name }}
+          path: |
+            reports/load-test-results/
+            !reports/load-test-results/*-raw.json
+          retention-days: 30
+
+      - name: Upload baselines
+        if: needs.setup.outputs.should_update_baselines == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-baselines
+          path: reports/performance-baselines/
+          retention-days: 90
+
+  # Analysis and reporting job
+  analyze-results:
+    name: Analyze Results
+    runs-on: ubuntu-latest
+    timeout-minutes: 10  # Quick analysis job
+    needs: [setup, performance-tests]
+    if: always() && needs.performance-tests.result != 'skipped'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: performance-results-*
+          path: reports/
+          merge-multiple: true
+
+      - name: Generate consolidated report
+        run: |
+          echo "📊 Generating consolidated performance report..."
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+
+            const resultsDir = 'reports/load-test-results';
+            const files = fs.readdirSync(resultsDir).filter(f => f.endsWith('.json') && !f.includes('raw'));
+
+            console.log('Found result files:', files);
+
+            let allPassed = true;
+            const summary = {
+              totalTests: 0,
+              totalRegressions: 0,
+              criticalIssues: 0,
+              reports: []
+            };
+
+            for (const file of files) {
+              try {
+                const data = JSON.parse(fs.readFileSync(path.join(resultsDir, file), 'utf8'));
+                summary.totalTests += data.summary?.totalTests || 0;
+                summary.totalRegressions += data.summary?.totalRegressions || 0;
+                summary.criticalIssues += data.summary?.criticalIssues?.length || 0;
+                summary.reports.push(file);
+
+                if (data.summary?.overallStatus === 'FAIL') {
+                  allPassed = false;
+                }
+              } catch (error) {
+                console.error('Error processing', file, error.message);
+              }
+            }
+
+            fs.writeFileSync('performance-summary.json', JSON.stringify(summary, null, 2));
+
+            console.log('=== PERFORMANCE TEST SUMMARY ===');
+            console.log('Total Tests:', summary.totalTests);
+            console.log('Total Regressions:', summary.totalRegressions);
+            console.log('Critical Issues:', summary.criticalIssues);
+            console.log('Overall Status:', allPassed ? 'PASS' : 'FAIL');
+
+            process.exit(allPassed ? 0 : 1);
+          "
+
+      - name: Create performance summary comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let summary;
+            try {
+              summary = JSON.parse(fs.readFileSync('performance-summary.json', 'utf8'));
+            } catch (error) {
+              console.log('No summary file found');
+              return;
+            }
+
+            const status = summary.criticalIssues > 0 ? '❌ FAIL' :
+                          summary.totalRegressions > 0 ? '⚠️ WARNING' : '✅ PASS';
+
+            const comment = `## 🎪 Performance Test Results ${status}
+
+            **Summary:**
+            - 📊 **Tests Executed:** ${summary.totalTests}
+            - 📈 **Regressions Found:** ${summary.totalRegressions}
+            - 🚨 **Critical Issues:** ${summary.criticalIssues}
+
+            **Test Reports:**
+            ${summary.reports.map(report => `- 📋 [${report}](../actions/runs/${{ github.run_id }})`).join('\n')}
+
+            **Target Environment:** ${{ needs.wait-for-deployment.outputs.deployment_url || needs.setup.outputs.target_url }}
+
+            ${summary.criticalIssues > 0 ?
+              '⚠️ **Action Required:** Critical performance issues detected. Review test results before merging.' :
+              summary.totalRegressions > 0 ?
+              'ℹ️ Performance regressions detected. Consider investigating before merging.' :
+              '🎉 All performance tests passed successfully!'
+            }
+
+            <details>
+            <summary>View detailed results</summary>
+
+            Performance test artifacts are available in the [workflow run](../actions/runs/${{ github.run_id }}).
+
+            </details>`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Performance Test Results')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+
+  # Stress testing (separate job for resource-intensive tests)
+  stress-tests:
+    name: Stress Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45  # Allow more time for stress tests
+    needs: [setup, wait-for-deployment]
+    if: |
+      always() &&
+      needs.setup.result == 'success' &&
+      (needs.wait-for-deployment.result == 'success' || needs.wait-for-deployment.result == 'skipped' || needs.wait-for-deployment.outputs.deployment_found == 'true') &&
+      (github.event_name == 'schedule' ||
+       github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install K6
+        run: |
+          curl -L "https://github.com/grafana/k6/releases/download/v${{ env.K6_VERSION }}/k6-v${{ env.K6_VERSION }}-linux-amd64.tar.gz" | tar xvz
+          sudo mv k6-v${{ env.K6_VERSION }}-linux-amd64/k6 /usr/local/bin/
+
+      - name: Run stress tests
+        run: |
+          echo "💪 Running stress tests..."
+
+          # Use the actual deployment URL from Vercel for PR previews, fallback to constructed URL
+          TARGET_URL="${{ needs.wait-for-deployment.outputs.deployment_url || needs.setup.outputs.target_url }}"
+
+          echo "Target URL: $TARGET_URL"
+
+          node scripts/performance-test-runner.js \
+            --tests=stress \
+            --url="$TARGET_URL" \
+            --verbose
+        env:
+          LOAD_TEST_BASE_URL: ${{ needs.wait-for-deployment.outputs.deployment_url || needs.setup.outputs.target_url }}
+          NODE_ENV: ${{ github.event.inputs.environment || 'staging' }}
+          ALERT_WEBHOOK_URL: ${{ secrets.PERFORMANCE_ALERT_WEBHOOK }}
+
+      - name: Upload stress test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stress-test-results
+          path: reports/load-test-results/
+          retention-days: 30

@@ -125,7 +125,11 @@
     },
     {
       "source": "/",
-      "destination": "/index.html"
+      "destination": "/pages/index.html"
+    },
+    {
+      "source": "/index.html",
+      "destination": "/pages/index.html"
     },
     {
       "source": "/home",
@@ -266,6 +270,14 @@
     {
       "source": "/my-tickets",
       "destination": "/pages/my-tickets.html"
+    },
+    {
+      "source": "/checkout-success",
+      "destination": "/pages/checkout-success.html"
+    },
+    {
+      "source": "/checkout-cancel",
+      "destination": "/pages/checkout-cancel.html"
     },
     {
       "source": "/admin/checkin",

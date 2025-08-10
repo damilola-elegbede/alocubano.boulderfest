@@ -1,0 +1,40 @@
+# DEPRECATED: This workflow has been consolidated into specialized workflows
+#
+# Functionality distributed to:
+# - deployment-health-monitor.yml: PR preview health monitoring
+# - production-quality-gates.yml: Production deployment validation
+# - performance-tests.yml: Dedicated performance testing
+# - ci.yml: Core code quality validation
+#
+# This consolidation eliminates redundant triggers and provides clearer separation of concerns.
+# Each workflow now has a specific, unique purpose to avoid duplicate runs.
+#
+# This file kept temporarily for reference, will be removed in next cleanup phase.
+
+name: 🚀 Vercel Deployment Validation (DEPRECATED)
+
+on:
+  # Workflow disabled - triggers removed to eliminate redundancy
+  workflow_dispatch:
+    inputs:
+      deprecated_notice:
+        description: 'This workflow is deprecated. Use specialized workflows instead.'
+        required: false
+        default: 'Refer to deployment-health-monitor.yml, production-quality-gates.yml, or performance-tests.yml'
+
+jobs:
+  deprecated-notice:
+    name: ⚠️ Workflow Deprecated
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📢 Deprecation Notice
+        run: |
+          echo "### ⚠️ Workflow Deprecated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This workflow has been consolidated into specialized workflows:" >> $GITHUB_STEP_SUMMARY
+          echo "- **deployment-health-monitor.yml**: PR preview monitoring" >> $GITHUB_STEP_SUMMARY
+          echo "- **production-quality-gates.yml**: Production validation" >> $GITHUB_STEP_SUMMARY
+          echo "- **performance-tests.yml**: Performance testing" >> $GITHUB_STEP_SUMMARY
+          echo "- **ci.yml**: Core CI pipeline" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please use the appropriate specialized workflow instead." >> $GITHUB_STEP_SUMMARY

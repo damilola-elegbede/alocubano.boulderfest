@@ -1,0 +1,220 @@
+{
+  "description": "Environment-aware performance thresholds for K6 load testing",
+  "version": "2.0.0",
+  "lastUpdated": "2025-01-13T00:00:00Z",
+
+  "environments": {
+    "ci": {
+      "description": "CI/CD environment - More lenient for GitHub Actions",
+      "context": "Limited resources, cold starts frequent, network variable",
+      "thresholds": {
+        "ticket-sales": {
+          "http_req_duration": ["p(95)<2000", "p(99)<5000"],
+          "http_req_duration{name:payment}": ["p(95)<1500"],
+          "http_req_duration{name:cart}": ["p(95)<800"],
+          "http_req_failed": ["rate<0.05"],
+          "api_errors": ["rate<0.05"],
+          "ticket_purchase_success": ["rate>0.85"],
+          "checkout_completion": ["rate>0.80"],
+          "payment_processing_duration": ["avg<1000", "p(95)<2000"]
+        },
+        "check-in": {
+          "http_req_duration{scenario:checkin_rush}": ["p(95)<500", "p(99)<1500"],
+          "qr_validation_duration": ["avg<200", "p(95)<600"],
+          "database_write_duration": ["avg<150", "p(95)<400"],
+          "checkin_success_rate": ["rate>0.90"],
+          "duplicate_scan_rate": ["rate<0.10"],
+          "invalid_qr_rate": ["rate<0.05"],
+          "http_req_failed{scenario:checkin_rush}": ["rate<0.08"]
+        },
+        "sustained": {
+          "http_req_duration": ["p(95)<1000", "p(99)<2500"],
+          "api_response_time": ["avg<400", "p(95)<1000"],
+          "operation_success_rate": ["rate>0.95"],
+          "error_rate": ["rate<0.05"],
+          "cache_hit_rate": ["rate>0.60"],
+          "memory_usage_mb": ["avg<768", "max<1536"],
+          "cpu_usage_percent": ["avg<80", "max<95"]
+        },
+        "stress": {
+          "http_req_duration": ["p(95)<5000", "p(99)<12000"],
+          "http_req_failed": ["rate<0.20"],
+          "failure_rate": ["rate<0.25"],
+          "timeout_rate": ["rate<0.15"],
+          "connection_refusal_rate": ["rate<0.15"],
+          "resource_exhaustion_rate": ["rate<0.40"],
+          "cascade_failure_rate": ["rate<0.15"],
+          "recovery_time_ms": ["p(95)<120000"]
+        }
+      }
+    },
+    
+    "staging": {
+      "description": "Staging environment - Production-like performance",
+      "context": "Dedicated resources, occasional cold starts, stable network",
+      "thresholds": {
+        "ticket-sales": {
+          "http_req_duration": ["p(95)<1200", "p(99)<3000"],
+          "http_req_duration{name:payment}": ["p(95)<800"],
+          "http_req_duration{name:cart}": ["p(95)<400"],
+          "http_req_failed": ["rate<0.03"],
+          "api_errors": ["rate<0.03"],
+          "ticket_purchase_success": ["rate>0.92"],
+          "checkout_completion": ["rate>0.87"],
+          "payment_processing_duration": ["avg<600", "p(95)<1200"]
+        },
+        "check-in": {
+          "http_req_duration{scenario:checkin_rush}": ["p(95)<300", "p(99)<800"],
+          "qr_validation_duration": ["avg<120", "p(95)<350"],
+          "database_write_duration": ["avg<100", "p(95)<200"],
+          "checkin_success_rate": ["rate>0.96"],
+          "duplicate_scan_rate": ["rate<0.06"],
+          "invalid_qr_rate": ["rate<0.03"],
+          "http_req_failed{scenario:checkin_rush}": ["rate<0.05"]
+        },
+        "sustained": {
+          "http_req_duration": ["p(95)<600", "p(99)<1500"],
+          "api_response_time": ["avg<250", "p(95)<600"],
+          "operation_success_rate": ["rate>0.97"],
+          "error_rate": ["rate<0.03"],
+          "cache_hit_rate": ["rate>0.70"],
+          "memory_usage_mb": ["avg<512", "max<1024"],
+          "cpu_usage_percent": ["avg<70", "max<90"]
+        },
+        "stress": {
+          "http_req_duration": ["p(95)<3000", "p(99)<8000"],
+          "http_req_failed": ["rate<0.15"],
+          "failure_rate": ["rate<0.20"],
+          "timeout_rate": ["rate<0.10"],
+          "connection_refusal_rate": ["rate<0.12"],
+          "resource_exhaustion_rate": ["rate<0.30"],
+          "cascade_failure_rate": ["rate<0.10"],
+          "recovery_time_ms": ["p(95)<60000"]
+        }
+      }
+    },
+    
+    "production": {
+      "description": "Production environment - Strict performance requirements",
+      "context": "Optimized infrastructure, warm functions, CDN active",
+      "thresholds": {
+        "ticket-sales": {
+          "http_req_duration": ["p(95)<800", "p(99)<2000"],
+          "http_req_duration{name:payment}": ["p(95)<500"],
+          "http_req_duration{name:cart}": ["p(95)<300"],
+          "http_req_failed": ["rate<0.02"],
+          "api_errors": ["rate<0.02"],
+          "ticket_purchase_success": ["rate>0.95"],
+          "checkout_completion": ["rate>0.90"],
+          "payment_processing_duration": ["avg<400", "p(95)<800"]
+        },
+        "check-in": {
+          "http_req_duration{scenario:checkin_rush}": ["p(95)<200", "p(99)<500"],
+          "qr_validation_duration": ["avg<80", "p(95)<200"],
+          "database_write_duration": ["avg<60", "p(95)<120"],
+          "checkin_success_rate": ["rate>0.98"],
+          "duplicate_scan_rate": ["rate<0.05"],
+          "invalid_qr_rate": ["rate<0.02"],
+          "http_req_failed{scenario:checkin_rush}": ["rate<0.03"]
+        },
+        "sustained": {
+          "http_req_duration": ["p(95)<400", "p(99)<1000"],
+          "api_response_time": ["avg<150", "p(95)<400"],
+          "operation_success_rate": ["rate>0.99"],
+          "error_rate": ["rate<0.01"],
+          "cache_hit_rate": ["rate>0.80"],
+          "memory_usage_mb": ["avg<400", "max<800"],
+          "cpu_usage_percent": ["avg<60", "max<80"]
+        },
+        "stress": {
+          "http_req_duration": ["p(95)<2000", "p(99)<5000"],
+          "http_req_failed": ["rate<0.10"],
+          "failure_rate": ["rate<0.15"],
+          "timeout_rate": ["rate<0.05"],
+          "connection_refusal_rate": ["rate<0.08"],
+          "resource_exhaustion_rate": ["rate<0.20"],
+          "cascade_failure_rate": ["rate<0.05"],
+          "recovery_time_ms": ["p(95)<30000"]
+        }
+      }
+    }
+  },
+
+  "serverless_adjustments": {
+    "description": "Vercel serverless-specific adjustments",
+    "cold_start_penalties": {
+      "first_invocation_buffer_ms": 2000,
+      "concurrent_cold_start_rate": 0.10,
+      "function_warmup_time_s": 15
+    },
+    "memory_constraints": {
+      "default_memory_mb": 1024,
+      "pro_memory_mb": 3008,
+      "memory_buffer_percentage": 0.20
+    },
+    "timeout_configurations": {
+      "hobby_timeout_s": 10,
+      "pro_timeout_s": 30,
+      "enterprise_timeout_s": 60,
+      "recommended_buffer_s": 2
+    }
+  },
+
+  "dynamic_threshold_logic": {
+    "description": "Logic for dynamic threshold selection",
+    "environment_detection": {
+      "ci_indicators": ["GITHUB_ACTIONS", "CI", "CONTINUOUS_INTEGRATION"],
+      "staging_patterns": ["staging", "preview", "dev"],
+      "production_patterns": ["production", "prod", "main"]
+    },
+    "fallback_hierarchy": ["ci", "staging", "production"],
+    "override_environment_var": "PERF_TEST_ENV"
+  },
+
+  "alerting_configuration": {
+    "threshold_breach_notifications": {
+      "ci": {
+        "enabled": false,
+        "comment_on_pr": true,
+        "block_merge": false
+      },
+      "staging": {
+        "enabled": true,
+        "webhook_url_env": "STAGING_PERFORMANCE_WEBHOOK",
+        "block_deployment": false
+      },
+      "production": {
+        "enabled": true,
+        "webhook_url_env": "PRODUCTION_PERFORMANCE_WEBHOOK", 
+        "block_deployment": true,
+        "escalation_required": true
+      }
+    },
+    "regression_detection": {
+      "baseline_comparison": true,
+      "regression_threshold_percentage": 15,
+      "consecutive_failures_limit": 3
+    }
+  },
+
+  "test_execution_parameters": {
+    "ci": {
+      "max_duration_minutes": 10,
+      "max_concurrent_users": 50,
+      "reduced_test_scope": true,
+      "skip_stress_tests": true
+    },
+    "staging": {
+      "max_duration_minutes": 30,
+      "max_concurrent_users": 200,
+      "full_test_scope": true,
+      "include_stress_tests": true
+    },
+    "production": {
+      "max_duration_minutes": 45,
+      "max_concurrent_users": 400,
+      "comprehensive_testing": true,
+      "include_capacity_planning": true
+    }
+  }
+}

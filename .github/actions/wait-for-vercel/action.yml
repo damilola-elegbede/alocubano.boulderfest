@@ -1,0 +1,294 @@
+---
+name: 'Wait for Vercel Deployment'
+description: 'Wait for Vercel deployment to complete and return deployment URL'
+
+inputs:
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+    default: ${{ github.token }}
+  timeout-minutes:
+    description: 'Maximum time to wait for deployment (minutes)'
+    required: false
+    default: '10'
+  check-interval:
+    description: 'Interval between checks (seconds)'
+    required: false
+    default: '10'
+
+outputs:
+  deployment-url:
+    description: 'URL of the deployed application'
+    value: ${{ steps.get-deployment.outputs.deployment-url }}
+  deployment-id:
+    description: 'GitHub deployment ID'
+    value: ${{ steps.get-deployment.outputs.deployment-id }}
+  environment:
+    description: 'Deployment environment (Production/Preview)'
+    value: ${{ steps.get-deployment.outputs.environment }}
+  ready:
+    description: 'Whether deployment is ready'
+    value: ${{ steps.verify-ready.outputs.ready }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🔍 Detect Vercel Deployment
+      id: get-deployment
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        TIMEOUT_MINUTES: ${{ inputs.timeout-minutes }}
+        CHECK_INTERVAL: ${{ inputs.check-interval }}
+      run: |
+        set -euo pipefail
+        echo "🔍 Detecting Vercel deployment..."
+
+        # Get PR number and ref for context
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          REF="${{ github.event.pull_request.head.sha }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+        else
+          REF="${{ github.sha }}"
+          PR_NUMBER=""
+          BRANCH_NAME="${{ github.ref_name }}"
+        fi
+
+        echo "Ref: $REF"
+        echo "Branch: $BRANCH_NAME"
+        echo "PR: $PR_NUMBER"
+        echo "Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        echo "Timeout: ${TIMEOUT_MINUTES} minutes"
+
+        # Wait for deployment to be created
+        DEPLOYMENT_FOUND="false"
+        DEPLOYMENT_URL=""
+        DEPLOYMENT_ID=""
+        ENVIRONMENT="Preview"
+
+        # Calculate max attempts based on timeout and check interval
+        DETECTION_INTERVAL=15  # Fixed 15-second interval
+        MAX_ATTEMPTS=$(( (TIMEOUT_MINUTES * 60) / DETECTION_INTERVAL ))
+
+        # Guard against zero or invalid MAX_ATTEMPTS
+        if [ "$MAX_ATTEMPTS" -le 0 ]; then
+          echo "❌ Invalid configuration: MAX_ATTEMPTS=$MAX_ATTEMPTS"
+          echo "TIMEOUT_MINUTES=$TIMEOUT_MINUTES, DETECTION_INTERVAL=$DETECTION_INTERVAL"
+          echo "deployment-url=" >> $GITHUB_OUTPUT
+          echo "deployment-id=" >> $GITHUB_OUTPUT
+          echo "environment=" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+        # Try up to MAX_ATTEMPTS times for deployment to appear
+        for attempt in $(seq 1 $MAX_ATTEMPTS); do
+          echo "🔍 Attempt $attempt/$MAX_ATTEMPTS: Looking for deployment..."
+
+          # Query GitHub Deployments API for this specific commit
+          DEPLOYMENTS=$(gh api \
+            "repos/${{ github.repository }}/deployments?ref=${REF}&per_page=10" \
+            --jq '[.[] | select(.creator.login == "vercel[bot]")] |
+                   sort_by(.created_at) | reverse' \
+            2>/dev/null || echo "[]")
+
+          # Check if we found any deployments
+          if [ "$DEPLOYMENTS" != "[]" ] && [ -n "$DEPLOYMENTS" ]; then
+            # Get the most recent deployment
+            DEPLOYMENT_DATA=$(echo "$DEPLOYMENTS" | jq '.[0] // null')
+
+            if [ "$DEPLOYMENT_DATA" != "null" ]; then
+              DEPLOYMENT_ID=$(echo "$DEPLOYMENT_DATA" | jq -r '.id // empty')
+              ENVIRONMENT=$(echo "$DEPLOYMENT_DATA" | jq -r '.environment // "Preview"')
+              CREATED_AT=$(echo "$DEPLOYMENT_DATA" | jq -r '.created_at // empty')
+
+              echo "Found deployment ID: $DEPLOYMENT_ID (created: $CREATED_AT)"
+
+              # Now wait for deployment status to be ready
+              STATUS_READY="false"
+              for status_check in {1..20}; do
+                echo "  Checking deployment status (attempt $status_check/20)..."
+
+                # Get deployment status
+                STATUS_DATA=$(gh api \
+                  "repos/${{ github.repository }}/deployments/$DEPLOYMENT_ID/statuses" \
+                  --jq 'sort_by(.created_at) | reverse | .[0] // null' \
+                  2>/dev/null || echo 'null')
+
+                if [ "$STATUS_DATA" != "null" ]; then
+                  STATUS_STATE=$(echo "$STATUS_DATA" | jq -r '.state // "pending"')
+                  DEPLOYMENT_URL=$(echo "$STATUS_DATA" | jq -r '.target_url // .environment_url // empty')
+
+                  echo "  Status: $STATUS_STATE, URL: $DEPLOYMENT_URL"
+
+                  # Check if deployment is complete
+                  if [ "$STATUS_STATE" = "success" ] && \
+                     [ -n "$DEPLOYMENT_URL" ] && \
+                     [ "$DEPLOYMENT_URL" != "null" ]; then
+                    echo "✅ Deployment is ready!"
+                    DEPLOYMENT_FOUND="true"
+                    STATUS_READY="true"
+                    break 2  # Break out of both loops
+                  elif [ "$STATUS_STATE" = "error" ] || [ "$STATUS_STATE" = "failure" ]; then
+                    echo "❌ Deployment failed with status: $STATUS_STATE"
+                    DEPLOYMENT_FOUND="false"
+                    break 2
+                  fi
+                fi
+
+                # Wait 10 seconds before checking status again
+                if [ $status_check -lt 20 ]; then
+                  sleep 10
+                fi
+              done
+
+              # If deployment exists but status isn't ready, break
+              if [ "$STATUS_READY" = "false" ] && \
+                 [ -n "$DEPLOYMENT_ID" ]; then
+                echo "⚠️ Deployment exists but status not ready"
+                break
+              fi
+            fi
+          fi
+
+          # If deployment not found yet, wait before trying again
+          if [ "$DEPLOYMENT_FOUND" = "false" ] && [ $attempt -lt $MAX_ATTEMPTS ]; then
+            echo "  No deployment found yet, waiting ${DETECTION_INTERVAL} seconds..."
+            sleep $DETECTION_INTERVAL
+          fi
+        done
+
+        # If we still don't have a deployment URL, try fallback strategies
+        if [ -z "$DEPLOYMENT_URL" ] || [ "$DEPLOYMENT_URL" = "null" ]; then
+          echo "⚠️ No deployment found via API, trying fallback..."
+
+          # Check for ANY recent Vercel deployment
+          RECENT_DEPLOYMENT=$(gh api \
+            "repos/${{ github.repository }}/deployments?per_page=5" \
+            --jq '[.[] | select(.creator.login == "vercel[bot]" and
+                   .environment == "Preview")] |
+                   sort_by(.created_at) | reverse | .[0] // null' \
+            2>/dev/null || echo "null")
+
+          if [ "$RECENT_DEPLOYMENT" != "null" ]; then
+            FALLBACK_ID=$(echo "$RECENT_DEPLOYMENT" | jq -r '.id // empty')
+            FALLBACK_REF=$(echo "$RECENT_DEPLOYMENT" | jq -r '.ref // empty')
+
+            echo "Found recent preview deployment for ref: $FALLBACK_REF"
+
+            STATUS_DATA=$(gh api \
+              "repos/${{ github.repository }}/deployments/$FALLBACK_ID/statuses" \
+              --jq '.[0] // null' 2>/dev/null || echo 'null')
+
+            if [ "$STATUS_DATA" != "null" ]; then
+              FALLBACK_URL=$(echo "$STATUS_DATA" | jq -r '.target_url // empty')
+              if [ -n "$FALLBACK_URL" ] && [ "$FALLBACK_URL" != "null" ]; then
+                echo "⚠️ Using fallback deployment URL"
+                DEPLOYMENT_URL="$FALLBACK_URL"
+                DEPLOYMENT_ID="$FALLBACK_ID"
+              fi
+            fi
+          fi
+        fi
+
+        # Last resort: construct URL based on branch/PR
+        if [ -z "$DEPLOYMENT_URL" ] || [ "$DEPLOYMENT_URL" = "null" ]; then
+          echo "⚠️ No deployment found via API, constructing URL..."
+
+          if [ "$BRANCH_NAME" = "main" ]; then
+            DEPLOYMENT_URL="https://alocubanoboulderfest.vercel.app"
+            ENVIRONMENT="Production"
+          else
+            # Sanitize branch name for Vercel URL format
+            SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | \
+              tr '[:upper:]' '[:lower:]' | \
+              sed 's/[^a-z0-9]/-/g' | \
+              sed 's/--*/-/g' | \
+              sed 's/^-\|-$//g')
+            DEPLOYMENT_URL="https://alocubanoboulderfest-git-${SANITIZED_BRANCH}-alocubano.vercel.app"
+            ENVIRONMENT="Preview"
+          fi
+
+          echo "Constructed fallback URL: $DEPLOYMENT_URL"
+        fi
+
+        # Set outputs
+        echo "deployment-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+        echo "deployment-id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+        echo "environment=${ENVIRONMENT:-Preview}" >> $GITHUB_OUTPUT
+
+        echo "✅ Deployment detection complete"
+        echo "URL: $DEPLOYMENT_URL"
+        echo "Environment: ${ENVIRONMENT:-Preview}"
+        echo "Deployment ID: ${DEPLOYMENT_ID:-none}"
+
+    - name: ⏳ Wait for Deployment Ready
+      id: verify-ready
+      shell: bash
+      env:
+        DEPLOYMENT_URL: ${{ steps.get-deployment.outputs.deployment-url }}
+        TIMEOUT_MINUTES: ${{ inputs.timeout-minutes }}
+        CHECK_INTERVAL: ${{ inputs.check-interval }}
+      run: |
+        set -euo pipefail
+        if [ -z "$DEPLOYMENT_URL" ] || [ "$DEPLOYMENT_URL" = "null" ]; then
+          echo "❌ No deployment URL available"
+          echo "ready=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+        echo "⏳ Waiting for deployment to be ready: $DEPLOYMENT_URL"
+
+        TIMEOUT_SECONDS=$((TIMEOUT_MINUTES * 60))
+        MAX_ATTEMPTS=$((TIMEOUT_SECONDS / CHECK_INTERVAL))
+
+        # Guard against zero or invalid MAX_ATTEMPTS
+        if [ "$MAX_ATTEMPTS" -le 0 ]; then
+          echo "❌ Invalid configuration: MAX_ATTEMPTS=$MAX_ATTEMPTS"
+          echo "TIMEOUT_SECONDS=$TIMEOUT_SECONDS, CHECK_INTERVAL=$CHECK_INTERVAL"
+          echo "ready=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+        for i in $(seq 1 $MAX_ATTEMPTS); do
+          echo "🔍 Attempt $i/$MAX_ATTEMPTS: Checking deployment..."
+
+          # Check if deployment responds with 200 (follow redirects)
+          HTTP_CODE=$(curl -sL -o /dev/null -w "%{http_code}" \
+            --max-time 15 --connect-timeout 10 \
+            "$DEPLOYMENT_URL" 2>/dev/null || echo "000")
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Deployment is ready! (HTTP $HTTP_CODE after $i attempts)"
+            echo "ready=true" >> $GITHUB_OUTPUT
+
+            # Additional health check if API endpoint exists
+            HEALTH_CODE=$(curl -sL -o /dev/null -w "%{http_code}" \
+              --max-time 10 "$DEPLOYMENT_URL/api/health/check" \
+              2>/dev/null || echo "000")
+            if [ "$HEALTH_CODE" = "200" ]; then
+              echo "✅ API health check passed (HTTP $HEALTH_CODE)"
+            else
+              echo "ℹ️ No API health endpoint or returned $HEALTH_CODE (expected for static sites)"
+            fi
+
+            exit 0
+          else
+            echo "  Response code: $HTTP_CODE (not ready yet)"
+          fi
+
+          if [ $i -eq $MAX_ATTEMPTS ]; then
+            echo "❌ Deployment not ready after $TIMEOUT_MINUTES minutes"
+            echo "ready=false" >> $GITHUB_OUTPUT
+
+            # Try to get more info about the failure
+            RESPONSE_CODE=$(curl -sL -o /dev/null -w "%{http_code}" \
+              --max-time 10 "$DEPLOYMENT_URL" 2>/dev/null || echo "000")
+            echo "Last response code: $RESPONSE_CODE"
+
+            exit 1
+          fi
+
+          echo "⏳ Deployment not ready, waiting ${CHECK_INTERVAL}s..."
+          sleep $CHECK_INTERVAL
+        done

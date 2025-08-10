@@ -1,0 +1,461 @@
+time="2025-08-09T21:33:44-06:00" level=debug msg="Binary Provisioning feature is disabled."
+time="2025-08-09T21:33:44-06:00" level=debug msg="Logger format: TEXT"
+time="2025-08-09T21:33:44-06:00" level=debug msg="k6 version: v1.1.0 (go1.24.4, darwin/arm64)"
+time="2025-08-09T21:33:44-06:00" level=debug msg="Resolving and reading test '/Users/damilola/Documents/Projects/alocubano.boulderfest/tests/load/k6-ticket-sales.js'..."
+time="2025-08-09T21:33:44-06:00" level=debug msg=Loading... moduleSpecifier="file:///Users/damilola/Documents/Projects/alocubano.boulderfest/tests/load/k6-ticket-sales.js" originalModuleSpecifier=/Users/damilola/Documents/Projects/alocubano.boulderfest/tests/load/k6-ticket-sales.js
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+time="2025-08-09T21:33:44-06:00" level=debug msg="'/Users/damilola/Documents/Projects/alocubano.boulderfest/tests/load/k6-ticket-sales.js' resolved to 'file:///Users/damilola/Documents/Projects/alocubano.boulderfest/tests/load/k6-ticket-sales.js' and successfully loaded 14801 bytes!"
+time="2025-08-09T21:33:44-06:00" level=debug msg="Gathering k6 runtime options..."
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initializing k6 runner for '/Users/damilola/Documents/Projects/alocubano.boulderfest/tests/load/k6-ticket-sales.js' (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/tests/load/k6-ticket-sales.js)..."
+time="2025-08-09T21:33:44-06:00" level=debug msg="Detecting test type for..." test_path="file:///Users/damilola/Documents/Projects/alocubano.boulderfest/tests/load/k6-ticket-sales.js"
+time="2025-08-09T21:33:44-06:00" level=debug msg="Trying to load as a JS test..." test_path="file:///Users/damilola/Documents/Projects/alocubano.boulderfest/tests/load/k6-ticket-sales.js"
+time="2025-08-09T21:33:44-06:00" level=debug msg=Loading... moduleSpecifier="https://jslib.k6.io/k6-utils/1.4.0/index.js" originalModuleSpecifier="https://jslib.k6.io/k6-utils/1.4.0/index.js"
+time="2025-08-09T21:33:44-06:00" level=debug msg="Fetching source..." url="https://jslib.k6.io/k6-utils/1.4.0/index.js?_k6=1"
+time="2025-08-09T21:33:44-06:00" level=debug msg="Fetched!" len=4974 t=138.811584ms url="https://jslib.k6.io/k6-utils/1.4.0/index.js?_k6=1"
+time="2025-08-09T21:33:44-06:00" level=debug msg=Loading... moduleSpecifier="https://jslib.k6.io/k6-utils/1.4.0/index.js.map" originalModuleSpecifier="https://jslib.k6.io/k6-utils/1.4.0/index.js.map"
+time="2025-08-09T21:33:44-06:00" level=debug msg="Fetching source..." url="https://jslib.k6.io/k6-utils/1.4.0/index.js.map?_k6=1"
+time="2025-08-09T21:33:44-06:00" level=debug msg="Fetched!" len=16297 t=49.725125ms url="https://jslib.k6.io/k6-utils/1.4.0/index.js.map?_k6=1"
+time="2025-08-09T21:33:44-06:00" level=debug msg=Loading... moduleSpecifier="https://jslib.k6.io/k6-utils/1.4.0/index.js.map" originalModuleSpecifier="https://jslib.k6.io/k6-utils/1.4.0/index.js.map"
+time="2025-08-09T21:33:44-06:00" level=debug msg="Runner successfully initialized!"
+time="2025-08-09T21:33:44-06:00" level=debug msg="Parsing CLI flags..."
+time="2025-08-09T21:33:44-06:00" level=debug msg="Consolidating config layers..."
+time="2025-08-09T21:33:44-06:00" level=debug msg="Parsing thresholds and validating config..."
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initializing the execution scheduler..."
+time="2025-08-09T21:33:44-06:00" level=debug msg="Starting 4 outputs..." component=output-manager
+time="2025-08-09T21:33:44-06:00" level=debug msg=Starting... filename=/Users/damilola/Documents/Projects/alocubano.boulderfest/reports/load-test-results/peak-ticket-sales-2025-08-10T03-33-44-713Z-raw.json output=json
+time="2025-08-09T21:33:44-06:00" level=debug msg="Starting the REST API server on localhost:6565"
+time="2025-08-09T21:33:44-06:00" level=debug msg="Started!" filename=/Users/damilola/Documents/Projects/alocubano.boulderfest/reports/load-test-results/peak-ticket-sales-2025-08-10T03-33-44-713Z-raw.json output=json
+time="2025-08-09T21:33:44-06:00" level=debug msg=Starting... component=metrics-engine-ingester
+time="2025-08-09T21:33:44-06:00" level=debug msg="Started!" component=metrics-engine-ingester
+time="2025-08-09T21:33:44-06:00" level=debug msg="Started!" output=summary
+time="2025-08-09T21:33:44-06:00" level=debug msg="Trapping interrupt signals so k6 can handle them gracefully..."
+     execution: local
+        script: /Users/damilola/Documents/Projects/alocubano.boulderfest/tests/load/k6-ticket-sales.js
+        output: json (/Users/damilola/Documents/Projects/alocubano.boulderfest/reports/load-test-results/peak-ticket-sales-2025-08-10T03-33-44-713Z-raw.json)
+
+     scenarios: (100.00%) 1 scenario, 150 max VUs, 12m30s max duration (incl. graceful stop):
+              * default: Up to 150 looping VUs for 12m0s over 4 stages (gracefulRampDown: 30s, gracefulStop: 30s)
+
+time="2025-08-09T21:33:44-06:00" level=debug msg="Starting emission of VUs and VUsMax metrics..."
+time="2025-08-09T21:33:44-06:00" level=debug msg="Start of initialization" executorsCount=1 neededVUs=150 phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #6" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #1" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #3" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #9" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #10" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #11" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #2" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #7" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #4" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #12" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #5" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #14" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #13" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #15" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #16" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #17" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #21" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #23" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #19" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #27" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #18" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #24" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #28" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #29" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #8" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #22" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #30" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #26" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #32" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #35" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #20" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #36" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #37" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #38" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #31" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #25" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #39" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #40" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #34" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #41" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #42" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #43" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #44" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #33" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #46" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #47" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #45" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #48" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #51" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #53" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #56" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #58" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #57" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #55" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #54" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #50" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #59" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #60" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #61" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #63" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #64" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #49" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #52" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #65" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #68" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #67" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #66" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #71" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #62" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #73" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #70" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #74" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #69" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #72" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #76" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #75" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #79" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #80" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #78" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #84" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #77" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #81" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #82" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #83" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #85" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #86" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #87" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #92" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #91" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #94" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #93" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #90" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #95" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #89" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #88" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #96" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #97" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #101" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #98" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #99" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #100" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #105" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #102" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #104" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #106" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #109" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #110" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #108" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #107" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #111" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #112" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #113" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #114" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #118" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #116" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #115" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #120" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #117" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #119" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #122" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #123" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #124" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #121" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #125" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #128" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #126" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #129" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #127" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #133" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #130" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #103" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #134" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #131" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #132" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #136" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #135" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #137" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #139" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #140" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #138" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #141" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #144" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #143" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #142" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #145" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #147" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #146" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #148" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #149" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized VU #150" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Finished initializing needed VUs, start initializing executors..." phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialized executor default" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Initialization completed" phase=execution-scheduler-init
+time="2025-08-09T21:33:44-06:00" level=debug msg="Start of test run" executorsCount=1 phase=execution-scheduler-run
+time="2025-08-09T21:33:44-06:00" level=debug msg="Running setup()..."
+time="2025-08-09T21:33:44-06:00" level=info msg="=== Ticket Sales Load Test Starting ===" source=console
+time="2025-08-09T21:33:44-06:00" level=info msg="Target URL: https://alocubano-boulderfest-boc5ncsdy.vercel.app" source=console
+time="2025-08-09T21:33:44-06:00" level=info msg="Environment: development" source=console
+time="2025-08-09T21:33:44-06:00" level=info msg="Peak Load: 150 concurrent users" source=console
+time="2025-08-09T21:33:44-06:00" level=info msg="Test Duration: 12 minutes total" source=console
+time="2025-08-09T21:33:45-06:00" level=debug msg="setup() aborted by error" error="Error: API health check failed: 404\n\tat setup (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/tests/load/k6-ticket-sales.js:405:11(54))\n" phase=execution-scheduler-run
+time="2025-08-09T21:33:45-06:00" level=debug msg="Test finished with an error" error="Error: API health check failed: 404\n\tat setup (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/tests/load/k6-ticket-sales.js:405:11(54))\n"
+time="2025-08-09T21:33:45-06:00" level=debug msg="Stopping vus and vux_max metrics emission..." phase=execution-scheduler-init
+time="2025-08-09T21:33:45-06:00" level=debug msg="Sending usage report..."
+time="2025-08-09T21:33:45-06:00" level=debug msg="Metrics emission of VUs and VUsMax metrics stopped"
+time="2025-08-09T21:33:45-06:00" level=debug msg="Releasing signal trap..."
+time="2025-08-09T21:33:45-06:00" level=debug msg="Waiting for metrics and traces processing to finish..."
+time="2025-08-09T21:33:45-06:00" level=debug msg="Metrics and traces processing finished!"
+time="2025-08-09T21:33:45-06:00" level=debug msg="Finalizing thresholds..."
+time="2025-08-09T21:33:45-06:00" level=debug msg=Stopping... component=metrics-engine-ingester
+time="2025-08-09T21:33:45-06:00" level=debug msg="Stopped!" component=metrics-engine-ingester
+time="2025-08-09T21:33:45-06:00" level=debug msg="Running thresholds on 8 metrics..." component=metrics-engine
+time="2025-08-09T21:33:45-06:00" level=debug msg="Thresholds on 1 metrics crossed: [http_req_failed]" component=metrics-engine
+time="2025-08-09T21:33:45-06:00" level=debug msg="Crossed thresholds, but test already exited with another error" error="thresholds on metrics 'http_req_failed' have been crossed"
+time="2025-08-09T21:33:45-06:00" level=debug msg="Stopping outputs..."
+time="2025-08-09T21:33:45-06:00" level=debug msg="Stopping 4 outputs..." component=output-manager
+time="2025-08-09T21:33:45-06:00" level=debug msg=Stopping... filename=/Users/damilola/Documents/Projects/alocubano.boulderfest/reports/load-test-results/peak-ticket-sales-2025-08-10T03-33-44-713Z-raw.json output=json
+time="2025-08-09T21:33:45-06:00" level=debug msg="Wrote metrics to JSON" count=11 filename=/Users/damilola/Documents/Projects/alocubano.boulderfest/reports/load-test-results/peak-ticket-sales-2025-08-10T03-33-44-713Z-raw.json output=json t="558.292µs"
+time="2025-08-09T21:33:45-06:00" level=debug msg="Stopped!" filename=/Users/damilola/Documents/Projects/alocubano.boulderfest/reports/load-test-results/peak-ticket-sales-2025-08-10T03-33-44-713Z-raw.json output=json
+time="2025-08-09T21:33:45-06:00" level=debug msg=Stopping... component=metrics-engine-ingester
+time="2025-08-09T21:33:45-06:00" level=debug msg="Stopped!" component=metrics-engine-ingester
+time="2025-08-09T21:33:45-06:00" level=debug msg="Generating the end-of-test summary..."
+{
+  "http_req_tls_handshaking": {
+    "type": "trend",
+    "contains": "time",
+    "values": {
+      "avg": 96.182,
+      "min": 96.182,
+      "med": 96.182,
+      "max": 96.182,
+      "p(90)": 96.182,
+      "p(95)": 96.182
+    }
+  },
+  "api_errors": {
+    "values": {
+      "rate": 0,
+      "passes": 0,
+      "fails": 0
+    },
+    "thresholds": {
+      "rate<0.02": {
+        "ok": true
+      }
+    },
+    "type": "rate",
+    "contains": "default"
+  },
+  "http_req_blocked": {
+    "values": {
+      "min": 155.957,
+      "med": 155.957,
+      "max": 155.957,
+      "p(90)": 155.957,
+      "p(95)": 155.957,
+      "avg": 155.957
+    },
+    "type": "trend",
+    "contains": "time"
+  },
+  "http_req_receiving": {
+    "type": "trend",
+    "contains": "time",
+    "values": {
+      "avg": 0.233,
+      "min": 0.233,
+      "med": 0.233,
+      "max": 0.233,
+      "p(90)": 0.233,
+      "p(95)": 0.233
+    }
+  },
+  "http_req_duration": {
+    "values": {
+      "avg": 287.993,
+      "min": 287.993,
+      "med": 287.993,
+      "max": 287.993,
+      "p(90)": 287.993,
+      "p(95)": 287.993
+    },
+    "thresholds": {
+      "p(95)<800": {
+        "ok": true
+      },
+      "p(99)<2000": {
+        "ok": true
+      }
+    },
+    "type": "trend",
+    "contains": "time"
+  },
+  "payment_processing_duration": {
+    "contains": "default",
+    "values": {
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "max": 0,
+      "p(90)": 0,
+      "p(95)": 0
+    },
+    "thresholds": {
+      "avg<500": {
+        "ok": true
+      },
+      "p(95)<1000": {
+        "ok": true
+      }
+    },
+    "type": "trend"
+  },
+  "http_req_failed": {
+    "type": "rate",
+    "contains": "default",
+    "values": {
+      "rate": 1,
+      "passes": 1,
+      "fails": 0
+    },
+    "thresholds": {
+      "rate<0.02": {
+        "ok": false
+      }
+    }
+  },
+  "checkout_completion": {
+    "thresholds": {
+      "rate>0.85": {
+        "ok": true
+      }
+    },
+    "type": "rate",
+    "contains": "default",
+    "values": {
+      "passes": 0,
+      "fails": 0,
+      "rate": 0
+    }
+  },
+  "http_req_duration{name:payment}": {
+    "type": "trend",
+    "contains": "time",
+    "values": {
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "max": 0,
+      "p(90)": 0,
+      "p(95)": 0
+    },
+    "thresholds": {
+      "p(95)<500": {
+        "ok": true
+      }
+    }
+  },
+  "ticket_purchase_success": {
+    "type": "rate",
+    "contains": "default",
+    "values": {
+      "rate": 0,
+      "passes": 0,
+      "fails": 0
+    },
+    "thresholds": {
+      "rate>0.90": {
+        "ok": true
+      }
+    }
+  },
+  "data_sent": {
+    "type": "counter",
+    "contains": "data",
+    "values": {
+      "count": 576,
+      "rate": 1293.4518997574778
+    }
+  },
+  "data_received": {
+    "values": {
+      "count": 3877,
+      "rate": 8706.098984999551
+    },
+    "type": "counter",
+    "contains": "data"
+  },
+  "http_req_connecting": {
+    "type": "trend",
+    "contains": "time",
+    "values": {
+      "max": 15.887,
+      "p(90)": 15.887,
+      "p(95)": 15.887,
+      "avg": 15.887,
+      "min": 15.887,
+      "med": 15.887
+    }
+  },
+  "http_req_waiting": {
+    "type": "trend",
+    "contains": "time",
+    "values": {
+      "med": 287.377,
+      "max": 287.377,
+      "p(90)": 287.377,
+      "p(95)": 287.377,
+      "avg": 287.377,
+      "min": 287.377
+    }
+  },
+  "http_req_duration{name:cart}": {
+    "type": "trend",
+    "contains": "time",
+    "values": {
+      "med": 0,
+      "max": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 0,
+      "min": 0
+    },
+    "thresholds": {
+      "p(95)<300": {
+        "ok": true
+      }
+    }
+  },
+  "http_req_sending": {
+    "type": "trend",
+    "contains": "time",
+    "values": {
+      "avg": 0.383,
+      "min": 0.383,
+      "med": 0.383,
+      "max": 0.383,
+      "p(90)": 0.383,
+      "p(95)": 0.383
+    }
+  },
+  "http_reqs": {
+    "type": "counter",
+    "contains": "default",
+    "values": {
+      "rate": 2.245576214856732,
+      "count": 1
+    }
+  }
+}
+Run       [ 100% ] setup()
+default   [   0% ]
+time="2025-08-09T21:33:45-06:00" level=debug msg="Usage report sent successfully"
+time="2025-08-09T21:33:45-06:00" level=debug msg="Everything has finished, exiting k6 with an error!" error="Error: API health check failed: 404\n\tat setup (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/tests/load/k6-ticket-sales.js:405:11(54))\n"
+time="2025-08-09T21:33:45-06:00" level=error msg="Error: API health check failed: 404\n\tat setup (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/tests/load/k6-ticket-sales.js:405:11(54))\n" hint="script exception"

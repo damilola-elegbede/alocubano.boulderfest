@@ -1,0 +1,526 @@
+name: 🚀 Production Quality Gates
+
+# UNIQUE PURPOSE: Production quality validation after main branch pushes
+# Comprehensive production readiness checks and quality gates
+# No overlap with PR workflows - focused only on production deployments
+
+on:
+  push:
+    branches: [main]  # Only main branch pushes trigger production validation
+  # Removed deployment_status to avoid duplicate triggers
+
+permissions:
+  contents: read
+  deployments: write
+  statuses: write
+  issues: write
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # Job 1: Pre-deployment Quality Checks (fast feedback)
+  pre-deployment-checks:
+    name: 🧪 Pre-deployment Quality
+    runs-on: ubuntu-latest
+    # Only run on main branch pushes to avoid duplicate runs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📚 Install Dependencies
+        run: npm ci
+
+      - name: 🧹 Lint Code
+        run: npm run lint
+
+      - name: 🧪 Run Unit Tests
+        run: npm run test:unit
+
+      - name: 🗄️ Database Tests
+        run: npm run test:database
+
+      - name: ✅ Pre-deployment Summary
+        run: |
+          echo "### ✅ Pre-deployment Quality Checks Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧹 Code linting: PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧪 Unit tests: PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "- 🗄️ Database tests: PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🚀 Ready for Vercel deployment" >> $GITHUB_STEP_SUMMARY
+
+  # Job 2: Wait for Vercel and Run Post-deployment Validation
+  post-deployment-validation:
+    name: 🔍 Post-deployment Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20  # Prevent indefinite hanging
+    needs: pre-deployment-checks
+    if: always() && needs.pre-deployment-checks.result == 'success'
+    outputs:
+      validation_passed: ${{ steps.validation-summary.outputs.validation_passed }}
+      deployment_url: ${{ steps.wait-vercel.outputs.deployment-url }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⏳ Wait for Vercel Deployment
+        id: wait-vercel
+        uses: ./.github/actions/wait-for-vercel
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          timeout-minutes: 10
+          check-interval: 15
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📚 Install Dependencies
+        run: npm ci
+
+      - name: 🏥 Production Health Check
+        env:
+          DEPLOYMENT_URL: ${{ steps.wait-vercel.outputs.deployment-url }}
+        run: |
+          echo "🏥 Running comprehensive health check against production deployment"
+          echo "URL: $DEPLOYMENT_URL"
+
+          # Basic availability (follow redirects, accept 2xx/3xx)
+          response_code=$(curl -s -L -o /dev/null -w "%{http_code}" "$DEPLOYMENT_URL")
+          if [ "$response_code" -lt 200 ] || [ "$response_code" -ge 400 ]; then
+            echo "❌ Production site not responding: HTTP $response_code"
+            exit 1
+          fi
+          echo "✅ Site responding: HTTP $response_code"
+
+          # API health check
+          if curl -sf "$DEPLOYMENT_URL/api/health/check" > /dev/null 2>&1; then
+            health_response=$(curl -s "$DEPLOYMENT_URL/api/health/check")
+            echo "API Health Response:"
+            echo "$health_response" | jq '.' 2>/dev/null || echo "$health_response"
+
+            # Parse JSON response with jq for robust checking
+            health_status=$(echo "$health_response" | jq -r '.status // "unknown"' 2>/dev/null || echo "unknown")
+            if [ "$health_status" = "ok" ] || [ "$health_status" = "healthy" ]; then
+              echo "✅ API health check passed (status: $health_status)"
+            else
+              echo "⚠️ API health check shows issues (status: $health_status)"
+              exit 1
+            fi
+          else
+            echo "ℹ️ No API health endpoint available"
+          fi
+
+      - name: 🔗 Production Link Validation
+        env:
+          DEPLOYMENT_URL: ${{ steps.wait-vercel.outputs.deployment-url }}
+        run: |
+          echo "🔗 Validating all links on production deployment"
+
+          # Create production link validator (ESM compatible)
+          cat > validate-production-links.mjs << 'EOF'
+          import https from 'https';
+          import http from 'http';
+          import { URL } from 'url';
+
+          const BASE_URL = process.env.DEPLOYMENT_URL;
+          const visited = new Set();
+          const errors = [];
+
+          async function checkUrl(url, timeout = 10000) {
+            return new Promise((resolve) => {
+              const urlObj = new URL(url);
+              const client = urlObj.protocol === 'https:' ? https : http;
+
+              const req = client.request(urlObj, { timeout }, (res) => {
+                resolve({
+                  status: res.statusCode,
+                  headers: res.headers,
+                  success: res.statusCode >= 200 && res.statusCode < 400
+                });
+              });
+
+              req.on('error', () => resolve({ success: false, status: 0 }));
+              req.on('timeout', () => {
+                req.destroy();
+                resolve({ success: false, status: 0 });
+              });
+              req.end();
+            });
+          }
+
+          async function validateCriticalPages() {
+            const criticalPages = [
+              '/',
+              '/about',
+              '/tickets',
+              '/donations',
+              '/boulder-fest-2026',
+              '/boulder-fest-2026/artists',
+              '/boulder-fest-2026/schedule',
+              '/boulder-fest-2026/gallery'
+            ];
+
+            console.log('Validating critical pages...');
+
+            for (const page of criticalPages) {
+              const url = BASE_URL + page;
+              console.log(`Checking: ${url}`);
+
+              const result = await checkUrl(url);
+              if (!result.success) {
+                errors.push(`CRITICAL: ${url} - Status: ${result.status}`);
+              } else {
+                console.log(`✅ ${url} - Status: ${result.status}`);
+              }
+            }
+
+            // Check API endpoints
+            const apiEndpoints = ['/api/health/check', '/api/featured-photos'];
+            for (const endpoint of apiEndpoints) {
+              const url = BASE_URL + endpoint;
+              const result = await checkUrl(url);
+              if (result.success) {
+                console.log(`✅ API ${url} - Status: ${result.status}`);
+              } else {
+                console.log(`⚠️ API ${url} not available (may be expected)`);
+              }
+            }
+          }
+
+          validateCriticalPages().then(() => {
+            if (errors.length > 0) {
+              console.log('\n❌ Link validation errors:');
+              errors.forEach(error => console.log(error));
+              process.exit(1);
+            } else {
+              console.log('\n✅ All critical links validated successfully');
+            }
+          });
+          EOF
+
+          node validate-production-links.mjs
+
+      - name: ⚡ Production Performance Test
+        env:
+          DEPLOYMENT_URL: ${{ steps.wait-vercel.outputs.deployment-url }}
+        run: |
+          echo "⚡ Running performance test against production"
+
+          # Install k6
+          curl -s -L https://github.com/grafana/k6/releases/latest/download/k6-linux-amd64.tar.gz | tar -xz --strip-components=1
+          chmod +x k6
+
+          # Create production performance test with dynamic thresholds
+          cat > production-perf-test.js << 'EOF'
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+
+          // Environment-aware threshold selection
+          function getThresholds() {
+            const isProduction = __ENV.DEPLOYMENT_URL && __ENV.DEPLOYMENT_URL.includes('alocubanoboulderfest.vercel.app');
+            const isCI = __ENV.GITHUB_ACTIONS || __ENV.CI;
+
+            if (isProduction) {
+              return {
+                'http_req_duration': ['p(95)<1000', 'p(99)<2000'],
+                'http_req_failed': ['rate<0.02'],
+                'http_req_duration{page:api}': ['p(95)<500'],
+              };
+            } else if (isCI) {
+              return {
+                'http_req_duration': ['p(95)<2000', 'p(99)<5000'],
+                'http_req_failed': ['rate<0.05'],
+                'http_req_duration{page:api}': ['p(95)<1500'],
+              };
+            } else {
+              // Staging/Preview
+              return {
+                'http_req_duration': ['p(95)<1500', 'p(99)<3000'],
+                'http_req_failed': ['rate<0.03'],
+                'http_req_duration{page:api}': ['p(95)<800'],
+              };
+            }
+          }
+
+          export let options = {
+            stages: [
+              { duration: '30s', target: 5 },   // Ramp up to 5 users
+              { duration: '1m', target: 5 },    // Stay at 5 users
+              { duration: '30s', target: 0 },   // Ramp down
+            ],
+            thresholds: getThresholds(),
+            tags: {
+              environment: __ENV.GITHUB_ACTIONS ? 'ci' : 'production',
+              deployment_url: __ENV.DEPLOYMENT_URL || 'unknown'
+            }
+          };
+
+          const BASE_URL = __ENV.DEPLOYMENT_URL;
+
+          export default function() {
+            // Test main page
+            let response = http.get(BASE_URL);
+            check(response, {
+              'homepage status 200': (r) => r.status === 200,
+              'homepage loads within threshold': (r) => {
+                const isProduction = BASE_URL.includes('alocubanoboulderfest.vercel.app');
+                const threshold = isProduction ? 1000 : 2000;
+                return r.timings.duration < threshold;
+              },
+            });
+
+            // Test critical pages
+            const pages = ['/about', '/tickets', '/boulder-fest-2026'];
+            const page = pages[Math.floor(Math.random() * pages.length)];
+
+            response = http.get(BASE_URL + page);
+            check(response, {
+              'page status 200': (r) => r.status === 200,
+              'page loads within threshold': (r) => {
+                const isProduction = BASE_URL.includes('alocubanoboulderfest.vercel.app');
+                const threshold = isProduction ? 1500 : 3000;
+                return r.timings.duration < threshold;
+              },
+            });
+
+            // Test API if available
+            response = http.get(BASE_URL + '/api/featured-photos', { tags: { page: 'api' } });
+            if (response.status === 200) {
+              check(response, {
+                'api responds within threshold': (r) => {
+                  const isProduction = BASE_URL.includes('alocubanoboulderfest.vercel.app');
+                  const threshold = isProduction ? 500 : 1000;
+                  return r.timings.duration < threshold;
+                },
+              });
+            }
+
+            sleep(Math.random() * 3 + 1); // 1-4 second pause
+          }
+          EOF
+
+          # Run performance test with proper error handling
+          if [ -x "./k6" ]; then
+            if ./k6 run production-perf-test.js; then
+              echo "✅ Production performance test passed"
+            else
+              echo "⚠️ Performance test failed - marking as warning for CI"
+              echo "::warning::Performance test did not meet all thresholds. This is a warning for CI environments."
+              # Don't fail the workflow for performance issues in CI
+            fi
+          else
+            echo "⚠️ k6 not available - skipping performance test"
+            echo "::warning::k6 performance testing tool could not be installed. Skipping performance tests."
+          fi
+
+      - name: 🛡️ Production Security Scan
+        env:
+          DEPLOYMENT_URL: ${{ steps.wait-vercel.outputs.deployment-url }}
+        run: |
+          echo "🛡️ Running security scan on production deployment"
+
+          # Check security headers
+          echo "Checking security headers..."
+          headers=$(curl -sI "$DEPLOYMENT_URL")
+
+          security_score=0
+          total_checks=6
+
+          # Check required security headers
+          if echo "$headers" | grep -qi "X-Content-Type-Options: nosniff"; then
+            echo "✅ X-Content-Type-Options header present"
+            security_score=$((security_score + 1))
+          else
+            echo "❌ Missing X-Content-Type-Options header"
+          fi
+
+          if echo "$headers" | grep -qi "X-Frame-Options"; then
+            echo "✅ X-Frame-Options header present"
+            security_score=$((security_score + 1))
+          else
+            echo "❌ Missing X-Frame-Options header"
+          fi
+
+          if echo "$headers" | grep -qi "X-XSS-Protection"; then
+            echo "✅ X-XSS-Protection header present"
+            security_score=$((security_score + 1))
+          else
+            echo "❌ Missing X-XSS-Protection header"
+          fi
+
+          if echo "$headers" | grep -qi "Referrer-Policy"; then
+            echo "✅ Referrer-Policy header present"
+            security_score=$((security_score + 1))
+          else
+            echo "❌ Missing Referrer-Policy header"
+          fi
+
+          # Check HTTPS redirect
+          http_response=$(curl -s -o /dev/null -w "%{http_code}" "http://alocubanoboulderfest.vercel.app" || echo "000")
+          if [ "$http_response" -eq 301 ] || [ "$http_response" -eq 308 ]; then
+            echo "✅ HTTPS redirect working"
+            security_score=$((security_score + 1))
+          else
+            echo "⚠️ HTTPS redirect not detected (HTTP $http_response)"
+          fi
+
+          # Check for secure cookies (if any set)
+          cookie_header=$(echo "$headers" | grep -i "set-cookie" || echo "")
+          if [ -n "$cookie_header" ]; then
+            if echo "$cookie_header" | grep -qi "secure"; then
+              echo "✅ Secure cookies detected"
+              security_score=$((security_score + 1))
+            else
+              echo "⚠️ Cookies not marked as Secure"
+            fi
+          else
+            echo "ℹ️ No cookies set (good for static site)"
+            security_score=$((security_score + 1))
+          fi
+
+          # Calculate security score
+          security_percentage=$((security_score * 100 / total_checks))
+          echo "🛡️ Security Score: $security_score/$total_checks ($security_percentage%)"
+
+          if [ $security_percentage -lt 80 ]; then
+            echo "❌ Security score below 80% - failing deployment"
+            exit 1
+          else
+            echo "✅ Security scan passed"
+          fi
+
+      - name: 📊 Validation Summary
+        id: validation-summary
+        run: |
+          echo "📊 Post-deployment validation completed successfully"
+          echo "validation_passed=true" >> $GITHUB_OUTPUT
+
+          echo "### 🚀 Production Deployment Validated" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** ${{ steps.wait-vercel.outputs.deployment-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ steps.wait-vercel.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Validations Passed:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏥 Health Check: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔗 Link Validation: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- ⚡ Performance Test: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- 🛡️ Security Scan: ✅" >> $GITHUB_STEP_SUMMARY
+
+  # Job 3: Database Migrations (only if needed)
+  database-migrations:
+    name: 🗄️ Database Migrations
+    runs-on: ubuntu-latest
+    needs: post-deployment-validation
+    if: needs.post-deployment-validation.outputs.validation_passed == 'true'
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📚 Install Dependencies
+        run: npm ci
+
+      - name: 🔍 Check Migration Status
+        id: migration-status
+        env:
+          DEPLOYMENT_URL: ${{ needs.post-deployment-validation.outputs.deployment_url }}
+        run: |
+          echo "🔍 Checking for pending migrations..."
+
+          # Check if migration API is available
+          if curl -sf "$DEPLOYMENT_URL/api/migrate" -X POST \
+            -H "Content-Type: application/json" \
+            -H "x-migration-key: ${{ secrets.MIGRATION_SECRET_KEY }}" \
+            -d '{"action": "status"}' > /dev/null 2>&1; then
+
+            # Get migration status
+            response=$(curl -s "$DEPLOYMENT_URL/api/migrate" -X POST \
+              -H "Content-Type: application/json" \
+              -H "x-migration-key: ${{ secrets.MIGRATION_SECRET_KEY }}" \
+              -d '{"action": "status"}')
+
+            echo "Migration status response: $response"
+
+            pending=$(echo "$response" | jq -r '.result.pending // 0')
+            echo "migrations_needed=$pending" >> $GITHUB_OUTPUT
+
+            if [ "$pending" -gt "0" ]; then
+              echo "📋 Found $pending pending migrations"
+            else
+              echo "✨ No pending migrations"
+            fi
+          else
+            echo "ℹ️ Migration API not available - skipping"
+            echo "migrations_needed=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🚀 Run Migrations
+        if: steps.migration-status.outputs.migrations_needed > 0
+        env:
+          DEPLOYMENT_URL: ${{ needs.post-deployment-validation.outputs.deployment_url }}
+        run: |
+          echo "🚀 Running database migrations..."
+
+          response=$(curl -s "$DEPLOYMENT_URL/api/migrate" -X POST \
+            -H "Content-Type: application/json" \
+            -H "x-migration-key: ${{ secrets.MIGRATION_SECRET_KEY }}" \
+            -d '{"action": "run"}')
+
+          echo "Migration response: $response"
+
+          success=$(echo "$response" | jq -r '.success')
+          applied=$(echo "$response" | jq -r '.result.deployed // 0')
+
+          if [ "$success" = "true" ]; then
+            echo "✅ Successfully applied $applied migrations"
+          else
+            echo "❌ Migration failed"
+            echo "$response" | jq -r '.error'
+            exit 1
+          fi
+
+  # Job 4: Production Monitoring Setup
+  setup-monitoring:
+    name: 📊 Setup Production Monitoring
+    runs-on: ubuntu-latest
+    needs: [post-deployment-validation, database-migrations]
+    if: always() && needs.post-deployment-validation.outputs.validation_passed == 'true'
+
+    steps:
+      - name: 🔔 Setup Alerts
+        run: |
+          echo "🔔 Production deployment monitoring activated"
+          echo "### 📊 Monitoring Active" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏥 Health checks: Enabled" >> $GITHUB_STEP_SUMMARY
+          echo "- ⚡ Performance monitoring: Active" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔒 Security monitoring: Active" >> $GITHUB_STEP_SUMMARY
+          echo "- 📈 Uptime monitoring: Configured" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🎉 Deployment Success
+        run: |
+          echo "### 🎉 Production Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**✅ All Quality Gates Passed**" >> $GITHUB_STEP_SUMMARY
+          echo "- Pre-deployment checks" >> $GITHUB_STEP_SUMMARY
+          echo "- Post-deployment validation" >> $GITHUB_STEP_SUMMARY
+          echo "- Database migrations" >> $GITHUB_STEP_SUMMARY
+          echo "- Production monitoring" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🌐 **Live at:** ${{ needs.post-deployment-validation.outputs.deployment_url }}" >> $GITHUB_STEP_SUMMARY

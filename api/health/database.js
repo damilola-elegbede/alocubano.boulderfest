@@ -1,50 +1,57 @@
-import { HealthStatus } from '../../lib/monitoring/health-checker.js';
-import { getDatabaseConnection } from '../db/database.js';
+import { HealthStatus } from "../../lib/monitoring/health-checker.js";
+import { getDatabase } from "../lib/database.js";
 
 /**
  * Validate database schema integrity
  */
-async function validateSchema(db) {
+async function validateSchema(dbService) {
   try {
     // Check for required tables
-    const tables = await db.prepare(`
+    const tablesResult = await dbService.execute(`
       SELECT name FROM sqlite_master 
       WHERE type='table' 
       ORDER BY name
-    `).all();
-    
-    const tableNames = tables.map(t => t.name);
-    const requiredTables = ['tickets', 'subscribers', 'migrations'];
-    const missingTables = requiredTables.filter(t => !tableNames.includes(t));
-    
+    `);
+
+    const tableNames = tablesResult.rows.map((row) => row[0]);
+    const requiredTables = ["tickets", "subscribers", "migrations"];
+    const missingTables = requiredTables.filter((t) => !tableNames.includes(t));
+
     if (missingTables.length > 0) {
       return {
         valid: false,
-        error: `Missing tables: ${missingTables.join(', ')}`
+        error: `Missing tables: ${missingTables.join(", ")}`,
       };
     }
-    
+
     // Check tickets table columns
-    const ticketColumns = await db.prepare(`
+    const ticketColumnsResult = await dbService.execute(`
       PRAGMA table_info(tickets)
-    `).all();
-    
-    const columnNames = ticketColumns.map(c => c.name);
-    const requiredColumns = ['id', 'email', 'created_at', 'stripe_payment_intent_id'];
-    const missingColumns = requiredColumns.filter(c => !columnNames.includes(c));
-    
+    `);
+
+    const columnNames = ticketColumnsResult.rows.map((row) => row[1]); // column name is second field in PRAGMA table_info
+    const requiredColumns = [
+      "id",
+      "email",
+      "created_at",
+      "stripe_payment_intent_id",
+    ];
+    const missingColumns = requiredColumns.filter(
+      (c) => !columnNames.includes(c),
+    );
+
     if (missingColumns.length > 0) {
       return {
         valid: false,
-        error: `Missing columns in tickets table: ${missingColumns.join(', ')}`
+        error: `Missing columns in tickets table: ${missingColumns.join(", ")}`,
       };
     }
-    
+
     return { valid: true };
   } catch (error) {
     return {
       valid: false,
-      error: `Schema validation error: ${error.message}`
+      error: `Schema validation error: ${error.message}`,
     };
   }
 }
@@ -52,49 +59,54 @@ async function validateSchema(db) {
 /**
  * Get database statistics
  */
-async function getDatabaseStats(db) {
+async function getDatabaseStats(dbService) {
   try {
     // Get ticket count
-    const ticketCount = await db.prepare(`
+    const ticketCountResult = await dbService.execute(`
       SELECT COUNT(*) as count FROM tickets
-    `).get();
-    
+    `);
+    const ticketCount = ticketCountResult.rows[0][0];
+
     // Get subscriber count
-    const subscriberCount = await db.prepare(`
+    const subscriberCountResult = await dbService.execute(`
       SELECT COUNT(*) as count FROM subscribers
-    `).get();
-    
+    `);
+    const subscriberCount = subscriberCountResult.rows[0][0];
+
     // Get database file size (approximation)
-    const pageCount = await db.prepare(`
+    const pageCountResult = await dbService.execute(`
       PRAGMA page_count
-    `).get();
-    
-    const pageSize = await db.prepare(`
+    `);
+    const pageCountVal = pageCountResult.rows[0][0] || 0;
+
+    const pageSizeResult = await dbService.execute(`
       PRAGMA page_size
-    `).get();
-    
+    `);
+    const pageSizeVal = pageSizeResult.rows[0][0] || 0;
+
     // Guard against NaN when computing DB size
-    const pageCountVal = pageCount?.page_count || 0;
-    const pageSizeVal = pageSize?.page_size || 0;
-    const dbSize = (pageCountVal && pageSizeVal) ? 
-      (pageCountVal * pageSizeVal) / (1024 * 1024) : null; // MB
-    
+    const dbSize =
+      pageCountVal && pageSizeVal
+        ? (pageCountVal * pageSizeVal) / (1024 * 1024)
+        : null; // MB
+
     // Get recent activity
-    const recentTickets = await db.prepare(`
+    const recentTicketsResult = await dbService.execute(`
       SELECT COUNT(*) as count 
       FROM tickets 
       WHERE created_at > datetime('now', '-1 hour')
-    `).get();
-    
+    `);
+    const recentTickets = recentTicketsResult.rows[0][0];
+
     return {
-      total_tickets: ticketCount.count,
-      total_subscribers: subscriberCount.count,
-      database_size: dbSize !== null ? `${dbSize.toFixed(2)}MB` : 'unknown',
-      recent_tickets_1h: recentTickets.count
+      total_tickets: ticketCount,
+      total_subscribers: subscriberCount,
+      database_size: dbSize !== null ? `${dbSize.toFixed(2)}MB` : "unknown",
+      recent_tickets_1h: recentTickets,
     };
   } catch (error) {
     return {
-      error: `Failed to get database stats: ${error.message}`
+      error: `Failed to get database stats: ${error.message}`,
     };
   }
 }
@@ -102,41 +114,47 @@ async function getDatabaseStats(db) {
 /**
  * Get migration status
  */
-async function getMigrationStatus(db) {
+async function getMigrationStatus(dbService) {
   try {
     // Check if migrations table exists
-    const migrationTable = await db.prepare(`
+    const migrationTableResult = await dbService.execute(`
       SELECT name FROM sqlite_master 
       WHERE type='table' AND name='migrations'
-    `).get();
-    
-    if (!migrationTable) {
+    `);
+
+    if (migrationTableResult.rows.length === 0) {
       return {
         migrations_applied: 0,
-        latest_migration: 'none'
+        latest_migration: "none",
       };
     }
-    
+
     // Get latest migration
-    const latestMigration = await db.prepare(`
+    const latestMigrationResult = await dbService.execute(`
       SELECT * FROM migrations 
       ORDER BY id DESC 
       LIMIT 1
-    `).get();
-    
+    `);
+
     // Get total migrations
-    const totalMigrations = await db.prepare(`
+    const totalMigrationsResult = await dbService.execute(`
       SELECT COUNT(*) as count FROM migrations
-    `).get();
-    
+    `);
+
+    const latestMigration =
+      latestMigrationResult.rows.length > 0
+        ? latestMigrationResult.rows[0]
+        : null;
+    const totalMigrations = totalMigrationsResult.rows[0][0];
+
     return {
-      migrations_applied: totalMigrations.count,
-      latest_migration: latestMigration ? latestMigration.name : 'none',
-      latest_applied_at: latestMigration ? latestMigration.applied_at : null
+      migrations_applied: totalMigrations,
+      latest_migration: latestMigration ? latestMigration[1] : "none", // name column
+      latest_applied_at: latestMigration ? latestMigration[2] : null, // applied_at column
     };
   } catch (error) {
     return {
-      error: `Failed to get migration status: ${error.message}`
+      error: `Failed to get migration status: ${error.message}`,
     };
   }
 }
@@ -146,90 +164,106 @@ async function getMigrationStatus(db) {
  */
 export const checkDatabaseHealth = async () => {
   const startTime = Date.now();
-  let db = null;
-  
+
   try {
-    // Get database connection
-    db = await getDatabaseConnection();
-    
-    // Test basic connectivity with a simple query
-    const testQuery = await db.prepare("SELECT datetime('now') as now").get();
-    
-    if (!testQuery || !testQuery.now) {
-      throw new Error('Database query test failed');
+    // Check if required environment variables are present
+    if (!process.env.TURSO_DATABASE_URL) {
+      return {
+        status: HealthStatus.UNHEALTHY,
+        response_time: `${Date.now() - startTime}ms`,
+        error: "TURSO_DATABASE_URL environment variable not configured",
+        details: {
+          connection: "failed",
+          error_type: "ConfigurationError",
+          has_database_url: false,
+          has_auth_token: !!process.env.TURSO_AUTH_TOKEN,
+        },
+      };
     }
-    
+
+    if (!process.env.TURSO_AUTH_TOKEN) {
+      return {
+        status: HealthStatus.UNHEALTHY,
+        response_time: `${Date.now() - startTime}ms`,
+        error: "TURSO_AUTH_TOKEN environment variable not configured",
+        details: {
+          connection: "failed",
+          error_type: "ConfigurationError",
+          has_database_url: !!process.env.TURSO_DATABASE_URL,
+          has_auth_token: false,
+        },
+      };
+    }
+
+    // Get database service
+    const dbService = getDatabase();
+
+    // Test basic connectivity with a simple query
+    const testResult = await dbService.execute("SELECT datetime('now') as now");
+
+    if (!testResult || !testResult.rows || testResult.rows.length === 0) {
+      throw new Error("Database query test failed");
+    }
+
     // Test write capability (non-destructive)
-    await db.prepare(`
+    await dbService.execute(`
       CREATE TEMP TABLE IF NOT EXISTS health_check_temp (
         id INTEGER PRIMARY KEY,
         checked_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
-    `).run();
-    
-    await db.prepare(`
+    `);
+
+    await dbService.execute(`
       INSERT INTO health_check_temp (id) VALUES (1)
       ON CONFLICT(id) DO UPDATE SET checked_at = CURRENT_TIMESTAMP
-    `).run();
-    
+    `);
+
     // Validate schema
-    const schemaValidation = await validateSchema(db);
-    
+    const schemaValidation = await validateSchema(dbService);
+
     // Get database statistics
-    const stats = await getDatabaseStats(db);
-    
+    const stats = await getDatabaseStats(dbService);
+
     // Get migration status
-    const migrationStatus = await getMigrationStatus(db);
-    
+    const migrationStatus = await getMigrationStatus(dbService);
+
     // Clean up temp table
-    await db.prepare("DROP TABLE IF EXISTS health_check_temp").run();
-    
-    // Close database connection to prevent handle leaks
-    await db.close();
-    
+    await dbService.execute("DROP TABLE IF EXISTS health_check_temp");
+
     // Determine health status
     let status = HealthStatus.HEALTHY;
     let details = {
-      connection: 'active',
-      read_write: 'operational',
+      connection: "active",
+      read_write: "operational",
       schema_valid: schemaValidation.valid,
       ...stats,
-      ...migrationStatus
+      ...migrationStatus,
     };
-    
+
     if (!schemaValidation.valid) {
       status = HealthStatus.UNHEALTHY;
       details.schema_error = schemaValidation.error;
     } else if (stats.error || migrationStatus.error) {
       status = HealthStatus.DEGRADED;
       if (stats.error) details.stats_error = stats.error;
-      if (migrationStatus.error) details.migration_error = migrationStatus.error;
+      if (migrationStatus.error)
+        details.migration_error = migrationStatus.error;
     }
-    
+
     return {
       status,
       response_time: `${Date.now() - startTime}ms`,
-      details
+      details,
     };
   } catch (error) {
-    // Attempt to close database connection if it exists
-    try {
-      if (db) {
-        await db.close();
-      }
-    } catch (closeError) {
-      // Log but don't throw - original error is more important
-      console.warn('Failed to close database connection:', closeError.message);
-    }
-    
     return {
       status: HealthStatus.UNHEALTHY,
       response_time: `${Date.now() - startTime}ms`,
       error: error.message,
       details: {
-        connection: 'failed',
-        error_type: error.name || 'DatabaseError'
-      }
+        connection: "failed",
+        error_type: error.name || "DatabaseError",
+      },
     };
   }
 };
@@ -238,20 +272,20 @@ export const checkDatabaseHealth = async () => {
  * Vercel serverless function handler
  */
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
-  
+
   try {
     const health = await checkDatabaseHealth();
     const statusCode = health.status === HealthStatus.HEALTHY ? 200 : 503;
-    
+
     res.status(statusCode).json(health);
   } catch (error) {
     res.status(503).json({
       status: HealthStatus.UNHEALTHY,
       error: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 }

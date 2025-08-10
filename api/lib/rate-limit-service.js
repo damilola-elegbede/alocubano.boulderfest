@@ -22,12 +22,13 @@ export class RateLimitService {
   getClientId(req) {
     // Handle both req object and headers directly
     const headers = req.headers || req;
-    
+
     // Handle case-insensitive header lookup for x-forwarded-for
-    const forwardedFor = headers["x-forwarded-for"] || 
-                        headers["X-Forwarded-For"] || 
-                        headers["X-FORWARDED-FOR"];
-    
+    const forwardedFor =
+      headers["x-forwarded-for"] ||
+      headers["X-Forwarded-For"] ||
+      headers["X-FORWARDED-FOR"];
+
     return (
       forwardedFor?.split(",")[0]?.trim() ||
       req.connection?.remoteAddress ||
@@ -85,10 +86,10 @@ export class RateLimitService {
     }
 
     failedAttemptsMap.set(clientId, record);
-    
+
     return {
       attemptsRemaining: Math.max(0, this.loginMaxAttempts - record.attempts),
-      isLocked: record.lockedUntil > now
+      isLocked: record.lockedUntil > now,
     };
   }
 
@@ -126,7 +127,7 @@ export class RateLimitService {
   clearFailedAttempts(clientId) {
     failedAttemptsMap.delete(clientId);
   }
-  
+
   /**
    * Clear attempts (alias for clearFailedAttempts)
    */
