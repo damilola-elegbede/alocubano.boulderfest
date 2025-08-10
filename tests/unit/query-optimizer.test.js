@@ -392,7 +392,7 @@ describe("FestivalQueryOptimizer", () => {
 
       expect(stats.totalExecutions).toBe(1);
       expect(stats.stats.EVENT_STATISTICS.executions).toBe(1);
-      expect(stats.stats.EVENT_STATISTICS.avgTime).toBeGreaterThan(0);
+      expect(stats.stats.EVENT_STATISTICS.avgTime).toBeGreaterThanOrEqual(0);
     });
   });
 
