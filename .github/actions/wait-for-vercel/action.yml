@@ -36,7 +36,7 @@ runs:
       id: get-deployment
       shell: bash
       env:
-        GITHUB_TOKEN: ${{ inputs.github-token }}
+        GH_TOKEN: ${{ inputs.github-token }}
       run: |
         echo "🔍 Detecting Vercel deployment..."
         
@@ -211,27 +211,32 @@ runs:
         for i in $(seq 1 $MAX_ATTEMPTS); do
           echo "🔍 Attempt $i/$MAX_ATTEMPTS: Checking deployment..."
           
-          # Check if deployment responds with 200
-          if curl -sf --max-time 15 --connect-timeout 10 "$DEPLOYMENT_URL" > /dev/null 2>&1; then
-            echo "✅ Deployment is ready! (after $i attempts)"
+          # Check if deployment responds with 200 (follow redirects)
+          HTTP_CODE=$(curl -sL -o /dev/null -w "%{http_code}" --max-time 15 --connect-timeout 10 "$DEPLOYMENT_URL" 2>/dev/null || echo "000")
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Deployment is ready! (HTTP $HTTP_CODE after $i attempts)"
             echo "ready=true" >> $GITHUB_OUTPUT
             
-            # Additional health check if API endpoint exists
-            if curl -sf --max-time 10 "$DEPLOYMENT_URL/api/health/check" > /dev/null 2>&1; then
-              echo "✅ API health check passed"
+            # Additional health check if API endpoint exists (follow redirects)
+            HEALTH_CODE=$(curl -sL -o /dev/null -w "%{http_code}" --max-time 10 "$DEPLOYMENT_URL/api/health/check" 2>/dev/null || echo "000")
+            if [ "$HEALTH_CODE" = "200" ]; then
+              echo "✅ API health check passed (HTTP $HEALTH_CODE)"
             else
-              echo "ℹ️ No API health endpoint (expected for static sites)"
+              echo "ℹ️ No API health endpoint or returned $HEALTH_CODE (expected for static sites)"
             fi
             
             exit 0
+          else
+            echo "  Response code: $HTTP_CODE (not ready yet)"
           fi
           
           if [ $i -eq $MAX_ATTEMPTS ]; then
             echo "❌ Deployment not ready after $TIMEOUT_MINUTES minutes"
             echo "ready=false" >> $GITHUB_OUTPUT
             
-            # Try to get more info about the failure
-            RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOYMENT_URL" || echo "000")
+            # Try to get more info about the failure (follow redirects)
+            RESPONSE_CODE=$(curl -sL -o /dev/null -w "%{http_code}" --max-time 10 "$DEPLOYMENT_URL" 2>/dev/null || echo "000")
             echo "Last response code: $RESPONSE_CODE"
             
             exit 1
