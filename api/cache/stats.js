@@ -241,6 +241,10 @@ async function handler(req, res) {
     // Rate limiting check
     const rateLimit = checkRateLimit(adminId);
     if (!rateLimit.allowed) {
+      res.setHeader("Retry-After", Math.ceil((rateLimit.resetTime - Date.now()) / 1000));
+      res.setHeader("X-RateLimit-Limit", MAX_STATS_REQUESTS);
+      res.setHeader("X-RateLimit-Remaining", rateLimit.remaining);
+      res.setHeader("X-RateLimit-Reset", new Date(rateLimit.resetTime).toISOString());
       return res.status(429).json({
         error: "Rate limit exceeded",
         remaining: rateLimit.remaining,

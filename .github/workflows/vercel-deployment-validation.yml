@@ -2,7 +2,7 @@
 #
 # Functionality distributed to:
 # - deployment-health-monitor.yml: PR preview health monitoring
-# - production-quality-gates.yml: Production deployment validation  
+# - production-quality-gates.yml: Production deployment validation
 # - performance-tests.yml: Dedicated performance testing
 # - ci.yml: Core code quality validation
 #

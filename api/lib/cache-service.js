@@ -15,6 +15,7 @@ class CacheService {
   constructor() {
     this.cache = null;
     this.initialized = false;
+    this.initPromise = null;
   }
 
   /**
@@ -22,20 +23,29 @@ class CacheService {
    */
   async init() {
     if (this.initialized) return;
+    
+    // Return existing promise if initialization is in progress
+    if (this.initPromise) return this.initPromise;
 
-    try {
-      // Initialize cache with festival data
-      const warmUpData = await this.getWarmUpData();
-      this.cache = await initializeCache(warmUpData);
+    this.initPromise = (async () => {
+      try {
+        // Initialize cache with festival data
+        const warmUpData = await this.getWarmUpData();
+        this.cache = await initializeCache(warmUpData);
 
-      this.initialized = true;
-      console.log("Cache service initialized successfully");
-    } catch (error) {
-      console.error("Cache service initialization failed:", error);
-      // Fallback to basic cache without warm-up
-      this.cache = getCache();
-      this.initialized = true;
-    }
+        this.initialized = true;
+        console.log("Cache service initialized successfully");
+      } catch (error) {
+        console.error("Cache service initialization failed:", error);
+        // Fallback to basic cache without warm-up
+        this.cache = getCache();
+        this.initialized = true;
+      } finally {
+        this.initPromise = null;
+      }
+    })();
+
+    return this.initPromise;
   }
 
   /**
@@ -413,7 +423,8 @@ class CacheService {
 
       case "gallery": {
         // Warm gallery cache with years
-        const galleryYears = await this.getWarmUpData()["gallery:years"];
+        const warmUpData = await this.getWarmUpData();
+        const galleryYears = warmUpData["gallery:years"];
         await cache.set("gallery:years", galleryYears, {
           type: CACHE_TYPES.GALLERY,
           namespace: "gallery",

@@ -71,7 +71,7 @@ runs:
             
             # Get deployment status and URL
             STATUS_DATA=$(gh api repos/${{ github.repository }}/deployments/$DEPLOYMENT_ID/statuses \
-              --jq '.[0] // {}')
+              --jq '.[0] // {}' 2>/dev/null || echo '{}')
             
             DEPLOYMENT_URL=$(echo "$STATUS_DATA" | jq -r '.target_url // .environment_url // empty')
             STATUS_STATE=$(echo "$STATUS_DATA" | jq -r '.state // "pending"')
@@ -99,7 +99,7 @@ runs:
               
               # Get deployment status and URL
               STATUS_DATA=$(gh api repos/${{ github.repository }}/deployments/$DEPLOYMENT_ID/statuses \
-                --jq '.[0] // {}')
+                --jq '.[0] // {}' 2>/dev/null || echo '{}')
               
               DEPLOYMENT_URL=$(echo "$STATUS_DATA" | jq -r '.target_url // .environment_url // empty')
               STATUS_STATE=$(echo "$STATUS_DATA" | jq -r '.state // "pending"')

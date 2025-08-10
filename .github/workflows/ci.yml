@@ -119,10 +119,10 @@ jobs:
         run: |
           python3 -m http.server 8000 &
           SERVER_PID=$!
-          
+
           # Set up trap to ensure server is killed on exit
           trap "kill $SERVER_PID 2>/dev/null || true" EXIT
-          
+
           sleep 5
 
           # Test if server is running
@@ -140,7 +140,7 @@ jobs:
           curl -f http://localhost:8000/pages/boulder-fest-2025-schedule.html || exit 1
           curl -f http://localhost:8000/pages/boulder-fest-2025-gallery.html || exit 1
 
-          # Test 2026 festival pages  
+          # Test 2026 festival pages
           curl -f http://localhost:8000/pages/boulder-fest-2026-index.html || exit 1
           curl -f http://localhost:8000/pages/boulder-fest-2026-artists.html || exit 1
           curl -f http://localhost:8000/pages/boulder-fest-2026-schedule.html || exit 1
@@ -154,7 +154,7 @@ jobs:
 
           # Test CSS loading
           curl -f http://localhost:8000/css/typography.css || exit 1
-          
+
           # Server will be killed by trap on exit
 
   security-scan:
@@ -194,7 +194,7 @@ jobs:
           # Filter out legitimate patterns
           if [ -s /tmp/potential_secrets.txt ]; then
             grep -v -E "(process\\.env|headers|api-key|verification_token|unsubscribe.*token|webhook.*secret|default-secret)" /tmp/potential_secrets.txt > /tmp/filtered_secrets.txt || true
-            
+
             if [ -s /tmp/filtered_secrets.txt ]; then
               echo "⚠️  Potential sensitive data found:"
               cat /tmp/filtered_secrets.txt

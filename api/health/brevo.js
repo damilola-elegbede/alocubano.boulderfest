@@ -53,7 +53,7 @@ async function checkAccountInfo() {
       emails_sent: credits.used || 0,
       emails_remaining: (credits.sendLimit || 0) - (credits.used || 0),
       quota_usage_percent: credits.sendLimit
-        ? ((credits.used / credits.sendLimit) * 100).toFixed(2)
+        ? parseFloat(((credits.used / credits.sendLimit) * 100).toFixed(2))
         : 0,
     };
   } catch (error) {
@@ -231,17 +231,13 @@ export const checkBrevoHealth = async () => {
   const startTime = Date.now();
 
   try {
-    // Check account info and quota
-    const accountInfo = await checkAccountInfo();
-
-    // Check contact lists
-    const contactLists = await checkContactLists();
-
-    // Check email templates
-    const templates = await checkEmailTemplates();
-
-    // Check recent email activity
-    const recentActivity = await checkRecentEmailActivity();
+    // Run independent checks in parallel to reduce latency
+    const [accountInfo, contactLists, templates, recentActivity] = await Promise.all([
+      checkAccountInfo(),
+      checkContactLists(),
+      checkEmailTemplates(),
+      checkRecentEmailActivity(),
+    ]);
 
     // Determine health status
     let status = HealthStatus.HEALTHY;
