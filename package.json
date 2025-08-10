@@ -20,6 +20,8 @@
     "test:unit:ui": "vitest --ui",
     "test:memory": "node scripts/test-with-memory.js run",
     "test:memory:watch": "node scripts/test-with-memory.js",
+    "test:health": "node scripts/test-health-endpoint.js",
+    "test:health:remote": "node scripts/test-health-endpoint.js https://alocubanoboulderfest.vercel.app",
     "test:coverage": "vitest run --coverage",
     "test:all": "npm run test:unit && npm run test:links",
     "test:links": "node tests/run-link-tests.js",

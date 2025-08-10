@@ -91,7 +91,14 @@ jobs:
           elif [ "${{ github.event_name }}" = "schedule" ]; then
             URL="https://alocubanoboulderfest.vercel.app"
           else
-            URL="https://alocubanoboulderfest-git-${{ github.head_ref || 'main' }}.vercel.app"
+            # For PR previews, create a fallback URL (actual URL will come from wait-for-deployment)
+            # Vercel format: project-git-branch-team.vercel.app
+            BRANCH_NAME="${{ github.head_ref || 'main' }}"
+            # Replace invalid URL characters and limit length
+            SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-50 | sed 's/-*$//')
+            URL="https://alocubanoboulderfest-git-${SAFE_BRANCH}.vercel.app"
+            echo "⚠️ Using fallback constructed URL: $URL"
+            echo "📋 Actual deployment URL will be determined by Vercel preview action"
           fi
           echo "url=${URL}" >> $GITHUB_OUTPUT
           
@@ -145,6 +152,9 @@ jobs:
     needs: setup
     if: github.event_name == 'pull_request'
     
+    outputs:
+      deployment-url: ${{ steps.wait-for-deployment.outputs.url }}
+    
     steps:
       - name: Wait for Vercel deployment
         uses: patrickedqvist/wait-for-vercel-preview@v1.3.1
@@ -154,27 +164,65 @@ jobs:
           max_timeout: 300
           check_interval: 10
           
+      - name: Debug deployment URLs
+        run: |
+          echo "🔍 Debug: Deployment URL information"
+          echo "Vercel action output URL: ${{ steps.wait-for-deployment.outputs.url }}"
+          echo "Constructed fallback URL: ${{ needs.setup.outputs.target-url }}"
+          echo "GitHub context - head_ref: ${{ github.head_ref }}"
+          echo "GitHub context - ref: ${{ github.ref }}"
+          
       - name: Verify deployment health
         run: |
           echo "🏥 Checking deployment health..."
-          HEALTH_URL="${{ needs.setup.outputs.target-url }}/api/health/check"
+          
+          # Use the actual deployment URL from Vercel instead of constructed one
+          DEPLOYMENT_URL="${{ steps.wait-for-deployment.outputs.url }}"
+          
+          if [ -z "$DEPLOYMENT_URL" ]; then
+            echo "⚠️ No deployment URL found from Vercel action, falling back to constructed URL"
+            DEPLOYMENT_URL="${{ needs.setup.outputs.target-url }}"
+          fi
+          
+          # Validate URL format
+          if [[ ! "$DEPLOYMENT_URL" =~ ^https?:// ]]; then
+            echo "❌ Invalid URL format: $DEPLOYMENT_URL"
+            exit 1
+          fi
+          
+          HEALTH_URL="${DEPLOYMENT_URL}/api/health/check"
+          
+          echo "Deployment URL: $DEPLOYMENT_URL"
+          echo "Health Check URL: $HEALTH_URL"
+          
+          # Test URL reachability first
+          echo "Testing URL reachability..."
+          if ! curl -f -s --connect-timeout 10 "$DEPLOYMENT_URL" > /dev/null; then
+            echo "⚠️ Base URL not reachable, waiting for deployment..."
+          fi
           
           # Wait up to 2 minutes for health check to pass
           for i in {1..12}; do
             echo "Health check attempt $i/12..."
             
-            if curl -f -s "$HEALTH_URL" > /dev/null; then
+            if curl -f -s --connect-timeout 30 --max-time 60 "$HEALTH_URL" > /dev/null; then
               echo "✅ Deployment is healthy"
+              
+              # Get health details for logging
+              HEALTH_RESPONSE=$(curl -s "$HEALTH_URL" || echo "Could not fetch health details")
+              echo "Health response: $HEALTH_RESPONSE"
               exit 0
             fi
             
             if [ $i -eq 12 ]; then
               echo "❌ Deployment health check failed after 2 minutes"
               echo "URL: $HEALTH_URL"
-              curl -v "$HEALTH_URL" || true
+              echo "Final attempt with verbose output:"
+              curl -v --connect-timeout 30 --max-time 60 "$HEALTH_URL" || true
               exit 1
             fi
             
+            echo "Waiting 10 seconds before retry..."
             sleep 10
           done
 
@@ -232,7 +280,11 @@ jobs:
       - name: Run performance tests
         run: |
           echo "🚀 Starting performance tests..."
-          echo "Target URL: ${{ needs.setup.outputs.target-url }}"
+          
+          # Use the actual deployment URL from Vercel for PR previews, fallback to constructed URL
+          TARGET_URL="${{ needs.wait-for-deployment.outputs.deployment-url || needs.setup.outputs.target-url }}"
+          
+          echo "Target URL: $TARGET_URL"
           echo "Tests to run: ${{ matrix.test-group.tests }}"
           
           PARALLEL_FLAG=""
@@ -247,12 +299,12 @@ jobs:
           
           node scripts/performance-test-runner.js \
             --tests=${{ matrix.test-group.tests }} \
-            --url=${{ needs.setup.outputs.target-url }} \
+            --url="$TARGET_URL" \
             $PARALLEL_FLAG \
             $BASELINE_FLAG \
             --verbose
         env:
-          LOAD_TEST_BASE_URL: ${{ needs.setup.outputs.target-url }}
+          LOAD_TEST_BASE_URL: ${{ needs.wait-for-deployment.outputs.deployment-url || needs.setup.outputs.target-url }}
           NODE_ENV: ${{ github.event.inputs.environment || 'staging' }}
           ALERT_WEBHOOK_URL: ${{ secrets.PERFORMANCE_ALERT_WEBHOOK }}
           ESCALATION_WEBHOOK_URL: ${{ secrets.PERFORMANCE_ESCALATION_WEBHOOK }}
@@ -377,7 +429,7 @@ jobs:
             **Test Reports:**
             ${summary.reports.map(report => `- 📋 [${report}](../actions/runs/${{ github.run_id }})`).join('\n')}
             
-            **Target Environment:** ${{ needs.setup.outputs.target-url }}
+            **Target Environment:** ${{ needs.wait-for-deployment.outputs.deployment-url || needs.setup.outputs.target-url }}
             
             ${summary.criticalIssues > 0 ? 
               '⚠️ **Action Required:** Critical performance issues detected. Review test results before merging.' :
@@ -454,12 +506,18 @@ jobs:
       - name: Run stress tests
         run: |
           echo "💪 Running stress tests..."
+          
+          # Use the actual deployment URL from Vercel for PR previews, fallback to constructed URL
+          TARGET_URL="${{ needs.wait-for-deployment.outputs.deployment-url || needs.setup.outputs.target-url }}"
+          
+          echo "Target URL: $TARGET_URL"
+          
           node scripts/performance-test-runner.js \
             --tests=stress \
-            --url=${{ needs.setup.outputs.target-url }} \
+            --url="$TARGET_URL" \
             --verbose
         env:
-          LOAD_TEST_BASE_URL: ${{ needs.setup.outputs.target-url }}
+          LOAD_TEST_BASE_URL: ${{ needs.wait-for-deployment.outputs.deployment-url || needs.setup.outputs.target-url }}
           NODE_ENV: ${{ github.event.inputs.environment || 'staging' }}
           ALERT_WEBHOOK_URL: ${{ secrets.PERFORMANCE_ALERT_WEBHOOK }}
           
