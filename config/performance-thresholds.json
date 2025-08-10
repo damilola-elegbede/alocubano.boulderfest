@@ -1,0 +1,239 @@
+{
+  "version": "1.0.0",
+  "description": "Performance testing thresholds and configuration for A Lo Cubano Boulder Fest",
+  "lastUpdated": "2025-01-10T00:00:00.000Z",
+  
+  "globalThresholds": {
+    "response_time": {
+      "p50_max": 150,
+      "p95_max": 500,
+      "p99_max": 1000,
+      "unit": "milliseconds"
+    },
+    "error_rates": {
+      "http_errors_max": 0.01,
+      "payment_errors_max": 0.005,
+      "api_errors_max": 0.01,
+      "unit": "percentage"
+    },
+    "availability": {
+      "uptime_min": 0.999,
+      "unit": "percentage"
+    }
+  },
+  
+  "testSpecificThresholds": {
+    "ticket-sales": {
+      "description": "Peak ticket sales performance requirements",
+      "response_time": {
+        "p95_max": 500,
+        "p99_max": 1000,
+        "cart_operations_p95": 100,
+        "payment_processing_p95": 200
+      },
+      "success_rates": {
+        "ticket_purchase_min": 0.95,
+        "checkout_completion_min": 0.90,
+        "payment_success_min": 0.98
+      },
+      "throughput": {
+        "min_rps": 50,
+        "target_rps": 100
+      }
+    },
+    
+    "check-in": {
+      "description": "QR code validation performance requirements",
+      "response_time": {
+        "p95_max": 100,
+        "p99_max": 200,
+        "qr_validation_avg": 50,
+        "qr_validation_p95": 100
+      },
+      "success_rates": {
+        "checkin_success_min": 0.98,
+        "qr_validation_min": 0.99
+      },
+      "throughput": {
+        "target_validations_per_second": 15,
+        "max_concurrent_validations": 75
+      },
+      "business_metrics": {
+        "duplicate_scan_rate_max": 0.05,
+        "invalid_qr_rate_max": 0.02
+      }
+    },
+    
+    "sustained": {
+      "description": "Baseline sustained load requirements",
+      "response_time": {
+        "p95_max": 300,
+        "p99_max": 800
+      },
+      "success_rates": {
+        "overall_success_min": 0.995
+      },
+      "resource_usage": {
+        "memory_usage_max": 80,
+        "cpu_usage_max": 70,
+        "unit": "percentage"
+      },
+      "stability": {
+        "error_rate_variance_max": 0.02,
+        "response_time_variance_max": 0.15
+      }
+    },
+    
+    "stress": {
+      "description": "Stress test breaking point thresholds",
+      "response_time": {
+        "p95_max": 1000,
+        "p99_max": 3000,
+        "acceptable_degradation": 2.0
+      },
+      "success_rates": {
+        "minimum_acceptable": 0.95
+      },
+      "capacity": {
+        "max_concurrent_users": 500,
+        "graceful_degradation_point": 400
+      }
+    }
+  },
+  
+  "regressionThresholds": {
+    "description": "Thresholds for detecting performance regressions",
+    "response_time_degradation": {
+      "warning": 0.10,
+      "critical": 0.25,
+      "unit": "percentage_increase"
+    },
+    "error_rate_increase": {
+      "warning": 0.02,
+      "critical": 0.05,
+      "unit": "percentage_points"
+    },
+    "throughput_decrease": {
+      "warning": 0.15,
+      "critical": 0.30,
+      "unit": "percentage_decrease"
+    },
+    "success_rate_decrease": {
+      "warning": 0.05,
+      "critical": 0.10,
+      "unit": "percentage_points"
+    }
+  },
+  
+  "environmentSpecific": {
+    "development": {
+      "description": "Relaxed thresholds for development testing",
+      "multipliers": {
+        "response_time": 2.0,
+        "error_rates": 5.0
+      }
+    },
+    "staging": {
+      "description": "Production-like thresholds for staging",
+      "multipliers": {
+        "response_time": 1.2,
+        "error_rates": 2.0
+      }
+    },
+    "production": {
+      "description": "Strict production thresholds",
+      "multipliers": {
+        "response_time": 1.0,
+        "error_rates": 1.0
+      }
+    }
+  },
+  
+  "alerting": {
+    "description": "Alert configuration for performance issues",
+    "levels": {
+      "info": {
+        "threshold_breach_percentage": 80,
+        "notification": false
+      },
+      "warning": {
+        "threshold_breach_percentage": 90,
+        "notification": true,
+        "webhook_required": false
+      },
+      "critical": {
+        "threshold_breach_percentage": 100,
+        "notification": true,
+        "webhook_required": true,
+        "escalation_required": true
+      }
+    },
+    "cooldown": {
+      "warning": 300,
+      "critical": 60,
+      "unit": "seconds"
+    }
+  },
+  
+  "cicd": {
+    "description": "CI/CD pipeline integration settings",
+    "failure_criteria": {
+      "any_critical_regression": true,
+      "multiple_warning_regressions": 3,
+      "overall_status_fail": true
+    },
+    "success_criteria": {
+      "all_tests_pass": true,
+      "no_critical_regressions": true,
+      "error_rates_within_limits": true
+    },
+    "reporting": {
+      "always_generate_html": true,
+      "store_json_artifacts": true,
+      "update_baselines_on_main": true
+    }
+  },
+  
+  "businessMetrics": {
+    "description": "Business-specific KPIs and their thresholds",
+    "ticketSales": {
+      "conversion_rate_min": 0.15,
+      "cart_abandonment_max": 0.30,
+      "payment_completion_min": 0.95,
+      "average_order_value_min": 75.00
+    },
+    "checkIn": {
+      "check_in_time_p95": 30,
+      "staff_efficiency_min": 0.90,
+      "queue_wait_time_max": 120,
+      "unit": "seconds"
+    },
+    "userExperience": {
+      "page_load_time_p95": 2000,
+      "time_to_interactive_p95": 3000,
+      "first_contentful_paint_p95": 1500,
+      "unit": "milliseconds"
+    }
+  },
+  
+  "capacityPlanning": {
+    "description": "Capacity planning targets and growth projections",
+    "currentCapacity": {
+      "peak_concurrent_users": 150,
+      "sustained_concurrent_users": 100,
+      "requests_per_second": 100,
+      "database_connections": 50
+    },
+    "growthProjections": {
+      "year_over_year_growth": 0.30,
+      "peak_traffic_multiplier": 3.0,
+      "festival_growth_factor": 1.5
+    },
+    "scalingTriggers": {
+      "cpu_utilization": 70,
+      "memory_utilization": 80,
+      "response_time_degradation": 0.20,
+      "error_rate_increase": 0.02
+    }
+  }
+}

@@ -78,7 +78,16 @@
     "monitoring:dashboard": "open http://localhost:3000/api/monitoring/dashboard?format=html",
     "monitoring:test": "npm run test:integration -- monitoring.test.js",
     "alert:test": "curl -X POST http://localhost:3000/api/monitoring/alerts -H 'X-Admin-Key: ${ADMIN_API_KEY}' -H 'Content-Type: application/json' -d '{\"action\":\"test\"}' | jq '.'",
-    "alert:trigger": "curl -X POST http://localhost:3000/api/monitoring/alerts -H 'X-Admin-Key: ${ADMIN_API_KEY}' -H 'Content-Type: application/json' -d '{\"action\":\"trigger\",\"severity\":\"info\",\"description\":\"Manual test alert\"}' | jq '.'"
+    "alert:trigger": "curl -X POST http://localhost:3000/api/monitoring/alerts -H 'X-Admin-Key: ${ADMIN_API_KEY}' -H 'Content-Type: application/json' -d '{\"action\":\"trigger\",\"severity\":\"info\",\"description\":\"Manual test alert\"}' | jq '.'",
+    "performance": "node scripts/performance-test-runner.js",
+    "performance:all": "node scripts/performance-test-runner.js --tests=ticket-sales,check-in,sustained,stress",
+    "performance:critical": "node scripts/performance-test-runner.js --tests=ticket-sales,check-in",
+    "performance:parallel": "node scripts/performance-test-runner.js --parallel",
+    "performance:baseline": "node scripts/performance-test-runner.js --update-baselines",
+    "performance:staging": "LOAD_TEST_BASE_URL=https://alocubanoboulderfest-staging.vercel.app node scripts/performance-test-runner.js",
+    "performance:production": "LOAD_TEST_BASE_URL=https://alocubanoboulderfest.vercel.app node scripts/performance-test-runner.js --skip-health-check",
+    "k6:install": "brew install k6 || echo 'Install K6: https://k6.io/docs/getting-started/installation/'",
+    "k6:check": "k6 version || echo 'K6 not installed. Run: npm run k6:install'"
   },
   "dependencies": {
     "@libsql/client": "^0.15.10",
@@ -97,6 +106,7 @@
     "node-fetch": "^3.3.2",
     "passkit-generator": "^3.4.0",
     "qrcode": "^1.5.4",
+    "redis": "^4.7.1",
     "sharp": "^0.34.3",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",

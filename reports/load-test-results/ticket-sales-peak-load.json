@@ -1,0 +1,294 @@
+{
+  "testMetadata": {
+    "testName": "Ticket Sales Peak Load Test",
+    "testId": "tkt-peak-2025-08-10-001",
+    "executedAt": "2025-08-10T14:30:00.000Z",
+    "duration": "PT15M",
+    "testTool": "k6",
+    "testVersion": "0.45.0",
+    "environment": "production-staging",
+    "loadPattern": "gradual-ramp-spike",
+    "description": "Simulates peak ticket sales load during festival launch"
+  },
+
+  "testConfiguration": {
+    "scenario": {
+      "type": "ramping-vus",
+      "stages": [
+        { "duration": "2m", "target": 20 },
+        { "duration": "5m", "target": 50 },
+        { "duration": "2m", "target": 100 },
+        { "duration": "3m", "target": 150 },
+        { "duration": "1m", "target": 200 },
+        { "duration": "2m", "target": 50 }
+      ]
+    },
+    
+    "thresholds": {
+      "http_req_duration": ["p(95)<500", "p(99)<1000"],
+      "http_req_failed": ["rate<0.01"],
+      "checks": ["rate>0.95"]
+    },
+
+    "userBehavior": {
+      "ticketBrowsing": 0.40,
+      "cartOperations": 0.35,
+      "checkoutFlow": 0.20,
+      "abandonedSessions": 0.05
+    }
+  },
+
+  "results": {
+    "summary": {
+      "totalRequests": 12485,
+      "successfulRequests": 12351,
+      "failedRequests": 134,
+      "successRate": 0.9893,
+      "testDuration": "15m 12s",
+      "dataTransferred": "45.2MB",
+      "averageRPS": 13.8,
+      "peakRPS": 28.4
+    },
+
+    "responseTimeMetrics": {
+      "overall": {
+        "min": 18,
+        "max": 1245,
+        "average": 156.7,
+        "median": 132,
+        "p90": 245,
+        "p95": 385,
+        "p99": 680,
+        "p99_9": 1089,
+        "unit": "milliseconds"
+      },
+
+      "byEndpoint": {
+        "/api/tickets/index": {
+          "requests": 4820,
+          "average": 89.2,
+          "p95": 165,
+          "p99": 285,
+          "successRate": 0.9958
+        },
+        
+        "/api/payments/create-checkout-session": {
+          "requests": 2150,
+          "average": 234.5,
+          "p95": 445,
+          "p99": 720,
+          "successRate": 0.9884
+        },
+
+        "/api/tickets/validate": {
+          "requests": 980,
+          "average": 67.8,
+          "p95": 125,
+          "p99": 195,
+          "successRate": 0.9969
+        },
+
+        "static-assets": {
+          "requests": 4535,
+          "average": 45.2,
+          "p95": 85,
+          "p99": 150,
+          "successRate": 0.9978,
+          "cacheHitRate": 0.892
+        }
+      }
+    },
+
+    "concurrencyMetrics": {
+      "peakConcurrentUsers": 198,
+      "averageConcurrentUsers": 85,
+      "peakActiveConnections": 156,
+      "connectionPoolUtilization": 0.78,
+      "queueWaitTime": {
+        "average": 23,
+        "p95": 85,
+        "p99": 145,
+        "unit": "milliseconds"
+      }
+    },
+
+    "errorAnalysis": {
+      "errorTypes": {
+        "timeout": {
+          "count": 45,
+          "percentage": 0.36,
+          "primaryCause": "Database connection pool exhaustion"
+        },
+        "5xx_server_errors": {
+          "count": 28,
+          "percentage": 0.22,
+          "primaryCause": "Stripe API rate limiting"
+        },
+        "4xx_client_errors": {
+          "count": 61,
+          "percentage": 0.49,
+          "primaryCause": "Invalid payment data validation"
+        }
+      },
+
+      "errorDistribution": {
+        "rampUpPhase": 0.15,
+        "peakLoadPhase": 0.72,
+        "coolDownPhase": 0.13
+      }
+    },
+
+    "resourceUtilization": {
+      "serverlessMemory": {
+        "average": 165,
+        "peak": 320,
+        "unit": "MB",
+        "efficiency": 0.82
+      },
+
+      "databaseConnections": {
+        "active": {
+          "average": 12,
+          "peak": 28,
+          "poolSize": 50
+        },
+        "waitingQueries": {
+          "average": 2.3,
+          "peak": 15,
+          "unit": "count"
+        }
+      },
+
+      "cachePerformance": {
+        "hitRate": 0.847,
+        "missRate": 0.153,
+        "evictions": 18,
+        "memoryPressure": "medium"
+      }
+    }
+  },
+
+  "businessMetrics": {
+    "conversionFunnel": {
+      "visitorToCart": 0.23,
+      "cartToCheckout": 0.65,
+      "checkoutToPayment": 0.89,
+      "overallConversion": 0.133
+    },
+
+    "revenueImpact": {
+      "completedTransactions": 287,
+      "totalRevenue": 24750.00,
+      "averageOrderValue": 86.24,
+      "abandonedCartValue": 8420.00
+    },
+
+    "userExperience": {
+      "averageCheckoutTime": "3m 45s",
+      "cartAbandonmentRate": 0.31,
+      "paymentFailureRate": 0.067,
+      "userSatisfactionScore": 4.2
+    }
+  },
+
+  "performanceGoalStatus": {
+    "responseTimeGoals": {
+      "p95_under_500ms": "PASS",
+      "p99_under_1000ms": "PASS",
+      "average_under_200ms": "PASS"
+    },
+
+    "reliabilityGoals": {
+      "error_rate_under_1_percent": "PASS",
+      "availability_over_99_percent": "PASS",
+      "no_critical_failures": "PASS"
+    },
+
+    "throughputGoals": {
+      "handle_200_concurrent_users": "PASS",
+      "process_25_rps_sustained": "PASS",
+      "maintain_conversion_over_10_percent": "PASS"
+    }
+  },
+
+  "recommendations": {
+    "immediate": [
+      "Increase database connection pool size from 50 to 75 during peak periods",
+      "Implement Stripe API request queuing to handle rate limiting gracefully",
+      "Add circuit breaker pattern for external service calls"
+    ],
+
+    "shortTerm": [
+      "Optimize ticket inventory queries with better indexing",
+      "Implement progressive enhancement for payment forms",
+      "Add Redis caching layer for frequently accessed ticket data"
+    ],
+
+    "longTerm": [
+      "Consider implementing horizontal scaling for database reads",
+      "Evaluate CDN configuration for dynamic content caching",
+      "Implement predictive auto-scaling based on historical patterns"
+    ]
+  },
+
+  "regressionAnalysis": {
+    "comparedToBaseline": {
+      "responseTimeChange": "+12.3%",
+      "errorRateChange": "+0.4%",
+      "throughputChange": "-5.2%",
+      "status": "WARNING"
+    },
+
+    "significantChanges": [
+      "Database query performance degraded by 18% under peak load",
+      "Stripe integration response times increased by 25%",
+      "Cache efficiency decreased from baseline 85% to 84.7%"
+    ],
+
+    "rootCauseAnalysis": [
+      "Database connection pool exhaustion during peak concurrency",
+      "Stripe API rate limiting more aggressive than baseline testing",
+      "Memory pressure affecting cache performance at scale"
+    ]
+  },
+
+  "testValidation": {
+    "testCompleteness": {
+      "plannedVirtualUsers": 200,
+      "actualPeakVirtualUsers": 198,
+      "completionRate": 0.99
+    },
+
+    "dataQuality": {
+      "validResponses": 0.9893,
+      "dataConsistency": 0.998,
+      "measurementAccuracy": "±2%"
+    },
+
+    "environmentConsistency": {
+      "networkStability": "Good",
+      "systemLoad": "Normal",
+      "externalDependencies": "Available"
+    }
+  },
+
+  "followUpActions": {
+    "monitoringAlerts": [
+      "Set up database connection pool monitoring",
+      "Configure Stripe API rate limit alerts",
+      "Monitor memory usage patterns during peak loads"
+    ],
+
+    "infrastructureChanges": [
+      "Schedule database connection pool optimization",
+      "Review Stripe integration error handling",
+      "Plan memory allocation adjustments"
+    ],
+
+    "nextTestingCycle": {
+      "scheduledDate": "2025-08-17T14:30:00.000Z",
+      "focusAreas": ["Database optimization validation", "Stripe integration improvements"],
+      "expectedImprovements": ["15% better response times", "50% fewer errors"]
+    }
+  }
+}

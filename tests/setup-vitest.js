@@ -347,10 +347,32 @@ if (!global.crypto) {
 }
 
 // Mock Node.js crypto module
+vi.mock("node:crypto", () => ({
+  default: {
+    randomBytes: vi.fn(() =>
+      Buffer.from("mock-random-bytes-1234567890123456", "utf8"),
+    ),
+    createHash: vi.fn(() => ({
+      update: vi.fn().mockReturnThis(),
+      digest: vi.fn(() => "mock-hash-digest-1234567890abcdef"),
+    })),
+    createHmac: vi.fn(() => ({
+      update: vi.fn(() => ({
+        digest: vi.fn(() => "mock-hash-digest-1234567890abcdef"),
+      })),
+    })),
+  },
+}));
+
+// Also mock the regular crypto module for backward compatibility
 vi.mock("crypto", () => ({
   randomBytes: vi.fn(() =>
     Buffer.from("mock-random-bytes-1234567890123456", "utf8"),
   ),
+  createHash: vi.fn(() => ({
+    update: vi.fn().mockReturnThis(),
+    digest: vi.fn(() => "mock-hash-digest-1234567890abcdef"),
+  })),
   createHmac: vi.fn(() => ({
     update: vi.fn(() => ({
       digest: vi.fn(() => "mock-hash-digest-1234567890abcdef"),
