@@ -9,14 +9,20 @@ import helmet from 'helmet';
 /**
  * Environment configuration
  */
-const isProduction = process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
-const isDevelopment = process.env.VERCEL_ENV === 'development' || process.env.NODE_ENV === 'development';
+function isProduction() {
+  return process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
+}
+
+function isDevelopment() {
+  return process.env.VERCEL_ENV === 'development' || process.env.NODE_ENV === 'development';
+}
+
 const reportUri = process.env.CSP_REPORT_URI || '/api/security/csp-report';
 
 /**
  * Trusted domains for Content Security Policy
  */
-const TRUSTED_DOMAINS = {
+export const TRUSTED_DOMAINS = {
   stripe: [
     'https://js.stripe.com',
     'https://checkout.stripe.com',
@@ -103,12 +109,12 @@ function buildCSP() {
     workerSrc: ["'self'", 'blob:'],
     childSrc: ["'self'", 'blob:'],
     manifestSrc: ["'self'"],
-    upgradeInsecureRequests: isProduction ? [] : false,
+    upgradeInsecureRequests: isProduction() ? [] : false,
     reportUri: [reportUri]
   };
 
   // In development, relax some restrictions for debugging
-  if (isDevelopment) {
+  if (isDevelopment()) {
     cspDirectives.scriptSrc.push("'unsafe-eval'");
     cspDirectives.connectSrc.push('ws:', 'wss:', 'http://localhost:*', 'https://localhost:*');
   }
@@ -139,7 +145,7 @@ const PERMISSIONS_POLICY = {
   microphone: [],
   midi: [],
   navigationOverride: [],
-  payment: isProduction ? ['self'] : [], // Allow payments in production
+  payment: isProduction() ? ['self'] : [], // Allow payments in production
   pictureInPicture: [],
   publickeyCredentialsGet: [],
   screenWakeLock: [],
@@ -170,7 +176,7 @@ export function getHelmetConfig() {
     },
 
     // HTTP Strict Transport Security
-    hsts: isProduction ? HSTS_CONFIG : false,
+    hsts: isProduction() ? HSTS_CONFIG : false,
 
     // X-Frame-Options
     frameguard: {
@@ -365,7 +371,7 @@ export function addBasicSecurityHeaders(res) {
   res.setHeader("X-XSS-Protection", "1; mode=block");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
 
-  if (isProduction) {
+  if (isProduction()) {
     res.setHeader(
       "Strict-Transport-Security",
       "max-age=63072000; includeSubDomains; preload"
@@ -383,6 +389,6 @@ export default {
   getHelmetConfig,
   applySecurityHeaders,
   TRUSTED_DOMAINS,
-  isProduction,
-  isDevelopment
+  isProduction: isProduction(),
+  isDevelopment: isDevelopment()
 };

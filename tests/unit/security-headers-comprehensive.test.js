@@ -69,26 +69,46 @@ describe('Security Headers System', () => {
     });
 
     it('should apply HSTS only in production', async () => {
-      // Test development
-      process.env.VERCEL_ENV = 'development';
-      await addSecurityHeaders(mockRes);
-      
-      expect(mockRes.setHeader).not.toHaveBeenCalledWith(
-        'Strict-Transport-Security',
-        expect.any(String)
-      );
+      // Store original env
+      const originalVercelEnv = process.env.VERCEL_ENV;
+      const originalNodeEnv = process.env.NODE_ENV;
 
-      // Reset mock calls
-      mockRes.setHeader.mockClear();
+      try {
+        // Test development
+        process.env.VERCEL_ENV = 'development';
+        process.env.NODE_ENV = 'development';
+        await addSecurityHeaders(mockRes);
+        
+        expect(mockRes.setHeader).not.toHaveBeenCalledWith(
+          'Strict-Transport-Security',
+          expect.any(String)
+        );
 
-      // Test production
-      process.env.VERCEL_ENV = 'production';
-      await addSecurityHeaders(mockRes);
-      
-      expect(mockRes.setHeader).toHaveBeenCalledWith(
-        'Strict-Transport-Security',
-        'max-age=63072000; includeSubDomains; preload'
-      );
+        // Reset mock calls
+        mockRes.setHeader.mockClear();
+
+        // Test production
+        process.env.VERCEL_ENV = 'production';
+        process.env.NODE_ENV = 'production';
+        await addSecurityHeaders(mockRes);
+        
+        expect(mockRes.setHeader).toHaveBeenCalledWith(
+          'Strict-Transport-Security',
+          'max-age=63072000; includeSubDomains; preload'
+        );
+      } finally {
+        // Restore original env
+        if (originalVercelEnv !== undefined) {
+          process.env.VERCEL_ENV = originalVercelEnv;
+        } else {
+          delete process.env.VERCEL_ENV;
+        }
+        if (originalNodeEnv !== undefined) {
+          process.env.NODE_ENV = originalNodeEnv;
+        } else {
+          delete process.env.NODE_ENV;
+        }
+      }
     });
 
     it('should hide server information', async () => {
@@ -204,19 +224,39 @@ describe('Security Headers System', () => {
     });
 
     it('should configure HSTS only in production', () => {
-      // Test development
-      process.env.VERCEL_ENV = 'development';
-      let config = getHelmetConfig();
-      expect(config.hsts).toBe(false);
+      // Store original env
+      const originalVercelEnv = process.env.VERCEL_ENV;
+      const originalNodeEnv = process.env.NODE_ENV;
 
-      // Test production
-      process.env.VERCEL_ENV = 'production';
-      config = getHelmetConfig();
-      expect(config.hsts).toEqual({
-        maxAge: 63072000,
-        includeSubDomains: true,
-        preload: true
-      });
+      try {
+        // Test development
+        process.env.VERCEL_ENV = 'development';
+        process.env.NODE_ENV = 'development';
+        let config = getHelmetConfig();
+        expect(config.hsts).toBe(false);
+
+        // Test production
+        process.env.VERCEL_ENV = 'production';
+        process.env.NODE_ENV = 'production';
+        config = getHelmetConfig();
+        expect(config.hsts).toEqual({
+          maxAge: 63072000,
+          includeSubDomains: true,
+          preload: true
+        });
+      } finally {
+        // Restore original env
+        if (originalVercelEnv !== undefined) {
+          process.env.VERCEL_ENV = originalVercelEnv;
+        } else {
+          delete process.env.VERCEL_ENV;
+        }
+        if (originalNodeEnv !== undefined) {
+          process.env.NODE_ENV = originalNodeEnv;
+        } else {
+          delete process.env.NODE_ENV;
+        }
+      }
     });
 
     it('should configure Permissions Policy', () => {
@@ -284,19 +324,57 @@ describe('Security Headers System', () => {
     });
 
     it('should upgrade insecure requests in production', () => {
-      process.env.VERCEL_ENV = 'production';
-      const config = getHelmetConfig();
-      const csp = config.contentSecurityPolicy.directives;
+      // Store original env
+      const originalVercelEnv = process.env.VERCEL_ENV;
+      const originalNodeEnv = process.env.NODE_ENV;
 
-      expect(csp.upgradeInsecureRequests).toEqual([]);
+      try {
+        process.env.VERCEL_ENV = 'production';
+        process.env.NODE_ENV = 'production';
+        const config = getHelmetConfig();
+        const csp = config.contentSecurityPolicy.directives;
+
+        expect(csp.upgradeInsecureRequests).toEqual([]);
+      } finally {
+        // Restore original env
+        if (originalVercelEnv !== undefined) {
+          process.env.VERCEL_ENV = originalVercelEnv;
+        } else {
+          delete process.env.VERCEL_ENV;
+        }
+        if (originalNodeEnv !== undefined) {
+          process.env.NODE_ENV = originalNodeEnv;
+        } else {
+          delete process.env.NODE_ENV;
+        }
+      }
     });
 
     it('should not upgrade insecure requests in development', () => {
-      process.env.VERCEL_ENV = 'development';
-      const config = getHelmetConfig();
-      const csp = config.contentSecurityPolicy.directives;
+      // Store original env
+      const originalVercelEnv = process.env.VERCEL_ENV;
+      const originalNodeEnv = process.env.NODE_ENV;
 
-      expect(csp.upgradeInsecureRequests).toBe(false);
+      try {
+        process.env.VERCEL_ENV = 'development';
+        process.env.NODE_ENV = 'development';
+        const config = getHelmetConfig();
+        const csp = config.contentSecurityPolicy.directives;
+
+        expect(csp.upgradeInsecureRequests).toBe(false);
+      } finally {
+        // Restore original env
+        if (originalVercelEnv !== undefined) {
+          process.env.VERCEL_ENV = originalVercelEnv;
+        } else {
+          delete process.env.VERCEL_ENV;
+        }
+        if (originalNodeEnv !== undefined) {
+          process.env.NODE_ENV = originalNodeEnv;
+        } else {
+          delete process.env.NODE_ENV;
+        }
+      }
     });
   });
 

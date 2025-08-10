@@ -29,10 +29,12 @@ describe('Advanced Rate Limiter', () => {
     // Reset analytics
     rateLimiter.resetAnalytics();
     
+    // Each test will use unique IPs to avoid interference
+    
     // Mock request object
     mockReq = {
       headers: {
-        'x-forwarded-for': '203.0.113.100', // Use a public IP that won't be whitelisted
+        'x-forwarded-for': '203.0.113.195', // Use a public IP that won't be whitelisted
         'user-agent': 'test-agent',
         'x-device-id': 'test-device-123'
       },
@@ -112,7 +114,7 @@ describe('Advanced Rate Limiter', () => {
     it('should identify clients correctly', () => {
       // IP-based identification
       const ipClient = rateLimiter.getClientId(mockReq, 'ip');
-      expect(ipClient).toBe('ip:203.0.113.100');
+      expect(ipClient).toBe('ip:203.0.113.195');
       
       // User-based identification
       const userClient = rateLimiter.getClientId(mockReq, 'user');
@@ -162,7 +164,7 @@ describe('Advanced Rate Limiter', () => {
   describe('Whitelist/Blacklist', () => {
     it('should allow whitelisted IPs', async () => {
       // Add IP to whitelist
-      await rateLimiter.addToWhitelist('203.0.113.100', 'test');
+      await rateLimiter.addToWhitelist('203.0.113.195', 'test');
       
       const result = await rateLimiter.checkRateLimit(mockReq, 'payment');
       expect(result.allowed).toBe(true);
@@ -171,7 +173,7 @@ describe('Advanced Rate Limiter', () => {
     
     it('should block blacklisted IPs', async () => {
       // Add IP to blacklist
-      await rateLimiter.addToBlacklist('203.0.113.100', 'test');
+      await rateLimiter.addToBlacklist('203.0.113.195', 'test');
       
       const result = await rateLimiter.checkRateLimit(mockReq, 'general');
       expect(result.allowed).toBe(false);
@@ -181,54 +183,85 @@ describe('Advanced Rate Limiter', () => {
   
   describe('Progressive Penalties', () => {
     it('should apply penalties for repeated violations', async () => {
-      // Exceed limits multiple times to trigger penalties
-      for (let violation = 0; violation < 3; violation++) {
-        // Reset to new time window
-        await new Promise(resolve => setTimeout(resolve, 10));
+      // Use a unique IP for this test to avoid blacklisting from previous tests
+      const testReq = {
+        ...mockReq,
+        headers: { ...mockReq.headers, 'x-forwarded-for': '203.0.113.210' }
+      };
+      const clientId = 'ip:203.0.113.210';
+      
+      // First violation - exceed the limit
+      let lastResult;
+      for (let i = 0; i <= 5; i++) { // 6 requests to exceed the 5 req/min limit
+        lastResult = await rateLimiter.checkRateLimit(testReq, 'auth');
+      }
+      
+      // Check that penalty was applied (only if rate limiting was actually triggered)
+      if (!lastResult.allowed && lastResult.reason === 'rate_limit_exceeded') {
+        let multiplier = await rateLimiter.getPenaltyMultiplier(clientId, 'auth');
+        expect(multiplier).toBeGreaterThan(1);
         
-        // Exceed limit to trigger penalty
-        for (let i = 0; i < 7; i++) {
-          await rateLimiter.checkRateLimit(mockReq, 'auth');
+        // Wait a bit to simulate time passing
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Second violation to increase penalty further
+        for (let i = 0; i <= 5; i++) {
+          await rateLimiter.checkRateLimit(testReq, 'auth');
         }
         
-        // Check penalty multiplier increases
-        const multiplier = await rateLimiter.getPenaltyMultiplier('ip:203.0.113.100', 'auth');
-        expect(multiplier).toBeGreaterThan(1);
+        // Check that penalty multiplier increased
+        const newMultiplier = await rateLimiter.getPenaltyMultiplier(clientId, 'auth');
+        expect(newMultiplier).toBeGreaterThanOrEqual(multiplier);
+      } else {
+        // If rate limiting didn't trigger with correct reason, fail the test
+        expect(lastResult.reason).toBe('rate_limit_exceeded');
       }
     });
   });
   
   describe('Sliding Window Algorithm', () => {
     it('should properly implement sliding window', async () => {
-      // Fill up most of the window
+      // Create a unique request for this test to avoid interference
+      const testReq = {
+        ...mockReq,
+        headers: { ...mockReq.headers, 'x-forwarded-for': '203.0.113.200' }
+      };
+      
+      // Fill up most of the window (payment limit is 5 req/min)
       for (let i = 0; i < 4; i++) {
-        const result = await rateLimiter.checkRateLimit(mockReq, 'payment');
+        const result = await rateLimiter.checkRateLimit(testReq, 'payment');
         expect(result.allowed).toBe(true);
       }
       
       // Should have one request left
-      const almostFull = await rateLimiter.checkRateLimit(mockReq, 'payment');
+      const almostFull = await rateLimiter.checkRateLimit(testReq, 'payment');
       expect(almostFull.allowed).toBe(true);
       expect(almostFull.remaining).toBe(0);
       
       // Should be blocked
-      const blocked = await rateLimiter.checkRateLimit(mockReq, 'payment');
+      const blocked = await rateLimiter.checkRateLimit(testReq, 'payment');
       expect(blocked.allowed).toBe(false);
     });
   });
   
   describe('Endpoint-Specific Configurations', () => {
     it('should apply different limits for different endpoints', async () => {
+      // Use a unique IP for this test
+      const testReq = {
+        ...mockReq,
+        headers: { ...mockReq.headers, 'x-forwarded-for': '203.0.113.220' }
+      };
+      
       // Payment endpoint: 5 req/min
       for (let i = 0; i < 5; i++) {
-        const result = await rateLimiter.checkRateLimit(mockReq, 'payment');
+        const result = await rateLimiter.checkRateLimit(testReq, 'payment');
         expect(result.allowed).toBe(true);
       }
-      const paymentBlocked = await rateLimiter.checkRateLimit(mockReq, 'payment');
+      const paymentBlocked = await rateLimiter.checkRateLimit(testReq, 'payment');
       expect(paymentBlocked.allowed).toBe(false);
       
-      // General endpoint should still work (different counter)
-      const generalAllowed = await rateLimiter.checkRateLimit(mockReq, 'general');
+      // General endpoint should still work (different counter and higher limit)
+      const generalAllowed = await rateLimiter.checkRateLimit(testReq, 'general');
       expect(generalAllowed.allowed).toBe(true);
     });
     
@@ -251,11 +284,20 @@ describe('Advanced Rate Limiter', () => {
   
   describe('Error Handling', () => {
     it('should fail open on errors', async () => {
-      // Mock an error in the rate limiter
-      const originalCheckSlidingWindow = rateLimiter.checkSlidingWindow;
-      rateLimiter.checkSlidingWindow = vi.fn().mockRejectedValue(new Error('Test error'));
+      // Create a mock request that will trigger an error path
+      const errorReq = {
+        ...mockReq,
+        headers: {
+          ...mockReq.headers,
+          'x-forwarded-for': undefined, // This will cause issues in IP extraction
+        }
+      };
       
-      const result = await rateLimiter.checkRateLimit(mockReq, 'general');
+      // Mock the checkSlidingWindow method to throw an error
+      const originalCheckSlidingWindow = rateLimiter.checkSlidingWindow.bind(rateLimiter);
+      rateLimiter.checkSlidingWindow = vi.fn().mockRejectedValue(new Error('Redis connection failed'));
+      
+      const result = await rateLimiter.checkRateLimit(errorReq, 'general');
       expect(result.allowed).toBe(true);
       expect(result.reason).toBe('error_fallback');
       
@@ -293,15 +335,21 @@ describe('Rate Limiting Middleware', () => {
     it('should apply payment rate limits', async () => {
       const middleware = paymentRateLimit();
       
-      // Should allow first few requests
+      // Create a unique IP for this test to avoid conflicts with other tests
+      const testReq = {
+        ...middlewareReq,
+        headers: { 'x-forwarded-for': '198.51.100.10' }
+      };
+      
+      // Should allow first few requests (payment limit is 5 req/min)
       for (let i = 0; i < 5; i++) {
-        await middleware(middlewareReq, middlewareRes, mockNext);
+        await middleware(testReq, middlewareRes, mockNext);
         expect(mockNext).toHaveBeenCalledWith();
         mockNext.mockClear();
       }
       
       // Should block subsequent requests
-      await middleware(middlewareReq, middlewareRes, mockNext);
+      await middleware(testReq, middlewareRes, mockNext);
       expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
     });
   });
@@ -320,14 +368,20 @@ describe('Rate Limiting Middleware', () => {
       const mockHandler = vi.fn();
       const protectedHandler = withRateLimit(mockHandler, 'payment');
       
-      // Exceed rate limit first
+      // Create unique request for this test
+      const testReq = { 
+        ...middlewareReq, 
+        headers: { 'x-forwarded-for': '198.51.100.20' }
+      };
+      
+      // Exceed rate limit (payment is 5 req/min)
       for (let i = 0; i < 6; i++) {
-        await protectedHandler({ ...middlewareReq, headers: { 'x-forwarded-for': '192.168.1.201' }}, middlewareRes);
+        await protectedHandler(testReq, middlewareRes);
       }
       
-      // Handler should not be called on last request
+      // Handler should not be called on last request (when rate limited)
       const callCount = mockHandler.mock.calls.length;
-      expect(callCount).toBeLessThan(6);
+      expect(callCount).toBeLessThanOrEqual(5); // Should be 5 or less due to rate limiting
     });
   });
   
@@ -361,11 +415,13 @@ describe('Integration Tests', () => {
     let capturedError = null;
     
     const mockNext = (error) => {
-      capturedError = error;
+      if (error) {
+        capturedError = error;
+      }
     };
     
     const testReq = {
-      headers: { 'x-forwarded-for': '192.168.1.202' },
+      headers: { 'x-forwarded-for': '198.51.100.30' },
       method: 'POST',
       url: '/api/auth'
     };
@@ -377,8 +433,8 @@ describe('Integration Tests', () => {
       headersSent: false
     };
     
-    // Exceed auth limits
-    for (let i = 0; i < 7; i++) {
+    // Exceed auth limits (5 req/min) + 1 to trigger rate limit
+    for (let i = 0; i < 6; i++) {
       await middleware(testReq, testRes, mockNext);
     }
     
