@@ -183,7 +183,7 @@ export const checkStripeHealth = async () => {
     };
   } catch (error) {
     // Determine if this is a configuration error or service error
-    const errorMessage = error.message || error.toString() || 'Unknown error';
+    const errorMessage = error?.message || error?.toString?.() || 'Unknown error';
     const isConfigError = errorMessage.includes('secret key') || 
                          errorMessage.includes('Invalid API Key');
     
