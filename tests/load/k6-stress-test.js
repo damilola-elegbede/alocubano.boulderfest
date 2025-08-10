@@ -17,6 +17,7 @@ import http from 'k6/http';
 import { check, sleep, group, fail } from 'k6';
 import { Rate, Trend, Counter, Gauge } from 'k6/metrics';
 import { randomItem, randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
+import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
 
 // Custom metrics for stress testing
 const systemBreakingPoint = new Gauge('system_breaking_point_users');
@@ -228,8 +229,28 @@ function heavyLoadOperation() {
   );
   
   return check(response, {
-    'heavy operation completed': (r) => r.status === 200 || r.status === 202,
-    'not server error': (r) => r.status < 500,
+    'heavy operation completed': (r) => {
+      const validStatuses = [200, 202]; // 200 = completed, 202 = accepted
+      if (!validStatuses.includes(r.status)) {
+        console.warn(`Heavy operation failed: ${r.status} - ${r.statusText || 'Unknown error'}`);
+        if (r.body) console.warn(`Response: ${r.body.substring(0, 200)}...`);
+        return false;
+      }
+      return true;
+    },
+    'not server error': (r) => {
+      if (r.status >= 500) {
+        console.warn(`Server error in heavy operation: ${r.status}`);
+        return false;
+      }
+      return true;
+    },
+    'response time within serverless limits': (r) => {
+      if (r.timings.duration > 18000) { // 18s warning, 20s is limit
+        console.warn(`Heavy operation approaching timeout: ${r.timings.duration}ms`);
+      }
+      return r.timings.duration < 20000;
+    },
   });
 }
 
@@ -296,7 +317,16 @@ function concurrentPurchaseOperation() {
     }
   );
   
-  return response.status === 200 || response.status === 409; // 409 = sold out acceptable
+  const success = response.status === 200 || response.status === 409; // 409 = sold out acceptable
+  
+  if (!success) {
+    console.warn(`Concurrent purchase failed for cart ${cartId}: ${response.status}`);
+    if (response.body) console.warn(`Response: ${response.body.substring(0, 200)}...`);
+  } else if (response.status === 409) {
+    console.log(`Inventory contention detected (expected): cart ${cartId}`);
+  }
+  
+  return success;
 }
 
 // Database stress operation
@@ -335,7 +365,14 @@ function databaseStressOperation() {
     databaseOverload.add(1);
   }
   
-  return response.status === 200 || response.status === 202;
+  const success = response.status === 200 || response.status === 202;
+  
+  if (!success) {
+    console.warn(`Database stress operation failed: ${response.status} - ${response.statusText || 'Unknown error'}`);
+    if (response.body) console.warn(`Response: ${response.body.substring(0, 200)}...`);
+  }
+  
+  return success;
 }
 
 // Memory intensive operation
@@ -359,7 +396,14 @@ function memoryIntensiveOperation() {
     resourceExhaustionRate.add(1);
   }
   
-  return response.status === 200 || response.status === 202;
+  const success = response.status === 200 || response.status === 202;
+  
+  if (!success) {
+    console.warn(`Memory intensive operation failed: ${response.status} - ${response.statusText || 'Unknown error'}`);
+    if (response.body) console.warn(`Response: ${response.body.substring(0, 200)}...`);
+  }
+  
+  return success;
 }
 
 // Cascade operation (tests failure propagation)
@@ -761,7 +805,7 @@ function generateStressTextSummary(data, metrics) {
   const statusEmoji = metrics.grade === 'A' ? '✅' : 
                      metrics.grade === 'B' ? '⚠️' : '❌';
   
-  return `
+  const stressResults = `
 🔥 STRESS TEST RESULTS ${statusEmoji}
 ═══════════════════════════════════════════
 Grade: ${metrics.grade} | Resilience Score: ${metrics.systemResilience}/100
@@ -794,6 +838,9 @@ ${metrics.grade === 'A' ? '🚀 EXCELLENT: System handles extreme load gracefull
   metrics.grade === 'D' ? '❌ POOR: System struggles under high load' :
   '💥 CRITICAL: System fails under stress - immediate attention required'}
 `;
+
+  // Combine with standard k6 textSummary
+  return stressResults + '\n\n' + textSummary(data, { indent: ' ', enableColors: true });
 }
 
 // Generate comprehensive HTML stress report

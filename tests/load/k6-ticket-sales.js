@@ -15,6 +15,7 @@ import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { Rate, Trend, Counter, Gauge } from 'k6/metrics';
 import { randomItem, randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
+import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
 
 // Custom metrics for detailed analysis
 const ticketPurchaseRate = new Rate('ticket_purchase_success');
@@ -129,6 +130,7 @@ export default function() {
   group('Ticket Purchase Journey', () => {
     let sessionToken = null;
     let cartId = null;
+    let orderId = null; // Add orderId to track across groups
     let selectedTickets = [];
     
     // Step 1: Landing page and initial browse
@@ -141,10 +143,29 @@ export default function() {
         timeout: '15s', // Extended for cold starts
       });
       
-      check(response, {
-        'tickets page loaded': (r) => r.status === 200,
-        'page load time acceptable': (r) => r.timings.duration < 2000, // More lenient for serverless
-        'not cold start timeout': (r) => r.status !== 504, // Check for gateway timeouts
+      const pageLoadSuccess = check(response, {
+        'tickets page loaded': (r) => {
+          if (r.status !== 200) {
+            console.warn(`Tickets page failed to load: ${r.status} - ${r.statusText}`);
+            return false;
+          }
+          return true;
+        },
+        'page load time acceptable': (r) => {
+          if (r.timings.duration >= 2000) {
+            console.warn(`Slow page load: ${r.timings.duration}ms (expected < 2000ms)`);
+            return false;
+          }
+          return true;
+        },
+        'not cold start timeout': (r) => {
+          if (r.status === 504) {
+            console.warn('Cold start timeout detected (504)');
+            return false;
+          }
+          return true;
+        },
+        'response has content': (r) => r.body && r.body.length > 0,
       });
       
       if (response.status !== 200) {
@@ -171,9 +192,33 @@ export default function() {
         });
       }
       
-      check(response, {
-        'ticket availability fetched': (r) => r.status === 200,
-        'tickets available': (r) => r.json('available') === true,
+      const availabilitySuccess = check(response, {
+        'ticket availability fetched': (r) => {
+          if (r.status !== 200) {
+            console.warn(`Availability check failed: ${r.status} - ${r.statusText || 'Unknown error'}`);
+            return false;
+          }
+          return true;
+        },
+        'tickets available': (r) => {
+          try {
+            const data = r.json();
+            if (!data || data.available !== true) {
+              console.warn(`Tickets not available: ${JSON.stringify(data)}`);
+              return false;
+            }
+            return true;
+          } catch (e) {
+            console.warn(`Invalid JSON in availability response: ${e.message}`);
+            return false;
+          }
+        },
+        'response time reasonable': (r) => {
+          if (r.timings.duration > 1500) {
+            console.warn(`Slow availability check: ${r.timings.duration}ms`);
+          }
+          return r.timings.duration < 3000; // Lenient for serverless
+        },
       });
       
       // Select tickets based on user behavior
@@ -208,9 +253,39 @@ export default function() {
         }
       );
       
-      check(response, {
-        'cart created': (r) => r.status === 201,
-        'cart ID received': (r) => r.json('cartId') !== undefined,
+      const cartCreationSuccess = check(response, {
+        'cart created': (r) => {
+          if (r.status !== 201) {
+            console.warn(`Cart creation failed: ${r.status} - ${r.statusText || 'Unknown error'}`);
+            if (r.body) console.warn(`Response body: ${r.body}`);
+            return false;
+          }
+          return true;
+        },
+        'cart ID received': (r) => {
+          try {
+            const data = r.json();
+            if (!data || !data.cartId) {
+              console.warn(`Cart ID missing from response: ${JSON.stringify(data)}`);
+              return false;
+            }
+            return true;
+          } catch (e) {
+            console.warn(`Invalid JSON in cart creation response: ${e.message}`);
+            return false;
+          }
+        },
+        'session token received': (r) => {
+          try {
+            const data = r.json();
+            if (data && !data.sessionToken) {
+              console.warn('Session token missing from cart creation response');
+            }
+            return true; // Non-critical
+          } catch (e) {
+            return true; // Non-critical
+          }
+        },
       });
       
       if (response.status === 201) {
@@ -247,8 +322,24 @@ export default function() {
           }
         );
         
-        check(response, {
-          'ticket added to cart': (r) => r.status === 200,
+        const addTicketSuccess = check(response, {
+          'ticket added to cart': (r) => {
+            if (r.status !== 200) {
+              console.warn(`Failed to add ${ticket.id} to cart ${cartId}: ${r.status} - ${r.statusText || 'Unknown error'}`);
+              if (r.body) console.warn(`Response: ${r.body}`);
+              return false;
+            }
+            return true;
+          },
+          'cart update confirmed': (r) => {
+            try {
+              const data = r.json();
+              return data && (data.success === true || data.cartUpdated === true || data.items !== undefined);
+            } catch (e) {
+              // Non-critical if response isn't JSON
+              return true;
+            }
+          },
         });
         
         // Small delay between adding items
@@ -283,9 +374,34 @@ export default function() {
         }
       );
       
-      check(response, {
-        'checkout initialized': (r) => r.status === 200,
-        'payment intent created': (r) => r.json('paymentIntentId') !== undefined,
+      const checkoutSuccess = check(response, {
+        'checkout initialized': (r) => {
+          if (r.status !== 200) {
+            console.warn(`Checkout initialization failed: ${r.status} - ${r.statusText || 'Unknown error'}`);
+            if (r.body) console.warn(`Response: ${r.body}`);
+            return false;
+          }
+          return true;
+        },
+        'payment intent created': (r) => {
+          try {
+            const data = r.json();
+            if (!data || !data.paymentIntentId) {
+              console.warn(`Payment intent ID missing: ${JSON.stringify(data)}`);
+              return false;
+            }
+            return true;
+          } catch (e) {
+            console.warn(`Invalid JSON in checkout response: ${e.message}`);
+            return false;
+          }
+        },
+        'checkout response time acceptable': (r) => {
+          if (r.timings.duration > 5000) {
+            console.warn(`Slow checkout initialization: ${r.timings.duration}ms`);
+          }
+          return r.timings.duration < 10000; // Lenient for serverless
+        },
       });
       
       if (response.status !== 200) {
@@ -341,14 +457,53 @@ export default function() {
       paymentProcessingTime.add(paymentDuration);
       
       const paymentSuccess = check(response, {
-        'payment processed': (r) => r.status === 200,
-        'payment confirmed': (r) => r.json('status') === 'succeeded',
-        'order ID received': (r) => r.json('orderId') !== undefined,
+        'payment processed': (r) => {
+          if (r.status !== 200) {
+            console.warn(`Payment processing failed: ${r.status} - ${r.statusText || 'Unknown error'}`);
+            if (r.body) console.warn(`Payment response: ${r.body}`);
+            return false;
+          }
+          return true;
+        },
+        'payment confirmed': (r) => {
+          try {
+            const data = r.json();
+            if (!data || data.status !== 'succeeded') {
+              console.warn(`Payment not succeeded: ${JSON.stringify(data)}`);
+              return false;
+            }
+            return true;
+          } catch (e) {
+            console.warn(`Invalid JSON in payment response: ${e.message}`);
+            return false;
+          }
+        },
+        'order ID received': (r) => {
+          try {
+            const data = r.json();
+            if (!data || !data.orderId) {
+              console.warn(`Order ID missing from payment response: ${JSON.stringify(data)}`);
+              return false;
+            }
+            return true;
+          } catch (e) {
+            console.warn(`Cannot parse payment response JSON: ${e.message}`);
+            return false;
+          }
+        },
+        'payment processing time acceptable': (r) => {
+          if (paymentDuration > 15000) {
+            console.warn(`Very slow payment processing: ${paymentDuration}ms`);
+          }
+          return paymentDuration < 25000; // Within Vercel limits
+        },
       });
       
       if (paymentSuccess) {
         ticketPurchaseRate.add(1);
         checkoutCompletionRate.add(1);
+        // Capture orderId for use in confirmation step
+        orderId = response.json('orderId');
       } else {
         ticketPurchaseRate.add(0);
         checkoutCompletionRate.add(0);
@@ -362,9 +517,12 @@ export default function() {
     
     // Step 4: Order confirmation
     group('Order Confirmation', () => {
+      // Use orderId if available, otherwise fall back to cartId
+      const confirmationId = orderId || cartId;
+      
       // View confirmation page
       const response = http.get(
-        `${BASE_URL}/api/orders/${cartId}/confirmation`,
+        `${BASE_URL}/api/orders/${confirmationId}/confirmation`,
         {
           headers: {
             'Authorization': `Bearer ${sessionToken}`,
@@ -373,10 +531,41 @@ export default function() {
         }
       );
       
-      check(response, {
-        'confirmation received': (r) => r.status === 200,
-        'tickets attached': (r) => r.json('tickets') !== undefined,
-        'QR codes generated': (r) => r.json('tickets[0].qrCode') !== undefined,
+      const confirmationSuccess = check(response, {
+        'confirmation received': (r) => {
+          if (r.status !== 200) {
+            console.warn(`Order confirmation failed for ${confirmationId}: ${r.status} - ${r.statusText || 'Unknown error'}`);
+            if (r.body) console.warn(`Confirmation response: ${r.body}`);
+            return false;
+          }
+          return true;
+        },
+        'tickets attached': (r) => {
+          try {
+            const data = r.json();
+            if (!data || !data.tickets || !Array.isArray(data.tickets) || data.tickets.length === 0) {
+              console.warn(`No tickets in confirmation response: ${JSON.stringify(data)}`);
+              return false;
+            }
+            return true;
+          } catch (e) {
+            console.warn(`Invalid JSON in confirmation response: ${e.message}`);
+            return false;
+          }
+        },
+        'QR codes generated': (r) => {
+          try {
+            const data = r.json();
+            if (!data || !data.tickets || !data.tickets[0] || !data.tickets[0].qrCode) {
+              console.warn(`QR codes missing from tickets: ${JSON.stringify(data?.tickets?.[0])}`);
+              return false;
+            }
+            return true;
+          } catch (e) {
+            console.warn(`Cannot verify QR codes in response: ${e.message}`);
+            return false;
+          }
+        },
       });
       
       // User reviews confirmation
@@ -433,11 +622,7 @@ export function handleSummary(data) {
   };
 }
 
-// Helper function for text summary
-function textSummary(data, options) {
-  // K6 will provide this function
-  return JSON.stringify(data.metrics, null, 2);
-}
+// Note: textSummary is now imported from k6 jslib above
 
 // Helper function for HTML report
 function htmlReport(data) {

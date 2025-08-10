@@ -20,12 +20,13 @@ export default async function handler(req, res) {
 
   try {
     const { endpoint = "event-info", year, forceRefresh } = req.query;
+    const shouldForceRefresh = forceRefresh === "true" || forceRefresh === true;
 
     // Example 1: Static event information (cached for 6 hours)
     if (endpoint === "event-info") {
       const cacheKey = "event:info";
 
-      if (!forceRefresh) {
+      if (!shouldForceRefresh) {
         const cached = await cacheService.get(cacheKey, {
           namespace: "static",
           fallback: null,
@@ -72,7 +73,7 @@ export default async function handler(req, res) {
     if (endpoint === "ticket-availability") {
       const cacheKey = "tickets:current-availability";
 
-      if (!forceRefresh) {
+      if (!shouldForceRefresh) {
         const cached = await cacheService.getTicketAvailability();
 
         if (cached) {
@@ -107,7 +108,7 @@ export default async function handler(req, res) {
     if (endpoint === "gallery" && year) {
       const cacheKey = `photos:${year}`;
 
-      if (!forceRefresh) {
+      if (!shouldForceRefresh) {
         const cached = await cacheService.getGalleryData(year);
 
         if (cached) {
@@ -144,7 +145,7 @@ export default async function handler(req, res) {
     if (endpoint === "analytics") {
       const cacheKey = "analytics:dashboard";
 
-      if (!forceRefresh) {
+      if (!shouldForceRefresh) {
         const cached = await cacheService.getAnalytics(cacheKey);
 
         if (cached) {

@@ -214,7 +214,7 @@ async function handler(req, res) {
         result.success = true;
         break;
 
-      case "selective":
+      case "selective": {
         // Selective clearing based on cache type
         const operations = [];
         let totalCleared = 0;
@@ -298,6 +298,7 @@ async function handler(req, res) {
         result.operations = operations;
         result.success = true;
         break;
+      }
 
       default:
         return res.status(400).json({

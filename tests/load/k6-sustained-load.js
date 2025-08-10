@@ -15,6 +15,7 @@ import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { Rate, Trend, Counter, Gauge } from 'k6/metrics';
 import { randomItem, randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
+import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
 
 // Custom metrics for sustained load monitoring
 const operationSuccessRate = new Rate('operation_success_rate');
@@ -169,6 +170,9 @@ function searchOperation() {
 
 // Purchase operation (simplified)
 function purchaseOperation() {
+  let cartId = null;
+  let sessionToken = null;
+  
   // Create cart
   let response = http.post(
     `${BASE_URL}/api/cart/create`,
@@ -183,7 +187,13 @@ function purchaseOperation() {
     return false;
   }
   
-  const cartId = response.json('cartId');
+  cartId = response.json('cartId');
+  sessionToken = response.json('sessionToken');
+  
+  if (!cartId) {
+    console.warn('Cart creation did not return cartId');
+    return false;
+  }
   
   // Add ticket
   response = http.post(
@@ -194,10 +204,18 @@ function purchaseOperation() {
       quantity: 1,
     }),
     {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': sessionToken ? `Bearer ${sessionToken}` : undefined
+      },
       tags: { operation: 'purchase' },
     }
   );
+  
+  if (response.status !== 200) {
+    console.warn(`Failed to add ticket to cart ${cartId}: ${response.status}`);
+    return false;
+  }
   
   // Simulate checkout process
   sleep(randomIntBetween(5, 15));
@@ -210,23 +228,34 @@ function purchaseOperation() {
       testMode: true,
     }),
     {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': sessionToken ? `Bearer ${sessionToken}` : undefined
+      },
       tags: { operation: 'purchase' },
     }
   );
   
-  return response.status === 200;
+  const success = response.status === 200;
+  if (!success) {
+    console.warn(`Purchase completion failed for cart ${cartId}: ${response.status}`);
+  }
+  
+  return success;
 }
 
 // Check-in operation
 function checkinOperation() {
+  const deviceId = `sustained_device_${__VU}`;
   const qrCode = `TEST-QR-${Date.now()}-${__VU}-${__ITER}`;
   
   const response = http.post(
     `${BASE_URL}/api/tickets/validate`,
     JSON.stringify({
       qr_code: qrCode,
-      device_id: `sustained_device_${__VU}`,
+      device_id: deviceId,
+      location_id: 'main_entrance',
+      timestamp: new Date().toISOString(),
       test_mode: true,
     }),
     {
@@ -235,7 +264,12 @@ function checkinOperation() {
     }
   );
   
-  return response.status === 200 || response.status === 409;
+  const success = response.status === 200 || response.status === 409;
+  if (!success) {
+    console.warn(`Check-in failed for device ${deviceId}, QR ${qrCode}: ${response.status}`);
+  }
+  
+  return success;
 }
 
 // Analytics operation
@@ -488,7 +522,4 @@ function generateStabilityReport(data, metrics) {
   `;
 }
 
-// Text summary helper
-function textSummary(data, options) {
-  return JSON.stringify(data.metrics, null, 2);
-}
+// Note: textSummary is now imported from k6 jslib above

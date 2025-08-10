@@ -27,6 +27,10 @@ async function handler(req, res) {
   );
 
   if (!rateLimitResult.allowed) {
+    res.setHeader("Retry-After", rateLimitResult.retryAfter);
+    res.setHeader("X-RateLimit-Limit", "50");
+    res.setHeader("X-RateLimit-Remaining", "0");
+    res.setHeader("X-RateLimit-Reset", rateLimitResult.resetTime);
     return res.status(429).json({
       error: "Too many requests. Please try again later.",
       retryAfter: rateLimitResult.retryAfter,
@@ -205,7 +209,15 @@ function convertMetricsToCSV(metrics) {
   const timestamp = new Date().toISOString();
 
   for (const [key, value] of Object.entries(metrics)) {
-    rows.push([key, value.toString(), timestamp]);
+    let csvValue;
+    if (typeof value === 'object' && value !== null) {
+      csvValue = Array.isArray(value) 
+        ? `"${value.join(';')}"` 
+        : `"${JSON.stringify(value).replace(/"/g, '""')}"`;
+    } else {
+      csvValue = value?.toString() || '';
+    }
+    rows.push([key, csvValue, timestamp]);
   }
 
   return rows.map((row) => row.join(",")).join("\n");

@@ -215,7 +215,11 @@ class CacheService {
   async cacheApiResponse(endpoint, method, params, response) {
     const cache = await this.ensureInitialized();
 
-    const cacheKey = `${method}:${endpoint}:${JSON.stringify(params || {})}`;
+    // Sort params keys for stable cache keys
+    const sortedParams = params 
+      ? JSON.stringify(params, Object.keys(params).sort())
+      : '{}';
+    const cacheKey = `${method}:${endpoint}:${sortedParams}`;
 
     return cache.set(cacheKey, response, {
       type: CACHE_TYPES.API,
@@ -229,7 +233,11 @@ class CacheService {
   async getCachedApiResponse(endpoint, method, params) {
     const cache = await this.ensureInitialized();
 
-    const cacheKey = `${method}:${endpoint}:${JSON.stringify(params || {})}`;
+    // Sort params keys for stable cache keys
+    const sortedParams = params 
+      ? JSON.stringify(params, Object.keys(params).sort())
+      : '{}';
+    const cacheKey = `${method}:${endpoint}:${sortedParams}`;
 
     return cache.get(cacheKey, {
       namespace: "api-responses",
@@ -280,10 +288,12 @@ class CacheService {
   async getCounter(key) {
     const cache = await this.ensureInitialized();
 
-    return cache.get(key, {
+    const result = await cache.get(key, {
       namespace: "counters",
       fallback: 0,
     });
+
+    return Number(result) || 0;
   }
 
   /**
@@ -349,7 +359,7 @@ class CacheService {
     const cache = await this.ensureInitialized();
 
     if (typeof cache.healthCheck === "function") {
-      return cache.healthCheck();
+      return await cache.healthCheck();
     }
 
     return {
@@ -370,7 +380,7 @@ class CacheService {
     const cache = await this.ensureInitialized();
 
     if (typeof cache.getStats === "function") {
-      return cache.getStats();
+      return await cache.getStats();
     }
 
     return { message: "Statistics not available for this cache type" };
@@ -394,14 +404,14 @@ class CacheService {
     const cache = await this.ensureInitialized();
 
     switch (section) {
-      case "tickets":
+      case "tickets": {
         // Warm ticket-related cache
-        await this.cacheTicketAvailability(
-          await this.getWarmUpData()["tickets:config"],
-        );
+        const warmUpData = await this.getWarmUpData();
+        await this.cacheTicketAvailability(warmUpData["tickets:config"]);
         break;
+      }
 
-      case "gallery":
+      case "gallery": {
         // Warm gallery cache with years
         const galleryYears = await this.getWarmUpData()["gallery:years"];
         await cache.set("gallery:years", galleryYears, {
@@ -409,14 +419,16 @@ class CacheService {
           namespace: "gallery",
         });
         break;
+      }
 
-      case "all":
+      case "all": {
         // Re-warm entire cache
         const warmUpData = await this.getWarmUpData();
         if (typeof cache.warmCache === "function") {
           await cache.warmCache(warmUpData, { type: CACHE_TYPES.STATIC });
         }
         break;
+      }
 
       default:
         console.warn(`Unknown cache section: ${section}`);

@@ -204,7 +204,7 @@ function generateInsights(stats, effectiveness) {
   // Memory usage insights
   if (
     stats.memory?.memoryUsageMB &&
-    stats.memory.memoryUsageMB > stats.memory.maxMemoryMB * 0.9
+    parseFloat(stats.memory.memoryUsageMB) > stats.memory.maxMemoryMB * 0.9
   ) {
     insights.alerts.push("Memory cache near capacity limit");
     insights.recommendations.push({
@@ -320,7 +320,7 @@ async function handler(req, res) {
           hitRatio: baseStats.memory?.hitRatio || "0%",
           memoryUsage: `${baseStats.memory?.memoryUsageMB || 0}MB / ${baseStats.memory?.maxMemoryMB || 50}MB`,
           utilization: baseStats.memory?.maxMemoryMB
-            ? `${((baseStats.memory.memoryUsageMB / baseStats.memory.maxMemoryMB) * 100).toFixed(1)}%`
+            ? `${((parseFloat(baseStats.memory.memoryUsageMB || 0) / baseStats.memory.maxMemoryMB) * 100).toFixed(1)}%`
             : "0%",
         },
         l2Cache: baseStats.redis
