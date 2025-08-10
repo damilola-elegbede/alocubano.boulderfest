@@ -143,6 +143,14 @@ jobs:
             fi
           done
           
+          # Validate health endpoint consistency in K6 tests
+          echo "🔍 Validating health endpoint consistency..."
+          if grep -r "api/health[^/]" tests/load/; then
+            echo "❌ Found incorrect health endpoint URLs in K6 tests"
+            echo "Use '/api/health/check' instead of '/api/health'"
+            exit 1
+          fi
+          
           echo "✅ All configurations validated"
 
   # Wait for deployment (for PR previews)
