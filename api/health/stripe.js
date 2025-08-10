@@ -169,7 +169,7 @@ export const checkStripeHealth = async () => {
       response_time: `${Date.now() - startTime}ms`,
       details: {
         api_accessible: true,
-        livemode: !stripe._api.key.includes('test'),
+        livemode: !process.env.STRIPE_SECRET_KEY?.includes('test'),
         webhook_configured: webhookStatus.configured,
         webhook_details: webhookStatus,
         balance: {
