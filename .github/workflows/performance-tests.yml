@@ -127,18 +127,35 @@ jobs:
           fi
           
           # Check if test files exist
-          for test in $(echo "${{ steps.determine-tests.outputs.tests }}" | tr ',' ' '); do
+          TESTS_LIST="${{ steps.determine-tests.outputs.tests }}"
+          echo "🔍 Processing tests: '$TESTS_LIST'"
+          
+          # Handle empty or whitespace-only test lists
+          if [ -z "$TESTS_LIST" ] || [ "$TESTS_LIST" = " " ]; then
+            echo "❌ No tests specified"
+            exit 1
+          fi
+          
+          for test in $(echo "$TESTS_LIST" | tr ',' ' ' | sed 's/  */ /g' | sed 's/^ *//; s/ *$//'); do
+            # Skip empty test names (from trailing commas, etc.)
+            if [ -z "$test" ] || [ "$test" = " " ]; then
+              continue
+            fi
+            
+            echo "🔍 Validating test: '$test'"
             case $test in
               "ticket-sales") file="tests/load/k6-ticket-sales.js" ;;
               "check-in") file="tests/load/k6-check-in-rush.js" ;;
               "sustained") file="tests/load/k6-sustained-load.js" ;;
               "stress") file="tests/load/k6-stress-test.js" ;;
-              *) echo "❌ Unknown test: $test"; exit 1 ;;
+              *) echo "❌ Unknown test: '$test'"; exit 1 ;;
             esac
             
             if [ ! -f "$file" ]; then
               echo "❌ Test file not found: $file"
               exit 1
+            else
+              echo "✅ Test file validated: $file"
             fi
           done
           
@@ -156,6 +173,7 @@ jobs:
   wait-for-deployment:
     name: Wait for Deployment
     runs-on: ubuntu-latest
+    timeout-minutes: 20  # Prevent indefinite hanging
     needs: setup
     if: github.event_name == 'pull_request'
     
@@ -291,6 +309,7 @@ jobs:
   performance-tests:
     name: Performance Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30  # Allow more time for performance tests
     needs: [setup, wait-for-deployment]
     if: always() && needs.setup.result == 'success' && (needs.wait-for-deployment.result == 'success' || needs.wait-for-deployment.result == 'skipped' || needs.wait-for-deployment.outputs.deployment-found == 'true')
     
@@ -392,6 +411,7 @@ jobs:
   analyze-results:
     name: Analyze Results
     runs-on: ubuntu-latest
+    timeout-minutes: 10  # Quick analysis job
     needs: [setup, performance-tests]
     if: always() && needs.performance-tests.result != 'skipped'
     
@@ -537,6 +557,7 @@ jobs:
   stress-tests:
     name: Stress Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 45  # Allow more time for stress tests
     needs: [setup, wait-for-deployment]
     if: |
       always() && 

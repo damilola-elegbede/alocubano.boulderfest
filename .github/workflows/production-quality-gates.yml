@@ -59,6 +59,7 @@ jobs:
   post-deployment-validation:
     name: 🔍 Post-deployment Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 20  # Prevent indefinite hanging
     needs: pre-deployment-checks
     if: always() && (needs.pre-deployment-checks.result == 'success' || github.event_name == 'deployment_status')
     outputs:
