@@ -4,14 +4,15 @@
  */
 
 import { vi } from "vitest";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // Alias jest to vi for compatibility
 global.jest = vi;
 
-// CRITICAL: Load actual lightbox source code
-// Since Jest doesn't support ES modules by default, we'll load and evaluate the source
-const fs = require("fs");
-const path = require("path");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load the lightbox source code
 const lightboxPath = path.join(__dirname, "../../js/components/lightbox.js");

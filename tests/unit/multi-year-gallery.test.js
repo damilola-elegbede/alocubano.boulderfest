@@ -1,12 +1,17 @@
 /**
-
-import { vi } from 'vitest';
  * Multi-Year Gallery Manager Tests
  * Tests for the Multi-Year Gallery Manager component functionality
  */
 
-const fs = require("fs");
-const path = require("path");
+import { vi } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import util from 'util';
+import { JSDOM } from 'jsdom';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 describe("Multi-Year Gallery Manager - Current Single Year (2025) with Future Multi-Year Support", () => {
   let multiYearGallerySource;
@@ -17,7 +22,6 @@ describe("Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
 
   beforeAll(() => {
     // Add TextEncoder/TextDecoder polyfills for jsdom
-    const util = require("util");
     global.TextEncoder = util.TextEncoder;
     global.TextDecoder = util.TextDecoder;
 
@@ -27,7 +31,6 @@ describe("Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
     multiYearGallerySource = fs.readFileSync(sourcePath, "utf8");
 
     // Setup DOM environment
-    const { JSDOM } = require("jsdom");
     const dom = new JSDOM("<!DOCTYPE html><html><body></body></html>", {
       url: "http://localhost:3000/gallery-multi-year-test",
       pretendToBeVisual: true,
