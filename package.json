@@ -88,8 +88,16 @@
     "performance:baseline": "node scripts/performance-test-runner.js --update-baselines",
     "performance:staging": "LOAD_TEST_BASE_URL=https://alocubanoboulderfest-staging.vercel.app node scripts/performance-test-runner.js",
     "performance:production": "LOAD_TEST_BASE_URL=https://alocubanoboulderfest.vercel.app node scripts/performance-test-runner.js --skip-health-check",
+    "performance:vercel:preview": "node scripts/performance-test-runner.js --tests=ticket-sales,check-in --vercel-optimized",
+    "performance:vercel:production": "LOAD_TEST_BASE_URL=https://alocubanoboulderfest.vercel.app node scripts/performance-test-runner.js --tests=ticket-sales,check-in --vercel-optimized --skip-health-check",
+    "performance:ci": "node scripts/performance-test-runner.js --tests=ticket-sales --duration=5m --reduced-load",
+    "performance:warmup": "node scripts/performance-test-runner.js --warmup-only",
     "k6:install": "brew install k6 || echo 'Install K6: https://k6.io/docs/getting-started/installation/'",
-    "k6:check": "k6 version || echo 'K6 not installed. Run: npm run k6:install'"
+    "k6:check": "k6 version || echo 'K6 not installed. Run: npm run k6:install'",
+    "k6:vercel:ticket-sales": "k6 run --env LOAD_TEST_BASE_URL=${VERCEL_URL:-http://localhost:3000} --env TEST_ENV=vercel tests/load/k6-ticket-sales.js",
+    "k6:vercel:check-in": "k6 run --env LOAD_TEST_BASE_URL=${VERCEL_URL:-http://localhost:3000} --env TEST_ENV=vercel tests/load/k6-check-in-rush.js",
+    "k6:vercel:sustained": "k6 run --env LOAD_TEST_BASE_URL=${VERCEL_URL:-http://localhost:3000} --env TEST_ENV=vercel tests/load/k6-sustained-load.js",
+    "k6:vercel:stress": "k6 run --env LOAD_TEST_BASE_URL=${VERCEL_URL:-http://localhost:3000} --env TEST_ENV=vercel tests/load/k6-stress-test.js"
   },
   "dependencies": {
     "@libsql/client": "^0.15.10",

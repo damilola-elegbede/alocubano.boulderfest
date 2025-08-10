@@ -314,9 +314,19 @@ export function setup() {
   console.log(`Duration: 34 minutes total`);
   console.log(`Operations: Mixed workload simulation`);
   
-  // Warm up cache
-  console.log('Warming up cache...');
-  http.post(`${BASE_URL}/api/cache/warm`, null, { timeout: '30s' });
+  // Pre-warm serverless functions for realistic testing
+  console.log('Pre-warming serverless functions...');
+  http.post(`${BASE_URL}/api/cache/warm`, JSON.stringify({
+    level: 'sustained-test',
+    serverless: true,
+    functions: ['cart', 'search', 'analytics', 'monitoring']
+  }), {
+    headers: { 
+      'Content-Type': 'application/json',
+      'X-Vercel-Serverless': 'true'
+    },
+    timeout: '15s', // Within serverless limits
+  });
   
   return {
     startTime: Date.now(),

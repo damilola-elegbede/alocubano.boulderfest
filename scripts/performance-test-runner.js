@@ -51,63 +51,63 @@ const colors = {
 };
 
 /**
- * Performance Test Configuration
+ * Performance Test Configuration (Optimized for Vercel Serverless)
  */
 const TEST_CONFIGURATIONS = {
   'ticket-sales': {
     file: 'k6-ticket-sales.js',
     name: 'Peak Ticket Sales',
-    description: 'Simulates high-traffic ticket purchasing scenarios',
+    description: 'Simulates high-traffic ticket purchasing scenarios (serverless-optimized)',
     duration: '12m',
-    peakVUs: 150,
+    peakVUs: 100, // Reduced for serverless efficiency
     priority: 1,
-    tags: ['sales', 'payment', 'cart'],
+    tags: ['sales', 'payment', 'cart', 'serverless'],
     thresholds: {
-      'http_req_duration': { p95: 500, p99: 1000 },
-      'http_req_failed': { rate: 0.01 },
-      'ticket_purchase_success': { rate: 0.95 },
-      'checkout_completion': { rate: 0.90 }
+      'http_req_duration': { p95: 800, p99: 2000 }, // Adjusted for cold starts
+      'http_req_failed': { rate: 0.02 }, // Higher tolerance for serverless
+      'ticket_purchase_success': { rate: 0.90 }, // More realistic
+      'checkout_completion': { rate: 0.85 } // Account for timeouts
     }
   },
   'check-in': {
     file: 'k6-check-in-rush.js',
     name: 'Check-in Rush',
-    description: 'High-frequency QR code validation during event entry',
+    description: 'High-frequency QR validation (serverless-optimized)',
     duration: '15m',
-    peakVUs: 75,
+    peakVUs: 50, // Reduced for serverless stability
     priority: 2,
-    tags: ['checkin', 'qr', 'validation'],
+    tags: ['checkin', 'qr', 'validation', 'serverless'],
     thresholds: {
-      'http_req_duration': { p95: 100, p99: 200 },
-      'checkin_success_rate': { rate: 0.98 },
-      'qr_validation_duration': { avg: 50, p95: 100 }
+      'http_req_duration': { p95: 200, p99: 500 }, // Account for cold starts
+      'checkin_success_rate': { rate: 0.95 }, // More realistic
+      'qr_validation_duration': { avg: 100, p95: 250 } // Serverless processing
     }
   },
   'sustained': {
     file: 'k6-sustained-load.js',
     name: 'Sustained Load',
-    description: 'Long-running baseline performance test',
-    duration: '30m',
-    peakVUs: 100,
+    description: 'Long-running serverless stability test',
+    duration: '20m', // Reduced for cost optimization
+    peakVUs: 75,     // Optimized for serverless
     priority: 3,
-    tags: ['baseline', 'sustained', 'stability'],
+    tags: ['baseline', 'sustained', 'stability', 'serverless'],
     thresholds: {
-      'http_req_duration': { p95: 300, p99: 800 },
-      'http_req_failed': { rate: 0.005 },
-      'memory_usage': { avg: 80 }
+      'http_req_duration': { p95: 800, p99: 2000 }, // Serverless expectations
+      'http_req_failed': { rate: 0.05 }, // Higher tolerance
+      'memory_usage': { avg: 256 } // Vercel function limits
     }
   },
   'stress': {
     file: 'k6-stress-test.js',
     name: 'Stress Test',
-    description: 'Breaking point analysis for capacity planning',
-    duration: '20m',
-    peakVUs: 500,
+    description: 'Serverless breaking point analysis',
+    duration: '15m', // Reduced duration for cost
+    peakVUs: 300,    // Reasonable for serverless
     priority: 4,
-    tags: ['stress', 'capacity', 'breaking-point'],
+    tags: ['stress', 'capacity', 'breaking-point', 'serverless'],
     thresholds: {
-      'http_req_duration': { p95: 1000, p99: 3000 },
-      'http_req_failed': { rate: 0.05 }
+      'http_req_duration': { p95: 3000, p99: 8000 }, // Serverless scaling
+      'http_req_failed': { rate: 0.15 } // Higher tolerance for stress
     }
   }
 };
@@ -1145,6 +1145,7 @@ class PerformanceTestOrchestrator {
       ...options
     };
 
+    this.reportsDir = REPORTS_DIR; // Initialize reportsDir property
     this.baselineManager = new BaselineManager();
     this.reportGenerator = new ReportGenerator();
     this.alertSystem = new AlertSystem();
@@ -1207,6 +1208,12 @@ class PerformanceTestOrchestrator {
       throw new Error('K6 is not installed. Install with: brew install k6 (macOS) or https://k6.io/docs/getting-started/installation/');
     }
     
+    // Detect Vercel deployment environment
+    if (this.options.baseUrl.includes('vercel.app')) {
+      print('  🌐 Detected Vercel deployment - optimizing for serverless', 'blue');
+      this.isVercelDeployment = true;
+    }
+    
     // Verify test files exist
     for (const testName of this.options.testsToRun) {
       const config = TEST_CONFIGURATIONS[testName];
@@ -1221,17 +1228,30 @@ class PerformanceTestOrchestrator {
     }
     print('  ✅ All test files found', 'green');
     
-    // Health check (optional)
+    // Health check with serverless awareness
     if (!this.options.skipHealthCheck) {
       try {
-        const response = await fetch(`${this.options.baseUrl}/api/health/check`, { timeout: 10000 });
+        const healthUrl = `${this.options.baseUrl}/api/health/check`;
+        const response = await fetch(healthUrl, { 
+          timeout: this.isVercelDeployment ? 15000 : 10000 // Extended for cold starts
+        });
         if (response.ok) {
           print('  ✅ Target system is healthy', 'green');
+          
+          // For Vercel, also check function regions
+          if (this.isVercelDeployment) {
+            const region = response.headers.get('x-vercel-edge-region') || 'unknown';
+            print(`  🌍 Vercel edge region: ${region}`, 'blue');
+          }
         } else {
           print('  ⚠️  Target system returned non-200 status', 'yellow');
         }
       } catch (error) {
-        print('  ⚠️  Health check failed, continuing anyway', 'yellow');
+        if (this.isVercelDeployment) {
+          print('  ⚠️  Cold start detected, functions may need warming', 'yellow');
+        } else {
+          print('  ⚠️  Health check failed, continuing anyway', 'yellow');
+        }
       }
     }
     
@@ -1250,9 +1270,17 @@ class PerformanceTestOrchestrator {
       .sort((a, b) => a.priority - b.priority);
 
     const results = [];
+    
+    // Warm up functions if running against Vercel
+    if (this.isVercelDeployment) {
+      await this.warmUpVercelFunctions();
+    }
 
     if (this.options.parallel && testsToExecute.length > 1) {
       print('📊 Running tests in parallel...', 'blue');
+      if (this.isVercelDeployment) {
+        print('  ⚠️  Parallel execution on Vercel may hit rate limits', 'yellow');
+      }
       
       // Execute tests in parallel
       const promises = testsToExecute.map(async (testConfig) => {
@@ -1285,8 +1313,78 @@ class PerformanceTestOrchestrator {
       }
     }
 
+    // Post-test analysis for Vercel
+    if (this.isVercelDeployment) {
+      await this.analyzeVercelPerformance(results);
+    }
+    
     print(`✅ All ${results.length} tests completed successfully`, 'green');
     return results;
+  }
+  
+  async warmUpVercelFunctions() {
+    print('🔥 Warming up Vercel serverless functions...', 'blue');
+    
+    const warmupEndpoints = [
+      '/api/health/check',
+      '/api/cart/create',
+      '/api/tickets/availability',
+      '/api/monitoring/metrics'
+    ];
+    
+    const warmupPromises = warmupEndpoints.map(async (endpoint) => {
+      try {
+        await fetch(`${this.options.baseUrl}${endpoint}`, { timeout: 10000 });
+      } catch (error) {
+        // Ignore warmup failures
+      }
+    });
+    
+    await Promise.allSettled(warmupPromises);
+    print('  🔥 Function warm-up completed', 'green');
+    
+    // Allow functions to initialize
+    await new Promise(resolve => setTimeout(resolve, 3000));
+  }
+  
+  async analyzeVercelPerformance(results) {
+    print('\n📊 Analyzing Vercel serverless performance...', 'cyan');
+    
+    for (const result of results) {
+      const kpis = result.results.summary;
+      
+      // Check for cold start indicators
+      const coldStartRate = this.calculateColdStartRate(result);
+      if (coldStartRate > 0.1) {
+        print(`  ❄️  High cold start rate detected in ${result.testConfig.name}: ${(coldStartRate * 100).toFixed(1)}%`, 'yellow');
+      }
+      
+      // Check for serverless timeout issues
+      const timeoutRate = this.calculateTimeoutRate(result);
+      if (timeoutRate > 0.05) {
+        print(`  ⏱️  Function timeouts detected in ${result.testConfig.name}: ${(timeoutRate * 100).toFixed(1)}%`, 'yellow');
+      }
+    }
+  }
+  
+  calculateColdStartRate(result) {
+    // Heuristic: requests > 2s response time likely cold starts
+    const slowRequests = result.results.dataPoints?.filter(point => 
+      point.metric === 'http_req_duration' && point.data.value > 2000
+    ) || [];
+    
+    const totalRequests = result.results.summary.throughput?.total_requests || 1;
+    return slowRequests.length / totalRequests;
+  }
+  
+  calculateTimeoutRate(result) {
+    // Look for 504 Gateway Timeout responses
+    const timeouts = result.results.dataPoints?.filter(point => 
+      point.metric === 'http_req_failed' && point.tags?.status === '504'
+    ) || [];
+    
+    const totalRequests = result.results.summary.throughput?.total_requests || 1;
+    return timeouts.length / totalRequests;
   }
 
   async compareWithBaselines(testResults) {

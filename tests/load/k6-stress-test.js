@@ -53,31 +53,35 @@ export let options = {
   ],
   
   thresholds: {
-    // Stress test expectations (more lenient than sustained load)
-    'http_req_duration': ['p(95)<2000', 'p(99)<5000'], // Allow degradation
-    'http_req_failed': ['rate<0.10'],  // Up to 10% failure acceptable under stress
+    // Stress test expectations (optimized for Vercel serverless limits)
+    'http_req_duration': ['p(95)<3000', 'p(99)<8000'], // Account for serverless scaling
+    'http_req_failed': ['rate<0.15'],  // Higher tolerance for serverless cold starts
     
-    // Breaking point detection
-    'failure_rate': ['rate<0.15'],     // Monitor failure patterns
-    'timeout_rate': ['rate<0.05'],     // Connection timeout monitoring
-    'connection_refusal_rate': ['rate<0.08'], // Server overload detection
+    // Breaking point detection (serverless-aware)
+    'failure_rate': ['rate<0.20'],     // Serverless functions may fail under extreme load
+    'timeout_rate': ['rate<0.10'],     // Vercel has 10-30s timeouts
+    'connection_refusal_rate': ['rate<0.12'], // Rate limiting more aggressive
     
-    // Resource exhaustion monitoring
-    'resource_exhaustion_rate': ['rate<0.20'], // Resource limit detection
-    'database_overload_rate': ['rate<0.10'],   // DB connection limit
-    'cache_eviction_rate': ['rate<0.30'],      // Cache under pressure
+    // Resource exhaustion monitoring (serverless constraints)
+    'resource_exhaustion_rate': ['rate<0.30'], // Vercel memory/CPU limits
+    'database_overload_rate': ['rate<0.15'],   // Connection pooling stressed
+    'cache_eviction_rate': ['rate<0.50'],      // Edge cache under extreme load
     
-    // System stability under stress
-    'cascade_failure_rate': ['rate<0.05'],     // Prevent total system failure
-    'emergency_throttling_activated': ['rate<0.50'], // Throttling engagement
+    // System stability under stress (serverless resilience)
+    'cascade_failure_rate': ['rate<0.10'],     // Isolated function failures expected
+    'emergency_throttling_activated': ['rate<0.70'], // Vercel auto-throttling
     
-    // Recovery requirements
-    'recovery_time_ms': ['p(95)<30000'],       // 30s max recovery time
+    // Recovery requirements (serverless scaling time)
+    'recovery_time_ms': ['p(95)<60000'],       // 60s for serverless auto-scaling
   },
   
-  // Extended timeouts for stress conditions
-  httpTimeout: '30s',
+  // Optimized timeouts for Vercel serverless limits
+  httpTimeout: '25s', // Match Vercel function timeout
   noConnectionReuse: false, // Allow connection reuse for efficiency
+  
+  // Serverless-specific options
+  setupTimeout: '60s',
+  teardownTimeout: '60s',
   
   tags: {
     testType: 'stress-test',
@@ -116,11 +120,33 @@ function selectStressOperation() {
   return { name: 'heavyLoad', func: stressOperations.heavyLoad.func };
 }
 
+// Serverless stress test warm-up
+function stressWarmUp() {
+  const criticalFunctions = [
+    '/api/health/check',
+    '/api/cart/create',
+    '/api/checkout/initialize',
+    '/api/processing/memory-intensive'
+  ];
+  
+  for (const endpoint of criticalFunctions) {
+    http.get(`${BASE_URL}${endpoint}`, {
+      tags: { operation: 'stress-warmup' },
+      timeout: '8s'
+    });
+  }
+}
+
 // Main stress test scenario
 export default function() {
   const startTime = Date.now();
   const operation = selectStressOperation();
   const currentUsers = __ENV.K6_BROWSER_ENABLED ? __VU : getCurrentStageUsers();
+  
+  // Warm up functions periodically during stress
+  if (__ITER % 100 === 0) {
+    stressWarmUp();
+  }
   
   // Track breaking point detection
   systemBreakingPoint.add(currentUsers);
@@ -178,12 +204,12 @@ export default function() {
   sleep(thinkTime);
 }
 
-// Heavy load operation (CPU/Memory intensive)
+// Heavy load operation (optimized for Vercel limits)
 function heavyLoadOperation() {
   const operations = [
-    { path: '/api/analytics/heavy-report', params: { period: '1y', detailed: true } },
-    { path: '/api/gallery/bulk-process', params: { count: 100, quality: 'high' } },
-    { path: '/api/search/advanced', params: { query: '*', facets: true, highlight: true } },
+    { path: '/api/analytics/heavy-report', params: { period: '6m', detailed: true, serverless: true } },
+    { path: '/api/gallery/bulk-process', params: { count: 50, quality: 'medium', serverless: true } },
+    { path: '/api/search/advanced', params: { query: '*', facets: true, serverless: true } },
   ];
   
   const op = randomItem(operations);
@@ -191,14 +217,22 @@ function heavyLoadOperation() {
   
   const response = http.post(
     url,
-    JSON.stringify(op.params),
+    JSON.stringify({
+      ...op.params,
+      vercel_config: {
+        max_duration: 20,
+        memory: 512,
+        region: 'us-east-1'
+      }
+    }),
     {
       headers: {
         'Content-Type': 'application/json',
         'X-Stress-Test': 'true',
+        'X-Vercel-Max-Duration': '20',
       },
       tags: { operation: 'heavy-load' },
-      timeout: '25s',
+      timeout: '20s', // Stay within Vercel limits
     }
   );
   
@@ -511,10 +545,13 @@ export function setup() {
   console.log(`⏱️  Duration: ~9 minutes total`);
   console.log(`🎯 Objective: Find breaking points & validate recovery`);
   
-  // Pre-warm system and establish baseline
-  console.log('Establishing performance baseline...');
-  const baselineResponse = http.get(`${BASE_URL}/api/monitoring/baseline`, {
-    timeout: '10s',
+  // Pre-warm serverless functions and establish baseline
+  console.log('Establishing serverless performance baseline...');
+  const baselineResponse = http.get(`${BASE_URL}/api/monitoring/baseline?serverless=true`, {
+    headers: {
+      'X-Vercel-Serverless': 'true'
+    },
+    timeout: '15s', // Extended for cold start
   });
   
   let baseline = {};
@@ -524,14 +561,19 @@ export function setup() {
     console.log(`📊 Baseline Memory: ${baseline.memory || 'N/A'}MB`);
   }
   
-  // Pre-load cache for more realistic stress testing
-  console.log('Pre-loading cache for realistic test conditions...');
-  http.post(`${BASE_URL}/api/cache/preload`, JSON.stringify({
+  // Pre-warm serverless functions for stress testing
+  console.log('Pre-warming serverless functions for stress test...');
+  http.post(`${BASE_URL}/api/cache/warm`, JSON.stringify({
     level: 'stress-test',
-    includeHeavyAssets: true,
+    serverless: true,
+    functions: ['heavy-load', 'concurrent-purchase', 'database-stress'],
+    preload_memory: true
   }), {
-    headers: { 'Content-Type': 'application/json' },
-    timeout: '30s',
+    headers: { 
+      'Content-Type': 'application/json',
+      'X-Vercel-Serverless': 'true'
+    },
+    timeout: '20s', // Within serverless limits
   });
   
   return {

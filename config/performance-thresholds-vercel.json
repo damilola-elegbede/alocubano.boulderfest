@@ -1,0 +1,150 @@
+{
+  "description": "Performance thresholds optimized for Vercel serverless deployment",
+  "environment": "vercel",
+  "last_updated": "2025-01-13T00:00:00Z",
+  "thresholds": {
+    "ticket-sales": {
+      "response_time": {
+        "avg": 600,
+        "p95": 800,
+        "p99": 2000,
+        "max": 10000
+      },
+      "error_rate": {
+        "http_failed": 0.02,
+        "api_errors": 0.02,
+        "payment_failures": 0.03
+      },
+      "business_metrics": {
+        "purchase_success": 0.90,
+        "checkout_completion": 0.85,
+        "cart_abandonment": 0.15
+      },
+      "serverless_specific": {
+        "cold_start_rate": 0.10,
+        "function_timeout_rate": 0.02,
+        "memory_limit_hits": 0.01
+      }
+    },
+    "check-in": {
+      "response_time": {
+        "avg": 200,
+        "p95": 300,
+        "p99": 600,
+        "max": 5000
+      },
+      "error_rate": {
+        "validation_failed": 0.03,
+        "qr_invalid": 0.03,
+        "duplicate_scan": 0.08
+      },
+      "business_metrics": {
+        "checkin_success": 0.95,
+        "device_sync": 0.92
+      },
+      "serverless_specific": {
+        "cold_start_rate": 0.08,
+        "database_timeout_rate": 0.05
+      }
+    },
+    "sustained": {
+      "response_time": {
+        "avg": 400,
+        "p95": 800,
+        "p99": 2000,
+        "max": 8000
+      },
+      "error_rate": {
+        "http_failed": 0.05,
+        "operation_failed": 0.05
+      },
+      "resource_usage": {
+        "memory_avg_mb": 256,
+        "memory_max_mb": 512,
+        "cpu_avg_percent": 80,
+        "database_connections_avg": 20,
+        "database_connections_max": 50
+      },
+      "stability": {
+        "cache_hit_rate": 0.60,
+        "uptime_percentage": 0.99
+      }
+    },
+    "stress": {
+      "response_time": {
+        "avg": 1000,
+        "p95": 3000,
+        "p99": 8000,
+        "max": 15000
+      },
+      "error_rate": {
+        "http_failed": 0.15,
+        "function_timeout": 0.10,
+        "resource_exhaustion": 0.30
+      },
+      "breaking_point": {
+        "max_concurrent_users": 200,
+        "failure_cascade_rate": 0.10,
+        "recovery_time_ms": 60000
+      },
+      "serverless_limits": {
+        "memory_exhaustion_rate": 0.20,
+        "execution_timeout_rate": 0.08,
+        "throttling_activation_rate": 0.70
+      }
+    }
+  },
+  "baseline_adjustments": {
+    "cold_start_penalty": {
+      "description": "Additional time allowance for serverless cold starts",
+      "response_time_multiplier": 1.5,
+      "timeout_buffer_ms": 2000
+    },
+    "scaling_considerations": {
+      "description": "Serverless auto-scaling behavior expectations",
+      "warmup_time_s": 30,
+      "scale_down_delay_s": 300,
+      "concurrent_execution_limit": 1000
+    },
+    "cost_optimization": {
+      "description": "Test execution optimizations for cost control",
+      "max_test_duration_minutes": 20,
+      "max_concurrent_vus": 100,
+      "parallel_execution_caution": "May hit rate limits"
+    }
+  },
+  "deployment_specific": {
+    "preview_deployments": {
+      "description": "Preview deployments may have different performance characteristics",
+      "expected_degradation": 0.10,
+      "cold_start_frequency": "higher",
+      "resource_limits": "standard"
+    },
+    "production_deployments": {
+      "description": "Production deployments with edge optimization",
+      "edge_cache_hit_rate": 0.80,
+      "function_regions": ["us-east-1", "us-west-2", "eu-west-1"],
+      "auto_scaling_aggressive": true
+    }
+  },
+  "monitoring_recommendations": {
+    "critical_metrics": [
+      "response_time_p95",
+      "error_rate",
+      "cold_start_rate",
+      "function_timeout_rate"
+    ],
+    "alert_thresholds": {
+      "response_time_p95_ms": 1000,
+      "error_rate_percent": 5,
+      "cold_start_rate_percent": 15
+    },
+    "dashboard_widgets": [
+      "function_invocation_count",
+      "function_duration_distribution",
+      "error_rate_by_function",
+      "memory_utilization",
+      "cold_start_frequency"
+    ]
+  }
+}
