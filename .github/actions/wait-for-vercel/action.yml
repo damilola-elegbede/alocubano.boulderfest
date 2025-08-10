@@ -1,0 +1,161 @@
+name: 'Wait for Vercel Deployment'
+description: 'Wait for Vercel deployment to complete and return deployment URL'
+
+inputs:
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+    default: ${{ github.token }}
+  timeout-minutes:
+    description: 'Maximum time to wait for deployment (minutes)'
+    required: false
+    default: '10'
+  check-interval:
+    description: 'Interval between checks (seconds)'
+    required: false
+    default: '10'
+
+outputs:
+  deployment-url:
+    description: 'URL of the deployed application'
+    value: ${{ steps.get-deployment.outputs.deployment-url }}
+  deployment-id:
+    description: 'GitHub deployment ID'
+    value: ${{ steps.get-deployment.outputs.deployment-id }}
+  environment:
+    description: 'Deployment environment (Production/Preview)'
+    value: ${{ steps.get-deployment.outputs.environment }}
+  ready:
+    description: 'Whether deployment is ready'
+    value: ${{ steps.verify-ready.outputs.ready }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🔍 Detect Vercel Deployment
+      id: get-deployment
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: |
+        echo "🔍 Detecting Vercel deployment..."
+        
+        # Get PR number and ref for context
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          REF="${{ github.event.pull_request.head.sha }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+        else
+          REF="${{ github.sha }}"
+          PR_NUMBER=""
+          BRANCH_NAME="${{ github.ref_name }}"
+        fi
+        
+        echo "Ref: $REF"
+        echo "Branch: $BRANCH_NAME"
+        echo "PR: $PR_NUMBER"
+        
+        # Query GitHub Deployments API
+        DEPLOYMENTS=$(gh api repos/${{ github.repository }}/deployments \
+          --field ref="$REF" \
+          --field per_page=20 \
+          --jq '.[] | select(.creator.login == "vercel[bot]") | {id, environment, created_at}' \
+          || echo "[]")
+        
+        if [ "$DEPLOYMENTS" != "[]" ] && [ -n "$DEPLOYMENTS" ]; then
+          # Get the most recent Vercel deployment
+          DEPLOYMENT_ID=$(echo "$DEPLOYMENTS" | jq -r '.[0].id // empty' | head -1)
+          ENVIRONMENT=$(echo "$DEPLOYMENTS" | jq -r '.[0].environment // "Preview"' | head -1)
+          
+          if [ -n "$DEPLOYMENT_ID" ] && [ "$DEPLOYMENT_ID" != "null" ]; then
+            echo "Found Vercel deployment: $DEPLOYMENT_ID"
+            
+            # Get deployment status and URL
+            STATUS_DATA=$(gh api repos/${{ github.repository }}/deployments/$DEPLOYMENT_ID/statuses \
+              --jq '.[0] // {}')
+            
+            DEPLOYMENT_URL=$(echo "$STATUS_DATA" | jq -r '.target_url // .environment_url // empty')
+            STATUS_STATE=$(echo "$STATUS_DATA" | jq -r '.state // "pending"')
+            
+            echo "Deployment URL: $DEPLOYMENT_URL"
+            echo "Status: $STATUS_STATE"
+          fi
+        fi
+        
+        # If no deployment found via API, construct URL based on branch/PR
+        if [ -z "$DEPLOYMENT_URL" ] || [ "$DEPLOYMENT_URL" = "null" ]; then
+          echo "No deployment found via API, constructing URL..."
+          
+          if [ "$BRANCH_NAME" = "main" ]; then
+            DEPLOYMENT_URL="https://alocubanoboulderfest.vercel.app"
+            ENVIRONMENT="Production"
+          else
+            # Sanitize branch name for Vercel URL format
+            SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+            DEPLOYMENT_URL="https://alocubanoboulderfest-git-${SANITIZED_BRANCH}-alocubano.vercel.app"
+            ENVIRONMENT="Preview"
+          fi
+          
+          echo "Constructed URL: $DEPLOYMENT_URL"
+        fi
+        
+        # Set outputs
+        echo "deployment-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+        echo "deployment-id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+        echo "environment=${ENVIRONMENT:-Preview}" >> $GITHUB_OUTPUT
+        
+        echo "✅ Deployment detection complete"
+        echo "URL: $DEPLOYMENT_URL"
+        echo "Environment: ${ENVIRONMENT:-Preview}"
+
+    - name: ⏳ Wait for Deployment Ready
+      id: verify-ready
+      shell: bash
+      env:
+        DEPLOYMENT_URL: ${{ steps.get-deployment.outputs.deployment-url }}
+        TIMEOUT_MINUTES: ${{ inputs.timeout-minutes }}
+        CHECK_INTERVAL: ${{ inputs.check-interval }}
+      run: |
+        if [ -z "$DEPLOYMENT_URL" ] || [ "$DEPLOYMENT_URL" = "null" ]; then
+          echo "❌ No deployment URL available"
+          echo "ready=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+        
+        echo "⏳ Waiting for deployment to be ready: $DEPLOYMENT_URL"
+        
+        TIMEOUT_SECONDS=$((TIMEOUT_MINUTES * 60))
+        MAX_ATTEMPTS=$((TIMEOUT_SECONDS / CHECK_INTERVAL))
+        
+        for i in $(seq 1 $MAX_ATTEMPTS); do
+          echo "🔍 Attempt $i/$MAX_ATTEMPTS: Checking deployment..."
+          
+          # Check if deployment responds with 200
+          if curl -sf --max-time 15 --connect-timeout 10 "$DEPLOYMENT_URL" > /dev/null 2>&1; then
+            echo "✅ Deployment is ready! (after $i attempts)"
+            echo "ready=true" >> $GITHUB_OUTPUT
+            
+            # Additional health check if API endpoint exists
+            if curl -sf --max-time 10 "$DEPLOYMENT_URL/api/health/check" > /dev/null 2>&1; then
+              echo "✅ API health check passed"
+            else
+              echo "ℹ️ No API health endpoint (expected for static sites)"
+            fi
+            
+            exit 0
+          fi
+          
+          if [ $i -eq $MAX_ATTEMPTS ]; then
+            echo "❌ Deployment not ready after $TIMEOUT_MINUTES minutes"
+            echo "ready=false" >> $GITHUB_OUTPUT
+            
+            # Try to get more info about the failure
+            RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOYMENT_URL" || echo "000")
+            echo "Last response code: $RESPONSE_CODE"
+            
+            exit 1
+          fi
+          
+          echo "⏳ Deployment not ready, waiting ${CHECK_INTERVAL}s..."
+          sleep $CHECK_INTERVAL
+        done

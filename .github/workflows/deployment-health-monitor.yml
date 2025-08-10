@@ -1,0 +1,192 @@
+name: 🏥 Deployment Health Monitor
+
+# Vercel-native deployment health monitoring
+# Waits for Vercel bot deployment completion and validates critical service health
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [develop, staging, feature/*]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  deployments: read
+
+jobs:
+  # Watch and validate Vercel deployment
+  watch-deployment:
+    name: 🔍 Watch Vercel Deployment
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⏳ Wait for Vercel Deployment
+        id: wait-deployment
+        uses: ./.github/actions/wait-for-vercel
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          timeout-minutes: 15
+          check-interval: 15
+
+      - name: 🏥 Health Check Deployment
+        id: health-check
+        env:
+          DEPLOYMENT_URL: ${{ steps.wait-deployment.outputs.deployment-url }}
+          ENVIRONMENT: ${{ steps.wait-deployment.outputs.environment }}
+        run: |
+          echo "🏥 Running comprehensive health checks on $ENVIRONMENT deployment..."
+          echo "URL: $DEPLOYMENT_URL"
+          
+          # Initialize health status tracking
+          OVERALL_HEALTH="✅ Healthy"
+          HEALTH_DETAILS=""
+          
+          # Basic connectivity check
+          echo "🔍 Testing basic connectivity..."
+          RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$DEPLOYMENT_URL")
+          if [ "$RESPONSE_CODE" = "200" ]; then
+            echo "✅ Site responding with HTTP 200"
+            HEALTH_DETAILS="${HEALTH_DETAILS}\n- ✅ **Basic connectivity**: Responding (HTTP $RESPONSE_CODE)"
+          else
+            echo "⚠️ Site responding with HTTP $RESPONSE_CODE"
+            OVERALL_HEALTH="⚠️ Issues detected"
+            HEALTH_DETAILS="${HEALTH_DETAILS}\n- ⚠️ **Basic connectivity**: HTTP $RESPONSE_CODE"
+          fi
+          
+          # Test critical pages
+          echo "🔍 Testing critical pages..."
+          CRITICAL_PAGES=("/" "/tickets" "/donations" "/about" "/artists")
+          PAGES_HEALTHY=0
+          TOTAL_PAGES=${#CRITICAL_PAGES[@]}
+          
+          for page in "${CRITICAL_PAGES[@]}"; do
+            PAGE_URL="${DEPLOYMENT_URL}${page}"
+            PAGE_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$PAGE_URL")
+            
+            if [ "$PAGE_CODE" = "200" ]; then
+              PAGES_HEALTHY=$((PAGES_HEALTHY + 1))
+              echo "  ✅ $page (HTTP $PAGE_CODE)"
+            else
+              echo "  ⚠️ $page (HTTP $PAGE_CODE)"
+              OVERALL_HEALTH="⚠️ Issues detected"
+            fi
+          done
+          
+          HEALTH_DETAILS="${HEALTH_DETAILS}\n- **Critical pages**: $PAGES_HEALTHY/$TOTAL_PAGES responding"
+          
+          # API health check (if available)
+          echo "🔍 Testing API endpoints..."
+          API_ENDPOINTS=("/api/health/check" "/api/test-db")
+          API_HEALTHY=0
+          API_TOTAL=0
+          
+          for endpoint in "${API_ENDPOINTS[@]}"; do
+            API_URL="${DEPLOYMENT_URL}${endpoint}"
+            if curl -s --max-time 10 "$API_URL" > /dev/null 2>&1; then
+              API_TOTAL=$((API_TOTAL + 1))
+              API_RESPONSE=$(curl -s --max-time 10 "$API_URL" || echo '{"status":"error"}')
+              API_STATUS=$(echo "$API_RESPONSE" | jq -r '.status // "unknown"' 2>/dev/null || echo "unknown")
+              
+              if [ "$API_STATUS" = "healthy" ] || [ "$API_STATUS" = "ok" ]; then
+                API_HEALTHY=$((API_HEALTHY + 1))
+                echo "  ✅ $endpoint ($API_STATUS)"
+              else
+                echo "  ⚠️ $endpoint ($API_STATUS)"
+                OVERALL_HEALTH="⚠️ Issues detected"
+              fi
+            else
+              echo "  ℹ️ $endpoint (not available - expected for static deployments)"
+            fi
+          done
+          
+          if [ $API_TOTAL -gt 0 ]; then
+            HEALTH_DETAILS="${HEALTH_DETAILS}\n- **API endpoints**: $API_HEALTHY/$API_TOTAL healthy"
+          else
+            HEALTH_DETAILS="${HEALTH_DETAILS}\n- **API endpoints**: Not available (static deployment)"
+          fi
+          
+          # Performance check
+          echo "🔍 Testing performance..."
+          LOAD_TIME=$(curl -s -o /dev/null -w "%{time_total}" --max-time 30 "$DEPLOYMENT_URL")
+          LOAD_TIME_MS=$(echo "$LOAD_TIME * 1000" | bc -l | cut -d. -f1)
+          
+          if [ "$LOAD_TIME_MS" -lt 2000 ]; then
+            echo "✅ Load time: ${LOAD_TIME_MS}ms (excellent)"
+            HEALTH_DETAILS="${HEALTH_DETAILS}\n- ✅ **Performance**: ${LOAD_TIME_MS}ms load time"
+          elif [ "$LOAD_TIME_MS" -lt 5000 ]; then
+            echo "⚠️ Load time: ${LOAD_TIME_MS}ms (acceptable)"
+            HEALTH_DETAILS="${HEALTH_DETAILS}\n- ⚠️ **Performance**: ${LOAD_TIME_MS}ms load time"
+          else
+            echo "❌ Load time: ${LOAD_TIME_MS}ms (slow)"
+            OVERALL_HEALTH="⚠️ Issues detected"
+            HEALTH_DETAILS="${HEALTH_DETAILS}\n- ❌ **Performance**: ${LOAD_TIME_MS}ms load time (slow)"
+          fi
+          
+          # Save results for PR comment
+          echo "overall_health=$OVERALL_HEALTH" >> $GITHUB_OUTPUT
+          {
+            echo "health_details<<EOF"
+            echo -e "$HEALTH_DETAILS"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+          
+          echo "🏁 Health check complete: $OVERALL_HEALTH"
+
+      - name: 💬 Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deploymentUrl = '${{ steps.wait-deployment.outputs.deployment-url }}';
+            const environment = '${{ steps.wait-deployment.outputs.environment }}';
+            const overallHealth = '${{ steps.health-check.outputs.overall_health }}';
+            const healthDetails = `${{ steps.health-check.outputs.health_details }}`;
+            const deploymentId = '${{ steps.wait-deployment.outputs.deployment-id }}';
+            
+            let deploymentInfo = '';
+            if (deploymentId && deploymentId !== 'null' && deploymentId !== '') {
+              deploymentInfo = `**Deployment ID:** ${deploymentId}\n`;
+            }
+            
+            const body = `## 🔍 Deployment Watcher Results
+            
+            **${environment} URL:** ${deploymentUrl}
+            ${deploymentInfo}**Health Status:** ${overallHealth}
+            
+            ### 🏥 Health Check Details
+            ${healthDetails}
+            
+            ### 🧪 Test Checklist
+            - [ ] Navigation works correctly
+            - [ ] Cart functionality 
+            - [ ] Email subscription
+            - [ ] Database connectivity
+            - [ ] Mobile responsiveness
+            - [ ] Performance optimization
+            
+            **Environment:** ${environment}  
+            **Commit:** ${{ github.sha }}
+            
+            ---
+            *🤖 This deployment was created by Vercel and monitored by our deployment watcher*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: 📊 Summary Report
+        run: |
+          echo "### 🔍 Deployment Watcher Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ steps.wait-deployment.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment URL:** ${{ steps.wait-deployment.outputs.deployment-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Health Status:** ${{ steps.health-check.outputs.overall_health }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Method:** Vercel Native (watched by GitHub Actions)" >> $GITHUB_STEP_SUMMARY
+          echo "**Monitoring:** Automated health checks and PR comments enabled" >> $GITHUB_STEP_SUMMARY
