@@ -153,34 +153,88 @@ jobs:
     if: github.event_name == 'pull_request'
     
     outputs:
-      deployment-url: ${{ steps.wait-for-deployment.outputs.url }}
+      deployment-url: ${{ steps.wait-for-deployment.outputs.url || steps.fallback-deployment.outputs.url }}
+      deployment-found: ${{ steps.wait-for-deployment.outputs.url != '' || steps.fallback-deployment.outputs.deployment_found == 'true' }}
     
     steps:
       - name: Wait for Vercel deployment
         uses: patrickedqvist/wait-for-vercel-preview@v1.3.1
         id: wait-for-deployment
+        continue-on-error: true
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          max_timeout: 300
-          check_interval: 10
+          max_timeout: 600  # Increased from 300s (5min) to 600s (10min) for larger deployments
+          check_interval: 15  # Increased from 10s to 15s to reduce API pressure
+          
+      - name: Fallback deployment detection
+        id: fallback-deployment
+        if: steps.wait-for-deployment.outcome == 'failure'
+        run: |
+          echo "⚠️ Wait action timed out, attempting manual deployment detection..."
+          
+          # Get PR number and construct expected deployment URL
+          PR_NUMBER="${{ github.event.number }}"
+          BRANCH_NAME="${{ github.head_ref }}"
+          SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-50 | sed 's/-*$//')
+          
+          # Try multiple common Vercel URL patterns
+          POSSIBLE_URLS=(
+            "https://alocubanoboulderfest-git-${SAFE_BRANCH}.vercel.app"
+            "https://alocubanoboulderfest-${SAFE_BRANCH}.vercel.app" 
+            "https://alocubanoboulderfest-pr-${PR_NUMBER}.vercel.app"
+            "https://alocubano-boulderfest-git-${SAFE_BRANCH}.vercel.app"
+          )
+          
+          echo "Testing potential deployment URLs..."
+          FOUND_URL=""
+          
+          for url in "${POSSIBLE_URLS[@]}"; do
+            echo "Testing: $url"
+            if curl -f -s --connect-timeout 10 --max-time 30 "$url" > /dev/null; then
+              echo "✅ Found working deployment: $url"
+              FOUND_URL="$url"
+              break
+            else
+              echo "❌ Not found: $url"
+            fi
+          done
+          
+          if [ -n "$FOUND_URL" ]; then
+            echo "url=$FOUND_URL" >> $GITHUB_OUTPUT
+            echo "deployment_found=true" >> $GITHUB_OUTPUT
+            echo "🎉 Deployment detected manually: $FOUND_URL"
+          else
+            echo "deployment_found=false" >> $GITHUB_OUTPUT
+            echo "❌ Could not detect deployment URL manually"
+          fi
           
       - name: Debug deployment URLs
         run: |
           echo "🔍 Debug: Deployment URL information"
           echo "Vercel action output URL: ${{ steps.wait-for-deployment.outputs.url }}"
+          echo "Fallback detection URL: ${{ steps.fallback-deployment.outputs.url }}"
           echo "Constructed fallback URL: ${{ needs.setup.outputs.target-url }}"
           echo "GitHub context - head_ref: ${{ github.head_ref }}"
           echo "GitHub context - ref: ${{ github.ref }}"
+          echo "Wait action outcome: ${{ steps.wait-for-deployment.outcome }}"
+          echo "Fallback found deployment: ${{ steps.fallback-deployment.outputs.deployment_found }}"
           
       - name: Verify deployment health
         run: |
           echo "🏥 Checking deployment health..."
           
-          # Use the actual deployment URL from Vercel instead of constructed one
+          # Use the actual deployment URL with proper fallback chain
           DEPLOYMENT_URL="${{ steps.wait-for-deployment.outputs.url }}"
           
           if [ -z "$DEPLOYMENT_URL" ]; then
-            echo "⚠️ No deployment URL found from Vercel action, falling back to constructed URL"
+            DEPLOYMENT_URL="${{ steps.fallback-deployment.outputs.url }}"
+            if [ -n "$DEPLOYMENT_URL" ]; then
+              echo "✅ Using fallback detected URL: $DEPLOYMENT_URL"
+            fi
+          fi
+          
+          if [ -z "$DEPLOYMENT_URL" ]; then
+            echo "⚠️ No deployment URL found, falling back to constructed URL"
             DEPLOYMENT_URL="${{ needs.setup.outputs.target-url }}"
           fi
           
@@ -231,7 +285,7 @@ jobs:
     name: Performance Tests
     runs-on: ubuntu-latest
     needs: [setup, wait-for-deployment]
-    if: always() && needs.setup.result == 'success' && (needs.wait-for-deployment.result == 'success' || needs.wait-for-deployment.result == 'skipped')
+    if: always() && needs.setup.result == 'success' && (needs.wait-for-deployment.result == 'success' || needs.wait-for-deployment.result == 'skipped' || needs.wait-for-deployment.outputs.deployment-found == 'true')
     
     strategy:
       fail-fast: false
@@ -480,7 +534,7 @@ jobs:
     if: |
       always() && 
       needs.setup.result == 'success' && 
-      (needs.wait-for-deployment.result == 'success' || needs.wait-for-deployment.result == 'skipped') &&
+      (needs.wait-for-deployment.result == 'success' || needs.wait-for-deployment.result == 'skipped' || needs.wait-for-deployment.outputs.deployment-found == 'true') &&
       (github.event_name == 'schedule' || 
        github.event_name == 'workflow_dispatch' ||
        (github.event_name == 'push' && github.ref == 'refs/heads/main'))
