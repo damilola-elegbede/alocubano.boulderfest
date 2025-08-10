@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20  # Prevent indefinite hanging
     needs: pre-deployment-checks
-    if: always() && (needs.pre-deployment-checks.result == 'success' || github.event_name == 'deployment_status')
+    if: always() && needs.pre-deployment-checks.result == 'success'
     outputs:
       validation_passed: ${{ steps.validation-summary.outputs.validation_passed }}
       deployment_url: ${{ steps.wait-vercel.outputs.deployment-url }}

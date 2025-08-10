@@ -258,12 +258,23 @@ async function handler(req, res) {
 
     // Parse request body
     const body = req.body || {};
-    const {
+    let {
       sections = ["all"], // Which sections to warm: 'all', 'event', 'tickets', 'gallery', 'analytics'
       priority = "normal", // 'low', 'normal', 'high' - affects TTL
       dryRun = false, // Preview what would be warmed
       force = false, // Force warming even if data exists
     } = body;
+    
+    // Normalize input types for robustness
+    if (typeof sections === 'string') {
+      sections = [sections];
+    } else if (!Array.isArray(sections)) {
+      sections = ["all"];
+    }
+    
+    // Coerce boolean values
+    dryRun = Boolean(dryRun);
+    force = Boolean(force);
 
     console.log(
       `[CACHE-WARM] Admin ${adminId} initiated warming for sections:`,
