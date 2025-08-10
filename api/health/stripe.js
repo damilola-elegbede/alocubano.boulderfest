@@ -6,7 +6,7 @@ import { HealthStatus } from '../../lib/monitoring/health-checker.js';
  */
 function getStripeClient() {
   if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error('Stripe secret key not configured');
+    throw new Error('STRIPE_SECRET_KEY environment variable not configured');
   }
   
   return new Stripe(process.env.STRIPE_SECRET_KEY, {
@@ -183,13 +183,14 @@ export const checkStripeHealth = async () => {
     };
   } catch (error) {
     // Determine if this is a configuration error or service error
-    const isConfigError = error.message.includes('secret key') || 
-                         error.message.includes('Invalid API Key');
+    const errorMessage = error.message || error.toString() || 'Unknown error';
+    const isConfigError = errorMessage.includes('secret key') || 
+                         errorMessage.includes('Invalid API Key');
     
     return {
       status: HealthStatus.UNHEALTHY,
       response_time: `${Date.now() - startTime}ms`,
-      error: error.message,
+      error: errorMessage,
       details: {
         api_accessible: false,
         error_type: isConfigError ? 'ConfigurationError' : 'ServiceError',

@@ -154,6 +154,35 @@ export const checkDatabaseHealth = async () => {
   const startTime = Date.now();
   
   try {
+    // Check if required environment variables are present
+    if (!process.env.TURSO_DATABASE_URL) {
+      return {
+        status: HealthStatus.UNHEALTHY,
+        response_time: `${Date.now() - startTime}ms`,
+        error: 'TURSO_DATABASE_URL environment variable not configured',
+        details: {
+          connection: 'failed',
+          error_type: 'ConfigurationError',
+          has_database_url: false,
+          has_auth_token: !!process.env.TURSO_AUTH_TOKEN
+        }
+      };
+    }
+    
+    if (!process.env.TURSO_AUTH_TOKEN) {
+      return {
+        status: HealthStatus.UNHEALTHY,
+        response_time: `${Date.now() - startTime}ms`,
+        error: 'TURSO_AUTH_TOKEN environment variable not configured',
+        details: {
+          connection: 'failed',
+          error_type: 'ConfigurationError',
+          has_database_url: !!process.env.TURSO_DATABASE_URL,
+          has_auth_token: false
+        }
+      };
+    }
+    
     // Get database service
     const dbService = getDatabase();
     
