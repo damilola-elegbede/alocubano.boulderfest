@@ -9,7 +9,7 @@ export default defineConfig({
     globalTeardown: "./tests/global-teardown.js",
 
     // Test file patterns
-    include: ["tests/unit/**/*.test.js", "tests/integration/**/*.test.js"],
+    include: ["tests/unit/**/*.test.js", "tests/integration/**/*.test.js", "tests/security/**/*.test.js"],
     exclude: [
       "tests/e2e/**/*.test.js", // Exclude E2E tests (need Playwright)
       "node_modules/**",
