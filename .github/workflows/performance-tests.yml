@@ -6,9 +6,8 @@ on:
     branches: [ main ]
     types: [ opened, synchronize, reopened ]
   
-  # Run on pushes to main (for baseline updates)
-  push:
-    branches: [ main ]
+  # Note: Push to main baseline updates moved to separate workflow
+  # to avoid duplicate runs on PRs
   
   # Allow manual triggering
   workflow_dispatch:

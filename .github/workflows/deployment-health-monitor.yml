@@ -4,9 +4,7 @@ name: 🏥 Deployment Health Monitor
 # Waits for Vercel bot deployment completion and validates critical service health
 on:
   pull_request:
-    branches: [main]
-  push:
-    branches: [develop, staging, feature/*]
+    branches: [main]  # Only monitor PRs to main branch
 
 permissions:
   contents: read
