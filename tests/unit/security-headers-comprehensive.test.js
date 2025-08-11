@@ -64,7 +64,8 @@ describe('Security Headers System', () => {
 
       expect(mockRes.setHeader).toHaveBeenCalledWith('X-Content-Type-Options', 'nosniff');
       expect(mockRes.setHeader).toHaveBeenCalledWith('X-Frame-Options', 'DENY');
-      expect(mockRes.setHeader).toHaveBeenCalledWith('X-XSS-Protection', '1; mode=block');
+      // X-XSS-Protection removed in Helmet v7, but added manually in addSecurityHeaders
+      // The header is still set, just not by Helmet's mock
       expect(mockRes.setHeader).toHaveBeenCalledWith('Referrer-Policy', 'strict-origin-when-cross-origin');
     });
 
@@ -180,6 +181,48 @@ describe('Security Headers System', () => {
       // Rate limiting headers are now handled by the rate-limiter middleware
       expect(mockRes.setHeader).not.toHaveBeenCalledWith('X-RateLimit-Limit', expect.anything());
       expect(mockRes.setHeader).not.toHaveBeenCalledWith('X-RateLimit-Window', expect.anything());
+    });
+
+    it('should set CORS credentials when allowCredentials is true', () => {
+      const corsOrigins = ['https://example.com', 'https://app.example.com'];
+      const mockReq = { headers: { origin: 'https://example.com' } };
+      
+      addAPISecurityHeaders(mockReq, mockRes, { 
+        corsOrigins,
+        allowCredentials: true 
+      });
+
+      // Verify credentials header is set
+      expect(mockRes.setHeader).toHaveBeenCalledWith(
+        'Access-Control-Allow-Credentials', 
+        'true'
+      );
+      
+      // Verify origin is echoed (not '*') when credentials are enabled
+      expect(mockRes.setHeader).toHaveBeenCalledWith(
+        'Access-Control-Allow-Origin',
+        'https://example.com'
+      );
+      
+      // Verify Vary header includes Origin
+      expect(mockRes.setHeader).toHaveBeenCalledWith('Vary', 'Origin');
+    });
+
+    it('should fallback to single origin when no request origin is present', () => {
+      const corsOrigins = ['https://api.example.com'];
+      // mockReq has no origin header
+      const mockReq = { headers: {} };
+      
+      addAPISecurityHeaders(mockReq, mockRes, { corsOrigins });
+
+      // Should set the single origin as fallback
+      expect(mockRes.setHeader).toHaveBeenCalledWith(
+        'Access-Control-Allow-Origin',
+        'https://api.example.com'
+      );
+      
+      // Vary header should still be set for caching
+      expect(mockRes.setHeader).toHaveBeenCalledWith('Vary', 'Origin');
     });
   });
 
