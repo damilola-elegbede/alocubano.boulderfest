@@ -1,9 +1,9 @@
 import speakeasy from "speakeasy";
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
 import { getDatabase } from "./database.js";
 import authService from "./auth-service.js";
 import { getMfaRateLimitService } from "./mfa-rate-limit-service.js";
+import { decryptSecret } from "./security/encryption-utils.js";
 
 /**
  * MFA Validation Middleware
@@ -304,29 +304,6 @@ async function getSessionMfaStatus(sessionToken) {
   }
 }
 
-/**
- * Decrypt TOTP secret from storage
- */
-function decryptSecret(encryptedData) {
-  try {
-    const algorithm = "aes-256-gcm";
-    const key = crypto.scryptSync(process.env.ADMIN_SECRET, "mfa-salt", 32);
-    
-    const { encrypted, iv, authTag } = JSON.parse(encryptedData);
-    
-    const decipher = crypto.createDecipheriv(algorithm, key, Buffer.from(iv, "hex"));
-    decipher.setAAD(Buffer.from("mfa-secret"));
-    decipher.setAuthTag(Buffer.from(authTag, "hex"));
-    
-    let decrypted = decipher.update(encrypted, "hex", "utf8");
-    decrypted += decipher.final("utf8");
-    
-    return decrypted;
-  } catch (error) {
-    console.error("Error decrypting MFA secret:", error);
-    throw new Error("Failed to decrypt MFA secret");
-  }
-}
 
 /**
  * Log MFA attempt

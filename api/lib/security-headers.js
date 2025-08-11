@@ -63,7 +63,6 @@ function buildCSP() {
     scriptSrc: [
       "'self'",
       "'unsafe-inline'", // Required for Stripe and inline scripts
-      "'unsafe-eval'", // Required for some Stripe functionality
       ...TRUSTED_DOMAINS.stripe,
       ...TRUSTED_DOMAINS.analytics,
       ...TRUSTED_DOMAINS.cdn
@@ -186,16 +185,14 @@ export function getHelmetConfig() {
     // X-Content-Type-Options
     noSniff: true,
 
-    // X-XSS-Protection (for legacy browsers)
-    xssFilter: true,
+    // X-XSS-Protection is handled manually below since xssFilter was removed in Helmet v7
 
     // Referrer Policy
     referrerPolicy: {
       policy: 'strict-origin-when-cross-origin'
     },
 
-    // Permissions Policy
-    permissionsPolicy: PERMISSIONS_POLICY,
+    // Permissions Policy is handled manually below due to Helmet config issues
 
     // X-DNS-Prefetch-Control
     dnsPrefetchControl: {
@@ -206,7 +203,7 @@ export function getHelmetConfig() {
     ieNoOpen: true,
 
     // X-Permitted-Cross-Domain-Policies
-    crossdomain: false,
+    permittedCrossDomainPolicies: false,
 
     // Origin-Agent-Cluster
     originAgentCluster: true,
@@ -234,13 +231,17 @@ export function addAPISecurityHeaders(res, options = {}) {
     maxAge = 0,
     apiVersion = 'v1',
     allowCredentials = false,
-    corsOrigins = ['https://alocubanoboulderfest.vercel.app']
+    corsOrigins = ['https://alocubanoboulderfest.vercel.app'],
+    etag = null
   } = options;
 
   // Cache control for API responses
   if (maxAge > 0) {
     res.setHeader('Cache-Control', `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=60`);
-    res.setHeader('ETag', `W/"${Date.now()}"`);
+    // Only set ETag if provided by caller to ensure stability
+    if (etag) {
+      res.setHeader('ETag', `W/"${etag}"`);
+    }
   } else {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
@@ -253,18 +254,25 @@ export function addAPISecurityHeaders(res, options = {}) {
 
   // CORS headers for API endpoints
   if (corsOrigins.length > 0) {
-    res.setHeader('Access-Control-Allow-Origin', corsOrigins.join(', '));
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-API-Key');
+    const origin = res.req?.headers?.origin;
+    if (origin && corsOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Vary', 'Origin');
+    } else if (corsOrigins.length === 1) {
+      // Fallback to first origin if request origin not available
+      res.setHeader('Access-Control-Allow-Origin', corsOrigins[0]);
+    }
+    
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-API-Key, X-CSRF-Token');
     
     if (allowCredentials) {
       res.setHeader('Access-Control-Allow-Credentials', 'true');
     }
   }
 
-  // Rate limiting headers (to be set by rate limiter)
-  res.setHeader('X-RateLimit-Limit', '100');
-  res.setHeader('X-RateLimit-Window', '900'); // 15 minutes
+  // Rate limiting headers are handled by rate limiter middleware
+  // Remove hard-coded rate limit headers to avoid conflicts
 
   // Security headers
   res.setHeader('X-Frame-Options', 'DENY');
@@ -285,6 +293,18 @@ export function addCSRFHeaders(res, token) {
 }
 
 /**
+ * Format Permissions Policy for header
+ */
+function formatPermissionsPolicy(policy) {
+  return Object.entries(policy)
+    .map(([feature, allowlist]) => {
+      const formattedAllowlist = allowlist.length === 0 ? '()' : `(${allowlist.join(' ')})`;
+      return `${feature.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}=${formattedAllowlist}`;
+    })
+    .join(', ');
+}
+
+/**
  * Apply Helmet.js security headers
  */
 export function applySecurityHeaders(req, res) {
@@ -295,6 +315,9 @@ export function applySecurityHeaders(req, res) {
       if (error) {
         reject(error);
       } else {
+        // Add headers that were removed from Helmet config
+        res.setHeader('X-XSS-Protection', '1; mode=block');
+        res.setHeader('Permissions-Policy', formatPermissionsPolicy(PERMISSIONS_POLICY));
         resolve();
       }
     });

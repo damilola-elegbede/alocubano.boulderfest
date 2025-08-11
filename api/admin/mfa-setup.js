@@ -1,11 +1,12 @@
 import speakeasy from "speakeasy";
 import QRCode from "qrcode";
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
 import authService from "../lib/auth-service.js";
 import { getDatabase } from "../lib/database.js";
 import { withSecurityHeaders } from "../lib/security-headers.js";
 import { getMfaRateLimitService } from "../lib/mfa-rate-limit-service.js";
+import { verifyMfaCode } from "../lib/mfa-middleware.js";
+import { encryptSecret, decryptSecret } from "../lib/security/encryption-utils.js";
 
 /**
  * MFA Setup and Management Endpoint
@@ -306,11 +307,15 @@ async function handleDisableMfa(req, res) {
       });
     }
 
-    // Verify the confirmation code
-    const isValid = await verifyMfaCode(adminId, confirmationCode, req);
+    // Verify the confirmation code using the middleware version
+    const verificationResult = await verifyMfaCode(adminId, confirmationCode, req);
 
-    if (!isValid) {
-      return res.status(401).json({ error: "Invalid confirmation code" });
+    if (!verificationResult.success) {
+      return res.status(401).json({ 
+        error: verificationResult.error || "Invalid confirmation code",
+        rateLimited: verificationResult.rateLimited,
+        remainingTime: verificationResult.remainingTime
+      });
     }
 
     // Disable MFA and clear all related data
@@ -412,122 +417,7 @@ async function generateBackupCodes(db, adminId) {
   return codes;
 }
 
-/**
- * Verify MFA code (TOTP or backup code)
- */
-async function verifyMfaCode(adminId, code, req) {
-  const db = getDatabase();
 
-  try {
-    // First try TOTP verification
-    const secretResult = await db.execute({
-      sql: `SELECT totp_secret, is_enabled FROM admin_mfa_config WHERE admin_id = ?`,
-      args: [adminId],
-    });
-
-    if (secretResult.rows[0]?.is_enabled) {
-      const encryptedSecret = secretResult.rows[0].totp_secret;
-      const decryptedSecret = decryptSecret(encryptedSecret);
-
-      // Check if it's a TOTP code (6 digits)
-      if (/^\d{6}$/.test(code)) {
-        const verified = speakeasy.totp.verify({
-          secret: decryptedSecret,
-          encoding: "base32",
-          token: code,
-          window: 2,
-        });
-
-        if (verified) {
-          await logMfaAttempt(adminId, "totp", true, req);
-          
-          // Update last used time
-          await db.execute({
-            sql: `UPDATE admin_mfa_config SET last_used_at = CURRENT_TIMESTAMP WHERE admin_id = ?`,
-            args: [adminId],
-          });
-          
-          return true;
-        }
-      }
-
-      // Try backup code verification (8-character hex)
-      if (/^[0-9A-F]{8}$/i.test(code.toUpperCase())) {
-        const backupCodes = await db.execute({
-          sql: `SELECT id, code_hash FROM admin_mfa_backup_codes 
-                WHERE admin_id = ? AND is_used = FALSE`,
-          args: [adminId],
-        });
-
-        for (const backupCode of backupCodes.rows) {
-          const isValid = await bcrypt.compare(code.toUpperCase(), backupCode.code_hash);
-          
-          if (isValid) {
-            // Mark backup code as used
-            await db.execute({
-              sql: `UPDATE admin_mfa_backup_codes 
-                    SET is_used = TRUE, used_at = CURRENT_TIMESTAMP, 
-                        used_from_ip = ? WHERE id = ?`,
-              args: [req.headers["x-forwarded-for"] || req.connection?.remoteAddress, backupCode.id],
-            });
-
-            await logMfaAttempt(adminId, "backup_code", true, req);
-            return true;
-          }
-        }
-      }
-    }
-
-    // Log failed attempt
-    await logMfaAttempt(adminId, code.length === 6 ? "totp" : "backup_code", false, req, "invalid_code");
-    return false;
-  } catch (error) {
-    console.error("Error verifying MFA code:", error);
-    return false;
-  }
-}
-
-/**
- * Encrypt TOTP secret for storage
- */
-function encryptSecret(secret) {
-  const algorithm = "aes-256-gcm";
-  const key = crypto.scryptSync(process.env.ADMIN_SECRET, "mfa-salt", 32);
-  const iv = crypto.randomBytes(16);
-  
-  const cipher = crypto.createCipheriv(algorithm, key, iv);
-  cipher.setAAD(Buffer.from("mfa-secret"));
-  
-  let encrypted = cipher.update(secret, "utf8", "hex");
-  encrypted += cipher.final("hex");
-  
-  const authTag = cipher.getAuthTag();
-  
-  return JSON.stringify({
-    encrypted,
-    iv: iv.toString("hex"),
-    authTag: authTag.toString("hex"),
-  });
-}
-
-/**
- * Decrypt TOTP secret from storage
- */
-function decryptSecret(encryptedData) {
-  const algorithm = "aes-256-gcm";
-  const key = crypto.scryptSync(process.env.ADMIN_SECRET, "mfa-salt", 32);
-  
-  const { encrypted, iv, authTag } = JSON.parse(encryptedData);
-  
-  const decipher = crypto.createDecipheriv(algorithm, key, Buffer.from(iv, "hex"));
-  decipher.setAAD(Buffer.from("mfa-secret"));
-  decipher.setAuthTag(Buffer.from(authTag, "hex"));
-  
-  let decrypted = decipher.update(encrypted, "hex", "utf8");
-  decrypted += decipher.final("utf8");
-  
-  return decrypted;
-}
 
 /**
  * Log MFA attempt
