@@ -1,10 +1,19 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs/promises';
 import path from 'path';
 import AuditLogger from '../../lib/security/audit-logger.js';
 
 describe('AuditLogger', () => {
   const logDir = path.resolve(process.cwd(), 'logs', 'audit');
+
+  // Set up log directory before each test
+  beforeEach(async () => {
+    try {
+      await fs.mkdir(logDir, { recursive: true });
+    } catch (error) {
+      // Ignore if directory already exists
+    }
+  });
 
   // Clean up log files after each test
   afterEach(async () => {
