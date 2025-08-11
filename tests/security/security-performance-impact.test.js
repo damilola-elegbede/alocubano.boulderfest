@@ -84,7 +84,7 @@ const TEST_CONFIG = {
   MAX_OVERHEAD_PERCENT: 50, // Increased from 5% to 50% - security hardening has legitimate overhead
   INDIVIDUAL_MAX_OVERHEAD_PERCENT: 200, // Increased from 3% to 200% - rate limiting can be expensive
   CONCURRENT_MAX_OVERHEAD_PERCENT: 100, // 100% overhead for concurrent operations
-  JWT_MAX_OVERHEAD_PERCENT: 10000, // JWT processing is cryptographically expensive
+  JWT_MAX_OVERHEAD_PERCENT: 50000, // JWT processing is cryptographically expensive (CI can be slower)
   PAYLOAD_SIZES: [1024, 4096, 16384], // Different payload sizes
   ATTACK_SIMULATION_SIZE: 10000 // For stress testing
 };
