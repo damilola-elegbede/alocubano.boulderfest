@@ -13,6 +13,7 @@ import { ApplicationError } from './error-handler.js';
  */
 export function createRateLimitMiddleware(endpointType, options = {}) {
   const rateLimiter = getRateLimiter();
+  const { failOpen = true, ...otherOptions } = options;
   
   return async function rateLimitMiddleware(req, res, next) {
     const startTime = Date.now();
@@ -133,9 +134,33 @@ export function createRateLimitMiddleware(endpointType, options = {}) {
     } catch (error) {
       console.error('Rate limiting middleware error:', error);
       
-      // Fail open - allow request to continue but log the error
-      if (next) {
-        return next();
+      // Configurable fail-open vs fail-closed behavior
+      if (failOpen) {
+        // Fail open - allow request to continue but log the error
+        if (next) {
+          return next();
+        }
+      } else {
+        // Fail closed - return 503 Service Unavailable
+        const serviceError = new ApplicationError(
+          'Rate limiting service temporarily unavailable',
+          'ServiceUnavailable',
+          503,
+          { reason: 'rate_limiter_error', temporary: true }
+        );
+        
+        if (next) {
+          return next(serviceError);
+        } else {
+          return res.status(503).json({
+            error: {
+              type: 'ServiceUnavailable',
+              message: 'Rate limiting service temporarily unavailable. Please try again later.',
+              details: { reason: 'rate_limiter_error', temporary: true },
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
       }
     }
   };
@@ -350,16 +375,32 @@ export function rateLimitStatus() {
     const isWhitelisted = rateLimiter.isWhitelisted(clientId);
     const isBlacklisted = rateLimiter.isBlacklisted(clientId);
     
-    res.json({
-      client: {
+    // Hide sensitive information in production
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    const response = {
+      timestamp: new Date().toISOString()
+    };
+    
+    if (isProduction) {
+      // Only include basic status in production
+      response.client = {
+        whitelisted: isWhitelisted,
+        blacklisted: isBlacklisted
+      };
+      response.endpoints = Object.keys(rateLimiter.constructor.ENDPOINT_CONFIGS || {});
+    } else {
+      // Include full details in non-production environments
+      response.client = {
         id: clientId,
         whitelisted: isWhitelisted,
         blacklisted: isBlacklisted
-      },
-      analytics,
-      endpoints: Object.keys(rateLimiter.constructor.ENDPOINT_CONFIGS || {}),
-      timestamp: new Date().toISOString()
-    });
+      };
+      response.analytics = analytics;
+      response.endpoints = Object.keys(rateLimiter.constructor.ENDPOINT_CONFIGS || {});
+    }
+    
+    res.json(response);
   };
 }
 

@@ -66,12 +66,42 @@ export function enforceHTTPS(req, res, next) {
   }
 
   // Check if request is over HTTPS
-  const isHTTPS = req.headers['x-forwarded-proto'] === 'https' || 
+  // Handle multi-valued x-forwarded-proto headers and include socket.encrypted check
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const isForwardedHTTPS = forwardedProto ? 
+    forwardedProto.split(',')[0].trim().toLowerCase() === 'https' : false;
+  
+  const isHTTPS = isForwardedHTTPS || 
                   req.secure || 
-                  req.connection.encrypted;
+                  req.connection?.encrypted ||
+                  req.socket?.encrypted;
 
   if (!isHTTPS) {
-    const httpsUrl = `https://${req.headers.host}${req.url}`;
+    // Sanitize Host header to prevent CRLF injection
+    const hostHeader = req.headers.host;
+    if (!hostHeader) {
+      res.status(400).json({
+        error: {
+          type: 'BadRequest',
+          message: 'Missing Host header'
+        }
+      });
+      return;
+    }
+    
+    // Remove any CRLF characters and validate hostname format
+    const sanitizedHost = hostHeader.replace(/[\r\n\t]/g, '').trim();
+    if (!sanitizedHost || !/^[a-zA-Z0-9.-]+(?::[0-9]+)?$/.test(sanitizedHost)) {
+      res.status(400).json({
+        error: {
+          type: 'BadRequest',
+          message: 'Invalid Host header'
+        }
+      });
+      return;
+    }
+    
+    const httpsUrl = `https://${sanitizedHost}${req.url}`;
     
     // Send 301 redirect to HTTPS
     res.writeHead(301, {
