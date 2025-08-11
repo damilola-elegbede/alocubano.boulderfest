@@ -9,29 +9,29 @@ The audit logging system provides comprehensive tracking of security-related eve
 ### Authentication Events
 
 ```javascript
-import AuditLogger from './audit-logger.js';
+import AuditLogger from "./audit-logger.js";
 
 // Successful login
 await AuditLogger.log({
-  eventType: 'USER_LOGIN',
+  eventType: "USER_LOGIN",
   severity: AuditLogger.SEVERITY.INFO,
   context: {
     userId: user.id,
     username: user.username,
-    ipAddress: req.ip
-  }
+    ipAddress: req.ip,
+  },
 });
 
 // Failed login attempt
 await AuditLogger.log({
-  eventType: 'USER_LOGIN_FAILURE',
+  eventType: "USER_LOGIN_FAILURE",
   severity: AuditLogger.SEVERITY.HIGH,
   success: false,
   context: {
     username: attemptedUsername,
     ipAddress: req.ip,
-    reason: 'INVALID_CREDENTIALS'
-  }
+    reason: "INVALID_CREDENTIALS",
+  },
 });
 ```
 
@@ -40,14 +40,14 @@ await AuditLogger.log({
 ```javascript
 // Unauthorized access attempt
 await AuditLogger.log({
-  eventType: 'UNAUTHORIZED_ACCESS',
+  eventType: "UNAUTHORIZED_ACCESS",
   severity: AuditLogger.SEVERITY.CRITICAL,
   success: false,
   context: {
-    userId: req.user?.id || 'UNAUTHENTICATED',
-    resourceAttempted: '/admin/dashboard',
-    ipAddress: req.ip
-  }
+    userId: req.user?.id || "UNAUTHENTICATED",
+    resourceAttempted: "/admin/dashboard",
+    ipAddress: req.ip,
+  },
 });
 ```
 
@@ -56,13 +56,13 @@ await AuditLogger.log({
 ```javascript
 // Ticket update event
 await AuditLogger.log({
-  eventType: 'TICKET_MODIFIED',
+  eventType: "TICKET_MODIFIED",
   severity: AuditLogger.SEVERITY.MEDIUM,
   context: {
     userId: admin.id,
     ticketId: ticket.id,
-    changes: ['price', 'availability']
-  }
+    changes: ["price", "availability"],
+  },
 });
 ```
 
@@ -71,11 +71,11 @@ await AuditLogger.log({
 ```javascript
 // Retrieve logs for forensic analysis
 const logs = await AuditLogger.retrieveLogs({
-  startDate: '2025-01-01',
-  endDate: '2025-01-31',
-  eventTypes: ['USER_LOGIN', 'UNAUTHORIZED_ACCESS'],
+  startDate: "2025-01-01",
+  endDate: "2025-01-31",
+  eventTypes: ["USER_LOGIN", "UNAUTHORIZED_ACCESS"],
   severityLevels: [AuditLogger.SEVERITY.HIGH, AuditLogger.SEVERITY.CRITICAL],
-  success: false
+  success: false,
 });
 ```
 
@@ -97,6 +97,7 @@ const logs = await AuditLogger.retrieveLogs({
 ## Compliance
 
 This logging system supports compliance requirements by providing:
+
 - Tamper-evident logging
 - Immutable log storage
 - Detailed event tracking

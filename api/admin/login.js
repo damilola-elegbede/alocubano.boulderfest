@@ -2,7 +2,10 @@ import authService from "../lib/auth-service.js";
 import { getDatabase } from "../lib/database.js";
 import { getRateLimitService } from "../lib/rate-limit-service.js";
 import { withSecurityHeaders } from "../lib/security-headers.js";
-import { verifyMfaCode, markSessionMfaVerified } from "../lib/mfa-middleware.js";
+import {
+  verifyMfaCode,
+  markSessionMfaVerified,
+} from "../lib/mfa-middleware.js";
 
 async function loginHandler(req, res) {
   if (req.method === "POST") {
@@ -56,7 +59,7 @@ async function handlePasswordStep(req, res, password, clientIP) {
   }
 
   const rateLimitService = getRateLimitService();
-  const db = getDatabase();
+  const db = await getDatabase().ensureInitialized();
 
   // Check rate limiting
   const rateLimitResult = await rateLimitService.checkRateLimit(clientIP);
@@ -102,7 +105,7 @@ async function handlePasswordStep(req, res, password, clientIP) {
 
   // MFA is required - create temporary session and request MFA
   const tempToken = authService.createSessionToken(adminId);
-  
+
   // Store temporary session (not MFA verified yet)
   try {
     await db.execute({
@@ -137,8 +140,9 @@ async function handleMfaStep(req, res, mfaCode, clientIP) {
   }
 
   // Get temp token from Authorization header or body
-  const tempToken = authService.getSessionFromRequest(req) || req.body.tempToken;
-  
+  const tempToken =
+    authService.getSessionFromRequest(req) || req.body.tempToken;
+
   if (!tempToken) {
     return res.status(400).json({ error: "Temporary session token required" });
   }
@@ -146,7 +150,9 @@ async function handleMfaStep(req, res, mfaCode, clientIP) {
   // Verify temp session
   const session = authService.verifySessionToken(tempToken);
   if (!session.valid) {
-    return res.status(401).json({ error: "Invalid or expired temporary session" });
+    return res
+      .status(401)
+      .json({ error: "Invalid or expired temporary session" });
   }
 
   const adminId = session.admin.id || "admin";
@@ -185,8 +191,15 @@ async function handleMfaStep(req, res, mfaCode, clientIP) {
 /**
  * Complete login process and create final session
  */
-async function completeLogin(req, res, adminId, clientIP, mfaUsed = false, existingToken = null) {
-  const db = getDatabase();
+async function completeLogin(
+  req,
+  res,
+  adminId,
+  clientIP,
+  mfaUsed = false,
+  existingToken = null,
+) {
+  const db = await getDatabase().ensureInitialized();
 
   // Use existing token or create new one
   const token = existingToken || authService.createSessionToken(adminId);
@@ -232,7 +245,7 @@ async function completeLogin(req, res, adminId, clientIP, mfaUsed = false, exist
         mfaUsed ? "login_with_mfa" : "login",
         clientIP,
         req.headers["user-agent"] || null,
-        JSON.stringify({ 
+        JSON.stringify({
           timestamp: new Date().toISOString(),
           mfaUsed,
           adminId,
@@ -258,7 +271,7 @@ async function completeLogin(req, res, adminId, clientIP, mfaUsed = false, exist
  * Get MFA status for admin
  */
 async function getMfaStatus(adminId) {
-  const db = getDatabase();
+  const db = await getDatabase().ensureInitialized();
 
   try {
     const result = await db.execute({

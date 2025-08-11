@@ -13,7 +13,11 @@
       "durationDays": 10
     },
     "methodology": "Continuous monitoring with synthetic load testing and real user metrics",
-    "complianceStandards": ["Core Web Vitals", "RAIL Model", "Vercel Edge Performance"]
+    "complianceStandards": [
+      "Core Web Vitals",
+      "RAIL Model",
+      "Vercel Edge Performance"
+    ]
   },
 
   "executiveSummary": {
@@ -65,7 +69,7 @@
         "availability": 99.98,
         "dependencies": ["database", "stripe", "inventory-checker"]
       },
-      
+
       "/api/payments/create-checkout-session": {
         "description": "Stripe checkout session creation",
         "priority": "P0",
@@ -229,7 +233,7 @@
         "timeoutLimit": "30 seconds",
         "coldStartOverhead": "50-150ms"
       },
-      
+
       "databaseCapacity": {
         "maxConnections": 50,
         "typicalActiveConnections": 8,
@@ -256,7 +260,7 @@
         "memoryEfficiency": 0.85,
         "gcPressure": "low"
       },
-      
+
       "imageProcessing": {
         "averageMemoryMB": 180,
         "peakMemoryMB": 420,
@@ -326,7 +330,7 @@
           "unit": "milliseconds",
           "indexHitRate": 0.98
         },
-        
+
         "insertOperations": {
           "averageTime": 18,
           "p95Time": 35,
@@ -427,7 +431,7 @@
 
       "responseTimeDegradation": {
         "warning": 0.15,
-        "critical": 0.30,
+        "critical": 0.3,
         "unit": "percentage_increase"
       },
 
@@ -452,7 +456,7 @@
         "Response time increase > 15%",
         "Error rate > 2%"
       ],
-      
+
       "scaleDownTriggers": [
         "CPU < 30% for 10 minutes",
         "Response time stable for 5 minutes",
@@ -523,7 +527,7 @@
           "loadTime": "120ms",
           "compressionRatio": 0.68
         },
-        
+
         "coreJavaScript": {
           "size": "85KB",
           "loadTime": "180ms",
@@ -544,7 +548,7 @@
           "formatDistribution": {
             "AVIF": 0.45,
             "WebP": 0.35,
-            "JPEG": 0.20
+            "JPEG": 0.2
           }
         },
 
@@ -607,8 +611,8 @@
     },
 
     "revenueMetrics": {
-      "averageOrderValue": 89.50,
-      "peakSalesPerHour": 2850.00,
+      "averageOrderValue": 89.5,
+      "peakSalesPerHour": 2850.0,
       "refundRate": 0.03,
       "chargebackRate": 0.001
     },
@@ -641,13 +645,13 @@
         "responseTimeIncrease": 0.15,
         "errorRateIncrease": 0.02,
         "throughputDecrease": 0.15,
-        "cacheHitRateDecrease": 0.10
+        "cacheHitRateDecrease": 0.1
       },
 
       "critical": {
-        "responseTimeIncrease": 0.30,
+        "responseTimeIncrease": 0.3,
         "errorRateIncrease": 0.05,
-        "throughputDecrease": 0.30,
+        "throughputDecrease": 0.3,
         "availabilityDecrease": 0.01
       }
     },
@@ -669,24 +673,20 @@
 
     "staging": {
       "performanceMultiplier": 0.85,
-      "cacheEfficiency": 0.90,
+      "cacheEfficiency": 0.9,
       "networkLatency": "+20ms"
     },
 
     "development": {
-      "performanceMultiplier": 0.60,
-      "cacheEfficiency": 0.70,
+      "performanceMultiplier": 0.6,
+      "cacheEfficiency": 0.7,
       "networkLatency": "+50ms",
       "debuggingOverhead": "+15%"
     }
   },
 
   "testingMetadata": {
-    "loadTestingTools": [
-      "k6",
-      "Artillery",
-      "Custom Node.js scripts"
-    ],
+    "loadTestingTools": ["k6", "Artillery", "Custom Node.js scripts"],
 
     "monitoringIntegration": [
       "Vercel Analytics",
@@ -730,8 +730,8 @@
       "deviceTypes": ["Desktop", "Mobile", "Tablet"],
       "browserDistribution": {
         "Chrome": 0.65,
-        "Safari": 0.20,
-        "Firefox": 0.10,
+        "Safari": 0.2,
+        "Firefox": 0.1,
         "Edge": 0.05
       }
     },

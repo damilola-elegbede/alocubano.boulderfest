@@ -3,7 +3,7 @@ import { getDatabase } from "../lib/database.js";
 import { withSecurityHeaders } from "../lib/security-headers.js";
 
 async function handler(req, res) {
-  const db = getDatabase();
+  const db = await getDatabase().ensureInitialized();
 
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");

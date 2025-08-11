@@ -18,9 +18,9 @@ on:
   workflow_dispatch:
     inputs:
       deprecated_notice:
-        description: 'This workflow is deprecated. Use specialized workflows instead.'
+        description: "This workflow is deprecated. Use specialized workflows instead."
         required: false
-        default: 'Refer to deployment-health-monitor.yml, production-quality-gates.yml, or performance-tests.yml'
+        default: "Refer to deployment-health-monitor.yml, production-quality-gates.yml, or performance-tests.yml"
 
 jobs:
   deprecated-notice:

@@ -18,14 +18,15 @@ The performance testing system consists of:
 ### Prerequisites
 
 1. **Install K6**:
+
    ```bash
    # macOS
    brew install k6
-   
+
    # Linux
    curl -L "https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-amd64.tar.gz" | tar xvz
    sudo mv k6-v0.47.0-linux-amd64/k6 /usr/local/bin/
-   
+
    # Or use npm script
    npm run k6:install
    ```
@@ -38,16 +39,19 @@ The performance testing system consists of:
 ### Basic Usage
 
 1. **Run Critical Performance Tests**:
+
    ```bash
    npm run performance:critical
    ```
 
 2. **Run All Performance Tests**:
+
    ```bash
    npm run performance:all
    ```
 
 3. **Run Tests in Parallel** (faster execution):
+
    ```bash
    npm run performance:parallel
    ```
@@ -60,9 +64,11 @@ The performance testing system consists of:
 ## 🧪 Available Tests
 
 ### 1. Ticket Sales Test (`ticket-sales`)
+
 **File**: `tests/load/k6-ticket-sales.js`
 
 Simulates peak ticket purchasing scenarios with:
+
 - 150 concurrent users at peak
 - Complete user journey (browse → cart → payment → confirmation)
 - Payment processing with Stripe test cards
@@ -70,15 +76,18 @@ Simulates peak ticket purchasing scenarios with:
 - Realistic user behavior patterns
 
 **Key Metrics**:
+
 - Payment success rate > 95%
 - Checkout completion rate > 90%
 - P95 response time < 500ms
 - Error rate < 1%
 
 ### 2. Check-in Rush Test (`check-in`)
+
 **File**: `tests/load/k6-check-in-rush.js`
 
 Tests QR code validation during event entry:
+
 - 15 QR validations per second sustained
 - 50-75 concurrent check-in devices
 - Duplicate scan detection
@@ -86,15 +95,18 @@ Tests QR code validation during event entry:
 - Mobile device performance simulation
 
 **Key Metrics**:
+
 - Check-in success rate > 98%
 - QR validation time < 100ms (P95)
 - Duplicate detection accuracy
 - Offline sync performance
 
 ### 3. Sustained Load Test (`sustained`)
+
 **File**: `tests/load/k6-sustained-load.js`
 
 Long-running stability test:
+
 - 30 minutes duration
 - 100 concurrent users
 - System stability validation
@@ -102,21 +114,25 @@ Long-running stability test:
 - Resource utilization monitoring
 
 **Key Metrics**:
+
 - P95 response time < 300ms
 - Error rate < 0.5%
 - Stable memory usage
 - No performance degradation over time
 
 ### 4. Stress Test (`stress`)
+
 **File**: `tests/load/k6-stress-test.js`
 
 Breaking point analysis:
+
 - Up to 500 concurrent users
 - System capacity limits
 - Graceful degradation testing
 - Recovery behavior validation
 
 **Key Metrics**:
+
 - Graceful handling of overload
 - P95 response time < 1000ms under stress
 - Error rate < 5% at breaking point
@@ -182,6 +198,7 @@ node scripts/performance-test-runner.js \
 ### Baseline Storage
 
 Baselines are stored in:
+
 ```
 reports/performance-baselines/performance-baselines.json
 ```
@@ -189,7 +206,7 @@ reports/performance-baselines/performance-baselines.json
 ### Regression Thresholds
 
 - **Response Time**: > 10% increase = regression
-- **Error Rate**: > 2% increase = regression  
+- **Error Rate**: > 2% increase = regression
 - **Throughput**: > 15% decrease = regression
 - **Success Rate**: > 5% decrease = regression
 
@@ -264,12 +281,14 @@ The system includes a comprehensive GitHub Actions workflow:
 **File**: `.github/workflows/performance-tests.yml`
 
 **Triggers**:
+
 - Pull requests to main
 - Pushes to main (baseline updates)
 - Manual workflow dispatch
 - Scheduled runs (daily at 2 AM UTC)
 
 **Features**:
+
 - Multi-environment support (staging/production)
 - Parallel test execution
 - Automatic baseline updates
@@ -280,6 +299,7 @@ The system includes a comprehensive GitHub Actions workflow:
 ### Performance Gates
 
 Tests fail the CI/CD pipeline when:
+
 - Any critical regressions detected (>25% degradation)
 - Multiple warning regressions (>3)
 - Overall test status is FAIL
@@ -288,6 +308,7 @@ Tests fail the CI/CD pipeline when:
 ### PR Integration
 
 Automatic PR comments include:
+
 - 📊 Test execution summary
 - 📈 Regression analysis
 - 🚨 Critical issue alerts
@@ -309,13 +330,13 @@ Edit `config/performance-thresholds.json` to customize:
       },
       "success_rates": {
         "ticket_purchase_min": 0.95,
-        "checkout_completion_min": 0.90
+        "checkout_completion_min": 0.9
       }
     }
   },
   "regressionThresholds": {
     "response_time_degradation": {
-      "warning": 0.10,
+      "warning": 0.1,
       "critical": 0.25
     }
   }
@@ -341,6 +362,7 @@ NODE_ENV=test|staging|production
 ### Common Issues
 
 **K6 Not Found**:
+
 ```bash
 # Install K6
 npm run k6:install
@@ -348,6 +370,7 @@ npm run k6:check
 ```
 
 **Target System Not Available**:
+
 ```bash
 # Check system health first
 curl -f http://localhost:3000/api/health/check
@@ -357,12 +380,14 @@ node scripts/performance-test-runner.js --skip-health-check
 ```
 
 **Memory Issues During Tests**:
+
 ```bash
 # Run tests sequentially instead of parallel
 node scripts/performance-test-runner.js --tests=ticket-sales,check-in
 ```
 
 **No Baseline Found**:
+
 ```bash
 # First run will establish baseline
 node scripts/performance-test-runner.js --update-baselines
@@ -379,6 +404,7 @@ node scripts/performance-test-runner.js --verbose
 ### Log Files
 
 Check log files in the reports directory:
+
 ```
 reports/load-test-results/
 ├── test-id-log.txt           # Execution logs
@@ -431,21 +457,21 @@ Create new K6 tests in `tests/load/`:
 
 ```javascript
 // tests/load/k6-custom-test.js
-import http from 'k6/http';
-import { check } from 'k6';
+import http from "k6/http";
+import { check } from "k6";
 
 export let options = {
   stages: [
-    { duration: '2m', target: 50 },
-    { duration: '5m', target: 50 },
-    { duration: '2m', target: 0 },
+    { duration: "2m", target: 50 },
+    { duration: "5m", target: 50 },
+    { duration: "2m", target: 0 },
   ],
 };
 
-export default function() {
-  let response = http.get('http://test.k6.io');
+export default function () {
+  let response = http.get("http://test.k6.io");
   check(response, {
-    'status is 200': (r) => r.status === 200,
+    "status is 200": (r) => r.status === 200,
   });
 }
 ```
@@ -455,18 +481,18 @@ Add to `TEST_CONFIGURATIONS` in `performance-test-runner.js`:
 ```javascript
 const TEST_CONFIGURATIONS = {
   // ... existing tests
-  'custom': {
-    file: 'k6-custom-test.js',
-    name: 'Custom Test',
-    description: 'Custom performance test',
-    duration: '9m',
+  custom: {
+    file: "k6-custom-test.js",
+    name: "Custom Test",
+    description: "Custom performance test",
+    duration: "9m",
     peakVUs: 50,
     priority: 5,
-    tags: ['custom'],
+    tags: ["custom"],
     thresholds: {
-      'http_req_duration': { p95: 300 }
-    }
-  }
+      http_req_duration: { p95: 300 },
+    },
+  },
 };
 ```
 
@@ -513,4 +539,4 @@ Use test results for capacity planning:
 
 ---
 
-*Generated by A Lo Cubano Performance Test Runner v1.0.0*
+_Generated by A Lo Cubano Performance Test Runner v1.0.0_

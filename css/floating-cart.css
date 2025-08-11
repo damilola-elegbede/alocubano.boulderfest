@@ -565,20 +565,20 @@
   .cart-checkout-btn {
     transition: none;
   }
-  
+
   /* Disable animations for checkout overlays */
   .checkout-email-modal,
   .checkout-loading-overlay,
   .checkout-error-message {
     animation: none;
   }
-  
+
   .checkout-loading-content,
   .checkout-email-content,
   .checkout-error-content {
     animation: none;
   }
-  
+
   /* Stop spinner rotation for reduced motion */
   .checkout-loading-spinner {
     animation: none;

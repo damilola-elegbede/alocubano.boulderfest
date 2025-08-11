@@ -4,22 +4,76 @@
  */
 
 import { getBrevoService } from "./brevo-service.js";
+import { getDatabase } from "./database.js";
 import { createHmac, randomBytes } from "crypto";
 
 class EmailSubscriberService {
   constructor() {
     this.brevoService = getBrevoService();
+    this.database = getDatabase();
+    this.initialized = false;
   }
 
   /**
-   * Get database connection (placeholder - implement based on your DB setup)
+   * Ensure service is properly initialized
+   * @returns {Promise<EmailSubscriberService>} This service instance
+   */
+  async ensureInitialized() {
+    // Return immediately if already initialized (fast path)
+    if (this.initialized) {
+      return this;
+    }
+
+    // If initialization is already in progress, return the existing promise
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    // Start new initialization
+    this.initializationPromise = this._performInitialization();
+
+    try {
+      await this.initializationPromise;
+      return this;
+    } catch (error) {
+      // Clear the failed promise so next call can retry
+      this.initializationPromise = null;
+      throw error;
+    }
+  }
+
+  /**
+   * Perform the actual service initialization
+   */
+  async _performInitialization() {
+    try {
+      // Test database connection first
+      await this.database.testConnection();
+
+      // Initialize Brevo service if it has an ensureInitialized method
+      if (this.brevoService.ensureInitialized) {
+        await this.brevoService.ensureInitialized();
+      }
+
+      this.initialized = true;
+      return this;
+    } catch (error) {
+      console.error("EmailSubscriberService initialization failed:", {
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      throw new Error(
+        `Email subscriber service initialization failed: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Get database client
    */
   async getDb() {
-    // This would be replaced with your actual database connection
-    // For now, we'll simulate database operations
-    throw new Error(
-      "Database connection not implemented - please configure your database",
-    );
+    await this.ensureInitialized();
+    return this.database;
   }
 
   /**
@@ -40,6 +94,8 @@ class EmailSubscriberService {
     } = subscriberData;
 
     try {
+      const db = await this.getDb();
+
       // Create in Brevo first
       const brevoResult = await this.brevoService.subscribeToNewsletter({
         email,
@@ -56,8 +112,7 @@ class EmailSubscriberService {
                     email, first_name, last_name, phone, status, brevo_contact_id,
                     list_ids, attributes, consent_date, consent_source, consent_ip,
                     verification_token
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-                RETURNING *
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
             `;
 
       const values = [
@@ -67,31 +122,31 @@ class EmailSubscriberService {
         phone || null,
         status,
         brevoResult.id || null,
-        listIds,
+        JSON.stringify(listIds),
         JSON.stringify(attributes),
-        new Date(),
+        new Date().toISOString(),
         consentSource,
         consentIp || null,
         verificationToken || null,
       ];
 
-      // Simulate database operation
+      const result = await db.execute(query, values);
       const subscriber = {
-        id: Math.floor(Math.random() * 10000),
+        id: result.lastInsertRowid,
         email,
-        first_name: firstName,
-        last_name: lastName,
-        phone,
+        first_name: firstName || null,
+        last_name: lastName || null,
+        phone: phone || null,
         status,
-        brevo_contact_id: brevoResult.id,
+        brevo_contact_id: brevoResult.id || null,
         list_ids: listIds,
         attributes,
-        consent_date: new Date(),
+        consent_date: new Date().toISOString(),
         consent_source: consentSource,
-        consent_ip: consentIp,
-        verification_token: verificationToken,
-        created_at: new Date(),
-        updated_at: new Date(),
+        consent_ip: consentIp || null,
+        verification_token: verificationToken || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
       // Log the event
@@ -116,7 +171,10 @@ class EmailSubscriberService {
 
       return subscriber;
     } catch (error) {
-      if (error.message.includes("duplicate key value")) {
+      if (
+        error.message.includes("UNIQUE constraint failed") ||
+        error.message.includes("duplicate key value")
+      ) {
         // Handle duplicate email
         throw new Error("Email address is already subscribed");
       }
@@ -128,28 +186,39 @@ class EmailSubscriberService {
    * Get subscriber by email
    */
   async getSubscriberByEmail(email) {
-    const query = "SELECT * FROM email_subscribers WHERE email = $1";
+    const db = await this.getDb();
+    const query = "SELECT * FROM email_subscribers WHERE email = ?1";
 
-    // Simulate database operation
-    return {
-      id: 1,
-      email,
-      first_name: null,
-      last_name: null,
-      phone: null,
-      status: "active",
-      brevo_contact_id: "123",
-      list_ids: [1],
-      attributes: {},
-      consent_date: new Date(),
-      consent_source: "website",
-      consent_ip: null,
-      verification_token: null,
-      verified_at: new Date(),
-      unsubscribed_at: null,
-      created_at: new Date(),
-      updated_at: new Date(),
-    };
+    try {
+      const result = await db.execute(query, [email]);
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const row = result.rows[0];
+      return {
+        id: row.id,
+        email: row.email,
+        first_name: row.first_name,
+        last_name: row.last_name,
+        phone: row.phone,
+        status: row.status,
+        brevo_contact_id: row.brevo_contact_id,
+        list_ids: row.list_ids ? JSON.parse(row.list_ids) : [],
+        attributes: row.attributes ? JSON.parse(row.attributes) : {},
+        consent_date: row.consent_date,
+        consent_source: row.consent_source,
+        consent_ip: row.consent_ip,
+        verification_token: row.verification_token,
+        verified_at: row.verified_at,
+        unsubscribed_at: row.unsubscribed_at,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+      };
+    } catch (error) {
+      throw new Error(`Failed to get subscriber: ${error.message}`);
+    }
   }
 
   /**
@@ -173,39 +242,39 @@ class EmailSubscriberService {
     let paramCount = 1;
 
     if (firstName !== undefined) {
-      updates.push(`first_name = $${paramCount++}`);
+      updates.push(`first_name = ?${paramCount++}`);
       values.push(firstName);
     }
     if (lastName !== undefined) {
-      updates.push(`last_name = $${paramCount++}`);
+      updates.push(`last_name = ?${paramCount++}`);
       values.push(lastName);
     }
     if (phone !== undefined) {
-      updates.push(`phone = $${paramCount++}`);
+      updates.push(`phone = ?${paramCount++}`);
       values.push(phone);
     }
     if (status !== undefined) {
-      updates.push(`status = $${paramCount++}`);
+      updates.push(`status = ?${paramCount++}`);
       values.push(status);
     }
     if (listIds !== undefined) {
-      updates.push(`list_ids = $${paramCount++}`);
-      values.push(listIds);
+      updates.push(`list_ids = ?${paramCount++}`);
+      values.push(JSON.stringify(listIds));
     }
     if (attributes !== undefined) {
-      updates.push(`attributes = $${paramCount++}`);
+      updates.push(`attributes = ?${paramCount++}`);
       values.push(JSON.stringify(attributes));
     }
     if (verificationToken !== undefined) {
-      updates.push(`verification_token = $${paramCount++}`);
+      updates.push(`verification_token = ?${paramCount++}`);
       values.push(verificationToken);
     }
     if (verifiedAt !== undefined) {
-      updates.push(`verified_at = $${paramCount++}`);
+      updates.push(`verified_at = ?${paramCount++}`);
       values.push(verifiedAt);
     }
     if (unsubscribedAt !== undefined) {
-      updates.push(`unsubscribed_at = $${paramCount++}`);
+      updates.push(`unsubscribed_at = ?${paramCount++}`);
       values.push(unsubscribedAt);
     }
 
@@ -218,13 +287,18 @@ class EmailSubscriberService {
     const query = `
             UPDATE email_subscribers 
             SET ${updates.join(", ")}, updated_at = CURRENT_TIMESTAMP
-            WHERE email = $${paramCount}
-            RETURNING *
+            WHERE email = ?${paramCount}
         `;
 
-    // Simulate database operation
+    const db = await this.getDb();
+    await db.execute(query, values);
+
+    // Get updated subscriber
     const updatedSubscriber = await this.getSubscriberByEmail(email);
-    Object.assign(updatedSubscriber, updateData);
+
+    if (!updatedSubscriber) {
+      throw new Error("Subscriber not found after update");
+    }
 
     // Audit log
     await this.auditLog(
@@ -304,30 +378,37 @@ class EmailSubscriberService {
    * Log email event
    */
   async logEmailEvent(subscriberId, eventType, eventData, brevoEventId = null) {
-    const query = `
-            INSERT INTO email_events (subscriber_id, event_type, event_data, brevo_event_id, occurred_at)
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING *
-        `;
+    try {
+      const db = await this.getDb();
+      const query = `
+              INSERT INTO email_events (subscriber_id, event_type, event_data, brevo_event_id, occurred_at)
+              VALUES (?1, ?2, ?3, ?4, ?5)
+          `;
 
-    const values = [
-      subscriberId,
-      eventType,
-      JSON.stringify(eventData),
-      brevoEventId,
-      new Date(),
-    ];
+      const values = [
+        subscriberId,
+        eventType,
+        JSON.stringify(eventData),
+        brevoEventId,
+        new Date().toISOString(),
+      ];
 
-    // Simulate database operation
-    return {
-      id: Math.floor(Math.random() * 10000),
-      subscriber_id: subscriberId,
-      event_type: eventType,
-      event_data: eventData,
-      brevo_event_id: brevoEventId,
-      occurred_at: new Date(),
-      created_at: new Date(),
-    };
+      const result = await db.execute(query, values);
+
+      return {
+        id: result.lastInsertRowid,
+        subscriber_id: subscriberId,
+        event_type: eventType,
+        event_data: eventData,
+        brevo_event_id: brevoEventId,
+        occurred_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error(`Failed to log email event: ${error.message}`);
+      // Don't throw - logging failure shouldn't break the main operation
+      return null;
+    }
   }
 
   /**
@@ -343,86 +424,114 @@ class EmailSubscriberService {
     ipAddress = null,
     userAgent = null,
   ) {
-    const query = `
-            INSERT INTO email_audit_log (entity_type, entity_id, action, actor_type, actor_id, changes, ip_address, user_agent)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING *
-        `;
+    try {
+      const db = await this.getDb();
+      const query = `
+              INSERT INTO email_audit_log (entity_type, entity_id, action, actor_type, actor_id, changes, ip_address, user_agent, created_at)
+              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+          `;
 
-    const values = [
-      entityType,
-      entityId,
-      action,
-      actorType,
-      actorId,
-      JSON.stringify(changes),
-      ipAddress,
-      userAgent,
-    ];
+      const values = [
+        entityType,
+        entityId,
+        action,
+        actorType,
+        actorId,
+        JSON.stringify(changes),
+        ipAddress,
+        userAgent,
+        new Date().toISOString(),
+      ];
 
-    // Simulate database operation
-    return {
-      id: Math.floor(Math.random() * 10000),
-      entity_type: entityType,
-      entity_id: entityId,
-      action,
-      actor_type: actorType,
-      actor_id: actorId,
-      changes,
-      ip_address: ipAddress,
-      user_agent: userAgent,
-      created_at: new Date(),
-    };
+      const result = await db.execute(query, values);
+
+      return {
+        id: result.lastInsertRowid,
+        entity_type: entityType,
+        entity_id: entityId,
+        action,
+        actor_type: actorType,
+        actor_id: actorId,
+        changes,
+        ip_address: ipAddress,
+        user_agent: userAgent,
+        created_at: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error(`Failed to create audit log: ${error.message}`);
+      // Don't throw - audit logging failure shouldn't break the main operation
+      return null;
+    }
   }
 
   /**
    * Get subscriber statistics
    */
   async getSubscriberStats() {
-    const query = `
-            SELECT 
-                COUNT(*) as total,
-                COUNT(*) FILTER (WHERE status = 'active') as active,
-                COUNT(*) FILTER (WHERE status = 'pending') as pending,
-                COUNT(*) FILTER (WHERE status = 'unsubscribed') as unsubscribed,
-                COUNT(*) FILTER (WHERE status = 'bounced') as bounced
-            FROM email_subscribers
-        `;
+    try {
+      const db = await this.getDb();
+      const query = `
+              SELECT 
+                  COUNT(*) as total,
+                  SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+                  SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+                  SUM(CASE WHEN status = 'unsubscribed' THEN 1 ELSE 0 END) as unsubscribed,
+                  SUM(CASE WHEN status = 'bounced' THEN 1 ELSE 0 END) as bounced
+              FROM email_subscribers
+          `;
 
-    // Simulate database operation
-    return {
-      total: 1250,
-      active: 1100,
-      pending: 50,
-      unsubscribed: 75,
-      bounced: 25,
-    };
+      const result = await db.execute(query);
+      const row = result.rows[0];
+
+      return {
+        total: Number(row.total) || 0,
+        active: Number(row.active) || 0,
+        pending: Number(row.pending) || 0,
+        unsubscribed: Number(row.unsubscribed) || 0,
+        bounced: Number(row.bounced) || 0,
+      };
+    } catch (error) {
+      console.error(`Failed to get subscriber stats: ${error.message}`);
+      // Return default stats on error
+      return {
+        total: 0,
+        active: 0,
+        pending: 0,
+        unsubscribed: 0,
+        bounced: 0,
+      };
+    }
   }
 
   /**
    * Get recent events
    */
   async getRecentEvents(limit = 100) {
-    const query = `
-            SELECT e.*, s.email
-            FROM email_events e
-            JOIN email_subscribers s ON e.subscriber_id = s.id
-            ORDER BY e.occurred_at DESC
-            LIMIT $1
-        `;
+    try {
+      const db = await this.getDb();
+      const query = `
+              SELECT e.*, s.email
+              FROM email_events e
+              JOIN email_subscribers s ON e.subscriber_id = s.id
+              ORDER BY e.occurred_at DESC
+              LIMIT ?1
+          `;
 
-    // Simulate database operation
-    return [
-      {
-        id: 1,
-        subscriber_id: 1,
-        event_type: "subscribed",
-        event_data: { source: "website" },
-        brevo_event_id: null,
-        occurred_at: new Date(),
-        email: "test@example.com",
-      },
-    ];
+      const result = await db.execute(query, [limit]);
+
+      return result.rows.map((row) => ({
+        id: row.id,
+        subscriber_id: row.subscriber_id,
+        event_type: row.event_type,
+        event_data: row.event_data ? JSON.parse(row.event_data) : {},
+        brevo_event_id: row.brevo_event_id,
+        occurred_at: row.occurred_at,
+        email: row.email,
+      }));
+    } catch (error) {
+      console.error(`Failed to get recent events: ${error.message}`);
+      return [];
+    }
   }
 
   /**
@@ -436,9 +545,16 @@ class EmailSubscriberService {
     let subscriber;
     try {
       subscriber = await this.getSubscriberByEmail(processedEvent.email);
+      if (!subscriber) {
+        console.warn(
+          `Subscriber not found for webhook event: ${processedEvent.email}`,
+        );
+        return null;
+      }
     } catch (error) {
       console.warn(
-        `Subscriber not found for webhook event: ${processedEvent.email}`,
+        `Error finding subscriber for webhook event: ${processedEvent.email}`,
+        error.message,
       );
       return null;
     }
@@ -456,12 +572,26 @@ class EmailSubscriberService {
       processedEvent.eventType === "hard_bounce" ||
       processedEvent.eventType === "spam"
     ) {
-      await this.updateSubscriber(processedEvent.email, { status: "bounced" });
+      try {
+        await this.updateSubscriber(processedEvent.email, {
+          status: "bounced",
+        });
+      } catch (error) {
+        console.error(
+          `Failed to update subscriber status to bounced: ${error.message}`,
+        );
+      }
     } else if (processedEvent.eventType === "unsubscribed") {
-      await this.updateSubscriber(processedEvent.email, {
-        status: "unsubscribed",
-        unsubscribedAt: processedEvent.occurredAt,
-      });
+      try {
+        await this.updateSubscriber(processedEvent.email, {
+          status: "unsubscribed",
+          unsubscribedAt: processedEvent.occurredAt,
+        });
+      } catch (error) {
+        console.error(
+          `Failed to update subscriber status to unsubscribed: ${error.message}`,
+        );
+      }
     }
 
     return processedEvent;
@@ -510,6 +640,13 @@ export function getEmailSubscriberService() {
     emailSubscriberServiceInstance = new EmailSubscriberService();
   }
   return emailSubscriberServiceInstance;
+}
+
+/**
+ * Reset singleton instance for testing
+ */
+export function resetEmailSubscriberService() {
+  emailSubscriberServiceInstance = null;
 }
 
 export { EmailSubscriberService };

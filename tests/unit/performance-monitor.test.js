@@ -23,6 +23,13 @@ if (
   });
 }
 
+// Mock PerformanceObserver before using it
+const mockPerformanceObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  disconnect: vi.fn(),
+}));
+global.PerformanceObserver = mockPerformanceObserver;
+
 // Mock window and document with vi functions
 const mockWindowAddEventListener = vi.fn();
 const mockDocumentAddEventListener = vi.fn();
@@ -41,6 +48,7 @@ global.window = {
   },
   innerWidth: 1920,
   innerHeight: 1080,
+  PerformanceObserver: mockPerformanceObserver,
 };
 
 // Also set global screen for getBrowserInfo method
@@ -118,11 +126,11 @@ describe("Advanced Performance Monitor", () => {
     });
 
     test("should initialize observers when PerformanceObserver is available", () => {
-      expect(PerformanceObserver).toHaveBeenCalled();
+      expect(mockPerformanceObserver).toHaveBeenCalled();
       // PerformanceObserver may be called different numbers of times due to error handling in test environment
-      expect(
-        global.PerformanceObserver.mock.calls.length,
-      ).toBeGreaterThanOrEqual(1);
+      expect(mockPerformanceObserver.mock.calls.length).toBeGreaterThanOrEqual(
+        1,
+      );
     });
 
     test("should set up event listeners", () => {

@@ -7,7 +7,10 @@ import { getDatabase } from "../lib/database.js";
 import { withSecurityHeaders } from "../lib/security-headers.js";
 import { getMfaRateLimitService } from "../lib/mfa-rate-limit-service.js";
 import { verifyMfaCode } from "../lib/mfa-middleware.js";
-import { encryptSecret, decryptSecret } from "../lib/security/encryption-utils.js";
+import {
+  encryptSecret,
+  decryptSecret,
+} from "../lib/security/encryption-utils.js";
 
 /**
  * MFA Setup and Management Endpoint
@@ -115,8 +118,9 @@ async function handleGenerateSecret(req, res) {
     });
 
     if (existingConfig.rows[0]?.is_enabled) {
-      return res.status(409).json({ 
-        error: "MFA is already enabled. Disable it first to generate a new secret." 
+      return res.status(409).json({
+        error:
+          "MFA is already enabled. Disable it first to generate a new secret.",
       });
     }
 
@@ -167,7 +171,8 @@ async function handleVerifySetup(req, res) {
   const db = getDatabase();
   const adminId = req.admin?.id || "admin";
   const { token, deviceName } = req.body || {};
-  const clientIP = req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
+  const clientIP =
+    req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
 
   if (!token || typeof token !== "string" || !/^\d{6}$/.test(token)) {
     return res.status(400).json({ error: "Invalid TOTP code format" });
@@ -176,7 +181,10 @@ async function handleVerifySetup(req, res) {
   try {
     // Check rate limiting
     const rateLimitService = getMfaRateLimitService();
-    const rateLimitResult = await rateLimitService.checkRateLimit(adminId, clientIP);
+    const rateLimitResult = await rateLimitService.checkRateLimit(
+      adminId,
+      clientIP,
+    );
 
     if (rateLimitResult.isLocked) {
       return res.status(429).json({
@@ -192,7 +200,9 @@ async function handleVerifySetup(req, res) {
     });
 
     if (!secretResult.rows[0]) {
-      return res.status(400).json({ error: "No MFA secret found. Generate a secret first." });
+      return res
+        .status(400)
+        .json({ error: "No MFA secret found. Generate a secret first." });
     }
 
     if (secretResult.rows[0].is_enabled) {
@@ -212,7 +222,13 @@ async function handleVerifySetup(req, res) {
     });
 
     // Log the attempt
-    await logMfaAttempt(adminId, "totp", verified, req, verified ? null : "invalid_code");
+    await logMfaAttempt(
+      adminId,
+      "totp",
+      verified,
+      req,
+      verified ? null : "invalid_code",
+    );
 
     if (!verified) {
       await rateLimitService.recordFailedAttempt(adminId, clientIP);
@@ -265,7 +281,9 @@ async function handleGenerateBackupCodes(req, res) {
     });
 
     if (!mfaConfig.rows[0]?.is_enabled) {
-      return res.status(400).json({ error: "MFA must be enabled to generate backup codes" });
+      return res
+        .status(400)
+        .json({ error: "MFA must be enabled to generate backup codes" });
     }
 
     // Invalidate existing unused backup codes
@@ -283,13 +301,17 @@ async function handleGenerateBackupCodes(req, res) {
     });
 
     // Set cache control headers to prevent caching of backup codes
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    res.setHeader(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, proxy-revalidate",
+    );
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
 
     res.status(200).json({
       backupCodes,
-      message: "New backup codes generated. Store them securely - they won't be shown again.",
+      message:
+        "New backup codes generated. Store them securely - they won't be shown again.",
     });
   } catch (error) {
     console.error("Error generating backup codes:", error);
@@ -308,19 +330,23 @@ async function handleDisableMfa(req, res) {
   try {
     // Require current TOTP or backup code to disable MFA
     if (!confirmationCode || typeof confirmationCode !== "string") {
-      return res.status(400).json({ 
-        error: "Current TOTP code or backup code required to disable MFA" 
+      return res.status(400).json({
+        error: "Current TOTP code or backup code required to disable MFA",
       });
     }
 
     // Verify the confirmation code using the middleware version
-    const verificationResult = await verifyMfaCode(adminId, confirmationCode, req);
+    const verificationResult = await verifyMfaCode(
+      adminId,
+      confirmationCode,
+      req,
+    );
 
     if (!verificationResult.success) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         error: verificationResult.error || "Invalid confirmation code",
         rateLimited: verificationResult.rateLimited,
-        remainingTime: verificationResult.remainingTime
+        remainingTime: verificationResult.remainingTime,
       });
     }
 
@@ -360,8 +386,9 @@ async function handleResetMfa(req, res) {
     const { emergencyReset } = req.body || {};
 
     if (!emergencyReset || emergencyReset !== "CONFIRM_RESET_MFA") {
-      return res.status(400).json({ 
-        error: "Emergency MFA reset requires confirmation: { emergencyReset: 'CONFIRM_RESET_MFA' }" 
+      return res.status(400).json({
+        error:
+          "Emergency MFA reset requires confirmation: { emergencyReset: 'CONFIRM_RESET_MFA' }",
       });
     }
 
@@ -406,7 +433,7 @@ async function generateBackupCodes(db, adminId) {
     // Generate a 8-character alphanumeric code
     const code = crypto.randomBytes(4).toString("hex").toUpperCase();
     codes.push(code);
-    
+
     // Hash the code for storage
     const hash = await bcrypt.hash(code, 10);
     codeHashes.push(hash);
@@ -423,15 +450,20 @@ async function generateBackupCodes(db, adminId) {
   return codes;
 }
 
-
-
 /**
  * Log MFA attempt
  */
-async function logMfaAttempt(adminId, attemptType, success, req, errorReason = null) {
+async function logMfaAttempt(
+  adminId,
+  attemptType,
+  success,
+  req,
+  errorReason = null,
+) {
   try {
     const db = getDatabase();
-    const clientIP = req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
+    const clientIP =
+      req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
     const userAgent = req.headers["user-agent"];
     const sessionToken = authService.getSessionFromRequest(req);
 
@@ -439,7 +471,15 @@ async function logMfaAttempt(adminId, attemptType, success, req, errorReason = n
       sql: `INSERT INTO admin_mfa_attempts 
             (admin_id, attempt_type, success, ip_address, user_agent, error_reason, session_token) 
             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      args: [adminId, attemptType, success, clientIP, userAgent, errorReason, sessionToken],
+      args: [
+        adminId,
+        attemptType,
+        success,
+        clientIP,
+        userAgent,
+        errorReason,
+        sessionToken,
+      ],
     });
   } catch (error) {
     console.error("Failed to log MFA attempt:", error);
@@ -452,7 +492,8 @@ async function logMfaAttempt(adminId, attemptType, success, req, errorReason = n
 async function logMfaEvent(adminId, eventType, req, details = null) {
   try {
     const db = getDatabase();
-    const clientIP = req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
+    const clientIP =
+      req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
     const userAgent = req.headers["user-agent"];
     const sessionToken = authService.getSessionFromRequest(req);
 
@@ -465,7 +506,7 @@ async function logMfaEvent(adminId, eventType, req, details = null) {
         eventType,
         clientIP,
         userAgent,
-        JSON.stringify({ 
+        JSON.stringify({
           timestamp: new Date().toISOString(),
           details: details || {},
         }),
@@ -478,8 +519,8 @@ async function logMfaEvent(adminId, eventType, req, details = null) {
 }
 
 // Apply auth middleware and security headers
-const protectedHandler = authService.requireAuth ? 
-  authService.requireAuth(mfaSetupHandler) : 
-  mfaSetupHandler;
+const protectedHandler = authService.requireAuth
+  ? authService.requireAuth(mfaSetupHandler)
+  : mfaSetupHandler;
 
 export default withSecurityHeaders(protectedHandler);

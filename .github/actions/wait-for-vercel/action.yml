@@ -1,37 +1,37 @@
 ---
-name: 'Wait for Vercel Deployment'
-description: 'Wait for Vercel deployment to complete and return deployment URL'
+name: "Wait for Vercel Deployment"
+description: "Wait for Vercel deployment to complete and return deployment URL"
 
 inputs:
   github-token:
-    description: 'GitHub token for API access'
+    description: "GitHub token for API access"
     required: true
     default: ${{ github.token }}
   timeout-minutes:
-    description: 'Maximum time to wait for deployment (minutes)'
+    description: "Maximum time to wait for deployment (minutes)"
     required: false
-    default: '10'
+    default: "10"
   check-interval:
-    description: 'Interval between checks (seconds)'
+    description: "Interval between checks (seconds)"
     required: false
-    default: '10'
+    default: "10"
 
 outputs:
   deployment-url:
-    description: 'URL of the deployed application'
+    description: "URL of the deployed application"
     value: ${{ steps.get-deployment.outputs.deployment-url }}
   deployment-id:
-    description: 'GitHub deployment ID'
+    description: "GitHub deployment ID"
     value: ${{ steps.get-deployment.outputs.deployment-id }}
   environment:
-    description: 'Deployment environment (Production/Preview)'
+    description: "Deployment environment (Production/Preview)"
     value: ${{ steps.get-deployment.outputs.environment }}
   ready:
-    description: 'Whether deployment is ready'
+    description: "Whether deployment is ready"
     value: ${{ steps.verify-ready.outputs.ready }}
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: 🔍 Detect Vercel Deployment
       id: get-deployment

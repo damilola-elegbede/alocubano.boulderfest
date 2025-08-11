@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Ticket Sales Load Test Report</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .metric {
+        margin: 10px 0;
+        padding: 10px;
+        background: #f0f0f0;
+      }
+      .success {
+        color: green;
+      }
+      .failure {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Ticket Sales Load Test Report</h1>
+    <div class="metrics">
+      <div class="metric">
+        <strong>payment_processing_duration:</strong>
+        {"thresholds":{"avg<1000":{"ok":true},"p(95)<2000":{"ok":true}},"type":"trend","contains":"default","values":{"max":0,"p(90)":0,"p(95)":0,"avg":0,"min":0,"med":0}}
+      </div>
+      <div class="metric">
+        <strong>ticket_purchase_success:</strong>
+        {"thresholds":{"rate>0.85":{"ok":true}},"type":"rate","contains":"default","values":{"rate":0,"passes":0,"fails":0}}
+      </div>
+      <div class="metric">
+        <strong>http_req_tls_handshaking:</strong>
+        {"type":"trend","contains":"time","values":{"p(90)":0,"p(95)":0,"avg":0,"min":0,"med":0,"max":0}}
+      </div>
+      <div class="metric">
+        <strong>api_errors:</strong>
+        {"values":{"rate":0,"passes":0,"fails":0},"thresholds":{"rate<0.05":{"ok":true}},"type":"rate","contains":"default"}
+      </div>
+      <div class="metric">
+        <strong>http_req_blocked:</strong>
+        {"contains":"time","values":{"max":0.8,"p(90)":0.8,"p(95)":0.8,"avg":0.8,"min":0.8,"med":0.8},"type":"trend"}
+      </div>
+      <div class="metric">
+        <strong>data_sent:</strong>
+        {"values":{"count":86,"rate":34.708180879666735},"type":"counter","contains":"data"}
+      </div>
+      <div class="metric">
+        <strong>http_req_duration{name:payment}:</strong>
+        {"type":"trend","contains":"time","values":{"p(90)":0,"p(95)":0,"avg":0,"min":0,"med":0,"max":0},"thresholds":{"p(95)<1500":{"ok":true}}}
+      </div>
+      <div class="metric">
+        <strong>http_req_failed:</strong>
+        {"type":"rate","contains":"default","values":{"rate":1,"passes":1,"fails":0},"thresholds":{"rate<0.05":{"ok":false}}}
+      </div>
+      <div class="metric">
+        <strong>http_req_connecting:</strong>
+        {"type":"trend","contains":"time","values":{"p(90)":0.164,"p(95)":0.164,"avg":0.164,"min":0.164,"med":0.164,"max":0.164}}
+      </div>
+      <div class="metric">
+        <strong>vus_max:</strong>
+        {"values":{"value":150,"min":150,"max":150},"type":"gauge","contains":"default"}
+      </div>
+      <div class="metric">
+        <strong>checkout_completion:</strong>
+        {"type":"rate","contains":"default","values":{"rate":0,"passes":0,"fails":0},"thresholds":{"rate>0.80":{"ok":true}}}
+      </div>
+      <div class="metric">
+        <strong>http_req_duration{name:cart}:</strong>
+        {"thresholds":{"p(95)<800":{"ok":true}},"type":"trend","contains":"time","values":{"avg":0,"min":0,"med":0,"max":0,"p(90)":0,"p(95)":0}}
+      </div>
+      <div class="metric">
+        <strong>http_req_receiving:</strong>
+        {"type":"trend","contains":"time","values":{"avg":0.192,"min":0.192,"med":0.192,"max":0.192,"p(90)":0.192,"p(95)":0.192}}
+      </div>
+      <div class="metric">
+        <strong>data_received:</strong>
+        {"contains":"data","values":{"count":3318,"rate":1339.0900483573748},"type":"counter"}
+      </div>
+      <div class="metric">
+        <strong>http_reqs:</strong>
+        {"type":"counter","contains":"default","values":{"count":1,"rate":0.403583498600776}}
+      </div>
+      <div class="metric">
+        <strong>http_req_waiting:</strong>
+        {"contains":"time","values":{"med":2474.747,"max":2474.747,"p(90)":2474.747,"p(95)":2474.747,"avg":2474.747,"min":2474.747},"type":"trend"}
+      </div>
+      <div class="metric">
+        <strong>http_req_sending:</strong>
+        {"contains":"time","values":{"avg":0.019,"min":0.019,"med":0.019,"max":0.019,"p(90)":0.019,"p(95)":0.019},"type":"trend"}
+      </div>
+      <div class="metric">
+        <strong>http_req_duration:</strong>
+        {"type":"trend","contains":"time","values":{"max":2474.958,"p(90)":2474.958,"p(95)":2474.958,"avg":2474.958,"min":2474.958,"med":2474.958},"thresholds":{"p(95)<2000":{"ok":false},"p(99)<5000":{"ok":true}}}
+      </div>
+      <div class="metric">
+        <strong>vus:</strong>
+        {"type":"gauge","contains":"default","values":{"value":0,"min":0,"max":0}}
+      </div>
+    </div>
+  </body>
+</html>

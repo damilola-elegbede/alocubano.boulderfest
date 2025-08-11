@@ -216,15 +216,15 @@
             </div>
           </div>
 
-          <dl class="ticket-details">
+          <dl class="ticket-details" data-testid="ticket-details">
             <dt>Ticket ID</dt>
-            <dd id="ticket-id">—</dd>
+            <dd id="ticket-id" data-testid="ticket-id">—</dd>
 
             <dt>Ticket Type</dt>
-            <dd id="ticket-type">—</dd>
+            <dd id="ticket-type" data-testid="ticket-type">—</dd>
 
             <dt>Attendee Name</dt>
-            <dd id="attendee-name">—</dd>
+            <dd id="attendee-name" data-testid="customer-name">—</dd>
 
             <dt>Event Dates</dt>
             <dd>May 15-17, 2026</dd>
@@ -233,13 +233,23 @@
             <dd>Avalon Ballroom<br />1320 Pearl Street, Boulder, CO</dd>
           </dl>
 
-          <div class="wallet-section">
+          <div class="wallet-section" data-testid="wallet-options">
             <h3>Add to Phone Wallet</h3>
             <div class="wallet-buttons">
-              <a href="#" id="apple-wallet-link" class="wallet-button apple">
+              <a
+                href="#"
+                id="apple-wallet-link"
+                class="wallet-button apple"
+                data-testid="add-to-apple-wallet"
+              >
                 <span>📱 Add to Apple Wallet</span>
               </a>
-              <a href="#" id="google-wallet-link" class="wallet-button google">
+              <a
+                href="#"
+                id="google-wallet-link"
+                class="wallet-button google"
+                data-testid="add-to-google-wallet"
+              >
                 <span>📱 Add to Google Wallet</span>
               </a>
             </div>

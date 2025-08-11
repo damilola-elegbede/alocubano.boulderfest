@@ -5,8 +5,8 @@ name: 🏥 Deployment Health Monitor
 # Focused on health validation and PR comments for development workflow
 on:
   pull_request:
-    branches: [main]  # Only monitor PRs to main branch
-    types: [opened, synchronize, reopened]  # Explicit PR events
+    branches: [main] # Only monitor PRs to main branch
+    types: [opened, synchronize, reopened] # Explicit PR events
 
 permissions:
   contents: read
@@ -19,7 +19,7 @@ jobs:
   watch-deployment:
     name: 🔍 Watch Vercel Deployment
     runs-on: ubuntu-latest
-    timeout-minutes: 20  # Prevent indefinite hanging
+    timeout-minutes: 20 # Prevent indefinite hanging
     # Conditional logic to prevent duplicate runs
     if: github.event_name == 'pull_request'
     steps:
@@ -41,13 +41,13 @@ jobs:
           ENVIRONMENT: ${{ steps.wait-deployment.outputs.environment }}
         run: |
           echo "🏥 Running comprehensive health checks on $ENVIRONMENT deployment..."
-          
+
           # Guard against missing deployment URL
           if [ -z "$DEPLOYMENT_URL" ] || [ "$DEPLOYMENT_URL" = "null" ]; then
             echo "❌ No deployment URL available"
             exit 1
           fi
-          
+
           echo "URL: $DEPLOYMENT_URL"
 
           # Initialize health status tracking

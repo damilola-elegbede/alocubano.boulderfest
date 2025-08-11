@@ -210,12 +210,12 @@ function convertMetricsToCSV(metrics) {
 
   for (const [key, value] of Object.entries(metrics)) {
     let csvValue;
-    if (typeof value === 'object' && value !== null) {
-      csvValue = Array.isArray(value) 
-        ? `"${value.join(';')}"` 
+    if (typeof value === "object" && value !== null) {
+      csvValue = Array.isArray(value)
+        ? `"${value.join(";")}"`
         : `"${JSON.stringify(value).replace(/"/g, '""')}"`;
     } else {
-      csvValue = value?.toString() || '';
+      csvValue = value?.toString() || "";
     }
     rows.push([key, csvValue, timestamp]);
   }

@@ -5,6 +5,7 @@
 This guide covers deploying database migrations to production on Vercel using your existing migration system.
 
 Your migration system is already production-ready with:
+
 - ✅ **Atomic transactions** (BEGIN/COMMIT/ROLLBACK)
 - ✅ **Checksum verification** for data integrity
 - ✅ **Sequential execution** with proper ordering
@@ -107,7 +108,7 @@ Your current migration files:
 migrations/
 ├── 000_test.sql              # Test table (can be removed in prod)
 ├── 001_core_tables_simple.sql # Transactions table + triggers
-├── 002_tickets_table.sql      # Tickets table + triggers  
+├── 002_tickets_table.sql      # Tickets table + triggers
 ├── 003_transaction_items.sql  # Transaction items table
 ├── 004_payment_events.sql     # Payment events table
 └── 005_final_indexes.sql      # Performance indexes
@@ -119,6 +120,7 @@ migrations/
 ## 🛠️ Migration Commands
 
 ### **Local Development**
+
 ```bash
 npm run migrate:up          # Run local migrations
 npm run migrate:status      # Show migration status
@@ -126,6 +128,7 @@ npm run migrate:verify      # Verify migration integrity
 ```
 
 ### **Production Deployment**
+
 ```bash
 npm run migrate:prod:check    # Pre-flight checks
 npm run migrate:prod:dry-run  # Simulate deployment
@@ -133,6 +136,7 @@ npm run migrate:prod:deploy   # Execute migrations
 ```
 
 ### **Monitoring & Debugging**
+
 ```bash
 npm run test:db             # Test database connectivity
 curl https://your-app.vercel.app/api/test-db  # Production health check
@@ -152,12 +156,14 @@ Your migration system uses atomic transactions, so failed migrations automatical
 ### **If Migration Succeeds But Causes Issues**
 
 1. **Immediate Response**:
+
    ```bash
    # Restore from backup
    turso db restore prod-db backup-db
    ```
 
 2. **Create Rollback Migration**:
+
    ```sql
    -- migrations/006_rollback_feature.sql
    DROP TABLE IF EXISTS problematic_table;
@@ -176,7 +182,7 @@ Your migration system uses atomic transactions, so failed migrations automatical
 Your application includes comprehensive database monitoring:
 
 - **Connection Testing**: `/api/test-db` endpoint
-- **Migration Status**: Dynamic migration status tracking  
+- **Migration Status**: Dynamic migration status tracking
 - **Table Verification**: Automatic schema validation
 - **Performance Metrics**: Query execution timing
 
@@ -185,13 +191,14 @@ Your application includes comprehensive database monitoring:
 Access: `https://your-app.vercel.app/api/test-db`
 
 Returns:
+
 ```json
 {
   "status": "healthy",
   "tests": {
     "connection": { "status": "passed" },
     "tables": { "status": "passed" },
-    "migrations": { "status": "passed" }, 
+    "migrations": { "status": "passed" },
     "configuration": { "status": "passed" }
   },
   "summary": {
@@ -207,6 +214,7 @@ Returns:
 ### **Migration API Security**
 
 The `/api/migrate` endpoint includes:
+
 - **Authentication required** in production
 - **Secret key validation** (`MIGRATION_SECRET_KEY`)
 - **Method restrictions** (POST only)
@@ -222,6 +230,7 @@ The `/api/migrate` endpoint includes:
 ## 🚀 Quick Start for Production
 
 1. **Setup Turso Production Database**:
+
    ```bash
    turso db create alocubano-boulderfest-prod
    turso db show alocubano-boulderfest-prod --url
@@ -231,13 +240,14 @@ The `/api/migrate` endpoint includes:
 2. **Configure Vercel Environment Variables** (use template above)
 
 3. **Deploy with Migrations**:
+
    ```bash
    # Test first
    npm run migrate:prod:dry-run
-   
+
    # Deploy for real
    npm run migrate:prod:deploy
-   
+
    # Verify
    curl https://your-app.vercel.app/api/test-db
    ```
@@ -259,7 +269,7 @@ The `/api/migrate` endpoint includes:
    - Check if migration files were modified after execution
    - Run `npm run migrate:verify` to see checksum mismatches
 
-3. **"Database connection failed"** 
+3. **"Database connection failed"**
    - Verify Turso auth token is still valid
    - Check database URL format: `libsql://your-db.turso.io`
 

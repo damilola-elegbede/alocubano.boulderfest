@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Sustained Load Test - Stability Report</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #f0f4f8;
+      }
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+      }
+      .status {
+        font-size: 1.2em;
+        margin-top: 10px;
+      }
+      .status.stable {
+        color: #48bb78;
+      }
+      .status.unstable {
+        color: #f56565;
+      }
+      .metrics-container {
+        margin-top: 30px;
+      }
+      .metric-group {
+        background: white;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .metric-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .metric-row:last-child {
+        border-bottom: none;
+      }
+      .metric-label {
+        color: #4a5568;
+      }
+      .metric-value {
+        font-weight: bold;
+        color: #2d3748;
+      }
+      .chart {
+        margin-top: 20px;
+        padding: 20px;
+        background: #f7fafc;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Sustained Load Test Report</h1>
+      <div class="status unstable">System Status: ⚠️ UNSTABLE</div>
+      <p>Test Duration: 2.6 minutes</p>
+    </div>
+
+    <div class="metrics-container">
+      <div class="metric-group">
+        <h2>Performance Metrics</h2>
+        <div class="metric-row">
+          <span class="metric-label">Success Rate</span>
+          <span class="metric-value">0.00%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Error Rate</span>
+          <span class="metric-value">0.00%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Cache Hit Rate</span>
+          <span class="metric-value">0.0%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Avg Response Time</span>
+          <span class="metric-value">0ms</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">P95 Response Time</span>
+          <span class="metric-value">0ms</span>
+        </div>
+      </div>
+
+      <div class="metric-group">
+        <h2>Resource Utilization</h2>
+        <div class="metric-row">
+          <span class="metric-label">Avg Memory Usage</span>
+          <span class="metric-value">0 MB</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Max Memory Usage</span>
+          <span class="metric-value">0 MB</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Avg CPU Usage</span>
+          <span class="metric-value">0.0%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Max CPU Usage</span>
+          <span class="metric-value">0.0%</span>
+        </div>
+      </div>
+
+      <div class="metric-group">
+        <h2>Test Summary</h2>
+        <div class="metric-row">
+          <span class="metric-label">Total Operations</span>
+          <span class="metric-value">0</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Operations/Minute</span>
+          <span class="metric-value">0</span>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

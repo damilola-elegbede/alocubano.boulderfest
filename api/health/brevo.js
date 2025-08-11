@@ -232,12 +232,13 @@ export const checkBrevoHealth = async () => {
 
   try {
     // Run independent checks in parallel to reduce latency
-    const [accountInfo, contactLists, templates, recentActivity] = await Promise.all([
-      checkAccountInfo(),
-      checkContactLists(),
-      checkEmailTemplates(),
-      checkRecentEmailActivity(),
-    ]);
+    const [accountInfo, contactLists, templates, recentActivity] =
+      await Promise.all([
+        checkAccountInfo(),
+        checkContactLists(),
+        checkEmailTemplates(),
+        checkRecentEmailActivity(),
+      ]);
 
     // Determine health status
     let status = HealthStatus.HEALTHY;

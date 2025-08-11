@@ -1,9 +1,9 @@
 /**
  * K6 Load Test - Check-in Rush QR Validation
- * 
+ *
  * This test simulates the high-frequency QR code validation during event check-in
  * periods with realistic mobile device behavior patterns and network conditions.
- * 
+ *
  * Test Scenarios:
  * - 50 concurrent check-in devices (staff tablets/phones)
  * - Sustain 15 QR validations per second for 15 minutes
@@ -11,29 +11,32 @@
  * - Test offline/online synchronization patterns
  */
 
-import http from 'k6/http';
-import { check, sleep, group } from 'k6';
-import { Rate, Trend, Counter, Gauge } from 'k6/metrics';
-import { randomItem, randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
-import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
-import encoding from 'k6/encoding';
-import crypto from 'k6/crypto';
+import http from "k6/http";
+import { check, sleep, group } from "k6";
+import { Rate, Trend, Counter, Gauge } from "k6/metrics";
+import {
+  randomItem,
+  randomIntBetween,
+} from "https://jslib.k6.io/k6-utils/1.4.0/index.js";
+import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
+import encoding from "k6/encoding";
+import crypto from "k6/crypto";
 
 // Custom metrics for check-in performance
-const checkInSuccessRate = new Rate('checkin_success_rate');
-const qrValidationTime = new Trend('qr_validation_duration');
-const databaseWriteTime = new Trend('database_write_duration');
-const duplicateScanRate = new Rate('duplicate_scan_rate');
-const invalidQRRate = new Rate('invalid_qr_rate');
-const concurrentValidations = new Gauge('concurrent_validations');
-const offlineSyncTime = new Trend('offline_sync_duration');
-const devicePerformance = new Trend('device_response_time');
+const checkInSuccessRate = new Rate("checkin_success_rate");
+const qrValidationTime = new Trend("qr_validation_duration");
+const databaseWriteTime = new Trend("database_write_duration");
+const duplicateScanRate = new Rate("duplicate_scan_rate");
+const invalidQRRate = new Rate("invalid_qr_rate");
+const concurrentValidations = new Gauge("concurrent_validations");
+const offlineSyncTime = new Trend("offline_sync_duration");
+const devicePerformance = new Trend("device_response_time");
 
 // Import threshold selector for dynamic configuration
-import { getThresholds, getTimeoutConfig } from '../utils/threshold-loader.js';
+import { getThresholds, getTimeoutConfig } from "../utils/threshold-loader.js";
 
 // Get environment-aware thresholds and timeouts
-const thresholdConfig = getThresholds('check-in');
+const thresholdConfig = getThresholds("check-in");
 const timeoutConfig = getTimeoutConfig();
 
 // Test configuration for sustained high-frequency validation
@@ -41,83 +44,83 @@ export let options = {
   scenarios: {
     // Main check-in rush scenario (optimized for serverless)
     checkin_rush: {
-      executor: 'constant-arrival-rate',
+      executor: "constant-arrival-rate",
       rate: 10, // Reduced rate for serverless optimization (10/sec)
-      timeUnit: '1s',
-      duration: '15m',
+      timeUnit: "1s",
+      duration: "15m",
       preAllocatedVUs: 30, // Fewer VUs for serverless efficiency
-      maxVUs: 50,          // Reduced max to prevent overwhelming functions
-      tags: { scenario: 'checkin_rush' },
+      maxVUs: 50, // Reduced max to prevent overwhelming functions
+      tags: { scenario: "checkin_rush" },
     },
-    
+
     // Duplicate scan testing
     duplicate_scans: {
-      executor: 'constant-vus',
+      executor: "constant-vus",
       vus: 5,
-      duration: '15m',
-      startTime: '30s', // Start after main scenario
-      tags: { scenario: 'duplicate_testing' },
+      duration: "15m",
+      startTime: "30s", // Start after main scenario
+      tags: { scenario: "duplicate_testing" },
     },
-    
+
     // Network failure simulation
     network_issues: {
-      executor: 'ramping-vus',
+      executor: "ramping-vus",
       startVUs: 0,
       stages: [
-        { duration: '5m', target: 0 },
-        { duration: '2m', target: 10 }, // Simulate network issues
-        { duration: '3m', target: 0 },
-        { duration: '5m', target: 0 },
+        { duration: "5m", target: 0 },
+        { duration: "2m", target: 10 }, // Simulate network issues
+        { duration: "3m", target: 0 },
+        { duration: "5m", target: 0 },
       ],
-      tags: { scenario: 'network_simulation' },
+      tags: { scenario: "network_simulation" },
     },
   },
-  
+
   // Dynamic thresholds based on environment
   thresholds: thresholdConfig.thresholds,
-  
+
   // Environment-specific timeouts
   httpTimeout: timeoutConfig.httpTimeout,
   setupTimeout: timeoutConfig.setupTimeout,
   teardownTimeout: timeoutConfig.teardownTimeout,
-  
+
   tags: {
-    testType: 'check-in-validation',
+    testType: "check-in-validation",
     environment: thresholdConfig.environment,
-    thresholdVersion: thresholdConfig.metadata?.timestamp || 'unknown',
+    thresholdVersion: thresholdConfig.metadata?.timestamp || "unknown",
   },
 };
 
 // Base URL configuration
-const BASE_URL = __ENV.LOAD_TEST_BASE_URL || 'http://localhost:3000';
+const BASE_URL = __ENV.LOAD_TEST_BASE_URL || "http://localhost:3000";
 
 // Test data for realistic QR code simulation
 const testData = {
   // Pre-generated valid ticket IDs for testing
   validTickets: generateValidTickets(1000),
-  
+
   // Device types and their characteristics
   deviceTypes: [
-    { type: 'ipad_pro', scanSpeed: 0.5, networkLatency: 20 },
-    { type: 'android_tablet', scanSpeed: 0.7, networkLatency: 30 },
-    { type: 'iphone_14', scanSpeed: 0.3, networkLatency: 25 },
-    { type: 'budget_android', scanSpeed: 1.0, networkLatency: 50 },
+    { type: "ipad_pro", scanSpeed: 0.5, networkLatency: 20 },
+    { type: "android_tablet", scanSpeed: 0.7, networkLatency: 30 },
+    { type: "iphone_14", scanSpeed: 0.3, networkLatency: 25 },
+    { type: "budget_android", scanSpeed: 1.0, networkLatency: 50 },
   ],
-  
+
   // Network conditions
   networkConditions: [
-    { type: 'excellent', latency: 10, packetLoss: 0 },
-    { type: 'good', latency: 30, packetLoss: 0.001 },
-    { type: 'fair', latency: 100, packetLoss: 0.01 },
-    { type: 'poor', latency: 500, packetLoss: 0.05 },
+    { type: "excellent", latency: 10, packetLoss: 0 },
+    { type: "good", latency: 30, packetLoss: 0.001 },
+    { type: "fair", latency: 100, packetLoss: 0.01 },
+    { type: "poor", latency: 500, packetLoss: 0.05 },
   ],
-  
+
   // Check-in locations
   locations: [
-    { id: 'main_entrance', name: 'Main Entrance' },
-    { id: 'vip_entrance', name: 'VIP Entrance' },
-    { id: 'artist_entrance', name: 'Artist Entrance' },
-    { id: 'workshop_room', name: 'Workshop Room' },
+    { id: "main_entrance", name: "Main Entrance" },
+    { id: "vip_entrance", name: "VIP Entrance" },
+    { id: "artist_entrance", name: "Artist Entrance" },
+    { id: "workshop_room", name: "Workshop Room" },
   ],
 };
 
@@ -128,8 +131,8 @@ function generateValidTickets(count) {
     tickets.push({
       ticketId: `TEST-${Date.now()}-${i}`,
       qrCode: generateQRCode(`TEST-${Date.now()}-${i}`),
-      type: randomItem(['general', 'vip', 'workshop', 'full']),
-      status: 'valid',
+      type: randomItem(["general", "vip", "workshop", "full"]),
+      status: "valid",
     });
   }
   return tickets;
@@ -139,9 +142,9 @@ function generateValidTickets(count) {
 function generateQRCode(ticketId) {
   const data = {
     id: ticketId,
-    event: 'alocubano-2026',
+    event: "alocubano-2026",
     timestamp: Date.now(),
-    signature: crypto.sha256(ticketId + 'secret', 'hex'),
+    signature: crypto.sha256(ticketId + "secret", "hex"),
   };
   return encoding.b64encode(JSON.stringify(data));
 }
@@ -149,7 +152,7 @@ function generateQRCode(ticketId) {
 // Parse QR code data
 function parseQRCode(qrCode) {
   try {
-    const decoded = encoding.b64decode(qrCode, 'utf8');
+    const decoded = encoding.b64decode(qrCode, "utf8");
     return JSON.parse(decoded);
   } catch (e) {
     return null;
@@ -165,13 +168,13 @@ function authenticateDevice(deviceId) {
       timestamp: new Date().toISOString(),
     }),
     {
-      headers: { 'Content-Type': 'application/json' },
-      tags: { name: 'device_auth' },
-    }
+      headers: { "Content-Type": "application/json" },
+      tags: { name: "device_auth" },
+    },
   );
-  
+
   if (response.status === 200) {
-    return response.json('token');
+    return response.json("token");
   }
   return null;
 }
@@ -179,33 +182,33 @@ function authenticateDevice(deviceId) {
 // Serverless function warm-up for check-in
 function warmUpCheckinFunctions() {
   const checkinEndpoints = [
-    '/api/checkin/device/auth',
-    '/api/tickets/validate',
-    '/api/checkin/sync'
+    "/api/checkin/device/auth",
+    "/api/tickets/validate",
+    "/api/checkin/sync",
   ];
-  
+
   for (const endpoint of checkinEndpoints) {
     http.get(`${BASE_URL}${endpoint}`, {
-      tags: { operation: 'checkin-warmup' },
-      timeout: '5s'
+      tags: { operation: "checkin-warmup" },
+      timeout: "5s",
     });
   }
 }
 
 // Main check-in validation scenario
-export default function() {
-  const scenario = __ENV.scenario || 'checkin_rush';
-  
+export default function () {
+  const scenario = __ENV.scenario || "checkin_rush";
+
   // Warm up functions periodically
   if (__ITER % 25 === 0) {
     warmUpCheckinFunctions();
   }
-  
-  if (scenario === 'checkin_rush') {
+
+  if (scenario === "checkin_rush") {
     performCheckInValidation();
-  } else if (scenario === 'duplicate_testing') {
+  } else if (scenario === "duplicate_testing") {
     performDuplicateTesting();
-  } else if (scenario === 'network_simulation') {
+  } else if (scenario === "network_simulation") {
     simulateNetworkIssues();
   }
 }
@@ -216,28 +219,28 @@ function performCheckInValidation() {
   const device = randomItem(testData.deviceTypes);
   const location = randomItem(testData.locations);
   const networkCondition = randomItem(testData.networkConditions);
-  
+
   // Track concurrent validations
   concurrentValidations.add(1);
-  
-  group('QR Code Validation', () => {
+
+  group("QR Code Validation", () => {
     // Select a ticket to validate
     const ticket = randomItem(testData.validTickets);
     const isInvalid = Math.random() < 0.01; // 1% invalid QR codes
     const isDuplicate = Math.random() < 0.03; // 3% duplicate scans
-    
+
     // Prepare QR code data
     let qrCode = ticket.qrCode;
     if (isInvalid) {
-      qrCode = 'INVALID_' + qrCode;
+      qrCode = "INVALID_" + qrCode;
     }
-    
+
     // Simulate device scan time
     sleep(device.scanSpeed);
-    
+
     // Start validation timing
     const validationStart = Date.now();
-    
+
     // Perform validation request (serverless optimized)
     const response = http.post(
       `${BASE_URL}/api/tickets/validate`,
@@ -250,86 +253,90 @@ function performCheckInValidation() {
         network_latency: networkCondition.latency,
         serverless_config: {
           max_duration: 8,
-          priority: 'high',
-          region: 'us-east-1'
-        }
+          priority: "high",
+          region: "us-east-1",
+        },
       }),
       {
         headers: {
-          'Content-Type': 'application/json',
-          'X-Device-Type': device.type,
-          'X-Network-Condition': networkCondition.type,
-          'X-Vercel-Serverless': 'true',
-          'X-Vercel-Max-Duration': '8',
+          "Content-Type": "application/json",
+          "X-Device-Type": device.type,
+          "X-Network-Condition": networkCondition.type,
+          "X-Vercel-Serverless": "true",
+          "X-Vercel-Max-Duration": "8",
         },
-        tags: { 
-          name: 'qr_validation',
+        tags: {
+          name: "qr_validation",
           device: device.type,
           location: location.id,
         },
-        timeout: '8s', // Extended for serverless processing
-      }
+        timeout: "8s", // Extended for serverless processing
+      },
     );
-    
+
     const validationDuration = Date.now() - validationStart;
     qrValidationTime.add(validationDuration);
     devicePerformance.add(validationDuration + device.networkLatency);
-    
+
     // Check validation results
     const validationSuccess = check(response, {
-      'validation completed': (r) => {
+      "validation completed": (r) => {
         const validStatuses = [200, 409]; // 200 = success, 409 = duplicate
         if (!validStatuses.includes(r.status)) {
-          console.warn(`QR validation failed for ${qrCode}: ${r.status} - ${r.statusText || 'Unknown error'}`);
+          console.warn(
+            `QR validation failed for ${qrCode}: ${r.status} - ${r.statusText || "Unknown error"}`,
+          );
           return false;
         }
         return true;
       },
-      'response time acceptable': (r) => {
+      "response time acceptable": (r) => {
         if (r.timings.duration >= 500) {
-          console.warn(`Slow QR validation: ${r.timings.duration}ms (expected < 500ms)`);
+          console.warn(
+            `Slow QR validation: ${r.timings.duration}ms (expected < 500ms)`,
+          );
         }
         return r.timings.duration < 1000; // More lenient for serverless
       },
-      'not cold start timeout': (r) => {
+      "not cold start timeout": (r) => {
         if (r.status === 504) {
           console.warn(`Cold start timeout for QR validation: ${qrCode}`);
           return false;
         }
         return true;
       },
-      'not serverless error': (r) => {
+      "not serverless error": (r) => {
         if (r.status === 502) {
           console.warn(`Serverless error for QR validation: ${qrCode}`);
           return false;
         }
         return true;
       },
-      'response has valid content': (r) => r.body && r.body.length > 0,
+      "response has valid content": (r) => r.body && r.body.length > 0,
     });
-    
+
     if (response.status === 200) {
       checkInSuccessRate.add(1);
-      
+
       // Parse response for detailed checks
       try {
         const result = response.json();
         const resultValidation = check(result, {
-          'ticket validated': (r) => {
+          "ticket validated": (r) => {
             if (r.valid !== true) {
               console.warn(`Ticket validation failed: ${JSON.stringify(r)}`);
               return false;
             }
             return true;
           },
-          'check-in recorded': (r) => {
+          "check-in recorded": (r) => {
             if (r.checkedIn !== true) {
               console.warn(`Check-in not recorded: ${JSON.stringify(r)}`);
               return false;
             }
             return true;
           },
-          'timestamp recorded': (r) => {
+          "timestamp recorded": (r) => {
             if (!r.checkInTime) {
               console.warn(`Check-in timestamp missing: ${JSON.stringify(r)}`);
               return false;
@@ -340,7 +347,7 @@ function performCheckInValidation() {
       } catch (e) {
         console.warn(`Cannot parse QR validation response JSON: ${e.message}`);
       }
-      
+
       // Track database write time from response
       if (result.dbWriteTime) {
         databaseWriteTime.add(result.dbWriteTime);
@@ -356,15 +363,15 @@ function performCheckInValidation() {
     } else {
       checkInSuccessRate.add(0);
     }
-    
+
     // Simulate network latency
     if (networkCondition.latency > 0) {
       sleep(networkCondition.latency / 1000);
     }
   });
-  
+
   concurrentValidations.add(-1);
-  
+
   // Small delay between scans (realistic staff behavior)
   sleep(randomIntBetween(0.1, 0.5));
 }
@@ -374,41 +381,43 @@ function performDuplicateTesting() {
   const deviceId = `duplicate_tester_${__VU}`;
   let testTicket = null;
   let firstScanSuccess = false;
-  
-  group('Duplicate Scan Testing', () => {
+
+  group("Duplicate Scan Testing", () => {
     // Use a small set of tickets for intentional duplicates
     testTicket = testData.validTickets[__ITER % 10];
-    
+
     if (!testTicket || !testTicket.qrCode) {
-      console.warn(`Invalid test ticket for duplicate testing: ${JSON.stringify(testTicket)}`);
+      console.warn(
+        `Invalid test ticket for duplicate testing: ${JSON.stringify(testTicket)}`,
+      );
       return;
     }
-    
+
     // First scan - should succeed
     let response = http.post(
       `${BASE_URL}/api/tickets/validate`,
       JSON.stringify({
         qr_code: testTicket.qrCode,
         device_id: deviceId,
-        location_id: 'main_entrance',
+        location_id: "main_entrance",
         timestamp: new Date().toISOString(),
       }),
       {
-        headers: { 'Content-Type': 'application/json' },
-        tags: { name: 'duplicate_first_scan' },
-      }
+        headers: { "Content-Type": "application/json" },
+        tags: { name: "duplicate_first_scan" },
+      },
     );
-    
+
     firstScanSuccess = response.status === 200;
-    
+
     check(response, {
-      'first scan processed': (r) => r.status === 200 || r.status === 409,
-      'valid response': (r) => r.body.length > 0,
+      "first scan processed": (r) => r.status === 200 || r.status === 409,
+      "valid response": (r) => r.body.length > 0,
     });
-    
+
     // Wait a bit
     sleep(randomIntBetween(2, 5));
-    
+
     // Second scan - should be rejected as duplicate (only if first succeeded)
     if (firstScanSuccess) {
       response = http.post(
@@ -416,28 +425,31 @@ function performDuplicateTesting() {
         JSON.stringify({
           qr_code: testTicket.qrCode,
           device_id: deviceId,
-          location_id: 'main_entrance',
+          location_id: "main_entrance",
           timestamp: new Date().toISOString(),
         }),
         {
-          headers: { 'Content-Type': 'application/json' },
-          tags: { name: 'duplicate_second_scan' },
-        }
+          headers: { "Content-Type": "application/json" },
+          tags: { name: "duplicate_second_scan" },
+        },
       );
-      
+
       check(response, {
-        'duplicate detected': (r) => r.status === 409,
-        'duplicate message': (r) => r.json('error')?.includes('already checked in'),
+        "duplicate detected": (r) => r.status === 409,
+        "duplicate message": (r) =>
+          r.json("error")?.includes("already checked in"),
       });
-      
+
       if (response.status === 409) {
         duplicateScanRate.add(1);
       } else {
-        console.warn(`Expected duplicate rejection for ticket ${testTicket.ticketId}, got ${response.status}`);
+        console.warn(
+          `Expected duplicate rejection for ticket ${testTicket.ticketId}, got ${response.status}`,
+        );
       }
     }
   });
-  
+
   sleep(randomIntBetween(5, 10));
 }
 
@@ -447,19 +459,21 @@ function simulateNetworkIssues() {
   const offlineQueue = [];
   let scanCount = 0;
   let syncDuration = 0;
-  
-  group('Offline Sync Testing', () => {
+
+  group("Offline Sync Testing", () => {
     // Simulate collecting scans while offline
     scanCount = randomIntBetween(5, 15);
-    
+
     for (let i = 0; i < scanCount; i++) {
       const ticket = randomItem(testData.validTickets);
-      
+
       if (!ticket || !ticket.qrCode) {
-        console.warn(`Invalid ticket for offline queue: ${JSON.stringify(ticket)}`);
+        console.warn(
+          `Invalid ticket for offline queue: ${JSON.stringify(ticket)}`,
+        );
         continue;
       }
-      
+
       offlineQueue.push({
         qr_code: ticket.qrCode,
         device_id: deviceId,
@@ -467,21 +481,23 @@ function simulateNetworkIssues() {
         offline: true,
         ticket_id: ticket.ticketId,
       });
-      
+
       // Simulate scan time
       sleep(randomIntBetween(1, 3));
     }
-    
+
     if (offlineQueue.length === 0) {
-      console.warn('No valid tickets collected for offline sync test');
+      console.warn("No valid tickets collected for offline sync test");
       return;
     }
-    
-    console.log(`Syncing ${offlineQueue.length} offline validations for device ${deviceId}`);
-    
+
+    console.log(
+      `Syncing ${offlineQueue.length} offline validations for device ${deviceId}`,
+    );
+
     // Simulate coming back online and syncing
     const syncStart = Date.now();
-    
+
     const response = http.post(
       `${BASE_URL}/api/checkin/sync`,
       JSON.stringify({
@@ -490,59 +506,64 @@ function simulateNetworkIssues() {
         batch_size: Math.min(offlineQueue.length, 10), // Limit batch size
         serverless: {
           max_duration: 20,
-          timeout_buffer: 2000
-        }
+          timeout_buffer: 2000,
+        },
       }),
       {
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Vercel-Serverless': 'true',
-          'X-Vercel-Max-Duration': '20'
+        headers: {
+          "Content-Type": "application/json",
+          "X-Vercel-Serverless": "true",
+          "X-Vercel-Max-Duration": "20",
         },
-        tags: { name: 'offline_sync' },
-        timeout: '20s', // Within serverless limits
-      }
+        tags: { name: "offline_sync" },
+        timeout: "20s", // Within serverless limits
+      },
     );
-    
+
     syncDuration = Date.now() - syncStart;
     offlineSyncTime.add(syncDuration);
-    
+
     const syncSuccess = check(response, {
-      'sync completed': (r) => r.status === 200,
-      'sync response valid': (r) => r.body && r.body.length > 0,
-      'sync time acceptable': (r) => syncDuration < 15000, // More lenient for serverless
+      "sync completed": (r) => r.status === 200,
+      "sync response valid": (r) => r.body && r.body.length > 0,
+      "sync time acceptable": (r) => syncDuration < 15000, // More lenient for serverless
     });
-    
+
     if (syncSuccess && response.status === 200) {
       const result = response.json();
       check(result, {
-        'processed count exists': (r) => r.processed !== undefined,
-        'reasonable processing rate': (r) => r.processed >= 0 && r.processed <= offlineQueue.length,
+        "processed count exists": (r) => r.processed !== undefined,
+        "reasonable processing rate": (r) =>
+          r.processed >= 0 && r.processed <= offlineQueue.length,
       });
-      
-      console.log(`Sync completed: ${result.processed || 0}/${offlineQueue.length} validations processed`);
+
+      console.log(
+        `Sync completed: ${result.processed || 0}/${offlineQueue.length} validations processed`,
+      );
     } else {
-      console.warn(`Sync failed for device ${deviceId}: ${response.status}, duration: ${syncDuration}ms`);
+      console.warn(
+        `Sync failed for device ${deviceId}: ${response.status}, duration: ${syncDuration}ms`,
+      );
     }
   });
-  
+
   sleep(randomIntBetween(10, 30));
 }
 
 // Setup function
 export function setup() {
-  console.log('=== Check-in Rush Load Test Starting ===');
+  console.log("=== Check-in Rush Load Test Starting ===");
   console.log(`Target URL: ${BASE_URL}`);
   console.log(`Target Rate: 15 QR validations/second`);
   console.log(`Duration: 15 minutes`);
   console.log(`Devices: 50-75 concurrent`);
-  
+
   // Verify check-in API is ready
   const response = http.get(`${BASE_URL}/api/checkin/health`);
   if (response.status !== 200) {
     console.warn(`Check-in API health check returned: ${response.status}`);
   }
-  
+
   return {
     startTime: Date.now(),
     testId: `checkin-rush-${Date.now()}`,
@@ -553,39 +574,46 @@ export function setup() {
 // Teardown function
 export function teardown(data) {
   const duration = (Date.now() - data.startTime) / 1000;
-  
-  console.log('=== Check-in Rush Load Test Complete ===');
+
+  console.log("=== Check-in Rush Load Test Complete ===");
   console.log(`Test ID: ${data.testId}`);
   console.log(`Duration: ${duration} seconds`);
   console.log(`Total Devices: ${data.totalDevices}`);
-  console.log('Check-in validation metrics saved to reports');
+  console.log("Check-in validation metrics saved to reports");
 }
 
 // Custom summary handling
 export function handleSummary(data) {
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
   // Calculate additional metrics
   const customMetrics = {
     avgValidationTime: data.metrics.qr_validation_duration?.avg || 0,
     successRate: data.metrics.checkin_success_rate?.rate || 0,
     duplicateRate: data.metrics.duplicate_scan_rate?.rate || 0,
     totalValidations: data.metrics.iterations?.count || 0,
-    validationsPerSecond: (data.metrics.iterations?.count || 0) / ((data.state?.testRunDurationMs || 1) / 1000),
+    validationsPerSecond:
+      (data.metrics.iterations?.count || 0) /
+      ((data.state?.testRunDurationMs || 1) / 1000),
   };
-  
+
   return {
     // Console output
-    stdout: textSummary(data, { indent: ' ', enableColors: true }),
-    
+    stdout: textSummary(data, { indent: " ", enableColors: true }),
+
     // JSON report
-    [`reports/load-test-results/check-in-${timestamp}.json`]: JSON.stringify({
-      ...data,
-      customMetrics,
-    }, null, 2),
-    
+    [`reports/load-test-results/check-in-${timestamp}.json`]: JSON.stringify(
+      {
+        ...data,
+        customMetrics,
+      },
+      null,
+      2,
+    ),
+
     // HTML report
-    [`reports/load-test-results/check-in-${timestamp}.html`]: generateHTMLReport(data, customMetrics),
+    [`reports/load-test-results/check-in-${timestamp}.html`]:
+      generateHTMLReport(data, customMetrics),
   };
 }
 
@@ -616,7 +644,7 @@ function generateHTMLReport(data, customMetrics) {
       
       <div class="metrics-grid">
         <div class="metric-card">
-          <div class="metric-value ${customMetrics.successRate > 0.98 ? 'success' : 'error'}">
+          <div class="metric-value ${customMetrics.successRate > 0.98 ? "success" : "error"}">
             ${(customMetrics.successRate * 100).toFixed(2)}%
           </div>
           <div class="metric-label">Check-in Success Rate</div>
@@ -638,7 +666,7 @@ function generateHTMLReport(data, customMetrics) {
         </div>
         
         <div class="metric-card">
-          <div class="metric-value ${customMetrics.duplicateRate < 0.05 ? 'success' : 'warning'}">
+          <div class="metric-value ${customMetrics.duplicateRate < 0.05 ? "success" : "warning"}">
             ${(customMetrics.duplicateRate * 100).toFixed(2)}%
           </div>
           <div class="metric-label">Duplicate Scan Rate</div>

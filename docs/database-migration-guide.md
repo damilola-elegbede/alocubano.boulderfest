@@ -7,7 +7,9 @@ This guide documents the database migration system for the A Lo Cubano Boulder F
 ## Migration 009: Add Wallet Tracking
 
 ### Purpose
+
 Adds critical columns for tracking wallet adoption and access methods:
+
 - `wallet_source`: Tracks which wallet service (Apple/Google) was used
 - Performance indexes for analytics queries
 - Data validation constraints
@@ -17,6 +19,7 @@ Adds critical columns for tracking wallet adoption and access methods:
 Before running the migration:
 
 1. **Environment Variables**
+
    ```bash
    TURSO_DATABASE_URL=your_database_url
    TURSO_AUTH_TOKEN=your_auth_token
@@ -42,6 +45,7 @@ node scripts/run-migration.js
 ```
 
 This will:
+
 1. Create an automated backup
 2. Validate current schema
 3. Run dry-run to preview changes
@@ -57,6 +61,7 @@ node scripts/run-migration.js --dry-run
 ```
 
 Preview changes without applying them. Useful for:
+
 - Reviewing SQL statements that will be executed
 - Estimating migration time
 - Validating migration file syntax
@@ -68,6 +73,7 @@ node scripts/run-migration.js --force
 ```
 
 Force migration even if already applied. Use when:
+
 - Schema is partially corrupted
 - Migration was marked complete but failed
 - Testing migration procedures
@@ -77,19 +83,21 @@ Force migration even if already applied. Use when:
 ### 1. Backup Manager (`api/db/backup-manager.js`)
 
 **Features:**
+
 - Automated backup creation with compression
 - Integrity verification using SHA-256 checksums
 - 30-day retention policy with automatic cleanup
 - Restore functionality with validation
 
 **Usage:**
+
 ```javascript
-import { BackupManager } from './api/db/backup-manager.js';
+import { BackupManager } from "./api/db/backup-manager.js";
 
 const manager = new BackupManager();
 
 // Create backup
-const backup = await manager.createBackup('pre_migration');
+const backup = await manager.createBackup("pre_migration");
 
 // Verify integrity
 const valid = await manager.verifyBackupIntegrity(backup.path);
@@ -101,36 +109,40 @@ await manager.restoreFromBackup(backup.path);
 ### 2. Migration Runner (`api/db/rollback-procedures.js`)
 
 **Features:**
+
 - Atomic migration execution
 - Automatic rollback on failure
 - Migration status tracking
 - Schema integrity validation
 
 **Usage:**
+
 ```javascript
-import { MigrationRunner } from './api/db/rollback-procedures.js';
+import { MigrationRunner } from "./api/db/rollback-procedures.js";
 
 const runner = new MigrationRunner();
 
 // Run migration
-const result = await runner.runMigration('009_add_wallet_tracking.sql');
+const result = await runner.runMigration("009_add_wallet_tracking.sql");
 
 // Validate
-const valid = await runner.validateMigration('009');
+const valid = await runner.validateMigration("009");
 
 // Rollback if needed
-await runner.rollbackMigration('009');
+await runner.rollbackMigration("009");
 ```
 
 ### 3. Schema Validator (`scripts/validate-schema.js`)
 
 **Features:**
+
 - Column existence validation
 - Data type verification
 - Index performance testing
 - Codebase reference scanning
 
 **Usage:**
+
 ```bash
 node scripts/validate-schema.js
 ```
@@ -142,6 +154,7 @@ Generates `schema-validation-report.json` with comprehensive analysis.
 ### Automatic Rollback
 
 If migration fails, automatic rollback occurs:
+
 1. Failure detected during execution
 2. Backup automatically restored
 3. Migration marked as failed
@@ -171,21 +184,24 @@ await manager.restoreFromBackup('./backups/backup_XXX.db.gz');
 If all else fails:
 
 1. **Stop all services**
+
    ```bash
    # Stop application servers
    pm2 stop all
    ```
 
 2. **Restore from latest backup**
+
    ```bash
    # Find latest backup
    ls -t ./backups/*.db.gz | head -1
-   
+
    # Restore
    node scripts/restore-backup.js --file=backup_latest.db.gz
    ```
 
 3. **Verify restoration**
+
    ```bash
    node scripts/validate-schema.js
    ```
@@ -204,16 +220,17 @@ Monitor migration progress:
 ```javascript
 // Check migration status
 const status = await runner.getMigrationStatus();
-console.log('Applied migrations:', status.appliedMigrations);
+console.log("Applied migrations:", status.appliedMigrations);
 
 // Validate schema integrity
 const integrity = await runner.validateSchemaIntegrity();
-console.log('Schema valid:', integrity.valid);
+console.log("Schema valid:", integrity.valid);
 ```
 
 ### Performance Metrics
 
 After migration, monitor:
+
 - Query execution times
 - Index usage statistics
 - Application response times
@@ -233,16 +250,20 @@ console.log(perf);
 ### Common Issues
 
 #### 1. "Database is locked"
+
 **Cause:** Active transactions preventing migration
-**Solution:** 
+**Solution:**
+
 ```bash
 # Wait for transactions to complete
 # Or restart database connection
 ```
 
 #### 2. "Column already exists"
+
 **Cause:** Partial migration or duplicate execution
 **Solution:**
+
 ```bash
 # Check current schema
 node scripts/validate-schema.js
@@ -252,8 +273,10 @@ node scripts/run-migration.js --force
 ```
 
 #### 3. "Backup integrity check failed"
+
 **Cause:** Corrupted backup file
 **Solution:**
+
 ```bash
 # Create new backup
 node -e "
@@ -263,8 +286,10 @@ await new BackupManager().createBackup('manual_backup');
 ```
 
 #### 4. "Migration validation failed"
+
 **Cause:** Schema changes not applied correctly
 **Solution:**
+
 ```bash
 # Check specific validation failures
 node scripts/validate-schema.js
@@ -278,6 +303,7 @@ cat migration.log
 ### Log Files
 
 Migration activity is logged to:
+
 - `./migration.log` - Detailed migration logs
 - `./schema-validation-report.json` - Schema validation results
 
@@ -286,6 +312,7 @@ Migration activity is logged to:
 If issues persist:
 
 1. Collect diagnostic information:
+
    ```bash
    # Generate diagnostic bundle
    tar -czf migration-debug.tar.gz \
@@ -295,6 +322,7 @@ If issues persist:
    ```
 
 2. Review recent changes:
+
    ```bash
    git log --oneline -10
    git diff HEAD~1
@@ -314,6 +342,7 @@ If issues persist:
    - Plan for 2x expected migration time
 
 2. **Verify backups**
+
    ```bash
    # Test backup and restore process
    node -e "
@@ -344,10 +373,11 @@ If issues persist:
 ### After Migration
 
 1. **Validate thoroughly**
+
    ```bash
    # Run full validation suite
    node scripts/validate-schema.js
-   
+
    # Test critical endpoints
    npm test
    ```
@@ -381,15 +411,15 @@ If issues persist:
 
 ```sql
 -- Add wallet tracking column
-ALTER TABLE tickets ADD COLUMN wallet_source TEXT 
+ALTER TABLE tickets ADD COLUMN wallet_source TEXT
   CHECK (wallet_source IN ('apple_wallet', 'google_wallet') OR wallet_source IS NULL);
 
 -- Add indexes for performance
-CREATE INDEX idx_tickets_wallet_source 
-  ON tickets(wallet_source) 
+CREATE INDEX idx_tickets_wallet_source
+  ON tickets(wallet_source)
   WHERE wallet_source IS NOT NULL;
 
-CREATE INDEX idx_tickets_wallet_analytics 
+CREATE INDEX idx_tickets_wallet_analytics
   ON tickets(wallet_source, qr_access_method, created_at)
   WHERE wallet_source IS NOT NULL;
 ```
@@ -397,6 +427,7 @@ CREATE INDEX idx_tickets_wallet_analytics
 ### Environment Configuration
 
 Required environment variables:
+
 ```bash
 # Database
 TURSO_DATABASE_URL=libsql://your-database.turso.io

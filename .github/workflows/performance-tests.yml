@@ -9,24 +9,24 @@ on:
   workflow_dispatch:
     inputs:
       tests_to_run:
-        description: 'Comma-separated list of tests to run (ticket-sales,check-in,sustained,stress)'
+        description: "Comma-separated list of tests to run (ticket-sales,check-in,sustained,stress)"
         required: false
-        default: 'ticket-sales,check-in'
+        default: "ticket-sales,check-in"
       environment:
-        description: 'Target environment'
+        description: "Target environment"
         required: false
-        default: 'staging'
+        default: "staging"
         type: choice
         options:
           - staging
           - production
       update_baselines:
-        description: 'Update performance baselines'
+        description: "Update performance baselines"
         required: false
         default: false
         type: boolean
       run_parallel:
-        description: 'Run tests in parallel'
+        description: "Run tests in parallel"
         required: false
         default: false
         type: boolean
@@ -34,11 +34,11 @@ on:
   # Schedule regular performance checks (daily at 2 AM UTC)
   # This provides automated performance regression detection
   schedule:
-    - cron: '0 2 * * *'
+    - cron: "0 2 * * *"
 
 env:
-  NODE_VERSION: '18'
-  K6_VERSION: '0.47.0'
+  NODE_VERSION: "18"
+  K6_VERSION: "0.47.0"
 
 jobs:
   # Setup and validation job
@@ -59,7 +59,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -170,7 +170,7 @@ jobs:
   wait-for-deployment:
     name: Wait for Deployment
     runs-on: ubuntu-latest
-    timeout-minutes: 20  # Prevent indefinite hanging
+    timeout-minutes: 20 # Prevent indefinite hanging
     needs: setup
     # Only wait for deployment for manual workflow runs against preview environments
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging'
@@ -186,8 +186,8 @@ jobs:
         continue-on-error: true
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          max_timeout: 600  # Increased from 300s (5min) to 600s (10min) for larger deployments
-          check_interval: 15  # Increased from 10s to 15s to reduce API pressure
+          max_timeout: 600 # Increased from 300s (5min) to 600s (10min) for larger deployments
+          check_interval: 15 # Increased from 10s to 15s to reduce API pressure
 
       - name: Fallback deployment detection
         id: fallback-deployment
@@ -307,7 +307,7 @@ jobs:
   performance-tests:
     name: Performance Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # Allow more time for performance tests
+    timeout-minutes: 30 # Allow more time for performance tests
     needs: [setup, wait-for-deployment]
     if: always() && needs.setup.result == 'success' && (needs.wait-for-deployment.result == 'success' || needs.wait-for-deployment.result == 'skipped' || needs.wait-for-deployment.outputs.deployment_found == 'true')
 
@@ -315,8 +315,8 @@ jobs:
       fail-fast: false
       matrix:
         test_group:
-          - {name: "critical", tests: "ticket-sales,check-in"}
-          - {name: "extended", tests: "sustained"}
+          - { name: "critical", tests: "ticket-sales,check-in" }
+          - { name: "extended", tests: "sustained" }
 
     steps:
       - name: Checkout code
@@ -326,7 +326,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -407,7 +407,7 @@ jobs:
   analyze-results:
     name: Analyze Results
     runs-on: ubuntu-latest
-    timeout-minutes: 10  # Quick analysis job
+    timeout-minutes: 10 # Quick analysis job
     needs: [setup, performance-tests]
     if: always() && needs.performance-tests.result != 'skipped'
 
@@ -419,7 +419,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -553,7 +553,7 @@ jobs:
   stress-tests:
     name: Stress Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 45  # Allow more time for stress tests
+    timeout-minutes: 45 # Allow more time for stress tests
     needs: [setup, wait-for-deployment]
     if: |
       always() &&
@@ -571,7 +571,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci

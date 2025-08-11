@@ -3,7 +3,7 @@
  * Tests the complete user flow from frontend to backend
  */
 
-const { test, expect } = require("@playwright/test");
+import { test, expect } from "@playwright/test";
 
 test.describe("Email Newsletter Signup E2E", () => {
   test.beforeEach(async ({ page }) => {

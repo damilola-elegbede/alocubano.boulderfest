@@ -23,7 +23,7 @@
         { "duration": "2m", "target": 50 }
       ]
     },
-    
+
     "thresholds": {
       "http_req_duration": ["p(95)<500", "p(99)<1000"],
       "http_req_failed": ["rate<0.01"],
@@ -31,9 +31,9 @@
     },
 
     "userBehavior": {
-      "ticketBrowsing": 0.40,
+      "ticketBrowsing": 0.4,
       "cartOperations": 0.35,
-      "checkoutFlow": 0.20,
+      "checkoutFlow": 0.2,
       "abandonedSessions": 0.05
     }
   },
@@ -71,7 +71,7 @@
           "p99": 285,
           "successRate": 0.9958
         },
-        
+
         "/api/payments/create-checkout-session": {
           "requests": 2150,
           "average": 234.5,
@@ -178,9 +178,9 @@
 
     "revenueImpact": {
       "completedTransactions": 287,
-      "totalRevenue": 24750.00,
+      "totalRevenue": 24750.0,
       "averageOrderValue": 86.24,
-      "abandonedCartValue": 8420.00
+      "abandonedCartValue": 8420.0
     },
 
     "userExperience": {
@@ -287,7 +287,10 @@
 
     "nextTestingCycle": {
       "scheduledDate": "2025-08-17T14:30:00.000Z",
-      "focusAreas": ["Database optimization validation", "Stripe integration improvements"],
+      "focusAreas": [
+        "Database optimization validation",
+        "Stripe integration improvements"
+      ],
       "expectedImprovements": ["15% better response times", "50% fewer errors"]
     }
   }

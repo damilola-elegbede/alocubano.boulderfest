@@ -79,7 +79,11 @@ self.addEventListener('activate', (event) => {
     console.log('[SW v2.0.0] Activating advanced service worker...');
 
     event.waitUntil(
-        Promise.all([cleanupOldCaches(), self.clients.claim(), loadOfflineQueue()]).then(() => {
+        Promise.all([
+            cleanupOldCaches(),
+            self.clients.claim(),
+            loadOfflineQueue()
+        ]).then(() => {
             console.log('[SW] Service worker activated and ready');
         })
     );
@@ -94,7 +98,10 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(request.url);
 
     // Handle QR validation requests for offline check-ins
-    if (url.pathname === '/api/tickets/validate-qr' && request.method === 'POST') {
+    if (
+        url.pathname === '/api/tickets/validate-qr' &&
+    request.method === 'POST'
+    ) {
         event.respondWith(handleOfflineCheckin(request));
         return;
     }
@@ -158,7 +165,7 @@ self.addEventListener('message', (event) => {
  * Sync Event Handler
  * Syncs offline check-ins when back online
  */
-self.addEventListener('sync', async (event) => {
+self.addEventListener('sync', async(event) => {
     if (event.tag === 'sync-checkins') {
         event.waitUntil(syncOfflineCheckins());
     }
@@ -738,37 +745,41 @@ function formatBytes(bytes) {
  */
 async function handleOfflineCheckin(request) {
     try {
-        // Try network first
+    // Try network first
         const response = await fetch(request);
         return response;
     } catch (error) {
-        // If offline, queue the check-in
+    // If offline, queue the check-in
         const data = await request.json();
-        
+
         offlineQueue.push({
             ...data,
             queuedAt: Date.now(),
             // Add wallet detection for JWT tokens
             wallet_source: data.token && data.token.length > 100 ? 'jwt' : null,
-            qr_access_method: data.token && data.token.length > 100 ? 'wallet' : 'qr_code'
+            qr_access_method:
+        data.token && data.token.length > 100 ? 'wallet' : 'qr_code'
         });
-        
+
         await saveOfflineQueue();
-        
+
         // Register sync event for when back online
         if ('sync' in self.registration) {
             await self.registration.sync.register('sync-checkins');
         }
-        
+
         // Return success response to app
-        return new Response(JSON.stringify({
-            valid: true,
-            offline: true,
-            message: 'Check-in queued for sync',
-            queuedCount: offlineQueue.length
-        }), {
-            headers: { 'Content-Type': 'application/json' }
-        });
+        return new Response(
+            JSON.stringify({
+                valid: true,
+                offline: true,
+                message: 'Check-in queued for sync',
+                queuedCount: offlineQueue.length
+            }),
+            {
+                headers: { 'Content-Type': 'application/json' }
+            }
+        );
     }
 }
 
@@ -777,12 +788,14 @@ async function handleOfflineCheckin(request) {
  */
 async function syncOfflineCheckins() {
     console.log('[SW] Syncing offline check-ins...');
-    
-    if (offlineQueue.length === 0) return;
-    
+
+    if (offlineQueue.length === 0) {
+        return;
+    }
+
     const queue = [...offlineQueue];
     offlineQueue = [];
-    
+
     for (const checkin of queue) {
         try {
             const response = await fetch('/api/tickets/validate-qr', {
@@ -790,7 +803,7 @@ async function syncOfflineCheckins() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(checkin)
             });
-            
+
             if (!response.ok) {
                 // Re-queue if failed
                 offlineQueue.push(checkin);
@@ -800,7 +813,7 @@ async function syncOfflineCheckins() {
             offlineQueue.push(checkin);
         }
     }
-    
+
     // Save remaining queue to IndexedDB
     await saveOfflineQueue();
 }
@@ -811,11 +824,11 @@ async function syncOfflineCheckins() {
 async function syncOfflineWalletTokens() {
     const cache = await caches.open(OFFLINE_CACHE);
     const response = await cache.match('wallet-tokens-queue');
-    
+
     if (response) {
         const walletTokens = await response.json();
         console.log('[SW] Syncing', walletTokens.length, 'wallet tokens');
-        
+
         for (const token of walletTokens) {
             try {
                 await fetch('/api/tickets/validate-qr', {
@@ -827,7 +840,7 @@ async function syncOfflineWalletTokens() {
                 console.error('[SW] Failed to sync wallet token:', error);
             }
         }
-        
+
         // Clear the wallet tokens queue after sync
         await cache.delete('wallet-tokens-queue');
     }
@@ -842,9 +855,9 @@ async function saveOfflineQueue() {
         new Request('offline-queue'),
         new Response(JSON.stringify(offlineQueue))
     );
-    
+
     // Also save wallet tokens if present
-    const walletTokens = offlineQueue.filter(item => item.wallet_source);
+    const walletTokens = offlineQueue.filter((item) => item.wallet_source);
     if (walletTokens.length > 0) {
         await cache.put(
             new Request('wallet-tokens-queue'),

@@ -196,7 +196,7 @@ export const checkDatabaseHealth = async () => {
     }
 
     // Get database service
-    const dbService = getDatabase();
+    const dbService = await getDatabase().ensureInitialized();
 
     // Test basic connectivity with a simple query
     const testResult = await dbService.execute("SELECT datetime('now') as now");

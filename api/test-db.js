@@ -53,8 +53,9 @@ export default async function handler(req, res) {
   try {
     console.log("Starting database test...");
 
-    // Get the email subscriber service instance
-    const subscriberService = getEmailSubscriberService();
+    // Ensure the email subscriber service is initialized
+    const subscriberService =
+      await getEmailSubscriberService().ensureInitialized();
 
     // Test results object
     const testResults = {
@@ -100,7 +101,7 @@ export default async function handler(req, res) {
     console.log("Testing table information...");
     try {
       // Query actual database schema information
-      const db = await getDatabase();
+      const db = await getDatabase().ensureInitialized();
       const tableInfo = {};
 
       // Get list of tables
@@ -170,7 +171,7 @@ export default async function handler(req, res) {
     console.log("Testing migration status...");
     try {
       // Get real migration status from database
-      const db = await getDatabase();
+      const db = await getDatabase().ensureInitialized();
       const migrationStatus = await getMigrationStatus(db);
 
       testResults.tests.migrations.status = "passed";

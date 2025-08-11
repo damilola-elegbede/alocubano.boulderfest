@@ -367,7 +367,7 @@
 
     <div class="dashboard-container">
       <!-- Statistics -->
-      <div class="stats-grid" id="statsGrid">
+      <div class="stats-grid" id="statsGrid" data-testid="dashboard-stats">
         <div class="loading">Loading statistics...</div>
       </div>
 
@@ -385,8 +385,13 @@
             id="searchInput"
             placeholder="Search by name, email, or ticket ID..."
             onkeypress="if(event.key==='Enter') searchRegistrations()"
+            data-testid="search-registrations"
           />
-          <select id="statusFilter" onchange="searchRegistrations()">
+          <select
+            id="statusFilter"
+            onchange="searchRegistrations()"
+            data-testid="ticket-type-filter"
+          >
             <option value="">All Status</option>
             <option value="valid">Valid</option>
             <option value="cancelled">Cancelled</option>
@@ -397,11 +402,13 @@
             <option value="false">Not Checked In</option>
             <option value="true">Checked In</option>
           </select>
-          <button onclick="searchRegistrations()">Search</button>
+          <button onclick="searchRegistrations()" data-testid="search-button">
+            Search
+          </button>
           <button onclick="exportToCSV()">Export CSV</button>
         </div>
 
-        <div id="registrationsTable">
+        <div id="registrationsTable" data-testid="registrations-table">
           <div class="loading">Loading registrations...</div>
         </div>
 
@@ -615,8 +622,8 @@
                                 <td>
                                     ${
                                       reg.checked_in_at
-                                        ? `<button class="checkin-btn" data-action="undo" data-ticket-id="${escapeHtml(reg.ticket_id)}">Undo</button>`
-                                        : `<button class="checkin-btn" data-action="checkin" data-ticket-id="${escapeHtml(reg.ticket_id)}">Check In</button>`
+                                        ? `<button class="checkin-btn" data-action="undo" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}">Undo</button>`
+                                        : `<button class="checkin-btn" data-action="checkin" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}">Check In</button>`
                                     }
                                 </td>
                             </tr>

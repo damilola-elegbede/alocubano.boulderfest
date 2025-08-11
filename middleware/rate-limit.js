@@ -1,12 +1,12 @@
 /**
  * Rate Limiting Middleware Integration
- * 
+ *
  * Provides easy integration of the advanced rate limiter with API endpoints.
  * Supports various endpoint types with appropriate configurations.
  */
 
-import { getRateLimiter } from '../api/lib/security/rate-limiter.js';
-import { ApplicationError } from './error-handler.js';
+import { getRateLimiter } from "../api/lib/security/rate-limiter.js";
+import { ApplicationError } from "./error-handler.js";
 
 /**
  * Create rate limiting middleware for specific endpoint type
@@ -14,126 +14,141 @@ import { ApplicationError } from './error-handler.js';
 export function createRateLimitMiddleware(endpointType, options = {}) {
   const rateLimiter = getRateLimiter();
   const { failOpen = true, ...otherOptions } = options;
-  
+
   return async function rateLimitMiddleware(req, res, next) {
     const startTime = Date.now();
-    
+
     try {
       // Skip rate limiting in development if specified
-      if (process.env.NODE_ENV === 'development' && options.skipInDevelopment) {
+      if (process.env.NODE_ENV === "development" && options.skipInDevelopment) {
         return next ? next() : undefined;
       }
-      
+
       // Check rate limit
       const result = await rateLimiter.checkRateLimit(req, endpointType, {
-        clientType: options.clientType || 'ip',
-        ...options
+        clientType: options.clientType || "ip",
+        ...options,
       });
-      
+
       // Add rate limit headers
-      res.setHeader('X-RateLimit-Endpoint', endpointType);
-      res.setHeader('X-RateLimit-Client', result.clientId || 'unknown');
-      res.setHeader('X-RateLimit-Performance', `${Date.now() - startTime}ms`);
-      
+      res.setHeader("X-RateLimit-Endpoint", endpointType);
+      res.setHeader("X-RateLimit-Client", result.clientId || "unknown");
+      res.setHeader("X-RateLimit-Performance", `${Date.now() - startTime}ms`);
+
       // Add standard rate limit headers using limiter result or config fallback
       if (result.limit !== undefined) {
-        res.setHeader('X-RateLimit-Limit', result.limit);
+        res.setHeader("X-RateLimit-Limit", result.limit);
       } else {
         // Fallback to shared config - access through rateLimiter instance
-        const config = rateLimiter.getEndpointConfigs()[endpointType] || rateLimiter.getEndpointConfigs().general;
+        const config =
+          rateLimiter.getEndpointConfigs()[endpointType] ||
+          rateLimiter.getEndpointConfigs().general;
         if (config) {
           // Check for different limit types (ipLimit, userLimit, deviceLimit, etc.)
-          const limitConfig = config.ipLimit || config.userLimit || config.deviceLimit;
+          const limitConfig =
+            config.ipLimit || config.userLimit || config.deviceLimit;
           if (limitConfig) {
-            res.setHeader('X-RateLimit-Limit', limitConfig.requests);
+            res.setHeader("X-RateLimit-Limit", limitConfig.requests);
           }
         }
       }
-      
+
       if (result.windowMs !== undefined) {
-        res.setHeader('X-RateLimit-Window', Math.floor(result.windowMs / 1000)); // Convert to seconds
+        res.setHeader("X-RateLimit-Window", Math.floor(result.windowMs / 1000)); // Convert to seconds
       } else {
         // Fallback to shared config
-        const config = rateLimiter.getEndpointConfigs()[endpointType] || rateLimiter.getEndpointConfigs().general;
+        const config =
+          rateLimiter.getEndpointConfigs()[endpointType] ||
+          rateLimiter.getEndpointConfigs().general;
         if (config) {
           // Check for different limit types (ipLimit, userLimit, deviceLimit, etc.)
-          const limitConfig = config.ipLimit || config.userLimit || config.deviceLimit;
+          const limitConfig =
+            config.ipLimit || config.userLimit || config.deviceLimit;
           if (limitConfig) {
-            res.setHeader('X-RateLimit-Window', Math.floor(limitConfig.windowMs / 1000));
+            res.setHeader(
+              "X-RateLimit-Window",
+              Math.floor(limitConfig.windowMs / 1000),
+            );
           }
         }
       }
-      
+
       if (result.allowed) {
         // Add success headers
         if (result.remaining !== undefined) {
-          res.setHeader('X-RateLimit-Remaining', result.remaining);
+          res.setHeader("X-RateLimit-Remaining", result.remaining);
         }
         if (result.resetTime) {
-          res.setHeader('X-RateLimit-Reset', new Date(result.resetTime).toISOString());
+          res.setHeader(
+            "X-RateLimit-Reset",
+            new Date(result.resetTime).toISOString(),
+          );
         }
-        
+
         // Continue to next middleware or handler
         return next ? next() : undefined;
-        
       } else {
         // Rate limit exceeded
-        res.setHeader('X-RateLimit-Exceeded', 'true');
+        res.setHeader("X-RateLimit-Exceeded", "true");
         if (result.retryAfter) {
-          res.setHeader('Retry-After', result.retryAfter);
-          res.setHeader('X-RateLimit-Retry-After', result.retryAfter);
+          res.setHeader("Retry-After", result.retryAfter);
+          res.setHeader("X-RateLimit-Retry-After", result.retryAfter);
         }
-        
+
         // Enhanced error information
         const errorDetails = {
-          reason: result.reason || 'rate_limit_exceeded',
+          reason: result.reason || "rate_limit_exceeded",
           endpoint: endpointType,
           clientId: result.clientId,
-          retryAfter: result.retryAfter
+          retryAfter: result.retryAfter,
         };
-        
+
         if (result.penaltyMultiplier > 1) {
           errorDetails.penaltyMultiplier = result.penaltyMultiplier;
           errorDetails.message = `Rate limit exceeded. Due to previous violations, your limits are temporarily reduced by ${result.penaltyMultiplier}x.`;
         }
-        
+
         // Create appropriate error message based on reason
-        let message = 'Rate limit exceeded. Please try again later.';
+        let message = "Rate limit exceeded. Please try again later.";
         let statusCode = 429;
-        
+
         switch (result.reason) {
-          case 'blacklisted':
-            message = 'Access denied due to suspicious activity.';
+          case "blacklisted":
+            message = "Access denied due to suspicious activity.";
             statusCode = 403;
             break;
-          case 'rate_limit_exceeded':
+          case "rate_limit_exceeded":
             if (result.retryAfter) {
               const minutes = Math.ceil(result.retryAfter / 60);
-              message = `Rate limit exceeded. Please wait ${minutes} minute${minutes !== 1 ? 's' : ''} before trying again.`;
+              message = `Rate limit exceeded. Please wait ${minutes} minute${minutes !== 1 ? "s" : ""} before trying again.`;
             }
             break;
         }
-        
-        const error = new ApplicationError(message, 'RateLimitError', statusCode, errorDetails);
-        
+
+        const error = new ApplicationError(
+          message,
+          "RateLimitError",
+          statusCode,
+          errorDetails,
+        );
+
         if (next) {
           return next(error);
         } else {
           // Direct response if no next middleware
           return res.status(statusCode).json({
             error: {
-              type: 'RateLimitError',
+              type: "RateLimitError",
               message,
               details: errorDetails,
-              timestamp: new Date().toISOString()
-            }
+              timestamp: new Date().toISOString(),
+            },
           });
         }
       }
-      
     } catch (error) {
-      console.error('Rate limiting middleware error:', error);
-      
+      console.error("Rate limiting middleware error:", error);
+
       // Configurable fail-open vs fail-closed behavior
       if (failOpen) {
         // Fail open - allow request to continue but log the error
@@ -143,22 +158,23 @@ export function createRateLimitMiddleware(endpointType, options = {}) {
       } else {
         // Fail closed - return 503 Service Unavailable
         const serviceError = new ApplicationError(
-          'Rate limiting service temporarily unavailable',
-          'ServiceUnavailable',
+          "Rate limiting service temporarily unavailable",
+          "ServiceUnavailable",
           503,
-          { reason: 'rate_limiter_error', temporary: true }
+          { reason: "rate_limiter_error", temporary: true },
         );
-        
+
         if (next) {
           return next(serviceError);
         } else {
           return res.status(503).json({
             error: {
-              type: 'ServiceUnavailable',
-              message: 'Rate limiting service temporarily unavailable. Please try again later.',
-              details: { reason: 'rate_limiter_error', temporary: true },
-              timestamp: new Date().toISOString()
-            }
+              type: "ServiceUnavailable",
+              message:
+                "Rate limiting service temporarily unavailable. Please try again later.",
+              details: { reason: "rate_limiter_error", temporary: true },
+              timestamp: new Date().toISOString(),
+            },
           });
         }
       }
@@ -176,9 +192,9 @@ export function createRateLimitMiddleware(endpointType, options = {}) {
  * - 10 requests per hour per user
  */
 export function paymentRateLimit(options = {}) {
-  return createRateLimitMiddleware('payment', {
-    clientType: 'ip',
-    ...options
+  return createRateLimitMiddleware("payment", {
+    clientType: "ip",
+    ...options,
   });
 }
 
@@ -187,9 +203,9 @@ export function paymentRateLimit(options = {}) {
  * - 100 requests per minute per device
  */
 export function qrValidationRateLimit(options = {}) {
-  return createRateLimitMiddleware('qrValidation', {
-    clientType: 'device',
-    ...options
+  return createRateLimitMiddleware("qrValidation", {
+    clientType: "device",
+    ...options,
   });
 }
 
@@ -199,9 +215,9 @@ export function qrValidationRateLimit(options = {}) {
  * - Progressive penalties for repeated failures
  */
 export function authRateLimit(options = {}) {
-  return createRateLimitMiddleware('auth', {
-    clientType: 'ip',
-    ...options
+  return createRateLimitMiddleware("auth", {
+    clientType: "ip",
+    ...options,
   });
 }
 
@@ -210,9 +226,9 @@ export function authRateLimit(options = {}) {
  * - 10 requests per hour per IP
  */
 export function emailRateLimit(options = {}) {
-  return createRateLimitMiddleware('email', {
-    clientType: 'ip',
-    ...options
+  return createRateLimitMiddleware("email", {
+    clientType: "ip",
+    ...options,
   });
 }
 
@@ -221,26 +237,26 @@ export function emailRateLimit(options = {}) {
  * - 60 requests per minute per IP
  */
 export function generalApiRateLimit(options = {}) {
-  return createRateLimitMiddleware('general', {
-    clientType: 'ip',
-    ...options
+  return createRateLimitMiddleware("general", {
+    clientType: "ip",
+    ...options,
   });
 }
 
 /**
  * Wrapper function for easy API endpoint protection
- * 
+ *
  * @param {Function} handler - The API handler function
  * @param {string} endpointType - Type of endpoint (payment, auth, email, etc.)
  * @param {Object} options - Rate limiting options
  * @returns {Function} Protected handler function
  */
-export function withRateLimit(handler, endpointType = 'general', options = {}) {
+export function withRateLimit(handler, endpointType = "general", options = {}) {
   const rateLimitMiddleware = createRateLimitMiddleware(endpointType, options);
-  
+
   return async function rateLimitedHandler(req, res) {
     let rateLimitPassed = true;
-    
+
     // Apply rate limiting
     await rateLimitMiddleware(req, res, (error) => {
       if (error) {
@@ -249,21 +265,21 @@ export function withRateLimit(handler, endpointType = 'general', options = {}) {
         if (!res.headersSent) {
           res.status(error.statusCode || 429).json({
             error: {
-              type: error.type || 'RateLimitError',
+              type: error.type || "RateLimitError",
               message: error.message,
               details: error.details,
-              timestamp: new Date().toISOString()
-            }
+              timestamp: new Date().toISOString(),
+            },
           });
         }
       }
     });
-    
+
     // If rate limit check failed or response was already sent, don't continue
     if (!rateLimitPassed || res.headersSent) {
       return;
     }
-    
+
     // Continue with original handler
     return await handler(req, res);
   };
@@ -273,7 +289,7 @@ export function withRateLimit(handler, endpointType = 'general', options = {}) {
  * Express-style middleware factory
  * Creates middleware that can be used with Express-like frameworks
  */
-export function expressRateLimit(endpointType = 'general', options = {}) {
+export function expressRateLimit(endpointType = "general", options = {}) {
   return createRateLimitMiddleware(endpointType, options);
 }
 
@@ -283,15 +299,15 @@ export function expressRateLimit(endpointType = 'general', options = {}) {
  */
 export function customRateLimit(config) {
   const {
-    endpointType = 'general',
+    endpointType = "general",
     customCheck = null,
     onExceeded = null,
     onAllowed = null,
     ...options
   } = config;
-  
+
   const rateLimiter = getRateLimiter();
-  
+
   return async function customRateLimitMiddleware(req, res, next) {
     try {
       // Custom pre-check logic
@@ -301,17 +317,20 @@ export function customRateLimit(config) {
           return next ? next() : undefined; // Skip rate limiting
         }
       }
-      
-      const result = await rateLimiter.checkRateLimit(req, endpointType, options);
-      
+
+      const result = await rateLimiter.checkRateLimit(
+        req,
+        endpointType,
+        options,
+      );
+
       if (result.allowed) {
         // Custom success logic
         if (onAllowed) {
           await onAllowed(req, res, result);
         }
-        
+
         return next ? next() : undefined;
-        
       } else {
         // Custom exceeded logic
         if (onExceeded) {
@@ -319,28 +338,27 @@ export function customRateLimit(config) {
         } else {
           // Default exceeded behavior
           const error = new ApplicationError(
-            'Rate limit exceeded',
-            'RateLimitError',
+            "Rate limit exceeded",
+            "RateLimitError",
             429,
-            { reason: result.reason, retryAfter: result.retryAfter }
+            { reason: result.reason, retryAfter: result.retryAfter },
           );
-          
+
           if (next) {
             return next(error);
           } else {
             return res.status(429).json({
               error: {
-                type: 'RateLimitError',
-                message: 'Rate limit exceeded',
-                retryAfter: result.retryAfter
-              }
+                type: "RateLimitError",
+                message: "Rate limit exceeded",
+                retryAfter: result.retryAfter,
+              },
             });
           }
         }
       }
-      
     } catch (error) {
-      console.error('Custom rate limit middleware error:', error);
+      console.error("Custom rate limit middleware error:", error);
       return next ? next() : undefined;
     }
   };
@@ -352,12 +370,12 @@ export function customRateLimit(config) {
  */
 export function bulkRateLimit(endpoints) {
   const middlewares = {};
-  
+
   for (const [path, config] of Object.entries(endpoints)) {
-    const { type = 'general', ...options } = config;
+    const { type = "general", ...options } = config;
     middlewares[path] = createRateLimitMiddleware(type, options);
   }
-  
+
   return middlewares;
 }
 
@@ -369,37 +387,41 @@ export function rateLimitStatus() {
   return async function rateLimitStatusHandler(req, res) {
     const rateLimiter = getRateLimiter();
     const analytics = rateLimiter.getAnalytics();
-    
+
     // Get client information
     const clientId = rateLimiter.getClientId(req);
     const isWhitelisted = rateLimiter.isWhitelisted(clientId);
     const isBlacklisted = rateLimiter.isBlacklisted(clientId);
-    
+
     // Hide sensitive information in production
-    const isProduction = process.env.NODE_ENV === 'production';
-    
+    const isProduction = process.env.NODE_ENV === "production";
+
     const response = {
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
-    
+
     if (isProduction) {
       // Only include basic status in production
       response.client = {
         whitelisted: isWhitelisted,
-        blacklisted: isBlacklisted
+        blacklisted: isBlacklisted,
       };
-      response.endpoints = Object.keys(rateLimiter.constructor.ENDPOINT_CONFIGS || {});
+      response.endpoints = Object.keys(
+        rateLimiter.constructor.ENDPOINT_CONFIGS || {},
+      );
     } else {
       // Include full details in non-production environments
       response.client = {
         id: clientId,
         whitelisted: isWhitelisted,
-        blacklisted: isBlacklisted
+        blacklisted: isBlacklisted,
       };
       response.analytics = analytics;
-      response.endpoints = Object.keys(rateLimiter.constructor.ENDPOINT_CONFIGS || {});
+      response.endpoints = Object.keys(
+        rateLimiter.constructor.ENDPOINT_CONFIGS || {},
+      );
     }
-    
+
     res.json(response);
   };
 }
@@ -415,5 +437,5 @@ export default {
   expressRateLimit,
   customRateLimit,
   bulkRateLimit,
-  rateLimitStatus
+  rateLimitStatus,
 };

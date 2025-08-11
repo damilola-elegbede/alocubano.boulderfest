@@ -7,6 +7,7 @@ As of Phase 7, the Google Sheets integration uses separate environment variables
 ## Background
 
 Previously, both Google Drive (for gallery images) and Google Sheets (for ticket sync) integrations were using the same environment variable names:
+
 - `GOOGLE_SERVICE_ACCOUNT_EMAIL`
 - `GOOGLE_PRIVATE_KEY`
 
@@ -15,18 +16,21 @@ This caused a critical issue where configuring one service would overwrite the c
 ## Changes
 
 ### Old Variables (DEPRECATED for Sheets)
+
 ```bash
 GOOGLE_SERVICE_ACCOUNT_EMAIL=sheets-account@project.iam.gserviceaccount.com
 GOOGLE_PRIVATE_KEY="sheets private key"
 ```
 
 ### New Variables (REQUIRED for Sheets)
+
 ```bash
 GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL=sheets-account@project.iam.gserviceaccount.com
 GOOGLE_SHEETS_PRIVATE_KEY="sheets private key"
 ```
 
 ### Drive Variables (UNCHANGED)
+
 ```bash
 GOOGLE_SERVICE_ACCOUNT_EMAIL=drive-account@project.iam.gserviceaccount.com
 GOOGLE_PRIVATE_KEY="drive private key"
@@ -60,13 +64,14 @@ GOOGLE_PRIVATE_KEY="drive private key"
    - You can use the same service account for both if it has appropriate permissions
 
 4. **Update your environment files**:
+
    ```bash
    # In .env.local or production environment
-   
+
    # Drive API (for gallery)
    GOOGLE_SERVICE_ACCOUNT_EMAIL=drive-service@project.iam.gserviceaccount.com
    GOOGLE_PRIVATE_KEY="drive private key"
-   
+
    # Sheets API (for ticket sync)
    GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL=sheets-service@project.iam.gserviceaccount.com
    GOOGLE_SHEETS_PRIVATE_KEY="sheets private key"
@@ -103,6 +108,7 @@ npm run test:sheets
 ## Support
 
 If you encounter issues during migration:
+
 1. Check that all required environment variables are set
 2. Verify service account permissions for both APIs
 3. Ensure the Google Sheet is shared with the Sheets service account email

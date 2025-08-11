@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import fs from 'fs/promises';
-import path from 'path';
-import AuditLogger from '../../lib/security/audit-logger.js';
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import fs from "fs/promises";
+import path from "path";
+import AuditLogger from "../../lib/security/audit-logger.js";
 
-describe('AuditLogger', () => {
-  const logDir = path.resolve(process.cwd(), 'logs', 'audit');
+describe("AuditLogger", () => {
+  const logDir = path.resolve(process.cwd(), "logs", "audit");
 
   // Set up log directory before each test
   beforeEach(async () => {
@@ -27,11 +27,11 @@ describe('AuditLogger', () => {
     }
   });
 
-  it('should log an event successfully', async () => {
+  it("should log an event successfully", async () => {
     const logId = await AuditLogger.log({
-      eventType: 'TEST_EVENT',
+      eventType: "TEST_EVENT",
       severity: AuditLogger.SEVERITY.INFO,
-      context: { test: 'data' }
+      context: { test: "data" },
     });
 
     expect(logId).toBeTruthy();
@@ -41,95 +41,89 @@ describe('AuditLogger', () => {
     expect(files.length).toBe(1);
 
     // Read log file contents
-    const logContent = await fs.readFile(
-      path.join(logDir, files[0]), 
-      'utf-8'
-    );
-    
+    const logContent = await fs.readFile(path.join(logDir, files[0]), "utf-8");
+
     const logEntries = logContent
-      .split('\n')
-      .filter(line => line.trim())
-      .map(line => JSON.parse(line));
+      .split("\n")
+      .filter((line) => line.trim())
+      .map((line) => JSON.parse(line));
 
     expect(logEntries.length).toBe(1);
     const entry = logEntries[0];
 
     expect(entry).toMatchObject({
       id: logId,
-      eventType: 'TEST_EVENT',
+      eventType: "TEST_EVENT",
       severity: AuditLogger.SEVERITY.INFO,
       success: true,
-      hash: expect.any(String)
+      hash: expect.any(String),
     });
   });
 
-  it('should sanitize sensitive context data', async () => {
+  it("should sanitize sensitive context data", async () => {
     await AuditLogger.log({
-      eventType: 'SENSITIVE_TEST',
+      eventType: "SENSITIVE_TEST",
       context: {
-        password: 'secret123',
-        token: 'abc123',
-        username: 'testuser'
-      }
+        password: "secret123",
+        token: "abc123",
+        username: "testuser",
+      },
     });
 
     const files = await fs.readdir(logDir);
-    const logContent = await fs.readFile(
-      path.join(logDir, files[0]), 
-      'utf-8'
-    );
-    
+    const logContent = await fs.readFile(path.join(logDir, files[0]), "utf-8");
+
     const logEntries = logContent
-      .split('\n')
-      .filter(line => line.trim())
-      .map(line => JSON.parse(line));
+      .split("\n")
+      .filter((line) => line.trim())
+      .map((line) => JSON.parse(line));
 
     const entry = logEntries[0];
-    
+
     // Verify sensitive data is removed
     expect(entry.password).toBeUndefined();
     expect(entry.token).toBeUndefined();
     // Non-sensitive data should remain
-    expect(entry.username).toBe('testuser');
+    expect(entry.username).toBe("testuser");
   });
 
-  it('should retrieve logs with filters', async () => {
+  it("should retrieve logs with filters", async () => {
     // Log multiple events
     await AuditLogger.log({
-      eventType: 'LOGIN_SUCCESS',
+      eventType: "LOGIN_SUCCESS",
       severity: AuditLogger.SEVERITY.INFO,
-      context: { username: 'user1' }
+      context: { username: "user1" },
     });
 
     await AuditLogger.log({
-      eventType: 'LOGIN_FAILURE',
+      eventType: "LOGIN_FAILURE",
       severity: AuditLogger.SEVERITY.HIGH,
       success: false,
-      context: { username: 'user2' }
+      context: { username: "user2" },
     });
 
     // Retrieve logs
     const successLogs = await AuditLogger.retrieveLogs({
-      eventTypes: ['LOGIN_SUCCESS'],
-      success: true
+      eventTypes: ["LOGIN_SUCCESS"],
+      success: true,
     });
 
     const failureLogs = await AuditLogger.retrieveLogs({
-      eventTypes: ['LOGIN_FAILURE'],
-      success: false
+      eventTypes: ["LOGIN_FAILURE"],
+      success: false,
     });
 
     expect(successLogs.length).toBe(1);
     expect(failureLogs.length).toBe(1);
 
     expect(successLogs[0]).toMatchObject({
-      eventType: 'LOGIN_SUCCESS',
-      success: true
+      eventType: "LOGIN_SUCCESS",
+      success: true,
     });
 
     expect(failureLogs[0]).toMatchObject({
-      eventType: 'LOGIN_FAILURE',
-      success: false
+      eventType: "LOGIN_FAILURE",
+      success: false,
     });
   });
 });

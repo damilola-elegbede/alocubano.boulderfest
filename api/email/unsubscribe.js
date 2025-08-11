@@ -147,8 +147,8 @@ export default async function handler(req, res) {
       });
     }
 
-    // Get service
-    const emailService = getEmailSubscriberService();
+    // Ensure service is initialized
+    const emailService = await getEmailSubscriberService().ensureInitialized();
 
     // Validate unsubscribe token
     const isValidToken = emailService.validateUnsubscribeToken(email, token);
@@ -316,6 +316,58 @@ export default async function handler(req, res) {
     });
 
     // Handle specific errors
+    if (
+      error.message.includes("Failed to initialize email subscriber service")
+    ) {
+      const message =
+        "Email service is currently initializing. Please try again in a moment.";
+
+      if (req.method === "GET") {
+        const html = `
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>Service Initializing - A Lo Cubano Boulder Fest</title>
+                        <style>
+                            body {
+                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                                max-width: 600px;
+                                margin: 0 auto;
+                                padding: 40px 20px;
+                                text-align: center;
+                                background: #f8f9fa;
+                                color: #343a40;
+                            }
+                            .container {
+                                background: white;
+                                padding: 40px;
+                                border-radius: 8px;
+                                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                            }
+                            h1 {
+                                color: #ffc107;
+                                margin-bottom: 20px;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <h1>Service Initializing</h1>
+                            <p>Our email service is currently starting up. Please try again in a moment.</p>
+                        </div>
+                    </body>
+                    </html>
+                `;
+
+        res.setHeader("Content-Type", "text/html");
+        return res.status(503).send(html);
+      }
+
+      return res.status(503).json({ error: message });
+    }
+
     if (error.message.includes("not found")) {
       const message = "Email address not found or already unsubscribed";
 

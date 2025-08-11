@@ -161,8 +161,8 @@ export default async function handler(req, res) {
       });
     }
 
-    // Get services
-    const emailService = getEmailSubscriberService();
+    // Ensure services are initialized
+    const emailService = await getEmailSubscriberService().ensureInitialized();
 
     // Prepare subscriber data
     const subscriberData = {
@@ -228,6 +228,15 @@ export default async function handler(req, res) {
     });
 
     // Handle specific errors
+    if (
+      error.message.includes("Failed to initialize email subscriber service")
+    ) {
+      return res.status(503).json({
+        error:
+          "Email service is currently initializing. Please try again in a moment.",
+      });
+    }
+
     if (error.message.includes("already subscribed")) {
       return res.status(409).json({
         error: "This email address is already subscribed to our newsletter",

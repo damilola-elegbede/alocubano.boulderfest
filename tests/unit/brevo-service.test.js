@@ -34,6 +34,9 @@ describe("BrevoService", () => {
     // Reset mocks
     vi.clearAllMocks();
 
+    // Create a proper vi.fn() mock with all the needed methods
+    global.fetch = vi.fn();
+
     // Set up environment variables
     process.env.BREVO_API_KEY = "test-api-key";
     process.env.BREVO_NEWSLETTER_LIST_ID = "1";

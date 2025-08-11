@@ -302,8 +302,12 @@
       }
 
       @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
       }
 
       .stats-grid {
@@ -360,7 +364,9 @@
     <div class="admin-header">
       <h1>🔐 MFA Security Settings</h1>
       <div class="header-actions">
-        <a href="/pages/admin/dashboard.html" class="btn btn-primary">← Dashboard</a>
+        <a href="/pages/admin/dashboard.html" class="btn btn-primary"
+          >← Dashboard</a
+        >
       </div>
     </div>
 
@@ -389,7 +395,9 @@
         <h2>Recovery Options</h2>
         <div id="recoveryContainer">
           <div class="warning-box">
-            <strong>Important:</strong> Store your backup codes in a safe place. They are your only way to recover access if you lose your authenticator device.
+            <strong>Important:</strong> Store your backup codes in a safe place.
+            They are your only way to recover access if you lose your
+            authenticator device.
           </div>
           <!-- Content will be dynamically loaded -->
         </div>
@@ -409,15 +417,15 @@
       // Check authentication
       async function checkAuth() {
         try {
-          const response = await fetch('/api/admin/dashboard');
+          const response = await fetch("/api/admin/dashboard");
           if (!response.ok) {
-            window.location.href = '/pages/admin/login.html';
+            window.location.href = "/pages/admin/login.html";
             return false;
           }
           return true;
         } catch (error) {
-          console.error('Auth check failed:', error);
-          window.location.href = '/pages/admin/login.html';
+          console.error("Auth check failed:", error);
+          window.location.href = "/pages/admin/login.html";
           return false;
         }
       }
@@ -425,31 +433,34 @@
       // Load MFA status
       async function loadMfaStatus() {
         try {
-          const response = await fetch('/api/admin/mfa-setup');
+          const response = await fetch("/api/admin/mfa-setup");
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
-          
+
           mfaStatus = await response.json();
           displayMfaStatus();
           displaySetupOptions();
           displayRecoveryOptions();
         } catch (error) {
-          console.error('Failed to load MFA status:', error);
-          displayError('mfaStatusContainer', `Failed to load MFA status: ${error.message}`);
+          console.error("Failed to load MFA status:", error);
+          displayError(
+            "mfaStatusContainer",
+            `Failed to load MFA status: ${error.message}`,
+          );
         }
       }
 
       // Display MFA status
       function displayMfaStatus() {
-        const container = document.getElementById('mfaStatusContainer');
+        const container = document.getElementById("mfaStatusContainer");
         const isEnabled = mfaStatus.isEnabled;
-        const statusClass = isEnabled ? 'enabled' : 'disabled';
-        const statusIcon = isEnabled ? '✅' : '❌';
-        const statusTitle = isEnabled ? 'MFA is Enabled' : 'MFA is Disabled';
-        const statusDesc = isEnabled ? 
-          `Enabled on ${new Date(mfaStatus.enabledAt).toLocaleDateString()}` :
-          'Your account is not protected by multi-factor authentication';
+        const statusClass = isEnabled ? "enabled" : "disabled";
+        const statusIcon = isEnabled ? "✅" : "❌";
+        const statusTitle = isEnabled ? "MFA is Enabled" : "MFA is Disabled";
+        const statusDesc = isEnabled
+          ? `Enabled on ${new Date(mfaStatus.enabledAt).toLocaleDateString()}`
+          : "Your account is not protected by multi-factor authentication";
 
         container.innerHTML = `
           <div class="mfa-status ${statusClass}">
@@ -459,7 +470,9 @@
               <div class="status-description">${statusDesc}</div>
             </div>
           </div>
-          ${isEnabled ? `
+          ${
+            isEnabled
+              ? `
             <div class="stats-grid">
               <div class="stat-item">
                 <div class="stat-value">${mfaStatus.backupCodesCount}</div>
@@ -474,18 +487,20 @@
                 <div class="stat-label">Total Attempts (24h)</div>
               </div>
               <div class="stat-item">
-                <div class="stat-value">${mfaStatus.deviceName || 'Unknown'}</div>
+                <div class="stat-value">${mfaStatus.deviceName || "Unknown"}</div>
                 <div class="stat-label">Authenticator Device</div>
               </div>
             </div>
-          ` : ''}
+          `
+              : ""
+          }
         `;
       }
 
       // Display setup options
       function displaySetupOptions() {
-        const container = document.getElementById('setupContainer');
-        
+        const container = document.getElementById("setupContainer");
+
         if (mfaStatus.isEnabled) {
           container.innerHTML = `
             <div class="success-box">
@@ -512,8 +527,8 @@
 
       // Display recovery options
       function displayRecoveryOptions() {
-        const container = document.getElementById('recoveryContainer');
-        
+        const container = document.getElementById("recoveryContainer");
+
         if (!mfaStatus.isEnabled) {
           container.innerHTML = `
             <div class="warning-box">
@@ -539,7 +554,7 @@
 
       // Start MFA setup process
       async function startMfaSetup() {
-        const container = document.getElementById('setupContainer');
+        const container = document.getElementById("setupContainer");
         container.innerHTML = `
           <div class="loading">
             <div class="spinner"></div>
@@ -548,11 +563,14 @@
         `;
 
         try {
-          const response = await fetch('/api/admin/mfa-setup?action=generate-secret', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ deviceName: 'Admin Authenticator' })
-          });
+          const response = await fetch(
+            "/api/admin/mfa-setup?action=generate-secret",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ deviceName: "Admin Authenticator" }),
+            },
+          );
 
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -561,14 +579,17 @@
           setupData = await response.json();
           displaySetupFlow();
         } catch (error) {
-          console.error('Failed to generate MFA secret:', error);
-          displayError('setupContainer', `Failed to generate MFA secret: ${error.message}`);
+          console.error("Failed to generate MFA secret:", error);
+          displayError(
+            "setupContainer",
+            `Failed to generate MFA secret: ${error.message}`,
+          );
         }
       }
 
       // Display setup flow
       function displaySetupFlow() {
-        const container = document.getElementById('setupContainer');
+        const container = document.getElementById("setupContainer");
         container.innerHTML = `
           <div class="setup-flow active">
             <div class="setup-step">
@@ -620,15 +641,15 @@
 
         // Auto-focus on verification input
         setTimeout(() => {
-          document.getElementById('verificationCode').focus();
+          document.getElementById("verificationCode").focus();
         }, 100);
       }
 
       // Verify MFA setup
       async function verifyMfaSetup() {
-        const codeInput = document.getElementById('verificationCode');
+        const codeInput = document.getElementById("verificationCode");
         const code = codeInput.value.trim();
-        const resultDiv = document.getElementById('verificationResult');
+        const resultDiv = document.getElementById("verificationResult");
 
         if (!/^\d{6}$/.test(code)) {
           resultDiv.innerHTML = `
@@ -647,14 +668,17 @@
         `;
 
         try {
-          const response = await fetch('/api/admin/mfa-setup?action=verify-setup', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              token: code,
-              deviceName: 'Admin Authenticator'
-            })
-          });
+          const response = await fetch(
+            "/api/admin/mfa-setup?action=verify-setup",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                token: code,
+                deviceName: "Admin Authenticator",
+              }),
+            },
+          );
 
           const result = await response.json();
 
@@ -664,14 +688,13 @@
 
           // Success! Show backup codes
           displayBackupCodes(result.backupCodes);
-          
+
           // Reload status after successful setup
           setTimeout(() => {
             loadMfaStatus();
           }, 2000);
-
         } catch (error) {
-          console.error('MFA verification failed:', error);
+          console.error("MFA verification failed:", error);
           resultDiv.innerHTML = `
             <div class="error-box">
               <strong>Verification failed:</strong> ${error.message}
@@ -682,7 +705,7 @@
 
       // Display backup codes
       function displayBackupCodes(codes) {
-        const container = document.getElementById('setupContainer');
+        const container = document.getElementById("setupContainer");
         container.innerHTML = `
           <div class="success-box">
             <strong>✅ MFA Successfully Enabled!</strong><br>
@@ -700,10 +723,10 @@
               Each code can only be used once.
             </div>
             <div class="backup-codes">
-              ${codes.map(code => `<div class="backup-code">${code}</div>`).join('')}
+              ${codes.map((code) => `<div class="backup-code">${code}</div>`).join("")}
             </div>
             <div class="mfa-actions">
-              <button class="btn btn-primary" onclick="downloadBackupCodes(${JSON.stringify(codes).replace(/"/g, '&quot;')})">Download Codes</button>
+              <button class="btn btn-primary" onclick="downloadBackupCodes(${JSON.stringify(codes).replace(/"/g, "&quot;")})">Download Codes</button>
               <button class="btn btn-success" onclick="loadMfaStatus()">Continue</button>
             </div>
           </div>
@@ -712,15 +735,20 @@
 
       // Generate new backup codes
       async function generateBackupCodes() {
-        if (!confirm('This will invalidate all existing backup codes. Continue?')) {
+        if (
+          !confirm("This will invalidate all existing backup codes. Continue?")
+        ) {
           return;
         }
 
         try {
-          const response = await fetch('/api/admin/mfa-setup?action=generate-backup-codes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-          });
+          const response = await fetch(
+            "/api/admin/mfa-setup?action=generate-backup-codes",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+            },
+          );
 
           const result = await response.json();
 
@@ -730,14 +758,16 @@
 
           displayBackupCodes(result.backupCodes);
         } catch (error) {
-          console.error('Failed to generate backup codes:', error);
+          console.error("Failed to generate backup codes:", error);
           alert(`Failed to generate backup codes: ${error.message}`);
         }
       }
 
       // Confirm disable MFA
       function confirmDisableMfa() {
-        const code = prompt('Enter your current TOTP code or backup code to disable MFA:');
+        const code = prompt(
+          "Enter your current TOTP code or backup code to disable MFA:",
+        );
         if (!code) return;
 
         disableMfa(code);
@@ -746,10 +776,10 @@
       // Disable MFA
       async function disableMfa(confirmationCode) {
         try {
-          const response = await fetch('/api/admin/mfa-setup?action=disable', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ confirmationCode })
+          const response = await fetch("/api/admin/mfa-setup?action=disable", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ confirmationCode }),
           });
 
           const result = await response.json();
@@ -758,10 +788,10 @@
             throw new Error(result.error);
           }
 
-          alert('MFA has been disabled successfully.');
+          alert("MFA has been disabled successfully.");
           loadMfaStatus();
         } catch (error) {
-          console.error('Failed to disable MFA:', error);
+          console.error("Failed to disable MFA:", error);
           alert(`Failed to disable MFA: ${error.message}`);
         }
       }
@@ -773,7 +803,7 @@ Generated: ${new Date().toLocaleString()}
 
 IMPORTANT: Store these codes safely. Each can only be used once.
 
-${codes.map((code, i) => `${i + 1}. ${code}`).join('\n')}
+${codes.map((code, i) => `${i + 1}. ${code}`).join("\n")}
 
 Instructions:
 - Use these codes if you lose access to your authenticator app
@@ -781,9 +811,9 @@ Instructions:
 - Generate new codes after using several of them
 `;
 
-        const blob = new Blob([content], { type: 'text/plain' });
+        const blob = new Blob([content], { type: "text/plain" });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
         a.download = `mfa-backup-codes-${Date.now()}.txt`;
         document.body.appendChild(a);
@@ -794,8 +824,12 @@ Instructions:
 
       // Show recovery options
       function showRecoveryOptions() {
-        if (confirm('Open recovery options? This should only be used if you have lost access to your authenticator device.')) {
-          window.open('/pages/admin/mfa-recovery.html', '_blank');
+        if (
+          confirm(
+            "Open recovery options? This should only be used if you have lost access to your authenticator device.",
+          )
+        ) {
+          window.open("/pages/admin/mfa-recovery.html", "_blank");
         }
       }
 
@@ -811,17 +845,17 @@ Instructions:
 
       // HTML escaping function
       function escapeHtml(unsafe) {
-        if (unsafe == null) return '';
+        if (unsafe == null) return "";
         return String(unsafe)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#039;');
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
       }
 
       // Initialize on page load
-      document.addEventListener('DOMContentLoaded', init);
+      document.addEventListener("DOMContentLoaded", init);
     </script>
   </body>
 </html>

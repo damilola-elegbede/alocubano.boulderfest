@@ -23,7 +23,7 @@ class CacheService {
    */
   async init() {
     if (this.initialized) return;
-    
+
     // Return existing promise if initialization is in progress
     if (this.initPromise) return this.initPromise;
 
@@ -226,17 +226,19 @@ class CacheService {
     const cache = await this.ensureInitialized();
 
     // Create stable cache key by sorting all object keys recursively
-    const sortedParams = params 
+    const sortedParams = params
       ? JSON.stringify(params, (key, value) => {
-          if (value && typeof value === 'object' && !Array.isArray(value)) {
-            return Object.keys(value).sort().reduce((sorted, k) => {
-              sorted[k] = value[k];
-              return sorted;
-            }, {});
+          if (value && typeof value === "object" && !Array.isArray(value)) {
+            return Object.keys(value)
+              .sort()
+              .reduce((sorted, k) => {
+                sorted[k] = value[k];
+                return sorted;
+              }, {});
           }
           return value;
         })
-      : '{}';
+      : "{}";
     const cacheKey = `${method}:${endpoint}:${sortedParams}`;
 
     return cache.set(cacheKey, response, {
@@ -252,17 +254,19 @@ class CacheService {
     const cache = await this.ensureInitialized();
 
     // Create stable cache key by sorting all object keys recursively
-    const sortedParams = params 
+    const sortedParams = params
       ? JSON.stringify(params, (key, value) => {
-          if (value && typeof value === 'object' && !Array.isArray(value)) {
-            return Object.keys(value).sort().reduce((sorted, k) => {
-              sorted[k] = value[k];
-              return sorted;
-            }, {});
+          if (value && typeof value === "object" && !Array.isArray(value)) {
+            return Object.keys(value)
+              .sort()
+              .reduce((sorted, k) => {
+                sorted[k] = value[k];
+                return sorted;
+              }, {});
           }
           return value;
         })
-      : '{}';
+      : "{}";
     const cacheKey = `${method}:${endpoint}:${sortedParams}`;
 
     return cache.get(cacheKey, {

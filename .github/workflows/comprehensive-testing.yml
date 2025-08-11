@@ -1,0 +1,603 @@
+name: Comprehensive Testing Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run daily regression tests at 2 AM UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      test-suite:
+        description: "Test suite to run"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - unit
+          - e2e
+          - security
+          - performance
+
+# Cancel in-progress workflows when new commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_ENV: test
+  CI: true
+  COVERAGE: true
+
+jobs:
+  # Job 1: Code Quality and Linting
+  quality-check:
+    name: Code Quality & Linting
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: |
+          npm ci --prefer-offline --no-audit --progress=false
+
+      - name: Cache ESLint
+        uses: actions/cache@v4
+        with:
+          path: .eslintcache
+          key: ${{ runner.os }}-eslint-${{ hashFiles('**/*.js') }}
+          restore-keys: |
+            ${{ runner.os }}-eslint-
+
+      - name: Run ESLint
+        run: npm run lint:js -- --cache
+
+      - name: Run HTMLHint
+        run: npm run lint:html
+
+      - name: Check file structure
+        run: npm run verify-structure
+
+      - name: Upload lint results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-results
+          path: |
+            .eslintcache
+            lint-report.json
+          retention-days: 7
+
+  # Job 2: Unit Tests with Matrix Strategy
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: quality-check
+    timeout-minutes: 20
+
+    strategy:
+      matrix:
+        node-version: [18, 20]
+        test-shard: [1, 2, 3, 4]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --progress=false
+
+      - name: Setup test results directory
+        run: mkdir -p test-results coverage
+
+      - name: Run unit tests with sharding
+        run: |
+          npx vitest run --shard=${{ matrix.test-shard }}/4 \
+            --coverage \
+            --reporter=default \
+            --reporter=junit \
+            --reporter=json \
+            --outputFile.junit=./test-results/junit-${{ matrix.node-version }}-shard-${{ matrix.test-shard }}.xml \
+            --outputFile.json=./test-results/results-${{ matrix.node-version }}-shard-${{ matrix.test-shard }}.json
+        env:
+          NODE_ENV: test
+          CI: true
+          COVERAGE: true
+
+      - name: Upload coverage to Codecov
+        if: matrix.node-version == '20' && matrix.test-shard == '1'
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: unit-tests
+          name: unit-tests-coverage
+          fail_ci_if_error: false
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results-node-${{ matrix.node-version }}-shard-${{ matrix.test-shard }}
+          path: |
+            test-results/
+            coverage/
+          retention-days: 30
+
+      - name: Performance regression detection
+        if: matrix.node-version == '20' && matrix.test-shard == '1'
+        run: |
+          if [ -f ./test-results/results-20-shard-1.json ]; then
+            node -e "
+              const results = JSON.parse(require('fs').readFileSync('./test-results/results-20-shard-1.json', 'utf8'));
+              const slowTests = results.testResults?.filter(test => test.duration > 5000) || [];
+              if (slowTests.length > 0) {
+                console.log('⚠️ Slow tests detected (>5s):');
+                slowTests.forEach(test => console.log(\`- \${test.name}: \${test.duration}ms\`));
+                process.exit(1);
+              }
+              console.log('✅ All tests within performance thresholds');
+            " || echo "Performance check failed but continuing..."
+          fi
+
+  # Job 3: Integration Tests with Redis
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: quality-check
+    timeout-minutes: 15
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --progress=false
+
+      - name: Wait for Redis
+        run: |
+          timeout 30 bash -c 'until redis-cli ping; do sleep 1; done'
+          echo "Redis is ready"
+
+      - name: Run integration tests
+        run: npm run test:integration
+        env:
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
+
+      - name: Run database tests
+        run: npm run test:database
+        env:
+          NODE_ENV: test
+
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: test-results/
+          retention-days: 30
+
+  # Job 4: End-to-End Tests with Playwright
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: quality-check
+    timeout-minutes: 30
+
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+        shard: [1, 2]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --progress=false
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Start server for E2E tests
+        run: |
+          npm run start:local &
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: Run E2E tests
+        run: |
+          npx playwright test --project=${{ matrix.browser }} --shard=${{ matrix.shard }}/2
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}-shard-${{ matrix.shard }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 30
+
+  # Job 5: Security Testing
+  security-tests:
+    name: Security Testing
+    runs-on: ubuntu-latest
+    needs: quality-check
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --progress=false
+
+      - name: Run security audit
+        run: |
+          npm audit --audit-level high --production
+          npm audit --audit-level critical --production
+
+      - name: Run security tests
+        run: npm run test:security
+
+      - name: OWASP ZAP Baseline Scan
+        if: github.event_name == 'schedule'
+        uses: zaproxy/action-baseline@v0.10.0
+        with:
+          target: "http://localhost:3000"
+          rules_file_name: ".zap/rules.tsv"
+          cmd_options: "-a"
+
+      - name: Upload security scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-test-results
+          path: |
+            test-results/
+            reports/
+          retention-days: 30
+
+  # Job 6: Performance Tests (K6)
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    timeout-minutes: 20
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --progress=false
+
+      - name: Install K6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Start application for load testing
+        run: |
+          npm run start:local &
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: Run performance tests
+        run: npm run performance:ci
+        env:
+          LOAD_TEST_BASE_URL: http://localhost:3000
+
+      - name: Performance baseline comparison
+        run: |
+          if [ -f baseline-performance.json ]; then
+            node scripts/compare-performance-results.js
+          else
+            echo "No baseline found, saving current results as baseline"
+            cp performance-results.json baseline-performance.json
+          fi
+
+      - name: Upload performance results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-test-results
+          path: |
+            performance-results.json
+            k6-report.html
+          retention-days: 30
+
+  # Job 7: Build and Deployment Tests
+  build-tests:
+    name: Build & Deployment Tests
+    runs-on: ubuntu-latest
+    needs: [unit-tests, e2e-tests]
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --progress=false
+
+      - name: Run pre-build checks
+        run: npm run prebuild
+
+      - name: Build project
+        run: npm run build
+
+      - name: Test deployment readiness
+        run: npm run deploy:check
+
+      - name: Validate deployment configuration
+        run: |
+          # Check Vercel configuration
+          node -e "
+            const config = require('./vercel.json');
+            console.log('✅ Vercel config is valid');
+            console.log('Routes:', config.routes?.length || 0);
+            console.log('Redirects:', config.redirects?.length || 0);
+          "
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            dist/
+            .vercel/
+            build-report.json
+          retention-days: 7
+
+  # Job 8: Test Results Aggregation and Reporting
+  test-aggregation:
+    name: Test Results Aggregation
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, e2e-tests, security-tests]
+    if: always()
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Aggregate test results
+        run: |
+          mkdir -p aggregated-results
+
+          # Combine JUnit reports
+          find artifacts -name "*.xml" -type f -exec cp {} aggregated-results/ \;
+
+          # Combine JSON reports
+          find artifacts -name "*.json" -type f -exec cp {} aggregated-results/ \;
+
+          # Generate summary report
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            
+            const summary = {
+              timestamp: new Date().toISOString(),
+              workflow: '${{ github.workflow }}',
+              commit: '${{ github.sha }}',
+              branch: '${{ github.ref_name }}',
+              results: {}
+            };
+            
+            // Count test files
+            const files = fs.readdirSync('./aggregated-results');
+            summary.totalArtifacts = files.length;
+            summary.junitFiles = files.filter(f => f.endsWith('.xml')).length;
+            summary.jsonFiles = files.filter(f => f.endsWith('.json')).length;
+            
+            fs.writeFileSync('./aggregated-results/test-summary.json', JSON.stringify(summary, null, 2));
+            console.log('Test Summary Generated:', JSON.stringify(summary, null, 2));
+          "
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Test Results Summary
+          path: "aggregated-results/*.xml"
+          reporter: java-junit
+          fail-on-error: false
+
+      - name: Upload aggregated results
+        uses: actions/upload-artifact@v4
+        with:
+          name: aggregated-test-results
+          path: aggregated-results/
+          retention-days: 90
+
+  # Job 9: Slack Notifications on Failure
+  notifications:
+    name: Failure Notifications
+    runs-on: ubuntu-latest
+    needs:
+      [
+        unit-tests,
+        integration-tests,
+        e2e-tests,
+        security-tests,
+        performance-tests,
+        build-tests,
+      ]
+    if: failure() && (github.ref == 'refs/heads/main' || github.event_name == 'schedule')
+    timeout-minutes: 5
+
+    steps:
+      - name: Notify Slack on Failure
+        if: env.SLACK_WEBHOOK_URL != ''
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: "#ci-cd"
+          username: "GitHub Actions"
+          icon_emoji: ":x:"
+          title: "CI Pipeline Failed"
+          text: |
+            :x: *CI Pipeline Failed* for `${{ github.repository }}`
+
+            *Branch:* `${{ github.ref_name }}`
+            *Commit:* `${{ github.sha }}`
+            *Author:* ${{ github.actor }}
+            *Workflow:* ${{ github.workflow }}
+
+            [View Workflow Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Create GitHub Issue on Repeated Failure
+        if: github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔥 Daily CI Pipeline Failed - ${new Date().toDateString()}`,
+              body: `
+                ## CI Pipeline Failure Report
+                
+                The daily regression test pipeline has failed.
+                
+                **Details:**
+                - **Workflow:** ${context.workflow}
+                - **Run ID:** ${context.runId}
+                - **Commit:** ${context.sha}
+                - **Branch:** ${context.ref}
+                
+                **Failed Jobs:**
+                Please check the workflow run for details on which specific jobs failed.
+                
+                **Action Required:**
+                1. Review the failed tests and logs
+                2. Fix any issues found
+                3. Ensure all tests pass locally before pushing
+                4. Close this issue once resolved
+                
+                [View Full Workflow Run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+              `,
+              labels: ['bug', 'ci-failure', 'priority-high']
+            });
+            console.log('Created issue:', issue.data.number);
+
+  # Job 10: Success Summary
+  success-summary:
+    name: Success Summary
+    runs-on: ubuntu-latest
+    needs:
+      [
+        unit-tests,
+        integration-tests,
+        e2e-tests,
+        security-tests,
+        build-tests,
+        test-aggregation,
+      ]
+    if: success()
+    timeout-minutes: 5
+
+    steps:
+      - name: Success notification
+        run: |
+          echo "🎉 All tests passed successfully!"
+          echo "✅ Unit Tests: Passed"
+          echo "✅ Integration Tests: Passed" 
+          echo "✅ E2E Tests: Passed"
+          echo "✅ Security Tests: Passed"
+          echo "✅ Build Tests: Passed"
+          echo ""
+          echo "Pipeline completed for: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+
+      - name: Update deployment status
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "🚀 Ready for deployment to production"
+          echo "All quality gates have been passed"

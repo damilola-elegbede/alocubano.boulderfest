@@ -17,6 +17,7 @@ Turso is a SQLite-compatible database that provides edge-distributed storage wit
 Install the Turso CLI tool on your local machine:
 
 ### macOS
+
 ```bash
 # Using Homebrew (recommended)
 brew install turso
@@ -26,17 +27,20 @@ curl -sSfL https://get.tur.so/install.sh | bash
 ```
 
 ### Linux
+
 ```bash
 curl -sSfL https://get.tur.so/install.sh | bash
 ```
 
 ### Windows
+
 ```powershell
 # Using PowerShell
 irm get.tur.so | iex
 ```
 
 Verify installation:
+
 ```bash
 turso --version
 ```
@@ -44,12 +48,15 @@ turso --version
 ## Step 2: Create Turso Account
 
 1. **Sign up for Turso** (if you don't have an account):
+
    ```bash
    turso auth signup
    ```
+
    This will open your browser to complete GitHub OAuth authentication.
 
 2. **Login to existing account**:
+
    ```bash
    turso auth login
    ```
@@ -62,20 +69,25 @@ turso --version
 ## Step 3: Create Development Database
 
 1. **Create your development database**:
+
    ```bash
    turso db create alocubano-dev
    ```
 
 2. **Get the database URL**:
+
    ```bash
    turso db show alocubano-dev --url
    ```
+
    Copy this URL - you'll need it for `TURSO_DATABASE_URL`
 
 3. **Create an auth token for development**:
+
    ```bash
    turso db tokens create alocubano-dev
    ```
+
    Copy this token - you'll need it for `TURSO_AUTH_TOKEN`
 
 4. **Test the connection**:
@@ -87,16 +99,19 @@ turso --version
 ## Step 4: Create Production Database
 
 1. **Create your production database**:
+
    ```bash
    turso db create alocubano-prod
    ```
 
 2. **Get the production database URL**:
+
    ```bash
    turso db show alocubano-prod --url
    ```
 
 3. **Create an auth token for production**:
+
    ```bash
    turso db tokens create alocubano-prod
    ```
@@ -111,11 +126,13 @@ turso --version
 ## Step 5: Configure Local Environment
 
 1. **Copy the local environment template**:
+
    ```bash
    cp .env.local.template .env.local
    ```
 
 2. **Edit `.env.local`** with your development database credentials:
+
    ```bash
    # Replace with your actual development values
    TURSO_DATABASE_URL=libsql://alocubano-dev-your-org.turso.io
@@ -132,21 +149,25 @@ turso --version
 ### Option A: Using Vercel CLI (Recommended)
 
 1. **Install Vercel CLI**:
+
    ```bash
    npm i -g vercel
    ```
 
 2. **Login to Vercel**:
+
    ```bash
    vercel login
    ```
 
 3. **Link your project**:
+
    ```bash
    vercel link
    ```
 
 4. **Set production environment variables**:
+
    ```bash
    # Set production database URL
    vercel env add TURSO_DATABASE_URL production
@@ -168,17 +189,20 @@ turso --version
 ## Step 7: Initialize Database Schema
 
 1. **Run migrations locally** (against development database):
+
    ```bash
    npm run migrate
    ```
 
 2. **Run migrations against production** (when ready to deploy):
+
    ```bash
    # Using Turso CLI directly
    turso db shell alocubano-prod < migrations/001_core_tables.sql
    ```
 
    Or create a migration script:
+
    ```bash
    npm run migrate:prod
    ```
@@ -186,12 +210,14 @@ turso --version
 ## Step 8: Verify Setup
 
 1. **Test local database connection**:
+
    ```bash
    # This should show "healthy" status
    npm run test:db
    ```
 
 2. **Test production database** (via API endpoint):
+
    ```bash
    # After deploying to Vercel
    curl https://your-app.vercel.app/api/database-health
@@ -209,10 +235,12 @@ turso --version
 ### Connection Issues
 
 **Error: "TURSO_DATABASE_URL environment variable is required"**
+
 - Ensure your `.env.local` file exists and contains `TURSO_DATABASE_URL`
 - Check that the URL format is correct: `libsql://database-name-org.turso.io`
 
 **Error: "Authentication failed"**
+
 - Verify your `TURSO_AUTH_TOKEN` is correct
 - Try creating a new token: `turso db tokens create your-database-name`
 - Ensure the token corresponds to the correct database
@@ -220,6 +248,7 @@ turso --version
 [... rest of the document remains the same ...]
 
 **Error: "Database connection failed in production"**
+
 - Verify environment variables are set in Vercel dashboard
 - Check that you're using the production database URL and token
 - Ensure the production database has been initialized with schema

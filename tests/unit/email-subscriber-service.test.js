@@ -40,6 +40,17 @@ vi.mock("../../api/lib/brevo-service.js", () => ({
   getBrevoService: vi.fn(() => mockBrevoServiceInstance),
 }));
 
+// Mock the database service
+const mockDatabaseService = {
+  testConnection: vi.fn(),
+  execute: vi.fn(),
+  getClient: vi.fn(),
+};
+
+vi.mock("../../api/lib/database.js", () => ({
+  getDatabase: vi.fn(() => mockDatabaseService),
+}));
+
 describe("EmailSubscriberService", () => {
   let emailService;
   let mockBrevoService;
@@ -49,6 +60,13 @@ describe("EmailSubscriberService", () => {
     process.env.BREVO_API_KEY = "test-api-key";
     process.env.BREVO_NEWSLETTER_LIST_ID = "1";
     process.env.BREVO_WELCOME_TEMPLATE_ID = "1";
+
+    // Setup database mocks
+    mockDatabaseService.testConnection.mockResolvedValue(true);
+    mockDatabaseService.execute.mockResolvedValue({
+      lastInsertRowid: 123,
+      rows: [],
+    });
 
     // Use the persistent mock instance
     mockBrevoService = mockBrevoServiceInstance;
@@ -150,6 +168,31 @@ describe("EmailSubscriberService", () => {
 
   describe("getSubscriberByEmail", () => {
     it("should return subscriber data", async () => {
+      // Mock database response for getSubscriberByEmail
+      mockDatabaseService.execute.mockResolvedValue({
+        rows: [
+          {
+            id: 1,
+            email: "test@example.com",
+            first_name: null,
+            last_name: null,
+            phone: null,
+            status: "active",
+            brevo_contact_id: "123",
+            list_ids: "[1]",
+            attributes: "{}",
+            consent_date: new Date().toISOString(),
+            consent_source: "website",
+            consent_ip: null,
+            verification_token: null,
+            verified_at: new Date().toISOString(),
+            unsubscribed_at: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ],
+      });
+
       const result =
         await emailService.getSubscriberByEmail("test@example.com");
 
@@ -166,6 +209,17 @@ describe("EmailSubscriberService", () => {
         unsubscribedAt: new Date(),
       };
 
+      // Mock getSubscriberByEmail to return updated subscriber
+      const getSubscriberSpy = vi
+        .spyOn(emailService, "getSubscriberByEmail")
+        .mockResolvedValue({
+          id: 1,
+          email: "test@example.com",
+          first_name: "Jane",
+          status: "unsubscribed",
+          unsubscribed_at: updateData.unsubscribedAt,
+        });
+
       const auditLogSpy = vi
         .spyOn(emailService, "auditLog")
         .mockResolvedValue({ id: 1 });
@@ -176,6 +230,7 @@ describe("EmailSubscriberService", () => {
       );
 
       expect(result.email).toBe("test@example.com");
+      expect(getSubscriberSpy).toHaveBeenCalledWith("test@example.com");
       expect(auditLogSpy).toHaveBeenCalledWith(
         "email_subscribers",
         expect.any(Number),
@@ -197,6 +252,16 @@ describe("EmailSubscriberService", () => {
     it("should unsubscribe user in Brevo and database", async () => {
       mockBrevoService.unsubscribeContact.mockResolvedValue({ success: true });
 
+      // Mock updateSubscriber to return unsubscribed subscriber
+      const updateSubscriberSpy = vi
+        .spyOn(emailService, "updateSubscriber")
+        .mockResolvedValue({
+          id: 1,
+          email: "test@example.com",
+          status: "unsubscribed",
+          unsubscribed_at: new Date().toISOString(),
+        });
+
       const logEmailEventSpy = vi
         .spyOn(emailService, "logEmailEvent")
         .mockResolvedValue({ id: 1 });
@@ -207,6 +272,7 @@ describe("EmailSubscriberService", () => {
       expect(mockBrevoService.unsubscribeContact).toHaveBeenCalledWith(
         "test@example.com",
       );
+      expect(updateSubscriberSpy).toHaveBeenCalled();
       expect(logEmailEventSpy).toHaveBeenCalledWith(
         expect.any(Number),
         "unsubscribed",
@@ -220,9 +286,20 @@ describe("EmailSubscriberService", () => {
         new Error("contact_not_exist"),
       );
 
+      // Mock updateSubscriber to return unsubscribed subscriber
+      const updateSubscriberSpy = vi
+        .spyOn(emailService, "updateSubscriber")
+        .mockResolvedValue({
+          id: 1,
+          email: "test@example.com",
+          status: "unsubscribed",
+          unsubscribed_at: new Date().toISOString(),
+        });
+
       const result =
         await emailService.unsubscribeSubscriber("test@example.com");
 
+      expect(updateSubscriberSpy).toHaveBeenCalled();
       expect(result.email).toBe("test@example.com");
     });
   });
@@ -307,6 +384,14 @@ describe("EmailSubscriberService", () => {
 
       mockBrevoService.processWebhookEvent.mockResolvedValue(processedEvent);
 
+      // Mock getSubscriberByEmail to return a subscriber
+      const getSubscriberSpy = vi
+        .spyOn(emailService, "getSubscriberByEmail")
+        .mockResolvedValue({
+          id: 1,
+          email: "test@example.com",
+        });
+
       const logEmailEventSpy = vi
         .spyOn(emailService, "logEmailEvent")
         .mockResolvedValue({ id: 1 });
@@ -316,8 +401,9 @@ describe("EmailSubscriberService", () => {
       expect(mockBrevoService.processWebhookEvent).toHaveBeenCalledWith(
         webhookData,
       );
+      expect(getSubscriberSpy).toHaveBeenCalledWith("test@example.com");
       expect(logEmailEventSpy).toHaveBeenCalledWith(
-        expect.any(Number),
+        1,
         "opened",
         {},
         "webhook-123",
@@ -341,12 +427,21 @@ describe("EmailSubscriberService", () => {
 
       mockBrevoService.processWebhookEvent.mockResolvedValue(processedEvent);
 
+      // Mock getSubscriberByEmail to return a subscriber
+      const getSubscriberSpy = vi
+        .spyOn(emailService, "getSubscriberByEmail")
+        .mockResolvedValue({
+          id: 1,
+          email: "test@example.com",
+        });
+
       const updateSubscriberSpy = vi
         .spyOn(emailService, "updateSubscriber")
         .mockResolvedValue({});
 
       await emailService.processWebhookEvent(webhookData);
 
+      expect(getSubscriberSpy).toHaveBeenCalledWith("test@example.com");
       expect(updateSubscriberSpy).toHaveBeenCalledWith("test@example.com", {
         status: "bounced",
       });

@@ -5,13 +5,13 @@
 reviews:
   # Wait for CI/CD checks to pass before reviewing (true = wait, false = immediate)
   review_status: true
-  
+
   # Skip reviewing draft pull requests
   review_draft_pr: false
-  
+
   # Group related comments together
   group_comments: true
-  
+
   # Required CI/CD checks that must pass before review
   required_checks:
     - "build"
@@ -20,15 +20,15 @@ reviews:
     - "Unit Tests"
     - "Integration Tests"
     - "E2E Tests"
-  
+
   # Auto-review configuration
   auto_review:
     enabled: true
-  
+
   # Custom instructions for AI reviewer - specific to A Lo Cubano Boulder Fest
   instructions: |
     As the AI code reviewer for the 'A Lo Cubano Boulder Fest' project, maintain high quality, performance, security, and testability for this Cuban salsa festival website.
-    
+
     Key review principles:
     1. **Follow Existing Conventions**: Match the style, formatting, and structure of surrounding code. The project has consistent HTML, CSS, and JavaScript patterns.
     2. **Performance is Key**: Scrutinize for performance bottlenecks. Ensure lazy-loading, efficient CSS, and fast page loads. Pay special attention to mobile performance.

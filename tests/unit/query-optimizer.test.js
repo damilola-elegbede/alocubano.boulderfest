@@ -12,8 +12,10 @@ vi.mock("node:crypto", () => ({
       update: vi.fn().mockReturnThis(),
       digest: vi.fn(() => "mock-hash-digest-1234567890abcdef"),
     })),
-    randomBytes: vi.fn(() => Buffer.from("mock-random-bytes-1234567890123456", "utf8")),
-  }
+    randomBytes: vi.fn(() =>
+      Buffer.from("mock-random-bytes-1234567890123456", "utf8"),
+    ),
+  },
 }));
 
 import {
@@ -32,13 +34,13 @@ const createMockDatabase = () => {
     testConnection: vi.fn(),
     healthCheck: vi.fn(),
   };
-  
+
   // Set up default behavior for execute to avoid recursive calls
   mockDb.execute.mockImplementation(async (queryOrObject, params = []) => {
     // Return a simple successful result
     return { rows: [] };
   });
-  
+
   return mockDb;
 };
 
@@ -141,7 +143,9 @@ describe("QueryOptimizer", () => {
 
       mockDb.execute.mockRejectedValue(error);
 
-      await expect(optimizer.executeWithTracking(sql)).rejects.toThrow("Table does not exist");
+      await expect(optimizer.executeWithTracking(sql)).rejects.toThrow(
+        "Table does not exist",
+      );
 
       const metrics = Array.from(optimizer.queryMetrics.values())[0];
       expect(metrics.failedExecutions).toBe(1);
@@ -151,7 +155,9 @@ describe("QueryOptimizer", () => {
       const sql = "SELECT * FROM tickets";
       mockDb.execute.mockImplementation(
         () =>
-          new Promise((resolve) => setTimeout(() => resolve({ rows: [] }), 150)), // Ensure it's definitely slow
+          new Promise((resolve) =>
+            setTimeout(() => resolve({ rows: [] }), 150),
+          ), // Ensure it's definitely slow
       );
 
       let slowQueryDetected = null;
@@ -172,7 +178,9 @@ describe("QueryOptimizer", () => {
       const sql = "SELECT * FROM tickets WHERE ticket_id = ?";
       const analysis = optimizer.analyzeQuery(sql);
 
-      expect(analysis.optimizations).toContain("Specify exact columns instead of SELECT *");
+      expect(analysis.optimizations).toContain(
+        "Specify exact columns instead of SELECT *",
+      );
     });
 
     it("should suggest index recommendations", () => {
@@ -189,8 +197,12 @@ describe("QueryOptimizer", () => {
       const analysis = optimizer.analyzeQuery(sql);
 
       // Query analysis includes general optimization suggestions as strings
-      expect(analysis.optimizations).toContain("Specify exact columns instead of SELECT *");
-      expect(analysis.optimizations).toContain("Add LIMIT clause to prevent large result sets");
+      expect(analysis.optimizations).toContain(
+        "Specify exact columns instead of SELECT *",
+      );
+      expect(analysis.optimizations).toContain(
+        "Add LIMIT clause to prevent large result sets",
+      );
     });
   });
 
@@ -232,7 +244,7 @@ describe("DatabasePerformanceService", () => {
     mockDb = createMockDatabase();
     performanceService = getDatabasePerformanceService();
     performanceService.db = mockDb; // Mock the database
-    
+
     // Clear any existing alerts from previous tests
     performanceService.performanceAlerts = [];
     performanceService.isInitialized = false;
@@ -240,7 +252,7 @@ describe("DatabasePerformanceService", () => {
       performanceService.optimizer.stopPerformanceMonitoring();
       performanceService.optimizer = null;
     }
-    
+
     // Disable automatic reporting to avoid timer issues in tests
     process.env.ENABLE_PERFORMANCE_REPORTING = "false";
   });
@@ -267,7 +279,7 @@ describe("DatabasePerformanceService", () => {
     it("should handle slow query alerts", () => {
       // Test without initialization to avoid the recursive issue
       performanceService.performanceAlerts = []; // Ensure clean state
-      
+
       const slowQuery = {
         sql: "SELECT * FROM tickets",
         executionTime: 150,
@@ -287,7 +299,7 @@ describe("DatabasePerformanceService", () => {
     it("should handle performance degradation", () => {
       // Test without initialization to avoid the recursive issue
       performanceService.performanceAlerts = []; // Ensure clean state
-      
+
       const degradation = {
         slowQueryPercentage: "15.5",
         errorRate: "8.2",
@@ -297,7 +309,9 @@ describe("DatabasePerformanceService", () => {
       performanceService.handlePerformanceDegradation(degradation);
 
       expect(performanceService.performanceAlerts).toHaveLength(1);
-      expect(performanceService.performanceAlerts[0].type).toBe("PERFORMANCE_DEGRADATION");
+      expect(performanceService.performanceAlerts[0].type).toBe(
+        "PERFORMANCE_DEGRADATION",
+      );
     });
   });
 
@@ -387,7 +401,7 @@ describe("FestivalQueryOptimizer", () => {
 
       // First call to track metrics
       await festivalOptimizer.optimizeEventStatistics("test-event-1");
-      
+
       const stats = festivalOptimizer.getOptimizationStats();
 
       expect(stats.totalExecutions).toBe(1);
@@ -463,19 +477,19 @@ describe("Performance System Integration", () => {
 
   it("should preserve original database functionality", async () => {
     const originalResult = { rows: [{ id: 1 }] };
-    
+
     // Test that we can verify the wrapped DB has the correct methods added
     const freshMockDb = createMockDatabase();
     const wrappedDb = withQueryOptimization(freshMockDb);
-    
+
     expect(wrappedDb.getPerformanceReport).toBeDefined();
     expect(wrappedDb.getQueryOptimizer).toBeDefined();
     expect(wrappedDb.resetPerformanceMetrics).toBeDefined();
-    
+
     // Verify the optimizer was created
     const optimizer = wrappedDb.getQueryOptimizer();
     expect(optimizer).toBeDefined();
-    
+
     // Clean up
     if (optimizer) {
       optimizer.stopPerformanceMonitoring();

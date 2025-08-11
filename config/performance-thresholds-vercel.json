@@ -16,12 +16,12 @@
         "payment_failures": 0.03
       },
       "business_metrics": {
-        "purchase_success": 0.90,
+        "purchase_success": 0.9,
         "checkout_completion": 0.85,
         "cart_abandonment": 0.15
       },
       "serverless_specific": {
-        "cold_start_rate": 0.10,
+        "cold_start_rate": 0.1,
         "function_timeout_rate": 0.02,
         "memory_limit_hits": 0.01
       }
@@ -66,7 +66,7 @@
         "database_connections_max": 50
       },
       "stability": {
-        "cache_hit_rate": 0.60,
+        "cache_hit_rate": 0.6,
         "uptime_percentage": 0.99
       }
     },
@@ -79,18 +79,18 @@
       },
       "error_rate": {
         "http_failed": 0.15,
-        "function_timeout": 0.10,
-        "resource_exhaustion": 0.30
+        "function_timeout": 0.1,
+        "resource_exhaustion": 0.3
       },
       "breaking_point": {
         "max_concurrent_users": 200,
-        "failure_cascade_rate": 0.10,
+        "failure_cascade_rate": 0.1,
         "recovery_time_ms": 60000
       },
       "serverless_limits": {
-        "memory_exhaustion_rate": 0.20,
+        "memory_exhaustion_rate": 0.2,
         "execution_timeout_rate": 0.08,
-        "throttling_activation_rate": 0.70
+        "throttling_activation_rate": 0.7
       }
     }
   },
@@ -116,13 +116,13 @@
   "deployment_specific": {
     "preview_deployments": {
       "description": "Preview deployments may have different performance characteristics",
-      "expected_degradation": 0.10,
+      "expected_degradation": 0.1,
       "cold_start_frequency": "higher",
       "resource_limits": "standard"
     },
     "production_deployments": {
       "description": "Production deployments with edge optimization",
-      "edge_cache_hit_rate": 0.80,
+      "edge_cache_hit_rate": 0.8,
       "function_regions": ["us-east-1", "us-west-2", "eu-west-1"],
       "auto_scaling_aggressive": true
     }

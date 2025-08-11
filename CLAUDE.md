@@ -26,6 +26,7 @@ npm test && git push
 ## Common Commands
 
 ### Development
+
 ```bash
 # Start development server with ngrok (default)
 npm start
@@ -40,6 +41,7 @@ npm run serve:simple
 ```
 
 ### Testing
+
 ```bash
 # Run unit tests (configured with 2 concurrent threads to prevent memory issues)
 npm test
@@ -60,14 +62,21 @@ npm run test:integration
 # Database tests
 npm run test:database
 
-# Performance tests  
+# Performance tests
 npm run test:performance
 
 # Pre-push validation (full suite)
 npm run test:pre-push
+
+# Async initialization testing
+npm run test:async-init
+
+# Test with service initialization helpers
+npm run test:services
 ```
 
 ### Database Management
+
 ```bash
 # Run migrations
 npm run migrate:up
@@ -86,6 +95,7 @@ npm run health:database
 ```
 
 ### Deployment
+
 ```bash
 # Pre-deployment validation
 npm run deploy:check
@@ -98,6 +108,7 @@ git push origin main
 ```
 
 ### Monitoring & Health
+
 ```bash
 # Health checks
 npm run health:check      # Overall health
@@ -114,6 +125,7 @@ npm run monitoring:dashboard
 ## Architecture Overview
 
 ### Frontend Architecture
+
 - **Vanilla JavaScript** with ES6 modules
 - **Typography-forward design** using multiple font families
 - **Virtual gallery** with lazy loading and Google Drive integration
@@ -121,7 +133,8 @@ npm run monitoring:dashboard
 - **Service worker** for offline support and caching
 - **Mobile-first responsive** with slide-in navigation
 
-### Backend Architecture  
+### Backend Architecture
+
 - **Vercel serverless functions** for API endpoints
 - **SQLite database** with automated migration system
 - **Brevo (SendinBlue)** for email marketing integration
@@ -130,8 +143,11 @@ npm run monitoring:dashboard
 - **JWT-based authentication** for admin and wallet passes
 
 ### Testing Architecture
+
 - **Vitest** with jsdom for browser-based testing
 - **2 concurrent threads max** to prevent memory exhaustion
+- **Async initialization patterns** with promise-based singletons
+- **Test initialization helpers** for reliable service setup
 - **Pre-commit hooks** with Husky
 - **CI/CD via GitHub Actions** on main/develop branches
 - **80% coverage target** on critical paths
@@ -139,22 +155,26 @@ npm run monitoring:dashboard
 ## Key API Endpoints
 
 ### Email System
+
 - `POST /api/email/subscribe` - Newsletter subscription
 - `GET/POST /api/email/unsubscribe` - Unsubscribe with token
 - `POST /api/email/brevo-webhook` - Webhook processing
 
 ### Payment System
+
 - `POST /api/payments/create-checkout-session` - Stripe checkout
 - `POST /api/payments/stripe-webhook` - Payment webhooks
 - `GET /api/payments/checkout-success` - Success handler
 
 ### Ticket System
+
 - `GET /api/tickets/[ticketId]` - Ticket details
 - `POST /api/tickets/validate` - QR code validation
 - `GET /api/tickets/apple-wallet/[ticketId]` - Apple pass
 - `GET /api/tickets/google-wallet/[ticketId]` - Google pass
 
 ### Admin System
+
 - `POST /api/admin/login` - Admin authentication
 - `GET /api/admin/dashboard` - Dashboard data
 - `GET /api/admin/registrations` - Registration data
@@ -192,10 +212,91 @@ WALLET_AUTH_SECRET=  # JWT signing
 Migrations are in `/migrations/*.sql` and run automatically on deployment.
 
 Migration system features:
+
 - Transactional execution with automatic rollback
 - Checksum verification for integrity
 - SQL statement parsing handles comments and strings
 - Status tracking in migrations table
+
+## Async Initialization Requirements
+
+All async services MUST use the **Promise-Based Lazy Singleton Pattern** to prevent race conditions:
+
+### Critical Pattern Requirements
+
+```javascript
+// ✅ REQUIRED: Promise-based singleton
+class AsyncService {
+  constructor() {
+    this.instance = null;
+    this.initialized = false;
+    this.initializationPromise = null; // Key: Cache the promise
+  }
+
+  async ensureInitialized() {
+    if (this.initialized && this.instance) {
+      return this.instance; // Fast path
+    }
+
+    if (this.initializationPromise) {
+      return this.initializationPromise; // Wait for existing
+    }
+
+    this.initializationPromise = this._performInitialization();
+
+    try {
+      return await this.initializationPromise;
+    } catch (error) {
+      this.initializationPromise = null; // Enable retry
+      throw error;
+    }
+  }
+}
+```
+
+### Database Client Usage
+
+```javascript
+// ✅ CORRECT: Always use ensureInitialized
+import { getDatabaseClient } from "./lib/database.js";
+
+export default async function handler(req, res) {
+  const client = await getDatabaseClient(); // Guaranteed initialized
+  const result = await client.execute("SELECT * FROM table");
+  res.json(result.rows);
+}
+```
+
+### Testing with Async Services
+
+```javascript
+// ✅ REQUIRED: Use test initialization helpers
+import { withInitializedServices } from "./utils/test-initialization-helpers.js";
+
+describe("Service Tests", () => {
+  it("should handle operations", async () => {
+    await withInitializedServices(
+      {
+        database: { factory: createTestDB, timeout: 15000 },
+        brevoService: { factory: createBrevo, dependencies: ["database"] },
+      },
+      async ({ database, brevoService }) => {
+        // Test with guaranteed initialized services
+        const result = await brevoService.subscribe("test@example.com");
+        expect(result).toHaveProperty("id");
+      },
+    );
+  });
+});
+```
+
+### Service Requirements
+
+1. **Database Service**: Must use `ensureInitialized()` before any queries
+2. **Brevo Service**: Must handle initialization timeouts and retries
+3. **All API Endpoints**: Must await service initialization
+4. **Test Services**: Must use `TestInitializationHelpers`
+5. **Error Handling**: Must clear failed promises for retry capability
 
 ## Cart System Visibility Rules
 
@@ -234,7 +335,7 @@ window.enableGalleryDebug();
 window.galleryDebugAPI.getCacheStats();
 window.galleryDebugAPI.clearCache();
 
-// Cart debugging  
+// Cart debugging
 console.log("Cart visibility:", determineCartVisibility(true));
 console.log("Cart contents:", JSON.parse(localStorage.getItem("cart") || "[]"));
 
@@ -245,11 +346,13 @@ document.querySelector(".floating-cart").style.display = "block";
 ## CI/CD Pipeline
 
 GitHub Actions workflow triggers:
+
 - **Push to main/develop**: Full test suite
 - **Pull requests**: Linting + tests + build verification
 - **Deployment**: Automatic to Vercel on main branch
 
 Pipeline includes:
+
 - ESLint + HTMLHint validation
 - Unit tests with Vitest
 - Link validation
@@ -261,7 +364,7 @@ Pipeline includes:
 ```
 /
 ├── api/               # Serverless functions
-│   ├── lib/          # Shared services
+│   ├── lib/          # Shared services with async initialization
 │   ├── admin/        # Admin endpoints
 │   ├── payments/     # Payment processing
 │   └── tickets/      # Ticket management
@@ -270,7 +373,11 @@ Pipeline includes:
 ├── pages/            # HTML pages (multi-event support)
 ├── tests/            # Test suites
 │   ├── unit/         # Unit tests
-│   └── integration/  # Integration tests
+│   ├── integration/  # Integration tests
+│   └── utils/        # Test initialization helpers
+├── docs/             # Documentation
+│   ├── ASYNC_INITIALIZATION_GUIDE.md  # Async patterns guide
+│   └── testing/      # Testing documentation
 ├── migrations/       # Database migrations
 ├── scripts/          # Build and utility scripts
 └── config/           # Configuration files
@@ -279,6 +386,7 @@ Pipeline includes:
 ## Apple Wallet Security (Phase 3 Completed)
 
 Recent security fixes applied:
+
 - Separated `APPLE_PASS_KEY` from `APPLE_PASS_PASSWORD`
 - Implemented proper JWT authentication with `WALLET_AUTH_SECRET`
 - Full UUID serial numbers for uniqueness
@@ -290,6 +398,14 @@ Recent security fixes applied:
 **Instagram**: [@alocubano.boulderfest](https://www.instagram.com/alocubano.boulderfest/)
 
 **Documentation**:
+
 - [Vercel Deployment](https://vercel.com/docs)
 - [Brevo API](https://developers.brevo.com)
 - [Vitest](https://vitest.dev)
+
+**Project Documentation**:
+
+- [Async Initialization Guide](/docs/ASYNC_INITIALIZATION_GUIDE.md) - Promise-based singleton patterns
+- [Test Patterns Guide](/tests/README_TEST_PATTERNS.md) - Testing async services and initialization
+- [Testing Strategy](/docs/testing/TESTING_STRATEGY.md) - Overall testing approach
+- [API Documentation](/docs/api/API_DOCUMENTATION.md) - Complete API reference

@@ -5,16 +5,19 @@
 To enable staging deployments, you need to configure the following GitHub repository secrets:
 
 ### 1. VERCEL_TOKEN
+
 - Go to [Vercel Dashboard → Settings → Tokens](https://vercel.com/account/tokens)
 - Create a new token with "Full Account" scope
 - Copy the token and add it as a GitHub secret
 
 ### 2. VERCEL_ORG_ID
+
 - Go to [Vercel Dashboard → Settings → General](https://vercel.com/account)
 - Copy your "Team ID" (for personal accounts, this is your user ID)
 - Add it as a GitHub secret
 
 ### 3. VERCEL_PROJECT_ID
+
 - Go to your project in Vercel Dashboard
 - Go to Settings → General
 - Copy the "Project ID"

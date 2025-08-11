@@ -1,0 +1,249 @@
+{
+  "setup_data": {
+    "totalDevices": 50,
+    "startTime": 1754948581698,
+    "testId": "checkin-rush-1754948581698"
+  },
+  "root_group": {
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {
+      "QR Code Validation": {
+        "groups": {},
+        "checks": {
+          "validation completed": {
+            "id": "a8bde699644bdccfbf2649da8a65a8e1",
+            "passes": 0,
+            "fails": 1565,
+            "name": "validation completed",
+            "path": "::QR Code Validation::validation completed"
+          },
+          "response time acceptable": {
+            "fails": 0,
+            "name": "response time acceptable",
+            "path": "::QR Code Validation::response time acceptable",
+            "id": "931f1a67702a852bcb5e3018add47ff3",
+            "passes": 1565
+          },
+          "not cold start timeout": {
+            "name": "not cold start timeout",
+            "path": "::QR Code Validation::not cold start timeout",
+            "id": "cacd768258282706a9d9482cebc78f9d",
+            "passes": 1565,
+            "fails": 0
+          },
+          "not serverless error": {
+            "path": "::QR Code Validation::not serverless error",
+            "id": "43699e1b7a945b25265ceed068950682",
+            "passes": 1565,
+            "fails": 0,
+            "name": "not serverless error"
+          },
+          "response has valid content": {
+            "passes": 0,
+            "fails": 1565,
+            "name": "response has valid content",
+            "path": "::QR Code Validation::response has valid content",
+            "id": "3dc24ea4a22fd255b868d966e0f0193d"
+          }
+        },
+        "name": "QR Code Validation",
+        "path": "::QR Code Validation",
+        "id": "19ef7ea8c05c8ed5f4c1b4f33cf4e555"
+      }
+    },
+    "checks": {}
+  },
+  "metrics": {
+    "http_req_receiving": {
+      "p(95)": 0,
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "max": 0,
+      "p(90)": 0
+    },
+    "device_response_time": {
+      "max": 51,
+      "p(90)": 50,
+      "p(95)": 50,
+      "avg": 31.47476038338658,
+      "min": 20,
+      "med": 30
+    },
+    "http_req_duration{scenario:checkin_rush}": {
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "max": 0,
+      "thresholds": {
+        "p(95)<500": false,
+        "p(99)<1500": false
+      }
+    },
+    "qr_validation_duration": {
+      "avg": 0.17124600638977636,
+      "min": 0,
+      "med": 0,
+      "max": 10,
+      "p(90)": 1,
+      "p(95)": 1,
+      "thresholds": {
+        "avg<200": false,
+        "p(95)<600": false
+      }
+    },
+    "http_req_tls_handshaking": {
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "max": 0
+    },
+    "data_received": {
+      "count": 0,
+      "rate": 0
+    },
+    "http_reqs": {
+      "count": 1800,
+      "rate": 15.022012882127147
+    },
+    "vus": {
+      "max": 20,
+      "value": 19,
+      "min": 7
+    },
+    "http_req_duration": {
+      "med": 0,
+      "max": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 0,
+      "min": 0
+    },
+    "checkin_success_rate": {
+      "passes": 0,
+      "fails": 1565,
+      "thresholds": {
+        "rate>0.90": true
+      },
+      "value": 0
+    },
+    "invalid_qr_rate": {
+      "fails": 0,
+      "passes": 0,
+      "thresholds": {
+        "rate<0.05": false
+      },
+      "value": 0
+    },
+    "http_req_blocked": {
+      "med": 0,
+      "max": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 0,
+      "min": 0
+    },
+    "http_req_connecting": {
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "max": 0,
+      "p(90)": 0,
+      "p(95)": 0
+    },
+    "iterations": {
+      "count": 1560,
+      "rate": 13.01907783117686
+    },
+    "vus_max": {
+      "min": 45,
+      "max": 45,
+      "value": 45
+    },
+    "duplicate_scan_rate": {
+      "passes": 0,
+      "fails": 0,
+      "thresholds": {
+        "rate<0.10": false
+      },
+      "value": 0
+    },
+    "concurrent_validations": {
+      "min": -1,
+      "max": 1,
+      "value": -1
+    },
+    "data_sent": {
+      "count": 0,
+      "rate": 0
+    },
+    "http_req_failed": {
+      "fails": 0,
+      "passes": 1800,
+      "value": 1
+    },
+    "group_duration": {
+      "avg": 784.1046818003842,
+      "min": 310.361584,
+      "med": 732.32425,
+      "max": 1505.303166,
+      "p(90)": 1200.2920078,
+      "p(95)": 1500.2841170000002
+    },
+    "database_write_duration": {
+      "min": 0,
+      "med": 0,
+      "max": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 0,
+      "thresholds": {
+        "avg<150": false,
+        "p(95)<400": false
+      }
+    },
+    "http_req_sending": {
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "max": 0,
+      "p(90)": 0,
+      "p(95)": 0
+    },
+    "http_req_waiting": {
+      "med": 0,
+      "max": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 0,
+      "min": 0
+    },
+    "http_req_failed{scenario:checkin_rush}": {
+      "passes": 1373,
+      "fails": 0,
+      "thresholds": {
+        "rate<0.08": true
+      },
+      "value": 1
+    },
+    "checks": {
+      "passes": 4695,
+      "fails": 3130,
+      "value": 0.6
+    },
+    "iteration_duration": {
+      "max": 2506.037042,
+      "p(90)": 2012.3786292,
+      "p(95)": 2101.20973335,
+      "avg": 1147.334292246154,
+      "min": 310.3995,
+      "med": 1031.3845835000002
+    }
+  }
+}
