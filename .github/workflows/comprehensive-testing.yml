@@ -126,15 +126,6 @@ jobs:
           CI: true
           COVERAGE: true
 
-      - name: Upload coverage to Codecov
-        if: matrix.node-version == '20' && matrix.test-shard == '1'
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
-          flags: unit-tests
-          name: unit-tests-coverage
-          fail_ci_if_error: false
 
       - name: Validate test results before upload
         if: always()

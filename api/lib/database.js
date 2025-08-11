@@ -154,20 +154,47 @@ class DatabaseService {
     // Allow tests to force strict environment validation
     const strictMode = process.env.DATABASE_TEST_STRICT_MODE === "true";
 
+    // Always validate environment variables first, regardless of mode
+    const databaseUrl = process.env.TURSO_DATABASE_URL;
+    const authToken = process.env.TURSO_AUTH_TOKEN;
+
+    // In strict test mode, always validate environment variables and throw immediately if invalid
+    if (strictMode) {
+      // Always validate environment in strict mode - throw error immediately if invalid
+      if (!databaseUrl || databaseUrl.trim() === "") {
+        throw new Error("TURSO_DATABASE_URL environment variable is required");
+      }
+
+      // In strict mode, always reinitialize to ensure environment consistency
+      // This prevents cached clients from previous tests with different environments
+      const config = {
+        url: databaseUrl,
+      };
+
+      if (authToken) {
+        config.authToken = authToken;
+      }
+
+      try {
+        const createClient = await importLibSQLClient();
+        this.client = createClient(config);
+        this.initialized = true;
+        return this.client;
+      } catch (error) {
+        throw new Error(
+          "Failed to initialize database client due to configuration error",
+        );
+      }
+    }
+
     // In test environment, maintain synchronous-like behavior for backward compatibility
     // unless strict mode is enabled for testing error conditions
-    if (
-      (process.env.NODE_ENV === "test" || process.env.VITEST) &&
-      !strictMode
-    ) {
+    if (process.env.NODE_ENV === "test" || process.env.VITEST) {
       if (this.initialized && this.client) {
         return this.client;
       }
 
-      const databaseUrl = process.env.TURSO_DATABASE_URL;
-      const authToken = process.env.TURSO_AUTH_TOKEN;
-
-      // Check for empty string as well as undefined
+      // Check for empty string as well as undefined (using pre-loaded variables)
       if (!databaseUrl || databaseUrl.trim() === "") {
         throw new Error("TURSO_DATABASE_URL environment variable is required");
       }
@@ -192,7 +219,7 @@ class DatabaseService {
       }
     }
 
-    // In production or strict test mode, use the full promise-based initialization with retry logic
+    // In production or non-test mode, use the full promise-based initialization with retry logic
     return this.ensureInitialized();
   }
 
@@ -305,6 +332,16 @@ class DatabaseService {
   }
 
   /**
+   * Reset the database service state for testing
+   * This clears the cached client and initialization state
+   */
+  resetForTesting() {
+    this.client = null;
+    this.initialized = false;
+    this.initializationPromise = null;
+  }
+
+  /**
    * Health check - verify database connectivity and basic functionality
    */
   async healthCheck() {
@@ -363,6 +400,18 @@ export async function getDatabaseClient() {
 export async function testConnection() {
   const service = getDatabase();
   return service.testConnection();
+}
+
+/**
+ * Reset singleton instance for testing
+ * This ensures test isolation by clearing any cached state
+ */
+export function resetDatabaseInstance() {
+  // CRITICAL FIX: Reset the existing instance state before nullifying
+  if (databaseServiceInstance) {
+    databaseServiceInstance.resetForTesting();
+  }
+  databaseServiceInstance = null;
 }
 
 export { DatabaseService };
