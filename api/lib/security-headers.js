@@ -108,8 +108,8 @@ function buildCSP() {
     workerSrc: ["'self'", 'blob:'],
     childSrc: ["'self'", 'blob:'],
     manifestSrc: ["'self'"],
-    upgradeInsecureRequests: isProduction() ? [] : false,
-    reportUri: [reportUri]
+    upgradeInsecureRequests: isProduction(),
+    reportUri: reportUri
   };
 
   // In development, relax some restrictions for debugging
@@ -333,7 +333,7 @@ export function applySecurityHeaders(req, res) {
 /**
  * Enhanced security headers with HTTPS enforcement
  */
-export async function addSecurityHeaders(res, options = {}) {
+export async function addSecurityHeaders(req, res, options = {}) {
   const {
     isAPI = false,
     maxAge = 0,
@@ -360,7 +360,7 @@ export async function addSecurityHeaders(res, options = {}) {
 
   // Add API-specific headers if needed
   if (isAPI) {
-    addAPISecurityHeaders(null, res, { maxAge, apiVersion });
+    addAPISecurityHeaders(req, res, { maxAge, apiVersion });
   }
 
   // Add custom application headers
@@ -380,7 +380,7 @@ export async function addSecurityHeaders(res, options = {}) {
 export function withSecurityHeaders(handler, options = {}) {
   return async (req, res) => {
     try {
-      await addSecurityHeaders(res, options);
+      await addSecurityHeaders(req, res, options);
       return await handler(req, res);
     } catch (error) {
       console.error('Security headers middleware error:', error);

@@ -133,8 +133,8 @@ async function handleGenerateSecret(req, res) {
     // Store the secret in database (not enabled yet)
     await db.execute({
       sql: `INSERT OR REPLACE INTO admin_mfa_config 
-            (admin_id, totp_secret, device_name, is_enabled) 
-            VALUES (?, ?, ?, FALSE)`,
+            (admin_id, totp_secret, device_name, is_enabled, secret_created_at) 
+            VALUES (?, ?, ?, FALSE, CURRENT_TIMESTAMP)`,
       args: [adminId, encryptedSecret, deviceName],
     });
 
@@ -281,6 +281,11 @@ async function handleGenerateBackupCodes(req, res) {
     await logMfaEvent(adminId, "backup_codes_generated", req, {
       codesCount: backupCodes.length,
     });
+
+    // Set cache control headers to prevent caching of backup codes
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
 
     res.status(200).json({
       backupCodes,

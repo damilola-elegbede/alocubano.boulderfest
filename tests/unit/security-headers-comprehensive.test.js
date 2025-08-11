@@ -60,7 +60,7 @@ describe('Security Headers System', () => {
 
   describe('Basic Security Headers', () => {
     it('should apply basic security headers', async () => {
-      await addSecurityHeaders(mockRes);
+      await addSecurityHeaders(mockReq, mockRes);
 
       expect(mockRes.setHeader).toHaveBeenCalledWith('X-Content-Type-Options', 'nosniff');
       expect(mockRes.setHeader).toHaveBeenCalledWith('X-Frame-Options', 'DENY');
@@ -77,7 +77,7 @@ describe('Security Headers System', () => {
         // Test development
         process.env.VERCEL_ENV = 'development';
         process.env.NODE_ENV = 'development';
-        await addSecurityHeaders(mockRes);
+        await addSecurityHeaders(mockReq, mockRes);
         
         expect(mockRes.setHeader).not.toHaveBeenCalledWith(
           'Strict-Transport-Security',
@@ -90,7 +90,7 @@ describe('Security Headers System', () => {
         // Test production
         process.env.VERCEL_ENV = 'production';
         process.env.NODE_ENV = 'production';
-        await addSecurityHeaders(mockRes);
+        await addSecurityHeaders(mockReq, mockRes);
         
         expect(mockRes.setHeader).toHaveBeenCalledWith(
           'Strict-Transport-Security',
@@ -112,14 +112,14 @@ describe('Security Headers System', () => {
     });
 
     it('should hide server information', async () => {
-      await addSecurityHeaders(mockRes);
+      await addSecurityHeaders(mockReq, mockRes);
 
       expect(mockRes.removeHeader).toHaveBeenCalledWith('X-Powered-By');
       expect(mockRes.setHeader).toHaveBeenCalledWith('Server', 'Vercel');
     });
 
     it('should add custom application headers', async () => {
-      await addSecurityHeaders(mockRes);
+      await addSecurityHeaders(mockReq, mockRes);
 
       expect(mockRes.setHeader).toHaveBeenCalledWith('X-Application', 'ALocubanoBoulderfest');
       expect(mockRes.setHeader).toHaveBeenCalledWith('X-Security-Level', 'Strict');
@@ -353,7 +353,7 @@ describe('Security Headers System', () => {
         const config = getHelmetConfig();
         const csp = config.contentSecurityPolicy.directives;
 
-        expect(csp.upgradeInsecureRequests).toEqual([]);
+        expect(csp.upgradeInsecureRequests).toBe(true);
       } finally {
         // Restore original env
         if (originalVercelEnv !== undefined) {
@@ -422,9 +422,18 @@ describe('Security Headers System', () => {
 });
 
 describe('Security Headers Edge Cases', () => {
-  let mockRes;
+  let mockReq, mockRes;
 
   beforeEach(() => {
+    mockReq = {
+      method: 'GET',
+      url: '/test',
+      headers: {
+        'user-agent': 'test-agent',
+        'x-forwarded-for': '192.168.1.1'
+      }
+    };
+
     mockRes = {
       headers: {},
       setHeader: vi.fn((name, value) => {
@@ -438,7 +447,7 @@ describe('Security Headers Edge Cases', () => {
   });
 
   it('should handle missing options gracefully', async () => {
-    await expect(addSecurityHeaders(mockRes)).resolves.not.toThrow();
+    await expect(addSecurityHeaders(mockReq, mockRes)).resolves.not.toThrow();
   });
 
   it('should handle API headers with empty CORS origins', () => {

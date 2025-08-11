@@ -93,7 +93,28 @@ export class AdvancedRateLimiter {
     };
     
     // Configuration
-    this.redisConfig = options.redis || {
+    this.redisConfig = options.redis || this.buildRedisConfig();
+    
+    this.enableRedis = options.enableRedis !== false;
+    this.enableAnalytics = options.enableAnalytics !== false;
+    this.alertCallback = options.alertCallback || this.defaultAlertHandler;
+    this._cleanupTimer = null;
+    
+    // Initialize Redis connection
+    this.initRedis();
+    
+    // Cleanup interval for fallback store
+    this.startCleanupInterval();
+  }
+  
+  buildRedisConfig() {
+    // Check for REDIS_URL first (common in cloud deployments)
+    if (process.env.RATE_LIMIT_REDIS_URL || process.env.REDIS_URL) {
+      return process.env.RATE_LIMIT_REDIS_URL || process.env.REDIS_URL;
+    }
+    
+    // Fall back to legacy host/port config
+    return {
       host: process.env.REDIS_HOST || 'localhost',
       port: process.env.REDIS_PORT || 6379,
       password: process.env.REDIS_PASSWORD,
@@ -102,16 +123,13 @@ export class AdvancedRateLimiter {
       maxRetriesPerRequest: 1,
       lazyConnect: true
     };
-    
-    this.enableRedis = options.enableRedis !== false;
-    this.enableAnalytics = options.enableAnalytics !== false;
-    this.alertCallback = options.alertCallback || this.defaultAlertHandler;
-    
-    // Initialize Redis connection
-    this.initRedis();
-    
-    // Cleanup interval for fallback store
-    setInterval(() => this.cleanupFallbackStore(), 300000); // 5 minutes
+  }
+  
+  startCleanupInterval() {
+    if (this._cleanupTimer) {
+      clearInterval(this._cleanupTimer);
+    }
+    this._cleanupTimer = setInterval(() => this.cleanupFallbackStore(), 300000); // 5 minutes
   }
   
   async initRedis() {
@@ -632,6 +650,11 @@ export class AdvancedRateLimiter {
    * Close connections
    */
   async close() {
+    if (this._cleanupTimer) {
+      clearInterval(this._cleanupTimer);
+      this._cleanupTimer = null;
+    }
+    
     if (this.redis) {
       await this.redis.quit();
     }
