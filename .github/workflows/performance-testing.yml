@@ -86,16 +86,20 @@ jobs:
           echo "CI=true" >> $GITHUB_ENV
           echo "PERF_TEST_ENV=ci" >> $GITHUB_ENV
 
+      - name: Validate CI server
+        if: matrix.test-type == 'load-integration'
+        run: npm run test:ci-server
+
       - name: Start application for testing
         if: matrix.test-type == 'load-integration'
         run: |
           # Start the application in background for load testing
-          npm run start:local &
+          npm run start:ci &
           APP_PID=$!
           echo "APP_PID=$APP_PID" >> $GITHUB_ENV
 
           # Wait for application to be ready
-          npx wait-on http://localhost:3000 --timeout 30000
+          npx wait-on http://localhost:3000 --timeout 45000 --interval 1000
           echo "✅ Application is ready for testing"
 
       - name: Run unit performance tests
@@ -240,7 +244,7 @@ jobs:
           console.log('Total Reports:', summary.totalReports);
 
           for (const detail of summary.details) {
-            console.log(\`📊 \${detail.file}: \${detail.status} (\${detail.tests} tests, \${detail.regressions} regressions, \${detail.violations} violations)\`);
+            console.log('📊 ' + detail.file + ': ' + detail.status + ' (' + detail.tests + ' tests, ' + detail.regressions + ' regressions, ' + detail.violations + ' violations)');
           }
 
           // Exit with appropriate code
@@ -269,54 +273,54 @@ jobs:
               'UNKNOWN': '❓'
             };
 
-            let comment = \`## \${statusEmoji[summary.overallStatus]} Performance Test Results
+            let comment = `## ${statusEmoji[summary.overallStatus]} Performance Test Results
 
-            **Overall Status:** \${summary.overallStatus}
-            **Reports Generated:** \${summary.totalReports}
+            **Overall Status:** ${summary.overallStatus}
+            **Reports Generated:** ${summary.totalReports}
 
             ### Detailed Results
 
             | Test Report | Status | Tests | Regressions | Violations |
             |-------------|--------|-------|-------------|------------|
-            \`;
+            `;
 
             for (const detail of summary.details) {
-              comment += \`| \${detail.file} | \${statusEmoji[detail.status]} \${detail.status} | \${detail.tests} | \${detail.regressions} | \${detail.violations} |\n\`;
+              comment += `| ${detail.file} | ${statusEmoji[detail.status]} ${detail.status} | ${detail.tests} | ${detail.regressions} | ${detail.violations} |\n`;
             }
 
-            comment += \`
+            comment += `
 
             ### Next Steps
-            \`;
+            `;
 
             if (summary.overallStatus === 'FAIL') {
-              comment += \`
+              comment += `
             ❌ **Performance tests failed!** Please review the detailed reports and address critical issues before merging.
 
             - Check for performance regressions in response times
             - Verify error rates are within acceptable limits
             - Review budget violations and optimize accordingly
-            \`;
+            `;
             } else if (summary.overallStatus === 'WARNING') {
-              comment += \`
+              comment += `
             ⚠️ **Performance warnings detected.** Consider reviewing and optimizing before merging.
 
             - Minor regressions detected - monitor closely
             - Some performance budgets exceeded warning thresholds
             - Review recommendations in detailed reports
-            \`;
+            `;
             } else {
-              comment += \`
+              comment += `
             ✅ **All performance tests passed!** No significant regressions or budget violations detected.
-            \`;
+            `;
             }
 
-            comment += \`
+            comment += `
 
             📊 Detailed reports are available in the workflow artifacts.
-            \`;
+            `;
 
-            github.rest.issues.createComment({
+            await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
