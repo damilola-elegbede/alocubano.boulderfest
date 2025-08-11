@@ -48,6 +48,14 @@ link_validation_report.txt
 # Performance audit reports
 performance-audit.html
 
+# Load test results (generated during performance testing)
+reports/load-test-results/
+reports/performance-baselines/
+reports/regression-analysis/
+performance-results.json
+performance-summary.json
+k6-report.html
+
 # Additional test artifacts
 *.coverage
 
