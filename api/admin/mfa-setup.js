@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import speakeasy from "speakeasy";
 import QRCode from "qrcode";
 import bcrypt from "bcryptjs";

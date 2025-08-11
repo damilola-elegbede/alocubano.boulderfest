@@ -226,7 +226,7 @@ export function getHelmetConfig() {
 /**
  * API-specific security headers with caching controls
  */
-export function addAPISecurityHeaders(res, options = {}) {
+export function addAPISecurityHeaders(req, res, options = {}) {
   const {
     maxAge = 0,
     apiVersion = 'v1',
@@ -238,9 +238,9 @@ export function addAPISecurityHeaders(res, options = {}) {
   // Cache control for API responses
   if (maxAge > 0) {
     res.setHeader('Cache-Control', `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=60`);
-    // Only set ETag if provided by caller to ensure stability
+    // Only set ETag if explicitly provided by caller to ensure cache stability
     if (etag) {
-      res.setHeader('ETag', `W/"${etag}"`);
+      res.setHeader('ETag', etag);
     }
   } else {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -254,13 +254,19 @@ export function addAPISecurityHeaders(res, options = {}) {
 
   // CORS headers for API endpoints
   if (corsOrigins.length > 0) {
-    const origin = res.req?.headers?.origin;
-    if (origin && corsOrigins.includes(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
+    const requestOrigin = req?.headers?.origin;
+    
+    if (requestOrigin && corsOrigins.includes(requestOrigin)) {
+      // Echo the requesting origin if it's in the allowlist
+      res.setHeader('Access-Control-Allow-Origin', requestOrigin);
       res.setHeader('Vary', 'Origin');
-    } else if (corsOrigins.length === 1) {
-      // Fallback to first origin if request origin not available
+    } else if (corsOrigins.length === 1 && !requestOrigin) {
+      // Fallback to first origin only if no request origin (e.g., server-side requests)
       res.setHeader('Access-Control-Allow-Origin', corsOrigins[0]);
+      res.setHeader('Vary', 'Origin');
+    } else {
+      // Always set Vary: Origin for proper caching behavior
+      res.setHeader('Vary', 'Origin');
     }
     
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS');
@@ -354,7 +360,7 @@ export async function addSecurityHeaders(res, options = {}) {
 
   // Add API-specific headers if needed
   if (isAPI) {
-    addAPISecurityHeaders(res, { maxAge, apiVersion });
+    addAPISecurityHeaders(null, res, { maxAge, apiVersion });
   }
 
   // Add custom application headers

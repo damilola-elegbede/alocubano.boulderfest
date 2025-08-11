@@ -182,7 +182,7 @@ async function handleCSPReport(req, res) {
   }
 
   // Add security headers
-  addAPISecurityHeaders(res, {
+  addAPISecurityHeaders(req, res, {
     maxAge: 0, // No caching for security endpoints
     corsOrigins: [] // No CORS for security reports
   });

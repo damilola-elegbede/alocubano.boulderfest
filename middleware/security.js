@@ -209,7 +209,7 @@ export function createAPISecurityMiddleware(options = {}) {
           }
 
           // Add API-specific security headers
-          addAPISecurityHeaders(res, {
+          addAPISecurityHeaders(req, res, {
             maxAge,
             corsOrigins,
             allowCredentials: requireAuth

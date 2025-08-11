@@ -10,7 +10,7 @@ export class MfaRateLimitService {
     this.lockoutDuration = parseInt(process.env.MFA_LOCKOUT_DURATION || "15"); // minutes
     this.windowSize = parseInt(process.env.MFA_WINDOW_SIZE || "60"); // minutes
     this.cleanupInterval = parseInt(process.env.MFA_CLEANUP_INTERVAL || "3600000"); // ms (1 hour)
-    this._cleanupTimer = null;
+    this.cleanupTimer = null;
 
     // Start periodic cleanup
     this.startCleanup();
@@ -274,11 +274,11 @@ export class MfaRateLimitService {
    */
   startCleanup() {
     // Guard against multiple intervals
-    if (this._cleanupTimer) {
+    if (this.cleanupTimer) {
       return;
     }
 
-    this._cleanupTimer = setInterval(async () => {
+    this.cleanupTimer = setInterval(async () => {
       await this.cleanupExpiredRecords();
     }, this.cleanupInterval);
   }
@@ -287,9 +287,9 @@ export class MfaRateLimitService {
    * Stop periodic cleanup timer
    */
   stopCleanup() {
-    if (this._cleanupTimer) {
-      clearInterval(this._cleanupTimer);
-      this._cleanupTimer = null;
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
     }
   }
 

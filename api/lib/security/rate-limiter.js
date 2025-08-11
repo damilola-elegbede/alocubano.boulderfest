@@ -162,7 +162,7 @@ export class AdvancedRateLimiter {
                headers['x-real-ip'] ||
                req.connection?.remoteAddress ||
                req.socket?.remoteAddress ||
-               'unknown';
+               `unknown-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     return `ip:${ip}`;
   }
@@ -587,6 +587,13 @@ export class AdvancedRateLimiter {
       whitelistSize: WHITELIST_IPS.length,
       blacklistSize: BLACKLIST_IPS.size
     };
+  }
+  
+  /**
+   * Get endpoint configurations for rate limit headers
+   */
+  getEndpointConfigs() {
+    return ENDPOINT_CONFIGS;
   }
   
   /**

@@ -128,7 +128,7 @@ describe('Security Headers System', () => {
 
   describe('API Security Headers', () => {
     it('should apply API-specific headers with no caching', () => {
-      addAPISecurityHeaders(mockRes, { maxAge: 0 });
+      addAPISecurityHeaders({}, mockRes, { maxAge: 0 });
 
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Cache-Control',
@@ -139,44 +139,47 @@ describe('Security Headers System', () => {
     });
 
     it('should apply API-specific headers with caching', () => {
-      addAPISecurityHeaders(mockRes, { maxAge: 300 });
+      addAPISecurityHeaders({}, mockRes, { maxAge: 300, etag: 'W/"123456"' });
 
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Cache-Control',
         'public, max-age=300, s-maxage=300, stale-while-revalidate=60'
       );
-      expect(mockRes.setHeader).toHaveBeenCalledWith('ETag', expect.stringMatching(/W\/"\d+"/));
+      expect(mockRes.setHeader).toHaveBeenCalledWith('ETag', 'W/"123456"');
     });
 
     it('should set CORS headers for API endpoints', () => {
       const corsOrigins = ['https://example.com', 'https://app.example.com'];
-      addAPISecurityHeaders(mockRes, { corsOrigins });
+      const mockReq = { headers: { origin: 'https://example.com' } };
+      addAPISecurityHeaders(mockReq, mockRes, { corsOrigins });
 
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Access-Control-Allow-Origin',
-        corsOrigins.join(', ')
+        'https://example.com'
       );
+      expect(mockRes.setHeader).toHaveBeenCalledWith('Vary', 'Origin');
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Access-Control-Allow-Methods',
-        'GET, POST, PUT, DELETE, OPTIONS'
+        'GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS'
       );
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Access-Control-Allow-Headers',
-        'Content-Type, Authorization, X-Requested-With, X-API-Key'
+        'Content-Type, Authorization, X-Requested-With, X-API-Key, X-CSRF-Token'
       );
     });
 
     it('should set API versioning headers', () => {
-      addAPISecurityHeaders(mockRes, { apiVersion: 'v2' });
+      addAPISecurityHeaders({}, mockRes, { apiVersion: 'v2' });
 
       expect(mockRes.setHeader).toHaveBeenCalledWith('X-API-Version', 'v2');
     });
 
-    it('should set rate limiting headers', () => {
-      addAPISecurityHeaders(mockRes);
+    it('should not set rate limiting headers (handled by middleware)', () => {
+      addAPISecurityHeaders({}, mockRes);
 
-      expect(mockRes.setHeader).toHaveBeenCalledWith('X-RateLimit-Limit', '100');
-      expect(mockRes.setHeader).toHaveBeenCalledWith('X-RateLimit-Window', '900');
+      // Rate limiting headers are now handled by the rate-limiter middleware
+      expect(mockRes.setHeader).not.toHaveBeenCalledWith('X-RateLimit-Limit', expect.anything());
+      expect(mockRes.setHeader).not.toHaveBeenCalledWith('X-RateLimit-Window', expect.anything());
     });
   });
 
@@ -198,9 +201,11 @@ describe('Security Headers System', () => {
       expect(config).toHaveProperty('contentSecurityPolicy');
       expect(config).toHaveProperty('frameguard');
       expect(config).toHaveProperty('noSniff', true);
-      expect(config).toHaveProperty('xssFilter', true);
+      // xssFilter removed in Helmet v7
+      expect(config).not.toHaveProperty('xssFilter');
       expect(config).toHaveProperty('referrerPolicy');
-      expect(config).toHaveProperty('permissionsPolicy');
+      // permissionsPolicy is not a core Helmet option
+      expect(config).not.toHaveProperty('permissionsPolicy');
     });
 
     it('should configure CSP with trusted domains', () => {
@@ -259,16 +264,10 @@ describe('Security Headers System', () => {
       }
     });
 
-    it('should configure Permissions Policy', () => {
+    it('should not include Permissions Policy in Helmet config', () => {
       const config = getHelmetConfig();
-      const permissions = config.permissionsPolicy;
-
-      expect(permissions.camera).toEqual([]);
-      expect(permissions.microphone).toEqual([]);
-      expect(permissions.geolocation).toEqual([]);
-      expect(permissions.usb).toEqual([]);
-      expect(permissions.fullscreen).toEqual(['self']);
-      expect(permissions.webShare).toEqual(['self']);
+      // Permissions Policy is not a core Helmet option, it's set separately
+      expect(config.permissionsPolicy).toBeUndefined();
     });
   });
 
@@ -309,11 +308,31 @@ describe('Security Headers System', () => {
 
   describe('Content Security Policy', () => {
     it('should allow necessary inline scripts for Stripe', () => {
-      const config = getHelmetConfig();
-      const csp = config.contentSecurityPolicy.directives;
-
-      expect(csp.scriptSrc).toContain("'unsafe-inline'");
-      expect(csp.scriptSrc).toContain("'unsafe-eval'");
+      // Store original env
+      const originalNodeEnv = process.env.NODE_ENV;
+      
+      try {
+        // Test development mode - should have unsafe-eval
+        process.env.NODE_ENV = 'development';
+        let config = getHelmetConfig();
+        let csp = config.contentSecurityPolicy.directives;
+        expect(csp.scriptSrc).toContain("'unsafe-inline'");
+        expect(csp.scriptSrc).toContain("'unsafe-eval'");
+        
+        // Test production mode - should NOT have unsafe-eval
+        process.env.NODE_ENV = 'production';
+        config = getHelmetConfig();
+        csp = config.contentSecurityPolicy.directives;
+        expect(csp.scriptSrc).toContain("'unsafe-inline'");
+        expect(csp.scriptSrc).not.toContain("'unsafe-eval'");
+      } finally {
+        // Restore original env
+        if (originalNodeEnv !== undefined) {
+          process.env.NODE_ENV = originalNodeEnv;
+        } else {
+          delete process.env.NODE_ENV;
+        }
+      }
     });
 
     it('should include report URI for CSP violations', () => {
@@ -423,7 +442,7 @@ describe('Security Headers Edge Cases', () => {
   });
 
   it('should handle API headers with empty CORS origins', () => {
-    expect(() => addAPISecurityHeaders(mockRes, { corsOrigins: [] })).not.toThrow();
+    expect(() => addAPISecurityHeaders({}, mockRes, { corsOrigins: [] })).not.toThrow();
     expect(mockRes.setHeader).not.toHaveBeenCalledWith(
       'Access-Control-Allow-Origin',
       expect.any(String)
@@ -432,7 +451,7 @@ describe('Security Headers Edge Cases', () => {
 
   it('should handle large maxAge values', () => {
     const largeMaxAge = 31536000; // 1 year
-    addAPISecurityHeaders(mockRes, { maxAge: largeMaxAge });
+    addAPISecurityHeaders({}, mockRes, { maxAge: largeMaxAge });
 
     expect(mockRes.setHeader).toHaveBeenCalledWith(
       'Cache-Control',
@@ -442,7 +461,7 @@ describe('Security Headers Edge Cases', () => {
 
   it('should handle special characters in API version', () => {
     const version = 'v2.1-beta';
-    addAPISecurityHeaders(mockRes, { apiVersion: version });
+    addAPISecurityHeaders({}, mockRes, { apiVersion: version });
 
     expect(mockRes.setHeader).toHaveBeenCalledWith('X-API-Version', version);
   });

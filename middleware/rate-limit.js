@@ -34,6 +34,35 @@ export function createRateLimitMiddleware(endpointType, options = {}) {
       res.setHeader('X-RateLimit-Client', result.clientId || 'unknown');
       res.setHeader('X-RateLimit-Performance', `${Date.now() - startTime}ms`);
       
+      // Add standard rate limit headers using limiter result or config fallback
+      if (result.limit !== undefined) {
+        res.setHeader('X-RateLimit-Limit', result.limit);
+      } else {
+        // Fallback to shared config - access through rateLimiter instance
+        const config = rateLimiter.getEndpointConfigs()[endpointType] || rateLimiter.getEndpointConfigs().general;
+        if (config) {
+          // Check for different limit types (ipLimit, userLimit, deviceLimit, etc.)
+          const limitConfig = config.ipLimit || config.userLimit || config.deviceLimit;
+          if (limitConfig) {
+            res.setHeader('X-RateLimit-Limit', limitConfig.requests);
+          }
+        }
+      }
+      
+      if (result.windowMs !== undefined) {
+        res.setHeader('X-RateLimit-Window', Math.floor(result.windowMs / 1000)); // Convert to seconds
+      } else {
+        // Fallback to shared config
+        const config = rateLimiter.getEndpointConfigs()[endpointType] || rateLimiter.getEndpointConfigs().general;
+        if (config) {
+          // Check for different limit types (ipLimit, userLimit, deviceLimit, etc.)
+          const limitConfig = config.ipLimit || config.userLimit || config.deviceLimit;
+          if (limitConfig) {
+            res.setHeader('X-RateLimit-Window', Math.floor(limitConfig.windowMs / 1000));
+          }
+        }
+      }
+      
       if (result.allowed) {
         // Add success headers
         if (result.remaining !== undefined) {
