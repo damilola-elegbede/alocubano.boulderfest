@@ -207,8 +207,13 @@ afterEach(async () => {
   }
 
   // Clear localStorage between tests
-  if (global.localStorage) {
+  if (global.localStorage && typeof global.localStorage.clear === 'function') {
     global.localStorage.clear();
+  } else if (global.localStorage && global.localStorage.data) {
+    // Clear mock localStorage data
+    Object.keys(global.localStorage.data).forEach(key => {
+      delete global.localStorage.data[key];
+    });
   }
 });
 
