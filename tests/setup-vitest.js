@@ -15,10 +15,16 @@ import { testEnvironmentDetector } from "./utils/test-environment-detector.js";
 
 // Set up test-specific environment variables that don't conflict with production
 if (!process.env.TURSO_DATABASE_URL) {
-  process.env.TURSO_DATABASE_URL = "file:test.db";
+  // Use in-memory database for tests to prevent file conflicts
+  process.env.TURSO_DATABASE_URL = process.env.CI === 'true' ? ':memory:' : 'file:test.db';
 }
 if (!process.env.NODE_ENV) {
   process.env.NODE_ENV = "test";
+}
+
+// Set busy timeout for SQLite to prevent SQLITE_BUSY errors
+if (!process.env.SQLITE_BUSY_TIMEOUT) {
+  process.env.SQLITE_BUSY_TIMEOUT = '30000'; // 30 seconds
 }
 
 // Set required service environment variables for integration tests
@@ -91,7 +97,20 @@ beforeAll(() => {
 });
 
 // Global teardown - restore original environment
-afterAll(() => {
+afterAll(async () => {
+  // Force cleanup of all database connections
+  if (process.env.TEST_INTEGRATION === 'true' || process.env.TEST_TYPE === 'integration') {
+    try {
+      const { resetDatabaseInstance } = await import('../api/lib/database.js');
+      await resetDatabaseInstance();
+      
+      // Additional delay for connection cleanup
+      await new Promise(resolve => setTimeout(resolve, 200));
+    } catch (error) {
+      console.warn('Final database cleanup failed:', error.message);
+    }
+  }
+
   // Restore the original environment
   testEnvManager.restore();
 
@@ -103,7 +122,7 @@ afterAll(() => {
 });
 
 // Reset mocks between tests to ensure test isolation
-afterEach(() => {
+afterEach(async () => {
   // Clear all Vitest mocks
   vi.clearAllMocks();
 
@@ -114,6 +133,25 @@ afterEach(() => {
 
   // Reset database mock state
   dbMockSync.reset();
+
+  // Force database connection cleanup for integration tests
+  if (process.env.TEST_INTEGRATION === 'true' || process.env.TEST_TYPE === 'integration') {
+    try {
+      // Dynamic import to avoid issues in unit tests
+      const { resetDatabaseInstance } = await import('../api/lib/database.js');
+      await resetDatabaseInstance();
+    } catch (error) {
+      // Silently ignore errors in unit tests where database module isn't used
+      if (process.env.TEST_INTEGRATION === 'true') {
+        console.warn('Database cleanup failed:', error.message);
+      }
+    }
+  }
+
+  // Clear localStorage between tests
+  if (global.localStorage) {
+    global.localStorage.clear();
+  }
 });
 
 // Environment validation (only warn if not in isolated test mode)

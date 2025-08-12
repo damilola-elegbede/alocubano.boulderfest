@@ -125,6 +125,18 @@ class DatabaseService {
       config.authToken = authToken;
     }
 
+    // Add SQLite-specific configuration for busy timeout and WAL mode
+    if (databaseUrl.startsWith('file:') || databaseUrl === ':memory:') {
+      config.pragmas = [
+        'PRAGMA busy_timeout = 30000',  // 30 second timeout
+        'PRAGMA journal_mode = WAL',     // Write-Ahead Logging for better concurrency
+        'PRAGMA synchronous = NORMAL',   // Balance safety and performance
+        'PRAGMA temp_store = memory',    // Store temp tables in memory
+        'PRAGMA mmap_size = 268435456',  // Enable memory mapping (256MB)
+        'PRAGMA cache_size = -2000',     // 2MB cache
+      ];
+    }
+
     try {
       const createClient = await importLibSQLClient();
       const client = createClient(config);
@@ -220,9 +232,33 @@ class DatabaseService {
       config.authToken = authToken;
     }
 
+    // Add SQLite-specific configuration for busy timeout and WAL mode
+    if (databaseUrl.startsWith('file:') || databaseUrl === ':memory:') {
+      config.pragmas = [
+        'PRAGMA busy_timeout = 30000',  // 30 second timeout
+        'PRAGMA journal_mode = WAL',     // Write-Ahead Logging for better concurrency
+        'PRAGMA synchronous = NORMAL',   // Balance safety and performance
+        'PRAGMA temp_store = memory',    // Store temp tables in memory
+        'PRAGMA mmap_size = 268435456',  // Enable memory mapping (256MB)
+        'PRAGMA cache_size = -2000',     // 2MB cache
+      ];
+    }
+
     try {
       const createClient = await importLibSQLClient();
       this.client = createClient(config);
+      
+      // Apply pragmas if configured
+      if (config.pragmas && Array.isArray(config.pragmas)) {
+        for (const pragma of config.pragmas) {
+          try {
+            await this.client.execute(pragma);
+          } catch (pragmaError) {
+            console.warn(`Failed to apply pragma: ${pragma}`, pragmaError.message);
+          }
+        }
+      }
+      
       this.initialized = true;
       return this.client;
     } catch (error) {

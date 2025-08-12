@@ -6,12 +6,13 @@ export default defineConfig({
     environment: "node",
     globals: true,
     
-    // Integration-specific setup
+    // Integration-specific setup with enhanced database cleanup
     setupFiles: [
-      "./tests/setup-vitest.js"
+      "./tests/setup-vitest.js",
+      "./tests/setup-integration.js"
     ],
     
-    // Integration test patterns only - exclude problematic tests in CI
+    // Integration test patterns only - now including previously problematic tests with fixes
     include: [
       "tests/integration/**/*.test.js",
     ],
@@ -22,14 +23,9 @@ export default defineConfig({
       "tests/security/**/*.test.js",
       "tests/validation/**/*.test.js",
       "node_modules/**",
-      // Skip these specific tests in CI to prevent conflicts
-      ...(process.env.CI === 'true' || process.env.TEST_CI_EXCLUDE_PATTERNS === 'true' ? [
-        "tests/integration/google-sheets.test.js",
-        "tests/integration/database-api.test.js",
-        "tests/integration/monitoring.test.js",
-        "tests/integration/database-operations-improved.test.js",
-        "tests/integration/brevo-email-improved.test.js"
-      ] : []),
+      // Only exclude tests that are genuinely incompatible with CI
+      // Remove blanket exclusions to maximize coverage
+      // Use selective CI skip conditions in individual test files instead
     ],
 
     // Conservative settings for integration tests
@@ -56,9 +52,12 @@ export default defineConfig({
       enabled: false, // Disable coverage for integration tests
     },
 
-    // Enhanced cleanup options
+    // Enhanced cleanup options for database isolation
     clearMocks: true,
     restoreMocks: true,
+    
+    // Custom teardown for database cleanup
+    teardownTimeout: 10000,
     
     // Isolation settings
     isolate: true,
@@ -68,6 +67,12 @@ export default defineConfig({
     env: {
       NODE_ENV: 'test',
       TEST_INTEGRATION: 'true',
+      TEST_TYPE: 'integration',
+      // Use in-memory database for integration tests to prevent SQLITE_BUSY
+      TURSO_DATABASE_URL: ':memory:',
+      TURSO_AUTH_TOKEN: 'integration-test-token',
+      // SQLite busy timeout
+      SQLITE_BUSY_TIMEOUT: '30000',
       // Explicitly set CI flag for test detection
       CI: process.env.CI || 'false',
     },

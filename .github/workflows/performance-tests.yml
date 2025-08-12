@@ -39,6 +39,7 @@ on:
 env:
   NODE_VERSION: "18"
   K6_VERSION: "0.47.0"
+  CI: true
 
 jobs:
   # Setup and validation job

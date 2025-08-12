@@ -4,32 +4,20 @@
  * Tests load performance and scalability under simulated user load
  * focusing on API endpoints and database operations.
  * 
- * Note: These tests are skipped in CI environments. For real load testing,
- * use the K6 scripts in the scripts/ directory which test actual endpoints.
+ * Note: These tests use selective skipping based on environment and available resources.
+ * For comprehensive load testing, use the K6 scripts in the scripts/ directory.
  * 
- * CRITICAL: This test requires a running local server at TEST_BASE_URL
- * and should NEVER run in CI environments.
+ * RESOURCE INTENSIVE: Skips resource-heavy tests in CI but runs basic performance validation.
  */
-
-// SAFETY CHECK: Multiple exit points to prevent CI execution
-if (process.env.CI === 'true' || 
-    process.env.NODE_ENV === 'ci' || 
-    process.env.GITHUB_ACTIONS === 'true' ||
-    process.env.VERCEL_ENV ||
-    typeof process.env.TEST_BASE_URL === 'undefined') {
-  console.log('⚠️  SKIPPING: Load integration tests not suitable for CI environment');
-  console.log('   Reason: Requires local server connection');
-  console.log('   Use: npm run performance:load-integration:local for local testing');
-  process.exit(0);
-}
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { performance } from "perf_hooks";
+import { isCI, shouldSkipPerformanceTests, getCIIterationCount, getCIConcurrency } from "../utils/ci-detection.js";
 
-// Performance thresholds for load testing (adjusted for CI)
+// Performance thresholds for load testing (CI-aware)
 const getLoadThresholds = () => {
-  const multiplier = process.env.CI === 'true' ? 2.5 : 1; // CI gets relaxed thresholds
-  const userReduction = process.env.CI === 'true' ? 0.5 : 1; // Fewer users in CI
+  const multiplier = isCI() ? 2.5 : 1; // CI gets relaxed thresholds
+  const userReduction = isCI() ? 0.5 : 1; // Fewer users in CI
   return {
     apiResponse: {
       max: 500 * multiplier,    // 500ms max for API responses
@@ -40,7 +28,7 @@ const getLoadThresholds = () => {
       target: 50 * multiplier   // 50ms target
     },
     concurrentUsers: {
-      max: Math.max(10, 50 * userReduction),     // Support fewer users in CI
+      max: getCIConcurrency(50, 0.2),     // Support fewer users in CI (20% reduction)
       responseTime: 1000 * multiplier // Under 1 second response time
     }
   };
@@ -54,11 +42,11 @@ const mockDatabase = {
   close: vi.fn()
 };
 
-// Mock API endpoints
+// Mock API endpoints with CI-awareness
 class MockAPIEndpoint {
   constructor(name, processingTime = 100) {
     this.name = name;
-    this.processingTime = processingTime;
+    this.processingTime = isCI() ? processingTime * 1.5 : processingTime; // Slower in CI
     this.callCount = 0;
   }
 
@@ -68,10 +56,11 @@ class MockAPIEndpoint {
     const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000';
     
     try {
-      // Skip HTTP requests in CI - use mock response instead
-      if (process.env.CI === 'true' || process.env.NODE_ENV === 'ci') {
+      // Skip HTTP requests in CI when no base URL configured - use mock response
+      if (isCI() && !process.env.TEST_BASE_URL) {
         // Simulate processing time without real HTTP request
         await new Promise(resolve => setTimeout(resolve, this.processingTime));
+        const duration = performance.now() - startTime; // Calculate duration for mock
         return {
           success: true,
           duration,
@@ -209,26 +198,21 @@ class LoadTestOrchestrator {
   }
 }
 
-// Multiple skip conditions for CI environments
-const shouldSkipInCI = process.env.CI === 'true' || 
-                      process.env.NODE_ENV === 'ci' || 
-                      process.env.GITHUB_ACTIONS === 'true' ||
-                      !process.env.TEST_BASE_URL;
+// Skip resource-intensive tests in CI environments unless specifically enabled
+const shouldSkipResourceIntensiveTests = shouldSkipPerformanceTests();
 
-describe.skipIf(shouldSkipInCI)("Load Testing Integration", () => {
+describe("Load Testing Integration", () => {
   let loadOrchestrator;
 
   beforeAll(() => {
-    // Early exit if running in CI
-    if (process.env.CI === 'true' || process.env.NODE_ENV === 'ci') {
-      console.log('⏭️  Load integration tests skipped in CI environment');
-      return;
-    }
-    
     // Skip if no base URL is configured for real testing
-    if (!process.env.TEST_BASE_URL) {
+    if (!process.env.TEST_BASE_URL && !isCI()) {
       console.warn('⚠️ TEST_BASE_URL not set. Set TEST_BASE_URL=http://localhost:3000 to run load tests against local server.');
       console.warn('⚠️ Tests will run with mock responses only.');
+    }
+    
+    if (isCI()) {
+      console.log('🔄 Running reduced load tests suitable for CI environment');
     }
     
     loadOrchestrator = new LoadTestOrchestrator();
@@ -247,7 +231,7 @@ describe.skipIf(shouldSkipInCI)("Load Testing Integration", () => {
 
   describe("Single User Performance", () => {
     it("should handle single user requests within thresholds", async () => {
-      const duration = process.env.CI === 'true' ? 2000 : 3000; // Shorter duration in CI
+      const duration = getCIIterationCount(3000, 0.67); // 67% reduction in CI (2000ms)
       const result = await loadOrchestrator.simulateUserLoad(1, duration);
 
       expect(result.userCount).toBe(1);
@@ -262,7 +246,7 @@ describe.skipIf(shouldSkipInCI)("Load Testing Integration", () => {
       console.log(`Single user - Avg response: ${result.avgResponseTime.toFixed(2)}ms`);
       console.log(`Requests completed: ${result.results.length}`);
       console.log(`Success rate: ${(successfulResults.length / result.results.length * 100).toFixed(1)}%`);
-    }, process.env.CI === 'true' ? 15000 : 10000);
+    }, isCI() ? 15000 : 10000);
 
     it("should maintain consistent response times", async () => {
       const result = await loadOrchestrator.simulateUserLoad(1, 5000);
@@ -284,9 +268,9 @@ describe.skipIf(shouldSkipInCI)("Load Testing Integration", () => {
   });
 
   describe("Concurrent User Load", () => {
-    it("should handle moderate concurrent load", async () => {
-      const userCount = process.env.CI === 'true' ? 5 : 10; // Fewer users in CI
-      const duration = process.env.CI === 'true' ? 3000 : 4000;
+    it.skipIf(shouldSkipResourceIntensiveTests)("should handle moderate concurrent load", async () => {
+      const userCount = getCIConcurrency(10, 0.5); // 50% fewer users in CI (5 users)
+      const duration = getCIIterationCount(4000, 0.75); // 75% duration in CI (3000ms)
       const result = await loadOrchestrator.simulateUserLoad(userCount, duration);
 
       const successfulRequests = result.results.filter(r => r.success);
@@ -298,11 +282,11 @@ describe.skipIf(shouldSkipInCI)("Load Testing Integration", () => {
 
       expect(successRate).toBeGreaterThan(0.90); // 90% success rate (more lenient for CI)
       expect(result.avgResponseTime).toBeLessThan(LOAD_THRESHOLDS.apiResponse.max);
-    }, process.env.CI === 'true' ? 20000 : 15000);
+    }, isCI() ? 20000 : 15000);
 
-    it("should scale to maximum concurrent users", async () => {
+    it.skipIf(shouldSkipResourceIntensiveTests)("should scale to maximum concurrent users", async () => {
       const userCount = LOAD_THRESHOLDS.concurrentUsers.max;
-      const duration = process.env.CI === 'true' ? 2000 : 3000;
+      const duration = getCIIterationCount(3000, 0.67); // 67% duration in CI (2000ms)
       const result = await loadOrchestrator.simulateUserLoad(userCount, duration);
 
       const successfulRequests = result.results.filter(r => r.success);

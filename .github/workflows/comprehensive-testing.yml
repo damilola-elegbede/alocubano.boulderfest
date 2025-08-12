@@ -99,7 +99,7 @@ jobs:
     strategy:
       matrix:
         node-version: [18, 20]
-        test-shard: [1, 2, 3, 4]
+        test-shard: [1, 2]
       fail-fast: false
 
     steps:
@@ -120,7 +120,7 @@ jobs:
 
       - name: Run unit tests with sharding
         run: |
-          npm run test:unit:ci -- --shard=${{ matrix.test-shard }}/4 \
+          npm run test:unit:ci -- --shard=${{ matrix.test-shard }}/2 \
             --reporter=default \
             --reporter=junit \
             --reporter=json \
@@ -132,6 +132,7 @@ jobs:
           CI: true
           COVERAGE: true
           TEST_CI_EXCLUDE_PATTERNS: 'true'
+          NODE_OPTIONS: '--max-old-space-size=1024'
 
 
       - name: Validate test results before upload
@@ -218,6 +219,7 @@ jobs:
           TEST_ISOLATION_MODE: true
           INTEGRATION_TEST_MODE: true
           TEST_CI_EXCLUDE_PATTERNS: 'true'
+          NODE_OPTIONS: '--max-old-space-size=1024'
           # Redis URL intentionally omitted - system will use memory fallback
         continue-on-error: false
 
@@ -228,6 +230,7 @@ jobs:
           NODE_ENV: test
           CI: true
           TEST_CI_EXCLUDE_PATTERNS: 'true'
+          NODE_OPTIONS: '--max-old-space-size=1024'
         continue-on-error: true
 
       - name: Validate integration test results
@@ -354,6 +357,7 @@ jobs:
           CI: true
           TEST_CI_EXCLUDE_PATTERNS: 'true'
           SECURITY_SKIP_PERFORMANCE_TESTS: 'true'
+          NODE_OPTIONS: '--max-old-space-size=1024'
         continue-on-error: true
 
       - name: OWASP ZAP Baseline Scan

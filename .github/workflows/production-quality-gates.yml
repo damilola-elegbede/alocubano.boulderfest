@@ -17,6 +17,7 @@ permissions:
 
 env:
   NODE_VERSION: "20"
+  CI: true
 
 jobs:
   # Job 1: Pre-deployment Quality Checks (fast feedback)

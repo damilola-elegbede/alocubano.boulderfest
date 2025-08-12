@@ -44,6 +44,8 @@ on:
 env:
   NODE_VERSION: "20"
   K6_VERSION: "0.47.0"
+  CI: true
+  NODE_ENV: ci
 
 jobs:
   performance-tests:
@@ -116,6 +118,7 @@ jobs:
           NODE_ENV: ci
           CI: true
           SKIP_PERFORMANCE_INTENSIVE_TESTS: 'true'
+          NODE_OPTIONS: '--max-old-space-size=1024'
 
       - name: Run load integration tests
         if: matrix.test-type == 'load-integration'
@@ -132,6 +135,7 @@ jobs:
           NODE_ENV: ci
           CI: true
           SKIP_PERFORMANCE_INTENSIVE_TESTS: 'true'
+          NODE_OPTIONS: '--max-old-space-size=1024'
 
       - name: Stop application
         if: matrix.test-type == 'load-integration' && env.APP_PID

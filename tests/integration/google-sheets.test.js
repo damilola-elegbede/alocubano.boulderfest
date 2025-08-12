@@ -8,6 +8,7 @@ import request from "supertest";
 import express from "express";
 import nock from "nock";
 import { setupDatabaseTests } from "../utils/enhanced-test-setup.js";
+import { isCI, shouldSkipExternalTests, getCITimeoutMultiplier } from "../utils/ci-detection.js";
 
 // Mock Google APIs with proper structure
 let mockSheetsAPI = {
@@ -24,9 +25,9 @@ let mockSheetsAPI = {
 // Create a proper mock implementation that returns the API
 const mockGoogleSheetsFactory = vi.fn().mockImplementation(() => mockSheetsAPI);
 
-// CI-safe mocking with proper cleanup
-if (process.env.CI === 'true') {
-  // In CI, use more robust mocking
+// Enhanced mocking based on environment detection
+if (isCI()) {
+  // In CI, use more robust mocking with longer timeouts
   vi.mock("googleapis", () => ({
     google: {
       auth: {
@@ -38,7 +39,7 @@ if (process.env.CI === 'true') {
     },
   }));
 } else {
-  // Local development mocking
+  // Local development mocking with cache busting
   vi.mock("googleapis", () => ({
     google: {
       auth: {
@@ -63,13 +64,11 @@ vi.mock("../../api/lib/database.js", () => ({
   getDatabase: vi.fn().mockImplementation(() => mockDatabase),
 }));
 
-// Skip entire test suite in CI to prevent database conflicts
-const shouldSkipInCI = process.env.CI === 'true';
+// Only skip tests that truly require external services without proper mocks
+// Use the centralized CI detection instead of blanket skips
+const shouldSkipTest = shouldSkipExternalTests() && !process.env.GOOGLE_SHEETS_MOCK_ENABLED;
 
-// Use conditional describe instead of skipIf for better CI compatibility
-const describeOrSkip = shouldSkipInCI ? describe.skip : describe;
-
-describeOrSkip("Google Sheets Analytics Integration", () => {
+describe("Google Sheets Analytics Integration", () => {
   let app;
   let GoogleSheetsService;
   let sheetsService;
@@ -77,13 +76,13 @@ describeOrSkip("Google Sheets Analytics Integration", () => {
 
   const { getHelpers } = setupDatabaseTests({
     cleanBeforeEach: true,
-    timeout: process.env.CI === 'true' ? 30000 : 15000,
+    timeout: isCI() ? 30000 * getCITimeoutMultiplier() : 15000,
   });
 
   beforeEach(async () => {
-    // Early exit for CI environment
-    if (shouldSkipInCI) {
-      console.log('⏭️ Skipping Google Sheets test setup in CI');
+    // Check if we should skip due to missing external service configuration
+    if (shouldSkipTest) {
+      console.log('⏭️ Skipping Google Sheets test setup - external services not configured for CI');
       return;
     }
     
@@ -142,9 +141,9 @@ describeOrSkip("Google Sheets Analytics Integration", () => {
     
     // Import Google Sheets service with error handling
     try {
-      // CI-safe module loading
-      if (process.env.CI === 'true') {
-        // In CI, use simpler import without cache busting
+      // CI-optimized service loading
+      if (isCI()) {
+        // In CI, use simpler import without cache busting for stability
         const { GoogleSheetsService: GSService } = await import(
           "../../api/lib/google-sheets-service.js"
         );
@@ -170,8 +169,8 @@ describeOrSkip("Google Sheets Analytics Integration", () => {
   });
 
   afterEach(async () => {
-    // Early exit for CI environment
-    if (shouldSkipInCI) {
+    // Early exit if test should be skipped
+    if (shouldSkipTest) {
       return;
     }
     
@@ -191,8 +190,14 @@ describeOrSkip("Google Sheets Analytics Integration", () => {
     
     if (mockDatabase) {
       // Ensure database connection is closed to prevent SQLITE_BUSY
-      await mockDatabase.close?.().catch(() => {});
-      mockDatabase.execute.mockReset?.();
+      if (typeof mockDatabase.close === 'function') {
+        try {
+          await mockDatabase.close();
+        } catch (error) {
+          // Ignore close errors
+        }
+      }
+      mockDatabase.execute?.mockReset?.();
       mockDatabase.batch?.mockReset?.();
       mockDatabase.transaction?.mockReset?.();
     }

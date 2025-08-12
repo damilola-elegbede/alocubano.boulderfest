@@ -248,8 +248,8 @@ export class TestEnvironmentManager {
       // Clear entire environment except for system variables
       this._clearEnvironmentForTesting();
       
-      // Clear module-level state
-      this.clearModuleState();
+      // Clear module-level state with proper async handling
+      await this.clearModuleState();
 
       if (typeof preset === "string") {
         this.setMockEnv(this.getPreset(preset));
@@ -259,7 +259,7 @@ export class TestEnvironmentManager {
 
       return await testFn();
     } finally {
-      this.restoreModuleState();
+      await this.restoreModuleState();
       this.restore();
     }
   }
@@ -334,22 +334,28 @@ export class TestEnvironmentManager {
   /**
    * Clear module-level state for complete test isolation
    */
-  clearModuleState() {
-    // Clear database service singleton
-    this._clearDatabaseServiceState();
+  async clearModuleState() {
+    // Clear database service singleton with proper async handling
+    await this._clearDatabaseServiceState();
     
     // Force module reload for critical modules
     this._forceModuleReload(['../../api/lib/database.js']);
+    
+    // Add a small delay to ensure connections are fully closed
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
 
   /**
    * Restore module-level state after test completion
    */
-  restoreModuleState() {
+  async restoreModuleState() {
     // Restore database service state if backed up
-    this._restoreDatabaseServiceState();
+    await this._restoreDatabaseServiceState();
     
     this.moduleStateBackup.clear();
+    
+    // Add a small delay for cleanup
+    await new Promise(resolve => setTimeout(resolve, 50));
   }
 
   /**
@@ -410,37 +416,41 @@ export class TestEnvironmentManager {
   }
 
   /**
-   * Clear database service singleton state
+   * Clear database service singleton state with proper async handling
    * @private
    */
-  _clearDatabaseServiceState() {
+  async _clearDatabaseServiceState() {
     try {
-      // Synchronously attempt to reset database service if available
-      // Use dynamic import but handle it synchronously for test isolation
+      // Properly handle async database reset
       const resetDatabaseState = async () => {
         try {
           const module = await import('../../api/lib/database.js');
           if (module.resetDatabaseInstance) {
-            module.resetDatabaseInstance();
+            await module.resetDatabaseInstance();
           }
           // Also reset the global singleton instance
           if (module.getDatabase && typeof module.getDatabase === 'function') {
             const service = module.getDatabase();
+            if (service && service.close) {
+              await service.close();
+            }
             if (service && service.resetForTesting) {
               service.resetForTesting();
             }
           }
         } catch (error) {
           // Module might not be available, ignore
+          console.warn('Database state reset failed:', error.message);
         }
       };
       
-      // Execute the reset immediately for synchronous behavior in tests
-      resetDatabaseState();
+      // Execute the reset and wait for completion
+      await resetDatabaseState();
       
       this.moduleStateBackup.set('databaseService', { stateCleared: true });
     } catch (error) {
       // Module might not be available, which is fine
+      console.warn('Database service state clear failed:', error.message);
     }
   }
 
@@ -448,11 +458,18 @@ export class TestEnvironmentManager {
    * Restore database service singleton state
    * @private
    */
-  _restoreDatabaseServiceState() {
+  async _restoreDatabaseServiceState() {
     const backupData = this.moduleStateBackup.get('databaseService');
     if (backupData && backupData.stateCleared) {
-      // State was cleared, leave it cleared since we're restoring
-      // The next test will get a fresh instance
+      // Ensure database is fully cleaned up after test
+      try {
+        const module = await import('../../api/lib/database.js');
+        if (module.resetDatabaseInstance) {
+          await module.resetDatabaseInstance();
+        }
+      } catch (error) {
+        console.warn('Database state restore failed:', error.message);
+      }
     }
   }
 
@@ -540,9 +557,9 @@ export class TestEnvironmentManager {
   /**
    * Static method for clearing module state globally
    */
-  static clearModuleState() {
+  static async clearModuleState() {
     const manager = new TestEnvironmentManager();
-    manager.clearModuleState();
+    await manager.clearModuleState();
   }
 
   /**
@@ -573,14 +590,16 @@ export class TestEnvironmentManager {
   /**
    * Enhanced clear that coordinates with other managers
    */
-  coordinatedClear() {
-    // Clear environment state
-    this.clearModuleState();
+  async coordinatedClear() {
+    // Clear environment state with proper async handling
+    await this.clearModuleState();
     
     // Coordinate with singleton manager if available
     if (this.singletonManager && this.singletonManager.clearAllSingletons) {
       try {
-        this.singletonManager.clearAllSingletons();
+        if (typeof this.singletonManager.clearAllSingletons === 'function') {
+          await this.singletonManager.clearAllSingletons();
+        }
       } catch (error) {
         // Log error but don't fail the entire operation
         console.warn("Failed to clear singletons:", error.message);
@@ -590,7 +609,9 @@ export class TestEnvironmentManager {
     // Coordinate with mock manager if available  
     if (this.mockManager && this.mockManager.resetAllMocks) {
       try {
-        this.mockManager.resetAllMocks();
+        if (typeof this.mockManager.resetAllMocks === 'function') {
+          await this.mockManager.resetAllMocks();
+        }
       } catch (error) {
         // Log error but don't fail the entire operation
         console.warn("Failed to reset mocks:", error.message);

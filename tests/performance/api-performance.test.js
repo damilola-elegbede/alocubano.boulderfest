@@ -11,10 +11,11 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { performance } from "perf_hooks";
+import { isCI, shouldSkipPerformanceTests, getCIIterationCount, getCITimeoutMultiplier } from "../utils/ci-detection.js";
 
-// Performance thresholds for API endpoints (adjusted for CI)
+// Performance thresholds for API endpoints (CI-aware)
 const getThresholds = () => {
-  const multiplier = process.env.CI === 'true' ? 3 : 1; // CI gets more relaxed thresholds
+  const multiplier = isCI() ? 3 : 1; // CI gets more relaxed thresholds
   return {
     health: { max: 100 * multiplier, target: 50 * multiplier },      // Health check endpoints
     gallery: { max: 300 * multiplier, target: 150 * multiplier },    // Gallery API endpoints  
@@ -26,8 +27,8 @@ const getThresholds = () => {
 };
 const API_THRESHOLDS = getThresholds();
 
-// Mock API response times based on endpoint complexity (adjusted for CI)
-const CI_MULTIPLIER = process.env.CI === 'true' ? 2 : 1; // CI is typically slower
+// Mock API response times based on endpoint complexity (CI-aware)
+const CI_MULTIPLIER = getCITimeoutMultiplier(); // CI is typically slower
 const MOCK_RESPONSE_TIMES = {
   "/api/health/check": 25 * CI_MULTIPLIER,
   "/api/health/database": 50 * CI_MULTIPLIER,
@@ -48,11 +49,30 @@ class APIPerformanceTester {
   async testEndpoint(endpoint, iterations = 10) {
     const results = [];
     const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000';
+    const ciIterations = getCIIterationCount(iterations, 0.5); // 50% fewer iterations in CI
 
-    for (let i = 0; i < iterations; i++) {
+    for (let i = 0; i < ciIterations; i++) {
       const startTime = performance.now();
       
       try {
+        // In CI without TEST_BASE_URL, use mock responses for stability
+        if (isCI() && !process.env.TEST_BASE_URL) {
+          const mockDelay = MOCK_RESPONSE_TIMES[endpoint] || 100;
+          await new Promise(resolve => setTimeout(resolve, mockDelay));
+          
+          const duration = performance.now() - startTime;
+          results.push({
+            success: true,
+            duration,
+            iteration: i,
+            endpoint,
+            status: 200,
+            timestamp: Date.now(),
+            mocked: true
+          });
+          continue;
+        }
+        
         // Make actual HTTP request to test real performance
         const response = await fetch(`${baseUrl}${endpoint}`, {
           method: 'GET',
@@ -192,14 +212,22 @@ class APIPerformanceTester {
   }
 }
 
-describe.skipIf(process.env.CI === 'true')("API Performance Tests", () => {
+// Only skip resource-intensive performance tests, not all performance tests
+const shouldSkipResourceIntensive = shouldSkipPerformanceTests();
+
+describe("API Performance Tests", () => {
   let tester;
 
   beforeAll(() => {
-    // Skip if no base URL is configured
-    if (!process.env.TEST_BASE_URL && !process.env.CI) {
+    // Skip if no base URL is configured (only for local development)
+    if (!process.env.TEST_BASE_URL && !isCI()) {
       console.warn('⚠️ TEST_BASE_URL not set. Set TEST_BASE_URL=http://localhost:3000 to run performance tests against local server.');
     }
+    
+    if (isCI()) {
+      console.log('🔄 Running API performance tests in CI mode with mock responses');
+    }
+    
     tester = new APIPerformanceTester();
   });
 
@@ -209,7 +237,7 @@ describe.skipIf(process.env.CI === 'true')("API Performance Tests", () => {
 
   describe("Health Check Performance", () => {
     it("should respond to health checks quickly", async () => {
-      const iterations = process.env.CI === 'true' ? 10 : 20; // Fewer iterations in CI
+      const iterations = getCIIterationCount(20, 0.5); // 50% fewer iterations in CI (10)
       const results = await tester.testEndpoint("/api/health/check", iterations);
       const stats = tester.getStatistics("/api/health/check");
 
@@ -218,7 +246,7 @@ describe.skipIf(process.env.CI === 'true')("API Performance Tests", () => {
       expect(stats.p95).toBeLessThan(API_THRESHOLDS.health.max * 1.5);
 
       console.log(`Health check - Avg: ${stats.avgDuration.toFixed(2)}ms, P95: ${stats.p95.toFixed(2)}ms`);
-    }, process.env.CI === 'true' ? 20000 : 10000);
+    }, isCI() ? 20000 : 10000);
 
     it("should handle database health checks efficiently", async () => {
       const results = await tester.testEndpoint("/api/health/database", 15);
@@ -280,7 +308,7 @@ describe.skipIf(process.env.CI === 'true')("API Performance Tests", () => {
   });
 
   describe("Concurrent Request Performance", () => {
-    it("should handle concurrent health checks", async () => {
+    it.skipIf(shouldSkipResourceIntensive)("should handle concurrent health checks", async () => {
       const result = await tester.testConcurrentRequests("/api/health/check", 10, 30);
 
       const successfulRequests = result.results.filter(r => r.success);
@@ -293,7 +321,7 @@ describe.skipIf(process.env.CI === 'true')("API Performance Tests", () => {
       console.log(`Concurrent health - Throughput: ${result.throughput.toFixed(1)} req/s`);
     }, 15000);
 
-    it("should handle concurrent gallery requests", async () => {
+    it.skipIf(shouldSkipResourceIntensive)("should handle concurrent gallery requests", async () => {
       const result = await tester.testConcurrentRequests("/api/gallery/years", 5, 20);
 
       const successfulRequests = result.results.filter(r => r.success);
@@ -307,7 +335,7 @@ describe.skipIf(process.env.CI === 'true')("API Performance Tests", () => {
   });
 
   describe("Performance Under Load", () => {
-    it("should maintain performance under sustained load", async () => {
+    it.skipIf(shouldSkipResourceIntensive)("should maintain performance under sustained load", async () => {
       const endpoints = ["/api/health/check", "/api/gallery/years", "/api/tickets/validate"];
       const results = new Map();
 
@@ -322,7 +350,7 @@ describe.skipIf(process.env.CI === 'true')("API Performance Tests", () => {
       }
     }, 20000);
 
-    it("should handle mixed endpoint load", async () => {
+    it.skipIf(shouldSkipResourceIntensive)("should handle mixed endpoint load", async () => {
       const testPromises = [
         tester.testConcurrentRequests("/api/health/check", 3, 10),
         tester.testConcurrentRequests("/api/gallery/years", 2, 8),
