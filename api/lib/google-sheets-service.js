@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import { getDatabase } from "./database.js";
+import { getDatabaseClient } from "./database.js";
 
 export class GoogleSheetsService {
   constructor() {
@@ -187,7 +187,7 @@ export class GoogleSheetsService {
    * Sync all data from database to sheets
    */
   async syncAllData() {
-    const db = getDatabase();
+    const db = await getDatabaseClient();
     const timestamp = new Date().toLocaleString("en-US", {
       timeZone: process.env.SHEETS_TIMEZONE || "America/Denver",
     });

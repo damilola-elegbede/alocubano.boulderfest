@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { QRTokenService } from "../../api/lib/qr-token-service.js";
 import handler from "../../api/tickets/validate.js";
+import { setupDatabaseTests } from "../utils/enhanced-test-setup.js";
 
 // Mock database for testing
 const mockDb = {
@@ -15,15 +16,21 @@ const mockTx = {
   rollback: vi.fn(),
 };
 
-// Mock getDatabase
+// Mock getDatabaseClient for integration test compatibility
 vi.mock("../../api/lib/database.js", () => ({
-  getDatabase: () => mockDb,
+  getDatabaseClient: async () => mockDb,
+  getDatabase: () => mockDb, // Keep for backward compatibility
 }));
 
 // Mock environment variables
 const originalEnv = process.env;
 
 describe("QR Code Concurrent Validation Tests", () => {
+  const { getHelpers } = setupDatabaseTests({
+    cleanBeforeEach: true,
+    timeout: 15000,
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     process.env = {
@@ -31,6 +38,7 @@ describe("QR Code Concurrent Validation Tests", () => {
       QR_SECRET_KEY: "test-secret-key-for-testing-purposes-only",
       QR_CODE_EXPIRY_DAYS: "180",
       QR_CODE_MAX_SCANS: "5",
+      TEST_TYPE: "integration", // Ensure proper integration test mode
     };
 
     // Setup transaction mock
@@ -354,7 +362,7 @@ describe("QR Code Concurrent Validation Tests", () => {
       // Verify no persistent connection in constructor
       expect(service.db).toBeUndefined();
 
-      // Mock getDatabase to track calls
+      // Mock getDatabaseClient to track calls
       const getDbSpy = vi.spyOn(service, "getDb");
 
       // Mock database response

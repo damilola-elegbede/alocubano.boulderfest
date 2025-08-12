@@ -1,4 +1,4 @@
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 import jwt from "jsonwebtoken";
 
 // Rate limiting map (simple in-memory for now, use Redis in production)
@@ -194,7 +194,7 @@ export default async function handler(req, res) {
   }
 
   const source = detectSource(req);
-  const db = await getDatabase().ensureInitialized();
+  const db = await getDatabaseClient();
 
   try {
     const ticketId = extractTicketId(token);
