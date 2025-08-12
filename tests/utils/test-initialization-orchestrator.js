@@ -76,7 +76,7 @@ export class TestInitializationOrchestrator {
     // Ensure all required environment variables
     const requiredVars = {
       NODE_ENV: "test",
-      TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL || "file:test.db",
+      TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL || ":memory:",
       TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN || "test-token",
       BREVO_API_KEY: process.env.BREVO_API_KEY || "test-key",
       BREVO_NEWSLETTER_LIST_ID: process.env.BREVO_NEWSLETTER_LIST_ID || "2",

@@ -43,7 +43,6 @@ class DatabaseService {
 
   /**
    * Ensure database client is initialized with promise-based lazy singleton pattern
-   * Prevents race conditions by caching the initialization promise
    */
   async ensureInitialized() {
     // Return immediately if already initialized (fast path)
@@ -76,12 +75,7 @@ class DatabaseService {
     try {
       return await this._performInitialization();
     } catch (error) {
-      // Only retry in production, not in tests
-      if (
-        retryCount < this.maxRetries &&
-        process.env.NODE_ENV !== "test" &&
-        !process.env.VITEST
-      ) {
+      if (retryCount < this.maxRetries) {
         console.warn(
           `Database initialization failed, retrying... (attempt ${retryCount + 1}/${this.maxRetries})`,
         );
@@ -96,20 +90,21 @@ class DatabaseService {
    * Perform the actual database initialization
    */
   async _performInitialization() {
-    const databaseUrl = process.env.TURSO_DATABASE_URL;
+    let databaseUrl = process.env.TURSO_DATABASE_URL;
     const authToken = process.env.TURSO_AUTH_TOKEN;
 
-    // Check for empty string as well as undefined
+    // Check for empty string as well as undefined first (before any transformation)
     if (!databaseUrl || databaseUrl.trim() === "") {
       throw new Error("TURSO_DATABASE_URL environment variable is required");
     }
+
 
     const config = {
       url: databaseUrl,
     };
 
-    // Add auth token if provided (required for Turso)
-    if (authToken) {
+    // Add auth token if provided (not needed for :memory: databases)
+    if (authToken && databaseUrl !== ":memory:") {
       config.authToken = authToken;
     }
 
@@ -117,11 +112,8 @@ class DatabaseService {
       const createClient = await importLibSQLClient();
       const client = createClient(config);
 
-      // Only test connection in production environment
-      // Skip connection test in tests to maintain backward compatibility
-      if (process.env.NODE_ENV !== "test" && !process.env.VITEST) {
-        await client.execute("SELECT 1 as test");
-      }
+      // Test connection to verify client is working
+      await client.execute("SELECT 1 as test");
 
       this.client = client;
       this.initialized = true;
@@ -148,79 +140,36 @@ class DatabaseService {
 
   /**
    * Initialize database client with environment variables
-   * Maintains backward compatibility with synchronous behavior in tests
    */
   async initializeClient() {
-    // Allow tests to force strict environment validation
-    const strictMode = process.env.DATABASE_TEST_STRICT_MODE === "true";
-
-    // Always validate environment variables first, regardless of mode
-    const databaseUrl = process.env.TURSO_DATABASE_URL;
-    const authToken = process.env.TURSO_AUTH_TOKEN;
-
-    // In strict test mode, always validate environment variables and throw immediately if invalid
-    if (strictMode) {
-      // Always validate environment in strict mode - throw error immediately if invalid
-      if (!databaseUrl || databaseUrl.trim() === "") {
-        throw new Error("TURSO_DATABASE_URL environment variable is required");
-      }
-
-      // In strict mode, always reinitialize to ensure environment consistency
-      // This prevents cached clients from previous tests with different environments
-      const config = {
-        url: databaseUrl,
-      };
-
-      if (authToken) {
-        config.authToken = authToken;
-      }
-
-      try {
-        const createClient = await importLibSQLClient();
-        this.client = createClient(config);
-        this.initialized = true;
-        return this.client;
-      } catch (error) {
-        throw new Error(
-          "Failed to initialize database client due to configuration error",
-        );
-      }
-    }
-
-    // In test environment, maintain synchronous-like behavior for backward compatibility
-    // unless strict mode is enabled for testing error conditions
-    if (process.env.NODE_ENV === "test" || process.env.VITEST) {
-      if (this.initialized && this.client) {
-        return this.client;
-      }
-
-      // Check for empty string as well as undefined (using pre-loaded variables)
-      if (!databaseUrl || databaseUrl.trim() === "") {
-        throw new Error("TURSO_DATABASE_URL environment variable is required");
-      }
-
-      const config = {
-        url: databaseUrl,
-      };
-
-      if (authToken) {
-        config.authToken = authToken;
-      }
-
-      try {
-        const createClient = await importLibSQLClient();
-        this.client = createClient(config);
-        this.initialized = true;
-        return this.client;
-      } catch (error) {
-        throw new Error(
-          "Failed to initialize database client due to configuration error",
-        );
-      }
-    }
-
-    // In production or non-test mode, use the full promise-based initialization with retry logic
+    // Use the full promise-based initialization with retry logic
     return this.ensureInitialized();
+  }
+
+  /**
+   * Create database client with configuration
+   * @private
+   */
+  async _createDatabaseClient(databaseUrl, authToken) {
+    const config = {
+      url: databaseUrl,
+    };
+
+    // Add auth token if provided (not needed for :memory: databases)
+    if (authToken && databaseUrl !== ":memory:") {
+      config.authToken = authToken;
+    }
+
+    try {
+      const createClient = await importLibSQLClient();
+      this.client = createClient(config);
+      this.initialized = true;
+      return this.client;
+    } catch (error) {
+      throw new Error(
+        "Failed to initialize database client due to configuration error",
+      );
+    }
   }
 
   /**
@@ -279,17 +228,12 @@ class DatabaseService {
       const sqlString =
         typeof queryOrObject === "string" ? queryOrObject : queryOrObject.sql;
 
-      // Don't log rollback errors in test environments - they're expected during cleanup
-      const isRollbackError =
-        sqlString === "ROLLBACK" && error.message?.includes("cannot rollback");
-      if (!isRollbackError || process.env.NODE_ENV !== "test") {
-        console.error("Database query execution failed:", {
-          sql:
-            sqlString.substring(0, 100) + (sqlString.length > 100 ? "..." : ""),
-          error: error.message,
-          timestamp: new Date().toISOString(),
-        });
-      }
+      console.error("Database query execution failed:", {
+        sql:
+          sqlString.substring(0, 100) + (sqlString.length > 100 ? "..." : ""),
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
 
       // Still throw the error even if we don't log it
       throw error;
@@ -404,10 +348,8 @@ export async function testConnection() {
 
 /**
  * Reset singleton instance for testing
- * This ensures test isolation by clearing any cached state
  */
 export function resetDatabaseInstance() {
-  // CRITICAL FIX: Reset the existing instance state before nullifying
   if (databaseServiceInstance) {
     databaseServiceInstance.resetForTesting();
   }

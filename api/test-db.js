@@ -15,6 +15,14 @@ import {
 import { getMigrationStatus } from "./lib/migration-status.js";
 
 export default async function handler(req, res) {
+  // Only allow access in development or test environments
+  if (
+    process.env.NODE_ENV === "production" &&
+    !process.env.ENABLE_DEBUG_ENDPOINTS
+  ) {
+    return res.status(404).json({ error: "Not found" });
+  }
+
   // Load secure CORS configuration
   const corsConfig = getCorsConfig();
 

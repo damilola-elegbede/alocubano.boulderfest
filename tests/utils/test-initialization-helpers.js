@@ -105,7 +105,7 @@ export class TestInitializationHelpers {
   setupTestEnvironment(envVars = {}) {
     const defaultEnvVars = {
       NODE_ENV: "test",
-      TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL || "file:test.db",
+      TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL || ":memory:",
       TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN || "",
       BREVO_API_KEY: process.env.BREVO_API_KEY || "xkeysib-test123",
       BREVO_NEWSLETTER_LIST_ID: process.env.BREVO_NEWSLETTER_LIST_ID || "123",

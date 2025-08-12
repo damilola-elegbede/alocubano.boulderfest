@@ -17,11 +17,6 @@ function detectRuntime() {
     return "vercel";
   }
 
-  // Check for test environment
-  if (process.env.NODE_ENV === "test") {
-    return "test";
-  }
-
   // Check for browser environment
   if (typeof window !== "undefined" && typeof document !== "undefined") {
     return "browser";
@@ -49,7 +44,6 @@ export async function getLibSQLClient() {
       );
       return createWebClient;
 
-    case "test":
     case "node":
     default:
       // Use Node.js client for tests and local development
@@ -79,7 +73,6 @@ export function getRuntimeInfo() {
     runtime: detectRuntime(),
     isEdge: typeof EdgeRuntime !== "undefined",
     isVercel: !!process.env.VERCEL,
-    isTest: process.env.NODE_ENV === "test",
     isBrowser: typeof window !== "undefined",
     isNode:
       typeof process !== "undefined" &&

@@ -5,8 +5,16 @@ export default defineConfig({
     // Default environment is jsdom for browser-based tests
     environment: "jsdom",
     globals: true,
-    setupFiles: ["./tests/setup-vitest.js"],
-    globalTeardown: "./tests/global-teardown.js",
+    
+    // Enhanced setup files for automatic test isolation
+    setupFiles: [
+      "./tests/config/enhanced-test-setup.js", // Phase 2: Automatic isolation
+      "./tests/setup-vitest.js"                // Existing setup preserved
+    ],
+    
+    // Global setup and teardown for suite-level isolation management
+    // globalSetup: "./tests/config/global-test-isolation.js",
+    // globalTeardown: "./tests/global-teardown.js",
 
     // Test file patterns
     include: [
@@ -14,6 +22,7 @@ export default defineConfig({
       "tests/integration/**/*.test.js",
       "tests/security/**/*.test.js",
       "tests/performance/**/*.test.js",
+      "tests/validation/**/*.test.js", // Include validation tests
     ],
     exclude: [
       "tests/e2e/**/*.test.js", // Exclude E2E tests (need Playwright)
@@ -103,9 +112,26 @@ export default defineConfig({
       },
     },
 
-    // Enhanced cleanup options
+    // Enhanced cleanup options with automatic isolation
     clearMocks: true,
     restoreMocks: true,
+    
+    // Isolation-specific configuration
+    isolate: true, // Ensure test isolation at Vitest level
+    pool: 'threads', // Use threads for better isolation
+    
+    // Environment variables for enhanced isolation and Phase 1 test defaults
+    env: {
+      TEST_ISOLATION_ENHANCED: 'true',
+      TEST_AUTO_ISOLATION: 'true',
+      // Phase 1: Default test environment variables
+      BREVO_API_KEY: 'test-api-key',
+      TURSO_DATABASE_URL: ':memory:',
+      TURSO_AUTH_TOKEN: 'test-token',
+      NODE_ENV: 'test',
+      STRIPE_SECRET_KEY: 'test-stripe-key',
+      ADMIN_SECRET: 'test-admin-secret-minimum-32-characters'
+    },
 
     // Reporter configuration
     reporter:

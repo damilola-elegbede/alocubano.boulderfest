@@ -72,7 +72,7 @@ app.get('/health', (req, res) => {
 });
 
 // API route handler - dynamically load serverless functions
-app.all('/api/*', async (req, res) => {
+app.all(/^\/api\/(.*)/, async (req, res) => {
   const apiPath = req.path.replace('/api/', '');
   const segments = apiPath.split('/').filter(Boolean);
   
@@ -275,13 +275,19 @@ app.use(express.static(rootDir, {
 }));
 
 // Handle SPA routing - serve index.html for non-API routes
-app.get('*', (req, res) => {
+app.get(/^\/(?!api\/).*/, (req, res) => {
   // Don't serve index.html for API routes that failed
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ error: 'API endpoint not found' });
   }
   
-  const indexPath = path.join(rootDir, 'index.html');
+  // Check for index.html in pages directory (like Vercel config)
+  let indexPath = path.join(rootDir, 'pages', 'index.html');
+  if (!fs.existsSync(indexPath)) {
+    // Fallback to root index.html
+    indexPath = path.join(rootDir, 'index.html');
+  }
+  
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);
   } else {

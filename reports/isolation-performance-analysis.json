@@ -1,0 +1,2258 @@
+{
+  "summary": {
+    "totalComponents": 4,
+    "totalOverhead": 0.037422580000000136,
+    "averageOverhead": 0.009355645000000034,
+    "overallCategory": "excellent",
+    "memoryEfficient": true
+  },
+  "components": {
+    "TestSingletonManager": {
+      "componentName": "TestSingletonManager",
+      "success": true,
+      "iterations": 50,
+      "successfulIterations": 50,
+      "successRate": 100,
+      "timing": {
+        "mean": 0.0027499600000000157,
+        "median": 0.0017085000000003348,
+        "min": 0.0011250000000000426,
+        "max": 0.0335409999999996,
+        "p95": 0.005625000000000213,
+        "p99": 0.0335409999999996
+      },
+      "memory": {
+        "meanHeapUsed": -13314.4,
+        "medianHeapUsed": 1272,
+        "minHeapUsed": -725160,
+        "maxHeapUsed": 1632,
+        "p95HeapUsed": 1632
+      },
+      "performance": {
+        "category": "excellent",
+        "overhead": "minimal",
+        "memoryEfficient": true
+      },
+      "errors": [],
+      "rawResults": [
+        {
+          "iteration": 0,
+          "duration": 0.0335409999999996,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": -725160,
+            "heapTotal": 0,
+            "external": 40
+          },
+          "peakMemory": 45629440,
+          "success": true
+        },
+        {
+          "iteration": 1,
+          "duration": 0.005625000000000213,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1288,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45662208,
+          "success": true
+        },
+        {
+          "iteration": 2,
+          "duration": 0.0038749999999989626,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1496,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45662208,
+          "success": true
+        },
+        {
+          "iteration": 3,
+          "duration": 0.0034999999999989484,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1256,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45662208,
+          "success": true
+        },
+        {
+          "iteration": 4,
+          "duration": 0.004666000000000281,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1624,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45662208,
+          "success": true
+        },
+        {
+          "iteration": 5,
+          "duration": 0.003540999999998462,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45662208,
+          "success": true
+        },
+        {
+          "iteration": 6,
+          "duration": 0.0021660000000007784,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1112,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45662208,
+          "success": true
+        },
+        {
+          "iteration": 7,
+          "duration": 0.0022500000000000853,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1216,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45678592,
+          "success": true
+        },
+        {
+          "iteration": 8,
+          "duration": 0.0024580000000007374,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1328,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45678592,
+          "success": true
+        },
+        {
+          "iteration": 9,
+          "duration": 0.004125000000000156,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1312,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45678592,
+          "success": true
+        },
+        {
+          "iteration": 10,
+          "duration": 0.003667000000000087,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1112,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45678592,
+          "success": true
+        },
+        {
+          "iteration": 11,
+          "duration": 0.0033340000000006142,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1456,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45678592,
+          "success": true
+        },
+        {
+          "iteration": 12,
+          "duration": 0.0022500000000000853,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1528,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45678592,
+          "success": true
+        },
+        {
+          "iteration": 13,
+          "duration": 0.0022079999999995437,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1528,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45694976,
+          "success": true
+        },
+        {
+          "iteration": 14,
+          "duration": 0.0017920000000000158,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1320,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45694976,
+          "success": true
+        },
+        {
+          "iteration": 15,
+          "duration": 0.0012919999999994047,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 800,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45694976,
+          "success": true
+        },
+        {
+          "iteration": 16,
+          "duration": 0.001875000000000071,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1528,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45694976,
+          "success": true
+        },
+        {
+          "iteration": 17,
+          "duration": 0.0012919999999994047,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 800,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45694976,
+          "success": true
+        },
+        {
+          "iteration": 18,
+          "duration": 0.0018329999999995295,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 1424,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45711360,
+          "success": true
+        },
+        {
+          "iteration": 19,
+          "duration": 0.0029589999999988237,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 1008,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45727744,
+          "success": true
+        },
+        {
+          "iteration": 20,
+          "duration": 0.0018329999999995295,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1528,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45727744,
+          "success": true
+        },
+        {
+          "iteration": 21,
+          "duration": 0.0017089999999999606,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1216,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45727744,
+          "success": true
+        },
+        {
+          "iteration": 22,
+          "duration": 0.0019580000000001263,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1632,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45727744,
+          "success": true
+        },
+        {
+          "iteration": 23,
+          "duration": 0.0028329999999989752,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1632,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45727744,
+          "success": true
+        },
+        {
+          "iteration": 24,
+          "duration": 0.0014170000000000016,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 800,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45727744,
+          "success": true
+        },
+        {
+          "iteration": 25,
+          "duration": 0.001708000000000709,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1424,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45727744,
+          "success": true
+        },
+        {
+          "iteration": 26,
+          "duration": 0.0018340000000005574,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1320,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45744128,
+          "success": true
+        },
+        {
+          "iteration": 27,
+          "duration": 0.0011670000000005842,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 800,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45744128,
+          "success": true
+        },
+        {
+          "iteration": 28,
+          "duration": 0.0011250000000000426,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 696,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45744128,
+          "success": true
+        },
+        {
+          "iteration": 29,
+          "duration": 0.00141600000000075,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1112,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45744128,
+          "success": true
+        },
+        {
+          "iteration": 30,
+          "duration": 0.001583000000000112,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1424,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45744128,
+          "success": true
+        },
+        {
+          "iteration": 31,
+          "duration": 0.0011670000000005842,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 904,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45744128,
+          "success": true
+        },
+        {
+          "iteration": 32,
+          "duration": 0.0015420000000005984,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1320,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45744128,
+          "success": true
+        },
+        {
+          "iteration": 33,
+          "duration": 0.0013750000000012363,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 904,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45760512,
+          "success": true
+        },
+        {
+          "iteration": 34,
+          "duration": 0.0014170000000000016,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1216,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45760512,
+          "success": true
+        },
+        {
+          "iteration": 35,
+          "duration": 0.0011250000000000426,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 800,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45760512,
+          "success": true
+        },
+        {
+          "iteration": 36,
+          "duration": 0.0011659999999995563,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 904,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45760512,
+          "success": true
+        },
+        {
+          "iteration": 37,
+          "duration": 0.0015000000000000568,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1424,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45760512,
+          "success": true
+        },
+        {
+          "iteration": 38,
+          "duration": 0.0013330000000006947,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1112,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45760512,
+          "success": true
+        },
+        {
+          "iteration": 39,
+          "duration": 0.0011670000000005842,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 904,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45760512,
+          "success": true
+        },
+        {
+          "iteration": 40,
+          "duration": 0.0016250000000006537,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1320,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45776896,
+          "success": true
+        },
+        {
+          "iteration": 41,
+          "duration": 0.001583000000000112,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1424,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45776896,
+          "success": true
+        },
+        {
+          "iteration": 42,
+          "duration": 0.0015000000000000568,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1320,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45776896,
+          "success": true
+        },
+        {
+          "iteration": 43,
+          "duration": 0.0012919999999994047,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1008,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45776896,
+          "success": true
+        },
+        {
+          "iteration": 44,
+          "duration": 0.0013330000000006947,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1112,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45776896,
+          "success": true
+        },
+        {
+          "iteration": 45,
+          "duration": 0.0017499999999994742,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1632,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45776896,
+          "success": true
+        },
+        {
+          "iteration": 46,
+          "duration": 0.0015000000000000568,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 1320,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45776896,
+          "success": true
+        },
+        {
+          "iteration": 47,
+          "duration": 0.006000000000000227,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 1216,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45793280,
+          "success": true
+        },
+        {
+          "iteration": 48,
+          "duration": 0.0011659999999995563,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 696,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45793280,
+          "success": true
+        },
+        {
+          "iteration": 49,
+          "duration": 0.0011250000000000426,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 800,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 45793280,
+          "success": true
+        }
+      ]
+    },
+    "TestMockManager": {
+      "componentName": "TestMockManager",
+      "success": true,
+      "iterations": 50,
+      "successfulIterations": 50,
+      "successRate": 100,
+      "timing": {
+        "mean": 0.009880020000000158,
+        "median": 0.004520499999999927,
+        "min": 0.002957999999999572,
+        "max": 0.2596659999999993,
+        "p95": 0.008999999999998565,
+        "p99": 0.2596659999999993
+      },
+      "memory": {
+        "meanHeapUsed": -9931.36,
+        "medianHeapUsed": 3028,
+        "minHeapUsed": -650112,
+        "maxHeapUsed": 4576,
+        "p95HeapUsed": 4176
+      },
+      "performance": {
+        "category": "excellent",
+        "overhead": "minimal",
+        "memoryEfficient": true
+      },
+      "errors": [],
+      "rawResults": [
+        {
+          "iteration": 0,
+          "duration": 0.007084000000000756,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 3000,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46055424,
+          "success": true
+        },
+        {
+          "iteration": 1,
+          "duration": 0.00495800000000024,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2736,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46055424,
+          "success": true
+        },
+        {
+          "iteration": 2,
+          "duration": 0.0045000000000001705,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2912,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46055424,
+          "success": true
+        },
+        {
+          "iteration": 3,
+          "duration": 0.006334000000000728,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 4552,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46055424,
+          "success": true
+        },
+        {
+          "iteration": 4,
+          "duration": 0.007749999999999702,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 3816,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46071808,
+          "success": true
+        },
+        {
+          "iteration": 5,
+          "duration": 0.005333000000000254,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 3656,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46071808,
+          "success": true
+        },
+        {
+          "iteration": 6,
+          "duration": 0.0037090000000006285,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2784,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46071808,
+          "success": true
+        },
+        {
+          "iteration": 7,
+          "duration": 0.004666999999999533,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 2960,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46088192,
+          "success": true
+        },
+        {
+          "iteration": 8,
+          "duration": 0.0032079999999989894,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2464,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46088192,
+          "success": true
+        },
+        {
+          "iteration": 9,
+          "duration": 0.0033329999999995863,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2704,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46088192,
+          "success": true
+        },
+        {
+          "iteration": 10,
+          "duration": 0.004082999999999615,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 3400,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46088192,
+          "success": true
+        },
+        {
+          "iteration": 11,
+          "duration": 0.005708000000000268,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 3400,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46104576,
+          "success": true
+        },
+        {
+          "iteration": 12,
+          "duration": 0.0034170000000006695,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2704,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46104576,
+          "success": true
+        },
+        {
+          "iteration": 13,
+          "duration": 0.002957999999999572,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46104576,
+          "success": true
+        },
+        {
+          "iteration": 14,
+          "duration": 0.004083000000001391,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 3400,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46104576,
+          "success": true
+        },
+        {
+          "iteration": 15,
+          "duration": 0.004749999999999588,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 2784,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46120960,
+          "success": true
+        },
+        {
+          "iteration": 16,
+          "duration": 0.0030000000000001137,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46120960,
+          "success": true
+        },
+        {
+          "iteration": 17,
+          "duration": 0.0030000000000001137,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2464,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46120960,
+          "success": true
+        },
+        {
+          "iteration": 18,
+          "duration": 0.004208000000000212,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 3576,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46120960,
+          "success": true
+        },
+        {
+          "iteration": 19,
+          "duration": 0.005250000000000199,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 3224,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46137344,
+          "success": true
+        },
+        {
+          "iteration": 20,
+          "duration": 0.00354199999999949,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2960,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46137344,
+          "success": true
+        },
+        {
+          "iteration": 21,
+          "duration": 0.003416999999998893,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2784,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46137344,
+          "success": true
+        },
+        {
+          "iteration": 22,
+          "duration": 0.003083000000000169,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2544,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46137344,
+          "success": true
+        },
+        {
+          "iteration": 23,
+          "duration": 0.005875000000001407,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 3840,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46153728,
+          "success": true
+        },
+        {
+          "iteration": 24,
+          "duration": 0.004082999999999615,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 3400,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46153728,
+          "success": true
+        },
+        {
+          "iteration": 25,
+          "duration": 0.004667000000001309,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 4016,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46153728,
+          "success": true
+        },
+        {
+          "iteration": 26,
+          "duration": 0.003166999999999476,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2624,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46153728,
+          "success": true
+        },
+        {
+          "iteration": 27,
+          "duration": 0.004291999999999518,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 3488,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46170112,
+          "success": true
+        },
+        {
+          "iteration": 28,
+          "duration": 0.004625000000000767,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 4016,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46170112,
+          "success": true
+        },
+        {
+          "iteration": 29,
+          "duration": 0.003917000000001281,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 3224,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46170112,
+          "success": true
+        },
+        {
+          "iteration": 30,
+          "duration": 0.2596659999999993,
+          "memoryDelta": {
+            "rss": 688128,
+            "heapUsed": -650112,
+            "heapTotal": 1048576,
+            "external": 0
+          },
+          "peakMemory": 46858240,
+          "success": true
+        },
+        {
+          "iteration": 31,
+          "duration": 0.008374999999999133,
+          "memoryDelta": {
+            "rss": 49152,
+            "heapUsed": 2704,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46923776,
+          "success": true
+        },
+        {
+          "iteration": 32,
+          "duration": 0.01083299999999987,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 4176,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46923776,
+          "success": true
+        },
+        {
+          "iteration": 33,
+          "duration": 0.0055840000000006995,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2560,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46940160,
+          "success": true
+        },
+        {
+          "iteration": 34,
+          "duration": 0.006583000000000894,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 3128,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46989312,
+          "success": true
+        },
+        {
+          "iteration": 35,
+          "duration": 0.008999999999998565,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 4576,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46989312,
+          "success": true
+        },
+        {
+          "iteration": 36,
+          "duration": 0.004540999999999684,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2368,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46989312,
+          "success": true
+        },
+        {
+          "iteration": 37,
+          "duration": 0.005209000000000685,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 3128,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46989312,
+          "success": true
+        },
+        {
+          "iteration": 38,
+          "duration": 0.004750000000001364,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2840,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46989312,
+          "success": true
+        },
+        {
+          "iteration": 39,
+          "duration": 0.004292000000001295,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2496,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46989312,
+          "success": true
+        },
+        {
+          "iteration": 40,
+          "duration": 0.004917000000000726,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2984,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46989312,
+          "success": true
+        },
+        {
+          "iteration": 41,
+          "duration": 0.004250000000000753,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2496,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 46989312,
+          "success": true
+        },
+        {
+          "iteration": 42,
+          "duration": 0.005416999999999561,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 3056,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47005696,
+          "success": true
+        },
+        {
+          "iteration": 43,
+          "duration": 0.004875000000000185,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 3200,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47005696,
+          "success": true
+        },
+        {
+          "iteration": 44,
+          "duration": 0.0037079999999996005,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 3272,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47005696,
+          "success": true
+        },
+        {
+          "iteration": 45,
+          "duration": 0.005167000000000144,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 3632,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47022080,
+          "success": true
+        },
+        {
+          "iteration": 46,
+          "duration": 0.0039999999999995595,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 3560,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47022080,
+          "success": true
+        },
+        {
+          "iteration": 47,
+          "duration": 0.0032920000000000726,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2768,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47022080,
+          "success": true
+        },
+        {
+          "iteration": 48,
+          "duration": 0.00358300000000078,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 3056,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47022080,
+          "success": true
+        },
+        {
+          "iteration": 49,
+          "duration": 0.003958000000000794,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 3344,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47038464,
+          "success": true
+        }
+      ]
+    },
+    "TestEnvironmentManager": {
+      "componentName": "TestEnvironmentManager",
+      "success": true,
+      "iterations": 50,
+      "successfulIterations": 50,
+      "successRate": 100,
+      "timing": {
+        "mean": 0.02092419999999997,
+        "median": 0.01814600000000066,
+        "min": 0.01683399999999935,
+        "max": 0.16391699999999965,
+        "p95": 0.02045800000000142,
+        "p99": 0.16391699999999965
+      },
+      "memory": {
+        "meanHeapUsed": -2095.04,
+        "medianHeapUsed": 10952,
+        "minHeapUsed": -641848,
+        "maxHeapUsed": 11400,
+        "p95HeapUsed": 11016
+      },
+      "performance": {
+        "category": "excellent",
+        "overhead": "minimal",
+        "memoryEfficient": true
+      },
+      "errors": [],
+      "rawResults": [
+        {
+          "iteration": 0,
+          "duration": 0.02045800000000142,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10904,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47153152,
+          "success": true
+        },
+        {
+          "iteration": 1,
+          "duration": 0.01812500000000128,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10904,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47153152,
+          "success": true
+        },
+        {
+          "iteration": 2,
+          "duration": 0.019041999999998893,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10904,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47169536,
+          "success": true
+        },
+        {
+          "iteration": 3,
+          "duration": 0.02012500000000017,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 11400,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47185920,
+          "success": true
+        },
+        {
+          "iteration": 4,
+          "duration": 0.021250000000000213,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 11064,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47202304,
+          "success": true
+        },
+        {
+          "iteration": 5,
+          "duration": 0.018499999999999517,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 11016,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47202304,
+          "success": true
+        },
+        {
+          "iteration": 6,
+          "duration": 0.01887499999999953,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10936,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47218688,
+          "success": true
+        },
+        {
+          "iteration": 7,
+          "duration": 0.01904200000000067,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10936,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47235072,
+          "success": true
+        },
+        {
+          "iteration": 8,
+          "duration": 0.0182500000000001,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10936,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47251456,
+          "success": true
+        },
+        {
+          "iteration": 9,
+          "duration": 0.016916000000000153,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10936,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47251456,
+          "success": true
+        },
+        {
+          "iteration": 10,
+          "duration": 0.018625000000000114,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47267840,
+          "success": true
+        },
+        {
+          "iteration": 11,
+          "duration": 0.018375000000000696,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47284224,
+          "success": true
+        },
+        {
+          "iteration": 12,
+          "duration": 0.01866699999999888,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47300608,
+          "success": true
+        },
+        {
+          "iteration": 13,
+          "duration": 0.017042,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47300608,
+          "success": true
+        },
+        {
+          "iteration": 14,
+          "duration": 0.01841699999999946,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47316992,
+          "success": true
+        },
+        {
+          "iteration": 15,
+          "duration": 0.01829200000000064,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47333376,
+          "success": true
+        },
+        {
+          "iteration": 16,
+          "duration": 0.018541999999998282,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10984,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47349760,
+          "success": true
+        },
+        {
+          "iteration": 17,
+          "duration": 0.01699999999999946,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47349760,
+          "success": true
+        },
+        {
+          "iteration": 18,
+          "duration": 0.018167000000000044,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47366144,
+          "success": true
+        },
+        {
+          "iteration": 19,
+          "duration": 0.018167000000000044,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47382528,
+          "success": true
+        },
+        {
+          "iteration": 20,
+          "duration": 0.01683399999999935,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47382528,
+          "success": true
+        },
+        {
+          "iteration": 21,
+          "duration": 0.018749999999998934,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47382528,
+          "success": true
+        },
+        {
+          "iteration": 22,
+          "duration": 0.018749999999998934,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47398912,
+          "success": true
+        },
+        {
+          "iteration": 23,
+          "duration": 0.018375000000000696,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47415296,
+          "success": true
+        },
+        {
+          "iteration": 24,
+          "duration": 0.016958000000000695,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47415296,
+          "success": true
+        },
+        {
+          "iteration": 25,
+          "duration": 0.017082999999999515,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47431680,
+          "success": true
+        },
+        {
+          "iteration": 26,
+          "duration": 0.018124999999999503,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47448064,
+          "success": true
+        },
+        {
+          "iteration": 27,
+          "duration": 0.01829200000000064,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47464448,
+          "success": true
+        },
+        {
+          "iteration": 28,
+          "duration": 0.01687500000000064,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47464448,
+          "success": true
+        },
+        {
+          "iteration": 29,
+          "duration": 0.017084000000000543,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47480832,
+          "success": true
+        },
+        {
+          "iteration": 30,
+          "duration": 0.01808299999999896,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47497216,
+          "success": true
+        },
+        {
+          "iteration": 31,
+          "duration": 0.01750000000000007,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47513600,
+          "success": true
+        },
+        {
+          "iteration": 32,
+          "duration": 0.01704100000000075,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47513600,
+          "success": true
+        },
+        {
+          "iteration": 33,
+          "duration": 0.017084000000000543,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47529984,
+          "success": true
+        },
+        {
+          "iteration": 34,
+          "duration": 0.018333000000000155,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47546368,
+          "success": true
+        },
+        {
+          "iteration": 35,
+          "duration": 0.01916699999999949,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47562752,
+          "success": true
+        },
+        {
+          "iteration": 36,
+          "duration": 0.016958999999999946,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47562752,
+          "success": true
+        },
+        {
+          "iteration": 37,
+          "duration": 0.01841699999999946,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47579136,
+          "success": true
+        },
+        {
+          "iteration": 38,
+          "duration": 0.16391699999999965,
+          "memoryDelta": {
+            "rss": 376832,
+            "heapUsed": -641848,
+            "heapTotal": 0,
+            "external": -19576
+          },
+          "peakMemory": 47955968,
+          "success": true
+        },
+        {
+          "iteration": 39,
+          "duration": 0.01829100000000139,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47955968,
+          "success": true
+        },
+        {
+          "iteration": 40,
+          "duration": 0.017665999999998405,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47955968,
+          "success": true
+        },
+        {
+          "iteration": 41,
+          "duration": 0.017249999999998877,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47955968,
+          "success": true
+        },
+        {
+          "iteration": 42,
+          "duration": 0.016958000000000695,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47955968,
+          "success": true
+        },
+        {
+          "iteration": 43,
+          "duration": 0.01766600000000018,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47955968,
+          "success": true
+        },
+        {
+          "iteration": 44,
+          "duration": 0.016958000000000695,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47955968,
+          "success": true
+        },
+        {
+          "iteration": 45,
+          "duration": 0.017125000000000057,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47955968,
+          "success": true
+        },
+        {
+          "iteration": 46,
+          "duration": 0.01733399999999996,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47955968,
+          "success": true
+        },
+        {
+          "iteration": 47,
+          "duration": 0.01695799999999892,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47955968,
+          "success": true
+        },
+        {
+          "iteration": 48,
+          "duration": 0.01737500000000125,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47955968,
+          "success": true
+        },
+        {
+          "iteration": 49,
+          "duration": 0.017125000000000057,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 10952,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47955968,
+          "success": true
+        }
+      ]
+    },
+    "AutomaticIsolationEngine": {
+      "componentName": "AutomaticIsolationEngine",
+      "success": true,
+      "iterations": 25,
+      "successfulIterations": 25,
+      "successRate": 100,
+      "timing": {
+        "mean": 0.003868399999999994,
+        "median": 0.0028330000000007516,
+        "min": 0.0025420000000000442,
+        "max": 0.016457999999998307,
+        "p95": 0.008917000000000286,
+        "p99": 0.016457999999998307
+      },
+      "memory": {
+        "meanHeapUsed": 23929.28,
+        "medianHeapUsed": 2384,
+        "minHeapUsed": 2384,
+        "maxHeapUsed": 538824,
+        "p95HeapUsed": 3928
+      },
+      "performance": {
+        "category": "excellent",
+        "overhead": "minimal",
+        "memoryEfficient": true
+      },
+      "errors": [],
+      "rawResults": [
+        {
+          "iteration": 0,
+          "duration": 0.004583000000000226,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2424,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47988736,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 1,
+          "duration": 0.004082999999999615,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2424,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47988736,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 2,
+          "duration": 0.004374999999999574,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2744,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47988736,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 3,
+          "duration": 0.008917000000000286,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 3928,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 47988736,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 4,
+          "duration": 0.016457999999998307,
+          "memoryDelta": {
+            "rss": 16384,
+            "heapUsed": 538824,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 5,
+          "duration": 0.004958999999999492,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 6,
+          "duration": 0.0033340000000006142,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 7,
+          "duration": 0.003083000000000169,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2568,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 8,
+          "duration": 0.0029590000000006,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 9,
+          "duration": 0.002834000000000003,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 10,
+          "duration": 0.00279100000000021,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 11,
+          "duration": 0.0037920000000006837,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 12,
+          "duration": 0.003083000000000169,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 13,
+          "duration": 0.0028330000000007516,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 14,
+          "duration": 0.002624999999998323,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2392,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 15,
+          "duration": 0.0027080000000001547,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 16,
+          "duration": 0.002584000000000586,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 17,
+          "duration": 0.002582999999999558,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 18,
+          "duration": 0.0026250000000000995,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2392,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 19,
+          "duration": 0.0026250000000000995,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 20,
+          "duration": 0.002584000000000586,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 21,
+          "duration": 0.002582999999999558,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2392,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 22,
+          "duration": 0.002584000000000586,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 23,
+          "duration": 0.002582999999999558,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        },
+        {
+          "iteration": 24,
+          "duration": 0.0025420000000000442,
+          "memoryDelta": {
+            "rss": 0,
+            "heapUsed": 2384,
+            "heapTotal": 0,
+            "external": 0
+          },
+          "peakMemory": 48005120,
+          "success": true,
+          "result": {}
+        }
+      ]
+    }
+  },
+  "recommendations": [],
+  "optimizations": []
+}

@@ -37,7 +37,7 @@ export const TestEnvironments = {
   VALID_LOCAL: {
     NODE_ENV: "test",
     TEST_ISOLATION_MODE: "true",
-    TURSO_DATABASE_URL: "file:test.db",
+    TURSO_DATABASE_URL: ":memory:",
     TURSO_AUTH_TOKEN: "test-token",
     BREVO_API_KEY: "test-key",
     BREVO_NEWSLETTER_LIST_ID: "2",
@@ -61,7 +61,7 @@ export const TestEnvironments = {
   COMPLETE_TEST: {
     NODE_ENV: "test",
     TEST_ISOLATION_MODE: "true",
-    TURSO_DATABASE_URL: "file:test.db",
+    TURSO_DATABASE_URL: ":memory:",
     TURSO_AUTH_TOKEN: "test-token",
     BREVO_API_KEY: "test-key-123",
     BREVO_NEWSLETTER_LIST_ID: "2",
@@ -111,7 +111,7 @@ export const TestEnvironments = {
   MISSING_BREVO: {
     NODE_ENV: "test",
     TEST_ISOLATION_MODE: "true",
-    TURSO_DATABASE_URL: "file:test.db",
+    TURSO_DATABASE_URL: ":memory:",
     TURSO_AUTH_TOKEN: "test-token",
     STRIPE_SECRET_KEY: "sk_test_123",
     // Intentionally missing Brevo configuration
@@ -121,7 +121,7 @@ export const TestEnvironments = {
   MISSING_STRIPE: {
     NODE_ENV: "test",
     TEST_ISOLATION_MODE: "true",
-    TURSO_DATABASE_URL: "file:test.db",
+    TURSO_DATABASE_URL: ":memory:",
     TURSO_AUTH_TOKEN: "test-token",
     BREVO_API_KEY: "test-key",
     BREVO_NEWSLETTER_LIST_ID: "2",

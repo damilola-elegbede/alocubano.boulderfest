@@ -18,7 +18,17 @@ vi.mock("@libsql/client/web", () => {
     close: vi.fn(),
   };
 
-  const createClientMock = vi.fn(() => mockClient);
+  // Make createClient conditional - mirror real client validation  
+  const createClientMock = vi.fn((config) => {
+    // Mirror the real LibSQL client validation for empty URLs only
+    if (!config || !config.url || config.url.trim() === '') {
+      throw new Error("URL_INVALID: The URL '' is not in a valid format");
+    }
+    
+    // In test mode, return mock client for any non-empty URL
+    // This allows testing of malformed URLs without actual connection failures
+    return mockClient;
+  });
 
   return {
     createClient: createClientMock,
@@ -40,7 +50,17 @@ vi.mock("@libsql/client", () => {
     close: vi.fn(),
   };
 
-  const createClientMock = vi.fn(() => mockClient);
+  // Make createClient conditional - mirror real client validation  
+  const createClientMock = vi.fn((config) => {
+    // Mirror the real LibSQL client validation for empty URLs only
+    if (!config || !config.url || config.url.trim() === '') {
+      throw new Error("URL_INVALID: The URL '' is not in a valid format");
+    }
+    
+    // In test mode, return mock client for any non-empty URL
+    // This allows testing of malformed URLs without actual connection failures
+    return mockClient;
+  });
 
   return {
     createClient: createClientMock,
@@ -82,9 +102,17 @@ describe("Database Environment Configuration", () => {
     testEnvManager.backup();
     testEnvManager.clearDatabaseEnv();
 
-    // Clear all mocks and reset modules
+    // Clear all mocks and reset modules - this is critical for test isolation
     vi.clearAllMocks();
     vi.resetModules();
+
+    // Reset database singleton to ensure test isolation
+    try {
+      const { resetDatabaseInstance } = await import("../../api/lib/database.js");
+      resetDatabaseInstance();
+    } catch (error) {
+      // Module may not be loaded yet, that's ok
+    }
 
     // Get access to the mock instances after reset
     const libsqlMock = await import("@libsql/client/web");
@@ -165,18 +193,31 @@ describe("Database Environment Configuration", () => {
       });
 
       it("should validate URL format patterns", async () => {
-        // Test empty string case
         await testEnvManager.withIsolatedEnv(
           {
+            NODE_ENV: "test",
             TURSO_DATABASE_URL: "",
             TURSO_AUTH_TOKEN: "test-token",
             DATABASE_TEST_STRICT_MODE: "true",
           },
           async () => {
-            const { DatabaseService } = await import(
-              "../../api/lib/database.js"
-            );
+            vi.resetModules();
+            
+            // Reset database singleton to ensure fresh state
+            try {
+              const { resetDatabaseInstance } = await import("../../api/lib/database.js");
+              resetDatabaseInstance();
+            } catch (error) {
+              // Module may not be loaded yet, that's ok
+            }
+            
+            const { DatabaseService } = await import("../../api/lib/database.js");
             const service = new DatabaseService();
+            
+            // Ensure the service is completely fresh
+            service.client = null;
+            service.initialized = false;
+            service.initializationPromise = null;
 
             await expect(service.initializeClient()).rejects.toThrow(
               "TURSO_DATABASE_URL environment variable is required",
@@ -184,17 +225,29 @@ describe("Database Environment Configuration", () => {
           },
         );
 
-        // Test undefined case
         await testEnvManager.withIsolatedEnv(
           {
             TURSO_AUTH_TOKEN: "test-token",
             DATABASE_TEST_STRICT_MODE: "true",
           },
           async () => {
-            const { DatabaseService } = await import(
-              "../../api/lib/database.js"
-            );
+            vi.resetModules();
+            
+            // Reset database singleton to ensure fresh state
+            try {
+              const { resetDatabaseInstance } = await import("../../api/lib/database.js");
+              resetDatabaseInstance();
+            } catch (error) {
+              // Module may not be loaded yet, that's ok
+            }
+            
+            const { DatabaseService } = await import("../../api/lib/database.js");
             const service = new DatabaseService();
+            
+            // Ensure the service is completely fresh
+            service.client = null;
+            service.initialized = false;
+            service.initializationPromise = null;
 
             await expect(service.initializeClient()).rejects.toThrow(
               "TURSO_DATABASE_URL environment variable is required",
@@ -202,19 +255,33 @@ describe("Database Environment Configuration", () => {
           },
         );
 
-        // Test invalid URL formats (these should NOT throw, just work with mocked client)
-        const nonFailingUrls = ["not-a-url", "ftp://invalid-protocol.com"];
+        // Test invalid URL formats (these should be handled gracefully in test environment)
+        const malformedUrls = ["not-a-url", "ftp://invalid-protocol.com"];
 
-        for (const url of nonFailingUrls) {
+        for (const url of malformedUrls) {
           await testEnvManager.withIsolatedEnv(
             { TURSO_DATABASE_URL: url, TURSO_AUTH_TOKEN: "test-token" },
             async () => {
-              const { DatabaseService } = await import(
-                "../../api/lib/database.js"
-              );
+              vi.resetModules();
+              
+              // Reset database singleton to ensure fresh state
+              try {
+                const { resetDatabaseInstance } = await import("../../api/lib/database.js");
+                resetDatabaseInstance();
+              } catch (error) {
+                // Module may not be loaded yet, that's ok
+              }
+              
+              const { DatabaseService } = await import("../../api/lib/database.js");
               const service = new DatabaseService();
+              
+              // Ensure the service is completely fresh
+              service.client = null;
+              service.initialized = false;
+              service.initializationPromise = null;
 
-              // These should not throw during initialization since we're mocking the client
+              // In test mode with mocked clients, invalid URLs should not prevent initialization
+              // The mock client will be returned regardless of URL format
               await expect(service.initializeClient()).resolves.toBeDefined();
             },
           );
@@ -589,9 +656,21 @@ describe("Database Environment Configuration", () => {
       await testEnvManager.withIsolatedEnv(
         { DATABASE_TEST_STRICT_MODE: "true" },
         async () => {
+          // Force a complete module reload to ensure fresh database service
+          vi.resetModules();
           const { DatabaseService } = await import("../../api/lib/database.js");
           const service = new DatabaseService();
-
+          
+          // CRITICAL: Reset the service instance to ensure no cached state
+          // This prevents cached clients from previous tests
+          service.client = null;
+          service.initialized = false;
+          service.initializationPromise = null;
+          
+          // Verify environment state
+          expect(process.env.DATABASE_TEST_STRICT_MODE).toBe("true");
+          expect(process.env.TURSO_DATABASE_URL).toBeUndefined();
+          
           await expect(service.initializeClient()).rejects.toThrow(
             "TURSO_DATABASE_URL environment variable is required",
           );
@@ -604,9 +683,16 @@ describe("Database Environment Configuration", () => {
       await testEnvManager.withIsolatedEnv(
         { DATABASE_TEST_STRICT_MODE: "true" },
         async () => {
+          // Force a complete module reload to ensure fresh database service
+          vi.resetModules();
           const { DatabaseService } = await import("../../api/lib/database.js");
           const service = new DatabaseService();
-
+          
+          // CRITICAL: Reset the service instance to ensure no cached state
+          service.client = null;
+          service.initialized = false;
+          service.initializationPromise = null;
+          
           await expect(service.initializeClient()).rejects.toThrow(
             "TURSO_DATABASE_URL environment variable is required",
           );
@@ -620,9 +706,11 @@ describe("Database Environment Configuration", () => {
           DATABASE_TEST_STRICT_MODE: "true",
         },
         async () => {
+          // Force a complete module reload to ensure fresh database service
+          vi.resetModules();
           const { DatabaseService } = await import("../../api/lib/database.js");
           const service = new DatabaseService();
-
+          
           await expect(service.initializeClient()).rejects.toThrow(
             "TURSO_DATABASE_URL environment variable is required",
           );
@@ -734,8 +822,12 @@ describe("Database Environment Configuration", () => {
           TURSO_AUTH_TOKEN: "super-secret-token-123",
         },
         async () => {
-          // Mock createClient to throw an error
-          createClientMock.mockImplementationOnce(() => {
+          // Get access to the mock instances after reset
+          const libsqlMock = await import("@libsql/client/web");
+          const mockClient = libsqlMock.__createClientMock;
+
+          // Mock createClient to throw an error  
+          mockClient.mockImplementationOnce(() => {
             throw new Error("Connection failed");
           });
 

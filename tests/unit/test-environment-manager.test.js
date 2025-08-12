@@ -136,7 +136,7 @@ describe("TestEnvironmentManager", () => {
 
     it("should provide valid-local preset", () => {
       const preset = manager.getPreset("valid-local");
-      expect(preset.TURSO_DATABASE_URL).toBe("file:test.db");
+      expect(preset.TURSO_DATABASE_URL).toBe(":memory:");
       expect(preset.TURSO_AUTH_TOKEN).toBe("test-token");
       expect(preset.BREVO_API_KEY).toBe("test-brevo-key");
     });
@@ -164,7 +164,7 @@ describe("TestEnvironmentManager", () => {
 
       const result = await manager.withIsolatedEnv("valid-local", () => {
         // Verify isolated environment
-        expect(process.env.TURSO_DATABASE_URL).toBe("file:test.db");
+        expect(process.env.TURSO_DATABASE_URL).toBe(":memory:");
         expect(process.env.ORIGINAL_VAR).toBeUndefined();
         return "test-result";
       });
@@ -207,7 +207,7 @@ describe("TestEnvironmentManager", () => {
       const envController = manager.createIsolatedEnv("valid-local");
 
       // Verify isolation
-      expect(process.env.TURSO_DATABASE_URL).toBe("file:test.db");
+      expect(process.env.TURSO_DATABASE_URL).toBe(":memory:");
       expect(process.env.ORIGINAL_VAR).toBeUndefined();
 
       // Add additional environment
@@ -216,7 +216,7 @@ describe("TestEnvironmentManager", () => {
 
       // Get current environment
       const currentEnv = envController.getCurrentEnv();
-      expect(currentEnv.TURSO_DATABASE_URL).toBe("file:test.db");
+      expect(currentEnv.TURSO_DATABASE_URL).toBe(":memory:");
       expect(currentEnv.EXTRA_VAR).toBe("extra-value");
 
       // Restore
