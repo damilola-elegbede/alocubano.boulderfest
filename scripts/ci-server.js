@@ -307,7 +307,7 @@ app.use((error, req, res, next) => {
   }
 });
 
-// Start server
+// Start server with error handling
 const server = app.listen(PORT, () => {
   console.log(`🚀 CI Development Server running at http://localhost:${PORT}`);
   console.log(`📁 Serving from: ${rootDir}`);
@@ -339,6 +339,23 @@ const server = app.listen(PORT, () => {
     scanDir(apiDir);
   }
   console.log('');
+});
+
+// Handle server errors (like port already in use)
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use!`);
+    console.error('Another server instance may still be running.');
+    console.error('Trying to find and kill the process...');
+    
+    // In CI, exit with error
+    if (process.env.CI) {
+      process.exit(1);
+    }
+  } else {
+    console.error('Server error:', error);
+    process.exit(1);
+  }
 });
 
 // Graceful shutdown

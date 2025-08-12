@@ -75,20 +75,32 @@ async function startServer() {
 function stopServer() {
   if (serverProcess) {
     console.log('\n🛑 Stopping server...');
-    serverProcess.kill('SIGTERM');
     
     return new Promise((resolve) => {
-      serverProcess.on('exit', () => {
-        console.log('✅ Server stopped');
-        resolve();
-      });
+      let exited = false;
       
-      // Force kill after 5 seconds
+      const onExit = () => {
+        if (!exited) {
+          exited = true;
+          console.log('✅ Server stopped');
+          serverProcess = null;
+          resolve();
+        }
+      };
+      
+      serverProcess.once('exit', onExit);
+      serverProcess.kill('SIGTERM');
+      
+      // Force kill after 5 seconds if still running
       setTimeout(() => {
-        serverProcess.kill('SIGKILL');
-        resolve();
+        if (!exited && serverProcess) {
+          console.log('⚠️ Force killing server...');
+          serverProcess.kill('SIGKILL');
+        }
       }, 5000);
     });
+  } else {
+    return Promise.resolve();
   }
 }
 
