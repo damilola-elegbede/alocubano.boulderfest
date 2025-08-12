@@ -951,6 +951,8 @@ export class MockServiceManager {
     this.stripe = new StripeMock();
     this.brevo = new BrevoMock();
     this.googleDrive = new GoogleDriveMock();
+    this.database = new DatabaseMock();
+    this.emailSubscriberService = new EmailSubscriberServiceMock();
     this.isInitialized = false;
   }
 
@@ -963,6 +965,7 @@ export class MockServiceManager {
     this.stripe.configure();
     this.brevo.configure();
     this.googleDrive.configure();
+    this.database.configure();
 
     this.isInitialized = true;
   }
@@ -974,6 +977,8 @@ export class MockServiceManager {
     this.stripe.reset();
     this.brevo.reset();
     this.googleDrive.reset();
+    this.database.reset();
+    this.emailSubscriberService.reset();
   }
 
   /**
@@ -984,6 +989,8 @@ export class MockServiceManager {
       stripe: this.stripe.getState(),
       brevo: this.brevo.getState(),
       googleDrive: this.googleDrive.getState(),
+      database: this.database.getState(),
+      emailSubscriberService: this.emailSubscriberService.getState(),
     };
   }
 }
@@ -992,7 +999,392 @@ export class MockServiceManager {
 export const mockServices = new MockServiceManager();
 
 // Export individual mocks for direct access
-export { StripeMock, BrevoMock, GoogleDriveMock };
+export { StripeMock, BrevoMock, GoogleDriveMock, DatabaseMock, EmailSubscriberServiceMock };
+
+/**
+ * Database Service Mock
+ * Mocks database operations with SQLite-like interface
+ */
+export class DatabaseMock {
+  constructor() {
+    this.data = new Map();
+    this.tables = new Map();
+    this.migrations = [];
+    this.isConfigured = false;
+    this.setupDefaults();
+  }
+
+  setupDefaults() {
+    // Setup default tables
+    this.tables.set("email_subscribers", {
+      name: "email_subscribers",
+      columns: ["id", "email", "status", "created_at", "updated_at"],
+      indexes: ["email_idx", "created_at_idx"],
+      rowCount: 42,
+    });
+
+    this.tables.set("email_events", {
+      name: "email_events",
+      columns: ["id", "subscriber_id", "event_type", "occurred_at"],
+      indexes: ["subscriber_idx", "event_type_idx"],
+      rowCount: 125,
+    });
+
+    this.tables.set("email_audit_log", {
+      name: "email_audit_log",
+      columns: ["id", "entity_type", "entity_id", "action", "created_at"],
+      indexes: ["entity_idx", "action_idx"],
+      rowCount: 33,
+    });
+
+    // Default subscriber data
+    this.data.set("subscribers", [
+      {
+        id: 1,
+        email: "test@example.com",
+        status: "active",
+        created_at: "2024-01-01T00:00:00Z",
+        updated_at: "2024-01-01T00:00:00Z",
+      },
+    ]);
+  }
+
+  configure() {
+    if (this.isConfigured) return;
+    this.isConfigured = true;
+  }
+
+  async execute(query, params = []) {
+    // Mock different types of queries
+    if (query.includes("sqlite_master")) {
+      return {
+        rows: Array.from(this.tables.values()).map((table) => ({
+          name: table.name,
+        })),
+      };
+    } else if (query.includes("table_info")) {
+      const tableName = this.extractTableName(query);
+      const table = this.tables.get(tableName);
+      if (table) {
+        return {
+          rows: table.columns.map((name) => ({ name })),
+        };
+      }
+    } else if (query.includes("index_list")) {
+      const tableName = this.extractTableName(query);
+      const table = this.tables.get(tableName);
+      if (table) {
+        return {
+          rows: table.indexes.map((name) => ({ name })),
+        };
+      }
+    } else if (query.includes("COUNT(*)")) {
+      return {
+        rows: [{ count: 42 }],
+      };
+    } else if (query.includes("SELECT") && query.includes("email_subscribers")) {
+      if (query.includes("SUM(CASE")) {
+        // Stats query
+        return {
+          rows: [
+            {
+              total: 1250,
+              active: 1100,
+              pending: 50,
+              unsubscribed: 75,
+              bounced: 25,
+            },
+          ],
+        };
+      }
+      return { rows: this.data.get("subscribers") || [] };
+    } else if (query.includes("INSERT")) {
+      return { lastInsertRowid: Math.floor(Math.random() * 1000) + 1 };
+    } else if (query.includes("UPDATE") || query.includes("DELETE")) {
+      return { changes: 1 };
+    }
+
+    return { rows: [] };
+  }
+
+  extractTableName(query) {
+    const match = query.match(/(?:table_info|index_list)\s*\(\s*['"`]?(\w+)['"`]?\s*\)/);
+    return match ? match[1] : "unknown";
+  }
+
+  async testConnection() {
+    return true;
+  }
+
+  reset() {
+    this.data.clear();
+    this.tables.clear();
+    this.migrations = [];
+    this.setupDefaults();
+  }
+
+  getState() {
+    return {
+      tables: Array.from(this.tables.values()),
+      data: Object.fromEntries(this.data),
+      migrations: this.migrations,
+    };
+  }
+}
+
+/**
+ * Email Subscriber Service Mock
+ * Mocks the EmailSubscriberService with all required methods
+ */
+export class EmailSubscriberServiceMock {
+  constructor() {
+    this.subscribers = new Map();
+    this.events = [];
+    this.auditLogs = [];
+    this.initialized = false;
+    this.initializationPromise = null;
+    this.setupDefaults();
+  }
+
+  setupDefaults() {
+    // Add sample subscribers
+    this.subscribers.set("test@example.com", {
+      id: 1,
+      email: "test@example.com",
+      first_name: "Test",
+      last_name: "User",
+      phone: "+1234567890",
+      status: "active",
+      brevo_contact_id: 12345,
+      list_ids: [1],
+      attributes: {},
+      consent_date: "2024-01-01T00:00:00Z",
+      consent_source: "website",
+      consent_ip: "127.0.0.1",
+      verification_token: null,
+      verified_at: "2024-01-01T01:00:00Z",
+      unsubscribed_at: null,
+      created_at: "2024-01-01T00:00:00Z",
+      updated_at: "2024-01-01T00:00:00Z",
+    });
+  }
+
+  async ensureInitialized() {
+    if (this.initialized) return this;
+    
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    this.initializationPromise = this._performInitialization();
+    try {
+      await this.initializationPromise;
+      return this;
+    } catch (error) {
+      this.initializationPromise = null;
+      throw error;
+    }
+  }
+
+  async _performInitialization() {
+    this.initialized = true;
+    return this;
+  }
+
+  async getDb() {
+    await this.ensureInitialized();
+    return new DatabaseMock();
+  }
+
+  async createSubscriber(subscriberData) {
+    await this.ensureInitialized();
+    const subscriber = {
+      id: Math.floor(Math.random() * 1000) + 1,
+      email: subscriberData.email,
+      first_name: subscriberData.firstName || null,
+      last_name: subscriberData.lastName || null,
+      phone: subscriberData.phone || null,
+      status: subscriberData.status || "pending",
+      brevo_contact_id: Math.floor(Math.random() * 100000),
+      list_ids: subscriberData.listIds || [],
+      attributes: subscriberData.attributes || {},
+      consent_date: new Date().toISOString(),
+      consent_source: subscriberData.consentSource || "website",
+      consent_ip: subscriberData.consentIp || null,
+      verification_token: subscriberData.verificationToken || null,
+      verified_at: null,
+      unsubscribed_at: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    this.subscribers.set(subscriber.email, subscriber);
+    await this.logEmailEvent(subscriber.id, "subscribed", {
+      source: subscriber.consent_source,
+    });
+
+    return subscriber;
+  }
+
+  async getSubscriberByEmail(email) {
+    await this.ensureInitialized();
+    return this.subscribers.get(email) || null;
+  }
+
+  async updateSubscriber(email, updateData) {
+    await this.ensureInitialized();
+    const subscriber = this.subscribers.get(email);
+    if (!subscriber) {
+      throw new Error("Subscriber not found");
+    }
+
+    const updatedSubscriber = {
+      ...subscriber,
+      ...updateData,
+      updated_at: new Date().toISOString(),
+    };
+
+    this.subscribers.set(email, updatedSubscriber);
+    return updatedSubscriber;
+  }
+
+  async unsubscribeSubscriber(email, reason = "user_request") {
+    await this.ensureInitialized();
+    const subscriber = await this.updateSubscriber(email, {
+      status: "unsubscribed",
+      unsubscribed_at: new Date().toISOString(),
+    });
+
+    await this.logEmailEvent(subscriber.id, "unsubscribed", { reason });
+    return subscriber;
+  }
+
+  async verifySubscriber(email, token) {
+    await this.ensureInitialized();
+    const subscriber = this.subscribers.get(email);
+    if (!subscriber) {
+      throw new Error("Subscriber not found");
+    }
+    if (subscriber.verification_token !== token) {
+      throw new Error("Invalid verification token");
+    }
+    if (subscriber.verified_at) {
+      throw new Error("Email already verified");
+    }
+
+    return this.updateSubscriber(email, {
+      status: "active",
+      verified_at: new Date().toISOString(),
+      verification_token: null,
+    });
+  }
+
+  async logEmailEvent(subscriberId, eventType, eventData, brevoEventId = null) {
+    await this.ensureInitialized();
+    const event = {
+      id: Math.floor(Math.random() * 1000) + 1,
+      subscriber_id: subscriberId,
+      event_type: eventType,
+      event_data: eventData,
+      brevo_event_id: brevoEventId,
+      occurred_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+    };
+
+    this.events.push(event);
+    return event;
+  }
+
+  async auditLog(entityType, entityId, action, actorType, actorId, changes, ipAddress = null, userAgent = null) {
+    await this.ensureInitialized();
+    const log = {
+      id: Math.floor(Math.random() * 1000) + 1,
+      entity_type: entityType,
+      entity_id: entityId,
+      action,
+      actor_type: actorType,
+      actor_id: actorId,
+      changes,
+      ip_address: ipAddress,
+      user_agent: userAgent,
+      created_at: new Date().toISOString(),
+    };
+
+    this.auditLogs.push(log);
+    return log;
+  }
+
+  async getSubscriberStats() {
+    await this.ensureInitialized();
+    const subscribers = Array.from(this.subscribers.values());
+    return {
+      total: subscribers.length,
+      active: subscribers.filter((s) => s.status === "active").length,
+      pending: subscribers.filter((s) => s.status === "pending").length,
+      unsubscribed: subscribers.filter((s) => s.status === "unsubscribed").length,
+      bounced: subscribers.filter((s) => s.status === "bounced").length,
+    };
+  }
+
+  async getRecentEvents(limit = 100) {
+    await this.ensureInitialized();
+    return this.events
+      .sort((a, b) => new Date(b.occurred_at) - new Date(a.occurred_at))
+      .slice(0, limit);
+  }
+
+  async processWebhookEvent(webhookData) {
+    await this.ensureInitialized();
+    // Mock webhook processing
+    return {
+      id: webhookData.id || Math.floor(Math.random() * 1000),
+      email: webhookData.email,
+      eventType: webhookData.event || "delivered",
+      data: webhookData.data || {},
+      occurredAt: new Date().toISOString(),
+    };
+  }
+
+  async syncWithBrevo() {
+    await this.ensureInitialized();
+    return {
+      synced: true,
+      total_contacts: this.subscribers.size,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  generateUnsubscribeToken(email) {
+    return `unsubscribe_${Buffer.from(email).toString("base64")}`;
+  }
+
+  validateUnsubscribeToken(email, token) {
+    const expectedToken = this.generateUnsubscribeToken(email);
+    return token === expectedToken;
+  }
+
+  generateVerificationToken() {
+    return Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+  }
+
+  reset() {
+    this.subscribers.clear();
+    this.events = [];
+    this.auditLogs = [];
+    this.initialized = false;
+    this.initializationPromise = null;
+    this.setupDefaults();
+  }
+
+  getState() {
+    return {
+      subscribers: Array.from(this.subscribers.values()),
+      events: this.events,
+      auditLogs: this.auditLogs,
+      initialized: this.initialized,
+    };
+  }
+}
 
 /**
  * Utility functions for common mock scenarios
@@ -1086,5 +1478,56 @@ export const MockScenarios = {
         thumbnailLink: `https://lh3.googleusercontent.com/d/social-${i}=s220`,
       });
     }
+  },
+
+  /**
+   * Setup database with realistic stats
+   */
+  databaseWithStats() {
+    mockServices.database.reset();
+    mockServices.emailSubscriberService.reset();
+    return {
+      database: mockServices.database,
+      emailService: mockServices.emailSubscriberService,
+    };
+  },
+
+  /**
+   * Setup email subscriber service with sample data
+   */
+  emailServiceWithSubscribers() {
+    mockServices.emailSubscriberService.reset();
+    
+    // Add multiple subscribers with different statuses
+    const emails = [
+      { email: "active@example.com", status: "active" },
+      { email: "pending@example.com", status: "pending" },
+      { email: "unsubscribed@example.com", status: "unsubscribed" },
+      { email: "bounced@example.com", status: "bounced" },
+    ];
+
+    emails.forEach(({ email, status }) => {
+      mockServices.emailSubscriberService.subscribers.set(email, {
+        id: Math.floor(Math.random() * 1000),
+        email,
+        first_name: "Test",
+        last_name: "User",
+        phone: "+1234567890",
+        status,
+        brevo_contact_id: Math.floor(Math.random() * 100000),
+        list_ids: [1],
+        attributes: {},
+        consent_date: new Date().toISOString(),
+        consent_source: "website",
+        consent_ip: "127.0.0.1",
+        verification_token: null,
+        verified_at: status === "active" ? new Date().toISOString() : null,
+        unsubscribed_at: status === "unsubscribed" ? new Date().toISOString() : null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    });
+
+    return mockServices.emailSubscriberService;
   },
 };

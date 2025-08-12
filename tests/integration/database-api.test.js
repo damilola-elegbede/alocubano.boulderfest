@@ -5,11 +5,32 @@ import testDbHandler from "../../api/test-db.js";
 // Create persistent mock for email subscriber service
 const mockEmailSubscriberService = {
   getSubscriberStats: vi.fn(),
+  ensureInitialized: vi.fn().mockResolvedValue(undefined),
+  createSubscriber: vi.fn(),
+  getSubscriberByEmail: vi.fn(),
+  updateSubscriber: vi.fn(),
+  unsubscribeSubscriber: vi.fn(),
+  verifySubscriber: vi.fn(),
+  logEmailEvent: vi.fn(),
+  auditLog: vi.fn(),
+  getRecentEvents: vi.fn(),
+  processWebhookEvent: vi.fn(),
+  syncWithBrevo: vi.fn(),
+  generateUnsubscribeToken: vi.fn(),
+  validateUnsubscribeToken: vi.fn(),
+  generateVerificationToken: vi.fn(),
+};
+
+// Create mock for database client (what ensureInitialized returns)
+const mockDatabaseClient = {
+  execute: vi.fn(),
 };
 
 // Create mock for database service
 const mockDatabase = {
-  execute: vi.fn(),
+  ensureInitialized: vi.fn().mockResolvedValue(mockDatabaseClient),
+  testConnection: vi.fn().mockResolvedValue(true),
+  getClient: vi.fn().mockResolvedValue(mockDatabaseClient),
 };
 
 // Mock the email subscriber service module
@@ -20,6 +41,7 @@ vi.mock("../../api/lib/email-subscriber-service.js", () => ({
 // Mock the database module
 vi.mock("../../api/lib/database.js", () => ({
   getDatabase: vi.fn(() => mockDatabase),
+  getDatabaseClient: vi.fn(() => mockDatabase),
 }));
 
 describe("Database API Integration Tests", () => {
@@ -34,6 +56,11 @@ describe("Database API Integration Tests", () => {
     process.env.TURSO_DATABASE_URL = "file:test.db";
     process.env.TURSO_AUTH_TOKEN = "test-token";
 
+    // Re-setup database mock after clearAllMocks
+    mockDatabase.ensureInitialized.mockResolvedValue(mockDatabaseClient);
+    mockDatabase.testConnection.mockResolvedValue(true);
+    mockDatabase.getClient.mockResolvedValue(mockDatabaseClient);
+
     // Mock successful service response by default
     mockEmailSubscriberService.getSubscriberStats.mockResolvedValue({
       total: 1250,
@@ -44,7 +71,7 @@ describe("Database API Integration Tests", () => {
     });
 
     // Mock database responses for the new dynamic queries
-    mockDatabase.execute.mockImplementation((sql) => {
+    mockDatabaseClient.execute.mockImplementation((sql) => {
       if (sql.includes("sqlite_master")) {
         // Return mock table list
         return Promise.resolve({
