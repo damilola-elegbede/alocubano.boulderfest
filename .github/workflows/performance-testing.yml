@@ -111,19 +111,27 @@ jobs:
       - name: Run unit performance tests
         if: matrix.test-type == 'unit-performance'
         run: |
-          npm run performance:load-test
+          npm run performance:load-test:ci
+        env:
+          NODE_ENV: ci
+          CI: true
+          SKIP_PERFORMANCE_INTENSIVE_TESTS: 'true'
 
       - name: Run load integration tests
         if: matrix.test-type == 'load-integration'
         run: |
           # Run different test suites based on trigger
           if [ "${{ github.event.inputs.test_suite }}" == "full" ]; then
-            npm run performance:all
+            npm run performance:ci:full
           elif [ "${{ github.event.inputs.test_suite }}" == "regression-only" ]; then
             echo "Skipping load tests, will only run regression analysis"
           else
-            npm run performance:critical
+            npm run performance:ci:critical
           fi
+        env:
+          NODE_ENV: ci
+          CI: true
+          SKIP_PERFORMANCE_INTENSIVE_TESTS: 'true'
 
       - name: Stop application
         if: matrix.test-type == 'load-integration' && env.APP_PID

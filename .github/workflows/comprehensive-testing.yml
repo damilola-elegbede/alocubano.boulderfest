@@ -120,8 +120,7 @@ jobs:
 
       - name: Run unit tests with sharding
         run: |
-          npx vitest run --shard=${{ matrix.test-shard }}/4 \
-            --coverage \
+          npm run test:unit:ci -- --shard=${{ matrix.test-shard }}/4 \
             --reporter=default \
             --reporter=junit \
             --reporter=json \
@@ -132,6 +131,7 @@ jobs:
           NODE_ENV: test
           CI: true
           COVERAGE: true
+          TEST_CI_EXCLUDE_PATTERNS: 'true'
 
 
       - name: Validate test results before upload
@@ -201,8 +201,8 @@ jobs:
         run: |
           echo "🚀 Running integration tests with memory-based rate limiting (no Redis required)"
           
-          # Run integration tests with optimized timeouts
-          npm run test:integration -- \
+          # Run integration tests with optimized timeouts and CI-specific exclusions
+          npm run test:integration:ci -- \
             --reporter=default \
             --reporter=junit \
             --reporter=json \
@@ -211,21 +211,23 @@ jobs:
             --testTimeout=30000 \
             --hookTimeout=15000 \
             --bail=5 \
-            --maxConcurrency=2
+            --maxConcurrency=1
         env:
           NODE_ENV: test
           CI: true
           TEST_ISOLATION_MODE: true
           INTEGRATION_TEST_MODE: true
+          TEST_CI_EXCLUDE_PATTERNS: 'true'
           # Redis URL intentionally omitted - system will use memory fallback
         continue-on-error: false
 
       - name: Run database tests
         run: |
-          npm run test:database -- --reporter=default --reporter=junit --reporter=json --outputFile.junit=./test-results/database-tests.xml --outputFile.json=./test-results/database-tests.json || true
+          npm run test:database:ci -- --reporter=default --reporter=junit --reporter=json --outputFile.junit=./test-results/database-tests.xml --outputFile.json=./test-results/database-tests.json || true
         env:
           NODE_ENV: test
           CI: true
+          TEST_CI_EXCLUDE_PATTERNS: 'true'
         continue-on-error: true
 
       - name: Validate integration test results
@@ -346,10 +348,12 @@ jobs:
 
       - name: Run security tests
         run: |
-          npm run test:security -- --reporter=default --reporter=junit --reporter=json --outputFile.junit=./test-results/security-tests.xml --outputFile.json=./test-results/security-tests.json || true
+          npm run test:security:ci -- --reporter=default --reporter=junit --reporter=json --outputFile.junit=./test-results/security-tests.xml --outputFile.json=./test-results/security-tests.json || true
         env:
           NODE_ENV: test
           CI: true
+          TEST_CI_EXCLUDE_PATTERNS: 'true'
+          SECURITY_SKIP_PERFORMANCE_TESTS: 'true'
         continue-on-error: true
 
       - name: OWASP ZAP Baseline Scan

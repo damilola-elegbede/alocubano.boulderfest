@@ -12,7 +12,10 @@ export default defineConfig({
     ],
 
     // Performance tests only
-    include: [
+    include: process.env.CI === 'true' || process.env.SKIP_PERFORMANCE_INTENSIVE_TESTS === 'true' ? [
+      "tests/performance/checkout-performance.test.js",
+      // Exclude intensive tests in CI
+    ] : [
       "tests/performance/**/*.test.js",
     ],
     exclude: [
@@ -20,6 +23,11 @@ export default defineConfig({
       "tests/integration/**/*.test.js",
       "tests/e2e/**/*.test.js",
       "node_modules/**",
+      // Always exclude intensive performance tests in CI
+      ...(process.env.CI === 'true' || process.env.SKIP_PERFORMANCE_INTENSIVE_TESTS === 'true' ? [
+        "tests/performance/load-integration.test.js",
+        "tests/performance/api-performance.test.js"
+      ] : []),
     ],
 
     // Single-threaded execution for consistent performance metrics

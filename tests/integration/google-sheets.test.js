@@ -66,7 +66,10 @@ vi.mock("../../api/lib/database.js", () => ({
 // Skip entire test suite in CI to prevent database conflicts
 const shouldSkipInCI = process.env.CI === 'true';
 
-describe.skipIf(shouldSkipInCI)("Google Sheets Analytics Integration", () => {
+// Use conditional describe instead of skipIf for better CI compatibility
+const describeOrSkip = shouldSkipInCI ? describe.skip : describe;
+
+describeOrSkip("Google Sheets Analytics Integration", () => {
   let app;
   let GoogleSheetsService;
   let sheetsService;
@@ -78,7 +81,7 @@ describe.skipIf(shouldSkipInCI)("Google Sheets Analytics Integration", () => {
   });
 
   beforeEach(async () => {
-    // Skip setup if we're in CI
+    // Early exit for CI environment
     if (shouldSkipInCI) {
       console.log('⏭️ Skipping Google Sheets test setup in CI');
       return;
@@ -167,7 +170,7 @@ describe.skipIf(shouldSkipInCI)("Google Sheets Analytics Integration", () => {
   });
 
   afterEach(async () => {
-    // Skip cleanup if we're in CI
+    // Early exit for CI environment
     if (shouldSkipInCI) {
       return;
     }

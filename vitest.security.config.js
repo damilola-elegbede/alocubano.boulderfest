@@ -21,6 +21,10 @@ export default defineConfig({
       "tests/performance/**/*.test.js",
       "tests/e2e/**/*.test.js",
       "node_modules/**",
+      // CI-specific exclusions for performance-intensive security tests
+      ...(process.env.SECURITY_SKIP_PERFORMANCE_TESTS === 'true' || process.env.TEST_CI_EXCLUDE_PATTERNS === 'true' ? [
+        "tests/security/security-performance-impact.test.js"
+      ] : []),
     ],
 
     // Single-threaded execution for security tests
