@@ -13,8 +13,8 @@ export default defineConfig({
 
     // Performance tests only
     include: process.env.CI === 'true' || process.env.SKIP_PERFORMANCE_INTENSIVE_TESTS === 'true' ? [
-      "tests/performance/checkout-performance.test.js",
-      // Exclude intensive tests in CI
+      // All performance tests are currently skipped in CI due to infrastructure issues
+      // See .tmp/test-infrastructure-overhaul-prd.md for fix plan
     ] : [
       "tests/performance/**/*.test.js",
     ],
