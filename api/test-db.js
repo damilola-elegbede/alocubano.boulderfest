@@ -62,8 +62,8 @@ export default async function handler(req, res) {
     console.log("Starting database test...");
 
     // Ensure the email subscriber service is initialized
-    const subscriberService =
-      await getEmailSubscriberService().ensureInitialized();
+    const subscriberService = getEmailSubscriberService();
+    await subscriberService.ensureInitialized();
 
     // Test results object
     const testResults = {

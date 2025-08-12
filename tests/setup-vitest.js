@@ -21,6 +21,17 @@ if (!process.env.NODE_ENV) {
   process.env.NODE_ENV = "test";
 }
 
+// Set required service environment variables for integration tests
+if (!process.env.BREVO_API_KEY) {
+  process.env.BREVO_API_KEY = "test-api-key";
+}
+if (!process.env.BREVO_NEWSLETTER_LIST_ID) {
+  process.env.BREVO_NEWSLETTER_LIST_ID = "1";
+}
+if (!process.env.STRIPE_SECRET_KEY) {
+  process.env.STRIPE_SECRET_KEY = "sk_test_123";
+}
+
 // Increase default timeout for remote operations and module loading
 vi.setConfig({
   testTimeout: 60000,
