@@ -378,60 +378,85 @@ describe('TestMockManager Core', () => {
 
 describe('TestMockManager Integration Tests', () => {
   describe('Mock Isolation Between Tests', () => {
-    let persistentMock;
-
+    // Use a global mock that might persist between tests
+    const globalMockKey = 'test-isolation-mock';
+    
     beforeEach(() => {
-      // Ensure clean state first
+      // Complete cleanup before each test
+      vi.clearAllMocks();
       MockManager.cleanup();
-      persistentMock = vi.fn();
-      MockManager.registerMock('persistent-test', () => persistentMock);
+    });
+    
+    afterEach(() => {
+      // Complete cleanup after each test
+      vi.clearAllMocks(); 
+      MockManager.cleanup();
     });
 
-    it('first test - should start with clean mock', () => {
-      expect(persistentMock).not.toHaveBeenCalled();
-      persistentMock('first-test-call');
-      expect(persistentMock).toHaveBeenCalledWith('first-test-call');
+    it('first test - should start clean and make calls', () => {
+      // Create a managed mock using the TestMockManager
+      const testMock = createManagedMock(globalMockKey, () => vi.fn());
+      
+      expect(testMock).not.toHaveBeenCalled();
+      testMock('first-test-call');
+      expect(testMock).toHaveBeenCalledWith('first-test-call');
+      expect(testMock).toHaveBeenCalledTimes(1);
     });
 
-    it('second test - should not see previous test calls', () => {
-      // This test should not see the call from the first test
-      expect(persistentMock).not.toHaveBeenCalled();
-      persistentMock('second-test-call');
-      expect(persistentMock).toHaveBeenCalledTimes(1);
-      expect(persistentMock).toHaveBeenCalledWith('second-test-call');
+    it('second test - should start completely fresh', () => {
+      // Create another managed mock with the same key
+      const testMock = createManagedMock(globalMockKey, () => vi.fn());
+      
+      // This test should not see calls from the first test due to proper cleanup
+      expect(testMock).not.toHaveBeenCalled();
+      testMock('second-test-call');
+      expect(testMock).toHaveBeenCalledTimes(1);
+      expect(testMock).toHaveBeenCalledWith('second-test-call');
     });
   });
 
   describe('Database Mock Isolation', () => {
-    let databaseMock;
-
     beforeEach(() => {
-      const { client } = createDatabaseTestMock();
-      databaseMock = client;
+      // Ensure cleanup before creating new mock
+      vi.clearAllMocks();
+      MockManager.cleanup();
+    });
+
+    afterEach(() => {
+      // Complete cleanup after each test
+      vi.clearAllMocks();
+      MockManager.cleanup();
     });
 
     it('first database test - should have fresh client', async () => {
-      expect(databaseMock.execute).not.toHaveBeenCalled();
+      const { client } = createDatabaseTestMock();
       
-      await databaseMock.execute('SELECT 1');
-      expect(databaseMock.execute).toHaveBeenCalledWith('SELECT 1');
+      expect(client.execute).not.toHaveBeenCalled();
+      
+      await client.execute('SELECT 1');
+      expect(client.execute).toHaveBeenCalledWith('SELECT 1');
+      expect(client.execute).toHaveBeenCalledTimes(1);
     });
 
     it('second database test - should not see previous calls', async () => {
-      // Should start fresh
-      expect(databaseMock.execute).not.toHaveBeenCalled();
+      const { client } = createDatabaseTestMock();
       
-      await databaseMock.execute('SELECT 2');
-      expect(databaseMock.execute).toHaveBeenCalledTimes(1);
-      expect(databaseMock.execute).toHaveBeenCalledWith('SELECT 2');
+      // Should start fresh due to proper cleanup
+      expect(client.execute).not.toHaveBeenCalled();
+      
+      await client.execute('SELECT 2');
+      expect(client.execute).toHaveBeenCalledTimes(1);
+      expect(client.execute).toHaveBeenCalledWith('SELECT 2');
     });
 
     it('third database test - validates continued isolation', async () => {
-      // Verify isolation continues to work
-      expect(databaseMock.execute).not.toHaveBeenCalled();
+      const { client } = createDatabaseTestMock();
       
-      await databaseMock.execute('SELECT 3');
-      expect(databaseMock.execute).toHaveBeenCalledTimes(1);
+      // Verify isolation continues to work
+      expect(client.execute).not.toHaveBeenCalled();
+      
+      await client.execute('SELECT 3');
+      expect(client.execute).toHaveBeenCalledTimes(1);
     });
   });
 });

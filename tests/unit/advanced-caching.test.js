@@ -28,6 +28,9 @@ const createMockResponse = (data, options = {}) => {
   return response;
 };
 
+// Store cache instances to ensure persistence across caches.open() calls
+const cacheInstances = new Map();
+
 const createMockServiceWorker = () => {
   const mockSW = {
     caches: new Map(),
@@ -42,14 +45,20 @@ const createMockServiceWorker = () => {
   // Mock cache API
   global.caches = {
     open: vi.fn((name) => {
+      // Return existing cache instance if available
+      if (cacheInstances.has(name)) {
+        return Promise.resolve(cacheInstances.get(name));
+      }
+      
       if (!mockSW.caches.has(name)) {
         mockSW.caches.set(name, new Map());
       }
       const cache = mockSW.caches.get(name);
-      return Promise.resolve({
+      const cacheApi = {
         match: vi.fn((request) => {
           const key = typeof request === "string" ? request : request.url;
-          return Promise.resolve(cache.get(key) || null);
+          const result = cache.get(key) || null;
+          return Promise.resolve(result);
         }),
         put: vi.fn((request, response) => {
           const key = typeof request === "string" ? request : request.url;
@@ -69,7 +78,11 @@ const createMockServiceWorker = () => {
           return Promise.resolve(cache.delete(key));
         }),
         keys: vi.fn(() => Promise.resolve(Array.from(cache.keys()))),
-      });
+      };
+      
+      // Store instance for reuse
+      cacheInstances.set(name, cacheApi);
+      return Promise.resolve(cacheApi);
     }),
     keys: vi.fn(() => Promise.resolve(Array.from(mockSW.caches.keys()))),
     delete: vi.fn((name) => Promise.resolve(mockSW.caches.delete(name))),
@@ -86,6 +99,9 @@ describe("Advanced Caching System - Phase 2", () => {
   beforeEach(() => {
     // Reset DOM
     document.body.innerHTML = "";
+    
+    // Clear cache instances between tests
+    cacheInstances.clear();
 
     // Mock fetch
     mockFetch = vi.fn();
@@ -167,19 +183,26 @@ describe("Advanced Caching System - Phase 2", () => {
       const mockRequest = { url: imageUrl };
 
       // First request - should go to network
-      mockFetch.mockResolvedValueOnce(
-        createMockResponse("image-data", {
-          headers: { "content-type": "image/jpeg" },
-        }),
-      );
+      const mockResponse = createMockResponse("image-data", {
+        headers: { "content-type": "image/jpeg" },
+      });
+      mockFetch.mockResolvedValueOnce(mockResponse);
 
       const response1 = await handleImageRequest(mockRequest);
       expect(mockFetch).toHaveBeenCalledWith(mockRequest);
       expect(response1.ok).toBe(true);
 
-      // Second request - should come from cache
+      // Verify the response was cached
+      const cache = await caches.open("alocubano-images-v2.0.0");
+      const cachedResponse = await cache.match(mockRequest);
+      expect(cachedResponse).toBeDefined();
+
+      // Clear the mock counter but don't set up any new mock responses
+      mockFetch.mockClear();
+
+      // Second request - should come from cache (no network call)
       const response2 = await handleImageRequest(mockRequest);
-      expect(mockFetch).toHaveBeenCalledTimes(1); // No additional network call
+      expect(mockFetch).toHaveBeenCalledTimes(0); // No network call
       expect(response2).toBeDefined();
     });
 

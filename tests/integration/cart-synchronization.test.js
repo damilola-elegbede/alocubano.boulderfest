@@ -57,12 +57,12 @@ describe("Cart Synchronization Integration Tests", () => {
                             
                             this.validateAmount(amount);
                             
-                            document.dispatchEvent(new CustomEvent('donation-amount-changed', {
+                            document.dispatchEvent(new window.CustomEvent('donation-amount-changed', {
                                 detail: { amount: amount }
                             }));
                         } catch (error) {
                             console.error('Donation error:', error.message);
-                            document.dispatchEvent(new CustomEvent('donation-error', {
+                            document.dispatchEvent(new window.CustomEvent('donation-error', {
                                 detail: { error: error.message }
                             }));
                         }
@@ -108,12 +108,12 @@ describe("Cart Synchronization Integration Tests", () => {
                                 this.selectedTickets.delete(ticketType);
                             }
                             
-                            document.dispatchEvent(new CustomEvent('ticket-quantity-changed', {
+                            document.dispatchEvent(new window.CustomEvent('ticket-quantity-changed', {
                                 detail: { ticketType, quantity, price, name }
                             }));
                         } catch (error) {
                             console.error('Ticket validation error:', error.message);
-                            document.dispatchEvent(new CustomEvent('ticket-error', {
+                            document.dispatchEvent(new window.CustomEvent('ticket-error', {
                                 detail: { error: error.message, ticketType }
                             }));
                         }
@@ -127,6 +127,39 @@ describe("Cart Synchronization Integration Tests", () => {
                     constructor() {
                         super();
                         this.state = { tickets: {}, donations: [], total: 0 };
+                        
+                        // Force use of custom EventTarget implementation for test compatibility
+                        // This avoids Node.js/JSDOM event incompatibility issues
+                        this._eventListeners = new Map();
+                        
+                        this.addEventListener = function(type, listener) {
+                            if (!this._eventListeners.has(type)) {
+                                this._eventListeners.set(type, []);
+                            }
+                            this._eventListeners.get(type).push(listener);
+                        };
+                        
+                        this.removeEventListener = function(type, listener) {
+                            const listeners = this._eventListeners.get(type);
+                            if (listeners) {
+                                const index = listeners.indexOf(listener);
+                                if (index > -1) {
+                                    listeners.splice(index, 1);
+                                }
+                            }
+                        };
+                        
+                        this.dispatchEvent = function(event) {
+                            const listeners = this._eventListeners.get(event.type) || [];
+                            listeners.forEach(listener => {
+                                try {
+                                    listener.call(this, event);
+                                } catch (err) {
+                                    console.error('Listener error:', err);
+                                }
+                            });
+                            return true;
+                        };
                     }
                     
                     validateCartOperation(operation, data) {
@@ -157,10 +190,21 @@ describe("Cart Synchronization Integration Tests", () => {
                     
                     emit(eventName, detail) {
                         try {
-                            this.dispatchEvent(new CustomEvent(eventName, { detail }));
-                            document.dispatchEvent(new CustomEvent(eventName, { detail }));
+                            let selfResult = true;
+                            
+                            // Use window.CustomEvent to ensure proper JSDOM context
+                            const selfEvent = new window.CustomEvent(eventName, { detail });
+                            selfResult = this.dispatchEvent(selfEvent);
+                            
+                            // Create separate event for document dispatch (JSDOM requirement)
+                            const docEvent = new window.CustomEvent(eventName, { detail });
+                            document.dispatchEvent(docEvent);
+                            
+                            return selfResult;
                         } catch (error) {
                             console.error('Event dispatch error:', error);
+                            // In tests, we want to see errors
+                            throw error;
                         }
                     }
                     
