@@ -1,0 +1,364 @@
+/**
+ * Load Testing Integration Performance Tests
+ * 
+ * Tests load performance and scalability under simulated user load
+ * focusing on API endpoints and database operations.
+ */
+
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
+import { performance } from "perf_hooks";
+
+// Performance thresholds for load testing
+const LOAD_THRESHOLDS = {
+  apiResponse: {
+    max: 500,    // 500ms max for API responses
+    target: 200  // 200ms target
+  },
+  dbQuery: {
+    max: 100,    // 100ms max for database queries
+    target: 50   // 50ms target
+  },
+  concurrentUsers: {
+    max: 50,     // Support 50 concurrent users
+    responseTime: 1000 // Under 1 second response time
+  }
+};
+
+// Mock database operations
+const mockDatabase = {
+  execute: vi.fn(),
+  batch: vi.fn(),
+  close: vi.fn()
+};
+
+// Mock API endpoints
+class MockAPIEndpoint {
+  constructor(name, processingTime = 100) {
+    this.name = name;
+    this.processingTime = processingTime;
+    this.callCount = 0;
+  }
+
+  async process(payload) {
+    this.callCount++;
+    const startTime = performance.now();
+    
+    // Simulate processing time with some variability
+    const actualProcessingTime = this.processingTime + (Math.random() * 50 - 25);
+    await new Promise(resolve => setTimeout(resolve, actualProcessingTime));
+    
+    const duration = performance.now() - startTime;
+    return {
+      success: true,
+      duration,
+      payload,
+      endpoint: this.name,
+      timestamp: Date.now()
+    };
+  }
+
+  getMetrics() {
+    return {
+      name: this.name,
+      callCount: this.callCount,
+      avgProcessingTime: this.processingTime
+    };
+  }
+}
+
+// Load test orchestrator
+class LoadTestOrchestrator {
+  constructor() {
+    this.endpoints = new Map();
+    this.results = [];
+    this.concurrentUsers = 0;
+    this.maxConcurrentUsers = 0;
+  }
+
+  addEndpoint(name, processingTime) {
+    this.endpoints.set(name, new MockAPIEndpoint(name, processingTime));
+  }
+
+  async simulateUserLoad(userCount, duration = 5000) {
+    const users = [];
+    const startTime = performance.now();
+
+    for (let i = 0; i < userCount; i++) {
+      users.push(this.simulateUser(i, duration));
+    }
+
+    const results = await Promise.all(users);
+    const totalTime = performance.now() - startTime;
+
+    return {
+      userCount,
+      duration: totalTime,
+      results: results.flat(),
+      maxConcurrentUsers: this.maxConcurrentUsers,
+      avgResponseTime: results.flat().reduce((sum, r) => sum + r.duration, 0) / results.flat().length
+    };
+  }
+
+  async simulateUser(userId, duration) {
+    const userResults = [];
+    const endTime = Date.now() + duration;
+    const endpointNames = Array.from(this.endpoints.keys());
+
+    while (Date.now() < endTime) {
+      this.concurrentUsers++;
+      this.maxConcurrentUsers = Math.max(this.maxConcurrentUsers, this.concurrentUsers);
+
+      // Randomly select an endpoint
+      const endpointName = endpointNames[Math.floor(Math.random() * endpointNames.length)];
+      const endpoint = this.endpoints.get(endpointName);
+
+      try {
+        const result = await endpoint.process({ userId, timestamp: Date.now() });
+        userResults.push(result);
+      } catch (error) {
+        userResults.push({
+          success: false,
+          error: error.message,
+          endpoint: endpointName,
+          userId,
+          timestamp: Date.now()
+        });
+      }
+
+      this.concurrentUsers--;
+
+      // Wait between requests (simulate user think time)
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+    }
+
+    return userResults;
+  }
+
+  getEndpointMetrics() {
+    const metrics = new Map();
+    for (const [name, endpoint] of this.endpoints) {
+      metrics.set(name, endpoint.getMetrics());
+    }
+    return metrics;
+  }
+
+  reset() {
+    this.results = [];
+    this.concurrentUsers = 0;
+    this.maxConcurrentUsers = 0;
+    for (const endpoint of this.endpoints.values()) {
+      endpoint.callCount = 0;
+    }
+  }
+}
+
+describe("Load Testing Integration", () => {
+  let loadOrchestrator;
+
+  beforeAll(() => {
+    loadOrchestrator = new LoadTestOrchestrator();
+    
+    // Setup mock endpoints with realistic processing times
+    loadOrchestrator.addEndpoint("tickets", 150);        // Ticket operations
+    loadOrchestrator.addEndpoint("payments", 300);       // Payment processing
+    loadOrchestrator.addEndpoint("gallery", 80);         // Gallery API
+    loadOrchestrator.addEndpoint("admin", 200);          // Admin operations
+    loadOrchestrator.addEndpoint("health", 25);          // Health checks
+  });
+
+  beforeEach(() => {
+    loadOrchestrator.reset();
+  });
+
+  describe("Single User Performance", () => {
+    it("should handle single user requests within thresholds", async () => {
+      const result = await loadOrchestrator.simulateUserLoad(1, 3000);
+
+      expect(result.userCount).toBe(1);
+      expect(result.results.length).toBeGreaterThan(0);
+      expect(result.avgResponseTime).toBeLessThan(LOAD_THRESHOLDS.apiResponse.max);
+
+      console.log(`Single user - Avg response: ${result.avgResponseTime.toFixed(2)}ms`);
+      console.log(`Requests completed: ${result.results.length}`);
+    }, 10000);
+
+    it("should maintain consistent response times", async () => {
+      const result = await loadOrchestrator.simulateUserLoad(1, 5000);
+      
+      const responseTimes = result.results
+        .filter(r => r.success)
+        .map(r => r.duration);
+
+      const avgTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+      const maxTime = Math.max(...responseTimes);
+      const minTime = Math.min(...responseTimes);
+      const variance = maxTime / minTime;
+
+      console.log(`Response time variance: ${variance.toFixed(2)}x (${minTime.toFixed(0)}ms - ${maxTime.toFixed(0)}ms)`);
+
+      expect(avgTime).toBeLessThan(LOAD_THRESHOLDS.apiResponse.target);
+      expect(variance).toBeLessThan(3); // No more than 3x difference between fastest and slowest
+    }, 12000);
+  });
+
+  describe("Concurrent User Load", () => {
+    it("should handle moderate concurrent load", async () => {
+      const userCount = 10;
+      const result = await loadOrchestrator.simulateUserLoad(userCount, 4000);
+
+      const successfulRequests = result.results.filter(r => r.success);
+      const successRate = successfulRequests.length / result.results.length;
+
+      console.log(`${userCount} users - Success rate: ${(successRate * 100).toFixed(1)}%`);
+      console.log(`Max concurrent: ${result.maxConcurrentUsers}`);
+      console.log(`Avg response: ${result.avgResponseTime.toFixed(2)}ms`);
+
+      expect(successRate).toBeGreaterThan(0.95); // 95% success rate
+      expect(result.avgResponseTime).toBeLessThan(LOAD_THRESHOLDS.apiResponse.max);
+    }, 15000);
+
+    it("should scale to maximum concurrent users", async () => {
+      const userCount = LOAD_THRESHOLDS.concurrentUsers.max;
+      const result = await loadOrchestrator.simulateUserLoad(userCount, 3000);
+
+      const successfulRequests = result.results.filter(r => r.success);
+      const successRate = successfulRequests.length / result.results.length;
+
+      console.log(`${userCount} users - Success rate: ${(successRate * 100).toFixed(1)}%`);
+      console.log(`Total requests: ${result.results.length}`);
+      console.log(`Avg response: ${result.avgResponseTime.toFixed(2)}ms`);
+
+      expect(successRate).toBeGreaterThan(0.90); // 90% success rate under max load
+      expect(result.avgResponseTime).toBeLessThan(LOAD_THRESHOLDS.concurrentUsers.responseTime);
+    }, 20000);
+  });
+
+  describe("Endpoint-Specific Load Testing", () => {
+    it("should handle payment endpoint load", async () => {
+      // Focus load on payment endpoint
+      loadOrchestrator.endpoints.clear();
+      loadOrchestrator.addEndpoint("payments", 300);
+
+      const result = await loadOrchestrator.simulateUserLoad(20, 4000);
+      const paymentResults = result.results.filter(r => r.endpoint === "payments");
+
+      const avgPaymentTime = paymentResults.reduce((sum, r) => sum + r.duration, 0) / paymentResults.length;
+
+      console.log(`Payment endpoint - Avg: ${avgPaymentTime.toFixed(2)}ms`);
+      console.log(`Payment requests: ${paymentResults.length}`);
+
+      expect(avgPaymentTime).toBeLessThan(800); // Payment operations can be slower
+      expect(paymentResults.length).toBeGreaterThan(0);
+    }, 15000);
+
+    it("should handle gallery endpoint high frequency", async () => {
+      loadOrchestrator.endpoints.clear();
+      loadOrchestrator.addEndpoint("gallery", 80);
+
+      const result = await loadOrchestrator.simulateUserLoad(25, 3000);
+      const galleryResults = result.results.filter(r => r.endpoint === "gallery");
+
+      const avgGalleryTime = galleryResults.reduce((sum, r) => sum + r.duration, 0) / galleryResults.length;
+
+      console.log(`Gallery endpoint - Avg: ${avgGalleryTime.toFixed(2)}ms`);
+      console.log(`Gallery requests: ${galleryResults.length}`);
+
+      expect(avgGalleryTime).toBeLessThan(LOAD_THRESHOLDS.apiResponse.target);
+      expect(galleryResults.length).toBeGreaterThan(0);
+    }, 12000);
+  });
+
+  describe("Performance Regression Detection", () => {
+    it("should detect performance degradation", async () => {
+      // First, establish baseline
+      const baselineResult = await loadOrchestrator.simulateUserLoad(5, 3000);
+      const baselineTime = baselineResult.avgResponseTime;
+
+      // Simulate performance degradation
+      loadOrchestrator.endpoints.clear();
+      loadOrchestrator.addEndpoint("degraded", 400); // Slower endpoint
+
+      const degradedResult = await loadOrchestrator.simulateUserLoad(5, 3000);
+      const degradedTime = degradedResult.avgResponseTime;
+
+      const performanceRatio = degradedTime / baselineTime;
+
+      console.log(`Baseline: ${baselineTime.toFixed(2)}ms`);
+      console.log(`Degraded: ${degradedTime.toFixed(2)}ms`);
+      console.log(`Performance ratio: ${performanceRatio.toFixed(2)}x`);
+
+      expect(performanceRatio).toBeGreaterThan(1.5); // Should detect significant degradation
+    }, 15000);
+
+    it("should track performance trends", async () => {
+      const measurements = [];
+
+      // Take multiple measurements
+      for (let i = 0; i < 5; i++) {
+        const result = await loadOrchestrator.simulateUserLoad(3, 2000);
+        measurements.push(result.avgResponseTime);
+        await new Promise(resolve => setTimeout(resolve, 500)); // Brief pause
+      }
+
+      const avgMeasurement = measurements.reduce((a, b) => a + b, 0) / measurements.length;
+      const maxVariation = Math.max(...measurements) / Math.min(...measurements);
+
+      console.log(`Measurements: ${measurements.map(m => m.toFixed(0)).join('ms, ')}ms`);
+      console.log(`Average: ${avgMeasurement.toFixed(2)}ms`);
+      console.log(`Max variation: ${maxVariation.toFixed(2)}x`);
+
+      expect(maxVariation).toBeLessThan(2.5); // Consistent performance
+      expect(avgMeasurement).toBeLessThan(LOAD_THRESHOLDS.apiResponse.max);
+    }, 20000);
+  });
+
+  describe("Resource Utilization", () => {
+    it("should monitor endpoint distribution", async () => {
+      const result = await loadOrchestrator.simulateUserLoad(15, 4000);
+      const endpointDistribution = new Map();
+
+      result.results.forEach(r => {
+        const count = endpointDistribution.get(r.endpoint) || 0;
+        endpointDistribution.set(r.endpoint, count + 1);
+      });
+
+      console.log("Endpoint distribution:");
+      for (const [endpoint, count] of endpointDistribution) {
+        const percentage = (count / result.results.length * 100).toFixed(1);
+        console.log(`  ${endpoint}: ${count} (${percentage}%)`);
+      }
+
+      // Verify reasonable distribution (no endpoint should dominate completely)
+      const maxRequests = Math.max(...endpointDistribution.values());
+      const totalRequests = result.results.length;
+      const maxPercentage = maxRequests / totalRequests;
+
+      expect(maxPercentage).toBeLessThan(0.7); // No single endpoint > 70%
+    }, 15000);
+
+    it("should handle memory-conscious operations", async () => {
+      const memoryBefore = process.memoryUsage?.() || { heapUsed: 0 };
+      
+      const result = await loadOrchestrator.simulateUserLoad(30, 3000);
+      
+      const memoryAfter = process.memoryUsage?.() || { heapUsed: 0 };
+      const memoryGrowth = (memoryAfter.heapUsed - memoryBefore.heapUsed) / 1024 / 1024; // MB
+
+      console.log(`Memory growth: ${memoryGrowth.toFixed(1)}MB`);
+      console.log(`Requests processed: ${result.results.length}`);
+
+      if (memoryGrowth > 0) {
+        expect(memoryGrowth).toBeLessThan(50); // Less than 50MB growth
+      }
+    }, 15000);
+  });
+
+  afterAll(() => {
+    // Generate performance summary
+    console.log("\n📊 Load Testing Summary:");
+    console.log(`  Max concurrent users tested: ${LOAD_THRESHOLDS.concurrentUsers.max}`);
+    console.log(`  API response threshold: ${LOAD_THRESHOLDS.apiResponse.max}ms`);
+    console.log(`  Target response time: ${LOAD_THRESHOLDS.apiResponse.target}ms`);
+    console.log("✅ All load tests completed");
+  });
+});

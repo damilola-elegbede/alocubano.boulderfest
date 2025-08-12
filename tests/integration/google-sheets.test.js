@@ -133,6 +133,11 @@ describe("Google Sheets Analytics Integration", () => {
     vi.resetAllMocks();
     vi.resetModules();
     
+    // Clean up any hanging promises or timers in CI
+    if (process.env.CI === 'true') {
+      vi.clearAllTimers();
+    }
+    
     // Complete cleanup of mock objects
     if (mockSheetsAPI) {
       Object.keys(mockSheetsAPI.spreadsheets.values).forEach(key => {

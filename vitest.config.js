@@ -29,25 +29,25 @@ export default defineConfig({
     ],
 
     // Memory-conscious performance settings with CI optimization
-    threads: process.env.CI === "true" ? 4 : 2,
-    maxConcurrency: process.env.CI === "true" ? 4 : 2,
+    threads: process.env.CI === "true" ? 2 : 2,
+    maxConcurrency: process.env.CI === "true" ? 2 : 2,
     minThreads: 1,
-    maxThreads: process.env.CI === "true" ? 4 : 2,
-    testTimeout: 60000, // Increased for remote database operations and module loading
-    hookTimeout: 30000, // Increased for database initialization and async services
+    maxThreads: process.env.CI === "true" ? 2 : 2,
+    testTimeout: process.env.CI === "true" ? 45000 : 60000, // Reduced timeout for CI
+    hookTimeout: process.env.CI === "true" ? 20000 : 30000, // Reduced hook timeout for CI
 
     // Pool options for memory management
     poolOptions: {
       threads: {
         singleThread: false,
-        maxThreads: process.env.CI === "true" ? 4 : 2,
+        maxThreads: process.env.CI === "true" ? 2 : 2,
         minThreads: 1,
         isolate: true,
         useAtomics: true,
       },
       forks: {
         singleFork: false,
-        maxForks: process.env.CI === "true" ? 4 : 2,
+        maxForks: process.env.CI === "true" ? 2 : 2,
         minForks: 1,
         isolate: true,
       },
