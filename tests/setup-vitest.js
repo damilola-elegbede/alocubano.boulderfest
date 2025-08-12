@@ -161,8 +161,10 @@ afterAll(async () => {
   // Restore the original environment
   testEnvManager.restore();
 
-  // Reset database mocks
-  dbMockSync.reset();
+  // Reset database mocks only for unit tests, not integration tests
+  if (process.env.TEST_TYPE !== 'integration' && process.env.TEST_INTEGRATION !== 'true') {
+    dbMockSync.reset();
+  }
 
   // Clear test isolation mode
   delete process.env.TEST_ISOLATION_MODE;
@@ -178,11 +180,15 @@ afterEach(async () => {
     global.fetch.mockClear();
   }
 
-  // Reset database mock state
-  dbMockSync.reset();
+  // Reset database mock state only for unit tests, not integration tests
+  if (process.env.TEST_TYPE !== 'integration' && process.env.TEST_INTEGRATION !== 'true') {
+    dbMockSync.reset();
+  }
 
   // Force database connection cleanup for integration tests with proper async handling
-  if (process.env.TEST_INTEGRATION === 'true' || process.env.TEST_TYPE === 'integration') {
+  // Skip for database schema tests to preserve real database connections
+  if ((process.env.TEST_INTEGRATION === 'true' || process.env.TEST_TYPE === 'integration') && 
+      !process.env.SKIP_DATABASE_RESET) {
     try {
       // Use the enhanced test environment manager for coordinated cleanup
       await testEnvManager.coordinatedClear();

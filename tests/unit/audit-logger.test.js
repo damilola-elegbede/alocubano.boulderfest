@@ -3,25 +3,35 @@ import fs from "fs/promises";
 import path from "path";
 import AuditLogger from "../../lib/security/audit-logger.js";
 
-describe("AuditLogger", () => {
-  const logDir = path.resolve(process.cwd(), "logs", "audit");
+// Force sequential execution to avoid static state collision
+describe.sequential("AuditLogger", () => {
+  let logDir;
 
-  // Set up log directory before each test
+  // Set up isolated log directory before each test
   beforeEach(async () => {
+    // Clear any existing test override first
+    delete AuditLogger._testLogDir;
+    
+    // Create unique directory for each individual test
+    const testRunId = `test-${Date.now()}-${process.hrtime.bigint()}-${Math.random().toString(36).substr(2, 9)}`;
+    logDir = path.resolve(process.cwd(), "logs", "audit", testRunId);
+    
     try {
       await fs.mkdir(logDir, { recursive: true });
+      // Override the CONFIG.LOG_DIR for this test run
+      AuditLogger._testLogDir = logDir;
     } catch (error) {
       // Ignore if directory already exists
     }
   });
 
-  // Clean up log files after each test
+  // Clean up entire test directory after each test
   afterEach(async () => {
     try {
-      const files = await fs.readdir(logDir);
-      for (const file of files) {
-        await fs.unlink(path.join(logDir, file));
-      }
+      // Clear the test override first
+      delete AuditLogger._testLogDir;
+      // Remove the entire test directory
+      await fs.rm(logDir, { recursive: true, force: true });
     } catch (error) {
       // Ignore errors if directory doesn't exist
     }

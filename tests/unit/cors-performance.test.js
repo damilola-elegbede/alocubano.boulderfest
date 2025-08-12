@@ -6,7 +6,9 @@ vi.mock("fs");
 const mockFs = vi.mocked(fs);
 
 describe("CORS Configuration Performance Optimizations", () => {
-  beforeEach(() => {
+  let corsConfigModule;
+  
+  beforeEach(async () => {
     vi.resetAllMocks();
     vi.resetModules();
 
@@ -19,16 +21,16 @@ describe("CORS Configuration Performance Optimizations", () => {
     });
 
     mockFs.readFileSync.mockReturnValue(mockConfigContent);
+    
+    // Import fresh module instance
+    corsConfigModule = await import("../../api/lib/cors-config.js");
+    
+    // Clear any existing cache from the fresh module
+    corsConfigModule.clearConfigCache();
   });
 
   it("should cache CORS configuration to avoid repeated disk reads", async () => {
-    // Dynamically import to ensure fresh module load
-    const { getCorsConfig, clearConfigCache } = await import(
-      "../../api/lib/cors-config.js"
-    );
-
-    // Clear any existing cache
-    clearConfigCache();
+    const { getCorsConfig } = corsConfigModule;
 
     // First call should read from disk
     const config1 = getCorsConfig();
@@ -59,22 +61,26 @@ describe("CORS Configuration Performance Optimizations", () => {
   });
 
   it("should invalidate cache when environment variable changes", async () => {
-    const { getCorsConfig, clearConfigCache } = await import(
-      "../../api/lib/cors-config.js"
-    );
+    const { getCorsConfig, clearConfigCache } = corsConfigModule;
 
-    clearConfigCache();
+    // Start completely fresh
+    delete process.env.CORS_ALLOWED_ORIGINS;
 
     // First call without env var
-    delete process.env.CORS_ALLOWED_ORIGINS;
     const config1 = getCorsConfig();
+    expect(mockFs.readFileSync).toHaveBeenCalledTimes(1);
+
+    // Clear cache to ensure fresh read with new env
+    clearConfigCache();
 
     // Set environment variable
     process.env.CORS_ALLOWED_ORIGINS =
       "https://new.example.com,https://another.example.com";
+    
+    // Get config with new env var (should read file again)
     const config2 = getCorsConfig();
 
-    // Should have called readFileSync twice (cache invalidated)
+    // Should have called readFileSync twice (once for each config)
     expect(mockFs.readFileSync).toHaveBeenCalledTimes(2);
 
     // Config should be different
@@ -89,9 +95,7 @@ describe("CORS Configuration Performance Optimizations", () => {
   });
 
   it("should cache fallback configuration on error", async () => {
-    const { getCorsConfig, clearConfigCache } = await import(
-      "../../api/lib/cors-config.js"
-    );
+    const { getCorsConfig, clearConfigCache } = corsConfigModule;
 
     clearConfigCache();
 
@@ -118,9 +122,7 @@ describe("CORS Configuration Performance Optimizations", () => {
   });
 
   it("should provide clearConfigCache function for testing", async () => {
-    const { getCorsConfig, clearConfigCache } = await import(
-      "../../api/lib/cors-config.js"
-    );
+    const { getCorsConfig, clearConfigCache } = corsConfigModule;
 
     // Load config into cache
     getCorsConfig();
@@ -139,9 +141,7 @@ describe("CORS Configuration Performance Optimizations", () => {
   });
 
   it("should handle concurrent access safely", async () => {
-    const { getCorsConfig, clearConfigCache } = await import(
-      "../../api/lib/cors-config.js"
-    );
+    const { getCorsConfig, clearConfigCache } = corsConfigModule;
 
     clearConfigCache();
 

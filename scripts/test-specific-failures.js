@@ -1,84 +1,137 @@
 #!/usr/bin/env node
 
 /**
- * Test runner for the 3 specific failing tests
- * Runs each test individually and reports results
+ * Test runner for the 4 specific failing tests
+ * Runs each test file and reports results
  */
 
 const { execSync } = require('child_process');
 const path = require('path');
 
-const tests = [
-  {
-    file: 'tests/unit/advanced-caching.test.js',
-    name: 'should implement cache-first strategy',
-    description: 'Cache persistence test'
-  },
-  {
-    file: 'tests/unit/test-mock-manager.test.js',
-    name: 'second test - should not see previous test calls',
-    description: 'Mock isolation test'
-  },
-  {
-    file: 'tests/integration/cart-synchronization.test.js',
-    name: 'should handle dual event dispatch',
-    description: 'Event dispatch test'
-  }
+const testFiles = [
+  'tests/unit/browser-compatibility.test.js',
+  'tests/unit/cache-management-apis.test.js',
+  'tests/unit/cors-performance.test.js'
 ];
 
-console.log('🔍 Running specific failing tests...\n');
+console.log('🔍 Running specific failing test files...\n');
 
-let passed = 0;
-let failed = 0;
+let totalPassed = 0;
+let totalFailed = 0;
+const results = [];
 
-tests.forEach((test, index) => {
-  console.log(`Test ${index + 1}/3: ${test.description}`);
-  console.log(`File: ${test.file}`);
-  console.log(`Test: "${test.name}"`);
+testFiles.forEach((testFile, index) => {
+  console.log(`Running ${index + 1}/${testFiles.length}: ${testFile}`);
   
   try {
-    const cmd = `npm test -- ${test.file} -t "${test.name}" 2>&1`;
+    const cmd = `npx vitest run ${testFile} --reporter=default 2>&1`;
     const output = execSync(cmd, { 
       cwd: path.dirname(__dirname),
       encoding: 'utf8'
     });
     
-    if (output.includes('✓') && !output.includes('✗')) {
-      console.log('✅ PASSED\n');
-      passed++;
+    // Parse output for pass/fail counts
+    const passMatch = output.match(/(\d+) passed/);
+    const failMatch = output.match(/(\d+) failed/);
+    
+    const passed = passMatch ? parseInt(passMatch[1]) : 0;
+    const failed = failMatch ? parseInt(failMatch[1]) : 0;
+    
+    results.push({
+      file: testFile,
+      passed,
+      failed
+    });
+    
+    totalPassed += passed;
+    totalFailed += failed;
+    
+    if (failed === 0) {
+      console.log(`  ✅ All ${passed} tests passed`);
     } else {
-      console.log('❌ FAILED');
-      // Show relevant error output
-      const lines = output.split('\n');
-      const errorLines = lines.filter(line => 
-        line.includes('Error:') || 
-        line.includes('Expected') || 
-        line.includes('Received') ||
-        line.includes('AssertionError')
-      ).slice(0, 5);
+      console.log(`  ❌ ${failed} tests failed, ${passed} passed`);
       
-      if (errorLines.length > 0) {
-        console.log('Error details:');
-        errorLines.forEach(line => console.log('  ', line));
+      // Extract failed test names
+      const failedTests = output.match(/✗ .+/g);
+      if (failedTests) {
+        console.log('  Failed tests:');
+        failedTests.forEach(test => console.log(`    ${test}`));
       }
-      console.log('');
-      failed++;
     }
-  } catch (error) {
-    console.log('❌ FAILED (test execution error)');
-    console.log('Error:', error.message.split('\n')[0]);
     console.log('');
-    failed++;
+    
+  } catch (error) {
+    // Test command failed - try to extract info from error
+    const output = error.stdout || error.stderr || error.message;
+    
+    const passMatch = output.match(/(\d+) passed/);
+    const failMatch = output.match(/(\d+) failed/);
+    
+    const passed = passMatch ? parseInt(passMatch[1]) : 0;
+    const failed = failMatch ? parseInt(failMatch[1]) : 0;
+    
+    if (failed > 0 || failMatch) {
+      results.push({
+        file: testFile,
+        passed,
+        failed: failed || 1
+      });
+      
+      totalPassed += passed;
+      totalFailed += failed || 1;
+      
+      console.log(`  ❌ ${failed || 1} tests failed`);
+      
+      // Extract failed test names
+      const failedTests = output.match(/✗ .+/g);
+      if (failedTests) {
+        console.log('  Failed tests:');
+        failedTests.slice(0, 5).forEach(test => console.log(`    ${test}`));
+      }
+    } else {
+      console.log('  ⚠️  Unable to parse test results');
+      results.push({
+        file: testFile,
+        passed: 0,
+        failed: 1
+      });
+      totalFailed += 1;
+    }
+    console.log('');
   }
 });
 
-console.log('=' .repeat(50));
-console.log(`\nResults: ${passed} passed, ${failed} failed`);
+console.log('=' .repeat(60));
+console.log('SUMMARY:');
+console.log('=' .repeat(60));
 
-if (passed === 3) {
-  console.log('🎉 All 3 tests are now passing!');
+results.forEach(r => {
+  const status = r.failed === 0 ? '✅' : '❌';
+  console.log(`${status} ${r.file}`);
+  console.log(`   Passed: ${r.passed}, Failed: ${r.failed}`);
+});
+
+console.log('=' .repeat(60));
+console.log(`Total: ${totalPassed} passed, ${totalFailed} failed`);
+
+if (totalFailed === 0) {
+  console.log('\n🎉 All previously failing tests are now passing!');
+  console.log('Run full test suite to confirm: npm test');
   process.exit(0);
 } else {
-  console.log(`⚠️  ${failed} test(s) still failing. Review the fixes.`);
+  console.log(`\n❌ ${totalFailed} test(s) still failing. Review the output above.`);
+  
+  // Show specific failing tests for targeted investigation
+  console.log('\nSpecific failing tests to investigate:');
+  if (results.some(r => r.file.includes('browser-compatibility') && r.failed > 0)) {
+    console.log('  - browser-compatibility.test.js: "handles intersection observer errors"');
+  }
+  if (results.some(r => r.file.includes('cache-management') && r.failed > 0)) {
+    console.log('  - cache-management-apis.test.js: "should clear all caches" and/or "should warm all sections by default"');
+  }
+  if (results.some(r => r.file.includes('cors-performance') && r.failed > 0)) {
+    console.log('  - cors-performance.test.js: "should invalidate cache when environment variable changes"');
+  }
+  
   process.exit(1);
 }

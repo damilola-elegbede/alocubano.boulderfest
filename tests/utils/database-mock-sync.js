@@ -24,18 +24,33 @@ export class DatabaseMockSync {
     };
 
     // Setup default successful responses matching LibSQL client
-    mockClient.execute.mockImplementation(async (query) => {
+    const successfulExecute = async (query) => {
       // Handle both string and object query formats like real client
       const sql = typeof query === "string" ? query : query.sql;
 
-      // Simulate successful response structure
+      // Special handling for health check queries ONLY
+      if (sql === "SELECT 1 as test") {
+        return {
+          rows: [{ test: 1 }],
+          rowsAffected: 1,
+          columns: ["test"],
+          columnTypes: ["INTEGER"],
+        };
+      }
+
+      // Simulate successful response structure for other queries
       return {
         rows: [],
         rowsAffected: 0,
         columns: [],
         columnTypes: [],
       };
-    });
+    };
+
+    mockClient.execute.mockImplementation(successfulExecute);
+    
+    // Store reference to reset implementation if needed
+    mockClient._originalExecute = successfulExecute;
 
     mockClient.close.mockImplementation(() => {
       // LibSQL close is synchronous, no return value
@@ -109,7 +124,36 @@ export class DatabaseMockSync {
       case "success":
       default:
         // Reset to successful behavior
-        this.createSynchronizedMock();
+        if (!this.mockClient) {
+          this.createSynchronizedMock();
+        } else {
+          // Re-setup successful behavior for existing client using stored reference
+          if (this.mockClient._originalExecute) {
+            this.mockClient.execute.mockImplementation(this.mockClient._originalExecute);
+          } else {
+            // Fallback: recreate the implementation
+            this.mockClient.execute.mockImplementation(async (query) => {
+              const sql = typeof query === "string" ? query : query.sql;
+              
+              // Special handling for health check queries ONLY
+              if (sql === "SELECT 1 as test") {
+                return {
+                  rows: [{ test: 1 }],
+                  rowsAffected: 1,
+                  columns: ["test"],
+                  columnTypes: ["INTEGER"],
+                };
+              }
+
+              return {
+                rows: [],
+                rowsAffected: 0,
+                columns: [],
+                columnTypes: [],
+              };
+            });
+          }
+        }
         break;
     }
   }
@@ -222,6 +266,11 @@ export class DatabaseMockSync {
               }
               this.initialized = true;
 
+              // Ensure the client has proper mock implementation
+              if (this.client && typeof this.client.execute !== "function") {
+                syncRef.setBehavior("success");
+              }
+
               // Skip connection test in tests (matches actual implementation)
               if (process.env.NODE_ENV !== "test" && !process.env.VITEST) {
                 await this.client.execute("SELECT 1 as test");
@@ -293,6 +342,11 @@ export class DatabaseMockSync {
         try {
           const client = await this.ensureInitialized();
 
+          // Ensure client has valid execute implementation
+          if (!client || !client.execute || typeof client.execute !== "function") {
+            throw new Error("Invalid client state - no execute method");
+          }
+
           // Handle both string and object formats (matches actual)
           if (typeof queryOrObject === "string") {
             return await client.execute({ sql: queryOrObject, args: params });
@@ -354,7 +408,8 @@ export class DatabaseMockSync {
           const client = await this.ensureInitialized();
           const result = await client.execute("SELECT 1 as test");
 
-          if (result && result.rows !== undefined) {
+          // Check for successful result structure from LibSQL client
+          if (result && result.rows !== undefined && result.columns !== undefined) {
             return true;
           }
 

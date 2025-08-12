@@ -113,6 +113,9 @@ class DatabaseService {
           databaseUrl = `file:${absolutePath}`;
           console.log(`✅ Converted relative database path to absolute: ${databaseUrl}`);
         }
+      } else if (databaseUrl === ':memory:') {
+        // In-memory database is fine for tests
+        console.log(`✅ Using in-memory database for tests`);
       }
     }
 
