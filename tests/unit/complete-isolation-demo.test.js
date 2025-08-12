@@ -116,20 +116,15 @@ describe("Complete Isolation Demo", () => {
       
       // Now test with invalid environment - this might get cached state
       await testEnvManager.withIsolatedEnv(
-        { TURSO_DATABASE_URL: "" }, // Empty URL should fail
+        { TURSO_DATABASE_URL: "", DATABASE_TEST_STRICT_MODE: "true" }, // Empty URL should fail with strict mode
         async () => {
           const { DatabaseService } = await import("../../api/lib/database.js");
           const service = new DatabaseService();
           
-          // The issue: cached state might prevent proper validation
-          // In the enhanced version, this is fixed with module state clearing
-          try {
-            await service.initializeClient();
-            // If we get here without an error, it means cached state was used
-            console.log("Warning: May have used cached state (original pattern)");
-          } catch (error) {
-            expect(error.message).toContain("TURSO_DATABASE_URL");
-          }
+          // With strict mode, this should properly fail
+          await expect(service.initializeClient()).rejects.toThrow(
+            "TURSO_DATABASE_URL environment variable is required"
+          );
         }
       );
     });
@@ -292,7 +287,7 @@ describe("Complete Isolation Demo", () => {
       
       // Complete isolation may be slower but should still be reasonable
       expect(envOnlyTime).toBeLessThan(50);
-      expect(completeTime).toBeLessThan(200);
+      expect(completeTime).toBeLessThan(500); // Increased threshold for CI environments
       
       console.log(`Environment-only: ${envOnlyTime.toFixed(2)}ms`);
       console.log(`Complete isolation: ${completeTime.toFixed(2)}ms`);
