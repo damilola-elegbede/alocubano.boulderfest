@@ -280,17 +280,19 @@ describe("Cart Synchronization Integration Tests", () => {
     window = dom.window;
 
     // Mock localStorage properly for JSDOM
+    const storageData = {};
     localStorage = {
-      data: {},
-      getItem: vi.fn((key) => localStorage.data[key] || null),
+      data: storageData,
+      getItem: vi.fn((key) => storageData[key] || null),
       setItem: vi.fn((key, value) => {
-        localStorage.data[key] = value;
+        storageData[key] = value;
       }),
       removeItem: vi.fn((key) => {
-        delete localStorage.data[key];
+        delete storageData[key];
       }),
       clear: vi.fn(() => {
-        localStorage.data = {};
+        // Clear all properties instead of reassigning
+        Object.keys(storageData).forEach(key => delete storageData[key]);
       }),
     };
 

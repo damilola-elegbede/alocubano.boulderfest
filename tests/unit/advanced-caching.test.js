@@ -139,6 +139,9 @@ describe("Advanced Caching System - Phase 2", () => {
 
   describe("Service Worker Cache Strategies", () => {
     test("should implement cache-first strategy for images", async () => {
+      // Clear fetch mock to ensure clean state
+      mockFetch.mockClear();
+      
       // Mock service worker implementation
       const handleImageRequest = async (request) => {
         const cache = await caches.open("alocubano-images-v2.0.0");
