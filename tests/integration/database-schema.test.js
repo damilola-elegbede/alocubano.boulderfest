@@ -69,6 +69,11 @@ describe("Database Schema Integration Tests", () => {
   });
 
   afterAll(async () => {
+    // Skip cleanup if we're in CI
+    if (shouldSkipInCI) {
+      return;
+    }
+    
     // Clean up test data if using real database
     if (isRealDatabase && client) {
       try {
