@@ -107,14 +107,8 @@ describe("Google Sheets Analytics Integration", () => {
     // Reset database mock implementations
     vi.clearAllMocks();
     
-    // Ensure database mock returns our mockDatabase
-    const databaseModule = await import("../../api/lib/database.js");
-    if (databaseModule.getDatabaseClient) {
-      databaseModule.getDatabaseClient.mockResolvedValue(mockDatabase);
-    }
-    if (databaseModule.getDatabase) {
-      databaseModule.getDatabase.mockReturnValue(mockDatabase);
-    }
+    // Skip trying to mock the database module directly
+    // The service will use actual test database which is fine for integration tests
 
     // Import Google Sheets service with error handling
     try {
