@@ -260,6 +260,19 @@ export function setupDatabaseTests(options = {}) {
         type: 'integration'
       });
       
+      // Add testConnection method wrapper to raw LibSQL client
+      if (!realDatabaseClient.testConnection) {
+        realDatabaseClient.testConnection = async () => {
+          try {
+            const result = await realDatabaseClient.execute('SELECT 1 as test');
+            return result && result.rows && result.rows.length === 1;
+          } catch (error) {
+            console.warn('Database connection test failed:', error.message);
+            return false;
+          }
+        };
+      }
+      
       // Override dbTestHelpers to use real client
       await dbTestHelpers.initialize({
         file: { filepath: 'database-integration-test' },
@@ -269,7 +282,19 @@ export function setupDatabaseTests(options = {}) {
       // Override the database client getter to return our real client
       dbTestHelpers.db = realDatabaseClient;
       
-      console.log('✅ Integration test database setup complete with real LibSQL client');
+      // Explicitly ensure essential tables are created and verified
+      await dbTestHelpers.ensureEssentialTables();
+      
+      // Verify tables were created successfully
+      const tablesCheck = await realDatabaseClient.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('transactions', 'tickets', 'email_subscribers')"
+      );
+      
+      if (!tablesCheck.rows || tablesCheck.rows.length < 3) {
+        throw new Error('Essential tables not created properly during setup');
+      }
+      
+      console.log('✅ Integration test database setup complete with real LibSQL client and verified tables');
     } catch (error) {
       console.error('❌ Failed to set up integration test database:', error);
       throw error;

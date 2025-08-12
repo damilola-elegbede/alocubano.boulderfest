@@ -112,10 +112,11 @@ export class DatabaseTestHelpers {
       transactions: `
         CREATE TABLE IF NOT EXISTS transactions (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          uuid TEXT UNIQUE NOT NULL,
           transaction_id TEXT UNIQUE NOT NULL,
           type TEXT NOT NULL DEFAULT 'tickets',
           status TEXT DEFAULT 'pending',
-          amount_cents INTEGER NOT NULL,
+          total_amount INTEGER NOT NULL,
           currency TEXT DEFAULT 'USD',
           stripe_session_id TEXT UNIQUE,
           stripe_payment_intent_id TEXT,
@@ -338,11 +339,12 @@ export class DatabaseTestHelpers {
         const uuid = `TEST-TXN-${Date.now()}-${i}`;
         const result = await db.execute(
           `INSERT INTO transactions (
-            transaction_id, stripe_session_id, stripe_payment_intent_id,
-            customer_email, customer_name, amount_cents,
+            uuid, transaction_id, stripe_session_id, stripe_payment_intent_id,
+            customer_email, customer_name, total_amount,
             currency, status, order_data
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
+            uuid,
             uuid,
             `cs_test_${crypto.randomBytes(16).toString("hex")}`,
             `pi_test_${crypto.randomBytes(16).toString("hex")}`,
@@ -460,10 +462,11 @@ export class DatabaseTestHelpers {
       // Create transaction (no explicit transaction wrapping to avoid rollback issues)
       const transResult = await db.execute(
         `INSERT INTO transactions (
-          transaction_id, stripe_session_id, customer_email, 
-          customer_name, amount_cents, status, order_data
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          uuid, transaction_id, stripe_session_id, customer_email, 
+          customer_name, total_amount, status, order_data
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
+          transactionId,
           transactionId,
           `cs_test_${crypto.randomBytes(16).toString("hex")}`,
           email,
