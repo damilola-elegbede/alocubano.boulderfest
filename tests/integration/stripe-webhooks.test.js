@@ -1,6 +1,9 @@
 /**
- * Stripe Webhooks Integration Tests
- * Tests the complete payment flow and webhook processing
+ * Stripe Webhooks Integration Tests - HTTP API Testing
+ * Tests webhook processing via HTTP requests, not direct module imports
+ * 
+ * IMPORTANT: Integration tests should test via HTTP requests to avoid
+ * module initialization conflicts and test real API behavior
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";

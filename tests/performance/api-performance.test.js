@@ -3,6 +3,10 @@
  * 
  * Tests API endpoint performance under various conditions
  * including response times, throughput, and error handling.
+ * 
+ * Note: These tests are skipped in CI environments as they require
+ * actual API endpoints to be running. Use real HTTP testing for
+ * meaningful performance measurements.
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
@@ -43,22 +47,29 @@ class APIPerformanceTester {
 
   async testEndpoint(endpoint, iterations = 10) {
     const results = [];
-    const mockResponseTime = MOCK_RESPONSE_TIMES[endpoint] || 200;
+    const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000';
 
     for (let i = 0; i < iterations; i++) {
       const startTime = performance.now();
       
       try {
-        // Simulate API call with realistic response time variation
-        const responseTime = mockResponseTime + (Math.random() * 100 - 50);
-        await new Promise(resolve => setTimeout(resolve, Math.max(responseTime, 10)));
+        // Make actual HTTP request to test real performance
+        const response = await fetch(`${baseUrl}${endpoint}`, {
+          method: 'GET',
+          timeout: 5000,
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'Vitest-Performance-Test'
+          }
+        });
         
         const duration = performance.now() - startTime;
         results.push({
-          success: true,
+          success: response.ok,
           duration,
           iteration: i,
           endpoint,
+          status: response.status,
           timestamp: Date.now()
         });
       } catch (error) {
@@ -143,18 +154,36 @@ class APIPerformanceTester {
 
   async testSingleRequest(endpoint, requestId) {
     const startTime = performance.now();
-    const mockResponseTime = MOCK_RESPONSE_TIMES[endpoint] || 200;
-    const responseTime = mockResponseTime + (Math.random() * 50 - 25);
+    const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000';
     
-    await new Promise(resolve => setTimeout(resolve, Math.max(responseTime, 5)));
-    
-    return {
-      success: true,
-      duration: performance.now() - startTime,
-      requestId,
-      endpoint,
-      timestamp: Date.now()
-    };
+    try {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: 'GET',
+        timeout: 5000,
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'Vitest-Performance-Test'
+        }
+      });
+      
+      return {
+        success: response.ok,
+        duration: performance.now() - startTime,
+        requestId,
+        endpoint,
+        status: response.status,
+        timestamp: Date.now()
+      };
+    } catch (error) {
+      return {
+        success: false,
+        duration: performance.now() - startTime,
+        requestId,
+        endpoint,
+        error: error.message,
+        timestamp: Date.now()
+      };
+    }
   }
 
   reset() {
@@ -163,10 +192,14 @@ class APIPerformanceTester {
   }
 }
 
-describe("API Performance Tests", () => {
+describe.skipIf(process.env.CI === 'true')("API Performance Tests", () => {
   let tester;
 
   beforeAll(() => {
+    // Skip if no base URL is configured
+    if (!process.env.TEST_BASE_URL && !process.env.CI) {
+      console.warn('⚠️ TEST_BASE_URL not set. Set TEST_BASE_URL=http://localhost:3000 to run performance tests against local server.');
+    }
     tester = new APIPerformanceTester();
   });
 
