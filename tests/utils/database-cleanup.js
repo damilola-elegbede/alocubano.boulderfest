@@ -20,7 +20,7 @@ export async function forceCloseAllConnections(timeoutMs = 5000) {
     
     // Check if resetDatabaseInstance exists (not mocked)
     if (typeof module.resetDatabaseInstance !== 'function') {
-      console.warn('Database module appears to be mocked, skipping cleanup');
+      console.debug('Database module appears to be mocked or missing resetDatabaseInstance, skipping cleanup');
       return;
     }
     

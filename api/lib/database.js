@@ -39,6 +39,7 @@ class DatabaseService {
     this.initializationPromise = null;
     this.maxRetries = 3;
     this.retryDelay = 1000; // 1 second
+    this.activeConnections = new Set(); // Track active connections
   }
 
   /**
@@ -176,6 +177,9 @@ class DatabaseService {
 
       this.client = client;
       this.initialized = true;
+      
+      // Track this connection
+      this.activeConnections.add(client);
 
       console.log(`✅ Database client initialized successfully (${process.env.NODE_ENV || 'production'} mode)`);
       return this.client;
@@ -247,6 +251,9 @@ class DatabaseService {
     try {
       const createClient = await importLibSQLClient();
       this.client = createClient(config);
+      
+      // Track this connection
+      this.activeConnections.add(this.client);
       
       // Apply pragmas if configured
       if (config.pragmas && Array.isArray(config.pragmas)) {
@@ -356,31 +363,96 @@ class DatabaseService {
   }
 
   /**
-   * Close database connection
+   * Close database connections with proper cleanup and timeout protection
+   * @param {number} timeout - Timeout in milliseconds for closing connections (default: 5000)
+   * @returns {Promise<boolean>} True if all connections closed successfully
    */
-  close() {
-    if (this.client) {
-      try {
-        this.client.close();
-        console.log("Database connection closed");
-      } catch (error) {
-        console.error("Error closing database connection:", error.message);
-      } finally {
-        this.client = null;
-        this.initialized = false;
-        this.initializationPromise = null;
-      }
+  async close(timeout = 5000) {
+    const startTime = Date.now();
+    let closedCount = 0;
+    let errorCount = 0;
+
+    try {
+      // Create an array of promises for closing all active connections
+      const closePromises = Array.from(this.activeConnections).map(async (connection) => {
+        try {
+          if (connection && typeof connection.close === 'function') {
+            await Promise.race([
+              connection.close(),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Connection close timeout')), timeout)
+              )
+            ]);
+            closedCount++;
+            return true;
+          }
+        } catch (error) {
+          console.error("Error closing database connection:", error.message);
+          errorCount++;
+          return false;
+        }
+      });
+
+      // Wait for all connections to close
+      await Promise.allSettled(closePromises);
+
+      // Clear the connections set
+      this.activeConnections.clear();
+
+      // Reset service state
+      this.client = null;
+      this.initialized = false;
+      this.initializationPromise = null;
+
+      const duration = Date.now() - startTime;
+      console.log(`Database connections closed: ${closedCount} successful, ${errorCount} errors (${duration}ms)`);
+      
+      return errorCount === 0;
+    } catch (error) {
+      console.error("Error in close operation:", error.message);
+      
+      // Force reset even if close failed
+      this.activeConnections.clear();
+      this.client = null;
+      this.initialized = false;
+      this.initializationPromise = null;
+      
+      return false;
     }
   }
 
   /**
    * Reset the database service state for testing
    * This clears the cached client and initialization state
+   * @returns {Promise<void>}
    */
-  resetForTesting() {
+  async resetForTesting() {
+    try {
+      // Close all active connections first
+      await this.close();
+    } catch (error) {
+      console.warn("Error during resetForTesting close operation:", error.message);
+    }
+    
+    // Force clear all state even if close failed
+    this.activeConnections.clear();
     this.client = null;
     this.initialized = false;
     this.initializationPromise = null;
+  }
+
+  /**
+   * Get connection statistics for monitoring and debugging
+   * @returns {Object} Connection statistics
+   */
+  getConnectionStats() {
+    return {
+      activeConnections: this.activeConnections.size,
+      initialized: this.initialized,
+      hasClient: !!this.client,
+      hasInitPromise: !!this.initializationPromise,
+      timestamp: new Date().toISOString(),
+    };
   }
 
   /**
@@ -389,23 +461,27 @@ class DatabaseService {
   async healthCheck() {
     try {
       const isConnected = await this.testConnection();
+      const stats = this.getConnectionStats();
 
       if (!isConnected) {
         return {
           status: "unhealthy",
           error: "Connection test failed",
+          connectionStats: stats,
           timestamp: new Date().toISOString(),
         };
       }
 
       return {
         status: "healthy",
+        connectionStats: stats,
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
       return {
         status: "unhealthy",
         error: error.message,
+        connectionStats: this.getConnectionStats(),
         timestamp: new Date().toISOString(),
       };
     }
@@ -456,10 +532,11 @@ export async function testConnection() {
 
 /**
  * Reset singleton instance for testing
+ * @returns {Promise<void>}
  */
-export function resetDatabaseInstance() {
+export async function resetDatabaseInstance() {
   if (databaseServiceInstance) {
-    databaseServiceInstance.resetForTesting();
+    await databaseServiceInstance.resetForTesting();
   }
   databaseServiceInstance = null;
 }

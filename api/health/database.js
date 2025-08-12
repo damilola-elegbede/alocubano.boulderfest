@@ -181,7 +181,11 @@ export const checkDatabaseHealth = async () => {
       };
     }
 
-    if (!process.env.TURSO_AUTH_TOKEN) {
+    // Check if auth token is required (not needed for local/test databases)
+    const dbUrl = process.env.TURSO_DATABASE_URL;
+    const isLocalDatabase = dbUrl === ':memory:' || dbUrl.startsWith('file:');
+    
+    if (!process.env.TURSO_AUTH_TOKEN && !isLocalDatabase) {
       return {
         status: HealthStatus.UNHEALTHY,
         response_time: `${Date.now() - startTime}ms`,
@@ -191,6 +195,7 @@ export const checkDatabaseHealth = async () => {
           error_type: "ConfigurationError",
           has_database_url: !!process.env.TURSO_DATABASE_URL,
           has_auth_token: false,
+          database_type: isLocalDatabase ? "local" : "remote",
         },
       };
     }

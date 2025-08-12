@@ -9,6 +9,7 @@ import { testEnvManager } from "./utils/test-environment-manager.js";
 import { dbMockSync } from "./utils/database-mock-sync.js";
 import { environmentAwareTestSetup } from "./config/environment-aware-test-setup.js";
 import { testEnvironmentDetector } from "./utils/test-environment-detector.js";
+import { runMigrationsForTest } from "./utils/test-migration-runner.js";
 
 // REMOVED: dotenv loading to prevent .env.local bleeding into tests
 // dotenv.config({ path: '.env.local' });
@@ -17,6 +18,16 @@ import { testEnvironmentDetector } from "./utils/test-environment-detector.js";
 if (!process.env.TURSO_DATABASE_URL) {
   // Use in-memory database for tests to prevent file conflicts
   process.env.TURSO_DATABASE_URL = process.env.CI === 'true' ? ':memory:' : 'file:test.db';
+}
+
+// For local databases (:memory: or file:), auth token is not required
+// Set a dummy token if not present to satisfy other components that check for it
+if (!process.env.TURSO_AUTH_TOKEN) {
+  const dbUrl = process.env.TURSO_DATABASE_URL;
+  const isLocalDatabase = dbUrl === ':memory:' || dbUrl.startsWith('file:');
+  if (isLocalDatabase) {
+    process.env.TURSO_AUTH_TOKEN = 'test-auth-token';
+  }
 }
 if (!process.env.NODE_ENV) {
   process.env.NODE_ENV = "test";
@@ -91,7 +102,29 @@ process.env.TEST_ISOLATION_MODE = "true";
 // based on test type detection - no static environment setting here
 
 // Global setup hooks for test lifecycle management
-beforeAll(() => {
+beforeAll(async () => {
+  // Run migrations before any tests execute to ensure database is ready
+  if (process.env.TEST_INTEGRATION === 'true' || process.env.TEST_TYPE === 'integration') {
+    try {
+      console.log('Running migrations for test environment...');
+      const databaseModule = await import('../api/lib/database.js');
+      const client = await databaseModule.getDatabaseClient();
+      
+      // Execute all migrations to ensure database schema is ready
+      await runMigrationsForTest(client, {
+        logLevel: process.env.CI === 'true' ? 'error' : 'warn',
+        createMigrationsTable: true,
+        continueOnError: false,
+        transactionMode: true
+      });
+      
+      console.log('Migrations completed successfully');
+    } catch (error) {
+      console.warn('Migration execution failed:', error.message);
+      // Don't fail setup if migrations fail - let individual tests handle it
+    }
+  }
+  
   // Additional setup per test file if needed
   // Environment is already isolated at this point
 });
@@ -101,13 +134,21 @@ afterAll(async () => {
   // Force cleanup of all database connections
   if (process.env.TEST_INTEGRATION === 'true' || process.env.TEST_TYPE === 'integration') {
     try {
-      const { resetDatabaseInstance } = await import('../api/lib/database.js');
-      await resetDatabaseInstance();
+      const databaseModule = await import('../api/lib/database.js');
       
-      // Additional delay for connection cleanup
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Check if resetDatabaseInstance exists (not mocked or missing)
+      if (typeof databaseModule.resetDatabaseInstance === 'function') {
+        await databaseModule.resetDatabaseInstance();
+        
+        // Additional delay for connection cleanup
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } else {
+        console.debug('resetDatabaseInstance not available, skipping final database cleanup');
+      }
     } catch (error) {
-      console.warn('Final database cleanup failed:', error.message);
+      if (!error.message.includes('mock') && !error.message.includes('vi.mock')) {
+        console.warn('Final database cleanup failed:', error.message);
+      }
     }
   }
 
@@ -134,15 +175,20 @@ afterEach(async () => {
   // Reset database mock state
   dbMockSync.reset();
 
-  // Force database connection cleanup for integration tests
+  // Force database connection cleanup for integration tests with proper async handling
   if (process.env.TEST_INTEGRATION === 'true' || process.env.TEST_TYPE === 'integration') {
     try {
-      // Dynamic import to avoid issues in unit tests
-      const { resetDatabaseInstance } = await import('../api/lib/database.js');
-      await resetDatabaseInstance();
+      // Use the enhanced test environment manager for coordinated cleanup
+      await testEnvManager.coordinatedClear();
+      
+      // Additional wait for async operations to complete
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
     } catch (error) {
-      // Silently ignore errors in unit tests where database module isn't used
-      if (process.env.TEST_INTEGRATION === 'true') {
+      // Handle different types of errors appropriately
+      if (error.message.includes('mock') || error.message.includes('vi.mock')) {
+        console.debug('Database module is mocked, skipping cleanup');
+      } else if (process.env.TEST_INTEGRATION === 'true') {
         console.warn('Database cleanup failed:', error.message);
       }
     }

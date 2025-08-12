@@ -333,16 +333,24 @@ export class TestEnvironmentManager {
 
   /**
    * Clear module-level state for complete test isolation
+   * Enhanced with better error handling and timing
    */
   async clearModuleState() {
-    // Clear database service singleton with proper async handling
-    await this._clearDatabaseServiceState();
-    
-    // Force module reload for critical modules
-    this._forceModuleReload(['../../api/lib/database.js']);
-    
-    // Add a small delay to ensure connections are fully closed
-    await new Promise(resolve => setTimeout(resolve, 100));
+    try {
+      // Clear database service singleton with proper async handling
+      await this._clearDatabaseServiceState();
+      
+      // Force module reload for critical modules
+      this._forceModuleReload(['../../api/lib/database.js']);
+      
+      // Longer delay to ensure all connections are fully closed and garbage collected
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+    } catch (error) {
+      console.warn('Module state clearing encountered an error:', error.message);
+      // Continue with partial cleanup rather than failing completely
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
   }
 
   /**
@@ -421,36 +429,55 @@ export class TestEnvironmentManager {
    */
   async _clearDatabaseServiceState() {
     try {
-      // Properly handle async database reset
+      // Properly handle async database reset with enhanced error handling
       const resetDatabaseState = async () => {
         try {
           const module = await import('../../api/lib/database.js');
-          if (module.resetDatabaseInstance) {
+          
+          // Primary cleanup method - reset the singleton instance
+          if (module.resetDatabaseInstance && typeof module.resetDatabaseInstance === 'function') {
             await module.resetDatabaseInstance();
+            console.debug('Database singleton instance reset successfully');
           }
-          // Also reset the global singleton instance
-          if (module.getDatabase && typeof module.getDatabase === 'function') {
-            const service = module.getDatabase();
-            if (service && service.close) {
-              await service.close();
-            }
-            if (service && service.resetForTesting) {
-              service.resetForTesting();
+          
+          // Secondary cleanup - get and reset the service instance directly if available
+          if (module.getDatabaseClient && typeof module.getDatabaseClient === 'function') {
+            try {
+              const client = await module.getDatabaseClient();
+              if (client && client.close && typeof client.close === 'function') {
+                await client.close();
+                console.debug('Database client connection closed');
+              }
+            } catch (clientError) {
+              console.debug('Database client cleanup skipped:', clientError.message);
             }
           }
+          
+          // Wait for connections to fully close
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
         } catch (error) {
-          // Module might not be available, ignore
-          console.warn('Database state reset failed:', error.message);
+          // Module might not be available or might be mocked
+          if (!error.message.includes('mock')) {
+            console.warn('Database state reset failed:', error.message);
+          }
+          throw error;
         }
       };
       
-      // Execute the reset and wait for completion
-      await resetDatabaseState();
+      // Execute the reset and wait for completion with timeout
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Database reset timeout')), 5000);
+      });
+      
+      await Promise.race([resetDatabaseState(), timeoutPromise]);
       
       this.moduleStateBackup.set('databaseService', { stateCleared: true });
     } catch (error) {
-      // Module might not be available, which is fine
-      console.warn('Database service state clear failed:', error.message);
+      // Module might not be available, which is fine for unit tests
+      if (!error.message.includes('mock') && !error.message.includes('timeout')) {
+        console.warn('Database service state clear failed:', error.message);
+      }
     }
   }
 
@@ -588,34 +615,100 @@ export class TestEnvironmentManager {
   }
 
   /**
+   * Initialize integrations with available managers
+   */
+  async initializeManagerIntegrations() {
+    try {
+      // Try to import and integrate with TestMockManager
+      const mockManagerModule = await import('./test-mock-manager.js');
+      if (mockManagerModule.testMockManager) {
+        this.integrateWithMockManager(mockManagerModule.testMockManager);
+        console.debug('TestMockManager integration initialized');
+      }
+    } catch (error) {
+      // Mock manager might not be available - continue without it
+      console.debug('TestMockManager not available:', error.message);
+    }
+
+    try {
+      // Try to import and integrate with TestSingletonManager  
+      const singletonManagerModule = await import('./test-singleton-manager.js');
+      if (singletonManagerModule.testSingletonManager || singletonManagerModule.TestSingletonManager) {
+        const manager = singletonManagerModule.testSingletonManager || new singletonManagerModule.TestSingletonManager();
+        this.integrateWithSingletonManager(manager);
+        console.debug('TestSingletonManager integration initialized');
+      }
+    } catch (error) {
+      // Singleton manager might not be available - continue without it
+      console.debug('TestSingletonManager not available:', error.message);
+    }
+  }
+
+  /**
    * Enhanced clear that coordinates with other managers
+   * Provides comprehensive cleanup for test isolation
    */
   async coordinatedClear() {
-    // Clear environment state with proper async handling
-    await this.clearModuleState();
+    const cleanupStart = Date.now();
     
-    // Coordinate with singleton manager if available
-    if (this.singletonManager && this.singletonManager.clearAllSingletons) {
-      try {
-        if (typeof this.singletonManager.clearAllSingletons === 'function') {
-          await this.singletonManager.clearAllSingletons();
-        }
-      } catch (error) {
-        // Log error but don't fail the entire operation
-        console.warn("Failed to clear singletons:", error.message);
+    try {
+      // Initialize manager integrations if not already done
+      if (!this.mockManager && !this.singletonManager) {
+        await this.initializeManagerIntegrations();
       }
-    }
-    
-    // Coordinate with mock manager if available  
-    if (this.mockManager && this.mockManager.resetAllMocks) {
-      try {
-        if (typeof this.mockManager.resetAllMocks === 'function') {
-          await this.mockManager.resetAllMocks();
+      
+      // Clear module-level state with proper async handling and timeout
+      const moduleCleanupPromise = this.clearModuleState();
+      const moduleTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Module cleanup timeout')), 3000);
+      });
+      
+      await Promise.race([moduleCleanupPromise, moduleTimeoutPromise]);
+      
+      // Coordinate with mock manager if available (using the correct method name)
+      if (this.mockManager && this.mockManager.clearAllMocks) {
+        try {
+          if (typeof this.mockManager.clearAllMocks === 'function') {
+            await this.mockManager.clearAllMocks();
+          }
+        } catch (error) {
+          // Log error but don't fail the entire operation
+          console.warn("Failed to clear mocks:", error.message);
         }
-      } catch (error) {
-        // Log error but don't fail the entire operation
-        console.warn("Failed to reset mocks:", error.message);
       }
+      
+      // Coordinate with singleton manager if available
+      if (this.singletonManager) {
+        try {
+          // Check for different method names as the interface may vary
+          if (typeof this.singletonManager.clearAllSingletons === 'function') {
+            await this.singletonManager.clearAllSingletons();
+          } else if (typeof this.singletonManager.reset === 'function') {
+            await this.singletonManager.reset();
+          } else if (typeof this.singletonManager.cleanup === 'function') {
+            await this.singletonManager.cleanup();
+          }
+        } catch (error) {
+          // Log error but don't fail the entire operation
+          console.warn("Failed to clear singletons:", error.message);
+        }
+      }
+      
+      // Final wait for all async operations to complete
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      const cleanupTime = Date.now() - cleanupStart;
+      if (cleanupTime > 1000) {
+        console.warn(`Coordinated cleanup took ${cleanupTime}ms - consider optimization`);
+      }
+      
+    } catch (error) {
+      if (error.message.includes('timeout')) {
+        console.warn('Coordinated cleanup timed out:', error.message);
+      } else {
+        console.warn('Coordinated cleanup failed:', error.message);
+      }
+      // Don't throw - allow tests to continue
     }
   }
 }
