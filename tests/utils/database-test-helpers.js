@@ -18,7 +18,20 @@ export class DatabaseTestHelpers {
    */
   async initialize(testContext = {}) {
     try {
-      this.db = await getDatabaseClient();
+      // Check if we're being called from integration test setup with override
+      if (process.env.FORCE_REAL_DATABASE_CLIENT === 'true') {
+        // For integration tests, use the integration test database factory
+        try {
+          const { integrationTestDatabaseFactory } = await import('./integration-test-database-factory.js');
+          this.db = await integrationTestDatabaseFactory.createRealDatabaseClient(testContext);
+          console.log("✅ Database test helper initialized with real LibSQL client from integration factory");
+        } catch (error) {
+          console.warn("Warning: Failed to use integration database factory, falling back to standard client:", error.message);
+          this.db = await getDatabaseClient();
+        }
+      } else {
+        this.db = await getDatabaseClient();
+      }
       
       // Verify we got a valid client with execute method
       if (!this.db || typeof this.db.execute !== 'function') {
@@ -29,11 +42,17 @@ export class DatabaseTestHelpers {
       let detectedTestType = 'unit';
       if (testContext.file && testContext.file.name) {
         detectedTestType = testEnvironmentDetector.detectTestType(testContext);
+      } else if (testContext.type) {
+        detectedTestType = testContext.type;
       } else {
-        // Fallback: try to detect from stack trace
-        const stack = new Error().stack;
-        if (stack && stack.includes('/integration/')) {
+        // Fallback: try to detect from stack trace or environment
+        if (process.env.TEST_TYPE === 'integration') {
           detectedTestType = 'integration';
+        } else {
+          const stack = new Error().stack;
+          if (stack && stack.includes('/integration/')) {
+            detectedTestType = 'integration';
+          }
         }
       }
       
@@ -48,7 +67,29 @@ export class DatabaseTestHelpers {
       }
       
       // Test the connection
-      await this.db.execute("SELECT 1");
+      const testResult = await this.db.execute("SELECT 1 as test");
+      
+      // For integration tests, verify we get proper response format
+      if (detectedTestType === 'integration') {
+        if (!testResult || !testResult.rows || !Array.isArray(testResult.rows)) {
+          throw new Error('Database client test query returned invalid response format for integration test');
+        }
+        
+        // Test insert capability to verify lastInsertRowid support
+        try {
+          await this.db.execute("CREATE TEMPORARY TABLE test_lastinsert (id INTEGER PRIMARY KEY, value TEXT)");
+          const insertResult = await this.db.execute("INSERT INTO test_lastinsert (value) VALUES (?)", ["test"]);
+          
+          if (!insertResult.hasOwnProperty('lastInsertRowid')) {
+            console.warn("⚠️ Database client may not support lastInsertRowid - some integration tests may fail");
+          }
+          
+          await this.db.execute("DROP TABLE test_lastinsert");
+        } catch (insertError) {
+          console.warn("⚠️ Could not verify lastInsertRowid support:", insertError.message);
+        }
+      }
+      
       return this.db;
     } catch (error) {
       console.error("❌ Failed to initialize database test helper:", error);
@@ -188,9 +229,9 @@ export class DatabaseTestHelpers {
       const tableInfo = await db.execute(
         "PRAGMA table_info(email_subscribers)",
       );
-      const hasBounceCount = tableInfo.rows.some(
+      const hasBounceCount = tableInfo?.rows?.some(
         (row) => row.name === "bounce_count",
-      );
+      ) || false;
 
       if (!hasBounceCount) {
         // Add bounce_count column
@@ -245,7 +286,7 @@ export class DatabaseTestHelpers {
             [table],
           );
 
-          if (tableExists.rows.length > 0) {
+          if (tableExists?.rows?.length > 0) {
             await db.execute(`DELETE FROM ${table}`);
           }
         } catch (error) {
@@ -313,7 +354,9 @@ export class DatabaseTestHelpers {
             JSON.stringify({ test: true, seed: i }),
           ],
         );
-        transactionIds.push(result.lastInsertRowid);
+        if (result?.lastInsertRowid) {
+          transactionIds.push(result.lastInsertRowid);
+        }
       }
 
       // Seed tickets - distribute evenly across transactions
@@ -431,7 +474,10 @@ export class DatabaseTestHelpers {
         ],
       );
 
-      const databaseTransactionId = transResult.lastInsertRowid;
+      const databaseTransactionId = transResult?.lastInsertRowid;
+      if (!databaseTransactionId) {
+        throw new Error("Failed to create transaction - no lastInsertRowid returned");
+      }
 
       // Create tickets
       const ticketIds = [];
@@ -486,7 +532,7 @@ export class DatabaseTestHelpers {
     );
 
     return {
-      id: result.lastInsertRowid,
+      id: result?.lastInsertRowid,
       email,
       status,
     };
@@ -510,27 +556,27 @@ export class DatabaseTestHelpers {
       const transResult = await db.execute(
         "SELECT COUNT(*) as count FROM transactions",
       );
-      stats.transactions = transResult.rows[0].count;
+      stats.transactions = transResult?.rows?.[0]?.count || 0;
 
       const ticketResult = await db.execute(
         "SELECT COUNT(*) as count FROM tickets",
       );
-      stats.tickets = ticketResult.rows[0].count;
+      stats.tickets = ticketResult?.rows?.[0]?.count || 0;
 
       const checkedInResult = await db.execute(
         "SELECT COUNT(*) as count FROM tickets WHERE checked_in_at IS NOT NULL",
       );
-      stats.checkedInTickets = checkedInResult.rows[0].count;
+      stats.checkedInTickets = checkedInResult?.rows?.[0]?.count || 0;
 
       const subResult = await db.execute(
         "SELECT COUNT(*) as count FROM email_subscribers",
       );
-      stats.subscribers = subResult.rows[0].count;
+      stats.subscribers = subResult?.rows?.[0]?.count || 0;
 
       const activeSubResult = await db.execute(
         "SELECT COUNT(*) as count FROM email_subscribers WHERE status = 'active'",
       );
-      stats.activeSubscribers = activeSubResult.rows[0].count;
+      stats.activeSubscribers = activeSubResult?.rows?.[0]?.count || 0;
 
       return stats;
     } catch (error) {
@@ -583,8 +629,8 @@ export class DatabaseTestHelpers {
     return {
       stats,
       samples: {
-        transactions: transactions.rows,
-        tickets: tickets.rows,
+        transactions: transactions?.rows || [],
+        tickets: tickets?.rows || [],
       },
       timestamp: new Date().toISOString(),
     };

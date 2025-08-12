@@ -99,6 +99,22 @@ class DatabaseService {
       throw new Error("TURSO_DATABASE_URL environment variable is required");
     }
 
+    // Integration test specific handling
+    if (process.env.TEST_TYPE === 'integration' || process.env.NODE_ENV === 'test') {
+      // For integration tests, ensure we have a valid file path
+      if (databaseUrl.startsWith('file:')) {
+        // Ensure the database file path is absolute and accessible
+        const dbPath = databaseUrl.replace('file:', '');
+        if (!dbPath.startsWith('/') && !dbPath.match(/^[A-Za-z]:/)) {
+          // Convert relative path to absolute for better reliability
+          const path = await import('path');
+          const absolutePath = path.resolve(process.cwd(), dbPath);
+          databaseUrl = `file:${absolutePath}`;
+          console.log(`✅ Converted relative database path to absolute: ${databaseUrl}`);
+        }
+      }
+    }
+
 
     const config = {
       url: databaseUrl,
@@ -114,21 +130,64 @@ class DatabaseService {
       const client = createClient(config);
 
       // Test connection to verify client is working
-      await client.execute("SELECT 1 as test");
+      const testResult = await client.execute("SELECT 1 as test");
+      
+      // Validate the client returns proper LibSQL response format
+      if (!testResult || !testResult.rows || !Array.isArray(testResult.rows)) {
+        throw new Error("Database client test query returned invalid response format");
+      }
+
+      // Integration test specific validation
+      if (process.env.TEST_TYPE === 'integration' || process.env.NODE_ENV === 'test') {
+        // Verify client has required methods for integration tests
+        if (typeof client.execute !== 'function') {
+          throw new Error("Database client missing execute method - invalid for integration tests");
+        }
+        
+        // Test that we can get lastInsertRowid (required for transaction tests)
+        try {
+          const insertTest = await client.execute("CREATE TEMPORARY TABLE test_insert (id INTEGER PRIMARY KEY, value TEXT)");
+          const insertResult = await client.execute("INSERT INTO test_insert (value) VALUES (?)", ["test"]);
+          
+          if (!insertResult.hasOwnProperty('lastInsertRowid')) {
+            console.warn("⚠️ Database client may not support lastInsertRowid - some tests may fail");
+          } else {
+            console.log("✅ Database client supports lastInsertRowid for integration tests");
+          }
+          
+          // Clean up test table
+          await client.execute("DROP TABLE test_insert");
+        } catch (insertTestError) {
+          console.warn("⚠️ Could not test lastInsertRowid support:", insertTestError.message);
+        }
+      }
 
       this.client = client;
       this.initialized = true;
 
+      console.log(`✅ Database client initialized successfully (${process.env.NODE_ENV || 'production'} mode)`);
       return this.client;
     } catch (error) {
-      // Log error without exposing sensitive config details
-      console.error("Database initialization failed:", {
+      // Enhanced error reporting for debugging
+      console.error("❌ Database initialization failed:", {
         error: error.message,
+        databaseUrl: config.url ? config.url.substring(0, 20) + '...' : 'undefined',
+        hasAuthToken: !!config.authToken,
+        environment: process.env.NODE_ENV,
+        testType: process.env.TEST_TYPE,
         timestamp: new Date().toISOString(),
       });
-      throw new Error(
-        "Failed to initialize database client due to configuration error",
-      );
+      
+      // More specific error message based on error type
+      if (error.message.includes('ENOENT') || error.message.includes('no such file')) {
+        throw new Error(`Database file not found or inaccessible: ${error.message}`);
+      } else if (error.message.includes('permission') || error.message.includes('EACCES')) {
+        throw new Error(`Database file permission denied: ${error.message}`);
+      } else if (error.message.includes('invalid response format')) {
+        throw new Error(`Database client configuration error: ${error.message}`);
+      } else {
+        throw new Error(`Failed to initialize database client: ${error.message}`);
+      }
     }
   }
 

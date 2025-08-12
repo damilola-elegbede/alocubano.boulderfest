@@ -238,14 +238,62 @@ export function setupApiTests(options = {}) {
 export function setupDatabaseTests(options = {}) {
   const { cleanBeforeEach = true, timeout = 20000 } = options;
 
+  let realDatabaseClient = null;
+
   beforeAll(async () => {
+    // Set up test environment for integration tests
     testInit.setupTestEnvironment();
-    await dbTestHelpers.initialize();
+    
+    // Force integration test mode to ensure real database clients
+    process.env.TEST_TYPE = 'integration';
+    process.env.FORCE_REAL_DATABASE_CLIENT = 'true';
+    
+    // Clear any database module mocks to ensure real client creation
+    vi.doUnmock('../../api/lib/database.js');
+    vi.doUnmock('../../api/lib/database-client-selector.js');
+    
+    // Initialize with integration test database factory
+    try {
+      const { integrationTestDatabaseFactory } = await import('./integration-test-database-factory.js');
+      realDatabaseClient = await integrationTestDatabaseFactory.createRealDatabaseClient({
+        file: { filepath: 'database-integration-test' },
+        type: 'integration'
+      });
+      
+      // Override dbTestHelpers to use real client
+      await dbTestHelpers.initialize({
+        file: { filepath: 'database-integration-test' },
+        type: 'integration'
+      });
+      
+      // Override the database client getter to return our real client
+      dbTestHelpers.db = realDatabaseClient;
+      
+      console.log('✅ Integration test database setup complete with real LibSQL client');
+    } catch (error) {
+      console.error('❌ Failed to set up integration test database:', error);
+      throw error;
+    }
+    
     await dbTestHelpers.cleanDatabase();
   }, timeout);
 
   afterAll(async () => {
     await dbTestHelpers.cleanDatabase();
+    
+    // Clean up real database client
+    if (realDatabaseClient) {
+      try {
+        const { integrationTestDatabaseFactory } = await import('./integration-test-database-factory.js');
+        await integrationTestDatabaseFactory.cleanupAll();
+      } catch (error) {
+        console.warn('Warning: Failed to cleanup integration test databases:', error.message);
+      }
+    }
+    
+    // Reset environment
+    delete process.env.TEST_TYPE;
+    delete process.env.FORCE_REAL_DATABASE_CLIENT;
   }, timeout);
 
   if (cleanBeforeEach) {
@@ -260,6 +308,7 @@ export function setupDatabaseTests(options = {}) {
 
   return {
     getHelpers: () => dbTestHelpers,
+    getRealClient: () => realDatabaseClient,
   };
 }
 
