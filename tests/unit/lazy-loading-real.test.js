@@ -159,6 +159,9 @@ describe("LazyLoader Real Source Code Integration", () => {
       <img src="loaded.jpg" alt="Already loaded">
     `;
 
+    // Clear mock call history to ensure clean state
+    mockIntersectionObserver.observe.mockClear();
+
     new LazyLoader();
 
     // Should observe the data-src images but not the already loaded one

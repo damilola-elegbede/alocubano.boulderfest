@@ -48,6 +48,12 @@ if (!process.env.BREVO_NEWSLETTER_LIST_ID) {
 if (!process.env.STRIPE_SECRET_KEY) {
   process.env.STRIPE_SECRET_KEY = "sk_test_123";
 }
+if (!process.env.ADMIN_SECRET) {
+  process.env.ADMIN_SECRET = "test-secret-key-that-is-at-least-32-characters-long";
+}
+if (!process.env.ADMIN_PASSWORD) {
+  process.env.ADMIN_PASSWORD = "$2a$10$test.hash.for.testing.purposes.only";
+}
 
 // Increase default timeout for remote operations and module loading
 vi.setConfig({

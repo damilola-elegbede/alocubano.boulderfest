@@ -115,6 +115,8 @@ export default defineConfig({
     env: {
       NODE_ENV: 'test',
       TEST_TYPE: 'unit',
+      ADMIN_SECRET: 'test-secret-key-that-is-at-least-32-characters-long',
+      ADMIN_PASSWORD: '$2a$10$test.hash.for.testing.purposes.only',
     },
 
     // Reporter configuration

@@ -80,6 +80,9 @@ describe('TestMockManager Core', () => {
     });
 
     it('should provide registry statistics', () => {
+      // Ensure clean state at start of test
+      MockManager.cleanup();
+      
       const factory = vi.fn(() => vi.fn());
       MockManager.registerMock('module-1', factory);
       MockManager.registerMock('module-2', factory);
@@ -268,6 +271,9 @@ describe('TestMockManager Core', () => {
 
   describe('Advanced Debugging', () => {
     it('should analyze mock state comprehensively', () => {
+      // Ensure clean state at start of test
+      MockManager.cleanup();
+      
       const factory = vi.fn(() => vi.fn());
       MockManager.registerMock('debug-test', factory);
 
@@ -375,6 +381,8 @@ describe('TestMockManager Integration Tests', () => {
     let persistentMock;
 
     beforeEach(() => {
+      // Ensure clean state first
+      MockManager.cleanup();
       persistentMock = vi.fn();
       MockManager.registerMock('persistent-test', () => persistentMock);
     });

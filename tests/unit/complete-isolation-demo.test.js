@@ -46,10 +46,20 @@ vi.mock("../../api/lib/database.js", () => {
       const strictMode = process.env.DATABASE_TEST_STRICT_MODE === "true";
       const databaseUrl = process.env.TURSO_DATABASE_URL;
 
-      if (strictMode || process.env.NODE_ENV === "test" || process.env.VITEST) {
+      // Only enforce strict validation when DATABASE_TEST_STRICT_MODE is true
+      if (strictMode) {
         if (!databaseUrl || databaseUrl.trim() === "") {
           throw new Error("TURSO_DATABASE_URL environment variable is required");
         }
+      }
+      
+      // If not in strict mode and we have a valid URL, allow it
+      if (databaseUrl && databaseUrl.trim() !== "") {
+        // Valid URL provided, continue with initialization
+      } else if (!strictMode) {
+        // No URL but not in strict mode - this should still work (local DB fallback)
+        // Set a default for the mock
+        process.env.TURSO_DATABASE_URL = "file:test.db";
       }
 
       // Mock successful client creation

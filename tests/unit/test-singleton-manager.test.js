@@ -64,7 +64,12 @@ describe("TestSingletonManager", () => {
         TestSingletonManager.registerSingleton("custom-key", mockSingleton, customReset);
         
         const debugInfo = TestSingletonManager.getDebugInfo();
-        expect(debugInfo.registryDetails[0].resetMethod).toBe(customReset);
+        expect(debugInfo.registeredKeys).toContain("custom-key");
+        
+        const customKeyDetails = debugInfo.registryDetails.find(detail => detail.key === "custom-key");
+        expect(customKeyDetails).toBeDefined();
+        expect(customKeyDetails.resetMethod).toBe(customReset);
+        expect(typeof customKeyDetails.resetMethod).toBe("function");
       });
 
       it("should throw error for missing required parameters", () => {
