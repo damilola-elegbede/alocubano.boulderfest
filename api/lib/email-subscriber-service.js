@@ -73,7 +73,7 @@ class EmailSubscriberService {
    */
   async getDb() {
     await this.ensureInitialized();
-    return this.database;
+    return await this.database.getClient();
   }
 
   /**

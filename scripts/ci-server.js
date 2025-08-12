@@ -268,9 +268,15 @@ app.all(/^\/api\/(.*)/, async (req, res) => {
   }
 });
 
-// Static file serving
-app.use(express.static(rootDir, {
+// Static file serving - serve pages directory first, then root
+app.use(express.static(path.join(rootDir, 'pages'), {
   index: ['index.html', 'index.htm'],
+  extensions: ['html', 'htm']
+}));
+
+// Also serve root directory for other static assets (css, js, images)
+app.use(express.static(rootDir, {
+  index: false, // Don't serve index files from root, pages takes precedence
   extensions: ['html', 'htm']
 }));
 
@@ -279,6 +285,12 @@ app.get(/^\/(?!api\/).*/, (req, res) => {
   // Don't serve index.html for API routes that failed
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  
+  // Try to find the requested file in pages directory
+  const pagePath = path.join(rootDir, 'pages', req.path.slice(1) + '.html');
+  if (fs.existsSync(pagePath)) {
+    return res.sendFile(pagePath);
   }
   
   // Check for index.html in pages directory (like Vercel config)

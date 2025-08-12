@@ -40,11 +40,16 @@ vi.mock("../../api/lib/brevo-service.js", () => ({
   getBrevoService: vi.fn(() => mockBrevoServiceInstance),
 }));
 
+// Mock database client
+const mockDatabaseClient = {
+  execute: vi.fn(),
+};
+
 // Mock the database service
 const mockDatabaseService = {
   testConnection: vi.fn(),
   execute: vi.fn(),
-  getClient: vi.fn(),
+  getClient: vi.fn(() => Promise.resolve(mockDatabaseClient)),
 };
 
 vi.mock("../../api/lib/database.js", () => ({
@@ -63,7 +68,7 @@ describe("EmailSubscriberService", () => {
 
     // Setup database mocks
     mockDatabaseService.testConnection.mockResolvedValue(true);
-    mockDatabaseService.execute.mockResolvedValue({
+    mockDatabaseClient.execute.mockResolvedValue({
       lastInsertRowid: 123,
       rows: [],
     });
@@ -169,7 +174,7 @@ describe("EmailSubscriberService", () => {
   describe("getSubscriberByEmail", () => {
     it("should return subscriber data", async () => {
       // Mock database response for getSubscriberByEmail
-      mockDatabaseService.execute.mockResolvedValue({
+      mockDatabaseClient.execute.mockResolvedValue({
         rows: [
           {
             id: 1,

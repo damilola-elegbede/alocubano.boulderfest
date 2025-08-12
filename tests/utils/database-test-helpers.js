@@ -3,7 +3,7 @@
  * Utilities for cleaning, seeding, and managing test database state
  */
 
-import { getDatabase } from "../../api/lib/database.js";
+import { getDatabaseClient } from "../../api/lib/database.js";
 import crypto from "crypto";
 
 export class DatabaseTestHelpers {
@@ -16,7 +16,7 @@ export class DatabaseTestHelpers {
    */
   async initialize() {
     try {
-      this.db = getDatabase();
+      this.db = await getDatabaseClient();
       // Test the connection
       await this.db.execute("SELECT 1");
       console.log("✅ Database test helper initialized");
@@ -31,7 +31,7 @@ export class DatabaseTestHelpers {
    * Ensure essential tables exist for testing
    */
   async ensureEssentialTables() {
-    const db = this.db || getDatabase();
+    const db = this.db || await getDatabaseClient();
 
     const tables = {
       transactions: `
@@ -147,7 +147,7 @@ export class DatabaseTestHelpers {
    * Ensure bounce_count column exists in email_subscribers table
    */
   async ensureBounceCountColumn() {
-    const db = this.db || getDatabase();
+    const db = this.db || await getDatabaseClient();
 
     try {
       // Check if bounce_count column exists
@@ -175,7 +175,7 @@ export class DatabaseTestHelpers {
    * Only cleans data, preserves schema
    */
   async cleanDatabase() {
-    const db = this.db || getDatabase();
+    const db = this.db || await getDatabaseClient();
 
     try {
       // Skip transaction rollback as it causes issues in tests
@@ -247,7 +247,7 @@ export class DatabaseTestHelpers {
    * Seed database with initial test data
    */
   async seedDatabase(options = {}) {
-    const db = this.db || getDatabase();
+    const db = this.db || await getDatabaseClient();
     const {
       transactions = 3,
       tickets = 5,
@@ -368,7 +368,7 @@ export class DatabaseTestHelpers {
    * Create a test transaction with tickets
    */
   async createTestTransaction(options = {}) {
-    const db = this.db || getDatabase();
+    const db = this.db || await getDatabaseClient();
     const {
       email = "test@example.com",
       name = "Test User",
@@ -436,7 +436,7 @@ export class DatabaseTestHelpers {
    * Create a test email subscriber
    */
   async createTestSubscriber(options = {}) {
-    const db = this.db || getDatabase();
+    const db = this.db || await getDatabaseClient();
     const {
       email = `test${Date.now()}@example.com`,
       status = "active",
@@ -462,7 +462,7 @@ export class DatabaseTestHelpers {
    * Get database statistics for testing
    */
   async getDatabaseStats() {
-    const db = this.db || getDatabase();
+    const db = this.db || await getDatabaseClient();
 
     const stats = {
       transactions: 0,
@@ -526,7 +526,7 @@ export class DatabaseTestHelpers {
    * Execute raw SQL for custom test scenarios
    */
   async executeSQL(sql, params = []) {
-    const db = this.db || getDatabase();
+    const db = this.db || await getDatabaseClient();
     return db.execute(sql, params);
   }
 
@@ -535,7 +535,7 @@ export class DatabaseTestHelpers {
    */
   async createSnapshot() {
     const stats = await this.getDatabaseStats();
-    const db = this.db || getDatabase();
+    const db = this.db || await getDatabaseClient();
 
     // Get sample data for verification
     const transactions = await db.execute(
