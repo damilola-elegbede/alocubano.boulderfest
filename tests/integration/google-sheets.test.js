@@ -57,6 +57,10 @@ describe("Google Sheets Analytics Integration", () => {
   });
 
   beforeEach(async () => {
+    // Reset module cache to prevent contamination
+    vi.resetModules();
+    vi.clearAllMocks();
+    
     // Set test environment variables
     process.env.GOOGLE_SHEET_ID = "test_sheet_123";
     process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL = "test@sheets.com";
@@ -71,7 +75,6 @@ describe("Google Sheets Analytics Integration", () => {
     app.use(express.json());
 
     // Clear all mocks first
-    vi.clearAllMocks();
     mockDatabase.execute.mockReset();
 
     // Ensure the Google Sheets factory returns our mock API
@@ -94,6 +97,12 @@ describe("Google Sheets Analytics Integration", () => {
   afterEach(() => {
     nock.cleanAll();
     vi.clearAllMocks();
+    vi.resetModules();
+    // Restore original environment
+    delete process.env.GOOGLE_SHEET_ID;
+    delete process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL;
+    delete process.env.GOOGLE_SHEETS_PRIVATE_KEY;
+    delete process.env.SHEETS_TIMEZONE;
   });
 
   describe("Service Initialization", () => {

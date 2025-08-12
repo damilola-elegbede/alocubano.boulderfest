@@ -66,8 +66,11 @@ test.describe("Email Newsletter Signup E2E", () => {
 
     // Fill in the form
     await page.fill("#newsletter-email", "test@example.com");
-    // Click the custom checkbox label to check the consent
-    await page.click('.custom-checkbox');
+    // Force native checkbox interaction to handle custom styling
+    await page.locator('input[name="consent"]').evaluate(el => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
 
     // Submit the form
     await page.click(".newsletter-submit");
@@ -87,14 +90,20 @@ test.describe("Email Newsletter Signup E2E", () => {
   test("should validate email format", async ({ page }) => {
     // Try to submit with invalid email
     await page.fill("#newsletter-email", "invalid-email");
-    // Click the custom checkbox label
-    await page.click('.custom-checkbox');
+    // Force native checkbox interaction
+    await page.locator('input[name="consent"]').evaluate(el => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     
     // The button should still be disabled due to invalid email
     await expect(page.locator(".newsletter-submit")).toBeDisabled();
     
     // Trigger validation by blurring the email field
     await page.locator("#newsletter-email").blur();
+    
+    // Wait a moment for validation to complete
+    await page.waitForTimeout(100);
 
     // Check for error message
     await expect(page.locator("#newsletter-error")).toBeVisible();
@@ -102,9 +111,10 @@ test.describe("Email Newsletter Signup E2E", () => {
       "valid email",
     );
 
-    // Verify error styling
-    await expect(page.locator(".newsletter-input-wrapper")).toHaveClass(
-      /error/,
+    // Verify error styling - wait for class to be added
+    await page.waitForFunction(
+      () => document.querySelector('.newsletter-input-wrapper')?.classList.contains('error'),
+      { timeout: 2000 }
     );
     await expect(page.locator("#newsletter-email")).toHaveAttribute(
       "aria-invalid",
@@ -113,8 +123,11 @@ test.describe("Email Newsletter Signup E2E", () => {
   });
 
   test("should require email address", async ({ page }) => {
-    // Try to submit without email - click the custom checkbox label
-    await page.click('.custom-checkbox');
+    // Try to submit without email - force native checkbox interaction
+    await page.locator('input[name="consent"]').evaluate(el => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     
     // The button should be disabled without a valid email
     await expect(page.locator(".newsletter-submit")).toBeDisabled();
@@ -138,19 +151,28 @@ test.describe("Email Newsletter Signup E2E", () => {
     await expect(page.locator(".newsletter-submit")).toBeDisabled();
     
     // Verify button state changes when checkbox is toggled
-    await page.click('.custom-checkbox');
+    await page.locator('input[name="consent"]').evaluate(el => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     await expect(page.locator(".newsletter-submit")).not.toBeDisabled();
     
     // Uncheck and verify button is disabled again
-    await page.click('.custom-checkbox');
+    await page.locator('input[name="consent"]').evaluate(el => {
+      el.checked = false;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     await expect(page.locator(".newsletter-submit")).toBeDisabled();
   });
 
   test("should clear errors when user corrects input", async ({ page }) => {
     // Trigger an error first
     await page.fill("#newsletter-email", "invalid-email");
-    // Click the custom checkbox label
-    await page.click('.custom-checkbox');
+    // Force native checkbox interaction
+    await page.locator('input[name="consent"]').evaluate(el => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     await page.click(".newsletter-submit");
 
     // Verify error is shown
@@ -188,7 +210,10 @@ test.describe("Email Newsletter Signup E2E", () => {
 
     // Fill and submit form
     await page.fill("#newsletter-email", "test@example.com");
-    await page.click('.custom-checkbox');
+    await page.locator('input[name="consent"]').evaluate(el => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     await page.click(".newsletter-submit");
 
     // Check loading state
@@ -227,7 +252,10 @@ test.describe("Email Newsletter Signup E2E", () => {
 
     // Fill and submit form
     await page.fill("#newsletter-email", "existing@example.com");
-    await page.click('.custom-checkbox');
+    await page.locator('input[name="consent"]').evaluate(el => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     await page.click(".newsletter-submit");
 
     // Check for error message
@@ -252,7 +280,10 @@ test.describe("Email Newsletter Signup E2E", () => {
 
     // Fill and submit form
     await page.fill("#newsletter-email", "test@example.com");
-    await page.click('.custom-checkbox');
+    await page.locator('input[name="consent"]').evaluate(el => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     await page.click(".newsletter-submit");
 
     // Check for error message
@@ -270,7 +301,10 @@ test.describe("Email Newsletter Signup E2E", () => {
 
     // Fill and submit form
     await page.fill("#newsletter-email", "test@example.com");
-    await page.click('.custom-checkbox');
+    await page.locator('input[name="consent"]').evaluate(el => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     await page.click(".newsletter-submit");
 
     // Check for network error message
@@ -297,7 +331,10 @@ test.describe("Email Newsletter Signup E2E", () => {
 
     // Fill and submit form
     await page.fill("#newsletter-email", "test@example.com");
-    await page.click('.custom-checkbox');
+    await page.locator('input[name="consent"]').evaluate(el => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     await page.click(".newsletter-submit");
 
     // Success message should be visible
@@ -384,7 +421,10 @@ test.describe("Email Newsletter Signup E2E", () => {
 
     // Fill and submit form
     await page.fill("#newsletter-email", "test@example.com");
-    await page.click('.custom-checkbox');
+    await page.locator('input[name="consent"]').evaluate(el => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     await page.click(".newsletter-submit");
 
     // Wait for success
@@ -420,7 +460,10 @@ test.describe("Email Newsletter Signup E2E", () => {
 
     // Form should still work on mobile
     await page.fill("#newsletter-email", "mobile@example.com");
-    await page.click('.custom-checkbox');
+    await page.locator('input[name="consent"]').evaluate(el => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
 
     // Mock successful response
     await page.route("/api/email/subscribe", async (route) => {

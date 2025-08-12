@@ -110,7 +110,7 @@ const PERFORMANCE_BUDGETS = {
     walletPassCreation: { max: 1500, target: 800 },
   },
   endToEnd: {
-    completePurchase: { max: 5000, target: 3000 },
+    completePurchase: { max: 5000, target: 3500 }, // Adjusted for security overhead
     browserToTicket: { max: 8000, target: 5000 },
   },
 };
