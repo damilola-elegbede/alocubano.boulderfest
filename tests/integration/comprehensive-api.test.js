@@ -47,8 +47,7 @@ describe("Comprehensive API Integration", () => {
   });
 
   beforeEach(async () => {
-    // Set test environment
-    process.env.NODE_ENV = "test";
+    // Set test-specific environment variables (database URL set globally in setup)
     process.env.BREVO_API_KEY = "xkeysib-test123";
     process.env.BREVO_NEWSLETTER_LIST_ID = "123";
     process.env.STRIPE_SECRET_KEY = "sk_test_123";

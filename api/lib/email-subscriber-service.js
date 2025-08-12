@@ -70,10 +70,13 @@ class EmailSubscriberService {
 
   /**
    * Get database client
+   * @returns {Promise<Object>} The raw LibSQL client instance
    */
   async getDb() {
     await this.ensureInitialized();
-    return await this.database.getClient();
+    // Use getDatabaseClient for consistency - it always returns the raw client
+    const { getDatabaseClient } = await import("./database.js");
+    return await getDatabaseClient();
   }
 
   /**

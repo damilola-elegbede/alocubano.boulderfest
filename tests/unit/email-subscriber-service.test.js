@@ -54,6 +54,7 @@ const mockDatabaseService = {
 
 vi.mock("../../api/lib/database.js", () => ({
   getDatabase: vi.fn(() => mockDatabaseService),
+  getDatabaseClient: vi.fn(() => Promise.resolve(mockDatabaseClient)),
 }));
 
 describe("EmailSubscriberService", () => {

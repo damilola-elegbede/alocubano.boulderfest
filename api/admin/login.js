@@ -1,5 +1,5 @@
 import authService from "../lib/auth-service.js";
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 import { getRateLimitService } from "../lib/rate-limit-service.js";
 import { withSecurityHeaders } from "../lib/security-headers.js";
 import {
@@ -59,7 +59,7 @@ async function handlePasswordStep(req, res, password, clientIP) {
   }
 
   const rateLimitService = getRateLimitService();
-  const db = await getDatabase().ensureInitialized();
+  const db = await getDatabaseClient();
 
   // Check rate limiting
   const rateLimitResult = await rateLimitService.checkRateLimit(clientIP);
@@ -199,7 +199,7 @@ async function completeLogin(
   mfaUsed = false,
   existingToken = null,
 ) {
-  const db = await getDatabase().ensureInitialized();
+  const db = await getDatabaseClient();
 
   // Use existing token or create new one
   const token = existingToken || authService.createSessionToken(adminId);
@@ -271,7 +271,7 @@ async function completeLogin(
  * Get MFA status for admin
  */
 async function getMfaStatus(adminId) {
-  const db = await getDatabase().ensureInitialized();
+  const db = await getDatabaseClient();
 
   try {
     const result = await db.execute({

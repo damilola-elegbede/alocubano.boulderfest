@@ -1,9 +1,9 @@
 import authService from "../lib/auth-service.js";
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 import { withSecurityHeaders } from "../lib/security-headers.js";
 
 async function handler(req, res) {
-  const db = await getDatabase().ensureInitialized();
+  const db = await getDatabaseClient();
 
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");

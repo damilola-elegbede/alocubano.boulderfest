@@ -11,6 +11,14 @@ import { dbMockSync } from "./utils/database-mock-sync.js";
 // REMOVED: dotenv loading to prevent .env.local bleeding into tests
 // dotenv.config({ path: '.env.local' });
 
+// Set up test-specific environment variables that don't conflict with production
+if (!process.env.TURSO_DATABASE_URL) {
+  process.env.TURSO_DATABASE_URL = "file:test.db";
+}
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = "test";
+}
+
 // Increase default timeout for remote operations and module loading
 vi.setConfig({
   testTimeout: 60000,

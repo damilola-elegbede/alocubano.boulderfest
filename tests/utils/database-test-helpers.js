@@ -17,6 +17,12 @@ export class DatabaseTestHelpers {
   async initialize() {
     try {
       this.db = await getDatabaseClient();
+      
+      // Verify we got a valid client with execute method
+      if (!this.db || typeof this.db.execute !== 'function') {
+        throw new Error('Invalid database client - missing execute method');
+      }
+      
       // Test the connection
       await this.db.execute("SELECT 1");
       console.log("✅ Database test helper initialized");
@@ -32,6 +38,11 @@ export class DatabaseTestHelpers {
    */
   async ensureEssentialTables() {
     const db = this.db || await getDatabaseClient();
+    
+    // Verify we have a valid client
+    if (!db || typeof db.execute !== 'function') {
+      throw new Error('Invalid database client in ensureEssentialTables');
+    }
 
     const tables = {
       transactions: `

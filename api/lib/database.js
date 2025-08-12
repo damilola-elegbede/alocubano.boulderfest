@@ -43,11 +43,12 @@ class DatabaseService {
 
   /**
    * Ensure database client is initialized with promise-based lazy singleton pattern
+   * @returns {Promise<Object>} The raw LibSQL client instance
    */
   async ensureInitialized() {
     // Return immediately if already initialized (fast path)
     if (this.initialized && this.client) {
-      return this.client;
+      return this.client; // ALWAYS return the raw client
     }
 
     // If initialization is already in progress, return the existing promise
@@ -60,7 +61,7 @@ class DatabaseService {
 
     try {
       const client = await this.initializationPromise;
-      return client;
+      return client; // ALWAYS return the raw client
     } catch (error) {
       // Clear the failed promise so next call can retry
       this.initializationPromise = null;
@@ -174,8 +175,10 @@ class DatabaseService {
 
   /**
    * Get database client instance
+   * @returns {Promise<Object>} The raw LibSQL client instance
    */
   async getClient() {
+    // Always return the raw LibSQL client for consistency
     return this.ensureInitialized();
   }
 
@@ -331,10 +334,20 @@ export function getDatabase() {
 /**
  * Get database client directly
  * @returns {Promise<Object>} LibSQL client instance
+ * 
+ * This is the PRIMARY method for getting a database client.
+ * It ALWAYS returns the raw LibSQL client with execute() method.
  */
 export async function getDatabaseClient() {
   const service = getDatabase();
-  return await service.getClient();
+  const client = await service.getClient();
+  
+  // Verify we're returning the raw client, not the service
+  if (!client || typeof client.execute !== 'function') {
+    throw new Error('Database client initialization failed - invalid client returned');
+  }
+  
+  return client;
 }
 
 /**
