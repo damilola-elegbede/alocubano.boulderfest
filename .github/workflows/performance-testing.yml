@@ -1,5 +1,11 @@
 name: Performance Testing
 
+permissions:
+  contents: read
+  pull-requests: write  # Required to comment on PRs
+  issues: write         # Required to create issues for failures
+  checks: write         # Required to create check runs
+
 on:
   push:
     branches: [main, develop]
