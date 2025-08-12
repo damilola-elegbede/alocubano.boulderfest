@@ -12,11 +12,19 @@ export class TestEnvironmentManager {
     this.originalEnv = {};
     this.mockEnv = {};
     this.isBackedUp = false;
+    this.backupTimestamp = null;
     
     // Enhanced state tracking for complete isolation
     this.moduleStateBackup = new Map();
     this.singletonRegistry = new Map();
     this.mockRegistry = new Map();
+    
+    // State tracking fixes
+    this.stateTracker = {
+      backups: 0,
+      restores: 0,
+      currentState: 'uninitialized'
+    };
   }
 
   /**
@@ -24,8 +32,17 @@ export class TestEnvironmentManager {
    * @returns {TestEnvironmentManager} Chainable instance
    */
   backup() {
+    if (this.isBackedUp) {
+      console.warn("TestEnvironmentManager: Already backed up, skipping duplicate backup");
+      return this;
+    }
+    
     this.originalEnv = { ...process.env };
     this.isBackedUp = true;
+    this.backupTimestamp = Date.now();
+    this.stateTracker.backups++;
+    this.stateTracker.currentState = 'backed_up';
+    
     return this;
   }
 
@@ -47,6 +64,14 @@ export class TestEnvironmentManager {
     // Restore original environment
     Object.assign(process.env, this.originalEnv);
     this.isBackedUp = false;
+    this.backupTimestamp = null;
+    this.stateTracker.restores++;
+    this.stateTracker.currentState = 'restored';
+    
+    // Clear tracking data
+    this.originalEnv = {};
+    this.mockEnv = {};
+    
     return this;
   }
 
@@ -476,6 +501,8 @@ export class TestEnvironmentManager {
   getState() {
     return {
       isBackedUp: this.isBackedUp,
+      backupTimestamp: this.backupTimestamp,
+      stateTracker: { ...this.stateTracker },
       originalEnvKeys: Object.keys(this.originalEnv),
       currentEnvKeys: Object.keys(process.env),
       mockEnvKeys: Object.keys(this.mockEnv),
@@ -484,6 +511,7 @@ export class TestEnvironmentManager {
       ),
       moduleStateBackedUp: this.moduleStateBackup.size > 0,
       isolationComplete: this.validateStateIsolation(),
+      backupAge: this.backupTimestamp ? Date.now() - this.backupTimestamp : null,
     };
   }
 

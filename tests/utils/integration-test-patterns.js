@@ -1,8 +1,8 @@
 /**
- * Integration Test Patterns
+ * Integration Test Patterns and Comprehensive Testing Strategy
  * 
- * Establishes consistent patterns for mocking services in integration tests
- * Prevents missing method errors and ensures all required methods are properly mocked
+ * Establishes consistent patterns for both mocking and real service integration tests
+ * Provides service availability detection, graceful degradation, and comprehensive patterns
  */
 
 import { vi } from "vitest";
@@ -13,6 +13,10 @@ import {
   REQUIRED_METHODS,
   validateServiceMock
 } from "./service-mock-factory.js";
+
+import { TestEnvironmentManager } from './test-environment-manager.js';
+import { serviceDetector, withServiceAvailability } from './service-availability-detector.js';
+import { integrationStrategy } from './integration-test-strategy.js';
 
 /**
  * Standard integration test setup for database API tests
@@ -335,6 +339,186 @@ export const IntegrationTestScenarios = {
 };
 
 /**
+ * Mock vs Real service decision matrix
+ * Helps decide when to use mocks vs real services in tests
+ */
+export const ServiceStrategy = {
+  /**
+   * Unit tests: Always use mocks
+   */
+  UNIT_TEST: {
+    database: 'mock',
+    googleSheets: 'mock', 
+    brevo: 'mock',
+    stripe: 'mock',
+    external: 'mock'
+  },
+
+  /**
+   * Integration tests: Real internal services, mock external
+   */
+  INTEGRATION_TEST: {
+    database: 'real',
+    googleSheets: 'real', // If available
+    brevo: 'real', // If available
+    stripe: 'mock', // External service
+    external: 'mock'
+  },
+
+  /**
+   * End-to-end tests: Real services with test data
+   */
+  E2E_TEST: {
+    database: 'real',
+    googleSheets: 'real',
+    brevo: 'real',
+    stripe: 'test_mode', // Real API in test mode
+    external: 'test_mode'
+  },
+
+  /**
+   * Get strategy for test type
+   * @param {string} testType - Type of test (unit/integration/e2e)
+   * @returns {Object} Service strategy configuration
+   */
+  getStrategy(testType) {
+    const strategies = {
+      unit: this.UNIT_TEST,
+      integration: this.INTEGRATION_TEST,
+      e2e: this.E2E_TEST
+    };
+    
+    return strategies[testType] || this.UNIT_TEST;
+  }
+};
+
+/**
+ * Enhanced integration test setup with service availability checking
+ * @param {Object} config - Test configuration
+ * @returns {Object} Test setup utilities
+ */
+export function setupEnhancedIntegrationTest(config = {}) {
+  const {
+    services = [],
+    environmentPreset = 'complete-test',
+    useRealServices = true,
+    skipOnUnavailable = true,
+    timeout = 30000
+  } = config;
+
+  const envManager = new TestEnvironmentManager();
+
+  return {
+    // Service availability wrapper with graceful degradation
+    withServiceAvailability: async (testFn, fallbackFn = null) => {
+      if (!skipOnUnavailable) {
+        return await testFn();
+      }
+
+      return await withServiceAvailability(services, testFn, fallbackFn || (async () => {
+        console.log(`⏭️  Skipping test - required services unavailable: ${services.join(', ')}`);
+        return { skipped: true, reason: `Services unavailable: ${services.join(', ')}` };
+      }));
+    },
+
+    // Real services integration with fallback to mocks
+    withRealOrMockServices: async (testFn) => {
+      if (!useRealServices) {
+        // Use traditional mock approach
+        const mocks = setupDatabaseApiIntegrationTest();
+        return await testFn({ mocked: true, services: mocks });
+      }
+
+      // Try real services first
+      try {
+        return await integrationStrategy.withRealServices(services, async (realServices) => {
+          return await testFn({ mocked: false, services: realServices });
+        });
+      } catch (error) {
+        console.warn(`Real services failed (${error.message}), falling back to mocks`);
+        const mocks = setupDatabaseApiIntegrationTest();
+        return await testFn({ mocked: true, services: mocks, fallback: true });
+      }
+    },
+
+    // Environment isolation with enhanced state tracking
+    withIsolatedEnvironment: async (testFn) => {
+      return await envManager.withCompleteIsolation(environmentPreset, testFn);
+    },
+
+    // Complete integration test with all features
+    withFullIntegration: async (testFn) => {
+      return await envManager.withCompleteIsolation(environmentPreset, async () => {
+        return await withServiceAvailability(services, async () => {
+          if (useRealServices) {
+            return await integrationStrategy.withRealServices(services, testFn);
+          } else {
+            const mocks = setupDatabaseApiIntegrationTest();
+            return await testFn(mocks);
+          }
+        }, async () => {
+          console.log(`⏭️  Integration test skipped - services unavailable: ${services.join(', ')}`);
+          return { skipped: true };
+        });
+      });
+    },
+
+    // Helper for database client enforcement (ensures real client in integration tests)
+    withEnforcedDatabaseClient: async (testFn) => {
+      const dbEnforcement = await integrationStrategy.createDatabaseClientEnforcement();
+      const client = await dbEnforcement.ensureRealClient();
+      dbEnforcement.validateNotMocked(client);
+      return await testFn(client);
+    },
+
+    // State and availability reporting
+    getTestState: async () => {
+      const availability = await serviceDetector.checkAllServices();
+      return {
+        environment: envManager.getState(),
+        serviceAvailability: availability,
+        canRunIntegrationTests: Object.values(availability).some(Boolean),
+        strategy: ServiceStrategy.getStrategy('integration')
+      };
+    }
+  };
+}
+
+/**
+ * Service health validation patterns
+ * @param {string[]} serviceNames - Services to validate
+ * @returns {Promise<Object>} Validation results
+ */
+export async function validateServiceHealth(serviceNames) {
+  const results = {
+    healthy: [],
+    unhealthy: [],
+    canRunTests: true,
+    warnings: []
+  };
+
+  for (const serviceName of serviceNames) {
+    const isHealthy = await serviceDetector.checkService(serviceName);
+    
+    if (isHealthy) {
+      results.healthy.push(serviceName);
+    } else {
+      results.unhealthy.push(serviceName);
+      
+      // Check if this service is required
+      const serviceConfig = serviceDetector.serviceChecks.get(serviceName);
+      if (serviceConfig?.required) {
+        results.canRunTests = false;
+      } else {
+        results.warnings.push(`Optional service ${serviceName} is unavailable`);
+      }
+    }
+  }
+
+  return results;
+}
+
+/**
  * Best practices checklist for integration test mocks
  */
 export const INTEGRATION_TEST_BEST_PRACTICES = {
@@ -343,7 +527,10 @@ export const INTEGRATION_TEST_BEST_PRACTICES = {
     "ensureInitialized methods must return appropriate objects (service or client)",
     "Database mocks must distinguish between service and client objects",
     "Environment variables must be properly set up and cleaned up",
-    "Mock behaviors must be reset in beforeEach to prevent test interference"
+    "Mock behaviors must be reset in beforeEach to prevent test interference",
+    "Integration tests should prefer real services when available",
+    "Service availability should be checked before test execution",
+    "Tests should gracefully degrade when services are unavailable"
   ],
   
   recommended: [
@@ -351,6 +538,17 @@ export const INTEGRATION_TEST_BEST_PRACTICES = {
     "Validate mocks have all required methods using validateServiceMock",
     "Provide realistic default responses for better test reliability",
     "Include helper methods for common mock reset and validation patterns",
-    "Document the purpose and configuration of each mock clearly"
+    "Document the purpose and configuration of each mock clearly",
+    "Use service availability detection for better CI/CD reliability",
+    "Implement fallback patterns for unavailable services",
+    "Track test performance and identify slow service initialization"
+  ],
+
+  realServices: [
+    "Real database clients should use in-memory databases for speed",
+    "External APIs should be mocked even in integration tests",
+    "Service initialization should have timeout protection",
+    "Integration tests should validate service health before execution",
+    "Real services must be properly cleaned up after tests"
   ]
 };

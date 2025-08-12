@@ -21,6 +21,9 @@ const mockSheetsAPI = {
   },
 };
 
+// Create a proper mock implementation that returns the API
+const mockGoogleSheetsFactory = vi.fn().mockImplementation(() => mockSheetsAPI);
+
 vi.mock("googleapis", () => ({
   google: {
     auth: {
@@ -28,7 +31,7 @@ vi.mock("googleapis", () => ({
         getAccessToken: vi.fn().mockResolvedValue("mock_access_token"),
       })),
     },
-    sheets: vi.fn().mockImplementation(() => mockSheetsAPI),
+    sheets: mockGoogleSheetsFactory,
   },
 }));
 
@@ -67,6 +70,13 @@ describe("Google Sheets Analytics Integration", () => {
     app = express();
     app.use(express.json());
 
+    // Clear all mocks first
+    vi.clearAllMocks();
+    mockDatabase.execute.mockReset();
+
+    // Ensure the Google Sheets factory returns our mock API
+    mockGoogleSheetsFactory.mockReturnValue(mockSheetsAPI);
+
     // Import Google Sheets service with error handling
     try {
       const { GoogleSheetsService: GSService } = await import(
@@ -79,12 +89,6 @@ describe("Google Sheets Analytics Integration", () => {
       GoogleSheetsService = null;
       sheetsService = null;
     }
-
-    // The mockSheetsAPI is already defined at module level
-
-    // Clear all mocks
-    vi.clearAllMocks();
-    mockDatabase.execute.mockReset();
   });
 
   afterEach(() => {
