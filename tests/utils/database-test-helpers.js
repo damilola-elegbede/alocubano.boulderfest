@@ -4,6 +4,8 @@
  */
 
 import { getDatabaseClient } from "../../api/lib/database.js";
+import { databaseClientValidator } from './database-client-validator.js';
+import { testEnvironmentDetector } from './test-environment-detector.js';
 import crypto from "crypto";
 
 export class DatabaseTestHelpers {
@@ -12,9 +14,9 @@ export class DatabaseTestHelpers {
   }
 
   /**
-   * Initialize database connection
+   * Initialize database connection with environment-aware validation
    */
-  async initialize() {
+  async initialize(testContext = {}) {
     try {
       this.db = await getDatabaseClient();
       
@@ -23,9 +25,30 @@ export class DatabaseTestHelpers {
         throw new Error('Invalid database client - missing execute method');
       }
       
+      // Auto-detect test type if not provided in context
+      let detectedTestType = 'unit';
+      if (testContext.file && testContext.file.name) {
+        detectedTestType = testEnvironmentDetector.detectTestType(testContext);
+      } else {
+        // Fallback: try to detect from stack trace
+        const stack = new Error().stack;
+        if (stack && stack.includes('/integration/')) {
+          detectedTestType = 'integration';
+        }
+      }
+      
+      if (detectedTestType === 'integration') {
+        // Integration tests must use real database clients
+        databaseClientValidator.validateIntegrationClient(this.db, testContext);
+        console.log("✅ Database test helper initialized with real LibSQL client for integration test");
+      } else {
+        // Unit tests can use either mocks or real clients
+        databaseClientValidator.validateUnitClient(this.db, testContext);
+        console.log("✅ Database test helper initialized for unit test");
+      }
+      
       // Test the connection
       await this.db.execute("SELECT 1");
-      console.log("✅ Database test helper initialized");
       return this.db;
     } catch (error) {
       console.error("❌ Failed to initialize database test helper:", error);

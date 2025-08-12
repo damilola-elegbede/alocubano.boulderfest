@@ -31,9 +31,10 @@ describe("Database Operations Integration - Improved", () => {
   beforeAll(async () => {
     // Wait for database to be fully initialized
     await waitForAsyncInit(async () => {
-      const { getDatabase } = await import("../../api/lib/database.js");
-      db = getDatabase();
-      await testInit.waitForDatabase(db, 15000);
+      const { getDatabaseClient } = await import("../../api/lib/database.js");
+      db = await getDatabaseClient();
+      // Test the connection to ensure we have a working client
+      await db.execute("SELECT 1 as test");
       return db;
     }, 20000);
 

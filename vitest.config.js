@@ -6,10 +6,9 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     
-    // Enhanced setup files for automatic test isolation
+    // Enhanced setup files for environment-aware test isolation
     setupFiles: [
-      "./tests/config/enhanced-test-setup.js", // Phase 2: Automatic isolation
-      "./tests/setup-vitest.js"                // Existing setup preserved
+      "./tests/setup-vitest.js"                         // Base setup (first)
     ],
     
     // Global setup and teardown for suite-level isolation management
@@ -120,17 +119,12 @@ export default defineConfig({
     isolate: true, // Ensure test isolation at Vitest level
     pool: 'threads', // Use threads for better isolation
     
-    // Environment variables for enhanced isolation and Phase 1 test defaults
+    // Environment variables will be set dynamically by environment-aware setup
+    // No default env vars here to prevent conflicts between unit/integration tests
     env: {
       TEST_ISOLATION_ENHANCED: 'true',
       TEST_AUTO_ISOLATION: 'true',
-      // Phase 1: Default test environment variables
-      BREVO_API_KEY: 'test-api-key',
-      TURSO_DATABASE_URL: ':memory:',
-      TURSO_AUTH_TOKEN: 'test-token',
-      NODE_ENV: 'test',
-      STRIPE_SECRET_KEY: 'test-stripe-key',
-      ADMIN_SECRET: 'test-admin-secret-minimum-32-characters'
+      NODE_ENV: 'test'
     },
 
     // Reporter configuration

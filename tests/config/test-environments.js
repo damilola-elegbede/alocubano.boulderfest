@@ -33,10 +33,11 @@ export const TestEnvironments = {
     STRIPE_SECRET_KEY: "sk_test_123",
   },
 
-  // Valid local SQLite configuration
+  // Valid local SQLite configuration (for unit tests)
   VALID_LOCAL: {
     NODE_ENV: "test",
     TEST_ISOLATION_MODE: "true",
+    TEST_TYPE: "unit",
     TURSO_DATABASE_URL: ":memory:",
     TURSO_AUTH_TOKEN: "test-token",
     BREVO_API_KEY: "test-key",
@@ -57,11 +58,12 @@ export const TestEnvironments = {
     STRIPE_PUBLISHABLE_KEY: "pk_test_123",
   },
 
-  // Complete test environment with all services
+  // Complete test environment with all services (for integration tests)
   COMPLETE_TEST: {
     NODE_ENV: "test",
     TEST_ISOLATION_MODE: "true",
-    TURSO_DATABASE_URL: ":memory:",
+    TEST_TYPE: "integration",
+    TURSO_DATABASE_URL: "file:integration-test.db",
     TURSO_AUTH_TOKEN: "test-token",
     BREVO_API_KEY: "test-key-123",
     BREVO_NEWSLETTER_LIST_ID: "2",

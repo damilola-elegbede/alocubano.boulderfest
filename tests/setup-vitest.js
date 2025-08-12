@@ -7,6 +7,8 @@
 import { vi } from "vitest";
 import { testEnvManager } from "./utils/test-environment-manager.js";
 import { dbMockSync } from "./utils/database-mock-sync.js";
+import { environmentAwareTestSetup } from "./config/environment-aware-test-setup.js";
+import { testEnvironmentDetector } from "./utils/test-environment-detector.js";
 
 // REMOVED: dotenv loading to prevent .env.local bleeding into tests
 // dotenv.config({ path: '.env.local' });
@@ -68,10 +70,8 @@ if (typeof global.process === "undefined") {
 // Set test isolation mode immediately to prevent environment variable warnings
 process.env.TEST_ISOLATION_MODE = "true";
 
-// Initialize test environment manager and set up clean test environment
-testEnvManager.backup();
-testEnvManager.clearDatabaseEnv();
-testEnvManager.setMockEnv(testEnvManager.getPreset("valid-local"));
+// Environment setup will be handled dynamically by environment-aware setup
+// based on test type detection - no static environment setting here
 
 // Global setup hooks for test lifecycle management
 beforeAll(() => {

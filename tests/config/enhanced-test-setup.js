@@ -25,6 +25,8 @@ import { vi, beforeEach, afterEach } from 'vitest';
 import { TestSingletonManager, testSingletonLifecycle } from '../utils/test-singleton-manager.js';
 import { setupTestMockManager } from '../utils/test-mock-manager.js';
 import { testEnvManager } from '../utils/test-environment-manager.js';
+import { environmentAwareTestSetup } from './environment-aware-test-setup.js';
+import { testEnvironmentDetector } from '../utils/test-environment-detector.js';
 
 // Import performance-optimized configuration
 import { 
