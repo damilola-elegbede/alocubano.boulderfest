@@ -15,6 +15,8 @@ export default defineConfig({
     include: [
       // All performance tests are currently skipped due to infrastructure issues
       // See .tmp/test-infrastructure-overhaul-prd.md for fix plan
+      // Include placeholder test to prevent "No test files found" error in CI
+      "tests/performance/ci-skip-placeholder.test.js"
     ],
     exclude: [
       "tests/unit/**/*.test.js",
