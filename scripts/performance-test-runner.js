@@ -1699,10 +1699,18 @@ class PerformanceTestOrchestrator {
 async function main() {
   const args = process.argv.slice(2);
 
+  // Debug environment variables in CI
+  if (process.env.CI) {
+    console.log('🔍 CI Environment detected:');
+    console.log('  CI:', process.env.CI);
+    console.log('  SKIP_PERFORMANCE_INTENSIVE_TESTS:', process.env.SKIP_PERFORMANCE_INTENSIVE_TESTS);
+    console.log('  SKIP_PERFORMANCE_TESTS:', process.env.SKIP_PERFORMANCE_TESTS);
+  }
+
   // Skip performance tests in CI when requested
-  if (process.env.CI === 'true' && 
-      (process.env.SKIP_PERFORMANCE_TESTS === 'true' || 
-       process.env.SKIP_PERFORMANCE_INTENSIVE_TESTS === 'true')) {
+  if (process.env.CI && 
+      (process.env.SKIP_PERFORMANCE_TESTS || 
+       process.env.SKIP_PERFORMANCE_INTENSIVE_TESTS)) {
     console.log('\n⚠️  Skipping performance tests in CI environment');
     console.log('✅ Performance test suite skipped successfully\n');
     process.exit(0);

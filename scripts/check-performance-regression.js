@@ -1161,9 +1161,9 @@ async function main() {
   const args = process.argv.slice(2);
 
   // Skip regression checks in CI when requested
-  if (process.env.CI === 'true' && 
-      (process.env.SKIP_PERFORMANCE_TESTS === 'true' || 
-       process.env.SKIP_PERFORMANCE_INTENSIVE_TESTS === 'true')) {
+  if (process.env.CI && 
+      (process.env.SKIP_PERFORMANCE_TESTS || 
+       process.env.SKIP_PERFORMANCE_INTENSIVE_TESTS)) {
     console.log('\n⚠️  Skipping performance regression analysis in CI environment');
     console.log('✅ Performance regression check skipped successfully\n');
     process.exit(0);
