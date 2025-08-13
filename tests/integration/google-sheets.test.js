@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import request from "supertest";
 import express from "express";
 import nock from "nock";
-import { setupDatabaseTests } from "../utils/enhanced-test-setup.js";
+import { createTestDatabase, seedTestData, createLibSQLAdapter } from "../helpers/db.js";
 import { isCI, shouldSkipExternalTests, getCITimeoutMultiplier } from "../utils/ci-detection.js";
 
 // Mock Google APIs with proper structure
@@ -74,10 +74,7 @@ describe("Google Sheets Analytics Integration", () => {
   let sheetsService;
   let testDatabasePath;
 
-  const { getHelpers } = setupDatabaseTests({
-    cleanBeforeEach: true,
-    timeout: isCI() ? 30000 * getCITimeoutMultiplier() : 15000,
-  });
+  let db;
 
   beforeEach(async () => {
     // Check if we should skip due to missing external service configuration
@@ -105,14 +102,10 @@ describe("Google Sheets Analytics Integration", () => {
       },
     };
     
-    // Create isolated test database for each test to prevent SQLITE_BUSY
-    testDatabasePath = `/tmp/test-sheets-${Date.now()}-${Math.random().toString(36).substring(7)}.db`;
-    mockDatabase = {
-      execute: vi.fn().mockImplementation(async () => ({ rows: [] })),
-      batch: vi.fn().mockImplementation(async () => ({ rows: [] })),
-      transaction: vi.fn().mockImplementation(async () => ({ rows: [] })),
-      close: vi.fn().mockResolvedValue(),
-    };
+    // Create isolated test database for each test
+    db = createTestDatabase();
+    seedTestData(db, 'minimal');
+    const mockDatabase = createLibSQLAdapter(db);
     
     // Reset the mock factory function completely
     mockGoogleSheetsFactory.mockReset();
@@ -172,6 +165,12 @@ describe("Google Sheets Analytics Integration", () => {
     // Early exit if test should be skipped
     if (shouldSkipTest) {
       return;
+    }
+    
+    // Close database connection
+    if (db) {
+      db.close();
+      db = null;
     }
     
     nock.cleanAll();
