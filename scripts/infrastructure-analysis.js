@@ -1,4 +1,4 @@
-import { readdir, stat, readFile, writeFile } from 'fs/promises';
+import { readdir, stat, readFile, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 
 async function analyzeTestInfrastructure() {
@@ -27,18 +27,24 @@ async function analyzeTestInfrastructure() {
       const filePath = join(dirPath, file);
       const content = await readFile(filePath, 'utf8');
       const lines = content.split('\n').length;
+      const deps = extractDependencies(content);
       
       results.totalLines += lines;
       results.fileCount++;
       
+      // Aggregate top-level dependency frequencies
+      for (const dep of deps) {
+        results.dependencies[dep] = (results.dependencies[dep] || 0) + 1;
+      }
+      
       // Detect manager classes (elimination targets)
-      if (content.match(/class.*(?:Manager|Orchestrator|Coordinator)/)) {
+      if (content.match(/class\s+\w*(?:Manager|Orchestrator|Coordinator|Registry|Mock)\b/)) {
         results.managerClasses.push({
           file: filePath,
           lines,
           className: extractClassName(content),
           complexity: calculateComplexity(content),
-          dependencies: extractDependencies(content)
+          dependencies: deps  // Use cached dependencies
         });
       }
       
@@ -54,6 +60,7 @@ async function analyzeTestInfrastructure() {
   
   // Generate comprehensive report
   const report = generateReport(results);
+  await mkdir('./docs', { recursive: true });
   await writeFile('./docs/INFRASTRUCTURE_INVENTORY.md', report);
   // Ensure dependencies is serializable
   const jsonResults = {

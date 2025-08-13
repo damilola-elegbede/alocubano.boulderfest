@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-08-13T08:35:50.996Z",
+  "timestamp": "2025-08-13T08:46:00.434Z",
   "totalLines": 20134,
   "fileCount": 39,
   "managerClasses": [
@@ -69,6 +69,13 @@
       "dependencies": [
         "vitest"
       ]
+    },
+    {
+      "file": "tests/mocks/brevo-mock.js",
+      "lines": 128,
+      "className": "BrevoMock",
+      "complexity": 9,
+      "dependencies": []
     }
   ],
   "utilities": [
@@ -535,5 +542,32 @@
     }
   ],
   "complexityScore": 0,
-  "dependencies": {}
+  "dependencies": {
+    "vitest": 16,
+    "../../api/lib/database.js": 2,
+    "./database-client-validator.js": 1,
+    "./test-environment-detector.js": 1,
+    "crypto": 2,
+    "better-sqlite3": 1,
+    "./test-data-builder.js": 1,
+    "./test-initialization-helpers.js": 1,
+    "./database-test-helpers.js": 1,
+    "path": 5,
+    "url": 3,
+    "./test-environment-manager.js": 2,
+    "./service-availability-detector.js": 2,
+    "./integration-test-strategy.js": 1,
+    "./mock-services.js": 2,
+    "fs": 3,
+    "../../scripts/lib/sql-splitter.js": 1,
+    "jsdom": 1,
+    "../utils/test-singleton-manager.js": 1,
+    "../utils/test-mock-manager.js": 1,
+    "../utils/test-environment-manager.js": 1,
+    "./environment-aware-test-setup.js": 1,
+    "../utils/test-environment-detector.js": 2,
+    "./isolation-config.js": 2,
+    "../utils/database-client-validator.js": 1,
+    "./test-environments.js": 3
+  }
 }

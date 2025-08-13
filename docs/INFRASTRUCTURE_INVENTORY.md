@@ -1,12 +1,12 @@
 # Test Infrastructure Inventory
   
-Generated: 2025-08-13T08:35:50.996Z
+Generated: 2025-08-13T08:46:00.434Z
 
 ## Executive Summary
 - **Total Infrastructure**: 20,134 lines
 - **File Count**: 39 files
 - **Average File Size**: 516 lines
-- **Manager Classes**: 7 (6088 lines)
+- **Manager Classes**: 8 (6216 lines)
 - **Target Reduction**: 16107 lines to eliminate
 
 ## Manager Classes (Priority Targets)
@@ -53,6 +53,12 @@ Generated: 2025-08-13T08:35:50.996Z
 - **Complexity**: 29
 - **Action**: DELETE in PR #TBD
 
+### BrevoMock
+- **File**: tests/mocks/brevo-mock.js
+- **Lines**: 128
+- **Complexity**: 9
+- **Action**: DELETE in PR #TBD
+
 ## Utility Categories
 
 ### other
@@ -94,6 +100,6 @@ Generated: 2025-08-13T08:35:50.996Z
 
 ## Success Metrics
 - [ ] Reduce from 20134 to <1,600 lines
-- [ ] Eliminate all 7 manager classes
+- [ ] Eliminate all 8 manager classes
 - [ ] Consolidate 39 files to <10 files
 - [ ] Activate all 49 skipped tests
