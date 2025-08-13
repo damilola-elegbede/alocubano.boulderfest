@@ -4,11 +4,6 @@
  */
 
 import { getEmailSubscriberService } from "../lib/email-subscriber-service.js";
-import { getBrevoService } from "../lib/brevo-service.js";
-import * as ipRangeCheckModule from "ip-range-check";
-
-// Handle both default and named exports
-const ipRangeCheck = ipRangeCheckModule.default || ipRangeCheckModule;
 
 /**
  * Get raw body from request
@@ -28,47 +23,6 @@ function getRawBody(req) {
 }
 
 /**
- * Get client IP address
- */
-function getClientIp(req) {
-  return (
-    req.headers["x-forwarded-for"] ||
-    req.connection?.remoteAddress ||
-    req.socket?.remoteAddress ||
-    req.connection?.socket?.remoteAddress ||
-    "127.0.0.1"
-  );
-}
-
-/**
- * Validate webhook source (basic IP whitelist)
- */
-function isValidWebhookSource(ip) {
-  // Skip IP validation in test environment
-  if (process.env.NODE_ENV === "test" || process.env.CI === "true") {
-    return true;
-  }
-
-  // Official Brevo webhook IP ranges
-  const allowedIPs = ["1.179.112.0/20", "172.246.240.0/20"];
-
-  try {
-    // Check if the IP falls within the allowed ranges
-    if (typeof ipRangeCheck === "function") {
-      return ipRangeCheck(ip, allowedIPs);
-    } else if (ipRangeCheck && typeof ipRangeCheck.inRange === "function") {
-      return ipRangeCheck.inRange(ip, allowedIPs);
-    } else {
-      console.error("ip-range-check module not properly loaded");
-      return false;
-    }
-  } catch (error) {
-    console.error("Error checking IP range:", error);
-    return false;
-  }
-}
-
-/**
  * Main handler function
  */
 export default async function handler(req, res) {
@@ -80,36 +34,10 @@ export default async function handler(req, res) {
   }
 
   let webhookData = null;
-  const clientIP = getClientIp(req);
 
   try {
-    // Validate webhook source
-    if (!isValidWebhookSource(clientIP)) {
-      console.warn("Webhook request from unauthorized IP:", clientIP);
-      return res.status(403).json({ error: "Unauthorized" });
-    }
-
-    // Get raw body for signature verification
+    // Get raw body
     const rawBody = await getRawBody(req);
-
-    // Validate webhook signature if secret is configured
-    if (process.env.BREVO_WEBHOOK_SECRET) {
-      const signature = req.headers["x-brevo-signature"];
-      if (!signature) {
-        return res.status(401).json({ error: "Missing webhook signature" });
-      }
-
-      const brevoService = getBrevoService();
-      const isValidSignature = brevoService.validateWebhookSignature(
-        rawBody,
-        signature,
-      );
-
-      if (!isValidSignature) {
-        console.warn("Invalid webhook signature from IP:", clientIP);
-        return res.status(401).json({ error: "Invalid signature" });
-      }
-    }
 
     // Parse webhook data
     try {
@@ -129,11 +57,10 @@ export default async function handler(req, res) {
       event: webhookData.event,
       email: webhookData.email,
       timestamp: webhookData.date || new Date().toISOString(),
-      ip: clientIP,
     });
 
-    // Get services
-    const emailService = getEmailSubscriberService();
+    // Ensure services are initialized
+    const emailService = await getEmailSubscriberService().ensureInitialized();
 
     // Process the webhook event
     const processedEvent = await emailService.processWebhookEvent(webhookData);
@@ -201,9 +128,17 @@ export default async function handler(req, res) {
       error: error.message,
       stack: error.stack,
       webhook_data: webhookData,
-      ip: getClientIp(req),
       timestamp: new Date().toISOString(),
     });
+
+    // Handle initialization errors specifically
+    if (
+      error.message.includes("Failed to initialize email subscriber service")
+    ) {
+      return res.status(503).json({
+        error: "Email service is currently initializing",
+      });
+    }
 
     // Return error response (but don't expose internal details)
     return res.status(500).json({

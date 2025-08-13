@@ -31,18 +31,21 @@ graph LR
 ### Key Components
 
 #### 1. Vercel Native Git Integration
+
 - **Automatic Deployments**: Push to `main` → Production, Push to feature branch → Preview
 - **Optimized Pipeline**: Vercel's edge-optimized build and deployment
 - **Zero Configuration**: Uses existing `vercel.json` configuration
 - **Preview URLs**: Automatic preview deployments for all PRs
 
 #### 2. GitHub Actions Validation
+
 - **Post-Deployment Testing**: Tests run against the ACTUAL deployed environment
 - **Deployment Detection**: Uses GitHub Deployments API + URL construction fallback
 - **Quality Gates**: Comprehensive validation suite
 - **Status Updates**: Results reflected in PR comments and deployment status
 
 #### 3. Smart Deployment Detection
+
 - **API Integration**: Queries GitHub Deployments API for Vercel deployments
 - **Fallback URL Construction**: Constructs expected URLs if API data unavailable
 - **Wait Logic**: Intelligent waiting for deployment readiness
@@ -53,6 +56,7 @@ graph LR
 ### Core Workflows (Consolidated for Efficiency)
 
 #### `deployment-health-monitor.yml`
+
 - **Purpose**: PR preview deployment health monitoring and developer feedback
 - **Triggers**: `pull_request` to main (opened, synchronize, reopened)
 - **Features**:
@@ -62,6 +66,7 @@ graph LR
   - Focused on development workflow optimization
 
 #### `production-quality-gates.yml`
+
 - **Purpose**: Production-specific comprehensive validation after main pushes
 - **Triggers**: `push` to main only
 - **Features**:
@@ -72,6 +77,7 @@ graph LR
   - Security and performance validation
 
 #### `performance-tests.yml`
+
 - **Purpose**: Dedicated K6 performance testing pipeline
 - **Triggers**: `workflow_dispatch`, `schedule` (daily)
 - **Features**:
@@ -81,6 +87,7 @@ graph LR
   - Performance baseline management
 
 #### `ci.yml`
+
 - **Purpose**: Core CI pipeline for code quality validation
 - **Triggers**: `push` to main/develop, `pull_request` to main/develop
 - **Features**:
@@ -91,6 +98,7 @@ graph LR
 ### Support Components
 
 #### `.github/actions/wait-for-vercel/action.yml`
+
 - **Purpose**: Reusable action for Vercel deployment detection
 - **Features**:
   - GitHub Deployments API integration
@@ -102,12 +110,12 @@ graph LR
 
 ### Performance Improvements
 
-| Metric | Old Approach | New Approach | Improvement |
-|--------|-------------|--------------|-------------|
-| Deployment Time | 8-12 minutes | 3-5 minutes | 60%+ faster |
-| Resource Usage | 2x CI minutes | 1x CI minutes | 50% reduction |
-| Testing Accuracy | Local build | Live deployment | 100% accurate |
-| Feedback Loop | Sequential | Parallel | 40% faster |
+| Metric           | Old Approach  | New Approach    | Improvement   |
+| ---------------- | ------------- | --------------- | ------------- |
+| Deployment Time  | 8-12 minutes  | 3-5 minutes     | 60%+ faster   |
+| Resource Usage   | 2x CI minutes | 1x CI minutes   | 50% reduction |
+| Testing Accuracy | Local build   | Live deployment | 100% accurate |
+| Feedback Loop    | Sequential    | Parallel        | 40% faster    |
 
 ### Quality Improvements
 
@@ -126,16 +134,19 @@ graph LR
 ## Migration Strategy
 
 ### Phase 1: Parallel Operation (Current)
+
 - New workflows active alongside old ones
 - Old workflows marked as legacy but functional
 - Monitor new workflow performance
 
 ### Phase 2: Gradual Cutover
+
 - Disable old workflows for feature branches
 - Keep old workflows for production (safety net)
 - Validate new approach with preview deployments
 
 ### Phase 3: Full Migration
+
 - Disable all legacy workflows
 - Remove old workflow files
 - Update documentation and runbooks
@@ -143,12 +154,14 @@ graph LR
 ## Quality Gates Specification
 
 ### Pre-Deployment Checks (Fast Feedback)
+
 - ✅ Code linting
 - ✅ Unit tests
 - ✅ Database tests
 - ✅ Static analysis
 
 ### Post-Deployment Validation (Comprehensive)
+
 - ✅ Health checks against live deployment
 - ✅ Link validation on actual site
 - ✅ Performance testing with real data
@@ -159,10 +172,11 @@ graph LR
 ## Configuration Requirements
 
 ### GitHub Secrets
+
 ```bash
 # Existing (reused)
 VERCEL_TOKEN                # For API calls (optional)
-VERCEL_ORG_ID              # For API calls (optional)  
+VERCEL_ORG_ID              # For API calls (optional)
 VERCEL_PROJECT_ID          # For API calls (optional)
 MIGRATION_SECRET_KEY       # For database operations
 
@@ -171,6 +185,7 @@ VERCEL_WEBHOOK_SECRET      # For deployment_status validation
 ```
 
 ### Vercel Settings
+
 ```json
 {
   "git": {
@@ -189,12 +204,14 @@ VERCEL_WEBHOOK_SECRET      # For deployment_status validation
 ## Monitoring and Alerting
 
 ### Deployment Monitoring
+
 - Real-time deployment status tracking
 - Performance baseline monitoring
 - Error rate alerting
 - Uptime monitoring
 
 ### Quality Gate Monitoring
+
 - Test execution metrics
 - Quality gate success rates
 - Performance regression detection
@@ -203,12 +220,14 @@ VERCEL_WEBHOOK_SECRET      # For deployment_status validation
 ## Rollback Strategy
 
 ### Automatic Rollback Triggers
+
 - Quality gate failures
 - Health check failures
 - Performance degradation
 - Security scan failures
 
 ### Manual Rollback Process
+
 1. Revert Git commit
 2. Vercel automatically deploys previous version
 3. Quality gates validate rollback deployment
@@ -217,12 +236,14 @@ VERCEL_WEBHOOK_SECRET      # For deployment_status validation
 ## Success Metrics
 
 ### Primary KPIs
+
 - **Deployment Frequency**: Target 10+ per day
 - **Lead Time**: Target <10 minutes from commit to production
 - **Change Failure Rate**: Target <2%
 - **Mean Time to Recovery**: Target <15 minutes
 
 ### Quality Metrics
+
 - **Test Coverage**: Maintain 90%+ on critical paths
 - **Performance**: 95th percentile <2s response time
 - **Availability**: 99.9% uptime SLA
@@ -233,6 +254,7 @@ VERCEL_WEBHOOK_SECRET      # For deployment_status validation
 ### Common Issues
 
 #### Deployment Not Detected
+
 ```bash
 # Check GitHub Deployments API
 gh api repos/OWNER/REPO/deployments
@@ -242,6 +264,7 @@ vercel project ls
 ```
 
 #### Quality Gates Failing
+
 ```bash
 # Check deployment URL accessibility
 curl -I https://your-deployment-url.vercel.app
@@ -251,6 +274,7 @@ curl https://your-deployment-url.vercel.app/api/health/check
 ```
 
 #### Slow Deployment Detection
+
 - Increase timeout in `wait-for-vercel` action
 - Check Vercel build logs for issues
 - Verify network connectivity to deployment
@@ -266,6 +290,7 @@ curl https://your-deployment-url.vercel.app/api/health/check
 ## Conclusion
 
 This Vercel-native approach provides:
+
 - **Superior testing accuracy** by validating actual deployments
 - **Improved performance** by eliminating duplicate deployment logic
 - **Better developer experience** through faster feedback loops

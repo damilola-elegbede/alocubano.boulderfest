@@ -38,16 +38,19 @@ tests/
 ## Environment Detection Logic
 
 ### CI Environment
+
 - **Detection**: `GITHUB_ACTIONS`, `CI`, or `CONTINUOUS_INTEGRATION` environment variables
 - **Characteristics**: Limited resources, frequent cold starts, variable network
 - **Threshold Strategy**: More lenient (5s p95, 5% error rate)
 
-### Staging Environment  
+### Staging Environment
+
 - **Detection**: URL patterns containing "staging", "preview", or "dev"
 - **Characteristics**: Production-like resources, occasional cold starts, stable network
 - **Threshold Strategy**: Moderate (2s p95, 2% error rate)
 
 ### Production Environment
+
 - **Detection**: URL patterns containing "production", "prod", or main domain
 - **Characteristics**: Optimized infrastructure, warm functions, CDN active
 - **Threshold Strategy**: Strict (1s p95, 1% error rate)
@@ -57,18 +60,18 @@ tests/
 ### Ticket Sales Test
 
 | Environment | p95 Response Time | Error Rate | Success Rate |
-|-------------|-------------------|------------|--------------|
-| CI          | 2000ms           | <5%        | >85%         |
-| Staging     | 1200ms           | <3%        | >92%         |
-| Production  | 800ms            | <2%        | >95%         |
+| ----------- | ----------------- | ---------- | ------------ |
+| CI          | 2000ms            | <5%        | >85%         |
+| Staging     | 1200ms            | <3%        | >92%         |
+| Production  | 800ms             | <2%        | >95%         |
 
 ### Check-in Rush Test
 
 | Environment | p95 QR Validation | Error Rate | Success Rate |
-|-------------|-------------------|------------|--------------|
-| CI          | 600ms            | <8%        | >90%         |
-| Staging     | 350ms            | <5%        | >96%         |
-| Production  | 200ms            | <3%        | >98%         |
+| ----------- | ----------------- | ---------- | ------------ |
+| CI          | 600ms             | <8%        | >90%         |
+| Staging     | 350ms             | <5%        | >96%         |
+| Production  | 200ms             | <3%        | >98%         |
 
 ## Usage
 
@@ -93,7 +96,7 @@ Force specific environment thresholds:
 # Force CI thresholds (most lenient)
 PERF_TEST_ENV=ci npm run test:performance
 
-# Force production thresholds (most strict)  
+# Force production thresholds (most strict)
 PERF_TEST_ENV=production npm run test:performance
 ```
 
@@ -175,15 +178,15 @@ Both workflows now use environment-aware thresholds:
 ### Threshold Breach Notifications
 
 | Environment | Notification | Block Deployment | Escalation |
-|-------------|-------------|------------------|------------|
-| CI          | PR Comment  | No               | No         |
-| Staging     | Webhook     | No               | No         |
-| Production  | Webhook     | Yes              | Yes        |
+| ----------- | ------------ | ---------------- | ---------- |
+| CI          | PR Comment   | No               | No         |
+| Staging     | Webhook      | No               | No         |
+| Production  | Webhook      | Yes              | Yes        |
 
 ### Regression Detection
 
 - **Baseline Comparison**: Compare against previous runs
-- **Trend Analysis**: Detect gradual performance degradation  
+- **Trend Analysis**: Detect gradual performance degradation
 - **Alert Thresholds**: 15% degradation triggers investigation
 
 ## Configuration Management
@@ -207,6 +210,7 @@ Both workflows now use environment-aware thresholds:
 ### Common Issues
 
 **False Failures in CI**:
+
 ```bash
 # Check environment detection
 node scripts/threshold-selector.js detect
@@ -216,6 +220,7 @@ PERF_TEST_ENV=ci node scripts/threshold-selector.js get ticket-sales
 ```
 
 **Threshold Too Strict**:
+
 ```bash
 # Validate against serverless constraints
 node scripts/threshold-selector.js validate stress
@@ -224,6 +229,7 @@ node scripts/threshold-selector.js validate stress
 ```
 
 **Environment Not Detected**:
+
 ```bash
 # Force environment
 PERF_TEST_ENV=staging npm run test:performance
@@ -262,15 +268,15 @@ thresholds: {
 
 ```javascript
 // Automatic environment detection
-import { getThresholds } from '../utils/threshold-loader.js';
+import { getThresholds } from "../utils/threshold-loader.js";
 
-const thresholdConfig = getThresholds('ticket-sales');
+const thresholdConfig = getThresholds("ticket-sales");
 
 export let options = {
   thresholds: thresholdConfig.thresholds,
   tags: {
-    environment: thresholdConfig.environment
-  }
+    environment: thresholdConfig.environment,
+  },
 };
 ```
 

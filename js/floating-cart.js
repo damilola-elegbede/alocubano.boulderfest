@@ -57,11 +57,11 @@ function createCartHTML() {
             <div class="cart-backdrop"></div>
             
             <!-- Floating Button -->
-            <button class="floating-cart-button" aria-label="View cart">
+            <button class="floating-cart-button" aria-label="View cart" data-testid="view-cart">
                 <svg class="cart-icon" viewBox="0 0 24 24" width="24" height="24">
                     <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03L21.7 4H5.21l-.94-2H1zm16 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
                 </svg>
-                <span class="cart-badge" style="display: none;">0</span>
+                <span class="cart-badge" style="display: none;" data-testid="cart-counter">0</span>
             </button>
             
             <!-- Cart Panel -->
@@ -89,10 +89,10 @@ function createCartHTML() {
                         <span>Total:</span>
                         <span class="cart-total-amount">$0</span>
                     </div>
-                    <button class="cart-checkout-btn" disabled>
+                    <button class="cart-checkout-btn" disabled data-testid="checkout-button">
                         Proceed to Checkout
                     </button>
-                    <button class="cart-clear-btn" aria-label="Clear cart">
+                    <button class="cart-clear-btn" aria-label="Clear cart" data-testid="clear-cart">
                         Clear cart
                     </button>
                 </div>
@@ -250,9 +250,9 @@ async function handleCheckoutClick(cartManager) {
 
     // Show payment method selector
     const paymentSelector = getPaymentSelector();
-    
+
     try {
-        // Close cart panel first for better UX
+    // Close cart panel first for better UX
         const panel = document.querySelector('.floating-cart-panel');
         const backdrop = document.querySelector('.cart-backdrop');
         if (panel && panel.classList.contains('open')) {
@@ -260,7 +260,7 @@ async function handleCheckoutClick(cartManager) {
             backdrop.classList.remove('active');
             document.body.style.overflow = '';
         }
-        
+
         // Show payment selector and let it handle the rest
         await paymentSelector.show((selectedMethod) => {
             // Track payment method selection
@@ -276,8 +276,10 @@ async function handleCheckoutClick(cartManager) {
             }
         });
     } catch (error) {
-        // Show error if payment selection fails
-        showCheckoutError(error.message || 'Payment processing failed. Please try again.');
+    // Show error if payment selection fails
+        showCheckoutError(
+            error.message || 'Payment processing failed. Please try again.'
+        );
     }
 }
 
@@ -398,9 +400,9 @@ function renderCartItems(container, tickets, donations) {
                         <p class="cart-item-price">$${ticket.price.toFixed(2)} × ${ticket.quantity} = $${itemTotal.toFixed(2)}</p>
                     </div>
                     <div class="cart-item-actions">
-                        <button class="qty-adjust minus" data-action="decrease" aria-label="Decrease quantity">−</button>
-                        <span class="qty-display">${ticket.quantity}</span>
-                        <button class="qty-adjust plus" data-action="increase" aria-label="Increase quantity">+</button>
+                        <button class="qty-adjust minus" data-action="decrease" aria-label="Decrease quantity" data-testid="quantity-decrease">−</button>
+                        <span class="qty-display" data-testid="quantity-display">${ticket.quantity}</span>
+                        <button class="qty-adjust plus" data-action="increase" aria-label="Increase quantity" data-testid="quantity-increase">+</button>
                     </div>
                 </div>
             `;
@@ -423,7 +425,7 @@ function renderCartItems(container, tickets, donations) {
                         <h4>${escapeHtml(donation.name)}</h4>
                         <p class="cart-item-price">$${donation.amount.toFixed(2)}</p>
                     </div>
-                    <button class="remove-donation" data-donation-id="${donation.id}" aria-label="Remove donation">×</button>
+                    <button class="remove-donation" data-donation-id="${donation.id}" aria-label="Remove donation" data-testid="remove-item">×</button>
                 </div>
             `;
         });
@@ -504,7 +506,7 @@ async function showClearCartConfirmation(cartState) {
                     cursor: pointer;
                     transition: all 0.2s;
                 ">Keep Cart</button>
-                <button class="confirm-clear" style="
+                <button class="confirm-clear" data-testid="confirm-clear" style="
                     padding: var(--space-md) var(--space-lg);
                     border: none;
                     background: var(--color-red);
@@ -574,7 +576,6 @@ async function showClearCartConfirmation(cartState) {
         cancelBtn.focus();
     });
 }
-
 
 // Show loading state during checkout
 function showCheckoutLoadingState() {

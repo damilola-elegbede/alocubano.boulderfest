@@ -11,8 +11,12 @@
 
 // Load actual gallery-detail.js in test environment
 import { vi } from "vitest";
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Alias jest to vi for compatibility
 global.jest = vi;
@@ -449,6 +453,8 @@ describe("Gallery API Integration", () => {
   });
 
   test("should handle API error responses", async () => {
+    // Ensure fresh mock setup
+    global.fetch = vi.fn();
     global.fetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
@@ -480,6 +486,9 @@ describe("Gallery Cache System", () => {
       removeItem: vi.fn((key) => {
         delete mockLocalStorage.data[key];
       }),
+      clear: vi.fn(() => {
+        mockLocalStorage.data = {};
+      }),
     };
 
     Object.defineProperty(global, "localStorage", {
@@ -507,16 +516,16 @@ describe("Gallery Cache System", () => {
       timestamp: Date.now(),
       content: testData,
     };
-    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    mockLocalStorage.setItem(cacheKey, JSON.stringify(cacheData));
 
     // Verify cache write
-    expect(localStorage.setItem).toHaveBeenCalledWith(
+    expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
       cacheKey,
       expect.stringContaining("timestamp"),
     );
 
     // Simulate cache read
-    const cached = localStorage.getItem(cacheKey);
+    const cached = mockLocalStorage.getItem(cacheKey);
     expect(cached).not.toBeNull();
 
     const parsedCache = JSON.parse(cached);
@@ -535,7 +544,7 @@ describe("Gallery Cache System", () => {
     };
 
     const validAge = now - validCache.timestamp;
-    expect(validAge < CACHE_DURATION).toBe(true);
+    expect(validAge).toBeLessThan(CACHE_DURATION);
 
     // Test expired cache
     const expiredCache = {
@@ -544,17 +553,18 @@ describe("Gallery Cache System", () => {
     };
 
     const expiredAge = now - expiredCache.timestamp;
-    expect(expiredAge > CACHE_DURATION).toBe(true);
+    expect(expiredAge).toBeGreaterThan(CACHE_DURATION);
   });
 
   test("should manage request cache with LRU eviction", () => {
     const MAX_CACHE_SIZE = 3;
     const REQUEST_CACHE_DURATION = 300000; // 5 minutes
+    const baseTime = Date.now();
 
-    // Add entries to cache
-    mockRequestCache.set("url1", { timestamp: Date.now(), response: "data1" });
-    mockRequestCache.set("url2", { timestamp: Date.now(), response: "data2" });
-    mockRequestCache.set("url3", { timestamp: Date.now(), response: "data3" });
+    // Add entries to cache with different timestamps
+    mockRequestCache.set("url1", { timestamp: baseTime - 3000, response: "data1" });
+    mockRequestCache.set("url2", { timestamp: baseTime - 2000, response: "data2" });
+    mockRequestCache.set("url3", { timestamp: baseTime - 1000, response: "data3" });
 
     expect(mockRequestCache.size).toBe(3);
 
@@ -575,8 +585,11 @@ describe("Gallery Cache System", () => {
       }
     }
 
-    mockRequestCache.set("url4", { timestamp: Date.now(), response: "data4" });
+    mockRequestCache.set("url4", { timestamp: baseTime, response: "data4" });
     expect(mockRequestCache.size).toBe(MAX_CACHE_SIZE);
+    // Verify url1 was evicted (oldest)
+    expect(mockRequestCache.has("url1")).toBe(false);
+    expect(mockRequestCache.has("url4")).toBe(true);
   });
 
   test("should handle cache hit/miss tracking", () => {
@@ -587,10 +600,11 @@ describe("Gallery Cache System", () => {
 
     const cacheKey = "test-url";
     const now = Date.now();
+    const CACHE_DURATION = 300000; // 5 minutes
 
     // Simulate cache miss
     const cached = mockRequestCache.get(cacheKey);
-    if (!cached || now - cached.timestamp > 300000) {
+    if (!cached || now - cached.timestamp > CACHE_DURATION) {
       performanceMetrics.cacheMisses++;
       // Store new data
       mockRequestCache.set(cacheKey, {
@@ -604,10 +618,11 @@ describe("Gallery Cache System", () => {
 
     // Simulate cache hit
     const secondRequest = mockRequestCache.get(cacheKey);
-    if (secondRequest && now - secondRequest.timestamp < 300000) {
+    if (secondRequest && now - secondRequest.timestamp <= CACHE_DURATION) {
       performanceMetrics.cacheHits++;
     }
 
     expect(performanceMetrics.cacheHits).toBe(1);
+    expect(performanceMetrics.cacheMisses).toBe(1);
   });
 });

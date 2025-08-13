@@ -96,6 +96,7 @@ curl http://localhost:3000/api/wallet/google/TEST-TICKET-ID
 ## Step 9: Production Deployment
 
 1. Add environment variables to Vercel:
+
    ```bash
    vercel env add GOOGLE_WALLET_ISSUER_ID
    vercel env add GOOGLE_WALLET_CLASS_ID
@@ -110,11 +111,13 @@ curl http://localhost:3000/api/wallet/google/TEST-TICKET-ID
 ## API Endpoints
 
 ### Generate Google Wallet Pass
+
 ```http
 GET /api/wallet/google/{ticketId}
 ```
 
 Returns:
+
 ```json
 {
   "success": true,
@@ -124,11 +127,13 @@ Returns:
 ```
 
 ### Generate Both Wallet Passes
+
 ```http
 GET /api/wallet/{ticketId}
 ```
 
 Returns:
+
 ```json
 {
   "ticketId": "TICKET-123",
@@ -145,6 +150,7 @@ Returns:
 ```
 
 ### Revoke Pass
+
 ```http
 DELETE /api/wallet/google/{ticketId}
 ```
@@ -154,6 +160,7 @@ DELETE /api/wallet/google/{ticketId}
 The Google Wallet pass includes:
 
 ### Front of Pass
+
 - **Event**: Boulder Fest 2026
 - **Ticket Type**: VIP PASS (in blue, all caps)
 - **Attendee**: John Doe
@@ -162,6 +169,7 @@ The Google Wallet pass includes:
 - **QR Code**: For scanning at entrance
 
 ### Back of Pass
+
 - **Venue**: Avalon Ballroom address
 - **Ticket ID**: Unique identifier
 - **Check-in Instructions**: Entry requirements
@@ -171,20 +179,24 @@ The Google Wallet pass includes:
 ## Troubleshooting
 
 ### "Google Wallet is not configured"
+
 - Verify all environment variables are set
 - Check service account JSON is properly base64 encoded
 - Ensure Google Wallet API is enabled
 
 ### "Invalid issuer ID"
+
 - Verify your issuer ID in Google Pay & Wallet Console
 - Ensure merchant account is verified
 
 ### "Authentication failed"
+
 - Check service account has proper permissions
 - Verify private key is correctly formatted
 - Ensure project ID matches service account
 
 ### Pass doesn't appear correctly
+
 - Images must be publicly accessible
 - Check image URLs in pass definition
 - Verify color codes are in correct format
@@ -192,6 +204,7 @@ The Google Wallet pass includes:
 ## Design Assets
 
 Place these images in `/public/images/`:
+
 - `logo.png` - Festival logo (used for pass icon)
 - `google-wallet-hero.png` - Optional hero image (currently not used for minimalist design)
 - `google-wallet-wide-logo.png` - Wide logo for pass listing

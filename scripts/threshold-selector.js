@@ -2,7 +2,7 @@
 
 /**
  * Threshold Selector Utility
- * 
+ *
  * Dynamically selects appropriate performance thresholds based on:
  * - Environment detection (CI, Staging, Production)
  * - Test type (ticket-sales, check-in, sustained, stress)
@@ -10,22 +10,27 @@
  * - Serverless platform constraints
  */
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 class ThresholdSelector {
   constructor() {
-    this.configPath = path.join(__dirname, '..', 'config', 'environment-thresholds.json');
+    this.configPath = path.join(
+      __dirname,
+      "..",
+      "config",
+      "environment-thresholds.json",
+    );
     this.config = this.loadConfig();
   }
 
   loadConfig() {
     try {
-      const configData = fs.readFileSync(this.configPath, 'utf8');
+      const configData = fs.readFileSync(this.configPath, "utf8");
       return JSON.parse(configData);
     } catch (error) {
       console.error(`Failed to load threshold configuration: ${error.message}`);
@@ -45,33 +50,42 @@ class ThresholdSelector {
     }
 
     // Check CI indicators
-    const ciIndicators = this.config.dynamic_threshold_logic.environment_detection.ci_indicators;
+    const ciIndicators =
+      this.config.dynamic_threshold_logic.environment_detection.ci_indicators;
     for (const indicator of ciIndicators) {
       if (process.env[indicator]) {
         console.log(`Detected CI environment via ${indicator}`);
-        return 'ci';
+        return "ci";
       }
     }
 
     // Check URL patterns for staging
-    const deploymentUrl = process.env.LOAD_TEST_BASE_URL || process.env.VERCEL_URL || '';
-    const stagingPatterns = this.config.dynamic_threshold_logic.environment_detection.staging_patterns;
-    
+    const deploymentUrl =
+      process.env.LOAD_TEST_BASE_URL || process.env.VERCEL_URL || "";
+    const stagingPatterns =
+      this.config.dynamic_threshold_logic.environment_detection
+        .staging_patterns;
+
     for (const pattern of stagingPatterns) {
       if (deploymentUrl.includes(pattern)) {
-        console.log(`Detected staging environment from URL pattern: ${pattern}`);
-        return 'staging';
+        console.log(
+          `Detected staging environment from URL pattern: ${pattern}`,
+        );
+        return "staging";
       }
     }
 
     // Check for production patterns
-    const productionPatterns = this.config.dynamic_threshold_logic.environment_detection.production_patterns;
-    const branch = process.env.GITHUB_REF_NAME || process.env.VERCEL_GIT_COMMIT_REF || '';
-    
+    const productionPatterns =
+      this.config.dynamic_threshold_logic.environment_detection
+        .production_patterns;
+    const branch =
+      process.env.GITHUB_REF_NAME || process.env.VERCEL_GIT_COMMIT_REF || "";
+
     for (const pattern of productionPatterns) {
       if (deploymentUrl.includes(pattern) || branch === pattern) {
         console.log(`Detected production environment from pattern: ${pattern}`);
-        return 'production';
+        return "production";
       }
     }
 
@@ -86,20 +100,22 @@ class ThresholdSelector {
    */
   getThresholds(testType, environment = null) {
     const env = environment || this.detectEnvironment();
-    
+
     if (!this.config.environments[env]) {
       throw new Error(`Unknown environment: ${env}`);
     }
 
     if (!this.config.environments[env].thresholds[testType]) {
-      throw new Error(`Unknown test type '${testType}' for environment '${env}'`);
+      throw new Error(
+        `Unknown test type '${testType}' for environment '${env}'`,
+      );
     }
 
     const thresholds = this.config.environments[env].thresholds[testType];
-    
+
     console.log(`Selected thresholds for ${testType} in ${env} environment:`);
     console.log(JSON.stringify(thresholds, null, 2));
-    
+
     return {
       environment: env,
       testType: testType,
@@ -107,8 +123,8 @@ class ThresholdSelector {
       metadata: {
         description: this.config.environments[env].description,
         context: this.config.environments[env].context,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     };
   }
 
@@ -131,13 +147,18 @@ class ThresholdSelector {
     return {
       thresholds: thresholds,
       execution: {
-        maxDuration: execParams.max_duration_minutes ? `${execParams.max_duration_minutes}m` : '30m',
+        maxDuration: execParams.max_duration_minutes
+          ? `${execParams.max_duration_minutes}m`
+          : "30m",
         maxUsers: execParams.max_concurrent_users || 100,
-        testScope: execParams.full_test_scope ? 'full' : 'reduced',
-        includeStress: execParams.include_stress_tests !== false
+        testScope: execParams.full_test_scope ? "full" : "reduced",
+        includeStress: execParams.include_stress_tests !== false,
       },
       serverless: this.config.serverless_adjustments,
-      alerting: this.config.alerting_configuration.threshold_breach_notifications[env] || {}
+      alerting:
+        this.config.alerting_configuration.threshold_breach_notifications[
+          env
+        ] || {},
     };
   }
 
@@ -147,7 +168,7 @@ class ThresholdSelector {
   exportForK6(testType, outputPath = null) {
     const environment = this.detectEnvironment();
     const options = this.generateTestOptions(testType, environment);
-    
+
     const k6Export = {
       // K6 options object
       options: {
@@ -155,17 +176,17 @@ class ThresholdSelector {
         tags: {
           environment: environment,
           testType: testType,
-          generated: new Date().toISOString()
-        }
+          generated: new Date().toISOString(),
+        },
       },
-      
+
       // Additional configuration for test scripts
       config: {
         environment: environment,
         serverless: options.serverless,
         execution: options.execution,
-        alerting: options.alerting
-      }
+        alerting: options.alerting,
+      },
     };
 
     if (outputPath) {
@@ -183,23 +204,28 @@ class ThresholdSelector {
     const env = environment || this.detectEnvironment();
     const thresholds = this.getThresholds(testType, env);
     const serverless = this.config.serverless_adjustments;
-    
+
     const warnings = [];
     const errors = [];
 
     // Check timeout compatibility
-    Object.keys(thresholds.thresholds).forEach(key => {
-      if (key.includes('duration') && thresholds.thresholds[key]) {
-        thresholds.thresholds[key].forEach(threshold => {
+    Object.keys(thresholds.thresholds).forEach((key) => {
+      if (key.includes("duration") && thresholds.thresholds[key]) {
+        thresholds.thresholds[key].forEach((threshold) => {
           const match = threshold.match(/p\(\d+\)<(\d+)/);
           if (match) {
             const timeoutMs = parseInt(match[1]);
-            const maxTimeoutMs = serverless.timeout_configurations.pro_timeout_s * 1000;
-            
+            const maxTimeoutMs =
+              serverless.timeout_configurations.pro_timeout_s * 1000;
+
             if (timeoutMs > maxTimeoutMs) {
-              errors.push(`Threshold ${threshold} exceeds Vercel timeout limit of ${maxTimeoutMs}ms`);
+              errors.push(
+                `Threshold ${threshold} exceeds Vercel timeout limit of ${maxTimeoutMs}ms`,
+              );
             } else if (timeoutMs > maxTimeoutMs * 0.8) {
-              warnings.push(`Threshold ${threshold} is close to Vercel timeout limit`);
+              warnings.push(
+                `Threshold ${threshold} is close to Vercel timeout limit`,
+              );
             }
           }
         });
@@ -242,23 +268,23 @@ Examples:
 
     try {
       switch (command) {
-        case 'detect':
+        case "detect":
           const env = selector.detectEnvironment();
           console.log(`Current environment: ${env}`);
           break;
 
-        case 'get':
+        case "get":
           if (args.length < 2) {
-            console.error('Test type required');
+            console.error("Test type required");
             process.exit(1);
           }
           const thresholds = selector.getThresholds(args[1], args[2]);
           console.log(JSON.stringify(thresholds, null, 2));
           break;
 
-        case 'export':
+        case "export":
           if (args.length < 2) {
-            console.error('Test type required');
+            console.error("Test type required");
             process.exit(1);
           }
           const exported = selector.exportForK6(args[1], args[2]);
@@ -267,21 +293,21 @@ Examples:
           }
           break;
 
-        case 'validate':
+        case "validate":
           if (args.length < 2) {
-            console.error('Test type required');
+            console.error("Test type required");
             process.exit(1);
           }
           const validation = selector.validateServerlessCompatibility(args[1]);
-          console.log('Validation Results:');
+          console.log("Validation Results:");
           console.log(`Valid: ${validation.valid}`);
           if (validation.warnings.length > 0) {
-            console.log('Warnings:');
-            validation.warnings.forEach(w => console.log(`  - ${w}`));
+            console.log("Warnings:");
+            validation.warnings.forEach((w) => console.log(`  - ${w}`));
           }
           if (validation.errors.length > 0) {
-            console.log('Errors:');
-            validation.errors.forEach(e => console.log(`  - ${e}`));
+            console.log("Errors:");
+            validation.errors.forEach((e) => console.log(`  - ${e}`));
           }
           process.exit(validation.valid ? 0 : 1);
 

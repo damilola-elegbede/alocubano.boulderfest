@@ -56,9 +56,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition:
-    transform var(--transition-fast),
-    box-shadow var(--transition-fast);
+  transition: transform var(--transition-fast);
 }
 
 .floating-cart-button:hover {
@@ -153,9 +151,7 @@
   padding: 8px;
   color: var(--cart-text-secondary);
   border-radius: 4px;
-  transition:
-    background-color 0.2s,
-    color 0.2s;
+  /* Removed transition per performance guidelines */
 }
 
 .cart-close:hover {
@@ -279,9 +275,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition:
-    background-color 0.2s,
-    border-color 0.2s;
+  /* Removed transition per performance guidelines */
 }
 
 .qty-adjust:hover {
@@ -324,9 +318,7 @@
   color: var(--cart-text-secondary);
   padding: 4px 8px;
   border-radius: 4px;
-  transition:
-    background-color 0.2s,
-    color 0.2s;
+  /* Removed transition per performance guidelines */
 }
 
 .remove-donation:hover {
@@ -379,9 +371,7 @@
   letter-spacing: var(--letter-spacing-wider);
   text-transform: uppercase;
   cursor: pointer;
-  transition:
-    background-color var(--transition-fast),
-    transform var(--transition-fast);
+  transition: transform var(--transition-fast);
 }
 
 .cart-checkout-btn:hover:not(:disabled) {
@@ -420,7 +410,7 @@
   text-transform: uppercase;
   text-decoration: underline;
   cursor: pointer;
-  transition: color 0.2s ease;
+  /* Removed transition per performance guidelines */
   text-align: center;
 }
 
@@ -565,20 +555,20 @@
   .cart-checkout-btn {
     transition: none;
   }
-  
+
   /* Disable animations for checkout overlays */
   .checkout-email-modal,
   .checkout-loading-overlay,
   .checkout-error-message {
     animation: none;
   }
-  
+
   .checkout-loading-content,
   .checkout-email-content,
   .checkout-error-content {
     animation: none;
   }
-  
+
   /* Stop spinner rotation for reduced motion */
   .checkout-loading-spinner {
     animation: none;
@@ -731,7 +721,7 @@
   border: 2px solid var(--color-gray-300);
   font-family: var(--font-body);
   font-size: 1rem;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
 #checkout-email-form input:focus {
@@ -755,7 +745,7 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease;
   border: none;
 }
 
@@ -880,7 +870,7 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
 .checkout-error-content button:hover {

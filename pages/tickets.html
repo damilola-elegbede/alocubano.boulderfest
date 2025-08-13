@@ -245,7 +245,7 @@
           </div>
 
           <!-- Ticket Selection Interface -->
-          <section class="ticket-selection">
+          <section class="ticket-selection" data-testid="ticket-options">
             <h2>Select Your Tickets</h2>
 
             <!-- Full Festival Passes -->
@@ -260,6 +260,7 @@
                   class="ticket-card"
                   data-ticket-type="2026-early-bird-full"
                   data-price="100"
+                  data-testid="weekend-pass-card"
                 >
                   <h4>2026 Early Bird Full Pass</h4>
                   <div class="ticket-price">$100</div>
@@ -280,6 +281,7 @@
                       data-action="increase"
                       type="button"
                       aria-label="Increase quantity"
+                      data-testid="weekend-pass-add"
                     >
                       +
                     </button>
@@ -359,6 +361,7 @@
                   class="ticket-card"
                   data-ticket-type="2026-saturday-pass"
                   data-price="85"
+                  data-testid="day-pass-card"
                 >
                   <h4>2026 Saturday Pass</h4>
                   <div class="ticket-price">$85</div>
@@ -378,6 +381,7 @@
                       data-action="increase"
                       type="button"
                       aria-label="Increase quantity"
+                      data-testid="day-pass-add"
                     >
                       +
                     </button>

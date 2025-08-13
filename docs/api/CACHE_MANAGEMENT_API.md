@@ -9,6 +9,7 @@ The A Lo Cubano Boulder Fest application provides comprehensive cache management
 All cache management endpoints require admin authentication using the same session tokens used for the admin dashboard.
 
 **Authentication Methods:**
+
 - Session cookie: `admin_session`
 - Authorization header: `Bearer <token>`
 
@@ -17,10 +18,11 @@ All cache management endpoints require admin authentication using the same sessi
 Each endpoint has specific rate limits to prevent system overload:
 
 - **Clear API**: 10 operations per minute per admin
-- **Warm API**: 5 operations per 10 minutes per admin  
+- **Warm API**: 5 operations per 10 minutes per admin
 - **Stats API**: 20 requests per minute per admin
 
 Rate limit headers are included in all responses:
+
 - `X-RateLimit-Remaining`: Number of requests remaining
 - `X-RateLimit-Reset`: Timestamp when limit resets
 
@@ -38,7 +40,7 @@ Provides secure cache clearing functionality with pattern-based and selective cl
 {
   "action": "selective|pattern|namespace|all",
   "pattern": "optional_wildcard_pattern",
-  "namespace": "optional_namespace", 
+  "namespace": "optional_namespace",
   "cacheType": "gallery|tickets|sessions|analytics|payments|api",
   "dryRun": false,
   "reason": "Manual admin clear"
@@ -47,14 +49,14 @@ Provides secure cache clearing functionality with pattern-based and selective cl
 
 #### Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `action` | string | Yes | Clear action type |
-| `pattern` | string | No | Wildcard pattern for pattern clearing |
-| `namespace` | string | No | Specific namespace to clear |
-| `cacheType` | string | No | Specific cache type for selective clearing |
-| `dryRun` | boolean | No | Preview mode - shows what would be cleared |
-| `reason` | string | No | Audit trail reason |
+| Parameter   | Type    | Required | Description                                |
+| ----------- | ------- | -------- | ------------------------------------------ |
+| `action`    | string  | Yes      | Clear action type                          |
+| `pattern`   | string  | No       | Wildcard pattern for pattern clearing      |
+| `namespace` | string  | No       | Specific namespace to clear                |
+| `cacheType` | string  | No       | Specific cache type for selective clearing |
+| `dryRun`    | boolean | No       | Preview mode - shows what would be cleared |
+| `reason`    | string  | No       | Audit trail reason                         |
 
 #### Action Types
 
@@ -74,7 +76,7 @@ Provides secure cache clearing functionality with pattern-based and selective cl
     {
       "type": "pattern_clear",
       "pattern": "tickets:*",
-      "namespace": "tickets", 
+      "namespace": "tickets",
       "cleared": 25
     }
   ],
@@ -88,6 +90,7 @@ Provides secure cache clearing functionality with pattern-based and selective cl
 #### Examples
 
 **Clear all caches:**
+
 ```bash
 curl -X POST https://alocubanoboulderfest.com/api/cache/clear \
   -H "Authorization: Bearer <token>" \
@@ -96,6 +99,7 @@ curl -X POST https://alocubanoboulderfest.com/api/cache/clear \
 ```
 
 **Clear by pattern (dry run):**
+
 ```bash
 curl -X POST https://alocubanoboulderfest.com/api/cache/clear \
   -H "Authorization: Bearer <token>" \
@@ -109,6 +113,7 @@ curl -X POST https://alocubanoboulderfest.com/api/cache/clear \
 ```
 
 **Clear specific cache type:**
+
 ```bash
 curl -X POST https://alocubanoboulderfest.com/api/cache/clear \
   -H "Authorization: Bearer <token>" \
@@ -139,12 +144,12 @@ Pre-loads critical data into cache for optimal performance with intelligent warm
 
 #### Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `sections` | array | No | Cache sections to warm (default: ["all"]) |
-| `priority` | string | No | Warming priority affecting TTL (default: "normal") |
-| `dryRun` | boolean | No | Preview mode - shows what would be warmed |
-| `force` | boolean | No | Force warming even if data exists |
+| Parameter  | Type    | Required | Description                                        |
+| ---------- | ------- | -------- | -------------------------------------------------- |
+| `sections` | array   | No       | Cache sections to warm (default: ["all"])          |
+| `priority` | string  | No       | Warming priority affecting TTL (default: "normal") |
+| `dryRun`   | boolean | No       | Preview mode - shows what would be warmed          |
+| `force`    | boolean | No       | Force warming even if data exists                  |
 
 #### Warming Sections
 
@@ -156,11 +161,11 @@ Pre-loads critical data into cache for optimal performance with intelligent warm
 
 #### Priority Levels
 
-| Priority | TTL | Memory Promotion | Use Case |
-|----------|-----|------------------|----------|
-| `low` | 30 min | No | Testing, development |
-| `normal` | 1 hour | No | Regular operations |
-| `high` | 2 hours | Yes | Pre-event, high traffic |
+| Priority | TTL     | Memory Promotion | Use Case                |
+| -------- | ------- | ---------------- | ----------------------- |
+| `low`    | 30 min  | No               | Testing, development    |
+| `normal` | 1 hour  | No               | Regular operations      |
+| `high`   | 2 hours | Yes              | Pre-event, high traffic |
 
 #### Response
 
@@ -181,7 +186,7 @@ Pre-loads critical data into cache for optimal performance with intelligent warm
       "namespace": "tickets"
     },
     {
-      "section": "gallery", 
+      "section": "gallery",
       "status": "completed",
       "warmedKeys": 24,
       "totalKeys": 24,
@@ -205,6 +210,7 @@ Pre-loads critical data into cache for optimal performance with intelligent warm
 #### Examples
 
 **Warm all sections:**
+
 ```bash
 curl -X POST https://alocubanoboulderfest.com/api/cache/warm \
   -H "Authorization: Bearer <token>" \
@@ -213,6 +219,7 @@ curl -X POST https://alocubanoboulderfest.com/api/cache/warm \
 ```
 
 **Warm specific sections with high priority:**
+
 ```bash
 curl -X POST https://alocubanoboulderfest.com/api/cache/warm \
   -H "Authorization: Bearer <token>" \
@@ -225,6 +232,7 @@ curl -X POST https://alocubanoboulderfest.com/api/cache/warm \
 ```
 
 **Preview warming (dry run):**
+
 ```bash
 curl -X POST https://alocubanoboulderfest.com/api/cache/warm \
   -H "Authorization: Bearer <token>" \
@@ -243,11 +251,11 @@ Provides comprehensive cache performance analytics and monitoring with effective
 
 #### Query Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `detailed` | boolean | Include detailed breakdown by namespace |
+| Parameter    | Type    | Description                                |
+| ------------ | ------- | ------------------------------------------ |
+| `detailed`   | boolean | Include detailed breakdown by namespace    |
 | `historical` | boolean | Include historical trends (future feature) |
-| `format` | string | Response format: 'json' or 'summary' |
+| `format`     | string  | Response format: 'json' or 'summary'       |
 
 #### Response (Full Format)
 
@@ -290,9 +298,7 @@ Provides comprehensive cache performance analytics and monitoring with effective
     "ttl": {
       "avgTtl": "N/A",
       "expirationPrediction": "N/A",
-      "recommendations": [
-        "High miss rate - consider increasing TTL values"
-      ]
+      "recommendations": ["High miss rate - consider increasing TTL values"]
     },
     "insights": {
       "performance": "good",
@@ -316,7 +322,7 @@ Provides comprehensive cache performance analytics and monitoring with effective
 ```json
 {
   "status": "multi-tier",
-  "hitRatio": "93.75%", 
+  "hitRatio": "93.75%",
   "effectiveness": "B",
   "alerts": [],
   "timestamp": "2026-01-15T10:30:00Z"
@@ -328,35 +334,38 @@ Provides comprehensive cache performance analytics and monitoring with effective
 The effectiveness score (0-100) is calculated based on:
 
 - **Hit Ratio** (40 points): Overall cache hit percentage
-- **Memory Distribution** (20 points): Optimal L1/L2 hit distribution  
+- **Memory Distribution** (20 points): Optimal L1/L2 hit distribution
 - **Promotion Effectiveness** (20 points): L2→L1 promotion success rate
 - **Reliability** (20 points): Low fallback/error rates
 
 #### Grade Scale
 
-| Score | Grade | Description |
-|-------|-------|-------------|
-| 90-100 | A | Excellent cache performance |
-| 80-89 | B | Good performance with room for optimization |
-| 70-79 | C | Fair performance, consider tuning |
-| 60-69 | D | Poor performance, optimization needed |
-| 0-59 | F | Critical performance issues |
+| Score  | Grade | Description                                 |
+| ------ | ----- | ------------------------------------------- |
+| 90-100 | A     | Excellent cache performance                 |
+| 80-89  | B     | Good performance with room for optimization |
+| 70-79  | C     | Fair performance, consider tuning           |
+| 60-69  | D     | Poor performance, optimization needed       |
+| 0-59   | F     | Critical performance issues                 |
 
 #### Examples
 
 **Get full statistics:**
+
 ```bash
 curl -H "Authorization: Bearer <token>" \
   https://alocubanoboulderfest.com/api/cache/stats?detailed=true
 ```
 
 **Get summary view:**
+
 ```bash
 curl -H "Authorization: Bearer <token>" \
   https://alocubanoboulderfest.com/api/cache/stats?format=summary
 ```
 
 **Monitor effectiveness:**
+
 ```bash
 curl -H "Authorization: Bearer <token>" \
   https://alocubanoboulderfest.com/api/cache/stats | \
@@ -377,13 +386,13 @@ All endpoints return consistent error responses:
 
 ### Common Error Codes
 
-| Code | Error | Description |
-|------|-------|-------------|
-| 401 | Unauthorized | Missing or invalid authentication |
-| 405 | Method Not Allowed | Invalid HTTP method |
-| 429 | Rate Limited | Too many requests |
-| 400 | Bad Request | Invalid parameters |
-| 500 | Server Error | Internal system error |
+| Code | Error              | Description                       |
+| ---- | ------------------ | --------------------------------- |
+| 401  | Unauthorized       | Missing or invalid authentication |
+| 405  | Method Not Allowed | Invalid HTTP method               |
+| 429  | Rate Limited       | Too many requests                 |
+| 400  | Bad Request        | Invalid parameters                |
+| 500  | Server Error       | Internal system error             |
 
 ## Best Practices
 
@@ -419,16 +428,19 @@ All endpoints return consistent error responses:
 ## Performance Impact
 
 ### Clear Operations
+
 - **Pattern clearing**: Minimal impact, proportional to matches
 - **Namespace clearing**: Low impact, isolated to namespace
 - **Full clearing**: Moderate impact, temporary performance reduction
 
-### Warm Operations  
+### Warm Operations
+
 - **Memory warming**: Low impact, improves subsequent performance
 - **Redis warming**: Minimal impact, network I/O during operation
 - **High priority warming**: Moderate memory usage increase
 
 ### Stats Operations
+
 - **Basic stats**: Negligible impact, cached briefly
 - **Detailed stats**: Low impact, comprehensive analysis
 - **Historical stats**: Future feature, expected low impact
@@ -470,22 +482,22 @@ echo "Cache effectiveness: $GRADE"
 // React component for cache monitoring
 const CacheMonitor = () => {
   const [stats, setStats] = useState(null);
-  
+
   useEffect(() => {
     const fetchStats = async () => {
-      const response = await fetch('/api/cache/stats', {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const response = await fetch("/api/cache/stats", {
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
       setStats(data);
     };
-    
+
     fetchStats();
     const interval = setInterval(fetchStats, 30000); // Every 30 seconds
-    
+
     return () => clearInterval(interval);
   }, []);
-  
+
   return (
     <div>
       <h3>Cache Performance</h3>
@@ -504,24 +516,28 @@ const CacheMonitor = () => {
 ## Troubleshooting
 
 ### Low Cache Effectiveness
+
 1. Check hit ratios in stats API
 2. Review TTL settings for your data patterns
 3. Consider warming critical data
 4. Monitor Redis connectivity
 
 ### High Memory Usage
+
 1. Check memory utilization in stats
 2. Clear unnecessary cached data
 3. Review TTL values to allow expiration
 4. Consider increasing memory limits
 
 ### Rate Limit Issues
+
 1. Reduce request frequency
 2. Use summary format for frequent monitoring
 3. Batch clear operations when possible
 4. Implement exponential backoff
 
 ### Redis Connectivity Issues
+
 1. Check fallback rates in stats
 2. Verify Redis server status
 3. Review connection configuration

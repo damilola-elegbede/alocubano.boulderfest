@@ -223,7 +223,8 @@ class StripePaymentHandler {
 
                 return {
                     success: false,
-                    error: data.error || data.message || 'Failed to create checkout session'
+                    error:
+            data.error || data.message || 'Failed to create checkout session'
                 };
             }
 
@@ -235,9 +236,11 @@ class StripePaymentHandler {
             };
         } catch (error) {
             // Log error in development mode only
-            if (typeof window !== 'undefined' &&
-                (window.location.hostname === 'localhost' ||
-                 window.location.hostname === '127.0.0.1')) {
+            if (
+                typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1')
+            ) {
                 // eslint-disable-next-line no-console
                 console.error('Checkout session creation error:', error);
             }

@@ -1,10 +1,15 @@
-name: CI/CD Pipeline
+name: Legacy CI Pipeline (Deprecated)
 
+# This workflow is deprecated in favor of comprehensive-testing.yml
+# Keeping for reference during transition period
 on:
-  push:
-    branches: [main, develop]  # Only run on main/develop pushes
-  pull_request:
-    branches: [main, develop]  # Run on all PRs targeting main/develop
+  workflow_dispatch:
+    inputs:
+      legacy-mode:
+        description: "Run legacy pipeline for comparison"
+        required: true
+        default: "false"
+        type: boolean
 
 jobs:
   lint:

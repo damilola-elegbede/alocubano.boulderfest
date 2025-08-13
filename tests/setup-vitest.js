@@ -1,463 +1,253 @@
+/**
+ * Vitest Global Setup
+ * Configures test environment for both Node.js and Edge runtime compatibility
+ * Uses TestEnvironmentManager for proper test isolation
+ */
+
 import { vi } from "vitest";
-import {
-  EventListenerTracker,
-  cleanupTest,
-  logMemoryUsage,
-} from "./utils/cleanup-helpers.js";
+import { testEnvManager } from "./utils/test-environment-manager.js";
+import { dbMockSync } from "./utils/database-mock-sync.js";
+import { environmentAwareTestSetup } from "./config/environment-aware-test-setup.js";
+import { testEnvironmentDetector } from "./utils/test-environment-detector.js";
+import { runMigrationsForTest } from "./utils/test-migration-runner.js";
 
-// Global event listener tracker
-global.__testEventTracker = new EventListenerTracker();
-global.__testEventTracker.start();
+// REMOVED: dotenv loading to prevent .env.local bleeding into tests
+// dotenv.config({ path: '.env.local' });
 
-// Jest compatibility layer - provide jest global for legacy tests
-global.jest = {
-  fn: vi.fn,
-  mock: vi.mock,
-  spyOn: vi.spyOn,
-  clearAllMocks: vi.clearAllMocks,
-  resetAllMocks: vi.resetAllMocks,
-  restoreAllMocks: vi.restoreAllMocks,
-  mocked: vi.mocked,
-  unstable_mockModule: vi.mock,
-};
-
-// Mock global fetch for Node.js environment
-global.fetch = vi.fn();
-
-// Mock browser APIs that are used in real source code
-// IntersectionObserver API
-global.IntersectionObserver = vi
-  .fn()
-  .mockImplementation((callback, options) => ({
-    observe: vi.fn(),
-    unobserve: vi.fn(),
-    disconnect: vi.fn(),
-    root: options?.root || null,
-    rootMargin: options?.rootMargin || "0px",
-    thresholds: options?.threshold || [0],
-  }));
-
-// PerformanceObserver API
-global.PerformanceObserver = vi.fn().mockImplementation((callback) => ({
-  observe: vi.fn(),
-  disconnect: vi.fn(),
-  takeRecords: vi.fn(() => []),
-  supportedEntryTypes: [
-    "navigation",
-    "measure",
-    "mark",
-    "resource",
-    "paint",
-    "largest-contentful-paint",
-    "first-input",
-    "layout-shift",
-  ],
-}));
-
-// Performance API enhancements
-if (!global.performance) {
-  global.performance = {};
+// Set up test-specific environment variables that don't conflict with production
+if (!process.env.TURSO_DATABASE_URL) {
+  // Use in-memory database for tests to prevent file conflicts
+  process.env.TURSO_DATABASE_URL = process.env.CI === 'true' ? ':memory:' : 'file:test.db';
 }
 
-// Node 18.x has a read-only performance object, so we need to use defineProperty
-const performanceMethods = {
-  now: vi.fn(() => Date.now()),
-  mark: vi.fn(),
-  measure: vi.fn(),
-  getEntriesByType: vi.fn(() => []),
-  getEntriesByName: vi.fn(() => []),
-  clearMarks: vi.fn(),
-  clearMeasures: vi.fn(),
-};
-
-// Define each method individually to handle read-only properties
-Object.keys(performanceMethods).forEach((key) => {
-  try {
-    if (
-      !global.performance[key] ||
-      typeof global.performance[key] !== "function"
-    ) {
-      Object.defineProperty(global.performance, key, {
-        value: performanceMethods[key],
-        writable: true,
-        configurable: true,
-      });
-    }
-  } catch (e) {
-    // Silently fail if property cannot be defined
+// For local databases (:memory: or file:), auth token is not required
+// Set a dummy token if not present to satisfy other components that check for it
+if (!process.env.TURSO_AUTH_TOKEN) {
+  const dbUrl = process.env.TURSO_DATABASE_URL;
+  const isLocalDatabase = dbUrl === ':memory:' || dbUrl.startsWith('file:');
+  if (isLocalDatabase) {
+    process.env.TURSO_AUTH_TOKEN = 'test-auth-token';
   }
-});
-
-// Define complex properties separately
-try {
-  if (!global.performance.memory) {
-    Object.defineProperty(global.performance, "memory", {
-      value: {
-        usedJSHeapSize: 1024 * 1024,
-        totalJSHeapSize: 2 * 1024 * 1024,
-        jsHeapSizeLimit: 4 * 1024 * 1024,
-      },
-      writable: true,
-      configurable: true,
-    });
-  }
-} catch (e) {
-  // Silently fail
+}
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = "test";
 }
 
-try {
-  if (!global.performance.navigation) {
-    Object.defineProperty(global.performance, "navigation", {
-      value: {
-        type: 1,
-        redirectCount: 0,
-      },
-      writable: true,
-      configurable: true,
-    });
-  }
-} catch (e) {
-  // Silently fail
+// Set busy timeout for SQLite to prevent SQLITE_BUSY errors
+if (!process.env.SQLITE_BUSY_TIMEOUT) {
+  process.env.SQLITE_BUSY_TIMEOUT = '30000'; // 30 seconds
 }
 
-try {
-  if (!global.performance.timing) {
-    Object.defineProperty(global.performance, "timing", {
-      value: {
-        navigationStart: Date.now() - 1000,
-        loadEventEnd: Date.now(),
-      },
-      writable: true,
-      configurable: true,
-    });
-  }
-} catch (e) {
-  // Silently fail
+// Set required service environment variables for integration tests
+if (!process.env.BREVO_API_KEY) {
+  process.env.BREVO_API_KEY = "test-api-key";
+}
+if (!process.env.BREVO_NEWSLETTER_LIST_ID) {
+  process.env.BREVO_NEWSLETTER_LIST_ID = "1";
+}
+if (!process.env.STRIPE_SECRET_KEY) {
+  process.env.STRIPE_SECRET_KEY = "sk_test_123";
+}
+if (!process.env.ADMIN_SECRET) {
+  process.env.ADMIN_SECRET = "test-secret-key-that-is-at-least-32-characters-long";
+}
+if (!process.env.ADMIN_PASSWORD) {
+  process.env.ADMIN_PASSWORD = "$2a$10$test.hash.for.testing.purposes.only";
 }
 
-// PageTransition API (experimental browser API)
-global.PageTransition = vi.fn().mockImplementation(() => ({
-  init: vi.fn(),
-  start: vi.fn(),
-  end: vi.fn(),
-  cancel: vi.fn(),
-}));
-
-// Navigator API enhancements
-if (!global.navigator) {
-  global.navigator = {};
-}
-
-// Use Object.defineProperty for read-only properties
-Object.defineProperty(global.navigator, "connection", {
-  value: {
-    effectiveType: "4g",
-    downlink: 10,
-    rtt: 50,
-    saveData: false,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-  },
-  writable: true,
-  configurable: true,
+// Increase default timeout for remote operations and module loading
+vi.setConfig({
+  testTimeout: 60000,
+  hookTimeout: 30000,
 });
 
-Object.defineProperty(global.navigator, "userAgent", {
-  value: "Mozilla/5.0 (Node.js Test Environment)",
-  writable: true,
-  configurable: true,
-});
+// Mock globals for browser environment simulation with full mock capabilities
+const mockFetch = vi.fn();
+mockFetch.mockResolvedValueOnce = vi.fn().mockReturnThis();
+mockFetch.mockRejectedValueOnce = vi.fn().mockReturnThis();
+mockFetch.mockResolvedValue = vi.fn().mockReturnThis();
+mockFetch.mockRejectedValue = vi.fn().mockReturnThis();
 
-Object.defineProperty(global.navigator, "onLine", {
-  value: true,
-  writable: true,
-  configurable: true,
-});
+global.fetch = global.fetch || mockFetch;
+global.Request = global.Request || vi.fn();
+global.Response = global.Response || vi.fn();
+global.Headers = global.Headers || vi.fn();
 
-Object.defineProperty(global.navigator, "serviceWorker", {
-  value: {
-    register: vi.fn().mockResolvedValue({
-      installing: null,
-      waiting: null,
-      active: { postMessage: vi.fn() },
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    }),
-    ready: Promise.resolve({
-      active: { postMessage: vi.fn() },
-      addEventListener: vi.fn(),
-    }),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-  },
-  writable: true,
-  configurable: true,
-});
-
-// ResizeObserver API
-global.ResizeObserver = vi.fn().mockImplementation((callback) => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
-
-// MutationObserver API
-global.MutationObserver = vi.fn().mockImplementation((callback) => ({
-  observe: vi.fn(),
-  disconnect: vi.fn(),
-  takeRecords: vi.fn(() => []),
-}));
-
-// Storage APIs with proper implementation
-function createStorageMock() {
-  const storage = {};
-
-  return {
-    getItem: vi.fn((key) => {
-      return storage[key] || null;
-    }),
-    setItem: vi.fn((key, value) => {
-      storage[key] = String(value);
-    }),
-    removeItem: vi.fn((key) => {
-      delete storage[key];
-    }),
-    clear: vi.fn(() => {
-      Object.keys(storage).forEach((key) => delete storage[key]);
-    }),
-    get length() {
-      return Object.keys(storage).length;
+// Mock localStorage for cart operations testing
+if (typeof global.localStorage === "undefined") {
+  const localStorageMock = {
+    store: {},
+    getItem: function (key) {
+      return this.store[key] || null;
     },
-    key: vi.fn((index) => {
-      const keys = Object.keys(storage);
-      return keys[index] || null;
-    }),
+    setItem: function (key, value) {
+      this.store[key] = value;
+    },
+    removeItem: function (key) {
+      delete this.store[key];
+    },
+    clear: function () {
+      this.store = {};
+    },
+  };
+  global.localStorage = localStorageMock;
+}
+
+// Mock process for browser environment checks
+if (typeof global.process === "undefined") {
+  global.process = {
+    env: {},
+    versions: { node: "18.0.0" }, // Ensure Node.js detection works
   };
 }
 
-global.localStorage = createStorageMock();
-global.sessionStorage = createStorageMock();
+// Set test isolation mode immediately to prevent environment variable warnings
+process.env.TEST_ISOLATION_MODE = "true";
 
-// URL API
-if (!global.URL) {
-  global.URL = {
-    createObjectURL: vi.fn(() => "blob:mock-url"),
-    revokeObjectURL: vi.fn(),
-  };
-}
+// Environment setup will be handled dynamically by environment-aware setup
+// based on test type detection - no static environment setting here
 
-// RequestAnimationFrame
-global.requestAnimationFrame = vi.fn((callback) => {
-  setTimeout(callback, 16);
-  return 1;
-});
-global.cancelAnimationFrame = vi.fn();
-
-// RequestIdleCallback
-global.requestIdleCallback = vi.fn((callback) => {
-  setTimeout(() => callback({ timeRemaining: () => 50 }), 0);
-  return 1;
-});
-global.cancelIdleCallback = vi.fn();
-
-// Window object and sizing/viewport
-if (!global.window) {
-  global.window = global;
-}
-
-Object.defineProperty(global, "innerWidth", { value: 1024, writable: true });
-Object.defineProperty(global, "innerHeight", { value: 768, writable: true });
-Object.defineProperty(global, "outerWidth", { value: 1024, writable: true });
-Object.defineProperty(global, "outerHeight", { value: 768, writable: true });
-
-// Make sure window has the same properties as global
-Object.defineProperty(global.window, "innerWidth", {
-  value: 1024,
-  writable: true,
-});
-Object.defineProperty(global.window, "innerHeight", {
-  value: 768,
-  writable: true,
-});
-
-// Window event handling
-global.window.addEventListener = vi.fn();
-global.window.removeEventListener = vi.fn();
-
-// Window location
-global.window.location = {
-  pathname: "/test",
-  href: "http://localhost:3000/test",
-  origin: "http://localhost:3000",
-  hostname: "localhost",
-  port: "3000",
-  protocol: "http:",
-  search: "",
-  hash: "",
-};
-
-// Screen API
-global.screen = {
-  width: 1920,
-  height: 1080,
-  availWidth: 1920,
-  availHeight: 1040,
-  colorDepth: 24,
-  pixelDepth: 24,
-};
-
-// CSS and styling APIs
-global.getComputedStyle = vi.fn(() => ({
-  getPropertyValue: vi.fn(),
-  width: "100px",
-  height: "100px",
-}));
-
-// Image loading
-global.Image = vi.fn().mockImplementation(() => ({
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  src: "",
-  onload: null,
-  onerror: null,
-  width: 0,
-  height: 0,
-  naturalWidth: 0,
-  naturalHeight: 0,
-  complete: false,
-}));
-
-// Mock crypto for Node.js environment (only if not already defined)
-if (!global.crypto) {
-  const mockCrypto = {
-    randomBytes: vi.fn(() =>
-      Buffer.from("mock-random-bytes-1234567890123456", "utf8"),
-    ),
-    createHmac: vi.fn(() => ({
-      update: vi.fn(() => ({
-        digest: vi.fn(() => "mock-hash-digest-1234567890abcdef"),
-      })),
-    })),
-  };
-
-  Object.defineProperty(global, "crypto", {
-    value: mockCrypto,
-    writable: true,
-  });
-}
-
-// Mock Node.js crypto module
-vi.mock("node:crypto", () => ({
-  default: {
-    randomBytes: vi.fn(() =>
-      Buffer.from("mock-random-bytes-1234567890123456", "utf8"),
-    ),
-    createHash: vi.fn(() => ({
-      update: vi.fn().mockReturnThis(),
-      digest: vi.fn(() => "mock-hash-digest-1234567890abcdef"),
-    })),
-    createHmac: vi.fn(() => ({
-      update: vi.fn(() => ({
-        digest: vi.fn(() => "mock-hash-digest-1234567890abcdef"),
-      })),
-    })),
-  },
-}));
-
-// Also mock the regular crypto module for backward compatibility
-vi.mock("crypto", () => ({
-  default: {
-    randomBytes: vi.fn(() =>
-      Buffer.from("mock-random-bytes-1234567890123456", "utf8"),
-    ),
-    createHash: vi.fn(() => ({
-      update: vi.fn().mockReturnThis(),
-      digest: vi.fn(() => "mock-hash-digest-1234567890abcdef"),
-    })),
-    createHmac: vi.fn(() => ({
-      update: vi.fn(() => ({
-        digest: vi.fn(() => "mock-hash-digest-1234567890abcdef"),
-      })),
-    })),
-    createCipherGCM: vi.fn(() => ({
-      update: vi.fn(() => "mock-encrypted-data"),
-      final: vi.fn(() => ""),
-      getAuthTag: vi.fn(() => Buffer.from("mock-auth-tag", "utf8")),
-    })),
-  },
-  randomBytes: vi.fn(() =>
-    Buffer.from("mock-random-bytes-1234567890123456", "utf8"),
-  ),
-  createHash: vi.fn(() => ({
-    update: vi.fn().mockReturnThis(),
-    digest: vi.fn(() => "mock-hash-digest-1234567890abcdef"),
-  })),
-  createHmac: vi.fn(() => ({
-    update: vi.fn(() => ({
-      digest: vi.fn(() => "mock-hash-digest-1234567890abcdef"),
-    })),
-  })),
-  createCipherGCM: vi.fn(() => ({
-    update: vi.fn(() => "mock-encrypted-data"),
-    final: vi.fn(() => ""),
-    getAuthTag: vi.fn(() => Buffer.from("mock-auth-tag", "utf8")),
-  })),
-}));
-
-// Mock process.env for tests
-process.env.NODE_ENV = "test";
-
-// Global test utilities
-global.createMockResponse = (data, status = 200) => ({
-  ok: status >= 200 && status < 300,
-  status,
-  json: vi.fn().mockResolvedValue(data),
-  text: vi.fn().mockResolvedValue(JSON.stringify(data)),
-  headers: new Map(),
-});
-
-// Reset all mocks before each test
-beforeEach(() => {
-  vi.clearAllMocks();
-});
-
-// Aggressive cleanup after each test to prevent memory leaks
-afterEach(() => {
-  // Use comprehensive cleanup utility
-  cleanupTest({
-    eventTracker: global.__testEventTracker,
-    clearTimers: true,
-    clearStorage: true,
-    clearMocks: true,
-    clearDOM: true,
-  });
-
-  // Log memory usage if high
-  const memStats = logMemoryUsage("AfterEach");
-  if (memStats && memStats.heapUsedMB > 500) {
-    console.warn(
-      `Test may have memory leak: ${memStats.heapUsedMB}MB heap used`,
-    );
-  }
-});
-
-// Global teardown - final cleanup
-afterAll(() => {
-  // Final cleanup
-  if (global.__testEventTracker) {
-    global.__testEventTracker.cleanup();
-    global.__testEventTracker = null;
-  }
-
-  // Force final garbage collection
-  if (global.gc) {
+// Global setup hooks for test lifecycle management
+beforeAll(async () => {
+  // Run migrations before any tests execute to ensure database is ready
+  if (process.env.TEST_INTEGRATION === 'true' || process.env.TEST_TYPE === 'integration') {
     try {
-      global.gc();
-    } catch (e) {
-      // Silently ignore
+      console.log('Running migrations for test environment...');
+      const databaseModule = await import('../api/lib/database.js');
+      const client = await databaseModule.getDatabaseClient();
+      
+      // Execute all migrations to ensure database schema is ready
+      await runMigrationsForTest(client, {
+        logLevel: process.env.CI === 'true' ? 'error' : 'warn',
+        createMigrationsTable: true,
+        continueOnError: false,
+        transactionMode: true
+      });
+      
+      console.log('Migrations completed successfully');
+    } catch (error) {
+      console.warn('Migration execution failed:', error.message);
+      // Don't fail setup if migrations fail - let individual tests handle it
+    }
+  }
+  
+  // Additional setup per test file if needed
+  // Environment is already isolated at this point
+});
+
+// Global teardown - restore original environment
+afterAll(async () => {
+  // Force cleanup of all database connections
+  if (process.env.TEST_INTEGRATION === 'true' || process.env.TEST_TYPE === 'integration') {
+    try {
+      const databaseModule = await import('../api/lib/database.js');
+      
+      // Check if resetDatabaseInstance exists (not mocked or missing)
+      if (typeof databaseModule.resetDatabaseInstance === 'function') {
+        await databaseModule.resetDatabaseInstance();
+        
+        // Additional delay for connection cleanup
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } else {
+        console.debug('resetDatabaseInstance not available, skipping final database cleanup');
+      }
+    } catch (error) {
+      if (!error.message.includes('mock') && !error.message.includes('vi.mock')) {
+        console.warn('Final database cleanup failed:', error.message);
+      }
     }
   }
 
-  // Log final memory stats
-  logMemoryUsage("AfterAll");
+  // Restore the original environment
+  testEnvManager.restore();
+
+  // Reset database mocks only for unit tests, not integration tests
+  if (process.env.TEST_TYPE !== 'integration' && process.env.TEST_INTEGRATION !== 'true') {
+    dbMockSync.reset();
+  }
+
+  // Clear test isolation mode
+  delete process.env.TEST_ISOLATION_MODE;
 });
+
+// Reset mocks between tests to ensure test isolation
+afterEach(async () => {
+  // Clear all Vitest mocks
+  vi.clearAllMocks();
+
+  // Reset fetch mock properly
+  if (global.fetch && typeof global.fetch.mockClear === "function") {
+    global.fetch.mockClear();
+  }
+
+  // Reset database mock state only for unit tests, not integration tests
+  if (process.env.TEST_TYPE !== 'integration' && process.env.TEST_INTEGRATION !== 'true') {
+    dbMockSync.reset();
+  }
+
+  // Force database connection cleanup for integration tests with proper async handling
+  // Skip for database schema tests to preserve real database connections
+  if ((process.env.TEST_INTEGRATION === 'true' || process.env.TEST_TYPE === 'integration') && 
+      !process.env.SKIP_DATABASE_RESET) {
+    try {
+      // Use the enhanced test environment manager for coordinated cleanup
+      await testEnvManager.coordinatedClear();
+      
+      // Additional wait for async operations to complete
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
+    } catch (error) {
+      // Handle different types of errors appropriately
+      if (error.message.includes('mock') || error.message.includes('vi.mock')) {
+        console.debug('Database module is mocked, skipping cleanup');
+      } else if (process.env.TEST_INTEGRATION === 'true') {
+        console.warn('Database cleanup failed:', error.message);
+      }
+    }
+  }
+
+  // Clear localStorage between tests
+  if (global.localStorage && typeof global.localStorage.clear === 'function') {
+    global.localStorage.clear();
+  } else if (global.localStorage && global.localStorage.data) {
+    // Clear mock localStorage data
+    Object.keys(global.localStorage.data).forEach(key => {
+      delete global.localStorage.data[key];
+    });
+  }
+});
+
+// Environment validation (only warn if not in isolated test mode)
+const requiredEnvVars = [
+  "TURSO_DATABASE_URL",
+  "TURSO_AUTH_TOKEN",
+  "BREVO_API_KEY",
+  "BREVO_NEWSLETTER_LIST_ID",
+  "BREVO_WEBHOOK_SECRET",
+];
+
+// Only warn about missing vars if not in isolated test mode
+if (!process.env.TEST_ISOLATION_MODE) {
+  const missingVars = requiredEnvVars.filter(
+    (varName) => !process.env[varName],
+  );
+  if (missingVars.length > 0) {
+    console.warn(
+      "⚠️  Missing environment variables for tests:",
+      missingVars.join(", "),
+    );
+    console.warn("   Some tests may be skipped or fail");
+  }
+}
+
+// Configure test environment logging
+if (process.env.CI === "true") {
+  // Reduce logging in CI
+  console.log = vi.fn();
+  console.info = vi.fn();
+} else {
+  // Keep logging for local development
+  console.log("🧪 Test environment initialized");
+  console.log(`   Node.js version: ${process.version}`);
+  console.log(`   Environment: ${process.env.NODE_ENV || "test"}`);
+}

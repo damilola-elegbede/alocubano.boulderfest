@@ -13,6 +13,7 @@ This document summarizes the security improvements implemented in the middleware
 **Solution**: Added configurable fail-open vs fail-closed behavior.
 
 **Changes**:
+
 - Added `failOpen` option to middleware options (defaults to `true` for backward compatibility)
 - When `failOpen = false`, returns 503 Service Unavailable error instead of allowing requests
 - Enhanced error handling with proper ApplicationError instances
@@ -20,8 +21,8 @@ This document summarizes the security improvements implemented in the middleware
 
 ```javascript
 // Usage examples:
-createRateLimitMiddleware('test', { failOpen: false }); // Fail closed
-createRateLimitMiddleware('test'); // Fail open (default)
+createRateLimitMiddleware("test", { failOpen: false }); // Fail closed
+createRateLimitMiddleware("test"); // Fail open (default)
 ```
 
 ### 2. Rate Limiting Status - Sensitive Information Hiding
@@ -31,6 +32,7 @@ createRateLimitMiddleware('test'); // Fail open (default)
 **Solution**: Environment-aware information disclosure control.
 
 **Changes**:
+
 - Added `NODE_ENV` check to conditionally include sensitive information
 - **Production mode**: Only exposes basic status (whitelisted/blacklisted flags, endpoints)
 - **Non-production mode**: Shows full details including client IDs and analytics
@@ -67,6 +69,7 @@ createRateLimitMiddleware('test'); // Fail open (default)
 **Solution**: Comprehensive HTTPS detection with input sanitization.
 
 **Changes**:
+
 - **Multi-valued header handling**: Properly parses comma-separated `x-forwarded-proto` values
 - **Enhanced detection methods**: Added `socket.encrypted` check for more reliable HTTPS detection
 - **Host header sanitization**: Prevents CRLF injection attacks
@@ -88,20 +91,24 @@ createRateLimitMiddleware('test'); // Fail open (default)
 ## Security Benefits
 
 ### 1. Improved Resilience
+
 - Rate limiting can now fail securely when configured for high-security environments
 - Prevents bypass attacks when rate limiting service experiences issues
 
 ### 2. Information Security
+
 - Production environments no longer leak sensitive client identifiers
 - Reduces attack surface by limiting information disclosure
 - Maintains full debugging capabilities in development
 
 ### 3. Enhanced HTTPS Enforcement
+
 - More robust HTTPS detection prevents protocol downgrade attacks
 - Input validation prevents header injection vulnerabilities
 - Comprehensive error handling improves security diagnostics
 
 ### 4. Defense in Depth
+
 - Multiple layers of validation and sanitization
 - Graceful degradation with security-first defaults
 - Environment-aware security controls
@@ -109,18 +116,21 @@ createRateLimitMiddleware('test'); // Fail open (default)
 ## Configuration Options
 
 ### Rate Limiting Configuration
+
 ```javascript
 // High-security mode (fail closed)
-const middleware = createRateLimitMiddleware('auth', { 
-  failOpen: false 
+const middleware = createRateLimitMiddleware("auth", {
+  failOpen: false,
 });
 
 // Standard mode (fail open - default)
-const middleware = createRateLimitMiddleware('payment');
+const middleware = createRateLimitMiddleware("payment");
 ```
 
 ### HTTPS Enforcement
+
 Automatically enabled in production via `VERCEL_ENV` environment variable. Includes:
+
 - Multi-valued header parsing
 - Host header sanitization
 - Socket-level HTTPS detection

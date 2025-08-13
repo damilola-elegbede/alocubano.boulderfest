@@ -1,0 +1,608 @@
+{
+  "summary": {
+    "baseline": {
+      "avgExecutionTime": 0,
+      "successfulSuites": 0,
+      "totalSuites": 4,
+      "reliability": 0
+    },
+    "enhanced": {
+      "avgExecutionTime": 0,
+      "successfulSuites": 0,
+      "totalSuites": 4,
+      "reliability": 0
+    },
+    "selective": {
+      "avgExecutionTime": 0,
+      "successfulSuites": 0,
+      "totalSuites": 4,
+      "reliability": 0
+    }
+  },
+  "configurations": {
+    "baseline": {
+      "unit_basic": {
+        "configName": "baseline",
+        "testSuiteName": "unit_basic",
+        "success": false,
+        "error": "No successful test runs",
+        "results": [
+          {
+            "iteration": 1,
+            "duration": 22.251083,
+            "memoryDelta": {
+              "rss": 1294336,
+              "heapUsed": -689104,
+              "heapTotal": 1310720
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          },
+          {
+            "iteration": 2,
+            "duration": 50.33929199999989,
+            "memoryDelta": {
+              "rss": 606208,
+              "heapUsed": 98792,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          }
+        ]
+      },
+      "unit_services": {
+        "configName": "baseline",
+        "testSuiteName": "unit_services",
+        "success": false,
+        "error": "No successful test runs",
+        "results": [
+          {
+            "iteration": 1,
+            "duration": 30.03079200000002,
+            "memoryDelta": {
+              "rss": 196608,
+              "heapUsed": 570880,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          },
+          {
+            "iteration": 2,
+            "duration": 48.03170799999998,
+            "memoryDelta": {
+              "rss": 98304,
+              "heapUsed": 62344,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          }
+        ]
+      },
+      "unit_database": {
+        "configName": "baseline",
+        "testSuiteName": "unit_database",
+        "success": false,
+        "error": "No successful test runs",
+        "results": [
+          {
+            "iteration": 1,
+            "duration": 42.76587500000005,
+            "memoryDelta": {
+              "rss": 360448,
+              "heapUsed": 103456,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          },
+          {
+            "iteration": 2,
+            "duration": 44.323999999999614,
+            "memoryDelta": {
+              "rss": 196608,
+              "heapUsed": -316048,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          }
+        ]
+      },
+      "isolation": {
+        "configName": "baseline",
+        "testSuiteName": "isolation",
+        "success": false,
+        "error": "No successful test runs",
+        "results": [
+          {
+            "iteration": 1,
+            "duration": 43.9839579999998,
+            "memoryDelta": {
+              "rss": 163840,
+              "heapUsed": 59240,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          },
+          {
+            "iteration": 2,
+            "duration": 44.62229099999968,
+            "memoryDelta": {
+              "rss": 49152,
+              "heapUsed": -149216,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          }
+        ]
+      }
+    },
+    "enhanced": {
+      "unit_basic": {
+        "configName": "enhanced",
+        "testSuiteName": "unit_basic",
+        "success": false,
+        "error": "No successful test runs",
+        "results": [
+          {
+            "iteration": 1,
+            "duration": 45.566499999998996,
+            "memoryDelta": {
+              "rss": 507904,
+              "heapUsed": 50816,
+              "heapTotal": -524288
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          },
+          {
+            "iteration": 2,
+            "duration": 50.92079100000046,
+            "memoryDelta": {
+              "rss": 196608,
+              "heapUsed": 57880,
+              "heapTotal": 262144
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          }
+        ]
+      },
+      "unit_services": {
+        "configName": "enhanced",
+        "testSuiteName": "unit_services",
+        "success": false,
+        "error": "No successful test runs",
+        "results": [
+          {
+            "iteration": 1,
+            "duration": 52.13591699999961,
+            "memoryDelta": {
+              "rss": 0,
+              "heapUsed": 49200,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          },
+          {
+            "iteration": 2,
+            "duration": 21.786416000000827,
+            "memoryDelta": {
+              "rss": 0,
+              "heapUsed": 49880,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          }
+        ]
+      },
+      "unit_database": {
+        "configName": "enhanced",
+        "testSuiteName": "unit_database",
+        "success": false,
+        "error": "No successful test runs",
+        "results": [
+          {
+            "iteration": 1,
+            "duration": 49.390416999998706,
+            "memoryDelta": {
+              "rss": 0,
+              "heapUsed": 49168,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          },
+          {
+            "iteration": 2,
+            "duration": 53.210290999999415,
+            "memoryDelta": {
+              "rss": 0,
+              "heapUsed": 48960,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          }
+        ]
+      },
+      "isolation": {
+        "configName": "enhanced",
+        "testSuiteName": "isolation",
+        "success": false,
+        "error": "No successful test runs",
+        "results": [
+          {
+            "iteration": 1,
+            "duration": 48.39758400000028,
+            "memoryDelta": {
+              "rss": 0,
+              "heapUsed": 49072,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          },
+          {
+            "iteration": 2,
+            "duration": 52.96299999999974,
+            "memoryDelta": {
+              "rss": 0,
+              "heapUsed": 49488,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          }
+        ]
+      }
+    },
+    "selective": {
+      "unit_basic": {
+        "configName": "selective",
+        "testSuiteName": "unit_basic",
+        "success": false,
+        "error": "No successful test runs",
+        "results": [
+          {
+            "iteration": 1,
+            "duration": 50.029749999997875,
+            "memoryDelta": {
+              "rss": 114688,
+              "heapUsed": 52552,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          },
+          {
+            "iteration": 2,
+            "duration": 41.91412500000297,
+            "memoryDelta": {
+              "rss": 0,
+              "heapUsed": 49152,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          }
+        ]
+      },
+      "unit_services": {
+        "configName": "selective",
+        "testSuiteName": "unit_services",
+        "success": false,
+        "error": "No successful test runs",
+        "results": [
+          {
+            "iteration": 1,
+            "duration": 40.64604099999997,
+            "memoryDelta": {
+              "rss": 98304,
+              "heapUsed": 49568,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          },
+          {
+            "iteration": 2,
+            "duration": 54.543000000001484,
+            "memoryDelta": {
+              "rss": 16384,
+              "heapUsed": 51488,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          }
+        ]
+      },
+      "unit_database": {
+        "configName": "selective",
+        "testSuiteName": "unit_database",
+        "success": false,
+        "error": "No successful test runs",
+        "results": [
+          {
+            "iteration": 1,
+            "duration": 51.896749999999884,
+            "memoryDelta": {
+              "rss": 0,
+              "heapUsed": 49440,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          },
+          {
+            "iteration": 2,
+            "duration": 53.840291000000434,
+            "memoryDelta": {
+              "rss": 98304,
+              "heapUsed": 56752,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          }
+        ]
+      },
+      "isolation": {
+        "configName": "selective",
+        "testSuiteName": "isolation",
+        "success": false,
+        "error": "No successful test runs",
+        "results": [
+          {
+            "iteration": 1,
+            "duration": 54.60883300000205,
+            "memoryDelta": {
+              "rss": 311296,
+              "heapUsed": -1744,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          },
+          {
+            "iteration": 2,
+            "duration": 55.236417000000074,
+            "memoryDelta": {
+              "rss": 0,
+              "heapUsed": 48960,
+              "heapTotal": 0
+            },
+            "testResults": {
+              "success": false,
+              "exitCode": 1,
+              "stdout": "",
+              "stderr": "node:internal/modules/cjs/loader:1408\n  throw err;\n  ^\n\nError: Cannot find module '/Users/damilola/Documents/Projects/alocubano.boulderfest/npx'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1405:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)\n    at Module._load (node:internal/modules/cjs/loader:1215:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)\n    at node:internal/main/run_main_module:33:47 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v24.2.0\n",
+              "jsonOutput": null,
+              "testCount": 0,
+              "passedTests": 0,
+              "failedTests": 0
+            },
+            "success": false
+          }
+        ]
+      }
+    }
+  },
+  "comparisons": {},
+  "recommendations": []
+}

@@ -19,10 +19,10 @@ class PaymentSelector {
     }
 
     /**
-     * Initialize the payment selector
-     * @param {Object} cartManager - Cart manager instance
-     * @param {Object} options - Configuration options
-     */
+   * Initialize the payment selector
+   * @param {Object} cartManager - Cart manager instance
+   * @param {Object} options - Configuration options
+   */
     init(cartManager, options = {}) {
         this.cartManager = cartManager;
 
@@ -39,15 +39,17 @@ class PaymentSelector {
     }
 
     /**
-     * Load the payment selector CSS dynamically
-     */
+   * Load the payment selector CSS dynamically
+   */
     loadCSS() {
         if (this.cssLoaded) {
             return;
         }
 
         // Check if CSS is already in the document
-        const existingLink = document.querySelector('link[href="/css/payment-selector.css"]');
+        const existingLink = document.querySelector(
+            'link[href="/css/payment-selector.css"]'
+        );
         if (existingLink) {
             this.cssLoaded = true;
             return;
@@ -62,10 +64,10 @@ class PaymentSelector {
     }
 
     /**
-     * Show payment method selector modal
-     * @param {Function} onSelect - Callback when payment method is selected
-     * @returns {Promise} Resolves with selected payment method
-     */
+   * Show payment method selector modal
+   * @param {Function} onSelect - Callback when payment method is selected
+   * @returns {Promise} Resolves with selected payment method
+   */
     show(onSelect) {
         return new Promise((resolve) => {
             this.onSelectCallback = onSelect || resolve;
@@ -80,10 +82,10 @@ class PaymentSelector {
     }
 
     /**
-     * Create the payment selector modal
-     */
+   * Create the payment selector modal
+   */
     createModal() {
-        // Remove existing modal if present
+    // Remove existing modal if present
         if (this.modal) {
             this.modal.remove();
         }
@@ -143,8 +145,8 @@ class PaymentSelector {
     }
 
     /**
-     * Set up modal event listeners
-     */
+   * Set up modal event listeners
+   */
     setupModalEventListeners() {
         if (!this.modal) {
             return;
@@ -158,7 +160,11 @@ class PaymentSelector {
         const closeBtn = this.modal.querySelector('.payment-selector-close');
         if (closeBtn) {
             closeBtn.addEventListener('click', closeHandler);
-            this.eventListeners.set('close-button', { element: closeBtn, type: 'click', handler: closeHandler });
+            this.eventListeners.set('close-button', {
+                element: closeBtn,
+                type: 'click',
+                handler: closeHandler
+            });
         }
 
         // Backdrop click handler
@@ -166,7 +172,11 @@ class PaymentSelector {
         const backdrop = this.modal.querySelector('.payment-selector-backdrop');
         if (backdrop) {
             backdrop.addEventListener('click', backdropHandler);
-            this.eventListeners.set('backdrop', { element: backdrop, type: 'click', handler: backdropHandler });
+            this.eventListeners.set('backdrop', {
+                element: backdrop,
+                type: 'click',
+                handler: backdropHandler
+            });
         }
 
         // Payment method buttons
@@ -184,9 +194,21 @@ class PaymentSelector {
             button.addEventListener('mouseleave', mouseLeaveHandler);
 
             // Store references for cleanup
-            this.eventListeners.set(`method-click-${index}`, { element: button, type: 'click', handler: clickHandler });
-            this.eventListeners.set(`method-enter-${index}`, { element: button, type: 'mouseenter', handler: mouseEnterHandler });
-            this.eventListeners.set(`method-leave-${index}`, { element: button, type: 'mouseleave', handler: mouseLeaveHandler });
+            this.eventListeners.set(`method-click-${index}`, {
+                element: button,
+                type: 'click',
+                handler: clickHandler
+            });
+            this.eventListeners.set(`method-enter-${index}`, {
+                element: button,
+                type: 'mouseenter',
+                handler: mouseEnterHandler
+            });
+            this.eventListeners.set(`method-leave-${index}`, {
+                element: button,
+                type: 'mouseleave',
+                handler: mouseLeaveHandler
+            });
         });
 
         // Keyboard navigation handler
@@ -196,15 +218,19 @@ class PaymentSelector {
             }
         };
         this.modal.addEventListener('keydown', keydownHandler);
-        this.eventListeners.set('modal-keydown', { element: this.modal, type: 'keydown', handler: keydownHandler });
+        this.eventListeners.set('modal-keydown', {
+            element: this.modal,
+            type: 'keydown',
+            handler: keydownHandler
+        });
 
         // Focus trap
         this.setupFocusTrap();
     }
 
     /**
-     * Clean up all event listeners
-     */
+   * Clean up all event listeners
+   */
     cleanupEventListeners() {
         this.eventListeners.forEach((listener) => {
             if (listener.element && listener.handler) {
@@ -215,8 +241,8 @@ class PaymentSelector {
     }
 
     /**
-     * Set up focus trap for accessibility
-     */
+   * Set up focus trap for accessibility
+   */
     setupFocusTrap() {
         const focusableElements = this.modal.querySelectorAll(
             'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
@@ -242,8 +268,8 @@ class PaymentSelector {
     }
 
     /**
-     * Open the modal with animation
-     */
+   * Open the modal with animation
+   */
     openModal() {
         if (!this.modal) {
             return;
@@ -259,8 +285,8 @@ class PaymentSelector {
     }
 
     /**
-     * Close the modal with animation
-     */
+   * Close the modal with animation
+   */
     closeModal() {
         if (!this.modal || !this.isOpen) {
             return;
@@ -281,9 +307,9 @@ class PaymentSelector {
     }
 
     /**
-     * Handle payment method selection
-     * @param {string} method - Selected payment method
-     */
+   * Handle payment method selection
+   * @param {string} method - Selected payment method
+   */
     async handleSelection(method) {
         this.selectedMethod = method;
 
@@ -320,8 +346,8 @@ class PaymentSelector {
     }
 
     /**
-     * Process Stripe payment
-     */
+   * Process Stripe payment
+   */
     async processStripePayment() {
         const cartState = this.cartManager.getState();
 
@@ -351,8 +377,8 @@ class PaymentSelector {
     }
 
     /**
-     * Process PayPal payment
-     */
+   * Process PayPal payment
+   */
     async processPayPalPayment() {
         const cartState = this.cartManager.getState();
 
@@ -394,11 +420,11 @@ class PaymentSelector {
     }
 
     /**
-     * Get customer info from form or return empty object
-     * @returns {Object} Customer information
-     */
+   * Get customer info from form or return empty object
+   * @returns {Object} Customer information
+   */
     getCustomerInfo() {
-        // Try to get customer info from checkout form if it exists
+    // Try to get customer info from checkout form if it exists
         const form = document.querySelector('#checkoutForm');
         if (form) {
             return {
@@ -412,10 +438,10 @@ class PaymentSelector {
     }
 
     /**
-     * Prepare cart items for payment processing
-     * @param {Object} cartState - Current cart state
-     * @returns {Array} Formatted cart items
-     */
+   * Prepare cart items for payment processing
+   * @param {Object} cartState - Current cart state
+   * @returns {Array} Formatted cart items
+   */
     prepareCartItems(cartState) {
         const cartItems = [];
 
@@ -448,8 +474,8 @@ class PaymentSelector {
     }
 
     /**
-     * Show processing state in modal
-     */
+   * Show processing state in modal
+   */
     showProcessingState() {
         if (!this.modal) {
             return;
@@ -471,8 +497,8 @@ class PaymentSelector {
     }
 
     /**
-     * Hide processing state
-     */
+   * Hide processing state
+   */
     hideProcessingState() {
         if (!this.modal) {
             return;
@@ -490,9 +516,9 @@ class PaymentSelector {
     }
 
     /**
-     * Show error message
-     * @param {string} message - Error message to display
-     */
+   * Show error message
+   * @param {string} message - Error message to display
+   */
     showError(message) {
         if (!this.modal) {
             return;
@@ -527,10 +553,10 @@ class PaymentSelector {
     }
 
     /**
-     * Escape HTML for security
-     * @param {string} unsafe - Unsafe string
-     * @returns {string} Escaped string
-     */
+   * Escape HTML for security
+   * @param {string} unsafe - Unsafe string
+   * @returns {string} Escaped string
+   */
     escapeHtml(unsafe) {
         return unsafe
             .replace(/&/g, '&amp;')
@@ -541,20 +567,20 @@ class PaymentSelector {
     }
 
     /**
-     * Check if a payment method is available
-     * @param {string} method - Payment method to check
-     * @returns {boolean}
-     */
+   * Check if a payment method is available
+   * @param {string} method - Payment method to check
+   * @returns {boolean}
+   */
     isMethodAvailable(method) {
-        // In the future, this could check configuration or feature flags
+    // In the future, this could check configuration or feature flags
         return ['stripe', 'paypal'].includes(method);
     }
 
     /**
-     * Get display name for payment method
-     * @param {string} method - Payment method
-     * @returns {string} Display name
-     */
+   * Get display name for payment method
+   * @param {string} method - Payment method
+   * @returns {string} Display name
+   */
     getMethodDisplayName(method) {
         const names = {
             stripe: 'Credit Card',
@@ -564,10 +590,10 @@ class PaymentSelector {
     }
 
     /**
-     * Clean up and destroy the payment selector
-     */
+   * Clean up and destroy the payment selector
+   */
     destroy() {
-        // Clean up event listeners
+    // Clean up event listeners
         this.cleanupEventListeners();
 
         // Remove modal if it exists

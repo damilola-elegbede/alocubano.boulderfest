@@ -264,14 +264,14 @@ async function handler(req, res) {
       dryRun = false, // Preview what would be warmed
       force = false, // Force warming even if data exists
     } = body;
-    
+
     // Normalize input types for robustness
-    if (typeof sections === 'string') {
+    if (typeof sections === "string") {
       sections = [sections];
     } else if (!Array.isArray(sections)) {
       sections = ["all"];
     }
-    
+
     // Coerce boolean values
     dryRun = Boolean(dryRun);
     force = Boolean(force);

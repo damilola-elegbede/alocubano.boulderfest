@@ -7,6 +7,7 @@ Apple Pay and Google Pay require specific configuration in your Stripe Dashboard
 ## Requirements Checklist
 
 ### 1. Domain Registration (REQUIRED)
+
 You must register your domain with Stripe for Apple Pay and Google Pay to work.
 
 #### Steps to Register Your Domain:
@@ -45,11 +46,13 @@ You must register your domain with Stripe for Apple Pay and Google Pay to work.
 ### 3. Testing Requirements
 
 #### For Apple Pay Testing:
+
 - **Device**: Must use Safari on Mac or iOS device
 - **Wallet**: Must have at least one card added to Apple Wallet
 - **Test Card**: In Stripe test mode, use: `4242 4242 4242 4242`
 
 #### For Google Pay Testing:
+
 - **Browser**: Must use Chrome browser
 - **Wallet**: Must have at least one card added to Google Pay
 - **Account**: Must be logged into Google account
@@ -89,6 +92,7 @@ curl https://api.stripe.com/v1/payment_method_configurations \
 ## Troubleshooting
 
 ### Apple Pay Not Showing:
+
 1. **Check Browser Console** for errors
 2. **Verify Domain Registration** in Stripe Dashboard
 3. **Ensure Using Safari** (won't show in Chrome/Firefox)
@@ -96,6 +100,7 @@ curl https://api.stripe.com/v1/payment_method_configurations \
 5. **Clear Safari Cache**: Develop → Empty Caches
 
 ### Google Pay Not Showing:
+
 1. **Check You're Using Chrome**
 2. **Verify Google Account** is logged in
 3. **Check Google Pay Setup**: pay.google.com
@@ -103,6 +108,7 @@ curl https://api.stripe.com/v1/payment_method_configurations \
 5. **Check Console** for specific errors
 
 ### Both Not Showing:
+
 1. **Domain Not Registered**: Most common issue
 2. **Wrong Environment**: Ensure using correct Stripe keys
 3. **Payment Method Not Enabled** in Stripe Dashboard
@@ -111,6 +117,7 @@ curl https://api.stripe.com/v1/payment_method_configurations \
 ## Testing with Real Devices
 
 ### iOS Testing (Apple Pay):
+
 1. Open Safari on iPhone/iPad
 2. Navigate to your checkout page
 3. Apple Pay should appear if:
@@ -119,6 +126,7 @@ curl https://api.stripe.com/v1/payment_method_configurations \
    - Using HTTPS
 
 ### Android Testing (Google Pay):
+
 1. Open Chrome on Android
 2. Navigate to your checkout page
 3. Google Pay should appear if:
@@ -129,6 +137,7 @@ curl https://api.stripe.com/v1/payment_method_configurations \
 ## Production Checklist
 
 Before going live:
+
 - [ ] Register production domain in Stripe Dashboard
 - [ ] Enable Apple Pay in Stripe Dashboard
 - [ ] Enable Google Pay in Stripe Dashboard
@@ -142,10 +151,11 @@ Before going live:
 ## API Configuration (Already Done)
 
 Our code already has the correct configuration:
+
 ```javascript
 // In create-checkout-session.js
 payment_method_types: ["card", "link"],
-// Apple Pay and Google Pay are automatically included 
+// Apple Pay and Google Pay are automatically included
 // when domains are registered and wallets enabled
 ```
 
@@ -159,6 +169,7 @@ payment_method_types: ["card", "link"],
 ## Contact Support
 
 If still having issues after following these steps:
+
 1. Contact Stripe Support with your account ID
 2. Provide:
    - Domain you're trying to register

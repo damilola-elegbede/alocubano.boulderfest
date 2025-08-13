@@ -1,103 +1,111 @@
-import { getMonitoringService } from '../../lib/monitoring/monitoring-service.js';
-import { getHealthChecker } from '../../lib/monitoring/health-checker.js';
-import { getAlertManager } from '../../lib/monitoring/alert-manager.js';
-import { getUptimeMetrics, calculateSLA } from './uptime.js';
-import { addBreadcrumb } from '../../lib/monitoring/sentry-config.js';
+import { getMonitoringService } from "../../lib/monitoring/monitoring-service.js";
+import { getHealthChecker } from "../../lib/monitoring/health-checker.js";
+import { getAlertManager } from "../../lib/monitoring/alert-manager.js";
+import { getUptimeMetrics, calculateSLA } from "./uptime.js";
+import { addBreadcrumb } from "../../lib/monitoring/sentry-config.js";
 
 /**
  * Dashboard configuration for different monitoring platforms
  */
 const DASHBOARD_CONFIGS = {
   grafana: {
-    name: 'A Lo Cubano Boulder Fest - Production Monitoring',
-    version: '1.0.0',
+    name: "A Lo Cubano Boulder Fest - Production Monitoring",
+    version: "1.0.0",
     panels: [
       {
         id: 1,
-        title: 'System Health Overview',
-        type: 'stat',
-        targets: ['health.status', 'uptime.percentage', 'sla.compliance']
+        title: "System Health Overview",
+        type: "stat",
+        targets: ["health.status", "uptime.percentage", "sla.compliance"],
       },
       {
         id: 2,
-        title: 'API Response Times',
-        type: 'graph',
-        targets: ['api.response_time.p50', 'api.response_time.p95', 'api.response_time.p99']
+        title: "API Response Times",
+        type: "graph",
+        targets: [
+          "api.response_time.p50",
+          "api.response_time.p95",
+          "api.response_time.p99",
+        ],
       },
       {
         id: 3,
-        title: 'Payment Processing',
-        type: 'stat',
-        targets: ['payments.success_rate', 'payments.total', 'revenue.total']
+        title: "Payment Processing",
+        type: "stat",
+        targets: ["payments.success_rate", "payments.total", "revenue.total"],
       },
       {
         id: 4,
-        title: 'Active Users',
-        type: 'gauge',
-        targets: ['users.active', 'users.registered']
+        title: "Active Users",
+        type: "gauge",
+        targets: ["users.active", "users.registered"],
       },
       {
         id: 5,
-        title: 'Error Rate',
-        type: 'graph',
-        targets: ['errors.rate', 'errors.total']
+        title: "Error Rate",
+        type: "graph",
+        targets: ["errors.rate", "errors.total"],
       },
       {
         id: 6,
-        title: 'Memory Usage',
-        type: 'graph',
-        targets: ['system.memory.heap_used', 'system.memory.heap_total']
+        title: "Memory Usage",
+        type: "graph",
+        targets: ["system.memory.heap_used", "system.memory.heap_total"],
       },
       {
         id: 7,
-        title: 'Alert Status',
-        type: 'table',
-        targets: ['alerts.active', 'alerts.escalated']
+        title: "Alert Status",
+        type: "table",
+        targets: ["alerts.active", "alerts.escalated"],
       },
       {
         id: 8,
-        title: 'Service Dependencies',
-        type: 'heatmap',
-        targets: ['dependencies.database', 'dependencies.stripe', 'dependencies.brevo']
-      }
-    ]
+        title: "Service Dependencies",
+        type: "heatmap",
+        targets: [
+          "dependencies.database",
+          "dependencies.stripe",
+          "dependencies.brevo",
+        ],
+      },
+    ],
   },
   datadog: {
-    name: 'alocubano-production',
+    name: "alocubano-production",
     widgets: [
       {
-        type: 'timeseries',
-        title: 'API Performance',
+        type: "timeseries",
+        title: "API Performance",
         queries: [
-          'avg:alocubano.api.response_time{*}',
-          'p95:alocubano.api.response_time{*}'
-        ]
+          "avg:alocubano.api.response_time{*}",
+          "p95:alocubano.api.response_time{*}",
+        ],
       },
       {
-        type: 'query_value',
-        title: 'Current Revenue',
-        query: 'sum:alocubano.revenue.total{*}'
+        type: "query_value",
+        title: "Current Revenue",
+        query: "sum:alocubano.revenue.total{*}",
       },
       {
-        type: 'toplist',
-        title: 'Top Errors',
-        query: 'top(alocubano.errors{*} by {error_type}, 10)'
-      }
-    ]
+        type: "toplist",
+        title: "Top Errors",
+        query: "top(alocubano.errors{*} by {error_type}, 10)",
+      },
+    ],
   },
   newrelic: {
-    name: 'A Lo Cubano Boulder Fest',
+    name: "A Lo Cubano Boulder Fest",
     dashboards: [
       {
-        name: 'Business Metrics',
-        widgets: ['revenue', 'tickets', 'users']
+        name: "Business Metrics",
+        widgets: ["revenue", "tickets", "users"],
       },
       {
-        name: 'Technical Metrics',
-        widgets: ['performance', 'errors', 'infrastructure']
-      }
-    ]
-  }
+        name: "Technical Metrics",
+        widgets: ["performance", "errors", "infrastructure"],
+      },
+    ],
+  },
 };
 
 /**
@@ -107,73 +115,77 @@ async function getDashboardData() {
   const monitoringService = getMonitoringService();
   const healthChecker = getHealthChecker();
   const alertManager = getAlertManager();
-  
+
   // Get all metrics
   const metrics = monitoringService.getMetricsSummary();
   const health = await healthChecker.executeAll();
   const uptime = getUptimeMetrics();
   const alerts = alertManager.getStatistics();
-  
+
   // Calculate key metrics
-  const errorRate = metrics.system['gauge.errors.total'] || 0;
+  const errorRate = metrics.system["gauge.errors.total"] || 0;
   const requestCount = uptime.requests.total;
   const errorPercent = requestCount > 0 ? (errorRate / requestCount) * 100 : 0;
-  
+
   // Calculate SLA
   const sla = calculateSLA(uptime.requests.successRate, errorPercent);
-  
+
   return {
     timestamp: new Date().toISOString(),
     overview: {
       status: health.status,
       health_score: health.health_score || 0,
       uptime: uptime.uptime.formatted,
-      sla_compliance: sla.compliance.overall
+      sla_compliance: sla.compliance.overall,
     },
     performance: {
       current: {
         response_time: metrics.performance?.avgResponseTime || 0,
         requests_per_minute: metrics.performance?.requestsPerMinute || 0,
-        error_rate: errorPercent.toFixed(2) + '%'
+        error_rate: errorPercent.toFixed(2) + "%",
       },
       percentiles: metrics.performance?.percentiles || {},
       trends: {
         response_time_trend: calculateTrend(metrics.performance?.history || []),
-        error_trend: calculateTrend(metrics.system?.errorHistory || [])
-      }
+        error_trend: calculateTrend(metrics.system?.errorHistory || []),
+      },
     },
     business: {
       revenue: {
         total: metrics.business.payments.revenue,
         today: calculateTodayRevenue(metrics.business.payments),
-        average_transaction: metrics.business.payments.revenue / Math.max(1, metrics.business.payments.successes)
+        average_transaction:
+          metrics.business.payments.revenue /
+          Math.max(1, metrics.business.payments.successes),
       },
       users: {
         active: metrics.business.users.activeCount,
         registered: metrics.business.users.registrations,
-        conversion_rate: calculateConversionRate(metrics.business)
+        conversion_rate: calculateConversionRate(metrics.business),
       },
-      tickets: metrics.business.tickets
+      tickets: metrics.business.tickets,
     },
     infrastructure: {
       memory: {
-        used: formatBytes(metrics.system['gauge.system.memory.heap_used'] || 0),
-        total: formatBytes(metrics.system['gauge.system.memory.heap_total'] || 0),
-        percentage: calculateMemoryUsagePercent(metrics.system)
+        used: formatBytes(metrics.system["gauge.system.memory.heap_used"] || 0),
+        total: formatBytes(
+          metrics.system["gauge.system.memory.heap_total"] || 0,
+        ),
+        percentage: calculateMemoryUsagePercent(metrics.system),
       },
       cpu: {
-        user: metrics.system['gauge.system.cpu.user'] || 0,
-        system: metrics.system['gauge.system.cpu.system'] || 0
+        user: metrics.system["gauge.system.cpu.user"] || 0,
+        system: metrics.system["gauge.system.cpu.system"] || 0,
       },
-      dependencies: health.services || {}
+      dependencies: health.services || {},
     },
     alerts: {
       active_count: alerts.total_active,
       escalated_count: alerts.total_escalated,
       by_severity: alerts.severity_breakdown,
       by_category: alerts.category_breakdown,
-      recent: alerts.recent_alerts
-    }
+      recent: alerts.recent_alerts,
+    },
   };
 }
 
@@ -182,21 +194,21 @@ async function getDashboardData() {
  */
 function calculateTrend(history) {
   if (!history || history.length < 2) {
-    return 'stable';
+    return "stable";
   }
-  
+
   const recent = history.slice(-10);
   const firstHalf = recent.slice(0, Math.floor(recent.length / 2));
   const secondHalf = recent.slice(Math.floor(recent.length / 2));
-  
+
   const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
   const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
-  
+
   const change = firstAvg === 0 ? 0 : ((secondAvg - firstAvg) / firstAvg) * 100;
-  
-  if (change > 10) return 'increasing';
-  if (change < -10) return 'decreasing';
-  return 'stable';
+
+  if (change > 10) return "increasing";
+  if (change < -10) return "decreasing";
+  return "stable";
 }
 
 /**
@@ -216,7 +228,7 @@ function calculateConversionRate(business) {
   if (business.users.registrations === 0) {
     return 0;
   }
-  
+
   const conversions = business.tickets.created;
   const rate = (conversions / business.users.registrations) * 100;
   return Math.min(100, rate); // Cap at 100%
@@ -226,8 +238,8 @@ function calculateConversionRate(business) {
  * Calculate memory usage percentage
  */
 function calculateMemoryUsagePercent(system) {
-  const used = system['gauge.system.memory.heap_used'] || 0;
-  const total = system['gauge.system.memory.heap_total'] || 1;
+  const used = system["gauge.system.memory.heap_used"] || 0;
+  const total = system["gauge.system.memory.heap_total"] || 1;
   return ((used / total) * 100).toFixed(2);
 }
 
@@ -235,15 +247,15 @@ function calculateMemoryUsagePercent(system) {
  * Format bytes to human readable
  */
 function formatBytes(bytes) {
-  const units = ['B', 'KB', 'MB', 'GB'];
+  const units = ["B", "KB", "MB", "GB"];
   let size = bytes;
   let unitIndex = 0;
-  
+
   while (size >= 1024 && unitIndex < units.length - 1) {
     size /= 1024;
     unitIndex++;
   }
-  
+
   return `${size.toFixed(2)} ${units[unitIndex]}`;
 }
 
@@ -252,26 +264,26 @@ function formatBytes(bytes) {
  */
 function generateDashboardConfig(platform, data) {
   const config = DASHBOARD_CONFIGS[platform];
-  
+
   if (!config) {
     return null;
   }
-  
+
   // Add real-time data to configuration
   const enrichedConfig = {
     ...config,
     generated: new Date().toISOString(),
     data_source: {
-      url: `${process.env.VERCEL_URL || 'http://localhost:3000'}/api/monitoring/metrics`,
-      refresh_interval: 30000
+      url: `${process.env.VERCEL_URL || "http://localhost:3000"}/api/monitoring/metrics`,
+      refresh_interval: 30000,
     },
     alerts: {
       webhook_url: process.env.ALERT_WEBHOOK_URL || null,
-      escalation_url: process.env.ESCALATION_WEBHOOK_URL || null
+      escalation_url: process.env.ESCALATION_WEBHOOK_URL || null,
     },
-    current_values: data
+    current_values: data,
   };
-  
+
   return enrichedConfig;
 }
 
@@ -280,76 +292,75 @@ function generateDashboardConfig(platform, data) {
  */
 export default async function handler(req, res) {
   // Only allow GET requests
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
-  
+
   try {
     // Add breadcrumb
     addBreadcrumb({
-      category: 'monitoring',
-      message: 'Dashboard data requested',
-      level: 'info',
+      category: "monitoring",
+      message: "Dashboard data requested",
+      level: "info",
       data: {
         path: req.url,
-        query: req.query
-      }
+        query: req.query,
+      },
     });
-    
+
     // Get query parameters
-    const { platform, format = 'json' } = req.query;
-    
+    const { platform, format = "json" } = req.query;
+
     // Get dashboard data
     const dashboardData = await getDashboardData();
-    
+
     // Generate platform-specific configuration if requested
     let response = dashboardData;
-    
+
     if (platform) {
       const config = generateDashboardConfig(platform, dashboardData);
       if (!config) {
         return res.status(400).json({
-          error: 'Invalid platform',
-          supported: Object.keys(DASHBOARD_CONFIGS)
+          error: "Invalid platform",
+          supported: Object.keys(DASHBOARD_CONFIGS),
         });
       }
       response = config;
     }
-    
+
     // Format response
-    if (format === 'html') {
+    if (format === "html") {
       // Return HTML dashboard
       const html = generateHTMLDashboard(dashboardData);
-      res.setHeader('Content-Type', 'text/html');
+      res.setHeader("Content-Type", "text/html");
       return res.status(200).send(html);
     }
-    
+
     // Set response headers
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('X-Dashboard-Status', dashboardData.overview.status);
-    res.setHeader('X-Dashboard-Health', dashboardData.overview.health_score);
-    
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("X-Dashboard-Status", dashboardData.overview.status);
+    res.setHeader("X-Dashboard-Health", dashboardData.overview.health_score);
+
     // Send JSON response
     res.status(200).json(response);
-    
   } catch (error) {
-    console.error('Dashboard error:', error);
-    
+    console.error("Dashboard error:", error);
+
     // Add error breadcrumb
     addBreadcrumb({
-      category: 'monitoring',
-      message: 'Dashboard generation failed',
-      level: 'error',
+      category: "monitoring",
+      message: "Dashboard generation failed",
+      level: "error",
       data: {
-        error: error.message
-      }
+        error: error.message,
+      },
     });
-    
+
     res.status(500).json({
-      error: 'Dashboard generation failure',
+      error: "Dashboard generation failure",
       message: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 }
@@ -358,9 +369,13 @@ export default async function handler(req, res) {
  * Generate HTML dashboard
  */
 function generateHTMLDashboard(data) {
-  const statusColor = data.overview.status === 'healthy' ? '#4CAF50' :
-                      data.overview.status === 'degraded' ? '#FF9800' : '#F44336';
-  
+  const statusColor =
+    data.overview.status === "healthy"
+      ? "#4CAF50"
+      : data.overview.status === "degraded"
+        ? "#FF9800"
+        : "#F44336";
+
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -487,7 +502,7 @@ function generateHTMLDashboard(data) {
         </div>
         <div class="metric">
           <span class="metric-label">SLA Compliance</span>
-          <span class="metric-value">${data.overview.sla_compliance ? '✅' : '❌'}</span>
+          <span class="metric-value">${data.overview.sla_compliance ? "✅" : "❌"}</span>
         </div>
       </div>
       
@@ -548,14 +563,14 @@ function generateHTMLDashboard(data) {
         </div>
         <div class="metric">
           <span class="metric-label">Database</span>
-          <span class="status ${data.infrastructure.dependencies.database?.status || 'unknown'}">
-            ${data.infrastructure.dependencies.database?.status || 'UNKNOWN'}
+          <span class="status ${data.infrastructure.dependencies.database?.status || "unknown"}">
+            ${data.infrastructure.dependencies.database?.status || "UNKNOWN"}
           </span>
         </div>
         <div class="metric">
           <span class="metric-label">Stripe</span>
-          <span class="status ${data.infrastructure.dependencies.stripe?.status || 'unknown'}">
-            ${data.infrastructure.dependencies.stripe?.status || 'UNKNOWN'}
+          <span class="status ${data.infrastructure.dependencies.stripe?.status || "unknown"}">
+            ${data.infrastructure.dependencies.stripe?.status || "UNKNOWN"}
           </span>
         </div>
       </div>
@@ -570,16 +585,25 @@ function generateHTMLDashboard(data) {
           <span class="metric-label">Escalated</span>
           <span class="metric-value">${data.alerts.escalated_count}</span>
         </div>
-        ${data.alerts.recent && data.alerts.recent.length > 0 ? `
+        ${
+          data.alerts.recent && data.alerts.recent.length > 0
+            ? `
           <div style="margin-top: 15px;">
-            ${data.alerts.recent.slice(0, 3).map(alert => `
+            ${data.alerts.recent
+              .slice(0, 3)
+              .map(
+                (alert) => `
               <div class="alert">
-                <strong>${alert.title || 'Alert'}</strong><br>
+                <strong>${alert.title || "Alert"}</strong><br>
                 <small>${new Date(alert.timestamp).toLocaleString()}</small>
               </div>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </div>
-        ` : '<p style="color: #666; margin-top: 15px;">No recent alerts</p>'}
+        `
+            : '<p style="color: #666; margin-top: 15px;">No recent alerts</p>'
+        }
       </div>
     </div>
     
@@ -606,5 +630,5 @@ export {
   getDashboardData,
   generateDashboardConfig,
   generateHTMLDashboard,
-  DASHBOARD_CONFIGS
+  DASHBOARD_CONFIGS,
 };

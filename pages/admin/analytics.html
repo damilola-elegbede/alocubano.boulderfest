@@ -559,7 +559,7 @@
         // Auto-refresh every 5 minutes
         refreshInterval = setInterval(loadAnalytics, 5 * 60 * 1000);
       });
-      
+
       // Clean up on page unload
       window.addEventListener("beforeunload", () => {
         // Clear interval to prevent memory leaks
@@ -567,10 +567,10 @@
           clearInterval(refreshInterval);
           refreshInterval = null;
         }
-        
+
         // Destroy all charts
-        Object.values(charts).forEach(chart => {
-          if (chart && typeof chart.destroy === 'function') {
+        Object.values(charts).forEach((chart) => {
+          if (chart && typeof chart.destroy === "function") {
             chart.destroy();
           }
         });
@@ -674,8 +674,8 @@
 
         const isPositive = change >= 0;
         // Remove old positive/negative classes before adding new one
-        element.classList.remove('positive', 'negative');
-        element.classList.add(isPositive ? 'positive' : 'negative');
+        element.classList.remove("positive", "negative");
+        element.classList.add(isPositive ? "positive" : "negative");
         // Use textContent for safe display
         element.textContent = `${isPositive ? "↑" : "↓"} ${Math.abs(change).toFixed(1)}%`;
       }
@@ -704,10 +704,10 @@
       function updateSalesTrendChart() {
         const canvas = document.getElementById("sales-trend-chart");
         if (!canvas) return; // Guard against missing element
-        
+
         const ctx = canvas.getContext("2d");
         const { salesTrend } = analyticsData;
-        
+
         if (!salesTrend) return; // Guard against missing data
 
         // Destroy existing chart if it exists
@@ -776,10 +776,10 @@
       function updateRevenueBreakdownChart() {
         const canvas = document.getElementById("revenue-breakdown-chart");
         if (!canvas) return; // Guard against missing element
-        
+
         const ctx = canvas.getContext("2d");
         const { revenueByType } = analyticsData;
-        
+
         if (!revenueByType) return; // Guard against missing data
 
         if (charts.revenueBreakdown) {
@@ -834,10 +834,10 @@
       function updateHourlySalesChart() {
         const canvas = document.getElementById("hourly-sales-chart");
         if (!canvas) return; // Guard against missing element
-        
+
         const ctx = canvas.getContext("2d");
         const { hourlySales } = analyticsData;
-        
+
         if (!hourlySales) return; // Guard against missing data
 
         if (charts.hourlySales) {
@@ -883,10 +883,10 @@
       function updateCheckinByTypeChart() {
         const canvas = document.getElementById("checkin-by-type-chart");
         if (!canvas) return; // Guard against missing element
-        
+
         const ctx = canvas.getContext("2d");
         const { checkinByType } = analyticsData;
-        
+
         if (!checkinByType) return; // Guard against missing data
 
         if (charts.checkinByType) {
@@ -927,10 +927,10 @@
       function updateWalletTrendChart() {
         const canvas = document.getElementById("wallet-trend-chart");
         if (!canvas) return; // Guard against missing element
-        
+
         const ctx = canvas.getContext("2d");
         const { walletTrend } = analyticsData;
-        
+
         if (!walletTrend) return; // Guard against missing data
 
         if (charts.walletTrend) {
@@ -994,7 +994,7 @@
                     <td>${escapeHtml(customer.name)}</td>
                     <td>${escapeHtml(customer.email)}</td>
                     <td>${escapeHtml(String(customer.ticketCount))}</td>
-                    <td>${escapeHtml('$' + customer.totalSpent.toLocaleString())}</td>
+                    <td>${escapeHtml("$" + customer.totalSpent.toLocaleString())}</td>
                     <td>${escapeHtml(formatDate(customer.lastPurchase))}</td>
                 </tr>
             `,

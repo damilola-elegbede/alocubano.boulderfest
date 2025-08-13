@@ -3,8 +3,9 @@ import { createMocks } from "node-mocks-http";
 import subscribeHandler from "../../api/email/subscribe.js";
 import unsubscribeHandler from "../../api/email/unsubscribe.js";
 
-// Create a persistent mock service instance
+// Create a persistent mock service instance with correct method structure
 const mockEmailService = {
+  ensureInitialized: vi.fn(),
   createSubscriber: vi.fn(),
   unsubscribeSubscriber: vi.fn(),
   validateUnsubscribeToken: vi.fn(),
@@ -14,6 +15,10 @@ const mockEmailService = {
   },
 };
 
+// Configure the ensureInitialized mock to return the service instance
+// This is the key pattern - ensureInitialized returns the service itself
+mockEmailService.ensureInitialized.mockResolvedValue(mockEmailService);
+
 // Mock the email subscriber service
 vi.mock("../../api/lib/email-subscriber-service.js", () => ({
   getEmailSubscriberService: vi.fn(() => mockEmailService),
@@ -22,6 +27,14 @@ vi.mock("../../api/lib/email-subscriber-service.js", () => ({
 describe("Email Subscription Integration Tests", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+
+    // Reset and reconfigure the mock after clearing
+    mockEmailService.ensureInitialized.mockResolvedValue(mockEmailService);
+    mockEmailService.createSubscriber.mockReset();
+    mockEmailService.unsubscribeSubscriber.mockReset();
+    mockEmailService.validateUnsubscribeToken.mockReset();
+    mockEmailService.generateVerificationToken.mockReturnValue("test-verification-token");
+    mockEmailService.brevoService.sendVerificationEmail.mockReset();
 
     // Set up environment variables
     process.env.REQUIRE_EMAIL_VERIFICATION = "false";

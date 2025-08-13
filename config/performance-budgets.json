@@ -1,0 +1,279 @@
+{
+  "version": "1.0.0",
+  "description": "Performance budgets and quality gates for A Lo Cubano Boulder Fest ticket system",
+  "lastUpdated": "2025-01-11T00:00:00.000Z",
+
+  "globalBudgets": {
+    "description": "Global performance budgets that apply to all test scenarios",
+    "responseTime": {
+      "p50_budget": 300,
+      "p95_budget": 800,
+      "p99_budget": 2000,
+      "avg_budget": 500,
+      "unit": "milliseconds"
+    },
+    "errorRate": {
+      "http_errors_budget": 0.02,
+      "api_errors_budget": 0.01,
+      "payment_errors_budget": 0.005,
+      "unit": "percentage"
+    },
+    "availability": {
+      "uptime_budget": 0.995,
+      "unit": "percentage"
+    },
+    "throughput": {
+      "min_rps_budget": 20,
+      "target_rps_budget": 50,
+      "unit": "requests_per_second"
+    }
+  },
+
+  "scenarioBudgets": {
+    "ticketPurchase": {
+      "description": "Performance budgets for ticket purchase flow",
+      "businessCritical": true,
+      "budgets": {
+        "checkoutCreation": {
+          "p95_budget": 1000,
+          "avg_budget": 600,
+          "success_rate_budget": 0.95
+        },
+        "paymentProcessing": {
+          "p95_budget": 2000,
+          "avg_budget": 1200,
+          "success_rate_budget": 0.98
+        },
+        "ticketGeneration": {
+          "p95_budget": 3000,
+          "avg_budget": 1500,
+          "success_rate_budget": 0.99
+        },
+        "endToEnd": {
+          "p95_budget": 5000,
+          "avg_budget": 3000,
+          "conversion_rate_budget": 0.15
+        }
+      }
+    },
+
+    "checkIn": {
+      "description": "Performance budgets for check-in process",
+      "businessCritical": true,
+      "budgets": {
+        "qrValidation": {
+          "p95_budget": 200,
+          "avg_budget": 100,
+          "success_rate_budget": 0.99
+        },
+        "checkinProcess": {
+          "p95_budget": 500,
+          "avg_budget": 250,
+          "success_rate_budget": 0.98
+        },
+        "concurrentValidations": {
+          "max_concurrent_budget": 100,
+          "queue_time_p95_budget": 1000
+        }
+      }
+    },
+
+    "browsing": {
+      "description": "Performance budgets for general browsing and content delivery",
+      "businessCritical": false,
+      "budgets": {
+        "pageLoad": {
+          "p95_budget": 2000,
+          "avg_budget": 1000,
+          "first_contentful_paint_budget": 1500
+        },
+        "apiResponses": {
+          "p95_budget": 500,
+          "avg_budget": 250
+        },
+        "staticAssets": {
+          "p95_budget": 300,
+          "avg_budget": 150
+        }
+      }
+    }
+  },
+
+  "regressionThresholds": {
+    "description": "Thresholds for detecting performance regressions",
+    "warning": {
+      "responseTime_degradation": 0.15,
+      "errorRate_increase": 0.02,
+      "throughput_decrease": 0.1,
+      "availability_decrease": 0.01
+    },
+    "critical": {
+      "responseTime_degradation": 0.3,
+      "errorRate_increase": 0.05,
+      "throughput_decrease": 0.25,
+      "availability_decrease": 0.02
+    }
+  },
+
+  "environmentMultipliers": {
+    "description": "Environment-specific budget multipliers",
+    "development": {
+      "responseTime": 2.0,
+      "errorRate": 3.0,
+      "throughput": 0.5
+    },
+    "staging": {
+      "responseTime": 1.5,
+      "errorRate": 2.0,
+      "throughput": 0.8
+    },
+    "ci": {
+      "responseTime": 3.0,
+      "errorRate": 5.0,
+      "throughput": 0.3
+    },
+    "production": {
+      "responseTime": 1.0,
+      "errorRate": 1.0,
+      "throughput": 1.0
+    }
+  },
+
+  "qualityGates": {
+    "description": "CI/CD quality gates for automated pass/fail decisions",
+    "pullRequest": {
+      "description": "Quality gates for pull request validation",
+      "requirements": {
+        "no_critical_regressions": true,
+        "max_warning_regressions": 2,
+        "budget_violations_allowed": 1,
+        "min_success_rate": 0.9
+      }
+    },
+    "mainBranch": {
+      "description": "Stricter quality gates for main branch",
+      "requirements": {
+        "no_critical_regressions": true,
+        "max_warning_regressions": 1,
+        "budget_violations_allowed": 0,
+        "min_success_rate": 0.95
+      }
+    },
+    "release": {
+      "description": "Strictest quality gates for release candidates",
+      "requirements": {
+        "no_regressions": true,
+        "budget_violations_allowed": 0,
+        "min_success_rate": 0.98,
+        "min_availability": 0.999
+      }
+    }
+  },
+
+  "alerting": {
+    "description": "Performance alerting configuration",
+    "thresholds": {
+      "immediate": {
+        "critical_regression": true,
+        "availability_drop": 0.02,
+        "error_spike": 0.05
+      },
+      "daily_summary": {
+        "warning_regressions": 3,
+        "budget_violations": 2
+      }
+    },
+    "channels": {
+      "slack_critical": "${SLACK_PERFORMANCE_WEBHOOK}",
+      "email_summary": "${PERFORMANCE_EMAIL_LIST}",
+      "github_issues": true
+    }
+  },
+
+  "testMatrix": {
+    "description": "Performance test matrix for different scenarios",
+    "scenarios": {
+      "smoke": {
+        "description": "Quick smoke test for basic functionality",
+        "duration": "2m",
+        "maxUsers": 5,
+        "tests": ["basic-flow", "health-check"]
+      },
+      "critical": {
+        "description": "Critical path performance validation",
+        "duration": "10m",
+        "maxUsers": 25,
+        "tests": ["ticket-purchase", "check-in"]
+      },
+      "full": {
+        "description": "Comprehensive performance validation",
+        "duration": "30m",
+        "maxUsers": 100,
+        "tests": [
+          "ticket-purchase",
+          "check-in",
+          "sustained-load",
+          "stress-test"
+        ]
+      },
+      "regression": {
+        "description": "Historical trend analysis and regression detection",
+        "duration": "5m",
+        "maxUsers": 10,
+        "tests": ["baseline-comparison", "trend-analysis"]
+      }
+    }
+  },
+
+  "reportingConfig": {
+    "description": "Performance reporting configuration",
+    "formats": ["json", "html", "junit"],
+    "retention": {
+      "detailed_reports": 30,
+      "summary_reports": 90,
+      "baselines": 365
+    },
+    "distribution": {
+      "teams": ["engineering", "product", "devops"],
+      "frequency": "per_build",
+      "summary_frequency": "daily"
+    }
+  },
+
+  "integrations": {
+    "description": "Integration points for performance data",
+    "monitoring": {
+      "grafana_dashboard": "${GRAFANA_PERFORMANCE_DASHBOARD}",
+      "prometheus_metrics": true,
+      "datadog_integration": "${DATADOG_API_KEY}"
+    },
+    "apm": {
+      "sentry_performance": true,
+      "newrelic_integration": false
+    },
+    "cicd": {
+      "github_actions": true,
+      "status_checks": true,
+      "artifact_storage": "github"
+    }
+  },
+
+  "customMetrics": {
+    "description": "Business-specific performance metrics",
+    "ticketSales": {
+      "conversion_rate_budget": 0.15,
+      "cart_abandonment_rate_budget": 0.3,
+      "payment_completion_rate_budget": 0.95
+    },
+    "userExperience": {
+      "time_to_interactive_budget": 3000,
+      "cumulative_layout_shift_budget": 0.1,
+      "largest_contentful_paint_budget": 2500
+    },
+    "operational": {
+      "database_query_time_budget": 100,
+      "cache_hit_rate_budget": 0.8,
+      "memory_usage_budget": 512
+    }
+  }
+}

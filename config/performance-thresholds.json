@@ -2,7 +2,7 @@
   "version": "1.0.0",
   "description": "Performance testing thresholds and configuration for A Lo Cubano Boulder Fest",
   "lastUpdated": "2025-01-10T00:00:00.000Z",
-  
+
   "globalThresholds": {
     "response_time": {
       "p50_max": 150,
@@ -21,7 +21,7 @@
       "unit": "percentage"
     }
   },
-  
+
   "testSpecificThresholds": {
     "ticket-sales": {
       "description": "Peak ticket sales performance requirements",
@@ -33,7 +33,7 @@
       },
       "success_rates": {
         "ticket_purchase_min": 0.95,
-        "checkout_completion_min": 0.90,
+        "checkout_completion_min": 0.9,
         "payment_success_min": 0.98
       },
       "throughput": {
@@ -41,7 +41,7 @@
         "target_rps": 100
       }
     },
-    
+
     "check-in": {
       "description": "QR code validation performance requirements",
       "response_time": {
@@ -63,7 +63,7 @@
         "invalid_qr_rate_max": 0.02
       }
     },
-    
+
     "sustained": {
       "description": "Baseline sustained load requirements",
       "response_time": {
@@ -83,7 +83,7 @@
         "response_time_variance_max": 0.15
       }
     },
-    
+
     "stress": {
       "description": "Stress test breaking point thresholds",
       "response_time": {
@@ -100,11 +100,11 @@
       }
     }
   },
-  
+
   "regressionThresholds": {
     "description": "Thresholds for detecting performance regressions",
     "response_time_degradation": {
-      "warning": 0.10,
+      "warning": 0.1,
       "critical": 0.25,
       "unit": "percentage_increase"
     },
@@ -115,16 +115,16 @@
     },
     "throughput_decrease": {
       "warning": 0.15,
-      "critical": 0.30,
+      "critical": 0.3,
       "unit": "percentage_decrease"
     },
     "success_rate_decrease": {
       "warning": 0.05,
-      "critical": 0.10,
+      "critical": 0.1,
       "unit": "percentage_points"
     }
   },
-  
+
   "environmentSpecific": {
     "development": {
       "description": "Relaxed thresholds for development testing",
@@ -148,7 +148,7 @@
       }
     }
   },
-  
+
   "alerting": {
     "description": "Alert configuration for performance issues",
     "levels": {
@@ -174,7 +174,7 @@
       "unit": "seconds"
     }
   },
-  
+
   "cicd": {
     "description": "CI/CD pipeline integration settings",
     "failure_criteria": {
@@ -193,18 +193,18 @@
       "update_baselines_on_main": true
     }
   },
-  
+
   "businessMetrics": {
     "description": "Business-specific KPIs and their thresholds",
     "ticketSales": {
       "conversion_rate_min": 0.15,
-      "cart_abandonment_max": 0.30,
+      "cart_abandonment_max": 0.3,
       "payment_completion_min": 0.95,
-      "average_order_value_min": 75.00
+      "average_order_value_min": 75.0
     },
     "checkIn": {
       "check_in_time_p95": 30,
-      "staff_efficiency_min": 0.90,
+      "staff_efficiency_min": 0.9,
       "queue_wait_time_max": 120,
       "unit": "seconds"
     },
@@ -215,7 +215,7 @@
       "unit": "milliseconds"
     }
   },
-  
+
   "capacityPlanning": {
     "description": "Capacity planning targets and growth projections",
     "currentCapacity": {
@@ -225,14 +225,14 @@
       "database_connections": 50
     },
     "growthProjections": {
-      "year_over_year_growth": 0.30,
+      "year_over_year_growth": 0.3,
       "peak_traffic_multiplier": 3.0,
       "festival_growth_factor": 1.5
     },
     "scalingTriggers": {
       "cpu_utilization": 70,
       "memory_utilization": 80,
-      "response_time_degradation": 0.20,
+      "response_time_degradation": 0.2,
       "error_rate_increase": 0.02
     }
   }

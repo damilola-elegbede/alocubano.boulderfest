@@ -57,7 +57,7 @@ class TicketSelection {
                 card.setAttribute('aria-disabled', 'true');
                 return;
             }
-            
+
             // Make cards keyboard accessible
             card.setAttribute('tabindex', '0');
             card.setAttribute('role', 'button');
@@ -112,12 +112,12 @@ class TicketSelection {
         event.stopPropagation();
         const btn = event.target;
         const card = btn.closest('.ticket-card');
-        
+
         // Skip if ticket is unavailable
         if (card.classList.contains('unavailable')) {
             return;
         }
-        
+
         const ticketType = card.dataset.ticketType;
         const price = parseInt(card.dataset.price);
         const action = btn.dataset.action;
@@ -167,12 +167,12 @@ class TicketSelection {
 
     handleTicketCardClick(event) {
         const card = event.currentTarget;
-        
+
         // Skip if ticket is unavailable
         if (card.classList.contains('unavailable')) {
             return;
         }
-        
+
         const quantitySpan = card.querySelector('.quantity');
         const currentQuantity = parseInt(quantitySpan.textContent) || 0;
 

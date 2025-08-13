@@ -4,9 +4,12 @@
  */
 
 import { vi } from "vitest";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const fs = require("fs");
-const path = require("path");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load actual LazyLoader source code
 let lazyLoadingSource;
@@ -155,6 +158,9 @@ describe("LazyLoader Real Source Code Integration", () => {
       <img data-src="image2.jpg" alt="Test 2">
       <img src="loaded.jpg" alt="Already loaded">
     `;
+
+    // Clear mock call history to ensure clean state
+    mockIntersectionObserver.observe.mockClear();
 
     new LazyLoader();
 

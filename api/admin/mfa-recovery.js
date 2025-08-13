@@ -57,8 +57,8 @@ async function handleGetRecoveryInfo(req, res) {
     });
 
     if (!mfaConfig.rows[0]?.is_enabled) {
-      return res.status(400).json({ 
-        error: "MFA is not enabled. Recovery options are not available." 
+      return res.status(400).json({
+        error: "MFA is not enabled. Recovery options are not available.",
       });
     }
 
@@ -80,7 +80,8 @@ async function handleGetRecoveryInfo(req, res) {
     });
 
     const config = mfaConfig.rows[0];
-    const availableBackupCodes = backupCodesResult.rows[0]?.available_codes || 0;
+    const availableBackupCodes =
+      backupCodesResult.rows[0]?.available_codes || 0;
     const recentRecoveryAttempts = recoveryAttempts.rows[0]?.attempts || 0;
 
     res.status(200).json({
@@ -94,7 +95,8 @@ async function handleGetRecoveryInfo(req, res) {
         },
         emergencyDisable: {
           available: true,
-          description: "Permanently disable MFA using master password confirmation",
+          description:
+            "Permanently disable MFA using master password confirmation",
           warning: "This will remove all MFA protection from your account",
         },
       },
@@ -114,7 +116,8 @@ async function handleGetRecoveryInfo(req, res) {
 async function handleVerifyBackupCode(req, res) {
   const { backupCode } = req.body;
   const adminId = req.admin?.id || "admin";
-  const clientIP = req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
+  const clientIP =
+    req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
 
   if (!backupCode || typeof backupCode !== "string") {
     return res.status(400).json({ error: "Backup code is required" });
@@ -122,17 +125,20 @@ async function handleVerifyBackupCode(req, res) {
 
   // Normalize backup code (uppercase, remove spaces/dashes)
   const normalizedCode = backupCode.toUpperCase().replace(/[\s\-]/g, "");
-  
+
   if (!/^[0-9A-F]{8}$/.test(normalizedCode)) {
-    return res.status(400).json({ 
-      error: "Invalid backup code format. Expected 8-character code." 
+    return res.status(400).json({
+      error: "Invalid backup code format. Expected 8-character code.",
     });
   }
 
   try {
     // Check rate limiting
     const rateLimitService = getMfaRateLimitService();
-    const rateLimitResult = await rateLimitService.checkRateLimit(adminId, clientIP);
+    const rateLimitResult = await rateLimitService.checkRateLimit(
+      adminId,
+      clientIP,
+    );
 
     if (rateLimitResult.isLocked) {
       return res.status(429).json({
@@ -155,8 +161,11 @@ async function handleVerifyBackupCode(req, res) {
 
     // Check each backup code
     for (const storedCode of backupCodes.rows) {
-      const isValid = await bcrypt.compare(normalizedCode, storedCode.code_hash);
-      
+      const isValid = await bcrypt.compare(
+        normalizedCode,
+        storedCode.code_hash,
+      );
+
       if (isValid) {
         codeFound = true;
         codeId = storedCode.id;
@@ -166,10 +175,16 @@ async function handleVerifyBackupCode(req, res) {
 
     if (!codeFound) {
       // Log failed attempt
-      await logRecoveryAttempt(adminId, "backup_code", false, req, "invalid_code");
+      await logRecoveryAttempt(
+        adminId,
+        "backup_code",
+        false,
+        req,
+        "invalid_code",
+      );
       await rateLimitService.recordFailedAttempt(adminId, clientIP);
-      
-      return res.status(401).json({ 
+
+      return res.status(401).json({
         error: "Invalid backup code",
         attemptsRemaining: Math.max(0, rateLimitResult.attemptsRemaining - 1),
       });
@@ -224,7 +239,8 @@ async function handleVerifyBackupCode(req, res) {
 async function handleEmergencyDisable(req, res) {
   const { masterPassword, confirmDisable } = req.body;
   const adminId = req.admin?.id || "admin";
-  const clientIP = req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
+  const clientIP =
+    req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
 
   if (confirmDisable !== "PERMANENTLY_DISABLE_MFA") {
     return res.status(400).json({
@@ -240,9 +256,15 @@ async function handleEmergencyDisable(req, res) {
   try {
     // Verify master password
     const isValidPassword = await authService.verifyPassword(masterPassword);
-    
+
     if (!isValidPassword) {
-      await logRecoveryAttempt(adminId, "emergency_disable", false, req, "invalid_password");
+      await logRecoveryAttempt(
+        adminId,
+        "emergency_disable",
+        false,
+        req,
+        "invalid_password",
+      );
       return res.status(401).json({ error: "Invalid master password" });
     }
 
@@ -278,7 +300,7 @@ async function handleEmergencyDisable(req, res) {
 
     // Log emergency disable
     await logRecoveryAttempt(adminId, "emergency_disable", true, req);
-    
+
     await db.execute({
       sql: `INSERT INTO admin_activity_log 
             (session_token, action, ip_address, user_agent, request_details, success) 
@@ -300,7 +322,8 @@ async function handleEmergencyDisable(req, res) {
     res.status(200).json({
       success: true,
       message: "MFA has been permanently disabled",
-      warning: "Your account no longer has multi-factor authentication protection",
+      warning:
+        "Your account no longer has multi-factor authentication protection",
       recommendation: "Set up MFA again as soon as possible for security",
     });
   } catch (error) {
@@ -344,17 +367,19 @@ async function handleUseRecoveryToken(req, res) {
   const { recoveryToken, recoveryAction } = req.body;
 
   if (!recoveryToken || !recoveryAction) {
-    return res.status(400).json({ 
-      error: "Recovery token and action are required" 
+    return res.status(400).json({
+      error: "Recovery token and action are required",
     });
   }
 
   try {
     // Verify recovery token
     const tokenData = verifyRecoveryToken(recoveryToken);
-    
+
     if (!tokenData.valid) {
-      return res.status(401).json({ error: "Invalid or expired recovery token" });
+      return res
+        .status(401)
+        .json({ error: "Invalid or expired recovery token" });
     }
 
     const adminId = tokenData.adminId;
@@ -383,7 +408,7 @@ function generateRecoveryToken(adminId) {
   const payload = {
     adminId,
     type: "recovery",
-    exp: Math.floor(Date.now() / 1000) + (15 * 60), // 15 minutes
+    exp: Math.floor(Date.now() / 1000) + 15 * 60, // 15 minutes
     iat: Math.floor(Date.now() / 1000),
   };
 
@@ -396,7 +421,7 @@ function generateRecoveryToken(adminId) {
 function verifyRecoveryToken(token) {
   try {
     const decoded = authService.verifySessionToken(token);
-    
+
     if (!decoded.valid || decoded.admin.type !== "recovery") {
       return { valid: false };
     }
@@ -484,7 +509,12 @@ async function generateNewBackupCodesWithRecovery(req, res, adminId) {
     }
 
     // Log the action
-    await logRecoveryAttempt(adminId, "backup_codes_regenerated_via_recovery", true, req);
+    await logRecoveryAttempt(
+      adminId,
+      "backup_codes_regenerated_via_recovery",
+      true,
+      req,
+    );
 
     res.status(200).json({
       success: true,
@@ -524,7 +554,8 @@ async function resetMfaSetupWithRecovery(req, res, adminId) {
 
     res.status(200).json({
       success: true,
-      message: "MFA setup reset successfully. You can now set up MFA on a new device.",
+      message:
+        "MFA setup reset successfully. You can now set up MFA on a new device.",
     });
   } catch (error) {
     console.error("Error resetting MFA setup via recovery:", error);
@@ -535,10 +566,17 @@ async function resetMfaSetupWithRecovery(req, res, adminId) {
 /**
  * Log recovery attempt
  */
-async function logRecoveryAttempt(adminId, attemptType, success, req, errorReason = null) {
+async function logRecoveryAttempt(
+  adminId,
+  attemptType,
+  success,
+  req,
+  errorReason = null,
+) {
   try {
     const db = getDatabase();
-    const clientIP = req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
+    const clientIP =
+      req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
     const userAgent = req.headers["user-agent"];
     const sessionToken = authService.getSessionFromRequest(req);
 
@@ -546,7 +584,15 @@ async function logRecoveryAttempt(adminId, attemptType, success, req, errorReaso
       sql: `INSERT INTO admin_mfa_attempts 
             (admin_id, attempt_type, success, ip_address, user_agent, error_reason, session_token) 
             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      args: [adminId, attemptType, success, clientIP, userAgent, errorReason, sessionToken],
+      args: [
+        adminId,
+        attemptType,
+        success,
+        clientIP,
+        userAgent,
+        errorReason,
+        sessionToken,
+      ],
     });
   } catch (error) {
     console.error("Failed to log recovery attempt:", error);

@@ -5,16 +5,19 @@ Place your image files in this directory for the Apple Wallet passes.
 ## Required Images
 
 ### Logo (appears in header)
+
 - `logo.png` - 160×50 px
 - `logo@2x.png` - 320×100 px (Retina)
 - `logo@3x.png` - 480×150 px (iPhone Plus)
 
 ### Icon (appears in listings)
+
 - `icon.png` - 29×29 px
 - `icon@2x.png` - 58×58 px
 - `icon@3x.png` - 87×87 px
 
 ### Background (watermark effect)
+
 - `background.png` - 180×220 px
 - `background@2x.png` - 360×440 px
 

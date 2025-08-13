@@ -17,7 +17,7 @@ import Stripe from "stripe";
 import transactionService from "../lib/transaction-service.js";
 import paymentEventLogger from "../lib/payment-event-logger.js";
 import ticketService from "../lib/ticket-service.js";
-import ticketEmailService from "../lib/ticket-email-service.js";
+import { getTicketEmailService } from "../lib/ticket-email-service-brevo.js";
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -123,6 +123,7 @@ export default async function handler(req, res) {
 
             // Send confirmation email with tickets
             if (tickets.length > 0) {
+              const ticketEmailService = getTicketEmailService();
               await ticketEmailService.sendTicketConfirmation(
                 transaction,
                 tickets,
@@ -181,6 +182,7 @@ export default async function handler(req, res) {
 
               // Send confirmation email with tickets
               if (tickets.length > 0) {
+                const ticketEmailService = getTicketEmailService();
                 await ticketEmailService.sendTicketConfirmation(
                   transaction,
                   tickets,

@@ -27,6 +27,7 @@ VERCEL_PROJECT_ID=your-project-id
 ```
 
 **How to get Vercel values:**
+
 1. **VERCEL_TOKEN**: Vercel Dashboard → Settings → Tokens → Create Token
 2. **VERCEL_ORG_ID & PROJECT_ID**: Run `vercel link` in your project, then check `.vercel/project.json`
 
@@ -45,7 +46,7 @@ MIGRATION_SECRET_KEY=your-strong-secret-key-here
 ### **Step 1: Create GitHub Secrets**
 
 - [ ] `VERCEL_TOKEN` - Your Vercel API token
-- [ ] `VERCEL_ORG_ID` - Your Vercel organization ID  
+- [ ] `VERCEL_ORG_ID` - Your Vercel organization ID
 - [ ] `VERCEL_PROJECT_ID` - Your Vercel project ID
 - [ ] `VERCEL_PRODUCTION_URL` - Your production domain
 - [ ] `MIGRATION_SECRET_KEY` - Secret key for migration API
@@ -59,6 +60,7 @@ Add the migration secret to Vercel production environment:
 ### **Step 3: Test Workflows**
 
 1. **Test Staging Deployment:**
+
    ```bash
    # Create a feature branch and push
    git checkout -b feature/test-deployment
@@ -83,12 +85,14 @@ Add the migration secret to Vercel production environment:
 ## 🔄 Workflow Triggers
 
 ### **Staging Workflow** (`.github/workflows/deploy-staging.yml`)
+
 - ✅ Pushes to `develop`, `staging`, `feature/*` branches
 - ✅ Pull requests to `main` branch
 - ✅ Runs tests and deploys to Vercel preview
 - ✅ Comments on PRs with preview URL
 
 ### **Production Workflow** (`.github/workflows/deploy-production.yml`)
+
 - ✅ Pushes to `main` branch
 - ✅ Manual trigger (workflow_dispatch)
 - ✅ Runs complete quality gates
@@ -114,7 +118,7 @@ The production workflow handles migrations automatically:
 Sometimes you want to deploy code without running migrations:
 
 1. Go to **Actions** tab → **Production Deployment**
-2. Click **Run workflow**  
+2. Click **Run workflow**
 3. Set "Skip database migrations" to `true`
 4. Click **Run workflow**
 
@@ -132,14 +136,16 @@ Run just migrations without deploying code:
 ### **GitHub Summaries**
 
 Each workflow run shows detailed summaries:
+
 - Migration status and count
-- Deployment URLs  
+- Deployment URLs
 - Health check results
 - Performance metrics
 
 ### **Automatic Issue Creation**
 
 Failed deployments automatically create GitHub issues with:
+
 - Error details and logs
 - Recovery steps
 - Assigned labels (bug, production, urgent)
@@ -147,6 +153,7 @@ Failed deployments automatically create GitHub issues with:
 ### **PR Comments**
 
 Staging deployments comment on PRs with:
+
 - Preview URL for testing
 - Health status
 - Test checklist
@@ -159,7 +166,7 @@ Staging deployments comment on PRs with:
    - Verify `VERCEL_TOKEN` is correct and has permissions
    - Check token hasn't expired
 
-2. **"Project not found" errors**  
+2. **"Project not found" errors**
    - Verify `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` are correct
    - Run `vercel link` locally and check `.vercel/project.json`
 
@@ -174,7 +181,7 @@ Staging deployments comment on PRs with:
 ### **Debug Workflow Issues**
 
 1. **Check Actions tab** for detailed logs
-2. **Review step-by-step** execution in failed runs  
+2. **Review step-by-step** execution in failed runs
 3. **Verify secrets** are set correctly
 4. **Test endpoints manually** to isolate issues
 
@@ -199,7 +206,7 @@ main           # Production deployments + migrations
 ### **Monitoring**
 
 - **Watch GitHub Actions** for deployment status
-- **Monitor health endpoints** after deployments  
+- **Monitor health endpoints** after deployments
 - **Set up alerts** for production issues
 - **Review performance** regularly
 

@@ -1,4 +1,4 @@
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 import jwt from "jsonwebtoken";
 
 // Rate limiting map (simple in-memory for now, use Redis in production)
@@ -194,7 +194,7 @@ export default async function handler(req, res) {
   }
 
   const source = detectSource(req);
-  const db = getDatabase();
+  const db = await getDatabaseClient();
 
   try {
     const ticketId = extractTicketId(token);
@@ -268,6 +268,14 @@ export default async function handler(req, res) {
       message: `Welcome ${ticket.attendee_first_name}!`,
     });
   } catch (error) {
+    // Handle initialization errors
+    if (error.message.includes("Failed to initialize database client")) {
+      return res.status(503).json({
+        valid: false,
+        error: "Service temporarily unavailable. Please try again.",
+      });
+    }
+
     // Sanitize error for logging
     const safeError = {
       message: error.message || "Validation failed",
@@ -275,14 +283,18 @@ export default async function handler(req, res) {
     };
     console.error("Validation error:", safeError);
 
-    // Log failed validation
-    await logValidation(db, {
-      token: token ? token.substring(0, 10) + "..." : "invalid",
-      result: "failed",
-      failureReason: error.message,
-      source: source,
-      ip: ip,
-    });
+    // Log failed validation (only if db is available)
+    try {
+      await logValidation(db, {
+        token: token ? token.substring(0, 10) + "..." : "invalid",
+        result: "failed",
+        failureReason: error.message,
+        source: source,
+        ip: ip,
+      });
+    } catch (logError) {
+      console.error("Failed to log validation error:", logError.message);
+    }
 
     res.status(400).json({
       valid: false,

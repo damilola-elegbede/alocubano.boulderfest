@@ -10,12 +10,16 @@ const __dirname = path.dirname(__filename);
 const projectRoot = path.join(__dirname, "..");
 
 console.log("🔍 Verifying File Structure for Vercel Deployment");
-console.log("================================================\n");
+console.log("================================================");
+console.log("📁 Architecture: Pages-based (index.html in pages/ directory)");
+console.log("🔄 Routing: Root (/) -> pages/index.html via vercel.json rewrites");
+console.log("");
 
 // Files that should exist for routing to work
 const expectedFiles = {
-  "Root Files": ["index.html", "vercel.json"],
+  "Root Files": ["vercel.json"],
   "Core Pages": [
+    "pages/index.html",
     "pages/404.html",
     "pages/home.html",
     "pages/about.html",
@@ -24,6 +28,19 @@ const expectedFiles = {
     "pages/tickets.html",
     "pages/success.html",
     "pages/failure.html",
+    "pages/my-ticket.html",
+    "pages/my-tickets.html",
+    "pages/checkout-success.html",
+    "pages/checkout-cancel.html",
+    "pages/admin.html",
+  ],
+  "Admin Pages": [
+    "pages/admin/index.html",
+    "pages/admin/login.html",
+    "pages/admin/dashboard.html",
+    "pages/admin/checkin.html",
+    "pages/admin/analytics.html",
+    "pages/admin/mfa-settings.html",
   ],
   "Event Pages - Boulder Fest 2025": [
     "pages/boulder-fest-2025-index.html",
@@ -185,11 +202,37 @@ if (fs.existsSync(vercelJsonPath)) {
 
     if (config.rewrites && config.rewrites.length > 0) {
       console.log("  ✅ Has rewrite rules:");
+      
+      // Check for critical routing rules
+      const rootRoute = config.rewrites.find(r => r.source === "/" && r.destination === "/pages/index.html");
+      const indexRoute = config.rewrites.find(r => r.source === "/index.html" && r.destination === "/pages/index.html");
+      
+      if (rootRoute) {
+        console.log("    ✅ Root route (/) -> pages/index.html configured");
+      } else {
+        console.log("    ❌ Root route (/) -> pages/index.html MISSING");
+        allGood = false;
+      }
+      
+      if (indexRoute) {
+        console.log("    ✅ Index route (/index.html) -> pages/index.html configured");
+      } else {
+        console.log("    ⚠️  Index route (/index.html) -> pages/index.html missing");
+      }
+      
+      const eventRoutes = config.rewrites.filter(r => 
+        r.destination && r.destination.includes("pages/") && 
+        (r.destination.includes("boulder-fest") || r.destination.includes("weekender"))
+      );
+      console.log(`    ✅ Found ${eventRoutes.length} event-specific routes`);
+      
+      console.log("  📝 All rewrite rules:");
       config.rewrites.forEach((rule, index) => {
         console.log(`    ${index + 1}. ${rule.source} -> ${rule.destination}`);
       });
     } else {
       console.log("  ⚠️  No rewrite rules found");
+      allGood = false;
     }
 
     if (config.functions) {
@@ -241,7 +284,7 @@ if (fs.existsSync(vercelIgnorePath)) {
     .filter((line) => line.trim() && !line.startsWith("#"));
 
   // Check if any critical files are being ignored
-  const criticalPatterns = ["pages/", "index.html", "api/", "vercel.json"];
+  const criticalPatterns = ["pages/", "pages/index.html", "api/", "vercel.json"];
   const problematicIgnores = ignoreLines.filter((line) =>
     criticalPatterns.some((pattern) => line.includes(pattern)),
   );
@@ -261,7 +304,7 @@ if (fs.existsSync(vercelIgnorePath)) {
 const caseIssues = [];
 if (process.platform !== "win32") {
   // Check for files that might have case issues
-  const checkCases = ["INDEX.HTML", "Index.html", "VERCEL.JSON", "Vercel.json"];
+  const checkCases = ["VERCEL.JSON", "Vercel.json", "pages/INDEX.HTML", "pages/Index.html"];
   checkCases.forEach((file) => {
     if (fs.existsSync(path.join(projectRoot, file))) {
       caseIssues.push(file);
@@ -291,13 +334,19 @@ console.log("===========");
 
 if (allGood && missingFiles.length === 0) {
   console.log("✅ All critical files present and accounted for!");
-  console.log("✅ File structure matches Vercel expectations");
+  console.log("✅ File structure matches Vercel expectations for pages-based architecture");
+  console.log("✅ Root route (/) correctly configured to serve pages/index.html");
   console.log("");
-  console.log("🤔 Since file structure is correct, the 404 issue is likely:");
-  console.log("   1. Build process not generating expected files");
-  console.log("   2. Deployment environment differences");
-  console.log("   3. Vercel configuration interpretation differences");
-  console.log("   4. Network/CDN caching issues");
+  console.log("🚀 Pages-based routing is properly configured:");
+  console.log("   - Root (/) -> pages/index.html");
+  console.log("   - Event routes -> pages/event-name-page.html");
+  console.log("   - Static assets served from appropriate directories");
+  console.log("");
+  console.log("🤔 If there are still deployment issues, check:");
+  console.log("   1. Build process and file deployment");
+  console.log("   2. Vercel function logs for errors");
+  console.log("   3. Network/CDN caching issues");
+  console.log("   4. API endpoint functionality");
 } else {
   console.log("❌ Issues found:");
   if (missingFiles.length > 0) {

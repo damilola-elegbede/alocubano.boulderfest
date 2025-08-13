@@ -1,12 +1,15 @@
 /**
-
-import { vi } from 'vitest';
  * API-Frontend Integration Tests
  * Testing actual data flow and error handling between API and frontend components
  */
 
-const fs = require("fs");
-const path = require("path");
+import { vi } from "vitest";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load actual gallery API source
 let galleryAPISource;
@@ -89,7 +92,7 @@ describe("Gallery API to Frontend Integration", () => {
     delete process.env.GOOGLE_PARENT_FOLDER_ID;
 
     // Restore filesystem mocks
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   test("should load actual API source code", () => {

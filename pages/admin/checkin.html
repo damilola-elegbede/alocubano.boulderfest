@@ -404,7 +404,9 @@
   </head>
   <body>
     <div class="app-header">
-      <div class="app-title">🎫 Check-in Scanner</div>
+      <div class="app-title" data-testid="scanner-title">
+        🎫 Check-in Scanner
+      </div>
       <button class="menu-btn" onclick="showMenu()">☰</button>
     </div>
 
@@ -412,14 +414,20 @@
       📵 Offline - Check-ins will sync when connected
     </div>
 
-    <div class="scanner-container">
+    <div class="scanner-container" data-testid="scanner-container">
       <div class="stats-bar">
         <div class="stat-item">
           <div class="stat-value" id="todayCount">0</div>
           <div class="stat-label">Today</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value" id="sessionCount">0</div>
+          <div
+            class="stat-value"
+            id="sessionCount"
+            data-testid="checkin-counter"
+          >
+            0
+          </div>
           <div class="stat-label">Session</div>
         </div>
         <div class="stat-item">
@@ -437,7 +445,7 @@
       </div>
 
       <div class="scanner-viewport">
-        <div id="reader"></div>
+        <div id="reader" data-testid="camera-scanner"></div>
         <div class="scanner-overlay">
           <div class="scan-region">
             <div class="scan-corners tl"></div>
@@ -452,7 +460,11 @@
         <button class="control-btn torch" onclick="toggleTorch()" id="torchBtn">
           🔦
         </button>
-        <button class="control-btn manual" onclick="showManualInput()">
+        <button
+          class="control-btn manual"
+          onclick="showManualInput()"
+          data-testid="manual-input-toggle"
+        >
           ⌨️
         </button>
         <button class="control-btn" onclick="location.reload()">🔄</button>
@@ -462,8 +474,16 @@
     <div class="result-modal" id="resultModal">
       <div class="result-content" id="resultContent">
         <div class="result-icon" id="resultIcon"></div>
-        <div class="result-title" id="resultTitle"></div>
-        <div class="result-details" id="resultDetails"></div>
+        <div
+          class="result-title"
+          id="resultTitle"
+          data-testid="validation-result"
+        ></div>
+        <div
+          class="result-details"
+          id="resultDetails"
+          data-testid="ticket-info"
+        ></div>
         <button class="result-btn" onclick="closeResult()">
           Continue Scanning
         </button>
@@ -477,9 +497,16 @@
         id="manualTicketId"
         placeholder="Enter ticket ID..."
         autocomplete="off"
+        data-testid="qr-manual-input"
       />
       <div class="manual-input-buttons">
-        <button class="submit" onclick="submitManualTicket()">Check In</button>
+        <button
+          class="submit"
+          onclick="submitManualTicket()"
+          data-testid="validate-ticket"
+        >
+          Check In
+        </button>
         <button class="cancel" onclick="hideManualInput()">Cancel</button>
       </div>
     </div>
@@ -641,12 +668,15 @@
         if (type === "success") {
           content.className = "result-content success";
           icon.textContent = "✅";
+          content.setAttribute("data-testid", "checkin-success");
         } else if (type === "error") {
           content.className = "result-content error";
           icon.textContent = "❌";
+          content.setAttribute("data-testid", "validation-error");
         } else if (type === "queued") {
           content.className = "result-content";
           icon.textContent = "📥";
+          content.setAttribute("data-testid", "network-error");
         }
 
         titleEl.textContent = title;

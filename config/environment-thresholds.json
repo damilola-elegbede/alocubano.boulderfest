@@ -19,7 +19,10 @@
           "payment_processing_duration": ["avg<1000", "p(95)<2000"]
         },
         "check-in": {
-          "http_req_duration{scenario:checkin_rush}": ["p(95)<500", "p(99)<1500"],
+          "http_req_duration{scenario:checkin_rush}": [
+            "p(95)<500",
+            "p(99)<1500"
+          ],
           "qr_validation_duration": ["avg<200", "p(95)<600"],
           "database_write_duration": ["avg<150", "p(95)<400"],
           "checkin_success_rate": ["rate>0.90"],
@@ -48,7 +51,7 @@
         }
       }
     },
-    
+
     "staging": {
       "description": "Staging environment - Production-like performance",
       "context": "Dedicated resources, occasional cold starts, stable network",
@@ -64,7 +67,10 @@
           "payment_processing_duration": ["avg<600", "p(95)<1200"]
         },
         "check-in": {
-          "http_req_duration{scenario:checkin_rush}": ["p(95)<300", "p(99)<800"],
+          "http_req_duration{scenario:checkin_rush}": [
+            "p(95)<300",
+            "p(99)<800"
+          ],
           "qr_validation_duration": ["avg<120", "p(95)<350"],
           "database_write_duration": ["avg<100", "p(95)<200"],
           "checkin_success_rate": ["rate>0.96"],
@@ -93,7 +99,7 @@
         }
       }
     },
-    
+
     "production": {
       "description": "Production environment - Strict performance requirements",
       "context": "Optimized infrastructure, warm functions, CDN active",
@@ -109,7 +115,10 @@
           "payment_processing_duration": ["avg<400", "p(95)<800"]
         },
         "check-in": {
-          "http_req_duration{scenario:checkin_rush}": ["p(95)<200", "p(99)<500"],
+          "http_req_duration{scenario:checkin_rush}": [
+            "p(95)<200",
+            "p(99)<500"
+          ],
           "qr_validation_duration": ["avg<80", "p(95)<200"],
           "database_write_duration": ["avg<60", "p(95)<120"],
           "checkin_success_rate": ["rate>0.98"],
@@ -144,13 +153,13 @@
     "description": "Vercel serverless-specific adjustments",
     "cold_start_penalties": {
       "first_invocation_buffer_ms": 2000,
-      "concurrent_cold_start_rate": 0.10,
+      "concurrent_cold_start_rate": 0.1,
       "function_warmup_time_s": 15
     },
     "memory_constraints": {
       "default_memory_mb": 1024,
       "pro_memory_mb": 3008,
-      "memory_buffer_percentage": 0.20
+      "memory_buffer_percentage": 0.2
     },
     "timeout_configurations": {
       "hobby_timeout_s": 10,
@@ -185,7 +194,7 @@
       },
       "production": {
         "enabled": true,
-        "webhook_url_env": "PRODUCTION_PERFORMANCE_WEBHOOK", 
+        "webhook_url_env": "PRODUCTION_PERFORMANCE_WEBHOOK",
         "block_deployment": true,
         "escalation_required": true
       }

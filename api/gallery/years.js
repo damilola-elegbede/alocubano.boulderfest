@@ -121,8 +121,8 @@ async function loadYearStatistics() {
         // Get real statistics from Google Drive
         stats = await getYearStatistics(drive, year, config);
       } else {
-        // Use mock data for testing
-        stats = getMockYearStatistics(year);
+        // Skip years without configured folder IDs
+        continue;
       }
 
       // Only include years that have images
@@ -157,32 +157,6 @@ async function loadYearStatistics() {
     cacheTimestamp: Date.now(),
     apiVersion: "1.0",
   };
-}
-
-/**
- * Get mock statistics for testing years without actual folders
- */
-function getMockYearStatistics(year) {
-  const mockData = {
-    2024: {
-      imageCount: 42,
-      totalSize: 85 * 1024 * 1024, // 85 MB
-      lastModified: "2024-05-19T20:30:00.000Z",
-    },
-    2023: {
-      imageCount: 28,
-      totalSize: 56 * 1024 * 1024, // 56 MB
-      lastModified: "2023-05-21T18:45:00.000Z",
-    },
-  };
-
-  return (
-    mockData[year] || {
-      imageCount: 0,
-      totalSize: 0,
-      lastModified: null,
-    }
-  );
 }
 
 /**

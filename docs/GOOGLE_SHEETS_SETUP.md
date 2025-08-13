@@ -7,6 +7,7 @@ This guide will help you set up Google Sheets integration to automatically sync 
 ## What You'll Get
 
 A Google Sheet with 6 tabs that auto-update every 15 minutes:
+
 - **Overview**: Key metrics and statistics at a glance
 - **All Registrations**: Complete list of all ticket purchases
 - **Check-in Status**: Real-time check-in tracking
@@ -145,20 +146,24 @@ Add the same environment variables to Vercel:
 ## Troubleshooting
 
 ### "Permission denied" Error
+
 - Make sure the sheet is shared with the service account email
 - Verify the service account has Editor permissions
 
 ### "Invalid private key" Error
+
 - Ensure the private key includes BEGIN/END headers
 - Check that newlines are preserved (use quotes around the value)
 - Try re-creating the service account key
 
 ### Sync Takes Too Long
+
 - Large datasets may take 30-60 seconds
 - Consider increasing the Vercel function timeout
 - Data is batched efficiently, but network latency affects speed
 
 ### No Data Appearing
+
 - Check that you have registrations in your database
 - Verify all environment variables are set correctly
 - Look at Vercel function logs for errors
@@ -173,6 +178,7 @@ Add the same environment variables to Vercel:
 ## Support
 
 If you encounter issues:
+
 1. Check the test script output: `node scripts/test-sheets.js`
 2. Review Vercel function logs
 3. Ensure all environment variables are set

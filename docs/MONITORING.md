@@ -27,36 +27,42 @@ The A Lo Cubano Boulder Fest application includes a comprehensive production mon
 ## Key Features
 
 ### 1. Health Monitoring
+
 - **Endpoint**: `/api/health/check`
 - Real-time health checks for all critical services
 - Circuit breaker pattern for dependency failures
 - Automatic recovery detection
 
 ### 2. Uptime Monitoring
+
 - **Endpoint**: `/api/monitoring/uptime`
 - SLA compliance tracking (99.9% target)
 - Availability zone status
 - Incident history and MTBF/MTTR metrics
 
 ### 3. Performance Monitoring
+
 - **Endpoint**: `/api/monitoring/metrics`
 - Response time percentiles (p50, p95, p99)
 - Request throughput tracking
 - Resource utilization metrics
 
 ### 4. Business Metrics
+
 - Payment success/failure rates
 - Revenue tracking
 - User activity monitoring
 - Ticket operation metrics
 
 ### 5. Error Tracking
+
 - Automatic error capture with Sentry
 - PII sanitization before logging
 - Error rate alerting
 - Stack trace collection
 
 ### 6. Alerting System
+
 - **Endpoint**: `/api/monitoring/alerts`
 - Multi-channel notifications (Sentry, Webhooks)
 - Alert severity levels (Critical, High, Medium, Low)
@@ -66,6 +72,7 @@ The A Lo Cubano Boulder Fest application includes a comprehensive production mon
 ## Monitoring Endpoints
 
 ### Health Check
+
 ```bash
 GET /api/health/check
 
@@ -82,6 +89,7 @@ GET /api/health/check
 ```
 
 ### Uptime Status
+
 ```bash
 GET /api/monitoring/uptime
 
@@ -103,6 +111,7 @@ GET /api/monitoring/uptime
 ```
 
 ### Metrics Export
+
 ```bash
 # JSON format (default)
 GET /api/monitoring/metrics?api_key=YOUR_KEY
@@ -118,6 +127,7 @@ GET /api/monitoring/metrics?category=business&api_key=YOUR_KEY
 ```
 
 ### Dashboard
+
 ```bash
 # JSON dashboard data
 GET /api/monitoring/dashboard
@@ -130,6 +140,7 @@ GET /api/monitoring/dashboard?platform=grafana
 ```
 
 ### Alert Management
+
 ```bash
 # Get active alerts
 GET /api/monitoring/alerts?action=active
@@ -204,6 +215,7 @@ Default alert rules are configured for:
 ### Grafana Integration
 
 1. Add data source:
+
 ```
 URL: https://your-domain.com/api/monitoring/metrics
 Headers:
@@ -211,6 +223,7 @@ Headers:
 ```
 
 2. Import dashboard:
+
 ```bash
 GET /api/monitoring/dashboard?platform=grafana
 ```
@@ -218,6 +231,7 @@ GET /api/monitoring/dashboard?platform=grafana
 ### Datadog Integration
 
 1. Configure API endpoint:
+
 ```bash
 curl -X POST "https://api.datadoghq.com/api/v1/series" \
   -H "DD-API-KEY: YOUR_DD_API_KEY" \
@@ -228,6 +242,7 @@ curl -X POST "https://api.datadoghq.com/api/v1/series" \
 
 1. Create incoming webhook in Slack
 2. Set environment variable:
+
 ```bash
 ALERT_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK
 ```
@@ -236,6 +251,7 @@ ALERT_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK
 
 1. Create PagerDuty integration
 2. Set escalation webhook:
+
 ```bash
 ESCALATION_WEBHOOK_URL=https://events.pagerduty.com/v2/enqueue
 ```
@@ -243,24 +259,28 @@ ESCALATION_WEBHOOK_URL=https://events.pagerduty.com/v2/enqueue
 ## Monitoring Best Practices
 
 ### 1. Alert Fatigue Prevention
+
 - Set appropriate thresholds
 - Use aggregation windows
 - Implement suppression rules
 - Group related alerts
 
 ### 2. Meaningful Metrics
+
 - Focus on business impact
 - Monitor user experience
 - Track error budgets
 - Measure SLA compliance
 
 ### 3. Incident Response
+
 - Clear escalation paths
 - Runbook documentation
 - Post-mortem process
 - Continuous improvement
 
 ### 4. Data Retention
+
 - Metrics: 30 days
 - Alerts: 90 days
 - Incidents: 1 year
@@ -269,6 +289,7 @@ ESCALATION_WEBHOOK_URL=https://events.pagerduty.com/v2/enqueue
 ## Troubleshooting
 
 ### High Memory Usage
+
 ```bash
 # Check memory metrics
 curl /api/monitoring/metrics?category=system
@@ -279,6 +300,7 @@ curl /api/monitoring/metrics?category=system
 ```
 
 ### Alert Not Firing
+
 ```bash
 # Test alert configuration
 curl -X POST /api/monitoring/alerts \
@@ -290,6 +312,7 @@ curl /api/monitoring/alerts?action=configuration
 ```
 
 ### Metrics Not Updating
+
 ```bash
 # Check health status
 curl /api/health/check
@@ -301,18 +324,21 @@ curl /api/monitoring/metrics?category=system
 ## Security Considerations
 
 ### PII Protection
+
 - Automatic email sanitization
 - Credit card masking
 - API key redaction
 - IP address anonymization
 
 ### Access Control
+
 - API key authentication for metrics
 - Admin key for configuration changes
 - Rate limiting on all endpoints
 - CORS configuration
 
 ### Audit Logging
+
 - All configuration changes logged
 - Alert actions tracked
 - Access attempts recorded
@@ -332,16 +358,19 @@ The monitoring system is designed for minimal overhead:
 ### Regular Tasks
 
 **Daily**:
+
 - Review active alerts
 - Check SLA compliance
 - Monitor error rates
 
 **Weekly**:
+
 - Analyze performance trends
 - Review alert effectiveness
 - Update thresholds if needed
 
 **Monthly**:
+
 - Capacity planning review
 - Incident post-mortems
 - Dashboard optimization
@@ -367,23 +396,23 @@ For monitoring issues or questions:
 
 ### Metric Definitions
 
-| Metric | Description | Unit | Target |
-|--------|-------------|------|--------|
-| api.response_time.p95 | 95th percentile response time | ms | < 2000 |
-| payments.success_rate | Payment success percentage | % | > 99 |
-| errors.rate | Errors per minute | count/min | < 3 |
-| system.memory.usage | Memory utilization | % | < 80 |
-| uptime.percentage | System availability | % | > 99.9 |
+| Metric                | Description                   | Unit      | Target |
+| --------------------- | ----------------------------- | --------- | ------ |
+| api.response_time.p95 | 95th percentile response time | ms        | < 2000 |
+| payments.success_rate | Payment success percentage    | %         | > 99   |
+| errors.rate           | Errors per minute             | count/min | < 3    |
+| system.memory.usage   | Memory utilization            | %         | < 80   |
+| uptime.percentage     | System availability           | %         | > 99.9 |
 
 ### Alert Severity Matrix
 
-| Severity | Response Time | Escalation | Examples |
-|----------|--------------|------------|----------|
-| Critical | < 5 min | Immediate | Payment system down |
-| High | < 15 min | 30 min | High error rate |
-| Medium | < 1 hour | 2 hours | Performance degradation |
-| Low | < 4 hours | Next day | Capacity warnings |
-| Info | Best effort | None | Scheduled maintenance |
+| Severity | Response Time | Escalation | Examples                |
+| -------- | ------------- | ---------- | ----------------------- |
+| Critical | < 5 min       | Immediate  | Payment system down     |
+| High     | < 15 min      | 30 min     | High error rate         |
+| Medium   | < 1 hour      | 2 hours    | Performance degradation |
+| Low      | < 4 hours     | Next day   | Capacity warnings       |
+| Info     | Best effort   | None       | Scheduled maintenance   |
 
 ### Monitoring Checklist
 

@@ -9,7 +9,9 @@ export class MfaRateLimitService {
     this.maxAttempts = parseInt(process.env.MFA_MAX_ATTEMPTS || "5");
     this.lockoutDuration = parseInt(process.env.MFA_LOCKOUT_DURATION || "15"); // minutes
     this.windowSize = parseInt(process.env.MFA_WINDOW_SIZE || "60"); // minutes
-    this.cleanupInterval = parseInt(process.env.MFA_CLEANUP_INTERVAL || "3600000"); // ms (1 hour)
+    this.cleanupInterval = parseInt(
+      process.env.MFA_CLEANUP_INTERVAL || "3600000",
+    ); // ms (1 hour)
     this.cleanupTimer = null;
 
     // Start periodic cleanup
@@ -41,10 +43,12 @@ export class MfaRateLimitService {
       }
 
       const record = result.rows[0];
-      
+
       // Check if still locked
       if (record.locked_until && new Date(record.locked_until) > now) {
-        const remainingTime = Math.ceil((new Date(record.locked_until) - now) / 60000);
+        const remainingTime = Math.ceil(
+          (new Date(record.locked_until) - now) / 60000,
+        );
         return {
           isLocked: true,
           attemptsRemaining: 0,
@@ -54,7 +58,8 @@ export class MfaRateLimitService {
 
       // Check if window has expired (reset attempts)
       const firstAttemptTime = new Date(record.first_attempt_at);
-      const windowExpired = (now - firstAttemptTime) > (this.windowSize * 60 * 1000);
+      const windowExpired =
+        now - firstAttemptTime > this.windowSize * 60 * 1000;
 
       if (windowExpired) {
         // Clear expired attempts
@@ -69,8 +74,10 @@ export class MfaRateLimitService {
       // Check if at max attempts
       if (record.attempt_count >= this.maxAttempts) {
         // Lock the account
-        const lockoutEnd = new Date(now.getTime() + (this.lockoutDuration * 60 * 1000));
-        
+        const lockoutEnd = new Date(
+          now.getTime() + this.lockoutDuration * 60 * 1000,
+        );
+
         await db.execute({
           sql: `UPDATE admin_mfa_rate_limits 
                 SET locked_until = ? 
@@ -202,13 +209,15 @@ export class MfaRateLimitService {
         args,
       });
 
-      return result.rows[0] || {
-        total_records: 0,
-        currently_locked: 0,
-        avg_attempts: 0,
-        max_attempts: 0,
-        unique_ips: 0,
-      };
+      return (
+        result.rows[0] || {
+          total_records: 0,
+          currently_locked: 0,
+          avg_attempts: 0,
+          max_attempts: 0,
+          unique_ips: 0,
+        }
+      );
     } catch (error) {
       console.error("Error getting MFA rate limit statistics:", error);
       return null;
@@ -231,14 +240,16 @@ export class MfaRateLimitService {
         args: [],
       });
 
-      return result.rows.map(row => ({
+      return result.rows.map((row) => ({
         adminId: row.admin_id,
         ipAddress: row.ip_address,
         attemptCount: row.attempt_count,
         lockedUntil: row.locked_until,
         firstAttemptAt: row.first_attempt_at,
         lastAttemptAt: row.last_attempt_at,
-        remainingTime: Math.ceil((new Date(row.locked_until) - new Date()) / 60000),
+        remainingTime: Math.ceil(
+          (new Date(row.locked_until) - new Date()) / 60000,
+        ),
       }));
     } catch (error) {
       console.error("Error getting locked MFA accounts:", error);
@@ -318,7 +329,9 @@ export class MfaRateLimitService {
       });
 
       if (result.changes > 0) {
-        console.log(`Cleaned up ${result.changes} expired MFA rate limit records`);
+        console.log(
+          `Cleaned up ${result.changes} expired MFA rate limit records`,
+        );
       }
     } catch (error) {
       console.error("Error cleaning up MFA rate limit records:", error);

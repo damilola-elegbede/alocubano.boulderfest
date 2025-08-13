@@ -4,7 +4,7 @@ import tokenService from "../lib/token-service.js";
 import { formatTicketType, TOKEN_ACTIONS } from "../lib/ticket-config.js";
 
 export default async function handler(req, res) {
-  const db = getDatabase();
+  const db = await getDatabase().ensureInitialized();
 
   try {
     if (req.method === "GET") {

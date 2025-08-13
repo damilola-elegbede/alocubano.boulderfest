@@ -44,12 +44,13 @@ export function requireMfa(handler) {
 
       // Check if MFA is already verified in this session
       const sessionMfaStatus = await getSessionMfaStatus(token);
-      
+
       if (sessionMfaStatus.isVerified) {
         // Check if MFA verification is still valid (within time window)
-        const mfaAge = Date.now() - new Date(sessionMfaStatus.verifiedAt).getTime();
+        const mfaAge =
+          Date.now() - new Date(sessionMfaStatus.verifiedAt).getTime();
         const maxAge = parseInt(process.env.MFA_SESSION_DURATION || "1800000"); // 30 minutes default
-        
+
         if (mfaAge < maxAge) {
           // MFA still valid, proceed with request
           req.admin.mfaVerified = true;
@@ -78,10 +79,10 @@ export function checkMfaStatus(handler) {
   return async (req, res) => {
     try {
       const adminId = req.admin?.id || "admin";
-      
+
       // Get MFA status
       const mfaStatus = await getMfaStatus(adminId);
-      
+
       // Add MFA info to request
       req.admin = req.admin || {};
       req.admin.mfa = mfaStatus;
@@ -107,12 +108,16 @@ export function checkMfaStatus(handler) {
  * Verify MFA code for admin
  */
 export async function verifyMfaCode(adminId, code, req) {
-  const clientIP = req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
-  
+  const clientIP =
+    req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
+
   try {
     // Check rate limiting first
     const rateLimitService = getMfaRateLimitService();
-    const rateLimitResult = await rateLimitService.checkRateLimit(adminId, clientIP);
+    const rateLimitResult = await rateLimitService.checkRateLimit(
+      adminId,
+      clientIP,
+    );
 
     if (rateLimitResult.isLocked) {
       await logMfaAttempt(adminId, "unknown", false, req, "rate_limited");
@@ -155,7 +160,7 @@ export async function verifyMfaCode(adminId, code, req) {
       if (verified) {
         await rateLimitService.clearAttempts(adminId, clientIP);
         await logMfaAttempt(adminId, "totp", true, req);
-        
+
         // Update last used time
         await db.execute({
           sql: `UPDATE admin_mfa_config SET last_used_at = CURRENT_TIMESTAMP WHERE admin_id = ?`,
@@ -175,8 +180,11 @@ export async function verifyMfaCode(adminId, code, req) {
       });
 
       for (const backupCode of backupCodes.rows) {
-        const isValid = await bcrypt.compare(code.toUpperCase(), backupCode.code_hash);
-        
+        const isValid = await bcrypt.compare(
+          code.toUpperCase(),
+          backupCode.code_hash,
+        );
+
         if (isValid) {
           // Mark backup code as used
           await db.execute({
@@ -188,7 +196,7 @@ export async function verifyMfaCode(adminId, code, req) {
 
           await rateLimitService.clearAttempts(adminId, clientIP);
           await logMfaAttempt(adminId, "backup_code", true, req);
-          
+
           return { success: true, method: "backup_code" };
         }
       }
@@ -304,14 +312,20 @@ async function getSessionMfaStatus(sessionToken) {
   }
 }
 
-
 /**
  * Log MFA attempt
  */
-async function logMfaAttempt(adminId, attemptType, success, req, errorReason = null) {
+async function logMfaAttempt(
+  adminId,
+  attemptType,
+  success,
+  req,
+  errorReason = null,
+) {
   try {
     const db = getDatabase();
-    const clientIP = req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
+    const clientIP =
+      req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
     const userAgent = req.headers["user-agent"];
     const sessionToken = authService.getSessionFromRequest(req);
 
@@ -319,7 +333,15 @@ async function logMfaAttempt(adminId, attemptType, success, req, errorReason = n
       sql: `INSERT INTO admin_mfa_attempts 
             (admin_id, attempt_type, success, ip_address, user_agent, error_reason, session_token) 
             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      args: [adminId, attemptType, success, clientIP, userAgent, errorReason, sessionToken],
+      args: [
+        adminId,
+        attemptType,
+        success,
+        clientIP,
+        userAgent,
+        errorReason,
+        sessionToken,
+      ],
     });
   } catch (error) {
     console.error("Failed to log MFA attempt:", error);

@@ -15,6 +15,14 @@ import {
 import { getMigrationStatus } from "./lib/migration-status.js";
 
 export default async function handler(req, res) {
+  // Only allow access in development or test environments
+  if (
+    process.env.NODE_ENV === "production" &&
+    !process.env.ENABLE_DEBUG_ENDPOINTS
+  ) {
+    return res.status(404).json({ error: "Not found" });
+  }
+
   // Load secure CORS configuration
   const corsConfig = getCorsConfig();
 
@@ -53,8 +61,9 @@ export default async function handler(req, res) {
   try {
     console.log("Starting database test...");
 
-    // Get the email subscriber service instance
+    // Ensure the email subscriber service is initialized
     const subscriberService = getEmailSubscriberService();
+    await subscriberService.ensureInitialized();
 
     // Test results object
     const testResults = {
@@ -100,7 +109,7 @@ export default async function handler(req, res) {
     console.log("Testing table information...");
     try {
       // Query actual database schema information
-      const db = await getDatabase();
+      const db = await getDatabase().ensureInitialized();
       const tableInfo = {};
 
       // Get list of tables
@@ -170,7 +179,7 @@ export default async function handler(req, res) {
     console.log("Testing migration status...");
     try {
       // Get real migration status from database
-      const db = await getDatabase();
+      const db = await getDatabase().ensureInitialized();
       const migrationStatus = await getMigrationStatus(db);
 
       testResults.tests.migrations.status = "passed";
