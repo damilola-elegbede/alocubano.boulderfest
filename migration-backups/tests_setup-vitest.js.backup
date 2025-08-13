@@ -5,13 +5,12 @@
  */
 
 import { vi } from "vitest";
-;
+import { testEnvManager } from "./utils/test-environment-manager.js";
 import { dbMockSync } from "./utils/database-mock-sync.js";
 import { environmentAwareTestSetup } from "./config/environment-aware-test-setup.js";
 import { testEnvironmentDetector } from "./utils/test-environment-detector.js";
 import { runMigrationsForTest } from "./utils/test-migration-runner.js";
 
-import { backupEnv, restoreEnv, withCompleteIsolation, resetDatabaseSingleton, cleanupTest } from "./helpers/simple-helpers.js";
 // REMOVED: dotenv loading to prevent .env.local bleeding into tests
 // dotenv.config({ path: '.env.local' });
 
@@ -136,8 +135,6 @@ beforeAll(async () => {
   // Environment is already isolated at this point
 });
 
-let envBackup; // Global environment backup
-
 // Global teardown - restore original environment
 afterAll(async () => {
   // Force cleanup of all database connections
@@ -162,7 +159,7 @@ afterAll(async () => {
   }
 
   // Restore the original environment
-  restoreEnv(envBackup);
+  testEnvManager.restore();
 
   // Reset database mocks only for unit tests, not integration tests
   if (process.env.TEST_TYPE !== 'integration' && process.env.TEST_INTEGRATION !== 'true') {
@@ -194,7 +191,7 @@ afterEach(async () => {
       !process.env.SKIP_DATABASE_RESET) {
     try {
       // Use the enhanced test environment manager for coordinated cleanup
-      await cleanupTest();
+      await testEnvManager.coordinatedClear();
       
       // Additional wait for async operations to complete
       await new Promise(resolve => setTimeout(resolve, 150));

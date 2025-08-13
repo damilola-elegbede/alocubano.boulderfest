@@ -534,8 +534,9 @@ export const componentPreloader = {
           break;
           
         case 'TestEnvironmentManager':
-          const { testEnvManager } = await import('../utils/test-environment-manager.js');
-          componentCache.set('TestEnvironmentManager', testEnvManager);
+          // TestEnvironmentManager has been replaced with simple helpers
+          const { backupEnv, restoreEnv } = await import('../helpers/simple-helpers.js');
+          componentCache.set('TestEnvironmentManager', { backupEnv, restoreEnv });
           break;
           
         default:
