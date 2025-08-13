@@ -1,0 +1,539 @@
+{
+  "timestamp": "2025-08-13T08:08:48.084Z",
+  "totalLines": 20134,
+  "fileCount": 39,
+  "managerClasses": [
+    {
+      "file": "tests/utils/database-test-utils.js",
+      "lines": 811,
+      "className": "DatabaseTestManager",
+      "complexity": 57,
+      "dependencies": [
+        "better-sqlite3",
+        "vitest",
+        "./test-data-builder.js"
+      ]
+    },
+    {
+      "file": "tests/utils/mock-services.js",
+      "lines": 1534,
+      "className": "StripeMock",
+      "complexity": 123,
+      "dependencies": [
+        "vitest"
+      ]
+    },
+    {
+      "file": "tests/utils/test-environment-manager.js",
+      "lines": 721,
+      "className": "TestEnvironmentManager",
+      "complexity": 76,
+      "dependencies": []
+    },
+    {
+      "file": "tests/utils/test-initialization-orchestrator.js",
+      "lines": 516,
+      "className": "TestInitializationOrchestrator",
+      "complexity": 56,
+      "dependencies": [
+        "../../api/lib/database.js",
+        "vitest",
+        "fs",
+        "path",
+        "url"
+      ]
+    },
+    {
+      "file": "tests/utils/test-mock-manager.js",
+      "lines": 869,
+      "className": "MockRegistry",
+      "complexity": 63,
+      "dependencies": [
+        "vitest"
+      ]
+    },
+    {
+      "file": "tests/utils/test-singleton-manager.js",
+      "lines": 518,
+      "className": "TestSingletonManager",
+      "complexity": 28,
+      "dependencies": [
+        "vitest"
+      ]
+    },
+    {
+      "file": "tests/utils/wallet-mocks.js",
+      "lines": 1119,
+      "className": "AppleWalletMock",
+      "complexity": 29,
+      "dependencies": [
+        "vitest"
+      ]
+    }
+  ],
+  "utilities": [
+    {
+      "file": "tests/utils/ci-detection.js",
+      "lines": 164,
+      "functions": [
+        "isCI",
+        "isGitHubActions",
+        "isAutomatedEnvironment",
+        "getCITimeoutMultiplier",
+        "getCIIterationCount",
+        "getCIConcurrency",
+        "getMemoryConfig",
+        "getTestConfig",
+        "shouldSkipPerformanceTests",
+        "shouldSkipExternalTests",
+        "getCIExcludePatterns",
+        "logCIInfo"
+      ],
+      "category": "other"
+    },
+    {
+      "file": "tests/utils/cleanup-helpers.js",
+      "lines": 293,
+      "functions": [
+        "cleanupDOM",
+        "cleanupJSDOM",
+        "cleanupVitest",
+        "cleanupStorage",
+        "cleanupTest",
+        "logMemoryUsage",
+        "createTestEnvironment"
+      ],
+      "category": "helpers"
+    },
+    {
+      "file": "tests/utils/database-cleanup.js",
+      "lines": 255,
+      "functions": [
+        "forceCloseAllConnections",
+        "waitForDatabaseOperations",
+        "cleanupDatabaseFile",
+        "comprehensiveDatabaseCleanup",
+        "setupDatabaseCleanup",
+        "const",
+        "const",
+        "createIsolatedDatabase"
+      ],
+      "category": "database"
+    },
+    {
+      "file": "tests/utils/database-client-validator.js",
+      "lines": 386,
+      "functions": [
+        "validateIntegrationClient",
+        "validateUnitClient",
+        "isMockClient",
+        "isValidLibSQLClient"
+      ],
+      "category": "database"
+    },
+    {
+      "file": "tests/utils/database-mock-sync.js",
+      "lines": 585,
+      "functions": [
+        "successfulExecute",
+        "to",
+        "for",
+        "withSynchronizedMock",
+        "to",
+        "withMockDatabaseService"
+      ],
+      "category": "database"
+    },
+    {
+      "file": "tests/utils/database-test-helpers.js",
+      "lines": 668,
+      "functions": [],
+      "category": "database"
+    },
+    {
+      "file": "tests/utils/database-test-utils.js",
+      "lines": 811,
+      "functions": [
+        "createMockDatabaseClient"
+      ],
+      "category": "database"
+    },
+    {
+      "file": "tests/utils/enhanced-test-setup.js",
+      "lines": 375,
+      "functions": [
+        "setupIntegrationTests",
+        "setupApiTests",
+        "setupDatabaseTests",
+        "createIsolatedTest"
+      ],
+      "category": "other"
+    },
+    {
+      "file": "tests/utils/environment-helpers.js",
+      "lines": 202,
+      "functions": [
+        "isNodeEnvironment",
+        "isEdgeEnvironment",
+        "isBrowserEnvironment",
+        "getDatabaseClientImport",
+        "shouldSkipTest",
+        "envTest",
+        "getMemoryUsage",
+        "getEnvironmentTimeout",
+        "getEnvironmentConfig"
+      ],
+      "category": "environment"
+    },
+    {
+      "file": "tests/utils/gallery-test-helpers.js",
+      "lines": 392,
+      "functions": [
+        "mockSavedState",
+        "createMockGalleryData",
+        "simulateStateCorruption",
+        "to",
+        "measureRestorationTime",
+        "createMockGalleryDOM",
+        "waitForDOM",
+        "validateGalleryItem",
+        "simulateNetwork",
+        "downloadTime",
+        "generatePerformanceReport"
+      ],
+      "category": "helpers"
+    },
+    {
+      "file": "tests/utils/integration-test-database-factory.js",
+      "lines": 349,
+      "functions": [
+        "export",
+        "createRealDatabaseClient"
+      ],
+      "category": "database"
+    },
+    {
+      "file": "tests/utils/integration-test-patterns.js",
+      "lines": 554,
+      "functions": [
+        "setupDatabaseApiIntegrationTest",
+        "setupEmailApiIntegrationTest",
+        "setupPaymentApiIntegrationTest",
+        "setupTestEnvironment",
+        "setupEnhancedIntegrationTest",
+        "validateServiceHealth"
+      ],
+      "category": "manager"
+    },
+    {
+      "file": "tests/utils/integration-test-strategy.js",
+      "lines": 404,
+      "functions": [
+        "to"
+      ],
+      "category": "manager"
+    },
+    {
+      "file": "tests/utils/mock-services.js",
+      "lines": 1534,
+      "functions": [],
+      "category": "mocking"
+    },
+    {
+      "file": "tests/utils/qr-code-generator.js",
+      "lines": 678,
+      "functions": [
+        "for"
+      ],
+      "category": "other"
+    },
+    {
+      "file": "tests/utils/service-availability-detector.js",
+      "lines": 290,
+      "functions": [
+        "that",
+        "skipIfUnavailable",
+        "to",
+        "checkService",
+        "checkAllServices",
+        "validatePrerequisites",
+        "withServiceAvailability"
+      ],
+      "category": "other"
+    },
+    {
+      "file": "tests/utils/service-mock-factory.js",
+      "lines": 305,
+      "functions": [
+        "createEmailSubscriberServiceMock",
+        "createDatabaseServiceMock",
+        "createBrevoServiceMock",
+        "createIntegrationTestMocks",
+        "validateServiceMock",
+        "resetAllMocks"
+      ],
+      "category": "mocking"
+    },
+    {
+      "file": "tests/utils/test-data-builder.js",
+      "lines": 854,
+      "functions": [],
+      "category": "other"
+    },
+    {
+      "file": "tests/utils/test-environment-detector.js",
+      "lines": 403,
+      "functions": [
+        "detectTestType",
+        "isIntegrationTest",
+        "isUnitTest",
+        "isPerformanceTest"
+      ],
+      "category": "environment"
+    },
+    {
+      "file": "tests/utils/test-environment-manager.js",
+      "lines": 721,
+      "functions": [
+        "with",
+        "to",
+        "to",
+        "resetDatabaseState",
+        "to",
+        "to"
+      ],
+      "category": "environment"
+    },
+    {
+      "file": "tests/utils/test-initialization-helpers.js",
+      "lines": 308,
+      "functions": [
+        "withInitializedServices",
+        "waitForAsyncInit"
+      ],
+      "category": "helpers"
+    },
+    {
+      "file": "tests/utils/test-initialization-orchestrator.js",
+      "lines": 516,
+      "functions": [
+        "for",
+        "setupTest",
+        "for",
+        "teardownTest"
+      ],
+      "category": "other"
+    },
+    {
+      "file": "tests/utils/test-migration-runner.js",
+      "lines": 692,
+      "functions": [
+        "outside",
+        "to",
+        "getAppliedMigrations",
+        "to",
+        "runMigrationsForTest",
+        "to",
+        "initializeTestDatabase",
+        "for",
+        "setupTestDatabase"
+      ],
+      "category": "other"
+    },
+    {
+      "file": "tests/utils/test-mock-manager-usage-example.js",
+      "lines": 244,
+      "functions": [],
+      "category": "mocking"
+    },
+    {
+      "file": "tests/utils/test-mock-manager.js",
+      "lines": 869,
+      "functions": [
+        "createManagedMock",
+        "beforeEachCleanup",
+        "afterEachValidation",
+        "setupTestMockManager",
+        "enhancedBeforeEach",
+        "enhancedAfterEach",
+        "createDatabaseTestMock",
+        "resetMockFactory",
+        "enableMockDebug",
+        "disableMockDebug",
+        "getMockManagerState",
+        "analyzeMockState",
+        "detectMockLeaks",
+        "generateMockReport",
+        "calculateMockHealthScore",
+        "emergencyMockCleanup"
+      ],
+      "category": "mocking"
+    },
+    {
+      "file": "tests/utils/test-reporter.js",
+      "lines": 607,
+      "functions": [
+        "getScoreColor",
+        "getScoreEmoji"
+      ],
+      "category": "other"
+    },
+    {
+      "file": "tests/utils/test-setup.js",
+      "lines": 663,
+      "functions": [],
+      "category": "other"
+    },
+    {
+      "file": "tests/utils/test-singleton-manager.js",
+      "lines": 518,
+      "functions": [
+        "to",
+        "to",
+        "for",
+        "enhancedResetDatabaseInstance"
+      ],
+      "category": "manager"
+    },
+    {
+      "file": "tests/utils/threshold-loader.js",
+      "lines": 304,
+      "functions": [
+        "detectEnvironment",
+        "getThresholds",
+        "getExecutionParams",
+        "isTestTypeSupported",
+        "getTimeoutConfig",
+        "logEnvironmentInfo"
+      ],
+      "category": "other"
+    },
+    {
+      "file": "tests/utils/wallet-mocks.js",
+      "lines": 1119,
+      "functions": [],
+      "category": "mocking"
+    },
+    {
+      "file": "tests/config/enhanced-test-setup.js",
+      "lines": 911,
+      "functions": [
+        "enableTestDebug",
+        "disableTestDebug",
+        "getIsolationStats",
+        "addIsolationOverride",
+        "withCompleteIsolation",
+        "withMinimalIsolation",
+        "logPerformanceIsolationReport",
+        "logIsolationReport",
+        "getPerformanceStats",
+        "resetPerformanceTracking"
+      ],
+      "category": "manager"
+    },
+    {
+      "file": "tests/config/environment-aware-test-setup.js",
+      "lines": 635,
+      "functions": [
+        "setupForTest",
+        "setIntegrationEnvironment",
+        "setUnitEnvironment",
+        "createRealDatabaseClient",
+        "createMockDatabaseClient"
+      ],
+      "category": "environment"
+    },
+    {
+      "file": "tests/config/global-test-isolation.js",
+      "lines": 483,
+      "functions": [
+        "setup",
+        "teardown",
+        "initializeIsolationComponents",
+        "setupGlobalTestEnvironment",
+        "setupPerformanceMonitoring",
+        "setupGlobalErrorHandlers",
+        "performFinalCleanup",
+        "validateFinalState",
+        "displayTestSuiteReport",
+        "savePerformanceMetrics"
+      ],
+      "category": "manager"
+    },
+    {
+      "file": "tests/config/integration-test-config.js",
+      "lines": 207,
+      "functions": [
+        "getIntegrationEnvironment",
+        "validateIntegrationPrerequisites",
+        "setupIntegrationTest",
+        "shouldRunAsIntegrationTest"
+      ],
+      "category": "other"
+    },
+    {
+      "file": "tests/config/isolation-config.js",
+      "lines": 557,
+      "functions": [
+        "getTestIsolationLevel",
+        "addCustomPattern",
+        "getEffectiveConfig",
+        "validateConfig",
+        "getPatternStats",
+        "generateConfigReport",
+        "generateRecommendations",
+        "applyPreset"
+      ],
+      "category": "other"
+    },
+    {
+      "file": "tests/config/performance-isolation-config.js",
+      "lines": 590,
+      "functions": [
+        "getPerformanceIsolationLevel",
+        "initializePerformanceOptimizations"
+      ],
+      "category": "manager"
+    },
+    {
+      "file": "tests/config/test-environments.js",
+      "lines": 295,
+      "functions": [
+        "to",
+        "applyEnvironmentPreset",
+        "getEnvironmentForTest",
+        "restoreEnvironment",
+        "to",
+        "withEnvironmentPreset",
+        "validateEnvironmentPreset",
+        "getAvailablePresets",
+        "createCustomPreset"
+      ],
+      "category": "environment"
+    },
+    {
+      "file": "tests/config/unit-test-config.js",
+      "lines": 265,
+      "functions": [
+        "getUnitEnvironment",
+        "validateUnitPrerequisites",
+        "setupUnitTest",
+        "shouldRunAsUnitTest",
+        "createUnitTestMocks"
+      ],
+      "category": "other"
+    },
+    {
+      "file": "tests/mocks/brevo-mock.js",
+      "lines": 128,
+      "functions": [
+        "for",
+        "createBrevoMock",
+        "createBrevoMockWithData"
+      ],
+      "category": "mocking"
+    }
+  ],
+  "complexityScore": 0,
+  "dependencies": {}
+}
