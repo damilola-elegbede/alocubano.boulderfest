@@ -89,7 +89,7 @@ export const performanceIsolationConfig = {
       componentCache: {
         enabled: true,
         maxSize: 100,
-        preload: ['TestSingletonManager', 'TestMockManager'] // Preload common components
+        preload: ['TestMockManager'] // Preload common components
       }
     },
     
@@ -523,10 +523,10 @@ export const componentPreloader = {
     
     try {
       switch (componentName) {
+        // TestSingletonManager removed - functionality integrated into simple helpers
         case 'TestSingletonManager':
-          const { TestSingletonManager } = await import('../utils/test-singleton-manager.js');
-          componentCache.set('TestSingletonManager', TestSingletonManager);
-          break;
+          console.warn('[ComponentPreloader] TestSingletonManager has been removed. Use simple helpers instead.');
+          return;
           
         case 'TestMockManager':
           const { setupTestMockManager } = await import('../utils/test-mock-manager.js');

@@ -399,3 +399,91 @@ export async function cleanupTest() {
     delete global.__testState;
   }
 }
+
+/**
+ * Simple test state reset - replaces TestSingletonManager boundary management
+ * Provides basic test isolation without complex orchestration
+ */
+export function resetTestState() {
+  // Reset Vitest modules and mocks
+  vi.resetModules();
+  vi.clearAllMocks();
+  
+  // Clear global test state
+  if (global.__testState) {
+    delete global.__testState;
+  }
+  
+  // Clear other global state
+  if (global.__testMocks) {
+    delete global.__testMocks;
+  }
+}
+
+/**
+ * Simple singleton reset - replaces complex registry management
+ * Direct reset without state tracking or coordination
+ */
+export async function resetSingleton(type = 'all') {
+  switch (type) {
+    case 'database':
+      await resetDatabaseSingleton();
+      break;
+    case 'services':
+      await resetServices();
+      break;
+    case 'all':
+    default:
+      await resetDatabaseSingleton();
+      await resetServices();
+      break;
+  }
+}
+
+/**
+ * Complete test cleanup - replaces TestSingletonManager.clearAllState()
+ * Simple comprehensive cleanup without complex state management
+ */
+export async function cleanupTestState() {
+  // Reset all test-related state
+  resetTestState();
+  
+  // Reset all singletons
+  await resetSingleton('all');
+  
+  // Additional cleanup
+  if (global.fetch && global.fetch.mockRestore) {
+    global.fetch.mockRestore();
+  }
+  
+  // Clear any timers or intervals that might be running
+  vi.clearAllTimers();
+}
+
+/**
+ * Simple test validation - replaces complex state checking
+ * Basic validation without extensive state analysis
+ */
+export function validateTestCleanup() {
+  const issues = [];
+  
+  // Check for global state leaks
+  if (global.__testState) {
+    issues.push('Global test state not cleaned');
+  }
+  
+  if (global.__databaseInstance) {
+    issues.push('Database instance not cleaned');
+  }
+  
+  // Check for mock leaks
+  if (global.fetch && global.fetch._isMockFunction) {
+    issues.push('Global fetch mock not cleaned');
+  }
+  
+  // Return validation result
+  return {
+    valid: issues.length === 0,
+    issues
+  };
+}
