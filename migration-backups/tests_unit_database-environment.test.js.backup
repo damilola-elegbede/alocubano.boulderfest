@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-;
+import { testEnvManager } from "../utils/test-environment-manager.js";
 import { dbMockSync } from "../utils/database-mock-sync.js";
 
 // Mock @libsql/client/web
@@ -90,19 +90,17 @@ vi.mock("fs", () => ({
 import fs from "fs";
 import { createClient } from "@libsql/client/web";
 
-import { backupEnv, restoreEnv, withCompleteIsolation, resetDatabaseSingleton, cleanupTest, withIsolatedEnv, clearDatabaseEnv } from "../helpers/simple-helpers.js";
 // Import DatabaseService - this will be replaced by dynamic imports in tests
 let DatabaseService;
 
 describe("Database Environment Configuration", () => {
   let consoleLogSpy;
   let consoleErrorSpy;
-  let envBackup;
 
   beforeEach(async () => {
     // Backup and clear environment
-    envBackup = backupEnv(Object.keys(process.env));
-    clearDatabaseEnv();
+    testEnvManager.backup();
+    testEnvManager.clearDatabaseEnv();
 
     // Clear all mocks and reset modules - this is critical for test isolation
     vi.clearAllMocks();
@@ -128,7 +126,7 @@ describe("Database Environment Configuration", () => {
 
   afterEach(() => {
     // Restore original environment
-    restoreEnv(envBackup);
+    testEnvManager.restore();
 
     // Restore console methods
     consoleLogSpy?.mockRestore();
@@ -142,7 +140,7 @@ describe("Database Environment Configuration", () => {
   describe("Environment Variable Loading and Validation", () => {
     describe("TURSO_DATABASE_URL validation", () => {
       it("should throw error when TURSO_DATABASE_URL is missing", async () => {
-        await withIsolatedEnv(
+        await testEnvManager.withIsolatedEnv(
           { DATABASE_TEST_STRICT_MODE: "true" },
           async () => {
             // Force a complete module reload to ensure fresh database service
@@ -163,7 +161,7 @@ describe("Database Environment Configuration", () => {
       });
 
       it("should throw error when TURSO_DATABASE_URL is empty string", async () => {
-        await withIsolatedEnv(
+        await testEnvManager.withIsolatedEnv(
           { 
             TURSO_DATABASE_URL: "", 
             TURSO_AUTH_TOKEN: "test-token",
@@ -199,7 +197,7 @@ describe("Database Environment Configuration", () => {
 
         // Test remote URLs with auth tokens
         for (const url of validRemoteUrls) {
-          await withIsolatedEnv(
+          await testEnvManager.withIsolatedEnv(
             {
               TURSO_DATABASE_URL: url,
               TURSO_AUTH_TOKEN: "test-token",
@@ -223,7 +221,7 @@ describe("Database Environment Configuration", () => {
         ];
 
         for (const url of validLocalUrls) {
-          await withIsolatedEnv(
+          await testEnvManager.withIsolatedEnv(
             {
               TURSO_DATABASE_URL: url,
               // No TURSO_AUTH_TOKEN - should work for local databases
@@ -241,7 +239,7 @@ describe("Database Environment Configuration", () => {
       });
 
       it("should validate URL format patterns", async () => {
-        await withIsolatedEnv(
+        await testEnvManager.withIsolatedEnv(
           {
             NODE_ENV: "test",
             TURSO_DATABASE_URL: "",
@@ -273,7 +271,7 @@ describe("Database Environment Configuration", () => {
           },
         );
 
-        await withIsolatedEnv(
+        await testEnvManager.withIsolatedEnv(
           {
             TURSO_AUTH_TOKEN: "test-token",
             DATABASE_TEST_STRICT_MODE: "true",
@@ -307,7 +305,7 @@ describe("Database Environment Configuration", () => {
         const malformedUrls = ["not-a-url", "ftp://invalid-protocol.com"];
 
         for (const url of malformedUrls) {
-          await withIsolatedEnv(
+          await testEnvManager.withIsolatedEnv(
             { TURSO_DATABASE_URL: url, TURSO_AUTH_TOKEN: "test-token" },
             async () => {
               vi.resetModules();
@@ -346,7 +344,7 @@ describe("Database Environment Configuration", () => {
         ];
 
         for (const dbUrl of localDatabaseUrls) {
-          await withIsolatedEnv(
+          await testEnvManager.withIsolatedEnv(
             {
               TURSO_DATABASE_URL: dbUrl,
               // No TURSO_AUTH_TOKEN - should work for local databases
@@ -370,7 +368,7 @@ describe("Database Environment Configuration", () => {
         ];
 
         for (const url of remoteUrls) {
-          await withIsolatedEnv(
+          await testEnvManager.withIsolatedEnv(
             {
               TURSO_DATABASE_URL: url,
               // No TURSO_AUTH_TOKEN - should still work in test mode with mocked client
@@ -390,7 +388,7 @@ describe("Database Environment Configuration", () => {
       });
 
       it("should include auth token when provided", async () => {
-        await withIsolatedEnv(
+        await testEnvManager.withIsolatedEnv(
           {
             TURSO_DATABASE_URL: "libsql://test.turso.io",
             TURSO_AUTH_TOKEN: "valid-token-for-remote",
@@ -424,7 +422,7 @@ describe("Database Environment Configuration", () => {
         ];
 
         for (const token of validTokens) {
-          await withIsolatedEnv(
+          await testEnvManager.withIsolatedEnv(
             {
               TURSO_DATABASE_URL: "libsql://test-db.turso.io",
               TURSO_AUTH_TOKEN: token,
@@ -611,7 +609,7 @@ describe("Database Environment Configuration", () => {
 
     describe("Production configuration validation", () => {
       it("should validate production environment settings", async () => {
-        await withIsolatedEnv(
+        await testEnvManager.withIsolatedEnv(
           {
             NODE_ENV: "production",
             TURSO_DATABASE_URL: "libsql://prod-db.turso.io",
@@ -636,7 +634,7 @@ describe("Database Environment Configuration", () => {
         ];
 
         for (const { url, token } of weakConfigs) {
-          await withIsolatedEnv(
+          await testEnvManager.withIsolatedEnv(
             {
               NODE_ENV: "production",
               TURSO_DATABASE_URL: url,
@@ -660,7 +658,7 @@ describe("Database Environment Configuration", () => {
   describe("Environment-Specific Behavior", () => {
     describe("Development environment", () => {
       it("should handle development-specific database URLs", async () => {
-        await withIsolatedEnv(
+        await testEnvManager.withIsolatedEnv(
           {
             NODE_ENV: "development",
             TURSO_DATABASE_URL: "file:./dev.db",
@@ -677,7 +675,7 @@ describe("Database Environment Configuration", () => {
       });
 
       it("should allow more flexible validation in development", async () => {
-        await withIsolatedEnv(
+        await testEnvManager.withIsolatedEnv(
           {
             NODE_ENV: "development",
             TURSO_DATABASE_URL: "libsql://localhost:8080",
@@ -697,7 +695,7 @@ describe("Database Environment Configuration", () => {
 
     describe("Production environment", () => {
       it("should enforce strict validation in production", async () => {
-        await withIsolatedEnv(
+        await testEnvManager.withIsolatedEnv(
           {
             NODE_ENV: "production",
             TURSO_DATABASE_URL: "libsql://prod-db.turso.io",
@@ -715,7 +713,7 @@ describe("Database Environment Configuration", () => {
       });
 
       it("should handle production SSL requirements", async () => {
-        await withIsolatedEnv(
+        await testEnvManager.withIsolatedEnv(
           {
             NODE_ENV: "production",
             TURSO_DATABASE_URL: "libsql://secure-prod-db.turso.io",
@@ -736,7 +734,7 @@ describe("Database Environment Configuration", () => {
 
   describe("Missing Environment Variable Handling", () => {
     it("should provide clear error messages for missing required variables", async () => {
-      await withIsolatedEnv(
+      await testEnvManager.withIsolatedEnv(
         { DATABASE_TEST_STRICT_MODE: "true" },
         async () => {
           // Force a complete module reload to ensure fresh database service
@@ -763,18 +761,19 @@ describe("Database Environment Configuration", () => {
 
     it("should handle undefined vs empty string variables differently", async () => {
       // Test with undefined (missing) - should fail
-      await withCompleteIsolation(
+      await testEnvManager.withCompleteIsolation(
         { DATABASE_TEST_STRICT_MODE: "true" },
         async () => {
-          // Explicitly delete the database URL to ensure clean state
-          delete process.env.TURSO_DATABASE_URL;
-          
-          // Verify environment state
-          expect(process.env.DATABASE_TEST_STRICT_MODE).toBe("true");
-          expect(process.env.TURSO_DATABASE_URL).toBeUndefined();
-          
           // Force a complete module reload to ensure fresh database service
           vi.resetModules();
+          
+          // Reset database singleton to ensure fresh state
+          try {
+            const { resetDatabaseInstance } = await import("../../api/lib/database.js");
+            await resetDatabaseInstance();
+          } catch (error) {
+            // Module may not be loaded yet, that's ok
+          }
           
           const { DatabaseService } = await import("../../api/lib/database.js");
           const service = new DatabaseService();
@@ -783,6 +782,13 @@ describe("Database Environment Configuration", () => {
           service.client = null;
           service.initialized = false;
           service.initializationPromise = null;
+          
+          // Explicitly delete the database URL to ensure clean state
+          delete process.env.TURSO_DATABASE_URL;
+          
+          // Verify environment state
+          expect(process.env.DATABASE_TEST_STRICT_MODE).toBe("true");
+          expect(process.env.TURSO_DATABASE_URL).toBeUndefined();
           
           await expect(service.initializeClient()).rejects.toThrow(
             "TURSO_DATABASE_URL environment variable is required",
@@ -791,18 +797,22 @@ describe("Database Environment Configuration", () => {
       );
 
       // Test with empty string - should also fail
-      await withCompleteIsolation(
+      await testEnvManager.withCompleteIsolation(
         {
           TURSO_DATABASE_URL: "",
           DATABASE_TEST_STRICT_MODE: "true",
         },
         async () => {
-          // Verify environment state FIRST, before any module operations
-          expect(process.env.DATABASE_TEST_STRICT_MODE).toBe("true");
-          expect(process.env.TURSO_DATABASE_URL).toBe("");
-          
           // Force a complete module reload to ensure fresh database service
           vi.resetModules();
+          
+          // Reset database singleton to ensure fresh state
+          try {
+            const { resetDatabaseInstance } = await import("../../api/lib/database.js");
+            await resetDatabaseInstance();
+          } catch (error) {
+            // Module may not be loaded yet, that's ok
+          }
           
           const { DatabaseService } = await import("../../api/lib/database.js");
           const service = new DatabaseService();
@@ -812,6 +822,10 @@ describe("Database Environment Configuration", () => {
           service.initialized = false;
           service.initializationPromise = null;
           
+          // Verify environment state
+          expect(process.env.DATABASE_TEST_STRICT_MODE).toBe("true");
+          expect(process.env.TURSO_DATABASE_URL).toBe("");
+          
           await expect(service.initializeClient()).rejects.toThrow(
             "TURSO_DATABASE_URL environment variable is required",
           );
@@ -819,7 +833,7 @@ describe("Database Environment Configuration", () => {
       );
 
       // Test with valid local database URL - should succeed
-      await withIsolatedEnv(
+      await testEnvManager.withIsolatedEnv(
         {
           TURSO_DATABASE_URL: ":memory:",
           // No auth token needed for local database
@@ -837,7 +851,7 @@ describe("Database Environment Configuration", () => {
     });
 
     it("should provide helpful debugging information", async () => {
-      await withCompleteIsolation(
+      await testEnvManager.withCompleteIsolation(
         {
           TURSO_AUTH_TOKEN: "test-token",
           DATABASE_TEST_STRICT_MODE: "true",
@@ -888,7 +902,7 @@ describe("Database Environment Configuration", () => {
       ];
 
       for (const url of malformedUrls) {
-        await withIsolatedEnv(
+        await testEnvManager.withIsolatedEnv(
           {
             TURSO_DATABASE_URL: url,
             TURSO_AUTH_TOKEN: "test-token",
@@ -915,19 +929,12 @@ describe("Database Environment Configuration", () => {
           envVars.TURSO_AUTH_TOKEN = token;
         }
 
-        await withIsolatedEnv(envVars, async () => {
+        await testEnvManager.withIsolatedEnv(envVars, async () => {
           const { DatabaseService } = await import("../../api/lib/database.js");
           const service = new DatabaseService();
 
-          try {
-            // Service may throw during initialization with invalid tokens, but should not crash
-            await service.initializeClient();
-            // If it doesn't throw, that's fine - some validation may be deferred
-            expect(true).toBe(true);
-          } catch (error) {
-            // If it throws, ensure it's a meaningful error, not a crash
-            expect(error.message).toMatch(/database|auth|token|url/i);
-          }
+          // Should not throw during initialization
+          await expect(service.initializeClient()).resolves.toBeDefined();
         });
       }
     });
@@ -939,7 +946,7 @@ describe("Database Environment Configuration", () => {
       ];
 
       for (const url of unsafePatterns) {
-        await withIsolatedEnv(
+        await testEnvManager.withIsolatedEnv(
           {
             TURSO_DATABASE_URL: url,
             TURSO_AUTH_TOKEN: "test-token",
@@ -960,7 +967,7 @@ describe("Database Environment Configuration", () => {
 
   describe("Environment Variable Security", () => {
     it("should not expose sensitive values in error messages", async () => {
-      await withIsolatedEnv(
+      await testEnvManager.withIsolatedEnv(
         {
           TURSO_DATABASE_URL: "libsql://secret-db.turso.io",
           TURSO_AUTH_TOKEN: "super-secret-token-123",
@@ -993,7 +1000,7 @@ describe("Database Environment Configuration", () => {
     });
 
     it("should not log sensitive environment variables", async () => {
-      await withIsolatedEnv(
+      await testEnvManager.withIsolatedEnv(
         {
           TURSO_DATABASE_URL: "libsql://prod-db.turso.io",
           TURSO_AUTH_TOKEN: "sensitive-production-token",
@@ -1020,7 +1027,7 @@ describe("Database Environment Configuration", () => {
       ];
 
       for (const pattern of hardcodedPatterns) {
-        await withIsolatedEnv(
+        await testEnvManager.withIsolatedEnv(
           {
             TURSO_AUTH_TOKEN: pattern + "rest_of_token",
             TURSO_DATABASE_URL: "libsql://test-db.turso.io",
@@ -1039,7 +1046,7 @@ describe("Database Environment Configuration", () => {
     });
 
     it("should validate environment variable sources", async () => {
-      await withIsolatedEnv(
+      await testEnvManager.withIsolatedEnv(
         {
           TURSO_DATABASE_URL: "libsql://from-env-file.turso.io",
           TURSO_AUTH_TOKEN: "from-env-file-token",
@@ -1079,7 +1086,7 @@ describe("Database Environment Configuration", () => {
     });
 
     it("should validate complete environment configuration", async () => {
-      await withIsolatedEnv(
+      await testEnvManager.withIsolatedEnv(
         {
           TURSO_DATABASE_URL: "test-turso_database_url",
           TURSO_AUTH_TOKEN: "test-turso_auth_token",

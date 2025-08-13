@@ -96,7 +96,10 @@ class DatabaseService {
     const authToken = process.env.TURSO_AUTH_TOKEN;
 
     // Check for empty string as well as undefined first (before any transformation)
-    if (!databaseUrl || databaseUrl.trim() === "") {
+    // In strict test mode, be even more strict about environment validation
+    const strictMode = process.env.DATABASE_TEST_STRICT_MODE === "true";
+    
+    if (!databaseUrl || databaseUrl.trim() === "" || (strictMode && !databaseUrl)) {
       throw new Error("TURSO_DATABASE_URL environment variable is required");
     }
 

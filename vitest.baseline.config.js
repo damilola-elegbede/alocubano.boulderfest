@@ -22,7 +22,6 @@ export default defineConfig({
       // Exclude problematic tests for clean baseline
       "tests/unit/database-environment.test.js",
       "tests/unit/database-singleton.test.js",
-      "tests/unit/test-environment-manager.test.js",
     ],
 
     // Minimal performance settings

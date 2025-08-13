@@ -1,6 +1,27 @@
 import { vi } from 'vitest';
 
 /**
+ * Advanced environment isolation utilities
+ * Preserves system variables needed for test execution
+ */
+function preserveSystemVars() {
+  return {
+    NODE_ENV: process.env.NODE_ENV,
+    PATH: process.env.PATH,
+    HOME: process.env.HOME,
+    USER: process.env.USER,
+    SHELL: process.env.SHELL,
+    CI: process.env.CI,
+    VITEST: process.env.VITEST,
+    VITEST_WORKER_ID: process.env.VITEST_WORKER_ID,
+    VITEST_POOL_ID: process.env.VITEST_POOL_ID,
+    // Test-specific variables that should be preserved
+    DATABASE_TEST_STRICT_MODE: process.env.DATABASE_TEST_STRICT_MODE,
+    TEST_TYPE: process.env.TEST_TYPE,
+  };
+}
+
+/**
  * Simple environment variable backup/restore
  * Will replace TestEnvironmentManager (721 lines) in PR #2
  */
@@ -13,6 +34,20 @@ export function backupEnv(keys) {
 }
 
 export function restoreEnv(backup) {
+  // Guard against null/undefined backup
+  if (!backup || typeof backup !== 'object') {
+    return;
+  }
+  
+  // Clear all current non-system variables first
+  const systemVars = preserveSystemVars();
+  Object.keys(process.env).forEach(key => {
+    if (!systemVars.hasOwnProperty(key)) {
+      delete process.env[key];
+    }
+  });
+  
+  // Restore from backup
   Object.entries(backup).forEach(([key, value]) => {
     if (value === undefined) {
       delete process.env[key];
@@ -51,8 +86,15 @@ export function createTestDatabase() {
 export async function resetServices() {
   // Direct resets without complex coordination
   if (global.__databaseInstance) {
-    await global.__databaseInstance.close();
+    if (global.__databaseInstance.close) {
+      await global.__databaseInstance.close();
+    }
     delete global.__databaseInstance;
+  }
+  
+  // Clear any other global service instances
+  if (global.__testState) {
+    delete global.__testState;
   }
 }
 
@@ -138,6 +180,208 @@ export function measureTime(fn) {
 }
 
 /**
+ * Environment validation utilities
+ */
+export function validateEnv(required = []) {
+  const missing = required.filter(key => !process.env[key]);
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+}
+
+/**
+ * Clear specific environment variable groups
+ */
+export function clearDatabaseEnv() {
+  delete process.env.TURSO_DATABASE_URL;
+  delete process.env.TURSO_AUTH_TOKEN;
+  delete process.env.DATABASE_URL;
+}
+
+export function clearAppEnv() {
+  // Database
+  clearDatabaseEnv();
+  
+  // Email service
+  delete process.env.BREVO_API_KEY;
+  delete process.env.BREVO_NEWSLETTER_LIST_ID;
+  delete process.env.BREVO_WEBHOOK_SECRET;
+  
+  // Payment processing
+  delete process.env.STRIPE_PUBLISHABLE_KEY;
+  delete process.env.STRIPE_SECRET_KEY;
+  delete process.env.STRIPE_WEBHOOK_SECRET;
+  
+  // Admin
+  delete process.env.ADMIN_PASSWORD;
+  delete process.env.ADMIN_SECRET;
+  
+  // Wallet passes
+  delete process.env.APPLE_PASS_KEY;
+  delete process.env.APPLE_PASS_PASSWORD;
+  delete process.env.WALLET_AUTH_SECRET;
+}
+
+/**
+ * Environment presets (replaces TestEnvironmentManager.getPreset)
+ */
+export function getEnvPreset(presetName) {
+  const presets = {
+    empty: {},
+    
+    'missing-db': {
+      BREVO_API_KEY: 'test-brevo-key',
+      STRIPE_SECRET_KEY: 'sk_test_test',
+      ADMIN_SECRET: 'test-admin-secret-32-chars-long',
+    },
+    
+    'invalid-db': {
+      TURSO_DATABASE_URL: 'invalid-url-format',
+      TURSO_AUTH_TOKEN: 'test-token',
+      BREVO_API_KEY: 'test-brevo-key',
+    },
+    
+    'valid-local': {
+      TURSO_DATABASE_URL: ':memory:',
+      TURSO_AUTH_TOKEN: 'test-token',
+      BREVO_API_KEY: 'test-brevo-key',
+      STRIPE_SECRET_KEY: 'sk_test_local',
+      ADMIN_SECRET: 'test-admin-secret-32-chars-long',
+    },
+    
+    'complete-test': {
+      // Database
+      TURSO_DATABASE_URL: ':memory:',
+      TURSO_AUTH_TOKEN: 'test-token',
+      
+      // Email service
+      BREVO_API_KEY: 'test-brevo-api-key',
+      BREVO_NEWSLETTER_LIST_ID: '123',
+      BREVO_WEBHOOK_SECRET: 'test-webhook-secret',
+      
+      // Payment processing
+      STRIPE_PUBLISHABLE_KEY: 'pk_test_test',
+      STRIPE_SECRET_KEY: 'sk_test_test',
+      STRIPE_WEBHOOK_SECRET: 'whsec_test',
+      
+      // Admin
+      ADMIN_PASSWORD: '$2b$10$test.hash.for.testing',
+      ADMIN_SECRET: 'test-admin-secret-32-chars-long',
+      
+      // Wallet passes
+      APPLE_PASS_KEY: 'dGVzdC1hcHBsZS1wYXNzLWtleQ==',
+      WALLET_AUTH_SECRET: 'test-wallet-auth-secret-32-chars',
+    }
+  };
+  
+  return presets[presetName] || {};
+}
+
+/**
+ * Complete environment isolation with system variable preservation
+ */
+export function isolateEnv(envVars = {}) {
+  const systemVars = preserveSystemVars();
+  
+  // Clear all environment variables
+  Object.keys(process.env).forEach(key => {
+    delete process.env[key];
+  });
+  
+  // Restore system variables
+  Object.entries(systemVars).forEach(([key, value]) => {
+    if (value !== undefined) {
+      process.env[key] = value;
+    }
+  });
+  
+  // Set test environment variables
+  Object.assign(process.env, envVars);
+}
+
+/**
+ * Reset database singleton state
+ */
+export async function resetDatabaseSingleton() {
+  try {
+    // Dynamic import to avoid issues with mocked modules
+    const module = await import('../../api/lib/database.js');
+    if (module.resetDatabaseInstance && typeof module.resetDatabaseInstance === 'function') {
+      await module.resetDatabaseInstance();
+    }
+    
+    // Clear any global database instances
+    if (global.__databaseInstance) {
+      if (global.__databaseInstance.close) {
+        await global.__databaseInstance.close();
+      }
+      delete global.__databaseInstance;
+    }
+  } catch (error) {
+    // Module might be mocked or unavailable
+    if (!error.message.includes('mock')) {
+      console.warn('Database singleton reset failed:', error.message);
+    }
+  }
+}
+
+/**
+ * Test isolation wrapper - replaces TestEnvironmentManager.withIsolatedEnv
+ */
+export async function withIsolatedEnv(preset, testFn) {
+  const envBackup = backupEnv(Object.keys(process.env));
+  
+  try {
+    // Handle preset or custom environment object
+    let envVars = {};
+    if (typeof preset === 'string') {
+      envVars = getEnvPreset(preset);
+    } else if (typeof preset === 'object' && preset !== null) {
+      envVars = preset;
+    }
+    
+    isolateEnv(envVars);
+    return await testFn();
+  } finally {
+    restoreEnv(envBackup);
+  }
+}
+
+/**
+ * Complete test isolation - replaces TestEnvironmentManager.withCompleteIsolation
+ */
+export async function withCompleteIsolation(preset, testFn) {
+  const envBackup = backupEnv(Object.keys(process.env));
+  
+  try {
+    // Reset module-level singletons
+    await resetDatabaseSingleton();
+    await resetServices();
+    
+    // Force module reset if Vitest is available
+    if (typeof vi !== 'undefined' && vi.resetModules) {
+      vi.resetModules();
+    }
+    
+    // Handle preset or custom environment object
+    let envVars = {};
+    if (typeof preset === 'string') {
+      envVars = getEnvPreset(preset);
+    } else if (typeof preset === 'object' && preset !== null) {
+      envVars = preset;
+    }
+    
+    isolateEnv(envVars);
+    return await testFn();
+  } finally {
+    // Restore state
+    await resetDatabaseSingleton();
+    await resetServices();
+    restoreEnv(envBackup);
+  }
+}
+
+/**
  * Simple cleanup utility
  */
 export async function cleanupTest() {
@@ -146,6 +390,9 @@ export async function cleanupTest() {
   
   // Reset services
   await resetServices();
+  
+  // Reset database singleton
+  await resetDatabaseSingleton();
   
   // Clear global test state
   if (global.__testState) {

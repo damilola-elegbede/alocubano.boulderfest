@@ -3,13 +3,12 @@
  * Removes mock contamination and implements real service initialization
  */
 
-;
+import { TestEnvironmentManager } from './test-environment-manager.js';
 import { serviceDetector } from './service-availability-detector.js';
 
-import { backupEnv, restoreEnv, withCompleteIsolation, resetDatabaseSingleton, cleanupTest } from "./helpers/simple-helpers.js";
 export class IntegrationTestStrategy {
   constructor() {
-    this.envManager = // TestEnvironmentManager → Simple helpers (no instantiation needed);
+    this.envManager = new TestEnvironmentManager();
     this.realServices = new Map();
     this.serviceConfigs = new Map();
     this.initializationPromises = new Map();
@@ -109,7 +108,7 @@ export class IntegrationTestStrategy {
    */
   async _performServiceInitialization(serviceName, config) {
     // Set up environment for this service
-    this.Object.assign(process.env, this.getEnvPreset(config.environmentPreset));
+    this.envManager.setMockEnv(this.envManager.getPreset(config.environmentPreset));
 
     // Validate required environment variables
     for (const envVar of config.requiredEnvVars) {
@@ -156,7 +155,7 @@ export class IntegrationTestStrategy {
     this.clearDatabaseMocks();
 
     // Set real database environment
-    this.Object.assign(process.env, {
+    this.envManager.setMockEnv({
       TURSO_DATABASE_URL: ':memory:', // Use in-memory for tests
       TURSO_AUTH_TOKEN: 'test-token',
       NODE_ENV: 'test'
@@ -184,7 +183,7 @@ export class IntegrationTestStrategy {
     this.clearGoogleSheetsMocks();
 
     // Set real Google Sheets environment
-    this.Object.assign(process.env, {
+    this.envManager.setMockEnv({
       GOOGLE_SHEET_ID: 'test_sheet_123',
       GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL: 'test@sheets.com',
       GOOGLE_SHEETS_PRIVATE_KEY: '-----BEGIN PRIVATE KEY-----\ntest\n-----END PRIVATE KEY-----',
@@ -220,7 +219,7 @@ export class IntegrationTestStrategy {
     this.clearBrevoMocks();
 
     // Set real Brevo environment
-    this.Object.assign(process.env, {
+    this.envManager.setMockEnv({
       BREVO_API_KEY: 'test-brevo-api-key',
       BREVO_NEWSLETTER_LIST_ID: '123',
       BREVO_WEBHOOK_SECRET: 'test-webhook-secret'
@@ -297,7 +296,7 @@ export class IntegrationTestStrategy {
     this.initializationPromises.clear();
 
     // Restore environment
-    this.restoreEnv(envBackup);
+    this.envManager.restore();
   }
 
   /**
@@ -307,7 +306,7 @@ export class IntegrationTestStrategy {
    * @returns {Promise<any>} Test result
    */
   async withRealServices(serviceNames, testFn) {
-    this.envBackup = backupEnv(Object.keys(process.env));
+    this.envManager.backup();
 
     try {
       // Initialize real services

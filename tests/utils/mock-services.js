@@ -11,7 +11,7 @@ import { vi } from "vitest";
  * Stripe Service Mock
  * Mocks Stripe API calls and webhook handling
  */
-export class StripeMock {
+class StripeMock {
   constructor() {
     this.paymentIntents = new Map();
     this.sessions = new Map();
@@ -380,7 +380,7 @@ export class StripeMock {
  * Brevo Service Mock
  * Mocks Brevo (SendinBlue) API calls for email marketing
  */
-export class BrevoMock {
+class BrevoMock {
   constructor() {
     this.contacts = new Map();
     this.lists = new Map();
@@ -773,7 +773,7 @@ export class BrevoMock {
  * Google Drive Mock
  * Mocks Google Drive API for gallery image fetching
  */
-export class GoogleDriveMock {
+class GoogleDriveMock {
   constructor() {
     this.files = new Map();
     this.folders = new Map();
@@ -1005,7 +1005,7 @@ export { StripeMock, BrevoMock, GoogleDriveMock, DatabaseMock, EmailSubscriberSe
  * Database Service Mock
  * Mocks database operations with SQLite-like interface
  */
-export class DatabaseMock {
+class DatabaseMock {
   constructor() {
     this.data = new Map();
     this.tables = new Map();
@@ -1136,7 +1136,7 @@ export class DatabaseMock {
  * Email Subscriber Service Mock
  * Mocks the EmailSubscriberService with all required methods
  */
-export class EmailSubscriberServiceMock {
+class EmailSubscriberServiceMock {
   constructor() {
     this.subscribers = new Map();
     this.events = [];

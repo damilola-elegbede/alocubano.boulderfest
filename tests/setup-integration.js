@@ -5,7 +5,7 @@
 
 import { vi } from "vitest";
 import { setupDatabaseCleanup } from "./utils/database-cleanup.js";
-import { testEnvManager } from "./utils/test-environment-manager.js";
+import { backupEnv, restoreEnv } from "./helpers/simple-helpers.js";
 
 // Track test context for cleanup
 const testContext = {
@@ -74,8 +74,8 @@ afterAll(async () => {
     }
   }
   
-  // Restore environment
-  testEnvManager.restore();
+  // Restore environment  
+  restoreEnv();
   
   // Clear test flags
   delete process.env.TEST_INTEGRATION;

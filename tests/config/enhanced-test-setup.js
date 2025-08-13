@@ -1,911 +1,625 @@
 /**
- * Enhanced Test Setup - Automatic Test Isolation Enforcement
+ * Enhanced Test Setup Configuration
  * 
- * Provides automatic test isolation without requiring manual setup in every test file.
- * This is Phase 2 of the bulletproof test isolation architecture that makes isolation
- * completely transparent to developers.
+ * Provides advanced test isolation, mocking, and environment management
+ * for comprehensive testing across unit, integration, and performance test suites.
  * 
- * Key Features:
- * - Automatic isolation hooks for all tests
- * - Smart pattern detection for isolation levels
- * - Integration with all Phase 1 components
- * - Zero configuration required for existing tests
- * - Performance optimized with selective isolation
+ * Features:
+ * - Multi-level test isolation (process, database, environment)
+ * - Performance-aware test configuration
+ * - Memory-optimized test execution
+ * - Automatic cleanup and restoration
  * 
- * Integration Components:
- * - TestSingletonManager: Complete singleton state clearing
- * - TestMockManager: Predictable mock lifecycle management  
- * - TestEnvironmentManager: Module-level state clearing
- * 
- * @author Test Engineer Agent
- * @version 2.0.0 - Enhanced Vitest Configuration Phase
+ * Usage:
+ * - Import specific utilities as needed
+ * - Use withCompleteIsolation for critical tests
+ * - Apply isolationEngine for database-sensitive tests
  */
 
-import { vi, beforeEach, afterEach } from 'vitest';
-import { TestSingletonManager, testSingletonLifecycle } from '../utils/test-singleton-manager.js';
-import { setupTestMockManager } from '../utils/test-mock-manager.js';
-import { testEnvManager } from '../utils/test-environment-manager.js';
-import { environmentAwareTestSetup } from './environment-aware-test-setup.js';
-import { testEnvironmentDetector } from '../utils/test-environment-detector.js';
+import { createRequire } from 'module';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 
-// Import performance-optimized configuration
-import { 
-  performanceIsolationConfig,
-  getPerformanceIsolationLevel,
-  performanceMonitor,
-  batchOperations,
-  initializePerformanceOptimizations
-} from './performance-isolation-config.js';
+// ES module compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
+
+// Performance-aware configuration loading
+let performanceConfig = null;
+try {
+  const configPath = path.join(__dirname, 'performance-isolation-config.js');
+  if (existsSync(configPath)) {
+    const module = await import('./performance-isolation-config.js');
+    performanceConfig = module.default || module;
+  }
+} catch (error) {
+  console.warn('Performance configuration not available, using defaults:', error.message);
+}
 
 // Fallback to base configuration if performance config not available
 import { isolationConfig, getTestIsolationLevel } from './isolation-config.js';
 
+import { backupEnv, restoreEnv, resetDatabaseSingleton, cleanupTest } from "./helpers/simple-helpers.js";
 /**
- * Performance-Optimized Smart Test Isolation Detection
- * Uses performance budgets and caching for efficient isolation decisions
+ * Enhanced Test Isolation Engine
+ * 
+ * Provides comprehensive test isolation with performance optimization.
+ * Manages environment variables, database state, and process-level isolation.
  */
-class PerformanceSmartIsolationDetector {
+class EnhancedTestIsolationEngine {
   constructor() {
-    this.testPatterns = new Map();
-    this.performanceMetrics = new Map();
-    this.isolationOverrides = new Map();
-    this.debugMode = process.env.TEST_DEBUG === 'true';
-    this.performanceMode = process.env.TEST_PERFORMANCE_MODE === 'true';
-  }
-
-  /**
-   * Determine isolation level for current test context with performance optimization
-   */
-  getIsolationLevel(testContext) {
-    const testFilePath = this._getTestFilePath(testContext);
-    const testName = this._getTestName(testContext);
-    
-    // Start performance monitoring
-    if (this.performanceMode) {
-      performanceMonitor.startTimer(testFilePath, 'isolation-detection');
-    }
-    
-    let isolationInfo;
-    
-    // Check for explicit overrides first
-    if (this.isolationOverrides.has(testFilePath)) {
-      isolationInfo = { 
-        level: this.isolationOverrides.get(testFilePath),
-        reason: 'Manual override',
-        performance: { budget: 5, critical: false }
-      };
-    } else {
-      // Use performance-optimized detection
-      try {
-        isolationInfo = getPerformanceIsolationLevel(testFilePath, testName, { debug: this.debugMode });
-      } catch (error) {
-        // Fallback to base configuration
-        const level = getTestIsolationLevel(testFilePath, testName);
-        isolationInfo = { 
-          level, 
-          reason: 'Fallback to base config',
-          performance: { budget: 5, critical: false }
-        };
-      }
-    }
-    
-    // End performance monitoring
-    if (this.performanceMode) {
-      performanceMonitor.endTimer(testFilePath, 'isolation-detection');
-    }
-    
-    if (this.debugMode) {
-      console.log(`[PerformanceSmartIsolation] ${testFilePath}: ${isolationInfo.level} (budget: ${isolationInfo.performance?.budget}ms)`);
-    }
-    
-    return isolationInfo;
-  }
-
-  /**
-   * Extract test context information
-   */
-  _getTestFilePath(testContext) {
-    try {
-      return testContext?.file?.filepath || 
-             testContext?.file?.name || 
-             testContext?.filepath ||
-             process.env.VITEST_TEST_FILE ||
-             'unknown';
-    } catch (error) {
-      return 'unknown';
-    }
-  }
-
-  _getTestName(testContext) {
-    try {
-      return testContext?.name || 
-             testContext?.task?.name || 
-             testContext?.suite?.name ||
-             'unknown';
-    } catch (error) {
-      return 'unknown';
-    }
-  }
-
-  /**
-   * Add isolation override for specific test file
-   */
-  addOverride(filePath, isolationLevel) {
-    this.isolationOverrides.set(filePath, isolationLevel);
-  }
-
-  /**
-   * Track performance metrics for isolation operations
-   */
-  trackPerformance(operation, duration, testContext) {
-    const testFile = this._getTestFilePath(testContext);
-    
-    if (!this.performanceMetrics.has(testFile)) {
-      this.performanceMetrics.set(testFile, {
-        operations: [],
-        totalTime: 0,
-        averageTime: 0
-      });
-    }
-
-    const metrics = this.performanceMetrics.get(testFile);
-    metrics.operations.push({ operation, duration, timestamp: Date.now() });
-    metrics.totalTime += duration;
-    metrics.averageTime = metrics.totalTime / metrics.operations.length;
-
-    // Warn about slow isolation operations
-    if (duration > 25 && this.debugMode) {
-      console.warn(`[PerformanceSmartIsolation] Slow isolation operation: ${operation} took ${duration.toFixed(2)}ms in ${testFile}`);
-    }
-  }
-
-  /**
-   * Pattern-based isolation level detection
-   */
-  _detectPatternBasedLevel(filePath, testName) {
-    // Database tests require complete isolation
-    if (this._isDatabaseTest(filePath, testName)) {
-      return 'complete';
-    }
-
-    // Integration tests need environment isolation
-    if (this._isIntegrationTest(filePath, testName)) {
-      return 'environment';
-    }
-
-    // Mock-heavy tests need singleton isolation
-    if (this._isHeavyMockTest(filePath, testName)) {
-      return 'singleton';
-    }
-
-    // Performance tests should have minimal isolation
-    if (this._isPerformanceTest(filePath, testName)) {
-      return 'minimal';
-    }
-
-    // Default to basic isolation
-    return isolationConfig.default;
-  }
-
-  /**
-   * Test pattern detection methods
-   */
-  _isDatabaseTest(filePath, testName) {
-    return (
-      filePath.includes('database') ||
-      filePath.includes('migration') ||
-      testName.includes('database') ||
-      testName.includes('Database')
-    );
-  }
-
-  _isIntegrationTest(filePath, testName) {
-    return (
-      filePath.includes('integration/') ||
-      filePath.includes('e2e/') ||
-      testName.includes('integration') ||
-      testName.includes('Integration')
-    );
-  }
-
-  _isHeavyMockTest(filePath, testName) {
-    return (
-      filePath.includes('brevo') ||
-      filePath.includes('stripe') ||
-      filePath.includes('email') ||
-      testName.includes('mock') ||
-      testName.includes('Mock')
-    );
-  }
-
-  _isPerformanceTest(filePath, testName) {
-    return (
-      filePath.includes('performance/') ||
-      testName.includes('performance') ||
-      testName.includes('Performance')
-    );
-  }
-
-  /**
-   * Extract test context information
-   */
-  _getTestFilePath(testContext) {
-    try {
-      // Vitest provides test file info in various ways
-      return testContext?.file?.filepath || 
-             testContext?.file?.name || 
-             testContext?.filepath ||
-             process.env.VITEST_TEST_FILE ||
-             'unknown';
-    } catch (error) {
-      return 'unknown';
-    }
-  }
-
-  _getTestName(testContext) {
-    try {
-      return testContext?.name || 
-             testContext?.task?.name || 
-             testContext?.suite?.name ||
-             'unknown';
-    } catch (error) {
-      return 'unknown';
-    }
-  }
-
-  /**
-   * Add isolation override for specific test file
-   */
-  addOverride(filePath, isolationLevel) {
-    this.isolationOverrides.set(filePath, isolationLevel);
-  }
-
-  /**
-   * Track performance metrics for isolation operations
-   */
-  trackPerformance(operation, duration, testContext) {
-    const testFile = this._getTestFilePath(testContext);
-    
-    if (!this.performanceMetrics.has(testFile)) {
-      this.performanceMetrics.set(testFile, {
-        operations: [],
-        totalTime: 0,
-        averageTime: 0
-      });
-    }
-
-    const metrics = this.performanceMetrics.get(testFile);
-    metrics.operations.push({ operation, duration, timestamp: Date.now() });
-    metrics.totalTime += duration;
-    metrics.averageTime = metrics.totalTime / metrics.operations.length;
-
-    // Warn about slow isolation operations
-    if (duration > 50) {
-      console.warn(`[SmartIsolation] Slow isolation operation: ${operation} took ${duration}ms in ${testFile}`);
-    }
-  }
-}
-
-/**
- * Performance-Optimized Automatic Isolation Engine
- * Orchestrates all isolation components with performance monitoring and optimization
- */
-class PerformanceAutomaticIsolationEngine {
-  constructor() {
-    this.detector = new PerformanceSmartIsolationDetector();
-    this.mockManager = null;
-    this.isolationStats = {
-      totalTests: 0,
-      isolationLevels: {},
-      errors: 0,
-      totalTime: 0,
-      budgetViolations: 0,
-      performanceOptimizations: 0
-    };
-    this.debugMode = process.env.TEST_DEBUG === 'true';
-    this.performanceMode = process.env.TEST_PERFORMANCE_MODE === 'true';
     this.initialized = false;
-    this.config = performanceIsolationConfig || isolationConfig;
+    this.isolationLevel = 'standard';
+    this.activeBackups = new Map();
+    this.cleanupTasks = [];
+    this.performanceMetrics = {
+      setupTime: 0,
+      cleanupTime: 0,
+      isolationOverhead: 0
+    };
   }
 
-  /**
-   * Extract test context information (utility methods)
-   */
-  _getTestFilePath(testContext) {
-    try {
-      return testContext?.file?.filepath || 
-             testContext?.file?.name || 
-             testContext?.filepath ||
-             process.env.VITEST_TEST_FILE ||
-             'unknown';
-    } catch (error) {
-      return 'unknown';
-    }
-  }
-
-  _getTestName(testContext) {
-    try {
-      return testContext?.name || 
-             testContext?.task?.name || 
-             testContext?.suite?.name ||
-             'unknown';
-    } catch (error) {
-      return 'unknown';
-    }
-  }
-
-  /**
-   * Initialize the performance-optimized isolation engine
-   */
   async initialize() {
     if (this.initialized) return;
-
+    
+    const startTime = performance.now();
+    
     try {
-      // Initialize performance optimizations if available
-      if (typeof initializePerformanceOptimizations === 'function') {
-        await initializePerformanceOptimizations();
-        this.isolationStats.performanceOptimizations++;
+      // Determine isolation level based on environment and configuration
+      this.isolationLevel = await getTestIsolationLevel();
+      
+      // Initialize performance-specific configurations
+      if (performanceConfig) {
+        await this._initializePerformanceConfig();
       }
-
-      // Set up mock manager with performance-aware configuration
-      const mockSetup = setupTestMockManager({
-        enableDebug: this.debugMode,
-        validateIsolation: this.config.validation?.validateIsolation ?? true,
-        autoCleanup: true,
-        strictMode: this.config.strictMode || false,
-        performance: this.config.performance || {}
-      });
-
-      this.mockManager = mockSetup;
-
-      // Add special overrides for known problematic tests
-      this._addKnownOverrides();
-
-      // Apply any pending overrides
-      if (global.pendingIsolationOverrides) {
-        for (const [testFile, level] of global.pendingIsolationOverrides) {
-          this.detector.addOverride(testFile, level);
-        }
-        global.pendingIsolationOverrides.clear();
-      }
-
+      
       this.initialized = true;
-      
-      if (this.debugMode) {
-        console.log('[AutomaticIsolation] Engine initialized');
-      }
+      this.performanceMetrics.setupTime = performance.now() - startTime;
     } catch (error) {
-      console.error('[AutomaticIsolation] Failed to initialize:', error);
+      console.error('Failed to initialize enhanced test isolation:', error);
       throw error;
     }
   }
 
-  /**
-   * Apply automatic isolation before each test with performance optimization
-   */
-  async applyBeforeEachIsolation(testContext) {
-    const startTime = performance.now();
-    const testFilePath = this._getTestFilePath(testContext);
+  async _initializePerformanceConfig() {
+    if (!performanceConfig) return;
     
     try {
-      await this.initialize();
-      
-      // Start performance monitoring
-      if (this.performanceMode) {
-        performanceMonitor.startTimer(testFilePath, 'beforeEach-isolation');
+      // Apply memory optimization settings
+      if (performanceConfig.memoryOptimization) {
+        process.env.NODE_OPTIONS = performanceConfig.memoryOptimization.nodeOptions || process.env.NODE_OPTIONS;
       }
       
-      const isolationInfo = this.detector.getIsolationLevel(testContext);
-      const isolationLevel = typeof isolationInfo === 'string' ? isolationInfo : isolationInfo.level;
-      const performanceBudget = isolationInfo.performance?.budget || 5;
-      
-      // Increment stats
-      this.isolationStats.totalTests++;
-      this.isolationStats.isolationLevels[isolationLevel] = 
-        (this.isolationStats.isolationLevels[isolationLevel] || 0) + 1;
-
-      // Apply isolation based on level with performance optimization
-      switch (isolationLevel) {
-        case 'complete':
-          await this._applyCompleteIsolation(performanceBudget);
-          break;
-        case 'environment':
-          await this._applyEnvironmentIsolation(performanceBudget);
-          break;
-        case 'singleton':
-          await this._applySingletonIsolation(performanceBudget);
-          break;
-        case 'minimal':
-          await this._applyMinimalIsolation(performanceBudget);
-          break;
-        default:
-          await this._applyBasicIsolation(performanceBudget);
+      // Configure test execution parameters
+      if (performanceConfig.executionLimits) {
+        this.executionLimits = performanceConfig.executionLimits;
       }
-
-      const duration = performance.now() - startTime;
       
-      // End performance monitoring and check budget
-      if (this.performanceMode) {
-        const perfResult = performanceMonitor.endTimer(testFilePath, 'beforeEach-isolation');
-        if (!perfResult?.withinBudget) {
-          this.isolationStats.budgetViolations++;
+      // Set up performance monitoring
+      if (performanceConfig.monitoring?.enabled) {
+        this._initializePerformanceMonitoring();
+      }
+    } catch (error) {
+      console.warn('Performance config initialization failed:', error);
+    }
+  }
+
+  _initializePerformanceMonitoring() {
+    // Track memory usage and test execution times
+    this.performanceMonitoring = {
+      memoryUsage: process.memoryUsage(),
+      startTime: process.hrtime(),
+      testMetrics: new Map()
+    };
+  }
+
+  async createIsolatedEnvironment(key, options = {}) {
+    await this.initialize();
+    
+    const isolationKey = key || `isolation-${Date.now()}-${Math.random()}`;
+    const backup = {
+      env: backupEnv(),
+      databaseState: null,
+      timestamp: Date.now()
+    };
+
+    // Store backup for later restoration
+    this.activeBackups.set(isolationKey, backup);
+    
+    // Apply isolation options
+    if (options.resetDatabase !== false) {
+      await resetDatabaseSingleton();
+    }
+    
+    if (options.cleanEnv !== false) {
+      this._applyCleanEnvironment(options.envWhitelist);
+    }
+    
+    // Register cleanup task
+    this.cleanupTasks.push(() => this.restoreEnvironment(isolationKey));
+    
+    return isolationKey;
+  }
+
+  _applyCleanEnvironment(whitelist = []) {
+    // Preserve essential environment variables
+    const essentialEnvs = [
+      'NODE_ENV', 'PATH', 'HOME', 'USER',
+      'VITEST', 'VITEST_POOL_ID', 'VITEST_WORKER_ID',
+      ...whitelist
+    ];
+    
+    const currentEnv = { ...process.env };
+    
+    // Clear all non-essential environment variables
+    for (const key of Object.keys(process.env)) {
+      if (!essentialEnvs.includes(key)) {
+        delete process.env[key];
+      }
+    }
+  }
+
+  async restoreEnvironment(isolationKey) {
+    const backup = this.activeBackups.get(isolationKey);
+    if (!backup) {
+      console.warn(`No backup found for isolation key: ${isolationKey}`);
+      return;
+    }
+    
+    const startTime = performance.now();
+    
+    try {
+      // Restore environment variables
+      restoreEnv(backup.env);
+      
+      // Reset database singleton
+      await resetDatabaseSingleton();
+      
+      // Perform any additional cleanup
+      await cleanupTest();
+      
+      // Remove backup
+      this.activeBackups.delete(isolationKey);
+      
+      // Update metrics
+      this.performanceMetrics.cleanupTime += performance.now() - startTime;
+    } catch (error) {
+      console.error(`Failed to restore environment for ${isolationKey}:`, error);
+      throw error;
+    }
+  }
+
+  async cleanup() {
+    const startTime = performance.now();
+    
+    try {
+      // Execute all pending cleanup tasks
+      for (const cleanupTask of this.cleanupTasks) {
+        try {
+          await cleanupTask();
+        } catch (error) {
+          console.error('Cleanup task failed:', error);
         }
       }
       
-      this.detector.trackPerformance && 
-        this.detector.trackPerformance(`beforeEach-${isolationLevel}`, duration, testContext);
-      this.isolationStats.totalTime += duration;
-
-    } catch (error) {
-      this.isolationStats.errors++;
-      console.error('[PerformanceAutomaticIsolation] BeforeEach isolation failed:', error);
+      // Clear all active backups
+      this.activeBackups.clear();
+      this.cleanupTasks = [];
       
-      // Fallback to complete isolation on error
-      await this._applyCompleteIsolation();
+      // Performance cleanup
+      this.performanceMetrics.cleanupTime += performance.now() - startTime;
+      
+    } catch (error) {
+      console.error('Enhanced isolation cleanup failed:', error);
     }
   }
 
-  /**
-   * Apply automatic cleanup after each test
-   */
-  async applyAfterEachCleanup(testContext) {
-    const startTime = performance.now();
-    
-    try {
-      const isolationLevel = this.detector.getIsolationLevel(testContext);
-      
-      // Apply cleanup based on isolation level
-      switch (isolationLevel) {
-        case 'complete':
-          await this._applyCompleteCleanup();
-          break;
-        case 'environment':
-          await this._applyEnvironmentCleanup();
-          break;
-        case 'singleton':
-          await this._applySingletonCleanup();
-          break;
-        case 'minimal':
-          await this._applyMinimalCleanup();
-          break;
-        default:
-          await this._applyBasicCleanup();
-      }
-
-      const duration = performance.now() - startTime;
-      this.detector.trackPerformance(`afterEach-${isolationLevel}`, duration, testContext);
-
-    } catch (error) {
-      this.isolationStats.errors++;
-      console.error('[AutomaticIsolation] AfterEach cleanup failed:', error);
-      
-      // Fallback to complete cleanup on error
-      await this._applyCompleteCleanup();
-    }
-  }
-
-  /**
-   * Performance-Optimized Isolation Level Implementations
-   */
-  async _applyCompleteIsolation(budget = 20) {
-    const startTime = performance.now();
-    
-    try {
-      // Use batch operations for performance
-      if (batchOperations && this.config.performance?.batching?.enabled) {
-        await Promise.all([
-          batchOperations.queueSingletonOperation(() => TestSingletonManager.clearAllState()),
-          this.mockManager?.beforeEach?.(),
-          testEnvManager.backup(),
-          testEnvManager.clearDatabaseEnv(),
-          testEnvManager.setMockEnv(testEnvManager.getPreset("valid-local"))
-        ]);
-        vi.resetModules();
-      } else {
-        // Standard complete isolation
-        TestSingletonManager.clearAllState();
-        this.mockManager?.beforeEach?.();
-        testEnvManager.backup();
-        testEnvManager.clearDatabaseEnv();
-        testEnvManager.setMockEnv(testEnvManager.getPreset("valid-local"));
-        vi.resetModules();
-      }
-      
-      // Check performance budget
-      const duration = performance.now() - startTime;
-      if (duration > budget && this.debugMode) {
-        console.warn(`[PerformanceIsolation] Complete isolation exceeded budget: ${duration.toFixed(2)}ms > ${budget}ms`);
-      }
-    } catch (error) {
-      console.warn('[PerformanceIsolation] Complete isolation failed:', error);
-      throw error;
-    }
-  }
-
-  async _applyEnvironmentIsolation(budget = 8) {
-    const startTime = performance.now();
-    
-    try {
-      // Environment isolation: Environment + basic mock cleanup
-      await Promise.all([
-        testEnvManager.backup(),
-        testEnvManager.clearDatabaseEnv(),
-        testEnvManager.setMockEnv(testEnvManager.getPreset("valid-local"))
-      ]);
-      vi.clearAllMocks();
-      
-      // Check performance budget
-      const duration = performance.now() - startTime;
-      if (duration > budget && this.debugMode) {
-        console.warn(`[PerformanceIsolation] Environment isolation exceeded budget: ${duration.toFixed(2)}ms > ${budget}ms`);
-      }
-    } catch (error) {
-      console.warn('[PerformanceIsolation] Environment isolation failed:', error);
-      throw error;
-    }
-  }
-
-  async _applySingletonIsolation(budget = 5) {
-    const startTime = performance.now();
-    
-    try {
-      // Use batch operations if available
-      if (batchOperations && this.config.performance?.batching?.enabled) {
-        await batchOperations.queueSingletonOperation(() => TestSingletonManager.clearAllState());
-        this.mockManager?.beforeEach?.();
-        vi.clearAllMocks();
-      } else {
-        // Standard singleton isolation
-        TestSingletonManager.clearAllState();
-        this.mockManager?.beforeEach?.();
-        vi.clearAllMocks();
-      }
-      
-      // Check performance budget
-      const duration = performance.now() - startTime;
-      if (duration > budget && this.debugMode) {
-        console.warn(`[PerformanceIsolation] Singleton isolation exceeded budget: ${duration.toFixed(2)}ms > ${budget}ms`);
-      }
-    } catch (error) {
-      console.warn('[PerformanceIsolation] Singleton isolation failed:', error);
-      throw error;
-    }
-  }
-
-  async _applyMinimalIsolation(budget = 1) {
-    const startTime = performance.now();
-    
-    try {
-      // Minimal isolation: Only essential cleanup
-      vi.clearAllMocks();
-      
-      // Check performance budget
-      const duration = performance.now() - startTime;
-      if (duration > budget && this.debugMode) {
-        console.warn(`[PerformanceIsolation] Minimal isolation exceeded budget: ${duration.toFixed(2)}ms > ${budget}ms`);
-      }
-    } catch (error) {
-      console.warn('[PerformanceIsolation] Minimal isolation failed:', error);
-      throw error;
-    }
-  }
-
-  async _applyBasicIsolation(budget = 3) {
-    const startTime = performance.now();
-    
-    try {
-      // Basic isolation: Standard Vitest cleanup
-      vi.clearAllMocks();
-      vi.resetModules();
-      
-      // Check performance budget
-      const duration = performance.now() - startTime;
-      if (duration > budget && this.debugMode) {
-        console.warn(`[PerformanceIsolation] Basic isolation exceeded budget: ${duration.toFixed(2)}ms > ${budget}ms`);
-      }
-    } catch (error) {
-      console.warn('[PerformanceIsolation] Basic isolation failed:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Add known overrides for problematic test files
-   */
-  _addKnownOverrides() {
-    // Known problematic tests that need complete isolation
-    const completeIsolationTests = [
-      'database-environment.test.js',
-      'database-singleton.test.js',
-      'brevo-email.test.js',
-      'email-webhook.test.js'
-    ];
-
-    completeIsolationTests.forEach(testFile => {
-      this.detector.addOverride(testFile, 'complete');
-    });
-
-    // Performance tests should have minimal isolation
-    this.detector.addOverride('performance/', 'minimal');
-  }
-
-  /**
-   * Get isolation statistics
-   */
-  getIsolationStats() {
+  getPerformanceMetrics() {
     return {
-      ...this.isolationStats,
-      averageTime: this.isolationStats.totalTests > 0 
-        ? this.isolationStats.totalTime / this.isolationStats.totalTests 
-        : 0
+      ...this.performanceMetrics,
+      activeBackups: this.activeBackups.size,
+      pendingCleanupTasks: this.cleanupTasks.length,
+      isolationLevel: this.isolationLevel
     };
   }
+}
 
-  /**
-   * Enable debug mode
-   */
-  enableDebug() {
-    this.debugMode = true;
-    this.detector.debugMode = true;
-  }
+// Global isolation engine instance
+export const isolationEngine = new EnhancedTestIsolationEngine();
 
-  /**
-   * Disable debug mode
-   */
-  disableDebug() {
-    this.debugMode = false;
-    this.detector.debugMode = false;
-  }
-
-  /**
-   * Cleanup Level Implementations
-   */
-  async _applyCompleteCleanup() {
-    // Complete cleanup: All components
-    testSingletonLifecycle.afterEach();
-    this.mockManager.afterEach();
-    testEnvManager.restore();
-    vi.clearAllMocks();
-  }
-
-  async _applyEnvironmentCleanup() {
-    // Environment cleanup: Restore environment
-    testEnvManager.restore();
-    vi.clearAllMocks();
-  }
-
-  async _applySingletonCleanup() {
-    // Singleton cleanup: Validate singleton state
-    testSingletonLifecycle.afterEach();
-    this.mockManager.afterEach();
-  }
-
-  async _applyMinimalCleanup() {
-    // Minimal cleanup: Basic cleanup
-    vi.clearAllMocks();
-  }
-
-  async _applyBasicCleanup() {
-    // Basic cleanup: Standard cleanup
-    vi.clearAllMocks();
-  }
-
-  /**
-   * Add known overrides for problematic test files
-   */
-  _addKnownOverrides() {
-    // Known problematic tests that need complete isolation
-    const completeIsolationTests = [
-      'database-environment.test.js',
-      'database-singleton.test.js',
-      'brevo-email.test.js',
-      'email-webhook.test.js'
-    ];
-
-    completeIsolationTests.forEach(testFile => {
-      this.detector.addOverride(testFile, 'complete');
+/**
+ * Process-level isolation utilities
+ */
+export class ProcessIsolation {
+  static async forkIsolatedProcess(testFn, options = {}) {
+    const { fork } = require('child_process');
+    
+    return new Promise((resolve, reject) => {
+      const child = fork(__filename, [], {
+        env: { ...process.env, ISOLATED_TEST: 'true' },
+        silent: true,
+        ...options
+      });
+      
+      child.on('message', (result) => {
+        if (result.error) {
+          reject(new Error(result.error));
+        } else {
+          resolve(result.data);
+        }
+      });
+      
+      child.on('error', reject);
+      
+      // Send test function to child process
+      child.send({ testFunction: testFn.toString() });
     });
-
-    // Performance tests should have minimal isolation
-    this.detector.addOverride('performance/', 'minimal');
   }
+  
+  static async withProcessIsolation(testFn, options = {}) {
+    if (process.env.ISOLATED_TEST) {
+      // We're already in an isolated process
+      return await testFn();
+    }
+    
+    return await ProcessIsolation.forkIsolatedProcess(testFn, options);
+  }
+}
 
-  /**
-   * Get isolation statistics
-   */
-  getIsolationStats() {
+/**
+ * Memory management utilities
+ */
+export class MemoryManager {
+  static getMemoryUsage() {
+    const usage = process.memoryUsage();
     return {
-      ...this.isolationStats,
-      averageTime: this.isolationStats.totalTests > 0 
-        ? this.isolationStats.totalTime / this.isolationStats.totalTests 
-        : 0
+      rss: Math.round(usage.rss / 1024 / 1024),
+      heapTotal: Math.round(usage.heapTotal / 1024 / 1024),
+      heapUsed: Math.round(usage.heapUsed / 1024 / 1024),
+      external: Math.round(usage.external / 1024 / 1024)
     };
   }
-
-  /**
-   * Enable debug mode
-   */
-  enableDebug() {
-    this.debugMode = true;
-    this.detector.debugMode = true;
-  }
-
-  /**
-   * Disable debug mode
-   */
-  disableDebug() {
-    this.debugMode = false;
-    this.detector.debugMode = false;
-  }
-}
-
-// Create performance-optimized singleton isolation engine
-const isolationEngine = new PerformanceAutomaticIsolationEngine();
-
-/**
- * Global beforeEach hook - Automatic isolation for all tests
- * This hook runs before every single test across all test files
- */
-beforeEach(async (testContext) => {
-  await isolationEngine.applyBeforeEachIsolation(testContext);
-});
-
-/**
- * Global afterEach hook - Automatic cleanup for all tests
- * This hook runs after every single test across all test files
- */
-afterEach(async (testContext) => {
-  await isolationEngine.applyAfterEachCleanup(testContext);
-});
-
-/**
- * Export performance-optimized isolation engine for advanced usage and debugging
- */
-export { 
-  isolationEngine, 
-  PerformanceSmartIsolationDetector, 
-  PerformanceAutomaticIsolationEngine,
-  performanceMonitor,
-  batchOperations 
-};
-
-/**
- * Convenience functions for manual isolation control
- */
-export function enableTestDebug() {
-  isolationEngine.enableDebug();
-}
-
-export function disableTestDebug() {
-  isolationEngine.disableDebug();
-}
-
-export function getIsolationStats() {
-  return isolationEngine.getIsolationStats();
-}
-
-export function addIsolationOverride(testFile, level) {
-  if (!isolationEngine.initialized) {
-    // Store override for later application
-    if (!global.pendingIsolationOverrides) {
-      global.pendingIsolationOverrides = new Map();
+  
+  static forceGarbageCollection() {
+    if (global.gc) {
+      global.gc();
     }
-    global.pendingIsolationOverrides.set(testFile, level);
-  } else {
-    isolationEngine.detector.addOverride(testFile, level);
+  }
+  
+  static async withMemoryMonitoring(testFn, options = {}) {
+    const initialMemory = MemoryManager.getMemoryUsage();
+    
+    try {
+      const result = await testFn();
+      
+      if (options.forceCleanup) {
+        MemoryManager.forceGarbageCollection();
+      }
+      
+      const finalMemory = MemoryManager.getMemoryUsage();
+      const memoryDelta = {
+        rss: finalMemory.rss - initialMemory.rss,
+        heapUsed: finalMemory.heapUsed - initialMemory.heapUsed
+      };
+      
+      if (options.logMemoryUsage) {
+        console.log(`Memory usage change: ${JSON.stringify(memoryDelta)} MB`);
+      }
+      
+      return { result, memoryDelta };
+    } catch (error) {
+      // Cleanup even on error
+      if (options.forceCleanup) {
+        MemoryManager.forceGarbageCollection();
+      }
+      throw error;
+    }
+  }
+}
+
+/**
+ * Database-specific isolation utilities
+ */
+export class DatabaseIsolation {
+  static async withDatabaseTransaction(testFn, options = {}) {
+    const { getDatabaseClient } = await import('../../api/lib/database.js');
+    const client = await getDatabaseClient();
+    
+    if (!client.execute) {
+      throw new Error('Database client does not support transactions');
+    }
+    
+    let transaction;
+    try {
+      await client.execute('BEGIN');
+      transaction = true;
+      
+      const result = await testFn(client);
+      
+      if (options.commit !== false) {
+        await client.execute('COMMIT');
+      } else {
+        await client.execute('ROLLBACK');
+      }
+      
+      return result;
+    } catch (error) {
+      if (transaction) {
+        try {
+          await client.execute('ROLLBACK');
+        } catch (rollbackError) {
+          console.error('Transaction rollback failed:', rollbackError);
+        }
+      }
+      throw error;
+    }
+  }
+  
+  static async resetToCleanState() {
+    try {
+      await resetDatabaseSingleton();
+      
+      // Additional database cleanup if needed
+      const { getDatabaseClient } = await import('../../api/lib/database.js');
+      const client = await getDatabaseClient();
+      
+      // Clean up test data
+      const tables = ['test_users', 'test_registrations', 'test_subscriptions'];
+      for (const table of tables) {
+        try {
+          await client.execute(`DELETE FROM ${table} WHERE created_at < datetime('now', '-1 hour')`);
+        } catch (error) {
+          // Table might not exist, which is fine
+          console.debug(`Could not clean table ${table}:`, error.message);
+        }
+      }
+    } catch (error) {
+      console.error('Database reset failed:', error);
+      throw error;
+    }
+  }
+}
+
+/**
+ * Environment variable isolation with enhanced backup/restore
+ */
+export class EnvironmentIsolation {
+  constructor() {
+    this.backups = new Map();
+    this.listeners = new Set();
+  }
+  
+  backup(key = 'default') {
+    const backup = backupEnv();
+    this.backups.set(key, backup);
+    return key;
+  }
+  
+  restore(key = 'default') {
+    const backup = this.backups.get(key);
+    if (!backup) {
+      throw new Error(`No environment backup found for key: ${key}`);
+    }
+    
+    restoreEnv(backup);
+    this.backups.delete(key);
+  }
+  
+  async withCleanEnv(testFn, whitelist = []) {
+    const backupKey = this.backup();
+    
+    try {
+      // Apply clean environment
+      isolationEngine._applyCleanEnvironment(whitelist);
+      
+      return await testFn();
+    } finally {
+      this.restore(backupKey);
+    }
+  }
+  
+  async withEnvVars(envVars, testFn) {
+    const backupKey = this.backup();
+    
+    try {
+      // Apply temporary environment variables
+      Object.assign(process.env, envVars);
+      
+      return await testFn();
+    } finally {
+      this.restore(backupKey);
+    }
+  }
+  
+  onEnvChange(callback) {
+    this.listeners.add(callback);
+  }
+  
+  offEnvChange(callback) {
+    this.listeners.delete(callback);
+  }
+}
+
+// Global environment isolation instance
+export const environmentIsolation = new EnvironmentIsolation();
+
+/**
+ * Test lifecycle hooks
+ */
+export class TestLifecycle {
+  static async beforeEach(testFn, options = {}) {
+    await isolationEngine.initialize();
+    
+    const isolationKey = await isolationEngine.createIsolatedEnvironment(
+      options.isolationKey,
+      options
+    );
+    
+    try {
+      return await testFn();
+    } finally {
+      if (options.autoCleanup !== false) {
+        await isolationEngine.restoreEnvironment(isolationKey);
+      }
+    }
+  }
+  
+  static async afterEach(options = {}) {
+    if (options.forceCleanup) {
+      await isolationEngine.cleanup();
+      MemoryManager.forceGarbageCollection();
+    }
+  }
+  
+  static async afterAll() {
+    await isolationEngine.cleanup();
   }
 }
 
 /**
  * Enhanced test isolation utilities
  */
-export function withCompleteIsolation(testFn) {
+export function withCompleteIsolationEnhanced(testFn) {
   return async function(testContext) {
     await isolationEngine.initialize();
     
     // Force complete isolation for this specific test
     const tempKey = testContext?.file?.filepath || `temp-${Date.now()}`;
-    isolationEngine.detector.addOverride(tempKey, 'complete');
+    const isolationKey = await isolationEngine.createIsolatedEnvironment(tempKey, {
+      resetDatabase: true,
+      cleanEnv: true,
+      envWhitelist: ['NODE_ENV', 'VITEST']
+    });
     
     try {
-      await isolationEngine._applyCompleteIsolation();
-      const result = await testFn(testContext);
-      await isolationEngine._applyCompleteCleanup();
-      return result;
+      // Execute test with complete isolation
+      return await testFn();
     } finally {
-      // Clean up temporary override
-      isolationEngine.detector.isolationOverrides.delete(tempKey);
-    }
-  };
-}
-
-export function withMinimalIsolation(testFn) {
-  return async function(testContext) {
-    await isolationEngine.initialize();
-    
-    // Force minimal isolation for this specific test
-    const tempKey = testContext?.file?.filepath || `temp-${Date.now()}`;
-    isolationEngine.detector.addOverride(tempKey, 'minimal');
-    
-    try {
-      await isolationEngine._applyMinimalIsolation();
-      const result = await testFn(testContext);
-      await isolationEngine._applyMinimalCleanup();
-      return result;
-    } finally {
-      // Clean up temporary override
-      isolationEngine.detector.isolationOverrides.delete(tempKey);
+      // Always cleanup, even on failure
+      await isolationEngine.restoreEnvironment(isolationKey);
     }
   };
 }
 
 /**
- * Performance and debug utilities
+ * Performance-optimized test utilities
  */
-export function logPerformanceIsolationReport() {
-  const stats = isolationEngine.getIsolationStats();
-  const perfStats = performanceMonitor?.getStats?.() || {};
+export class PerformanceTestUtils {
+  static async measureTestPerformance(testFn, iterations = 1) {
+    const metrics = [];
+    
+    for (let i = 0; i < iterations; i++) {
+      const startTime = performance.now();
+      const startMemory = MemoryManager.getMemoryUsage();
+      
+      try {
+        await testFn();
+      } catch (error) {
+        metrics.push({
+          iteration: i,
+          error: error.message,
+          duration: performance.now() - startTime
+        });
+        continue;
+      }
+      
+      const endTime = performance.now();
+      const endMemory = MemoryManager.getMemoryUsage();
+      
+      metrics.push({
+        iteration: i,
+        duration: endTime - startTime,
+        memoryDelta: endMemory.heapUsed - startMemory.heapUsed,
+        success: true
+      });
+    }
+    
+    return {
+      metrics,
+      average: metrics.reduce((acc, m) => acc + (m.duration || 0), 0) / metrics.length,
+      failures: metrics.filter(m => m.error).length,
+      successRate: metrics.filter(m => m.success).length / metrics.length
+    };
+  }
   
-  console.log('\n=== Performance-Optimized Test Isolation Report ===');
-  console.log(`Total Tests: ${stats.totalTests}`);
-  console.log(`Total Time: ${stats.totalTime.toFixed(2)}ms`);
-  console.log(`Average Time: ${stats.averageTime?.toFixed(2) || 'N/A'}ms per test`);
-  console.log(`Errors: ${stats.errors}`);
-  console.log(`Budget Violations: ${stats.budgetViolations || 0}`);
-  console.log(`Performance Optimizations: ${stats.performanceOptimizations || 0}`);
-  
-  console.log('\nIsolation Levels:');
-  Object.entries(stats.isolationLevels).forEach(([level, count]) => {
-    const percentage = stats.totalTests > 0 ? ((count / stats.totalTests) * 100).toFixed(1) : '0.0';
-    console.log(`  ${level}: ${count} tests (${percentage}%)`);
-  });
-  
-  if (perfStats.totalViolations > 0) {
-    console.log(`\n⚠️  Performance Issues: ${perfStats.totalViolations} budget violations`);
-    perfStats.recentViolations?.forEach(violation => {
-      console.log(`   ${violation.testPath}: ${violation.operation} (${violation.duration.toFixed(2)}ms > ${violation.budget}ms)`);
+  static async benchmarkFunction(fn, options = {}) {
+    const {
+      iterations = 100,
+      warmup = 10,
+      timeout = 30000
+    } = options;
+    
+    // Warmup runs
+    for (let i = 0; i < warmup; i++) {
+      try {
+        await Promise.race([
+          fn(),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Warmup timeout')), timeout)
+          )
+        ]);
+      } catch (error) {
+        console.warn(`Warmup iteration ${i} failed:`, error.message);
+      }
+    }
+    
+    // Actual benchmark
+    return await PerformanceTestUtils.measureTestPerformance(fn, iterations);
+  }
+}
+
+/**
+ * Integration with Vitest lifecycle
+ */
+export function setupVitestIntegration() {
+  if (typeof globalThis.beforeEach === 'function') {
+    globalThis.beforeEach(async () => {
+      await isolationEngine.initialize();
+    });
+    
+    globalThis.afterEach(async () => {
+      await TestLifecycle.afterEach({ forceCleanup: false });
+    });
+    
+    globalThis.afterAll(async () => {
+      await TestLifecycle.afterAll();
     });
   }
-  
-  console.log('======================================================\n');
 }
 
-export function logIsolationReport() {
-  // Backward compatibility
-  logPerformanceIsolationReport();
-}
-
-export function getPerformanceStats() {
-  return {
-    isolation: isolationEngine.getIsolationStats(),
-    performance: performanceMonitor?.getStats?.() || {},
-    cacheSize: typeof decisionCache !== 'undefined' ? decisionCache.size() : 0
-  };
-}
-
-export function resetPerformanceTracking() {
-  if (performanceMonitor?.reset) {
-    performanceMonitor.reset();
-  }
-  if (isolationEngine.isolationStats) {
-    isolationEngine.isolationStats.budgetViolations = 0;
-    isolationEngine.isolationStats.performanceOptimizations = 0;
-  }
-}
-
-// Export for backward compatibility and new performance features
+/**
+ * Export configuration and utilities
+ */
 export default {
   isolationEngine,
-  enableTestDebug,
-  disableTestDebug,
-  getIsolationStats,
-  addIsolationOverride,
-  withCompleteIsolation,
-  withMinimalIsolation,
-  logIsolationReport,
-  logPerformanceIsolationReport,
-  getPerformanceStats,
-  resetPerformanceTracking,
-  performanceMonitor,
-  batchOperations
+  ProcessIsolation,
+  MemoryManager,
+  DatabaseIsolation,
+  EnvironmentIsolation,
+  TestLifecycle,
+  PerformanceTestUtils,
+  environmentIsolation,
+  withCompleteIsolationEnhanced,
+  setupVitestIntegration
 };
+
+// Auto-setup integration if in test environment
+if (process.env.NODE_ENV === 'test' || process.env.VITEST) {
+  setupVitestIntegration();
+}
+
+// Handle process-level test execution
+if (process.env.ISOLATED_TEST && process.send) {
+  process.on('message', async (message) => {
+    try {
+      const testFn = new Function('return ' + message.testFunction)();
+      const result = await testFn();
+      process.send({ data: result });
+    } catch (error) {
+      process.send({ error: error.message });
+    }
+    process.exit(0);
+  });
+}

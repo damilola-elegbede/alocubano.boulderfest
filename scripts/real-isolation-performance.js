@@ -64,7 +64,7 @@ const TEST_SUITES = {
   },
   isolation: {
     name: 'Isolation Component Tests',
-    pattern: 'tests/unit/test-singleton-manager.test.js tests/unit/test-mock-manager.test.js tests/unit/test-environment-manager.test.js',
+    pattern: 'tests/unit/test-singleton-manager.test.js tests/unit/test-mock-manager.test.js',
     expected: 'high overhead'
   }
 };

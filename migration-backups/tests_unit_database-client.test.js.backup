@@ -2,16 +2,14 @@
  * @vitest-environment node
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { backupEnv, restoreEnv, clearDatabaseEnv, clearAppEnv, getEnvPreset, withIsolatedEnv } from "../helpers/simple-helpers.js";
+import { testEnvManager } from "../utils/test-environment-manager.js";
 
 describe.skip("DatabaseService - Updated Implementation Validation", () => {
   // These tests validate the real implementation, not mocks
   // Skip them in unit tests since we're using mocked modules
-  let envBackup;
-
   beforeEach(() => {
-    envBackup = backupEnv(Object.keys(process.env));
-    clearDatabaseEnv();
+    testEnvManager.backup();
+    testEnvManager.clearDatabaseEnv();
   });
 
   afterEach(async () => {
@@ -23,13 +21,13 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
       // Ignore cleanup errors
     }
     
-    restoreEnv(envBackup);
+    testEnvManager.restore();
     vi.resetModules();
   });
 
   describe("DatabaseService constructor", () => {
     it("should have new properties for connection tracking", async () => {
-      await withIsolatedEnv("valid-local", async () => {
+      await testEnvManager.withIsolatedEnv("valid-local", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
         
@@ -49,7 +47,7 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
 
   describe("DatabaseService new methods", () => {
     it("should have async close method", async () => {
-      await withIsolatedEnv("valid-local", async () => {
+      await testEnvManager.withIsolatedEnv("valid-local", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
         
@@ -66,7 +64,7 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
     });
 
     it("should have resetForTesting method", async () => {
-      await withIsolatedEnv("valid-local", async () => {
+      await testEnvManager.withIsolatedEnv("valid-local", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
         
@@ -81,7 +79,7 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
     });
 
     it("should have getConnectionStats method", async () => {
-      await withIsolatedEnv("valid-local", async () => {
+      await testEnvManager.withIsolatedEnv("valid-local", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
         
@@ -97,7 +95,7 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
     });
 
     it("should have healthCheck method", async () => {
-      await withIsolatedEnv("valid-local", async () => {
+      await testEnvManager.withIsolatedEnv("valid-local", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
         
@@ -131,7 +129,7 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
 
   describe("Connection tracking behavior", () => {
     it("should track connections when initialized successfully", async () => {
-      await withIsolatedEnv("valid-local", async () => {
+      await testEnvManager.withIsolatedEnv("valid-local", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
         
@@ -157,7 +155,7 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
 
   describe("Retry logic implementation", () => {
     it("should have retry configuration", async () => {
-      await withIsolatedEnv("valid-local", async () => {
+      await testEnvManager.withIsolatedEnv("valid-local", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
         
@@ -174,7 +172,7 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
 
   describe("Enhanced error handling", () => {
     it("should handle missing environment variables with retries", async () => {
-      await withIsolatedEnv("empty", async () => {
+      await testEnvManager.withIsolatedEnv("empty", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
         
@@ -197,7 +195,7 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
       process.env.TEST_TYPE = 'integration';
       
       try {
-        await withIsolatedEnv({
+        await testEnvManager.withIsolatedEnv({
           TURSO_DATABASE_URL: "file:test.db"
         }, async () => {
           const { DatabaseService } = await import("../../api/lib/database.js");
@@ -220,7 +218,7 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
 
   describe("State management", () => {
     it("should properly reset state in resetForTesting", async () => {
-      await withIsolatedEnv("valid-local", async () => {
+      await testEnvManager.withIsolatedEnv("valid-local", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
         
@@ -242,7 +240,7 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
 
   describe("Singleton behavior", () => {
     it("should maintain singleton instance through module exports", async () => {
-      await withIsolatedEnv("valid-local", async () => {
+      await testEnvManager.withIsolatedEnv("valid-local", async () => {
         const { getDatabase, getDatabaseClient } = await import("../../api/lib/database.js");
         
         const service1 = getDatabase();

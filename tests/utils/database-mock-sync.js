@@ -226,7 +226,10 @@ export class DatabaseMockSync {
         const authToken = process.env.TURSO_AUTH_TOKEN;
 
         // Match exact error messages from actual implementation
-        if (!databaseUrl) {
+        // In strict test mode, be even more strict about environment validation
+        const strictMode = process.env.DATABASE_TEST_STRICT_MODE === "true";
+        
+        if (!databaseUrl || databaseUrl.trim() === "" || (strictMode && !databaseUrl)) {
           throw new Error(
             "TURSO_DATABASE_URL environment variable is required",
           );
@@ -304,8 +307,9 @@ export class DatabaseMockSync {
           }
 
           const databaseUrl = process.env.TURSO_DATABASE_URL;
+          const strictMode = process.env.DATABASE_TEST_STRICT_MODE === "true";
 
-          if (!databaseUrl) {
+          if (!databaseUrl || databaseUrl.trim() === "" || (strictMode && !databaseUrl)) {
             throw new Error(
               "TURSO_DATABASE_URL environment variable is required",
             );

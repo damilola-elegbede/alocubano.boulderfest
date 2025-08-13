@@ -4,19 +4,18 @@
  * @vitest-environment node
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { backupEnv, restoreEnv, withCompleteIsolation, resetDatabaseSingleton, cleanupTest, clearDatabaseEnv } from "../helpers/simple-helpers.js";
+import { testEnvManager } from "../utils/test-environment-manager.js";
 
 describe("Database Singleton Pattern", () => {
   let mockCreateClient;
   let mockClient;
-  let envBackup;
 
   beforeEach(async () => {
     // Complete environment isolation - backup original env
-    envBackup = backupEnv(Object.keys(process.env));
+    testEnvManager.backup();
 
     // Clear all environment variables that might affect database initialization
-    // Environment clearing handled by isolateEnv();
+    testEnvManager._clearEnvironmentForTesting();
 
     // Reset all module caches to get fresh singletons
     vi.resetModules();
@@ -49,7 +48,7 @@ describe("Database Singleton Pattern", () => {
 
   afterEach(() => {
     // Restore original environment
-    restoreEnv(envBackup);
+    testEnvManager.restore();
     vi.clearAllMocks();
     vi.resetModules();
   });
@@ -293,11 +292,9 @@ describe("Database Singleton Pattern", () => {
 });
 
 describe("Environment-Specific Singleton Behavior", () => {
-  let envBackup;
-  
   beforeEach(() => {
-    envBackup = backupEnv(Object.keys(process.env));
-    clearDatabaseEnv();
+    testEnvManager.backup();
+    testEnvManager.clearDatabaseEnv();
     vi.resetModules();
     vi.clearAllMocks();
 
@@ -312,7 +309,7 @@ describe("Environment-Specific Singleton Behavior", () => {
   });
 
   afterEach(() => {
-    restoreEnv(envBackup);
+    testEnvManager.restore();
     vi.clearAllMocks();
     vi.resetModules();
   });
