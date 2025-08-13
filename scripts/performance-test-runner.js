@@ -1699,6 +1699,15 @@ class PerformanceTestOrchestrator {
 async function main() {
   const args = process.argv.slice(2);
 
+  // Skip performance tests in CI when requested
+  if (process.env.CI === 'true' && 
+      (process.env.SKIP_PERFORMANCE_TESTS === 'true' || 
+       process.env.SKIP_PERFORMANCE_INTENSIVE_TESTS === 'true')) {
+    console.log('\n⚠️  Skipping performance tests in CI environment');
+    console.log('✅ Performance test suite skipped successfully\n');
+    process.exit(0);
+  }
+
   // Parse CLI options
   const options = {
     baseUrl: process.env.LOAD_TEST_BASE_URL || "http://localhost:3000",
