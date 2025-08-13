@@ -13,8 +13,12 @@ const __dirname = dirname(__filename);
 export function createTestDatabase() {
   const db = new Database(':memory:');
   const schemaPath = join(__dirname, '..', 'test-schema.sql');
-  const schema = readFileSync(schemaPath, 'utf8');
-  db.exec(schema);
+  try {
+    const schema = readFileSync(schemaPath, 'utf8');
+    db.exec(schema);
+  } catch (error) {
+    throw new Error(`Failed to load test schema from ${schemaPath}: ${error.message}`);
+  }
   return db;
 }
 

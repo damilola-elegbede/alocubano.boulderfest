@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
 import { readFile, writeFile, readdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import { join } from 'path';
+import { join, dirname, relative } from 'path';
 
 async function findTestFiles(dir, files = []) {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -17,6 +16,13 @@ async function findTestFiles(dir, files = []) {
   }
   
   return files;
+}
+
+function getDbHelperImportFor(file) {
+  const from = dirname(file);
+  const to = 'tests/helpers/db.js';
+  let rel = relative(from, to).replace(/\\/g, '/');
+  return rel.startsWith('.') ? rel : `./${rel}`;
 }
 
 async function migrateDatabaseTests() {
@@ -52,28 +58,31 @@ async function migrateDatabaseTests() {
       if (hasOldHelpers) {
         console.log(`📝 Migrating: ${file}`);
         
+        // Compute relative path to db.js from this test file
+        const dbImportPath = getDbHelperImportFor(file);
+        
         // Replace imports
         content = content.replace(
           /import\s*{[^}]*DatabaseTestHelpers[^}]*}\s*from\s*['"][^'"]*database-test-helpers['"]/g,
-          "import { createTestDatabase, seedTestData, createLibSQLAdapter } from '@tests/helpers/db'"
+          `import { createTestDatabase, seedTestData, createLibSQLAdapter } from '${dbImportPath}'`
         );
         
         content = content.replace(
           /import\s*{[^}]*IntegrationTestDatabaseFactory[^}]*}\s*from\s*['"][^'"]*integration-test-database-factory['"]/g,
-          "import { createTestDatabase, seedTestData, createLibSQLAdapter } from '@tests/helpers/db'"
+          `import { createTestDatabase, seedTestData, createLibSQLAdapter } from '${dbImportPath}'`
         );
         
         // Replace other database helper imports
         content = content.replace(
           /import\s*{[^}]*}\s*from\s*['"]\.\.\/utils\/database-[^'"]+['"]/g,
-          "import { createTestDatabase, seedTestData, createLibSQLAdapter, queryHelper } from '@tests/helpers/db'"
+          `import { createTestDatabase, seedTestData, createLibSQLAdapter, queryHelper } from '${dbImportPath}'`
         );
         
         // Replace TestEnvironmentManager with simple pattern
         if (content.includes('TestEnvironmentManager')) {
           content = content.replace(
             /import\s*{[^}]*TestEnvironmentManager[^}]*}\s*from\s*[^;]+;/g,
-            "import { createTestDatabase, seedTestData } from '@tests/helpers/db';"
+            `import { createTestDatabase, seedTestData } from '${dbImportPath}';`
           );
           
           // Remove TestEnvironmentManager usage
@@ -110,10 +119,10 @@ async function migrateDatabaseTests() {
 });`
         );
         
-        // Replace factory pattern usage
+        // Replace factory pattern usage - preserve original variable names
         content = content.replace(
-          /const\s+factory\s*=\s*new\s+IntegrationTestDatabaseFactory\(\);[\s\S]*?const\s+\w+\s*=\s*await\s+factory\.create\w+Client\(\);/gm,
-          'const db = createTestDatabase();\n  const client = createLibSQLAdapter(db);'
+          /const\s+factory\s*=\s*new\s+IntegrationTestDatabaseFactory\(\);[\s\S]*?const\s+(\w+)\s*=\s*await\s+factory\.create\w+Client\(\);/gm,
+          (_m, varName) => `const db = createTestDatabase();\n  const ${varName} = createLibSQLAdapter(db);`
         );
         
         // Replace getDatabaseClient mocks

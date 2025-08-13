@@ -32,5 +32,5 @@ INSERT INTO admin_sessions (username, token_hash, expires_at) VALUES
   ('admin', 'test_token_hash', datetime('now', '+1 day'));
 
 INSERT INTO access_tokens (token_hash, transaction_id, email, expires_at) VALUES
-  ('access_token_001', 1, 'user1@example.com', datetime('now', '+7 days')),
-  ('access_token_002', 2, 'user2@example.com', datetime('now', '+7 days'));
+  ('access_token_001', 'txn_001', 'user1@example.com', datetime('now', '+7 days')),
+  ('access_token_002', 'txn_002', 'user2@example.com', datetime('now', '+7 days'));
