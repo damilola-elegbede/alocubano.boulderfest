@@ -161,8 +161,8 @@ describe("Database Singleton Pattern", () => {
       expect(service1.initialized).toBe(true);
       expect(service1.client).toBeDefined();
 
-      // Close the service
-      service1.close();
+      // Close the service (await async close to avoid race)
+      await service1.close();
 
       // Verify state reset
       expect(service1.initialized).toBe(false);

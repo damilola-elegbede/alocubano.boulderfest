@@ -6,7 +6,7 @@
 ;
 import { serviceDetector } from './service-availability-detector.js';
 
-import { backupEnv, restoreEnv, withCompleteIsolation, resetDatabaseSingleton, cleanupTest } from "./helpers/simple-helpers.js";
+import { backupEnv, restoreEnv, withCompleteIsolation, resetDatabaseSingleton, cleanupTest, getEnvPreset } from "../helpers/simple-helpers.js";
 export class IntegrationTestStrategy {
   constructor() {
     this.envManager = // TestEnvironmentManager → Simple helpers (no instantiation needed);
@@ -109,7 +109,7 @@ export class IntegrationTestStrategy {
    */
   async _performServiceInitialization(serviceName, config) {
     // Set up environment for this service
-    this.Object.assign(process.env, this.getEnvPreset(config.environmentPreset));
+    Object.assign(process.env, getEnvPreset(config.environmentPreset));
 
     // Validate required environment variables
     for (const envVar of config.requiredEnvVars) {
@@ -297,7 +297,7 @@ export class IntegrationTestStrategy {
     this.initializationPromises.clear();
 
     // Restore environment
-    this.restoreEnv(envBackup);
+    restoreEnv(this.envBackup);
   }
 
   /**
