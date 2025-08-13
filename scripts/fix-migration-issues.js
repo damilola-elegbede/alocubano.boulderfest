@@ -57,11 +57,11 @@ const FIXES = [
     replacement: 'clearDatabaseEnv('
   },
   
-  // Fix duplicate import lines
-  {
-    pattern: /import { backupEnv, restoreEnv, withCompleteIsolation, resetDatabaseSingleton, cleanupTest } from "\.\.\/helpers\/simple-helpers\.js";\s*import\s*{\s*backupEnv/gm,
-    replacement: 'import { backupEnv, restoreEnv, withCompleteIsolation, resetDatabaseSingleton, cleanupTest, getEnvPreset, withIsolatedEnv, clearDatabaseEnv'
-  },
+  // Remove problematic duplicate import fix - will be handled by mergeSimpleHelpersImports
+  // {
+  //   pattern: /import { backupEnv, restoreEnv, withCompleteIsolation, resetDatabaseSingleton, cleanupTest } from "\.\.\/helpers\/simple-helpers\.js";\s*import\s*{\s*backupEnv/gm,
+  //   replacement: 'import { backupEnv, restoreEnv, withCompleteIsolation, resetDatabaseSingleton, cleanupTest, getEnvPreset, withIsolatedEnv, clearDatabaseEnv'
+  // },
   
   // Clean up extra whitespace and newlines
   {
@@ -120,12 +120,11 @@ class MigrationFixer {
       
       // Apply all fixes
       for (const fix of FIXES) {
-        if (typeof fix.replacement === 'function') {
-          content = content.replace(fix.pattern, fix.replacement);
-        } else {
-          content = content.replace(fix.pattern, fix.replacement);
-        }
+        content = content.replace(fix.pattern, fix.replacement);
       }
+      
+      // Merge and normalize simple-helpers imports to avoid duplicates/broken merges
+      content = this.mergeSimpleHelpersImports(content);
       
       // Special handling for specific files
       content = await this.applySpecialFixes(filepath, content);
@@ -186,6 +185,42 @@ class MigrationFixer {
       );
     }
     
+    // Fix envBackup declarations - ensure at file scope, not inside beforeEach
+    if (content.includes('restoreEnv(envBackup)') && !content.includes('let envBackup;')) {
+      // Add at file scope before first describe block
+      content = content.replace(/(describe\s*\(|^)/, 'let envBackup;\n\n$1');
+    }
+    
+    return content;
+  }
+  
+  mergeSimpleHelpersImports(content) {
+    const importRe = /import\s*{\s*([^}]*)\s*}\s*from\s*["']\.\.\/helpers\/simple-helpers\.js["'];?/g;
+    let all = new Set();
+    let sawAny = false;
+
+    // Strip all existing simple-helpers imports while collecting specifiers
+    content = content.replace(importRe, (_, specifiers) => {
+      sawAny = true;
+      specifiers
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .forEach(s => all.add(s));
+      return '';
+    });
+
+    // Determine any additionally-needed imports by usage
+    const maybeNeeded = ['backupEnv','restoreEnv','withCompleteIsolation','resetDatabaseSingleton','cleanupTest','getEnvPreset','withIsolatedEnv','clearDatabaseEnv','clearAppEnv'];
+    for (const name of maybeNeeded) {
+      const usageRe = new RegExp(`\\b${name}\\s*\\(`, 'm');
+      if (usageRe.test(content)) all.add(name);
+    }
+
+    if (sawAny || all.size > 0) {
+      const normalized = `import { ${Array.from(all).sort().join(', ')} } from "../helpers/simple-helpers.js";\n`;
+      content = normalized + content;
+    }
     return content;
   }
 }

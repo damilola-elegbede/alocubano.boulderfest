@@ -192,14 +192,10 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
 
   describe("Database path conversion", () => {
     it("should handle file path conversion for integration tests", async () => {
-      // Set TEST_TYPE to trigger integration test path handling
-      const originalTestType = process.env.TEST_TYPE;
-      process.env.TEST_TYPE = 'integration';
-      
-      try {
-        await withIsolatedEnv({
-          TURSO_DATABASE_URL: "file:test.db"
-        }, async () => {
+      await withIsolatedEnv({
+        TURSO_DATABASE_URL: "file:test.db",
+        TEST_TYPE: 'integration'
+      }, async () => {
           const { DatabaseService } = await import("../../api/lib/database.js");
           const service = new DatabaseService();
           
@@ -212,9 +208,6 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
             expect(error.message).not.toContain("ENOENT");
           }
         });
-      } finally {
-        process.env.TEST_TYPE = originalTestType;
-      }
     });
   });
 
