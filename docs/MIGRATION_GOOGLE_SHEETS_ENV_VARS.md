@@ -77,6 +77,10 @@ GOOGLE_PRIVATE_KEY="drive private key"
    GOOGLE_SHEETS_PRIVATE_KEY="sheets private key"
    ```
 
+   **Recommendations**:
+   - Do not commit .env files. Use your platform's secret manager (e.g., Vercel, GitHub Actions) for production.
+   - Store private keys with escaped newlines (\\n) and convert at runtime (see note above).
+
 5. **Restart your application** to pick up the new environment variables
 
 ## Why This Change?
