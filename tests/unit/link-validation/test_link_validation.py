@@ -326,15 +326,21 @@ class LinkValidator:
         # Remove leading slash and check if file exists
         clean_url = url.lstrip('/')
         
-        # Try with .html extension
-        html_file = self.project_root / f"{clean_url}.html"
-        if html_file.exists():
+        # First, check if URL already points to an existing file (e.g., already has .html)
+        direct_file = self.project_root / clean_url
+        if direct_file.exists() and direct_file.is_file():
             return True
         
-        # Try in pages directory
-        pages_file = self.pages_dir / f"{clean_url}.html"
-        if pages_file.exists():
-            return True
+        # Try with .html extension (if not already present)
+        if not clean_url.endswith('.html'):
+            html_file = self.project_root / f"{clean_url}.html"
+            if html_file.exists():
+                return True
+            
+            # Try in pages directory
+            pages_file = self.pages_dir / f"{clean_url}.html"
+            if pages_file.exists():
+                return True
         
         # Try as directory with index.html
         index_file = self.project_root / clean_url / "index.html"
@@ -404,8 +410,8 @@ class LinkValidator:
         url = link.url
         
         if url == '/':
-            # Root route redirects to index.html
-            return (self.project_root / "index.html").exists()
+            # Root route redirects to pages/index.html per vercel.json
+            return (self.project_root / "pages" / "index.html").exists()
         
         
         elif url.startswith('/gallery-data/') and url.endswith('.json'):

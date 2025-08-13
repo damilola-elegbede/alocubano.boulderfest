@@ -18,6 +18,9 @@
 
 class PerformanceMonitor {
     constructor() {
+    // Detect test environment to suppress warnings
+        this.isTestEnvironment = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+        
     // Core metrics storage
         this.metrics = {
             // Core Web Vitals
@@ -439,7 +442,9 @@ class PerformanceMonitor {
 
     initializeMemoryMonitoring() {
         if (!('memory' in performance)) {
-            console.warn('[PerfMonitor] Memory API not supported');
+            if (!this.isTestEnvironment) {
+                console.warn('[PerfMonitor] Memory API not supported');
+            }
             return;
         }
 
@@ -481,7 +486,9 @@ class PerformanceMonitor {
 
     initializeNetworkMonitoring() {
         if (!('connection' in navigator)) {
-            console.warn('[PerfMonitor] Network Information API not supported');
+            if (!this.isTestEnvironment) {
+                console.warn('[PerfMonitor] Network Information API not supported');
+            }
             return;
         }
 
@@ -965,9 +972,13 @@ class PerformanceMonitor {
                 );
 
                 if (success) {
-                    console.log('[PerfMonitor] Final report sent via sendBeacon');
+                    if (!this.isTestEnvironment) {
+                        console.log('[PerfMonitor] Final report sent via sendBeacon');
+                    }
                 } else {
-                    console.warn('[PerfMonitor] sendBeacon failed, attempting fetch');
+                    if (!this.isTestEnvironment) {
+                        console.warn('[PerfMonitor] sendBeacon failed, attempting fetch');
+                    }
                     this.fallbackFinalReport(finalReport);
                 }
             } else {
@@ -986,7 +997,9 @@ class PerformanceMonitor {
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.send(JSON.stringify(reportData));
         } catch (error) {
-            console.error('[PerfMonitor] Fallback final report failed:', error);
+            if (!this.isTestEnvironment) {
+                console.error('[PerfMonitor] Fallback final report failed:', error);
+            }
         }
     }
 
@@ -1206,9 +1219,11 @@ class PerformanceMonitor {
                 );
 
                 if (!success) {
-                    console.warn(
-                        '[PerfMonitor] sendBeacon failed, falling back to fetch'
-                    );
+                    if (!this.isTestEnvironment) {
+                        console.warn(
+                            '[PerfMonitor] sendBeacon failed, falling back to fetch'
+                        );
+                    }
                     this.sendWithFetch(analyticsEndpoint, report);
                 }
             } else {
