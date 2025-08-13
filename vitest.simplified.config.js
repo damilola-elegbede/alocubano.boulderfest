@@ -15,7 +15,8 @@ export default defineConfig({
     pool: 'forks',
     poolOptions: {
       forks: {
-        singleFork: true
+        singleFork: true,
+        maxForks: 2  // Limit to 2 threads to prevent memory exhaustion
       }
     }
   }

@@ -61,7 +61,7 @@ This PR establishes the foundation for test infrastructure simplification by cre
 ## Metrics & Impact
 
 ### Current State (Documented)
-```
+```text
 Total Infrastructure: 20,134 lines
 Files: 39
 Manager Classes: 7 (6,088 lines)
@@ -70,7 +70,7 @@ Target Reduction: 16,107 lines (80%)
 ```
 
 ### Foundation Established
-```
+```text
 Simple Helpers: 125 lines (vs 3,125 lines in managers)
 Reduction Demonstrated: 96%
 Tests Passing: 14/14

@@ -9,14 +9,17 @@ async function analyzeTestInfrastructure() {
     managerClasses: [],
     utilities: [],
     complexityScore: 0,
-    dependencies: new Map()
+    dependencies: {}
   };
 
   // Analyze test utilities
   const paths = ['./tests/utils', './tests/config', './tests/mocks'];
   
   for (const dirPath of paths) {
-    const files = await readdir(dirPath).catch(() => []);
+    const files = await readdir(dirPath).catch((err) => {
+      console.warn(`⚠️ Could not read directory ${dirPath}: ${err.message}`);
+      return [];
+    });
     
     for (const file of files) {
       if (!file.endsWith('.js')) continue;
@@ -52,7 +55,12 @@ async function analyzeTestInfrastructure() {
   // Generate comprehensive report
   const report = generateReport(results);
   await writeFile('./docs/INFRASTRUCTURE_INVENTORY.md', report);
-  await writeFile('./docs/infrastructure-metrics.json', JSON.stringify(results, null, 2));
+  // Ensure dependencies is serializable
+  const jsonResults = {
+    ...results,
+    dependencies: results.dependencies || {}
+  };
+  await writeFile('./docs/infrastructure-metrics.json', JSON.stringify(jsonResults, null, 2));
   
   return results;
 }
@@ -171,7 +179,12 @@ function getActionForCategory(category) {
 }
 
 // Run analysis
-analyzeTestInfrastructure().then(results => {
-  console.log('✅ Infrastructure analysis complete');
-  console.log(`📊 Total lines to eliminate: ${Math.round(results.totalLines * 0.8)}`);
-});
+analyzeTestInfrastructure()
+  .then(results => {
+    console.log('✅ Infrastructure analysis complete');
+    console.log(`📊 Total lines to eliminate: ${Math.round(results.totalLines * 0.8)}`);
+  })
+  .catch(error => {
+    console.error('❌ Infrastructure analysis failed:', error);
+    process.exit(1);
+  });

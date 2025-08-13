@@ -32,7 +32,7 @@ Successfully implemented **PR #1: Infrastructure Inventory & Foundation** as out
 ## Key Metrics
 
 ### Before (Current State)
-```
+```text
 Total Infrastructure: 20,134 lines
 Files: 39
 Manager Classes: 7 (6,088 lines)
@@ -40,14 +40,14 @@ Average File Size: 516 lines
 ```
 
 ### Foundation Demonstrates
-```
+```text
 Simple Helpers: 125 lines
 Replaces: 3,125 lines in managers
 Reduction: 96%
 ```
 
 ### Target (After All PRs)
-```
+```text
 Total Infrastructure: <1,600 lines
 Files: <10
 Manager Classes: 0
