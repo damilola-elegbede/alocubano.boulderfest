@@ -156,7 +156,7 @@ export class IntegrationTestStrategy {
     this.clearDatabaseMocks();
 
     // Set real database environment
-    this.Object.assign(process.env, {
+    Object.assign(process.env, {
       TURSO_DATABASE_URL: ':memory:', // Use in-memory for tests
       TURSO_AUTH_TOKEN: 'test-token',
       NODE_ENV: 'test'
@@ -184,7 +184,7 @@ export class IntegrationTestStrategy {
     this.clearGoogleSheetsMocks();
 
     // Set real Google Sheets environment
-    this.Object.assign(process.env, {
+    Object.assign(process.env, {
       GOOGLE_SHEET_ID: 'test_sheet_123',
       GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL: 'test@sheets.com',
       GOOGLE_SHEETS_PRIVATE_KEY: '-----BEGIN PRIVATE KEY-----\ntest\n-----END PRIVATE KEY-----',
@@ -220,7 +220,7 @@ export class IntegrationTestStrategy {
     this.clearBrevoMocks();
 
     // Set real Brevo environment
-    this.Object.assign(process.env, {
+    Object.assign(process.env, {
       BREVO_API_KEY: 'test-brevo-api-key',
       BREVO_NEWSLETTER_LIST_ID: '123',
       BREVO_WEBHOOK_SECRET: 'test-webhook-secret'

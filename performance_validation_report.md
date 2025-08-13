@@ -15,21 +15,21 @@
 
 ### Environment Operations
 - **Baseline:** 5-10ms (estimated from report)
-- **Measured:** nullms
+- **Measured:** MEASUREMENT FAILED
 - **Improvement:** N/A%
 - **Samples:** undefined
 
 ### Service Reset Operations
-- **Measured:** nullms
+- **Measured:** MEASUREMENT FAILED
 - **Samples:** undefined
 - **Note:** New functionality - no baseline comparison
 
 ### Complete Isolation Operations
 - **Baseline:** 255ms
-- **Measured:** nullms
+- **Measured:** MEASUREMENT FAILED
 - **Improvement:** N/A%
 - **Target:** 5ms
-- **Target Achieved:** ✅
+- **Target Achieved:** ❌ (measurement failed)
 
 ### Test Suite Performance
 - **Baseline:** 21ms/test (967 tests)
@@ -39,12 +39,12 @@
 
 ## Validation Results
 
-- **Performance Target:** ⚠️ PARTIAL
+- **Performance Target:** ❌ FAILED (no valid measurements)
 - **Memory Usage:** +0MB RSS
 
 ## Conclusion
 
-Significant improvement achieved, though not the full 98% target. Migration still beneficial.
+Performance validation failed - all measurements returned null values. No valid performance data collected. Validation must be re-run with working measurement infrastructure.
 
 ---
 **Validated:** 2025-08-13T09:19:49.003Z

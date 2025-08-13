@@ -2,7 +2,6 @@
  * @vitest-environment node
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-;
 import { dbMockSync } from "../utils/database-mock-sync.js";
 
 // Mock @libsql/client/web

@@ -120,11 +120,7 @@ class MigrationFixer {
       
       // Apply all fixes
       for (const fix of FIXES) {
-        if (typeof fix.replacement === 'function') {
-          content = content.replace(fix.pattern, fix.replacement);
-        } else {
-          content = content.replace(fix.pattern, fix.replacement);
-        }
+        content = content.replace(fix.pattern, fix.replacement);
       }
       
       // Special handling for specific files

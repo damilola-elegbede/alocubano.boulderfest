@@ -234,18 +234,19 @@ describe("Complete Isolation Demo", () => {
   describe("Performance Comparison", () => {
     it("measures performance difference between isolation methods", async () => {
       const iterations = 10;
+      const shouldLog = process.env.CI !== "true";
       
       // Measure environment-only isolation
-      console.time("Environment-only");
+      if (shouldLog) console.time("Environment-only");
       for (let i = 0; i < iterations; i++) {
         const envBackup = backupEnv(Object.keys(process.env));
         process.env.TEST_VAR = `test-${i}`;
         restoreEnv(envBackup);
       }
-      console.timeEnd("Environment-only");
+      if (shouldLog) console.timeEnd("Environment-only");
 
       // Measure complete isolation
-      console.time("Complete isolation");
+      if (shouldLog) console.time("Complete isolation");
       for (let i = 0; i < iterations; i++) {
         await withCompleteIsolation(
           { TEST_VAR: `test-${i}` },
@@ -254,7 +255,7 @@ describe("Complete Isolation Demo", () => {
           }
         );
       }
-      console.timeEnd("Complete isolation");
+      if (shouldLog) console.timeEnd("Complete isolation");
       
       // The test passes regardless of performance - this is just for measurement
       expect(true).toBe(true);

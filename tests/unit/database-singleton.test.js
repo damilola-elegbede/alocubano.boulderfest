@@ -4,7 +4,7 @@
  * @vitest-environment node
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { backupEnv, restoreEnv, withCompleteIsolation, resetDatabaseSingleton, cleanupTest, clearDatabaseEnv } from "../helpers/simple-helpers.js";
+import { backupEnv, restoreEnv, clearDatabaseEnv } from "../helpers/simple-helpers.js";
 
 describe("Database Singleton Pattern", () => {
   let mockCreateClient;
@@ -354,12 +354,3 @@ describe("Environment-Specific Singleton Behavior", () => {
     expect(client).toBeDefined();
   });
 });
-
-/**
- * Helper function to get fresh database module
- * Ensures clean module state for testing
- */
-async function getFreshDatabaseModule() {
-  vi.resetModules();
-  return await import("../../api/lib/database.js");
-}
