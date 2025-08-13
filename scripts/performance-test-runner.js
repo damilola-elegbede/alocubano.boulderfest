@@ -1810,7 +1810,8 @@ Environment Variables:
 }
 
 // Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === `file://${process.argv[1]}` || 
+    process.argv[1]?.endsWith('performance-test-runner.js')) {
   main().catch((error) => {
     console.error("Unhandled error:", error);
     process.exit(1);
