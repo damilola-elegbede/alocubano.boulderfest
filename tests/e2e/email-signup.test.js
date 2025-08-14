@@ -119,12 +119,12 @@ test.describe("Email Newsletter Signup E2E", () => {
       };
     });
 
-    // Navigate to contact page
-    await page.goto("/contact");
+    // Navigate to contact page with longer timeout for WebKit
+    await page.goto("/contact", { timeout: 45000 });
 
     // Wait for the newsletter form to be visible and interactive
-    await page.waitForSelector("#newsletter-form", { state: "visible" });
-    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("#newsletter-form", { state: "visible", timeout: 30000 });
+    await page.waitForLoadState("networkidle", { timeout: 30000 });
     
     // Ensure newsletter.js is loaded and initialized
     await page.waitForFunction(() => {
