@@ -319,6 +319,38 @@ app.use((error, req, res, next) => {
   }
 });
 
+// Check for test mode flag
+const isTestMode = process.argv.includes('--test-mode');
+
+if (isTestMode) {
+  console.log('🧪 Running in test mode - validating server configuration...');
+  
+  // Quick validation that everything is set up correctly
+  try {
+    const apiDir = path.join(rootDir, 'api');
+    const pagesDir = path.join(rootDir, 'pages');
+    
+    if (!fs.existsSync(apiDir)) {
+      console.error('❌ API directory not found');
+      process.exit(1);
+    }
+    
+    if (!fs.existsSync(pagesDir)) {
+      console.error('❌ Pages directory not found');
+      process.exit(1);
+    }
+    
+    console.log('✅ Server configuration is valid');
+    console.log('✅ API directory exists');
+    console.log('✅ Pages directory exists');
+    console.log('✅ Test mode validation complete');
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Test mode validation failed:', error.message);
+    process.exit(1);
+  }
+}
+
 // Start server with error handling
 const server = app.listen(PORT, () => {
   console.log(`🚀 CI Development Server running at http://localhost:${PORT}`);

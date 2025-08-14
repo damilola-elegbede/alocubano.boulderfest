@@ -17,6 +17,7 @@
     "start": "./scripts/start-with-ngrok.sh",
     "start:local": "npx vercel dev --listen 3000",
     "start:ci": "node scripts/ci-server.js",
+    "test:ci-server": "node scripts/ci-server.js --test-mode",
     "dev": "./scripts/start-with-ngrok.sh",
     "serve:simple": "npx http-server . -p 8000",
     "verify-structure": "node scripts/verify-structure.js",

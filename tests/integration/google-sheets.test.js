@@ -107,8 +107,10 @@ describe("Google Sheets Analytics Integration", () => {
     seedTestData(db, 'minimal');
     const mockDatabase = createLibSQLAdapter(db);
     
-    // Reset the mock factory function completely
-    mockGoogleSheetsFactory.mockReset();
+    // Reset the mock factory function completely (using Vitest syntax)
+    if (typeof mockGoogleSheetsFactory.mockClear === 'function') {
+      mockGoogleSheetsFactory.mockClear();
+    }
     mockGoogleSheetsFactory.mockReturnValue(mockSheetsAPI);
     
     // Set test environment variables
@@ -125,9 +127,10 @@ describe("Google Sheets Analytics Integration", () => {
     app = express();
     app.use(express.json());
 
-    // Clear database mock completely
-    mockDatabase.execute.mockReset();
-    mockDatabase.execute.mockClear();
+    // Clear database mock completely (using Vitest syntax)
+    if (typeof mockDatabase.execute.mockClear === 'function') {
+      mockDatabase.execute.mockClear();
+    }
 
     // Reset database mock implementations
     vi.clearAllMocks();
