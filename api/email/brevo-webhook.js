@@ -3,6 +3,7 @@
  * Processes incoming webhook events from Brevo
  */
 
+import crypto from "crypto";
 import { getEmailSubscriberService } from "../lib/email-subscriber-service.js";
 
 /**
@@ -23,6 +24,24 @@ function getRawBody(req) {
 }
 
 /**
+ * Validate webhook signature
+ */
+function validateSignature(rawBody, signature) {
+  const secret = process.env.BREVO_WEBHOOK_SECRET;
+  if (!secret) {
+    console.warn("BREVO_WEBHOOK_SECRET not configured, skipping signature validation");
+    return true; // Skip validation if not configured
+  }
+
+  const expectedSignature = crypto
+    .createHmac("sha256", secret)
+    .update(rawBody)
+    .digest("hex");
+
+  return signature === expectedSignature;
+}
+
+/**
  * Main handler function
  */
 export default async function handler(req, res) {
@@ -38,6 +57,12 @@ export default async function handler(req, res) {
   try {
     // Get raw body
     const rawBody = await getRawBody(req);
+
+    // Validate signature if provided
+    const signature = req.headers["x-brevo-signature"];
+    if (signature && !validateSignature(rawBody, signature)) {
+      return res.status(401).json({ error: "Invalid signature" });
+    }
 
     // Parse webhook data
     try {

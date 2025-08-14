@@ -31,25 +31,32 @@ const createSignature = (payload) => {
 // Helper to create a webhook handler that properly handles body streaming
 function createWebhookHandler(webhookHandler) {
   return (req, res) => {
-    // If the body is already parsed (from express.json()), convert it back to stream
-    if (req.body && typeof req.body === 'object') {
-      const bodyString = JSON.stringify(req.body);
-      let position = 0;
-      
-      // Mock the stream interface
-      req.setEncoding = () => {};
-      req.on = (event, callback) => {
-        if (event === 'data') {
-          // Simulate streaming the data
+    // Store the original body if it was parsed
+    const parsedBody = req.body;
+    
+    // Remove the parsed body so the handler reads from stream
+    delete req.body;
+    
+    // Convert parsed body back to string for raw body reading
+    const bodyString = JSON.stringify(parsedBody);
+    let dataEmitted = false;
+    
+    // Mock the stream interface
+    req.setEncoding = () => {};
+    req.on = (event, callback) => {
+      if (event === 'data') {
+        // Emit data only once
+        if (!dataEmitted) {
+          dataEmitted = true;
           setImmediate(() => callback(bodyString));
-        } else if (event === 'end') {
-          // Signal end of stream
-          setImmediate(() => callback());
-        } else if (event === 'error') {
-          // Store error handler but don't call it
         }
-      };
-    }
+      } else if (event === 'end') {
+        // Signal end of stream after data is emitted
+        setImmediate(() => callback());
+      } else if (event === 'error') {
+        // Store error handler but don't call it
+      }
+    };
     
     // Call the original handler
     return webhookHandler(req, res);
