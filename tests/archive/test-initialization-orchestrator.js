@@ -1,3 +1,6 @@
+// DEPRECATED: This file has been replaced by tests/helpers/setup.js
+// Use setupTest() and teardownTest() instead
+
 /**
  * Test Initialization Orchestrator
  *
@@ -278,7 +281,7 @@ export class TestInitializationOrchestrator {
   /**
    * Create isolated test context
    */
-  async createTestContext() {
+  async const setup = await setupTest() {
     await this.initialize();
 
     return {
@@ -292,7 +295,7 @@ export class TestInitializationOrchestrator {
   /**
    * Start transaction for test isolation
    */
-  async beginTestTransaction() {
+  async // Transaction handled automatically by setup {
     const db = this.services.get("database");
     if (!db) throw new Error("Database not initialized");
 
@@ -307,7 +310,7 @@ export class TestInitializationOrchestrator {
   /**
    * Rollback test transaction
    */
-  async rollbackTestTransaction(savepointName) {
+  async await teardownTest(setup) {
     const db = this.services.get("database");
     if (!db) return;
 
@@ -334,7 +337,7 @@ export class TestInitializationOrchestrator {
     // Rollback any pending transactions
     while (this.transactionStack.length > 0) {
       const savepoint = this.transactionStack.pop();
-      await this.rollbackTestTransaction(savepoint);
+      await this.await teardownTest(setup);
     }
 
     // Clean database
@@ -492,14 +495,14 @@ export const testOrchestrator = new TestInitializationOrchestrator();
  * Helper function for test setup
  */
 export async function setupTest() {
-  const context = await testOrchestrator.createTestContext();
-  const savepoint = await testOrchestrator.beginTestTransaction();
+  const setup = await setupTest();
+  // Transaction handled automatically by setup;
 
   return {
     ...context,
     savepoint,
     cleanup: async () => {
-      await testOrchestrator.rollbackTestTransaction(savepoint);
+      await teardownTest(setup);
       await context.cleanup();
     },
   };

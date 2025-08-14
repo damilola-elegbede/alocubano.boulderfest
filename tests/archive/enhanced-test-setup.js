@@ -1,3 +1,6 @@
+// DEPRECATED: This file has been replaced by tests/helpers/setup.js
+// Use setupTest() and teardownTest() instead
+
 /**
  * Enhanced Test Setup
  * Improved setup and teardown patterns for integration tests
@@ -5,12 +8,10 @@
 
 import { vi, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import { testInit } from "./test-initialization-helpers.js";
-import { dbTestHelpers } from "./database-test-helpers.js";
-
-/**
+// Database helpers are now integrated into setup.js/**
  * Enhanced test suite setup for integration tests
  */
-export function setupIntegrationTests(options = {}) {
+export function // Integration setup now handled by setupIntegrationTest() or setupTest() with options {
   const {
     enableDatabase = true,
     enableMocks = true,
