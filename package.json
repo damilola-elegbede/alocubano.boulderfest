@@ -82,7 +82,9 @@
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "lint": "eslint . && htmlhint pages/"
+    "lint": "npm run lint:js && npm run lint:html",
+    "lint:js": "eslint .",
+    "lint:html": "htmlhint pages/"
   },
   "dependencies": {
     "@libsql/client": "^0.15.10",
