@@ -105,7 +105,12 @@ describe("Google Sheets Analytics Integration", () => {
     // Create isolated test database for each test
     db = createTestDatabase();
     seedTestData(db, 'minimal');
-    const mockDatabase = createLibSQLAdapter(db);
+    
+    // Reset the global mock database to point to our test database
+    mockDatabase = {
+      execute: vi.fn().mockImplementation(() => Promise.resolve({ rows: [] })),
+      close: vi.fn().mockResolvedValue(undefined),
+    };
     
     // Reset the mock factory function completely (using Vitest syntax)
     if (typeof mockGoogleSheetsFactory.mockClear === 'function') {
@@ -126,11 +131,6 @@ describe("Google Sheets Analytics Integration", () => {
     // Create Express app for testing
     app = express();
     app.use(express.json());
-
-    // Clear database mock completely (using Vitest syntax)
-    if (typeof mockDatabase.execute.mockClear === 'function') {
-      mockDatabase.execute.mockClear();
-    }
 
     // Reset database mock implementations
     vi.clearAllMocks();
