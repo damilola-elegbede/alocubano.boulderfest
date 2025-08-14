@@ -22,7 +22,7 @@ export default defineConfig({
       "tests/e2e/**/*.test.js",
       "node_modules/**",
       // CI-specific exclusions for performance-intensive security tests
-      ...(process.env.SECURITY_SKIP_PERFORMANCE_TESTS === 'true' || process.env.TEST_CI_EXCLUDE_PATTERNS === 'true' ? [
+      ...(process.env.SECURITY_SKIP_PERFORMANCE_TESTS === 'true' ? [
         "tests/security/security-performance-impact.test.js"
       ] : []),
     ],

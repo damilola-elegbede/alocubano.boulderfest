@@ -55,7 +55,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
 
       - name: Install dependencies
@@ -98,7 +98,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: [20, 24]
         test-shard: [1, 2]
       fail-fast: false
 
@@ -131,7 +131,6 @@ jobs:
           NODE_ENV: test
           CI: true
           COVERAGE: true
-          TEST_CI_EXCLUDE_PATTERNS: 'true'
           NODE_OPTIONS: '--max-old-space-size=1024'
 
 
@@ -160,11 +159,11 @@ jobs:
           retention-days: 30
 
       - name: Performance regression detection
-        if: matrix.node-version == '20' && matrix.test-shard == '1'
+        if: matrix.node-version == '24' && matrix.test-shard == '1'
         run: |
-          if [ -f ./test-results/results-20-shard-1.json ]; then
+          if [ -f ./test-results/results-24-shard-1.json ]; then
             node -e "
-              const results = JSON.parse(require('fs').readFileSync('./test-results/results-20-shard-1.json', 'utf8'));
+              const results = JSON.parse(require('fs').readFileSync('./test-results/results-24-shard-1.json', 'utf8'));
               const slowTests = results.testResults?.filter(test => test.duration > 5000) || [];
               if (slowTests.length > 0) {
                 console.log('⚠️ Slow tests detected (>5s):');
@@ -189,7 +188,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
 
       - name: Install dependencies
@@ -218,7 +217,6 @@ jobs:
           CI: true
           TEST_ISOLATION_MODE: true
           INTEGRATION_TEST_MODE: true
-          TEST_CI_EXCLUDE_PATTERNS: 'true'
           NODE_OPTIONS: '--max-old-space-size=1024'
           # Redis URL intentionally omitted - system will use memory fallback
         continue-on-error: false
@@ -229,7 +227,6 @@ jobs:
         env:
           NODE_ENV: test
           CI: true
-          TEST_CI_EXCLUDE_PATTERNS: 'true'
           NODE_OPTIONS: '--max-old-space-size=1024'
         continue-on-error: true
 
@@ -274,7 +271,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
 
       - name: Install dependencies
@@ -335,7 +332,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
 
       - name: Install dependencies
@@ -355,7 +352,6 @@ jobs:
         env:
           NODE_ENV: test
           CI: true
-          TEST_CI_EXCLUDE_PATTERNS: 'true'
           SECURITY_SKIP_PERFORMANCE_TESTS: 'true'
           NODE_OPTIONS: '--max-old-space-size=1024'
         continue-on-error: true
@@ -416,7 +412,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
 
       - name: Install dependencies
@@ -478,7 +474,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
 
       - name: Install dependencies
@@ -539,7 +535,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
 
       - name: Install dependencies
