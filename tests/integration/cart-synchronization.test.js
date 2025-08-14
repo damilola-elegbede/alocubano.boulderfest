@@ -197,8 +197,14 @@ describe("Cart Synchronization Integration Tests", () => {
                             selfResult = this.dispatchEvent(selfEvent);
                             
                             // Create separate event for document dispatch (JSDOM requirement)
-                            const docEvent = new window.CustomEvent(eventName, { detail });
-                            document.dispatchEvent(docEvent);
+                            // Wrap in try/catch to handle faulty document listeners gracefully
+                            try {
+                                const docEvent = new window.CustomEvent(eventName, { detail });
+                                document.dispatchEvent(docEvent);
+                            } catch (listenerError) {
+                                console.error('Document listener error:', listenerError);
+                                // Don't re-throw - continue operation despite listener failures
+                            }
                             
                             return selfResult;
                         } catch (error) {
@@ -708,18 +714,37 @@ describe("Cart Synchronization Integration Tests", () => {
 
     test("should handle event listener failures gracefully", async () => {
       const cartManager = new window.CartManager();
+      
+      // Track errors using window.onerror to catch JSDOM thrown errors
+      const errorsSeen = [];
+      const originalOnerror = window.onerror;
+      
+      window.onerror = (message, source, lineno, colno, error) => {
+        if (error && error.message === 'Listener error') {
+          errorsSeen.push(error);
+          return true; // Prevent default error handling
+        }
+        return false; // Let other errors bubble up
+      };
 
-      // Add faulty event listener
+      // Add faulty event listener that will throw
       const faultyListener = () => {
         throw new Error("Listener error");
       };
 
       document.addEventListener("cart:updated", faultyListener);
 
-      // Should not break other functionality
+      // Should not break other functionality even when listener throws
       expect(() => {
         cartManager.updateTicketQuantity("early-bird-full", 1);
       }).not.toThrow();
+      
+      // Verify that the error was caught by window.onerror
+      expect(errorsSeen.length).toBe(1);
+      expect(errorsSeen[0].message).toBe("Listener error");
+      
+      // Restore window.onerror
+      window.onerror = originalOnerror;
     });
   });
 
