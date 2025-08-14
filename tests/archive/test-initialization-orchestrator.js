@@ -281,7 +281,7 @@ export class TestInitializationOrchestrator {
   /**
    * Create isolated test context
    */
-  async const setup = await setupTest() {
+  async setupTest() {
     await this.initialize();
 
     return {
@@ -295,7 +295,7 @@ export class TestInitializationOrchestrator {
   /**
    * Start transaction for test isolation
    */
-  async // Transaction handled automatically by setup {
+  async startTransaction() {
     const db = this.services.get("database");
     if (!db) throw new Error("Database not initialized");
 
@@ -310,7 +310,7 @@ export class TestInitializationOrchestrator {
   /**
    * Rollback test transaction
    */
-  async await teardownTest(setup) {
+  async rollbackTransaction(savepointName) {
     const db = this.services.get("database");
     if (!db) return;
 
@@ -337,7 +337,7 @@ export class TestInitializationOrchestrator {
     // Rollback any pending transactions
     while (this.transactionStack.length > 0) {
       const savepoint = this.transactionStack.pop();
-      await this.await teardownTest(setup);
+      await this.rollbackTransaction(savepoint);
     }
 
     // Clean database
@@ -495,14 +495,14 @@ export const testOrchestrator = new TestInitializationOrchestrator();
  * Helper function for test setup
  */
 export async function setupTest() {
-  const setup = await setupTest();
-  // Transaction handled automatically by setup;
+  const context = await testOrchestrator.setupTest();
+  const savepoint = await testOrchestrator.startTransaction();
 
   return {
     ...context,
     savepoint,
     cleanup: async () => {
-      await teardownTest(setup);
+      await testOrchestrator.rollbackTransaction(savepoint);
       await context.cleanup();
     },
   };
