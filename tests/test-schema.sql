@@ -77,6 +77,17 @@ CREATE TABLE IF NOT EXISTS email_subscribers (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS email_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  subscriber_id INTEGER NOT NULL,
+  event_type TEXT NOT NULL,
+  event_date DATETIME NOT NULL,
+  message_id TEXT,
+  metadata TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (subscriber_id) REFERENCES email_subscribers(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS migrations (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL UNIQUE,
@@ -183,3 +194,5 @@ CREATE INDEX idx_wallet_passes_serial ON wallet_passes(serial_number);
 CREATE INDEX idx_admin_sessions_token ON admin_sessions(token_hash);
 CREATE INDEX idx_email_subscribers_email ON email_subscribers(email);
 CREATE INDEX idx_email_subscribers_status ON email_subscribers(status);
+CREATE INDEX idx_email_events_subscriber ON email_events(subscriber_id);
+CREATE INDEX idx_email_events_type ON email_events(event_type);

@@ -94,7 +94,8 @@ export function createLibSQLAdapter(db) {
           const result = params.length ? stmt.run(...params) : stmt.run();
           return Promise.resolve({ 
             rows: [],
-            rowsAffected: result.changes
+            rowsAffected: result.changes,
+            lastInsertRowid: result.lastInsertRowid
           });
         }
       } catch (error) {

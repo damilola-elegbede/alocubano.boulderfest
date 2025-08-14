@@ -17,7 +17,6 @@ import {
 } from "vitest";
 import request from "supertest";
 import express from "express";
-import nock from "nock";
 import crypto from "crypto";
 import { setupIntegrationTest, teardownTest } from "../helpers/index.js";
 
@@ -29,6 +28,34 @@ const createSignature = (payload) => {
     .digest("hex");
 };
 
+// Helper to create a webhook handler that properly handles body streaming
+function createWebhookHandler(webhookHandler) {
+  return (req, res) => {
+    // If the body is already parsed (from express.json()), convert it back to stream
+    if (req.body && typeof req.body === 'object') {
+      const bodyString = JSON.stringify(req.body);
+      let position = 0;
+      
+      // Mock the stream interface
+      req.setEncoding = () => {};
+      req.on = (event, callback) => {
+        if (event === 'data') {
+          // Simulate streaming the data
+          setImmediate(() => callback(bodyString));
+        } else if (event === 'end') {
+          // Signal end of stream
+          setImmediate(() => callback());
+        } else if (event === 'error') {
+          // Store error handler but don't call it
+        }
+      };
+    }
+    
+    // Call the original handler
+    return webhookHandler(req, res);
+  };
+}
+
 describe("Comprehensive API Integration", () => {
   let app;
   let setup;
@@ -39,7 +66,7 @@ describe("Comprehensive API Integration", () => {
     setup = await setupTest({
       database: true,
       env: 'complete-test', // Use complete-test preset which includes TURSO_DATABASE_URL
-      mocks: ['fetch', 'brevo', 'stripe'],
+      mocks: ['fetch'], // Only mock fetch, not brevo/stripe separately
       seed: false, // Don't seed any fixtures
       isolate: true
     });
@@ -57,20 +84,33 @@ describe("Comprehensive API Integration", () => {
     process.env.BREVO_NEWSLETTER_LIST_ID = process.env.BREVO_NEWSLETTER_LIST_ID || "123";
     process.env.BREVO_WEBHOOK_SECRET = process.env.BREVO_WEBHOOK_SECRET || "test_webhook_secret";
 
+    // Mock the database module to return our test database with required methods
+    const mockDatabase = {
+      ...setup.client,
+      testConnection: async () => true,
+      getDatabaseClient: async () => setup.client
+    };
+    
+    vi.doMock("../../api/lib/database.js", () => ({
+      getDatabase: () => mockDatabase,
+      getDatabaseClient: async () => mockDatabase,
+      default: mockDatabase
+    }));
+
     // Create Express app with routes
     app = express();
     app.use(express.json());
     // Remove global express.raw middleware - apply it only to webhook routes
 
-    // Import and set up handlers after services are ready
+    // Import and set up handlers after services are ready and mocks are in place
     const [subscribeHandler, webhookHandler] = await Promise.all([
       import("../../api/email/subscribe.js"),
       import("../../api/email/brevo-webhook.js"),
     ]);
 
     app.post("/api/email/subscribe", subscribeHandler.default);
-    // Don't use express.raw - the webhook handler reads raw body itself
-    app.post("/api/email/brevo-webhook", webhookHandler.default);
+    // Use wrapper to handle body streaming properly in tests
+    app.post("/api/email/brevo-webhook", createWebhookHandler(webhookHandler.default));
 
     console.log("🎯 Comprehensive API integration test setup complete");
   }, 45000);
@@ -98,23 +138,37 @@ describe("Comprehensive API Integration", () => {
   });
 
   afterEach(() => {
-    nock.cleanAll();
     vi.clearAllMocks();
+    // Reset fetch mock for next test
+    if (global.fetch) {
+      global.fetch.mockClear();
+    }
   });
 
   describe("Email Subscription Flow", () => {
     it("should handle complete subscription with database persistence", async () => {
-      // Mock external Brevo API
-      nock("https://api.brevo.com")
-        .post("/v3/contacts", (body) => {
+      // Mock external Brevo API using fetch mock
+      global.fetch.mockImplementationOnce(async (url, options) => {
+        if (url.includes('/v3/contacts') && options.method === 'POST') {
+          const body = JSON.parse(options.body);
           expect(body.email).toBe("comprehensive@example.com");
-          expect(body.attributes.FIRSTNAME).toBe("Comprehensive");
-          return true;
-        })
-        .reply(201, {
-          id: 12345,
-          email: "comprehensive@example.com",
-        });
+          expect(body.attributes.FNAME).toBe("Comprehensive");
+          
+          return {
+            ok: true,
+            status: 201,
+            json: async () => ({
+              id: 12345,
+              email: "comprehensive@example.com",
+            }),
+            text: async () => JSON.stringify({
+              id: 12345,
+              email: "comprehensive@example.com",
+            })
+          };
+        }
+        throw new Error(`Unexpected fetch call: ${url}`);
+      });
 
       const response = await request(app).post("/api/email/subscribe").send({
         email: "comprehensive@example.com",
@@ -178,10 +232,18 @@ describe("Comprehensive API Integration", () => {
     it("should prevent duplicate subscriptions", async () => {
       const email = "duplicate-test@example.com";
 
-      // First subscription
-      nock("https://api.brevo.com")
-        .post("/v3/contacts")
-        .reply(201, { id: 54321, email });
+      // First subscription - mock Brevo API response
+      global.fetch.mockImplementationOnce(async (url, options) => {
+        if (url.includes('/v3/contacts') && options.method === 'POST') {
+          return {
+            ok: true,
+            status: 201,
+            json: async () => ({ id: 54321, email }),
+            text: async () => JSON.stringify({ id: 54321, email })
+          };
+        }
+        throw new Error(`Unexpected fetch call: ${url}`);
+      });
 
       const firstResponse = await request(app)
         .post("/api/email/subscribe")
@@ -210,13 +272,21 @@ describe("Comprehensive API Integration", () => {
   });
 
   describe("Webhook Processing", () => {
-    it.skipIf(process.env.CI)("should process delivery webhooks correctly", async () => {
+    it("should process delivery webhooks correctly", async () => {
       const email = "webhook-test@example.com";
 
       // Create subscriber first
-      nock("https://api.brevo.com")
-        .post("/v3/contacts")
-        .reply(201, { id: 99999, email });
+      global.fetch.mockImplementationOnce(async (url, options) => {
+        if (url.includes('/v3/contacts') && options.method === 'POST') {
+          return {
+            ok: true,
+            status: 201,
+            json: async () => ({ id: 99999, email }),
+            text: async () => JSON.stringify({ id: 99999, email })
+          };
+        }
+        throw new Error(`Unexpected fetch call: ${url}`);
+      });
 
       await request(app).post("/api/email/subscribe").send({
         email,
@@ -237,7 +307,7 @@ describe("Comprehensive API Integration", () => {
 
       const response = await request(app)
         .post("/api/email/brevo-webhook")
-        .send(JSON.stringify(webhookPayload))
+        .send(webhookPayload)
         .set("Content-Type", "application/json")
         .set("x-brevo-signature", signature);
 
@@ -256,13 +326,21 @@ describe("Comprehensive API Integration", () => {
       expect(eventResult.rows).toHaveLength(1);
     });
 
-    it.skipIf(process.env.CI)("should handle unsubscribe webhooks", async () => {
+    it("should handle unsubscribe webhooks", async () => {
       const email = "unsubscribe-test@example.com";
 
       // Create subscriber
-      nock("https://api.brevo.com")
-        .post("/v3/contacts")
-        .reply(201, { id: 88888, email });
+      global.fetch.mockImplementationOnce(async (url, options) => {
+        if (url.includes('/v3/contacts') && options.method === 'POST') {
+          return {
+            ok: true,
+            status: 201,
+            json: async () => ({ id: 88888, email }),
+            text: async () => JSON.stringify({ id: 88888, email })
+          };
+        }
+        throw new Error(`Unexpected fetch call: ${url}`);
+      });
 
       await request(app).post("/api/email/subscribe").send({
         email,
@@ -282,7 +360,7 @@ describe("Comprehensive API Integration", () => {
 
       const response = await request(app)
         .post("/api/email/brevo-webhook")
-        .send(JSON.stringify(webhookPayload))
+        .send(webhookPayload)
         .set("Content-Type", "application/json")
         .set("x-brevo-signature", signature);
 
@@ -299,7 +377,7 @@ describe("Comprehensive API Integration", () => {
       expect(result.rows[0].status).toBe("unsubscribed");
     });
 
-    it.skipIf(process.env.CI)("should reject webhooks with invalid signatures", async () => {
+    it("should reject webhooks with invalid signatures", async () => {
       const webhookPayload = {
         event: "delivered",
         email: "test@example.com",
@@ -308,7 +386,7 @@ describe("Comprehensive API Integration", () => {
 
       const response = await request(app)
         .post("/api/email/brevo-webhook")
-        .send(JSON.stringify(webhookPayload))
+        .send(webhookPayload)
         .set("Content-Type", "application/json")
         .set("x-brevo-signature", "invalid_signature");
 
@@ -320,9 +398,17 @@ describe("Comprehensive API Integration", () => {
   describe("Error Handling and Edge Cases", () => {
     it("should handle Brevo service failures gracefully", async () => {
       // Mock Brevo failure
-      nock("https://api.brevo.com")
-        .post("/v3/contacts")
-        .reply(500, { message: "Service Unavailable" });
+      global.fetch.mockImplementationOnce(async (url, options) => {
+        if (url.includes('/v3/contacts') && options.method === 'POST') {
+          return {
+            ok: false,
+            status: 500,
+            json: async () => ({ message: "Service Unavailable" }),
+            text: async () => JSON.stringify({ message: "Service Unavailable" })
+          };
+        }
+        throw new Error(`Unexpected fetch call: ${url}`);
+      });
 
       const response = await request(app).post("/api/email/subscribe").send({
         email: "service-error@example.com",
@@ -349,14 +435,25 @@ describe("Comprehensive API Integration", () => {
       const requestCount = 3;
 
       // Setup multiple Brevo mocks
-      for (let i = 0; i < requestCount; i++) {
-        nock("https://api.brevo.com")
-          .post("/v3/contacts")
-          .reply(201, {
-            id: 77000 + i,
-            email: `${baseEmail}${i}@example.com`,
-          });
-      }
+      let callCount = 0;
+      global.fetch.mockImplementation(async (url, options) => {
+        if (url.includes('/v3/contacts') && options.method === 'POST') {
+          const currentCall = callCount++;
+          return {
+            ok: true,
+            status: 201,
+            json: async () => ({
+              id: 77000 + currentCall,
+              email: `${baseEmail}${currentCall}@example.com`,
+            }),
+            text: async () => JSON.stringify({
+              id: 77000 + currentCall,
+              email: `${baseEmail}${currentCall}@example.com`,
+            })
+          };
+        }
+        throw new Error(`Unexpected fetch call: ${url}`);
+      });
 
       // Send concurrent requests
       const requests = Array(requestCount)
@@ -395,13 +492,21 @@ describe("Comprehensive API Integration", () => {
   });
 
   describe("Data Consistency and Integrity", () => {
-    it.skipIf(process.env.CI)("should maintain referential integrity between subscribers and events", async () => {
+    it("should maintain referential integrity between subscribers and events", async () => {
       const email = "integrity-test@example.com";
 
       // Create subscriber and events
-      nock("https://api.brevo.com")
-        .post("/v3/contacts")
-        .reply(201, { id: 66666, email });
+      global.fetch.mockImplementationOnce(async (url, options) => {
+        if (url.includes('/v3/contacts') && options.method === 'POST') {
+          return {
+            ok: true,
+            status: 201,
+            json: async () => ({ id: 66666, email }),
+            text: async () => JSON.stringify({ id: 66666, email })
+          };
+        }
+        throw new Error(`Unexpected fetch call: ${url}`);
+      });
 
       await request(app).post("/api/email/subscribe").send({
         email,
@@ -424,7 +529,7 @@ describe("Comprehensive API Integration", () => {
 
         await request(app)
           .post("/api/email/brevo-webhook")
-          .send(JSON.stringify(webhookPayload))
+          .send(webhookPayload)
           .set("Content-Type", "application/json")
           .set("x-brevo-signature", signature);
       }
@@ -454,9 +559,17 @@ describe("Comprehensive API Integration", () => {
       const initialCount = initialResult.rows[0].count;
 
       // Mock successful Brevo API call
-      nock("https://api.brevo.com")
-        .post("/v3/contacts")
-        .reply(201, { id: 55555, email: "rollback-test@example.com" });
+      global.fetch.mockImplementationOnce(async (url, options) => {
+        if (url.includes('/v3/contacts') && options.method === 'POST') {
+          return {
+            ok: true,
+            status: 201,
+            json: async () => ({ id: 55555, email: "rollback-test@example.com" }),
+            text: async () => JSON.stringify({ id: 55555, email: "rollback-test@example.com" })
+          };
+        }
+        throw new Error(`Unexpected fetch call: ${url}`);
+      });
 
       // Spy on database execute method to force failure on INSERT INTO email_subscribers
       const originalExecute = db.execute.bind(db);
