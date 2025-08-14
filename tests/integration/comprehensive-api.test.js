@@ -61,48 +61,69 @@ describe("Comprehensive API Integration", () => {
   let setup;
 
   beforeAll(async () => {
-    // Use setup without fixture seeding to avoid schema conflicts
+    // CRITICAL: Set up test environment BEFORE importing anything that uses services
+    process.env.NODE_ENV = "test";
+    process.env.TURSO_DATABASE_URL = ":memory:";
+    process.env.TURSO_AUTH_TOKEN = "test-token";
+    process.env.BREVO_API_KEY = "fake_brevo_key_for_tests";
+    process.env.BREVO_NEWSLETTER_LIST_ID = "123";
+    process.env.BREVO_WEBHOOK_SECRET = "test_webhook_secret";
+
+    // Set up the test database first
     const { setupTest } = await import("../helpers/index.js");
     setup = await setupTest({
       database: true,
-      env: 'complete-test', // Use complete-test preset which includes TURSO_DATABASE_URL
-      mocks: ['fetch'], // Only mock fetch, not brevo/stripe separately
-      seed: false, // Don't seed any fixtures
+      env: 'complete-test',
+      mocks: ['fetch'],
+      seed: false,
       isolate: true
     });
 
-    // Override with CI-specific variables if needed
-    process.env.NODE_ENV = "test";
-    
-    // In CI, ensure database URL is set for in-memory testing
-    if (!process.env.TURSO_DATABASE_URL) {
-      process.env.TURSO_DATABASE_URL = ":memory:";
-    }
-    
-    // Ensure required environment variables are set
-    process.env.BREVO_API_KEY = process.env.BREVO_API_KEY || "fake_brevo_key_for_tests";
-    process.env.BREVO_NEWSLETTER_LIST_ID = process.env.BREVO_NEWSLETTER_LIST_ID || "123";
-    process.env.BREVO_WEBHOOK_SECRET = process.env.BREVO_WEBHOOK_SECRET || "test_webhook_secret";
+    // Mock the database module BEFORE any service imports
+    // This ensures all services use the same test database instance
+    vi.doMock("../../api/lib/database.js", () => {
+      const mockDatabaseService = {
+        ensureInitialized: async () => setup.client,
+        testConnection: async () => true,
+        execute: async (...args) => setup.client.execute(...args),
+        close: async () => {},
+        client: setup.client,
+        initialized: true
+      };
+      
+      return {
+        getDatabase: () => mockDatabaseService,
+        getDatabaseClient: async () => setup.client,
+        testConnection: async () => true,
+        resetDatabaseInstance: async () => {},
+        DatabaseService: class {
+          constructor() {
+            return mockDatabaseService;
+          }
+        }
+      };
+    });
 
-    // Mock the database module to return our test database with required methods
-    const mockDatabase = {
-      ...setup.client,
-      testConnection: async () => true,
-      getDatabaseClient: async () => setup.client
-    };
-    
-    vi.doMock("../../api/lib/database.js", () => ({
-      getDatabase: () => mockDatabase,
-      getDatabaseClient: async () => mockDatabase,
-      default: mockDatabase
-    }));
+    // Mock the services to ensure they're reset
+    vi.doMock("../../api/lib/email-subscriber-service.js", async () => {
+      const actual = await vi.importActual("../../api/lib/email-subscriber-service.js");
+      // Reset the singleton
+      actual.resetEmailSubscriberService();
+      return actual;
+    });
+
+    vi.doMock("../../api/lib/brevo-service.js", async () => {
+      const actual = await vi.importActual("../../api/lib/brevo-service.js");
+      // Reset the singleton
+      actual.resetBrevoService();
+      return actual;
+    });
 
     // Create Express app with routes
     app = express();
     app.use(express.json());
-    // Remove global express.raw middleware - apply it only to webhook routes
 
-    // Import and set up handlers after services are ready and mocks are in place
+    // Import handlers AFTER environment is set up and database is mocked
     const [subscribeHandler, webhookHandler] = await Promise.all([
       import("../../api/email/subscribe.js"),
       import("../../api/email/brevo-webhook.js"),

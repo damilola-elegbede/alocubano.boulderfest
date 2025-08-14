@@ -390,4 +390,11 @@ export function getBrevoService() {
   return brevoServiceInstance;
 }
 
+/**
+ * Reset singleton instance for testing
+ */
+export function resetBrevoService() {
+  brevoServiceInstance = null;
+}
+
 export { BrevoService };
