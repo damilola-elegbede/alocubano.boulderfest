@@ -107,7 +107,7 @@ git push origin main        # Auto-deploy to production
 - **Vitest** with jsdom for unit tests (2 threads max to prevent memory issues)
 - **Playwright** for E2E tests
 - **Test isolation** with TestEnvironmentManager for reliable async testing
-- **CI/CD** via GitHub Actions with 2 test shards (reduced from 4)
+- **CI/CD** via GitHub Actions with Node.js 24 and 2 test shards (reduced from 4)
 
 ## Key API Patterns
 
@@ -226,10 +226,11 @@ Features:
 ## CI/CD Configuration
 
 ### GitHub Actions
+- **Node.js version**: 24 (upgraded from 20 for better DOM/jsdom compatibility)
+- **Test matrix**: Node.js 20 and 24 (was 18 and 20)
 - **Test shards**: 2 (reduced from 4 to prevent memory exhaustion)
 - **Memory limit**: NODE_OPTIONS='--max-old-space-size=1024'
 - **SQLite**: Uses in-memory database in CI to prevent lock conflicts
-- **Test exclusions**: Some unit tests excluded in CI via TEST_CI_EXCLUDE_PATTERNS
 
 ### Test Failures
 - Integration/performance tests may fail in CI due to resource constraints
