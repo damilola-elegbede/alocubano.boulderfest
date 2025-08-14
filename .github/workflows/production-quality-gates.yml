@@ -43,18 +43,14 @@ jobs:
       - name: 🧹 Lint Code
         run: npm run lint
 
-      - name: 🧪 Run Unit Tests
-        run: npm run test:unit
-
-      - name: 🗄️ Database Tests
-        run: npm run test:database
+      - name: 🧪 Run Tests
+        run: npm test
 
       - name: ✅ Pre-deployment Summary
         run: |
           echo "### ✅ Pre-deployment Quality Checks Passed" >> $GITHUB_STEP_SUMMARY
           echo "- 🧹 Code linting: PASSED" >> $GITHUB_STEP_SUMMARY
-          echo "- 🧪 Unit tests: PASSED" >> $GITHUB_STEP_SUMMARY
-          echo "- 🗄️ Database tests: PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧪 Tests: PASSED" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "🚀 Ready for Vercel deployment" >> $GITHUB_STEP_SUMMARY
 

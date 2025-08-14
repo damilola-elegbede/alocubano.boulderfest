@@ -55,8 +55,8 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Run Jest unit tests
-        run: npm run test:unit
+      - name: Run tests
+        run: npm test
         continue-on-error: false
 
       # TODO: Re-enable after JS module refactoring
@@ -85,7 +85,7 @@ jobs:
       - name: Check coverage thresholds
         run: |
           echo "✅ All tests passed - coverage temporarily disabled"
-          echo "📊 Jest unit tests: 197 tests passing (coverage disabled until JS module refactoring)"
+          echo "📊 Tests: passing (coverage available via npm run test:coverage)"
           echo "🔗 Link validation: All links verified"
           echo "💡 TODO: Enable coverage after JS module refactoring to ES modules"
 

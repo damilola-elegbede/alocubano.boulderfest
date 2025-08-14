@@ -1,29 +1,26 @@
-// Jest setup file
-beforeAll(async () => {
-  // Set longer timeout for CI environments
-  jest.setTimeout(30000);
+// Single setup file for all tests
+import { vi } from 'vitest';
 
-  // Setup puppeteer environment
-  if (global.page) {
-    await global.page.setViewport({ width: 1280, height: 800 });
+// Test environment
+process.env.NODE_ENV = 'test';
 
-    // Mock console to capture logs
-    global.page.on("console", (msg) => {
-      if (process.env.DEBUG_TESTS) {
-        console.log("Browser console:", msg.text());
-      }
-    });
+// Default test database
+process.env.TURSO_DATABASE_URL = ':memory:';
 
-    // Log any page errors
-    global.page.on("error", (err) => {
-      console.error("Browser error:", err);
-    });
-  }
+// Disable external services in tests
+process.env.DISABLE_EXTERNAL_SERVICES = 'true';
+
+// Global mocks
+global.fetch = vi.fn();
+
+// Cleanup after each test
+afterEach(() => {
+  vi.clearAllMocks();
+  vi.clearAllTimers();
 });
 
-afterAll(async () => {
-  // Clean up any resources
-  if (global.browser) {
-    await global.browser.close();
-  }
-});
+// Suppress console errors in tests
+if (process.env.SUPPRESS_TEST_LOGS === 'true') {
+  global.console.error = vi.fn();
+  global.console.warn = vi.fn();
+}

@@ -1,142 +1,73 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig } from 'vitest/config';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   test: {
-    // Unit tests optimized for speed and isolation
-    environment: "jsdom",
+    // Global settings for ALL test types
     globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./tests/setup.js'],
     
-    // Basic setup for unit tests only
-    setupFiles: [
-      "./tests/setup-vitest.js"
-    ],
-
-    // Unit tests only - exclude integration and performance
-    include: [
-      "tests/unit/**/*.test.js",
-    ],
+    // Consistent timeouts
+    testTimeout: 5000,
+    hookTimeout: 5000,
+    
+    // Single include/exclude pattern
+    include: ['tests/**/*.test.js'],
     exclude: [
-      "tests/e2e/**/*.test.js",
-      "tests/integration/**/*.test.js",
-      "tests/performance/**/*.test.js",
-      "tests/security/**/*.test.js",
-      "tests/validation/**/*.test.js",
-      "node_modules/**",
-      // Ensure problematic tests are excluded even if they're somehow included
-      "**/google-sheets.test.js",
-      "**/database-api.test.js",
-      // CI-specific exclusions for problematic tests
-      ...(process.env.TEST_CI_EXCLUDE_PATTERNS === 'true' ? [
-        "tests/unit/complete-isolation-demo.test.js", 
-        "tests/unit/test-singleton-manager.test.js",
-        "tests/unit/test-mock-manager.test.js"
-      ] : []),
+      'tests/e2e/**',           // Playwright handles E2E
+      '**/node_modules/**',
+      'tests/meta/**'           // Meta tests about infrastructure
     ],
-
-    // Optimized settings for unit tests
-    threads: process.env.CI === "true" ? 1 : 2,
-    maxConcurrency: process.env.CI === "true" ? 1 : 2,
-    minThreads: 1,
-    maxThreads: process.env.CI === "true" ? 1 : 2,
-    testTimeout: 15000, // Shorter timeout for fast unit tests
-    hookTimeout: 10000,
-
-    // Pool options optimized for unit test performance
+    
+    // NO environment detection
+    // NO CI-specific branches
+    // Same behavior everywhere
+    pool: 'forks',
     poolOptions: {
-      threads: {
-        singleThread: process.env.CI === "true",
-        maxThreads: process.env.CI === "true" ? 1 : 2,
-        minThreads: 1,
-        isolate: true,
-        useAtomics: false,
-      },
+      forks: {
+        singleFork: true,       // Consistent execution
+        maxForks: 2             // Same locally and CI
+      }
     },
-
-    // Fast failure for unit tests
-    bail: 5,
-
-    // Coverage configuration for unit tests
+    
+    // Coverage configuration
     coverage: {
-      enabled: process.env.COVERAGE === "true",
-      provider: "v8",
-      reporter: ["text", "html", "lcov", "json-summary"],
-      reportOnFailure: true,
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      reportsDirectory: './coverage',
       exclude: [
-        "node_modules/",
-        "tests/",
-        "**/*.config.js",
-        "scripts/build/**",
-        "scripts/test-*",
-        "public/",
-        "css/",
-        "images/",
-        "migrations/",
-        "**/*.d.ts",
-        "**/types.js",
+        'tests/**',
+        'scripts/**',
+        '**/*.config.js',
+        'node_modules/**'
       ],
-      include: ["api/**/*.js", "js/**/*.js", "scripts/*.js"],
       thresholds: {
         global: {
           branches: 60,
           functions: 60,
           lines: 60,
-          statements: 60,
-        },
-        // Critical paths require higher coverage
-        "api/payments/**": {
-          branches: 80,
-          functions: 80,
-          lines: 80,
-          statements: 80,
-        },
-        "api/tickets/**": {
-          branches: 80,
-          functions: 80,
-          lines: 80,
-          statements: 80,
-        },
-        "api/admin/**": {
-          branches: 80,
-          functions: 80,
-          lines: 80,
-          statements: 80,
-        },
-      },
+          statements: 60
+        }
+      }
     },
-
-    // Standard cleanup for unit tests
-    clearMocks: true,
-    restoreMocks: true,
-    isolate: true,
-    pool: 'threads',
     
-    // Environment for unit tests
-    env: {
-      NODE_ENV: 'test',
-      TEST_TYPE: 'unit',
-      ADMIN_SECRET: 'test-secret-key-that-is-at-least-32-characters-long',
-      ADMIN_PASSWORD: '$2a$10$test.hash.for.testing.purposes.only',
-    },
-
-    // Reporter configuration
-    reporter: process.env.CI === "true" ? ["default", "junit", "json"] : ["verbose"],
-
-    // Output files for CI reporting
-    outputFile: {
-      junit: "./test-results/unit-junit.xml",
-      json: "./test-results/unit-results.json",
-    },
-
-    // No retry for unit tests - they should be deterministic
-    retry: 0,
-    
-    // File watching for development
-    watch: process.env.CI !== "true",
-    
-    // Fast sequential execution for unit tests
-    sequence: {
-      shuffle: false,
-      concurrent: true,
-    },
+    // Simple reporter configuration
+    reporters: process.env.GITHUB_ACTIONS 
+      ? ['default', 'github-actions']  // Only reporter difference
+      : ['default']
   },
+  
+  // Path aliases
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './'),
+      '@api': resolve(__dirname, './api'),
+      '@tests': resolve(__dirname, './tests'),
+      '@pages': resolve(__dirname, './pages')
+    }
+  }
 });

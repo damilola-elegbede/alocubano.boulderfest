@@ -70,11 +70,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-eslint-
 
-      - name: Run ESLint
-        run: npm run lint:js -- --cache
-
-      - name: Run HTMLHint
-        run: npm run lint:html
+      - name: Run lint
+        run: npm run lint
 
       - name: Check file structure
         run: npm run verify-structure
@@ -118,9 +115,9 @@ jobs:
       - name: Setup test results directory
         run: mkdir -p test-results coverage
 
-      - name: Run unit tests with sharding
+      - name: Run tests with sharding
         run: |
-          npm run test:unit:ci -- --shard=${{ matrix.test-shard }}/2 \
+          npm test -- --shard=${{ matrix.test-shard }}/2 \
             --reporter=default \
             --reporter=junit \
             --reporter=json \
@@ -131,7 +128,6 @@ jobs:
           NODE_ENV: test
           CI: true
           COVERAGE: true
-          TEST_CI_EXCLUDE_PATTERNS: 'true'
           NODE_OPTIONS: '--max-old-space-size=1024'
 
 
@@ -203,7 +199,7 @@ jobs:
           echo "🚀 Running integration tests with memory-based rate limiting (no Redis required)"
           
           # Run integration tests with optimized timeouts and CI-specific exclusions
-          npm run test:integration:ci -- \
+          npm test -- \
             --reporter=default \
             --reporter=junit \
             --reporter=json \
@@ -218,18 +214,16 @@ jobs:
           CI: true
           TEST_ISOLATION_MODE: true
           INTEGRATION_TEST_MODE: true
-          TEST_CI_EXCLUDE_PATTERNS: 'true'
           NODE_OPTIONS: '--max-old-space-size=1024'
           # Redis URL intentionally omitted - system will use memory fallback
         continue-on-error: false
 
-      - name: Run database tests
+      - name: Run coverage report
         run: |
-          npm run test:database:ci -- --reporter=default --reporter=junit --reporter=json --outputFile.junit=./test-results/database-tests.xml --outputFile.json=./test-results/database-tests.json || true
+          npm run test:coverage -- --reporter=default --reporter=junit --reporter=json --outputFile.junit=./test-results/coverage-tests.xml --outputFile.json=./test-results/coverage-tests.json || true
         env:
           NODE_ENV: test
           CI: true
-          TEST_CI_EXCLUDE_PATTERNS: 'true'
           NODE_OPTIONS: '--max-old-space-size=1024'
         continue-on-error: true
 
@@ -349,13 +343,12 @@ jobs:
       - name: Setup security test results directory
         run: mkdir -p test-results
 
-      - name: Run security tests
+      - name: Run security tests  
         run: |
-          npm run test:security:ci -- --reporter=default --reporter=junit --reporter=json --outputFile.junit=./test-results/security-tests.xml --outputFile.json=./test-results/security-tests.json || true
+          npm test -- --testNamePattern="security" --reporter=default --reporter=junit --reporter=json --outputFile.junit=./test-results/security-tests.xml --outputFile.json=./test-results/security-tests.json || true
         env:
           NODE_ENV: test
           CI: true
-          TEST_CI_EXCLUDE_PATTERNS: 'true'
           SECURITY_SKIP_PERFORMANCE_TESTS: 'true'
           NODE_OPTIONS: '--max-old-space-size=1024'
         continue-on-error: true
@@ -441,7 +434,7 @@ jobs:
           echo "🚀 Running Redis-based rate limiting tests"
           
           # Run specific rate limiting tests that require Redis
-          npm run test:security -- \
+          npm test -- \
             --reporter=default \
             --reporter=junit \
             --reporter=json \
