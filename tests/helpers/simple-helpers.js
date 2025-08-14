@@ -1,4 +1,7 @@
-import { vi } from "vitest";
+// Optional Vitest import pattern to prevent eager loading in re-exports
+function _getVi(injectedVi) {
+  return injectedVi ?? globalThis?.vi ?? undefined;
+}
 
 /**
  * Advanced environment isolation utilities
@@ -104,6 +107,10 @@ export async function resetServices() {
  */
 export function setupSimpleMocks(services = []) {
   const mocks = {};
+  const vi = _getVi();
+  if (!vi) {
+    throw new Error('Vitest not available for mocking');
+  }
 
   if (services.includes("fetch")) {
     global.fetch = vi.fn().mockResolvedValue({
@@ -366,7 +373,8 @@ export async function withCompleteIsolation(preset, testFn) {
     await resetServices();
 
     // Force module reset if Vitest is available
-    if (typeof vi !== "undefined" && vi.resetModules) {
+    const vi = _getVi();
+    if (vi && vi.resetModules) {
       vi.resetModules();
     }
 
@@ -393,7 +401,10 @@ export async function withCompleteIsolation(preset, testFn) {
  */
 export async function cleanupTest() {
   // Clear all mocks
-  vi.clearAllMocks();
+  const vi = _getVi();
+  if (vi) {
+    vi.clearAllMocks();
+  }
 
   // Reset services
   await resetServices();
@@ -413,8 +424,11 @@ export async function cleanupTest() {
  */
 export function resetTestState() {
   // Reset Vitest modules and mocks
-  vi.resetModules();
-  vi.clearAllMocks();
+  const vi = _getVi();
+  if (vi) {
+    vi.resetModules();
+    vi.clearAllMocks();
+  }
 
   // Clear global test state
   if (global.__testState) {
@@ -464,7 +478,10 @@ export async function cleanupTestState() {
   }
 
   // Clear any timers or intervals that might be running
-  vi.clearAllTimers();
+  const vi = _getVi();
+  if (vi) {
+    vi.clearAllTimers();
+  }
 }
 
 /**

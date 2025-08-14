@@ -21,24 +21,39 @@ import nock from "nock";
 import crypto from "crypto";
 import { setupIntegrationTest, teardownTest } from "../helpers/index.js";
 
+// Move createSignature to module scope for accessibility
+const createSignature = (payload) => {
+  return crypto
+    .createHmac("sha256", process.env.BREVO_WEBHOOK_SECRET)
+    .update(JSON.stringify(payload))
+    .digest("hex");
+};
+
 describe("Comprehensive API Integration", () => {
   let app;
   let setup;
 
   beforeAll(async () => {
-    // Use new simplified setup
-    setup = await setupIntegrationTest('complete-test');
+    // Use setup without fixture seeding to avoid schema conflicts
+    const { setupTest } = await import("../helpers/index.js");
+    setup = await setupTest({
+      database: true,
+      env: 'test',
+      mocks: ['fetch', 'brevo', 'stripe'],
+      seed: false, // Don't seed any fixtures
+      isolate: true
+    });
 
     // Set up additional test environment variables
     process.env.NODE_ENV = "test";
-    process.env.BREVO_API_KEY = "xkeysib-test123";
+    process.env.BREVO_API_KEY = process.env.BREVO_API_KEY || "fake_brevo_key_for_tests";
     process.env.BREVO_NEWSLETTER_LIST_ID = "123";
-    process.env.BREVO_WEBHOOK_SECRET = "webhook_secret_123";
+    process.env.BREVO_WEBHOOK_SECRET = process.env.BREVO_WEBHOOK_SECRET || "test_webhook_secret";
 
     // Create Express app with routes
     app = express();
     app.use(express.json());
-    app.use(express.raw({ type: "application/json" }));
+    // Remove global express.raw middleware - apply it only to webhook routes
 
     // Import and set up handlers after services are ready
     const [subscribeHandler, webhookHandler] = await Promise.all([
@@ -47,7 +62,8 @@ describe("Comprehensive API Integration", () => {
     ]);
 
     app.post("/api/email/subscribe", subscribeHandler.default);
-    app.post("/api/email/brevo-webhook", webhookHandler.default);
+    // Apply express.raw middleware only to webhook route to prevent conflicts
+    app.post("/api/email/brevo-webhook", express.raw({ type: "application/json" }), webhookHandler.default);
 
     console.log("🎯 Comprehensive API integration test setup complete");
   }, 45000);
@@ -187,13 +203,6 @@ describe("Comprehensive API Integration", () => {
   });
 
   describe("Webhook Processing", () => {
-    const createSignature = (payload) => {
-      return crypto
-        .createHmac("sha256", process.env.BREVO_WEBHOOK_SECRET)
-        .update(JSON.stringify(payload))
-        .digest("hex");
-    };
-
     it("should process delivery webhooks correctly", async () => {
       const email = "webhook-test@example.com";
 
@@ -428,7 +437,7 @@ describe("Comprehensive API Integration", () => {
       expect(result.rows[0].event_type).toBe("subscribed");
     });
 
-    it("should handle transaction rollbacks on errors", async () => {
+    it("should handle transaction rollbacks on database errors", async () => {
       const db = setup.client;
 
       // Get initial count
@@ -437,27 +446,55 @@ describe("Comprehensive API Integration", () => {
       );
       const initialCount = initialResult.rows[0].count;
 
-      // Attempt subscription with simulated failure after Brevo success
+      // Mock successful Brevo API call
       nock("https://api.brevo.com")
         .post("/v3/contacts")
         .reply(201, { id: 55555, email: "rollback-test@example.com" });
 
-      // This should fail during database operation (simulated)
-      const response = await request(app).post("/api/email/subscribe").send({
-        email: "rollback-test@example.com",
-        firstName: "Rollback",
-        lastName: "Test",
-        consentToMarketing: true,
+      // Spy on database execute method to force failure on INSERT INTO email_subscribers
+      const originalExecute = db.execute.bind(db);
+      const executeSpy = vi.spyOn(db, 'execute').mockImplementation(async (query, params) => {
+        // Force failure specifically for email_subscribers INSERT
+        if (typeof query === 'string' && query.includes('INSERT INTO email_subscribers')) {
+          throw new Error('Simulated database failure during INSERT');
+        }
+        // Allow other queries to proceed normally
+        return originalExecute(query, params);
       });
 
-      // Even if this succeeds, verify no partial state
-      const finalResult = await db.execute(
-        "SELECT COUNT(*) as count FROM email_subscribers",
-      );
-      const finalCount = finalResult.rows[0].count;
+      try {
+        // Attempt subscription - should fail during database insertion
+        const response = await request(app).post("/api/email/subscribe").send({
+          email: "rollback-test@example.com",
+          firstName: "Rollback",
+          lastName: "Test",
+          consentToMarketing: true,
+        });
 
-      // Count should either be same (failure) or +1 (success), never partial
-      expect([initialCount, initialCount + 1]).toContain(finalCount);
+        // Should return 500 error due to database failure
+        expect(response.status).toBe(500);
+        expect(response.body.error).toContain('error occurred while processing');
+
+        // Verify subscriber count remains unchanged (rollback worked)
+        const finalResult = await originalExecute(
+          "SELECT COUNT(*) as count FROM email_subscribers",
+          []
+        );
+        const finalCount = finalResult.rows[0].count;
+        
+        expect(finalCount).toBe(initialCount);
+        
+        // Verify no subscriber record was created
+        const subscriberCheck = await originalExecute(
+          "SELECT * FROM email_subscribers WHERE email = ?",
+          ["rollback-test@example.com"]
+        );
+        expect(subscriberCheck.rows).toHaveLength(0);
+        
+      } finally {
+        // Restore original method
+        executeSpy.mockRestore();
+      }
     });
   });
 });

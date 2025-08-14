@@ -17,6 +17,7 @@ export default defineConfig({
       "tests/integration/api-frontend-integration.test.js",
       "tests/integration/brevo-email-improved.test.js", 
       "tests/integration/cart-synchronization.test.js",
+      "tests/integration/comprehensive-api.test.js",
       // Skip other integration tests temporarily for CI success
     ],
     exclude: [

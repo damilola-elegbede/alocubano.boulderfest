@@ -54,7 +54,7 @@ const projectRoot = path.resolve(__dirname, '..');
 const config = {
   dryRun: process.argv.includes('--dry-run'),
   verbose: process.argv.includes('--verbose'),
-  pattern: process.argv.find(arg => !arg.startsWith('--') && arg !== 'node' && !arg.endsWith('.js')) || 'tests/**/*.js',
+  pattern: process.argv.slice(2).find(arg => !arg.startsWith('--')) || 'tests/**/*.js',
   backupDir: path.join(projectRoot, '.migration-backups'),
   
   // Patterns to identify files that need migration

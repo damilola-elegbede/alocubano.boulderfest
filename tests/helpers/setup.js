@@ -33,7 +33,10 @@
  * });
  */
 
-import { vi } from 'vitest';
+// Optional Vitest import pattern to prevent eager loading in re-exports
+function _getVi(injectedVi) {
+  return injectedVi ?? globalThis?.vi ?? undefined;
+}
 import { createTestDatabase, createLibSQLAdapter, seedTestData } from './db.js';
 import { mockBrevoService, mockStripeService, mockFetch } from './mocks.js';
 import { 
@@ -98,7 +101,7 @@ export async function setupTest(options = {}) {
         seedTestData(setup.database, fixture);
       } catch (error) {
         // Continue without seeding if fixture doesn't exist
-        if (!error.message.includes('ENOENT')) {
+        if (error.code !== 'ENOENT') {
           throw error;
         }
       }
@@ -137,11 +140,22 @@ export async function teardownTest(setup) {
   if (setup.mocks.fetch && global.fetch === setup.mocks.fetch) {
     delete global.fetch;
   }
-  vi.clearAllMocks();
+  const vi = _getVi();
+  if (vi) {
+    vi.clearAllMocks();
+  }
 
-  // Close database
+  // Close database properly with await
   if (setup.database) {
-    setup.database.close();
+    if (setup.client && typeof setup.client.close === 'function') {
+      await setup.client.close();
+    } else if (typeof setup.database.close === 'function') {
+      const result = setup.database.close();
+      // Await if it returns a Promise
+      if (result && typeof result.then === 'function') {
+        await result;
+      }
+    }
   }
 
   // Reset services
