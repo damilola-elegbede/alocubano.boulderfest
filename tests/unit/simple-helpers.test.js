@@ -501,15 +501,17 @@ describe('Helper Size Comparison', () => {
       before: {
         'TestEnvironmentManager': 721,
         'TestSingletonManager': 518,
-        'TestMockManager': 869,
+        'TestMockManager (deleted)': 869,
+        'service-mock-factory (deleted)': 304,
         'Database utilities (8 files)': 1017,
-        total: 3125
+        total: 3429
       },
       after: {
-        'simple-helpers.js': 377, // Current lines in our enhanced helper file
-        total: 377
+        'simple-helpers.js': 377,
+        'mocks.js': 120,
+        total: 497
       },
-      reduction: '88% reduction in lines of code'
+      reduction: '86% reduction in lines of code'
     };
     
     console.log('Infrastructure Simplification:', comparison);
