@@ -136,8 +136,8 @@ class NewsletterSignup {
                     data.error || 'Subscription failed. Please try again.'
                 );
             }
-        } catch (error) {
-            console.error('Newsletter signup error:', error);
+        } catch {
+
             this.handleError(
                 'Network error. Please check your connection and try again.'
             );
@@ -188,7 +188,7 @@ class NewsletterSignup {
         }
     }
 
-    handleSuccess(data) {
+    handleSuccess() {
     // Clear form
         this.form.reset();
 

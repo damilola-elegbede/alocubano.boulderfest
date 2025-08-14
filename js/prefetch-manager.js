@@ -46,11 +46,7 @@ class IntelligentPrefetchManager {
         };
 
         this.initialize();
-        console.log('[IntelligentPrefetch] Advanced manager initialized', {
-            connection: this.connectionInfo,
-            budget: this.resourceBudget,
-            device: this.deviceCapabilities
-        });
+
     }
 
     initialize() {
@@ -231,8 +227,8 @@ class IntelligentPrefetchManager {
     }
 
     calculateResourceBudget() {
-        const { qualityTier, saveData, bandwidthScore } = this.connectionInfo;
-        const { performanceTier, memory } = this.deviceCapabilities;
+        const { qualityTier, saveData } = this.connectionInfo;
+        const { performanceTier } = this.deviceCapabilities;
 
         if (saveData) {
             return {
@@ -332,8 +328,8 @@ class IntelligentPrefetchManager {
                 parsed.sessionData.sessionCount++;
                 parsed.sessionData.currentSession = Date.now();
                 return { ...defaultTracking, ...parsed };
-            } catch (error) {
-                console.warn('[IntelligentPrefetch] Failed to parse interaction data');
+            } catch {
+                // Error parsing stored data
             }
         }
 
@@ -416,7 +412,6 @@ class IntelligentPrefetchManager {
                     this.processBackgroundQueue();
                 }, 2000); // Process every 2 seconds
 
-                console.log('[IntelligentPrefetch] Background worker started');
             },
 
             stop: () => {
@@ -425,7 +420,7 @@ class IntelligentPrefetchManager {
                     this.backgroundWorker.intervalId = null;
                 }
                 this.backgroundWorker.isRunning = false;
-                console.log('[IntelligentPrefetch] Background worker stopped');
+
             },
 
             addTask: (task) => {
@@ -436,7 +431,7 @@ class IntelligentPrefetchManager {
 
     addToPriorityQueue(resourceUrl, priority, metadata = {}) {
         if (!this.priorityQueue.has(priority)) {
-            console.warn('[IntelligentPrefetch] Invalid priority level:', priority);
+
             priority = 'low';
         }
 
@@ -462,10 +457,6 @@ class IntelligentPrefetchManager {
             this.processNextInQueue();
         }
 
-        console.log(
-            `[IntelligentPrefetch] Added to ${priority} queue:`,
-            resourceUrl
-        );
     }
 
     estimateResourceSize(resourceUrl) {
@@ -521,9 +512,7 @@ class IntelligentPrefetchManager {
                     this.currentBudgetUsed + resourceInfo.estimatedSize >
           this.resourceBudget.totalBudget
                 ) {
-                    console.log(
-                        '[IntelligentPrefetch] Budget exhausted, skipping resource'
-                    );
+
                     break;
                 }
 
@@ -576,25 +565,16 @@ class IntelligentPrefetchManager {
                 const loadTime = performance.now() - startTime;
                 this.updatePerformanceMetrics(url, loadTime, actualSize, priority);
 
-                console.log(
-                    `[IntelligentPrefetch] Successfully prefetched (${priority}):`,
-                    url,
-                    `(${actualSize}B in ${Math.round(loadTime)}ms)`
-                );
+                // Prefetch completed
 
                 // Update prediction model with successful prefetch
                 this.updatePredictionModel(url, true);
             } else {
-                console.warn(
-                    '[IntelligentPrefetch] Failed to prefetch:',
-                    url,
-                    'Status:',
-                    response.status
-                );
+
                 this.updatePredictionModel(url, false);
             }
-        } catch (error) {
-            console.warn('[IntelligentPrefetch] Prefetch error:', url, error.message);
+        } catch {
+
             this.updatePredictionModel(url, false);
         } finally {
             this.processingQueue.delete(url);
@@ -1001,11 +981,7 @@ class IntelligentPrefetchManager {
         const timeRemaining = deadline.timeRemaining();
 
         if (timeRemaining > 20 && this.getTotalQueueSize() > 0) {
-            console.log(
-                '[IntelligentPrefetch] Performing idle work with',
-                timeRemaining,
-                'ms'
-            );
+
             this.processNextInQueue();
         }
 
@@ -1028,8 +1004,8 @@ class IntelligentPrefetchManager {
             if (typeof task === 'function') {
                 task();
             }
-        } catch (error) {
-            console.warn('[IntelligentPrefetch] Background task error:', error);
+        } catch {
+
         }
     }
 
@@ -1048,9 +1024,7 @@ class IntelligentPrefetchManager {
     monitorConnectionChanges() {
         if ('connection' in navigator) {
             navigator.connection.addEventListener('change', () => {
-                console.log(
-                    '[IntelligentPrefetch] Connection changed, recalculating budget'
-                );
+
                 this.connectionInfo = this.detectConnectionCapabilities();
                 this.resourceBudget = this.calculateResourceBudget();
 
@@ -1121,11 +1095,6 @@ class IntelligentPrefetchManager {
         this.connectionInfo = this.detectConnectionCapabilities();
         this.resourceBudget = this.calculateResourceBudget();
 
-        console.log('[IntelligentPrefetch] Adapted to connection change:', {
-            quality: this.connectionInfo.qualityTier,
-            budget: this.resourceBudget
-        });
-
         // Adjust strategy based on new connection
         if (this.connectionInfo.saveData) {
             this.clearAllQueues();
@@ -1136,11 +1105,10 @@ class IntelligentPrefetchManager {
         if (document.hidden) {
             // Pause aggressive prefetching when tab is hidden
             this.backgroundWorker.stop();
-            console.log('[IntelligentPrefetch] Paused - tab hidden');
+
         } else {
             // Resume when tab becomes visible
             this.backgroundWorker.start();
-            console.log('[IntelligentPrefetch] Resumed - tab visible');
 
             // Trigger immediate processing
             setTimeout(() => this.processNextInQueue(), 1000);
@@ -1165,11 +1133,8 @@ class IntelligentPrefetchManager {
                 'alocubano-interaction-data',
                 JSON.stringify(this.userInteractions)
             );
-        } catch (error) {
-            console.warn(
-                '[IntelligentPrefetch] Failed to save interaction data:',
-                error
-            );
+        } catch {
+
         }
     }
 
@@ -1235,13 +1200,13 @@ class IntelligentPrefetchManager {
         this.resourceCache.clear();
         this.resourceSizes.clear();
         this.currentBudgetUsed = 0;
-        console.log('[IntelligentPrefetch] Cache cleared');
+
     }
 
     setConnectionOverride(connectionInfo) {
         this.connectionInfo = { ...this.connectionInfo, ...connectionInfo };
         this.resourceBudget = this.calculateResourceBudget();
-        console.log('[IntelligentPrefetch] Connection override applied');
+
     }
 }
 

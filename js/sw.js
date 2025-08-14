@@ -57,16 +57,15 @@ const STATIC_RESOURCES = [
  * Precaches critical static resources
  */
 self.addEventListener('install', (event) => {
-    console.log('[SW v2.0.0] Installing advanced service worker...');
 
     event.waitUntil(
         precacheStaticResources()
             .then(() => {
-                console.log('[SW] Static resources precached successfully');
+
                 return self.skipWaiting();
             })
-            .catch((error) => {
-                console.error('[SW] Failed to precache resources:', error);
+            .catch(() => {
+
             })
     );
 });
@@ -76,7 +75,6 @@ self.addEventListener('install', (event) => {
  * Cleans up old caches and claims clients
  */
 self.addEventListener('activate', (event) => {
-    console.log('[SW v2.0.0] Activating advanced service worker...');
 
     event.waitUntil(
         Promise.all([
@@ -84,7 +82,7 @@ self.addEventListener('activate', (event) => {
             self.clients.claim(),
             loadOfflineQueue()
         ]).then(() => {
-            console.log('[SW] Service worker activated and ready');
+
         })
     );
 });
@@ -157,7 +155,7 @@ self.addEventListener('message', (event) => {
         break;
 
     default:
-        console.warn('[SW] Unknown message type:', type);
+
     }
 });
 
@@ -182,15 +180,14 @@ async function precacheStaticResources() {
 
     try {
         await cache.addAll(STATIC_RESOURCES);
-        console.log('[SW] Precached', STATIC_RESOURCES.length, 'static resources');
-    } catch (error) {
-        console.error('[SW] Precache failed for some resources:', error);
+
+    } catch {
         // Try to cache individually to identify problematic resources
         for (const resource of STATIC_RESOURCES) {
             try {
                 await cache.add(resource);
-            } catch (individualError) {
-                console.warn('[SW] Failed to cache:', resource, individualError);
+            } catch {
+
             }
         }
     }
@@ -209,7 +206,7 @@ async function cleanupOldCaches() {
 
     if (oldCaches.length > 0) {
         await Promise.all(oldCaches.map((cacheName) => caches.delete(cacheName)));
-        console.log('[SW] Cleaned up old caches:', oldCaches);
+
     }
 }
 
@@ -260,7 +257,6 @@ async function handleImageRequest(request) {
         cachedResponse &&
     isCacheEntryValid(cachedResponse, CACHE_CONFIG.imageTTL)
     ) {
-        console.log('[SW] Image cache hit:', request.url);
 
         // Schedule background update for frequently accessed images
         scheduleBackgroundUpdate(request);
@@ -268,7 +264,6 @@ async function handleImageRequest(request) {
     }
 
     try {
-        console.log('[SW] Fetching image from network:', request.url);
 
         // Handle Google Drive images with CORS issues
         let fetchRequest = request;
@@ -288,23 +283,17 @@ async function handleImageRequest(request) {
                 // First try the proxy endpoint
                 const proxyResponse = await fetch(proxyUrl);
                 if (proxyResponse.ok) {
-                    console.log('[SW] Using proxy for Google Drive image:', request.url);
+
                     fetchRequest = new Request(proxyUrl);
                 } else {
                     // Fallback to no-cors mode for opaque response
                     fetchOptions.mode = 'no-cors';
-                    console.log(
-                        '[SW] Using no-cors mode for Google Drive image:',
-                        request.url
-                    );
+
                 }
-            } catch (proxyError) {
+            } catch {
                 // Fallback to no-cors mode
                 fetchOptions.mode = 'no-cors';
-                console.log(
-                    '[SW] Proxy failed, using no-cors mode for Google Drive image:',
-                    request.url
-                );
+
             }
         }
 
@@ -328,12 +317,11 @@ async function handleImageRequest(request) {
         }
 
         return networkResponse;
-    } catch (error) {
-        console.error('[SW] Image fetch failed:', error);
+    } catch {
 
         // Return stale cache as fallback
         if (cachedResponse) {
-            console.log('[SW] Returning stale cache as fallback');
+
             return cachedResponse;
         }
 
@@ -354,12 +342,12 @@ async function handleGalleryAPIRequest(request) {
     const networkUpdate = updateCacheInBackground(cache, request);
 
     if (cachedResponse) {
-        console.log('[SW] Gallery API cache hit, updating in background');
+
         return cachedResponse;
     }
 
     try {
-        console.log('[SW] Gallery API cache miss, fetching from network');
+
         const networkResponse = await fetch(request);
 
         if (networkResponse.ok) {
@@ -371,8 +359,7 @@ async function handleGalleryAPIRequest(request) {
         }
 
         return networkResponse;
-    } catch (error) {
-        console.error('[SW] Gallery API fetch failed:', error);
+    } catch {
 
         // Wait for background update if no cache available
         try {
@@ -381,8 +368,8 @@ async function handleGalleryAPIRequest(request) {
             if (updatedResponse) {
                 return updatedResponse;
             }
-        } catch (bgError) {
-            console.error('[SW] Background update failed:', bgError);
+        } catch {
+
         }
 
         throw error;
@@ -397,7 +384,7 @@ async function handleAPIRequest(request) {
     const cache = await caches.open(API_CACHE);
 
     try {
-        console.log('[SW] API network first:', request.url);
+
         const networkResponse = await fetch(request, {
             headers: { 'Cache-Control': 'no-cache' }
         });
@@ -411,15 +398,14 @@ async function handleAPIRequest(request) {
         }
 
         return networkResponse;
-    } catch (error) {
-        console.error('[SW] API network failed, trying cache:', error);
+    } catch {
 
         const cachedResponse = await cache.match(request);
         if (
             cachedResponse &&
       isCacheEntryValid(cachedResponse, CACHE_CONFIG.apiTTL)
         ) {
-            console.log('[SW] API cache fallback:', request.url);
+
             return cachedResponse;
         }
 
@@ -436,7 +422,6 @@ async function handleStaticAssetRequest(request) {
     const cachedResponse = await cache.match(request);
 
     if (cachedResponse) {
-        console.log('[SW] Static asset cache hit:', request.url);
 
         // Update in background if stale
         if (!isCacheEntryValid(cachedResponse, CACHE_CONFIG.staticTTL)) {
@@ -447,7 +432,7 @@ async function handleStaticAssetRequest(request) {
     }
 
     try {
-        console.log('[SW] Static asset cache miss:', request.url);
+
         const networkResponse = await fetch(request);
 
         if (networkResponse.ok) {
@@ -459,8 +444,8 @@ async function handleStaticAssetRequest(request) {
         }
 
         return networkResponse;
-    } catch (error) {
-        console.error('[SW] Static asset fetch failed:', error);
+    } catch {
+
         throw error;
     }
 }
@@ -471,7 +456,7 @@ async function handleStaticAssetRequest(request) {
 async function cacheWithMetadata(cache, request, response, metadata) {
     // Safety check: ensure cache is a valid Cache object
     if (!cache || typeof cache.put !== 'function') {
-        console.warn('[SW] Invalid cache object passed to cacheWithMetadata');
+
         return;
     }
 
@@ -516,10 +501,10 @@ async function updateCacheInBackground(cache, request) {
                 cachedAt: Date.now(),
                 type: 'background-update'
             });
-            console.log('[SW] Background cache update successful:', request.url);
+
         }
-    } catch (error) {
-        console.log('[SW] Background cache update failed:', error);
+    } catch {
+
     }
 }
 
@@ -570,7 +555,7 @@ async function cleanupImageCache(cache) {
 
             await cache.delete(entry.key);
             totalSize -= entry.size;
-            console.log('[SW] Cleaned up cached image:', entry.key.url);
+
         }
     }
 }
@@ -609,8 +594,6 @@ async function handleCacheWarm(urls) {
         return;
     }
 
-    console.log('[SW] Warming cache with', urls.length, 'URLs');
-
     const promises = urls.map(async(url) => {
         try {
             const response = await fetch(url);
@@ -621,13 +604,13 @@ async function handleCacheWarm(urls) {
                     type: 'warmed'
                 });
             }
-        } catch (error) {
-            console.warn('[SW] Cache warm failed for:', url, error);
+        } catch {
+
         }
     });
 
     await Promise.allSettled(promises);
-    console.log('[SW] Cache warming completed');
+
 }
 
 async function handleCacheClear(cacheType) {
@@ -640,14 +623,14 @@ async function handleCacheClear(cacheType) {
     const cacheName = cacheMap[cacheType];
     if (cacheName) {
         await caches.delete(cacheName);
-        console.log('[SW] Cleared cache:', cacheName);
+
     } else if (cacheType === 'all') {
         await Promise.all([
             caches.delete(STATIC_CACHE),
             caches.delete(IMAGE_CACHE),
             caches.delete(API_CACHE)
         ]);
-        console.log('[SW] Cleared all caches');
+
     }
 }
 
@@ -666,20 +649,19 @@ async function handleCacheStats(port) {
         };
 
         port.postMessage({ type: 'CACHE_STATS_RESPONSE', data: stats });
-    } catch (error) {
+    } catch {
         port.postMessage({ type: 'CACHE_STATS_ERROR', error: error.message });
     }
 }
 
 async function handleBackgroundUpdate(urls) {
-    console.log('[SW] Background update requested for', urls.length, 'URLs');
 
     for (const url of urls) {
         try {
             const cache = await getCacheForUrl(url);
             await updateCacheInBackground(cache, new Request(url));
-        } catch (error) {
-            console.warn('[SW] Background update failed for:', url, error);
+        } catch {
+
         }
     }
 }
@@ -722,7 +704,7 @@ async function getCacheStats(cacheName, type) {
                 sizeFormatted: formatBytes(totalSize)
             }
         ];
-    } catch (error) {
+    } catch {
         return [
             type,
             { name: cacheName, entries: 0, size: 0, error: error.message }
@@ -748,7 +730,7 @@ async function handleOfflineCheckin(request) {
     // Try network first
         const response = await fetch(request);
         return response;
-    } catch (error) {
+    } catch {
     // If offline, queue the check-in
         const data = await request.json();
 
@@ -787,7 +769,6 @@ async function handleOfflineCheckin(request) {
  * Sync offline check-ins when back online
  */
 async function syncOfflineCheckins() {
-    console.log('[SW] Syncing offline check-ins...');
 
     if (offlineQueue.length === 0) {
         return;
@@ -808,7 +789,7 @@ async function syncOfflineCheckins() {
                 // Re-queue if failed
                 offlineQueue.push(checkin);
             }
-        } catch (error) {
+        } catch {
             // Re-queue if network error
             offlineQueue.push(checkin);
         }
@@ -827,7 +808,6 @@ async function syncOfflineWalletTokens() {
 
     if (response) {
         const walletTokens = await response.json();
-        console.log('[SW] Syncing', walletTokens.length, 'wallet tokens');
 
         for (const token of walletTokens) {
             try {
@@ -836,8 +816,8 @@ async function syncOfflineWalletTokens() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(token)
                 });
-            } catch (error) {
-                console.error('[SW] Failed to sync wallet token:', error);
+            } catch {
+
             }
         }
 
@@ -875,13 +855,10 @@ async function loadOfflineQueue() {
         const response = await cache.match('offline-queue');
         if (response) {
             offlineQueue = await response.json();
-            console.log('[SW] Loaded', offlineQueue.length, 'queued check-ins');
+
         }
-    } catch (error) {
-        console.error('[SW] Failed to load offline queue:', error);
+    } catch {
+
     }
 }
 
-console.log(
-    `[SW] Advanced Service Worker v${CACHE_VERSION} initialized with multi-level caching and offline check-in support`
-);

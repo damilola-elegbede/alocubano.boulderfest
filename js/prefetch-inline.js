@@ -134,7 +134,7 @@ class CriticalResourcePrefetcher {
 
         // Validate URL before creating preload
         if (!this.isValidUrl(heroUrl)) {
-            console.warn(`[Prefetch] Invalid hero image URL: ${heroUrl}`);
+
             return false;
         }
 
@@ -145,9 +145,6 @@ class CriticalResourcePrefetcher {
             crossOrigin: false // Static images don't need CORS
         });
 
-        console.log(
-            `[Prefetch] Static hero image preloaded for page: ${pageId} (${heroUrl})`
-        );
         return true;
     }
 
@@ -166,7 +163,7 @@ class CriticalResourcePrefetcher {
 
         // Skip prefetching for gallery index page (no specific year)
         if (pageId === 'gallery') {
-            console.log('[Prefetch] Skipping gallery data prefetch for index page');
+
             return false;
         }
 
@@ -178,11 +175,11 @@ class CriticalResourcePrefetcher {
             year: year,
             category: this.config.defaultGalleryParams.category
         });
-        const galleryUrl = `${this.config.galleryDataApi}?${params}`;
+        const galleryUrl = this.config.galleryDataApi + '?' + params.toString();
 
         // Validate URL before creating preload
         if (!this.isValidUrl(galleryUrl)) {
-            console.warn(`[Prefetch] Invalid gallery data URL: ${galleryUrl}`);
+
             return false;
         }
 
@@ -192,7 +189,6 @@ class CriticalResourcePrefetcher {
             crossOrigin: true // API calls need CORS
         });
 
-        console.log(`[Prefetch] Gallery data preloaded for year: ${year}`);
         return true;
     }
 
@@ -210,14 +206,14 @@ class CriticalResourcePrefetcher {
         try {
             results.heroImage = this.preloadHeroImage();
         } catch (error) {
-            console.warn('[Prefetch] Error preloading hero image:', error);
+
             results.errors.push({ type: 'heroImage', error });
         }
 
         try {
             results.galleryData = this.preloadGalleryData();
         } catch (error) {
-            console.warn('[Prefetch] Error preloading gallery data:', error);
+
             results.errors.push({ type: 'galleryData', error });
         }
 

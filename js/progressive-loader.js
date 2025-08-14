@@ -16,7 +16,7 @@ class ProgressiveImageLoader {
         this.ctx = this.canvas.getContext('2d');
 
         this.setupIntersectionObserver();
-        console.log('[Progressive] Image loader initialized');
+
     }
 
     createOffscreenCanvas() {
@@ -61,8 +61,8 @@ class ProgressiveImageLoader {
 
         try {
             await loadingPromise;
-        } catch (error) {
-            console.error('[Progressive] Failed to load image:', error);
+        } catch {
+
         } finally {
             this.loadingImages.delete(imageId);
         }
@@ -151,8 +151,8 @@ class ProgressiveImageLoader {
 
             // Show blurred thumbnail
             this.showBlurredPreview(imageElement, blurredDataUrl);
-        } catch (error) {
-            console.warn('[Progressive] Failed to load thumbnail:', error);
+        } catch {
+
         }
     }
 
@@ -216,8 +216,8 @@ class ProgressiveImageLoader {
 
             // Transition to full image
             this.transitionToFullImage(imageElement, fullImg);
-        } catch (error) {
-            console.error('[Progressive] Failed to load full image:', error);
+        } catch {
+
             this.handleImageLoadError(imageElement, metadata);
         }
     }
@@ -310,8 +310,8 @@ class ProgressiveImageLoader {
             const rgb = this.calculateAverageColor(imageData.data);
 
             return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
-        } catch (error) {
-            console.warn('[Progressive] Failed to extract dominant color:', error);
+        } catch {
+
             return '#f0f0f0';
         }
     }

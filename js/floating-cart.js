@@ -2,7 +2,6 @@
  * Floating Cart UI Component
  * Mobile-first responsive cart interface
  */
-import { getStripePaymentHandler } from './lib/stripe-integration.js';
 import { getPaymentSelector } from './components/payment-selector.js';
 
 export function initializeFloatingCart(cartManager) {
@@ -575,27 +574,6 @@ async function showClearCartConfirmation(cartState) {
         // Focus the cancel button initially (safer default)
         cancelBtn.focus();
     });
-}
-
-// Show loading state during checkout
-function showCheckoutLoadingState() {
-    const loadingHTML = `
-    <div class="checkout-loading-overlay">
-      <div class="checkout-loading-content">
-        <div class="checkout-loading-spinner"></div>
-        <p>Creating secure checkout session...</p>
-      </div>
-    </div>
-  `;
-    document.body.insertAdjacentHTML('beforeend', loadingHTML);
-}
-
-// Hide loading state
-function hideCheckoutLoadingState() {
-    const overlay = document.querySelector('.checkout-loading-overlay');
-    if (overlay) {
-        overlay.remove();
-    }
 }
 
 // Show checkout error

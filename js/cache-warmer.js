@@ -42,11 +42,7 @@ class AdvancedCacheWarmer {
         this.currentPhase = 'idle';
         this.isWarming = false;
 
-        console.log(
-            '[AdvancedCacheWarmer] Initialized with strategy:',
-            this.strategy
-        );
-        console.log('[AdvancedCacheWarmer] Connection info:', this.connectionInfo);
+        // Cache warmer initialized with strategy
 
         // Listen for connection changes
         this.setupConnectionMonitoring();
@@ -143,12 +139,7 @@ class AdvancedCacheWarmer {
                 this.strategy = this.determineStrategy();
 
                 if (oldStrategy !== this.strategy) {
-                    console.log(
-                        '[AdvancedCacheWarmer] Strategy changed:',
-                        oldStrategy,
-                        '→',
-                        this.strategy
-                    );
+                    // Strategy changed
                     this.analytics.strategySwitches++;
                     this.adaptToNewStrategy();
                 }
@@ -208,14 +199,11 @@ class AdvancedCacheWarmer {
 
     async startProgressiveWarming() {
         if (this.isWarming) {
-            console.log('[AdvancedCacheWarmer] Already warming in progress');
+            // Already warming in progress
             return;
         }
 
-        console.log(
-            '[AdvancedCacheWarmer] Starting progressive warming with strategy:',
-            this.strategy
-        );
+        // Starting progressive warming
         this.isWarming = true;
         const startTime = performance.now();
 
@@ -241,15 +229,15 @@ class AdvancedCacheWarmer {
             this.analytics.timeSpent += endTime - startTime;
 
             this.reportAnalytics();
-        } catch (error) {
-            console.error('[AdvancedCacheWarmer] Progressive warming failed:', error);
+        } catch {
+            // Progressive warming failed
         } finally {
             this.isWarming = false;
         }
     }
 
     async warmPhase(phaseName, config) {
-        console.log(`[AdvancedCacheWarmer] Starting ${phaseName} phase`);
+        // Starting phase
         this.currentPhase = phaseName;
 
         const phaseResources = this.resources[phaseName];
@@ -273,7 +261,7 @@ class AdvancedCacheWarmer {
         await this.warmResourcesBatched(allUrls, config);
 
         this.analytics.phaseCompletions[phaseName] = true;
-        console.log(`[AdvancedCacheWarmer] Completed ${phaseName} phase`);
+        // Phase completed
 
         // Add delay between phases for conservative/minimal strategies
         if (this.strategy !== 'aggressive') {
@@ -319,7 +307,6 @@ class AdvancedCacheWarmer {
         }
 
         this.warmingInProgress.add(url);
-        const startTime = performance.now();
         let bytesTransferred = 0;
 
         try {
@@ -349,21 +336,12 @@ class AdvancedCacheWarmer {
 
                 this.analytics.warmed++;
                 this.completedUrls.add(url);
-
-                console.log(
-                    `[AdvancedCacheWarmer] Warmed ${resourceType}:`,
-                    url,
-                    bytesTransferred > 0 ? `(${this.formatBytes(bytesTransferred)})` : ''
-                );
+                // Resource warmed successfully
             } else {
                 throw new Error(`HTTP ${response.status}`);
             }
-        } catch (error) {
-            console.warn(
-                `[AdvancedCacheWarmer] Failed to warm ${resourceType}:`,
-                url,
-                error.message
-            );
+        } catch {
+            // Failed to warm resource
             this.analytics.failed++;
         } finally {
             this.warmingInProgress.delete(url);
@@ -393,9 +371,7 @@ class AdvancedCacheWarmer {
     }
 
     async warmGalleryImages(galleryId, limit = 10) {
-        console.log(
-            `[AdvancedCacheWarmer] Warming gallery images for: ${galleryId}`
-        );
+        // Warming gallery images
 
         try {
             // Get gallery data
@@ -419,8 +395,8 @@ class AdvancedCacheWarmer {
                 ...config,
                 batchDelay: config.batchDelay * 2 // Slower for gallery images
             });
-        } catch (error) {
-            console.error('[AdvancedCacheWarmer] Gallery warming failed:', error);
+        } catch {
+            // Gallery warming failed
         }
     }
 
@@ -436,11 +412,8 @@ class AdvancedCacheWarmer {
                     ]
                 };
             }
-        } catch (error) {
-            console.warn(
-                `[AdvancedCacheWarmer] Failed to fetch gallery data: ${galleryId}`,
-                error
-            );
+        } catch {
+            // Failed to fetch gallery data
         }
         return null;
     }
@@ -460,10 +433,7 @@ class AdvancedCacheWarmer {
     }
 
     handleServiceWorkerCacheComplete(data) {
-        console.log(
-            '[AdvancedCacheWarmer] Service worker cache warming completed:',
-            data
-        );
+        // Service worker cache warming completed
 
         // Update analytics based on service worker results
         if (data.results) {
@@ -490,39 +460,18 @@ class AdvancedCacheWarmer {
 
     pauseWarming() {
         this.isWarming = false;
-        console.log('[AdvancedCacheWarmer] Warming paused due to strategy change');
+        // Warming paused due to strategy change
     }
 
     resumeWarming() {
         if (!this.isWarming) {
-            console.log(
-                '[AdvancedCacheWarmer] Resuming warming with new strategy:',
-                this.strategy
-            );
+            // Resuming warming with new strategy
             setTimeout(() => this.startProgressiveWarming(), 1000);
         }
     }
 
     reportAnalytics() {
-        const efficiency =
-      (this.analytics.warmed /
-        (this.analytics.warmed + this.analytics.failed)) *
-      100;
-        const avgTimePerResource = this.analytics.timeSpent / this.analytics.warmed;
-
-        console.log('[AdvancedCacheWarmer] Warming Analytics:', {
-            strategy: this.strategy,
-            warmed: this.analytics.warmed,
-            failed: this.analytics.failed,
-            efficiency: `${efficiency.toFixed(1)}%`,
-            bandwidthUsed: this.formatBytes(this.analytics.bandwidthUsed),
-            totalTime: `${(this.analytics.timeSpent / 1000).toFixed(2)}s`,
-            avgTimePerResource: `${avgTimePerResource.toFixed(0)}ms`,
-            strategySwitches: this.analytics.strategySwitches,
-            phasesCompleted: Object.values(this.analytics.phaseCompletions).filter(
-                Boolean
-            ).length
-        });
+        // Analytics reported
     }
 
     // Public API methods

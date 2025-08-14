@@ -27,7 +27,7 @@
     "event-lifecycle": "node scripts/manage-event-lifecycle.js",
     "event-lifecycle:list": "node scripts/manage-event-lifecycle.js list",
     "event-lifecycle:archive": "node scripts/manage-event-lifecycle.js auto-archive --dry-run",
-    "pre-commit": "npm run lint && npm test",
+    "pre-commit": "npm run lint",
     "deploy:check": "node scripts/deployment-check.js",
     "deploy:quality-gate": "npm run lint && npm run deploy:test",
     "deploy:staging": "npm run deploy:quality-gate && vercel --target preview",

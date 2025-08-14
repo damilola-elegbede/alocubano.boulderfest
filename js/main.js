@@ -153,7 +153,6 @@ function registerServiceWorker() {
                 updateViaCache: 'none'
             })
             .then((registration) => {
-                console.log('[SW] Service Worker registered:', registration.scope);
 
                 // Handle updates
                 registration.addEventListener('updatefound', () => {
@@ -164,7 +163,7 @@ function registerServiceWorker() {
               navigator.serviceWorker.controller
                         ) {
                             // New version available, prompt user to refresh
-                            console.log('[SW] New version available');
+
                             if (confirm('A new version is available. Refresh to update?')) {
                                 window.location.reload();
                             }
@@ -172,8 +171,8 @@ function registerServiceWorker() {
                     });
                 });
             })
-            .catch((error) => {
-                console.warn('[SW] Service Worker registration failed:', error);
+            .catch(() => {
+                // Service worker registration failed
             });
     }
 }

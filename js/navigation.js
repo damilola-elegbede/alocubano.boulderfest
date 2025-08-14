@@ -36,8 +36,8 @@ class EventBus {
         this.events.get(eventName).forEach((callback) => {
             try {
                 callback(data);
-            } catch (error) {
-                console.error(`Error in event listener for '${eventName}':`, error);
+            } catch {
+
             }
         });
     }
@@ -195,7 +195,6 @@ class DropdownManager {
         const container = trigger.closest(
             '.nav-item.has-dropdown, .dropdown-container'
         );
-        const menu = container.querySelector('.dropdown-menu');
         const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
 
         if (isExpanded) {
@@ -432,8 +431,7 @@ class DropdownManager {
         const triggerRect = trigger.getBoundingClientRect();
         const menuRect = menu.getBoundingClientRect();
         const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        const scrollY = window.scrollY;
+        // Removed unused viewportHeight and scrollY
 
         // Reset positioning
         menu.style.left = '';
@@ -565,7 +563,7 @@ class DropdownManager {
         this.dropdownTimers.clear();
 
         // Clean up all active observers
-        this.activeObservers.forEach((observer, container) => {
+        this.activeObservers.forEach((observer) => {
             observer.disconnect();
         });
         this.activeObservers.clear();
@@ -695,7 +693,7 @@ class SiteNavigation {
         this.dropdownManager.init();
 
         // Setup dropdown event listeners
-        this.eventBus.on('dropdownOpened', (data) => {
+        this.eventBus.on('dropdownOpened', () => {
             this.performanceMetrics.dropdownUsage++;
         });
     }
@@ -1176,8 +1174,8 @@ if (typeof PageTransition === 'undefined') {
                             // Create a safe function execution instead of eval()
                             const scriptFunction = new Function(scriptContent);
                             scriptFunction();
-                        } catch (error) {
-                            console.warn('Error executing inline script:', error);
+                        } catch {
+
                         }
                     }
                 }

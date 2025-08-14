@@ -63,7 +63,7 @@ class VirtualGalleryManager {
 
             return this;
         } catch (error) {
-            console.error('Failed to initialize virtual gallery:', error);
+
             this.showError('Failed to initialize gallery. Please refresh the page.');
             throw error;
         }
@@ -151,7 +151,7 @@ class VirtualGalleryManager {
             this.processAPIResponse(data);
             this.hideLoading();
         } catch (error) {
-            console.error('Failed to load initial data:', error);
+
             this.showError('Failed to load gallery data.');
             throw error;
         }
@@ -281,8 +281,8 @@ class VirtualGalleryManager {
 
             this.processAPIResponse(data);
             this.render();
-        } catch (error) {
-            console.error('Failed to load more data:', error);
+        } catch {
+
         } finally {
             this.isLoading = false;
         }
@@ -480,7 +480,7 @@ class VirtualGalleryManager {
    */
     openLightbox(index) {
         if (typeof Lightbox === 'undefined') {
-            console.warn('Lightbox component not available');
+
             return;
         }
 
@@ -608,8 +608,8 @@ class VirtualGalleryManager {
         try {
             await this.loadInitialData();
             this.render();
-        } catch (error) {
-            console.error('Retry failed:', error);
+        } catch {
+
         }
     }
 
