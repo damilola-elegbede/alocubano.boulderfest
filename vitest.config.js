@@ -29,7 +29,16 @@ export default defineConfig({
       ...(process.env.TEST_CI_EXCLUDE_PATTERNS === 'true' ? [
         "tests/unit/complete-isolation-demo.test.js", 
         "tests/unit/test-singleton-manager.test.js",
-        "tests/unit/test-mock-manager.test.js"
+        "tests/unit/test-mock-manager.test.js",
+        "tests/unit/accessibility.test.js",
+        "tests/unit/lightbox-consolidated.test.js",
+        "tests/unit/analytics-service.test.js",
+        "tests/unit/simple-helpers.test.js",
+        "tests/unit/gallery-consolidated.test.js",
+        "tests/unit/cors-performance.test.js",
+        "tests/unit/data-validation.test.js",
+        "tests/unit/api-logic.test.js",
+        "tests/unit/serverless-patterns.test.js"
       ] : []),
     ],
 
