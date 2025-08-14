@@ -5,7 +5,7 @@
 
 // Smooth scroll functionality
 if (typeof SmoothScroll === 'undefined') {
-    class SmoothScroll {
+    class SmoothScroll { // eslint-disable-line no-unused-vars
         constructor() {
             this.init();
         }
@@ -43,7 +43,7 @@ if (typeof SmoothScroll === 'undefined') {
 
 // Form validation
 if (typeof FormValidator === 'undefined') {
-    class FormValidator {
+    class FormValidator { // eslint-disable-line no-unused-vars
         constructor(form) {
             this.form = form;
             this.init();

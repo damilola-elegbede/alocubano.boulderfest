@@ -1062,7 +1062,7 @@ class SiteNavigation {
 
 // Page transition effects
 if (typeof PageTransition === 'undefined') {
-    class PageTransition {
+    class PageTransition { // eslint-disable-line no-unused-vars
         constructor() {
             this.init();
         }
