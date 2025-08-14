@@ -28,7 +28,6 @@ describe("Comprehensive API Integration", () => {
     // Create Express app with proper service initialization
     app = express();
     app.use(express.json());
-    app.use(express.raw({ type: "application/json" }));
 
     // Import handlers after services are ready
     const [subscribeHandler, webhookHandler] = await Promise.all([
@@ -37,7 +36,11 @@ describe("Comprehensive API Integration", () => {
     ]);
 
     app.post("/api/email/subscribe", subscribeHandler.default);
-    app.post("/api/email/brevo-webhook", webhookHandler.default);
+    app.post(
+      "/api/email/brevo-webhook",
+      express.raw({ type: "application/json" }),
+      webhookHandler.default
+    );
 
     console.log("🎯 Comprehensive API integration test setup complete");
   }, 45000);

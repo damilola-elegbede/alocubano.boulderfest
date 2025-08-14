@@ -294,14 +294,24 @@ function findJSFiles(dir, files = []) {
  */
 async function findFiles() {
   try {
-    const testsDir = path.join(projectRoot, 'tests');
-    
-    if (!fs.existsSync(testsDir)) {
-      log('Tests directory not found', 'warn');
+    const defaultDir = path.join(projectRoot, 'tests');
+    const userPattern = config.pattern;
+    // Derive a base directory from pattern (supports 'dir/**/*.js' or 'dir')
+    const patternRoot = userPattern && userPattern !== 'tests/**/*.js'
+      ? (userPattern.includes('**') ? userPattern.split('**')[0] : userPattern)
+      : 'tests';
+    const baseDir = path.isAbsolute(patternRoot)
+      ? patternRoot
+      : path.join(projectRoot, patternRoot);
+
+    const dirToScan = fs.existsSync(baseDir) ? baseDir : defaultDir;
+
+    if (!fs.existsSync(dirToScan)) {
+      log(`Directory not found: ${dirToScan}`, 'warn');
       return [];
     }
     
-    return findJSFiles(testsDir);
+    return findJSFiles(dirToScan);
   } catch (error) {
     log(`Error finding files: ${error.message}`, 'error');
     return [];

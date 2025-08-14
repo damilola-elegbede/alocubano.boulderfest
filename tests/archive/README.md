@@ -84,7 +84,7 @@ import { testOrchestrator } from '../utils/test-initialization-orchestrator.js';
 
 const context = await testOrchestrator.setupTest();
 // ... test logic
-await context.cleanup(); // or teardownTest(context) from the orchestrator
+await teardownTest(context); // or: await context.cleanup()
 ```
 
 ### New Pattern (Simplified)
