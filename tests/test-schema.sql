@@ -94,9 +94,22 @@ CREATE TABLE IF NOT EXISTS email_events (
   event_date DATETIME NOT NULL,
   occurred_at DATETIME NOT NULL,
   message_id TEXT,
+  event_data TEXT,
   metadata TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (subscriber_id) REFERENCES email_subscribers(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS email_audit_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  action TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id INTEGER,
+  details TEXT,
+  user_id TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS migrations (
@@ -207,3 +220,5 @@ CREATE INDEX idx_email_subscribers_email ON email_subscribers(email);
 CREATE INDEX idx_email_subscribers_status ON email_subscribers(status);
 CREATE INDEX idx_email_events_subscriber ON email_events(subscriber_id);
 CREATE INDEX idx_email_events_type ON email_events(event_type);
+CREATE INDEX idx_email_audit_log_entity ON email_audit_log(entity_type, entity_id);
+CREATE INDEX idx_email_audit_log_created ON email_audit_log(created_at);

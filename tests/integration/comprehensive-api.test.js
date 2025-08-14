@@ -59,8 +59,12 @@ function createWebhookHandler(webhookHandler) {
 describe("Comprehensive API Integration", () => {
   let app;
   let setup;
+  let originalFetch;
 
   beforeAll(async () => {
+    // Store original fetch
+    originalFetch = global.fetch;
+    
     // CRITICAL: Set up test environment BEFORE importing anything that uses services
     process.env.NODE_ENV = "test";
     process.env.TURSO_DATABASE_URL = ":memory:";
@@ -74,10 +78,13 @@ describe("Comprehensive API Integration", () => {
     setup = await setupTest({
       database: true,
       env: 'complete-test',
-      mocks: ['fetch'],
+      mocks: [], // Don't use the default fetch mock
       seed: false,
       isolate: true
     });
+
+    // Create a proper fetch mock that will persist across all tests
+    global.fetch = vi.fn();
 
     // Mock the database module BEFORE any service imports
     // This ensures all services use the same test database instance
@@ -137,6 +144,11 @@ describe("Comprehensive API Integration", () => {
   }, 45000);
 
   afterAll(async () => {
+    // Restore original fetch
+    if (originalFetch) {
+      global.fetch = originalFetch;
+    }
+    
     await teardownTest(setup);
   });
 
@@ -169,7 +181,7 @@ describe("Comprehensive API Integration", () => {
   describe("Email Subscription Flow", () => {
     it("should handle complete subscription with database persistence", async () => {
       // Mock external Brevo API using fetch mock
-      global.fetch.mockImplementationOnce(async (url, options) => {
+      global.fetch.mockImplementation(async (url, options) => {
         if (url.includes('/v3/contacts') && options.method === 'POST') {
           const body = JSON.parse(options.body);
           expect(body.email).toBe("comprehensive@example.com");
@@ -253,9 +265,12 @@ describe("Comprehensive API Integration", () => {
     it("should prevent duplicate subscriptions", async () => {
       const email = "duplicate-test@example.com";
 
-      // First subscription - mock Brevo API response
-      global.fetch.mockImplementationOnce(async (url, options) => {
+      // Mock Brevo API for both subscription attempts
+      let callCount = 0;
+      global.fetch.mockImplementation(async (url, options) => {
         if (url.includes('/v3/contacts') && options.method === 'POST') {
+          callCount++;
+          // First call succeeds, subsequent calls shouldn't happen but if they do, succeed
           return {
             ok: true,
             status: 201,
@@ -297,7 +312,7 @@ describe("Comprehensive API Integration", () => {
       const email = "webhook-test@example.com";
 
       // Create subscriber first
-      global.fetch.mockImplementationOnce(async (url, options) => {
+      global.fetch.mockImplementation(async (url, options) => {
         if (url.includes('/v3/contacts') && options.method === 'POST') {
           return {
             ok: true,
@@ -351,7 +366,7 @@ describe("Comprehensive API Integration", () => {
       const email = "unsubscribe-test@example.com";
 
       // Create subscriber
-      global.fetch.mockImplementationOnce(async (url, options) => {
+      global.fetch.mockImplementation(async (url, options) => {
         if (url.includes('/v3/contacts') && options.method === 'POST') {
           return {
             ok: true,
@@ -419,7 +434,7 @@ describe("Comprehensive API Integration", () => {
   describe("Error Handling and Edge Cases", () => {
     it("should handle Brevo service failures gracefully", async () => {
       // Mock Brevo failure
-      global.fetch.mockImplementationOnce(async (url, options) => {
+      global.fetch.mockImplementation(async (url, options) => {
         if (url.includes('/v3/contacts') && options.method === 'POST') {
           return {
             ok: false,
@@ -517,7 +532,7 @@ describe("Comprehensive API Integration", () => {
       const email = "integrity-test@example.com";
 
       // Create subscriber and events
-      global.fetch.mockImplementationOnce(async (url, options) => {
+      global.fetch.mockImplementation(async (url, options) => {
         if (url.includes('/v3/contacts') && options.method === 'POST') {
           return {
             ok: true,
@@ -580,7 +595,7 @@ describe("Comprehensive API Integration", () => {
       const initialCount = initialResult.rows[0].count;
 
       // Mock successful Brevo API call
-      global.fetch.mockImplementationOnce(async (url, options) => {
+      global.fetch.mockImplementation(async (url, options) => {
         if (url.includes('/v3/contacts') && options.method === 'POST') {
           return {
             ok: true,
