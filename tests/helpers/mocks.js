@@ -1,10 +1,17 @@
-import { vi } from 'vitest';
+// Optional Vitest import pattern to prevent eager loading in re-exports
+function _getVi(injectedVi) {
+  return injectedVi ?? globalThis?.vi ?? undefined;
+}
 
 /**
  * Mock fetch with configurable responses
  */
 export function mockFetch(responses = []) {
   let callIndex = 0;
+  const vi = _getVi();
+  if (!vi) {
+    throw new Error('Vitest not available for mocking');
+  }
   
   return vi.fn().mockImplementation(async (url, options) => {
     const response = responses[callIndex] || { 
@@ -29,6 +36,11 @@ export function mockFetch(responses = []) {
  * Mock Brevo email service
  */
 export function mockBrevoService() {
+  const vi = _getVi();
+  if (!vi) {
+    throw new Error('Vitest not available for mocking');
+  }
+  
   return {
     sendEmail: vi.fn().mockResolvedValue({ 
       messageId: `msg_${Date.now()}` 
@@ -53,6 +65,11 @@ export function mockBrevoService() {
  * Mock Stripe payment service
  */
 export function mockStripeService() {
+  const vi = _getVi();
+  if (!vi) {
+    throw new Error('Vitest not available for mocking');
+  }
+  
   return {
     checkout: {
       sessions: {
@@ -86,6 +103,11 @@ export function mockStripeService() {
  * Mock database client
  */
 export function mockDatabaseClient(responses = {}) {
+  const vi = _getVi();
+  if (!vi) {
+    throw new Error('Vitest not available for mocking');
+  }
+  
   return {
     execute: vi.fn().mockImplementation(async (query) => {
       const key = query.trim().split(' ')[0].toUpperCase();
@@ -121,5 +143,8 @@ export function resetMocks(mocks = {}, assertions = {}) {
     }
   });
   
-  vi.clearAllMocks();
+  const vi = _getVi();
+  if (vi) {
+    vi.clearAllMocks();
+  }
 }

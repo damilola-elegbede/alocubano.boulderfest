@@ -68,13 +68,52 @@ CREATE TABLE IF NOT EXISTS newsletter_subscribers (
 CREATE TABLE IF NOT EXISTS email_subscribers (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT NOT NULL UNIQUE,
+  first_name TEXT,
+  last_name TEXT,
+  phone TEXT,
   status TEXT DEFAULT 'active',
   brevo_contact_id TEXT,
+  list_ids TEXT,
+  attributes TEXT,
+  consent_date DATETIME,
+  consent_source TEXT,
+  consent_ip TEXT,
+  verification_token TEXT,
+  verified_at DATETIME,
   bounce_count INTEGER DEFAULT 0,
   last_bounce_at DATETIME,
   unsubscribed_at DATETIME,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS email_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  subscriber_id INTEGER NOT NULL,
+  event_type TEXT NOT NULL,
+  event_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+  occurred_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  message_id TEXT,
+  brevo_event_id TEXT,
+  event_data TEXT,
+  metadata TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (subscriber_id) REFERENCES email_subscribers(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS email_audit_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  action TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id INTEGER,
+  actor_type TEXT,
+  actor_id TEXT,
+  changes TEXT,
+  details TEXT,
+  user_id TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS migrations (
@@ -183,3 +222,7 @@ CREATE INDEX idx_wallet_passes_serial ON wallet_passes(serial_number);
 CREATE INDEX idx_admin_sessions_token ON admin_sessions(token_hash);
 CREATE INDEX idx_email_subscribers_email ON email_subscribers(email);
 CREATE INDEX idx_email_subscribers_status ON email_subscribers(status);
+CREATE INDEX idx_email_events_subscriber ON email_events(subscriber_id);
+CREATE INDEX idx_email_events_type ON email_events(event_type);
+CREATE INDEX idx_email_audit_log_entity ON email_audit_log(entity_type, entity_id);
+CREATE INDEX idx_email_audit_log_created ON email_audit_log(created_at);

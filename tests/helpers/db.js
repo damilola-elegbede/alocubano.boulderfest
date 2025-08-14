@@ -81,7 +81,9 @@ export function createLibSQLAdapter(db) {
   return {
     execute: (sql, params = []) => {
       try {
-        const stmt = db.prepare(sql);
+        // Convert numbered parameters (?1, ?2) to positional (?, ?)
+        const convertedSql = sql.replace(/\?(\d+)/g, '?');
+        const stmt = db.prepare(convertedSql);
         const isSelect = sql.trim().toUpperCase().startsWith('SELECT');
         
         if (isSelect) {
@@ -94,7 +96,8 @@ export function createLibSQLAdapter(db) {
           const result = params.length ? stmt.run(...params) : stmt.run();
           return Promise.resolve({ 
             rows: [],
-            rowsAffected: result.changes
+            rowsAffected: result.changes,
+            lastInsertRowid: result.lastInsertRowid
           });
         }
       } catch (error) {

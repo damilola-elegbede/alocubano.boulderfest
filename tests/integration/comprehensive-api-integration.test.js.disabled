@@ -1,30 +1,25 @@
 /**
  * Comprehensive API Integration Tests
  * Tests complete request flow with proper service initialization
+ * 
+ * Updated to use new simplified test helpers (Phase 2.6)
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import express from "express";
 import nock from "nock";
-import { setupIntegrationTests } from "../utils/enhanced-test-setup.js";
-import { testInit } from "../utils/test-initialization-helpers.js";
+import { setupIntegrationTest, teardownTest } from "../helpers/index.js";
 
 describe("Comprehensive API Integration", () => {
-  const testSetup = setupIntegrationTests({
-    enableDatabase: true,
-    enableMocks: false, // Test with real services
-    timeout: 40000,
-    cleanDatabase: true,
-  });
-
   let app;
-  let services;
+  let setup;
 
   beforeAll(async () => {
-    services = testSetup.getServices();
+    // Use new simplified setup
+    setup = await setupIntegrationTest('complete-test');
 
-    // Set up test environment
+    // Set up additional test environment variables
     process.env.BREVO_API_KEY = "xkeysib-test123";
     process.env.BREVO_NEWSLETTER_LIST_ID = "123";
     process.env.BREVO_WEBHOOK_SECRET = "webhook_secret_123";
@@ -33,10 +28,6 @@ describe("Comprehensive API Integration", () => {
     // Create Express app with proper service initialization
     app = express();
     app.use(express.json());
-    app.use(express.raw({ type: "application/json" }));
-
-    // Wait for services to be ready before adding routes
-    await testInit.waitForService("database", 20000);
 
     // Import handlers after services are ready
     const [subscribeHandler, webhookHandler] = await Promise.all([
@@ -45,10 +36,18 @@ describe("Comprehensive API Integration", () => {
     ]);
 
     app.post("/api/email/subscribe", subscribeHandler.default);
-    app.post("/api/email/brevo-webhook", webhookHandler.default);
+    app.post(
+      "/api/email/brevo-webhook",
+      express.raw({ type: "application/json" }),
+      webhookHandler.default
+    );
 
     console.log("🎯 Comprehensive API integration test setup complete");
   }, 45000);
+
+  afterAll(async () => {
+    await teardownTest(setup);
+  });
 
   describe("Email Subscription API with Real Database", () => {
     it("should handle complete subscription flow", async () => {
@@ -79,7 +78,7 @@ describe("Comprehensive API Integration", () => {
       expect(response.body.subscriber.email).toBe("integration@example.com");
 
       // Verify subscriber was actually created in database
-      const db = services.database;
+      const db = setup.client;
       const result = await db.execute(
         "SELECT * FROM email_subscribers WHERE email = ?",
         ["integration@example.com"],
@@ -227,7 +226,7 @@ describe("Comprehensive API Integration", () => {
       expect(response.body.message).toBe("Email delivery recorded");
 
       // Verify event was logged in database
-      const db = services.database;
+      const db = setup.client;
       const eventResult = await db.execute(
         `SELECT ee.* FROM email_events ee
          JOIN email_subscribers es ON ee.subscriber_id = es.id
@@ -277,7 +276,7 @@ describe("Comprehensive API Integration", () => {
       expect(response.body.message).toBe("Unsubscribe processed");
 
       // Verify subscriber status was updated
-      const db = services.database;
+      const db = setup.client;
       const result = await db.execute(
         "SELECT status FROM email_subscribers WHERE email = ?",
         [email],
@@ -326,7 +325,7 @@ describe("Comprehensive API Integration", () => {
       );
 
       // Verify subscriber status was updated
-      const db = services.database;
+      const db = setup.client;
       const result = await db.execute(
         "SELECT status FROM email_subscribers WHERE email = ?",
         [email],
@@ -436,7 +435,7 @@ describe("Comprehensive API Integration", () => {
       expect(openResponse.body.message).toBe("Email open recorded");
 
       // Step 4: Verify complete lifecycle in database
-      const db = services.database;
+      const db = setup.client;
 
       // Check subscriber exists and is active
       const subscriberResult = await db.execute(
@@ -504,7 +503,7 @@ describe("Comprehensive API Integration", () => {
       });
 
       // Verify all subscribers were created
-      const db = services.database;
+      const db = setup.client;
       const result = await db.execute(
         "SELECT COUNT(*) as count FROM email_subscribers WHERE email LIKE ?",
         [`${baseEmail}%@example.com`],
@@ -516,7 +515,7 @@ describe("Comprehensive API Integration", () => {
     });
 
     it("should maintain data consistency under load", async () => {
-      const db = services.database;
+      const db = setup.client;
 
       // Get initial counts
       const initialStats = await db.execute(`

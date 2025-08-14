@@ -5,12 +5,17 @@
 
 import { vi, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import { testInit } from "./test-initialization-helpers.js";
-import { dbTestHelpers } from "./database-test-helpers.js";
-
+// Database helpers are now integrated into setup.js
 /**
  * Enhanced test suite setup for integration tests
+ * DEPRECATED: Use tests/helpers/setup.js -> setupIntegrationTest() or setupTest()
  */
 export function setupIntegrationTests(options = {}) {
+  throw new Error("[DEPRECATED] tests/utils/enhanced-test-setup.setupIntegrationTests was removed. Use tests/helpers/setup.js:setupIntegrationTest instead.");
+}
+
+// Original implementation preserved below for reference but unreachable
+export function setupIntegrationTests_ARCHIVED(options = {}) {
   const {
     enableDatabase = true,
     enableMocks = true,
