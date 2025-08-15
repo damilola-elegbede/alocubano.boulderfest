@@ -18,6 +18,9 @@ beforeAll(async () => {
   // Set integration test environment
   process.env.TEST_TYPE = "integration";
   process.env.TEST_INTEGRATION = "true";
+  
+  // Skip Redis in integration tests to prevent connection errors
+  process.env.SKIP_REDIS = "true";
 
   // Use in-memory database for integration tests to prevent file conflicts
   if (

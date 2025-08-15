@@ -429,7 +429,7 @@ class DropdownManager {
         const triggerRect = trigger.getBoundingClientRect();
         const menuRect = menu.getBoundingClientRect();
         const viewportWidth = window.innerWidth;
-        // Removed unused viewportHeight and scrollY
+        const viewportHeight = window.innerHeight;
 
         // Reset positioning
         menu.style.left = '';
@@ -1059,9 +1059,12 @@ class SiteNavigation {
 }
 
 // Page transition effects
+// Define PageTransition at module scope for proper export
+let PageTransition;
+
 if (typeof PageTransition === 'undefined') {
     // eslint-disable-next-line no-unused-vars
-    class PageTransition {
+    PageTransition = class PageTransition {
 
         constructor() {
             this.init();
@@ -1179,7 +1182,7 @@ if (typeof PageTransition === 'undefined') {
                 }
             });
         }
-    }
+    };
 }
 
 // Initialize on DOM load

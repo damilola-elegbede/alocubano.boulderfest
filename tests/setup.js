@@ -10,6 +10,9 @@ process.env.TURSO_DATABASE_URL = ":memory:";
 // Disable external services in tests
 process.env.DISABLE_EXTERNAL_SERVICES = "true";
 
+// Skip Redis in test environment to prevent connection errors
+process.env.SKIP_REDIS = "true";
+
 // Global mocks
 global.fetch = vi.fn();
 

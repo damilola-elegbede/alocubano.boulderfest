@@ -254,10 +254,10 @@ export function setupBrowserPolyfills(window) {
     }
   }
 
-  // Web Storage API enhancements (if not already present)
-  if (!window.localStorage) {
+  // Web Storage API - localStorage
+  if (!window.localStorage || typeof window.localStorage.removeItem !== 'function') {
     const storage = {};
-    window.localStorage = {
+    const localStoragePolyfill = {
       getItem: function(key) {
         return storage[key] || null;
       },
@@ -278,11 +278,19 @@ export function setupBrowserPolyfills(window) {
         return keys[index] || null;
       }
     };
+
+    // If localStorage exists but is incomplete, extend it
+    if (window.localStorage && typeof window.localStorage === 'object') {
+      Object.assign(window.localStorage, localStoragePolyfill);
+    } else {
+      window.localStorage = localStoragePolyfill;
+    }
   }
 
-  if (!window.sessionStorage) {
+  // Web Storage API - sessionStorage
+  if (!window.sessionStorage || typeof window.sessionStorage.removeItem !== 'function') {
     const storage = {};
-    window.sessionStorage = {
+    const sessionStoragePolyfill = {
       getItem: function(key) {
         return storage[key] || null;
       },
@@ -303,6 +311,13 @@ export function setupBrowserPolyfills(window) {
         return keys[index] || null;
       }
     };
+
+    // If sessionStorage exists but is incomplete, extend it
+    if (window.sessionStorage && typeof window.sessionStorage === 'object') {
+      Object.assign(window.sessionStorage, sessionStoragePolyfill);
+    } else {
+      window.sessionStorage = sessionStoragePolyfill;
+    }
   }
 
   // Crypto API (basic polyfill)
