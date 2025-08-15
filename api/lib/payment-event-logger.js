@@ -10,6 +10,10 @@ export class PaymentEventLogger {
    */
   async logStripeEvent(event, transactionId = null) {
     try {
+      if (!event || !event.id) {
+        throw new Error("Invalid event: missing event or event.id");
+      }
+      
       const sourceId = `STRIPE-${event.id}`;
 
       // Check if event was already processed (idempotency)
@@ -18,7 +22,7 @@ export class PaymentEventLogger {
         args: [sourceId],
       });
 
-      if (existing.rows.length > 0) {
+      if (existing.rows && existing.rows.length > 0) {
         console.log(`Event ${sourceId} already processed`);
         return { status: "already_processed", eventId: sourceId };
       }
@@ -69,6 +73,10 @@ export class PaymentEventLogger {
    */
   async updateEventTransactionId(eventId, transactionId) {
     try {
+      if (!eventId || !transactionId) {
+        throw new Error(`Invalid parameters: eventId=${eventId}, transactionId=${transactionId}`);
+      }
+      
       const sourceId = `STRIPE-${eventId}`;
       await this.db.execute({
         sql: "UPDATE payment_events SET transaction_id = ? WHERE source_id = ?",
@@ -159,7 +167,7 @@ export class PaymentEventLogger {
             LIMIT ?`,
       args: [limit],
     });
-    return result.rows;
+    return result.rows || [];
   }
 }
 

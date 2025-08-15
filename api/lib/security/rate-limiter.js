@@ -22,7 +22,19 @@ async function loadRedis() {
       const redisModule = await import("ioredis");
       Redis = redisModule.default;
     } catch (error) {
-      console.warn("Redis not available, using memory fallback only");
+      // Check if we're in test environment to suppress warnings
+      const isTestEnv = (
+        process.env.CI === 'true' ||
+        process.env.GITHUB_ACTIONS === 'true' ||
+        process.env.NODE_ENV === 'test' ||
+        process.env.SKIP_REDIS === 'true' ||
+        process.env.VITEST === 'true' ||
+        process.env.JEST_WORKER_ID !== undefined
+      );
+      
+      if (!isTestEnv) {
+        console.warn("Redis not available, using memory fallback only");
+      }
       Redis = false; // Mark as unavailable
     }
   }
@@ -92,19 +104,39 @@ export class AdvancedRateLimiter {
       alerts: 0,
     };
 
+    // Check if we're in CI/test environment
+    this.isTestEnvironment = this.detectTestEnvironment();
+    
     // Configuration
     this.redisConfig = options.redis || this.buildRedisConfig();
 
-    this.enableRedis = options.enableRedis !== false;
+    // Disable Redis in CI/test environments or when explicitly skipped
+    this.enableRedis = options.enableRedis !== false && !this.isTestEnvironment;
     this.enableAnalytics = options.enableAnalytics !== false;
     this.alertCallback = options.alertCallback || this.defaultAlertHandler;
     this._cleanupTimer = null;
 
-    // Initialize Redis connection
-    this.initRedis();
+    // Initialize Redis connection only if enabled
+    if (this.enableRedis) {
+      this.initRedis();
+    }
 
     // Cleanup interval for fallback store
     this.startCleanupInterval();
+  }
+
+  /**
+   * Detect if we're running in a test/CI environment
+   */
+  detectTestEnvironment() {
+    return (
+      process.env.CI === 'true' ||
+      process.env.GITHUB_ACTIONS === 'true' ||
+      process.env.NODE_ENV === 'test' ||
+      process.env.SKIP_REDIS === 'true' ||
+      process.env.VITEST === 'true' ||
+      process.env.JEST_WORKER_ID !== undefined
+    );
   }
 
   buildRedisConfig() {
@@ -142,19 +174,27 @@ export class AdvancedRateLimiter {
         this.redis = new RedisClass(this.redisConfig);
 
         this.redis.on("error", (error) => {
-          console.warn(
-            "Redis connection error, falling back to memory:",
-            error,
-          );
+          // Suppress Redis error logs in test/CI environments
+          if (!this.isTestEnvironment) {
+            console.warn(
+              "Redis connection error, falling back to memory:",
+              error,
+            );
+          }
           this.redis = null;
         });
 
         this.redis.on("connect", () => {
-          console.log("Redis connected for rate limiting");
+          if (!this.isTestEnvironment) {
+            console.log("Redis connected for rate limiting");
+          }
         });
       }
     } catch (error) {
-      console.warn("Failed to initialize Redis, using memory fallback:", error);
+      // Suppress Redis initialization errors in test/CI environments
+      if (!this.isTestEnvironment) {
+        console.warn("Failed to initialize Redis, using memory fallback:", error);
+      }
       this.redis = null;
     }
   }
@@ -258,7 +298,10 @@ export class AdvancedRateLimiter {
           count: count + 1,
         };
       } catch (error) {
-        console.warn("Redis sliding window failed, using fallback:", error);
+        // Suppress Redis operation error logs in test/CI environments
+        if (!this.isTestEnvironment) {
+          console.warn("Redis sliding window failed, using fallback:", error);
+        }
         return this.checkFallbackWindow(key, limit, windowMs);
       }
     }
@@ -348,7 +391,10 @@ export class AdvancedRateLimiter {
 
       this.analytics.penalties++;
     } catch (error) {
-      console.warn("Failed to apply penalty:", error);
+      // Suppress penalty application error logs in test/CI environments
+      if (!this.isTestEnvironment) {
+        console.warn("Failed to apply penalty:", error);
+      }
     }
   }
 
@@ -382,7 +428,10 @@ export class AdvancedRateLimiter {
         await this.triggerAlert(endpoint, clientId, count);
       }
     } catch (error) {
-      console.warn("Failed to check abuse pattern:", error);
+      // Suppress abuse pattern check error logs in test/CI environments
+      if (!this.isTestEnvironment) {
+        console.warn("Failed to check abuse pattern:", error);
+      }
     }
   }
 
@@ -711,6 +760,21 @@ let rateLimiterInstance = null;
 
 export function getRateLimiter(options = {}) {
   if (!rateLimiterInstance) {
+    // Detect test environment for singleton creation
+    const isTestEnvironment = (
+      process.env.CI === 'true' ||
+      process.env.GITHUB_ACTIONS === 'true' ||
+      process.env.NODE_ENV === 'test' ||
+      process.env.SKIP_REDIS === 'true' ||
+      process.env.VITEST === 'true' ||
+      process.env.JEST_WORKER_ID !== undefined
+    );
+    
+    // Disable Redis in test environments unless explicitly enabled
+    if (isTestEnvironment && options.enableRedis === undefined) {
+      options.enableRedis = false;
+    }
+    
     rateLimiterInstance = new AdvancedRateLimiter(options);
   }
   return rateLimiterInstance;

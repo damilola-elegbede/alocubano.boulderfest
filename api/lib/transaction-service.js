@@ -208,28 +208,40 @@ export class TransactionService {
    * Get transaction by UUID
    */
   async getByUUID(uuid) {
+    if (!uuid) {
+      return null;
+    }
+    
     const result = await this.db.execute({
       sql: "SELECT * FROM transactions WHERE uuid = ?",
       args: [uuid],
     });
-    return result.rows[0];
+    return result.rows && result.rows.length > 0 ? result.rows[0] : null;
   }
 
   /**
    * Get transaction by Stripe session ID
    */
   async getByStripeSessionId(sessionId) {
+    if (!sessionId) {
+      return null;
+    }
+    
     const result = await this.db.execute({
       sql: "SELECT * FROM transactions WHERE stripe_checkout_session_id = ?",
       args: [sessionId],
     });
-    return result.rows[0];
+    return result.rows && result.rows.length > 0 ? result.rows[0] : null;
   }
 
   /**
    * Update transaction status
    */
   async updateStatus(uuid, status, metadata = {}) {
+    if (!uuid || !status) {
+      throw new Error(`Invalid parameters: uuid=${uuid}, status=${status}`);
+    }
+    
     // Use parameterized timestamp for database-agnostic compatibility
     const updatedAt = new Date().toISOString();
 
@@ -248,6 +260,11 @@ export class TransactionService {
    * Log transaction status change
    */
   async logStatusChange(uuid, newStatus, metadata) {
+    if (!uuid || !newStatus) {
+      console.error(`Cannot log status change: invalid parameters uuid=${uuid}, status=${newStatus}`);
+      return;
+    }
+    
     const transaction = await this.getByUUID(uuid);
 
     // Check if transaction exists
@@ -286,24 +303,32 @@ export class TransactionService {
    * Get transaction by Stripe payment intent ID
    */
   async getByPaymentIntentId(paymentIntentId) {
+    if (!paymentIntentId) {
+      return null;
+    }
+    
     const result = await this.db.execute({
       sql: "SELECT * FROM transactions WHERE stripe_payment_intent_id = ?",
       args: [paymentIntentId],
     });
-    return result.rows[0];
+    return result.rows && result.rows.length > 0 ? result.rows[0] : null;
   }
 
   /**
    * Get customer transaction history
    */
   async getCustomerTransactions(email) {
+    if (!email) {
+      return [];
+    }
+    
     const result = await this.db.execute({
       sql: `SELECT * FROM transactions 
             WHERE customer_email = ? 
             ORDER BY created_at DESC`,
       args: [email],
     });
-    return result.rows;
+    return result.rows || [];
   }
 }
 

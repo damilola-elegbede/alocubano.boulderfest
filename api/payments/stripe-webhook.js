@@ -67,7 +67,7 @@ export default async function handler(req, res) {
     try {
       const logResult = await paymentEventLogger.logStripeEvent(event);
 
-      if (logResult.status === "already_processed") {
+      if (logResult && logResult.status === "already_processed") {
         console.log(`Skipping already processed event: ${event.id}`);
         return res.json({ received: true, status: "already_processed" });
       }
@@ -103,6 +103,11 @@ export default async function handler(req, res) {
           // Create transaction record
           const transaction =
             await transactionService.createFromStripeSession(fullSession);
+          
+          if (!transaction) {
+            throw new Error(`Failed to create transaction for session ${session.id}`);
+          }
+          
           console.log(`Created transaction: ${transaction.uuid}`);
 
           // Update the payment event with transaction ID
@@ -166,6 +171,11 @@ export default async function handler(req, res) {
           if (!existingTransaction) {
             const transaction =
               await transactionService.createFromStripeSession(fullSession);
+            
+            if (!transaction) {
+              throw new Error(`Failed to create transaction for async payment ${session.id}`);
+            }
+            
             console.log(
               `Created transaction from async payment: ${transaction.uuid}`,
             );
@@ -216,7 +226,7 @@ export default async function handler(req, res) {
           const transaction = await transactionService.getByStripeSessionId(
             session.id,
           );
-          if (transaction) {
+          if (transaction && transaction.uuid) {
             await transactionService.updateStatus(transaction.uuid, "failed");
           }
         } catch (error) {
@@ -239,7 +249,7 @@ export default async function handler(req, res) {
           const transaction = await transactionService.getByStripeSessionId(
             session.id,
           );
-          if (transaction) {
+          if (transaction && transaction.uuid) {
             await transactionService.updateStatus(
               transaction.uuid,
               "cancelled",
@@ -275,7 +285,7 @@ export default async function handler(req, res) {
             paymentIntent.id,
           );
 
-          if (transaction) {
+          if (transaction && transaction.uuid) {
             await transactionService.updateStatus(transaction.uuid, "failed");
           }
         } catch (error) {
@@ -301,7 +311,7 @@ export default async function handler(req, res) {
             paymentIntent.id,
           );
 
-          if (transaction) {
+          if (transaction && transaction.uuid) {
             await transactionService.updateStatus(
               transaction.uuid,
               "cancelled",
@@ -329,7 +339,7 @@ export default async function handler(req, res) {
               charge.payment_intent,
             );
 
-            if (transaction) {
+            if (transaction && transaction.uuid) {
               const status =
                 charge.amount_refunded === charge.amount
                   ? "refunded"
