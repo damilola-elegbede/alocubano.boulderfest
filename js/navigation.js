@@ -1060,6 +1060,7 @@ class SiteNavigation {
 
 // Page transition effects
 if (typeof PageTransition === 'undefined') {
+    // eslint-disable-next-line no-unused-vars
     class PageTransition {
 
         constructor() {
