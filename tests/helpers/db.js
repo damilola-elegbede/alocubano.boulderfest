@@ -176,6 +176,34 @@ export function createTestTransaction(db, data = {}) {
 /**
  * Helper to create test newsletter subscriber
  */
+
+/**
+ * Creates an async test database with proper initialization
+ * Matches production database service interface
+ */
+export async function createAsyncTestDatabase() {
+  const db = createTestDatabase();
+  const client = createLibSQLAdapter(db);
+  
+  // Ensure client matches production interface
+  client.ensureInitialized = async () => client;
+  client.getClient = async () => client;
+  
+  // Add test connection method
+  client.testConnection = async () => {
+    try {
+      const result = await client.execute("SELECT 1 as test");
+      return result && result.rows && result.rows.length > 0;
+    } catch {
+      return false;
+    }
+  };
+  
+  return { db, client };
+}
+
+// Removed duplicate createAsyncTestDatabase function
+
 export function createTestSubscriber(db, data = {}) {
   const defaults = {
     email: `subscriber${Date.now()}@example.com`,

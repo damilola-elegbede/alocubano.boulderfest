@@ -26,6 +26,7 @@ export { setupTest, teardownTest, setupIntegrationTest } from "./setup.js";
 // Database helpers
 export {
   createTestDatabase,
+  createAsyncTestDatabase,
   seedTestData,
   createTestUser,
   createTestTicket,

@@ -1,9 +1,11 @@
 /**
-
-import { vi } from 'vitest';
  * Gallery-Lightbox Integration Tests
  * Testing actual component interaction between Gallery and Lightbox
  */
+
+import { vi } from 'vitest';
+import { JSDOM } from 'jsdom';
+import { setupBrowserPolyfills } from '../helpers/browser-polyfills.js';
 
 const fs = require("fs");
 const path = require("path");
@@ -28,8 +30,22 @@ try {
 
 describe("Gallery-Lightbox Integration - Real Component Interaction", () => {
   let mockLocalStorage, mockSessionStorage;
+  let dom;
 
   const setupIntegrationEnvironment = () => {
+    // Create JSDOM instance and setup polyfills
+    dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
+      url: 'http://localhost',
+      pretendToBeVisual: true,
+      resources: 'usable'
+    });
+    
+    global.window = dom.window;
+    global.document = dom.window.document;
+    
+    // Setup browser polyfills
+    setupBrowserPolyfills(global.window);
+    
     // Set up complete gallery page DOM structure
     document.body.innerHTML = `
       <div id="gallery-detail-loading" style="display: block;">Loading...</div>

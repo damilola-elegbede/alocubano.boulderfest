@@ -3,6 +3,7 @@
 
 import { describe, test, expect, beforeEach, vi } from "vitest";
 import { JSDOM } from "jsdom";
+import { setupBrowserPolyfills } from "../helpers/browser-polyfills.js";
 
 describe("Cart Management Regression Tests", () => {
   let dom;
@@ -72,6 +73,9 @@ describe("Cart Management Regression Tests", () => {
 
     document = dom.window.document;
     window = dom.window;
+
+    // Setup browser polyfills
+    setupBrowserPolyfills(window);
 
     // Mock localStorage properly for JSDOM
     localStorage = {

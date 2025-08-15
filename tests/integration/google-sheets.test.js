@@ -8,10 +8,9 @@ import request from "supertest";
 import express from "express";
 import nock from "nock";
 import {
-  createTestDatabase,
+  createAsyncTestDatabase,
   seedTestData,
-  createLibSQLAdapter,
-} from "../helpers/db.js";
+} from "../helpers/index.js";
 import {
   isCI,
   shouldSkipExternalTests,
@@ -60,17 +59,11 @@ if (isCI()) {
   }));
 }
 
-// Mock database
+// Mock database - will be updated in beforeEach
 let mockDatabase = {
   execute: vi.fn(),
   close: vi.fn(),
 };
-
-// Mock the database module to return our mock database
-vi.mock("../../api/lib/database.js", () => ({
-  getDatabaseClient: vi.fn().mockImplementation(async () => mockDatabase),
-  getDatabase: vi.fn().mockImplementation(() => mockDatabase),
-}));
 
 // Only skip tests that truly require external services without proper mocks
 // Use the centralized CI detection instead of blanket skips
@@ -114,14 +107,21 @@ describe("Google Sheets Analytics Integration", () => {
     };
 
     // Create isolated test database for each test
-    db = createTestDatabase();
+    const { db: testDb, client: testClient } = await createAsyncTestDatabase();
+    db = testDb;
     seedTestData(db, "minimal");
 
     // Reset the global mock database to point to our test database
-    mockDatabase = {
-      execute: vi.fn().mockImplementation(() => Promise.resolve({ rows: [] })),
-      close: vi.fn().mockResolvedValue(undefined),
-    };
+    mockDatabase.execute.mockReset();
+    mockDatabase.close.mockReset();
+    mockDatabase.execute.mockImplementation(() => Promise.resolve({ rows: [] }));
+    mockDatabase.close.mockResolvedValue(undefined);
+
+    // Mock the database module to return our updated mock database
+    vi.doMock("../../api/lib/database.js", () => ({
+      getDatabaseClient: vi.fn().mockImplementation(async () => mockDatabase),
+      getDatabase: vi.fn().mockImplementation(() => mockDatabase),
+    }));
 
     // Reset the mock factory function completely (using Vitest syntax)
     if (typeof mockGoogleSheetsFactory.mockClear === "function") {

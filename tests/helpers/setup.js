@@ -37,7 +37,7 @@
 function _getVi(injectedVi) {
   return injectedVi ?? globalThis?.vi ?? undefined;
 }
-import { createTestDatabase, createLibSQLAdapter, seedTestData } from "./db.js";
+// Database imports moved to dynamic imports below to avoid conflicts
 import { mockBrevoService, mockStripeService, mockFetch } from "./mocks.js";
 import {
   backupEnv,
@@ -90,15 +90,42 @@ export async function setupTest(options = {}) {
     }
   }
 
-  // Database setup
+      // Database setup
   if (options.database !== false) {
-    setup.database = createTestDatabase();
-    setup.client = createLibSQLAdapter(setup.database);
+    // Import dynamically to avoid conflicts - first check exports
+    const dbModule = await import('./db.js');
+    const createAsyncTestDatabase = dbModule.createAsyncTestDatabase || dbModule.default?.createAsyncTestDatabase;
+    if (!createAsyncTestDatabase) {
+      throw new Error('createAsyncTestDatabase not found in db.js module');
+    }
+    const { db, client } = await createAsyncTestDatabase();
+    
+    setup.database = db;
+    setup.client = client;
+    
+    // Mock the database module to return our test client
+    const { createMockDatabaseService } = await import('./mocks.js');
+    const mockService = createMockDatabaseService(client);
+    
+    vi.doMock('../../api/lib/database.js', () => ({
+      getDatabase: () => mockService,
+      getDatabaseClient: async () => client,
+      testConnection: async () => true,
+      resetDatabaseInstance: async () => {
+        await mockService.resetForTesting();
+      },
+      DatabaseService: class {
+        constructor() {
+          return mockService;
+        }
+      }
+    }));
 
     // Seed with test data
     if (options.seed !== false) {
       const fixture = options.seed || "minimal";
       try {
+        const { seedTestData } = await import('./db.js');
         seedTestData(setup.database, fixture);
       } catch (error) {
         // Continue without seeding if fixture doesn't exist

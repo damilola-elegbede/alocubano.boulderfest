@@ -7,6 +7,8 @@ import { vi } from "vitest";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { JSDOM } from "jsdom";
+import { setupBrowserPolyfills } from "../helpers/browser-polyfills.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,6 +34,19 @@ try {
 
 describe("Lightbox Accessibility", () => {
   beforeEach(() => {
+    // Create JSDOM instance and setup polyfills
+    const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
+      url: 'http://localhost',
+      pretendToBeVisual: true,
+      resources: 'usable'
+    });
+    
+    global.window = dom.window;
+    global.document = dom.window.document;
+    
+    // Setup browser polyfills
+    setupBrowserPolyfills(global.window);
+    
     // Load lightbox source for accessibility testing
     if (lightboxSource) {
       try {
@@ -336,6 +351,19 @@ describe("Lightbox Accessibility", () => {
 
 describe("Gallery Accessibility", () => {
   beforeEach(() => {
+    // Create JSDOM instance and setup polyfills
+    const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
+      url: 'http://localhost',
+      pretendToBeVisual: true,
+      resources: 'usable'
+    });
+    
+    global.window = dom.window;
+    global.document = dom.window.document;
+    
+    // Setup browser polyfills
+    setupBrowserPolyfills(global.window);
+    
     // Setup accessible gallery DOM
     document.body.innerHTML = `
       <div class="gallery-container" role="region" aria-label="Photo gallery">
@@ -563,6 +591,19 @@ describe("Gallery Accessibility", () => {
 
 describe("Navigation Accessibility", () => {
   beforeEach(() => {
+    // Create JSDOM instance and setup polyfills
+    const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
+      url: 'http://localhost',
+      pretendToBeVisual: true,
+      resources: 'usable'
+    });
+    
+    global.window = dom.window;
+    global.document = dom.window.document;
+    
+    // Setup browser polyfills
+    setupBrowserPolyfills(global.window);
+    
     // Setup accessible navigation DOM
     document.body.innerHTML = `
       <nav class="main-nav" role="navigation" aria-label="Main navigation">
