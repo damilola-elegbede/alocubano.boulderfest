@@ -41,7 +41,6 @@ class ImageCacheManager {
             const cached = localStorage.getItem(this.imageCacheKey);
             return cached ? JSON.parse(cached) : {};
         } catch {
-
             return {};
         }
     }
@@ -52,9 +51,7 @@ class ImageCacheManager {
                 this.imageCacheKey,
                 JSON.stringify(this.imageDataCache)
             );
-        } catch {
-
-        }
+        } catch {}
     }
 
     /**
@@ -92,7 +89,6 @@ class ImageCacheManager {
 
         // Validate format
         if (!this.supportedFormats.includes(format)) {
-
             format = this.fallbackFormat;
         }
 
@@ -245,7 +241,6 @@ class ImageCacheManager {
         // 2. Get the assigned image for the current page
         const assignedImage = this.sessionAssignments[pageId];
         if (!assignedImage) {
-
             return {
                 id: null,
                 url: this.defaultImageUrl,
@@ -318,9 +313,7 @@ class ImageCacheManager {
                 this.cacheKey,
                 JSON.stringify(this.sessionAssignments)
             );
-
         } catch {
-
             throw error;
         }
     }
@@ -372,7 +365,6 @@ class ImageCacheManager {
 
             return { id: null, url: this.defaultImageUrl }; // Fallback
         } catch {
-
             return { id: null, url: this.defaultImageUrl }; // Fallback to default
         }
     }
@@ -422,10 +414,7 @@ class ImageCacheManager {
         try {
             localStorage.removeItem(this.imageCacheKey);
             sessionStorage.removeItem(this.cacheKey);
-
-        } catch {
-
-        }
+        } catch {}
     }
 
     /**
@@ -458,4 +447,3 @@ class ImageCacheManager {
 
 // Create global instance
 window.ImageCacheManager = new ImageCacheManager();
-

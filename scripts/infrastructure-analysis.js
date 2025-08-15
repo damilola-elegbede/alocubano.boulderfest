@@ -1,5 +1,5 @@
-import { readdir, stat, readFile, writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { readdir, stat, readFile, writeFile, mkdir } from "fs/promises";
+import { join } from "path";
 
 async function analyzeTestInfrastructure() {
   const results = {
@@ -9,88 +9,99 @@ async function analyzeTestInfrastructure() {
     managerClasses: [],
     utilities: [],
     complexityScore: 0,
-    dependencies: {}
+    dependencies: {},
   };
 
   // Analyze test utilities
-  const paths = ['./tests/utils', './tests/config', './tests/mocks'];
-  
+  const paths = ["./tests/utils", "./tests/config", "./tests/mocks"];
+
   for (const dirPath of paths) {
     const files = await readdir(dirPath).catch((err) => {
       console.warn(`⚠️ Could not read directory ${dirPath}: ${err.message}`);
       return [];
     });
-    
+
     for (const file of files) {
-      if (!file.endsWith('.js')) continue;
-      
+      if (!file.endsWith(".js")) continue;
+
       const filePath = join(dirPath, file);
-      const content = await readFile(filePath, 'utf8');
-      const lines = content.split('\n').length;
+      const content = await readFile(filePath, "utf8");
+      const lines = content.split("\n").length;
       const deps = extractDependencies(content);
-      
+
       results.totalLines += lines;
       results.fileCount++;
-      
+
       // Aggregate top-level dependency frequencies
       for (const dep of deps) {
         results.dependencies[dep] = (results.dependencies[dep] || 0) + 1;
       }
-      
+
       // Detect manager classes (elimination targets)
-      if (content.match(/class\s+\w*(?:Manager|Orchestrator|Coordinator|Registry|Mock)\b/)) {
+      if (
+        content.match(
+          /class\s+\w*(?:Manager|Orchestrator|Coordinator|Registry|Mock)\b/,
+        )
+      ) {
         results.managerClasses.push({
           file: filePath,
           lines,
           className: extractClassName(content),
           complexity: calculateComplexity(content),
-          dependencies: deps  // Use cached dependencies
+          dependencies: deps, // Use cached dependencies
         });
       }
-      
+
       // Track all utilities
       results.utilities.push({
         file: filePath,
         lines,
         functions: extractFunctions(content),
-        category: categorizeUtility(file, content)
+        category: categorizeUtility(file, content),
       });
     }
   }
-  
+
   // Generate comprehensive report
   const report = generateReport(results);
-  await mkdir('./docs', { recursive: true });
-  await writeFile('./docs/INFRASTRUCTURE_INVENTORY.md', report);
+  await mkdir("./docs", { recursive: true });
+  await writeFile("./docs/INFRASTRUCTURE_INVENTORY.md", report);
   // Ensure dependencies is serializable
   const jsonResults = {
     ...results,
-    dependencies: results.dependencies || {}
+    dependencies: results.dependencies || {},
   };
-  await writeFile('./docs/infrastructure-metrics.json', JSON.stringify(jsonResults, null, 2));
-  
+  await writeFile(
+    "./docs/infrastructure-metrics.json",
+    JSON.stringify(jsonResults, null, 2),
+  );
+
   return results;
 }
 
 function calculateComplexity(content) {
-  const conditions = (content.match(/if\s*\(|while\s*\(|for\s*\(|\?\s*:/g) || []).length;
+  const conditions = (
+    content.match(/if\s*\(|while\s*\(|for\s*\(|\?\s*:/g) || []
+  ).length;
   const functions = (content.match(/function\s+\w+|=>\s*{/g) || []).length;
-  const asyncPatterns = (content.match(/async|await|Promise|then\(/g) || []).length;
+  const asyncPatterns = (content.match(/async|await|Promise|then\(/g) || [])
+    .length;
   return conditions + functions + Math.floor(asyncPatterns / 2);
 }
 
 function extractClassName(content) {
   const match = content.match(/class\s+(\w+)/);
-  return match ? match[1] : 'Unknown';
+  return match ? match[1] : "Unknown";
 }
 
 function categorizeUtility(filename, content) {
-  if (filename.includes('database') || filename.includes('db')) return 'database';
-  if (filename.includes('mock')) return 'mocking';
-  if (filename.includes('env')) return 'environment';
-  if (filename.includes('helper')) return 'helpers';
-  if (content.includes('Manager')) return 'manager';
-  return 'other';
+  if (filename.includes("database") || filename.includes("db"))
+    return "database";
+  if (filename.includes("mock")) return "mocking";
+  if (filename.includes("env")) return "environment";
+  if (filename.includes("helper")) return "helpers";
+  if (content.includes("Manager")) return "manager";
+  return "other";
 }
 
 function generateReport(results) {
@@ -106,19 +117,27 @@ Generated: ${results.timestamp}
 - **Target Reduction**: ${Math.round(results.totalLines * 0.8)} lines to eliminate
 
 ## Manager Classes (Priority Targets)
-${results.managerClasses.map(m => `
+${results.managerClasses
+  .map(
+    (m) => `
 ### ${m.className}
 - **File**: ${m.file}
 - **Lines**: ${m.lines}
 - **Complexity**: ${m.complexity}
-- **Action**: DELETE in PR #${getManagerPR(m.className)}`).join('\n')}
+- **Action**: DELETE in PR #${getManagerPR(m.className)}`,
+  )
+  .join("\n")}
 
 ## Utility Categories
-${Object.entries(groupByCategory(results.utilities)).map(([category, files]) => `
+${Object.entries(groupByCategory(results.utilities))
+  .map(
+    ([category, files]) => `
 ### ${category}
 - Files: ${files.length}
 - Lines: ${files.reduce((sum, f) => sum + f.lines, 0)}
-- Action: ${getActionForCategory(category)}`).join('\n')}
+- Action: ${getActionForCategory(category)}`,
+  )
+  .join("\n")}
 
 ## Elimination Strategy
 1. **PR #1**: This inventory and foundation (0 deletions)
@@ -136,7 +155,8 @@ ${Object.entries(groupByCategory(results.utilities)).map(([category, files]) => 
 
 // Helper functions
 function extractFunctions(content) {
-  const regex = /(?:export\s+)?(?:async\s+)?function\s+(\w+)|(?:export\s+)?const\s+(\w+)\s*=\s*(?:async\s*)?\(/g;
+  const regex =
+    /(?:export\s+)?(?:async\s+)?function\s+(\w+)|(?:export\s+)?const\s+(\w+)\s*=\s*(?:async\s*)?\(/g;
   const functions = [];
   let match;
   while ((match = regex.exec(content)) !== null) {
@@ -165,33 +185,35 @@ function groupByCategory(utilities) {
 
 function getManagerPR(className) {
   const prMap = {
-    'TestEnvironmentManager': 2,
-    'TestSingletonManager': 3,
-    'TestMockManager': 5,
-    'TestInitializationOrchestrator': 6
+    TestEnvironmentManager: 2,
+    TestSingletonManager: 3,
+    TestMockManager: 5,
+    TestInitializationOrchestrator: 6,
   };
-  return prMap[className] || 'TBD';
+  return prMap[className] || "TBD";
 }
 
 function getActionForCategory(category) {
   const actions = {
-    'database': 'SIMPLIFY in PR #4 (1,017 → 80 lines)',
-    'mocking': 'SIMPLIFY in PR #5 (850 → 100 lines)',
-    'environment': 'REPLACE in PR #2 (400 → 30 lines)',
-    'manager': 'DELETE in PR #2-6',
-    'helpers': 'CONSOLIDATE in PR #7',
-    'other': 'REVIEW and consolidate'
+    database: "SIMPLIFY in PR #4 (1,017 → 80 lines)",
+    mocking: "SIMPLIFY in PR #5 (850 → 100 lines)",
+    environment: "REPLACE in PR #2 (400 → 30 lines)",
+    manager: "DELETE in PR #2-6",
+    helpers: "CONSOLIDATE in PR #7",
+    other: "REVIEW and consolidate",
   };
-  return actions[category] || 'REVIEW';
+  return actions[category] || "REVIEW";
 }
 
 // Run analysis
 analyzeTestInfrastructure()
-  .then(results => {
-    console.log('✅ Infrastructure analysis complete');
-    console.log(`📊 Total lines to eliminate: ${Math.round(results.totalLines * 0.8)}`);
+  .then((results) => {
+    console.log("✅ Infrastructure analysis complete");
+    console.log(
+      `📊 Total lines to eliminate: ${Math.round(results.totalLines * 0.8)}`,
+    );
   })
-  .catch(error => {
-    console.error('❌ Infrastructure analysis failed:', error);
+  .catch((error) => {
+    console.error("❌ Infrastructure analysis failed:", error);
     process.exit(1);
   });

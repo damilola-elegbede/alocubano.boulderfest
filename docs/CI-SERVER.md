@@ -15,24 +15,28 @@ GitHub Actions workflows were failing when trying to run performance tests becau
 ## Solution Features
 
 ### 🚀 **Serverless Function Compatibility**
+
 - Dynamically imports and executes Vercel serverless functions
 - Supports parameterized routes (e.g., `/api/tickets/[ticketId].js`)
 - Handles ES6 modules with proper import caching
 - Compatible with existing function signatures
 
 ### 🛡️ **Error Handling**
+
 - Graceful handling of missing dependencies in CI
 - Timeout protection for slow handlers (30s limit)
 - Detailed error messages for debugging
 - Circuit breaker pattern for repeated failures
 
 ### 🔧 **CI Optimization**
+
 - Automatic CI environment detection
-- Mock services for unavailable dependencies  
+- Mock services for unavailable dependencies
 - Minimal resource footprint
 - Fast startup time (<5 seconds)
 
 ### 📊 **Monitoring & Debugging**
+
 - Health check endpoint at `/health`
 - API endpoint discovery and listing
 - Request/response logging in CI mode
@@ -68,26 +72,28 @@ CI=true NODE_ENV=ci node scripts/ci-server.js
 The server provides Vercel-compatible request/response objects:
 
 ### Request Object
+
 ```javascript
 {
-  body,        // Parsed request body
-  query,       // Query parameters + route parameters
-  headers,     // Request headers
-  method,      // HTTP method
-  url,         // Request URL
-  params       // Route parameters (Express-style)
+  (body, // Parsed request body
+    query, // Query parameters + route parameters
+    headers, // Request headers
+    method, // HTTP method
+    url, // Request URL
+    params); // Route parameters (Express-style)
 }
 ```
 
 ### Response Object
+
 ```javascript
 {
-  status(code),     // Set status code
-  json(data),       // Send JSON response
-  send(data),       // Send response
-  setHeader(k, v),  // Set response header
-  end(data),        // End response
-  redirect(url)     // Redirect response
+  (status(code), // Set status code
+    json(data), // Send JSON response
+    send(data), // Send response
+    setHeader(k, v), // Set response header
+    end(data), // End response
+    redirect(url)); // Redirect response
 }
 ```
 
@@ -103,14 +109,17 @@ The server handles multiple route patterns:
 ## Environment Handling
 
 ### CI Mode Detection
+
 ```javascript
-if (process.env.CI || process.env.NODE_ENV === 'ci') {
+if (process.env.CI || process.env.NODE_ENV === "ci") {
   // Enable CI-specific configurations
 }
 ```
 
 ### Mock Services
+
 When dependencies are unavailable, the server provides:
+
 - Mock database responses
 - Mock email service calls
 - Mock payment processing
@@ -148,16 +157,19 @@ TURSO_AUTH_TOKEN=test-token
 ## Performance Characteristics
 
 ### Startup Time
+
 - **Cold start**: 3-5 seconds
 - **Warm start**: 1-2 seconds
 - **Health check**: <100ms response time
 
 ### Resource Usage
+
 - **Memory**: ~50MB baseline
 - **CPU**: Minimal when idle
 - **Disk**: No persistent storage requirements
 
 ### Scaling
+
 - **Concurrent requests**: 100+ (Node.js default)
 - **Request timeout**: 30 seconds
 - **Graceful shutdown**: 5 second timeout
@@ -165,6 +177,7 @@ TURSO_AUTH_TOKEN=test-token
 ## Error Scenarios
 
 ### Missing Dependencies
+
 ```json
 {
   "error": "Service temporarily unavailable",
@@ -174,6 +187,7 @@ TURSO_AUTH_TOKEN=test-token
 ```
 
 ### Handler Timeout
+
 ```json
 {
   "error": "Gateway timeout",
@@ -183,9 +197,10 @@ TURSO_AUTH_TOKEN=test-token
 ```
 
 ### Import Failures
+
 ```json
 {
-  "error": "Invalid serverless function", 
+  "error": "Invalid serverless function",
   "expected": "function",
   "received": "undefined"
 }
@@ -194,6 +209,7 @@ TURSO_AUTH_TOKEN=test-token
 ## Testing Strategy
 
 ### Validation Tests
+
 - Server starts successfully
 - Health endpoints respond correctly
 - API routing works for common patterns
@@ -201,6 +217,7 @@ TURSO_AUTH_TOKEN=test-token
 - Static file serving functions
 
 ### CI Integration Tests
+
 - Workflow can start server
 - Performance tests can connect
 - Load testing completes successfully
@@ -209,18 +226,21 @@ TURSO_AUTH_TOKEN=test-token
 ## Troubleshooting
 
 ### Server Won't Start
+
 1. Check Node.js version (requires 18+)
 2. Verify dependencies are installed (`npm ci`)
 3. Check port availability (default 3000)
 4. Review startup logs for errors
 
 ### API Endpoints Not Found
+
 1. Verify file exists in `/api` directory
 2. Check file has valid `export default` handler
 3. Review route parameter patterns
 4. Check server logs for import errors
 
 ### Tests Failing
+
 1. Validate server starts with `npm run test:ci-server`
 2. Check `wait-on` timeout values in workflows
 3. Review CI environment variables
@@ -229,56 +249,61 @@ TURSO_AUTH_TOKEN=test-token
 ## Development
 
 ### Adding New Route Patterns
+
 Update the route resolution logic in `scripts/ci-server.js`:
 
 ```javascript
 // Add new parameter patterns
-const paramNames = ['id', 'ticketId', 'userId', 'fileId', 'newParam'];
+const paramNames = ["id", "ticketId", "userId", "fileId", "newParam"];
 ```
 
 ### Adding Mock Services
+
 Extend `scripts/ci-mock-services.js`:
 
 ```javascript
 export const mockNewService = {
   method: async (params) => {
-    console.log('[MOCK NEW] Action:', params);
+    console.log("[MOCK NEW] Action:", params);
     return { success: true };
-  }
+  },
 };
 ```
 
 ### Environment Configuration
+
 Modify the CI mode detection:
 
 ```javascript
-if (process.env.CI || process.env.NODE_ENV === 'ci') {
-  process.env.NEW_SERVICE_URL = 'mock://service';
+if (process.env.CI || process.env.NODE_ENV === "ci") {
+  process.env.NEW_SERVICE_URL = "mock://service";
 }
 ```
 
 ## Comparison with Vercel Dev
 
-| Feature | Vercel Dev | CI Server |
-|---------|------------|-----------|
-| Authentication | Required | Not required |
-| Startup time | 10-15s | 3-5s |
-| CI compatibility | Poor | Excellent |
-| Function support | Full | Core features |
-| Edge functions | ✅ | ❌ |
-| Build integration | ✅ | ❌ |
-| Hot reload | ✅ | ❌ |
-| Production parity | High | Medium |
+| Feature           | Vercel Dev | CI Server     |
+| ----------------- | ---------- | ------------- |
+| Authentication    | Required   | Not required  |
+| Startup time      | 10-15s     | 3-5s          |
+| CI compatibility  | Poor       | Excellent     |
+| Function support  | Full       | Core features |
+| Edge functions    | ✅         | ❌            |
+| Build integration | ✅         | ❌            |
+| Hot reload        | ✅         | ❌            |
+| Production parity | High       | Medium        |
 
 ## Future Enhancements
 
 ### Short Term
+
 - [ ] Edge function simulation
-- [ ] WebSocket support  
+- [ ] WebSocket support
 - [ ] Request/response middleware
 - [ ] Enhanced logging formats
 
 ### Long Term
+
 - [ ] Build step integration
 - [ ] Advanced caching strategies
 - [ ] Multi-environment configuration

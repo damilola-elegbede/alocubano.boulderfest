@@ -5,7 +5,8 @@
 
 // Smooth scroll functionality
 if (typeof SmoothScroll === 'undefined') {
-    class SmoothScroll { // eslint-disable-line no-unused-vars
+    class SmoothScroll {
+
         constructor() {
             this.init();
         }
@@ -43,7 +44,8 @@ if (typeof SmoothScroll === 'undefined') {
 
 // Form validation
 if (typeof FormValidator === 'undefined') {
-    class FormValidator { // eslint-disable-line no-unused-vars
+    class FormValidator {
+
         constructor(form) {
             this.form = form;
             this.init();
@@ -153,7 +155,6 @@ function registerServiceWorker() {
                 updateViaCache: 'none'
             })
             .then((registration) => {
-
                 // Handle updates
                 registration.addEventListener('updatefound', () => {
                     const newWorker = registration.installing;

@@ -28,9 +28,7 @@ async function initializeGlobalCart() {
 
         // Set up global debugging
         setupGlobalDebugging(cartManager);
-    } catch {
-
-    }
+    } catch {}
 }
 
 function setupPageIntegrations(cartManager) {
@@ -68,7 +66,6 @@ function setupTicketsPageIntegration(cartManager) {
                 await cartManager.removeTicket(ticketType);
             }
         } catch {
-
             // Show user notification if needed
         }
     });
@@ -79,9 +76,7 @@ function setupTicketsPageIntegration(cartManager) {
 
         try {
             await cartManager.updateTicketQuantity(ticketType, quantity);
-        } catch {
-
-        }
+        } catch {}
     });
 }
 
@@ -94,9 +89,7 @@ function setupDonationsPageIntegration(cartManager) {
         if (amount > 0) {
             try {
                 await cartManager.addDonation(amount);
-            } catch {
-
-            }
+            } catch {}
         }
     });
 }
@@ -164,15 +157,9 @@ function setupGlobalDebugging(cartManager) {
         };
 
         // Listen for cart events and log them in development
-        const cartUpdatedHandler = () => {
-
-        };
-        const ticketAddedHandler = () => {
-
-        };
-        const donationUpdatedHandler = () => {
-
-        };
+        const cartUpdatedHandler = () => {};
+        const ticketAddedHandler = () => {};
+        const donationUpdatedHandler = () => {};
 
         cartManager.addEventListener('cart:updated', cartUpdatedHandler);
         cartManager.addEventListener('cart:ticket:added', ticketAddedHandler);

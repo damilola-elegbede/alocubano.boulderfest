@@ -19,7 +19,8 @@
 class PerformanceMonitor {
     constructor() {
     // Detect test environment to suppress warnings
-        this.isTestEnvironment = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+        this.isTestEnvironment =
+      typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
 
         // Core metrics storage
         this.metrics = {
@@ -79,7 +80,6 @@ class PerformanceMonitor {
         // Initialize monitoring
         this.isObserving = false;
         this.initializeMonitoring();
-
     }
 
     initializeMonitoring() {
@@ -115,9 +115,7 @@ class PerformanceMonitor {
             this.setupUnloadReporting();
 
             this.isObserving = true;
-
         } catch (error) {
-
             this.recordError('monitoring_init_error', error);
         }
     }
@@ -157,7 +155,6 @@ class PerformanceMonitor {
 
     initializeCoreWebVitals() {
         if (!('PerformanceObserver' in window)) {
-
             return;
         }
 
@@ -170,9 +167,7 @@ class PerformanceMonitor {
 
             // Initialize Cumulative Layout Shift (CLS) tracking
             this.initializeCLS();
-
         } catch (error) {
-
             this.recordError('cwv_init_error', error);
         }
     }
@@ -219,7 +214,6 @@ class PerformanceMonitor {
 
             this.observers.lcp.observe({ entryTypes: ['largest-contentful-paint'] });
         } catch (error) {
-
             this.recordError('lcp_observer_error', error);
         }
     }
@@ -264,7 +258,6 @@ class PerformanceMonitor {
 
             this.observers.fid.observe({ entryTypes: ['first-input'] });
         } catch (error) {
-
             this.recordError('fid_observer_error', error);
         }
     }
@@ -320,7 +313,6 @@ class PerformanceMonitor {
 
             this.observers.cls.observe({ entryTypes: ['layout-shift'] });
         } catch (error) {
-
             this.recordError('cls_observer_error', error);
         }
     }
@@ -384,9 +376,7 @@ class PerformanceMonitor {
             });
 
             this.observers.resource.observe({ entryTypes: ['resource'] });
-
         } catch (error) {
-
             this.recordError('resource_timing_error', error);
         }
     }
@@ -440,7 +430,6 @@ class PerformanceMonitor {
     initializeMemoryMonitoring() {
         if (!('memory' in performance)) {
             if (!this.isTestEnvironment) {
-
             }
             return;
         }
@@ -470,9 +459,7 @@ class PerformanceMonitor {
                     });
                 }
             }, 60000); // 60 seconds instead of 10
-
         } catch (error) {
-
             this.recordError('memory_monitoring_error', error);
         }
     }
@@ -480,7 +467,6 @@ class PerformanceMonitor {
     initializeNetworkMonitoring() {
         if (!('connection' in navigator)) {
             if (!this.isTestEnvironment) {
-
             }
             return;
         }
@@ -508,9 +494,7 @@ class PerformanceMonitor {
 
             // Listen for network changes
             connection.addEventListener('change', updateNetworkInfo);
-
         } catch (error) {
-
             this.recordError('network_monitoring_error', error);
         }
     }
@@ -535,10 +519,7 @@ class PerformanceMonitor {
                     stack: event.reason && event.reason.stack ? event.reason.stack : null
                 });
             });
-
-        } catch {
-
-        }
+        } catch {}
     }
 
     initializeGalleryTracking() {
@@ -551,9 +532,7 @@ class PerformanceMonitor {
 
             // Track cache efficiency
             this.trackCacheEfficiency();
-
         } catch (error) {
-
             this.recordError('gallery_tracking_error', error);
         }
     }
@@ -901,13 +880,10 @@ class PerformanceMonitor {
                 }).catch((error) => {
                     // Only log non-404 errors to reduce console noise
                     if (!error.message.includes('404')) {
-
                     }
                 });
             }
-        } catch {
-
-        }
+        } catch {}
     }
 
     startPeriodicReporting() {
@@ -948,20 +924,16 @@ class PerformanceMonitor {
 
                 if (success) {
                     if (!this.isTestEnvironment) {
-
                     }
                 } else {
                     if (!this.isTestEnvironment) {
-
                     }
                     this.fallbackFinalReport(finalReport);
                 }
             } else {
                 this.fallbackFinalReport(finalReport);
             }
-        } catch {
-
-        }
+        } catch {}
     }
 
     fallbackFinalReport(reportData) {
@@ -973,7 +945,6 @@ class PerformanceMonitor {
             xhr.send(JSON.stringify(reportData));
         } catch {
             if (!this.isTestEnvironment) {
-
             }
         }
     }
@@ -990,7 +961,6 @@ class PerformanceMonitor {
             // Clear old events to manage memory
             this.cleanupOldEvents();
         } catch (error) {
-
             this.recordError('report_generation_error', error);
         }
     }
@@ -1179,7 +1149,6 @@ class PerformanceMonitor {
 
                 if (!success) {
                     if (!this.isTestEnvironment) {
-
                     }
                     this.sendWithFetch(analyticsEndpoint, report);
                 }
@@ -1187,7 +1156,6 @@ class PerformanceMonitor {
                 this.sendWithFetch(analyticsEndpoint, report);
             }
         } catch (error) {
-
             this.recordError('analytics_send_error', error);
         }
     }
@@ -1201,7 +1169,6 @@ class PerformanceMonitor {
         }).catch((error) => {
             // Only log non-404 errors to reduce console noise
             if (!error.message.includes('404') && !error.toString().includes('404')) {
-
             }
         });
     }
@@ -1271,10 +1238,7 @@ class PerformanceMonitor {
             this.sendFinalReport();
 
             this.isObserving = false;
-
-        } catch {
-
-        }
+        } catch {}
     }
 
     // Force report generation
@@ -1324,7 +1288,6 @@ class PerformanceMonitor {
             totalPageViews: 0
         };
         this.events = [];
-
     }
 }
 

@@ -3,14 +3,20 @@
  * Removes mock contamination and implements real service initialization
  */
 
-;
-import { serviceDetector } from './service-availability-detector.js';
+import { serviceDetector } from "./service-availability-detector.js";
 
-import { backupEnv, restoreEnv, withCompleteIsolation, resetDatabaseSingleton, cleanupTest, getEnvPreset } from "../helpers/simple-helpers.js";
+import {
+  backupEnv,
+  restoreEnv,
+  withCompleteIsolation,
+  resetDatabaseSingleton,
+  cleanupTest,
+  getEnvPreset,
+} from "../helpers/simple-helpers.js";
 export class IntegrationTestStrategy {
   constructor() {
     this.envManager = // TestEnvironmentManager → Simple helpers (no instantiation needed);
-    this.realServices = new Map();
+      this.realServices = new Map();
     this.serviceConfigs = new Map();
     this.initializationPromises = new Map();
   }
@@ -23,12 +29,12 @@ export class IntegrationTestStrategy {
   configureService(serviceName, config) {
     this.serviceConfigs.set(serviceName, {
       factory: config.factory,
-      environmentPreset: config.environmentPreset || 'complete-test',
+      environmentPreset: config.environmentPreset || "complete-test",
       requiredEnvVars: config.requiredEnvVars || [],
       initialization: config.initialization || null,
       dependencies: config.dependencies || [],
       timeout: config.timeout || 15000,
-      ...config
+      ...config,
     });
   }
 
@@ -61,7 +67,9 @@ export class IntegrationTestStrategy {
     }
 
     if (errors.length > 0 && errors.length === serviceNames.length) {
-      throw new Error(`All services failed to initialize: ${errors.map(e => e.service).join(', ')}`);
+      throw new Error(
+        `All services failed to initialize: ${errors.map((e) => e.service).join(", ")}`,
+      );
     }
 
     return services;
@@ -114,7 +122,9 @@ export class IntegrationTestStrategy {
     // Validate required environment variables
     for (const envVar of config.requiredEnvVars) {
       if (!process.env[envVar]) {
-        throw new Error(`Required environment variable ${envVar} not set for ${serviceName}`);
+        throw new Error(
+          `Required environment variable ${envVar} not set for ${serviceName}`,
+        );
       }
     }
 
@@ -130,9 +140,12 @@ export class IntegrationTestStrategy {
     if (config.initialization) {
       await Promise.race([
         config.initialization(service),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error(`${serviceName} initialization timeout`)), config.timeout)
-        )
+        new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error(`${serviceName} initialization timeout`)),
+            config.timeout,
+          ),
+        ),
       ]);
     }
 
@@ -140,7 +153,9 @@ export class IntegrationTestStrategy {
     if (config.healthCheck) {
       const isHealthy = await config.healthCheck(service);
       if (!isHealthy) {
-        throw new Error(`${serviceName} failed health check after initialization`);
+        throw new Error(
+          `${serviceName} failed health check after initialization`,
+        );
       }
     }
 
@@ -157,19 +172,19 @@ export class IntegrationTestStrategy {
 
     // Set real database environment
     Object.assign(process.env, {
-      TURSO_DATABASE_URL: ':memory:', // Use in-memory for tests
-      TURSO_AUTH_TOKEN: 'test-token',
-      NODE_ENV: 'test'
+      TURSO_DATABASE_URL: ":memory:", // Use in-memory for tests
+      TURSO_AUTH_TOKEN: "test-token",
+      NODE_ENV: "test",
     });
 
     // Import and get real database client
-    const { getDatabaseClient } = await import('../../api/lib/database.js');
+    const { getDatabaseClient } = await import("../../api/lib/database.js");
     const client = await getDatabaseClient();
 
     // Verify connection
-    const testResult = await client.execute('SELECT 1 as test');
+    const testResult = await client.execute("SELECT 1 as test");
     if (!testResult || !testResult.rows || testResult.rows.length === 0) {
-      throw new Error('Database client connection verification failed');
+      throw new Error("Database client connection verification failed");
     }
 
     return client;
@@ -185,27 +200,35 @@ export class IntegrationTestStrategy {
 
     // Set real Google Sheets environment
     Object.assign(process.env, {
-      GOOGLE_SHEET_ID: 'test_sheet_123',
-      GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL: 'test@sheets.com',
-      GOOGLE_SHEETS_PRIVATE_KEY: '-----BEGIN PRIVATE KEY-----\ntest\n-----END PRIVATE KEY-----',
-      SHEETS_TIMEZONE: 'America/Denver'
+      GOOGLE_SHEET_ID: "test_sheet_123",
+      GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL: "test@sheets.com",
+      GOOGLE_SHEETS_PRIVATE_KEY:
+        "-----BEGIN PRIVATE KEY-----\ntest\n-----END PRIVATE KEY-----",
+      SHEETS_TIMEZONE: "America/Denver",
     });
 
     // Import real Google Sheets service
-    const { GoogleSheetsService } = await import('../../api/lib/google-sheets-service.js');
+    const { GoogleSheetsService } = await import(
+      "../../api/lib/google-sheets-service.js"
+    );
     const service = new GoogleSheetsService();
 
     // Initialize with timeout
     await Promise.race([
       service.initialize(),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Google Sheets initialization timeout')), 10000)
-      )
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error("Google Sheets initialization timeout")),
+          10000,
+        ),
+      ),
     ]);
 
     // Verify initialization
     if (!service.sheets || !service.auth) {
-      throw new Error('Google Sheets service initialization failed - missing sheets or auth');
+      throw new Error(
+        "Google Sheets service initialization failed - missing sheets or auth",
+      );
     }
 
     return service;
@@ -221,21 +244,26 @@ export class IntegrationTestStrategy {
 
     // Set real Brevo environment
     Object.assign(process.env, {
-      BREVO_API_KEY: 'test-brevo-api-key',
-      BREVO_NEWSLETTER_LIST_ID: '123',
-      BREVO_WEBHOOK_SECRET: 'test-webhook-secret'
+      BREVO_API_KEY: "test-brevo-api-key",
+      BREVO_NEWSLETTER_LIST_ID: "123",
+      BREVO_WEBHOOK_SECRET: "test-webhook-secret",
     });
 
     // Import real Brevo service
-    const { getEmailSubscriberService } = await import('../../api/lib/email-subscriber-service.js');
+    const { getEmailSubscriberService } = await import(
+      "../../api/lib/email-subscriber-service.js"
+    );
     const service = getEmailSubscriberService();
 
     // Initialize with timeout
     await Promise.race([
       service.ensureInitialized(),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Brevo service initialization timeout')), 8000)
-      )
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error("Brevo service initialization timeout")),
+          8000,
+        ),
+      ),
     ]);
 
     return service;
@@ -245,10 +273,10 @@ export class IntegrationTestStrategy {
    * Clear database-related mocks to prevent interference
    */
   clearDatabaseMocks() {
-    if (typeof vi !== 'undefined') {
+    if (typeof vi !== "undefined") {
       // Clear any existing database mocks
-      vi.doUnmock('../../api/lib/database.js');
-      vi.doUnmock('../../api/lib/database-client-selector.js');
+      vi.doUnmock("../../api/lib/database.js");
+      vi.doUnmock("../../api/lib/database-client-selector.js");
     }
   }
 
@@ -256,10 +284,10 @@ export class IntegrationTestStrategy {
    * Clear Google Sheets mocks to prevent interference
    */
   clearGoogleSheetsMocks() {
-    if (typeof vi !== 'undefined') {
+    if (typeof vi !== "undefined") {
       // Clear Google Sheets related mocks
-      vi.doUnmock('googleapis');
-      vi.doUnmock('../../api/lib/google-sheets-service.js');
+      vi.doUnmock("googleapis");
+      vi.doUnmock("../../api/lib/google-sheets-service.js");
     }
   }
 
@@ -267,10 +295,10 @@ export class IntegrationTestStrategy {
    * Clear Brevo service mocks to prevent interference
    */
   clearBrevoMocks() {
-    if (typeof vi !== 'undefined') {
+    if (typeof vi !== "undefined") {
       // Clear Brevo related mocks
-      vi.doUnmock('../../api/lib/email-subscriber-service.js');
-      vi.doUnmock('../../api/lib/brevo-client.js');
+      vi.doUnmock("../../api/lib/email-subscriber-service.js");
+      vi.doUnmock("../../api/lib/brevo-client.js");
     }
   }
 
@@ -281,10 +309,10 @@ export class IntegrationTestStrategy {
     // Close/cleanup all real services
     for (const [serviceName, service] of this.realServices) {
       try {
-        if (service && typeof service.close === 'function') {
+        if (service && typeof service.close === "function") {
           await service.close();
         }
-        if (service && typeof service.cleanup === 'function') {
+        if (service && typeof service.cleanup === "function") {
           await service.cleanup();
         }
       } catch (error) {
@@ -329,27 +357,36 @@ export class IntegrationTestStrategy {
     return {
       ensureRealClient: async () => {
         const client = await this.createRealDatabaseClient();
-        
+
         // Verify this is a real client, not a mock
-        if (client.execute && typeof client.execute === 'function') {
-          const testQuery = await client.execute('SELECT sqlite_version() as version');
+        if (client.execute && typeof client.execute === "function") {
+          const testQuery = await client.execute(
+            "SELECT sqlite_version() as version",
+          );
           if (!testQuery.rows || testQuery.rows.length === 0) {
-            throw new Error('Database client verification failed - appears to be mocked');
+            throw new Error(
+              "Database client verification failed - appears to be mocked",
+            );
           }
         } else {
-          throw new Error('Database client does not have expected execute method');
+          throw new Error(
+            "Database client does not have expected execute method",
+          );
         }
-        
+
         return client;
       },
-      
+
       validateNotMocked: (client) => {
         // Additional checks to ensure we have a real client
-        if (client._isMockFunction || client.constructor.name.includes('Mock')) {
-          throw new Error('Mock database client detected in integration test');
+        if (
+          client._isMockFunction ||
+          client.constructor.name.includes("Mock")
+        ) {
+          throw new Error("Mock database client detected in integration test");
         }
         return true;
-      }
+      },
     };
   }
 }
@@ -358,48 +395,52 @@ export class IntegrationTestStrategy {
 export const integrationStrategy = new IntegrationTestStrategy();
 
 // Configure database service
-integrationStrategy.configureService('database', {
+integrationStrategy.configureService("database", {
   factory: async () => {
-    const { getDatabaseClient } = await import('../../api/lib/database.js');
+    const { getDatabaseClient } = await import("../../api/lib/database.js");
     return await getDatabaseClient();
   },
-  environmentPreset: 'valid-local',
-  requiredEnvVars: ['TURSO_DATABASE_URL'],
+  environmentPreset: "valid-local",
+  requiredEnvVars: ["TURSO_DATABASE_URL"],
   healthCheck: async (client) => {
     try {
-      const result = await client.execute('SELECT 1 as test');
+      const result = await client.execute("SELECT 1 as test");
       return result && result.rows && result.rows.length > 0;
     } catch {
       return false;
     }
   },
-  timeout: 15000
+  timeout: 15000,
 });
 
 // Configure Google Sheets service
-integrationStrategy.configureService('googleSheets', {
+integrationStrategy.configureService("googleSheets", {
   factory: async () => {
-    const { GoogleSheetsService } = await import('../../api/lib/google-sheets-service.js');
+    const { GoogleSheetsService } = await import(
+      "../../api/lib/google-sheets-service.js"
+    );
     return new GoogleSheetsService();
   },
-  environmentPreset: 'complete-test',
-  requiredEnvVars: ['GOOGLE_SHEET_ID', 'GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL'],
+  environmentPreset: "complete-test",
+  requiredEnvVars: ["GOOGLE_SHEET_ID", "GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL"],
   initialization: async (service) => await service.initialize(),
   healthCheck: async (service) => Boolean(service.sheets && service.auth),
-  timeout: 10000
+  timeout: 10000,
 });
 
 // Configure Brevo service
-integrationStrategy.configureService('brevo', {
+integrationStrategy.configureService("brevo", {
   factory: async () => {
-    const { getEmailSubscriberService } = await import('../../api/lib/email-subscriber-service.js');
+    const { getEmailSubscriberService } = await import(
+      "../../api/lib/email-subscriber-service.js"
+    );
     return getEmailSubscriberService();
   },
-  environmentPreset: 'complete-test',
-  requiredEnvVars: ['BREVO_API_KEY'],
+  environmentPreset: "complete-test",
+  requiredEnvVars: ["BREVO_API_KEY"],
   initialization: async (service) => await service.ensureInitialized(),
-  dependencies: ['database'],
-  timeout: 8000
+  dependencies: ["database"],
+  timeout: 8000,
 });
 
 export default integrationStrategy;

@@ -451,7 +451,7 @@ describe("MigrationSystem", () => {
     migrationSystem = new TestMigrationSystem();
     mockDatabase = createMockDatabase();
     migrationSystem.setDatabase(mockDatabase);
-    
+
     // Clear mock files
     migrationSystem.clearMockFiles();
     migrationSystem.restoreMockDirectory();
@@ -809,10 +809,10 @@ INSERT INTO users (data) VALUES ('user; data with "quotes" and \\' escapes');
       // Create completely fresh instances for this test with isolated state
       const testExecuteSpy = vi.fn().mockResolvedValue({ rows: [] });
       const testDb = { execute: testExecuteSpy };
-      
+
       const testMigrationSystem = new TestMigrationSystem();
       testMigrationSystem.setDatabase(testDb);
-      
+
       const migration = {
         filename: "001_test.sql",
         content: "CREATE TABLE test (id INTEGER);",
@@ -823,8 +823,10 @@ INSERT INTO users (data) VALUES ('user; data with "quotes" and \\' escapes');
       };
 
       // The migration system should execute without throwing errors
-      await expect(testMigrationSystem.executeMigration(migration)).resolves.toBeUndefined();
-      
+      await expect(
+        testMigrationSystem.executeMigration(migration),
+      ).resolves.toBeUndefined();
+
       // Verify that the database execute method was called at least once
       // Note: Full suite has test isolation issues, but individual test confirms 3 calls work
       expect(testExecuteSpy).toHaveBeenCalled();
@@ -834,10 +836,10 @@ INSERT INTO users (data) VALUES ('user; data with "quotes" and \\' escapes');
       // Create completely fresh instances for this test with isolated state
       const testExecuteSpy = vi.fn().mockResolvedValue({ rows: [] });
       const testDb = { execute: testExecuteSpy };
-      
+
       const testMigrationSystem = new TestMigrationSystem();
       testMigrationSystem.setDatabase(testDb);
-      
+
       const migration = {
         filename: "002_test.sql", // Use different filename to avoid conflicts
         content: "CREATE TABLE test (id INTEGER);",
@@ -851,8 +853,10 @@ INSERT INTO users (data) VALUES ('user; data with "quotes" and \\' escapes');
 
       // The migration system should execute without throwing errors
       // This verifies that the core functionality works including empty statement filtering
-      await expect(testMigrationSystem.executeMigration(migration)).resolves.toBeUndefined();
-      
+      await expect(
+        testMigrationSystem.executeMigration(migration),
+      ).resolves.toBeUndefined();
+
       // Test passes individually - verifies empty statement filtering works correctly
       // Full suite has test isolation issues but core functionality is validated
     });

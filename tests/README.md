@@ -147,6 +147,36 @@ The system automatically integrates with GitHub Actions:
     path: test-reports/
 ```
 
+## Configuration Validation
+
+### Meta Tests
+
+The project includes meta tests that validate the test configuration itself to ensure consolidation is complete and prevent regression:
+
+```bash
+# Run configuration validation tests
+npm run test:config
+```
+
+### What Meta Tests Validate
+
+1. **Single Configuration**: Ensures only one main vitest config exists
+2. **No Environment Detection**: Validates that configuration is environment-agnostic
+3. **Standard Commands**: Confirms package.json scripts use standard commands
+4. **Git Hook Consistency**: Verifies git hooks match CI commands
+5. **No CI-Specific Variants**: Prevents creation of :ci script variants
+6. **Documentation Accuracy**: Ensures docs reflect actual configuration
+
+### Meta Test Structure
+
+```
+tests/meta/
+├── configuration-validation.test.js  # Comprehensive validation
+└── configuration.test.js             # Basic configuration checks
+```
+
+Meta tests are excluded from normal test runs to prevent recursion but can be run explicitly for validation.
+
 ### Generated Outputs
 
 - **GitHub Step Summary**: Markdown formatted results

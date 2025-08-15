@@ -11,7 +11,9 @@ import { testInit } from "./test-initialization-helpers.js";
  * DEPRECATED: Use tests/helpers/setup.js -> setupIntegrationTest() or setupTest()
  */
 export function setupIntegrationTests(options = {}) {
-  throw new Error("[DEPRECATED] tests/utils/enhanced-test-setup.setupIntegrationTests was removed. Use tests/helpers/setup.js:setupIntegrationTest instead.");
+  throw new Error(
+    "[DEPRECATED] tests/utils/enhanced-test-setup.setupIntegrationTests was removed. Use tests/helpers/setup.js:setupIntegrationTest instead.",
+  );
 }
 
 // Original implementation preserved below for reference but unreachable
@@ -248,79 +250,89 @@ export function setupDatabaseTests(options = {}) {
   beforeAll(async () => {
     // Set up test environment for integration tests
     testInit.setupTestEnvironment();
-    
+
     // Force integration test mode to ensure real database clients
-    process.env.TEST_TYPE = 'integration';
-    process.env.FORCE_REAL_DATABASE_CLIENT = 'true';
-    
+    process.env.TEST_TYPE = "integration";
+    process.env.FORCE_REAL_DATABASE_CLIENT = "true";
+
     // Clear any database module mocks to ensure real client creation
-    vi.doUnmock('../../api/lib/database.js');
-    vi.doUnmock('../../api/lib/database-client-selector.js');
-    
+    vi.doUnmock("../../api/lib/database.js");
+    vi.doUnmock("../../api/lib/database-client-selector.js");
+
     // Initialize with integration test database factory
     try {
-      const { integrationTestDatabaseFactory } = await import('./integration-test-database-factory.js');
-      realDatabaseClient = await integrationTestDatabaseFactory.createRealDatabaseClient({
-        file: { filepath: 'database-integration-test' },
-        type: 'integration'
-      });
-      
+      const { integrationTestDatabaseFactory } = await import(
+        "./integration-test-database-factory.js"
+      );
+      realDatabaseClient =
+        await integrationTestDatabaseFactory.createRealDatabaseClient({
+          file: { filepath: "database-integration-test" },
+          type: "integration",
+        });
+
       // Add testConnection method wrapper to raw LibSQL client
       if (!realDatabaseClient.testConnection) {
         realDatabaseClient.testConnection = async () => {
           try {
-            const result = await realDatabaseClient.execute('SELECT 1 as test');
+            const result = await realDatabaseClient.execute("SELECT 1 as test");
             return result && result.rows && result.rows.length === 1;
           } catch (error) {
-            console.warn('Database connection test failed:', error.message);
+            console.warn("Database connection test failed:", error.message);
             return false;
           }
         };
       }
-      
+
       // Override dbTestHelpers to use real client
       await dbTestHelpers.initialize({
-        file: { filepath: 'database-integration-test' },
-        type: 'integration'
+        file: { filepath: "database-integration-test" },
+        type: "integration",
       });
-      
+
       // Override the database client getter to return our real client
       dbTestHelpers.db = realDatabaseClient;
-      
+
       // Explicitly ensure essential tables are created and verified
       await dbTestHelpers.ensureEssentialTables();
-      
+
       // Verify tables were created successfully
       const tablesCheck = await realDatabaseClient.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('transactions', 'tickets', 'email_subscribers')"
+        "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('transactions', 'tickets', 'email_subscribers')",
       );
-      
+
       if (!tablesCheck.rows || tablesCheck.rows.length < 3) {
-        throw new Error('Essential tables not created properly during setup');
+        throw new Error("Essential tables not created properly during setup");
       }
-      
-      console.log('✅ Integration test database setup complete with real LibSQL client and verified tables');
+
+      console.log(
+        "✅ Integration test database setup complete with real LibSQL client and verified tables",
+      );
     } catch (error) {
-      console.error('❌ Failed to set up integration test database:', error);
+      console.error("❌ Failed to set up integration test database:", error);
       throw error;
     }
-    
+
     await dbTestHelpers.cleanDatabase();
   }, timeout);
 
   afterAll(async () => {
     await dbTestHelpers.cleanDatabase();
-    
+
     // Clean up real database client
     if (realDatabaseClient) {
       try {
-        const { integrationTestDatabaseFactory } = await import('./integration-test-database-factory.js');
+        const { integrationTestDatabaseFactory } = await import(
+          "./integration-test-database-factory.js"
+        );
         await integrationTestDatabaseFactory.cleanupAll();
       } catch (error) {
-        console.warn('Warning: Failed to cleanup integration test databases:', error.message);
+        console.warn(
+          "Warning: Failed to cleanup integration test databases:",
+          error.message,
+        );
       }
     }
-    
+
     // Reset environment
     delete process.env.TEST_TYPE;
     delete process.env.FORCE_REAL_DATABASE_CLIENT;

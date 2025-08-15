@@ -108,7 +108,8 @@ describe("Admin Authentication", () => {
 
     // Set test environment variables
     process.env.ADMIN_PASSWORD = bcrypt.hashSync("testpassword", 10);
-    process.env.ADMIN_SECRET = "test-secret-key-that-is-at-least-32-characters-long";
+    process.env.ADMIN_SECRET =
+      "test-secret-key-that-is-at-least-32-characters-long";
     process.env.ADMIN_SESSION_DURATION = "3600000"; // 1 hour
     process.env.NODE_ENV = "test";
   });
@@ -129,7 +130,7 @@ describe("Admin Authentication", () => {
 
     it("should throw error if ADMIN_SECRET is too short", () => {
       process.env.ADMIN_SECRET = "short";
-      
+
       expect(() => {
         new MockAuthService();
       }).toThrow("ADMIN_SECRET must be at least 32 characters long");

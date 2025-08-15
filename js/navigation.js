@@ -36,9 +36,7 @@ class EventBus {
         this.events.get(eventName).forEach((callback) => {
             try {
                 callback(data);
-            } catch {
-
-            }
+            } catch {}
         });
     }
 
@@ -1062,7 +1060,8 @@ class SiteNavigation {
 
 // Page transition effects
 if (typeof PageTransition === 'undefined') {
-    class PageTransition { // eslint-disable-line no-unused-vars
+    class PageTransition {
+
         constructor() {
             this.init();
         }
@@ -1174,9 +1173,7 @@ if (typeof PageTransition === 'undefined') {
                             // Create a safe function execution instead of eval()
                             const scriptFunction = new Function(scriptContent);
                             scriptFunction();
-                        } catch {
-
-                        }
+                        } catch {}
                     }
                 }
             });

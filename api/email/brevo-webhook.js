@@ -29,7 +29,9 @@ function getRawBody(req) {
 function validateSignature(rawBody, signature) {
   const secret = process.env.BREVO_WEBHOOK_SECRET;
   if (!secret) {
-    console.warn("BREVO_WEBHOOK_SECRET not configured, skipping signature validation");
+    console.warn(
+      "BREVO_WEBHOOK_SECRET not configured, skipping signature validation",
+    );
     return true; // Skip validation if not configured
   }
 

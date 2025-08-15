@@ -19,20 +19,26 @@ async function globalSetup() {
     console.log(`🔗 Testing connection to: ${baseURL}`);
 
     // Firefox-specific optimization for timeout issues
-    const isFirefox = process.env.PLAYWRIGHT_BROWSER === 'firefox' || context._browser._options?.name === 'firefox';
-    
+    const isFirefox =
+      process.env.PLAYWRIGHT_BROWSER === "firefox" ||
+      context._browser._options?.name === "firefox";
+
     if (isFirefox) {
       console.log("🦊 Applying Firefox-specific optimizations...");
       // Firefox: Use domcontentloaded + manual resource check for better reliability
-      await page.goto(`${baseURL}/pages/home.html`, { 
+      await page.goto(`${baseURL}/pages/home.html`, {
         waitUntil: "domcontentloaded",
-        timeout: 20000 
+        timeout: 20000,
       });
       // Wait for JavaScript to complete loading
-      await page.waitForFunction(() => document.readyState === 'complete', { timeout: 10000 });
+      await page.waitForFunction(() => document.readyState === "complete", {
+        timeout: 10000,
+      });
     } else {
       // Standard browsers: Use networkidle
-      await page.goto(`${baseURL}/pages/home.html`, { waitUntil: "networkidle" });
+      await page.goto(`${baseURL}/pages/home.html`, {
+        waitUntil: "networkidle",
+      });
     }
 
     // Verify core application functionality
@@ -42,14 +48,14 @@ async function globalSetup() {
     console.log("🔥 Pre-warming application cache...");
     const cacheWaitUntil = isFirefox ? "domcontentloaded" : "networkidle";
     const cacheTimeout = isFirefox ? 15000 : 10000;
-    
-    await page.goto(`${baseURL}/pages/about.html`, { 
+
+    await page.goto(`${baseURL}/pages/about.html`, {
       waitUntil: cacheWaitUntil,
-      timeout: cacheTimeout
+      timeout: cacheTimeout,
     });
-    await page.goto(`${baseURL}/pages/tickets.html`, { 
-      waitUntil: cacheWaitUntil, 
-      timeout: cacheTimeout
+    await page.goto(`${baseURL}/pages/tickets.html`, {
+      waitUntil: cacheWaitUntil,
+      timeout: cacheTimeout,
     });
 
     // Set up any required test data or state

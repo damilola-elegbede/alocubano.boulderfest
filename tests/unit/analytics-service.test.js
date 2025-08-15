@@ -8,13 +8,13 @@ describe("AnalyticsService", () => {
   beforeEach(() => {
     // Clear all mocks to ensure complete isolation
     vi.clearAllMocks();
-    
+
     // Create a completely fresh mock for each test
     mockExecute = vi.fn();
-    
+
     // Create a fresh analytics service instance
     analyticsService = new AnalyticsService();
-    
+
     // Override the db property with a fresh mock object
     analyticsService.db = {
       execute: mockExecute,

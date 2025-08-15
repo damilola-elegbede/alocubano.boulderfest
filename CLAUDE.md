@@ -39,26 +39,22 @@ npm run serve:simple  # http://localhost:8000
 ### Testing
 
 ```bash
-# Run unit tests (default)
+# Run all tests (unit and integration)
 npm test
 
-# Run specific test file
-npm run test:unit -- tests/unit/brevo-service.test.js
+# Run with coverage
+npm run test:coverage
 
-# Test categories
-npm run test:integration     # Integration tests
-npm run test:performance     # Performance tests  
-npm run test:security        # Security tests
-npm run test:e2e             # End-to-end tests
+# End-to-end tests
+npm run test:e2e
 
-# Coverage
-npm run test:coverage        # Unit test coverage
-npm run test:unit:coverage   # With coverage report
+# Watch mode for development
+npm run test:watch
 
-# CI-specific commands (with exclusions and optimizations)
-npm run test:unit:ci
-npm run test:integration:ci
-npm run test:performance:ci
+# Performance testing
+npm run performance         # Run performance test suite
+npm run performance:critical # Run critical performance tests
+npm run performance:ci      # CI-optimized performance tests
 ```
 
 ### Database
@@ -89,6 +85,7 @@ git push origin main        # Auto-deploy to production
 ## Architecture Overview
 
 ### Frontend
+
 - **Vanilla JavaScript** ES6 modules - no framework dependencies
 - **Typography-forward design** with Bebas Neue, Playfair Display, Space Mono
 - **Virtual gallery** with Google Drive integration and lazy loading
@@ -96,6 +93,7 @@ git push origin main        # Auto-deploy to production
 - **Mobile-first** with slide-in navigation and 44px touch targets
 
 ### Backend (Vercel Serverless)
+
 - **SQLite database** with Turso for production
 - **Async services** using Promise-Based Lazy Singleton pattern
 - **Email** via Brevo (SendinBlue) with webhook processing
@@ -104,6 +102,7 @@ git push origin main        # Auto-deploy to production
 - **Admin panel** with bcrypt auth and JWT sessions
 
 ### Testing
+
 - **Vitest** with jsdom for unit tests (2 threads max to prevent memory issues)
 - **Playwright** for E2E tests
 - **Test isolation** with TestEnvironmentManager for reliable async testing
@@ -128,13 +127,13 @@ class AsyncService {
     if (this.initialized && this.instance) {
       return this.instance; // Fast path
     }
-    
+
     if (this.initializationPromise) {
       return this.initializationPromise; // Wait for existing
     }
-    
+
     this.initializationPromise = this._performInitialization();
-    
+
     try {
       return await this.initializationPromise;
     } catch (error) {
@@ -188,27 +187,32 @@ WALLET_AUTH_SECRET=      # JWT signing
 ## API Endpoints
 
 ### Email
+
 - `POST /api/email/subscribe` - Newsletter signup
 - `GET/POST /api/email/unsubscribe` - Unsubscribe with token
 - `POST /api/email/brevo-webhook` - Process Brevo webhooks
 
 ### Payments
+
 - `POST /api/payments/create-checkout-session` - Create Stripe session
 - `POST /api/payments/stripe-webhook` - Handle payment webhooks
 - `GET /api/payments/checkout-success` - Post-payment handler
 
 ### Tickets
+
 - `GET /api/tickets/[ticketId]` - Ticket details
 - `POST /api/tickets/validate` - Validate QR code
 - `GET /api/tickets/apple-wallet/[ticketId]` - Apple Wallet pass
 - `GET /api/tickets/google-wallet/[ticketId]` - Google Wallet pass
 
 ### Admin
+
 - `POST /api/admin/login` - Admin authentication
 - `GET /api/admin/dashboard` - Dashboard data
 - `GET /api/admin/registrations` - Registration list
 
 ### Gallery
+
 - `GET /api/gallery` - Google Drive photos/videos
 - `GET /api/gallery/years` - Available years
 - `GET /api/featured-photos` - Featured photos
@@ -218,6 +222,7 @@ WALLET_AUTH_SECRET=      # JWT signing
 Located in `/migrations/*.sql`, run automatically on deployment.
 
 Features:
+
 - Transactional execution with rollback
 - Checksum verification
 - Handles comments and multi-line statements
@@ -226,12 +231,14 @@ Features:
 ## CI/CD Configuration
 
 ### GitHub Actions
+
 - **Test shards**: 2 (reduced from 4 to prevent memory exhaustion)
 - **Memory limit**: NODE_OPTIONS='--max-old-space-size=1024'
 - **SQLite**: Uses in-memory database in CI to prevent lock conflicts
-- **Test exclusions**: Some unit tests excluded in CI via TEST_CI_EXCLUDE_PATTERNS
+- **Simplified commands**: Uses consolidated `npm test` and `npm run test:coverage`
 
 ### Test Failures
+
 - Integration/performance tests may fail in CI due to resource constraints
 - Database tests use retry logic for SQLITE_BUSY errors
 - External API tests are mocked in CI environment
@@ -297,6 +304,7 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 **Instagram**: [@alocubano.boulderfest](https://www.instagram.com/alocubano.boulderfest/)
 
 **Documentation**:
+
 - [Async Initialization Guide](/docs/ASYNC_INITIALIZATION_GUIDE.md)
 - [Testing Strategy](/docs/testing/TESTING_STRATEGY.md)
 - [API Documentation](/docs/api/API_DOCUMENTATION.md)

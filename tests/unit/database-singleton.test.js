@@ -4,7 +4,11 @@
  * @vitest-environment node
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { backupEnv, restoreEnv, clearDatabaseEnv } from "../helpers/simple-helpers.js";
+import {
+  backupEnv,
+  restoreEnv,
+  clearDatabaseEnv,
+} from "../helpers/simple-helpers.js";
 
 describe("Database Singleton Pattern", () => {
   let mockCreateClient;
@@ -296,7 +300,7 @@ describe("Database Singleton Pattern", () => {
 
 describe("Environment-Specific Singleton Behavior", () => {
   let envBackup;
-  
+
   beforeEach(() => {
     envBackup = backupEnv(Object.keys(process.env));
     clearDatabaseEnv();
@@ -323,7 +327,7 @@ describe("Environment-Specific Singleton Behavior", () => {
     // SKIP: This test attempts to connect to external Turso database
     // which causes timeouts in CI. Environment behavior is already
     // tested through the singleton pattern tests above with proper mocks.
-    // 
+    //
     // TODO: Rewrite to use proper mocks instead of external connections
   });
 

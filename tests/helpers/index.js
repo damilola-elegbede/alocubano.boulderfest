@@ -1,19 +1,19 @@
 /**
  * Consolidated Test Helpers Index
- * 
+ *
  * Single import point for all test helpers, replacing the complex
  * TestInitializationOrchestrator infrastructure with simple, direct imports.
- * 
+ *
  * Usage Examples:
- * 
+ *
  * // Import everything
  * import * as helpers from './tests/helpers/index.js';
- * 
+ *
  * // Import specific helpers
  * import { setupTest, teardownTest } from './tests/helpers/index.js';
  * import { createTestDatabase, seedTestData } from './tests/helpers/index.js';
  * import { mockBrevoService, mockStripeService } from './tests/helpers/index.js';
- * 
+ *
  * // Use in tests
  * const setup = await setupTest({ database: true, mocks: ['brevo', 'stripe'] });
  * // ... test logic
@@ -21,11 +21,7 @@
  */
 
 // Setup and teardown functions
-export {
-  setupTest,
-  teardownTest,
-  setupIntegrationTest
-} from './setup.js';
+export { setupTest, teardownTest, setupIntegrationTest } from "./setup.js";
 
 // Database helpers
 export {
@@ -36,8 +32,8 @@ export {
   createTestTransaction,
   createTestSubscriber,
   createLibSQLAdapter,
-  queryHelper
-} from './db.js';
+  queryHelper,
+} from "./db.js";
 
 // Mock services
 export {
@@ -46,8 +42,8 @@ export {
   mockStripeService,
   mockDatabaseClient,
   assertMockCalled,
-  resetMocks
-} from './mocks.js';
+  resetMocks,
+} from "./mocks.js";
 
 // Environment and utilities
 export {
@@ -64,8 +60,8 @@ export {
   withCompleteIsolation,
   createTestData,
   measureTime,
-  validateEnv
-} from './simple-helpers.js';
+  validateEnv,
+} from "./simple-helpers.js";
 
 /**
  * Convenience function for most common test setup pattern
@@ -74,13 +70,13 @@ export {
 export async function quickSetup(options = {}) {
   const defaults = {
     database: true,
-    env: 'complete-test',
-    mocks: ['fetch'],
-    seed: 'minimal'
+    env: "complete-test",
+    mocks: ["fetch"],
+    seed: "minimal",
   };
-  
+
   const config = { ...defaults, ...options };
-  const { setupTest } = await import('./setup.js');
+  const { setupTest } = await import("./setup.js");
   return setupTest(config);
 }
 
@@ -88,8 +84,8 @@ export async function quickSetup(options = {}) {
  * Convenience function for integration test setup
  * Pre-configured for integration testing with all services
  */
-export async function integrationSetup(envPreset = 'complete-test') {
-  const { setupIntegrationTest } = await import('./setup.js');
+export async function integrationSetup(envPreset = "complete-test") {
+  const { setupIntegrationTest } = await import("./setup.js");
   return setupIntegrationTest(envPreset);
 }
 
@@ -97,13 +93,13 @@ export async function integrationSetup(envPreset = 'complete-test') {
  * Helper for database-only tests
  * Minimal setup with just database and basic environment
  */
-export async function databaseOnlySetup(seed = 'minimal') {
-  const { setupTest } = await import('./setup.js');
+export async function databaseOnlySetup(seed = "minimal") {
+  const { setupTest } = await import("./setup.js");
   return setupTest({
     database: true,
-    env: 'valid-local',
+    env: "valid-local",
     mocks: [],
-    seed
+    seed,
   });
 }
 
@@ -112,11 +108,11 @@ export async function databaseOnlySetup(seed = 'minimal') {
  * Database + environment + all service mocks
  */
 export async function apiTestSetup() {
-  const { setupTest } = await import('./setup.js');
+  const { setupTest } = await import("./setup.js");
   return setupTest({
     database: true,
-    env: 'complete-test',
-    mocks: ['fetch', 'brevo', 'stripe'],
-    seed: 'integration'
+    env: "complete-test",
+    mocks: ["fetch", "brevo", "stripe"],
+    seed: "integration",
   });
 }

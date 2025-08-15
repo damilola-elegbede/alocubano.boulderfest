@@ -134,7 +134,6 @@ class CriticalResourcePrefetcher {
 
         // Validate URL before creating preload
         if (!this.isValidUrl(heroUrl)) {
-
             return false;
         }
 
@@ -163,7 +162,6 @@ class CriticalResourcePrefetcher {
 
         // Skip prefetching for gallery index page (no specific year)
         if (pageId === 'gallery') {
-
             return false;
         }
 
@@ -179,7 +177,6 @@ class CriticalResourcePrefetcher {
 
         // Validate URL before creating preload
         if (!this.isValidUrl(galleryUrl)) {
-
             return false;
         }
 
@@ -206,14 +203,12 @@ class CriticalResourcePrefetcher {
         try {
             results.heroImage = this.preloadHeroImage();
         } catch (error) {
-
             results.errors.push({ type: 'heroImage', error });
         }
 
         try {
             results.galleryData = this.preloadGalleryData();
         } catch (error) {
-
             results.errors.push({ type: 'galleryData', error });
         }
 

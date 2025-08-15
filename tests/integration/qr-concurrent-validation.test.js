@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { QRTokenService } from "../../api/lib/qr-token-service.js";
 import handler from "../../api/tickets/validate.js";
-import { createTestDatabase, seedTestData, createLibSQLAdapter } from "../helpers/db.js";
+import {
+  createTestDatabase,
+  seedTestData,
+  createLibSQLAdapter,
+} from "../helpers/db.js";
 
 // Mock database for testing
 const mockDb = {
@@ -30,7 +34,7 @@ describe("QR Code Concurrent Validation Tests", () => {
 
   beforeEach(() => {
     db = createTestDatabase();
-    seedTestData(db, 'minimal');
+    seedTestData(db, "minimal");
     vi.clearAllMocks();
     process.env = {
       ...originalEnv,

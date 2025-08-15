@@ -109,7 +109,7 @@ export function setupSimpleMocks(services = []) {
   const mocks = {};
   const vi = _getVi();
   if (!vi) {
-    throw new Error('Vitest not available for mocking');
+    throw new Error("Vitest not available for mocking");
   }
 
   if (services.includes("fetch")) {

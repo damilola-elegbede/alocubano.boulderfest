@@ -17,13 +17,13 @@ vi.mock("@libsql/client/web", () => {
     close: vi.fn(),
   };
 
-  // Make createClient conditional - mirror real client validation  
+  // Make createClient conditional - mirror real client validation
   const createClientMock = vi.fn((config) => {
     // Mirror the real LibSQL client validation for empty URLs only
-    if (!config || !config.url || config.url.trim() === '') {
+    if (!config || !config.url || config.url.trim() === "") {
       throw new Error("URL_INVALID: The URL '' is not in a valid format");
     }
-    
+
     // In test mode, return mock client for any non-empty URL
     // This allows testing of malformed URLs without actual connection failures
     return mockClient;
@@ -49,13 +49,13 @@ vi.mock("@libsql/client", () => {
     close: vi.fn(),
   };
 
-  // Make createClient conditional - mirror real client validation  
+  // Make createClient conditional - mirror real client validation
   const createClientMock = vi.fn((config) => {
     // Mirror the real LibSQL client validation for empty URLs only
-    if (!config || !config.url || config.url.trim() === '') {
+    if (!config || !config.url || config.url.trim() === "") {
       throw new Error("URL_INVALID: The URL '' is not in a valid format");
     }
-    
+
     // In test mode, return mock client for any non-empty URL
     // This allows testing of malformed URLs without actual connection failures
     return mockClient;
@@ -89,7 +89,15 @@ vi.mock("fs", () => ({
 import fs from "fs";
 import { createClient } from "@libsql/client/web";
 
-import { backupEnv, restoreEnv, withCompleteIsolation, resetDatabaseSingleton, cleanupTest, withIsolatedEnv, clearDatabaseEnv } from "../helpers/simple-helpers.js";
+import {
+  backupEnv,
+  restoreEnv,
+  withCompleteIsolation,
+  resetDatabaseSingleton,
+  cleanupTest,
+  withIsolatedEnv,
+  clearDatabaseEnv,
+} from "../helpers/simple-helpers.js";
 // Import DatabaseService - this will be replaced by dynamic imports in tests
 let DatabaseService;
 
@@ -109,7 +117,9 @@ describe("Database Environment Configuration", () => {
 
     // Reset database singleton to ensure test isolation
     try {
-      const { resetDatabaseInstance } = await import("../../api/lib/database.js");
+      const { resetDatabaseInstance } = await import(
+        "../../api/lib/database.js"
+      );
       resetDatabaseInstance();
     } catch (error) {
       // Module may not be loaded yet, that's ok
@@ -146,9 +156,11 @@ describe("Database Environment Configuration", () => {
           async () => {
             // Force a complete module reload to ensure fresh database service
             vi.resetModules();
-            const { DatabaseService } = await import("../../api/lib/database.js");
+            const { DatabaseService } = await import(
+              "../../api/lib/database.js"
+            );
             const service = new DatabaseService();
-            
+
             // CRITICAL: Reset the service instance to ensure no cached state
             service.client = null;
             service.initialized = false;
@@ -163,10 +175,10 @@ describe("Database Environment Configuration", () => {
 
       it("should throw error when TURSO_DATABASE_URL is empty string", async () => {
         await withIsolatedEnv(
-          { 
-            TURSO_DATABASE_URL: "", 
+          {
+            TURSO_DATABASE_URL: "",
             TURSO_AUTH_TOKEN: "test-token",
-            DATABASE_TEST_STRICT_MODE: "true" 
+            DATABASE_TEST_STRICT_MODE: "true",
           },
           async () => {
             // Force a complete module reload to ensure fresh database service
@@ -175,7 +187,7 @@ describe("Database Environment Configuration", () => {
               "../../api/lib/database.js"
             );
             const service = new DatabaseService();
-            
+
             // CRITICAL: Reset the service instance to ensure no cached state
             service.client = null;
             service.initialized = false;
@@ -249,18 +261,22 @@ describe("Database Environment Configuration", () => {
           },
           async () => {
             vi.resetModules();
-            
+
             // Reset database singleton to ensure fresh state
             try {
-              const { resetDatabaseInstance } = await import("../../api/lib/database.js");
+              const { resetDatabaseInstance } = await import(
+                "../../api/lib/database.js"
+              );
               resetDatabaseInstance();
             } catch (error) {
               // Module may not be loaded yet, that's ok
             }
-            
-            const { DatabaseService } = await import("../../api/lib/database.js");
+
+            const { DatabaseService } = await import(
+              "../../api/lib/database.js"
+            );
             const service = new DatabaseService();
-            
+
             // Ensure the service is completely fresh
             service.client = null;
             service.initialized = false;
@@ -279,18 +295,22 @@ describe("Database Environment Configuration", () => {
           },
           async () => {
             vi.resetModules();
-            
+
             // Reset database singleton to ensure fresh state
             try {
-              const { resetDatabaseInstance } = await import("../../api/lib/database.js");
+              const { resetDatabaseInstance } = await import(
+                "../../api/lib/database.js"
+              );
               resetDatabaseInstance();
             } catch (error) {
               // Module may not be loaded yet, that's ok
             }
-            
-            const { DatabaseService } = await import("../../api/lib/database.js");
+
+            const { DatabaseService } = await import(
+              "../../api/lib/database.js"
+            );
             const service = new DatabaseService();
-            
+
             // Ensure the service is completely fresh
             service.client = null;
             service.initialized = false;
@@ -310,18 +330,22 @@ describe("Database Environment Configuration", () => {
             { TURSO_DATABASE_URL: url, TURSO_AUTH_TOKEN: "test-token" },
             async () => {
               vi.resetModules();
-              
+
               // Reset database singleton to ensure fresh state
               try {
-                const { resetDatabaseInstance } = await import("../../api/lib/database.js");
+                const { resetDatabaseInstance } = await import(
+                  "../../api/lib/database.js"
+                );
                 resetDatabaseInstance();
               } catch (error) {
                 // Module may not be loaded yet, that's ok
               }
-              
-              const { DatabaseService } = await import("../../api/lib/database.js");
+
+              const { DatabaseService } = await import(
+                "../../api/lib/database.js"
+              );
               const service = new DatabaseService();
-              
+
               // Ensure the service is completely fresh
               service.client = null;
               service.initialized = false;
@@ -735,29 +759,26 @@ describe("Database Environment Configuration", () => {
 
   describe("Missing Environment Variable Handling", () => {
     it("should provide clear error messages for missing required variables", async () => {
-      await withIsolatedEnv(
-        { DATABASE_TEST_STRICT_MODE: "true" },
-        async () => {
-          // Force a complete module reload to ensure fresh database service
-          vi.resetModules();
-          const { DatabaseService } = await import("../../api/lib/database.js");
-          const service = new DatabaseService();
-          
-          // CRITICAL: Reset the service instance to ensure no cached state
-          // This prevents cached clients from previous tests
-          service.client = null;
-          service.initialized = false;
-          service.initializationPromise = null;
-          
-          // Verify environment state
-          expect(process.env.DATABASE_TEST_STRICT_MODE).toBe("true");
-          expect(process.env.TURSO_DATABASE_URL).toBeUndefined();
-          
-          await expect(service.initializeClient()).rejects.toThrow(
-            "TURSO_DATABASE_URL environment variable is required",
-          );
-        },
-      );
+      await withIsolatedEnv({ DATABASE_TEST_STRICT_MODE: "true" }, async () => {
+        // Force a complete module reload to ensure fresh database service
+        vi.resetModules();
+        const { DatabaseService } = await import("../../api/lib/database.js");
+        const service = new DatabaseService();
+
+        // CRITICAL: Reset the service instance to ensure no cached state
+        // This prevents cached clients from previous tests
+        service.client = null;
+        service.initialized = false;
+        service.initializationPromise = null;
+
+        // Verify environment state
+        expect(process.env.DATABASE_TEST_STRICT_MODE).toBe("true");
+        expect(process.env.TURSO_DATABASE_URL).toBeUndefined();
+
+        await expect(service.initializeClient()).rejects.toThrow(
+          "TURSO_DATABASE_URL environment variable is required",
+        );
+      });
     });
 
     it("should handle undefined vs empty string variables differently", async () => {
@@ -767,22 +788,22 @@ describe("Database Environment Configuration", () => {
         async () => {
           // Explicitly delete the database URL to ensure clean state
           delete process.env.TURSO_DATABASE_URL;
-          
+
           // Verify environment state
           expect(process.env.DATABASE_TEST_STRICT_MODE).toBe("true");
           expect(process.env.TURSO_DATABASE_URL).toBeUndefined();
-          
+
           // Force a complete module reload to ensure fresh database service
           vi.resetModules();
-          
+
           const { DatabaseService } = await import("../../api/lib/database.js");
           const service = new DatabaseService();
-          
+
           // CRITICAL: Reset the service instance to ensure no cached state
           service.client = null;
           service.initialized = false;
           service.initializationPromise = null;
-          
+
           await expect(service.initializeClient()).rejects.toThrow(
             "TURSO_DATABASE_URL environment variable is required",
           );
@@ -799,18 +820,18 @@ describe("Database Environment Configuration", () => {
           // Verify environment state FIRST, before any module operations
           expect(process.env.DATABASE_TEST_STRICT_MODE).toBe("true");
           expect(process.env.TURSO_DATABASE_URL).toBe("");
-          
+
           // Force a complete module reload to ensure fresh database service
           vi.resetModules();
-          
+
           const { DatabaseService } = await import("../../api/lib/database.js");
           const service = new DatabaseService();
-          
+
           // CRITICAL: Reset the service instance to ensure no cached state
           service.client = null;
           service.initialized = false;
           service.initializationPromise = null;
-          
+
           await expect(service.initializeClient()).rejects.toThrow(
             "TURSO_DATABASE_URL environment variable is required",
           );
@@ -826,10 +847,10 @@ describe("Database Environment Configuration", () => {
         async () => {
           // Force a complete module reload to ensure fresh database service
           vi.resetModules();
-          
+
           const { DatabaseService } = await import("../../api/lib/database.js");
           const service = new DatabaseService();
-          
+
           await expect(service.initializeClient()).resolves.toBeDefined();
         },
       );
@@ -845,32 +866,34 @@ describe("Database Environment Configuration", () => {
         async () => {
           // Force a complete module reload to ensure fresh database service
           vi.resetModules();
-          
+
           // Reset database singleton to ensure fresh state
           try {
-            const { resetDatabaseInstance } = await import("../../api/lib/database.js");
+            const { resetDatabaseInstance } = await import(
+              "../../api/lib/database.js"
+            );
             await resetDatabaseInstance();
           } catch (error) {
             // Module may not be loaded yet, that's ok
           }
-          
+
           const { DatabaseService } = await import("../../api/lib/database.js");
           const service = new DatabaseService();
-          
+
           // CRITICAL: Reset the service instance to ensure no cached state
           service.client = null;
           service.initialized = false;
           service.initializationPromise = null;
-          
+
           // Explicitly delete the database URL to ensure clean state
           delete process.env.TURSO_DATABASE_URL;
-          
+
           // Verify environment state - TURSO_DATABASE_URL should be missing
           expect(process.env.DATABASE_TEST_STRICT_MODE).toBe("true");
           expect(process.env.TURSO_DATABASE_URL).toBeUndefined();
 
           await expect(service.initializeClient()).rejects.toThrow(
-            "TURSO_DATABASE_URL environment variable is required"
+            "TURSO_DATABASE_URL environment variable is required",
           );
         },
       );
@@ -969,7 +992,7 @@ describe("Database Environment Configuration", () => {
           const libsqlMock = await import("@libsql/client/web");
           const mockClient = libsqlMock.__createClientMock;
 
-          // Mock createClient to throw an error  
+          // Mock createClient to throw an error
           mockClient.mockImplementationOnce(() => {
             throw new Error("Connection failed");
           });

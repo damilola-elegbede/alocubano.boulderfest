@@ -7,8 +7,16 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import request from "supertest";
 import express from "express";
 import nock from "nock";
-import { createTestDatabase, seedTestData, createLibSQLAdapter } from "../helpers/db.js";
-import { isCI, shouldSkipExternalTests, getCITimeoutMultiplier } from "../utils/ci-detection.js";
+import {
+  createTestDatabase,
+  seedTestData,
+  createLibSQLAdapter,
+} from "../helpers/db.js";
+import {
+  isCI,
+  shouldSkipExternalTests,
+  getCITimeoutMultiplier,
+} from "../utils/ci-detection.js";
 
 // Mock Google APIs with proper structure
 let mockSheetsAPI = {
@@ -66,7 +74,8 @@ vi.mock("../../api/lib/database.js", () => ({
 
 // Only skip tests that truly require external services without proper mocks
 // Use the centralized CI detection instead of blanket skips
-const shouldSkipTest = shouldSkipExternalTests() && !process.env.GOOGLE_SHEETS_MOCK_ENABLED;
+const shouldSkipTest =
+  shouldSkipExternalTests() && !process.env.GOOGLE_SHEETS_MOCK_ENABLED;
 
 describe("Google Sheets Analytics Integration", () => {
   let app;
@@ -79,15 +88,17 @@ describe("Google Sheets Analytics Integration", () => {
   beforeEach(async () => {
     // Check if we should skip due to missing external service configuration
     if (shouldSkipTest) {
-      console.log('⏭️ Skipping Google Sheets test setup - external services not configured for CI');
+      console.log(
+        "⏭️ Skipping Google Sheets test setup - external services not configured for CI",
+      );
       return;
     }
-    
+
     // Complete reset to prevent contamination
     vi.resetModules();
     vi.clearAllMocks();
     vi.resetAllMocks();
-    
+
     // Completely recreate mock implementations
     mockSheetsAPI = {
       spreadsheets: {
@@ -101,23 +112,23 @@ describe("Google Sheets Analytics Integration", () => {
         },
       },
     };
-    
+
     // Create isolated test database for each test
     db = createTestDatabase();
-    seedTestData(db, 'minimal');
-    
+    seedTestData(db, "minimal");
+
     // Reset the global mock database to point to our test database
     mockDatabase = {
       execute: vi.fn().mockImplementation(() => Promise.resolve({ rows: [] })),
       close: vi.fn().mockResolvedValue(undefined),
     };
-    
+
     // Reset the mock factory function completely (using Vitest syntax)
-    if (typeof mockGoogleSheetsFactory.mockClear === 'function') {
+    if (typeof mockGoogleSheetsFactory.mockClear === "function") {
       mockGoogleSheetsFactory.mockClear();
     }
     mockGoogleSheetsFactory.mockReturnValue(mockSheetsAPI);
-    
+
     // Set test environment variables
     process.env.GOOGLE_SHEET_ID = "test_sheet_123";
     process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL = "test@sheets.com";
@@ -134,7 +145,7 @@ describe("Google Sheets Analytics Integration", () => {
 
     // Reset database mock implementations
     vi.clearAllMocks();
-    
+
     // Import Google Sheets service with error handling
     try {
       // CI-optimized service loading
@@ -147,10 +158,12 @@ describe("Google Sheets Analytics Integration", () => {
         sheetsService = new GoogleSheetsService();
       } else {
         // Clear module cache before importing (local development)
-        if (typeof require !== 'undefined' && require.cache) {
-          delete require.cache[require.resolve("../../api/lib/google-sheets-service.js")];
+        if (typeof require !== "undefined" && require.cache) {
+          delete require.cache[
+            require.resolve("../../api/lib/google-sheets-service.js")
+          ];
         }
-        
+
         const { GoogleSheetsService: GSService } = await import(
           "../../api/lib/google-sheets-service.js?" + Date.now() // Cache busting
         );
@@ -158,7 +171,10 @@ describe("Google Sheets Analytics Integration", () => {
         sheetsService = new GoogleSheetsService();
       }
     } catch (error) {
-      console.log("Google Sheets service not available, skipping related tests:", error.message);
+      console.log(
+        "Google Sheets service not available, skipping related tests:",
+        error.message,
+      );
       GoogleSheetsService = null;
       sheetsService = null;
     }
@@ -169,30 +185,30 @@ describe("Google Sheets Analytics Integration", () => {
     if (shouldSkipTest) {
       return;
     }
-    
+
     // Close database connection
     if (db) {
       db.close();
       db = null;
     }
-    
+
     nock.cleanAll();
     vi.clearAllMocks();
     vi.resetAllMocks();
     vi.resetModules();
-    
+
     // Complete cleanup of mock objects
     if (mockSheetsAPI) {
-      Object.keys(mockSheetsAPI.spreadsheets.values).forEach(key => {
+      Object.keys(mockSheetsAPI.spreadsheets.values).forEach((key) => {
         mockSheetsAPI.spreadsheets.values[key].mockReset?.();
       });
       mockSheetsAPI.spreadsheets.get.mockReset?.();
       mockSheetsAPI.spreadsheets.batchUpdate.mockReset?.();
     }
-    
+
     if (mockDatabase) {
       // Ensure database connection is closed to prevent SQLITE_BUSY
-      if (typeof mockDatabase.close === 'function') {
+      if (typeof mockDatabase.close === "function") {
         try {
           await mockDatabase.close();
         } catch (error) {
@@ -203,21 +219,21 @@ describe("Google Sheets Analytics Integration", () => {
       mockDatabase.batch?.mockReset?.();
       mockDatabase.transaction?.mockReset?.();
     }
-    
+
     // Reset service instances
     sheetsService = null;
     GoogleSheetsService = null;
-    
+
     // Clean up test database file
     if (testDatabasePath) {
       try {
-        const fs = await import('fs/promises');
+        const fs = await import("fs/promises");
         await fs.unlink(testDatabasePath).catch(() => {});
       } catch (error) {
         // Ignore cleanup errors
       }
     }
-    
+
     // Restore original environment
     delete process.env.GOOGLE_SHEET_ID;
     delete process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL;
@@ -233,7 +249,7 @@ describe("Google Sheets Analytics Integration", () => {
         console.log("Skipping Google Sheets test - service not available");
         return;
       }
-      
+
       await expect(sheetsService.initialize()).resolves.not.toThrow();
       expect(sheetsService.sheets).toBeTruthy();
       expect(sheetsService.auth).toBeTruthy();
@@ -241,13 +257,15 @@ describe("Google Sheets Analytics Integration", () => {
 
     it("should throw error when GOOGLE_SHEET_ID is missing", () => {
       delete process.env.GOOGLE_SHEET_ID;
-      
+
       // Skip if GoogleSheetsService is not available
       if (!GoogleSheetsService) {
-        console.log("Skipping Google Sheets service instantiation test - service not available");
+        console.log(
+          "Skipping Google Sheets service instantiation test - service not available",
+        );
         return;
       }
-      
+
       expect(() => new GoogleSheetsService()).toThrow(
         "GOOGLE_SHEET_ID environment variable is required",
       );
@@ -256,10 +274,12 @@ describe("Google Sheets Analytics Integration", () => {
     it("should handle authentication errors", async () => {
       // Skip if GoogleSheetsService is not available
       if (!GoogleSheetsService) {
-        console.log("Skipping Google Sheets authentication test - service not available");
+        console.log(
+          "Skipping Google Sheets authentication test - service not available",
+        );
         return;
       }
-      
+
       try {
         const { google } = await import("googleapis");
         google.auth.GoogleAuth.mockImplementationOnce(() => {
@@ -281,12 +301,12 @@ describe("Google Sheets Analytics Integration", () => {
     beforeEach(() => {
       // Skip setup if service not available
       if (!sheetsService) return;
-      
+
       // Clear mocks before setting up new responses
       mockSheetsAPI.spreadsheets.get.mockClear();
       mockSheetsAPI.spreadsheets.batchUpdate.mockClear();
       mockSheetsAPI.spreadsheets.values.update.mockClear();
-      
+
       mockSheetsAPI.spreadsheets.get.mockResolvedValue({
         data: {
           sheets: [
@@ -304,7 +324,7 @@ describe("Google Sheets Analytics Integration", () => {
         console.log("Skipping sheet setup test - service not available");
         return;
       }
-      
+
       const result = await sheetsService.setupSheets();
 
       expect(result).toBe(true);
@@ -329,7 +349,7 @@ describe("Google Sheets Analytics Integration", () => {
         console.log("Skipping sheet headers test - service not available");
         return;
       }
-      
+
       await sheetsService.setupSheets();
 
       const expectedSheets = [
@@ -358,7 +378,7 @@ describe("Google Sheets Analytics Integration", () => {
         console.log("Skipping API error test - service not available");
         return;
       }
-      
+
       mockSheetsAPI.spreadsheets.get.mockRejectedValue(new Error("API Error"));
 
       await expect(sheetsService.setupSheets()).rejects.toThrow("API Error");
@@ -370,7 +390,7 @@ describe("Google Sheets Analytics Integration", () => {
       // Clear mocks before setting up new responses
       mockSheetsAPI.spreadsheets.values.clear.mockClear();
       mockSheetsAPI.spreadsheets.values.update.mockClear();
-      
+
       // Mock successful API responses
       mockSheetsAPI.spreadsheets.values.clear.mockResolvedValue({});
       mockSheetsAPI.spreadsheets.values.update.mockResolvedValue({});
@@ -382,11 +402,11 @@ describe("Google Sheets Analytics Integration", () => {
           console.log("Skipping overview sync test - service not available");
           return;
         }
-        
+
         // Clear mocks for this specific test
         mockDatabase.execute.mockClear();
         mockSheetsAPI.spreadsheets.values.update.mockClear();
-        
+
         // Mock database responses for overview stats
         mockDatabase.execute
           .mockResolvedValueOnce({
@@ -439,10 +459,10 @@ describe("Google Sheets Analytics Integration", () => {
           console.log("Skipping wallet columns test - service not available");
           return;
         }
-        
+
         // Clear mocks for clean state
         mockDatabase.execute.mockClear();
-        
+
         mockDatabase.execute
           .mockResolvedValueOnce({
             rows: [
@@ -479,14 +499,16 @@ describe("Google Sheets Analytics Integration", () => {
     describe("Registrations Sync", () => {
       it("should sync all registrations with proper formatting", async () => {
         if (!sheetsService) {
-          console.log("Skipping registrations sync test - service not available");
+          console.log(
+            "Skipping registrations sync test - service not available",
+          );
           return;
         }
-        
+
         // Clear mocks for clean state
         mockDatabase.execute.mockClear();
         mockSheetsAPI.spreadsheets.values.update.mockClear();
-        
+
         const mockRegistrations = [
           {
             ticket_id: "TKT_123",
@@ -503,7 +525,7 @@ describe("Google Sheets Analytics Integration", () => {
             price_cents: 8500,
             customer_email: "buyer@example.com",
             checked_in: "Yes", // Add missing checked_in field
-            price: 85.00, // Add price in dollars
+            price: 85.0, // Add price in dollars
             wallet_source: null,
             qr_access_method: null,
           },
@@ -513,7 +535,9 @@ describe("Google Sheets Analytics Integration", () => {
 
         await sheetsService.syncRegistrations(mockDatabase);
 
-        expect(mockSheetsAPI?.spreadsheets?.values?.update).toHaveBeenCalledWith({
+        expect(
+          mockSheetsAPI?.spreadsheets?.values?.update,
+        ).toHaveBeenCalledWith({
           spreadsheetId: "test_sheet_123",
           range: "All Registrations!A2",
           valueInputOption: "RAW",
@@ -546,7 +570,9 @@ describe("Google Sheets Analytics Integration", () => {
     describe("Check-in Status Sync", () => {
       it("should sync check-in status correctly", async () => {
         if (!sheetsService) {
-          console.log("Skipping check-in status sync test - service not available");
+          console.log(
+            "Skipping check-in status sync test - service not available",
+          );
           return;
         }
         const mockCheckins = [
@@ -591,13 +617,15 @@ describe("Google Sheets Analytics Integration", () => {
     describe("Summary by Type Sync", () => {
       it("should aggregate ticket data by type", async () => {
         if (!sheetsService) {
-          console.log("Skipping summary by type sync test - service not available");
+          console.log(
+            "Skipping summary by type sync test - service not available",
+          );
           return;
         }
-        
+
         // Clear mocks for clean state
         mockDatabase.execute.mockClear();
-        
+
         const mockSummary = [
           {
             ticket_type: "weekend-pass",
@@ -637,10 +665,10 @@ describe("Google Sheets Analytics Integration", () => {
           console.log("Skipping daily sales sync test - service not available");
           return;
         }
-        
+
         // Clear mocks for clean state
         mockDatabase.execute.mockClear();
-        
+
         const mockSales = [
           {
             sale_date: "2026-04-01",
@@ -671,7 +699,7 @@ describe("Google Sheets Analytics Integration", () => {
                 "$2125.00", // Running total (cumulative)
               ],
               [
-                "04/02/2026", 
+                "04/02/2026",
                 15,
                 "$1275.00", // Actual formatted revenue
                 "$1275.00", // Running total (most recent)
@@ -685,13 +713,15 @@ describe("Google Sheets Analytics Integration", () => {
     describe("Wallet Analytics Sync", () => {
       it("should sync wallet analytics with fallback for missing columns", async () => {
         if (!sheetsService) {
-          console.log("Skipping wallet analytics sync test - service not available");
+          console.log(
+            "Skipping wallet analytics sync test - service not available",
+          );
           return;
         }
-        
+
         // Clear mocks for clean state
         mockDatabase.execute.mockClear();
-        
+
         // Simulate wallet columns not existing yet
         mockDatabase.execute.mockRejectedValueOnce(
           new Error("no such column: wallet_source"),
@@ -735,13 +765,15 @@ describe("Google Sheets Analytics Integration", () => {
 
       it("should calculate wallet adoption percentage correctly", async () => {
         if (!sheetsService) {
-          console.log("Skipping wallet adoption percentage test - service not available");
+          console.log(
+            "Skipping wallet adoption percentage test - service not available",
+          );
           return;
         }
-        
+
         // Clear mocks for clean state
         mockDatabase.execute.mockClear();
-        
+
         mockDatabase.execute.mockResolvedValueOnce({
           rows: [
             {
@@ -782,12 +814,12 @@ describe("Google Sheets Analytics Integration", () => {
   describe("Complete Sync Process", () => {
     beforeEach(() => {
       if (!sheetsService) return;
-      
+
       // Ensure clean mock state for complete sync tests
       mockSheetsAPI.spreadsheets.values.clear.mockClear();
       mockSheetsAPI.spreadsheets.values.update.mockClear();
       mockDatabase.execute.mockClear();
-      
+
       mockSheetsAPI.spreadsheets.values.clear.mockResolvedValue({});
       mockSheetsAPI.spreadsheets.values.update.mockResolvedValue({});
     });
@@ -797,10 +829,10 @@ describe("Google Sheets Analytics Integration", () => {
         console.log("Skipping full sync test - service not available");
         return;
       }
-      
+
       // Mock successful database operations to prevent SQLITE_BUSY
       mockDatabase.execute.mockImplementation(async (sql) => {
-        if (sql.includes('SELECT')) {
+        if (sql.includes("SELECT")) {
           return {
             rows: [
               {
@@ -810,17 +842,17 @@ describe("Google Sheets Analytics Integration", () => {
                 total_revenue: 0,
                 workshop_tickets: 0,
                 vip_tickets: 0,
-              }
-            ]
+              },
+            ],
           };
         }
         return { rows: [] };
       });
-      
+
       // For this test, we'll just check that syncAllData completes successfully
       // without throwing errors. The detailed mocking of individual sync methods
       // is tested separately in their respective test suites.
-      
+
       const result = await sheetsService.syncAllData();
 
       expect(result.success).toBe(true);
@@ -832,13 +864,13 @@ describe("Google Sheets Analytics Integration", () => {
         console.log("Skipping partial sync test - service not available");
         return;
       }
-      
+
       // Mock database to work correctly first
       mockDatabase.execute.mockImplementation(async () => ({ rows: [] }));
-      
+
       // Mock sheets API to fail
       mockSheetsAPI.spreadsheets.values.clear.mockRejectedValueOnce(
-        new Error("Sheets API Error")
+        new Error("Sheets API Error"),
       );
 
       await expect(sheetsService.syncAllData()).rejects.toThrow(
@@ -871,7 +903,7 @@ describe("Google Sheets Analytics Integration", () => {
         console.log("Skipping date formatting test - service not available");
         return;
       }
-      
+
       const testDate = "2026-05-16";
       const formatted = sheetsService.formatDate(testDate);
 
@@ -880,10 +912,12 @@ describe("Google Sheets Analytics Integration", () => {
 
     it("should format datetimes correctly", () => {
       if (!sheetsService) {
-        console.log("Skipping datetime formatting test - service not available");
+        console.log(
+          "Skipping datetime formatting test - service not available",
+        );
         return;
       }
-      
+
       const testDateTime = "2026-05-16T14:30:00Z";
       const formatted = sheetsService.formatDateTime(testDateTime);
 
@@ -895,7 +929,7 @@ describe("Google Sheets Analytics Integration", () => {
         console.log("Skipping null date handling test - service not available");
         return;
       }
-      
+
       expect(sheetsService.formatDate(null)).toBe("");
       expect(sheetsService.formatDate(undefined)).toBe("");
       expect(sheetsService.formatDateTime(null)).toBe("");
@@ -908,10 +942,10 @@ describe("Google Sheets Analytics Integration", () => {
         console.log("Skipping API error handling test - service not available");
         return;
       }
-      
+
       // Clear mocks for clean state
       mockDatabase.execute.mockClear();
-      
+
       // Ensure database operations succeed to isolate Sheets API error
       mockDatabase.execute.mockImplementation(async () => ({ rows: [] }));
       mockSheetsAPI.spreadsheets.values.clear.mockRejectedValue(
@@ -928,10 +962,10 @@ describe("Google Sheets Analytics Integration", () => {
         console.log("Skipping rate limiting test - service not available");
         return;
       }
-      
+
       // Clear mocks for clean state
       mockDatabase.execute.mockClear();
-      
+
       mockDatabase.execute.mockResolvedValue({ rows: [] });
       mockSheetsAPI.spreadsheets.values.update
         .mockRejectedValueOnce(new Error("Rate limit exceeded"))
@@ -948,10 +982,10 @@ describe("Google Sheets Analytics Integration", () => {
         console.log("Skipping network timeout test - service not available");
         return;
       }
-      
+
       // Clear mocks for clean state
       mockSheetsAPI.spreadsheets.values.update.mockClear();
-      
+
       mockSheetsAPI.spreadsheets.values.update.mockRejectedValue(
         new Error("ETIMEDOUT"),
       );
@@ -965,10 +999,12 @@ describe("Google Sheets Analytics Integration", () => {
   describe("Security and Access Control", () => {
     it("should use service account authentication", async () => {
       if (!sheetsService) {
-        console.log("Skipping service account auth test - service not available");
+        console.log(
+          "Skipping service account auth test - service not available",
+        );
         return;
       }
-      
+
       const { google } = await import("googleapis");
 
       await sheetsService.initialize();
@@ -987,10 +1023,10 @@ describe("Google Sheets Analytics Integration", () => {
         console.log("Skipping data sanitization test - service not available");
         return;
       }
-      
+
       // Clear mocks for clean state
       mockSheetsAPI.spreadsheets.values.update.mockClear();
-      
+
       const maliciousData = [
         ['=HYPERLINK("http://evil.com", "click here")', "safe data"],
         ["@SUM(1+1)", "more safe data"],
@@ -1004,14 +1040,16 @@ describe("Google Sheets Analytics Integration", () => {
           // This is a potential security issue that should be addressed
           const values = requestBody.values;
           // For now, we'll check that the data is passed through as-is
-          expect(values[0][0]).toBe('=HYPERLINK("http://evil.com", "click here")');
+          expect(values[0][0]).toBe(
+            '=HYPERLINK("http://evil.com", "click here")',
+          );
           expect(values[1][0]).toBe("@SUM(1+1)");
           return Promise.resolve({});
         },
       );
 
       await sheetsService.updateSheetData("Test", maliciousData);
-      
+
       // TODO: Implement data sanitization in GoogleSheetsService to prevent formula injection
       // Values starting with =, @, +, - should be escaped with a leading apostrophe
     });
@@ -1023,11 +1061,11 @@ describe("Google Sheets Analytics Integration", () => {
         console.log("Skipping batch updates test - service not available");
         return;
       }
-      
+
       // Clear mocks for clean state
       mockSheetsAPI.spreadsheets.values.clear.mockClear();
       mockSheetsAPI.spreadsheets.values.update.mockClear();
-      
+
       const largeDataSet = Array(1000)
         .fill()
         .map((_, i) => [`row_${i}`, `data_${i}`]);
@@ -1044,11 +1082,11 @@ describe("Google Sheets Analytics Integration", () => {
         console.log("Skipping empty datasets test - service not available");
         return;
       }
-      
+
       // Clear mocks for clean state
       mockSheetsAPI.spreadsheets.values.clear.mockClear();
       mockSheetsAPI.spreadsheets.values.update.mockClear();
-      
+
       await sheetsService.replaceSheetData("EmptySheet", []);
 
       expect(mockSheetsAPI.spreadsheets.values.clear).toHaveBeenCalledTimes(1);

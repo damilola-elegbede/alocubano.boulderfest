@@ -72,7 +72,6 @@ class MultiYearGalleryManager {
             this.isInitialized = true;
             this.dispatchEvent('initialized', { year: this.currentYear });
         } catch (error) {
-
             // Instead of showing error, dispatch event to trigger fallback
             this.dispatchEvent('initializationError', {
                 error: error.message,
@@ -157,7 +156,6 @@ class MultiYearGalleryManager {
             // Create year selector buttons
             this.createYearSelectorButtons();
         } catch (error) {
-
             // Use fallback data when API fails
             this.availableYears = ['2025']; // Only show available year
             this.yearStatistics = new Map([

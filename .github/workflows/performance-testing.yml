@@ -2,9 +2,9 @@ name: Performance Testing
 
 permissions:
   contents: read
-  pull-requests: write  # Required to comment on PRs
-  issues: write         # Required to create issues for failures
-  checks: write         # Required to create check runs
+  pull-requests: write # Required to comment on PRs
+  issues: write # Required to create issues for failures
+  checks: write # Required to create check runs
 
 on:
   push:
@@ -117,8 +117,8 @@ jobs:
         env:
           NODE_ENV: ci
           CI: true
-          SKIP_PERFORMANCE_INTENSIVE_TESTS: 'true'
-          NODE_OPTIONS: '--max-old-space-size=1024'
+          SKIP_PERFORMANCE_INTENSIVE_TESTS: "true"
+          NODE_OPTIONS: "--max-old-space-size=1024"
 
       - name: Run load integration tests
         if: matrix.test-type == 'load-integration'
@@ -130,8 +130,8 @@ jobs:
         env:
           NODE_ENV: ci
           CI: true
-          SKIP_PERFORMANCE_INTENSIVE_TESTS: 'true'
-          NODE_OPTIONS: '--max-old-space-size=1024'
+          SKIP_PERFORMANCE_INTENSIVE_TESTS: "true"
+          NODE_OPTIONS: "--max-old-space-size=1024"
 
       - name: Stop application
         if: matrix.test-type == 'load-integration' && env.APP_PID

@@ -237,7 +237,7 @@ class AdvancedCacheWarmer {
     }
 
     async warmPhase(phaseName, config) {
-        // Starting phase
+    // Starting phase
         this.currentPhase = phaseName;
 
         const phaseResources = this.resources[phaseName];
@@ -371,7 +371,7 @@ class AdvancedCacheWarmer {
     }
 
     async warmGalleryImages(galleryId, limit = 10) {
-        // Warming gallery images
+    // Warming gallery images
 
         try {
             // Get gallery data
@@ -433,7 +433,7 @@ class AdvancedCacheWarmer {
     }
 
     handleServiceWorkerCacheComplete(data) {
-        // Service worker cache warming completed
+    // Service worker cache warming completed
 
         // Update analytics based on service worker results
         if (data.results) {
@@ -460,7 +460,7 @@ class AdvancedCacheWarmer {
 
     pauseWarming() {
         this.isWarming = false;
-        // Warming paused due to strategy change
+    // Warming paused due to strategy change
     }
 
     resumeWarming() {
@@ -471,7 +471,7 @@ class AdvancedCacheWarmer {
     }
 
     reportAnalytics() {
-        // Analytics reported
+    // Analytics reported
     }
 
     // Public API methods

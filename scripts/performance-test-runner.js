@@ -2,8 +2,8 @@
 
 // IMMEDIATE CI SKIP - Must be at the very top
 if (process.env.CI && process.env.SKIP_PERFORMANCE_INTENSIVE_TESTS) {
-  console.log('\n⚠️  Skipping performance tests in CI environment');
-  console.log('✅ Performance test suite skipped successfully\n');
+  console.log("\n⚠️  Skipping performance tests in CI environment");
+  console.log("✅ Performance test suite skipped successfully\n");
   process.exit(0);
 }
 
@@ -1800,8 +1800,10 @@ Environment Variables:
 }
 
 // Run if called directly
-if (import.meta.url === `file://${process.argv[1]}` || 
-    process.argv[1]?.endsWith('performance-test-runner.js')) {
+if (
+  import.meta.url === `file://${process.argv[1]}` ||
+  process.argv[1]?.endsWith("performance-test-runner.js")
+) {
   main().catch((error) => {
     console.error("Unhandled error:", error);
     process.exit(1);

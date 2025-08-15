@@ -37,36 +37,44 @@ export class ServiceAvailabilityDetector {
     const now = Date.now();
 
     // Use cached result if recent
-    if (lastCheck && (now - lastCheck) < this.checkInterval) {
+    if (lastCheck && now - lastCheck < this.checkInterval) {
       return this.availability.get(serviceName) || false;
     }
 
     const serviceConfig = this.serviceChecks.get(serviceName);
     if (!serviceConfig) {
-      console.warn(`Service ${serviceName} not registered for availability checking`);
+      console.warn(
+        `Service ${serviceName} not registered for availability checking`,
+      );
       return false;
     }
 
     try {
       const available = await Promise.race([
         serviceConfig.check(),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Health check timeout')), serviceConfig.timeout)
-        )
+        new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error("Health check timeout")),
+            serviceConfig.timeout,
+          ),
+        ),
       ]);
 
       this.availability.set(serviceName, Boolean(available));
       this.lastChecked.set(serviceName, now);
-      
+
       if (available) {
         console.log(`✅ Service ${serviceName} is available`);
       } else {
         console.log(`❌ Service ${serviceName} is unavailable`);
       }
-      
+
       return Boolean(available);
     } catch (error) {
-      console.log(`❌ Service ${serviceName} health check failed:`, error.message);
+      console.log(
+        `❌ Service ${serviceName} health check failed:`,
+        error.message,
+      );
       this.availability.set(serviceName, false);
       this.lastChecked.set(serviceName, now);
       return false;
@@ -79,9 +87,11 @@ export class ServiceAvailabilityDetector {
    */
   async checkAllServices() {
     const results = {};
-    const promises = Array.from(this.serviceChecks.keys()).map(async (serviceName) => {
-      results[serviceName] = await this.checkService(serviceName);
-    });
+    const promises = Array.from(this.serviceChecks.keys()).map(
+      async (serviceName) => {
+        results[serviceName] = await this.checkService(serviceName);
+      },
+    );
 
     await Promise.all(promises);
     return results;
@@ -99,22 +109,24 @@ export class ServiceAvailabilityDetector {
       unavailable: [],
       required: [],
       optional: [],
-      skipReasons: []
+      skipReasons: [],
     };
 
     for (const serviceName of requiredServices) {
       const isAvailable = await this.checkService(serviceName);
       const serviceConfig = this.serviceChecks.get(serviceName);
-      
+
       if (isAvailable) {
         results.available.push(serviceName);
       } else {
         results.unavailable.push(serviceName);
-        
+
         if (serviceConfig?.required) {
           results.required.push(serviceName);
           results.canRun = false;
-          results.skipReasons.push(`Required service ${serviceName} unavailable`);
+          results.skipReasons.push(
+            `Required service ${serviceName} unavailable`,
+          );
         } else {
           results.optional.push(serviceName);
         }
@@ -131,12 +143,12 @@ export class ServiceAvailabilityDetector {
    */
   async createSkipCondition(requiredServices) {
     const prerequisites = await this.validatePrerequisites(requiredServices);
-    
+
     return function skipIfUnavailable() {
       if (!prerequisites.canRun) {
         return {
           skip: true,
-          reason: `Services unavailable: ${prerequisites.skipReasons.join(', ')}`
+          reason: `Services unavailable: ${prerequisites.skipReasons.join(", ")}`,
         };
       }
       return { skip: false };
@@ -155,11 +167,15 @@ export class ServiceAvailabilityDetector {
 
     if (!prerequisites.canRun) {
       if (fallbackFn) {
-        console.log(`🔄 Running fallback test due to: ${prerequisites.skipReasons.join(', ')}`);
+        console.log(
+          `🔄 Running fallback test due to: ${prerequisites.skipReasons.join(", ")}`,
+        );
         return await fallbackFn();
       } else {
-        console.log(`⏭️  Skipping test due to: ${prerequisites.skipReasons.join(', ')}`);
-        return { skipped: true, reason: prerequisites.skipReasons.join(', ') };
+        console.log(
+          `⏭️  Skipping test due to: ${prerequisites.skipReasons.join(", ")}`,
+        );
+        return { skipped: true, reason: prerequisites.skipReasons.join(", ") };
       }
     }
 
@@ -184,9 +200,9 @@ export class ServiceAvailabilityDetector {
       status[serviceName] = {
         available: this.availability.get(serviceName) || false,
         lastChecked: this.lastChecked.get(serviceName) || null,
-        cacheAge: this.lastChecked.get(serviceName) 
+        cacheAge: this.lastChecked.get(serviceName)
           ? Date.now() - this.lastChecked.get(serviceName)
-          : null
+          : null,
       };
     }
     return status;
@@ -197,94 +213,124 @@ export class ServiceAvailabilityDetector {
 export const serviceDetector = new ServiceAvailabilityDetector();
 
 // Register common services
-serviceDetector.registerService('database', async () => {
-  try {
-    // Check if database client can be created
-    const { getDatabaseClient } = await import('../../api/lib/database.js');
-    const client = await getDatabaseClient();
-    
-    // Perform a simple query
-    const result = await client.execute('SELECT 1 as test');
-    return result && result.rows && result.rows.length > 0;
-  } catch (error) {
-    return false;
-  }
-}, {
-  timeout: 10000,
-  required: true,
-  description: 'Database connectivity'
-});
+serviceDetector.registerService(
+  "database",
+  async () => {
+    try {
+      // Check if database client can be created
+      const { getDatabaseClient } = await import("../../api/lib/database.js");
+      const client = await getDatabaseClient();
 
-serviceDetector.registerService('brevo', async () => {
-  try {
-    // Check if Brevo API key is configured
-    if (!process.env.BREVO_API_KEY) {
+      // Perform a simple query
+      const result = await client.execute("SELECT 1 as test");
+      return result && result.rows && result.rows.length > 0;
+    } catch (error) {
       return false;
     }
-    
-    // Try to get Brevo service
-    const { getEmailSubscriberService } = await import('../../api/lib/email-subscriber-service.js');
-    const service = getEmailSubscriberService();
-    await service.ensureInitialized();
-    
-    // Try a simple operation
-    const stats = await service.getSubscriberStats();
-    return stats && typeof stats.total === 'number';
-  } catch (error) {
-    return false;
-  }
-}, {
-  timeout: 8000,
-  required: false,
-  description: 'Brevo email service'
-});
+  },
+  {
+    timeout: 10000,
+    required: true,
+    description: "Database connectivity",
+  },
+);
 
-serviceDetector.registerService('googleSheets', async () => {
-  try {
-    // Check if Google Sheets environment variables are configured
-    if (!process.env.GOOGLE_SHEET_ID || !process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL) {
+serviceDetector.registerService(
+  "brevo",
+  async () => {
+    try {
+      // Check if Brevo API key is configured
+      if (!process.env.BREVO_API_KEY) {
+        return false;
+      }
+
+      // Try to get Brevo service
+      const { getEmailSubscriberService } = await import(
+        "../../api/lib/email-subscriber-service.js"
+      );
+      const service = getEmailSubscriberService();
+      await service.ensureInitialized();
+
+      // Try a simple operation
+      const stats = await service.getSubscriberStats();
+      return stats && typeof stats.total === "number";
+    } catch (error) {
       return false;
     }
-    
-    // Try to create Google Sheets service
-    const { GoogleSheetsService } = await import('../../api/lib/google-sheets-service.js');
-    const service = new GoogleSheetsService();
-    await service.initialize();
-    
-    return service.sheets && service.auth;
-  } catch (error) {
-    return false;
-  }
-}, {
-  timeout: 10000,
-  required: false,
-  description: 'Google Sheets API'
-});
+  },
+  {
+    timeout: 8000,
+    required: false,
+    description: "Brevo email service",
+  },
+);
 
-serviceDetector.registerService('stripe', async () => {
-  try {
-    // Check if Stripe keys are configured
-    if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_PUBLISHABLE_KEY) {
+serviceDetector.registerService(
+  "googleSheets",
+  async () => {
+    try {
+      // Check if Google Sheets environment variables are configured
+      if (
+        !process.env.GOOGLE_SHEET_ID ||
+        !process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL
+      ) {
+        return false;
+      }
+
+      // Try to create Google Sheets service
+      const { GoogleSheetsService } = await import(
+        "../../api/lib/google-sheets-service.js"
+      );
+      const service = new GoogleSheetsService();
+      await service.initialize();
+
+      return service.sheets && service.auth;
+    } catch (error) {
       return false;
     }
-    
-    // Basic validation of key format
-    const secretKey = process.env.STRIPE_SECRET_KEY;
-    return secretKey.startsWith('sk_test_') || secretKey.startsWith('sk_live_');
-  } catch (error) {
-    return false;
-  }
-}, {
-  timeout: 3000,
-  required: false,
-  description: 'Stripe payment processing'
-});
+  },
+  {
+    timeout: 10000,
+    required: false,
+    description: "Google Sheets API",
+  },
+);
+
+serviceDetector.registerService(
+  "stripe",
+  async () => {
+    try {
+      // Check if Stripe keys are configured
+      if (
+        !process.env.STRIPE_SECRET_KEY ||
+        !process.env.STRIPE_PUBLISHABLE_KEY
+      ) {
+        return false;
+      }
+
+      // Basic validation of key format
+      const secretKey = process.env.STRIPE_SECRET_KEY;
+      return (
+        secretKey.startsWith("sk_test_") || secretKey.startsWith("sk_live_")
+      );
+    } catch (error) {
+      return false;
+    }
+  },
+  {
+    timeout: 3000,
+    required: false,
+    description: "Stripe payment processing",
+  },
+);
 
 // Export helper functions for easy use in tests
-export const checkService = (serviceName) => serviceDetector.checkService(serviceName);
+export const checkService = (serviceName) =>
+  serviceDetector.checkService(serviceName);
 export const checkAllServices = () => serviceDetector.checkAllServices();
-export const validatePrerequisites = (services) => serviceDetector.validatePrerequisites(services);
-export const withServiceAvailability = (services, testFn, fallbackFn) => 
+export const validatePrerequisites = (services) =>
+  serviceDetector.validatePrerequisites(services);
+export const withServiceAvailability = (services, testFn, fallbackFn) =>
   serviceDetector.withServiceAvailability(services, testFn, fallbackFn);
 
 export default serviceDetector;

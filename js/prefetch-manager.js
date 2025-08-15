@@ -46,7 +46,6 @@ class IntelligentPrefetchManager {
         };
 
         this.initialize();
-
     }
 
     initialize() {
@@ -411,7 +410,6 @@ class IntelligentPrefetchManager {
                 this.backgroundWorker.intervalId = setInterval(() => {
                     this.processBackgroundQueue();
                 }, 2000); // Process every 2 seconds
-
             },
 
             stop: () => {
@@ -420,7 +418,6 @@ class IntelligentPrefetchManager {
                     this.backgroundWorker.intervalId = null;
                 }
                 this.backgroundWorker.isRunning = false;
-
             },
 
             addTask: (task) => {
@@ -431,7 +428,6 @@ class IntelligentPrefetchManager {
 
     addToPriorityQueue(resourceUrl, priority, metadata = {}) {
         if (!this.priorityQueue.has(priority)) {
-
             priority = 'low';
         }
 
@@ -456,7 +452,6 @@ class IntelligentPrefetchManager {
         if (priority === 'critical' && !this.processingActive) {
             this.processNextInQueue();
         }
-
     }
 
     estimateResourceSize(resourceUrl) {
@@ -512,7 +507,6 @@ class IntelligentPrefetchManager {
                     this.currentBudgetUsed + resourceInfo.estimatedSize >
           this.resourceBudget.totalBudget
                 ) {
-
                     break;
                 }
 
@@ -570,11 +564,9 @@ class IntelligentPrefetchManager {
                 // Update prediction model with successful prefetch
                 this.updatePredictionModel(url, true);
             } else {
-
                 this.updatePredictionModel(url, false);
             }
         } catch {
-
             this.updatePredictionModel(url, false);
         } finally {
             this.processingQueue.delete(url);
@@ -981,7 +973,6 @@ class IntelligentPrefetchManager {
         const timeRemaining = deadline.timeRemaining();
 
         if (timeRemaining > 20 && this.getTotalQueueSize() > 0) {
-
             this.processNextInQueue();
         }
 
@@ -1004,9 +995,7 @@ class IntelligentPrefetchManager {
             if (typeof task === 'function') {
                 task();
             }
-        } catch {
-
-        }
+        } catch {}
     }
 
     cleanupOldCache() {
@@ -1024,7 +1013,6 @@ class IntelligentPrefetchManager {
     monitorConnectionChanges() {
         if ('connection' in navigator) {
             navigator.connection.addEventListener('change', () => {
-
                 this.connectionInfo = this.detectConnectionCapabilities();
                 this.resourceBudget = this.calculateResourceBudget();
 
@@ -1105,7 +1093,6 @@ class IntelligentPrefetchManager {
         if (document.hidden) {
             // Pause aggressive prefetching when tab is hidden
             this.backgroundWorker.stop();
-
         } else {
             // Resume when tab becomes visible
             this.backgroundWorker.start();
@@ -1133,9 +1120,7 @@ class IntelligentPrefetchManager {
                 'alocubano-interaction-data',
                 JSON.stringify(this.userInteractions)
             );
-        } catch {
-
-        }
+        } catch {}
     }
 
     clearAllQueues() {
@@ -1200,13 +1185,11 @@ class IntelligentPrefetchManager {
         this.resourceCache.clear();
         this.resourceSizes.clear();
         this.currentBudgetUsed = 0;
-
     }
 
     setConnectionOverride(connectionInfo) {
         this.connectionInfo = { ...this.connectionInfo, ...connectionInfo };
         this.resourceBudget = this.calculateResourceBudget();
-
     }
 }
 

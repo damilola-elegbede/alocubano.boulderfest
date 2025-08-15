@@ -2,7 +2,14 @@
  * @vitest-environment node
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { backupEnv, restoreEnv, clearDatabaseEnv, clearAppEnv, getEnvPreset, withIsolatedEnv } from "../helpers/simple-helpers.js";
+import {
+  backupEnv,
+  restoreEnv,
+  clearDatabaseEnv,
+  clearAppEnv,
+  getEnvPreset,
+  withIsolatedEnv,
+} from "../helpers/simple-helpers.js";
 
 describe.skip("DatabaseService - Updated Implementation Validation", () => {
   // These tests validate the real implementation, not mocks
@@ -17,12 +24,14 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
   afterEach(async () => {
     // Cleanup any database instances
     try {
-      const { resetDatabaseInstance } = await import("../../api/lib/database.js");
+      const { resetDatabaseInstance } = await import(
+        "../../api/lib/database.js"
+      );
       await resetDatabaseInstance();
     } catch (error) {
       // Ignore cleanup errors
     }
-    
+
     restoreEnv(envBackup);
     vi.resetModules();
   });
@@ -32,12 +41,12 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
       await withIsolatedEnv("valid-local", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
-        
+
         // Check that new properties exist (even if undefined/null initially)
-        expect(service.hasOwnProperty('activeConnections')).toBe(true);
-        expect(service.hasOwnProperty('maxRetries')).toBe(true);
-        expect(service.hasOwnProperty('retryDelay')).toBe(true);
-        
+        expect(service.hasOwnProperty("activeConnections")).toBe(true);
+        expect(service.hasOwnProperty("maxRetries")).toBe(true);
+        expect(service.hasOwnProperty("retryDelay")).toBe(true);
+
         // Check default values
         expect(service.maxRetries).toBe(3);
         expect(service.retryDelay).toBe(1000);
@@ -52,16 +61,16 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
       await withIsolatedEnv("valid-local", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
-        
-        expect(typeof service.close).toBe('function');
-        
+
+        expect(typeof service.close).toBe("function");
+
         // Should return a promise
         const result = service.close();
         expect(result).toBeInstanceOf(Promise);
-        
+
         // Should resolve to boolean
         const closeResult = await result;
-        expect(typeof closeResult).toBe('boolean');
+        expect(typeof closeResult).toBe("boolean");
       });
     });
 
@@ -69,13 +78,13 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
       await withIsolatedEnv("valid-local", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
-        
-        expect(typeof service.resetForTesting).toBe('function');
-        
+
+        expect(typeof service.resetForTesting).toBe("function");
+
         // Should return a promise
         const result = service.resetForTesting();
         expect(result).toBeInstanceOf(Promise);
-        
+
         await result; // Should not throw
       });
     });
@@ -84,15 +93,15 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
       await withIsolatedEnv("valid-local", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
-        
-        expect(typeof service.getConnectionStats).toBe('function');
-        
+
+        expect(typeof service.getConnectionStats).toBe("function");
+
         const stats = service.getConnectionStats();
-        expect(stats).toBeTypeOf('object');
-        expect(stats).toHaveProperty('activeConnections');
-        expect(stats).toHaveProperty('initialized');
-        expect(stats).toHaveProperty('hasClient');
-        expect(stats).toHaveProperty('timestamp');
+        expect(stats).toBeTypeOf("object");
+        expect(stats).toHaveProperty("activeConnections");
+        expect(stats).toHaveProperty("initialized");
+        expect(stats).toHaveProperty("hasClient");
+        expect(stats).toHaveProperty("timestamp");
       });
     });
 
@@ -100,31 +109,33 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
       await withIsolatedEnv("valid-local", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
-        
-        expect(typeof service.healthCheck).toBe('function');
-        
+
+        expect(typeof service.healthCheck).toBe("function");
+
         // Should return a promise
         const result = service.healthCheck();
         expect(result).toBeInstanceOf(Promise);
-        
+
         const health = await result;
-        expect(health).toBeTypeOf('object');
-        expect(health).toHaveProperty('status');
-        expect(health).toHaveProperty('timestamp');
+        expect(health).toBeTypeOf("object");
+        expect(health).toHaveProperty("status");
+        expect(health).toHaveProperty("timestamp");
       });
     });
   });
 
   describe("resetDatabaseInstance function", () => {
     it("should be async function", async () => {
-      const { resetDatabaseInstance } = await import("../../api/lib/database.js");
-      
-      expect(typeof resetDatabaseInstance).toBe('function');
-      
+      const { resetDatabaseInstance } = await import(
+        "../../api/lib/database.js"
+      );
+
+      expect(typeof resetDatabaseInstance).toBe("function");
+
       // Should return a promise
       const result = resetDatabaseInstance();
       expect(result).toBeInstanceOf(Promise);
-      
+
       await result; // Should not throw
     });
   });
@@ -134,13 +145,13 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
       await withIsolatedEnv("valid-local", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
-        
+
         expect(service.activeConnections.size).toBe(0);
-        
+
         try {
           // Try to initialize - may fail due to network, but should still track behavior
           await service.ensureInitialized();
-          
+
           // If initialization succeeds, should have added to activeConnections
           // Note: This might fail in test environment, which is expected
         } catch (error) {
@@ -148,7 +159,7 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
           // The important thing is that the method exists and behaves properly
           expect(error).toBeDefined();
         }
-        
+
         // activeConnections should still be a Set regardless of initialization success
         expect(service.activeConnections).toBeInstanceOf(Set);
       });
@@ -160,14 +171,14 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
       await withIsolatedEnv("valid-local", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
-        
+
         // Check retry configuration exists
         expect(service.maxRetries).toBe(3);
         expect(service.retryDelay).toBe(1000);
-        
+
         // Check private retry methods exist
-        expect(typeof service._initializeWithRetry).toBe('function');
-        expect(typeof service._delay).toBe('function');
+        expect(typeof service._initializeWithRetry).toBe("function");
+        expect(typeof service._delay).toBe("function");
       });
     });
   });
@@ -177,7 +188,7 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
       await withIsolatedEnv("empty", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
-        
+
         try {
           await service.ensureInitialized();
           // If this doesn't throw, something is wrong
@@ -192,13 +203,15 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
 
   describe("Database path conversion", () => {
     it("should handle file path conversion for integration tests", async () => {
-      await withIsolatedEnv({
-        TURSO_DATABASE_URL: "file:test.db",
-        TEST_TYPE: 'integration'
-      }, async () => {
+      await withIsolatedEnv(
+        {
+          TURSO_DATABASE_URL: "file:test.db",
+          TEST_TYPE: "integration",
+        },
+        async () => {
           const { DatabaseService } = await import("../../api/lib/database.js");
           const service = new DatabaseService();
-          
+
           try {
             await service.ensureInitialized();
           } catch (error) {
@@ -207,7 +220,8 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
             expect(error.message).not.toContain("path");
             expect(error.message).not.toContain("ENOENT");
           }
-        });
+        },
+      );
     });
   });
 
@@ -216,14 +230,14 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
       await withIsolatedEnv("valid-local", async () => {
         const { DatabaseService } = await import("../../api/lib/database.js");
         const service = new DatabaseService();
-        
+
         // Set some initial state manually
         service.initialized = true;
-        service.client = { fake: 'client' };
+        service.client = { fake: "client" };
         service.initializationPromise = Promise.resolve();
-        
+
         await service.resetForTesting();
-        
+
         // Should reset all state
         expect(service.initialized).toBe(false);
         expect(service.client).toBeNull();
@@ -236,16 +250,18 @@ describe.skip("DatabaseService - Updated Implementation Validation", () => {
   describe("Singleton behavior", () => {
     it("should maintain singleton instance through module exports", async () => {
       await withIsolatedEnv("valid-local", async () => {
-        const { getDatabase, getDatabaseClient } = await import("../../api/lib/database.js");
-        
+        const { getDatabase, getDatabaseClient } = await import(
+          "../../api/lib/database.js"
+        );
+
         const service1 = getDatabase();
         const service2 = getDatabase();
-        
+
         // Should be the same instance
         expect(service1).toBe(service2);
-        
+
         // getDatabaseClient should work with the singleton
-        expect(typeof getDatabaseClient).toBe('function');
+        expect(typeof getDatabaseClient).toBe("function");
       });
     });
   });

@@ -1,28 +1,41 @@
 /**
  * API Performance Tests
- * 
+ *
  * Tests API endpoint performance under various conditions
  * including response times, throughput, and error handling.
- * 
+ *
  * Note: These tests are skipped in CI environments as they require
  * actual API endpoints to be running. Use real HTTP testing for
  * meaningful performance measurements.
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  vi,
+} from "vitest";
 import { performance } from "perf_hooks";
-import { isCI, shouldSkipPerformanceTests, getCIIterationCount, getCITimeoutMultiplier } from "../utils/ci-detection.js";
+import {
+  isCI,
+  shouldSkipPerformanceTests,
+  getCIIterationCount,
+  getCITimeoutMultiplier,
+} from "../utils/ci-detection.js";
 
 // Performance thresholds for API endpoints (CI-aware)
 const getThresholds = () => {
   const multiplier = isCI() ? 3 : 1; // CI gets more relaxed thresholds
   return {
-    health: { max: 100 * multiplier, target: 50 * multiplier },      // Health check endpoints
-    gallery: { max: 300 * multiplier, target: 150 * multiplier },    // Gallery API endpoints  
-    tickets: { max: 500 * multiplier, target: 250 * multiplier },    // Ticket operations
-    payments: { max: 800 * multiplier, target: 400 * multiplier },   // Payment processing
-    admin: { max: 600 * multiplier, target: 300 * multiplier },      // Admin operations
-    email: { max: 1000 * multiplier, target: 500 * multiplier }      // Email operations
+    health: { max: 100 * multiplier, target: 50 * multiplier }, // Health check endpoints
+    gallery: { max: 300 * multiplier, target: 150 * multiplier }, // Gallery API endpoints
+    tickets: { max: 500 * multiplier, target: 250 * multiplier }, // Ticket operations
+    payments: { max: 800 * multiplier, target: 400 * multiplier }, // Payment processing
+    admin: { max: 600 * multiplier, target: 300 * multiplier }, // Admin operations
+    email: { max: 1000 * multiplier, target: 500 * multiplier }, // Email operations
   };
 };
 const API_THRESHOLDS = getThresholds();
@@ -37,7 +50,7 @@ const MOCK_RESPONSE_TIMES = {
   "/api/tickets/validate": 200 * CI_MULTIPLIER,
   "/api/payments/create-checkout-session": 400 * CI_MULTIPLIER,
   "/api/admin/dashboard": 300 * CI_MULTIPLIER,
-  "/api/email/subscribe": 250 * CI_MULTIPLIER
+  "/api/email/subscribe": 250 * CI_MULTIPLIER,
 };
 
 class APIPerformanceTester {
@@ -48,18 +61,18 @@ class APIPerformanceTester {
 
   async testEndpoint(endpoint, iterations = 10) {
     const results = [];
-    const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.TEST_BASE_URL || "http://localhost:3000";
     const ciIterations = getCIIterationCount(iterations, 0.5); // 50% fewer iterations in CI
 
     for (let i = 0; i < ciIterations; i++) {
       const startTime = performance.now();
-      
+
       try {
         // In CI without TEST_BASE_URL, use mock responses for stability
         if (isCI() && !process.env.TEST_BASE_URL) {
           const mockDelay = MOCK_RESPONSE_TIMES[endpoint] || 100;
-          await new Promise(resolve => setTimeout(resolve, mockDelay));
-          
+          await new Promise((resolve) => setTimeout(resolve, mockDelay));
+
           const duration = performance.now() - startTime;
           results.push({
             success: true,
@@ -68,21 +81,21 @@ class APIPerformanceTester {
             endpoint,
             status: 200,
             timestamp: Date.now(),
-            mocked: true
+            mocked: true,
           });
           continue;
         }
-        
+
         // Make actual HTTP request to test real performance
         const response = await fetch(`${baseUrl}${endpoint}`, {
-          method: 'GET',
+          method: "GET",
           timeout: 5000,
           headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'Vitest-Performance-Test'
-          }
+            Accept: "application/json",
+            "User-Agent": "Vitest-Performance-Test",
+          },
         });
-        
+
         const duration = performance.now() - startTime;
         results.push({
           success: response.ok,
@@ -90,7 +103,7 @@ class APIPerformanceTester {
           iteration: i,
           endpoint,
           status: response.status,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       } catch (error) {
         const duration = performance.now() - startTime;
@@ -100,7 +113,7 @@ class APIPerformanceTester {
           error: error.message,
           iteration: i,
           endpoint,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
         this.errors.push({ endpoint, error: error.message, iteration: i });
       }
@@ -116,8 +129,8 @@ class APIPerformanceTester {
       return null;
     }
 
-    const successfulResults = results.filter(r => r.success);
-    const durations = successfulResults.map(r => r.duration);
+    const successfulResults = results.filter((r) => r.success);
+    const durations = successfulResults.map((r) => r.duration);
     durations.sort((a, b) => a - b);
 
     return {
@@ -130,7 +143,7 @@ class APIPerformanceTester {
       maxDuration: Math.max(...durations),
       p50: durations[Math.floor(durations.length * 0.5)],
       p95: durations[Math.floor(durations.length * 0.95)],
-      p99: durations[Math.floor(durations.length * 0.99)]
+      p99: durations[Math.floor(durations.length * 0.99)],
     };
   }
 
@@ -139,19 +152,21 @@ class APIPerformanceTester {
     const startTime = performance.now();
 
     for (let i = 0; i < requests; i++) {
-      const promise = this.testSingleRequest(endpoint, i).catch(error => ({
+      const promise = this.testSingleRequest(endpoint, i).catch((error) => ({
         success: false,
         error: error.message,
         requestId: i,
-        endpoint
+        endpoint,
       }));
-      
+
       promises.push(promise);
-      
+
       // Limit concurrency
       if (promises.length >= concurrency) {
         await Promise.race(promises);
-        const completedIndex = promises.findIndex(p => p.isFulfilled || p.isRejected);
+        const completedIndex = promises.findIndex(
+          (p) => p.isFulfilled || p.isRejected,
+        );
         if (completedIndex !== -1) {
           promises.splice(completedIndex, 1);
         }
@@ -168,31 +183,31 @@ class APIPerformanceTester {
       totalTime,
       results,
       avgConcurrentTime: totalTime / requests,
-      throughput: requests / (totalTime / 1000) // requests per second
+      throughput: requests / (totalTime / 1000), // requests per second
     };
   }
 
   async testSingleRequest(endpoint, requestId) {
     const startTime = performance.now();
-    const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000';
-    
+    const baseUrl = process.env.TEST_BASE_URL || "http://localhost:3000";
+
     try {
       const response = await fetch(`${baseUrl}${endpoint}`, {
-        method: 'GET',
+        method: "GET",
         timeout: 5000,
         headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Vitest-Performance-Test'
-        }
+          Accept: "application/json",
+          "User-Agent": "Vitest-Performance-Test",
+        },
       });
-      
+
       return {
         success: response.ok,
         duration: performance.now() - startTime,
         requestId,
         endpoint,
         status: response.status,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     } catch (error) {
       return {
@@ -201,7 +216,7 @@ class APIPerformanceTester {
         requestId,
         endpoint,
         error: error.message,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
   }
@@ -224,13 +239,17 @@ describe.skip("API Performance Tests", () => {
   beforeAll(() => {
     // Skip if no base URL is configured (only for local development)
     if (!process.env.TEST_BASE_URL && !isCI()) {
-      console.warn('⚠️ TEST_BASE_URL not set. Set TEST_BASE_URL=http://localhost:3000 to run performance tests against local server.');
+      console.warn(
+        "⚠️ TEST_BASE_URL not set. Set TEST_BASE_URL=http://localhost:3000 to run performance tests against local server.",
+      );
     }
-    
+
     if (isCI()) {
-      console.log('🔄 Running API performance tests in CI mode with mock responses');
+      console.log(
+        "🔄 Running API performance tests in CI mode with mock responses",
+      );
     }
-    
+
     tester = new APIPerformanceTester();
   });
 
@@ -239,17 +258,26 @@ describe.skip("API Performance Tests", () => {
   });
 
   describe("Health Check Performance", () => {
-    it("should respond to health checks quickly", async () => {
-      const iterations = getCIIterationCount(20, 0.5); // 50% fewer iterations in CI (10)
-      const results = await tester.testEndpoint("/api/health/check", iterations);
-      const stats = tester.getStatistics("/api/health/check");
+    it(
+      "should respond to health checks quickly",
+      async () => {
+        const iterations = getCIIterationCount(20, 0.5); // 50% fewer iterations in CI (10)
+        const results = await tester.testEndpoint(
+          "/api/health/check",
+          iterations,
+        );
+        const stats = tester.getStatistics("/api/health/check");
 
-      expect(stats.successRate).toBe(1.0);
-      expect(stats.avgDuration).toBeLessThan(API_THRESHOLDS.health.max);
-      expect(stats.p95).toBeLessThan(API_THRESHOLDS.health.max * 1.5);
+        expect(stats.successRate).toBe(1.0);
+        expect(stats.avgDuration).toBeLessThan(API_THRESHOLDS.health.max);
+        expect(stats.p95).toBeLessThan(API_THRESHOLDS.health.max * 1.5);
 
-      console.log(`Health check - Avg: ${stats.avgDuration.toFixed(2)}ms, P95: ${stats.p95.toFixed(2)}ms`);
-    }, isCI() ? 20000 : 10000);
+        console.log(
+          `Health check - Avg: ${stats.avgDuration.toFixed(2)}ms, P95: ${stats.p95.toFixed(2)}ms`,
+        );
+      },
+      isCI() ? 20000 : 10000,
+    );
 
     it("should handle database health checks efficiently", async () => {
       const results = await tester.testEndpoint("/api/health/database", 15);
@@ -299,85 +327,132 @@ describe.skip("API Performance Tests", () => {
 
   describe("Payment API Performance", () => {
     it("should create checkout sessions efficiently", async () => {
-      const results = await tester.testEndpoint("/api/payments/create-checkout-session", 10);
-      const stats = tester.getStatistics("/api/payments/create-checkout-session");
+      const results = await tester.testEndpoint(
+        "/api/payments/create-checkout-session",
+        10,
+      );
+      const stats = tester.getStatistics(
+        "/api/payments/create-checkout-session",
+      );
 
-      expect(stats.successRate).toBeGreaterThan(0.90); // Payment operations can have more variability
+      expect(stats.successRate).toBeGreaterThan(0.9); // Payment operations can have more variability
       expect(stats.avgDuration).toBeLessThan(API_THRESHOLDS.payments.max);
       expect(stats.p99).toBeLessThan(API_THRESHOLDS.payments.max * 1.5);
 
-      console.log(`Payment checkout - Avg: ${stats.avgDuration.toFixed(2)}ms, P99: ${stats.p99.toFixed(2)}ms`);
+      console.log(
+        `Payment checkout - Avg: ${stats.avgDuration.toFixed(2)}ms, P99: ${stats.p99.toFixed(2)}ms`,
+      );
     }, 15000);
   });
 
   describe("Concurrent Request Performance", () => {
-    it.skipIf(shouldSkipResourceIntensive)("should handle concurrent health checks", async () => {
-      const result = await tester.testConcurrentRequests("/api/health/check", 10, 30);
+    it.skipIf(shouldSkipResourceIntensive)(
+      "should handle concurrent health checks",
+      async () => {
+        const result = await tester.testConcurrentRequests(
+          "/api/health/check",
+          10,
+          30,
+        );
 
-      const successfulRequests = result.results.filter(r => r.success);
-      const avgDuration = successfulRequests.reduce((sum, r) => sum + r.duration, 0) / successfulRequests.length;
+        const successfulRequests = result.results.filter((r) => r.success);
+        const avgDuration =
+          successfulRequests.reduce((sum, r) => sum + r.duration, 0) /
+          successfulRequests.length;
 
-      expect(successfulRequests.length).toBeGreaterThan(25); // At least 83% success
-      expect(avgDuration).toBeLessThan(API_THRESHOLDS.health.max * 2); // Concurrent requests can be slower
-      expect(result.throughput).toBeGreaterThan(10); // At least 10 requests/second
+        expect(successfulRequests.length).toBeGreaterThan(25); // At least 83% success
+        expect(avgDuration).toBeLessThan(API_THRESHOLDS.health.max * 2); // Concurrent requests can be slower
+        expect(result.throughput).toBeGreaterThan(10); // At least 10 requests/second
 
-      console.log(`Concurrent health - Throughput: ${result.throughput.toFixed(1)} req/s`);
-    }, 15000);
+        console.log(
+          `Concurrent health - Throughput: ${result.throughput.toFixed(1)} req/s`,
+        );
+      },
+      15000,
+    );
 
-    it.skipIf(shouldSkipResourceIntensive)("should handle concurrent gallery requests", async () => {
-      const result = await tester.testConcurrentRequests("/api/gallery/years", 5, 20);
+    it.skipIf(shouldSkipResourceIntensive)(
+      "should handle concurrent gallery requests",
+      async () => {
+        const result = await tester.testConcurrentRequests(
+          "/api/gallery/years",
+          5,
+          20,
+        );
 
-      const successfulRequests = result.results.filter(r => r.success);
-      const avgDuration = successfulRequests.reduce((sum, r) => sum + r.duration, 0) / successfulRequests.length;
+        const successfulRequests = result.results.filter((r) => r.success);
+        const avgDuration =
+          successfulRequests.reduce((sum, r) => sum + r.duration, 0) /
+          successfulRequests.length;
 
-      expect(successfulRequests.length).toBeGreaterThan(18); // 90% success rate
-      expect(avgDuration).toBeLessThan(API_THRESHOLDS.gallery.max * 1.5);
+        expect(successfulRequests.length).toBeGreaterThan(18); // 90% success rate
+        expect(avgDuration).toBeLessThan(API_THRESHOLDS.gallery.max * 1.5);
 
-      console.log(`Concurrent gallery - Avg: ${avgDuration.toFixed(2)}ms`);
-    }, 15000);
+        console.log(`Concurrent gallery - Avg: ${avgDuration.toFixed(2)}ms`);
+      },
+      15000,
+    );
   });
 
   describe("Performance Under Load", () => {
-    it.skipIf(shouldSkipResourceIntensive)("should maintain performance under sustained load", async () => {
-      const endpoints = ["/api/health/check", "/api/gallery/years", "/api/tickets/validate"];
-      const results = new Map();
+    it.skipIf(shouldSkipResourceIntensive)(
+      "should maintain performance under sustained load",
+      async () => {
+        const endpoints = [
+          "/api/health/check",
+          "/api/gallery/years",
+          "/api/tickets/validate",
+        ];
+        const results = new Map();
 
-      for (const endpoint of endpoints) {
-        const result = await tester.testEndpoint(endpoint, 25);
-        results.set(endpoint, tester.getStatistics(endpoint));
-      }
+        for (const endpoint of endpoints) {
+          const result = await tester.testEndpoint(endpoint, 25);
+          results.set(endpoint, tester.getStatistics(endpoint));
+        }
 
-      for (const [endpoint, stats] of results) {
-        expect(stats.successRate).toBeGreaterThan(0.95);
-        console.log(`${endpoint} - Success: ${(stats.successRate * 100).toFixed(1)}%, Avg: ${stats.avgDuration.toFixed(2)}ms`);
-      }
-    }, 20000);
+        for (const [endpoint, stats] of results) {
+          expect(stats.successRate).toBeGreaterThan(0.95);
+          console.log(
+            `${endpoint} - Success: ${(stats.successRate * 100).toFixed(1)}%, Avg: ${stats.avgDuration.toFixed(2)}ms`,
+          );
+        }
+      },
+      20000,
+    );
 
-    it.skipIf(shouldSkipResourceIntensive)("should handle mixed endpoint load", async () => {
-      const testPromises = [
-        tester.testConcurrentRequests("/api/health/check", 3, 10),
-        tester.testConcurrentRequests("/api/gallery/years", 2, 8),
-        tester.testConcurrentRequests("/api/tickets/validate", 2, 6)
-      ];
+    it.skipIf(shouldSkipResourceIntensive)(
+      "should handle mixed endpoint load",
+      async () => {
+        const testPromises = [
+          tester.testConcurrentRequests("/api/health/check", 3, 10),
+          tester.testConcurrentRequests("/api/gallery/years", 2, 8),
+          tester.testConcurrentRequests("/api/tickets/validate", 2, 6),
+        ];
 
-      const results = await Promise.all(testPromises);
-      
-      let totalSuccessful = 0;
-      let totalRequests = 0;
+        const results = await Promise.all(testPromises);
 
-      results.forEach((result, index) => {
-        const successful = result.results.filter(r => r.success).length;
-        totalSuccessful += successful;
-        totalRequests += result.totalRequests;
-        
-        console.log(`Endpoint ${index + 1} - Success: ${successful}/${result.totalRequests}`);
-      });
+        let totalSuccessful = 0;
+        let totalRequests = 0;
 
-      const overallSuccessRate = totalSuccessful / totalRequests;
-      expect(overallSuccessRate).toBeGreaterThan(0.90);
+        results.forEach((result, index) => {
+          const successful = result.results.filter((r) => r.success).length;
+          totalSuccessful += successful;
+          totalRequests += result.totalRequests;
 
-      console.log(`Overall mixed load success rate: ${(overallSuccessRate * 100).toFixed(1)}%`);
-    }, 15000);
+          console.log(
+            `Endpoint ${index + 1} - Success: ${successful}/${result.totalRequests}`,
+          );
+        });
+
+        const overallSuccessRate = totalSuccessful / totalRequests;
+        expect(overallSuccessRate).toBeGreaterThan(0.9);
+
+        console.log(
+          `Overall mixed load success rate: ${(overallSuccessRate * 100).toFixed(1)}%`,
+        );
+      },
+      15000,
+    );
   });
 
   describe("Performance Regression Detection", () => {
@@ -385,22 +460,27 @@ describe.skip("API Performance Tests", () => {
       // Establish baseline
       await tester.testEndpoint("/api/health/check", 10);
       const baselineStats = tester.getStatistics("/api/health/check");
-      
+
       tester.reset();
-      
+
       // Simulate degraded performance by using a slower endpoint
       await tester.testEndpoint("/api/payments/create-checkout-session", 10);
-      const degradedStats = tester.getStatistics("/api/payments/create-checkout-session");
+      const degradedStats = tester.getStatistics(
+        "/api/payments/create-checkout-session",
+      );
 
-      const performanceRatio = degradedStats.avgDuration / baselineStats.avgDuration;
+      const performanceRatio =
+        degradedStats.avgDuration / baselineStats.avgDuration;
 
       expect(performanceRatio).toBeGreaterThan(3); // Should detect significant degradation
-      console.log(`Performance degradation detected: ${performanceRatio.toFixed(2)}x slower`);
+      console.log(
+        `Performance degradation detected: ${performanceRatio.toFixed(2)}x slower`,
+      );
     }, 15000);
 
     it("should track performance consistency", async () => {
       const measurements = [];
-      
+
       for (let i = 0; i < 5; i++) {
         await tester.testEndpoint("/api/gallery/years", 8);
         const stats = tester.getStatistics("/api/gallery/years");
@@ -408,13 +488,17 @@ describe.skip("API Performance Tests", () => {
         tester.reset();
       }
 
-      const avgMeasurement = measurements.reduce((a, b) => a + b, 0) / measurements.length;
-      const maxVariation = Math.max(...measurements) / Math.min(...measurements);
+      const avgMeasurement =
+        measurements.reduce((a, b) => a + b, 0) / measurements.length;
+      const maxVariation =
+        Math.max(...measurements) / Math.min(...measurements);
 
       expect(maxVariation).toBeLessThan(2.5); // Less than 2.5x variation between measurements
       expect(avgMeasurement).toBeLessThan(API_THRESHOLDS.gallery.max);
 
-      console.log(`Consistency check - Avg: ${avgMeasurement.toFixed(2)}ms, Variation: ${maxVariation.toFixed(2)}x`);
+      console.log(
+        `Consistency check - Avg: ${avgMeasurement.toFixed(2)}ms, Variation: ${maxVariation.toFixed(2)}x`,
+      );
     }, 20000);
   });
 
@@ -422,7 +506,9 @@ describe.skip("API Performance Tests", () => {
     console.log("\n📊 API Performance Test Summary:");
     console.log("  Thresholds tested:");
     for (const [endpoint, threshold] of Object.entries(API_THRESHOLDS)) {
-      console.log(`    ${endpoint}: ${threshold.max}ms max, ${threshold.target}ms target`);
+      console.log(
+        `    ${endpoint}: ${threshold.max}ms max, ${threshold.target}ms target`,
+      );
     }
     console.log("✅ All API performance tests completed");
   });

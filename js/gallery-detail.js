@@ -113,7 +113,7 @@
         state.timestamp = null;
         state.restoredFromCache = false;
 
-        // Console statement removed
+    // Console statement removed
     }
 
     // State persistence functions
@@ -447,7 +447,7 @@
 
     // Sequential loading algorithm for category-aware pagination
     function getNextPageItems(allCategories, pageSize = 20) {
-        // Console statement removed
+    // Console statement removed
 
         const items = [];
         let remainingSpace = pageSize;
@@ -653,7 +653,7 @@
 
     // Initialize gallery on page load
     document.addEventListener('DOMContentLoaded', () => {
-        // Console statement removed
+    // Console statement removed
 
         // Clear any stale session storage that might interfere with workshop photos
         const event = getEventFromPage();
@@ -742,7 +742,7 @@
 
     // Load next page of photos with mutex protection
     async function loadNextPage(year, loadingEl, contentEl, staticEl) {
-        // Prevent concurrent loading with mutex pattern
+    // Prevent concurrent loading with mutex pattern
         if (state.loadingMutex || !state.hasMorePages) {
             // Console statement removed
             return;
@@ -984,7 +984,7 @@
         categoryOffset = 0, // eslint-disable-line no-unused-vars
         isAppend = false
     ) {
-        // categoryOffset parameter kept for API compatibility but not used internally
+    // categoryOffset parameter kept for API compatibility but not used internally
         const BATCH_SIZE = 5; // Process 5 items at a time
 
         // Initialize category counters if not already present
@@ -1113,7 +1113,7 @@
         loadingEl,
         appendMode = false
     ) {
-        // Console statement removed
+    // Console statement removed
 
         // Check if we have any categories with items
         let hasItems = false;
@@ -1468,7 +1468,7 @@
 
     // Get year from page (from URL path or data attribute)
     function getYearFromPage() {
-        // Try to get from URL path (e.g., gallery-2025.html)
+    // Try to get from URL path (e.g., gallery-2025.html)
         const pathMatch = window.location.pathname.match(/gallery-(\d{4})\.html/);
         if (pathMatch) {
             return pathMatch[1];
@@ -1587,6 +1587,6 @@
         // Clear caches
         RequestManager.clearCache();
 
-        // Console statement removed
+    // Console statement removed
     };
 })();

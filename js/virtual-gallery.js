@@ -63,7 +63,6 @@ class VirtualGalleryManager {
 
             return this;
         } catch (error) {
-
             this.showError('Failed to initialize gallery. Please refresh the page.');
             throw error;
         }
@@ -151,7 +150,6 @@ class VirtualGalleryManager {
             this.processAPIResponse(data);
             this.hideLoading();
         } catch (error) {
-
             this.showError('Failed to load gallery data.');
             throw error;
         }
@@ -282,7 +280,6 @@ class VirtualGalleryManager {
             this.processAPIResponse(data);
             this.render();
         } catch {
-
         } finally {
             this.isLoading = false;
         }
@@ -480,7 +477,6 @@ class VirtualGalleryManager {
    */
     openLightbox(index) {
         if (typeof Lightbox === 'undefined') {
-
             return;
         }
 
@@ -608,9 +604,7 @@ class VirtualGalleryManager {
         try {
             await this.loadInitialData();
             this.render();
-        } catch {
-
-        }
+        } catch {}
     }
 
     /**

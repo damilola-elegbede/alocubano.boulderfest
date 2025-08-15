@@ -45,17 +45,17 @@ vi.mock("../../api/lib/database.js", () => ({
 }));
 
 // Skip in CI to prevent SQLITE_BUSY conflicts
-const shouldSkipInCI = process.env.CI === 'true';
+const shouldSkipInCI = process.env.CI === "true";
 const describeOrSkip = shouldSkipInCI ? describe.skip : describe;
 
 describeOrSkip("Database API Integration Tests", () => {
   beforeEach(() => {
     // Early exit for CI environment
     if (shouldSkipInCI) {
-      console.log('⏭️ Skipping Database API test setup in CI');
+      console.log("⏭️ Skipping Database API test setup in CI");
       return;
     }
-    
+
     vi.clearAllMocks();
 
     // Set up environment variables for tests
@@ -122,7 +122,7 @@ describeOrSkip("Database API Integration Tests", () => {
     if (shouldSkipInCI) {
       return;
     }
-    
+
     // Clean up environment variables
     delete process.env.DATABASE_URL;
     delete process.env.BREVO_API_KEY;
@@ -537,26 +537,29 @@ describeOrSkip("Database API Integration Tests", () => {
       const responseData = JSON.parse(res._getData());
 
       // Check if tests and configuration exist before accessing nested properties
-      expect(responseData).toHaveProperty('tests');
-      expect(responseData.tests).toHaveProperty('configuration');
-      
+      expect(responseData).toHaveProperty("tests");
+      expect(responseData.tests).toHaveProperty("configuration");
+
       // Ensure configuration test passed and has data
-      if (responseData.tests.configuration.status === 'passed') {
+      if (responseData.tests.configuration.status === "passed") {
         expect(responseData.tests.configuration.data).toBeDefined();
-        
+
         const configData = responseData.tests.configuration.data;
         expect(configData.environment).toBe("production");
-        
+
         // In production, environment variables are hidden for security
         expect(configData.environmentVariables).toEqual({
-          status: "configuration_hidden_in_production"
+          status: "configuration_hidden_in_production",
         });
       } else {
         // If configuration test failed, we should still have error information
         expect(responseData.tests.configuration.error).toBeDefined();
-        console.log('Configuration test failed:', responseData.tests.configuration.error);
+        console.log(
+          "Configuration test failed:",
+          responseData.tests.configuration.error,
+        );
       }
-      
+
       // Clean up
       delete process.env.ENABLE_DEBUG_ENDPOINTS;
     });

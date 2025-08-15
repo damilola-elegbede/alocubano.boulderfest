@@ -98,11 +98,10 @@
 
     // Initialize hero image
     function initializeHero() {
-        // Hero initialization
+    // Hero initialization
 
         const heroElement = document.getElementById('hero-splash-image');
         if (!heroElement) {
-
             return;
         }
 
@@ -115,7 +114,6 @@
 
         // Add loading state management
         heroElement.addEventListener('load', function() {
-
             // Remove loading class and add loaded class to parent container
             const container = this.closest('.gallery-hero-splash');
             if (container) {
@@ -126,17 +124,13 @@
 
         // Error handling
         heroElement.addEventListener('error', function() {
-
             // Fallback to default hero image if not already using it
             if (!this.src.includes('hero-default.jpg')) {
-
                 this.src = HERO_IMAGES['default'];
                 this.alt = 'A Lo Cubano Boulder Fest';
             } else {
-
             }
         });
-
     }
 
     // Get appropriate alt text for hero image
@@ -201,10 +195,8 @@
 
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
-
         document.addEventListener('DOMContentLoaded', initializeHero);
     } else {
-
         initializeHero();
     }
 })();

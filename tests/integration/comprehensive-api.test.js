@@ -1,7 +1,7 @@
 /**
  * Comprehensive API Integration Tests
  * Tests complete end-to-end API flows with proper initialization and data consistency
- * 
+ *
  * Updated to use new simplified test helpers (Phase 2.6)
  */
 
@@ -33,31 +33,31 @@ function createWebhookHandler(webhookHandler) {
   return (req, res) => {
     // Store the original body if it was parsed
     const parsedBody = req.body;
-    
+
     // Remove the parsed body so the handler reads from stream
     delete req.body;
-    
+
     // Convert parsed body back to string for raw body reading
     const bodyString = JSON.stringify(parsedBody);
     let dataEmitted = false;
-    
+
     // Mock the stream interface
     req.setEncoding = () => {};
     req.on = (event, callback) => {
-      if (event === 'data') {
+      if (event === "data") {
         // Emit data only once
         if (!dataEmitted) {
           dataEmitted = true;
           setImmediate(() => callback(bodyString));
         }
-      } else if (event === 'end') {
+      } else if (event === "end") {
         // Signal end of stream after data is emitted
         setImmediate(() => callback());
-      } else if (event === 'error') {
+      } else if (event === "error") {
         // Store error handler but don't call it
       }
     };
-    
+
     // Call the original handler
     return webhookHandler(req, res);
   };
@@ -71,7 +71,7 @@ describe("Comprehensive API Integration", () => {
   beforeAll(async () => {
     // Store original fetch
     originalFetch = global.fetch;
-    
+
     // CRITICAL: Set up test environment BEFORE importing anything that uses services
     process.env.NODE_ENV = "test";
     process.env.TURSO_DATABASE_URL = ":memory:";
@@ -84,10 +84,10 @@ describe("Comprehensive API Integration", () => {
     const { setupTest } = await import("../helpers/index.js");
     setup = await setupTest({
       database: true,
-      env: 'complete-test',
+      env: "complete-test",
       mocks: [], // Don't use the default fetch mock
       seed: false,
-      isolate: true
+      isolate: true,
     });
 
     // Create a proper fetch mock that will persist across all tests
@@ -102,9 +102,9 @@ describe("Comprehensive API Integration", () => {
         execute: async (...args) => setup.client.execute(...args),
         close: async () => {},
         client: setup.client,
-        initialized: true
+        initialized: true,
       };
-      
+
       return {
         getDatabase: () => mockDatabaseService,
         getDatabaseClient: async () => setup.client,
@@ -114,13 +114,15 @@ describe("Comprehensive API Integration", () => {
           constructor() {
             return mockDatabaseService;
           }
-        }
+        },
       };
     });
 
     // Mock the services to ensure they're reset
     vi.doMock("../../api/lib/email-subscriber-service.js", async () => {
-      const actual = await vi.importActual("../../api/lib/email-subscriber-service.js");
+      const actual = await vi.importActual(
+        "../../api/lib/email-subscriber-service.js",
+      );
       // Reset the singleton
       actual.resetEmailSubscriberService();
       return actual;
@@ -145,7 +147,10 @@ describe("Comprehensive API Integration", () => {
 
     app.post("/api/email/subscribe", subscribeHandler.default);
     // Use wrapper to handle body streaming properly in tests
-    app.post("/api/email/brevo-webhook", createWebhookHandler(webhookHandler.default));
+    app.post(
+      "/api/email/brevo-webhook",
+      createWebhookHandler(webhookHandler.default),
+    );
 
     console.log("🎯 Comprehensive API integration test setup complete");
   }, 45000);
@@ -155,19 +160,15 @@ describe("Comprehensive API Integration", () => {
     if (originalFetch) {
       global.fetch = originalFetch;
     }
-    
+
     await teardownTest(setup);
   });
 
   beforeEach(async () => {
     // Clean database before each test
     const db = setup.client;
-    const tables = [
-      "email_events",
-      "email_subscribers", 
-      "email_audit_log"
-    ];
-    
+    const tables = ["email_events", "email_subscribers", "email_audit_log"];
+
     for (const table of tables) {
       try {
         await db.execute(`DELETE FROM ${table}`);
@@ -189,11 +190,11 @@ describe("Comprehensive API Integration", () => {
     it("should handle complete subscription with database persistence", async () => {
       // Mock external Brevo API using fetch mock
       global.fetch.mockImplementation(async (url, options) => {
-        if (url.includes('/v3/contacts') && options.method === 'POST') {
+        if (url.includes("/v3/contacts") && options.method === "POST") {
           const body = JSON.parse(options.body);
           expect(body.email).toBe("comprehensive@example.com");
           expect(body.attributes.FNAME).toBe("Comprehensive");
-          
+
           return {
             ok: true,
             status: 201,
@@ -201,10 +202,11 @@ describe("Comprehensive API Integration", () => {
               id: 12345,
               email: "comprehensive@example.com",
             }),
-            text: async () => JSON.stringify({
-              id: 12345,
-              email: "comprehensive@example.com",
-            })
+            text: async () =>
+              JSON.stringify({
+                id: 12345,
+                email: "comprehensive@example.com",
+              }),
           };
         }
         throw new Error(`Unexpected fetch call: ${url}`);
@@ -259,7 +261,11 @@ describe("Comprehensive API Integration", () => {
         },
       ];
 
-      for (const { payload, expectedStatus, expectedError } of invalidRequests) {
+      for (const {
+        payload,
+        expectedStatus,
+        expectedError,
+      } of invalidRequests) {
         const response = await request(app)
           .post("/api/email/subscribe")
           .send(payload);
@@ -275,14 +281,14 @@ describe("Comprehensive API Integration", () => {
       // Mock Brevo API for both subscription attempts
       let callCount = 0;
       global.fetch.mockImplementation(async (url, options) => {
-        if (url.includes('/v3/contacts') && options.method === 'POST') {
+        if (url.includes("/v3/contacts") && options.method === "POST") {
           callCount++;
           // First call succeeds, subsequent calls shouldn't happen but if they do, succeed
           return {
             ok: true,
             status: 201,
             json: async () => ({ id: 54321, email }),
-            text: async () => JSON.stringify({ id: 54321, email })
+            text: async () => JSON.stringify({ id: 54321, email }),
           };
         }
         throw new Error(`Unexpected fetch call: ${url}`);
@@ -304,7 +310,7 @@ describe("Comprehensive API Integration", () => {
         .post("/api/email/subscribe")
         .send({
           email,
-          firstName: "Second", 
+          firstName: "Second",
           lastName: "User",
           consentToMarketing: true,
         });
@@ -320,12 +326,12 @@ describe("Comprehensive API Integration", () => {
 
       // Create subscriber first
       global.fetch.mockImplementation(async (url, options) => {
-        if (url.includes('/v3/contacts') && options.method === 'POST') {
+        if (url.includes("/v3/contacts") && options.method === "POST") {
           return {
             ok: true,
             status: 201,
             json: async () => ({ id: 99999, email }),
-            text: async () => JSON.stringify({ id: 99999, email })
+            text: async () => JSON.stringify({ id: 99999, email }),
           };
         }
         throw new Error(`Unexpected fetch call: ${url}`);
@@ -334,7 +340,7 @@ describe("Comprehensive API Integration", () => {
       await request(app).post("/api/email/subscribe").send({
         email,
         firstName: "Webhook",
-        lastName: "Test", 
+        lastName: "Test",
         consentToMarketing: true,
       });
 
@@ -374,12 +380,12 @@ describe("Comprehensive API Integration", () => {
 
       // Create subscriber
       global.fetch.mockImplementation(async (url, options) => {
-        if (url.includes('/v3/contacts') && options.method === 'POST') {
+        if (url.includes("/v3/contacts") && options.method === "POST") {
           return {
             ok: true,
             status: 201,
             json: async () => ({ id: 88888, email }),
-            text: async () => JSON.stringify({ id: 88888, email })
+            text: async () => JSON.stringify({ id: 88888, email }),
           };
         }
         throw new Error(`Unexpected fetch call: ${url}`);
@@ -442,12 +448,13 @@ describe("Comprehensive API Integration", () => {
     it("should handle Brevo service failures gracefully", async () => {
       // Mock Brevo failure
       global.fetch.mockImplementation(async (url, options) => {
-        if (url.includes('/v3/contacts') && options.method === 'POST') {
+        if (url.includes("/v3/contacts") && options.method === "POST") {
           return {
             ok: false,
             status: 500,
             json: async () => ({ message: "Service Unavailable" }),
-            text: async () => JSON.stringify({ message: "Service Unavailable" })
+            text: async () =>
+              JSON.stringify({ message: "Service Unavailable" }),
           };
         }
         throw new Error(`Unexpected fetch call: ${url}`);
@@ -480,7 +487,7 @@ describe("Comprehensive API Integration", () => {
       // Setup multiple Brevo mocks
       let callCount = 0;
       global.fetch.mockImplementation(async (url, options) => {
-        if (url.includes('/v3/contacts') && options.method === 'POST') {
+        if (url.includes("/v3/contacts") && options.method === "POST") {
           const currentCall = callCount++;
           return {
             ok: true,
@@ -489,10 +496,11 @@ describe("Comprehensive API Integration", () => {
               id: 77000 + currentCall,
               email: `${baseEmail}${currentCall}@example.com`,
             }),
-            text: async () => JSON.stringify({
-              id: 77000 + currentCall,
-              email: `${baseEmail}${currentCall}@example.com`,
-            })
+            text: async () =>
+              JSON.stringify({
+                id: 77000 + currentCall,
+                email: `${baseEmail}${currentCall}@example.com`,
+              }),
           };
         }
         throw new Error(`Unexpected fetch call: ${url}`);
@@ -540,12 +548,12 @@ describe("Comprehensive API Integration", () => {
 
       // Create subscriber and events
       global.fetch.mockImplementation(async (url, options) => {
-        if (url.includes('/v3/contacts') && options.method === 'POST') {
+        if (url.includes("/v3/contacts") && options.method === "POST") {
           return {
             ok: true,
             status: 201,
             json: async () => ({ id: 66666, email }),
-            text: async () => JSON.stringify({ id: 66666, email })
+            text: async () => JSON.stringify({ id: 66666, email }),
           };
         }
         throw new Error(`Unexpected fetch call: ${url}`);
@@ -560,7 +568,7 @@ describe("Comprehensive API Integration", () => {
 
       // Add multiple events
       const events = ["delivered", "opened", "clicked"];
-      
+
       for (const eventType of events) {
         const webhookPayload = {
           event: eventType,
@@ -603,12 +611,16 @@ describe("Comprehensive API Integration", () => {
 
       // Mock successful Brevo API call
       global.fetch.mockImplementation(async (url, options) => {
-        if (url.includes('/v3/contacts') && options.method === 'POST') {
+        if (url.includes("/v3/contacts") && options.method === "POST") {
           return {
             ok: true,
             status: 201,
-            json: async () => ({ id: 55555, email: "rollback-test@example.com" }),
-            text: async () => JSON.stringify({ id: 55555, email: "rollback-test@example.com" })
+            json: async () => ({
+              id: 55555,
+              email: "rollback-test@example.com",
+            }),
+            text: async () =>
+              JSON.stringify({ id: 55555, email: "rollback-test@example.com" }),
           };
         }
         throw new Error(`Unexpected fetch call: ${url}`);
@@ -616,14 +628,19 @@ describe("Comprehensive API Integration", () => {
 
       // Spy on database execute method to force failure on INSERT INTO email_subscribers
       const originalExecute = db.execute.bind(db);
-      const executeSpy = vi.spyOn(db, 'execute').mockImplementation(async (query, params) => {
-        // Force failure specifically for email_subscribers INSERT
-        if (typeof query === 'string' && query.includes('INSERT INTO email_subscribers')) {
-          throw new Error('Simulated database failure during INSERT');
-        }
-        // Allow other queries to proceed normally
-        return originalExecute(query, params);
-      });
+      const executeSpy = vi
+        .spyOn(db, "execute")
+        .mockImplementation(async (query, params) => {
+          // Force failure specifically for email_subscribers INSERT
+          if (
+            typeof query === "string" &&
+            query.includes("INSERT INTO email_subscribers")
+          ) {
+            throw new Error("Simulated database failure during INSERT");
+          }
+          // Allow other queries to proceed normally
+          return originalExecute(query, params);
+        });
 
       try {
         // Attempt subscription - should fail during database insertion
@@ -636,24 +653,25 @@ describe("Comprehensive API Integration", () => {
 
         // Should return 500 error due to database failure
         expect(response.status).toBe(500);
-        expect(response.body.error).toContain('error occurred while processing');
+        expect(response.body.error).toContain(
+          "error occurred while processing",
+        );
 
         // Verify subscriber count remains unchanged (rollback worked)
         const finalResult = await originalExecute(
           "SELECT COUNT(*) as count FROM email_subscribers",
-          []
+          [],
         );
         const finalCount = finalResult.rows[0].count;
-        
+
         expect(finalCount).toBe(initialCount);
-        
+
         // Verify no subscriber record was created
         const subscriberCheck = await originalExecute(
           "SELECT * FROM email_subscribers WHERE email = ?",
-          ["rollback-test@example.com"]
+          ["rollback-test@example.com"],
         );
         expect(subscriberCheck.rows).toHaveLength(0);
-        
       } finally {
         // Restore original method
         executeSpy.mockRestore();

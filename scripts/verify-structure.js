@@ -12,7 +12,9 @@ const projectRoot = path.join(__dirname, "..");
 console.log("🔍 Verifying File Structure for Vercel Deployment");
 console.log("================================================");
 console.log("📁 Architecture: Pages-based (index.html in pages/ directory)");
-console.log("🔄 Routing: Root (/) -> pages/index.html via vercel.json rewrites");
+console.log(
+  "🔄 Routing: Root (/) -> pages/index.html via vercel.json rewrites",
+);
 console.log("");
 
 // Files that should exist for routing to work
@@ -202,30 +204,42 @@ if (fs.existsSync(vercelJsonPath)) {
 
     if (config.rewrites && config.rewrites.length > 0) {
       console.log("  ✅ Has rewrite rules:");
-      
+
       // Check for critical routing rules
-      const rootRoute = config.rewrites.find(r => r.source === "/" && r.destination === "/pages/index.html");
-      const indexRoute = config.rewrites.find(r => r.source === "/index.html" && r.destination === "/pages/index.html");
-      
+      const rootRoute = config.rewrites.find(
+        (r) => r.source === "/" && r.destination === "/pages/index.html",
+      );
+      const indexRoute = config.rewrites.find(
+        (r) =>
+          r.source === "/index.html" && r.destination === "/pages/index.html",
+      );
+
       if (rootRoute) {
         console.log("    ✅ Root route (/) -> pages/index.html configured");
       } else {
         console.log("    ❌ Root route (/) -> pages/index.html MISSING");
         allGood = false;
       }
-      
+
       if (indexRoute) {
-        console.log("    ✅ Index route (/index.html) -> pages/index.html configured");
+        console.log(
+          "    ✅ Index route (/index.html) -> pages/index.html configured",
+        );
       } else {
-        console.log("    ⚠️  Index route (/index.html) -> pages/index.html missing");
+        console.log(
+          "    ⚠️  Index route (/index.html) -> pages/index.html missing",
+        );
       }
-      
-      const eventRoutes = config.rewrites.filter(r => 
-        r.destination && r.destination.includes("pages/") && 
-        (r.destination.includes("boulder-fest") || r.destination.includes("weekender"))
+
+      const eventRoutes = config.rewrites.filter(
+        (r) =>
+          r.destination &&
+          r.destination.includes("pages/") &&
+          (r.destination.includes("boulder-fest") ||
+            r.destination.includes("weekender")),
       );
       console.log(`    ✅ Found ${eventRoutes.length} event-specific routes`);
-      
+
       console.log("  📝 All rewrite rules:");
       config.rewrites.forEach((rule, index) => {
         console.log(`    ${index + 1}. ${rule.source} -> ${rule.destination}`);
@@ -284,7 +298,12 @@ if (fs.existsSync(vercelIgnorePath)) {
     .filter((line) => line.trim() && !line.startsWith("#"));
 
   // Check if any critical files are being ignored
-  const criticalPatterns = ["pages/", "pages/index.html", "api/", "vercel.json"];
+  const criticalPatterns = [
+    "pages/",
+    "pages/index.html",
+    "api/",
+    "vercel.json",
+  ];
   const problematicIgnores = ignoreLines.filter((line) =>
     criticalPatterns.some((pattern) => line.includes(pattern)),
   );
@@ -304,7 +323,12 @@ if (fs.existsSync(vercelIgnorePath)) {
 const caseIssues = [];
 if (process.platform !== "win32") {
   // Check for files that might have case issues
-  const checkCases = ["VERCEL.JSON", "Vercel.json", "pages/INDEX.HTML", "pages/Index.html"];
+  const checkCases = [
+    "VERCEL.JSON",
+    "Vercel.json",
+    "pages/INDEX.HTML",
+    "pages/Index.html",
+  ];
   checkCases.forEach((file) => {
     if (fs.existsSync(path.join(projectRoot, file))) {
       caseIssues.push(file);
@@ -334,8 +358,12 @@ console.log("===========");
 
 if (allGood && missingFiles.length === 0) {
   console.log("✅ All critical files present and accounted for!");
-  console.log("✅ File structure matches Vercel expectations for pages-based architecture");
-  console.log("✅ Root route (/) correctly configured to serve pages/index.html");
+  console.log(
+    "✅ File structure matches Vercel expectations for pages-based architecture",
+  );
+  console.log(
+    "✅ Root route (/) correctly configured to serve pages/index.html",
+  );
   console.log("");
   console.log("🚀 Pages-based routing is properly configured:");
   console.log("   - Root (/) -> pages/index.html");

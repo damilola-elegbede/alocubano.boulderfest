@@ -137,7 +137,6 @@ class NewsletterSignup {
                 );
             }
         } catch {
-
             this.handleError(
                 'Network error. Please check your connection and try again.'
             );

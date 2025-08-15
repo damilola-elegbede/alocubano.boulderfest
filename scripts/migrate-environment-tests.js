@@ -2,33 +2,35 @@
 
 /**
  * Automated Migration Script: TestEnvironmentManager → Simple Helpers
- * 
+ *
  * This script automatically converts all TestEnvironmentManager usage to simple helpers.
  * It handles different usage patterns and maintains proper error handling.
- * 
+ *
  * Usage: node scripts/migrate-environment-tests.js [--dry-run] [--rollback]
  */
 
-import { promises as fs } from 'fs';
-import { join } from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { promises as fs } from "fs";
+import { join } from "path";
+import { exec } from "child_process";
+import { promisify } from "util";
 
 const execAsync = promisify(exec);
 
 // Configuration
 const CONFIG = {
-  testsDir: 'tests',
-  backupDir: 'migration-backups',
-  logFile: 'migration-log.json',
+  testsDir: "tests",
+  backupDir: "migration-backups",
+  logFile: "migration-log.json",
   patterns: {
     // Import pattern matching
     imports: {
-      testEnvManager: /import\s*{\s*testEnvManager\s*}\s*from\s*["'][^"']*test-environment-manager\.js["']/g,
-      TestEnvironmentManager: /import\s*{\s*TestEnvironmentManager(?:\s*,\s*testEnvManager)?\s*}\s*from\s*["'][^"']*test-environment-manager\.js["']/g,
-      both: /import\s*{\s*TestEnvironmentManager\s*,\s*testEnvManager\s*}\s*from\s*["'][^"']*test-environment-manager\.js["']/g
+      testEnvManager:
+        /import\s*{\s*testEnvManager\s*}\s*from\s*["'][^"']*test-environment-manager\.js["']/g,
+      TestEnvironmentManager:
+        /import\s*{\s*TestEnvironmentManager(?:\s*,\s*testEnvManager)?\s*}\s*from\s*["'][^"']*test-environment-manager\.js["']/g,
+      both: /import\s*{\s*TestEnvironmentManager\s*,\s*testEnvManager\s*}\s*from\s*["'][^"']*test-environment-manager\.js["']/g,
     },
-    
+
     // Usage pattern matching
     usage: {
       backup: /(?:testEnvManager|envManager)\.backup\(\)/g,
@@ -38,14 +40,17 @@ const CONFIG = {
       setMockEnv: /(?:testEnvManager|envManager)\.setMockEnv\(/g,
       getPreset: /(?:testEnvManager|envManager)\.getPreset\(/g,
       withIsolatedEnv: /(?:testEnvManager|envManager)\.withIsolatedEnv\(/g,
-      withCompleteIsolation: /(?:testEnvManager|envManager|TestEnvironmentManager)\.withCompleteIsolation\(/g,
+      withCompleteIsolation:
+        /(?:testEnvManager|envManager|TestEnvironmentManager)\.withCompleteIsolation\(/g,
       coordinatedClear: /(?:testEnvManager|envManager)\.coordinatedClear\(\)/g,
-      staticWithCompleteIsolation: /TestEnvironmentManager\.withCompleteIsolation\(/g,
+      staticWithCompleteIsolation:
+        /TestEnvironmentManager\.withCompleteIsolation\(/g,
       staticWithIsolatedEnv: /TestEnvironmentManager\.withIsolatedEnv\(/g,
       newTestEnvironmentManager: /new TestEnvironmentManager\(\)/g,
-      _clearEnvironmentForTesting: /(?:testEnvManager|envManager)\._clearEnvironmentForTesting\(\)/g
-    }
-  }
+      _clearEnvironmentForTesting:
+        /(?:testEnvManager|envManager)\._clearEnvironmentForTesting\(\)/g,
+    },
+  },
 };
 
 class MigrationLogger {
@@ -57,8 +62,8 @@ class MigrationLogger {
         processed: 0,
         modified: 0,
         skipped: 0,
-        errors: 0
-      }
+        errors: 0,
+      },
     };
   }
 
@@ -66,7 +71,7 @@ class MigrationLogger {
     this.log.files[filepath] = {
       action,
       details,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -90,8 +95,10 @@ class TestEnvironmentMigrator {
    * Main migration entry point
    */
   async migrate() {
-    console.log('🔄 Starting TestEnvironmentManager → Simple Helpers migration...');
-    
+    console.log(
+      "🔄 Starting TestEnvironmentManager → Simple Helpers migration...",
+    );
+
     if (this.rollback) {
       return this.performRollback();
     }
@@ -116,13 +123,14 @@ class TestEnvironmentMigrator {
       this.printSummary();
 
       if (!this.dryRun && this.logger.log.summary.modified > 0) {
-        console.log('\n✅ Migration completed successfully!');
-        console.log('📝 Run tests to verify everything works: npm test');
-        console.log('🔄 To rollback: node scripts/migrate-environment-tests.js --rollback');
+        console.log("\n✅ Migration completed successfully!");
+        console.log("📝 Run tests to verify everything works: npm test");
+        console.log(
+          "🔄 To rollback: node scripts/migrate-environment-tests.js --rollback",
+        );
       }
-
     } catch (error) {
-      console.error('❌ Migration failed:', error.message);
+      console.error("❌ Migration failed:", error.message);
       throw error;
     }
   }
@@ -132,20 +140,23 @@ class TestEnvironmentMigrator {
    */
   async findTestFiles() {
     const testFiles = [];
-    
+
     async function scanDirectory(dir) {
       const entries = await fs.readdir(dir, { withFileTypes: true });
-      
+
       for (const entry of entries) {
         const fullPath = join(dir, entry.name);
-        
+
         if (entry.isDirectory()) {
           await scanDirectory(fullPath);
-        } else if (entry.name.endsWith('.js') && entry.name.includes('test')) {
+        } else if (entry.name.endsWith(".js") && entry.name.includes("test")) {
           // Check if file contains TestEnvironmentManager
           try {
-            const content = await fs.readFile(fullPath, 'utf8');
-            if (content.includes('TestEnvironmentManager') || content.includes('testEnvManager')) {
+            const content = await fs.readFile(fullPath, "utf8");
+            if (
+              content.includes("TestEnvironmentManager") ||
+              content.includes("testEnvManager")
+            ) {
               testFiles.push(fullPath);
             }
           } catch (error) {
@@ -163,12 +174,12 @@ class TestEnvironmentMigrator {
    * Process a single test file
    */
   async processFile(filepath) {
-    this.logger.logSummary('processed');
-    
+    this.logger.logSummary("processed");
+
     try {
-      const originalContent = await fs.readFile(filepath, 'utf8');
+      const originalContent = await fs.readFile(filepath, "utf8");
       let modifiedContent = originalContent;
-      
+
       // Analyze usage patterns
       const usagePattern = this.analyzeUsagePattern(originalContent);
       console.log(`📄 Processing ${filepath} (${usagePattern} pattern)`);
@@ -185,26 +196,29 @@ class TestEnvironmentMigrator {
       // Check if content actually changed
       if (modifiedContent === originalContent) {
         console.log(`  ⏭️  No changes needed`);
-        this.logger.logFile(filepath, 'skipped', { reason: 'No changes needed' });
-        this.logger.logSummary('skipped');
+        this.logger.logFile(filepath, "skipped", {
+          reason: "No changes needed",
+        });
+        this.logger.logSummary("skipped");
         return;
       }
 
       // Write changes (unless dry run)
       if (this.dryRun) {
         console.log(`  🔍 Would modify (dry run)`);
-        this.logger.logFile(filepath, 'would-modify', { pattern: usagePattern });
+        this.logger.logFile(filepath, "would-modify", {
+          pattern: usagePattern,
+        });
       } else {
         await fs.writeFile(filepath, modifiedContent);
         console.log(`  ✅ Modified`);
-        this.logger.logFile(filepath, 'modified', { pattern: usagePattern });
-        this.logger.logSummary('modified');
+        this.logger.logFile(filepath, "modified", { pattern: usagePattern });
+        this.logger.logSummary("modified");
       }
-
     } catch (error) {
       console.error(`  ❌ Error processing ${filepath}:`, error.message);
-      this.logger.logFile(filepath, 'error', { error: error.message });
-      this.logger.logSummary('errors');
+      this.logger.logFile(filepath, "error", { error: error.message });
+      this.logger.logSummary("errors");
     }
   }
 
@@ -214,40 +228,31 @@ class TestEnvironmentMigrator {
   analyzeUsagePattern(content) {
     const patterns = {
       complex: [
-        'withCompleteIsolation',
-        'coordinatedClear',
-        '_clearEnvironmentForTesting',
-        'new TestEnvironmentManager'
+        "withCompleteIsolation",
+        "coordinatedClear",
+        "_clearEnvironmentForTesting",
+        "new TestEnvironmentManager",
       ],
-      moderate: [
-        'withIsolatedEnv',
-        'setMockEnv',
-        'getPreset'
-      ],
-      simple: [
-        'backup',
-        'restore',
-        'clearDatabaseEnv',
-        'clearAppEnv'
-      ]
+      moderate: ["withIsolatedEnv", "setMockEnv", "getPreset"],
+      simple: ["backup", "restore", "clearDatabaseEnv", "clearAppEnv"],
     };
 
     // Check for complex patterns first
     for (const pattern of patterns.complex) {
       if (content.includes(pattern)) {
-        return 'complex';
+        return "complex";
       }
     }
 
     // Check for moderate patterns
     for (const pattern of patterns.moderate) {
       if (content.includes(pattern)) {
-        return 'moderate';
+        return "moderate";
       }
     }
 
     // Default to simple
-    return 'simple';
+    return "simple";
   }
 
   /**
@@ -256,33 +261,40 @@ class TestEnvironmentMigrator {
   transformImports(content, pattern) {
     // Map imports to simple helpers
     const importTransformations = {
-      simple: 'import { backupEnv, restoreEnv, clearDatabaseEnv, clearAppEnv } from "../helpers/simple-helpers.js";',
-      moderate: 'import { backupEnv, restoreEnv, clearDatabaseEnv, clearAppEnv, getEnvPreset, withIsolatedEnv } from "../helpers/simple-helpers.js";',
-      complex: 'import { backupEnv, restoreEnv, withCompleteIsolation, resetDatabaseSingleton, cleanupTest } from "../helpers/simple-helpers.js";'
+      simple:
+        'import { backupEnv, restoreEnv, clearDatabaseEnv, clearAppEnv } from "../helpers/simple-helpers.js";',
+      moderate:
+        'import { backupEnv, restoreEnv, clearDatabaseEnv, clearAppEnv, getEnvPreset, withIsolatedEnv } from "../helpers/simple-helpers.js";',
+      complex:
+        'import { backupEnv, restoreEnv, withCompleteIsolation, resetDatabaseSingleton, cleanupTest } from "../helpers/simple-helpers.js";',
     };
 
     let result = content;
 
     // Remove existing TestEnvironmentManager imports
-    result = result.replace(CONFIG.patterns.imports.both, '');
-    result = result.replace(CONFIG.patterns.imports.TestEnvironmentManager, '');
-    result = result.replace(CONFIG.patterns.imports.testEnvManager, '');
+    result = result.replace(CONFIG.patterns.imports.both, "");
+    result = result.replace(CONFIG.patterns.imports.TestEnvironmentManager, "");
+    result = result.replace(CONFIG.patterns.imports.testEnvManager, "");
 
     // Add appropriate simple-helpers import
     const importToAdd = importTransformations[pattern];
-    
+
     // Find a good place to add the import (after existing imports)
     const importRegex = /^import\s+.*from\s+["'][^"']+["'];?\s*$/gm;
     const importMatches = [...result.matchAll(importRegex)];
-    
+
     if (importMatches.length > 0) {
       // Add after the last import
       const lastImport = importMatches[importMatches.length - 1];
       const insertIndex = lastImport.index + lastImport[0].length;
-      result = result.slice(0, insertIndex) + '\n' + importToAdd + result.slice(insertIndex);
+      result =
+        result.slice(0, insertIndex) +
+        "\n" +
+        importToAdd +
+        result.slice(insertIndex);
     } else {
       // Add at the beginning if no imports found
-      result = importToAdd + '\n\n' + result;
+      result = importToAdd + "\n\n" + result;
     }
 
     return result;
@@ -295,13 +307,13 @@ class TestEnvironmentMigrator {
     let result = content;
 
     switch (pattern) {
-      case 'simple':
+      case "simple":
         result = this.transformSimpleUsage(result);
         break;
-      case 'moderate':
+      case "moderate":
         result = this.transformModerateUsage(result);
         break;
-      case 'complex':
+      case "complex":
         result = this.transformComplexUsage(result);
         break;
     }
@@ -319,10 +331,19 @@ class TestEnvironmentMigrator {
     result = this.addBackupVariableDeclaration(result);
 
     // Transform method calls
-    result = result.replace(CONFIG.patterns.usage.backup, 'envBackup = backupEnv(Object.keys(process.env))');
-    result = result.replace(CONFIG.patterns.usage.restore, 'restoreEnv(envBackup)');
-    result = result.replace(CONFIG.patterns.usage.clearDatabaseEnv, 'clearDatabaseEnv()');
-    result = result.replace(CONFIG.patterns.usage.clearAppEnv, 'clearAppEnv()');
+    result = result.replace(
+      CONFIG.patterns.usage.backup,
+      "envBackup = backupEnv(Object.keys(process.env))",
+    );
+    result = result.replace(
+      CONFIG.patterns.usage.restore,
+      "restoreEnv(envBackup)",
+    );
+    result = result.replace(
+      CONFIG.patterns.usage.clearDatabaseEnv,
+      "clearDatabaseEnv()",
+    );
+    result = result.replace(CONFIG.patterns.usage.clearAppEnv, "clearAppEnv()");
 
     return result;
   }
@@ -337,9 +358,15 @@ class TestEnvironmentMigrator {
     result = this.transformSimpleUsage(result);
 
     // Transform moderate-specific patterns
-    result = result.replace(/(\w+)\.setMockEnv\(/g, 'Object.assign(process.env, ');
-    result = result.replace(/(\w+)\.getPreset\(/g, 'getEnvPreset(');
-    result = result.replace(CONFIG.patterns.usage.withIsolatedEnv, 'await withIsolatedEnv(');
+    result = result.replace(
+      /(\w+)\.setMockEnv\(/g,
+      "Object.assign(process.env, ",
+    );
+    result = result.replace(/(\w+)\.getPreset\(/g, "getEnvPreset(");
+    result = result.replace(
+      CONFIG.patterns.usage.withIsolatedEnv,
+      "await withIsolatedEnv(",
+    );
 
     return result;
   }
@@ -354,12 +381,30 @@ class TestEnvironmentMigrator {
     result = this.transformModerateUsage(result);
 
     // Transform complex-specific patterns
-    result = result.replace(CONFIG.patterns.usage.withCompleteIsolation, 'await withCompleteIsolation(');
-    result = result.replace(CONFIG.patterns.usage.staticWithCompleteIsolation, 'await withCompleteIsolation(');
-    result = result.replace(CONFIG.patterns.usage.staticWithIsolatedEnv, 'await withIsolatedEnv(');
-    result = result.replace(CONFIG.patterns.usage.coordinatedClear, 'await cleanupTest()');
-    result = result.replace(CONFIG.patterns.usage._clearEnvironmentForTesting, '// Environment clearing handled by isolateEnv()');
-    result = result.replace(CONFIG.patterns.usage.newTestEnvironmentManager, '// TestEnvironmentManager → Simple helpers (no instantiation needed)');
+    result = result.replace(
+      CONFIG.patterns.usage.withCompleteIsolation,
+      "await withCompleteIsolation(",
+    );
+    result = result.replace(
+      CONFIG.patterns.usage.staticWithCompleteIsolation,
+      "await withCompleteIsolation(",
+    );
+    result = result.replace(
+      CONFIG.patterns.usage.staticWithIsolatedEnv,
+      "await withIsolatedEnv(",
+    );
+    result = result.replace(
+      CONFIG.patterns.usage.coordinatedClear,
+      "await cleanupTest()",
+    );
+    result = result.replace(
+      CONFIG.patterns.usage._clearEnvironmentForTesting,
+      "// Environment clearing handled by isolateEnv()",
+    );
+    result = result.replace(
+      CONFIG.patterns.usage.newTestEnvironmentManager,
+      "// TestEnvironmentManager → Simple helpers (no instantiation needed)",
+    );
 
     return result;
   }
@@ -369,20 +414,20 @@ class TestEnvironmentMigrator {
    */
   addBackupVariableDeclaration(content) {
     // Look for test blocks that use backup/restore
-    if (content.includes('backupEnv') || content.includes('restoreEnv')) {
+    if (content.includes("backupEnv") || content.includes("restoreEnv")) {
       // Add variable declaration after describe/it declarations
       const testBlockRegex = /(describe|it|test).*\{/g;
       let result = content;
-      
+
       // Look for patterns where backup/restore are used
-      if (content.includes('envBackup') && !content.includes('let envBackup')) {
+      if (content.includes("envBackup") && !content.includes("let envBackup")) {
         // Add declaration at the beginning of the file's test blocks
         result = result.replace(
           /(describe.*\{[\s\S]*?)(beforeEach|afterEach|it|test)/,
-          '$1  let envBackup;\n\n  $2'
+          "$1  let envBackup;\n\n  $2",
         );
       }
-      
+
       return result;
     }
     return content;
@@ -392,7 +437,10 @@ class TestEnvironmentMigrator {
    * Create file backup
    */
   async createFileBackup(filepath, content) {
-    const backupPath = join(CONFIG.backupDir, filepath.replace(/\//g, '_') + '.backup');
+    const backupPath = join(
+      CONFIG.backupDir,
+      filepath.replace(/\//g, "_") + ".backup",
+    );
     await fs.writeFile(backupPath, content);
   }
 
@@ -403,7 +451,7 @@ class TestEnvironmentMigrator {
     try {
       await fs.mkdir(CONFIG.backupDir, { recursive: true });
     } catch (error) {
-      if (error.code !== 'EEXIST') {
+      if (error.code !== "EEXIST") {
         throw error;
       }
     }
@@ -413,22 +461,25 @@ class TestEnvironmentMigrator {
    * Perform rollback
    */
   async performRollback() {
-    console.log('🔄 Starting rollback...');
+    console.log("🔄 Starting rollback...");
 
     try {
       // Read migration log
-      const logContent = await fs.readFile(CONFIG.logFile, 'utf8');
+      const logContent = await fs.readFile(CONFIG.logFile, "utf8");
       const log = JSON.parse(logContent);
 
       let restoredCount = 0;
 
       for (const [filepath, fileLog] of Object.entries(log.files)) {
-        if (fileLog.action === 'modified') {
+        if (fileLog.action === "modified") {
           try {
             // Find backup file
-            const backupPath = join(CONFIG.backupDir, filepath.replace(/\//g, '_') + '.backup');
-            const backupContent = await fs.readFile(backupPath, 'utf8');
-            
+            const backupPath = join(
+              CONFIG.backupDir,
+              filepath.replace(/\//g, "_") + ".backup",
+            );
+            const backupContent = await fs.readFile(backupPath, "utf8");
+
             // Restore original content
             await fs.writeFile(filepath, backupContent);
             console.log(`✅ Restored ${filepath}`);
@@ -440,13 +491,12 @@ class TestEnvironmentMigrator {
       }
 
       console.log(`\n🔄 Rollback completed! Restored ${restoredCount} files.`);
-      
+
       // Clean up
       await fs.rm(CONFIG.backupDir, { recursive: true, force: true });
       await fs.unlink(CONFIG.logFile);
-
     } catch (error) {
-      console.error('❌ Rollback failed:', error.message);
+      console.error("❌ Rollback failed:", error.message);
       throw error;
     }
   }
@@ -456,20 +506,22 @@ class TestEnvironmentMigrator {
    */
   printSummary() {
     const { summary } = this.logger.log;
-    
-    console.log('\n📊 Migration Summary:');
+
+    console.log("\n📊 Migration Summary:");
     console.log(`   Files processed: ${summary.processed}`);
     console.log(`   Files modified: ${summary.modified}`);
     console.log(`   Files skipped: ${summary.skipped}`);
     console.log(`   Errors: ${summary.errors}`);
 
     if (summary.errors > 0) {
-      console.log(`\n⚠️  ${summary.errors} errors occurred. Check ${CONFIG.logFile} for details.`);
+      console.log(
+        `\n⚠️  ${summary.errors} errors occurred. Check ${CONFIG.logFile} for details.`,
+      );
     }
 
     if (this.dryRun) {
-      console.log('\n🔍 This was a dry run. No files were actually modified.');
-      console.log('   Run without --dry-run to apply changes.');
+      console.log("\n🔍 This was a dry run. No files were actually modified.");
+      console.log("   Run without --dry-run to apply changes.");
     }
   }
 }
@@ -477,10 +529,10 @@ class TestEnvironmentMigrator {
 // CLI handling
 async function main() {
   const args = process.argv.slice(2);
-  const dryRun = args.includes('--dry-run');
-  const rollback = args.includes('--rollback');
+  const dryRun = args.includes("--dry-run");
+  const rollback = args.includes("--rollback");
 
-  if (args.includes('--help') || args.includes('-h')) {
+  if (args.includes("--help") || args.includes("-h")) {
     console.log(`
 TestEnvironmentManager Migration Script
 
@@ -511,8 +563,8 @@ Examples:
 
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch(error => {
-    console.error('💥 Fatal error:', error);
+  main().catch((error) => {
+    console.error("💥 Fatal error:", error);
     process.exit(1);
   });
 }

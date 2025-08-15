@@ -48,7 +48,7 @@ export class DatabaseMockSync {
     };
 
     mockClient.execute.mockImplementation(successfulExecute);
-    
+
     // Store reference to reset implementation if needed
     mockClient._originalExecute = successfulExecute;
 
@@ -129,12 +129,14 @@ export class DatabaseMockSync {
         } else {
           // Re-setup successful behavior for existing client using stored reference
           if (this.mockClient._originalExecute) {
-            this.mockClient.execute.mockImplementation(this.mockClient._originalExecute);
+            this.mockClient.execute.mockImplementation(
+              this.mockClient._originalExecute,
+            );
           } else {
             // Fallback: recreate the implementation
             this.mockClient.execute.mockImplementation(async (query) => {
               const sql = typeof query === "string" ? query : query.sql;
-              
+
               // Special handling for health check queries ONLY
               if (sql === "SELECT 1 as test") {
                 return {
@@ -228,8 +230,12 @@ export class DatabaseMockSync {
         // Match exact error messages from actual implementation
         // In strict test mode, be even more strict about environment validation
         const strictMode = process.env.DATABASE_TEST_STRICT_MODE === "true";
-        
-        if (!databaseUrl || databaseUrl.trim() === "" || (strictMode && !databaseUrl)) {
+
+        if (
+          !databaseUrl ||
+          databaseUrl.trim() === "" ||
+          (strictMode && !databaseUrl)
+        ) {
           throw new Error(
             "TURSO_DATABASE_URL environment variable is required",
           );
@@ -309,7 +315,11 @@ export class DatabaseMockSync {
           const databaseUrl = process.env.TURSO_DATABASE_URL;
           const strictMode = process.env.DATABASE_TEST_STRICT_MODE === "true";
 
-          if (!databaseUrl || databaseUrl.trim() === "" || (strictMode && !databaseUrl)) {
+          if (
+            !databaseUrl ||
+            databaseUrl.trim() === "" ||
+            (strictMode && !databaseUrl)
+          ) {
             throw new Error(
               "TURSO_DATABASE_URL environment variable is required",
             );
@@ -347,7 +357,11 @@ export class DatabaseMockSync {
           const client = await this.ensureInitialized();
 
           // Ensure client has valid execute implementation
-          if (!client || !client.execute || typeof client.execute !== "function") {
+          if (
+            !client ||
+            !client.execute ||
+            typeof client.execute !== "function"
+          ) {
             throw new Error("Invalid client state - no execute method");
           }
 
@@ -413,7 +427,11 @@ export class DatabaseMockSync {
           const result = await client.execute("SELECT 1 as test");
 
           // Check for successful result structure from LibSQL client
-          if (result && result.rows !== undefined && result.columns !== undefined) {
+          if (
+            result &&
+            result.rows !== undefined &&
+            result.columns !== undefined
+          ) {
             return true;
           }
 

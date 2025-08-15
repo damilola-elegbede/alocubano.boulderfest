@@ -1,19 +1,22 @@
 # CI Configuration Fixes Summary
 
 ## Overview
+
 This document summarizes the CI configuration fixes implemented to improve test reliability, reduce resource usage, and standardize CI environment detection across all workflows.
 
 ## ✅ Implemented Fixes
 
 ### 1. **Reduced Test Shards** (Line 102 in comprehensive-testing.yml)
+
 - **Before**: `test-shard: [1, 2, 3, 4]` (4 shards)
 - **After**: `test-shard: [1, 2]` (2 shards)
-- **Impact**: 
+- **Impact**:
   - Reduces matrix job count from 8 (2 Node versions × 4 shards) to 4 (2 Node versions × 2 shards)
   - Decreases CI execution time and resource usage
   - Maintains parallel testing benefits while preventing resource exhaustion
 
 ### 2. **Standardized CI Detection**
+
 - **Created**: `tests/utils/ci-detection.js` - Centralized CI detection utility
 - **Features**:
   - Consistent `process.env.CI === 'true'` checks across all test files
@@ -23,6 +26,7 @@ This document summarizes the CI configuration fixes implemented to improve test 
   - Performance test skipping logic
 
 ### 3. **Added Memory Management**
+
 - **Added**: `NODE_OPTIONS: '--max-old-space-size=1024'` to all test environments
 - **Applied to**:
   - Unit tests with sharding
@@ -33,7 +37,9 @@ This document summarizes the CI configuration fixes implemented to improve test 
 - **Impact**: Prevents Node.js memory exhaustion in CI environments
 
 ### 4. **Consistent Environment Variables**
+
 Added `CI=true` to all workflow files:
+
 - ✅ `comprehensive-testing.yml`
 - ✅ `performance-testing.yml`
 - ✅ `production-quality-gates.yml`
@@ -43,6 +49,7 @@ Added `CI=true` to all workflow files:
 ## 📁 Files Modified
 
 ### Workflow Files
+
 1. `.github/workflows/comprehensive-testing.yml`
    - Reduced test shards from 4 to 2
    - Added memory management (`NODE_OPTIONS`)
@@ -63,6 +70,7 @@ Added `CI=true` to all workflow files:
    - Added `CI=true` to global environment
 
 ### New Utility Files
+
 1. `tests/utils/ci-detection.js`
    - Centralized CI detection logic
    - Memory configuration helpers
@@ -77,21 +85,25 @@ Added `CI=true` to all workflow files:
 ## 🔧 Key Improvements
 
 ### Memory Management
+
 - **Problem**: Node.js processes running out of memory in CI environments
 - **Solution**: Added `NODE_OPTIONS: '--max-old-space-size=1024'` to limit memory usage
 - **Impact**: Prevents memory exhaustion and improves test reliability
 
-### Resource Optimization  
+### Resource Optimization
+
 - **Problem**: Excessive resource usage with 4 test shards
 - **Solution**: Reduced to 2 test shards while maintaining parallel execution
 - **Impact**: 50% reduction in matrix jobs, faster CI completion
 
 ### Standardized CI Detection
+
 - **Problem**: Inconsistent CI detection logic across test files
 - **Solution**: Centralized utility with consistent `process.env.CI === 'true'` checks
 - **Impact**: Reliable CI behavior, easier maintenance
 
 ### Environment Consistency
+
 - **Problem**: Missing or inconsistent CI environment variables
 - **Solution**: Added `CI=true` to all workflow files
 - **Impact**: Consistent behavior across all CI contexts
@@ -99,12 +111,14 @@ Added `CI=true` to all workflow files:
 ## 📊 Performance Impact
 
 ### Before Changes
+
 - **Matrix Jobs**: 8 (2 Node versions × 4 shards)
 - **Memory Issues**: Frequent Node.js OOM errors
 - **CI Detection**: Inconsistent across different test files
 - **Environment Variables**: Missing in some workflows
 
 ### After Changes
+
 - **Matrix Jobs**: 4 (2 Node versions × 2 shards) - **50% reduction**
 - **Memory Management**: Controlled with 1024MB limit
 - **CI Detection**: Standardized across all test files
@@ -113,12 +127,14 @@ Added `CI=true` to all workflow files:
 ## 🧪 Testing & Validation
 
 ### CI Detection Utility Test Results
+
 - ✅ 13 tests passed
 - ✅ All CI detection functions work correctly
 - ✅ Memory configuration helpers validated
 - ✅ Test exclusion logic working properly
 
 ### Expected CI Improvements
+
 1. **Faster Execution**: Reduced matrix jobs mean faster CI completion
 2. **Better Reliability**: Memory limits prevent OOM errors
 3. **Consistent Behavior**: Standardized CI detection eliminates edge cases
@@ -127,22 +143,31 @@ Added `CI=true` to all workflow files:
 ## 🚀 Usage Examples
 
 ### Using CI Detection in Tests
+
 ```javascript
-import ciDetection from '../utils/ci-detection.js';
+import ciDetection from "../utils/ci-detection.js";
 
-describe('My Test Suite', () => {
-  it('should handle CI timeouts', async () => {
-    const timeout = ciDetection.getTestConfig().timeouts.test;
-    // Use CI-appropriate timeout
-  }, ciDetection.getTestConfig().timeouts.test);
+describe("My Test Suite", () => {
+  it(
+    "should handle CI timeouts",
+    async () => {
+      const timeout = ciDetection.getTestConfig().timeouts.test;
+      // Use CI-appropriate timeout
+    },
+    ciDetection.getTestConfig().timeouts.test,
+  );
 
-  it.skipIf(ciDetection.shouldSkipPerformanceTests())('performance test', () => {
-    // Skipped in CI when SKIP_PERFORMANCE_INTENSIVE_TESTS=true
-  });
+  it.skipIf(ciDetection.shouldSkipPerformanceTests())(
+    "performance test",
+    () => {
+      // Skipped in CI when SKIP_PERFORMANCE_INTENSIVE_TESTS=true
+    },
+  );
 });
 ```
 
 ### Memory Configuration
+
 ```javascript
 const memoryConfig = ciDetection.getMemoryConfig();
 // Returns: { isCI: true, maxOldSpaceSize: '1024', maxConcurrency: 2, ... }

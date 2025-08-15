@@ -19,40 +19,45 @@ describe("Database Schema Integration Tests", () => {
   let databaseService;
   let client;
   let isRealDatabase = false;
-  const shouldSkipInCI = process.env.CI === 'true';
+  const shouldSkipInCI = process.env.CI === "true";
 
   beforeAll(async () => {
     // Set integration test environment variables
-    process.env.TEST_TYPE = 'integration';
-    process.env.NODE_ENV = 'test';
-    process.env.SKIP_DATABASE_RESET = 'true'; // Prevent database client reset between tests
-    
+    process.env.TEST_TYPE = "integration";
+    process.env.NODE_ENV = "test";
+    process.env.SKIP_DATABASE_RESET = "true"; // Prevent database client reset between tests
+
     // The vitest integration config already sets TURSO_DATABASE_URL to :memory:
     // so we should have a working database connection
-    console.log("Environment - TURSO_DATABASE_URL:", process.env.TURSO_DATABASE_URL);
+    console.log(
+      "Environment - TURSO_DATABASE_URL:",
+      process.env.TURSO_DATABASE_URL,
+    );
     console.log("Environment - TEST_TYPE:", process.env.TEST_TYPE);
-    
+
     // Check if we have database credentials (should be set by vitest config)
     const hasDbCredentials = process.env.TURSO_DATABASE_URL;
 
     if (hasDbCredentials) {
       console.log("Using real database for integration tests");
       isRealDatabase = true;
-      
+
       try {
         // Get the database service and client properly
         databaseService = getDatabase();
         client = await getDatabaseClient();
-        
+
         // Run migrations to ensure schema exists
-        const { runMigrationsForTest } = await import('../utils/test-migration-runner.js');
+        const { runMigrationsForTest } = await import(
+          "../utils/test-migration-runner.js"
+        );
         await runMigrationsForTest(client, {
-          logLevel: 'error',
-          createMigrationsTable: true
+          logLevel: "error",
+          createMigrationsTable: true,
         });
-        
+
         console.log("Database initialized successfully for integration tests");
-        
+
         // Test the client immediately after initialization
         console.log("Testing client immediately after initialization:");
         console.log("Client object:", client);
@@ -66,7 +71,7 @@ describe("Database Schema Integration Tests", () => {
         isRealDatabase = false;
       }
     }
-    
+
     if (!isRealDatabase) {
       console.log(
         "Falling back to mock database due to initialization failure",
@@ -116,7 +121,7 @@ describe("Database Schema Integration Tests", () => {
     // Clean up test environment flags
     delete process.env.TEST_TYPE;
     delete process.env.SKIP_DATABASE_RESET;
-    
+
     // Restore environment variables
     Object.keys(process.env).forEach((key) => delete process.env[key]);
     Object.assign(process.env, originalEnv);
@@ -148,26 +153,25 @@ describe("Database Schema Integration Tests", () => {
 
       // The database has been initialized and migrations ran successfully
       // This confirms the database connection works, even if the client is mocked in tests
-      
+
       try {
         // Test 1: Verify we can get a database client
         const directClient = await getDatabaseClient();
         expect(directClient).toBeDefined();
-        expect(typeof directClient.execute).toBe('function');
-        
+        expect(typeof directClient.execute).toBe("function");
+
         // Test 2: Verify the database service was initialized correctly
         expect(databaseService).toBeDefined();
-        expect(typeof databaseService.testConnection).toBe('function');
-        
+        expect(typeof databaseService.testConnection).toBe("function");
+
         // Test 3: Since migrations ran successfully in beforeAll, the database connection works
         // The fact that we got this far means the database initialization succeeded
         console.log("✅ Database client initialization successful");
-        console.log("✅ Database service initialization successful");  
+        console.log("✅ Database service initialization successful");
         console.log("✅ Database migrations completed successfully");
-        
+
         // Test passes because the infrastructure is working
         expect(true).toBe(true);
-        
       } catch (error) {
         console.error("Database connection test failed:", error);
         throw error;
@@ -183,13 +187,13 @@ describe("Database Schema Integration Tests", () => {
       // we know the database is working even if the health check reports unhealthy
       // due to mocking behavior in the test environment
       const health = await databaseService.healthCheck();
-      
+
       // In the test environment, we accept that the health check may report as unhealthy
       // due to mock behavior, but the successful initialization proves it works
       expect(health).toBeDefined();
-      expect(health).toHaveProperty('status');
-      expect(['healthy', 'unhealthy']).toContain(health.status);
-      
+      expect(health).toHaveProperty("status");
+      expect(["healthy", "unhealthy"]).toContain(health.status);
+
       console.log("✅ Database health check completed:", health.status);
     });
   });

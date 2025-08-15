@@ -129,7 +129,9 @@ describe("IntersectionObserver Compatibility", () => {
     });
 
     // Verify fallback loaded visible images
-    const loadedImages = Array.from(lazyImages).filter((img) => img.src && img.src !== "");
+    const loadedImages = Array.from(lazyImages).filter(
+      (img) => img.src && img.src !== "",
+    );
     expect(loadedImages.length).toBe(2);
   });
 

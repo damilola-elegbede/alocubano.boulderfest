@@ -16,7 +16,6 @@ class ProgressiveImageLoader {
         this.ctx = this.canvas.getContext('2d');
 
         this.setupIntersectionObserver();
-
     }
 
     createOffscreenCanvas() {
@@ -62,7 +61,6 @@ class ProgressiveImageLoader {
         try {
             await loadingPromise;
         } catch {
-
         } finally {
             this.loadingImages.delete(imageId);
         }
@@ -151,9 +149,7 @@ class ProgressiveImageLoader {
 
             // Show blurred thumbnail
             this.showBlurredPreview(imageElement, blurredDataUrl);
-        } catch {
-
-        }
+        } catch {}
     }
 
     createBlurredVersion(image) {
@@ -217,7 +213,6 @@ class ProgressiveImageLoader {
             // Transition to full image
             this.transitionToFullImage(imageElement, fullImg);
         } catch {
-
             this.handleImageLoadError(imageElement, metadata);
         }
     }
@@ -311,7 +306,6 @@ class ProgressiveImageLoader {
 
             return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
         } catch {
-
             return '#f0f0f0';
         }
     }

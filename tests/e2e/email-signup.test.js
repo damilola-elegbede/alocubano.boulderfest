@@ -13,27 +13,27 @@ test.describe("Email Newsletter Signup E2E", () => {
       const checkbox = document.querySelector('input[name="consent"]');
       return checkbox && !checkbox.disabled;
     });
-    
+
     // Use both programmatic and user interaction for reliability
-    await page.locator('input[name="consent"]').evaluate(el => {
+    await page.locator('input[name="consent"]').evaluate((el) => {
       el.checked = true;
-      el.dispatchEvent(new Event('change', { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    
+
     // Wait for change to be processed
-    await page.waitForFunction(() => 
-      document.querySelector('input[name="consent"]')?.checked === true
+    await page.waitForFunction(
+      () => document.querySelector('input[name="consent"]')?.checked === true,
     );
   };
 
   const uncheckConsentBox = async (page) => {
-    await page.locator('input[name="consent"]').evaluate(el => {
+    await page.locator('input[name="consent"]').evaluate((el) => {
       el.checked = false;
-      el.dispatchEvent(new Event('change', { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    
-    await page.waitForFunction(() => 
-      document.querySelector('input[name="consent"]')?.checked === false
+
+    await page.waitForFunction(
+      () => document.querySelector('input[name="consent"]')?.checked === false,
     );
   };
 
@@ -42,39 +42,49 @@ test.describe("Email Newsletter Signup E2E", () => {
       // Wait for error message to be visible and input to be marked invalid
       await page.waitForFunction(
         () => {
-          const errorElement = document.querySelector('#newsletter-error');
-          const emailInput = document.querySelector('#newsletter-email');
-          return errorElement && 
-                 errorElement.style.display !== 'none' && 
-                 errorElement.textContent.trim() !== '' &&
-                 emailInput?.getAttribute('aria-invalid') === 'true';
+          const errorElement = document.querySelector("#newsletter-error");
+          const emailInput = document.querySelector("#newsletter-email");
+          return (
+            errorElement &&
+            errorElement.style.display !== "none" &&
+            errorElement.textContent.trim() !== "" &&
+            emailInput?.getAttribute("aria-invalid") === "true"
+          );
         },
-        { timeout: 5000 }
+        { timeout: 5000 },
       );
-      
+
       // Also wait for wrapper error class if present (optional check)
-      await page.waitForFunction(
-        () => {
-          const wrapper = document.querySelector('.newsletter-input-wrapper');
-          return wrapper && wrapper.classList.contains('error');
-        },
-        { timeout: 2000 }
-      ).catch(() => {
-        // Error class might not be added immediately, that's okay
-        console.log('Warning: Error class not found on wrapper, but error message is visible');
-      });
+      await page
+        .waitForFunction(
+          () => {
+            const wrapper = document.querySelector(".newsletter-input-wrapper");
+            return wrapper && wrapper.classList.contains("error");
+          },
+          { timeout: 2000 },
+        )
+        .catch(() => {
+          // Error class might not be added immediately, that's okay
+          console.log(
+            "Warning: Error class not found on wrapper, but error message is visible",
+          );
+        });
     } else {
       // Wait for error message to be hidden and input to be marked valid
       await page.waitForFunction(
         () => {
-          const errorElement = document.querySelector('#newsletter-error');
-          const emailInput = document.querySelector('#newsletter-email');
-          const wrapper = document.querySelector('.newsletter-input-wrapper');
-          return (!errorElement || errorElement.style.display === 'none' || errorElement.textContent.trim() === '') &&
-                 emailInput?.getAttribute('aria-invalid') === 'false' &&
-                 (!wrapper || !wrapper.classList.contains('error'));
+          const errorElement = document.querySelector("#newsletter-error");
+          const emailInput = document.querySelector("#newsletter-email");
+          const wrapper = document.querySelector(".newsletter-input-wrapper");
+          return (
+            (!errorElement ||
+              errorElement.style.display === "none" ||
+              errorElement.textContent.trim() === "") &&
+            emailInput?.getAttribute("aria-invalid") === "false" &&
+            (!wrapper || !wrapper.classList.contains("error"))
+          );
         },
-        { timeout: 5000 }
+        { timeout: 5000 },
       );
     }
   };
@@ -82,30 +92,27 @@ test.describe("Email Newsletter Signup E2E", () => {
   const waitForButtonState = async (page, shouldBeEnabled = true) => {
     await page.waitForFunction(
       (enabled) => {
-        const button = document.querySelector('.newsletter-submit');
+        const button = document.querySelector(".newsletter-submit");
         return button && button.disabled !== enabled;
       },
       shouldBeEnabled,
-      { timeout: 5000 }
+      { timeout: 5000 },
     );
   };
 
   const clickWithStability = async (page, selector) => {
     // Wait for element to be stable and ready for interaction
     await page.waitForSelector(selector, { state: "visible" });
-    await page.waitForFunction(
-      (sel) => {
-        const element = document.querySelector(sel);
-        if (!element) return false;
-        const rect = element.getBoundingClientRect();
-        return rect.width > 0 && rect.height > 0;
-      },
-      selector
-    );
-    
+    await page.waitForFunction((sel) => {
+      const element = document.querySelector(sel);
+      if (!element) return false;
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    }, selector);
+
     // Wait a bit more for any animations to settle
     await page.waitForTimeout(100);
-    
+
     // Click the element
     await page.click(selector);
   };
@@ -123,16 +130,19 @@ test.describe("Email Newsletter Signup E2E", () => {
     await page.goto("/contact", { timeout: 45000 });
 
     // Wait for the newsletter form to be visible and interactive
-    await page.waitForSelector("#newsletter-form", { state: "visible", timeout: 30000 });
+    await page.waitForSelector("#newsletter-form", {
+      state: "visible",
+      timeout: 30000,
+    });
     await page.waitForLoadState("networkidle", { timeout: 30000 });
-    
+
     // Ensure newsletter.js is loaded and initialized
     await page.waitForFunction(() => {
-      const form = document.getElementById('newsletter-form');
-      const emailInput = document.getElementById('newsletter-email');
-      const submitButton = document.querySelector('.newsletter-submit');
+      const form = document.getElementById("newsletter-form");
+      const emailInput = document.getElementById("newsletter-email");
+      const submitButton = document.querySelector(".newsletter-submit");
       const checkbox = document.querySelector('input[name="consent"]');
-      
+
       return form && emailInput && submitButton && checkbox;
     });
   });
@@ -143,7 +153,7 @@ test.describe("Email Newsletter Signup E2E", () => {
     await expect(page.locator("#newsletter-email")).toBeVisible();
     await expect(page.locator(".newsletter-submit")).toBeVisible();
     // The actual checkbox is hidden, check for the custom checkbox label
-    await expect(page.locator('.custom-checkbox')).toBeVisible();
+    await expect(page.locator(".custom-checkbox")).toBeVisible();
 
     // Check form labels and placeholders
     await expect(page.locator("#newsletter-email")).toHaveAttribute(
@@ -189,7 +199,7 @@ test.describe("Email Newsletter Signup E2E", () => {
 
     // Fill in the form
     await page.fill("#newsletter-email", "test@example.com");
-    
+
     // Use helper function for reliable checkbox interaction
     await checkConsentBox(page);
 
@@ -209,9 +219,9 @@ test.describe("Email Newsletter Signup E2E", () => {
     await page.waitForFunction(() => {
       const emailInput = document.querySelector("#newsletter-email");
       const checkbox = document.querySelector('input[name="consent"]');
-      return emailInput?.value === '' && checkbox?.checked === false;
+      return emailInput?.value === "" && checkbox?.checked === false;
     });
-    
+
     await expect(page.locator("#newsletter-email")).toHaveValue("");
     await expect(page.locator('input[name="consent"]')).not.toBeChecked();
   });
@@ -219,22 +229,25 @@ test.describe("Email Newsletter Signup E2E", () => {
   test("should validate email format", async ({ page }) => {
     // Fill invalid email
     await page.fill("#newsletter-email", "invalid-email");
-    
+
     // Use helper function for checkbox interaction
     await checkConsentBox(page);
-    
+
     // The button should still be disabled due to invalid email
     await waitForButtonState(page, false);
     await expect(page.locator(".newsletter-submit")).toBeDisabled();
-    
+
     // Trigger validation by blurring the email field (this triggers validateEmail())
     await page.locator("#newsletter-email").blur();
-    
+
     // Wait for validation error to appear
     await page.waitForFunction(() => {
       const errorElement = document.querySelector("#newsletter-error");
-      return errorElement && errorElement.style.display !== "none" && 
-             errorElement.textContent.includes("valid email");
+      return (
+        errorElement &&
+        errorElement.style.display !== "none" &&
+        errorElement.textContent.includes("valid email")
+      );
     });
 
     // Check for error message
@@ -252,11 +265,11 @@ test.describe("Email Newsletter Signup E2E", () => {
   test("should require email address", async ({ page }) => {
     // Check consent but leave email empty
     await checkConsentBox(page);
-    
+
     // The button should be disabled without a valid email
     await waitForButtonState(page, false);
     await expect(page.locator(".newsletter-submit")).toBeDisabled();
-    
+
     // Focus and blur the email field to trigger validation
     await page.locator("#newsletter-email").focus();
     await page.locator("#newsletter-email").blur();
@@ -264,7 +277,11 @@ test.describe("Email Newsletter Signup E2E", () => {
     // Wait for validation to show error
     await page.waitForFunction(() => {
       const errorElement = document.querySelector("#newsletter-error");
-      return errorElement && errorElement.style.display !== "none" && errorElement.textContent.includes("email address");
+      return (
+        errorElement &&
+        errorElement.style.display !== "none" &&
+        errorElement.textContent.includes("email address")
+      );
     });
 
     // Check for error message
@@ -277,16 +294,16 @@ test.describe("Email Newsletter Signup E2E", () => {
   test("should require consent checkbox", async ({ page }) => {
     // Fill email but don't check consent
     await page.fill("#newsletter-email", "test@example.com");
-    
+
     // The button should be disabled without consent
     await waitForButtonState(page, false);
     await expect(page.locator(".newsletter-submit")).toBeDisabled();
-    
+
     // Verify button state changes when checkbox is toggled
     await checkConsentBox(page);
     await waitForButtonState(page, true);
     await expect(page.locator(".newsletter-submit")).not.toBeDisabled();
-    
+
     // Uncheck and verify button is disabled again
     await uncheckConsentBox(page);
     await waitForButtonState(page, false);
@@ -297,19 +314,24 @@ test.describe("Email Newsletter Signup E2E", () => {
     // Trigger an error first with invalid email
     await page.fill("#newsletter-email", "invalid-email");
     await checkConsentBox(page);
-    
+
     // Trigger validation by blurring the email field
     await page.locator("#newsletter-email").blur();
-    
+
     // Wait for error state to be visible
     await page.waitForFunction(() => {
       const errorElement = document.querySelector("#newsletter-error");
-      return errorElement && errorElement.style.display !== "none" && 
-             errorElement.textContent.includes("valid email");
+      return (
+        errorElement &&
+        errorElement.style.display !== "none" &&
+        errorElement.textContent.includes("valid email")
+      );
     });
-    
+
     await expect(page.locator("#newsletter-error")).toBeVisible();
-    await expect(page.locator("#newsletter-error")).toContainText("valid email");
+    await expect(page.locator("#newsletter-error")).toContainText(
+      "valid email",
+    );
 
     // Start typing in email field to correct it (this triggers clearError on input)
     await page.fill("#newsletter-email", "test@example.com");
@@ -318,10 +340,14 @@ test.describe("Email Newsletter Signup E2E", () => {
     await page.waitForFunction(() => {
       const errorElement = document.querySelector("#newsletter-error");
       const emailInput = document.querySelector("#newsletter-email");
-      return (!errorElement || errorElement.style.display === "none" || errorElement.textContent.trim() === "") &&
-             emailInput?.getAttribute("aria-invalid") === "false";
+      return (
+        (!errorElement ||
+          errorElement.style.display === "none" ||
+          errorElement.textContent.trim() === "") &&
+        emailInput?.getAttribute("aria-invalid") === "false"
+      );
     });
-    
+
     // Error should be cleared
     await expect(page.locator("#newsletter-error")).not.toBeVisible();
     await expect(page.locator("#newsletter-email")).toHaveAttribute(
@@ -350,7 +376,7 @@ test.describe("Email Newsletter Signup E2E", () => {
     await page.fill("#newsletter-email", "test@example.com");
     await checkConsentBox(page);
     await waitForButtonState(page, true);
-    
+
     await clickWithStability(page, ".newsletter-submit");
 
     // Check loading state immediately after click
@@ -358,7 +384,7 @@ test.describe("Email Newsletter Signup E2E", () => {
       const button = document.querySelector(".newsletter-submit");
       return button && button.getAttribute("aria-busy") === "true";
     });
-    
+
     await expect(page.locator(".newsletter-submit")).toHaveAttribute(
       "aria-busy",
       "true",
@@ -395,14 +421,17 @@ test.describe("Email Newsletter Signup E2E", () => {
     await page.fill("#newsletter-email", "existing@example.com");
     await checkConsentBox(page);
     await waitForButtonState(page, true);
-    
+
     await clickWithStability(page, ".newsletter-submit");
 
     // Wait for error message to appear
     await page.waitForFunction(() => {
       const errorElement = document.querySelector("#newsletter-error");
-      return errorElement && errorElement.style.display !== "none" && 
-             errorElement.textContent.includes("already subscribed");
+      return (
+        errorElement &&
+        errorElement.style.display !== "none" &&
+        errorElement.textContent.includes("already subscribed")
+      );
     });
 
     // Check for error message
@@ -429,14 +458,17 @@ test.describe("Email Newsletter Signup E2E", () => {
     await page.fill("#newsletter-email", "test@example.com");
     await checkConsentBox(page);
     await waitForButtonState(page, true);
-    
+
     await clickWithStability(page, ".newsletter-submit");
 
     // Wait for error message to appear
     await page.waitForFunction(() => {
       const errorElement = document.querySelector("#newsletter-error");
-      return errorElement && errorElement.style.display !== "none" && 
-             errorElement.textContent.includes("error occurred");
+      return (
+        errorElement &&
+        errorElement.style.display !== "none" &&
+        errorElement.textContent.includes("error occurred")
+      );
     });
 
     // Check for error message
@@ -456,14 +488,17 @@ test.describe("Email Newsletter Signup E2E", () => {
     await page.fill("#newsletter-email", "test@example.com");
     await checkConsentBox(page);
     await waitForButtonState(page, true);
-    
+
     await clickWithStability(page, ".newsletter-submit");
 
     // Wait for network error message to appear
     await page.waitForFunction(() => {
       const errorElement = document.querySelector("#newsletter-error");
-      return errorElement && errorElement.style.display !== "none" && 
-             errorElement.textContent.includes("Network error");
+      return (
+        errorElement &&
+        errorElement.style.display !== "none" &&
+        errorElement.textContent.includes("Network error")
+      );
     });
 
     // Check for network error message
@@ -492,7 +527,7 @@ test.describe("Email Newsletter Signup E2E", () => {
     await page.fill("#newsletter-email", "test@example.com");
     await checkConsentBox(page);
     await waitForButtonState(page, true);
-    
+
     await clickWithStability(page, ".newsletter-submit");
 
     // Success message should be visible
@@ -530,19 +565,19 @@ test.describe("Email Newsletter Signup E2E", () => {
 
     // Focus the checkbox directly (since Tab order can be unreliable)
     await page.locator('input[name="consent"]').focus();
-    
+
     // Verify focus is on the consent checkbox
     await expect(page.locator('input[name="consent"]')).toBeFocused();
 
     // Check consent with Space key
     await page.keyboard.press("Space");
-    
+
     // Wait for checkbox to be checked
     await page.waitForFunction(() => {
       const checkbox = document.querySelector('input[name="consent"]');
       return checkbox && checkbox.checked;
     });
-    
+
     await expect(page.locator('input[name="consent"]')).toBeChecked();
 
     // Wait for button to be enabled after checkbox is checked
@@ -564,7 +599,7 @@ test.describe("Email Newsletter Signup E2E", () => {
     page,
   }) => {
     // Note: Analytics mock is already set up in beforeEach
-    
+
     // Mock successful response
     await page.route("/api/email/subscribe", async (route) => {
       await route.fulfill({
@@ -581,7 +616,7 @@ test.describe("Email Newsletter Signup E2E", () => {
     await page.fill("#newsletter-email", "test@example.com");
     await checkConsentBox(page);
     await waitForButtonState(page, true);
-    
+
     await clickWithStability(page, ".newsletter-submit");
 
     // Wait for success
@@ -590,11 +625,12 @@ test.describe("Email Newsletter Signup E2E", () => {
     // Wait for analytics event to be tracked
     await page.waitForFunction(() => {
       if (!window.gtagEvents) return false;
-      return window.gtagEvents.some(event => 
-        event.type === "event" && 
-        event.event === "newsletter_signup" &&
-        event.params?.event_category === "engagement" &&
-        event.params?.event_label === "contact_page"
+      return window.gtagEvents.some(
+        (event) =>
+          event.type === "event" &&
+          event.event === "newsletter_signup" &&
+          event.params?.event_category === "engagement" &&
+          event.params?.event_label === "contact_page",
       );
     });
 

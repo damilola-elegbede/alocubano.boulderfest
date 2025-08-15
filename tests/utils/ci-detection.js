@@ -1,7 +1,7 @@
 /**
  * Centralized CI Detection Utility
  * Provides consistent CI environment detection across all test files
- * 
+ *
  * This utility standardizes CI detection logic and ensures consistent behavior
  * across unit tests, integration tests, and performance tests.
  */
@@ -11,7 +11,7 @@
  * @returns {boolean} True if running in CI
  */
 export function isCI() {
-  return process.env.CI === 'true';
+  return process.env.CI === "true";
 }
 
 /**
@@ -19,7 +19,7 @@ export function isCI() {
  * @returns {boolean} True if running in GitHub Actions
  */
 export function isGitHubActions() {
-  return process.env.GITHUB_ACTIONS === 'true';
+  return process.env.GITHUB_ACTIONS === "true";
 }
 
 /**
@@ -27,7 +27,7 @@ export function isGitHubActions() {
  * @returns {boolean} True if in CI or automated testing
  */
 export function isAutomatedEnvironment() {
-  return isCI() || isGitHubActions() || process.env.NODE_ENV === 'ci';
+  return isCI() || isGitHubActions() || process.env.NODE_ENV === "ci";
 }
 
 /**
@@ -48,7 +48,9 @@ export function getCITimeoutMultiplier(baseMultiplier = 2) {
  * @returns {number} Iteration count appropriate for environment
  */
 export function getCIIterationCount(localCount, ciReduction = 0.5) {
-  return isCI() ? Math.max(1, Math.floor(localCount * ciReduction)) : localCount;
+  return isCI()
+    ? Math.max(1, Math.floor(localCount * ciReduction))
+    : localCount;
 }
 
 /**
@@ -59,7 +61,9 @@ export function getCIIterationCount(localCount, ciReduction = 0.5) {
  * @returns {number} Concurrency level appropriate for environment
  */
 export function getCIConcurrency(localConcurrency, ciReduction = 0.5) {
-  return isCI() ? Math.max(1, Math.floor(localConcurrency * ciReduction)) : localConcurrency;
+  return isCI()
+    ? Math.max(1, Math.floor(localConcurrency * ciReduction))
+    : localConcurrency;
 }
 
 /**
@@ -69,12 +73,12 @@ export function getCIConcurrency(localConcurrency, ciReduction = 0.5) {
 export function getMemoryConfig() {
   return {
     isCI: isCI(),
-    maxOldSpaceSize: isCI() ? '1024' : '2048',
+    maxOldSpaceSize: isCI() ? "1024" : "2048",
     maxConcurrency: isCI() ? 2 : 4,
     poolOptions: {
       threads: isCI() ? 2 : 4,
-      maxThreads: isCI() ? 2 : undefined
-    }
+      maxThreads: isCI() ? 2 : undefined,
+    },
   };
 }
 
@@ -87,14 +91,14 @@ export function getTestConfig() {
     ci: isCI(),
     githubActions: isGitHubActions(),
     automated: isAutomatedEnvironment(),
-    environment: process.env.NODE_ENV || 'development',
+    environment: process.env.NODE_ENV || "development",
     timeouts: {
       test: isCI() ? 30000 : 15000,
       hook: isCI() ? 15000 : 10000,
-      global: isCI() ? 60000 : 30000
+      global: isCI() ? 60000 : 30000,
     },
     retries: isCI() ? 2 : 0,
-    bail: isCI() ? 5 : false
+    bail: isCI() ? 5 : false,
   };
 
   return config;
@@ -105,7 +109,7 @@ export function getTestConfig() {
  * @returns {boolean} True if performance tests should be skipped
  */
 export function shouldSkipPerformanceTests() {
-  return isCI() && process.env.SKIP_PERFORMANCE_INTENSIVE_TESTS === 'true';
+  return isCI() && process.env.SKIP_PERFORMANCE_INTENSIVE_TESTS === "true";
 }
 
 /**
@@ -113,7 +117,7 @@ export function shouldSkipPerformanceTests() {
  * @returns {boolean} True if external tests should be skipped
  */
 export function shouldSkipExternalTests() {
-  return isCI() && process.env.TEST_CI_EXCLUDE_PATTERNS === 'true';
+  return isCI() && process.env.TEST_CI_EXCLUDE_PATTERNS === "true";
 }
 
 /**
@@ -122,12 +126,12 @@ export function shouldSkipExternalTests() {
  */
 export function getCIExcludePatterns() {
   if (!shouldSkipExternalTests()) return [];
-  
+
   return [
-    '**/external-integration/**',
-    '**/performance-intensive/**',
-    '**/*.external.test.js',
-    '**/*.load.test.js'
+    "**/external-integration/**",
+    "**/performance-intensive/**",
+    "**/*.external.test.js",
+    "**/*.load.test.js",
   ];
 }
 
@@ -136,14 +140,14 @@ export function getCIExcludePatterns() {
  */
 export function logCIInfo() {
   const config = getTestConfig();
-  console.log('🔍 CI Detection Info:', {
+  console.log("🔍 CI Detection Info:", {
     isCI: config.ci,
     isGitHubActions: config.githubActions,
     environment: config.environment,
     timeouts: config.timeouts,
     memoryConfig: getMemoryConfig(),
     shouldSkipPerformance: shouldSkipPerformanceTests(),
-    shouldSkipExternal: shouldSkipExternalTests()
+    shouldSkipExternal: shouldSkipExternalTests(),
   });
 }
 
@@ -160,5 +164,5 @@ export default {
   shouldSkipPerformanceTests,
   shouldSkipExternalTests,
   getCIExcludePatterns,
-  logCIInfo
+  logCIInfo,
 };

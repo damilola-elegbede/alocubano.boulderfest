@@ -57,16 +57,12 @@ const STATIC_RESOURCES = [
  * Precaches critical static resources
  */
 self.addEventListener('install', (event) => {
-
     event.waitUntil(
         precacheStaticResources()
             .then(() => {
-
                 return self.skipWaiting();
             })
-            .catch(() => {
-
-            })
+            .catch(() => {})
     );
 });
 
@@ -75,15 +71,12 @@ self.addEventListener('install', (event) => {
  * Cleans up old caches and claims clients
  */
 self.addEventListener('activate', (event) => {
-
     event.waitUntil(
         Promise.all([
             cleanupOldCaches(),
             self.clients.claim(),
             loadOfflineQueue()
-        ]).then(() => {
-
-        })
+        ]).then(() => {})
     );
 });
 
@@ -155,7 +148,6 @@ self.addEventListener('message', (event) => {
         break;
 
     default:
-
     }
 });
 
@@ -180,15 +172,12 @@ async function precacheStaticResources() {
 
     try {
         await cache.addAll(STATIC_RESOURCES);
-
     } catch {
-        // Try to cache individually to identify problematic resources
+    // Try to cache individually to identify problematic resources
         for (const resource of STATIC_RESOURCES) {
             try {
                 await cache.add(resource);
-            } catch {
-
-            }
+            } catch {}
         }
     }
 }
@@ -206,7 +195,6 @@ async function cleanupOldCaches() {
 
     if (oldCaches.length > 0) {
         await Promise.all(oldCaches.map((cacheName) => caches.delete(cacheName)));
-
     }
 }
 
@@ -257,15 +245,13 @@ async function handleImageRequest(request) {
         cachedResponse &&
     isCacheEntryValid(cachedResponse, CACHE_CONFIG.imageTTL)
     ) {
-
-        // Schedule background update for frequently accessed images
+    // Schedule background update for frequently accessed images
         scheduleBackgroundUpdate(request);
         return cachedResponse;
     }
 
     try {
-
-        // Handle Google Drive images with CORS issues
+    // Handle Google Drive images with CORS issues
         let fetchRequest = request;
         const fetchOptions = {
             headers: { 'Cache-Control': 'max-age=3600' }
@@ -283,17 +269,14 @@ async function handleImageRequest(request) {
                 // First try the proxy endpoint
                 const proxyResponse = await fetch(proxyUrl);
                 if (proxyResponse.ok) {
-
                     fetchRequest = new Request(proxyUrl);
                 } else {
                     // Fallback to no-cors mode for opaque response
                     fetchOptions.mode = 'no-cors';
-
                 }
             } catch {
                 // Fallback to no-cors mode
                 fetchOptions.mode = 'no-cors';
-
             }
         }
 
@@ -318,10 +301,8 @@ async function handleImageRequest(request) {
 
         return networkResponse;
     } catch {
-
-        // Return stale cache as fallback
+    // Return stale cache as fallback
         if (cachedResponse) {
-
             return cachedResponse;
         }
 
@@ -342,12 +323,10 @@ async function handleGalleryAPIRequest(request) {
     const networkUpdate = updateCacheInBackground(cache, request);
 
     if (cachedResponse) {
-
         return cachedResponse;
     }
 
     try {
-
         const networkResponse = await fetch(request);
 
         if (networkResponse.ok) {
@@ -360,17 +339,14 @@ async function handleGalleryAPIRequest(request) {
 
         return networkResponse;
     } catch {
-
-        // Wait for background update if no cache available
+    // Wait for background update if no cache available
         try {
             await networkUpdate;
             const updatedResponse = await cache.match(request);
             if (updatedResponse) {
                 return updatedResponse;
             }
-        } catch {
-
-        }
+        } catch {}
 
         throw error;
     }
@@ -384,7 +360,6 @@ async function handleAPIRequest(request) {
     const cache = await caches.open(API_CACHE);
 
     try {
-
         const networkResponse = await fetch(request, {
             headers: { 'Cache-Control': 'no-cache' }
         });
@@ -399,13 +374,11 @@ async function handleAPIRequest(request) {
 
         return networkResponse;
     } catch {
-
         const cachedResponse = await cache.match(request);
         if (
             cachedResponse &&
       isCacheEntryValid(cachedResponse, CACHE_CONFIG.apiTTL)
         ) {
-
             return cachedResponse;
         }
 
@@ -422,8 +395,7 @@ async function handleStaticAssetRequest(request) {
     const cachedResponse = await cache.match(request);
 
     if (cachedResponse) {
-
-        // Update in background if stale
+    // Update in background if stale
         if (!isCacheEntryValid(cachedResponse, CACHE_CONFIG.staticTTL)) {
             updateCacheInBackground(cache, request);
         }
@@ -432,7 +404,6 @@ async function handleStaticAssetRequest(request) {
     }
 
     try {
-
         const networkResponse = await fetch(request);
 
         if (networkResponse.ok) {
@@ -445,7 +416,6 @@ async function handleStaticAssetRequest(request) {
 
         return networkResponse;
     } catch {
-
         throw error;
     }
 }
@@ -456,7 +426,6 @@ async function handleStaticAssetRequest(request) {
 async function cacheWithMetadata(cache, request, response, metadata) {
     // Safety check: ensure cache is a valid Cache object
     if (!cache || typeof cache.put !== 'function') {
-
         return;
     }
 
@@ -501,11 +470,8 @@ async function updateCacheInBackground(cache, request) {
                 cachedAt: Date.now(),
                 type: 'background-update'
             });
-
         }
-    } catch {
-
-    }
+    } catch {}
 }
 
 /**
@@ -555,7 +521,6 @@ async function cleanupImageCache(cache) {
 
             await cache.delete(entry.key);
             totalSize -= entry.size;
-
         }
     }
 }
@@ -604,13 +569,10 @@ async function handleCacheWarm(urls) {
                     type: 'warmed'
                 });
             }
-        } catch {
-
-        }
+        } catch {}
     });
 
     await Promise.allSettled(promises);
-
 }
 
 async function handleCacheClear(cacheType) {
@@ -623,14 +585,12 @@ async function handleCacheClear(cacheType) {
     const cacheName = cacheMap[cacheType];
     if (cacheName) {
         await caches.delete(cacheName);
-
     } else if (cacheType === 'all') {
         await Promise.all([
             caches.delete(STATIC_CACHE),
             caches.delete(IMAGE_CACHE),
             caches.delete(API_CACHE)
         ]);
-
     }
 }
 
@@ -655,14 +615,11 @@ async function handleCacheStats(port) {
 }
 
 async function handleBackgroundUpdate(urls) {
-
     for (const url of urls) {
         try {
             const cache = await getCacheForUrl(url);
             await updateCacheInBackground(cache, new Request(url));
-        } catch {
-
-        }
+        } catch {}
     }
 }
 
@@ -769,7 +726,6 @@ async function handleOfflineCheckin(request) {
  * Sync offline check-ins when back online
  */
 async function syncOfflineCheckins() {
-
     if (offlineQueue.length === 0) {
         return;
     }
@@ -816,9 +772,7 @@ async function syncOfflineWalletTokens() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(token)
                 });
-            } catch {
-
-            }
+            } catch {}
         }
 
         // Clear the wallet tokens queue after sync
@@ -855,10 +809,6 @@ async function loadOfflineQueue() {
         const response = await cache.match('offline-queue');
         if (response) {
             offlineQueue = await response.json();
-
         }
-    } catch {
-
-    }
+    } catch {}
 }
-
