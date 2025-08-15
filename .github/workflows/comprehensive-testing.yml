@@ -74,7 +74,7 @@ jobs:
         run: npm run lint
 
       - name: Check file structure
-        run: npm run verify-structure
+        run: npm run build
 
       - name: Upload lint results
         if: always()
