@@ -587,7 +587,7 @@ describe("Database Schema Integration Tests", () => {
       const insertResult = await insertTransaction(client, testTransaction);
       if (isRealDatabase) {
         expect(
-          insertResult.insertId || insertResult.meta?.last_row_id,
+          insertResult.lastInsertRowid || insertResult.insertId || insertResult.meta?.last_row_id,
         ).toBeDefined();
       }
 
@@ -598,7 +598,7 @@ describe("Database Schema Integration Tests", () => {
           ["completed", testTransaction.transaction_id],
         );
         expect(
-          updateResult.changes || updateResult.meta?.changes,
+          updateResult.rowsAffected || updateResult.changes || updateResult.meta?.changes,
         ).toBeGreaterThan(0);
 
         // Delete
@@ -607,7 +607,7 @@ describe("Database Schema Integration Tests", () => {
           [testTransaction.transaction_id],
         );
         expect(
-          deleteResult.changes || deleteResult.meta?.changes,
+          deleteResult.rowsAffected || deleteResult.changes || deleteResult.meta?.changes,
         ).toBeGreaterThan(0);
       }
     });
@@ -631,7 +631,7 @@ describe("Database Schema Integration Tests", () => {
 
       const txResult = await insertTransaction(client, testTransaction);
       const transactionId = isRealDatabase
-        ? txResult.insertId || txResult.meta?.last_row_id
+        ? txResult.lastInsertRowid || txResult.insertId || txResult.meta?.last_row_id
         : 1;
 
       // Create associated ticket
@@ -658,7 +658,7 @@ describe("Database Schema Integration Tests", () => {
           ],
         );
         expect(
-          ticketResult.insertId || ticketResult.meta?.last_row_id,
+          ticketResult.lastInsertRowid || ticketResult.insertId || ticketResult.meta?.last_row_id,
         ).toBeDefined();
 
         // Update ticket status
@@ -667,7 +667,7 @@ describe("Database Schema Integration Tests", () => {
           ["used", testTicket.ticket_id],
         );
         expect(
-          updateResult.changes || updateResult.meta?.changes,
+          updateResult.rowsAffected || updateResult.changes || updateResult.meta?.changes,
         ).toBeGreaterThan(0);
       }
     });
@@ -683,32 +683,59 @@ describe("Database Schema Integration Tests", () => {
         ]);
       }
 
-      const statements = [
-        {
-          sql: "INSERT INTO transactions (transaction_id, type, amount_cents, customer_email, order_data) VALUES (?, ?, ?, ?, ?)",
-          args: [
-            "batch-001",
-            "tickets",
-            3000,
-            "batch@example.com",
-            '{"batch": true}',
-          ],
-        },
-        {
-          sql: "INSERT INTO transaction_items (transaction_id, item_type, item_name, unit_price_cents, quantity, total_price_cents) VALUES (?, ?, ?, ?, ?, ?)",
-          args: [1, "ticket", "General Admission", 3000, 1, 3000],
-        },
-        {
-          sql: "INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, price_cents) VALUES (?, ?, ?, ?, ?)",
-          args: ["ticket-batch-001", 1, "general", "event-2026", 3000],
-        },
-      ];
-
       if (isRealDatabase) {
+        // First, create a transaction to get a valid ID
+        const testTransaction = {
+          transaction_id: "batch-001",
+          type: "tickets",
+          amount_cents: 3000,
+          customer_email: "batch@example.com",
+          order_data: '{"batch": true}',
+        };
+
+        const txResult = await insertTransaction(client, testTransaction);
+        const transactionId = txResult.lastInsertRowid || txResult.insertId || txResult.meta?.last_row_id;
+
+        expect(transactionId).toBeDefined();
+
+        // Now test batch operations with valid foreign key references
+        const statements = [
+          {
+            sql: "INSERT INTO transaction_items (transaction_id, item_type, item_name, unit_price_cents, quantity, total_price_cents) VALUES (?, ?, ?, ?, ?, ?)",
+            args: [transactionId, "ticket", "General Admission", 3000, 1, 3000],
+          },
+          {
+            sql: "INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, price_cents) VALUES (?, ?, ?, ?, ?)",
+            args: ["ticket-batch-001", transactionId, "general", "event-2026", 3000],
+          },
+        ];
+
         const results = await client.batch(statements);
         expect(results).toBeDefined();
         expect(Array.isArray(results)).toBe(true);
       } else {
+        // Mock test - use hardcoded statements for mocking
+        const statements = [
+          {
+            sql: "INSERT INTO transactions (transaction_id, type, amount_cents, customer_email, order_data) VALUES (?, ?, ?, ?, ?)",
+            args: [
+              "batch-001",
+              "tickets",
+              3000,
+              "batch@example.com",
+              '{"batch": true}',
+            ],
+          },
+          {
+            sql: "INSERT INTO transaction_items (transaction_id, item_type, item_name, unit_price_cents, quantity, total_price_cents) VALUES (?, ?, ?, ?, ?, ?)",
+            args: [1, "ticket", "General Admission", 3000, 1, 3000],
+          },
+          {
+            sql: "INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, price_cents) VALUES (?, ?, ?, ?, ?)",
+            args: ["ticket-batch-001", 1, "general", "event-2026", 3000],
+          },
+        ];
+
         const results = await client.batch(statements);
         expect(results).toBeDefined();
         expect(client.batch).toHaveBeenCalledWith(statements);
@@ -720,24 +747,37 @@ describe("Database Schema Integration Tests", () => {
         client.batch.mockRejectedValue(new Error("Transaction failed"));
       }
 
-      const failingStatements = [
-        {
-          sql: "INSERT INTO transactions (transaction_id, type, amount_cents, customer_email, order_data) VALUES (?, ?, ?, ?, ?)",
-          args: [
-            "fail-001",
-            "tickets",
-            2000,
-            "fail@example.com",
-            '{"fail": true}',
-          ],
-        },
-        {
-          sql: "INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, price_cents) VALUES (?, ?, ?, ?, ?)",
-          args: ["ticket-fail-001", 999999, "general", "event-2026", 2000], // Invalid transaction_id
-        },
-      ];
+      if (isRealDatabase) {
+        // Use a non-existent foreign key to trigger constraint failure
+        const failingStatements = [
+          {
+            sql: "INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, price_cents) VALUES (?, ?, ?, ?, ?)",
+            args: ["ticket-fail-001", 999999, "general", "event-2026", 2000], // Invalid transaction_id that doesn't exist
+          },
+        ];
 
-      await expect(client.batch(failingStatements)).rejects.toThrow();
+        await expect(client.batch(failingStatements)).rejects.toThrow();
+      } else {
+        // Mock test
+        const failingStatements = [
+          {
+            sql: "INSERT INTO transactions (transaction_id, type, amount_cents, customer_email, order_data) VALUES (?, ?, ?, ?, ?)",
+            args: [
+              "fail-001",
+              "tickets",
+              2000,
+              "fail@example.com",
+              '{"fail": true}',
+            ],
+          },
+          {
+            sql: "INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, price_cents) VALUES (?, ?, ?, ?, ?)",
+            args: ["ticket-fail-001", 999999, "general", "event-2026", 2000], // Invalid transaction_id
+          },
+        ];
+
+        await expect(client.batch(failingStatements)).rejects.toThrow();
+      }
     });
   });
 
@@ -763,7 +803,7 @@ describe("Database Schema Integration Tests", () => {
 
       const txResult = await insertTransaction(client, testTransaction);
       const transactionId = isRealDatabase
-        ? txResult.insertId || txResult.meta?.last_row_id
+        ? txResult.lastInsertRowid || txResult.insertId || txResult.meta?.last_row_id
         : 1;
 
       // Create ticket
@@ -823,7 +863,7 @@ describe("Database Schema Integration Tests", () => {
 
       const txResult = await insertTransaction(client, transactionData);
       const transactionId = isRealDatabase
-        ? txResult.insertId || txResult.meta?.last_row_id
+        ? txResult.lastInsertRowid || txResult.insertId || txResult.meta?.last_row_id
         : 1;
 
       if (isRealDatabase) {

@@ -37,6 +37,10 @@
 function _getVi(injectedVi) {
   return injectedVi ?? globalThis?.vi ?? undefined;
 }
+
+// Import vi from vitest for mocking
+import { vi } from "vitest";
+
 // Database imports moved to dynamic imports below to avoid conflicts
 import { mockBrevoService, mockStripeService, mockFetch } from "./mocks.js";
 import {

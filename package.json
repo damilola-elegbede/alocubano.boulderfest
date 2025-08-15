@@ -12,6 +12,7 @@
     "start": "./scripts/start-with-ngrok.sh",
     "dev": "./scripts/start-with-ngrok.sh",
     "start:ci": "node scripts/ci-server.js",
+    "prebuild": "node scripts/generate-gallery-cache.js && node scripts/generate-featured-photos.js",
     "build": "node scripts/verify-structure.js && echo 'Build process completed'",
     "test": "vitest run",
     "test:watch": "vitest watch",

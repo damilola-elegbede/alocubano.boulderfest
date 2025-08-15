@@ -19,6 +19,12 @@ import request from "supertest";
 import express from "express";
 import crypto from "crypto";
 import { setupIntegrationTest, teardownTest } from "../helpers/index.js";
+import { 
+  createTestApp, 
+  createWebhookHandler, 
+  createMockServiceContainer,
+  applyServiceMocks 
+} from "../helpers/supertest-app.js";
 
 // Move createSignature to module scope for accessibility
 const createSignature = (payload) => {
@@ -28,40 +34,7 @@ const createSignature = (payload) => {
     .digest("hex");
 };
 
-// Helper to create a webhook handler that properly handles body streaming
-function createWebhookHandler(webhookHandler) {
-  return (req, res) => {
-    // Store the original body if it was parsed
-    const parsedBody = req.body;
-
-    // Remove the parsed body so the handler reads from stream
-    delete req.body;
-
-    // Convert parsed body back to string for raw body reading
-    const bodyString = JSON.stringify(parsedBody);
-    let dataEmitted = false;
-
-    // Mock the stream interface
-    req.setEncoding = () => {};
-    req.on = (event, callback) => {
-      if (event === "data") {
-        // Emit data only once
-        if (!dataEmitted) {
-          dataEmitted = true;
-          setImmediate(() => callback(bodyString));
-        }
-      } else if (event === "end") {
-        // Signal end of stream after data is emitted
-        setImmediate(() => callback());
-      } else if (event === "error") {
-        // Store error handler but don't call it
-      }
-    };
-
-    // Call the original handler
-    return webhookHandler(req, res);
-  };
-}
+// Webhook handler creation is now imported from supertest-app.js
 
 describe("Comprehensive API Integration", () => {
   let app;
@@ -93,64 +66,43 @@ describe("Comprehensive API Integration", () => {
     // Create a proper fetch mock that will persist across all tests
     global.fetch = vi.fn();
 
-    // Mock the database module BEFORE any service imports
-    // This ensures all services use the same test database instance
-    vi.doMock("../../api/lib/database.js", () => {
-      const mockDatabaseService = {
-        ensureInitialized: async () => setup.client,
-        testConnection: async () => true,
-        execute: async (...args) => setup.client.execute(...args),
-        close: async () => {},
-        client: setup.client,
-        initialized: true,
-      };
-
-      return {
-        getDatabase: () => mockDatabaseService,
-        getDatabaseClient: async () => setup.client,
-        testConnection: async () => true,
-        resetDatabaseInstance: async () => {},
-        DatabaseService: class {
-          constructor() {
-            return mockDatabaseService;
-          }
-        },
-      };
+    // Create service mocks using the new helper
+    const serviceMocks = createMockServiceContainer({
+      database: setup.client,
+      email: {
+        createSubscriber: vi.fn().mockImplementation(async (data) => ({
+          id: Math.floor(Math.random() * 10000),
+          email: data.email,
+          first_name: data.firstName,
+          last_name: data.lastName,
+          status: data.status || 'active',
+          created_at: new Date().toISOString(),
+        })),
+        processWebhookEvent: vi.fn().mockImplementation(async (webhookData) => ({
+          eventType: webhookData.event,
+          email: webhookData.email,
+          occurredAt: webhookData.date || new Date().toISOString(),
+          data: { messageId: webhookData.messageId }
+        }))
+      }
     });
 
-    // Mock the services to ensure they're reset
-    vi.doMock("../../api/lib/email-subscriber-service.js", async () => {
-      const actual = await vi.importActual(
-        "../../api/lib/email-subscriber-service.js",
-      );
-      // Reset the singleton
-      actual.resetEmailSubscriberService();
-      return actual;
-    });
+    // Apply service mocks
+    applyServiceMocks(serviceMocks);
 
-    vi.doMock("../../api/lib/brevo-service.js", async () => {
-      const actual = await vi.importActual("../../api/lib/brevo-service.js");
-      // Reset the singleton
-      actual.resetBrevoService();
-      return actual;
-    });
-
-    // Create Express app with routes
-    app = express();
-    app.use(express.json());
-
-    // Import handlers AFTER environment is set up and database is mocked
+    // Import handlers AFTER environment is set up and services are mocked
     const [subscribeHandler, webhookHandler] = await Promise.all([
       import("../../api/email/subscribe.js"),
       import("../../api/email/brevo-webhook.js"),
     ]);
 
-    app.post("/api/email/subscribe", subscribeHandler.default);
-    // Use wrapper to handle body streaming properly in tests
-    app.post(
-      "/api/email/brevo-webhook",
-      createWebhookHandler(webhookHandler.default),
-    );
+    // Create test app using the helper
+    app = createTestApp({
+      routes: [
+        { method: 'post', path: '/api/email/subscribe', handler: subscribeHandler.default },
+        { method: 'post', path: '/api/email/brevo-webhook', handler: createWebhookHandler(webhookHandler.default) }
+      ]
+    });
 
     console.log("🎯 Comprehensive API integration test setup complete");
   }, 45000);

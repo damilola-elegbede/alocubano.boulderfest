@@ -404,6 +404,7 @@ describe("Local Storage Compatibility", () => {
   test("handles localStorage unavailability", () => {
     // Remove localStorage (private browsing mode)
     delete global.localStorage;
+    delete window.localStorage;
 
     // Test storage availability detection
     const hasLocalStorage = "localStorage" in window;

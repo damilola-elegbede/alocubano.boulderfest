@@ -143,6 +143,7 @@ class DatabaseService {
     // Add SQLite-specific configuration for busy timeout and WAL mode
     if (databaseUrl.startsWith("file:") || databaseUrl === ":memory:") {
       config.pragmas = [
+        "PRAGMA foreign_keys = ON", // CRITICAL: Enable foreign key constraints
         "PRAGMA busy_timeout = 30000", // 30 second timeout
         "PRAGMA journal_mode = WAL", // Write-Ahead Logging for better concurrency
         "PRAGMA synchronous = NORMAL", // Balance safety and performance
@@ -288,6 +289,7 @@ class DatabaseService {
     // Add SQLite-specific configuration for busy timeout and WAL mode
     if (databaseUrl.startsWith("file:") || databaseUrl === ":memory:") {
       config.pragmas = [
+        "PRAGMA foreign_keys = ON", // CRITICAL: Enable foreign key constraints
         "PRAGMA busy_timeout = 30000", // 30 second timeout
         "PRAGMA journal_mode = WAL", // Write-Ahead Logging for better concurrency
         "PRAGMA synchronous = NORMAL", // Balance safety and performance

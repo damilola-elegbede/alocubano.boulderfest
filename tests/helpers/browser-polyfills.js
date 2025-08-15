@@ -283,7 +283,15 @@ export function setupBrowserPolyfills(window) {
     if (window.localStorage && typeof window.localStorage === 'object') {
       Object.assign(window.localStorage, localStoragePolyfill);
     } else {
-      window.localStorage = localStoragePolyfill;
+      try {
+        Object.defineProperty(window, 'localStorage', {
+          value: localStoragePolyfill,
+          writable: true,
+          configurable: true
+        });
+      } catch (e) {
+        window.localStorage = localStoragePolyfill;
+      }
     }
   }
 

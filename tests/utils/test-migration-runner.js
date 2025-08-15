@@ -221,6 +221,8 @@ export class TestMigrationRunner {
     `;
 
     try {
+      // Ensure foreign keys are enabled before creating tables
+      await client.execute("PRAGMA foreign_keys = ON");
       await client.execute(createTableSQL);
       this.log("debug", "Migrations tracking table created/verified");
     } catch (error) {
