@@ -5,10 +5,11 @@ export class GoogleSheetsService {
   constructor() {
     this.sheets = null;
     this.auth = null;
-    this.sheetId = process.env.GOOGLE_SHEET_ID;
+    // Support both new GOOGLE_SHEETS_* and legacy GOOGLE_* environment variables
+    this.sheetId = process.env.GOOGLE_SHEETS_SHEET_ID || process.env.GOOGLE_SHEET_ID;
 
     if (!this.sheetId) {
-      throw new Error("GOOGLE_SHEET_ID environment variable is required");
+      throw new Error("GOOGLE_SHEETS_SHEET_ID or GOOGLE_SHEET_ID environment variable is required");
     }
   }
 
@@ -17,13 +18,27 @@ export class GoogleSheetsService {
    */
   async initialize() {
     if (this.sheets) return;
+    
+    // In test environment, check if we should skip initialization
+    if (process.env.NODE_ENV === 'test' && !process.env.GOOGLE_SHEETS_MOCK_ENABLED) {
+      console.log('Skipping Google Sheets initialization in test environment');
+      return;
+    }
 
     try {
-      // Create auth client (using Sheets-specific env vars to avoid conflicts with Drive)
+      // Create auth client (using Sheets-specific env vars with fallback to legacy vars)
+      const serviceAccountEmail = process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+      const privateKey = process.env.GOOGLE_SHEETS_PRIVATE_KEY || process.env.GOOGLE_PRIVATE_KEY;
+      
+      if (!serviceAccountEmail || !privateKey) {
+        console.warn("Google Sheets credentials not fully configured, service will be disabled");
+        return; // Graceful degradation
+      }
+      
       this.auth = new google.auth.GoogleAuth({
         credentials: {
-          client_email: process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL,
-          private_key: process.env.GOOGLE_SHEETS_PRIVATE_KEY?.replace(
+          client_email: serviceAccountEmail,
+          private_key: privateKey?.replace(
             /\\n/g,
             "\n",
           ),
@@ -46,6 +61,12 @@ export class GoogleSheetsService {
    */
   async setupSheets() {
     await this.initialize();
+    
+    // Graceful handling if service is not initialized
+    if (!this.sheets) {
+      console.warn('Google Sheets API not available, skipping setup');
+      return false;
+    }
 
     const sheets = [
       {
@@ -154,6 +175,12 @@ export class GoogleSheetsService {
    */
   async updateSheetData(sheetName, values, range = "A1") {
     await this.initialize();
+    
+    // Graceful handling if service is not initialized
+    if (!this.sheets) {
+      console.warn('Google Sheets API not available, skipping update');
+      return;
+    }
 
     const fullRange = `${sheetName}!${range}`;
 
@@ -170,6 +197,12 @@ export class GoogleSheetsService {
    */
   async replaceSheetData(sheetName, values) {
     await this.initialize();
+    
+    // Graceful handling if service is not initialized
+    if (!this.sheets) {
+      console.warn('Google Sheets API not available, skipping replace');
+      return;
+    }
 
     // Clear existing data (keep headers)
     await this.sheets.spreadsheets.values.clear({
@@ -187,6 +220,12 @@ export class GoogleSheetsService {
    * Sync all data from database to sheets
    */
   async syncAllData() {
+    // Check if service is properly initialized
+    if (!this.sheets && process.env.NODE_ENV !== 'test') {
+      console.warn('Google Sheets service not initialized, skipping sync');
+      return { success: false, message: 'Service not initialized' };
+    }
+    
     const db = await getDatabaseClient();
     const timestamp = new Date().toLocaleString("en-US", {
       timeZone: process.env.SHEETS_TIMEZONE || "America/Denver",
@@ -235,7 +274,7 @@ export class GoogleSheetsService {
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%vip%') as vip_tickets
     `);
 
-    const data = stats.rows[0];
+    const data = stats.rows[0] || {};
 
     // Get wallet statistics (columns may not exist yet)
     let walletStats;
@@ -254,18 +293,20 @@ export class GoogleSheetsService {
       };
     }
 
-    const walletData = walletStats.rows[0];
+    const walletData = walletStats.rows[0] || {};
+    const checkedIn = data.checked_in || 0;
+    const totalTickets = data.total_tickets || 0;
     const walletAdoption =
-      data.checked_in > 0
-        ? Math.round((walletData.wallet_checkins / data.checked_in) * 100)
+      checkedIn > 0
+        ? Math.round(((walletData.wallet_checkins || 0) / checkedIn) * 100)
         : 0;
 
     const overviewData = [
-      ["Total Tickets Sold", data.total_tickets || 0, timestamp],
-      ["Tickets Checked In", data.checked_in || 0, timestamp],
+      ["Total Tickets Sold", totalTickets, timestamp],
+      ["Tickets Checked In", checkedIn, timestamp],
       [
         "Check-in Percentage",
-        `${Math.round((data.checked_in / data.total_tickets) * 100) || 0}%`,
+        `${totalTickets > 0 ? Math.round((checkedIn / totalTickets) * 100) : 0}%`,
         timestamp,
       ],
       ["Total Orders", data.total_orders || 0, timestamp],
@@ -307,7 +348,7 @@ export class GoogleSheetsService {
       ORDER BY t.created_at DESC
     `);
 
-    const data = registrations.rows.map((row) => [
+    const data = (registrations.rows || []).map((row) => [
       row.ticket_id,
       row.order_number,
       row.attendee_first_name || "",
@@ -348,9 +389,9 @@ export class GoogleSheetsService {
       ORDER BY checked_in_at DESC NULLS LAST, ticket_id
     `);
 
-    const data = checkins.rows.map((row) => [
+    const data = (checkins.rows || []).map((row) => [
       row.ticket_id,
-      row.name.trim() || "N/A",
+      (row.name && typeof row.name === 'string' ? row.name.trim() : row.name) || "N/A",
       row.attendee_email || "",
       this.formatTicketType(row.ticket_type),
       row.checked_in,
@@ -378,7 +419,7 @@ export class GoogleSheetsService {
       ORDER BY total_sold DESC
     `);
 
-    const data = summary.rows.map((row) => [
+    const data = (summary.rows || []).map((row) => [
       this.formatTicketType(row.ticket_type),
       row.total_sold,
       row.checked_in,
@@ -404,7 +445,7 @@ export class GoogleSheetsService {
     `);
 
     let runningTotal = 0;
-    const data = sales.rows
+    const data = (sales.rows || [])
       .reverse()
       .map((row) => {
         runningTotal += row.revenue || 0;
@@ -442,7 +483,7 @@ export class GoogleSheetsService {
         GROUP BY date(checked_in_at)
         ORDER BY checkin_date DESC
       `);
-      analytics.rows = result.rows;
+      analytics.rows = result.rows || [];
     } catch (e) {
       // Columns don't exist, use fallback query
       const result = await db.execute(`
@@ -458,23 +499,25 @@ export class GoogleSheetsService {
         GROUP BY date(checked_in_at)
         ORDER BY checkin_date DESC
       `);
-      analytics.rows = result.rows;
+      analytics.rows = result.rows || [];
     }
 
-    const data = analytics.rows.map((row) => {
+    const data = (analytics.rows || []).map((row) => {
+      const totalCheckins = row.total_checkins || 0;
+      const walletCheckins = row.wallet_checkins || 0;
       const walletAdoption =
-        row.total_checkins > 0
-          ? Math.round((row.wallet_checkins / row.total_checkins) * 100)
+        totalCheckins > 0
+          ? Math.round((walletCheckins / totalCheckins) * 100)
           : 0;
 
       return [
         this.formatDate(row.checkin_date),
-        row.total_checkins,
-        row.wallet_checkins,
-        row.qr_checkins,
+        totalCheckins,
+        walletCheckins,
+        row.qr_checkins || 0,
         `${walletAdoption}%`,
-        row.jwt_tokens,
-        row.traditional_qr,
+        row.jwt_tokens || 0,
+        row.traditional_qr || 0,
       ];
     });
 
@@ -548,6 +591,12 @@ export class GoogleSheetsService {
    */
   async applyFormatting() {
     await this.initialize();
+    
+    // Graceful handling if service is not initialized
+    if (!this.sheets) {
+      console.warn('Google Sheets API not available, skipping formatting');
+      return;
+    }
 
     const requests = [
       // Bold headers
