@@ -117,7 +117,7 @@ jobs:
 
       - name: Run tests with sharding
         run: |
-          npm run test:unit:ci -- --shard=${{ matrix.test-shard }}/2 \
+          npm test -- --shard=${{ matrix.test-shard }}/2 \
             --reporter=default \
             --reporter=junit \
             --reporter=json \
@@ -198,8 +198,8 @@ jobs:
         run: |
           echo "🚀 Running integration tests with memory-based rate limiting (no Redis required)"
           
-          # Run CI-specific integration tests (temporarily disabled)
-          npm run test:integration:ci || echo "✅ Integration tests skipped in CI"
+          # Run standard integration tests (temporarily disabled)
+          npm test || echo "✅ Integration tests skipped in CI"
         env:
           NODE_ENV: test
           CI: true
@@ -211,7 +211,7 @@ jobs:
 
       - name: Run coverage report
         run: |
-          npm run test:unit -- --coverage --reporter=default --reporter=junit --reporter=json --outputFile.junit=./test-results/coverage-tests.xml --outputFile.json=./test-results/coverage-tests.json || true
+          npm run test:coverage -- --reporter=default --reporter=junit --reporter=json --outputFile.junit=./test-results/coverage-tests.xml --outputFile.json=./test-results/coverage-tests.json || true
         env:
           NODE_ENV: test
           CI: true
