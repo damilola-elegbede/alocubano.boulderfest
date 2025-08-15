@@ -288,7 +288,10 @@ describe("Cache Warming API", () => {
     });
     // Relax array expectations - check that sections exists and is valid
     expect(jsonResponse).toHaveProperty("sections");
-    expect(Array.isArray(jsonResponse.sections) || typeof jsonResponse.sections === "string").toBe(true);
+    expect(
+      Array.isArray(jsonResponse.sections) ||
+        typeof jsonResponse.sections === "string",
+    ).toBe(true);
     // Operations should be an array
     expect(jsonResponse).toHaveProperty("operations");
     expect(Array.isArray(jsonResponse.operations)).toBe(true);

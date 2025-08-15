@@ -2,10 +2,7 @@
 (function() {
     'use strict';
 
-    console.log(
-        '🎬 Gallery hero module loading (static version)... DOM state:',
-        document.readyState
-    );
+    // DOM state ready
 
     // Page-specific hero image mapping
     const HERO_IMAGES = {
@@ -101,19 +98,15 @@
 
     // Initialize hero image
     function initializeHero() {
-        console.log('🚀 Gallery hero initializing (static version)...');
+    // Hero initialization
 
         const heroElement = document.getElementById('hero-splash-image');
         if (!heroElement) {
-            console.log('No hero image element found');
             return;
         }
 
         const pageId = getCurrentPageId();
         const heroImagePath = getHeroImagePath(pageId);
-
-        console.log(`📍 Current page: ${pageId}`);
-        console.log(`🖼️ Hero image path: ${heroImagePath}`);
 
         // Set the hero image source
         heroElement.src = heroImagePath;
@@ -121,8 +114,6 @@
 
         // Add loading state management
         heroElement.addEventListener('load', function() {
-            console.log('✅ Hero image loaded successfully:', this.src);
-
             // Remove loading class and add loaded class to parent container
             const container = this.closest('.gallery-hero-splash');
             if (container) {
@@ -133,19 +124,13 @@
 
         // Error handling
         heroElement.addEventListener('error', function() {
-            console.warn('⚠️ Hero image failed to load:', this.src);
-
             // Fallback to default hero image if not already using it
             if (!this.src.includes('hero-default.jpg')) {
-                console.log('🔄 Falling back to default hero image');
                 this.src = HERO_IMAGES['default'];
                 this.alt = 'A Lo Cubano Boulder Fest';
             } else {
-                console.error('❌ Default hero image also failed to load');
             }
         });
-
-        console.log('🎬 Static hero image initialized');
     }
 
     // Get appropriate alt text for hero image
@@ -210,10 +195,8 @@
 
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
-        console.log('⏳ DOM still loading, waiting for DOMContentLoaded...');
         document.addEventListener('DOMContentLoaded', initializeHero);
     } else {
-        console.log('✅ DOM already loaded');
         initializeHero();
     }
 })();

@@ -5,13 +5,15 @@ This directory contains test infrastructure files that have been superseded by t
 ## Archived Files
 
 ### test-initialization-orchestrator.js (515 lines)
+
 **Archived**: 2025-08-14  
 **Reason**: Replaced by `tests/helpers/setup.js` (~170 lines)  
 **Status**: DEPRECATED - Use `setupTest()` and `teardownTest()` instead
 
 Complex orchestration system with:
+
 - Comprehensive initialization sequence
-- Service dependency management  
+- Service dependency management
 - Transaction stacking
 - Environment snapshots
 - Mock registry management
@@ -19,11 +21,13 @@ Complex orchestration system with:
 **Migration Path**: Use `setupTest(options)` from `tests/helpers/setup.js`
 
 ### enhanced-test-setup.js (376 lines)
+
 **Archived**: 2025-08-14  
 **Reason**: Replaced by `tests/helpers/setup.js` and `tests/helpers/index.js`  
 **Status**: DEPRECATED - Use new helper functions
 
 Enhanced setup patterns for integration tests with:
+
 - Complex service initialization
 - Database helper integration
 - API test configuration
@@ -32,11 +36,13 @@ Enhanced setup patterns for integration tests with:
 **Migration Path**: Use `setupIntegrationTest()` or `apiTestSetup()` from `tests/helpers/index.js`
 
 ### database-test-utils.js (500+ lines estimated)
+
 **Archived**: 2025-08-14  
 **Reason**: Replaced by `tests/helpers/db.js` (~180 lines)  
 **Status**: UNUSED - No active references found
 
 Database test management with:
+
 - Database isolation
 - Test helpers
 - Transaction management
@@ -45,13 +51,15 @@ Database test management with:
 **Migration Path**: Use database functions from `tests/helpers/db.js`
 
 ### test-database-fix.js
+
 **Archived**: 2025-08-14  
 **Reason**: One-off verification script, no longer needed  
 **Status**: OBSOLETE - Was used for database architecture verification
 
 Integration test script for database architecture validation.
 
-### verify-database-fix.js  
+### verify-database-fix.js
+
 **Archived**: 2025-08-14  
 **Reason**: One-off verification script, no longer needed  
 **Status**: OBSOLETE - Was used for database architecture verification
@@ -63,7 +71,7 @@ Verification script for database access patterns.
 The new simplified system consists of:
 
 1. **`tests/helpers/setup.js`** - Main setup/teardown functions
-2. **`tests/helpers/db.js`** - Database test utilities  
+2. **`tests/helpers/db.js`** - Database test utilities
 3. **`tests/helpers/mocks.js`** - Service mocking
 4. **`tests/helpers/simple-helpers.js`** - Environment and utilities
 5. **`tests/helpers/index.js`** - Consolidated exports
@@ -79,8 +87,9 @@ The new simplified system consists of:
 ## Usage Examples
 
 ### Old Pattern (Orchestrator)
+
 ```javascript
-import { testOrchestrator } from '../utils/test-initialization-orchestrator.js';
+import { testOrchestrator } from "../utils/test-initialization-orchestrator.js";
 
 const context = await testOrchestrator.setupTest();
 // ... test logic
@@ -88,17 +97,23 @@ await teardownTest(context); // or: await context.cleanup()
 ```
 
 ### New Pattern (Simplified)
-```javascript
-import { setupTest, teardownTest } from '../helpers/index.js';
 
-const setup = await setupTest({ database: true, mocks: ['brevo'] });
-// ... test logic  
+```javascript
+import { setupTest, teardownTest } from "../helpers/index.js";
+
+const setup = await setupTest({ database: true, mocks: ["brevo"] });
+// ... test logic
 await teardownTest(setup);
 ```
 
 ### Convenience Functions
+
 ```javascript
-import { quickSetup, integrationSetup, apiTestSetup } from '../helpers/index.js';
+import {
+  quickSetup,
+  integrationSetup,
+  apiTestSetup,
+} from "../helpers/index.js";
 
 // Most common pattern
 const setup = await quickSetup();
@@ -122,6 +137,7 @@ If you need to restore any of these files temporarily:
 ## Archive Maintenance
 
 These files should be deleted after:
+
 - All tests confirm working with new system (✅ completed)
 - 30-day observation period (target: 2025-09-14)
 - No regression reports filed

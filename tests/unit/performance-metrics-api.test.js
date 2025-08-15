@@ -642,7 +642,7 @@ describe("Performance Metrics API", () => {
       const handler = async (req, res) => {
         // Simulate processing time
         await new Promise((resolve) => setTimeout(resolve, 10));
-        if (res && res.status && typeof res.status === 'function') {
+        if (res && res.status && typeof res.status === "function") {
           return res.status(200).json({
             success: true,
             processedAt: Date.now(),

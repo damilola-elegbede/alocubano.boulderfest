@@ -19,9 +19,10 @@
 class PerformanceMonitor {
     constructor() {
     // Detect test environment to suppress warnings
-        this.isTestEnvironment = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
-        
-    // Core metrics storage
+        this.isTestEnvironment =
+      typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+
+        // Core metrics storage
         this.metrics = {
             // Core Web Vitals
             lcp: { value: 0, measurements: [] },
@@ -79,7 +80,6 @@ class PerformanceMonitor {
         // Initialize monitoring
         this.isObserving = false;
         this.initializeMonitoring();
-        console.log('[PerfMonitor] Advanced Performance monitoring initialized');
     }
 
     initializeMonitoring() {
@@ -115,11 +115,7 @@ class PerformanceMonitor {
             this.setupUnloadReporting();
 
             this.isObserving = true;
-            console.log(
-                '[PerfMonitor] All monitoring systems initialized successfully'
-            );
         } catch (error) {
-            console.error('[PerfMonitor] Error initializing monitoring:', error);
             this.recordError('monitoring_init_error', error);
         }
     }
@@ -159,7 +155,6 @@ class PerformanceMonitor {
 
     initializeCoreWebVitals() {
         if (!('PerformanceObserver' in window)) {
-            console.warn('[PerfMonitor] PerformanceObserver not supported');
             return;
         }
 
@@ -172,10 +167,7 @@ class PerformanceMonitor {
 
             // Initialize Cumulative Layout Shift (CLS) tracking
             this.initializeCLS();
-
-            console.log('[PerfMonitor] Core Web Vitals tracking initialized');
         } catch (error) {
-            console.error('[PerfMonitor] Error initializing Core Web Vitals:', error);
             this.recordError('cwv_init_error', error);
         }
     }
@@ -222,7 +214,6 @@ class PerformanceMonitor {
 
             this.observers.lcp.observe({ entryTypes: ['largest-contentful-paint'] });
         } catch (error) {
-            console.error('[PerfMonitor] Error initializing LCP observer:', error);
             this.recordError('lcp_observer_error', error);
         }
     }
@@ -267,7 +258,6 @@ class PerformanceMonitor {
 
             this.observers.fid.observe({ entryTypes: ['first-input'] });
         } catch (error) {
-            console.error('[PerfMonitor] Error initializing FID observer:', error);
             this.recordError('fid_observer_error', error);
         }
     }
@@ -323,7 +313,6 @@ class PerformanceMonitor {
 
             this.observers.cls.observe({ entryTypes: ['layout-shift'] });
         } catch (error) {
-            console.error('[PerfMonitor] Error initializing CLS observer:', error);
             this.recordError('cls_observer_error', error);
         }
     }
@@ -387,9 +376,7 @@ class PerformanceMonitor {
             });
 
             this.observers.resource.observe({ entryTypes: ['resource'] });
-            console.log('[PerfMonitor] Resource timing monitoring initialized');
         } catch (error) {
-            console.error('[PerfMonitor] Error initializing resource timing:', error);
             this.recordError('resource_timing_error', error);
         }
     }
@@ -443,7 +430,6 @@ class PerformanceMonitor {
     initializeMemoryMonitoring() {
         if (!('memory' in performance)) {
             if (!this.isTestEnvironment) {
-                console.warn('[PerfMonitor] Memory API not supported');
             }
             return;
         }
@@ -473,13 +459,7 @@ class PerformanceMonitor {
                     });
                 }
             }, 60000); // 60 seconds instead of 10
-
-            console.log('[PerfMonitor] Memory monitoring initialized');
         } catch (error) {
-            console.error(
-                '[PerfMonitor] Error initializing memory monitoring:',
-                error
-            );
             this.recordError('memory_monitoring_error', error);
         }
     }
@@ -487,7 +467,6 @@ class PerformanceMonitor {
     initializeNetworkMonitoring() {
         if (!('connection' in navigator)) {
             if (!this.isTestEnvironment) {
-                console.warn('[PerfMonitor] Network Information API not supported');
             }
             return;
         }
@@ -515,13 +494,7 @@ class PerformanceMonitor {
 
             // Listen for network changes
             connection.addEventListener('change', updateNetworkInfo);
-
-            console.log('[PerfMonitor] Network monitoring initialized');
         } catch (error) {
-            console.error(
-                '[PerfMonitor] Error initializing network monitoring:',
-                error
-            );
             this.recordError('network_monitoring_error', error);
         }
     }
@@ -546,11 +519,7 @@ class PerformanceMonitor {
                     stack: event.reason && event.reason.stack ? event.reason.stack : null
                 });
             });
-
-            console.log('[PerfMonitor] Error tracking initialized');
-        } catch (error) {
-            console.error('[PerfMonitor] Error initializing error tracking:', error);
-        }
+        } catch {}
     }
 
     initializeGalleryTracking() {
@@ -563,13 +532,7 @@ class PerformanceMonitor {
 
             // Track cache efficiency
             this.trackCacheEfficiency();
-
-            console.log('[PerfMonitor] Gallery-specific tracking initialized');
         } catch (error) {
-            console.error(
-                '[PerfMonitor] Error initializing gallery tracking:',
-                error
-            );
             this.recordError('gallery_tracking_error', error);
         }
     }
@@ -877,8 +840,6 @@ class PerformanceMonitor {
             this.events = this.events.slice(-this.maxBufferSize);
         }
 
-        console.log(`[PerfMonitor] ${eventType}:`, data);
-
         // Trigger immediate reporting for critical events
         if (this.isCriticalEvent(eventType)) {
             this.sendCriticalMetrics(event);
@@ -919,16 +880,10 @@ class PerformanceMonitor {
                 }).catch((error) => {
                     // Only log non-404 errors to reduce console noise
                     if (!error.message.includes('404')) {
-                        console.warn(
-                            '[PerfMonitor] Failed to send critical metrics:',
-                            error
-                        );
                     }
                 });
             }
-        } catch (error) {
-            console.error('[PerfMonitor] Error sending critical metrics:', error);
-        }
+        } catch {}
     }
 
     startPeriodicReporting() {
@@ -936,10 +891,6 @@ class PerformanceMonitor {
         this.reportingTimer = setInterval(() => {
             this.reportMetrics();
         }, this.reportingInterval);
-
-        console.log(
-            `[PerfMonitor] Periodic reporting started (${this.reportingInterval}ms interval)`
-        );
     }
 
     setupUnloadReporting() {
@@ -973,20 +924,16 @@ class PerformanceMonitor {
 
                 if (success) {
                     if (!this.isTestEnvironment) {
-                        console.log('[PerfMonitor] Final report sent via sendBeacon');
                     }
                 } else {
                     if (!this.isTestEnvironment) {
-                        console.warn('[PerfMonitor] sendBeacon failed, attempting fetch');
                     }
                     this.fallbackFinalReport(finalReport);
                 }
             } else {
                 this.fallbackFinalReport(finalReport);
             }
-        } catch (error) {
-            console.error('[PerfMonitor] Error sending final report:', error);
-        }
+        } catch {}
     }
 
     fallbackFinalReport(reportData) {
@@ -996,9 +943,8 @@ class PerformanceMonitor {
             xhr.open('POST', '/api/performance-final', false); // synchronous
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.send(JSON.stringify(reportData));
-        } catch (error) {
+        } catch {
             if (!this.isTestEnvironment) {
-                console.error('[PerfMonitor] Fallback final report failed:', error);
             }
         }
     }
@@ -1008,19 +954,6 @@ class PerformanceMonitor {
             const report = this.generateComprehensiveReport();
 
             // Log summary to console
-            console.log('[PerfMonitor] Performance Report Summary:', {
-                timestamp: report.timestamp,
-                url: report.url,
-                coreWebVitals: {
-                    lcp: report.metrics.lcp.value,
-                    fid: report.metrics.fid.value,
-                    cls: report.metrics.cls.value
-                },
-                cacheHitRatio: report.metrics.cacheHitRatio,
-                imageLoadSuccessRate: report.metrics.imageLoadSuccessRate,
-                errorCount: report.metrics.errorCount,
-                memoryUtilization: report.metrics.memoryUsage.utilization
-            });
 
             // Send to analytics service
             this.sendToAnalytics(report);
@@ -1028,10 +961,6 @@ class PerformanceMonitor {
             // Clear old events to manage memory
             this.cleanupOldEvents();
         } catch (error) {
-            console.error(
-                '[PerfMonitor] Error generating performance report:',
-                error
-            );
             this.recordError('report_generation_error', error);
         }
     }
@@ -1220,9 +1149,6 @@ class PerformanceMonitor {
 
                 if (!success) {
                     if (!this.isTestEnvironment) {
-                        console.warn(
-                            '[PerfMonitor] sendBeacon failed, falling back to fetch'
-                        );
                     }
                     this.sendWithFetch(analyticsEndpoint, report);
                 }
@@ -1230,7 +1156,6 @@ class PerformanceMonitor {
                 this.sendWithFetch(analyticsEndpoint, report);
             }
         } catch (error) {
-            console.error('[PerfMonitor] Error sending to analytics:', error);
             this.recordError('analytics_send_error', error);
         }
     }
@@ -1244,10 +1169,6 @@ class PerformanceMonitor {
         }).catch((error) => {
             // Only log non-404 errors to reduce console noise
             if (!error.message.includes('404') && !error.toString().includes('404')) {
-                console.warn(
-                    '[PerfMonitor] Failed to send analytics via fetch:',
-                    error
-                );
             }
         });
     }
@@ -1317,10 +1238,7 @@ class PerformanceMonitor {
             this.sendFinalReport();
 
             this.isObserving = false;
-            console.log('[PerfMonitor] Monitoring stopped');
-        } catch (error) {
-            console.error('[PerfMonitor] Error stopping monitoring:', error);
-        }
+        } catch {}
     }
 
     // Force report generation
@@ -1370,7 +1288,6 @@ class PerformanceMonitor {
             totalPageViews: 0
         };
         this.events = [];
-        console.log('[PerfMonitor] Metrics reset');
     }
 }
 

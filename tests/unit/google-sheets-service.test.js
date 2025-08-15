@@ -107,7 +107,7 @@ describe("GoogleSheetsService", () => {
       // Clear all mocks and module cache for complete isolation
       vi.clearAllMocks();
       vi.resetModules();
-      
+
       // Create a fresh mock for googleapis with a new spy
       const mockGoogleAuth = vi.fn().mockImplementation(() => ({}));
       const mockSheets = vi.fn().mockImplementation(() => ({
@@ -133,7 +133,9 @@ describe("GoogleSheetsService", () => {
 
       // Fresh import after module reset
       const { google } = await import("googleapis");
-      const { GoogleSheetsService: FreshGoogleSheetsService } = await import("../../api/lib/google-sheets-service.js");
+      const { GoogleSheetsService: FreshGoogleSheetsService } = await import(
+        "../../api/lib/google-sheets-service.js"
+      );
       const service = new FreshGoogleSheetsService();
 
       await service.initialize();
@@ -153,7 +155,7 @@ describe("GoogleSheetsService", () => {
       // This test verifies the service can initialize even when some env vars are missing
       // The service should not crash when optional env vars are undefined
       const service = new GoogleSheetsService();
-      
+
       // The service should initialize without throwing errors
       await expect(service.initialize()).resolves.not.toThrow();
     });

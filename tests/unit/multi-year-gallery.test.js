@@ -665,14 +665,14 @@ describe("Multi-Year Gallery Manager - Current Single Year (2025) with Future Mu
         container: mockContainer,
       });
 
-      // Wait for initialization to complete/fail 
+      // Wait for initialization to complete/fail
       await new Promise((resolve) => setTimeout(resolve, 200));
 
       // The loadAvailableYears method handles errors gracefully and uses fallback data
       // Check that even with API failure, gallery has fallback state
       expect(gallery.availableYears).toEqual(["2025"]);
-      
-      // Since the DOM creation might fail in test environment, we'll just check 
+
+      // Since the DOM creation might fail in test environment, we'll just check
       // that the gallery instance was created with proper fallback behavior
       expect(gallery).toBeDefined();
       expect(gallery.availableYears.length).toBeGreaterThan(0);

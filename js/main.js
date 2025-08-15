@@ -5,7 +5,9 @@
 
 // Smooth scroll functionality
 if (typeof SmoothScroll === 'undefined') {
+    // eslint-disable-next-line no-unused-vars
     class SmoothScroll {
+
         constructor() {
             this.init();
         }
@@ -43,7 +45,9 @@ if (typeof SmoothScroll === 'undefined') {
 
 // Form validation
 if (typeof FormValidator === 'undefined') {
+    // eslint-disable-next-line no-unused-vars
     class FormValidator {
+
         constructor(form) {
             this.form = form;
             this.init();
@@ -153,8 +157,6 @@ function registerServiceWorker() {
                 updateViaCache: 'none'
             })
             .then((registration) => {
-                console.log('[SW] Service Worker registered:', registration.scope);
-
                 // Handle updates
                 registration.addEventListener('updatefound', () => {
                     const newWorker = registration.installing;
@@ -164,7 +166,7 @@ function registerServiceWorker() {
               navigator.serviceWorker.controller
                         ) {
                             // New version available, prompt user to refresh
-                            console.log('[SW] New version available');
+
                             if (confirm('A new version is available. Refresh to update?')) {
                                 window.location.reload();
                             }
@@ -172,8 +174,8 @@ function registerServiceWorker() {
                     });
                 });
             })
-            .catch((error) => {
-                console.warn('[SW] Service Worker registration failed:', error);
+            .catch(() => {
+                // Service worker registration failed
             });
     }
 }

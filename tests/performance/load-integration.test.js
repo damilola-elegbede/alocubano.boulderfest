@@ -1,18 +1,31 @@
 /**
  * Load Testing Integration Performance Tests
- * 
+ *
  * Tests load performance and scalability under simulated user load
  * focusing on API endpoints and database operations.
- * 
+ *
  * Note: These tests use selective skipping based on environment and available resources.
  * For comprehensive load testing, use the K6 scripts in the scripts/ directory.
- * 
+ *
  * RESOURCE INTENSIVE: Skips resource-heavy tests in CI but runs basic performance validation.
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  vi,
+} from "vitest";
 import { performance } from "perf_hooks";
-import { isCI, shouldSkipPerformanceTests, getCIIterationCount, getCIConcurrency } from "../utils/ci-detection.js";
+import {
+  isCI,
+  shouldSkipPerformanceTests,
+  getCIIterationCount,
+  getCIConcurrency,
+} from "../utils/ci-detection.js";
 
 // Performance thresholds for load testing (CI-aware)
 const getLoadThresholds = () => {
@@ -20,17 +33,17 @@ const getLoadThresholds = () => {
   const userReduction = isCI() ? 0.5 : 1; // Fewer users in CI
   return {
     apiResponse: {
-      max: 500 * multiplier,    // 500ms max for API responses
-      target: 200 * multiplier  // 200ms target
+      max: 500 * multiplier, // 500ms max for API responses
+      target: 200 * multiplier, // 200ms target
     },
     dbQuery: {
-      max: 100 * multiplier,    // 100ms max for database queries
-      target: 50 * multiplier   // 50ms target
+      max: 100 * multiplier, // 100ms max for database queries
+      target: 50 * multiplier, // 50ms target
     },
     concurrentUsers: {
-      max: getCIConcurrency(50, 0.2),     // Support fewer users in CI (20% reduction)
-      responseTime: 1000 * multiplier // Under 1 second response time
-    }
+      max: getCIConcurrency(50, 0.2), // Support fewer users in CI (20% reduction)
+      responseTime: 1000 * multiplier, // Under 1 second response time
+    },
   };
 };
 const LOAD_THRESHOLDS = getLoadThresholds();
@@ -39,7 +52,7 @@ const LOAD_THRESHOLDS = getLoadThresholds();
 const mockDatabase = {
   execute: vi.fn(),
   batch: vi.fn(),
-  close: vi.fn()
+  close: vi.fn(),
 };
 
 // Mock API endpoints with CI-awareness
@@ -53,13 +66,15 @@ class MockAPIEndpoint {
   async process(payload) {
     this.callCount++;
     const startTime = performance.now();
-    const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000';
-    
+    const baseUrl = process.env.TEST_BASE_URL || "http://localhost:3000";
+
     try {
       // Skip HTTP requests in CI when no base URL configured - use mock response
       if (isCI() && !process.env.TEST_BASE_URL) {
         // Simulate processing time without real HTTP request
-        await new Promise(resolve => setTimeout(resolve, this.processingTime));
+        await new Promise((resolve) =>
+          setTimeout(resolve, this.processingTime),
+        );
         const duration = performance.now() - startTime; // Calculate duration for mock
         return {
           success: true,
@@ -67,20 +82,20 @@ class MockAPIEndpoint {
           payload,
           endpoint: this.name,
           status: 200,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
-      
+
       // Make actual HTTP request in non-CI environments
       const response = await fetch(`${baseUrl}/api/health/check`, {
-        method: 'GET',
+        method: "GET",
         timeout: 5000,
         headers: {
-          'Accept': 'application/json',
-          'User-Agent': `Vitest-Load-Test-${this.name}`
-        }
+          Accept: "application/json",
+          "User-Agent": `Vitest-Load-Test-${this.name}`,
+        },
       });
-      
+
       const duration = performance.now() - startTime;
       return {
         success: response.ok,
@@ -88,7 +103,7 @@ class MockAPIEndpoint {
         payload,
         endpoint: this.name,
         status: response.status,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     } catch (error) {
       const duration = performance.now() - startTime;
@@ -98,7 +113,7 @@ class MockAPIEndpoint {
         payload,
         endpoint: this.name,
         error: error.message,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
   }
@@ -107,7 +122,7 @@ class MockAPIEndpoint {
     return {
       name: this.name,
       callCount: this.callCount,
-      avgProcessingTime: this.processingTime
+      avgProcessingTime: this.processingTime,
     };
   }
 }
@@ -141,7 +156,9 @@ class LoadTestOrchestrator {
       duration: totalTime,
       results: results.flat(),
       maxConcurrentUsers: this.maxConcurrentUsers,
-      avgResponseTime: results.flat().reduce((sum, r) => sum + r.duration, 0) / results.flat().length
+      avgResponseTime:
+        results.flat().reduce((sum, r) => sum + r.duration, 0) /
+        results.flat().length,
     };
   }
 
@@ -152,14 +169,21 @@ class LoadTestOrchestrator {
 
     while (Date.now() < endTime) {
       this.concurrentUsers++;
-      this.maxConcurrentUsers = Math.max(this.maxConcurrentUsers, this.concurrentUsers);
+      this.maxConcurrentUsers = Math.max(
+        this.maxConcurrentUsers,
+        this.concurrentUsers,
+      );
 
       // Randomly select an endpoint
-      const endpointName = endpointNames[Math.floor(Math.random() * endpointNames.length)];
+      const endpointName =
+        endpointNames[Math.floor(Math.random() * endpointNames.length)];
       const endpoint = this.endpoints.get(endpointName);
 
       try {
-        const result = await endpoint.process({ userId, timestamp: Date.now() });
+        const result = await endpoint.process({
+          userId,
+          timestamp: Date.now(),
+        });
         userResults.push(result);
       } catch (error) {
         userResults.push({
@@ -167,14 +191,16 @@ class LoadTestOrchestrator {
           error: error.message,
           endpoint: endpointName,
           userId,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       }
 
       this.concurrentUsers--;
 
       // Wait between requests (simulate user think time)
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.random() * 1000 + 500),
+      );
     }
 
     return userResults;
@@ -210,22 +236,24 @@ describe.skip("Load Testing Integration", () => {
   beforeAll(() => {
     // Skip if no base URL is configured for real testing
     if (!process.env.TEST_BASE_URL && !isCI()) {
-      console.warn('⚠️ TEST_BASE_URL not set. Set TEST_BASE_URL=http://localhost:3000 to run load tests against local server.');
-      console.warn('⚠️ Tests will run with mock responses only.');
+      console.warn(
+        "⚠️ TEST_BASE_URL not set. Set TEST_BASE_URL=http://localhost:3000 to run load tests against local server.",
+      );
+      console.warn("⚠️ Tests will run with mock responses only.");
     }
-    
+
     if (isCI()) {
-      console.log('🔄 Running reduced load tests suitable for CI environment');
+      console.log("🔄 Running reduced load tests suitable for CI environment");
     }
-    
+
     loadOrchestrator = new LoadTestOrchestrator();
-    
+
     // Setup endpoints - they'll all use real HTTP requests
-    loadOrchestrator.addEndpoint("tickets", 150);        // Ticket operations
-    loadOrchestrator.addEndpoint("payments", 300);       // Payment processing
-    loadOrchestrator.addEndpoint("gallery", 80);         // Gallery API
-    loadOrchestrator.addEndpoint("admin", 200);          // Admin operations
-    loadOrchestrator.addEndpoint("health", 25);          // Health checks
+    loadOrchestrator.addEndpoint("tickets", 150); // Ticket operations
+    loadOrchestrator.addEndpoint("payments", 300); // Payment processing
+    loadOrchestrator.addEndpoint("gallery", 80); // Gallery API
+    loadOrchestrator.addEndpoint("admin", 200); // Admin operations
+    loadOrchestrator.addEndpoint("health", 25); // Health checks
   });
 
   beforeEach(() => {
@@ -233,37 +261,50 @@ describe.skip("Load Testing Integration", () => {
   });
 
   describe("Single User Performance", () => {
-    it("should handle single user requests within thresholds", async () => {
-      const duration = getCIIterationCount(3000, 0.67); // 67% reduction in CI (2000ms)
-      const result = await loadOrchestrator.simulateUserLoad(1, duration);
+    it(
+      "should handle single user requests within thresholds",
+      async () => {
+        const duration = getCIIterationCount(3000, 0.67); // 67% reduction in CI (2000ms)
+        const result = await loadOrchestrator.simulateUserLoad(1, duration);
 
-      expect(result.userCount).toBe(1);
-      expect(result.results.length).toBeGreaterThan(0);
-      
-      // Allow more lenient thresholds for real HTTP requests
-      const successfulResults = result.results.filter(r => r.success);
-      if (successfulResults.length > 0) {
-        expect(result.avgResponseTime).toBeLessThan(LOAD_THRESHOLDS.apiResponse.max * 2); // 2x for real requests
-      }
+        expect(result.userCount).toBe(1);
+        expect(result.results.length).toBeGreaterThan(0);
 
-      console.log(`Single user - Avg response: ${result.avgResponseTime.toFixed(2)}ms`);
-      console.log(`Requests completed: ${result.results.length}`);
-      console.log(`Success rate: ${(successfulResults.length / result.results.length * 100).toFixed(1)}%`);
-    }, isCI() ? 15000 : 10000);
+        // Allow more lenient thresholds for real HTTP requests
+        const successfulResults = result.results.filter((r) => r.success);
+        if (successfulResults.length > 0) {
+          expect(result.avgResponseTime).toBeLessThan(
+            LOAD_THRESHOLDS.apiResponse.max * 2,
+          ); // 2x for real requests
+        }
+
+        console.log(
+          `Single user - Avg response: ${result.avgResponseTime.toFixed(2)}ms`,
+        );
+        console.log(`Requests completed: ${result.results.length}`);
+        console.log(
+          `Success rate: ${((successfulResults.length / result.results.length) * 100).toFixed(1)}%`,
+        );
+      },
+      isCI() ? 15000 : 10000,
+    );
 
     it("should maintain consistent response times", async () => {
       const result = await loadOrchestrator.simulateUserLoad(1, 5000);
-      
-      const responseTimes = result.results
-        .filter(r => r.success)
-        .map(r => r.duration);
 
-      const avgTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+      const responseTimes = result.results
+        .filter((r) => r.success)
+        .map((r) => r.duration);
+
+      const avgTime =
+        responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
       const maxTime = Math.max(...responseTimes);
       const minTime = Math.min(...responseTimes);
       const variance = maxTime / minTime;
 
-      console.log(`Response time variance: ${variance.toFixed(2)}x (${minTime.toFixed(0)}ms - ${maxTime.toFixed(0)}ms)`);
+      console.log(
+        `Response time variance: ${variance.toFixed(2)}x (${minTime.toFixed(0)}ms - ${maxTime.toFixed(0)}ms)`,
+      );
 
       expect(avgTime).toBeLessThan(LOAD_THRESHOLDS.apiResponse.target);
       expect(variance).toBeLessThan(3); // No more than 3x difference between fastest and slowest
@@ -271,37 +312,59 @@ describe.skip("Load Testing Integration", () => {
   });
 
   describe("Concurrent User Load", () => {
-    it.skipIf(shouldSkipResourceIntensiveTests)("should handle moderate concurrent load", async () => {
-      const userCount = getCIConcurrency(10, 0.5); // 50% fewer users in CI (5 users)
-      const duration = getCIIterationCount(4000, 0.75); // 75% duration in CI (3000ms)
-      const result = await loadOrchestrator.simulateUserLoad(userCount, duration);
+    it.skipIf(shouldSkipResourceIntensiveTests)(
+      "should handle moderate concurrent load",
+      async () => {
+        const userCount = getCIConcurrency(10, 0.5); // 50% fewer users in CI (5 users)
+        const duration = getCIIterationCount(4000, 0.75); // 75% duration in CI (3000ms)
+        const result = await loadOrchestrator.simulateUserLoad(
+          userCount,
+          duration,
+        );
 
-      const successfulRequests = result.results.filter(r => r.success);
-      const successRate = successfulRequests.length / result.results.length;
+        const successfulRequests = result.results.filter((r) => r.success);
+        const successRate = successfulRequests.length / result.results.length;
 
-      console.log(`${userCount} users - Success rate: ${(successRate * 100).toFixed(1)}%`);
-      console.log(`Max concurrent: ${result.maxConcurrentUsers}`);
-      console.log(`Avg response: ${result.avgResponseTime.toFixed(2)}ms`);
+        console.log(
+          `${userCount} users - Success rate: ${(successRate * 100).toFixed(1)}%`,
+        );
+        console.log(`Max concurrent: ${result.maxConcurrentUsers}`);
+        console.log(`Avg response: ${result.avgResponseTime.toFixed(2)}ms`);
 
-      expect(successRate).toBeGreaterThan(0.90); // 90% success rate (more lenient for CI)
-      expect(result.avgResponseTime).toBeLessThan(LOAD_THRESHOLDS.apiResponse.max);
-    }, isCI() ? 20000 : 15000);
+        expect(successRate).toBeGreaterThan(0.9); // 90% success rate (more lenient for CI)
+        expect(result.avgResponseTime).toBeLessThan(
+          LOAD_THRESHOLDS.apiResponse.max,
+        );
+      },
+      isCI() ? 20000 : 15000,
+    );
 
-    it.skipIf(shouldSkipResourceIntensiveTests)("should scale to maximum concurrent users", async () => {
-      const userCount = LOAD_THRESHOLDS.concurrentUsers.max;
-      const duration = getCIIterationCount(3000, 0.67); // 67% duration in CI (2000ms)
-      const result = await loadOrchestrator.simulateUserLoad(userCount, duration);
+    it.skipIf(shouldSkipResourceIntensiveTests)(
+      "should scale to maximum concurrent users",
+      async () => {
+        const userCount = LOAD_THRESHOLDS.concurrentUsers.max;
+        const duration = getCIIterationCount(3000, 0.67); // 67% duration in CI (2000ms)
+        const result = await loadOrchestrator.simulateUserLoad(
+          userCount,
+          duration,
+        );
 
-      const successfulRequests = result.results.filter(r => r.success);
-      const successRate = successfulRequests.length / result.results.length;
+        const successfulRequests = result.results.filter((r) => r.success);
+        const successRate = successfulRequests.length / result.results.length;
 
-      console.log(`${userCount} users - Success rate: ${(successRate * 100).toFixed(1)}%`);
-      console.log(`Total requests: ${result.results.length}`);
-      console.log(`Avg response: ${result.avgResponseTime.toFixed(2)}ms`);
+        console.log(
+          `${userCount} users - Success rate: ${(successRate * 100).toFixed(1)}%`,
+        );
+        console.log(`Total requests: ${result.results.length}`);
+        console.log(`Avg response: ${result.avgResponseTime.toFixed(2)}ms`);
 
-      expect(successRate).toBeGreaterThan(0.80); // 80% success rate under max load (more lenient)
-      expect(result.avgResponseTime).toBeLessThan(LOAD_THRESHOLDS.concurrentUsers.responseTime);
-    }, process.env.CI === 'true' ? 30000 : 20000);
+        expect(successRate).toBeGreaterThan(0.8); // 80% success rate under max load (more lenient)
+        expect(result.avgResponseTime).toBeLessThan(
+          LOAD_THRESHOLDS.concurrentUsers.responseTime,
+        );
+      },
+      process.env.CI === "true" ? 30000 : 20000,
+    );
   });
 
   describe("Endpoint-Specific Load Testing", () => {
@@ -311,9 +374,13 @@ describe.skip("Load Testing Integration", () => {
       loadOrchestrator.addEndpoint("payments", 300);
 
       const result = await loadOrchestrator.simulateUserLoad(20, 4000);
-      const paymentResults = result.results.filter(r => r.endpoint === "payments");
+      const paymentResults = result.results.filter(
+        (r) => r.endpoint === "payments",
+      );
 
-      const avgPaymentTime = paymentResults.reduce((sum, r) => sum + r.duration, 0) / paymentResults.length;
+      const avgPaymentTime =
+        paymentResults.reduce((sum, r) => sum + r.duration, 0) /
+        paymentResults.length;
 
       console.log(`Payment endpoint - Avg: ${avgPaymentTime.toFixed(2)}ms`);
       console.log(`Payment requests: ${paymentResults.length}`);
@@ -327,9 +394,13 @@ describe.skip("Load Testing Integration", () => {
       loadOrchestrator.addEndpoint("gallery", 80);
 
       const result = await loadOrchestrator.simulateUserLoad(25, 3000);
-      const galleryResults = result.results.filter(r => r.endpoint === "gallery");
+      const galleryResults = result.results.filter(
+        (r) => r.endpoint === "gallery",
+      );
 
-      const avgGalleryTime = galleryResults.reduce((sum, r) => sum + r.duration, 0) / galleryResults.length;
+      const avgGalleryTime =
+        galleryResults.reduce((sum, r) => sum + r.duration, 0) /
+        galleryResults.length;
 
       console.log(`Gallery endpoint - Avg: ${avgGalleryTime.toFixed(2)}ms`);
       console.log(`Gallery requests: ${galleryResults.length}`);
@@ -368,13 +439,17 @@ describe.skip("Load Testing Integration", () => {
       for (let i = 0; i < 5; i++) {
         const result = await loadOrchestrator.simulateUserLoad(3, 2000);
         measurements.push(result.avgResponseTime);
-        await new Promise(resolve => setTimeout(resolve, 500)); // Brief pause
+        await new Promise((resolve) => setTimeout(resolve, 500)); // Brief pause
       }
 
-      const avgMeasurement = measurements.reduce((a, b) => a + b, 0) / measurements.length;
-      const maxVariation = Math.max(...measurements) / Math.min(...measurements);
+      const avgMeasurement =
+        measurements.reduce((a, b) => a + b, 0) / measurements.length;
+      const maxVariation =
+        Math.max(...measurements) / Math.min(...measurements);
 
-      console.log(`Measurements: ${measurements.map(m => m.toFixed(0)).join('ms, ')}ms`);
+      console.log(
+        `Measurements: ${measurements.map((m) => m.toFixed(0)).join("ms, ")}ms`,
+      );
       console.log(`Average: ${avgMeasurement.toFixed(2)}ms`);
       console.log(`Max variation: ${maxVariation.toFixed(2)}x`);
 
@@ -388,14 +463,14 @@ describe.skip("Load Testing Integration", () => {
       const result = await loadOrchestrator.simulateUserLoad(15, 4000);
       const endpointDistribution = new Map();
 
-      result.results.forEach(r => {
+      result.results.forEach((r) => {
         const count = endpointDistribution.get(r.endpoint) || 0;
         endpointDistribution.set(r.endpoint, count + 1);
       });
 
       console.log("Endpoint distribution:");
       for (const [endpoint, count] of endpointDistribution) {
-        const percentage = (count / result.results.length * 100).toFixed(1);
+        const percentage = ((count / result.results.length) * 100).toFixed(1);
         console.log(`  ${endpoint}: ${count} (${percentage}%)`);
       }
 
@@ -409,11 +484,12 @@ describe.skip("Load Testing Integration", () => {
 
     it("should handle memory-conscious operations", async () => {
       const memoryBefore = process.memoryUsage?.() || { heapUsed: 0 };
-      
+
       const result = await loadOrchestrator.simulateUserLoad(30, 3000);
-      
+
       const memoryAfter = process.memoryUsage?.() || { heapUsed: 0 };
-      const memoryGrowth = (memoryAfter.heapUsed - memoryBefore.heapUsed) / 1024 / 1024; // MB
+      const memoryGrowth =
+        (memoryAfter.heapUsed - memoryBefore.heapUsed) / 1024 / 1024; // MB
 
       console.log(`Memory growth: ${memoryGrowth.toFixed(1)}MB`);
       console.log(`Requests processed: ${result.results.length}`);
@@ -427,9 +503,15 @@ describe.skip("Load Testing Integration", () => {
   afterAll(() => {
     // Generate performance summary
     console.log("\n📊 Load Testing Summary:");
-    console.log(`  Max concurrent users tested: ${LOAD_THRESHOLDS.concurrentUsers.max}`);
-    console.log(`  API response threshold: ${LOAD_THRESHOLDS.apiResponse.max}ms`);
-    console.log(`  Target response time: ${LOAD_THRESHOLDS.apiResponse.target}ms`);
+    console.log(
+      `  Max concurrent users tested: ${LOAD_THRESHOLDS.concurrentUsers.max}`,
+    );
+    console.log(
+      `  API response threshold: ${LOAD_THRESHOLDS.apiResponse.max}ms`,
+    );
+    console.log(
+      `  Target response time: ${LOAD_THRESHOLDS.apiResponse.target}ms`,
+    );
     console.log("✅ All load tests completed");
   });
 });

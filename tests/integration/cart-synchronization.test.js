@@ -342,7 +342,7 @@ describe("Cart Synchronization Integration Tests", () => {
       }),
       clear: vi.fn(() => {
         // Clear all properties instead of reassigning
-        Object.keys(storageData).forEach(key => delete storageData[key]);
+        Object.keys(storageData).forEach((key) => delete storageData[key]);
       }),
     };
 
@@ -714,13 +714,13 @@ describe("Cart Synchronization Integration Tests", () => {
 
     test("should handle event listener failures gracefully", async () => {
       const cartManager = new window.CartManager();
-      
+
       // Track errors using window.onerror to catch JSDOM thrown errors
       const errorsSeen = [];
       const originalOnerror = window.onerror;
-      
+
       window.onerror = (message, source, lineno, colno, error) => {
-        if (error && error.message === 'Listener error') {
+        if (error && error.message === "Listener error") {
           errorsSeen.push(error);
           return true; // Prevent default error handling
         }
@@ -738,11 +738,11 @@ describe("Cart Synchronization Integration Tests", () => {
       expect(() => {
         cartManager.updateTicketQuantity("early-bird-full", 1);
       }).not.toThrow();
-      
+
       // Verify that the error was caught by window.onerror
       expect(errorsSeen.length).toBe(1);
       expect(errorsSeen[0].message).toBe("Listener error");
-      
+
       // Restore window.onerror
       window.onerror = originalOnerror;
     });

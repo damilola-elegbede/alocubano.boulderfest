@@ -1,7 +1,7 @@
 /**
  * Stripe Webhooks Integration Tests - HTTP API Testing
  * Tests webhook processing via HTTP requests, not direct module imports
- * 
+ *
  * IMPORTANT: Integration tests should test via HTTP requests to avoid
  * module initialization conflicts and test real API behavior
  */

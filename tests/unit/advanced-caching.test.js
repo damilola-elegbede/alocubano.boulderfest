@@ -49,7 +49,7 @@ const createMockServiceWorker = () => {
       if (cacheInstances.has(name)) {
         return Promise.resolve(cacheInstances.get(name));
       }
-      
+
       if (!mockSW.caches.has(name)) {
         mockSW.caches.set(name, new Map());
       }
@@ -79,7 +79,7 @@ const createMockServiceWorker = () => {
         }),
         keys: vi.fn(() => Promise.resolve(Array.from(cache.keys()))),
       };
-      
+
       // Store instance for reuse
       cacheInstances.set(name, cacheApi);
       return Promise.resolve(cacheApi);
@@ -99,7 +99,7 @@ describe("Advanced Caching System - Phase 2", () => {
   beforeEach(() => {
     // Reset DOM
     document.body.innerHTML = "";
-    
+
     // Clear cache instances between tests
     cacheInstances.clear();
 
@@ -157,7 +157,7 @@ describe("Advanced Caching System - Phase 2", () => {
     test("should implement cache-first strategy for images", async () => {
       // Clear fetch mock to ensure clean state
       mockFetch.mockClear();
-      
+
       // Mock service worker implementation
       const handleImageRequest = async (request) => {
         const cache = await caches.open("alocubano-images-v2.0.0");

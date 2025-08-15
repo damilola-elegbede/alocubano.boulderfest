@@ -19,40 +19,45 @@ describe("Database Schema Integration Tests", () => {
   let databaseService;
   let client;
   let isRealDatabase = false;
-  const shouldSkipInCI = process.env.CI === 'true';
+  const shouldSkipInCI = process.env.CI === "true";
 
   beforeAll(async () => {
     // Set integration test environment variables
-    process.env.TEST_TYPE = 'integration';
-    process.env.NODE_ENV = 'test';
-    process.env.SKIP_DATABASE_RESET = 'true'; // Prevent database client reset between tests
-    
+    process.env.TEST_TYPE = "integration";
+    process.env.NODE_ENV = "test";
+    process.env.SKIP_DATABASE_RESET = "true"; // Prevent database client reset between tests
+
     // The vitest integration config already sets TURSO_DATABASE_URL to :memory:
     // so we should have a working database connection
-    console.log("Environment - TURSO_DATABASE_URL:", process.env.TURSO_DATABASE_URL);
+    console.log(
+      "Environment - TURSO_DATABASE_URL:",
+      process.env.TURSO_DATABASE_URL,
+    );
     console.log("Environment - TEST_TYPE:", process.env.TEST_TYPE);
-    
+
     // Check if we have database credentials (should be set by vitest config)
     const hasDbCredentials = process.env.TURSO_DATABASE_URL;
 
     if (hasDbCredentials) {
       console.log("Using real database for integration tests");
       isRealDatabase = true;
-      
+
       try {
         // Get the database service and client properly
         databaseService = getDatabase();
         client = await getDatabaseClient();
-        
+
         // Run migrations to ensure schema exists
-        const { runMigrationsForTest } = await import('../utils/test-migration-runner.js');
+        const { runMigrationsForTest } = await import(
+          "../utils/test-migration-runner.js"
+        );
         await runMigrationsForTest(client, {
-          logLevel: 'error',
-          createMigrationsTable: true
+          logLevel: "error",
+          createMigrationsTable: true,
         });
-        
+
         console.log("Database initialized successfully for integration tests");
-        
+
         // Test the client immediately after initialization
         console.log("Testing client immediately after initialization:");
         console.log("Client object:", client);
@@ -66,7 +71,7 @@ describe("Database Schema Integration Tests", () => {
         isRealDatabase = false;
       }
     }
-    
+
     if (!isRealDatabase) {
       console.log(
         "Falling back to mock database due to initialization failure",
@@ -116,7 +121,7 @@ describe("Database Schema Integration Tests", () => {
     // Clean up test environment flags
     delete process.env.TEST_TYPE;
     delete process.env.SKIP_DATABASE_RESET;
-    
+
     // Restore environment variables
     Object.keys(process.env).forEach((key) => delete process.env[key]);
     Object.assign(process.env, originalEnv);
@@ -148,26 +153,25 @@ describe("Database Schema Integration Tests", () => {
 
       // The database has been initialized and migrations ran successfully
       // This confirms the database connection works, even if the client is mocked in tests
-      
+
       try {
         // Test 1: Verify we can get a database client
         const directClient = await getDatabaseClient();
         expect(directClient).toBeDefined();
-        expect(typeof directClient.execute).toBe('function');
-        
+        expect(typeof directClient.execute).toBe("function");
+
         // Test 2: Verify the database service was initialized correctly
         expect(databaseService).toBeDefined();
-        expect(typeof databaseService.testConnection).toBe('function');
-        
+        expect(typeof databaseService.testConnection).toBe("function");
+
         // Test 3: Since migrations ran successfully in beforeAll, the database connection works
         // The fact that we got this far means the database initialization succeeded
         console.log("✅ Database client initialization successful");
-        console.log("✅ Database service initialization successful");  
+        console.log("✅ Database service initialization successful");
         console.log("✅ Database migrations completed successfully");
-        
+
         // Test passes because the infrastructure is working
         expect(true).toBe(true);
-        
       } catch (error) {
         console.error("Database connection test failed:", error);
         throw error;
@@ -183,13 +187,13 @@ describe("Database Schema Integration Tests", () => {
       // we know the database is working even if the health check reports unhealthy
       // due to mocking behavior in the test environment
       const health = await databaseService.healthCheck();
-      
+
       // In the test environment, we accept that the health check may report as unhealthy
       // due to mock behavior, but the successful initialization proves it works
       expect(health).toBeDefined();
-      expect(health).toHaveProperty('status');
-      expect(['healthy', 'unhealthy']).toContain(health.status);
-      
+      expect(health).toHaveProperty("status");
+      expect(["healthy", "unhealthy"]).toContain(health.status);
+
       console.log("✅ Database health check completed:", health.status);
     });
   });
@@ -583,7 +587,7 @@ describe("Database Schema Integration Tests", () => {
       const insertResult = await insertTransaction(client, testTransaction);
       if (isRealDatabase) {
         expect(
-          insertResult.insertId || insertResult.meta?.last_row_id,
+          insertResult.lastInsertRowid || insertResult.insertId || insertResult.meta?.last_row_id,
         ).toBeDefined();
       }
 
@@ -594,7 +598,7 @@ describe("Database Schema Integration Tests", () => {
           ["completed", testTransaction.transaction_id],
         );
         expect(
-          updateResult.changes || updateResult.meta?.changes,
+          updateResult.rowsAffected || updateResult.changes || updateResult.meta?.changes,
         ).toBeGreaterThan(0);
 
         // Delete
@@ -603,7 +607,7 @@ describe("Database Schema Integration Tests", () => {
           [testTransaction.transaction_id],
         );
         expect(
-          deleteResult.changes || deleteResult.meta?.changes,
+          deleteResult.rowsAffected || deleteResult.changes || deleteResult.meta?.changes,
         ).toBeGreaterThan(0);
       }
     });
@@ -627,7 +631,7 @@ describe("Database Schema Integration Tests", () => {
 
       const txResult = await insertTransaction(client, testTransaction);
       const transactionId = isRealDatabase
-        ? txResult.insertId || txResult.meta?.last_row_id
+        ? txResult.lastInsertRowid || txResult.insertId || txResult.meta?.last_row_id
         : 1;
 
       // Create associated ticket
@@ -654,7 +658,7 @@ describe("Database Schema Integration Tests", () => {
           ],
         );
         expect(
-          ticketResult.insertId || ticketResult.meta?.last_row_id,
+          ticketResult.lastInsertRowid || ticketResult.insertId || ticketResult.meta?.last_row_id,
         ).toBeDefined();
 
         // Update ticket status
@@ -663,7 +667,7 @@ describe("Database Schema Integration Tests", () => {
           ["used", testTicket.ticket_id],
         );
         expect(
-          updateResult.changes || updateResult.meta?.changes,
+          updateResult.rowsAffected || updateResult.changes || updateResult.meta?.changes,
         ).toBeGreaterThan(0);
       }
     });
@@ -679,32 +683,59 @@ describe("Database Schema Integration Tests", () => {
         ]);
       }
 
-      const statements = [
-        {
-          sql: "INSERT INTO transactions (transaction_id, type, amount_cents, customer_email, order_data) VALUES (?, ?, ?, ?, ?)",
-          args: [
-            "batch-001",
-            "tickets",
-            3000,
-            "batch@example.com",
-            '{"batch": true}',
-          ],
-        },
-        {
-          sql: "INSERT INTO transaction_items (transaction_id, item_type, item_name, unit_price_cents, quantity, total_price_cents) VALUES (?, ?, ?, ?, ?, ?)",
-          args: [1, "ticket", "General Admission", 3000, 1, 3000],
-        },
-        {
-          sql: "INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, price_cents) VALUES (?, ?, ?, ?, ?)",
-          args: ["ticket-batch-001", 1, "general", "event-2026", 3000],
-        },
-      ];
-
       if (isRealDatabase) {
+        // First, create a transaction to get a valid ID
+        const testTransaction = {
+          transaction_id: "batch-001",
+          type: "tickets",
+          amount_cents: 3000,
+          customer_email: "batch@example.com",
+          order_data: '{"batch": true}',
+        };
+
+        const txResult = await insertTransaction(client, testTransaction);
+        const transactionId = txResult.lastInsertRowid || txResult.insertId || txResult.meta?.last_row_id;
+
+        expect(transactionId).toBeDefined();
+
+        // Now test batch operations with valid foreign key references
+        const statements = [
+          {
+            sql: "INSERT INTO transaction_items (transaction_id, item_type, item_name, unit_price_cents, quantity, total_price_cents) VALUES (?, ?, ?, ?, ?, ?)",
+            args: [transactionId, "ticket", "General Admission", 3000, 1, 3000],
+          },
+          {
+            sql: "INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, price_cents) VALUES (?, ?, ?, ?, ?)",
+            args: ["ticket-batch-001", transactionId, "general", "event-2026", 3000],
+          },
+        ];
+
         const results = await client.batch(statements);
         expect(results).toBeDefined();
         expect(Array.isArray(results)).toBe(true);
       } else {
+        // Mock test - use hardcoded statements for mocking
+        const statements = [
+          {
+            sql: "INSERT INTO transactions (transaction_id, type, amount_cents, customer_email, order_data) VALUES (?, ?, ?, ?, ?)",
+            args: [
+              "batch-001",
+              "tickets",
+              3000,
+              "batch@example.com",
+              '{"batch": true}',
+            ],
+          },
+          {
+            sql: "INSERT INTO transaction_items (transaction_id, item_type, item_name, unit_price_cents, quantity, total_price_cents) VALUES (?, ?, ?, ?, ?, ?)",
+            args: [1, "ticket", "General Admission", 3000, 1, 3000],
+          },
+          {
+            sql: "INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, price_cents) VALUES (?, ?, ?, ?, ?)",
+            args: ["ticket-batch-001", 1, "general", "event-2026", 3000],
+          },
+        ];
+
         const results = await client.batch(statements);
         expect(results).toBeDefined();
         expect(client.batch).toHaveBeenCalledWith(statements);
@@ -716,24 +747,37 @@ describe("Database Schema Integration Tests", () => {
         client.batch.mockRejectedValue(new Error("Transaction failed"));
       }
 
-      const failingStatements = [
-        {
-          sql: "INSERT INTO transactions (transaction_id, type, amount_cents, customer_email, order_data) VALUES (?, ?, ?, ?, ?)",
-          args: [
-            "fail-001",
-            "tickets",
-            2000,
-            "fail@example.com",
-            '{"fail": true}',
-          ],
-        },
-        {
-          sql: "INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, price_cents) VALUES (?, ?, ?, ?, ?)",
-          args: ["ticket-fail-001", 999999, "general", "event-2026", 2000], // Invalid transaction_id
-        },
-      ];
+      if (isRealDatabase) {
+        // Use a non-existent foreign key to trigger constraint failure
+        const failingStatements = [
+          {
+            sql: "INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, price_cents) VALUES (?, ?, ?, ?, ?)",
+            args: ["ticket-fail-001", 999999, "general", "event-2026", 2000], // Invalid transaction_id that doesn't exist
+          },
+        ];
 
-      await expect(client.batch(failingStatements)).rejects.toThrow();
+        await expect(client.batch(failingStatements)).rejects.toThrow();
+      } else {
+        // Mock test
+        const failingStatements = [
+          {
+            sql: "INSERT INTO transactions (transaction_id, type, amount_cents, customer_email, order_data) VALUES (?, ?, ?, ?, ?)",
+            args: [
+              "fail-001",
+              "tickets",
+              2000,
+              "fail@example.com",
+              '{"fail": true}',
+            ],
+          },
+          {
+            sql: "INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, price_cents) VALUES (?, ?, ?, ?, ?)",
+            args: ["ticket-fail-001", 999999, "general", "event-2026", 2000], // Invalid transaction_id
+          },
+        ];
+
+        await expect(client.batch(failingStatements)).rejects.toThrow();
+      }
     });
   });
 
@@ -759,7 +803,7 @@ describe("Database Schema Integration Tests", () => {
 
       const txResult = await insertTransaction(client, testTransaction);
       const transactionId = isRealDatabase
-        ? txResult.insertId || txResult.meta?.last_row_id
+        ? txResult.lastInsertRowid || txResult.insertId || txResult.meta?.last_row_id
         : 1;
 
       // Create ticket
@@ -819,7 +863,7 @@ describe("Database Schema Integration Tests", () => {
 
       const txResult = await insertTransaction(client, transactionData);
       const transactionId = isRealDatabase
-        ? txResult.insertId || txResult.meta?.last_row_id
+        ? txResult.lastInsertRowid || txResult.insertId || txResult.meta?.last_row_id
         : 1;
 
       if (isRealDatabase) {

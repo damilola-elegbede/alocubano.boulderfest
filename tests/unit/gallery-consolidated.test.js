@@ -562,9 +562,18 @@ describe("Gallery Cache System", () => {
     const baseTime = Date.now();
 
     // Add entries to cache with different timestamps
-    mockRequestCache.set("url1", { timestamp: baseTime - 3000, response: "data1" });
-    mockRequestCache.set("url2", { timestamp: baseTime - 2000, response: "data2" });
-    mockRequestCache.set("url3", { timestamp: baseTime - 1000, response: "data3" });
+    mockRequestCache.set("url1", {
+      timestamp: baseTime - 3000,
+      response: "data1",
+    });
+    mockRequestCache.set("url2", {
+      timestamp: baseTime - 2000,
+      response: "data2",
+    });
+    mockRequestCache.set("url3", {
+      timestamp: baseTime - 1000,
+      response: "data3",
+    });
 
     expect(mockRequestCache.size).toBe(3);
 

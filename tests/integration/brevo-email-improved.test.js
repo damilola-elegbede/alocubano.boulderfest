@@ -1,7 +1,7 @@
 /**
  * Brevo Email Service Integration Tests - HTTP API Testing
  * Tests email service via HTTP endpoints, not direct module imports
- * 
+ *
  * IMPORTANT: Integration tests should test via HTTP requests to avoid
  * module initialization conflicts and race conditions
  */
@@ -21,16 +21,16 @@ describe("Brevo Email Service Integration - HTTP Testing", () => {
   beforeEach(async () => {
     // Reset all mocks before each test
     vi.clearAllMocks();
-    
+
     // Create fresh Brevo mock with CI-appropriate configuration
     brevoMock = createBrevoMock();
-    
+
     // Use longer timeouts in CI environments
     const timeoutMultiplier = getCITimeoutMultiplier();
     if (isCI()) {
       vi.setConfig({ testTimeout: 30000 * timeoutMultiplier });
     }
-    
+
     // Create mock database
     mockDatabase = {
       execute: vi.fn(),
@@ -55,7 +55,7 @@ describe("Brevo Email Service Integration - HTTP Testing", () => {
     process.env.BREVO_API_KEY = "xkeysib-test123";
     process.env.BREVO_NEWSLETTER_LIST_ID = "1";
     process.env.NODE_ENV = "test";
-    
+
     // Ensure consistent behavior in CI vs local
     if (isCI()) {
       process.env.TEST_ENVIRONMENT = "ci";
@@ -65,49 +65,49 @@ describe("Brevo Email Service Integration - HTTP Testing", () => {
     testApp.post("/api/email/subscribe", async (req, res) => {
       try {
         const { email, firstName, lastName, consentToMarketing } = req.body;
-        
+
         // Validate required fields
         if (!email) {
           return res.status(400).json({
             error: "Email address is required",
-            success: false
+            success: false,
           });
         }
-        
+
         if (!consentToMarketing) {
           return res.status(400).json({
             error: "Marketing consent is required",
-            success: false
+            success: false,
           });
         }
-        
+
         // Simulate existing subscriber check
         if (email === "existing@example.com") {
           return res.status(409).json({
             error: "Email already subscribed",
-            success: false
+            success: false,
           });
         }
-        
+
         // Simulate database error
         if (email === "error@example.com") {
           return res.status(500).json({
             error: "An error occurred while processing your request",
-            success: false
+            success: false,
           });
         }
-        
+
         // Simulate Brevo API error (more stable in CI)
         if (email === "brevo-error@example.com") {
           const errorCode = isCI() ? 500 : 503; // Use 500 in CI for consistency
           return res.status(errorCode).json({
-            error: isCI() 
+            error: isCI()
               ? "Email service error"
               : "Email service temporarily unavailable",
-            success: false
+            success: false,
           });
         }
-        
+
         // Mock successful subscription
         if (brevoMock) {
           brevoMock.createContact({
@@ -119,17 +119,16 @@ describe("Brevo Email Service Integration - HTTP Testing", () => {
             listIds: [1],
           });
         }
-        
+
         return res.status(201).json({
           success: true,
           message: "Successfully subscribed to newsletter",
-          data: { email, firstName, lastName }
+          data: { email, firstName, lastName },
         });
-        
       } catch (error) {
         return res.status(500).json({
           error: "An error occurred while processing your request",
-          success: false
+          success: false,
         });
       }
     });
@@ -199,8 +198,10 @@ describe("Brevo Email Service Integration - HTTP Testing", () => {
       });
 
       const expectedStatus = isCI() ? 500 : 503;
-      const expectedErrorPattern = isCI() ? "service error" : "temporarily unavailable";
-      
+      const expectedErrorPattern = isCI()
+        ? "service error"
+        : "temporarily unavailable";
+
       expect(response.status).toBe(expectedStatus);
       expect(response.body.error).toContain(expectedErrorPattern);
     });
@@ -212,7 +213,7 @@ describe("Brevo Email Service Integration - HTTP Testing", () => {
         event: "delivered",
         email: "test@example.com",
         date: new Date().toISOString(),
-        messageId: "msg-123"
+        messageId: "msg-123",
       };
 
       // Mock webhook processing
@@ -220,7 +221,7 @@ describe("Brevo Email Service Integration - HTTP Testing", () => {
         eventType: mockWebhookEvent.event,
         email: mockWebhookEvent.email,
         occurredAt: new Date(mockWebhookEvent.date),
-        messageId: mockWebhookEvent.messageId
+        messageId: mockWebhookEvent.messageId,
       };
 
       expect(processedEvent.eventType).toBe("delivered");
@@ -283,7 +284,7 @@ describe("Brevo Email Service Integration - HTTP Testing", () => {
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty("firstName", maliciousName);
-      
+
       // Verify that the contact was created in Brevo mock (input was processed)
       if (brevoMock) {
         expect(brevoMock.hasSubscriber("test@example.com")).toBe(true);

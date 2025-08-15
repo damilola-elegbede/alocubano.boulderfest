@@ -1,11 +1,13 @@
 # Simple Test Patterns Guide
 
 ## Core Principle
+
 Keep tests simple, obvious, and maintainable. A junior developer should understand any test immediately.
 
 ## Environment Configuration
 
 ### Test Defaults (vitest.config.js)
+
 ```javascript
 env: {
   NODE_ENV: 'test',
@@ -19,25 +21,27 @@ env: {
 ## Pattern 1: Simple Mocking
 
 ### ✅ DO: Create simple, predictable mocks
+
 ```javascript
 // tests/mocks/brevo-mock.js
 export function createBrevoMock() {
   const subscribers = new Map();
-  
+
   return {
     createContact: async ({ email }) => {
       if (subscribers.has(email)) {
-        throw new Error('Contact already exists');
+        throw new Error("Contact already exists");
       }
       subscribers.set(email, { email, id: Date.now() });
       return { email };
     },
-    reset: () => subscribers.clear()
+    reset: () => subscribers.clear(),
   };
 }
 ```
 
 ### ❌ DON'T: Create complex state management
+
 ```javascript
 // Avoid this complexity
 class ComplexMockManager extends TestBoundaryManager {
@@ -48,19 +52,21 @@ class ComplexMockManager extends TestBoundaryManager {
 ## Pattern 2: Database Testing
 
 ### ✅ DO: Use in-memory SQLite for tests
+
 ```javascript
-describe('Database operations', () => {
+describe("Database operations", () => {
   // Automatically uses ':memory:' from vitest.config.js
-  
-  it('should insert data', async () => {
+
+  it("should insert data", async () => {
     const db = await getDatabase();
-    await db.execute('INSERT INTO users (name) VALUES (?)', ['Test']);
+    await db.execute("INSERT INTO users (name) VALUES (?)", ["Test"]);
     // Each test gets a fresh database
   });
 });
 ```
 
 ### ❌ DON'T: Create complex test boundary managers
+
 ```javascript
 // Avoid this
 TestBoundaryManager.withCompleteIsolation(async () => {
@@ -71,9 +77,10 @@ TestBoundaryManager.withCompleteIsolation(async () => {
 ## Pattern 3: Environment Variables
 
 ### ✅ DO: Use test defaults in config
+
 ```javascript
 // Tests automatically get defaults from vitest.config.js
-it('should use API key', async () => {
+it("should use API key", async () => {
   // BREVO_API_KEY is already 'test-api-key'
   const service = new EmailService();
   // Works without setup
@@ -81,6 +88,7 @@ it('should use API key', async () => {
 ```
 
 ### ❌ DON'T: Manipulate environment in tests
+
 ```javascript
 // Avoid this
 beforeEach(() => {
@@ -92,41 +100,45 @@ beforeEach(() => {
 ## Pattern 4: External Service Mocking
 
 ### ✅ DO: Mock at the boundary
+
 ```javascript
 // Mock the external service directly
-vi.mock('@brevo/client', () => ({
+vi.mock("@brevo/client", () => ({
   ApiClient: {
     instance: {
-      authentications: { 'api-key': { apiKey: null } }
-    }
+      authentications: { "api-key": { apiKey: null } },
+    },
   },
-  ContactsApi: vi.fn(() => createBrevoMock())
+  ContactsApi: vi.fn(() => createBrevoMock()),
 }));
 ```
 
 ### ❌ DON'T: Mock internal implementation
+
 ```javascript
 // Avoid mocking internal methods
-vi.spyOn(service, '_internalMethod');
+vi.spyOn(service, "_internalMethod");
 ```
 
 ## Pattern 5: Test Structure
 
 ### ✅ DO: Keep tests flat and obvious
+
 ```javascript
-describe('User Service', () => {
-  it('creates a user', async () => {
-    const user = await createUser({ name: 'Test' });
-    expect(user.name).toBe('Test');
+describe("User Service", () => {
+  it("creates a user", async () => {
+    const user = await createUser({ name: "Test" });
+    expect(user.name).toBe("Test");
   });
-  
-  it('handles errors', async () => {
-    await expect(createUser({})).rejects.toThrow('Name required');
+
+  it("handles errors", async () => {
+    await expect(createUser({})).rejects.toThrow("Name required");
   });
 });
 ```
 
 ### ❌ DON'T: Create deep nesting
+
 ```javascript
 // Avoid this
 describe('Complex Suite', () => {
@@ -140,6 +152,7 @@ describe('Complex Suite', () => {
 ## Pattern 6: Cleanup
 
 ### ✅ DO: Use simple cleanup
+
 ```javascript
 let mockService;
 
@@ -153,6 +166,7 @@ afterEach(() => {
 ```
 
 ### ❌ DON'T: Create complex cleanup orchestration
+
 ```javascript
 // Avoid this
 afterEach(async () => {
@@ -166,19 +180,21 @@ afterEach(async () => {
 ## Pattern 7: Assertions
 
 ### ✅ DO: Make assertions clear
+
 ```javascript
 // Clear what we're testing
 expect(response.status).toBe(200);
-expect(response.body.email).toBe('test@example.com');
+expect(response.body.email).toBe("test@example.com");
 ```
 
 ### ❌ DON'T: Create complex assertion helpers
+
 ```javascript
 // Avoid this
 validateCompleteIsolationState({
   singletons: cleared,
   mocks: reset,
-  environment: pristine
+  environment: pristine,
 });
 ```
 
@@ -199,8 +215,9 @@ validateCompleteIsolationState({
 ## Anti-Patterns to Remove
 
 If you see these, simplify them:
+
 - TestBoundaryManager
-- TestSingletonManager  
+- TestSingletonManager
 - Complex beforeEach chains
 - Test-aware production code
 - Environment manipulation utilities

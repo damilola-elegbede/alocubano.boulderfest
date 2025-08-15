@@ -28,9 +28,7 @@ async function initializeGlobalCart() {
 
         // Set up global debugging
         setupGlobalDebugging(cartManager);
-    } catch (error) {
-        console.error('Failed to initialize global cart:', error);
-    }
+    } catch {}
 }
 
 function setupPageIntegrations(cartManager) {
@@ -67,8 +65,7 @@ function setupTicketsPageIntegration(cartManager) {
             } else {
                 await cartManager.removeTicket(ticketType);
             }
-        } catch (error) {
-            console.error('Failed to update cart with ticket:', error);
+        } catch {
             // Show user notification if needed
         }
     });
@@ -79,9 +76,7 @@ function setupTicketsPageIntegration(cartManager) {
 
         try {
             await cartManager.updateTicketQuantity(ticketType, quantity);
-        } catch (error) {
-            console.error('Failed to update ticket quantity:', error);
-        }
+        } catch {}
     });
 }
 
@@ -94,9 +89,7 @@ function setupDonationsPageIntegration(cartManager) {
         if (amount > 0) {
             try {
                 await cartManager.addDonation(amount);
-            } catch (error) {
-                console.error('Failed to add donation:', error);
-            }
+            } catch {}
         }
     });
 }
@@ -164,15 +157,9 @@ function setupGlobalDebugging(cartManager) {
         };
 
         // Listen for cart events and log them in development
-        const cartUpdatedHandler = (event) => {
-            console.log('Cart updated:', event.detail);
-        };
-        const ticketAddedHandler = (event) => {
-            console.log('Ticket added to cart:', event.detail);
-        };
-        const donationUpdatedHandler = (event) => {
-            console.log('Donation updated in cart:', event.detail);
-        };
+        const cartUpdatedHandler = () => {};
+        const ticketAddedHandler = () => {};
+        const donationUpdatedHandler = () => {};
 
         cartManager.addEventListener('cart:updated', cartUpdatedHandler);
         cartManager.addEventListener('cart:ticket:added', ticketAddedHandler);

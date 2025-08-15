@@ -11,11 +11,11 @@ describe.sequential("AuditLogger", () => {
   beforeEach(async () => {
     // Clear any existing test override first
     delete AuditLogger._testLogDir;
-    
+
     // Create unique directory for each individual test
     const testRunId = `test-${Date.now()}-${process.hrtime.bigint()}-${Math.random().toString(36).substr(2, 9)}`;
     logDir = path.resolve(process.cwd(), "logs", "audit", testRunId);
-    
+
     try {
       await fs.mkdir(logDir, { recursive: true });
       // Override the CONFIG.LOG_DIR for this test run

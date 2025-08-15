@@ -7,6 +7,8 @@ import { vi } from "vitest";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { JSDOM } from "jsdom";
+import { setupBrowserPolyfills } from "../helpers/browser-polyfills.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,9 +34,23 @@ try {
 
 describe("IntersectionObserver Compatibility", () => {
   let originalIntersectionObserver;
+  let dom;
 
   beforeEach(() => {
-    // Store original IntersectionObserver
+    // Create JSDOM instance and setup polyfills
+    dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
+      url: 'http://localhost',
+      pretendToBeVisual: true,
+      resources: 'usable'
+    });
+    
+    global.window = dom.window;
+    global.document = dom.window.document;
+    
+    // Setup browser polyfills first
+    setupBrowserPolyfills(global.window);
+    
+    // Store original IntersectionObserver after polyfill setup
     originalIntersectionObserver = global.IntersectionObserver;
 
     // Setup DOM for lazy loading tests
@@ -129,7 +145,9 @@ describe("IntersectionObserver Compatibility", () => {
     });
 
     // Verify fallback loaded visible images
-    const loadedImages = Array.from(lazyImages).filter((img) => img.src && img.src !== "");
+    const loadedImages = Array.from(lazyImages).filter(
+      (img) => img.src && img.src !== "",
+    );
     expect(loadedImages.length).toBe(2);
   });
 
@@ -199,8 +217,22 @@ describe("IntersectionObserver Compatibility", () => {
 
 describe("Service Worker Compatibility", () => {
   let originalNavigator;
+  let dom;
 
   beforeEach(() => {
+    // Create JSDOM instance and setup polyfills
+    dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
+      url: 'http://localhost',
+      pretendToBeVisual: true,
+      resources: 'usable'
+    });
+    
+    global.window = dom.window;
+    global.document = dom.window.document;
+    
+    // Setup browser polyfills
+    setupBrowserPolyfills(global.window);
+    
     originalNavigator = global.navigator;
     vi.clearAllMocks();
   });
@@ -345,8 +377,22 @@ describe("Service Worker Compatibility", () => {
 
 describe("Local Storage Compatibility", () => {
   let originalLocalStorage;
+  let dom;
 
   beforeEach(() => {
+    // Create JSDOM instance and setup polyfills
+    dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
+      url: 'http://localhost',
+      pretendToBeVisual: true,
+      resources: 'usable'
+    });
+    
+    global.window = dom.window;
+    global.document = dom.window.document;
+    
+    // Setup browser polyfills
+    setupBrowserPolyfills(global.window);
+    
     originalLocalStorage = global.localStorage;
     vi.clearAllMocks();
   });
@@ -358,6 +404,7 @@ describe("Local Storage Compatibility", () => {
   test("handles localStorage unavailability", () => {
     // Remove localStorage (private browsing mode)
     delete global.localStorage;
+    delete window.localStorage;
 
     // Test storage availability detection
     const hasLocalStorage = "localStorage" in window;
@@ -466,8 +513,22 @@ describe("Local Storage Compatibility", () => {
 
 describe("Fetch API Compatibility", () => {
   let originalFetch;
+  let dom;
 
   beforeEach(() => {
+    // Create JSDOM instance and setup polyfills
+    dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
+      url: 'http://localhost',
+      pretendToBeVisual: true,
+      resources: 'usable'
+    });
+    
+    global.window = dom.window;
+    global.document = dom.window.document;
+    
+    // Setup browser polyfills
+    setupBrowserPolyfills(global.window);
+    
     originalFetch = global.fetch;
     vi.clearAllMocks();
   });

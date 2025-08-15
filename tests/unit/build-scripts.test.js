@@ -95,6 +95,7 @@ describe("Build Scripts and ES Module Compatibility", () => {
       const buildProcess = spawn("npm", ["run", "prebuild"], {
         cwd: path.join(__dirname, "..", ".."),
         stdio: "pipe",
+        timeout: 25000,
       });
 
       let stdout = "";
@@ -112,7 +113,7 @@ describe("Build Scripts and ES Module Compatibility", () => {
         const timeout = setTimeout(() => {
           buildProcess.kill();
           reject(new Error("Build script timed out"));
-        }, 30000);
+        }, 25000);
 
         buildProcess.on("close", (code) => {
           clearTimeout(timeout);
@@ -147,19 +148,20 @@ describe("Build Scripts and ES Module Compatibility", () => {
           resolve();
         });
       });
-    }, 35000); // 35 second timeout for Jest
+    }, 30000); // 30 second timeout for Jest
 
     test("should generate expected output files", async () => {
       const buildProcess = spawn("npm", ["run", "prebuild"], {
         cwd: path.join(__dirname, "..", ".."),
         stdio: "pipe",
+        timeout: 25000,
       });
 
       await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           buildProcess.kill();
           reject(new Error("Build script timed out"));
-        }, 30000);
+        }, 25000);
 
         buildProcess.on("close", (code) => {
           clearTimeout(timeout);
@@ -205,7 +207,7 @@ describe("Build Scripts and ES Module Compatibility", () => {
           resolve();
         });
       });
-    }, 35000);
+    }, 30000);
   });
 
   describe("Vercel Compatibility", () => {
@@ -214,7 +216,9 @@ describe("Build Scripts and ES Module Compatibility", () => {
 
       // Should not have Python build commands
       expect(packageJson.scripts.build).not.toMatch(/python/i);
-      expect(packageJson.scripts.prebuild).not.toMatch(/pip/i);
+      if (packageJson.scripts.prebuild) {
+        expect(packageJson.scripts.prebuild).not.toMatch(/pip/i);
+      }
 
       // Should be configured as Node.js project
       expect(packageJson.type).toBe("module");
@@ -314,6 +318,7 @@ describe("Build Scripts and ES Module Compatibility", () => {
         cwd: path.join(__dirname, "..", ".."),
         stdio: "pipe",
         env: env,
+        timeout: 25000,
       });
 
       let stderr = "";
@@ -331,7 +336,7 @@ describe("Build Scripts and ES Module Compatibility", () => {
         const timeout = setTimeout(() => {
           buildProcess.kill();
           reject(new Error("Build script timed out"));
-        }, 30000);
+        }, 25000);
 
         buildProcess.on("close", (code) => {
           clearTimeout(timeout);
@@ -350,6 +355,6 @@ describe("Build Scripts and ES Module Compatibility", () => {
           resolve();
         });
       });
-    }, 35000);
+    }, 30000);
   });
 });

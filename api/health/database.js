@@ -14,26 +14,33 @@ async function validateSchema(dbService) {
     `);
 
     const tableNames = tablesResult.rows.map((row) => row[0]);
-    
+
     // In test environment, be more flexible with table requirements
-    const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.TEST_TYPE === 'integration';
-    
+    const isTestEnvironment =
+      process.env.NODE_ENV === "test" ||
+      process.env.TEST_TYPE === "integration";
+
     if (isTestEnvironment) {
       // For tests, just check that we have at least one of the core tables
-      const coreTableExists = tableNames.some(table => 
-        ['tickets', 'email_subscribers', 'transactions', 'subscribers'].includes(table)
+      const coreTableExists = tableNames.some((table) =>
+        [
+          "tickets",
+          "email_subscribers",
+          "transactions",
+          "subscribers",
+        ].includes(table),
       );
-      
+
       if (!coreTableExists) {
         return {
           valid: false,
           error: `No core tables found. Available tables: ${tableNames.join(", ")}`,
         };
       }
-      
+
       return { valid: true, note: "Test environment - relaxed validation" };
     }
-    
+
     // Production environment - strict validation
     const requiredTables = ["tickets", "email_subscribers", "migrations"];
     const missingTables = requiredTables.filter((t) => !tableNames.includes(t));
@@ -46,17 +53,13 @@ async function validateSchema(dbService) {
     }
 
     // Check tickets table columns only if table exists
-    if (tableNames.includes('tickets')) {
+    if (tableNames.includes("tickets")) {
       const ticketColumnsResult = await dbService.execute(`
         PRAGMA table_info(tickets)
       `);
 
       const columnNames = ticketColumnsResult.rows.map((row) => row[1]); // column name is second field in PRAGMA table_info
-      const requiredColumns = [
-        "id",
-        "ticket_id", 
-        "created_at",
-      ];
+      const requiredColumns = ["id", "ticket_id", "created_at"];
       const missingColumns = requiredColumns.filter(
         (c) => !columnNames.includes(c),
       );
@@ -87,13 +90,13 @@ async function getDatabaseStats(dbService) {
     const tablesResult = await dbService.execute(`
       SELECT name FROM sqlite_master WHERE type='table'
     `);
-    const tableNames = tablesResult.rows.map(row => row[0]);
-    
+    const tableNames = tablesResult.rows.map((row) => row[0]);
+
     let ticketCount = 0;
     let subscriberCount = 0;
-    
+
     // Get ticket count if table exists
-    if (tableNames.includes('tickets')) {
+    if (tableNames.includes("tickets")) {
       const ticketCountResult = await dbService.execute(`
         SELECT COUNT(*) as count FROM tickets
       `);
@@ -101,12 +104,12 @@ async function getDatabaseStats(dbService) {
     }
 
     // Get subscriber count if email_subscribers table exists
-    if (tableNames.includes('email_subscribers')) {
+    if (tableNames.includes("email_subscribers")) {
       const subscriberCountResult = await dbService.execute(`
         SELECT COUNT(*) as count FROM email_subscribers
       `);
       subscriberCount = subscriberCountResult.rows[0][0];
-    } else if (tableNames.includes('subscribers')) {
+    } else if (tableNames.includes("subscribers")) {
       // Fallback to legacy subscribers table if it exists
       const subscriberCountResult = await dbService.execute(`
         SELECT COUNT(*) as count FROM subscribers
@@ -133,7 +136,7 @@ async function getDatabaseStats(dbService) {
 
     // Get recent activity if tickets table exists
     let recentTickets = 0;
-    if (tableNames.includes('tickets')) {
+    if (tableNames.includes("tickets")) {
       const recentTicketsResult = await dbService.execute(`
         SELECT COUNT(*) as count 
         FROM tickets 
@@ -227,8 +230,8 @@ export const checkDatabaseHealth = async () => {
 
     // Check if auth token is required (not needed for local/test databases)
     const dbUrl = process.env.TURSO_DATABASE_URL;
-    const isLocalDatabase = dbUrl === ':memory:' || dbUrl.startsWith('file:');
-    
+    const isLocalDatabase = dbUrl === ":memory:" || dbUrl.startsWith("file:");
+
     if (!process.env.TURSO_AUTH_TOKEN && !isLocalDatabase) {
       return {
         status: HealthStatus.UNHEALTHY,
@@ -246,16 +249,18 @@ export const checkDatabaseHealth = async () => {
 
     // Get database client directly to avoid mocking issues
     const dbService = await getDatabaseClient();
-    
+
     // Debug logging for tests
-    const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.TEST_TYPE === 'integration';
+    const isTestEnvironment =
+      process.env.NODE_ENV === "test" ||
+      process.env.TEST_TYPE === "integration";
     if (isTestEnvironment) {
-      console.log('Health check debug:', {
+      console.log("Health check debug:", {
         TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL,
         hasDbService: !!dbService,
         dbServiceType: typeof dbService,
         hasExecuteMethod: typeof dbService.execute,
-        dbServiceKeys: Object.keys(dbService || {})
+        dbServiceKeys: Object.keys(dbService || {}),
       });
     }
 
@@ -264,22 +269,24 @@ export const checkDatabaseHealth = async () => {
     try {
       testResult = await dbService.execute("SELECT datetime('now') as now");
       if (isTestEnvironment) {
-        console.log('Execute result debug:', {
+        console.log("Execute result debug:", {
           hasResult: !!testResult,
           resultType: typeof testResult,
           resultKeys: Object.keys(testResult || {}),
-          stringified: JSON.stringify(testResult)
+          stringified: JSON.stringify(testResult),
         });
       }
     } catch (executeError) {
       if (isTestEnvironment) {
-        console.log('Execute error debug:', executeError.message);
+        console.log("Execute error debug:", executeError.message);
       }
       throw new Error(`Database execute failed: ${executeError.message}`);
     }
 
     if (!testResult || !testResult.rows || testResult.rows.length === 0) {
-      throw new Error(`Database query test failed - no results returned. testResult: ${JSON.stringify(testResult)}`);
+      throw new Error(
+        `Database query test failed - no results returned. testResult: ${JSON.stringify(testResult)}`,
+      );
     }
 
     // Test write capability (non-destructive)

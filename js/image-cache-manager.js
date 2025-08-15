@@ -1,5 +1,4 @@
 // Image Cache Manager - Session-scoped caching with format-aware optimization (v3)
-console.log('📦 ImageCacheManager v3 loading...');
 
 class ImageCacheManager {
     constructor() {
@@ -41,8 +40,7 @@ class ImageCacheManager {
         try {
             const cached = localStorage.getItem(this.imageCacheKey);
             return cached ? JSON.parse(cached) : {};
-        } catch (error) {
-            console.warn('Failed to load image data cache:', error);
+        } catch {
             return {};
         }
     }
@@ -53,9 +51,7 @@ class ImageCacheManager {
                 this.imageCacheKey,
                 JSON.stringify(this.imageDataCache)
             );
-        } catch (error) {
-            console.warn('Failed to save image data cache:', error);
-        }
+        } catch {}
     }
 
     /**
@@ -93,9 +89,6 @@ class ImageCacheManager {
 
         // Validate format
         if (!this.supportedFormats.includes(format)) {
-            console.warn(
-                `Unsupported format '${format}', falling back to ${this.fallbackFormat}`
-            );
             format = this.fallbackFormat;
         }
 
@@ -104,9 +97,7 @@ class ImageCacheManager {
             const closestWidth = this.supportedWidths.reduce((prev, curr) =>
                 Math.abs(curr - width) < Math.abs(prev - width) ? curr : prev
             );
-            console.warn(
-                `Unsupported width '${width}', using closest width ${closestWidth}`
-            );
+
             width = closestWidth;
         }
 
@@ -162,9 +153,6 @@ class ImageCacheManager {
         };
 
         this.saveImageDataCache();
-        console.log(
-            `📦 Cached image variant: ${name} (${options.format || this.defaultFormat}, ${options.width || this.defaultWidth}px)`
-        );
     }
 
     /**
@@ -198,7 +186,7 @@ class ImageCacheManager {
 
         if (timeSinceLastCall < this.minApiInterval) {
             const waitTime = this.minApiInterval - timeSinceLastCall;
-            console.log(`⏳ Rate limiting: waiting ${waitTime}ms before API call`);
+
             await new Promise((resolve) => setTimeout(resolve, waitTime));
         }
 
@@ -210,34 +198,29 @@ class ImageCacheManager {
         }
 
         // Fallback to legacy URL for backward compatibility
-        return `/api/image-proxy/${fileId}?size=medium&quality=85&cache=24h`;
+        return '/api/image-proxy/' + fileId + '?size=medium&quality=85&cache=24h';
     }
 
     getCurrentPageId() {
         const pathname = window.location.pathname;
-        console.log('🔍 Detecting page from pathname:', pathname);
 
         // Handle root path and clean URLs
         if (pathname === '/' || pathname === '') {
-            console.log('📍 Detected: home (root path)');
             return 'home';
         }
 
         // Extract filename from path
         const filename = pathname.split('/').pop() || 'index.html';
-        console.log('📄 Extracted filename:', filename);
 
         // Check if filename contains .html
         if (filename.includes('.html')) {
             const pageId = this.pageMapping[filename] || 'default';
-            console.log(`📍 Detected: ${pageId} (from ${filename})`);
             return pageId;
         }
 
         // Check full pathname mapping
         const pageId =
       this.pageMapping[pathname] || this.pageMapping[filename] || 'default';
-        console.log(`📍 Detected: ${pageId} (from pathname mapping)`);
         return pageId;
     }
 
@@ -258,7 +241,6 @@ class ImageCacheManager {
         // 2. Get the assigned image for the current page
         const assignedImage = this.sessionAssignments[pageId];
         if (!assignedImage) {
-            console.log(`📷 No assigned image for ${pageId}, using default`);
             return {
                 id: null,
                 url: this.defaultImageUrl,
@@ -272,11 +254,6 @@ class ImageCacheManager {
         // 3. Check if the specific variant is cached
         if (this.isImageVariantCached(fileId, options)) {
             const cachedData = this.getCachedImageVariant(fileId, options);
-            console.log(
-                `📦 Using cached optimized image for ${pageId}:`,
-                assignedImage.name,
-                `(${cachedData.format}, ${cachedData.width}px)`
-            );
             return {
                 id: fileId,
                 url: cachedData.url,
@@ -288,19 +265,10 @@ class ImageCacheManager {
         }
 
         // 4. Generate new optimized URL and cache it
-        console.log(
-            `🔄 Generating optimized image for ${pageId}:`,
-            assignedImage.name,
-            `(${options.format || this.defaultFormat}, ${options.width || this.defaultWidth}px)`
-        );
 
         const url = await this.rateLimitedApiCall(fileId, options);
         this.cacheImageVariant(fileId, url, options, assignedImage.name);
 
-        console.log(
-            `🖼️ New optimized image assigned for ${pageId}:`,
-            assignedImage.name
-        );
         return {
             id: fileId,
             url: url,
@@ -324,12 +292,12 @@ class ImageCacheManager {
             const cachedAssignments = sessionStorage.getItem(this.cacheKey);
             if (cachedAssignments) {
                 this.sessionAssignments = JSON.parse(cachedAssignments);
-                console.log('📦 Using cached session assignments');
+
                 return;
             }
 
             // If no session cache, fetch static JSON and create assignments
-            console.log('No session cache. Fetching static featured photos list...');
+
             const response = await fetch('/featured-photos.json');
             if (!response.ok) {
                 throw new Error('Failed to load featured-photos.json');
@@ -345,9 +313,7 @@ class ImageCacheManager {
                 this.cacheKey,
                 JSON.stringify(this.sessionAssignments)
             );
-            console.log('Created and cached new session assignments.');
-        } catch (error) {
-            console.error('Failed to get hero image assignments:', error);
+        } catch {
             throw error;
         }
     }
@@ -368,10 +334,7 @@ class ImageCacheManager {
                 // Check if legacy image data is already cached locally
                 if (this.isImageCached(fileId)) {
                     const cachedData = this.imageDataCache[fileId];
-                    console.log(
-                        `📦 Using cached legacy image for ${pageId}:`,
-                        assignedImage.name
-                    );
+
                     return {
                         id: fileId,
                         url: cachedData.url,
@@ -381,10 +344,7 @@ class ImageCacheManager {
                 }
 
                 // If not cached, prepare API call with rate limiting (legacy format)
-                console.log(
-                    `🔄 Legacy image not cached for ${pageId}, will make API call:`,
-                    assignedImage.name
-                );
+
                 const url = await this.rateLimitedApiCall(fileId);
 
                 // Cache the URL for future use (legacy format)
@@ -395,10 +355,6 @@ class ImageCacheManager {
                 };
                 this.saveImageDataCache();
 
-                console.log(
-                    `🖼️ New legacy image assigned for ${pageId}:`,
-                    assignedImage.name
-                );
                 return {
                     id: fileId,
                     url: url,
@@ -407,10 +363,8 @@ class ImageCacheManager {
                 };
             }
 
-            console.log(`📷 No assigned image for ${pageId}, using default`);
             return { id: null, url: this.defaultImageUrl }; // Fallback
-        } catch (error) {
-            console.error('Failed to get hero image assignments:', error);
+        } catch {
             return { id: null, url: this.defaultImageUrl }; // Fallback to default
         }
     }
@@ -460,10 +414,7 @@ class ImageCacheManager {
         try {
             localStorage.removeItem(this.imageCacheKey);
             sessionStorage.removeItem(this.cacheKey);
-            console.log('🗑️ Image cache cleared successfully');
-        } catch (error) {
-            console.warn('Failed to clear cache:', error);
-        }
+        } catch {}
     }
 
     /**
@@ -484,8 +435,8 @@ class ImageCacheManager {
             totalEntries,
             variantEntries,
             legacyEntries,
-            cacheSize: `${(cacheSize / 1024).toFixed(2)} KB`,
-            sessionSize: `${(sessionSize / 1024).toFixed(2)} KB`,
+            cacheSize: (cacheSize / 1024).toFixed(2) + ' KB',
+            sessionSize: (sessionSize / 1024).toFixed(2) + ' KB',
             supportedFormats: this.supportedFormats,
             supportedWidths: this.supportedWidths,
             defaultFormat: this.defaultFormat,
@@ -496,6 +447,3 @@ class ImageCacheManager {
 
 // Create global instance
 window.ImageCacheManager = new ImageCacheManager();
-console.log(
-    '🚀 ImageCacheManager v3 initialized with format-aware caching support'
-);

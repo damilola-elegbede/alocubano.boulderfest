@@ -157,8 +157,10 @@ export class TestEnvironment {
     process.env.VITEST = "true";
 
     // Mock API keys and secrets - clearly fake values for testing only
-    process.env.STRIPE_PUBLISHABLE_KEY = "pk_test_fake_test_key_for_unit_tests_only";
-    process.env.STRIPE_SECRET_KEY = "sk_test_fake_secret_key_for_unit_tests_only";
+    process.env.STRIPE_PUBLISHABLE_KEY =
+      "pk_test_fake_test_key_for_unit_tests_only";
+    process.env.STRIPE_SECRET_KEY =
+      "sk_test_fake_secret_key_for_unit_tests_only";
     process.env.STRIPE_WEBHOOK_SECRET = "whsec_test_fake_webhook_secret";
 
     process.env.BREVO_API_KEY = "xkeysib-test-api-key";

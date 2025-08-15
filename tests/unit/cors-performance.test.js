@@ -7,7 +7,7 @@ const mockFs = vi.mocked(fs);
 
 describe("CORS Configuration Performance Optimizations", () => {
   let corsConfigModule;
-  
+
   beforeEach(async () => {
     vi.resetAllMocks();
     vi.resetModules();
@@ -21,10 +21,10 @@ describe("CORS Configuration Performance Optimizations", () => {
     });
 
     mockFs.readFileSync.mockReturnValue(mockConfigContent);
-    
+
     // Import fresh module instance
     corsConfigModule = await import("../../api/lib/cors-config.js");
-    
+
     // Clear any existing cache from the fresh module
     corsConfigModule.clearConfigCache();
   });
@@ -76,7 +76,7 @@ describe("CORS Configuration Performance Optimizations", () => {
     // Set environment variable
     process.env.CORS_ALLOWED_ORIGINS =
       "https://new.example.com,https://another.example.com";
-    
+
     // Get config with new env var (should read file again)
     const config2 = getCorsConfig();
 

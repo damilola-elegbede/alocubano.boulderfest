@@ -37,11 +37,18 @@ export default async function handler(req, res) {
     // Retrieve and validate Checkout Session from Stripe
     const session = await stripe.checkout.sessions.retrieve(session_id);
 
-    // Verify the session is in a successful state
+    // Verify the session exists and is in a successful state
+    if (!session) {
+      return res.status(404).json({
+        error: "Session not found",
+        message: "Checkout session does not exist",
+      });
+    }
+    
     if (session.payment_status !== "paid") {
       return res.status(400).json({
         error: "Payment not completed",
-        status: session.payment_status,
+        status: session.payment_status || "unknown",
       });
     }
 

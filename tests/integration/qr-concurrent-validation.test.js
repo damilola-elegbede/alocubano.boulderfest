@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { QRTokenService } from "../../api/lib/qr-token-service.js";
 import handler from "../../api/tickets/validate.js";
-import { createTestDatabase, seedTestData, createLibSQLAdapter } from "../helpers/db.js";
+import {
+  createTestDatabase,
+  seedTestData,
+  createLibSQLAdapter,
+  createAsyncTestDatabase,
+} from "../helpers/db.js";
 
 // Mock database for testing
 const mockDb = {
@@ -28,9 +33,10 @@ const originalEnv = process.env;
 describe("QR Code Concurrent Validation Tests", () => {
   let db;
 
-  beforeEach(() => {
-    db = createTestDatabase();
-    seedTestData(db, 'minimal');
+  beforeEach(async () => {
+    const { db: testDb, client: testClient } = await createAsyncTestDatabase();
+    db = testDb;
+    seedTestData(db, "minimal");
     vi.clearAllMocks();
     process.env = {
       ...originalEnv,
@@ -44,7 +50,7 @@ describe("QR Code Concurrent Validation Tests", () => {
     mockDb.transaction.mockResolvedValue(mockTx);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     if (db) {
       db.close();
       db = null;

@@ -1,22 +1,22 @@
 /**
  * Database Client Validator
- * 
+ *
  * Validates database client types and prevents mock contamination in integration tests.
  * Ensures integration tests always use real LibSQL clients while allowing mocks in unit tests.
- * 
+ *
  * Key Features:
  * - Strict validation for integration test database clients
  * - Multiple mock detection strategies
  * - Real LibSQL client verification
  * - Detailed error reporting and debugging
- * 
+ *
  * @author Principal Architect
  * @version 1.0.0 - Integration Test Architecture Fix
  */
 
 export class DatabaseClientValidator {
   constructor() {
-    this.debugMode = process.env.TEST_DEBUG === 'true';
+    this.debugMode = process.env.TEST_DEBUG === "true";
     this.validationHistory = [];
   }
 
@@ -29,16 +29,20 @@ export class DatabaseClientValidator {
    */
   validateIntegrationClient(client, testContext = {}) {
     const testPath = this._getTestPath(testContext);
-    
+
     try {
       // Basic null/undefined check
       if (!client) {
-        throw new Error(`Database client is null/undefined in integration test: ${testPath}`);
+        throw new Error(
+          `Database client is null/undefined in integration test: ${testPath}`,
+        );
       }
 
       // Check for required methods
-      if (typeof client.execute !== 'function') {
-        throw new Error(`Invalid database client - missing execute method in: ${testPath}`);
+      if (typeof client.execute !== "function") {
+        throw new Error(
+          `Invalid database client - missing execute method in: ${testPath}`,
+        );
       }
 
       // Detect and reject mock clients
@@ -46,9 +50,9 @@ export class DatabaseClientValidator {
         const mockDetails = this.analyzeMockClient(client);
         throw new Error(
           `Mock database client detected in integration test: ${testPath}\n` +
-          `Mock type: ${mockDetails.type}\n` +
-          `Mock indicators: ${mockDetails.indicators.join(', ')}\n` +
-          `Integration tests must use real LibSQL clients.`
+            `Mock type: ${mockDetails.type}\n` +
+            `Mock indicators: ${mockDetails.indicators.join(", ")}\n` +
+            `Integration tests must use real LibSQL clients.`,
         );
       }
 
@@ -57,18 +61,22 @@ export class DatabaseClientValidator {
         const clientInfo = this.analyzeClient(client);
         throw new Error(
           `Database client is not a valid LibSQL client: ${testPath}\n` +
-          `Client type: ${clientInfo.type}\n` +
-          `Available methods: ${clientInfo.methods.join(', ')}\n` +
-          `Expected LibSQL client with execute method returning {rows, lastInsertRowid}.`
+            `Client type: ${clientInfo.type}\n` +
+            `Available methods: ${clientInfo.methods.join(", ")}\n` +
+            `Expected LibSQL client with execute method returning {rows, lastInsertRowid}.`,
         );
       }
 
       // Log successful validation
-      this._logValidation(testPath, 'PASS', 'Valid LibSQL client for integration test');
-      
+      this._logValidation(
+        testPath,
+        "PASS",
+        "Valid LibSQL client for integration test",
+      );
+
       return true;
     } catch (error) {
-      this._logValidation(testPath, 'FAIL', error.message);
+      this._logValidation(testPath, "FAIL", error.message);
       throw error;
     }
   }
@@ -81,31 +89,41 @@ export class DatabaseClientValidator {
    */
   validateUnitClient(client, testContext = {}) {
     const testPath = this._getTestPath(testContext);
-    
+
     try {
       // Basic null/undefined check
       if (!client) {
-        throw new Error(`Database client is null/undefined in unit test: ${testPath}`);
+        throw new Error(
+          `Database client is null/undefined in unit test: ${testPath}`,
+        );
       }
 
       // Check for required methods (mocks or real)
-      if (typeof client.execute !== 'function') {
-        throw new Error(`Invalid database client - missing execute method in: ${testPath}`);
+      if (typeof client.execute !== "function") {
+        throw new Error(
+          `Invalid database client - missing execute method in: ${testPath}`,
+        );
       }
 
       // Unit tests can use either mocks or real clients
       const isMock = this.isMockClient(client);
       const isReal = this.isValidLibSQLClient(client);
-      
+
       if (!isMock && !isReal) {
-        throw new Error(`Database client is neither a valid mock nor LibSQL client: ${testPath}`);
+        throw new Error(
+          `Database client is neither a valid mock nor LibSQL client: ${testPath}`,
+        );
       }
 
-      this._logValidation(testPath, 'PASS', `Valid ${isMock ? 'mock' : 'LibSQL'} client for unit test`);
-      
+      this._logValidation(
+        testPath,
+        "PASS",
+        `Valid ${isMock ? "mock" : "LibSQL"} client for unit test`,
+      );
+
       return true;
     } catch (error) {
-      this._logValidation(testPath, 'FAIL', error.message);
+      this._logValidation(testPath, "FAIL", error.message);
       throw error;
     }
   }
@@ -125,35 +143,39 @@ export class DatabaseClientValidator {
       client.mockImplementation,
       client.mockResolvedValue,
       client.mockRejectedValue,
-      
+
       // Jest mock indicators (for compatibility)
       client._isMockFunction,
       client.mockClear,
       client.mockReset,
       client.mockRestore,
-      
+
       // Function-level mock indicators
       client.execute && client.execute._isMockFunction,
       client.execute && client.execute.__vitest_mock__,
       client.execute && client.execute.mockImplementation,
-      
+
       // Constructor name indicators
-      client.constructor && client.constructor.name.includes('Mock'),
-      client.constructor && client.constructor.name.includes('Spy'),
-      
+      client.constructor && client.constructor.name.includes("Mock"),
+      client.constructor && client.constructor.name.includes("Spy"),
+
       // Prototype indicators
-      Object.getPrototypeOf(client).constructor.name.includes('Mock'),
-      
+      Object.getPrototypeOf(client).constructor.name.includes("Mock"),
+
       // Property indicators
-      Object.keys(client).some(key => key.includes('mock') || key.includes('Mock')),
-      
+      Object.keys(client).some(
+        (key) => key.includes("mock") || key.includes("Mock"),
+      ),
+
       // Symbol indicators
-      Object.getOwnPropertySymbols(client).some(symbol => 
-        symbol.toString().includes('mock') || symbol.toString().includes('Mock')
-      )
+      Object.getOwnPropertySymbols(client).some(
+        (symbol) =>
+          symbol.toString().includes("mock") ||
+          symbol.toString().includes("Mock"),
+      ),
     ];
 
-    return mockIndicators.some(indicator => Boolean(indicator));
+    return mockIndicators.some((indicator) => Boolean(indicator));
   }
 
   /**
@@ -162,28 +184,28 @@ export class DatabaseClientValidator {
    * @returns {boolean} True if client appears to be a real LibSQL client
    */
   isValidLibSQLClient(client) {
-    if (!client || typeof client.execute !== 'function') {
+    if (!client || typeof client.execute !== "function") {
       return false;
     }
 
     // Check for LibSQL-specific characteristics
     const libsqlIndicators = [
       // Has required methods
-      typeof client.execute === 'function',
-      
+      typeof client.execute === "function",
+
       // Not a mock (confirmed above)
       !this.isMockClient(client),
-      
+
       // Constructor name patterns
-      client.constructor.name === 'Client' ||
-      client.constructor.name.includes('LibSQL') ||
-      client.constructor.name.includes('Turso'),
-      
+      client.constructor.name === "Client" ||
+        client.constructor.name.includes("LibSQL") ||
+        client.constructor.name.includes("Turso"),
+
       // Method signature analysis (LibSQL execute returns {rows, lastInsertRowid})
       this._hasLibSQLSignature(client),
-      
+
       // Property patterns
-      !Object.keys(client).some(key => key.includes('mock'))
+      !Object.keys(client).some((key) => key.includes("mock")),
     ];
 
     // Require majority of indicators to be true
@@ -198,27 +220,27 @@ export class DatabaseClientValidator {
    */
   analyzeMockClient(client) {
     const indicators = [];
-    let type = 'unknown';
+    let type = "unknown";
 
     if (client._isMockFunction || client.__vitest_mock__) {
-      type = 'vitest';
-      indicators.push('Vitest mock function');
+      type = "vitest";
+      indicators.push("Vitest mock function");
     }
 
     if (client.mockImplementation) {
-      indicators.push('Has mockImplementation');
+      indicators.push("Has mockImplementation");
     }
 
     if (client.mockResolvedValue) {
-      indicators.push('Has mockResolvedValue');
+      indicators.push("Has mockResolvedValue");
     }
 
-    if (client.constructor.name.includes('Mock')) {
-      indicators.push('Constructor name contains Mock');
+    if (client.constructor.name.includes("Mock")) {
+      indicators.push("Constructor name contains Mock");
     }
 
     if (client.execute && client.execute._isMockFunction) {
-      indicators.push('Execute method is mocked');
+      indicators.push("Execute method is mocked");
     }
 
     return { type, indicators };
@@ -230,18 +252,19 @@ export class DatabaseClientValidator {
    * @returns {Object} Analysis results
    */
   analyzeClient(client) {
-    const methods = Object.getOwnPropertyNames(client)
-      .filter(name => typeof client[name] === 'function');
-    
+    const methods = Object.getOwnPropertyNames(client).filter(
+      (name) => typeof client[name] === "function",
+    );
+
     const type = client.constructor.name;
     const properties = Object.keys(client);
-    
+
     return {
       type,
       methods,
       properties,
       isMock: this.isMockClient(client),
-      isLibSQL: this.isValidLibSQLClient(client)
+      isLibSQL: this.isValidLibSQLClient(client),
     };
   }
 
@@ -253,7 +276,7 @@ export class DatabaseClientValidator {
   _hasLibSQLSignature(client) {
     try {
       // Check if execute method exists and is not obviously mocked
-      if (typeof client.execute !== 'function') {
+      if (typeof client.execute !== "function") {
         return false;
       }
 
@@ -263,7 +286,7 @@ export class DatabaseClientValidator {
         execute._isMockFunction,
         execute.__vitest_mock__,
         execute.mockImplementation,
-        execute.mockResolvedValue
+        execute.mockResolvedValue,
       ].some(Boolean);
 
       return !hasMockProperties;
@@ -279,13 +302,15 @@ export class DatabaseClientValidator {
    */
   _getTestPath(testContext) {
     try {
-      return testContext?.file?.filepath || 
-             testContext?.file?.name || 
-             testContext?.filepath ||
-             process.env.VITEST_TEST_FILE ||
-             'unknown';
+      return (
+        testContext?.file?.filepath ||
+        testContext?.file?.name ||
+        testContext?.filepath ||
+        process.env.VITEST_TEST_FILE ||
+        "unknown"
+      );
     } catch (error) {
-      return 'unknown';
+      return "unknown";
     }
   }
 
@@ -300,18 +325,20 @@ export class DatabaseClientValidator {
       timestamp: new Date().toISOString(),
       testPath,
       result,
-      message
+      message,
     };
 
     this.validationHistory.push(entry);
-    
+
     // Keep only last 100 entries
     if (this.validationHistory.length > 100) {
       this.validationHistory = this.validationHistory.slice(-100);
     }
 
-    if (this.debugMode || result === 'FAIL') {
-      console.log(`[DatabaseClientValidator] ${result}: ${testPath} - ${message}`);
+    if (this.debugMode || result === "FAIL") {
+      console.log(
+        `[DatabaseClientValidator] ${result}: ${testPath} - ${message}`,
+      );
     }
   }
 
@@ -350,14 +377,16 @@ export class DatabaseClientValidator {
    */
   getValidationStats() {
     const total = this.validationHistory.length;
-    const passed = this.validationHistory.filter(entry => entry.result === 'PASS').length;
+    const passed = this.validationHistory.filter(
+      (entry) => entry.result === "PASS",
+    ).length;
     const failed = total - passed;
-    
+
     return {
       total,
       passed,
       failed,
-      successRate: total > 0 ? (passed / total * 100).toFixed(2) + '%' : '0%'
+      successRate: total > 0 ? ((passed / total) * 100).toFixed(2) + "%" : "0%",
     };
   }
 }

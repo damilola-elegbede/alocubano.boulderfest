@@ -3,7 +3,7 @@
  *
  * Benchmarks the complete ticket purchase flow including cart operations,
  * Stripe integration, payment processing, and ticket generation.
- * 
+ *
  * Note: These tests are skipped in CI environments as they require
  * actual API endpoints and external service integrations. For realistic
  * performance testing, use the K6 scripts against a running server.
@@ -221,7 +221,7 @@ async function simulateCalculateTotal() {
  */
 async function benchmarkCheckoutSession(iterations = 50) {
   const results = [];
-  const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000';
+  const baseUrl = process.env.TEST_BASE_URL || "http://localhost:3000";
 
   for (let i = 0; i < iterations; i++) {
     const operationId = `checkout_session_${i}`;
@@ -229,15 +229,17 @@ async function benchmarkCheckoutSession(iterations = 50) {
 
     try {
       // In CI, use mock performance instead of real HTTP requests
-      if (process.env.CI === 'true' || !process.env.TEST_BASE_URL) {
+      if (process.env.CI === "true" || !process.env.TEST_BASE_URL) {
         // Simulate checkout session creation time
-        await new Promise(resolve => setTimeout(resolve, 150 + Math.random() * 100));
-        
+        await new Promise((resolve) =>
+          setTimeout(resolve, 150 + Math.random() * 100),
+        );
+
         const duration = performanceCollector.end(operationId, {
-          operation: 'checkout_session_mock',
+          operation: "checkout_session_mock",
           iteration: i,
         });
-        
+
         results.push({
           success: true,
           duration,
@@ -246,28 +248,31 @@ async function benchmarkCheckoutSession(iterations = 50) {
         });
       } else {
         // Make actual API call to test real performance
-        const response = await fetch(`${baseUrl}/api/payments/create-checkout-session`, {
-        method: "POST",
-        timeout: 10000,
-        headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "User-Agent": "Vitest-Performance-Test"
-        },
-        body: JSON.stringify({
-          items: [
-            { ticketId: "weekend-pass", quantity: 2 },
-            { ticketId: "day-pass-friday", quantity: 1 },
-          ],
-          successUrl: "https://example.com/success",
-          cancelUrl: "https://example.com/cancel",
-        }),
-      });
+        const response = await fetch(
+          `${baseUrl}/api/payments/create-checkout-session`,
+          {
+            method: "POST",
+            timeout: 10000,
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              "User-Agent": "Vitest-Performance-Test",
+            },
+            body: JSON.stringify({
+              items: [
+                { ticketId: "weekend-pass", quantity: 2 },
+                { ticketId: "day-pass-friday", quantity: 1 },
+              ],
+              successUrl: "https://example.com/success",
+              cancelUrl: "https://example.com/cancel",
+            }),
+          },
+        );
 
-      const duration = performanceCollector.end(operationId, {
-        status: response.status,
-        iteration: i,
-      });
+        const duration = performanceCollector.end(operationId, {
+          status: response.status,
+          iteration: i,
+        });
 
         results.push({
           iteration: i,
@@ -298,7 +303,7 @@ async function benchmarkCheckoutSession(iterations = 50) {
  */
 async function simulateEndToEndPurchase() {
   const purchaseId = `e2e_${Date.now()}`;
-  const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000';
+  const baseUrl = process.env.TEST_BASE_URL || "http://localhost:3000";
 
   performanceCollector.start(`${purchaseId}_complete`);
 
@@ -310,20 +315,22 @@ async function simulateEndToEndPurchase() {
 
   // Step 2: Health check (to test API connectivity)
   performanceCollector.start(`${purchaseId}_health`);
-  
-  if (process.env.CI === 'true' || !process.env.TEST_BASE_URL) {
+
+  if (process.env.CI === "true" || !process.env.TEST_BASE_URL) {
     // Mock health check in CI
-    await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 30));
+    await new Promise((resolve) =>
+      setTimeout(resolve, 50 + Math.random() * 30),
+    );
     performanceCollector.end(`${purchaseId}_health`);
   } else {
     try {
       await fetch(`${baseUrl}/api/health/check`, {
-        method: 'GET',
+        method: "GET",
         timeout: 5000,
         headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Vitest-E2E-Performance-Test'
-        }
+          Accept: "application/json",
+          "User-Agent": "Vitest-E2E-Performance-Test",
+        },
       });
     } catch (error) {
       console.warn(`Health check failed: ${error.message}`);
@@ -334,7 +341,9 @@ async function simulateEndToEndPurchase() {
   // Step 3: Simulate processing time for complex operations
   performanceCollector.start(`${purchaseId}_processing`);
   // Use reasonable delays based on real operation complexity
-  await new Promise((resolve) => setTimeout(resolve, 100 + Math.random() * 200));
+  await new Promise((resolve) =>
+    setTimeout(resolve, 100 + Math.random() * 200),
+  );
   performanceCollector.end(`${purchaseId}_processing`);
 
   const totalDuration = performanceCollector.end(`${purchaseId}_complete`);
@@ -384,9 +393,11 @@ describe.skip("Checkout Flow Performance", () => {
   beforeAll(() => {
     // Skip if no base URL is configured for real testing
     if (!process.env.TEST_BASE_URL && !process.env.CI) {
-      console.warn('⚠️ TEST_BASE_URL not set. Set TEST_BASE_URL=http://localhost:3000 to run checkout performance tests against local server.');
+      console.warn(
+        "⚠️ TEST_BASE_URL not set. Set TEST_BASE_URL=http://localhost:3000 to run checkout performance tests against local server.",
+      );
     }
-    
+
     // Setup global localStorage mock for browser simulation
     if (typeof globalThis.localStorage === "undefined") {
       const localStorageMock = {
@@ -514,189 +525,204 @@ describe.skip("Checkout Flow Performance", () => {
   });
 
   describe("Checkout Session Performance", () => {
-    test.skipIf(process.env.CI === 'true' && !process.env.TEST_BASE_URL)("checkout session creation performance", async () => {
-      const iterations = process.env.CI === 'true' ? 5 : 10; // Fewer iterations in CI
-      const results = await benchmarkCheckoutSession(iterations);
+    test.skipIf(process.env.CI === "true" && !process.env.TEST_BASE_URL)(
+      "checkout session creation performance",
+      async () => {
+        const iterations = process.env.CI === "true" ? 5 : 10; // Fewer iterations in CI
+        const results = await benchmarkCheckoutSession(iterations);
 
-      const successfulResults = results.filter((r) => r.success);
-      const allResults = results.filter((r) => r.duration > 0);
-      
-      if (allResults.length === 0) {
-        console.warn("No checkout session requests completed - API may not be available");
-        expect(true).toBe(true); // Skip test if API unavailable
-        return;
-      }
+        const successfulResults = results.filter((r) => r.success);
+        const allResults = results.filter((r) => r.duration > 0);
 
-      const durations = allResults.map((r) => r.duration);
-      durations.sort((a, b) => a - b);
+        if (allResults.length === 0) {
+          console.warn(
+            "No checkout session requests completed - API may not be available",
+          );
+          expect(true).toBe(true); // Skip test if API unavailable
+          return;
+        }
 
-      const stats = {
-        count: durations.length,
-        avg: durations.reduce((a, b) => a + b, 0) / durations.length,
-        p95: durations[Math.floor(durations.length * 0.95)] || durations[durations.length - 1],
-        max: Math.max(...durations),
-        successRate: successfulResults.length / results.length,
-      };
+        const durations = allResults.map((r) => r.duration);
+        durations.sort((a, b) => a - b);
 
-      console.log("\n💳 Checkout Session Performance:");
-      console.log(`   Success Rate: ${(stats.successRate * 100).toFixed(1)}%`);
-      console.log(`   Average: ${stats.avg.toFixed(2)}ms`);
-      console.log(`   P95: ${stats.p95.toFixed(2)}ms`);
-      console.log(`   Max: ${stats.max.toFixed(2)}ms`);
-      console.log(`   Total Requests: ${results.length}`);
+        const stats = {
+          count: durations.length,
+          avg: durations.reduce((a, b) => a + b, 0) / durations.length,
+          p95:
+            durations[Math.floor(durations.length * 0.95)] ||
+            durations[durations.length - 1],
+          max: Math.max(...durations),
+          successRate: successfulResults.length / results.length,
+        };
 
-      // More lenient thresholds for real API testing
-      if (successfulResults.length > 0) {
-        const budget = PERFORMANCE_BUDGETS.checkoutSession.creation;
-        expect(stats.avg, "Checkout average exceeds target").toBeLessThan(
-          budget.target * 3, // 3x for real API calls
+        console.log("\n💳 Checkout Session Performance:");
+        console.log(
+          `   Success Rate: ${(stats.successRate * 100).toFixed(1)}%`,
         );
-      }
-      
-      // Always pass if we got some results (API availability test)
-      expect(allResults.length).toBeGreaterThan(0);
-    }, 30000);
+        console.log(`   Average: ${stats.avg.toFixed(2)}ms`);
+        console.log(`   P95: ${stats.p95.toFixed(2)}ms`);
+        console.log(`   Max: ${stats.max.toFixed(2)}ms`);
+        console.log(`   Total Requests: ${results.length}`);
+
+        // More lenient thresholds for real API testing
+        if (successfulResults.length > 0) {
+          const budget = PERFORMANCE_BUDGETS.checkoutSession.creation;
+          expect(stats.avg, "Checkout average exceeds target").toBeLessThan(
+            budget.target * 3, // 3x for real API calls
+          );
+        }
+
+        // Always pass if we got some results (API availability test)
+        expect(allResults.length).toBeGreaterThan(0);
+      },
+      30000,
+    );
   });
 
   describe("End-to-End Purchase Flow", () => {
-    test.skipIf(process.env.CI === 'true' && !process.env.TEST_BASE_URL)("complete purchase flow performance", async () => {
-      const purchaseResults = [];
-      const iterations = process.env.CI === 'true' ? 3 : 10; // Fewer iterations in CI
+    test.skipIf(process.env.CI === "true" && !process.env.TEST_BASE_URL)(
+      "complete purchase flow performance",
+      async () => {
+        const purchaseResults = [];
+        const iterations = process.env.CI === "true" ? 3 : 10; // Fewer iterations in CI
 
-      for (let i = 0; i < iterations; i++) {
-        const result = await simulateEndToEndPurchase();
-        purchaseResults.push(result);
-      }
+        for (let i = 0; i < iterations; i++) {
+          const result = await simulateEndToEndPurchase();
+          purchaseResults.push(result);
+        }
 
-      const totalDurations = purchaseResults.map((r) => r.totalDuration);
-      totalDurations.sort((a, b) => a - b);
+        const totalDurations = purchaseResults.map((r) => r.totalDuration);
+        totalDurations.sort((a, b) => a - b);
 
-      const stats = {
-        avg: totalDurations.reduce((a, b) => a + b, 0) / totalDurations.length,
-        p95: totalDurations[Math.floor(totalDurations.length * 0.95)],
-        max: Math.max(...totalDurations),
-        min: Math.min(...totalDurations),
-      };
+        const stats = {
+          avg:
+            totalDurations.reduce((a, b) => a + b, 0) / totalDurations.length,
+          p95: totalDurations[Math.floor(totalDurations.length * 0.95)],
+          max: Math.max(...totalDurations),
+          min: Math.min(...totalDurations),
+        };
 
-      console.log("\n🎫 End-to-End Purchase Performance:");
-      console.log(`   Average: ${stats.avg.toFixed(2)}ms`);
-      console.log(`   P95: ${stats.p95.toFixed(2)}ms`);
-      console.log(
-        `   Range: ${stats.min.toFixed(2)}ms - ${stats.max.toFixed(2)}ms`,
-      );
+        console.log("\n🎫 End-to-End Purchase Performance:");
+        console.log(`   Average: ${stats.avg.toFixed(2)}ms`);
+        console.log(`   P95: ${stats.p95.toFixed(2)}ms`);
+        console.log(
+          `   Range: ${stats.min.toFixed(2)}ms - ${stats.max.toFixed(2)}ms`,
+        );
 
-      // Step-by-step breakdown
-      const stepStats = {};
-      for (const step of [
-        "cartOps",
-        "health",
-        "processing",
-      ]) {
-        const stepDurations = purchaseResults
-          .map((r) => r.steps[step])
-          .filter(Boolean);
-        if (stepDurations.length > 0) {
-          stepStats[step] = {
-            avg:
-              stepDurations.reduce((a, b) => a + b, 0) / stepDurations.length,
-            max: Math.max(...stepDurations),
-          };
+        // Step-by-step breakdown
+        const stepStats = {};
+        for (const step of ["cartOps", "health", "processing"]) {
+          const stepDurations = purchaseResults
+            .map((r) => r.steps[step])
+            .filter(Boolean);
+          if (stepDurations.length > 0) {
+            stepStats[step] = {
+              avg:
+                stepDurations.reduce((a, b) => a + b, 0) / stepDurations.length,
+              max: Math.max(...stepDurations),
+            };
+            console.log(
+              `   ${step}: ${stepStats[step].avg.toFixed(2)}ms avg, ${stepStats[step].max.toFixed(2)}ms max`,
+            );
+          }
+        }
+
+        const budget = PERFORMANCE_BUDGETS.endToEnd.completePurchase;
+
+        expect(stats.p95, "E2E P95 exceeds budget").toBeLessThan(budget.max);
+        expect(stats.avg, "E2E average exceeds target").toBeLessThan(
+          budget.target,
+        );
+
+        // Verify no single step dominates the flow
+        const maxStepTime = Math.max(
+          ...Object.values(stepStats).map((s) => s.avg),
+        );
+        const totalStepTime = Object.values(stepStats).reduce(
+          (sum, s) => sum + s.avg,
+          0,
+        );
+
+        expect(
+          maxStepTime / totalStepTime,
+          "Single step dominates E2E flow",
+        ).toBeLessThan(0.6);
+      },
+      60000,
+    );
+
+    test.skipIf(process.env.CI === "true" && !process.env.TEST_BASE_URL)(
+      "concurrent purchase flows",
+      async () => {
+        const concurrentPurchases = process.env.CI === "true" ? 2 : 5; // Fewer concurrent in CI
+        const memoryBefore = trackMemoryUsage("concurrent_start");
+
+        const startTime = performance.now();
+
+        // Execute multiple purchase flows simultaneously
+        const promises = Array(concurrentPurchases)
+          .fill()
+          .map((_, i) =>
+            simulateEndToEndPurchase().catch((error) => ({
+              error: error.message,
+              purchaseId: `failed_${i}`,
+            })),
+          );
+
+        const results = await Promise.all(promises);
+        const totalTime = performance.now() - startTime;
+
+        const memoryAfter = trackMemoryUsage("concurrent_end");
+
+        const successfulResults = results.filter((r) => !r.error);
+        const failedResults = results.filter((r) => r.error);
+
+        console.log("\n🔄 Concurrent Purchase Analysis:");
+        console.log(`   Total Time: ${totalTime.toFixed(2)}ms`);
+        console.log(
+          `   Successful: ${successfulResults.length}/${concurrentPurchases}`,
+        );
+        console.log(`   Failed: ${failedResults.length}`);
+
+        if (failedResults.length > 0) {
           console.log(
-            `   ${step}: ${stepStats[step].avg.toFixed(2)}ms avg, ${stepStats[step].max.toFixed(2)}ms max`,
+            "   Failures:",
+            failedResults.map((r) => r.error),
           );
         }
-      }
 
-      const budget = PERFORMANCE_BUDGETS.endToEnd.completePurchase;
+        if (memoryBefore && memoryAfter) {
+          const heapGrowth = memoryAfter.heapUsed - memoryBefore.heapUsed;
+          console.log(
+            `   Memory Growth: ${heapGrowth > 0 ? "+" : ""}${heapGrowth}MB`,
+          );
+          expect(
+            heapGrowth,
+            "Concurrent operations cause memory leak",
+          ).toBeLessThan(100);
+        }
 
-      expect(stats.p95, "E2E P95 exceeds budget").toBeLessThan(budget.max);
-      expect(stats.avg, "E2E average exceeds target").toBeLessThan(
-        budget.target,
-      );
+        expect(
+          successfulResults.length,
+          "Too many concurrent purchase failures",
+        ).toBeGreaterThan(concurrentPurchases * 0.8);
 
-      // Verify no single step dominates the flow
-      const maxStepTime = Math.max(
-        ...Object.values(stepStats).map((s) => s.avg),
-      );
-      const totalStepTime = Object.values(stepStats).reduce(
-        (sum, s) => sum + s.avg,
-        0,
-      );
+        // Verify concurrent execution is actually concurrent (should be faster than sequential)
+        const avgSequentialTime =
+          successfulResults.reduce((sum, r) => sum + r.totalDuration, 0) /
+          successfulResults.length;
+        const expectedSequentialTotal = avgSequentialTime * concurrentPurchases;
 
-      expect(
-        maxStepTime / totalStepTime,
-        "Single step dominates E2E flow",
-      ).toBeLessThan(0.6);
-    }, 60000);
-
-    test.skipIf(process.env.CI === 'true' && !process.env.TEST_BASE_URL)("concurrent purchase flows", async () => {
-      const concurrentPurchases = process.env.CI === 'true' ? 2 : 5; // Fewer concurrent in CI
-      const memoryBefore = trackMemoryUsage("concurrent_start");
-
-      const startTime = performance.now();
-
-      // Execute multiple purchase flows simultaneously
-      const promises = Array(concurrentPurchases)
-        .fill()
-        .map((_, i) =>
-          simulateEndToEndPurchase().catch((error) => ({
-            error: error.message,
-            purchaseId: `failed_${i}`,
-          })),
-        );
-
-      const results = await Promise.all(promises);
-      const totalTime = performance.now() - startTime;
-
-      const memoryAfter = trackMemoryUsage("concurrent_end");
-
-      const successfulResults = results.filter((r) => !r.error);
-      const failedResults = results.filter((r) => r.error);
-
-      console.log("\n🔄 Concurrent Purchase Analysis:");
-      console.log(`   Total Time: ${totalTime.toFixed(2)}ms`);
-      console.log(
-        `   Successful: ${successfulResults.length}/${concurrentPurchases}`,
-      );
-      console.log(`   Failed: ${failedResults.length}`);
-
-      if (failedResults.length > 0) {
         console.log(
-          "   Failures:",
-          failedResults.map((r) => r.error),
-        );
-      }
-
-      if (memoryBefore && memoryAfter) {
-        const heapGrowth = memoryAfter.heapUsed - memoryBefore.heapUsed;
-        console.log(
-          `   Memory Growth: ${heapGrowth > 0 ? "+" : ""}${heapGrowth}MB`,
+          `   Concurrency Benefit: ${(((expectedSequentialTotal - totalTime) / expectedSequentialTotal) * 100).toFixed(1)}%`,
         );
         expect(
-          heapGrowth,
-          "Concurrent operations cause memory leak",
-        ).toBeLessThan(100);
-      }
-
-      expect(
-        successfulResults.length,
-        "Too many concurrent purchase failures",
-      ).toBeGreaterThan(concurrentPurchases * 0.8);
-
-      // Verify concurrent execution is actually concurrent (should be faster than sequential)
-      const avgSequentialTime =
-        successfulResults.reduce((sum, r) => sum + r.totalDuration, 0) /
-        successfulResults.length;
-      const expectedSequentialTotal = avgSequentialTime * concurrentPurchases;
-
-      console.log(
-        `   Concurrency Benefit: ${(((expectedSequentialTotal - totalTime) / expectedSequentialTotal) * 100).toFixed(1)}%`,
-      );
-      expect(
-        totalTime,
-        "Concurrent execution not actually concurrent",
-      ).toBeLessThan(expectedSequentialTotal * 0.8);
-    }, 45000);
+          totalTime,
+          "Concurrent execution not actually concurrent",
+        ).toBeLessThan(expectedSequentialTotal * 0.8);
+      },
+      45000,
+    );
   });
 
   describe("Performance Regression Detection", () => {

@@ -8,20 +8,14 @@
       "lines": 811,
       "className": "DatabaseTestManager",
       "complexity": 57,
-      "dependencies": [
-        "better-sqlite3",
-        "vitest",
-        "./test-data-builder.js"
-      ]
+      "dependencies": ["better-sqlite3", "vitest", "./test-data-builder.js"]
     },
     {
       "file": "tests/utils/mock-services.js",
       "lines": 1534,
       "className": "StripeMock",
       "complexity": 123,
-      "dependencies": [
-        "vitest"
-      ]
+      "dependencies": ["vitest"]
     },
     {
       "file": "tests/utils/test-environment-manager.js",
@@ -48,27 +42,21 @@
       "lines": 869,
       "className": "MockRegistry",
       "complexity": 63,
-      "dependencies": [
-        "vitest"
-      ]
+      "dependencies": ["vitest"]
     },
     {
       "file": "tests/utils/test-singleton-manager.js",
       "lines": 518,
       "className": "TestSingletonManager",
       "complexity": 28,
-      "dependencies": [
-        "vitest"
-      ]
+      "dependencies": ["vitest"]
     },
     {
       "file": "tests/utils/wallet-mocks.js",
       "lines": 1119,
       "className": "AppleWalletMock",
       "complexity": 29,
-      "dependencies": [
-        "vitest"
-      ]
+      "dependencies": ["vitest"]
     },
     {
       "file": "tests/mocks/brevo-mock.js",
@@ -160,9 +148,7 @@
     {
       "file": "tests/utils/database-test-utils.js",
       "lines": 811,
-      "functions": [
-        "createMockDatabaseClient"
-      ],
+      "functions": ["createMockDatabaseClient"],
       "category": "database"
     },
     {
@@ -213,10 +199,7 @@
     {
       "file": "tests/utils/integration-test-database-factory.js",
       "lines": 349,
-      "functions": [
-        "export",
-        "createRealDatabaseClient"
-      ],
+      "functions": ["export", "createRealDatabaseClient"],
       "category": "database"
     },
     {
@@ -235,9 +218,7 @@
     {
       "file": "tests/utils/integration-test-strategy.js",
       "lines": 404,
-      "functions": [
-        "to"
-      ],
+      "functions": ["to"],
       "category": "manager"
     },
     {
@@ -249,9 +230,7 @@
     {
       "file": "tests/utils/qr-code-generator.js",
       "lines": 678,
-      "functions": [
-        "for"
-      ],
+      "functions": ["for"],
       "category": "other"
     },
     {
@@ -301,34 +280,19 @@
     {
       "file": "tests/utils/test-environment-manager.js",
       "lines": 721,
-      "functions": [
-        "with",
-        "to",
-        "to",
-        "resetDatabaseState",
-        "to",
-        "to"
-      ],
+      "functions": ["with", "to", "to", "resetDatabaseState", "to", "to"],
       "category": "environment"
     },
     {
       "file": "tests/utils/test-initialization-helpers.js",
       "lines": 308,
-      "functions": [
-        "withInitializedServices",
-        "waitForAsyncInit"
-      ],
+      "functions": ["withInitializedServices", "waitForAsyncInit"],
       "category": "helpers"
     },
     {
       "file": "tests/utils/test-initialization-orchestrator.js",
       "lines": 516,
-      "functions": [
-        "for",
-        "setupTest",
-        "for",
-        "teardownTest"
-      ],
+      "functions": ["for", "setupTest", "for", "teardownTest"],
       "category": "other"
     },
     {
@@ -379,10 +343,7 @@
     {
       "file": "tests/utils/test-reporter.js",
       "lines": 607,
-      "functions": [
-        "getScoreColor",
-        "getScoreEmoji"
-      ],
+      "functions": ["getScoreColor", "getScoreEmoji"],
       "category": "other"
     },
     {
@@ -394,12 +355,7 @@
     {
       "file": "tests/utils/test-singleton-manager.js",
       "lines": 518,
-      "functions": [
-        "to",
-        "to",
-        "for",
-        "enhancedResetDatabaseInstance"
-      ],
+      "functions": ["to", "to", "for", "enhancedResetDatabaseInstance"],
       "category": "manager"
     },
     {
@@ -533,11 +489,7 @@
     {
       "file": "tests/mocks/brevo-mock.js",
       "lines": 128,
-      "functions": [
-        "for",
-        "createBrevoMock",
-        "createBrevoMockWithData"
-      ],
+      "functions": ["for", "createBrevoMock", "createBrevoMockWithData"],
       "category": "mocking"
     }
   ],

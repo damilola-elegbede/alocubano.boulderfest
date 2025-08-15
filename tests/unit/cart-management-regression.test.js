@@ -3,6 +3,7 @@
 
 import { describe, test, expect, beforeEach, vi } from "vitest";
 import { JSDOM } from "jsdom";
+import { setupBrowserPolyfills } from "../helpers/browser-polyfills.js";
 
 describe("Cart Management Regression Tests", () => {
   let dom;
@@ -15,7 +16,15 @@ describe("Cart Management Regression Tests", () => {
       `<!DOCTYPE html>
             <html>
             <head>
-                <link rel="stylesheet" href="/css/floating-cart.css">
+                <style>
+                  /* Inline critical CSS for testing */
+                  .floating-cart-container { display: none; }
+                  .floating-cart-panel { background: #fff; }
+                  .cart-close { background: none; border: none; }
+                  .custom-amount-wrapper { display: flex; align-items: center; }
+                  .dollar-sign { margin-right: 2px; }
+                  .custom-amount-input { border: 1px solid #ccc; }
+                </style>
             </head>
             <body>
                 <!-- Donation Selection Elements -->
@@ -64,14 +73,18 @@ describe("Cart Management Regression Tests", () => {
             </body>
             </html>`,
       {
-        url: "https://localhost",
+        url: "http://localhost",
         pretendToBeVisual: true,
         resources: "usable",
+        runScripts: "dangerously",
       },
     );
 
     document = dom.window.document;
     window = dom.window;
+
+    // Setup browser polyfills
+    setupBrowserPolyfills(window);
 
     // Mock localStorage properly for JSDOM
     localStorage = {

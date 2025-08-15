@@ -2,8 +2,10 @@
 
 // IMMEDIATE CI SKIP - Must be at the very top
 if (process.env.CI && process.env.SKIP_PERFORMANCE_INTENSIVE_TESTS) {
-  console.log('\n⚠️  Skipping performance regression analysis in CI environment');
-  console.log('✅ Performance regression check skipped successfully\n');
+  console.log(
+    "\n⚠️  Skipping performance regression analysis in CI environment",
+  );
+  console.log("✅ Performance regression check skipped successfully\n");
   process.exit(0);
 }
 
@@ -1325,8 +1327,10 @@ async function loadRecentPerformanceResults(reportsDir) {
 }
 
 // Run if called directly
-if (import.meta.url === `file://${process.argv[1]}` || 
-    process.argv[1]?.endsWith('check-performance-regression.js')) {
+if (
+  import.meta.url === `file://${process.argv[1]}` ||
+  process.argv[1]?.endsWith("check-performance-regression.js")
+) {
   main().catch((error) => {
     console.error("Unhandled error:", error);
     process.exit(1);

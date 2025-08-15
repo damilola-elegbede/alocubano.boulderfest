@@ -67,12 +67,12 @@ export default defineConfig({
 
     {
       name: "firefox",
-      use: { 
+      use: {
         ...devices["Desktop Firefox"],
         // Pass browser type to global setup
         launchOptions: {
-          env: { PLAYWRIGHT_BROWSER: 'firefox' }
-        }
+          env: { PLAYWRIGHT_BROWSER: "firefox" },
+        },
       },
       testMatch: /.*\.test\.js$/,
     },

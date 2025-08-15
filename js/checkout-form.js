@@ -264,7 +264,6 @@ async function processPayment(customerData) {
         const submitButton = document.querySelector(
             '[data-testid="proceed-to-payment"]'
         );
-        const originalText = submitButton.textContent;
         submitButton.textContent = 'Processing...';
         submitButton.disabled = true;
 

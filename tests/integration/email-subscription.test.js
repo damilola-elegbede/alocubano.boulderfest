@@ -33,7 +33,9 @@ describe("Email Subscription Integration Tests", () => {
     mockEmailService.createSubscriber.mockReset();
     mockEmailService.unsubscribeSubscriber.mockReset();
     mockEmailService.validateUnsubscribeToken.mockReset();
-    mockEmailService.generateVerificationToken.mockReturnValue("test-verification-token");
+    mockEmailService.generateVerificationToken.mockReturnValue(
+      "test-verification-token",
+    );
     mockEmailService.brevoService.sendVerificationEmail.mockReset();
 
     // Set up environment variables

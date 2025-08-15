@@ -3,10 +3,10 @@
  * This prevents "No test files found" errors in CI environments
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 
-describe('Performance CI Placeholder', () => {
-  it('should pass when all performance tests are skipped in CI', () => {
+describe("Performance CI Placeholder", () => {
+  it("should pass when all performance tests are skipped in CI", () => {
     // This test always passes to prevent CI failures when performance tests are disabled
     expect(true).toBe(true);
   });

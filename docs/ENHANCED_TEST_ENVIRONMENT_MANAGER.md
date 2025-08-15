@@ -9,12 +9,16 @@ The Enhanced TestEnvironmentManager provides comprehensive test isolation capabi
 **Original Issue**: Tests using `withIsolatedEnv()` could fail when module-level singletons cached state from previous test runs, causing environment variable validation to be bypassed.
 
 **Example of the Problem**:
+
 ```javascript
 // Test 1: Sets up database service with valid config
-await testEnvManager.withIsolatedEnv({ TURSO_DATABASE_URL: "valid" }, async () => {
-  const service = new DatabaseService(); // Creates cached instance
-  await service.initializeClient(); // Success
-});
+await testEnvManager.withIsolatedEnv(
+  { TURSO_DATABASE_URL: "valid" },
+  async () => {
+    const service = new DatabaseService(); // Creates cached instance
+    await service.initializeClient(); // Success
+  },
+);
 
 // Test 2: Should fail with invalid config, but cached state interferes
 await testEnvManager.withIsolatedEnv({ TURSO_DATABASE_URL: "" }, async () => {
@@ -30,17 +34,20 @@ The enhanced TestEnvironmentManager provides `withCompleteIsolation()` that clea
 ## Key Features
 
 ### 1. Backward Compatibility
+
 - All existing `withIsolatedEnv()` functionality preserved
 - Existing tests continue to work without changes
 - Performance characteristics maintained
 
 ### 2. Enhanced Isolation Capabilities
+
 - **Environment Variable Isolation**: Same as before
 - **Module State Clearing**: Resets singleton instances and cached state
 - **Module Reload Coordination**: Integrates with Vitest `vi.resetModules()`
 - **State Validation**: Verifies isolation completeness
 
 ### 3. Integration Points
+
 - **TestSingletonManager**: Coordinates singleton clearing
 - **TestMockManager**: Coordinates mock state management
 - **Error Handling**: Graceful failure handling
@@ -50,55 +57,65 @@ The enhanced TestEnvironmentManager provides `withCompleteIsolation()` that clea
 ### Core Methods
 
 #### `withCompleteIsolation(preset, testFn)`
+
 Enhanced isolation with module state clearing.
+
 ```javascript
 await testEnvManager.withCompleteIsolation(
   { TURSO_DATABASE_URL: "", DATABASE_TEST_STRICT_MODE: "true" },
   async () => {
     const { DatabaseService } = await import("../../api/lib/database.js");
     const service = new DatabaseService();
-    
+
     // Guaranteed fresh state - will throw as expected
     await expect(service.initializeClient()).rejects.toThrow(
-      "TURSO_DATABASE_URL environment variable is required"
+      "TURSO_DATABASE_URL environment variable is required",
     );
-  }
+  },
 );
 ```
 
-#### `withIsolatedEnv(preset, testFn)` 
+#### `withIsolatedEnv(preset, testFn)`
+
 Original environment-only isolation (unchanged).
+
 ```javascript
 await testEnvManager.withIsolatedEnv(
   { TURSO_DATABASE_URL: "test-url" },
   async () => {
     expect(process.env.TURSO_DATABASE_URL).toBe("test-url");
-  }
+  },
 );
 ```
 
 ### Static Methods
 
 #### `TestEnvironmentManager.withCompleteIsolation(preset, testFn)`
+
 Static version for one-off tests.
+
 ```javascript
 const result = await TestEnvironmentManager.withCompleteIsolation(
   { TEST_VALUE: "isolated" },
   async () => {
     expect(process.env.TEST_VALUE).toBe("isolated");
     return "success";
-  }
+  },
 );
 ```
 
 #### `TestEnvironmentManager.clearModuleState()`
+
 Global module state clearing.
+
 ```javascript
 TestEnvironmentManager.clearModuleState();
 ```
 
 #### `TestEnvironmentManager.forceModuleReload(moduleKeys)`
+
 Force reload specific modules.
+
 ```javascript
 TestEnvironmentManager.forceModuleReload(["../../api/lib/database.js"]);
 ```
@@ -106,19 +123,25 @@ TestEnvironmentManager.forceModuleReload(["../../api/lib/database.js"]);
 ### Integration Methods
 
 #### `integrateWithSingletonManager(manager)`
+
 Coordinate with singleton management.
+
 ```javascript
 manager.integrateWithSingletonManager(singletonManager);
 ```
 
 #### `integrateWithMockManager(manager)`
+
 Coordinate with mock management.
-```javascript  
+
+```javascript
 manager.integrateWithMockManager(mockManager);
 ```
 
 #### `coordinatedClear()`
+
 Clear all integrated state.
+
 ```javascript
 manager.coordinatedClear();
 ```
@@ -126,7 +149,9 @@ manager.coordinatedClear();
 ### Debugging Methods
 
 #### `getState()`
+
 Get current isolation state for debugging.
+
 ```javascript
 const state = manager.getState();
 console.log(state);
@@ -141,7 +166,9 @@ console.log(state);
 ```
 
 #### `validateStateIsolation()`
+
 Verify isolation is complete.
+
 ```javascript
 const isIsolated = manager.validateStateIsolation();
 ```
@@ -151,17 +178,16 @@ const isIsolated = manager.validateStateIsolation();
 ### Pattern 1: Fix Database Environment Validation Issues
 
 **Before (Problematic)**:
+
 ```javascript
-await testEnvManager.withIsolatedEnv(
-  { TURSO_DATABASE_URL: "" },
-  async () => {
-    const service = new DatabaseService(); // May get cached state
-    await service.initializeClient(); // May not fail as expected
-  }
-);
+await testEnvManager.withIsolatedEnv({ TURSO_DATABASE_URL: "" }, async () => {
+  const service = new DatabaseService(); // May get cached state
+  await service.initializeClient(); // May not fail as expected
+});
 ```
 
 **After (Fixed)**:
+
 ```javascript
 await testEnvManager.withCompleteIsolation(
   { TURSO_DATABASE_URL: "", DATABASE_TEST_STRICT_MODE: "true" },
@@ -169,24 +195,26 @@ await testEnvManager.withCompleteIsolation(
     vi.resetModules(); // Ensure fresh import
     const { DatabaseService } = await import("../../api/lib/database.js");
     const service = new DatabaseService();
-    
+
     // Guaranteed fresh state
     await expect(service.initializeClient()).rejects.toThrow(
-      "TURSO_DATABASE_URL environment variable is required"
+      "TURSO_DATABASE_URL environment variable is required",
     );
-  }
+  },
 );
 ```
 
 ### Pattern 2: When to Use Each Method
 
 **Use `withIsolatedEnv()` for**:
+
 - Simple configuration tests
 - Tests that don't use singletons
 - Performance-critical tests
 - Backward compatibility
 
 **Use `withCompleteIsolation()` for**:
+
 - Tests involving singleton services
 - Environment validation testing
 - Complex service initialization
@@ -237,6 +265,7 @@ Enhanced TestEnvironmentManager
 ## Error Handling
 
 The enhanced manager gracefully handles:
+
 - Missing modules during reload attempts
 - Failed singleton manager operations
 - Import resolution failures
@@ -257,6 +286,7 @@ All errors are logged but don't fail the isolation operation.
 ## Usage Examples
 
 See the test files for comprehensive usage examples:
+
 - `/tests/unit/test-environment-manager-enhanced.test.js` - Core functionality tests
 - `/tests/unit/complete-isolation-demo.test.js` - Practical demonstration
 - `/tests/unit/test-environment-manager-usage-examples.test.js` - Usage patterns

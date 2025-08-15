@@ -999,7 +999,13 @@ export class MockServiceManager {
 export const mockServices = new MockServiceManager();
 
 // Export individual mocks for direct access
-export { StripeMock, BrevoMock, GoogleDriveMock, DatabaseMock, EmailSubscriberServiceMock };
+export {
+  StripeMock,
+  BrevoMock,
+  GoogleDriveMock,
+  DatabaseMock,
+  EmailSubscriberServiceMock,
+};
 
 /**
  * Database Service Mock
@@ -1082,7 +1088,10 @@ class DatabaseMock {
       return {
         rows: [{ count: 42 }],
       };
-    } else if (query.includes("SELECT") && query.includes("email_subscribers")) {
+    } else if (
+      query.includes("SELECT") &&
+      query.includes("email_subscribers")
+    ) {
       if (query.includes("SUM(CASE")) {
         // Stats query
         return {
@@ -1108,7 +1117,9 @@ class DatabaseMock {
   }
 
   extractTableName(query) {
-    const match = query.match(/(?:table_info|index_list)\s*\(\s*['"`]?(\w+)['"`]?\s*\)/);
+    const match = query.match(
+      /(?:table_info|index_list)\s*\(\s*['"`]?(\w+)['"`]?\s*\)/,
+    );
     return match ? match[1] : "unknown";
   }
 
@@ -1171,7 +1182,7 @@ class EmailSubscriberServiceMock {
 
   async ensureInitialized() {
     if (this.initialized) return this;
-    
+
     if (this.initializationPromise) {
       return this.initializationPromise;
     }
@@ -1295,7 +1306,16 @@ class EmailSubscriberServiceMock {
     return event;
   }
 
-  async auditLog(entityType, entityId, action, actorType, actorId, changes, ipAddress = null, userAgent = null) {
+  async auditLog(
+    entityType,
+    entityId,
+    action,
+    actorType,
+    actorId,
+    changes,
+    ipAddress = null,
+    userAgent = null,
+  ) {
     await this.ensureInitialized();
     const log = {
       id: Math.floor(Math.random() * 1000) + 1,
@@ -1321,7 +1341,8 @@ class EmailSubscriberServiceMock {
       total: subscribers.length,
       active: subscribers.filter((s) => s.status === "active").length,
       pending: subscribers.filter((s) => s.status === "pending").length,
-      unsubscribed: subscribers.filter((s) => s.status === "unsubscribed").length,
+      unsubscribed: subscribers.filter((s) => s.status === "unsubscribed")
+        .length,
       bounced: subscribers.filter((s) => s.status === "bounced").length,
     };
   }
@@ -1364,7 +1385,10 @@ class EmailSubscriberServiceMock {
   }
 
   generateVerificationToken() {
-    return Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+    return (
+      Math.random().toString(36).substring(2) +
+      Math.random().toString(36).substring(2)
+    );
   }
 
   reset() {
@@ -1497,7 +1521,7 @@ export const MockScenarios = {
    */
   emailServiceWithSubscribers() {
     mockServices.emailSubscriberService.reset();
-    
+
     // Add multiple subscribers with different statuses
     const emails = [
       { email: "active@example.com", status: "active" },
@@ -1522,7 +1546,8 @@ export const MockScenarios = {
         consent_ip: "127.0.0.1",
         verification_token: null,
         verified_at: status === "active" ? new Date().toISOString() : null,
-        unsubscribed_at: status === "unsubscribed" ? new Date().toISOString() : null,
+        unsubscribed_at:
+          status === "unsubscribed" ? new Date().toISOString() : null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });

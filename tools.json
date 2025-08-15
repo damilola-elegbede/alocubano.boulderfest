@@ -1,0 +1,20 @@
+{
+  "description": "Archived scripts from package.json consolidation",
+  "date": "2025-08-15T04:44:31.475Z",
+  "usage": "npx node scripts/run-tool.js <script-name>",
+  "scripts": {
+    "start": "./scripts/start-with-ngrok.sh",
+    "dev": "./scripts/start-with-ngrok.sh",
+    "build": "npm run verify-structure && echo 'Build process completed'",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:meta": "vitest run --config vitest.config.js tests/meta/**/*.test.js",
+    "lint": "eslint . && htmlhint pages/",
+    "migrate:up": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/migrate.js",
+    "db:shell": "sqlite3 data/development.db",
+    "deploy:check": "node scripts/deployment-check.js",
+    "deploy": "npm run deploy:check && vercel --target production"
+  }
+}
