@@ -11,7 +11,7 @@
   "scripts": {
     "start": "./scripts/start-with-ngrok.sh",
     "dev": "./scripts/start-with-ngrok.sh",
-    "start:ci": "http-server . -p 3000 -c-1",
+    "start:ci": "vercel dev --listen 3000",
     "build": "node scripts/verify-structure.js && echo 'Build process completed'",
     "test": "vitest run",
     "test:watch": "vitest watch",
