@@ -1,0 +1,48 @@
+name: New Test Framework CI
+
+on:
+  push:
+    branches: [main, feature/parallel-test-framework]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-old:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: false  # Temporarily disabled - old tests being replaced
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: Install dependencies
+        run: npm install
+      - name: Run old test suite
+        run: npm run test:unit:ci
+
+  test-new:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: Install dependencies
+        run: npm install
+      - name: Run new test framework
+        run: npm run test:new
+      - name: Check performance metrics
+        run: |
+          echo "New test framework performance:"
+          TIME=$(npm run test:new 2>&1 | grep "Duration" | sed 's/.*Duration \([0-9.]*\)ms.*/\1/')
+          echo "Execution time: ${TIME}ms"
+          if [ "${TIME}" -gt "30000" ]; then
+            echo "ERROR: Tests took longer than 30 seconds"
+            exit 1
+          fi
+          echo "✅ Performance target met"
