@@ -40,8 +40,8 @@ jobs:
         env:
           CI: "true"
           NODE_ENV: "test"
-          # Use existing VERCEL_TOKEN from GitHub secrets (already configured)
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          # Temporarily disabled - Vercel server not working properly in CI
+          # VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           # Vercel project configuration
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
