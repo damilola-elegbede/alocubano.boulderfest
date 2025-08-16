@@ -56,11 +56,8 @@ export async function setup() {
       console.log('🔧 Starting test server for HTTP/API tests...');
       const serverUrl = await serverManager.start();
       
-      // Verify server is healthy
-      const healthCheck = await serverManager.healthCheck();
-      if (!healthCheck.healthy) {
-        throw new Error(`Server health check failed: ${healthCheck.error || 'Unknown error'}`);
-      }
+      // The serverManager.start() already does a health check internally
+      // No need to do another one here - it would fail if unhealthy
       
       console.log(`✅ Test server started and healthy at ${serverUrl}`);
       serverStarted = true;
