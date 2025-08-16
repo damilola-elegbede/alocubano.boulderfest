@@ -6,8 +6,9 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { authHelper } from '@core/auth.js';
 import { httpClient } from '@core/http.js';
 import { databaseHelper } from '@core/database.js';
+import { isMockMode } from '../helpers/test-mode.js';
 
-describe('Admin Authentication Integration', () => {
+describe.skipIf(isMockMode())('Admin Authentication Integration', () => {
   beforeEach(async () => {
     await databaseHelper.initialize();
     authHelper.clearAuth();

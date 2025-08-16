@@ -8,8 +8,9 @@ import { serverManager } from '../core/server.js';
 import { httpClient } from '../core/http.js';
 import { stripeHelpers } from '../core/stripe-helpers.js';
 import { TestDataFactory } from '../helpers/test-data.js';
+import { isMockMode } from '../helpers/test-mode.js';
 
-describe('Payment API Integration Tests', () => {
+describe.skipIf(isMockMode())('Payment API Integration Tests', () => {
   let serverUrl;
   let testData;
 

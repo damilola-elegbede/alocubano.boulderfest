@@ -8,8 +8,9 @@ import crypto from 'crypto';
 import { serverManager } from '../core/server.js';
 import { httpClient } from '../core/http.js';
 import { databaseHelper } from '../core/database.js';
+import { isMockMode } from '../helpers/test-mode.js';
 
-describe('Email/Brevo Integration Tests', () => {
+describe.skipIf(isMockMode())('Email/Brevo Integration Tests', () => {
   let serverUrl;
   let testEmails = [];
 
