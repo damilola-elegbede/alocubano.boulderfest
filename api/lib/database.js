@@ -381,42 +381,38 @@ class DatabaseService {
         return await client.transaction();
       }
       
-      // Fallback for clients without native transaction support
-      console.warn('Database client does not support native transactions, using batch operations');
-      
-      const statements = [];
-      let committed = false;
-      let rolledBack = false;
-      
+      // Fallback for clients without native transaction support:
+      // emulate a transaction boundary with explicit SQL
+      console.warn('Database client lacks native transactions; using explicit BEGIN/COMMIT/ROLLBACK fallback');
+      let started = false;
+      let completed = false;
       return {
         execute: async (sql, params = []) => {
-          if (committed || rolledBack) {
-            throw new Error('Transaction already completed');
+          if (completed) throw new Error('Transaction already completed');
+          if (!started) {
+            // Use IMMEDIATE to acquire a write lock early and reduce deadlocks
+            await client.execute('BEGIN IMMEDIATE');
+            started = true;
           }
-          
-          // Store statement for batch execution
-          statements.push({ sql, args: params });
-          
-          // For immediate execution mode, execute right away
-          const result = await client.execute(sql, params);
-          return result;
+          // Execute within the explicit transaction
+          return await client.execute({ sql, args: params });
         },
         commit: async () => {
-          if (committed || rolledBack) {
-            throw new Error('Transaction already completed');
+          if (completed) throw new Error('Transaction already completed');
+          if (started) {
+            await client.execute('COMMIT');
           }
-          committed = true;
-          // For clients without transactions, statements are already executed
+          completed = true;
           return true;
         },
         rollback: async () => {
-          if (committed || rolledBack) {
-            throw new Error('Transaction already completed');
+          if (completed) throw new Error('Transaction already completed');
+          if (started) {
+            await client.execute('ROLLBACK');
           }
-          rolledBack = true;
-          console.warn('Rollback requested but not supported - statements may have been executed');
+          completed = true;
           return true;
-        }
+        },
       };
     } catch (error) {
       console.error("Database transaction creation failed:", {

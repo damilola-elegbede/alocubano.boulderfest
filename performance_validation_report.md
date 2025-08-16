@@ -48,8 +48,8 @@ The integration test suite has been validated for performance requirements with 
 
 - **Total Tests**: 3
 - **Passed**: 2
-- **Failed**: 12
-- **Skipped**: 42
+- **Failed**: 1
+- **Skipped**: 0
 - **Success Rate**: 66.7%
 
 ## Individual Test Runs

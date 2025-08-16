@@ -9,9 +9,16 @@ import bcrypt from 'bcryptjs';
 class AuthHelper {
   constructor() {
     this.adminToken = null;
-    this.adminSecret = process.env.ADMIN_SECRET;
-    this.adminPassword = process.env.ADMIN_PASSWORD;
+    // Do not snapshot secrets here; read from process.env when needed
     this.sessionDuration = 3600000; // 1 hour
+  }
+  
+  get adminSecret() {
+    return process.env.ADMIN_SECRET;
+  }
+  
+  get adminPassword() {
+    return process.env.ADMIN_PASSWORD;
   }
 
   /**
