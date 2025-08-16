@@ -38,21 +38,21 @@ export async function setup() {
   }
   
   try {
-    // Check if we need to start the server (only for HTTP/API tests)
-    const needsServer = process.env.INTEGRATION_NEEDS_SERVER === 'true' || 
-                       process.argv.some(arg => arg.includes('api-health') || 
-                                              arg.includes('http-server') ||
-                                              arg.includes('payments') ||
-                                              arg.includes('email') ||
-                                              arg.includes('stripe-webhooks'));
+    // Always start server for integration tests unless explicitly disabled
+    // When running all tests, we need the server available
+    const forceSkipServer = process.env.SKIP_SERVER === 'true';
+    const needsServer = !forceSkipServer && (
+      process.env.INTEGRATION_NEEDS_SERVER === 'true' || 
+      process.argv.length < 4 || // Running all tests
+      process.argv.some(arg => arg.includes('integration')) || // Any integration test
+      process.argv.some(arg => arg.includes('api-health') || 
+                               arg.includes('http-server') ||
+                               arg.includes('payments') ||
+                               arg.includes('email') ||
+                               arg.includes('stripe-webhooks'))
+    );
     
-    // Explicitly exclude tests that don't need server
-    const skipServer = process.argv.some(arg => arg.includes('simple-connectivity') ||
-                                              arg.includes('database-operations') ||
-                                              arg.includes('database-transactions') ||
-                                              arg.includes('admin-auth'));
-    
-    if (needsServer && !skipServer && !serverStarted) {
+    if (needsServer && !serverStarted) {
       console.log('🔧 Starting test server for HTTP/API tests...');
       const serverUrl = await serverManager.start();
       
@@ -64,7 +64,7 @@ export async function setup() {
       
       console.log(`✅ Test server started and healthy at ${serverUrl}`);
       serverStarted = true;
-    } else if (!needsServer || skipServer) {
+    } else if (!needsServer) {
       console.log('⏭️ Skipping server startup (not needed for this test)');
     } else {
       console.log('ℹ️ Server already started');
