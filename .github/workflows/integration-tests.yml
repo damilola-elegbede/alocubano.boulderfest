@@ -26,6 +26,7 @@ jobs:
   integration-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    if: false  # Temporarily disabled - replaced by test-new-framework.yml with mock server support
 
     strategy:
       matrix:
