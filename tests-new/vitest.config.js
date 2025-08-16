@@ -74,8 +74,9 @@ export default defineConfig({
       TEST_TYPE: 'integration',
       TEST_PORT: '3005',
       DATABASE_TEST_STRICT_MODE: 'true',
-      // Use in-memory database for reliable tests
-      TURSO_DATABASE_URL: ':memory:',
+      // Use file-based database for integration tests (not in-memory)
+      // This allows proper testing of database operations
+      TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL || 'file:./test-integration.db',
       // Authentication secrets for testing
       ADMIN_SECRET: process.env.ADMIN_SECRET || 'test-admin-secret-key-32-characters-long',
       ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '$2b$10$PMCZ6tj2JVicCvLQIV.NfuQ93bMjJbxrA8AsJsSngMrwm4G4iN5eG',

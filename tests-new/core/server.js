@@ -14,8 +14,18 @@ const require = createRequire(import.meta.url);
 
 // Detect CI environment and mock mode
 const IS_CI = process.env.CI === 'true';
-const HAS_VERCEL_TOKEN = Boolean(process.env.VERCEL_TOKEN);
+const HAS_VERCEL_TOKEN = Boolean(process.env.VERCEL_TOKEN && process.env.VERCEL_TOKEN.trim());
 const USE_MOCK_SERVER = IS_CI && !HAS_VERCEL_TOKEN;
+
+// Log detection results for debugging
+if (IS_CI) {
+  console.log('🔍 Server detection:', {
+    CI: IS_CI,
+    hasToken: HAS_VERCEL_TOKEN,
+    useMock: USE_MOCK_SERVER,
+    tokenLength: process.env.VERCEL_TOKEN ? process.env.VERCEL_TOKEN.length : 0
+  });
+}
 
 // Import mock server conditionally
 let mockServer;
@@ -264,14 +274,24 @@ class ServerManager {
     return new Promise((resolve, reject) => {
       const args = ['dev', '--listen', this.port, '--yes'];
       
+      // Add token argument if available in CI
+      if (process.env.CI === 'true' && process.env.VERCEL_TOKEN) {
+        args.push('--token', process.env.VERCEL_TOKEN);
+        console.log('✅ Using Vercel token for authentication');
+      }
+      
       // Ensure we're running from the project root
       const projectRoot = process.cwd().includes('tests-new') 
         ? process.cwd().replace('/tests-new', '') 
         : process.cwd();
       
-      console.log(`Running: npx vercel ${args.join(' ')} from ${projectRoot}`);
+      console.log(`Running: vercel ${args.join(' ')} from ${projectRoot}`);
       
-      this.serverProcess = spawn('npx', ['vercel', ...args], {
+      // Use 'vercel' directly if installed globally, otherwise use 'npx'
+      const command = process.env.CI === 'true' ? 'vercel' : 'npx';
+      const commandArgs = process.env.CI === 'true' ? args : ['vercel', ...args];
+      
+      this.serverProcess = spawn(command, commandArgs, {
         stdio: ['ignore', 'pipe', 'pipe'],
         cwd: projectRoot, // Run from project root, not tests-new
         env: {
@@ -284,7 +304,11 @@ class ServerManager {
           DISABLE_NGROK: 'true',
           // Force the port
           PORT: this.port,
-          VERCEL_PORT: this.port
+          VERCEL_PORT: this.port,
+          // Pass through Vercel credentials
+          VERCEL_TOKEN: process.env.VERCEL_TOKEN,
+          VERCEL_ORG_ID: process.env.VERCEL_ORG_ID,
+          VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID
         },
         detached: true // Allow process group management
       });

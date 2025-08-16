@@ -20,16 +20,18 @@ export async function setup() {
   
   // Detect environment and mode
   const isCI = process.env.CI === 'true';
-  const hasVercelToken = Boolean(process.env.VERCEL_TOKEN);
+  const hasVercelToken = Boolean(process.env.VERCEL_TOKEN && process.env.VERCEL_TOKEN.trim());
   const useMockServer = isCI && !hasVercelToken;
   
   if (isCI) {
     console.log('📍 Running in CI environment');
+    console.log(`   VERCEL_TOKEN: ${hasVercelToken ? 'Present ✅' : 'Missing ❌'}`);
+    console.log(`   Server mode: ${useMockServer ? 'Mock 🎭' : 'Real Vercel 🔧'}`);
     if (useMockServer) {
-      console.log('🎭 Using mock server (no Vercel token available)');
-      console.log('   To use real server in CI, add VERCEL_TOKEN to GitHub secrets');
+      console.log('   Using mock server (no Vercel token available)');
+      console.log('   To use real server in CI, ensure VERCEL_TOKEN is set in GitHub secrets');
     } else {
-      console.log('🔧 Using real Vercel server (token available)');
+      console.log('   Using real Vercel server with authentication');
     }
   } else {
     console.log('💻 Running in local development environment');

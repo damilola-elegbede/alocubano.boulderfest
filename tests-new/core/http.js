@@ -6,7 +6,7 @@ import { serverManager } from './server.js';
 
 // Detect CI environment and mock mode
 const IS_CI = process.env.CI === 'true';
-const HAS_VERCEL_TOKEN = Boolean(process.env.VERCEL_TOKEN);
+const HAS_VERCEL_TOKEN = Boolean(process.env.VERCEL_TOKEN && process.env.VERCEL_TOKEN.trim());
 const USE_MOCK_CLIENT = IS_CI && !HAS_VERCEL_TOKEN;
 
 // Import mock client conditionally

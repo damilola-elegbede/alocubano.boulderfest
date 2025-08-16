@@ -14,14 +14,14 @@ export function isCI() {
  * Check if using mock server mode
  */
 export function isMockMode() {
-  return isCI() && !process.env.VERCEL_TOKEN;
+  return isCI() && !Boolean(process.env.VERCEL_TOKEN && process.env.VERCEL_TOKEN.trim());
 }
 
 /**
  * Check if using real server mode
  */
 export function isRealServerMode() {
-  return !isCI() || Boolean(process.env.VERCEL_TOKEN);
+  return !isCI() || Boolean(process.env.VERCEL_TOKEN && process.env.VERCEL_TOKEN.trim());
 }
 
 /**
@@ -29,7 +29,7 @@ export function isRealServerMode() {
  * Usage: skipInCI(it)('should test with real server', async () => {...})
  */
 export function skipInCI(testFn) {
-  if (isCI() && !process.env.VERCEL_TOKEN) {
+  if (isCI() && !Boolean(process.env.VERCEL_TOKEN && process.env.VERCEL_TOKEN.trim())) {
     return testFn.skip;
   }
   return testFn;

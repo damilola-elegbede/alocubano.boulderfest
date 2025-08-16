@@ -34,14 +34,32 @@ jobs:
           cache: "npm"
       - name: Install dependencies
         run: npm install
-      - name: Run new test framework with mock server
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+      - name: Run new test framework with real Vercel server
         env:
           CI: "true"
           NODE_ENV: "test"
-          # Uncomment to use real server (requires adding secret to GitHub)
-          # VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          # Use existing VERCEL_TOKEN from GitHub secrets (already configured)
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          # Vercel project configuration
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          # Test database (local SQLite for CI)
+          TURSO_DATABASE_URL: "file:./test-integration.db"
+          # Test secrets (safe defaults for CI testing)
+          ADMIN_SECRET: "test-admin-secret-key-32-characters-long"
+          ADMIN_PASSWORD: "$2b$10$PMCZ6tj2JVicCvLQIV.NfuQ93bMjJbxrA8AsJsSngMrwm4G4iN5eG"
+          QR_SECRET_KEY: "test-qr-secret-key-32-characters-long-abc"
+          STRIPE_WEBHOOK_SECRET: "whsec_test_webhook_secret_for_integration_tests"
+          BREVO_WEBHOOK_SECRET: "brevo_test_webhook_secret_for_integration_tests"
+          UNSUBSCRIBE_SECRET: "test-unsubscribe-secret"
+          # Disable external services in test
+          DISABLE_NGROK: "true"
+          DISABLE_EXTERNAL_APIS: "true"
         run: |
-          echo "🎭 Running tests in CI with mock server"
+          echo "🔧 Running tests in CI with real Vercel server"
+          echo "Token available: $([ -n "$VERCEL_TOKEN" ] && echo "Yes" || echo "No")"
           npm run test:new
       - name: Upload test results
         if: always()
