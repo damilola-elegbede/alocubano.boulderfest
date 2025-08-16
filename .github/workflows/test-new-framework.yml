@@ -10,6 +10,7 @@ jobs:
   test-old:
     runs-on: ubuntu-latest
     continue-on-error: true
+    if: false  # Temporarily disabled - old tests being replaced
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
