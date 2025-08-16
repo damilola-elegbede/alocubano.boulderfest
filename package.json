@@ -184,7 +184,6 @@
     "eslint": "^9.15.0",
     "express": "^5.1.0",
     "happy-dom": "^18.0.1",
-    "html-validator": "^6.0.1",
     "htmlhint": "^1.6.3",
     "http-server": "^14.1.1",
     "jsdom": "^26.1.0",

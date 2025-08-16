@@ -77,9 +77,19 @@ class MockServer {
       }
     });
 
+    // Stripe webhook with signature validation
     this.addMock('POST', '/api/payments/stripe-webhook', {
-      status: 200,
-      data: { received: true }
+      handler: (req) => {
+        const signature = req.headers?.['stripe-signature'];
+        if (!signature) {
+          return { status: 400, data: { error: 'Missing stripe-signature header' } };
+        }
+        // Mock validation - check for specific test signatures
+        if (signature === 'invalid_signature') {
+          return { status: 400, data: { error: 'Invalid signature' } };
+        }
+        return { status: 200, data: { received: true } };
+      }
     });
 
     // Email endpoints
@@ -211,13 +221,13 @@ class MockServer {
     this.mockResponses.set(key, response);
   }
 
-  getMockResponse(method, path) {
+  getMockResponse(method, path, req = null) {
     // Direct match
     let key = `${method}:${path}`;
     if (this.mockResponses.has(key)) {
       const response = this.mockResponses.get(key);
       // Clone and update dynamic values
-      return this.prepareMockResponse(response, path);
+      return this.prepareMockResponse(response, path, null, req);
     }
 
     // Pattern matching for parameterized routes
@@ -228,7 +238,7 @@ class MockServer {
         const regex = new RegExp(`^${pattern}$`);
         if (regex.test(path)) {
           // Clone response and substitute parameters
-          return this.prepareMockResponse(response, path, mockPath);
+          return this.prepareMockResponse(response, path, mockPath, req);
         }
       }
     }
@@ -240,7 +250,12 @@ class MockServer {
     };
   }
 
-  prepareMockResponse(response, actualPath, mockPath = null) {
+  prepareMockResponse(response, actualPath, mockPath = null, req = null) {
+    // If response has a handler function, execute it
+    if (response.handler && typeof response.handler === 'function') {
+      return response.handler(req || {});
+    }
+    
     // Deep clone the response
     const cloned = JSON.parse(JSON.stringify(response));
     

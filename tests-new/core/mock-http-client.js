@@ -49,11 +49,19 @@ class MockHttpClient {
       this.initialize();
     }
 
+    // Build request object with headers
+    const req = {
+      method,
+      path,
+      headers: { ...this.defaultHeaders, ...options.headers },
+      body: data
+    };
+
     // Log the request
     mockServer.logRequest(method, path, data);
 
-    // Get mock response
-    const mockResponse = mockServer.getMockResponse(method, path);
+    // Get mock response with request object for dynamic handlers
+    const mockResponse = mockServer.getMockResponse(method, path, req);
 
     // Simulate network delay (10-50ms)
     const delay = 10 + Math.random() * 40;
