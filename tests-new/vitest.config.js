@@ -22,8 +22,10 @@ export default defineConfig({
     
     // File patterns - ONLY include tests-new directory
     include: [
-      'tests-new/integration/**/*.test.js',
-      'tests-new/integration/**/*.spec.js'
+      'integration/**/*.test.js',
+      'integration/**/*.spec.js',
+      '**/integration/**/*.test.js',
+      '**/integration/**/*.spec.js'
     ],
     exclude: [
       'node_modules/**',

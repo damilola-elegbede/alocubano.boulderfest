@@ -34,17 +34,23 @@ export async function setup() {
                                               arg.includes('admin-auth'));
     
     if (needsServer && !skipServer && !serverStarted) {
-      console.log('🔧 Starting test server for HTTP/API tests...');
-      const serverUrl = await serverManager.start();
-      
-      // Verify server is healthy
-      const healthCheck = await serverManager.healthCheck();
-      if (!healthCheck.healthy) {
-        throw new Error(`Server health check failed: ${healthCheck.error || 'Unknown error'}`);
+      // Skip server startup in CI if no Vercel token is available
+      if (process.env.CI && !process.env.VERCEL_TOKEN) {
+        console.log('⏭️ Skipping server startup in CI (no Vercel token available)');
+        console.log('   Tests requiring server will be skipped or use mocks');
+      } else {
+        console.log('🔧 Starting test server for HTTP/API tests...');
+        const serverUrl = await serverManager.start();
+        
+        // Verify server is healthy
+        const healthCheck = await serverManager.healthCheck();
+        if (!healthCheck.healthy) {
+          throw new Error(`Server health check failed: ${healthCheck.error || 'Unknown error'}`);
+        }
+        
+        console.log(`✅ Test server started and healthy at ${serverUrl}`);
+        serverStarted = true;
       }
-      
-      console.log(`✅ Test server started and healthy at ${serverUrl}`);
-      serverStarted = true;
     } else if (!needsServer || skipServer) {
       console.log('⏭️ Skipping server startup (not needed for this test)');
     } else {
