@@ -36,6 +36,9 @@ if (USE_MOCK_SERVER) {
 
 class ServerManager {
   constructor() {
+    // Increase EventEmitter limit to prevent warnings
+    process.setMaxListeners(20);
+    
     this.useMockServer = USE_MOCK_SERVER;
     this.serverProcess = null;
     this.serverUrl = null;
