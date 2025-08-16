@@ -27,9 +27,19 @@ export class AuthService {
       return false;
     }
 
-    // For simple implementation, we're using a single admin account
-    // In production, you might want to store multiple users in database
-    return await bcrypt.compare(password, adminPasswordHash);
+    if (!password || typeof password !== 'string') {
+      // Invalid password input
+      return false;
+    }
+
+    try {
+      // For simple implementation, we're using a single admin account
+      // In production, you might want to store multiple users in database
+      return await bcrypt.compare(password, adminPasswordHash);
+    } catch (error) {
+      // Handle bcrypt comparison errors gracefully
+      return false;
+    }
   }
 
   /**

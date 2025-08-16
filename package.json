@@ -184,7 +184,6 @@
     "eslint": "^9.15.0",
     "express": "^5.1.0",
     "happy-dom": "^18.0.1",
-    "html-validator": "^6.0.1",
     "htmlhint": "^1.6.3",
     "http-server": "^14.1.1",
     "jsdom": "^26.1.0",
@@ -195,7 +194,7 @@
     "stylelint": "^16.21.1",
     "stylelint-config-standard": "^36.0.1",
     "supertest": "^7.1.4",
-    "vercel": "^41.0.2",
+    "vercel": "^44.1.0",
     "vitest": "^3.2.4",
     "wait-on": "^7.2.0"
   }
