@@ -46,14 +46,14 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           # Test database (local SQLite for CI)
-          TURSO_DATABASE_URL: "file:./test-integration.db"
+          TURSO_DATABASE_URL: file:./test-integration.db
           # Test secrets (safe defaults for CI testing)
-          ADMIN_SECRET: "test-admin-secret-key-32-characters-long"
-          ADMIN_PASSWORD: "$2b$10$PMCZ6tj2JVicCvLQIV.NfuQ93bMjJbxrA8AsJsSngMrwm4G4iN5eG"
-          QR_SECRET_KEY: "test-qr-secret-key-32-characters-long-abc"
-          STRIPE_WEBHOOK_SECRET: "whsec_test_webhook_secret_for_integration_tests"
-          BREVO_WEBHOOK_SECRET: "brevo_test_webhook_secret_for_integration_tests"
-          UNSUBSCRIBE_SECRET: "test-unsubscribe-secret"
+          ADMIN_SECRET: test-admin-secret-key-32-characters-long
+          ADMIN_PASSWORD: $2b$10$PMCZ6tj2JVicCvLQIV.NfuQ93bMjJbxrA8AsJsSngMrwm4G4iN5eG
+          QR_SECRET_KEY: test-qr-secret-key-32-characters-long-abc
+          STRIPE_WEBHOOK_SECRET: whsec_test_webhook_secret_for_integration_tests
+          BREVO_WEBHOOK_SECRET: brevo_test_webhook_secret_for_integration_tests
+          UNSUBSCRIBE_SECRET: test-unsubscribe-secret
           # Disable external services in test
           DISABLE_NGROK: "true"
           DISABLE_EXTERNAL_APIS: "true"
