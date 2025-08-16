@@ -18,6 +18,23 @@ export async function setup() {
 
   console.log('🚀 Starting integration test environment...');
   
+  // Detect environment and mode
+  const isCI = process.env.CI === 'true';
+  const hasVercelToken = Boolean(process.env.VERCEL_TOKEN);
+  const useMockServer = isCI && !hasVercelToken;
+  
+  if (isCI) {
+    console.log('📍 Running in CI environment');
+    if (useMockServer) {
+      console.log('🎭 Using mock server (no Vercel token available)');
+      console.log('   To use real server in CI, add VERCEL_TOKEN to GitHub secrets');
+    } else {
+      console.log('🔧 Using real Vercel server (token available)');
+    }
+  } else {
+    console.log('💻 Running in local development environment');
+  }
+  
   try {
     // Check if we need to start the server (only for HTTP/API tests)
     const needsServer = process.env.INTEGRATION_NEEDS_SERVER === 'true' || 
@@ -34,23 +51,17 @@ export async function setup() {
                                               arg.includes('admin-auth'));
     
     if (needsServer && !skipServer && !serverStarted) {
-      // Skip server startup in CI if no Vercel token is available
-      if (process.env.CI && !process.env.VERCEL_TOKEN) {
-        console.log('⏭️ Skipping server startup in CI (no Vercel token available)');
-        console.log('   Tests requiring server will be skipped or use mocks');
-      } else {
-        console.log('🔧 Starting test server for HTTP/API tests...');
-        const serverUrl = await serverManager.start();
-        
-        // Verify server is healthy
-        const healthCheck = await serverManager.healthCheck();
-        if (!healthCheck.healthy) {
-          throw new Error(`Server health check failed: ${healthCheck.error || 'Unknown error'}`);
-        }
-        
-        console.log(`✅ Test server started and healthy at ${serverUrl}`);
-        serverStarted = true;
+      console.log('🔧 Starting test server for HTTP/API tests...');
+      const serverUrl = await serverManager.start();
+      
+      // Verify server is healthy
+      const healthCheck = await serverManager.healthCheck();
+      if (!healthCheck.healthy) {
+        throw new Error(`Server health check failed: ${healthCheck.error || 'Unknown error'}`);
       }
+      
+      console.log(`✅ Test server started and healthy at ${serverUrl}`);
+      serverStarted = true;
     } else if (!needsServer || skipServer) {
       console.log('⏭️ Skipping server startup (not needed for this test)');
     } else {

@@ -4,6 +4,18 @@
  */
 import { serverManager } from './server.js';
 
+// Detect CI environment and mock mode
+const IS_CI = process.env.CI === 'true';
+const HAS_VERCEL_TOKEN = Boolean(process.env.VERCEL_TOKEN);
+const USE_MOCK_CLIENT = IS_CI && !HAS_VERCEL_TOKEN;
+
+// Import mock client conditionally
+let mockHttpClient;
+if (USE_MOCK_CLIENT) {
+  const module = await import('./mock-http-client.js');
+  mockHttpClient = module.mockHttpClient;
+}
+
 class HttpClient {
   constructor() {
     this.baseUrl = null;
@@ -261,8 +273,11 @@ class HttpClient {
   }
 }
 
+// Create appropriate client based on environment
+const httpClient = USE_MOCK_CLIENT ? mockHttpClient : new HttpClient();
+
 // Export singleton instance
-export const httpClient = new HttpClient();
+export { httpClient };
 
 // Export class for creating additional instances if needed
 export { HttpClient };

@@ -12,8 +12,21 @@ import net from 'net';
 const execAsync = promisify(exec);
 const require = createRequire(import.meta.url);
 
+// Detect CI environment and mock mode
+const IS_CI = process.env.CI === 'true';
+const HAS_VERCEL_TOKEN = Boolean(process.env.VERCEL_TOKEN);
+const USE_MOCK_SERVER = IS_CI && !HAS_VERCEL_TOKEN;
+
+// Import mock server conditionally
+let mockServer;
+if (USE_MOCK_SERVER) {
+  const module = await import('./mock-server.js');
+  mockServer = module.mockServer;
+}
+
 class ServerManager {
   constructor() {
+    this.useMockServer = USE_MOCK_SERVER;
     this.serverProcess = null;
     this.serverUrl = null;
     this.port = null;
@@ -28,6 +41,15 @@ class ServerManager {
    */
   async start() {
     if (this.isRunning) {
+      return this.serverUrl;
+    }
+
+    // Use mock server in CI without Vercel token
+    if (this.useMockServer) {
+      console.log('🎭 Using mock server in CI environment');
+      this.serverUrl = await mockServer.start();
+      this.port = mockServer.port;
+      this.isRunning = true;
       return this.serverUrl;
     }
 
@@ -81,6 +103,15 @@ class ServerManager {
       return;
     }
 
+    // Stop mock server if in use
+    if (this.useMockServer) {
+      await mockServer.stop();
+      this.isRunning = false;
+      this.port = null;
+      this.serverUrl = null;
+      return;
+    }
+
     console.log('🛑 Stopping test server...');
     
     try {
@@ -128,6 +159,9 @@ class ServerManager {
     if (!this.isRunning) {
       throw new Error('Test server is not running');
     }
+    if (this.useMockServer) {
+      return mockServer.getUrl();
+    }
     return this.serverUrl;
   }
 
@@ -135,6 +169,9 @@ class ServerManager {
    * Check if server is running
    */
   isServerRunning() {
+    if (this.useMockServer) {
+      return mockServer.isServerRunning();
+    }
     return this.isRunning;
   }
 
@@ -420,6 +457,10 @@ class ServerManager {
       return { healthy: false, error: 'Server not running' };
     }
 
+    if (this.useMockServer) {
+      return mockServer.healthCheck();
+    }
+
     try {
       const response = await fetch(`${this.serverUrl}/api/health/check`, {
         method: 'GET',
@@ -455,6 +496,10 @@ class ServerManager {
   async ping() {
     if (!this.isRunning) {
       return { reachable: false, error: 'Server not running' };
+    }
+
+    if (this.useMockServer) {
+      return mockServer.ping();
     }
 
     try {
