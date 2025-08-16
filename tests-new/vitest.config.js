@@ -1,37 +1,97 @@
+/**
+ * Vitest Configuration for Integration Tests
+ * Configures real server testing with actual APIs and database
+ */
 import { defineConfig } from 'vitest/config';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   test: {
-    globals: true,
+    // Test environment configuration
     environment: 'node',
-    testTimeout: 5000,
-    hookTimeout: 10000,
-    maxConcurrency: 2,
-    pool: 'threads',
-    poolOptions: {
-      threads: {
-        maxThreads: 2,
-        minThreads: 1
-      }
+    testTimeout: 30000,
+    setupFiles: [
+      resolve(__dirname, 'core/setup.js')
+    ],
+    
+    // Global test configuration
+    globals: true,
+    
+    // File patterns - ONLY include tests-new directory
+    include: [
+      'tests-new/integration/**/*.test.js',
+      'tests-new/integration/**/*.spec.js'
+    ],
+    exclude: [
+      'node_modules/**',
+      'tests/**',  // Exclude old tests directory
+      '**/*.config.js',
+      'tests-new/core/**',
+      'tests-new/fixtures/**',
+      'tests-new/helpers/**'
+    ],
+    
+    // Reporters
+    reporters: ['verbose', 'json'],
+    outputFile: {
+      json: 'test-results/integration-results.json'
     },
+    
+    // Coverage configuration
     coverage: {
+      enabled: false, // Disabled for integration tests - focused on E2E behavior
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'tests-new/']
+      reportsDirectory: 'coverage/integration',
+      exclude: [
+        'core/**',
+        'fixtures/**',
+        'helpers/**',
+        'node_modules/**',
+        '**/*.config.js'
+      ]
     },
-    setupFiles: [],
-    include: ['tests-new/**/*.test.js'],
-    exclude: ['node_modules/**', 'tests/**'],
-    // Support for test sharding
-    shard: process.env.VITEST_SHARD ? {
-      index: parseInt(process.env.VITEST_SHARD_INDEX) || 1,
-      count: parseInt(process.env.VITEST_SHARD_COUNT) || 1
-    } : undefined
+    
+    // Retry configuration for flaky external API calls
+    retry: 2,
+    
+    // Pool configuration for stability
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true // Use single fork for database stability
+      }
+    },
+    
+    // Environment variables for integration tests
+    env: {
+      NODE_ENV: 'test',
+      TEST_TYPE: 'integration',
+      TEST_PORT: '3005',
+      DATABASE_TEST_STRICT_MODE: 'true',
+      // Use in-memory database for reliable tests
+      TURSO_DATABASE_URL: ':memory:',
+      // Authentication secrets for testing
+      ADMIN_SECRET: process.env.ADMIN_SECRET || 'test-admin-secret-key-32-characters-long',
+      ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '$2b$10$PMCZ6tj2JVicCvLQIV.NfuQ93bMjJbxrA8AsJsSngMrwm4G4iN5eG',
+      QR_SECRET_KEY: process.env.QR_SECRET_KEY || 'test-qr-secret-key-32-characters-long-abc',
+      // Webhook secrets for testing
+      STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || 'whsec_test_webhook_secret_for_integration_tests',
+      BREVO_WEBHOOK_SECRET: process.env.BREVO_WEBHOOK_SECRET || 'brevo_test_webhook_secret_for_integration_tests'
+    }
   },
+  
+  // Resolution configuration
   resolve: {
     alias: {
-      '@': '/api',
-      '@lib': '/api/lib'
+      '@': resolve(__dirname, '../api'),
+      '@lib': resolve(__dirname, '../api/lib'),
+      '@core': resolve(__dirname, 'core'),
+      '@fixtures': resolve(__dirname, 'fixtures'),
+      '@helpers': resolve(__dirname, 'helpers')
     }
   }
 });

@@ -369,6 +369,65 @@ class DatabaseService {
   }
 
   /**
+   * Create a database transaction
+   * @returns {Promise<Object>} Transaction object with execute, commit, and rollback methods
+   */
+  async transaction() {
+    try {
+      const client = await this.ensureInitialized();
+      
+      // Check if client has transaction support
+      if (typeof client.transaction === 'function') {
+        return await client.transaction();
+      }
+      
+      // Fallback for clients without native transaction support
+      console.warn('Database client does not support native transactions, using batch operations');
+      
+      const statements = [];
+      let committed = false;
+      let rolledBack = false;
+      
+      return {
+        execute: async (sql, params = []) => {
+          if (committed || rolledBack) {
+            throw new Error('Transaction already completed');
+          }
+          
+          // Store statement for batch execution
+          statements.push({ sql, args: params });
+          
+          // For immediate execution mode, execute right away
+          const result = await client.execute(sql, params);
+          return result;
+        },
+        commit: async () => {
+          if (committed || rolledBack) {
+            throw new Error('Transaction already completed');
+          }
+          committed = true;
+          // For clients without transactions, statements are already executed
+          return true;
+        },
+        rollback: async () => {
+          if (committed || rolledBack) {
+            throw new Error('Transaction already completed');
+          }
+          rolledBack = true;
+          console.warn('Rollback requested but not supported - statements may have been executed');
+          return true;
+        }
+      };
+    } catch (error) {
+      console.error("Database transaction creation failed:", {
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Close database connections with proper cleanup and timeout protection
    * @param {number} timeout - Timeout in milliseconds for closing connections (default: 5000)
    * @returns {Promise<boolean>} True if all connections closed successfully
