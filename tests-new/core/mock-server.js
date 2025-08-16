@@ -36,7 +36,7 @@ class MockServer {
 
     this.addMock('GET', '/api/health/simple', {
       status: 200,
-      data: { status: 'ok' }
+      data: { status: 'ok', timestamp: new Date().toISOString() }
     });
 
     this.addMock('GET', '/api/health/database', {
@@ -85,8 +85,13 @@ class MockServer {
           return { status: 400, data: { error: 'Missing stripe-signature header' } };
         }
         // Mock validation - check for specific test signatures
-        if (signature === 'invalid_signature') {
-          return { status: 400, data: { error: 'Invalid signature' } };
+        // Handle format: t=timestamp,v1=signature
+        if (signature.includes('invalid_signature') || signature === 'invalid_signature') {
+          return { status: 400, data: { error: 'Invalid webhook signature' } };
+        }
+        // Check for malformed body
+        if (req.body && typeof req.body === 'string' && req.body.includes('invalid json')) {
+          return { status: 400, data: { error: 'Invalid JSON payload' } };
         }
         return { status: 200, data: { received: true } };
       }
