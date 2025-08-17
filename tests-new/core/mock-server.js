@@ -45,7 +45,35 @@ class MockServer {
         status: 'healthy',
         database: {
           connected: true,
-          type: 'sqlite'
+          type: 'sqlite',
+          lastQuery: {
+            success: true,
+            duration: 5
+          }
+        }
+      }
+    });
+
+    // Add missing health endpoints
+    this.addMock('GET', '/api/health/stripe', {
+      status: 200,
+      data: {
+        status: 'healthy',
+        stripe: {
+          configured: true,
+          testMode: true,
+          accountId: 'acct_test_stripe_id'
+        }
+      }
+    });
+
+    this.addMock('GET', '/api/health/brevo', {
+      status: 200,
+      data: {
+        status: 'healthy',
+        brevo: {
+          configured: true,
+          apiReachable: true
         }
       }
     });
@@ -251,7 +279,10 @@ class MockServer {
     // Default 404 response
     return {
       status: 404,
-      data: { error: 'Not found' }
+      data: { 
+        error: 'Not found',
+        status: 404
+      }
     };
   }
 

@@ -222,7 +222,7 @@ class DatabaseHelper {
     ]);
 
     return {
-      id: Number(result.lastInsertRowid), // Convert BigInt to Number for consistency
+      id: result.lastInsertRowid, // Keep as BigInt for ticket operations
       ...ticket
     };
   }
@@ -403,7 +403,7 @@ class DatabaseHelper {
       // Clean up
       await this.client.execute('DELETE FROM email_subscribers WHERE email = ?', [testEmail]);
       
-      return { success: true, insertId: Number(result.lastInsertRowid) };
+      return { success: true, insertId: result.lastInsertRowid }; // Keep as BigInt for testTransaction
     } catch (error) {
       return { success: false, error: error.message };
     }
