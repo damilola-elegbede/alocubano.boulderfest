@@ -183,13 +183,14 @@ class StripeHelpers {
   /**
    * Send webhook to test server (real HTTP request for signature/auth testing)
    */
-  async sendWebhookRequest(eventData, signature = null) {
+  async sendWebhookRequest(eventData, signature = undefined) {
     // Use the same JSON formatting for payload and signature generation
     const payload = JSON.stringify(eventData, null, 0); // Compact JSON
     
-    // Generate signature if not provided
+    // Generate signature if not explicitly provided
+    // If signature is explicitly null, don't generate one (for testing missing signature scenarios)
     let webhookSignature = signature;
-    if (!webhookSignature && this.webhookSecret) {
+    if (signature === undefined && this.webhookSecret) {
       webhookSignature = this.generateWebhookSignature(payload);
     }
 
