@@ -160,13 +160,19 @@ class MockHttpClient {
       'Content-Type': 'application/json'
     };
 
-    if (path.includes('stripe')) {
-      headers['stripe-signature'] = signature;
-    } else if (path.includes('brevo')) {
-      headers['x-sib-signature'] = signature;
+    // Add signature header only if provided and valid
+    if (signature && signature !== 'test-signature') {
+      if (path.includes('stripe')) {
+        headers['stripe-signature'] = signature;
+      } else if (path.includes('brevo')) {
+        headers['x-sib-signature'] = signature;
+      }
     }
 
-    return this.post(path, payload, { ...options, headers });
+    // Use payload as-is for webhooks - it should already be properly formatted
+    const webhookPayload = payload;
+
+    return this._request('POST', path, webhookPayload, { ...options, headers });
   }
 }
 

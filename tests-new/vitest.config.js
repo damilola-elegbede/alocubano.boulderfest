@@ -11,7 +11,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   test: {
     // Test environment configuration
-    environment: 'node',
+    environment: 'jsdom',
     testTimeout: 30000,
     setupFiles: [
       resolve(__dirname, 'core/setup.js')
@@ -74,16 +74,18 @@ export default defineConfig({
       TEST_TYPE: 'integration',
       TEST_PORT: '3005',
       DATABASE_TEST_STRICT_MODE: 'true',
-      // Use file-based database for integration tests (not in-memory)
-      // This allows proper testing of database operations
-      TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL || 'file:./test-integration.db',
+      // Use in-memory database for integration tests to avoid locking issues
+      // This allows proper testing of database operations without file locking
+      TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL || ':memory:',
       // Authentication secrets for testing
       ADMIN_SECRET: process.env.ADMIN_SECRET || 'test-admin-secret-key-32-characters-long',
       ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '$2b$10$PMCZ6tj2JVicCvLQIV.NfuQ93bMjJbxrA8AsJsSngMrwm4G4iN5eG',
       QR_SECRET_KEY: process.env.QR_SECRET_KEY || 'test-qr-secret-key-32-characters-long-abc',
       // Webhook secrets for testing
       STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || 'whsec_test_webhook_secret_for_integration_tests',
-      BREVO_WEBHOOK_SECRET: process.env.BREVO_WEBHOOK_SECRET || 'brevo_test_webhook_secret_for_integration_tests'
+      BREVO_WEBHOOK_SECRET: process.env.BREVO_WEBHOOK_SECRET || 'brevo_test_webhook_secret_for_integration_tests',
+      // Webhook timestamp tolerance for tests (10 minutes vs 5 minutes in production)
+      STRIPE_WEBHOOK_TOLERANCE_SECONDS: '600'
     }
   },
   

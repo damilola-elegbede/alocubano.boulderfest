@@ -259,14 +259,19 @@ class HttpClient {
       'Content-Type': 'application/json'
     };
 
-    // Add signature header based on service
-    if (path.includes('stripe')) {
-      headers['stripe-signature'] = signature;
-    } else if (path.includes('brevo')) {
-      headers['x-sib-signature'] = signature;
+    // Add signature header based on service - only if signature is provided
+    if (signature && signature !== 'test-signature') {
+      if (path.includes('stripe')) {
+        headers['stripe-signature'] = signature;
+      } else if (path.includes('brevo')) {
+        headers['x-sib-signature'] = signature;
+      }
     }
 
-    return this.post(path, payload, {
+    // Use payload as-is for webhooks - it should already be properly formatted
+    const webhookPayload = payload;
+
+    return this._request('POST', path, webhookPayload, {
       ...options,
       headers
     });

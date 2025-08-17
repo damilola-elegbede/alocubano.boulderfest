@@ -5,6 +5,97 @@
 import { serverManager } from './server.js';
 import { databaseHelper } from './database.js';
 
+// DOM Polyfills for Virtual Scrolling Tests
+if (typeof global !== 'undefined') {
+  // Request Animation Frame polyfill
+  global.requestAnimationFrame = global.requestAnimationFrame || function(callback) {
+    return setTimeout(callback, 16);
+  };
+  
+  global.cancelAnimationFrame = global.cancelAnimationFrame || function(id) {
+    clearTimeout(id);
+  };
+  
+  // IntersectionObserver polyfill
+  global.IntersectionObserver = global.IntersectionObserver || class {
+    constructor(callback, options = {}) {
+      this.callback = callback;
+      this.options = options;
+      this.observedElements = new Set();
+    }
+    
+    observe(element) {
+      this.observedElements.add(element);
+      // Simulate intersection immediately for testing
+      setTimeout(() => {
+        this.callback([{
+          target: element,
+          isIntersecting: true,
+          intersectionRatio: 1,
+          boundingClientRect: element.getBoundingClientRect(),
+          intersectionRect: element.getBoundingClientRect(),
+          rootBounds: null,
+          time: performance.now()
+        }]);
+      }, 10);
+    }
+    
+    unobserve(element) {
+      this.observedElements.delete(element);
+    }
+    
+    disconnect() {
+      this.observedElements.clear();
+    }
+  };
+  
+  // ResizeObserver polyfill
+  global.ResizeObserver = global.ResizeObserver || class {
+    constructor(callback) {
+      this.callback = callback;
+      this.observedElements = new Set();
+    }
+    
+    observe(element) {
+      this.observedElements.add(element);
+      // Simulate resize event immediately for testing
+      setTimeout(() => {
+        this.callback([{
+          target: element,
+          contentRect: {
+            width: element.offsetWidth || 800,
+            height: element.offsetHeight || 600,
+            top: 0,
+            left: 0,
+            bottom: element.offsetHeight || 600,
+            right: element.offsetWidth || 800
+          }
+        }]);
+      }, 10);
+    }
+    
+    unobserve(element) {
+      this.observedElements.delete(element);
+    }
+    
+    disconnect() {
+      this.observedElements.clear();
+    }
+  };
+  
+  // Performance polyfill
+  if (!global.performance) {
+    global.performance = {
+      now: () => Date.now(),
+      timing: {},
+      mark: () => {},
+      measure: () => {},
+      getEntriesByType: () => [],
+      getEntriesByName: () => []
+    };
+  }
+}
+
 let globalSetupComplete = false;
 let serverStarted = false;
 

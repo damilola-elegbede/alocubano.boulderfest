@@ -3,12 +3,37 @@
  * Handles test database setup, cleanup, and Turso connection management
  */
 import { getDatabaseClient, resetDatabaseInstance } from '../../api/lib/database.js';
+import { calculateMigrationChecksum } from '../helpers/migration-helpers.js';
 
 class DatabaseHelper {
   constructor() {
     this.client = null;
     this.initialized = false;
     this.testDatabaseUrl = null;
+    this.mutex = Promise.resolve(); // Simple mutex using promises
+    this.activeMutexCount = 0;
+  }
+
+  /**
+   * Acquire mutex lock for database operations
+   */
+  async acquireMutex() {
+    const previousMutex = this.mutex;
+    let releaseMutex;
+    
+    this.mutex = new Promise(resolve => {
+      releaseMutex = resolve;
+    });
+    
+    this.activeMutexCount++;
+    
+    // Wait for previous operation to complete
+    await previousMutex;
+    
+    return () => {
+      this.activeMutexCount--;
+      releaseMutex();
+    };
   }
 
   /**
@@ -22,10 +47,14 @@ class DatabaseHelper {
     console.log('🗄️ Initializing test database...');
 
     try {
-      // Set up test database URL
-      this.testDatabaseUrl = process.env.TURSO_DATABASE_URL || 'file:./test-integration.db';
+      // Set up test database URL - use in-memory for concurrent transaction tests to avoid locking
+      this.testDatabaseUrl = process.env.TURSO_DATABASE_URL || ':memory:';
       
-      // Get database client
+      // Important: Make sure the main database service uses our test database
+      // by resetting it first to pick up our test environment variables
+      await resetDatabaseInstance();
+      
+      // Get database client - ensure we use the shared instance
       this.client = await getDatabaseClient();
       
       // Verify connection
@@ -112,6 +141,19 @@ class DatabaseHelper {
         )
       `);
 
+      // Create migrations table for checksum tests
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS migrations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          version TEXT UNIQUE NOT NULL,
+          filename TEXT NOT NULL,
+          description TEXT,
+          checksum TEXT NOT NULL,
+          executed_at TEXT NOT NULL,
+          execution_time_ms INTEGER DEFAULT 0
+        )
+      `);
+
       // Create additional tables needed for transaction tests
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS subscribers (
@@ -135,6 +177,45 @@ class DatabaseHelper {
           refunded_at DATETIME,
           refund_amount DECIMAL(10,2),
           tickets_generated INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Update tickets table schema to match test expectations
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS tickets_transaction (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          ticket_id TEXT UNIQUE,
+          registration_id INTEGER,
+          email TEXT NOT NULL,
+          buyer_email TEXT NOT NULL,
+          buyer_name TEXT NOT NULL,
+          event_name TEXT NOT NULL,
+          ticket_type TEXT NOT NULL,
+          event_date TEXT,
+          attendee_name TEXT,
+          qr_code TEXT UNIQUE,
+          qr_token TEXT UNIQUE,
+          status TEXT DEFAULT 'valid',
+          unit_price_cents INTEGER DEFAULT 0,
+          total_amount_cents INTEGER DEFAULT 0,
+          currency TEXT DEFAULT 'usd',
+          invalidated_at DATETIME,
+          scanned_count INTEGER DEFAULT 0,
+          max_scans INTEGER DEFAULT 5,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          expires_at DATETIME
+        )
+      `);
+
+      // Create refunds table for transaction tests
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS refunds (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          registration_id INTEGER NOT NULL,
+          amount DECIMAL(10,2) NOT NULL,
+          reason TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
@@ -301,27 +382,97 @@ class DatabaseHelper {
   }
 
   /**
-   * Create database transaction for tests
+   * Acquire mutex lock for database operations with timeout
+   */
+  async acquireMutex(timeout = 10000) {
+    const previousMutex = this.mutex;
+    let releaseMutex;
+    
+    this.mutex = new Promise(resolve => {
+      releaseMutex = resolve;
+    });
+    
+    this.activeMutexCount++;
+    
+    // Wait for previous operation to complete with timeout
+    try {
+      await Promise.race([
+        previousMutex,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Mutex timeout')), timeout)
+        )
+      ]);
+    } catch (error) {
+      this.activeMutexCount--;
+      releaseMutex();
+      throw error;
+    }
+    
+    return () => {
+      this.activeMutexCount--;
+      releaseMutex();
+    };
+  }
+
+  /**
+   * Create database transaction for tests with proper ACID properties
    * @returns {Object} Transaction object with execute, commit, and rollback methods
    */
   async createTransaction() {
-    if (!this.client) {
+    if (!this.client || !this.initialized) {
       await this.initialize();
     }
 
     // Try to use native transaction support if available
     if (typeof this.client.transaction === 'function') {
       try {
-        return await this.client.transaction();
+        const nativeTx = await this.client.transaction();
+        
+        // Wrap native transaction to handle closed state gracefully
+        return {
+          execute: nativeTx.execute.bind(nativeTx),
+          commit: nativeTx.commit.bind(nativeTx),
+          rollback: async () => {
+            try {
+              return await nativeTx.rollback();
+            } catch (error) {
+              if (error.message.includes('TRANSACTION_CLOSED')) {
+                // Transaction already closed, this is fine
+                return true;
+              }
+              throw error;
+            }
+          }
+        };
       } catch (error) {
         console.warn('Native transaction failed, using fallback:', error.message);
       }
     }
 
-    // Fallback transaction wrapper for testing
+    // Acquire mutex lock for the entire transaction
+    const releaseMutex = await this.acquireMutex();
+    
+    // Proper SQLite transaction implementation with retry logic
     const statements = [];
+    let transactionStarted = false;
     let committed = false;
     let rolledBack = false;
+    let transactionId = `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    const executeWithRetry = async (sql, params = [], maxRetries = 3) => {
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          return await this.client.execute(sql, params);
+        } catch (error) {
+          if (error.message.includes('SQLITE_BUSY') && attempt < maxRetries - 1) {
+            // Wait with exponential backoff
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 100));
+            continue;
+          }
+          throw error;
+        }
+      }
+    };
 
     return {
       execute: async (sql, params = []) => {
@@ -329,13 +480,30 @@ class DatabaseHelper {
           throw new Error('Transaction already completed');
         }
         
-        // For transaction tests, execute immediately with proper error handling
         try {
-          const result = await this.client.execute(sql, params);
-          statements.push({ sql, params, result });
+          // Start transaction on first execute with retry
+          if (!transactionStarted) {
+            await executeWithRetry('BEGIN IMMEDIATE');
+            transactionStarted = true;
+          }
+          
+          // Store statement for potential rollback tracking
+          statements.push({ sql, params });
+          
+          // Execute within the transaction with retry
+          const result = await executeWithRetry(sql, params);
           return result;
         } catch (error) {
-          rolledBack = true;
+          // Auto-rollback on error
+          if (transactionStarted && !rolledBack) {
+            try {
+              await executeWithRetry('ROLLBACK');
+            } catch (rollbackError) {
+              console.warn('Error during auto-rollback:', rollbackError.message);
+            }
+            rolledBack = true;
+            releaseMutex();
+          }
           throw error;
         }
       },
@@ -343,20 +511,40 @@ class DatabaseHelper {
         if (committed || rolledBack) {
           throw new Error('Transaction already completed');
         }
-        committed = true;
-        // For SQLite in test mode, commit is implicit
-        return true;
+        
+        try {
+          if (transactionStarted) {
+            await executeWithRetry('COMMIT');
+          }
+          committed = true;
+          return true;
+        } finally {
+          releaseMutex();
+        }
       },
       rollback: async () => {
         if (committed || rolledBack) {
           throw new Error('Transaction already completed');
         }
-        rolledBack = true;
-        // For rollback in tests, we'll try to clean up what we can
-        // In a real transaction system, this would revert changes
-        return true;
+        
+        try {
+          if (transactionStarted) {
+            await executeWithRetry('ROLLBACK');
+          }
+          rolledBack = true;
+          return true;
+        } finally {
+          releaseMutex();
+        }
       }
     };
+  }
+
+  /**
+   * Calculate checksum for migration verification
+   */
+  calculateMigrationChecksum(content) {
+    return calculateMigrationChecksum(content);
   }
 
   /**
