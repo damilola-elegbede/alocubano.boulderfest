@@ -132,7 +132,12 @@ export async function setup() {
     // Always start server for integration tests unless explicitly disabled
     // When running all tests, we need the server available
     const forceSkipServer = process.env.SKIP_SERVER === 'true';
-    const needsServer = !forceSkipServer && (
+    const isDatabaseOnlyTest = process.argv.some(arg => 
+      arg.includes('database-transactions') || 
+      arg.includes('database-operations') ||
+      arg.includes('migration-checksums')
+    );
+    const needsServer = !forceSkipServer && !isDatabaseOnlyTest && (
       process.env.INTEGRATION_NEEDS_SERVER === 'true' || 
       process.argv.length < 4 || // Running all tests
       process.argv.some(arg => arg.includes('integration')) || // Any integration test

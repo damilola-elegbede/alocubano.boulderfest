@@ -3,7 +3,7 @@
  * Tests database interactions with real Turso connection
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { databaseHelper } from '@core/database.js';
+import { databaseHelper } from '../core/database.js';
 
 describe('Database Operations Integration', () => {
   beforeEach(async () => {

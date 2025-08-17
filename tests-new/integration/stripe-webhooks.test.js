@@ -3,9 +3,9 @@
  * Tests Stripe webhook processing with real signatures and database
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { stripeHelpers } from '@core/stripe-helpers.js';
-import { databaseHelper } from '@core/database.js';
-import { httpClient } from '@core/http.js';
+import { stripeHelpers } from '../core/stripe-helpers.js';
+import { databaseHelper } from '../core/database.js';
+import { httpClient } from '../core/http.js';
 
 describe('Stripe Webhooks Integration', () => {
   beforeEach(async () => {

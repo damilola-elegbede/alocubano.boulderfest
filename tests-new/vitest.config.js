@@ -93,10 +93,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, '../api'),
-      '@lib': resolve(__dirname, '../api/lib'),
-      '@core': resolve(__dirname, 'core'),
-      '@fixtures': resolve(__dirname, 'fixtures'),
-      '@helpers': resolve(__dirname, 'helpers')
+      '@lib': resolve(__dirname, '../api/lib')
+      // Note: @core, @fixtures, @helpers aliases removed as tests use relative imports
+      // This prevents confusion and ensures consistent import patterns
     }
   }
 });

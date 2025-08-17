@@ -3,8 +3,8 @@
  * Tests that require an actual running server
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { serverManager } from '@core/server.js';
-import { httpClient } from '@core/http.js';
+import { serverManager } from '../core/server.js';
+import { httpClient } from '../core/http.js';
 
 describe('HTTP Server Integration', () => {
   beforeAll(async () => {

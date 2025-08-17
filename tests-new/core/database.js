@@ -93,6 +93,24 @@ class DatabaseHelper {
    */
   async ensureBasicSchema() {
     try {
+      // First ensure we have a table to track schema creation
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS _test_schema_initialized (
+          id INTEGER PRIMARY KEY,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      // Check if schema was already created
+      const existingSchema = await this.client.execute(
+        'SELECT COUNT(*) as count FROM _test_schema_initialized'
+      );
+      
+      if (existingSchema.rows[0].count > 0) {
+        console.log('✅ Test schema already initialized');
+        return;
+      }
+      
       // Create core tables needed for integration tests
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS tickets (
@@ -220,6 +238,9 @@ class DatabaseHelper {
         )
       `);
 
+      // Mark schema as initialized
+      await this.client.execute('INSERT INTO _test_schema_initialized (id) VALUES (1)');
+      
       console.log('✅ Basic database schema ensured');
     } catch (error) {
       console.error('⚠️ Error ensuring schema:', error.message);
@@ -422,9 +443,33 @@ class DatabaseHelper {
     if (!this.client || !this.initialized) {
       await this.initialize();
     }
+    
+    // Double-check schema exists for transactions
+    try {
+      await this.client.execute('SELECT 1 FROM registrations LIMIT 1');
+    } catch (error) {
+      if (error.message.includes('no such table')) {
+        console.log('🔧 Schema missing in transaction, re-initializing...');
+        await this.ensureBasicSchema();
+      }
+    }
+    
+    // Verify subscribers table exists too
+    try {
+      await this.client.execute('SELECT 1 FROM subscribers LIMIT 1');
+    } catch (error) {
+      if (error.message.includes('no such table')) {
+        console.log('🔧 Subscribers table missing in transaction, re-initializing...');
+        await this.ensureBasicSchema();
+      }
+    }
 
-    // Try to use native transaction support if available
-    if (typeof this.client.transaction === 'function') {
+    // For tests, always use fallback transaction implementation
+    // Native transactions in libsql have issues with schema availability
+    const forceUseFallback = process.env.NODE_ENV === 'test' || process.env.TEST_TYPE === 'database';
+    
+    // Try to use native transaction support if available (but not in tests)
+    if (!forceUseFallback && typeof this.client.transaction === 'function') {
       try {
         const nativeTx = await this.client.transaction();
         

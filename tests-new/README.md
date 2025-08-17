@@ -108,9 +108,9 @@ npm run test:new:shard2
 1. Import required helpers:
 ```javascript
 import { describe, it, expect, beforeEach } from 'vitest';
-import { httpClient } from '@core/http.js';
-import { databaseHelper } from '@core/database.js';
-import { authHelper } from '@core/auth.js';
+import { httpClient } from '../core/http.js';
+import { databaseHelper } from '../core/database.js';
+import { authHelper } from '../core/auth.js';
 ```
 
 2. Setup test environment:
@@ -138,7 +138,7 @@ const response = await authHelper.authenticatedRequest('GET', '/api/admin/dashbo
 Use the test data factory for consistent test data:
 
 ```javascript
-import { TestDataFactory } from '@helpers/test-data.js';
+import { TestDataFactory } from '../helpers/test-data.js';
 
 const ticketData = TestDataFactory.createTicketData({
   buyer_email: 'custom@test.com'

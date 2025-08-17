@@ -3,8 +3,8 @@
  * Basic test to verify the test infrastructure works
  */
 import { describe, it, expect } from 'vitest';
-import { databaseHelper } from '@core/database.js';
-import { authHelper } from '@core/auth.js';
+import { databaseHelper } from '../core/database.js';
+import { authHelper } from '../core/auth.js';
 import { TestDataFactory } from '../helpers/test-data.js';
 
 describe('Simple Connectivity Integration', () => {

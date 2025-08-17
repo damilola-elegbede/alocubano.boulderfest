@@ -3,9 +3,9 @@
  * Tests admin login, JWT tokens, and protected routes
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { authHelper } from '@core/auth.js';
-import { httpClient } from '@core/http.js';
-import { databaseHelper } from '@core/database.js';
+import { authHelper } from '../core/auth.js';
+import { httpClient } from '../core/http.js';
+import { databaseHelper } from '../core/database.js';
 import { isMockMode } from '../helpers/test-mode.js';
 
 describe.skipIf(isMockMode())('Admin Authentication Integration', () => {

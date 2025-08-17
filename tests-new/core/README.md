@@ -91,7 +91,7 @@ this.addMock('POST', '/api/custom/endpoint', {
 The HTTP client automatically switches between mock and real implementations:
 
 ```javascript
-import { httpClient } from '@core/http.js';
+import { httpClient } from '../core/http.js';
 
 // Works in both modes
 const response = await httpClient.get('/api/health/check');
@@ -112,7 +112,7 @@ const response = await httpClient.get('/api/health/check');
 ### Mode Detection
 
 ```javascript
-import { isCI, isMockMode, isRealServerMode } from '@helpers/test-mode.js';
+import { isCI, isMockMode, isRealServerMode } from '../helpers/test-mode.js';
 
 if (isMockMode()) {
   console.log('Using mock server');
@@ -122,7 +122,7 @@ if (isMockMode()) {
 ### Conditional Test Execution
 
 ```javascript
-import { skipInCI, onlyInCI } from '@helpers/test-mode.js';
+import { skipInCI, onlyInCI } from '../helpers/test-mode.js';
 
 // Skip test in CI without real server
 skipInCI(it)('should test with real server', async () => {
