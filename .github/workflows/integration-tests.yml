@@ -142,8 +142,8 @@ jobs:
 
       - name: Run performance tests
         run: |
-          # Run from root directory with proper config path
-          npx vitest run tests-new/integration/*.test.js --config tests-new/vitest.config.js --reporter=json > tests-new/performance.json 2>/dev/null || true
+          # Run the new test framework with JSON reporter
+          npm run test:new -- --reporter=json > tests-new/performance.json 2>/dev/null || true
           
           # Ensure file exists and is valid JSON
           if [ ! -f tests-new/performance.json ] || [ ! -s tests-new/performance.json ]; then
@@ -154,7 +154,14 @@ jobs:
           cd tests-new
           node -e "try { JSON.parse(require('fs').readFileSync('performance.json', 'utf8')); console.log('✅ Valid JSON generated'); } catch(e) { console.error('❌ Invalid JSON, using fallback'); require('fs').writeFileSync('performance.json', JSON.stringify({testResults:[],numTotalTests:0,numPassedTests:0,numFailedTests:0})); }"
         env:
-          INTEGRATION_NEEDS_SERVER: false
+          NODE_ENV: test
+          CI: true
+          TURSO_DATABASE_URL: file:./test-integration.db
+          ADMIN_SECRET: test-admin-secret-key-32-characters-long-enough
+          ADMIN_PASSWORD: $2b$10$PMCZ6tj2JVicCvLQIV.NfuQ93bMjJbxrA8AsJsSngMrwm4G4iN5eG
+          QR_SECRET_KEY: test-qr-secret-key-32-characters-long-abc
+          STRIPE_WEBHOOK_SECRET: whsec_test_webhook_secret_for_integration_tests
+          BREVO_WEBHOOK_SECRET: brevo_test_webhook_secret_for_integration_tests
 
       - name: Analyze performance
         run: |
