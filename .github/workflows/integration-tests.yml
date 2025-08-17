@@ -142,16 +142,16 @@ jobs:
 
       - name: Run performance tests
         run: |
-          cd tests-new
-          # Generate JSON output only (redirect verbose to stderr, JSON to stdout)
-          npx vitest run integration/*.test.js --config vitest.config.js --reporter=json > performance.json 2>/dev/null || true
+          # Run from root directory with proper config path
+          npx vitest run tests-new/integration/*.test.js --config tests-new/vitest.config.js --reporter=json > tests-new/performance.json 2>/dev/null || true
           
           # Ensure file exists and is valid JSON
-          if [ ! -f performance.json ] || [ ! -s performance.json ]; then
-            echo '{"testResults":[],"numTotalTests":0,"numPassedTests":0,"numFailedTests":0}' > performance.json
+          if [ ! -f tests-new/performance.json ] || [ ! -s tests-new/performance.json ]; then
+            echo '{"testResults":[],"numTotalTests":0,"numPassedTests":0,"numFailedTests":0}' > tests-new/performance.json
           fi
           
           # Validate JSON structure
+          cd tests-new
           node -e "try { JSON.parse(require('fs').readFileSync('performance.json', 'utf8')); console.log('✅ Valid JSON generated'); } catch(e) { console.error('❌ Invalid JSON, using fallback'); require('fs').writeFileSync('performance.json', JSON.stringify({testResults:[],numTotalTests:0,numPassedTests:0,numFailedTests:0})); }"
         env:
           INTEGRATION_NEEDS_SERVER: false
