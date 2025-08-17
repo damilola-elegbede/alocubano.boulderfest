@@ -126,7 +126,7 @@ jobs:
 
   performance-check:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: false  # Temporarily disabled - the test-new job already provides comprehensive performance monitoring
 
     steps:
       - uses: actions/checkout@v4
