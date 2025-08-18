@@ -135,3 +135,17 @@ export class QRTokenService {
     // Each operation uses its own connection
   }
 }
+
+// Singleton instance
+let qrTokenService = null;
+
+/**
+ * Get QR Token Service singleton instance
+ * @returns {QRTokenService} QR Token Service instance
+ */
+export function getQRTokenService() {
+  if (!qrTokenService) {
+    qrTokenService = new QRTokenService();
+  }
+  return qrTokenService;
+}

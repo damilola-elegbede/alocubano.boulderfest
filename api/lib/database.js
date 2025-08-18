@@ -369,6 +369,64 @@ class DatabaseService {
   }
 
   /**
+   * Create a database transaction
+   * @returns {Promise<Object>} Transaction object with execute, commit, and rollback methods
+   */
+  async transaction() {
+    try {
+      const client = await this.ensureInitialized();
+      
+      // Check if client has transaction support
+      if (typeof client.transaction === 'function') {
+        return await client.transaction();
+      }
+      
+      // Fallback for clients without native transaction support:
+      // emulate a transaction boundary with explicit SQL
+      console.warn('Database client lacks native transactions; using explicit BEGIN/COMMIT/ROLLBACK fallback');
+      let started = false;
+      let completed = false;
+      return {
+        execute: async (sql, params = []) => {
+          if (completed) throw new Error('Transaction already completed');
+          if (!started) {
+            // Use IMMEDIATE to acquire a write lock early and reduce deadlocks
+            // Call client.execute with proper object format
+            await client.execute({ sql: 'BEGIN IMMEDIATE', args: [] });
+            started = true;
+          }
+          // Execute within the explicit transaction using proper object format
+          return await client.execute({ sql, args: params });
+        },
+        commit: async () => {
+          if (completed) throw new Error('Transaction already completed');
+          if (started) {
+            // Call client.execute with proper object format
+            await client.execute({ sql: 'COMMIT', args: [] });
+          }
+          completed = true;
+          return true;
+        },
+        rollback: async () => {
+          if (completed) throw new Error('Transaction already completed');
+          if (started) {
+            // Call client.execute with proper object format
+            await client.execute({ sql: 'ROLLBACK', args: [] });
+          }
+          completed = true;
+          return true;
+        },
+      };
+    } catch (error) {
+      console.error("Database transaction creation failed:", {
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Close database connections with proper cleanup and timeout protection
    * @param {number} timeout - Timeout in milliseconds for closing connections (default: 5000)
    * @returns {Promise<boolean>} True if all connections closed successfully
