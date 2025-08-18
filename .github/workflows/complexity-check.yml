@@ -26,14 +26,14 @@ jobs:
       run: |
         echo "🔍 Analyzing test infrastructure complexity..."
         
-        # Count total lines in test framework
-        TOTAL_TEST_LINES=$(find tests-new -name "*.js" -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
+        # Count total lines in streamlined test framework
+        TOTAL_TEST_LINES=$(find tests -name "*.js" -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
         
         # Count test files
-        TEST_FILE_COUNT=$(find tests-new -name "*.js" | wc -l || echo 0)
+        TEST_FILE_COUNT=$(find tests -name "*.js" | wc -l || echo 0)
         
-        # Count utility files in core/helpers/fixtures
-        UTIL_FILE_COUNT=$(find tests-new/core tests-new/helpers tests-new/fixtures -name "*.js" 2>/dev/null | wc -l || echo 0)
+        # Count utility files (should be minimal)
+        UTIL_FILE_COUNT=$(find tests -name "helpers.js" -o -name "setup.js" 2>/dev/null | wc -l || echo 0)
         
         echo "📊 Current Test Infrastructure Metrics:"
         echo "  Total test lines: $TOTAL_TEST_LINES"
