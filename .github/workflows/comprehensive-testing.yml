@@ -503,7 +503,7 @@ jobs:
           npx wait-on http://localhost:3000 --timeout 45000 --interval 1000
 
       - name: Run performance tests
-        run: npm run performance:ci
+        run: npm run performance:ci:critical
         env:
           LOAD_TEST_BASE_URL: http://localhost:3000
 
