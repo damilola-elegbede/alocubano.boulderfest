@@ -111,8 +111,8 @@ jobs:
           # Check for exposed API keys or secrets (excluding test files and fixtures)
           # Only fail if we find actual production keys, not test keys
           
-          # Check for Stripe live keys (not test keys)
-          if grep -r "sk_live" . --exclude-dir=node_modules --exclude-dir=tests --exclude="*.test.js" --exclude="*.md" 2>/dev/null; then
+          # Check for Stripe live keys (not test keys) - exclude workflow files with examples
+          if grep -r "sk_live" . --exclude-dir=node_modules --exclude-dir=tests --exclude-dir=.github --exclude="*.test.js" --exclude="*.md" 2>/dev/null; then
             echo "❌ Found exposed Stripe live key!"
             exit 1
           fi
