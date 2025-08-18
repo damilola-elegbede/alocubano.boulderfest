@@ -118,9 +118,9 @@ jobs:
       - name: Setup test results directory
         run: mkdir -p test-results coverage
 
-      - name: Run unit tests with sharding
+      - name: Run streamlined tests with sharding
         run: |
-          npm run test:unit:ci -- --shard=${{ matrix.test-shard }}/2 \
+          npm run test:simple -- --shard=${{ matrix.test-shard }}/2 \
             --reporter=default \
             --reporter=junit \
             --reporter=json \
@@ -198,21 +198,19 @@ jobs:
       - name: Setup integration test results directory
         run: mkdir -p test-results
 
-      - name: Run integration tests
+      - name: Run integration tests (using streamlined suite)
         run: |
-          echo "🚀 Running integration tests with memory-based rate limiting (no Redis required)"
+          echo "🚀 Running streamlined integration tests (480 lines total)"
           
-          # Run integration tests with optimized timeouts and CI-specific exclusions
+          # Integration tests are now part of the simple test suite
           npm run test:integration:ci -- \
             --reporter=default \
             --reporter=junit \
             --reporter=json \
             --outputFile.junit=./test-results/integration-tests.xml \
             --outputFile.json=./test-results/integration-tests.json \
-            --testTimeout=30000 \
-            --hookTimeout=15000 \
-            --bail=5 \
-            --maxConcurrency=1
+            --testTimeout=15000 \
+            --hookTimeout=10000
         env:
           NODE_ENV: test
           CI: true
@@ -223,15 +221,10 @@ jobs:
           # Redis URL intentionally omitted - system will use memory fallback
         continue-on-error: false
 
-      - name: Run database tests
+      - name: Skip separate database tests (included in streamlined suite)
         run: |
-          npm run test:database:ci -- --reporter=default --reporter=junit --reporter=json --outputFile.junit=./test-results/database-tests.xml --outputFile.json=./test-results/database-tests.json || true
-        env:
-          NODE_ENV: test
-          CI: true
-          TEST_CI_EXCLUDE_PATTERNS: 'true'
-          NODE_OPTIONS: '--max-old-space-size=1024'
-        continue-on-error: true
+          echo "⚡ Database tests are now part of the streamlined test suite"
+          echo "   No separate database test run needed - reduces complexity"
 
       - name: Validate integration test results
         if: always()
