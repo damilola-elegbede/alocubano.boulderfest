@@ -153,7 +153,7 @@
     "stylelint": "^16.21.1",
     "stylelint-config-standard": "^36.0.1",
     "supertest": "^7.1.4",
-    "vercel": "^44.1.0",
+    "vercel": "^41.0.2",
     "vitest": "^3.2.4",
     "wait-on": "^7.2.0"
   }
