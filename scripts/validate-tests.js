@@ -1,12 +1,106 @@
 #!/usr/bin/env node
 
-import { execSync } from 'child_process';
+import { execSync, spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/**
+ * Creates a non-blocking memory monitor using spawn()
+ * @returns {Object} Monitor object with start/stop methods and memory tracking
+ */
+function createMemoryMonitor() {
+  let maxMemory = 0;
+  let isRunning = false;
+  let monitorTimeout = null;
+
+  const sampleMemory = () => {
+    return new Promise((resolve) => {
+      const ps = spawn('ps', ['aux'], { stdio: ['ignore', 'pipe', 'ignore'] });
+      const grep = spawn('grep', ['node'], { stdio: [ps.stdout, 'pipe', 'ignore'] });
+      const grepOut = spawn('grep', ['-v', 'grep'], { stdio: [grep.stdout, 'pipe', 'ignore'] });
+      const awk = spawn('awk', ['{print $6}'], { stdio: [grepOut.stdout, 'pipe', 'ignore'] });
+
+      let output = '';
+      
+      awk.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+
+      awk.on('close', (code) => {
+        try {
+          const memLines = output.trim().split('\n').filter(line => line.trim());
+          if (memLines.length > 0) {
+            // Get the highest memory usage from all node processes
+            const memValues = memLines.map(line => {
+              const memKB = parseInt(line.trim());
+              return isNaN(memKB) ? 0 : memKB / 1024; // Convert KB to MB
+            });
+            const currentMem = Math.max(...memValues);
+            
+            if (currentMem > maxMemory) {
+              maxMemory = currentMem;
+            }
+          }
+        } catch (error) {
+          // Ignore parsing errors - process might not be running yet
+        }
+        resolve();
+      });
+
+      awk.on('error', () => {
+        // Ignore spawn errors - process might not be running yet
+        resolve();
+      });
+
+      // Cleanup pipes on error
+      [ps, grep, grepOut].forEach(proc => {
+        proc.on('error', () => {
+          // Ignore pipe errors
+        });
+      });
+    });
+  };
+
+  const scheduleNextSample = () => {
+    if (isRunning) {
+      monitorTimeout = setTimeout(async () => {
+        await sampleMemory();
+        scheduleNextSample();
+      }, 100);
+    }
+  };
+
+  return {
+    start() {
+      if (!isRunning) {
+        isRunning = true;
+        maxMemory = 0;
+        scheduleNextSample();
+      }
+    },
+    
+    stop() {
+      isRunning = false;
+      if (monitorTimeout) {
+        clearTimeout(monitorTimeout);
+        monitorTimeout = null;
+      }
+      return maxMemory;
+    },
+    
+    getMaxMemory() {
+      return maxMemory;
+    },
+    
+    reset() {
+      maxMemory = 0;
+    }
+  };
+}
 
 const metrics = {
   old_suite: { 
@@ -35,28 +129,19 @@ function runCommand(command, label) {
   console.log(`\n📊 Running: ${label}`);
   console.log(`Command: ${command}`);
   const start = Date.now();
-  let maxMemory = 0;
+  
+  // Create and start non-blocking memory monitor
+  const memoryMonitor = createMemoryMonitor();
+  memoryMonitor.start();
   
   try {
-    const memoryInterval = setInterval(() => {
-      try {
-        const memInfo = execSync('ps aux | grep "node.*test" | grep -v grep | awk \'{print $6}\'', { encoding: 'utf8' });
-        const currentMem = parseInt(memInfo.trim()) / 1024; // Convert KB to MB
-        if (!isNaN(currentMem) && currentMem > maxMemory) {
-          maxMemory = currentMem;
-        }
-      } catch (e) {
-        // Process might not be running yet
-      }
-    }, 100);
-
     const output = execSync(command, { 
       encoding: 'utf8',
       maxBuffer: 10 * 1024 * 1024,
       env: { ...process.env, CI: 'true' }
     });
     
-    clearInterval(memoryInterval);
+    const maxMemory = memoryMonitor.stop();
     const duration = (Date.now() - start) / 1000;
     
     console.log(`✅ Completed in ${duration}s`);
@@ -76,6 +161,7 @@ function runCommand(command, label) {
       failures: []
     };
   } catch (error) {
+    const maxMemory = memoryMonitor.stop();
     const duration = (Date.now() - start) / 1000;
     console.log(`❌ Failed after ${duration}s`);
     

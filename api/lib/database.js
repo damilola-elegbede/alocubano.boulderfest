@@ -391,16 +391,18 @@ class DatabaseService {
           if (completed) throw new Error('Transaction already completed');
           if (!started) {
             // Use IMMEDIATE to acquire a write lock early and reduce deadlocks
-            await client.execute('BEGIN IMMEDIATE');
+            // Call client.execute with proper object format
+            await client.execute({ sql: 'BEGIN IMMEDIATE', args: [] });
             started = true;
           }
-          // Execute within the explicit transaction
+          // Execute within the explicit transaction using proper object format
           return await client.execute({ sql, args: params });
         },
         commit: async () => {
           if (completed) throw new Error('Transaction already completed');
           if (started) {
-            await client.execute('COMMIT');
+            // Call client.execute with proper object format
+            await client.execute({ sql: 'COMMIT', args: [] });
           }
           completed = true;
           return true;
@@ -408,7 +410,8 @@ class DatabaseService {
         rollback: async () => {
           if (completed) throw new Error('Transaction already completed');
           if (started) {
-            await client.execute('ROLLBACK');
+            // Call client.execute with proper object format
+            await client.execute({ sql: 'ROLLBACK', args: [] });
           }
           completed = true;
           return true;
