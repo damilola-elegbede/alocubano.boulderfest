@@ -19,7 +19,7 @@ yarn-error.log*
 node_modules/
 yarn.lock
 
-# Test artifacts
+# Test artifacts (streamlined)
 coverage/
 test-results/
 test-reports/
@@ -27,6 +27,11 @@ test-reports/
 *.lcov
 jest-results.json
 lighthouse-report.html
+*.test.db
+*-test.db
+test-*.db
+test-output.json
+test-result.json
 
 # Build outputs
 dist/
