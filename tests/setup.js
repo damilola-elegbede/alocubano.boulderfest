@@ -1,29 +1,20 @@
-// Jest setup file
-beforeAll(async () => {
-  // Set longer timeout for CI environments
-  jest.setTimeout(30000);
+/**
+ * Test Setup - Basic Configuration Only
+ * Minimal environment setup for tests.
+ * Target: < 50 lines
+ */
+import { afterEach } from 'vitest';
+import { cleanup } from './helpers.js';
 
-  // Setup puppeteer environment
-  if (global.page) {
-    await global.page.setViewport({ width: 1280, height: 800 });
+// Set test environment
+process.env.NODE_ENV = 'test';
 
-    // Mock console to capture logs
-    global.page.on("console", (msg) => {
-      if (process.env.DEBUG_TESTS) {
-        console.log("Browser console:", msg.text());
-      }
-    });
+// Use test database if not specified
+if (!process.env.TURSO_DATABASE_URL) {
+  process.env.TURSO_DATABASE_URL = 'file:test.db';
+}
 
-    // Log any page errors
-    global.page.on("error", (err) => {
-      console.error("Browser error:", err);
-    });
-  }
-});
-
-afterAll(async () => {
-  // Clean up any resources
-  if (global.browser) {
-    await global.browser.close();
-  }
+// Cleanup after each test - simple and reliable
+afterEach(async () => {
+  await cleanup();
 });
