@@ -40,13 +40,14 @@ jobs:
         echo "  Test file count: $TEST_FILE_COUNT" 
         echo "  Utility file count: $UTIL_FILE_COUNT"
         
-        # Check total lines threshold
-        if [ "$TOTAL_TEST_LINES" -gt 3000 ]; then
-          echo "❌ COMPLEXITY FAILURE: Total test lines ($TOTAL_TEST_LINES) exceeds 3000 line threshold"
-          echo "   This indicates test infrastructure bloat. Consider:"
-          echo "   • Removing duplicate test utilities"
-          echo "   • Simplifying complex test patterns"
-          echo "   • Using direct assertions instead of helper abstractions"
+        # Check total lines threshold - streamlined target is 500 lines max
+        if [ "$TOTAL_TEST_LINES" -gt 500 ]; then
+          echo "❌ COMPLEXITY FAILURE: Total test lines ($TOTAL_TEST_LINES) exceeds 500 line threshold"
+          echo "   The streamlined test approach should stay under 500 lines total. Consider:"
+          echo "   • Removing unnecessary test abstractions"
+          echo "   • Simplifying test helper functions"
+          echo "   • Using direct assertions instead of complex helpers"
+          echo "   • Focus only on critical business flows"
           exit 1
         fi
         
@@ -61,7 +62,7 @@ jobs:
               OVERSIZED_FILES="$OVERSIZED_FILES\n  $file ($LINE_COUNT lines)"
             fi
           fi
-        done < <(find tests-new -name "*.test.js" -type f 2>/dev/null || true)
+        done < <(find tests -name "*.test.js" -type f 2>/dev/null || true)
         
         # Check for oversized utility files
         echo "🔍 Checking utility file sizes..."
@@ -74,7 +75,7 @@ jobs:
               OVERSIZED_UTILS="$OVERSIZED_UTILS\n  $file ($LINE_COUNT lines)"
             fi
           fi
-        done < <(find tests-new/core tests-new/helpers tests-new/fixtures -name "*.js" -type f 2>/dev/null || true)
+        done < <(find tests -name "helpers.js" -o -name "setup.js" -type f 2>/dev/null || true)
         
         # Report oversized files as warnings, not failures
         if [ -n "$OVERSIZED_FILES" ]; then
@@ -99,31 +100,32 @@ jobs:
         echo "Generated: $(date)" >> complexity-report.md
         echo "" >> complexity-report.md
         
-        # Metrics
-        TOTAL_LINES=$(find tests-new -name "*.js" -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
-        FILE_COUNT=$(find tests-new -name "*.js" | wc -l || echo 0)
-        UTIL_COUNT=$(find tests-new/core tests-new/helpers tests-new/fixtures -name "*.js" 2>/dev/null | wc -l || echo 0)
+        # Metrics for streamlined tests
+        TOTAL_LINES=$(find tests -name "*.js" -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
+        FILE_COUNT=$(find tests -name "*.js" | wc -l || echo 0)
+        UTIL_COUNT=$(find tests -name "helpers.js" -o -name "setup.js" 2>/dev/null | wc -l || echo 0)
         
         echo "## Current Metrics" >> complexity-report.md
-        echo "- **Total Lines**: $TOTAL_LINES / 3000 threshold" >> complexity-report.md
+        echo "- **Total Lines**: $TOTAL_LINES / 500 threshold (streamlined)" >> complexity-report.md
         echo "- **Test Files**: $FILE_COUNT" >> complexity-report.md  
         echo "- **Utility Files**: $UTIL_COUNT" >> complexity-report.md
         echo "" >> complexity-report.md
         
         # Top 5 largest files
         echo "## Largest Test Files" >> complexity-report.md
-        find tests-new -name "*.js" -exec wc -l {} + 2>/dev/null | sort -nr | head -6 | tail -5 | while read line file; do
+        find tests -name "*.js" -exec wc -l {} + 2>/dev/null | sort -nr | head -6 | tail -5 | while read line file; do
           echo "- $file: $line lines" >> complexity-report.md
         done
         
         # Prevention guidance
         echo "" >> complexity-report.md
-        echo "## Prevention Guidelines" >> complexity-report.md
-        echo "- Keep test files under 200 lines" >> complexity-report.md
-        echo "- Keep utility files under 150 lines" >> complexity-report.md
-        echo "- Avoid complex test abstractions" >> complexity-report.md
-        echo "- Use direct assertions over helper methods" >> complexity-report.md
-        echo "- Delete unused test utilities immediately" >> complexity-report.md
+        echo "## Streamlined Test Guidelines" >> complexity-report.md
+        echo "- **Total test suite**: Stay under 500 lines" >> complexity-report.md
+        echo "- **Individual test files**: Under 200 lines each" >> complexity-report.md
+        echo "- **Helper files**: Under 100 lines each" >> complexity-report.md
+        echo "- **Focus**: Test critical business flows only" >> complexity-report.md
+        echo "- **Approach**: Direct API calls, no complex mocking" >> complexity-report.md
+        echo "- **Simplicity**: Any developer should understand tests immediately" >> complexity-report.md
         
     - name: Upload Complexity Report
       uses: actions/upload-artifact@v4
