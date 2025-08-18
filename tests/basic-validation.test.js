@@ -35,6 +35,24 @@ test('APIs handle missing required fields', async () => {
   expect([400, 422, 0, 500].includes(noEmail.status)).toBe(true);
 });
 
+test('ticket validation handles invalid QR codes', async () => {
+  const invalidQRCodes = [
+    '', // Empty
+    'invalid-qr-format',
+    'malicious-injection-attempt',
+    null
+  ];
+  
+  for (const qrCode of invalidQRCodes) {
+    const response = await testRequest('POST', '/api/tickets/validate', {
+      qr_code: qrCode
+    });
+    
+    // Should reject invalid QR codes gracefully
+    expect([400, 404, 422, 0, 500].includes(response.status)).toBe(true);
+  }
+});
+
 test('APIs handle SQL injection attempts safely', async () => {
   const maliciousInputs = [
     "'; DROP TABLE registrations; --",

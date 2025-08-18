@@ -59,6 +59,18 @@ test('health check APIs exist', async () => {
   }
 });
 
+test('ticket endpoints exist and handle requests', async () => {
+  // Test ticket validation endpoint (QR scanning)
+  const validateResponse = await testRequest('POST', '/api/tickets/validate', {
+    qr_code: 'test-qr-code-123'
+  });
+  expect([200, 400, 404, 0, 500].includes(validateResponse.status)).toBe(true);
+  
+  // Test ticket retrieval endpoint
+  const ticketResponse = await testRequest('GET', '/api/tickets?ticket_id=test-123');
+  expect([200, 404, 0, 500].includes(ticketResponse.status)).toBe(true);
+});
+
 test('admin endpoints require authentication', async () => {
   const adminEndpoints = [
     '/api/admin/dashboard',

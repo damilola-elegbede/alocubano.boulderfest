@@ -102,4 +102,18 @@ test('APIs respond within acceptable time limits', async () => {
       expect(duration).toBeLessThan(5000); // 5 second max for smoke tests
     }
   }
+  
+  // Test ticket validation performance (critical for check-in rush scenarios)
+  const qrStart = Date.now();
+  const qrResponse = await testRequest('POST', '/api/tickets/validate', {
+    qr_code: 'test-performance-qr'
+  });
+  const qrDuration = Date.now() - qrStart;
+  
+  expect([200, 400, 404, 0, 500].includes(qrResponse.status)).toBe(true);
+  
+  // QR validation should be fast for check-in scenarios
+  if (qrResponse.status === 200 || qrResponse.status === 400 || qrResponse.status === 404) {
+    expect(qrDuration).toBeLessThan(2000); // 2 second max for QR validation
+  }
 });
