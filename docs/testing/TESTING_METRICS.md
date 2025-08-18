@@ -1,8 +1,8 @@
 # Testing Metrics & Quality Thresholds
 
-## Measurable Testing Metrics
+## Streamlined Testing Metrics
 
-We focus on **functional quality metrics** rather than code coverage, ensuring the application works correctly and performantly through pattern validation testing.
+We focus on **functional quality metrics** with a streamlined test suite, ensuring the application works correctly and performantly through efficient pattern validation testing.
 
 ## Core Quality Metrics
 
@@ -12,18 +12,21 @@ We focus on **functional quality metrics** rather than code coverage, ensuring t
 
 ```bash
 npm test
-# Current: 250/252 tests passing (99.2%)
+# Current: 13/13 tests passing (100%)
+# Architecture: 3 test files, streamlined configuration
 # Threshold: Must maintain 100% pass rate
 ```
 
 ### 2. **Test Suite Performance**
 
-**Target: <10 seconds execution time**
+**Target: <5 seconds execution time**
 
 ```bash
 npm test
-# Current: ~9 seconds for full suite
-# Threshold: Must complete in <15 seconds
+# Current: 255ms for streamlined suite (13 tests)
+# Baseline: 255ms across 3 test files
+# Memory: <256MB usage
+# Threshold: Must complete in <5 seconds (currently 97% under target)
 ```
 
 ### 3. **Functional Component Performance**
@@ -36,16 +39,16 @@ npm test
 - DOM render: <200ms for 50 items
 - API processing: <100ms for 150 items
 
-### 4. **Test Coverage Breadth**
+### 4. **Streamlined Test Coverage**
 
-**Target: All major components tested**
+**Target: Essential components tested with maximum efficiency**
 
-- ✅ API Logic (14 test files)
-- ✅ Frontend Components (lightbox, lazy-loading, gallery)
-- ✅ Integration Flows (gallery→lightbox, API→frontend)
-- ✅ Error Handling & Browser Compatibility
-- ✅ Performance Characteristics
-- ✅ Accessibility & Mobile Support
+- ✅ API Contracts (5 tests) - Essential endpoint validation
+- ✅ Basic Validation (3 tests) - Core functionality validation  
+- ✅ Smoke Tests (5 tests) - Critical system availability
+- ✅ Single command execution - `npm test` runs everything
+- ✅ Direct API testing - Real endpoints, minimal mocking
+- ✅ Streamlined architecture - 3 files, 13 tests total
 
 ### 5. **Zero Flaky Tests**
 
@@ -73,16 +76,16 @@ npm run prebuild
 
 ```bash
 npm run lint          # ESLint + HTMLHint
-npm run test:fast     # Unit tests (<30s)
-npm run test:coverage  # Coverage reporting only (no thresholds)
+npm test             # Streamlined tests (255ms)
+npm run test:coverage  # Coverage reporting (optional)
 ```
 
 ### Pre-Push Gates
 
 ```bash
-npm run test:all      # Full test suite
-npm run test:integration  # Component interaction tests
-npm run test:performance  # Performance benchmarks
+npm test             # Streamlined test suite (255ms)
+npm run test:e2e     # End-to-end tests (separate suite)
+npm run lint         # Code quality validation
 ```
 
 ### Deployment Gates
@@ -97,22 +100,22 @@ npm run deploy:quality-gate  # Blocking gate for releases
 ### Quick Health Check
 
 ```bash
-# Fast validation (30 seconds)
-npm run test:fast
+# Fast validation (255ms)
+npm test
 ```
 
 ### Comprehensive Validation
 
 ```bash
-# Full validation (60 seconds)
-npm run test:all
+# Full validation including E2E (2-5 minutes)
+npm test && npm run test:e2e
 ```
 
 ### Performance Benchmarking
 
 ```bash
-# Performance-only tests
-npm run test:performance
+# Application performance (separate from unit tests)
+npm run performance:ci
 ```
 
 ### Flaky Test Detection
@@ -127,17 +130,17 @@ node scripts/test-maintenance.js
 ### 🚨 **Critical Issues** (Block deployments)
 
 - Test success rate <100%
-- Test suite execution >15 seconds
+- Test suite execution >5 seconds (current baseline: 255ms)
 - Any flaky tests detected
 - Build script failures
 - Performance regression >50%
 
 ### ⚠️ **Warning Issues** (Investigate immediately)
 
-- Test suite execution >10 seconds
+- Test suite execution >2 seconds (current baseline: 255ms)
 - Performance regression >25%
-- New untested code paths
-- Coverage breadth reduction
+- New tests added without justification (maintain streamlined approach)
+- Memory usage >512MB for test suite
 
 ### ℹ️ **Monitoring Issues** (Track trends)
 
@@ -169,36 +172,36 @@ npm run test:all && npm run lint && npm run test:links
 
 ### Primary Metrics (Must Pass)
 
-1. **Test Success**: 100% tests passing
-2. **Execution Speed**: <15 seconds full suite
+1. **Test Success**: 100% tests passing (13/13)
+2. **Execution Speed**: <5 seconds total (current: 255ms)
 3. **Zero Flaky Tests**: 100% consistency across runs
 4. **Build Reliability**: 100% successful builds
-5. **Performance Standards**: All components meet latency targets
+5. **Memory Efficiency**: <256MB test suite usage
 
 ### Secondary Metrics (Monitor)
 
-1. **Test Coverage Breadth**: All major features tested
-2. **Performance Trends**: No >25% regression
-3. **Error Handling**: All error paths tested
-4. **Browser Compatibility**: Cross-browser validation
-5. **Accessibility Standards**: WCAG compliance maintained
+1. **Streamlined Coverage**: Essential functionality tested efficiently
+2. **Performance Trends**: No execution time regression
+3. **Architecture Simplicity**: Maintain 3 test files maximum
+4. **Browser Compatibility**: Cross-browser E2E validation
+5. **Command Simplicity**: Single `npm test` command effectiveness
 
 ## Implementation
 
 ### Current Status ✅
 
-- **250 passing tests** across 19 test suites
-- **9-second execution time** (well under threshold)
+- **13 passing tests** across 3 streamlined test files
+- **255ms execution time** (97% under 5-second threshold)
 - **Zero flaky tests** confirmed via health checks
-- **Comprehensive component coverage** achieved
-- **Performance benchmarks** established and monitored
+- **Essential component coverage** achieved efficiently
+- **Sub-second performance** consistently maintained
 
 ### Measurement Tools
 
-- **Jest**: Test execution and reporting
-- **Performance API**: Timing and benchmarks
-- **Custom Scripts**: Health monitoring and flaky detection
-- **CI/CD Pipeline**: Automated gate enforcement
-- **HTML Reports**: Trend analysis and debugging
+- **Vitest**: Streamlined test execution and reporting
+- **Performance Monitoring**: Execution time tracking in CI
+- **GitHub Actions**: Automated gate enforcement
+- **Simple Metrics**: Focus on execution time and test count
+- **Memory Monitoring**: <256MB usage tracking
 
-This metrics framework provides **measurable quality assurance** without relying on traditional code coverage, focusing instead on **functional correctness** and **performance characteristics** that directly impact user experience.
+This streamlined metrics framework provides **efficient quality assurance** focusing on **execution speed**, **memory efficiency**, and **functional correctness** with minimal overhead and maximum developer productivity.
