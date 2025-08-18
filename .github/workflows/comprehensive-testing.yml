@@ -89,9 +89,9 @@ jobs:
             lint-report.json
           retention-days: 7
 
-  # Job 2: Streamlined Tests (13 tests in 234ms)
+  # Job 2: Streamlined Tests (15 tests in 400ms)
   streamlined-tests:
-    name: Streamlined Tests (13 tests - API Contracts + Smoke + Validation)
+    name: Streamlined Tests (15 tests - API Contracts + Smoke + Validation + Tickets)
     runs-on: ubuntu-latest
     needs: quality-check
     timeout-minutes: 5
@@ -117,11 +117,11 @@ jobs:
       - name: Setup test results directory
         run: mkdir -p test-results coverage
 
-      - name: Run streamlined tests (13 tests in ~255ms)
+      - name: Run streamlined tests (15 tests in ~400ms)
         run: |
-          echo "🚀 Running streamlined test suite - 13 tests in 3 files"
-          echo "   Performance: 255ms execution time"
-          echo "   Memory: <256MB usage"
+          echo "🚀 Running streamlined test suite - 15 tests in 3 files"
+          echo "   Performance: ~400ms execution time"
+          echo "   Memory: <512MB usage"
           npm run test:simple -- \
             --reporter=default \
             --reporter=junit \
@@ -132,7 +132,7 @@ jobs:
         env:
           NODE_ENV: test
           CI: true
-          NODE_OPTIONS: '--max-old-space-size=256'
+          NODE_OPTIONS: '--max-old-space-size=512'
 
 
       - name: Validate test results before upload
@@ -161,15 +161,15 @@ jobs:
         if: matrix.node-version == '20'
         run: |
           echo "⚡ Streamlined tests target: <5 seconds total execution"
-          echo "   Baseline: 255ms (13 tests in 3 files)"
+          echo "   Baseline: ~400ms (15 tests in 3 files including ticket endpoints)"
           if [ -f ./test-results/results-20.json ]; then
             node -e "
               const results = JSON.parse(require('fs').readFileSync('./test-results/results-20.json', 'utf8'));
               const totalDuration = results.duration || 0;
               console.log('Total test duration:', totalDuration, 'ms');
-              console.log('Baseline target: 255ms');
+              console.log('Baseline target: ~400ms');
               if (totalDuration > 5000) {
-                console.log('⚠️ Tests took longer than 5s target (baseline: 255ms)');
+                console.log('⚠️ Tests took longer than 5s target (baseline: ~400ms)');
                 process.exit(1);
               }
               console.log('✅ Tests completed within performance target');
@@ -202,7 +202,7 @@ jobs:
       - name: Run integration tests (using streamlined suite)
         run: |
           echo "🚀 Running streamlined integration tests"
-          echo "   Same 13 tests, same 255ms execution"
+          echo "   Same 15 tests, same ~400ms execution"
           echo "   No separate integration suite needed"
           
           # Integration tests are now part of the simple test suite
@@ -350,7 +350,7 @@ jobs:
       - name: Run security tests (using streamlined suite)
         run: |
           echo "🔒 Running streamlined security tests"
-          echo "   Same 13 tests, same 255ms execution"
+          echo "   Same 15 tests, same ~400ms execution"
           echo "   All security checks included in simple suite"
           npm run test:security:ci -- --reporter=default --reporter=junit --reporter=json --outputFile.junit=./test-results/security-tests.xml --outputFile.json=./test-results/security-tests.json || true
         env:
@@ -438,7 +438,7 @@ jobs:
       - name: Run Redis-specific rate limiting tests
         run: |
           echo "🚀 Running Redis-based rate limiting tests"
-          echo "   Same streamlined 13 tests with Redis backend"
+          echo "   Same streamlined 15 tests with Redis backend"
           echo "   Testing Redis functionality specifically"
           
           # Run specific rate limiting tests that require Redis
@@ -892,7 +892,7 @@ jobs:
           echo "📊 Streamlined test performance:"
           echo "   • 15 tests total across 3 files (includes ticket/QR validation)"
           echo "   • ~400ms execution time"
-          echo "   • <256MB memory usage"
+          echo "   • <512MB memory usage"
           echo "   • Single npm test command"
           echo "Pipeline completed for: ${{ github.ref_name }}"
           echo "Commit: ${{ github.sha }}"

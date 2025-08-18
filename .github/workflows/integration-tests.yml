@@ -52,7 +52,7 @@ jobs:
 
       - name: Run streamlined integration tests
         run: |
-          echo "Running streamlined integration tests (13 tests in 255ms)..."
+          echo "Running streamlined integration tests (15 tests in ~400ms)..."
           echo "Using same streamlined test suite with integration environment"
           npm run test:integration
         env:
@@ -91,7 +91,8 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           echo "## Integration Test Coverage Report"
-          echo "✅ Simple test framework integration tests completed successfully."
+          echo "✅ Streamlined test framework integration tests completed successfully (15 tests)."
+          echo "✅ Includes ticket validation and QR endpoint testing."
 
   security-scan:
     runs-on: ubuntu-latest
