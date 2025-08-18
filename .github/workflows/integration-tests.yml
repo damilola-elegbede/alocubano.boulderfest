@@ -25,6 +25,8 @@ env:
 jobs:
   integration-tests:
     runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=1024
     timeout-minutes: 5
 
     strategy:

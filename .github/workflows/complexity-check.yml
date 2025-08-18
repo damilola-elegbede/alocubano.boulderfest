@@ -13,13 +13,13 @@ jobs:
     name: Prevent Test Infrastructure Bloat
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
         
     - name: Check Test Infrastructure Complexity
       run: |
@@ -32,7 +32,7 @@ jobs:
         TEST_FILE_COUNT=$(find tests -name "*.js" | wc -l || echo 0)
         
         # Count utility files (should be minimal)
-        UTIL_FILE_COUNT=$(find tests -name "helpers.js" -o -name "setup.js" 2>/dev/null | wc -l || echo 0)
+        UTIL_FILE_COUNT=$(find tests \( -name "helpers.js" -o -name "setup.js" \) -type f 2>/dev/null | wc -l || echo 0)
         
         echo "📊 Current Test Infrastructure Metrics:"
         echo "  Total test lines: $TOTAL_TEST_LINES"
@@ -74,7 +74,7 @@ jobs:
               OVERSIZED_UTILS="$OVERSIZED_UTILS\n  $file ($LINE_COUNT lines)"
             fi
           fi
-        done < <(find tests -name "helpers.js" -o -name "setup.js" -type f 2>/dev/null || true)
+        done < <(find tests \( -name "helpers.js" -o -name "setup.js" \) -type f 2>/dev/null || true)
         
         # Report oversized files as warnings, not failures
         if [ -n "$OVERSIZED_FILES" ]; then

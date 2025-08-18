@@ -470,7 +470,7 @@ When adding database changes:
 ### Getting Help
 
 - **Documentation**: Check `/docs/` directory for detailed guides
-- **Test Examples**: Look at `tests-new/integration/` for patterns
+- **Test Examples**: See `tests/` (api-contracts.test.js, basic-validation.test.js, smoke-tests.test.js)
 - **Architecture**: See `CLAUDE.md` for project-specific guidance
 - **Issues**: Create GitHub issue with detailed reproduction steps
 
