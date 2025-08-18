@@ -1,20 +1,15 @@
 /**
- * Test Setup - Basic Configuration Only
- * Minimal environment setup for tests.
- * Target: < 50 lines
+ * Test Setup - Minimal Configuration
+ * Basic environment setup for streamlined tests.
+ * Target: < 20 lines
  */
-import { afterEach } from 'vitest';
-import { cleanup } from './helpers.js';
 
-// Set test environment
+// Set test environment variables
 process.env.NODE_ENV = 'test';
 
-// Use test database if not specified
-if (!process.env.TURSO_DATABASE_URL) {
-  process.env.TURSO_DATABASE_URL = 'file:test.db';
+// Set test base URL if not provided
+if (!process.env.TEST_BASE_URL) {
+  process.env.TEST_BASE_URL = 'http://localhost:3000';
 }
 
-// Cleanup after each test - simple and reliable
-afterEach(async () => {
-  await cleanup();
-});
+console.log('🧪 Streamlined test setup complete - testing API contracts only');

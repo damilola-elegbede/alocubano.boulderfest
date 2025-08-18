@@ -3,7 +3,6 @@ name: Test Infrastructure Complexity Check
 on:
   pull_request:
     paths:
-      - 'tests-new/**'
       - 'tests/**'
       - 'scripts/test-*.js'
       - 'scripts/**test**.js'
