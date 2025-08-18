@@ -113,7 +113,7 @@ jobs:
       - name: Run unit performance tests
         if: matrix.test-type == 'unit-performance'
         run: |
-          npm run performance:load-test:ci
+          npm run performance:ci:critical
         env:
           NODE_ENV: ci
           CI: true
