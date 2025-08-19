@@ -81,11 +81,14 @@ test('APIs handle SQL injection attempts safely', async () => {
       name: 'Test User'
     });
     
-    // Should handle gracefully - either reject or sanitize, never crash with 500
+    // ✅ CRITICAL SECURITY FIX: SQL injection must never return 200
     if (response.status === 0) {
       throw new Error(`Network connectivity failure for POST /api/email/subscribe`);
     }
-    expect([200, 400, 422].includes(response.status)).toBe(true);
+    expect([400, 422].includes(response.status)).toBe(true);
+    if (response.status === 200) {
+      throw new Error("SQL injection attack returned success - CRITICAL SECURITY ISSUE");
+    }
   }
 });
 
