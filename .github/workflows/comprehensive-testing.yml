@@ -159,6 +159,8 @@ jobs:
           TEST_BASE_URL: http://localhost:3000
           NODE_ENV: test
           CI: true
+          DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
+          TURSO_DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
 
       - name: Run streamlined tests (2 shards)
         run: |
@@ -296,6 +298,8 @@ jobs:
           TEST_BASE_URL: http://localhost:3000
           NODE_ENV: test
           CI: true
+          DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
+          TURSO_DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
 
       - name: Run integration tests (using streamlined suite)
         run: |
@@ -498,6 +502,8 @@ jobs:
           TEST_BASE_URL: http://localhost:3000
           NODE_ENV: test
           CI: true
+          DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
+          TURSO_DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
 
       - name: Run security tests (using streamlined suite)
         run: |
@@ -621,6 +627,8 @@ jobs:
           TEST_BASE_URL: http://localhost:3000
           NODE_ENV: test
           CI: true
+          DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
+          TURSO_DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
 
       - name: Run Redis-specific rate limiting tests
         run: |
