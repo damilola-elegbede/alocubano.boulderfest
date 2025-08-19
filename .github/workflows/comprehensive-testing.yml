@@ -121,18 +121,38 @@ jobs:
       - name: Start API server for streamlined tests
         run: |
           echo "🚀 Starting API server for streamlined tests..."
+          
+          # Kill any existing processes on port 3000
+          sudo lsof -ti:3000 | xargs kill -9 || true
+          sleep 2
+          
+          # Start the server in background
           npm run start:ci &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           echo "Server started with PID: $SERVER_PID"
           
-          # Wait for server to be ready
+          # Wait for server to be ready with multiple checks
           echo "⏳ Waiting for server to be ready..."
-          npx wait-on http://localhost:3000/health --timeout 45000 --interval 1000 --verbose
+          for i in {1..30}; do
+            echo "Attempt $i/30: Testing /health endpoint..."
+            if curl -f http://localhost:3000/health >/dev/null 2>&1; then
+              echo "✅ Health check successful"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Server failed to start after 30 attempts"
+              ps aux | grep node || true
+              exit 1
+            fi
+            sleep 2
+          done
           
-          # Verify health endpoint is working
-          echo "🏥 Verifying server health..."
-          curl -f http://localhost:3000/health || (echo "❌ Health check failed" && exit 1)
+          # Verify critical API endpoints
+          echo "🔧 Verifying critical API endpoints..."
+          sleep 3
+          curl -f http://localhost:3000/api/health/check || echo "⚠️ /api/health/check not ready"
+          curl -f http://localhost:3000/api/gallery || echo "⚠️ /api/gallery not ready"
           
           echo "✅ API server is ready at http://localhost:3000"
         env:
@@ -246,18 +266,30 @@ jobs:
       - name: Start API server for integration tests
         run: |
           echo "🚀 Starting API server for integration tests..."
+          
+          # Kill any existing processes on port 3000
+          sudo lsof -ti:3000 | xargs kill -9 || true
+          sleep 2
+          
           npm run start:ci &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           echo "Server started with PID: $SERVER_PID"
           
-          # Wait for server to be ready
+          # Wait for server to be ready with multiple checks
           echo "⏳ Waiting for server to be ready..."
-          npx wait-on http://localhost:3000/health --timeout 45000 --interval 1000 --verbose
-          
-          # Verify health endpoint is working
-          echo "🏥 Verifying server health..."
-          curl -f http://localhost:3000/health || (echo "❌ Health check failed" && exit 1)
+          for i in {1..30}; do
+            echo "Attempt $i/30: Testing /health endpoint..."
+            if curl -f http://localhost:3000/health >/dev/null 2>&1; then
+              echo "✅ Health check successful"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Server failed to start after 30 attempts"
+              exit 1
+            fi
+            sleep 2
+          done
           
           echo "✅ API server is ready at http://localhost:3000"
         env:
@@ -362,13 +394,32 @@ jobs:
 
       - name: Start server for E2E tests
         run: |
+          echo "🚀 Starting API server for E2E tests..."
+          
+          # Kill any existing processes on port 3000
+          sudo lsof -ti:3000 | xargs kill -9 || true
+          sleep 2
+          
           npm run start:ci &
           SERVER_PID=$!
           echo "Server started with PID: $SERVER_PID"
-          sleep 2  # Give server time to fully start
-          npx wait-on http://localhost:3000 --timeout 45000 --interval 1000 --verbose
+          
+          # Wait for server to be ready with multiple checks
+          echo "⏳ Waiting for server to be ready..."
+          for i in {1..30}; do
+            echo "Attempt $i/30: Testing /health endpoint..."
+            if curl -f http://localhost:3000/health >/dev/null 2>&1; then
+              echo "✅ Health check successful"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Server failed to start after 30 attempts"
+              exit 1
+            fi
+            sleep 2
+          done
+          
           echo "✅ Server is ready at http://localhost:3000"
-          curl -I http://localhost:3000/health || echo "Health check failed"
 
       - name: Run E2E tests
         run: |
@@ -417,14 +468,30 @@ jobs:
       - name: Start API server for security tests
         run: |
           echo "🚀 Starting API server for security tests..."
+          
+          # Kill any existing processes on port 3000
+          sudo lsof -ti:3000 | xargs kill -9 || true
+          sleep 2
+          
           npm run start:ci &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           echo "Server started with PID: $SERVER_PID"
           
-          # Wait for server to be ready
+          # Wait for server to be ready with multiple checks
           echo "⏳ Waiting for server to be ready..."
-          npx wait-on http://localhost:3000/health --timeout 45000 --interval 1000
+          for i in {1..30}; do
+            echo "Attempt $i/30: Testing /health endpoint..."
+            if curl -f http://localhost:3000/health >/dev/null 2>&1; then
+              echo "✅ Health check successful"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Server failed to start after 30 attempts"
+              exit 1
+            fi
+            sleep 2
+          done
           
           echo "✅ API server is ready at http://localhost:3000"
         env:
@@ -524,14 +591,30 @@ jobs:
       - name: Start API server for Redis tests
         run: |
           echo "🚀 Starting API server for Redis tests..."
+          
+          # Kill any existing processes on port 3000
+          sudo lsof -ti:3000 | xargs kill -9 || true
+          sleep 2
+          
           npm run start:ci &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           echo "Server started with PID: $SERVER_PID"
           
-          # Wait for server to be ready
+          # Wait for server to be ready with multiple checks
           echo "⏳ Waiting for server to be ready..."
-          npx wait-on http://localhost:3000/health --timeout 45000 --interval 1000
+          for i in {1..30}; do
+            echo "Attempt $i/30: Testing /health endpoint..."
+            if curl -f http://localhost:3000/health >/dev/null 2>&1; then
+              echo "✅ Health check successful"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Server failed to start after 30 attempts"
+              exit 1
+            fi
+            sleep 2
+          done
           
           echo "✅ API server is ready at http://localhost:3000"
         env:
@@ -598,8 +681,32 @@ jobs:
 
       - name: Start application for load testing
         run: |
+          echo "🚀 Starting API server for performance tests..."
+          
+          # Kill any existing processes on port 3000
+          sudo lsof -ti:3000 | xargs kill -9 || true
+          sleep 2
+          
           npm run start:ci &
-          npx wait-on http://localhost:3000 --timeout 45000 --interval 1000
+          SERVER_PID=$!
+          echo "Server started with PID: $SERVER_PID"
+          
+          # Wait for server to be ready with multiple checks
+          echo "⏳ Waiting for server to be ready..."
+          for i in {1..30}; do
+            echo "Attempt $i/30: Testing /health endpoint..."
+            if curl -f http://localhost:3000/health >/dev/null 2>&1; then
+              echo "✅ Health check successful"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Server failed to start after 30 attempts"
+              exit 1
+            fi
+            sleep 2
+          done
+          
+          echo "✅ Server is ready for performance testing"
 
       - name: Run performance tests
         run: npm run performance:ci:critical
