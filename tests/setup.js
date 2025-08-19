@@ -1,29 +1,15 @@
-// Jest setup file
-beforeAll(async () => {
-  // Set longer timeout for CI environments
-  jest.setTimeout(30000);
+/**
+ * Test Setup - Minimal Configuration
+ * Basic environment setup for streamlined tests.
+ * Target: < 20 lines
+ */
 
-  // Setup puppeteer environment
-  if (global.page) {
-    await global.page.setViewport({ width: 1280, height: 800 });
+// Set test environment variables
+process.env.NODE_ENV = 'test';
 
-    // Mock console to capture logs
-    global.page.on("console", (msg) => {
-      if (process.env.DEBUG_TESTS) {
-        console.log("Browser console:", msg.text());
-      }
-    });
+// Set test base URL if not provided
+if (!process.env.TEST_BASE_URL) {
+  process.env.TEST_BASE_URL = 'http://localhost:3000';
+}
 
-    // Log any page errors
-    global.page.on("error", (err) => {
-      console.error("Browser error:", err);
-    });
-  }
-});
-
-afterAll(async () => {
-  // Clean up any resources
-  if (global.browser) {
-    await global.browser.close();
-  }
-});
+console.log('🧪 Streamlined test setup complete - testing API contracts only');

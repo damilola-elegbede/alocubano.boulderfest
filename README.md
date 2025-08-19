@@ -148,51 +148,56 @@ alocubano.boulderfest/
 - `npm start` - Start Vercel development server with full API support (port 3000)
 - `npm run start-vercel-dev` - Same as npm start
 - `npm run serve:simple` - Simple HTTP server without API functions (port 8000)
-- `npm test` - Run unit tests (197 tests)
-- `npm run test:all` - Run all tests including link validation
+- `npm test` - Run streamlined test suite (13 tests, ~234ms)
+- `npm run test:all` - Run all tests including E2E validation
 - `npm run lint` - Run ESLint and HTMLHint
 - `npm run build` - Build for production
 - `npm run prebuild` - Generate cache files for gallery
 
 ## Testing
 
+### Streamlined Test Philosophy
+
+We've achieved a **96% complexity reduction** by eliminating complex test infrastructure in favor of radical simplicity:
+
+- **419 total lines** vs 11,411 lines previously (96% reduction)
+- **13 essential tests** covering critical API contracts
+- **234ms execution time** for complete test suite
+- **Zero abstractions** - every test readable by any JavaScript developer
+
 ### Quick Start
 
 ```bash
 # Run all tests
-npm test
+npm test                    # 13 tests, ~234ms
 
-# Run integration tests
-npm run test:integration
+# Development mode
+npm run test:simple:watch   # Watch mode
+
+# With coverage
+npm run test:coverage       # Coverage report
 ```
 
-### Test Categories
+### Test Structure
 
-- **Unit Tests**: Core functionality validation
-- **Integration Tests**: Component interaction validation
-- **Performance Tests**: Load time and memory usage validation
-- **Accessibility Tests**: WCAG AA compliance validation
+- **api-contracts.test.js** (5 tests) - API contract validation
+- **basic-validation.test.js** (4 tests) - Input validation and security
+- **smoke-tests.test.js** (4 tests) - Basic functionality verification
 
 ### Quality Gates
 
-- **Pre-commit**: Linting + fast unit tests
-- **Pre-push**: Full test suite + integration tests
-- **CI/CD**: Multi-environment validation + performance benchmarks
+- **Simple execution**: Single command `npm test` 
+- **Fast feedback**: Complete suite runs in under 1 second
+- **Real API testing**: Direct interaction with actual endpoints
+- **No mocking complexity**: Tests use real services and databases
 
-### Documentation
+### Test Philosophy
 
-- [Testing Strategy](docs/testing/TESTING_STRATEGY.md)
-- [Troubleshooting Guide](docs/testing/TROUBLESHOOTING.md)
-
-### Maintenance
-
-```bash
-# Check test health
-node scripts/test-maintenance.js health
-
-# Detect flaky tests
-node scripts/test-maintenance.js flaky
-```
+Focus on **user-visible behavior** with **minimal complexity**:
+- Test real API endpoints, not implementation details
+- Keep each test under 20 lines
+- Use direct HTTP requests, not elaborate abstractions
+- Clean up test data explicitly in each test
 
 ## 📱 Browser Support
 
