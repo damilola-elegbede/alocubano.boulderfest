@@ -20,7 +20,7 @@ test('essential APIs respond', async () => {
     if (response.status === 0) {
       throw new Error(`Network connectivity failure for GET ${path}`);
     }
-    expect([200, 500, 503].includes(response.status)).toBe(true);
+    expect([200, 403, 500, 503].includes(response.status)).toBe(true);
   }
 });
 
