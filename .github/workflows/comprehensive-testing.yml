@@ -99,6 +99,7 @@ jobs:
     strategy:
       matrix:
         node-version: [18, 20]
+        test-shard: [1, 2]
       fail-fast: false
 
     steps:
@@ -117,22 +118,25 @@ jobs:
       - name: Setup test results directory
         run: mkdir -p test-results coverage
 
-      - name: Run streamlined tests (19 tests in ~400ms)
+      - name: Run streamlined tests (2 shards)
         run: |
-          echo "🚀 Running streamlined test suite - 19 tests in 4 files"
-          echo "   Performance: ~400ms execution time"
-          echo "   Memory: <512MB usage"
+          echo "🚀 Running streamlined test suite (shard ${{ matrix.test-shard }}/2)"
           npm run test:simple -- \
             --reporter=default \
             --reporter=junit \
             --reporter=json \
-            --outputFile.junit=./test-results/junit-${{ matrix.node-version }}.xml \
-            --outputFile.json=./test-results/results-${{ matrix.node-version }}.json
+            --shard=${{ matrix.test-shard }}/2 \
+            --coverage \
+            --outputFile.junit=./test-results/junit-${{ matrix.node-version }}-shard-${{ matrix.test-shard }}.xml \
+            --outputFile.json=./test-results/results-${{ matrix.node-version }}-shard-${{ matrix.test-shard }}.json
         continue-on-error: false
         env:
           NODE_ENV: test
           CI: true
-          NODE_OPTIONS: '--max-old-space-size=512'
+          NODE_OPTIONS: '--max-old-space-size=1024'
+          DATABASE_URL: 'file::memory:?cache=shared'
+          MOCK_EXTERNAL_APIS: 'true'
+          TEST_CI_EXCLUDE_PATTERNS: '**/*.flaky.test.*'
 
 
       - name: Validate test results before upload
@@ -153,27 +157,39 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: streamlined-test-results-node-${{ matrix.node-version }}
+          name: streamlined-test-results-node-${{ matrix.node-version }}-shard-${{ matrix.test-shard }}
           path: test-results/
           retention-days: 30
 
-      - name: Performance check (streamlined tests should be fast)
+      - name: Upload coverage results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-node-${{ matrix.node-version }}-shard-${{ matrix.test-shard }}
+          path: coverage/
+          retention-days: 14
+
+      - name: Performance check (per-shard)
         if: matrix.node-version == '20'
         run: |
-          echo "⚡ Streamlined tests target: <5 seconds total execution"
-          echo "   Baseline: ~400ms (19 tests in 4 files including Redis rate limiting)"
-          if [ -f ./test-results/results-20.json ]; then
+          echo "⚡ Per-shard target: <2500ms (2 shards => <5s total)"
+          FILE=./test-results/results-20-shard-${{ matrix.test-shard }}.json
+          if [ -f "$FILE" ]; then
             node -e "
-              const results = JSON.parse(require('fs').readFileSync('./test-results/results-20.json', 'utf8'));
-              const totalDuration = results.duration || 0;
-              console.log('Total test duration:', totalDuration, 'ms');
-              console.log('Baseline target: ~400ms');
-              if (totalDuration > 5000) {
-                console.log('⚠️ Tests took longer than 5s target (baseline: ~400ms)');
+              const fs = require('fs');
+              const file = process.env.FILE;
+              const results = JSON.parse(fs.readFileSync(file, 'utf8'));
+              const duration = results.duration || 0;
+              console.log('Shard ${{ matrix.test-shard }} duration:', duration, 'ms');
+              if (duration > 2500) {
+                console.log('⚠️ Shard exceeded 2.5s target');
                 process.exit(1);
               }
-              console.log('✅ Tests completed within performance target');
-            " || echo "Performance check completed"
+              console.log('✅ Shard within performance target');
+            "
+          else
+            echo "⚠️ Results file not found: $FILE"
+            exit 1
           fi
 
   # Job 3: Integration Tests (Memory-based, Redis not required)

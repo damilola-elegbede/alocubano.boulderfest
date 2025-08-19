@@ -32,6 +32,7 @@ jobs:
     strategy:
       matrix:
         node-version: [20.x, 22.x]
+        shard: [1, 2]
 
     steps:
       - uses: actions/checkout@v4
@@ -48,21 +49,23 @@ jobs:
       - name: Setup test database
         run: |
           echo "Setting up test database..."
+          export DATABASE_URL="file:./ci-test.db?mode=memory&cache=shared"
           npm run migrate:up || true
 
-      - name: Run streamlined integration tests
+      - name: Run streamlined integration tests (2 shards)
         run: |
-          echo "Running streamlined integration tests (15 tests in ~400ms)..."
-          echo "Using same streamlined test suite with integration environment"
-          npm run test:integration
+          echo "Running streamlined integration tests (shard ${{ matrix.shard }}/2)..."
+          npm run test:integration -- --shard=${{ matrix.shard }}/2
         env:
           TEST_TIMEOUT: 30000
+          DATABASE_URL: 'file::memory:?cache=shared'
+          MOCK_EXTERNAL_APIS: 'true'
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.node-version }}
+          name: test-results-${{ matrix.node-version }}-shard-${{ matrix.shard }}
           path: tests/
           retention-days: 7
 
