@@ -40,7 +40,7 @@ npm run serve:simple  # http://localhost:8000
 
 ```bash
 # Run streamlined test suite (default)
-npm test                     # All essential tests (13 tests, ~255ms)
+npm test                     # All essential tests (17 tests, ~395ms)
 
 # Test execution modes
 npm run test:simple         # Same as npm test
@@ -104,7 +104,7 @@ git push origin main        # Auto-deploy to production
 ### Testing
 - **Streamlined test suite** with Vitest - 96% complexity reduction (419 vs 11,411 lines)
 - **13 essential tests** covering critical API contracts and business flows
-- **234ms execution time** for complete test suite
+- **395ms execution time** for complete test suite
 - **Playwright** for E2E tests
 - **Zero abstractions** - every test readable by any JavaScript developer
 - **Direct API calls** - no complex mocking or test infrastructure
@@ -251,7 +251,7 @@ Managed by `determineCartVisibility()` in `floating-cart.js`:
 - **Images**: Progressive loading (AVIF → WebP → JPEG)
 - **API response**: <100ms target
 - **Browser cache**: 24-hour for static assets
-- **Test execution**: 234ms for complete test suite (13 tests)
+- **Test execution**: 395ms for complete test suite (17 tests)
 - **Test simplicity**: Zero abstractions, readable by any JavaScript developer
 
 ## Debugging
