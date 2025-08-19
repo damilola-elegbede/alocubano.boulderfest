@@ -21,8 +21,8 @@ jobs:
         with:
           node-version: '18'
         
-    - name: Check Test Infrastructure Complexity
-      run: |
+      - name: Check Test Infrastructure Complexity
+        run: |
         echo "🔍 Analyzing test infrastructure complexity..."
         
         # Count total lines in streamlined test framework
@@ -93,8 +93,8 @@ jobs:
         echo "✅ Test infrastructure complexity within acceptable limits"
         echo "   Keep tests simple and focused!"
 
-    - name: Generate Complexity Report
-      run: |
+      - name: Generate Complexity Report
+        run: |
         echo "📋 Test Infrastructure Complexity Report" > complexity-report.md
         echo "Generated: $(date)" >> complexity-report.md
         echo "" >> complexity-report.md
@@ -112,7 +112,7 @@ jobs:
         
         # Top 5 largest files
         echo "## Largest Test Files" >> complexity-report.md
-        find tests -name "*.js" -exec wc -l {} + 2>/dev/null | sort -nr | head -6 | tail -5 | while read line file; do
+        find tests -name "*.js" -exec wc -l {} + 2>/dev/null | grep -vE '\\stotal$' | sort -nr | head -5 | while read line file; do
           echo "- $file: $line lines" >> complexity-report.md
         done
         
@@ -126,8 +126,8 @@ jobs:
         echo "- **Approach**: Direct API calls, no complex mocking" >> complexity-report.md
         echo "- **Simplicity**: Any developer should understand tests immediately" >> complexity-report.md
         
-    - name: Upload Complexity Report
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-complexity-report
-        path: complexity-report.md
+      - name: Upload Complexity Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-complexity-report
+          path: complexity-report.md
