@@ -50,7 +50,7 @@ test('gallery API returns expected structure', async () => {
   expect([200, 500].includes(response.status)).toBe(true);
   
   if (response.status === 200) {
-    expect(Array.isArray(response.data.photos) || response.data.error).toBe(true);
+    expect(Array.isArray(response.data.items) || response.data.error).toBe(true);
   }
 });
 

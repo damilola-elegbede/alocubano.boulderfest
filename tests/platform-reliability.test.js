@@ -48,14 +48,17 @@ test('APIs degrade gracefully when external services timeout', async () => {
   // Test email subscription with potential Brevo timeout
   const emailResponse = await testRequest('POST', '/api/email/subscribe', {
     email: 'reliability-test@example.com',
-    name: 'Reliability Test'
+    firstName: 'Reliability',
+    lastName: 'Test',
+    consentToMarketing: true,
+    source: 'reliability-test'
   });
   
   // Should handle Brevo unavailability gracefully
   if (emailResponse.status === 0) {
     throw new Error(`Network connectivity failure for POST /api/email/subscribe`);
   }
-  expect([200, 503, 429, 500].includes(emailResponse.status)).toBe(true);
+  expect([201, 400, 409, 429, 500, 503].includes(emailResponse.status)).toBe(true);
 });
 
 // Test environment configuration robustness

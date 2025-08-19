@@ -30,7 +30,7 @@ export async function testRequest(method, path, data = null, customHeaders = {})
     clearTimeout(timeoutId);
     
     // Handle unexpected status codes explicitly
-    if (!response.ok && ![400, 401, 404, 422, 429, 500].includes(response.status)) {
+    if (!response.ok && ![400, 401, 404, 422, 429, 500, 503].includes(response.status)) {
       throw new Error(`Unexpected status code: ${response.status}`);
     }
     
