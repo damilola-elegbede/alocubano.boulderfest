@@ -35,7 +35,7 @@ test.describe('Mobile Basic Tests', () => {
 
   test('manifest.json is served correctly', async ({ page }) => {
     // This doesn't need mobile viewport
-    const response = await page.request.get('/manifest.json');
+    const response = await page.request.get('/public/manifest.json');
     expect(response.ok()).toBeTruthy();
     
     const manifest = await response.json();
