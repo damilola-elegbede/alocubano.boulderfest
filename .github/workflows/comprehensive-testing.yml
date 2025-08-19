@@ -118,6 +118,28 @@ jobs:
       - name: Setup test results directory
         run: mkdir -p test-results coverage
 
+      - name: Start API server for streamlined tests
+        run: |
+          echo "🚀 Starting API server for streamlined tests..."
+          npm run start:ci &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          echo "Server started with PID: $SERVER_PID"
+          
+          # Wait for server to be ready
+          echo "⏳ Waiting for server to be ready..."
+          npx wait-on http://localhost:3000/health --timeout 45000 --interval 1000 --verbose
+          
+          # Verify health endpoint is working
+          echo "🏥 Verifying server health..."
+          curl -f http://localhost:3000/health || (echo "❌ Health check failed" && exit 1)
+          
+          echo "✅ API server is ready at http://localhost:3000"
+        env:
+          TEST_BASE_URL: http://localhost:3000
+          NODE_ENV: test
+          CI: true
+
       - name: Run streamlined tests (2 shards)
         run: |
           echo "🚀 Running streamlined test suite (shard ${{ matrix.test-shard }}/2)"
@@ -133,6 +155,7 @@ jobs:
         env:
           NODE_ENV: test
           CI: true
+          TEST_BASE_URL: http://localhost:3000
           NODE_OPTIONS: '--max-old-space-size=1024'
           DATABASE_URL: 'file::memory:?cache=shared'
           MOCK_EXTERNAL_APIS: 'true'
@@ -220,6 +243,28 @@ jobs:
       - name: Setup integration test results directory
         run: mkdir -p test-results
 
+      - name: Start API server for integration tests
+        run: |
+          echo "🚀 Starting API server for integration tests..."
+          npm run start:ci &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          echo "Server started with PID: $SERVER_PID"
+          
+          # Wait for server to be ready
+          echo "⏳ Waiting for server to be ready..."
+          npx wait-on http://localhost:3000/health --timeout 45000 --interval 1000 --verbose
+          
+          # Verify health endpoint is working
+          echo "🏥 Verifying server health..."
+          curl -f http://localhost:3000/health || (echo "❌ Health check failed" && exit 1)
+          
+          echo "✅ API server is ready at http://localhost:3000"
+        env:
+          TEST_BASE_URL: http://localhost:3000
+          NODE_ENV: test
+          CI: true
+
       - name: Run integration tests (using streamlined suite)
         run: |
           echo "🚀 Running streamlined integration tests"
@@ -238,6 +283,7 @@ jobs:
         env:
           NODE_ENV: test
           CI: true
+          TEST_BASE_URL: http://localhost:3000
           TEST_ISOLATION_MODE: true
           INTEGRATION_TEST_MODE: true
           TEST_CI_EXCLUDE_PATTERNS: 'true'
@@ -368,6 +414,24 @@ jobs:
       - name: Setup security test results directory
         run: mkdir -p test-results
 
+      - name: Start API server for security tests
+        run: |
+          echo "🚀 Starting API server for security tests..."
+          npm run start:ci &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          echo "Server started with PID: $SERVER_PID"
+          
+          # Wait for server to be ready
+          echo "⏳ Waiting for server to be ready..."
+          npx wait-on http://localhost:3000/health --timeout 45000 --interval 1000
+          
+          echo "✅ API server is ready at http://localhost:3000"
+        env:
+          TEST_BASE_URL: http://localhost:3000
+          NODE_ENV: test
+          CI: true
+
       - name: Run security tests (using streamlined suite)
         run: |
           echo "🔒 Running streamlined security tests"
@@ -377,6 +441,7 @@ jobs:
         env:
           NODE_ENV: test
           CI: true
+          TEST_BASE_URL: http://localhost:3000
           NODE_OPTIONS: '--max-old-space-size=1024'
         continue-on-error: true
 
@@ -456,6 +521,24 @@ jobs:
           redis-cli -h localhost -p 6379 get test-key
           echo "✅ Redis basic operations working"
 
+      - name: Start API server for Redis tests
+        run: |
+          echo "🚀 Starting API server for Redis tests..."
+          npm run start:ci &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          echo "Server started with PID: $SERVER_PID"
+          
+          # Wait for server to be ready
+          echo "⏳ Waiting for server to be ready..."
+          npx wait-on http://localhost:3000/health --timeout 45000 --interval 1000
+          
+          echo "✅ API server is ready at http://localhost:3000"
+        env:
+          TEST_BASE_URL: http://localhost:3000
+          NODE_ENV: test
+          CI: true
+
       - name: Run Redis-specific rate limiting tests
         run: |
           echo "🚀 Running Redis-based rate limiting tests"
@@ -474,6 +557,7 @@ jobs:
         env:
           REDIS_URL: redis://localhost:6379
           RATE_LIMIT_REDIS_URL: redis://localhost:6379
+          TEST_BASE_URL: http://localhost:3000
           NODE_ENV: test
           CI: true
 
