@@ -663,10 +663,15 @@ jobs:
             echo "Searching for JUnit XML reports..."
             while IFS= read -r -d '' file; do
               if [ -f "$file" ]; then
-                filename=$(basename "$file")
-                cp "$file" "aggregated-results/junit-$junit_count-$filename" 2>/dev/null || echo "Failed to copy $file"
-                junit_count=$((junit_count + 1))
-                echo "  Copied: $file"
+                # Check if it's actually a JUnit XML by looking for testsuite elements
+                if grep -q "<testsuite" "$file" 2>/dev/null; then
+                  filename=$(basename "$file")
+                  cp "$file" "aggregated-results/junit-$junit_count-$filename" 2>/dev/null || echo "Failed to copy $file"
+                  junit_count=$((junit_count + 1))
+                  echo "  Copied JUnit XML: $file"
+                else
+                  echo "  Skipped non-JUnit XML: $file"
+                fi
               fi
             done < <(find ./artifacts -name "*.xml" -type f -print0 2>/dev/null || true)
             
@@ -745,8 +750,25 @@ jobs:
         id: check-reports
         run: |
           if ls aggregated-results/junit-*.xml 1> /dev/null 2>&1; then
-            echo "junit-reports=true" >> $GITHUB_OUTPUT
-            echo "✅ JUnit reports found for publishing"
+            # Validate JUnit XML files before publishing
+            valid_files=0
+            for file in aggregated-results/junit-*.xml; do
+              if [ -f "$file" ] && grep -q "<testsuite" "$file" 2>/dev/null; then
+                valid_files=$((valid_files + 1))
+                echo "  Valid JUnit XML: $(basename "$file")"
+              else
+                echo "  Removing invalid XML: $(basename "$file")"
+                rm -f "$file"
+              fi
+            done
+            
+            if [ $valid_files -gt 0 ]; then
+              echo "junit-reports=true" >> $GITHUB_OUTPUT
+              echo "✅ Found $valid_files valid JUnit reports for publishing"
+            else
+              echo "junit-reports=false" >> $GITHUB_OUTPUT
+              echo "⚠️ No valid JUnit reports found after validation"
+            fi
           else
             echo "junit-reports=false" >> $GITHUB_OUTPUT
             echo "⚠️ No JUnit reports found to publish"
