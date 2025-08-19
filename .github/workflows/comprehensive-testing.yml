@@ -175,9 +175,14 @@ jobs:
           echo "⚡ Per-shard target: <2500ms (2 shards => <5s total)"
           FILE=./test-results/results-20-shard-${{ matrix.test-shard }}.json
           if [ -f "$FILE" ]; then
+            export FILE
             node -e "
               const fs = require('fs');
               const file = process.env.FILE;
+              if (!file) {
+                console.log('Error: FILE env var not set');
+                process.exit(1);
+              }
               const results = JSON.parse(fs.readFileSync(file, 'utf8'));
               const duration = results.duration || 0;
               console.log('Shard ${{ matrix.test-shard }} duration:', duration, 'ms');
