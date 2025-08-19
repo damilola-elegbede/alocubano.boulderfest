@@ -77,15 +77,6 @@ export function generateTestEmail() {
   return `test-${Date.now()}-${Math.random().toString(36).substring(7)}@example.com`;
 }
 
-// Validate email format
-export function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-// Wait helper for async tests
-export function wait(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 // Generate test payment data
 export function generateTestPayment(overrides = {}) {
@@ -98,10 +89,4 @@ export function generateTestPayment(overrides = {}) {
     },
     ...overrides
   };
-}
-
-// Clean test data
-export async function cleanupTestData() {
-  // Cleanup is handled by database reset in setup
-  return true;
 }

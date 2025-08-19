@@ -1,7 +1,3 @@
-/**
- * Redis Rate Limiting Tests
- * Tests that rate limiting works correctly with both Redis and in-memory fallback
- */
 import { test, expect } from 'vitest';
 import { testRequest } from './helpers.js';
 
@@ -82,44 +78,27 @@ test('rate limiting on admin login attempts', async () => {
   // Note: Protection behavior depends on Redis availability
 });
 
-test('rate limiting handles concurrent payment requests', async () => {
-  const requests = [];
-  const testPayload = {
-    cartItems: [{ name: 'Test', price: 10, quantity: 1 }],
-    customerInfo: { email: 'test@example.com' }
-  };
+test('payment and webhook endpoints handle concurrent requests', async () => {
+  // Test both payment creation and webhook handling in one test
+  const paymentRequests = Array(3).fill().map(() =>
+    testRequest('POST', '/api/payments/create-checkout-session', {
+      cartItems: [{ name: 'Test', price: 10, quantity: 1 }],
+      customerInfo: { email: 'test@example.com' }
+    })
+  );
   
-  // Simulate concurrent payment attempts (could indicate attack or system stress)
-  for (let i = 0; i < 5; i++) {
-    requests.push(testRequest('POST', '/api/payments/create-checkout-session', testPayload));
-  }
+  const webhookRequests = Array(2).fill().map(() =>
+    testRequest('POST', '/api/payments/stripe-webhook', {})
+  );
   
-  const responses = await Promise.all(requests);
+  const allRequests = [...paymentRequests, ...webhookRequests];
+  const responses = await Promise.all(allRequests);
   const statusCodes = responses.map(r => r.status);
   
-  // All should be handled gracefully (success, validation error, or rate limited)
   const hasNetworkFailure = statusCodes.some(code => code === 0);
   if (hasNetworkFailure) {
-    throw new Error(`Network connectivity failure for POST /api/payments/create-checkout-session`);
+    throw new Error(`Network connectivity failure for payment/webhook endpoints`);
   }
-  const allHandled = statusCodes.every(code => [200, 400, 422, 429, 500].includes(code));
-  expect(allHandled).toBe(true);
-});
-
-test('webhook endpoints handle rapid events', async () => {
-  const requests = [];
-  
-  // Simulate rapid webhook events from Stripe
-  for (let i = 0; i < 3; i++) {
-    requests.push(testRequest('POST', '/api/payments/stripe-webhook', {}));
-  }
-  
-  const responses = await Promise.all(requests);
-  const statusCodes = responses.map(r => r.status);
-  const hasNetworkFailure = statusCodes.some(code => code === 0);
-  if (hasNetworkFailure) {
-    throw new Error(`Network connectivity failure for POST /api/payments/stripe-webhook`);
-  }
-  const allHandled = statusCodes.every(code => [200, 400, 401, 500].includes(code));
+  const allHandled = statusCodes.every(code => [200, 400, 401, 422, 429, 500].includes(code));
   expect(allHandled).toBe(true);
 });

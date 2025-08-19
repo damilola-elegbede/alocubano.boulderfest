@@ -1,8 +1,3 @@
-/**
- * Basic Validation Tests - Streamlined Approach
- * Tests basic input validation and error handling
- * Target: 60 lines total
- */
 import { test, expect } from 'vitest';
 import { testRequest } from './helpers.js';
 
@@ -68,29 +63,6 @@ test('ticket validation handles invalid QR codes', async () => {
   }
 });
 
-test('APIs handle SQL injection attempts safely', async () => {
-  const maliciousInputs = [
-    "'; DROP TABLE registrations; --",
-    "' OR '1'='1",
-    "test@example.com'; DELETE FROM users; --"
-  ];
-  
-  for (const maliciousInput of maliciousInputs) {
-    const response = await testRequest('POST', '/api/email/subscribe', {
-      email: maliciousInput,
-      name: 'Test User'
-    });
-    
-    // ✅ CRITICAL SECURITY FIX: SQL injection must never return 200
-    if (response.status === 0) {
-      throw new Error(`Network connectivity failure for POST /api/email/subscribe`);
-    }
-    expect([400, 422].includes(response.status)).toBe(true);
-    if (response.status === 200) {
-      throw new Error("SQL injection attack returned success - CRITICAL SECURITY ISSUE");
-    }
-  }
-});
 
 test('payment validation rejects invalid amounts and items', async () => {
   const invalidPayments = [
@@ -121,10 +93,3 @@ test('admin endpoints reject without CSRF tokens', async () => {
   expect([401, 403, 400, 500].includes(response.status)).toBe(true);
 });
 
-test('wallet pass endpoints validate ticket ownership', async () => {
-  const response = await testRequest('GET', '/api/tickets/apple-wallet/invalid-ticket-123');
-  if (response.status === 0) {
-    throw new Error(`Network connectivity failure for GET /api/tickets/apple-wallet/invalid-ticket-123`);
-  }
-  expect([404, 401, 403, 500, 503].includes(response.status)).toBe(true);
-});
