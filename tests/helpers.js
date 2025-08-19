@@ -34,9 +34,17 @@ export async function testRequest(method, path, data = null, customHeaders = {})
       throw new Error(`Unexpected status code: ${response.status}`);
     }
     
-    const responseData = response.headers.get('content-type')?.includes('application/json') 
-      ? await response.json() 
-      : await response.text();
+    let responseData;
+    const isJson = response.headers.get('content-type')?.includes('application/json');
+    if (isJson) {
+      try {
+        responseData = await response.json();
+      } catch {
+        responseData = await response.text();
+      }
+    } else {
+      responseData = await response.text();
+    }
     
     return {
       status: response.status,
