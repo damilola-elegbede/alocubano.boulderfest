@@ -159,8 +159,8 @@ jobs:
           TEST_BASE_URL: http://localhost:3000
           NODE_ENV: test
           CI: true
-          DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
-          TURSO_DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
+          DATABASE_URL: "file:./ci-test.db"
+          TURSO_DATABASE_URL: "file:./ci-test.db"
 
       - name: Run streamlined tests (2 shards)
         run: |
@@ -179,7 +179,7 @@ jobs:
           CI: true
           TEST_BASE_URL: http://localhost:3000
           NODE_OPTIONS: '--max-old-space-size=1024'
-          DATABASE_URL: 'file::memory:?cache=shared'
+          DATABASE_URL: 'file::memory:'
           MOCK_EXTERNAL_APIS: 'true'
           TEST_CI_EXCLUDE_PATTERNS: '**/*.flaky.test.*'
 
@@ -298,8 +298,8 @@ jobs:
           TEST_BASE_URL: http://localhost:3000
           NODE_ENV: test
           CI: true
-          DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
-          TURSO_DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
+          DATABASE_URL: "file:./ci-test.db"
+          TURSO_DATABASE_URL: "file:./ci-test.db"
 
       - name: Run integration tests (using streamlined suite)
         run: |
@@ -502,8 +502,8 @@ jobs:
           TEST_BASE_URL: http://localhost:3000
           NODE_ENV: test
           CI: true
-          DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
-          TURSO_DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
+          DATABASE_URL: "file:./ci-test.db"
+          TURSO_DATABASE_URL: "file:./ci-test.db"
 
       - name: Run security tests (using streamlined suite)
         run: |
@@ -627,8 +627,8 @@ jobs:
           TEST_BASE_URL: http://localhost:3000
           NODE_ENV: test
           CI: true
-          DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
-          TURSO_DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
+          DATABASE_URL: "file:./ci-test.db"
+          TURSO_DATABASE_URL: "file:./ci-test.db"
 
       - name: Run Redis-specific rate limiting tests
         run: |

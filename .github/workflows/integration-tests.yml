@@ -50,8 +50,8 @@ jobs:
         run: |
           echo "Setting up test database..."
           mkdir -p data
-          export DATABASE_URL="file:./ci-test.db?mode=memory&cache=shared"
-          export TURSO_DATABASE_URL="file:./ci-test.db?mode=memory&cache=shared"
+          export DATABASE_URL="file:./ci-test.db"
+          export TURSO_DATABASE_URL="file:./ci-test.db"
           npm run migrate:up || true
 
       - name: Start API server
@@ -95,8 +95,8 @@ jobs:
           TEST_BASE_URL: http://localhost:3000
           NODE_ENV: test
           CI: true
-          DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
-          TURSO_DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
+          DATABASE_URL: "file:./ci-test.db"
+          TURSO_DATABASE_URL: "file:./ci-test.db"
 
       - name: Run streamlined integration tests (2 shards)
         run: |
@@ -105,7 +105,7 @@ jobs:
         env:
           TEST_TIMEOUT: 30000
           TEST_BASE_URL: http://localhost:3000
-          DATABASE_URL: 'file::memory:?cache=shared'
+          DATABASE_URL: 'file::memory:'
           MOCK_EXTERNAL_APIS: 'true'
 
       - name: Upload test results
@@ -166,8 +166,8 @@ jobs:
           TEST_BASE_URL: http://localhost:3000
           NODE_ENV: test
           CI: true
-          DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
-          TURSO_DATABASE_URL: "file:./ci-test.db?mode=memory&cache=shared"
+          DATABASE_URL: "file:./ci-test.db"
+          TURSO_DATABASE_URL: "file:./ci-test.db"
 
       - name: Run tests with coverage
         run: |
