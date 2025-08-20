@@ -1,13 +1,10 @@
 /**
  * Test Helpers - Essential utilities for streamlined testing
- * Minimal helper functions under 100 lines total
  */
-
 // Environment detection for intelligent retry behavior
 const CI_ENV = process.env.CI === 'true' || process.env.CI === '1';
 const POST_MERGE = process.env.GITHUB_EVENT_NAME === 'push' && process.env.GITHUB_REF === 'refs/heads/main';
 const RETRY_DISABLED = process.env.DISABLE_TEST_RETRY === 'true' || process.env.DISABLE_TEST_RETRY === '1';
-
 // Retry configuration based on environment
 const RETRY_CONFIG = {
   local: { maxRetries: 0, timeout: 5000 },
