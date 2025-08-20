@@ -147,6 +147,17 @@ jobs:
             sleep 2
           done
           
+          # Phase 3: Server warm-up sequence for serverless functions
+          echo "🔥 Warming up serverless functions..."
+          for endpoint in health/check health/database gallery featured-photos; do
+            echo "Warming up: /api/$endpoint"
+            for i in {1..3}; do
+              curl -f "http://localhost:3000/api/$endpoint" >/dev/null 2>&1 || true
+              sleep 1
+            done
+          done
+          echo "✅ Server warm-up complete"
+          
           # Verify critical API endpoints
           echo "🔧 Verifying critical API endpoints..."
           sleep 3
@@ -293,6 +304,17 @@ jobs:
             sleep 2
           done
           
+          # Phase 3: Server warm-up sequence for serverless functions
+          echo "🔥 Warming up serverless functions..."
+          for endpoint in health/check health/database gallery featured-photos; do
+            echo "Warming up: /api/$endpoint"
+            for i in {1..3}; do
+              curl -f "http://localhost:3000/api/$endpoint" >/dev/null 2>&1 || true
+              sleep 1
+            done
+          done
+          echo "✅ Server warm-up complete"
+          
           echo "✅ API server is ready at http://localhost:3000"
         env:
           TEST_BASE_URL: http://localhost:3000
@@ -427,6 +449,17 @@ jobs:
             sleep 2
           done
           
+          # Phase 3: Server warm-up sequence for serverless functions
+          echo "🔥 Warming up serverless functions..."
+          for endpoint in health/check health/database gallery featured-photos; do
+            echo "Warming up: /api/$endpoint"
+            for i in {1..3}; do
+              curl -f "http://localhost:3000/api/$endpoint" >/dev/null 2>&1 || true
+              sleep 1
+            done
+          done
+          echo "✅ Server warm-up complete"
+          
           echo "✅ API server is ready at http://localhost:3000"
         env:
           TEST_BASE_URL: http://localhost:3000
@@ -553,6 +586,17 @@ jobs:
             sleep 2
           done
           
+          # Phase 3: Server warm-up sequence for serverless functions
+          echo "🔥 Warming up serverless functions..."
+          for endpoint in health/check health/database gallery featured-photos; do
+            echo "Warming up: /api/$endpoint"
+            for i in {1..3}; do
+              curl -f "http://localhost:3000/api/$endpoint" >/dev/null 2>&1 || true
+              sleep 1
+            done
+          done
+          echo "✅ Server warm-up complete"
+          
           echo "✅ API server is ready at http://localhost:3000"
         env:
           TEST_BASE_URL: http://localhost:3000
@@ -645,6 +689,17 @@ jobs:
             fi
             sleep 2
           done
+          
+          # Phase 3: Server warm-up sequence for serverless functions
+          echo "🔥 Warming up serverless functions for performance testing..."
+          for endpoint in health/check health/database gallery featured-photos; do
+            echo "Warming up: /api/$endpoint"
+            for i in {1..3}; do
+              curl -f "http://localhost:3000/api/$endpoint" >/dev/null 2>&1 || true
+              sleep 1
+            done
+          done
+          echo "✅ Server warm-up complete"
           
           echo "✅ Server is ready for performance testing"
 

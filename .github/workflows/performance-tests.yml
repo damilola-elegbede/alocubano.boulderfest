@@ -286,6 +286,18 @@ jobs:
             if curl -f -s --connect-timeout 30 --max-time 60 "$HEALTH_URL" > /dev/null; then
               echo "✅ Deployment is healthy"
 
+              # Phase 3: Server warm-up sequence for serverless functions
+              echo "🔥 Warming up serverless functions for performance testing..."
+              for endpoint in health/check health/database gallery featured-photos; do
+                WARMUP_URL="${DEPLOYMENT_URL}/api/$endpoint"
+                echo "Warming up: $WARMUP_URL"
+                for j in {1..3}; do
+                  curl -f -s --connect-timeout 10 --max-time 30 "$WARMUP_URL" >/dev/null 2>&1 || true
+                  sleep 1
+                done
+              done
+              echo "✅ Server warm-up complete"
+
               # Get health details for logging
               HEALTH_RESPONSE=$(curl -s "$HEALTH_URL" || echo "Could not fetch health details")
               echo "Health response: $HEALTH_RESPONSE"
