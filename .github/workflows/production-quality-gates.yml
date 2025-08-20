@@ -19,6 +19,7 @@ permissions:
 env:
   NODE_VERSION: "20"
   CI: true
+  NODE_OPTIONS: "--max-old-space-size=1024"
 
 jobs:
   # Job 1: Pre-deployment Quality Checks (fast feedback)
@@ -93,10 +94,14 @@ jobs:
       - name: 🧹 Cleanup CI Server
         if: always()
         run: |
-          if [ ! -z "$CI_SERVER_PID" ]; then
+          if [ -n "${CI_SERVER_PID:-}" ]; then
             echo "Stopping CI server (PID: $CI_SERVER_PID)..."
-            kill $CI_SERVER_PID || true
-            wait $CI_SERVER_PID 2>/dev/null || true
+            # Try to kill the entire process group (works if group leader)
+            kill -TERM -- -"$CI_SERVER_PID" 2>/dev/null || kill "$CI_SERVER_PID" || true
+            sleep 2
+            # Ensure nothing lingers
+            pkill -P "$CI_SERVER_PID" 2>/dev/null || true
+            wait "$CI_SERVER_PID" 2>/dev/null || true
             echo "CI server stopped"
           fi
 
