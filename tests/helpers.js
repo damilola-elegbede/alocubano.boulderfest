@@ -6,6 +6,7 @@
 // Environment detection for intelligent retry behavior
 const CI_ENV = process.env.CI === 'true' || process.env.CI === '1';
 const POST_MERGE = process.env.GITHUB_EVENT_NAME === 'push' && process.env.GITHUB_REF === 'refs/heads/main';
+const RETRY_DISABLED = process.env.DISABLE_TEST_RETRY === 'true' || process.env.DISABLE_TEST_RETRY === '1';
 
 // Retry configuration based on environment
 const RETRY_CONFIG = {
@@ -16,6 +17,7 @@ const RETRY_CONFIG = {
 
 // Get current environment configuration
 function getRetryConfig() {
+  if (RETRY_DISABLED) return { maxRetries: 0, timeout: RETRY_CONFIG.local.timeout };
   if (POST_MERGE) return RETRY_CONFIG.postMerge;
   if (CI_ENV) return RETRY_CONFIG.ci;
   return RETRY_CONFIG.local;
@@ -52,7 +54,7 @@ export async function testRequest(method, path, data = null, customHeaders = {})
       const response = await fetch(url, options);
       clearTimeout(timeoutId);
       // Handle unexpected status codes explicitly
-      if (!response.ok && ![400, 401, 404, 422, 429, 500, 503].includes(response.status)) {
+      if (!response.ok && ![400, 401, 403, 404, 422, 429, 500, 503].includes(response.status)) {
         throw new Error(`Unexpected status code: ${response.status}`);
       }
       let responseData;
