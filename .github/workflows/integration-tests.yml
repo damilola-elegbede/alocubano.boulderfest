@@ -97,6 +97,7 @@ jobs:
           CI: true
           DATABASE_URL: "file:./ci-test.db"
           TURSO_DATABASE_URL: "file:./ci-test.db"
+          ADMIN_SECRET: "test-admin-secret-key-32-characters-long"
 
       - name: Run streamlined integration tests (2 shards)
         run: |
@@ -105,7 +106,7 @@ jobs:
         env:
           TEST_TIMEOUT: 30000
           TEST_BASE_URL: http://localhost:3000
-          DATABASE_URL: 'file::memory:'
+          DATABASE_URL: 'file:./ci-test.db'
           MOCK_EXTERNAL_APIS: 'true'
 
       - name: Upload test results
@@ -168,6 +169,7 @@ jobs:
           CI: true
           DATABASE_URL: "file:./ci-test.db"
           TURSO_DATABASE_URL: "file:./ci-test.db"
+          ADMIN_SECRET: "test-admin-secret-key-32-characters-long"
 
       - name: Run tests with coverage
         run: |

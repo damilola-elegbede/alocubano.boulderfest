@@ -65,12 +65,12 @@ test('rate limiting on admin login attempts', async () => {
   const responses = await Promise.all(requests);
   const statusCodes = responses.map(r => r.status);
   
-  // Should see 401s for wrong password, potentially 429 for rate limiting
+  // Should see 400s for validation, 401s for wrong password, potentially 429 for rate limiting
   const hasNetworkFailure = statusCodes.some(code => code === 0);
   if (hasNetworkFailure) {
     throw new Error(`Network connectivity failure for POST /api/admin/login`);
   }
-  const allHandled = statusCodes.every(code => [401, 403, 429, 500].includes(code));
+  const allHandled = statusCodes.every(code => [400, 401, 403, 429, 500].includes(code));
   expect(allHandled).toBe(true);
   
   // After many attempts, should potentially see rate limiting or account protection

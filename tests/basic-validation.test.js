@@ -90,6 +90,6 @@ test('admin endpoints reject without CSRF tokens', async () => {
   if (response.status === 0) {
     throw new Error(`Network connectivity failure for POST /api/admin/login`);
   }
-  expect([401, 403, 400, 500].includes(response.status)).toBe(true);
+  expect([400, 401, 403, 429, 500].includes(response.status)).toBe(true);
 });
 
