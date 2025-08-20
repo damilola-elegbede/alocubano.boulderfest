@@ -110,7 +110,7 @@ class MigrationSystem {
 
   /**
    * Parse SQL content into individual statements
-   * Handles semicolons within strings and comments
+   * Handles semicolons within strings, comments, and trigger blocks
    */
   parseSQLStatements(content) {
     const statements = [];
@@ -119,6 +119,8 @@ class MigrationSystem {
     let inDoubleQuote = false;
     let inComment = false;
     let inMultiLineComment = false;
+    let inTriggerBlock = false;
+    let triggerDepth = 0;
 
     for (let i = 0; i < content.length; i++) {
       const char = content[i];
@@ -180,8 +182,32 @@ class MigrationSystem {
         inDoubleQuote = !inDoubleQuote;
       }
 
+      // Track CREATE TRIGGER blocks to handle BEGIN...END properly
+      if (!inSingleQuote && !inDoubleQuote && !inComment && !inMultiLineComment) {
+        // Check for CREATE TRIGGER statement start
+        const remainingContent = content.slice(i).toUpperCase();
+        if (remainingContent.startsWith('CREATE TRIGGER') || 
+            remainingContent.startsWith('CREATE OR REPLACE TRIGGER')) {
+          inTriggerBlock = true;
+          triggerDepth = 0;
+        }
+        
+        // Track BEGIN/END blocks within triggers
+        if (inTriggerBlock) {
+          if (remainingContent.startsWith('BEGIN')) {
+            triggerDepth++;
+          } else if (remainingContent.startsWith('END')) {
+            triggerDepth--;
+            // If we've closed all BEGIN blocks, we can end at the next semicolon
+            if (triggerDepth <= 0) {
+              inTriggerBlock = false;
+            }
+          }
+        }
+      }
+
       // Handle statement separation
-      if (char === ";" && !inSingleQuote && !inDoubleQuote) {
+      if (char === ";" && !inSingleQuote && !inDoubleQuote && !inTriggerBlock) {
         currentStatement += char;
         statements.push(currentStatement.trim());
         currentStatement = "";
