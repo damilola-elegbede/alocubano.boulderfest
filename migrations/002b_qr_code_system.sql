@@ -1,11 +1,11 @@
 -- Add QR code fields to tickets table
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS qr_token TEXT NOT NULL UNIQUE;
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS qr_code_generated_at TIMESTAMP;
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS scan_count INTEGER DEFAULT 0 CHECK (scan_count >= 0);
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS max_scan_count INTEGER DEFAULT 10 CHECK (max_scan_count >= 0);
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS first_scanned_at TIMESTAMP;
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS last_scanned_at TIMESTAMP;
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS qr_access_method TEXT;
+ALTER TABLE tickets ADD COLUMN qr_token TEXT NOT NULL UNIQUE;
+ALTER TABLE tickets ADD COLUMN qr_code_generated_at TIMESTAMP;
+ALTER TABLE tickets ADD COLUMN scan_count INTEGER DEFAULT 0 CHECK (scan_count >= 0);
+ALTER TABLE tickets ADD COLUMN max_scan_count INTEGER DEFAULT 10 CHECK (max_scan_count >= 0);
+ALTER TABLE tickets ADD COLUMN first_scanned_at TIMESTAMP;
+ALTER TABLE tickets ADD COLUMN last_scanned_at TIMESTAMP;
+ALTER TABLE tickets ADD COLUMN qr_access_method TEXT;
 
 -- Create QR code validation tracking table
 CREATE TABLE IF NOT EXISTS qr_validations (
