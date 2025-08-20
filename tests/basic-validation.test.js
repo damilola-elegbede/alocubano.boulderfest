@@ -93,3 +93,29 @@ test('admin endpoints reject without CSRF tokens', async () => {
   expect([400, 401, 403, 429, 500].includes(response.status)).toBe(true);
 });
 
+test('APIs reject SQL injection attempts', async () => {
+  const sqlInjectionPayloads = [
+    "'; DROP TABLE users; --",
+    "1' OR '1'='1",
+    "admin'--",
+    "' UNION SELECT * FROM users--"
+  ];
+  
+  for (const payload of sqlInjectionPayloads) {
+    const response = await testRequest('POST', '/api/email/subscribe', {
+      email: `test${payload}@example.com`,
+      name: payload
+    });
+    
+    // SQL injection must NEVER return 200
+    if (response.status === 0) {
+      throw new Error(`Network connectivity failure for POST /api/email/subscribe`);
+    }
+    
+    expect([400, 422].includes(response.status)).toBe(true);
+    if (response.status === 200) {
+      throw new Error("SQL injection attack returned success - CRITICAL SECURITY ISSUE");
+    }
+  }
+});
+
