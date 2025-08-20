@@ -99,9 +99,8 @@ jobs:
         run: npm run test:ci-server
 
       - name: Start application for testing
-        if: matrix.test-type == 'load-integration'
         run: |
-          # Start the application in background for load testing
+          # Start the application in background for all test types
           npm run start:ci &
           APP_PID=$!
           echo "APP_PID=$APP_PID" >> $GITHUB_ENV
@@ -130,7 +129,7 @@ jobs:
           echo "✅ Ticket validation performance: <2s target tested"
 
       - name: Stop application
-        if: matrix.test-type == 'load-integration' && env.APP_PID
+        if: env.APP_PID
         run: |
           if [ -n "$APP_PID" ]; then
             kill $APP_PID || true
