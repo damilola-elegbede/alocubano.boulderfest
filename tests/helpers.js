@@ -9,7 +9,7 @@ const RETRY_DISABLED = process.env.DISABLE_TEST_RETRY === 'true' || process.env.
 const RETRY_CONFIG = {
   local: { maxRetries: 0, timeout: 5000 },
   ci: { maxRetries: 2, timeout: 10000 },
-  postMerge: { maxRetries: 3, timeout: 15000 }
+  postMerge: { maxRetries: 2, timeout: 8000 }
 };
 
 // Get current environment configuration
