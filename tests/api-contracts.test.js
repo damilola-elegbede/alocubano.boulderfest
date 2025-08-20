@@ -12,7 +12,10 @@ test('payment API accepts correct structure', async () => {
   });
   
   // API should exist and respond appropriately
-  expect([200, 0, 400, 500].includes(response.status)).toBe(true);
+  if (response.status === 0) {
+    throw new Error(`Network connectivity failure for POST /api/payments/create-checkout-session`);
+  }
+  expect([200, 400, 500].includes(response.status)).toBe(true);
 });
 
 test('email API accepts subscription data', async () => {
@@ -21,7 +24,10 @@ test('email API accepts subscription data', async () => {
     name: 'Test User'
   });
   
-  expect([200, 0, 400, 500].includes(response.status)).toBe(true);
+  if (response.status === 0) {
+    throw new Error(`Network connectivity failure for POST /api/email/subscribe`);
+  }
+  expect([200, 400, 500].includes(response.status)).toBe(true);
 });
 
 test('ticket validation API exists', async () => {
@@ -29,21 +35,60 @@ test('ticket validation API exists', async () => {
     ticketId: 'test-ticket-123'
   });
   
-  expect([200, 0, 400, 404, 500].includes(response.status)).toBe(true);
+  if (response.status === 0) {
+    throw new Error(`Network connectivity failure for POST /api/tickets/validate`);
+  }
+  expect([200, 400, 404, 500].includes(response.status)).toBe(true);
 });
 
 test('gallery API returns expected structure', async () => {
   const response = await testRequest('GET', '/api/gallery');
   
-  expect([200, 0, 500].includes(response.status)).toBe(true);
+  if (response.status === 0) {
+    throw new Error(`Network connectivity failure for GET /api/gallery`);
+  }
+  expect([200, 403, 500].includes(response.status)).toBe(true);
   
   if (response.status === 200) {
-    expect(Array.isArray(response.data.photos) || response.data.error).toBe(true);
+    expect(Array.isArray(response.data.items) || response.data.error).toBe(true);
   }
 });
 
 test('admin dashboard requires authentication', async () => {
   const response = await testRequest('GET', '/api/admin/dashboard');
   
-  expect([401, 0, 500].includes(response.status)).toBe(true);
+  if (response.status === 0) {
+    throw new Error(`Network connectivity failure for GET /api/admin/dashboard`);
+  }
+  expect([401, 500].includes(response.status)).toBe(true);
+});
+
+test('payment creates valid checkout session structure', async () => {
+  const response = await testRequest('POST', '/api/payments/create-checkout-session', {
+    cartItems: [{ name: 'Weekend Pass', price: 125.00, quantity: 1 }],
+    customerInfo: { email: 'test@example.com', firstName: 'Test', lastName: 'User' }
+  });
+  
+  if (response.status === 200 && response.data?.url) {
+    expect(response.data.url).toContain('checkout.stripe.com');
+  } else {
+    if (response.status === 0) {
+      throw new Error(`Network connectivity failure for POST /api/payments/create-checkout-session`);
+    }
+    expect([200, 400, 500].includes(response.status)).toBe(true);
+  }
+});
+
+test('ticket transfer API accepts valid structure', async () => {
+  const response = await testRequest('POST', '/api/tickets/transfer', {
+    ticketId: 'test-123',
+    actionToken: 'token-456',
+    newAttendee: { email: 'new@example.com', firstName: 'New', lastName: 'User' }
+  });
+  
+  if (response.status === 0) {
+    throw new Error(`Network connectivity failure for POST /api/tickets/transfer`);
+  }
+  // Transfer endpoint returns 404 in test environment (requires real database)
+  expect([200, 400, 404, 401, 500].includes(response.status)).toBe(true);
 });

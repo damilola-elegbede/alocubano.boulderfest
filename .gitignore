@@ -97,4 +97,4 @@ certificates/
 .githooks/
 .vercel
 *-tickets-*.json
-*.serviceaccount.json
+*.serviceaccount.jsondeployment-check-report.json

@@ -49,8 +49,55 @@ jobs:
       - name: Setup test database
         run: |
           echo "Setting up test database..."
-          export DATABASE_URL="file:./ci-test.db?mode=memory&cache=shared"
+          mkdir -p data
+          export DATABASE_URL="file:./ci-test.db"
+          export TURSO_DATABASE_URL="file:./ci-test.db"
           npm run migrate:up || true
+
+      - name: Start API server
+        run: |
+          echo "🚀 Starting API server for integration tests..."
+          
+          # Kill any existing processes on port 3000
+          sudo lsof -ti:3000 | xargs kill -9 || true
+          sleep 2
+          
+          # Start the server in background
+          npm run start:ci &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          echo "Server started with PID: $SERVER_PID"
+          
+          # Wait for server to be ready with multiple checks
+          echo "⏳ Waiting for server to be ready..."
+          for i in {1..30}; do
+            echo "Attempt $i/30: Testing /health endpoint..."
+            if curl -f http://localhost:3000/health >/dev/null 2>&1; then
+              echo "✅ Health check successful"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Server failed to start after 30 attempts"
+              ps aux | grep node || true
+              exit 1
+            fi
+            sleep 2
+          done
+          
+          # Verify critical API endpoints
+          echo "🔧 Verifying critical API endpoints..."
+          sleep 3
+          curl -f http://localhost:3000/api/health/check || echo "⚠️ /api/health/check not ready"
+          curl -f http://localhost:3000/api/gallery || echo "⚠️ /api/gallery not ready"
+          
+          echo "✅ API server is ready at http://localhost:3000"
+        env:
+          TEST_BASE_URL: http://localhost:3000
+          NODE_ENV: test
+          CI: true
+          DATABASE_URL: "file:./ci-test.db"
+          TURSO_DATABASE_URL: "file:./ci-test.db"
+          ADMIN_SECRET: "test-admin-secret-key-32-characters-long"
 
       - name: Run streamlined integration tests (2 shards)
         run: |
@@ -58,7 +105,8 @@ jobs:
           npm run test:integration -- --shard=${{ matrix.shard }}/2
         env:
           TEST_TIMEOUT: 30000
-          DATABASE_URL: 'file::memory:?cache=shared'
+          TEST_BASE_URL: http://localhost:3000
+          DATABASE_URL: 'file:./ci-test.db'
           MOCK_EXTERNAL_APIS: 'true'
 
       - name: Upload test results
@@ -86,9 +134,48 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Start API server for coverage tests
+        run: |
+          echo "🚀 Starting API server for coverage tests..."
+          
+          # Kill any existing processes on port 3000
+          sudo lsof -ti:3000 | xargs kill -9 || true
+          sleep 2
+          
+          npm run start:ci &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          echo "Server started with PID: $SERVER_PID"
+          
+          # Wait for server to be ready with multiple checks
+          echo "⏳ Waiting for server to be ready..."
+          for i in {1..30}; do
+            echo "Attempt $i/30: Testing /health endpoint..."
+            if curl -f http://localhost:3000/health >/dev/null 2>&1; then
+              echo "✅ Health check successful"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Server failed to start after 30 attempts"
+              exit 1
+            fi
+            sleep 2
+          done
+          
+          echo "✅ API server is ready at http://localhost:3000"
+        env:
+          TEST_BASE_URL: http://localhost:3000
+          NODE_ENV: test
+          CI: true
+          DATABASE_URL: "file:./ci-test.db"
+          TURSO_DATABASE_URL: "file:./ci-test.db"
+          ADMIN_SECRET: "test-admin-secret-key-32-characters-long"
+
       - name: Run tests with coverage
         run: |
           npm run test:coverage
+        env:
+          TEST_BASE_URL: http://localhost:3000
 
       - name: Log coverage summary  
         if: github.event_name == 'pull_request'

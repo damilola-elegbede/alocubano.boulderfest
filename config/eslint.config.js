@@ -40,6 +40,11 @@ export default [
       "keyword-spacing": "error",
       "space-infix-ops": "error",
       "no-multiple-empty-lines": ["error", { max: 1 }],
+      // Security rules - prevent dangerous JavaScript patterns
+      "no-eval": "error",
+      "no-implied-eval": "error", 
+      "no-new-func": "error",
+      "no-script-url": "error",
     },
   },
 ];

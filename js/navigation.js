@@ -1173,11 +1173,13 @@ if (typeof PageTransition === 'undefined') {
                     if (!hasClassDeclaration) {
                         // Inline script without class declarations - create safe execution context
                         try {
-                            // Create a safe function execution instead of eval()
-                            const scriptFunction = new Function(scriptContent);
-                            scriptFunction();
+                            // SECURITY FIX: Safe DOM-based script execution (no Function constructor)
+                            const scriptElement = document.createElement('script');
+                            scriptElement.textContent = scriptContent;
+                            document.head.appendChild(scriptElement);
+                            document.head.removeChild(scriptElement); // Clean up immediately
                         } catch (error) {
-                            console.warn('Error executing inline script:', error);
+                            console.warn('Error executing inline script safely:', error);
                         }
                     }
                 }

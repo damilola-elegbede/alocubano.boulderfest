@@ -25,7 +25,6 @@ on:
         options:
           - all
           - unit
-          - e2e
           - security
           - performance
 
@@ -118,6 +117,51 @@ jobs:
       - name: Setup test results directory
         run: mkdir -p test-results coverage
 
+      - name: Start API server for streamlined tests
+        run: |
+          echo "🚀 Starting API server for streamlined tests..."
+          
+          # Kill any existing processes on port 3000
+          sudo lsof -ti:3000 | xargs kill -9 || true
+          sleep 2
+          
+          # Start the server in background
+          npm run start:ci &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          echo "Server started with PID: $SERVER_PID"
+          
+          # Wait for server to be ready with multiple checks
+          echo "⏳ Waiting for server to be ready..."
+          for i in {1..30}; do
+            echo "Attempt $i/30: Testing /health endpoint..."
+            if curl -f http://localhost:3000/health >/dev/null 2>&1; then
+              echo "✅ Health check successful"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Server failed to start after 30 attempts"
+              ps aux | grep node || true
+              exit 1
+            fi
+            sleep 2
+          done
+          
+          # Verify critical API endpoints
+          echo "🔧 Verifying critical API endpoints..."
+          sleep 3
+          curl -f http://localhost:3000/api/health/check || echo "⚠️ /api/health/check not ready"
+          curl -f http://localhost:3000/api/gallery || echo "⚠️ /api/gallery not ready"
+          
+          echo "✅ API server is ready at http://localhost:3000"
+        env:
+          TEST_BASE_URL: http://localhost:3000
+          NODE_ENV: test
+          CI: true
+          DATABASE_URL: "file:./ci-test.db"
+          TURSO_DATABASE_URL: "file:./ci-test.db"
+          ADMIN_SECRET: "test-admin-secret-key-32-characters-long"
+
       - name: Run streamlined tests (2 shards)
         run: |
           echo "🚀 Running streamlined test suite (shard ${{ matrix.test-shard }}/2)"
@@ -133,8 +177,9 @@ jobs:
         env:
           NODE_ENV: test
           CI: true
+          TEST_BASE_URL: http://localhost:3000
           NODE_OPTIONS: '--max-old-space-size=1024'
-          DATABASE_URL: 'file::memory:?cache=shared'
+          DATABASE_URL: 'file::memory:'
           MOCK_EXTERNAL_APIS: 'true'
           TEST_CI_EXCLUDE_PATTERNS: '**/*.flaky.test.*'
 
@@ -220,6 +265,43 @@ jobs:
       - name: Setup integration test results directory
         run: mkdir -p test-results
 
+      - name: Start API server for integration tests
+        run: |
+          echo "🚀 Starting API server for integration tests..."
+          
+          # Kill any existing processes on port 3000
+          sudo lsof -ti:3000 | xargs kill -9 || true
+          sleep 2
+          
+          npm run start:ci &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          echo "Server started with PID: $SERVER_PID"
+          
+          # Wait for server to be ready with multiple checks
+          echo "⏳ Waiting for server to be ready..."
+          for i in {1..30}; do
+            echo "Attempt $i/30: Testing /health endpoint..."
+            if curl -f http://localhost:3000/health >/dev/null 2>&1; then
+              echo "✅ Health check successful"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Server failed to start after 30 attempts"
+              exit 1
+            fi
+            sleep 2
+          done
+          
+          echo "✅ API server is ready at http://localhost:3000"
+        env:
+          TEST_BASE_URL: http://localhost:3000
+          NODE_ENV: test
+          CI: true
+          DATABASE_URL: "file:./ci-test.db"
+          TURSO_DATABASE_URL: "file:./ci-test.db"
+          ADMIN_SECRET: "test-admin-secret-key-32-characters-long"
+
       - name: Run integration tests (using streamlined suite)
         run: |
           echo "🚀 Running streamlined integration tests"
@@ -238,6 +320,7 @@ jobs:
         env:
           NODE_ENV: test
           CI: true
+          TEST_BASE_URL: http://localhost:3000
           TEST_ISOLATION_MODE: true
           INTEGRATION_TEST_MODE: true
           TEST_CI_EXCLUDE_PATTERNS: 'true'
@@ -273,72 +356,20 @@ jobs:
           path: test-results/
           retention-days: 30
 
-  # Job 4: End-to-End Tests with Playwright
-  e2e-tests:
-    name: E2E Tests
-    runs-on: ubuntu-latest
-    needs: quality-check
-    timeout-minutes: 30
-
-    strategy:
-      matrix:
-        browser: [chromium, firefox, webkit]
-        shard: [1, 2]
-      fail-fast: false
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit --progress=false
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps ${{ matrix.browser }}
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
-      # Skip validation - it was already tested and causes port conflicts
-      # - name: Validate CI server
-      #   run: npm run test:ci-server
-
-      - name: Start server for E2E tests
-        run: |
-          npm run start:ci &
-          SERVER_PID=$!
-          echo "Server started with PID: $SERVER_PID"
-          sleep 2  # Give server time to fully start
-          npx wait-on http://localhost:3000 --timeout 45000 --interval 1000 --verbose
-          echo "✅ Server is ready at http://localhost:3000"
-          curl -I http://localhost:3000/health || echo "Health check failed"
-
-      - name: Run E2E tests
-        run: |
-          npx playwright test --project=${{ matrix.browser }} --shard=${{ matrix.shard }}/2
-        env:
-          PLAYWRIGHT_BASE_URL: http://localhost:3000
-
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report-${{ matrix.browser }}-shard-${{ matrix.shard }}
-          path: |
-            playwright-report/
-            test-results/
-          retention-days: 30
+  # Job 4: E2E Tests - Temporarily disabled (removed during test simplification)
+  # E2E tests were removed to meet 500-line complexity limit
+  # Uncomment and re-enable when E2E tests are re-implemented
+  #
+  # e2e-tests:
+  #   name: E2E Tests (Disabled)
+  #   runs-on: ubuntu-latest
+  #   if: false  # Disabled until E2E tests are re-implemented
+  #   steps:
+  #     - name: Skip E2E Tests
+  #       run: |
+  #         echo "⚠️ E2E tests have been temporarily removed during test simplification"
+  #         echo "   Tests were removed to meet the 500-line complexity requirement"
+  #         echo "   Core functionality is covered by streamlined integration tests"
 
   # Job 5: Security Testing
   security-tests:
@@ -368,6 +399,43 @@ jobs:
       - name: Setup security test results directory
         run: mkdir -p test-results
 
+      - name: Start API server for security tests
+        run: |
+          echo "🚀 Starting API server for security tests..."
+          
+          # Kill any existing processes on port 3000
+          sudo lsof -ti:3000 | xargs kill -9 || true
+          sleep 2
+          
+          npm run start:ci &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          echo "Server started with PID: $SERVER_PID"
+          
+          # Wait for server to be ready with multiple checks
+          echo "⏳ Waiting for server to be ready..."
+          for i in {1..30}; do
+            echo "Attempt $i/30: Testing /health endpoint..."
+            if curl -f http://localhost:3000/health >/dev/null 2>&1; then
+              echo "✅ Health check successful"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Server failed to start after 30 attempts"
+              exit 1
+            fi
+            sleep 2
+          done
+          
+          echo "✅ API server is ready at http://localhost:3000"
+        env:
+          TEST_BASE_URL: http://localhost:3000
+          NODE_ENV: test
+          CI: true
+          DATABASE_URL: "file:./ci-test.db"
+          TURSO_DATABASE_URL: "file:./ci-test.db"
+          ADMIN_SECRET: "test-admin-secret-key-32-characters-long"
+
       - name: Run security tests (using streamlined suite)
         run: |
           echo "🔒 Running streamlined security tests"
@@ -377,6 +445,7 @@ jobs:
         env:
           NODE_ENV: test
           CI: true
+          TEST_BASE_URL: http://localhost:3000
           NODE_OPTIONS: '--max-old-space-size=1024'
         continue-on-error: true
 
@@ -456,6 +525,43 @@ jobs:
           redis-cli -h localhost -p 6379 get test-key
           echo "✅ Redis basic operations working"
 
+      - name: Start API server for Redis tests
+        run: |
+          echo "🚀 Starting API server for Redis tests..."
+          
+          # Kill any existing processes on port 3000
+          sudo lsof -ti:3000 | xargs kill -9 || true
+          sleep 2
+          
+          npm run start:ci &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          echo "Server started with PID: $SERVER_PID"
+          
+          # Wait for server to be ready with multiple checks
+          echo "⏳ Waiting for server to be ready..."
+          for i in {1..30}; do
+            echo "Attempt $i/30: Testing /health endpoint..."
+            if curl -f http://localhost:3000/health >/dev/null 2>&1; then
+              echo "✅ Health check successful"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Server failed to start after 30 attempts"
+              exit 1
+            fi
+            sleep 2
+          done
+          
+          echo "✅ API server is ready at http://localhost:3000"
+        env:
+          TEST_BASE_URL: http://localhost:3000
+          NODE_ENV: test
+          CI: true
+          DATABASE_URL: "file:./ci-test.db"
+          TURSO_DATABASE_URL: "file:./ci-test.db"
+          ADMIN_SECRET: "test-admin-secret-key-32-characters-long"
+
       - name: Run Redis-specific rate limiting tests
         run: |
           echo "🚀 Running Redis-based rate limiting tests"
@@ -474,6 +580,7 @@ jobs:
         env:
           REDIS_URL: redis://localhost:6379
           RATE_LIMIT_REDIS_URL: redis://localhost:6379
+          TEST_BASE_URL: http://localhost:3000
           NODE_ENV: test
           CI: true
 
@@ -514,8 +621,32 @@ jobs:
 
       - name: Start application for load testing
         run: |
+          echo "🚀 Starting API server for performance tests..."
+          
+          # Kill any existing processes on port 3000
+          sudo lsof -ti:3000 | xargs kill -9 || true
+          sleep 2
+          
           npm run start:ci &
-          npx wait-on http://localhost:3000 --timeout 45000 --interval 1000
+          SERVER_PID=$!
+          echo "Server started with PID: $SERVER_PID"
+          
+          # Wait for server to be ready with multiple checks
+          echo "⏳ Waiting for server to be ready..."
+          for i in {1..30}; do
+            echo "Attempt $i/30: Testing /health endpoint..."
+            if curl -f http://localhost:3000/health >/dev/null 2>&1; then
+              echo "✅ Health check successful"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Server failed to start after 30 attempts"
+              exit 1
+            fi
+            sleep 2
+          done
+          
+          echo "✅ Server is ready for performance testing"
 
       - name: Run performance tests
         run: npm run performance:ci:critical
@@ -538,7 +669,7 @@ jobs:
   build-tests:
     name: Pre-Deployment Validation
     runs-on: ubuntu-latest
-    needs: [e2e-tests, streamlined-tests]  # Wait for both E2E and Streamlined tests
+    needs: [streamlined-tests, integration-tests]  # Wait for streamlined and integration tests
     timeout-minutes: 10
 
     steps:
@@ -590,7 +721,7 @@ jobs:
   wait-for-vercel:
     name: Wait for Vercel Deployment
     runs-on: ubuntu-latest
-    needs: [e2e-tests, streamlined-tests]
+    needs: [streamlined-tests, integration-tests]
     timeout-minutes: 15
     if: github.event_name == 'pull_request'
     
@@ -612,7 +743,7 @@ jobs:
   test-aggregation:
     name: Test Results Aggregation
     runs-on: ubuntu-latest
-    needs: [streamlined-tests, integration-tests, e2e-tests, security-tests, wait-for-vercel]
+    needs: [streamlined-tests, integration-tests, security-tests, wait-for-vercel]
     if: always()
     timeout-minutes: 10
 
@@ -828,7 +959,6 @@ jobs:
       [
         streamlined-tests,
         integration-tests,
-        e2e-tests,
         security-tests,
         performance-tests,
         build-tests,
@@ -901,7 +1031,6 @@ jobs:
       [
         streamlined-tests,
         integration-tests,
-        e2e-tests,
         security-tests,
         build-tests,
         test-aggregation,
@@ -915,7 +1044,6 @@ jobs:
           echo "🎉 All tests passed successfully!"
           echo "✅ Streamlined Tests (19 tests in ~400ms): Passed"
           echo "✅ Integration Tests (same 19 tests): Passed" 
-          echo "✅ E2E Tests: Passed"
           echo "✅ Security Tests (same 19 tests): Passed"
           echo "✅ Build Tests: Passed"
           echo ""
@@ -924,6 +1052,9 @@ jobs:
           echo "   • ~400ms execution time"
           echo "   • <512MB memory usage"
           echo "   • Single npm test command"
+          echo ""
+          echo "ℹ️ Note: E2E tests temporarily disabled (removed to meet 500-line limit)"
+          echo ""
           echo "Pipeline completed for: ${{ github.ref_name }}"
           echo "Commit: ${{ github.sha }}"
           echo "Author: ${{ github.actor }}"

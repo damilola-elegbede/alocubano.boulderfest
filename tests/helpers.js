@@ -3,17 +3,22 @@
  * Minimal helper functions under 100 lines total
  */
 
-// Simple HTTP client for API testing
+// Simple HTTP client for API testing with timeout and error boundaries
 export async function testRequest(method, path, data = null, customHeaders = {}) {
   const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000';
   const url = `${baseUrl}${path}`;
+  
+  // Setup AbortController for timeout handling
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
   
   const options = {
     method,
     headers: { 
       'Content-Type': 'application/json',
       ...customHeaders 
-    }
+    },
+    signal: controller.signal
   };
   
   if (data && method !== 'GET') {
@@ -22,9 +27,24 @@ export async function testRequest(method, path, data = null, customHeaders = {})
 
   try {
     const response = await fetch(url, options);
-    const responseData = response.headers.get('content-type')?.includes('application/json') 
-      ? await response.json() 
-      : await response.text();
+    clearTimeout(timeoutId);
+    
+    // Handle unexpected status codes explicitly
+    if (!response.ok && ![400, 401, 404, 422, 429, 500, 503].includes(response.status)) {
+      throw new Error(`Unexpected status code: ${response.status}`);
+    }
+    
+    let responseData;
+    const isJson = response.headers.get('content-type')?.includes('application/json');
+    if (isJson) {
+      try {
+        responseData = await response.json();
+      } catch {
+        responseData = await response.text();
+      }
+    } else {
+      responseData = await response.text();
+    }
     
     return {
       status: response.status,
@@ -32,9 +52,21 @@ export async function testRequest(method, path, data = null, customHeaders = {})
       ok: response.ok
     };
   } catch (error) {
+    clearTimeout(timeoutId);
+    
+    // Handle timeout errors
+    if (error.name === 'AbortError') {
+      return {
+        status: 0,
+        data: { error: `Request timeout for ${method} ${path}` },
+        ok: false
+      };
+    }
+    
+    // Handle network and other errors with context
     return {
       status: 0,
-      data: { error: error.message },
+      data: { error: `Network error for ${method} ${path}: ${error.message}` },
       ok: false
     };
   }
@@ -45,18 +77,16 @@ export function generateTestEmail() {
   return `test-${Date.now()}-${Math.random().toString(36).substring(7)}@example.com`;
 }
 
-// Validate email format
-export function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
 
-// Wait helper for async tests
-export function wait(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-// Clean test data
-export async function cleanupTestData() {
-  // Cleanup is handled by database reset in setup
-  return true;
+// Generate test payment data
+export function generateTestPayment(overrides = {}) {
+  return {
+    cartItems: [{ name: 'Weekend Pass', price: 125.00, quantity: 1 }],
+    customerInfo: { 
+      email: generateTestEmail(),
+      firstName: 'Test',
+      lastName: 'User'
+    },
+    ...overrides
+  };
 }

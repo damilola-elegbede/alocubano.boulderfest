@@ -1,7 +1,3 @@
-/**
- * Redis Rate Limiting Tests
- * Tests that rate limiting works correctly with both Redis and in-memory fallback
- */
 import { test, expect } from 'vitest';
 import { testRequest } from './helpers.js';
 
@@ -22,8 +18,12 @@ test('rate limiting prevents abuse on email subscription', async () => {
   
   // Some requests should be rate limited (429) or at least handled gracefully
   // In test environment without Redis, might get 200s or 400s
+  const hasNetworkFailure = statusCodes.some(code => code === 0);
+  if (hasNetworkFailure) {
+    throw new Error(`Network connectivity failure for POST /api/email/subscribe`);
+  }
   const hasRateLimiting = statusCodes.some(code => code === 429);
-  const allHandled = statusCodes.every(code => [200, 400, 429, 0, 500].includes(code));
+  const allHandled = statusCodes.every(code => [200, 400, 429, 500].includes(code));
   
   expect(allHandled).toBe(true);
   // Note: actual rate limiting (429) only works with Redis or after multiple attempts
@@ -43,7 +43,11 @@ test('rate limiting on ticket validation endpoint', async () => {
   const statusCodes = responses.map(r => r.status);
   
   // All requests should be handled gracefully
-  const allHandled = statusCodes.every(code => [200, 400, 404, 429, 0, 500].includes(code));
+  const hasNetworkFailure = statusCodes.some(code => code === 0);
+  if (hasNetworkFailure) {
+    throw new Error(`Network connectivity failure for POST /api/tickets/validate`);
+  }
+  const allHandled = statusCodes.every(code => [200, 400, 404, 429, 500].includes(code));
   expect(allHandled).toBe(true);
 });
 
@@ -61,8 +65,12 @@ test('rate limiting on admin login attempts', async () => {
   const responses = await Promise.all(requests);
   const statusCodes = responses.map(r => r.status);
   
-  // Should see 401s for wrong password, potentially 429 for rate limiting
-  const allHandled = statusCodes.every(code => [401, 403, 429, 0, 500].includes(code));
+  // Should see 400s for validation, 401s for wrong password, potentially 429 for rate limiting
+  const hasNetworkFailure = statusCodes.some(code => code === 0);
+  if (hasNetworkFailure) {
+    throw new Error(`Network connectivity failure for POST /api/admin/login`);
+  }
+  const allHandled = statusCodes.every(code => [400, 401, 403, 429, 500].includes(code));
   expect(allHandled).toBe(true);
   
   // After many attempts, should potentially see rate limiting or account protection
@@ -70,9 +78,27 @@ test('rate limiting on admin login attempts', async () => {
   // Note: Protection behavior depends on Redis availability
 });
 
-test('rate limiting resets after time window', async () => {
-  // This test would need to wait for rate limit window to expire
-  // Skipping actual implementation as it would slow down test suite
-  // In production, this would test that rate limits reset after 1 minute
-  expect(true).toBe(true);
+test('payment and webhook endpoints handle concurrent requests', async () => {
+  // Test both payment creation and webhook handling in one test
+  const paymentRequests = Array(3).fill().map(() =>
+    testRequest('POST', '/api/payments/create-checkout-session', {
+      cartItems: [{ name: 'Test', price: 10, quantity: 1 }],
+      customerInfo: { email: 'test@example.com' }
+    })
+  );
+  
+  const webhookRequests = Array(2).fill().map(() =>
+    testRequest('POST', '/api/payments/stripe-webhook', {})
+  );
+  
+  const allRequests = [...paymentRequests, ...webhookRequests];
+  const responses = await Promise.all(allRequests);
+  const statusCodes = responses.map(r => r.status);
+  
+  const hasNetworkFailure = statusCodes.some(code => code === 0);
+  if (hasNetworkFailure) {
+    throw new Error(`Network connectivity failure for payment/webhook endpoints`);
+  }
+  const allHandled = statusCodes.every(code => [200, 400, 401, 422, 429, 500].includes(code));
+  expect(allHandled).toBe(true);
 });

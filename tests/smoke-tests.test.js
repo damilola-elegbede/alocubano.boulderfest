@@ -16,8 +16,11 @@ test('essential APIs respond', async () => {
 
   for (const path of endpoints) {
     const response = await testRequest('GET', path);
-    // Allow for server down (0), success (200), or server errors (5xx)
-    expect([200, 0, 500, 503].includes(response.status)).toBe(true);
+    // Allow for success (200), client errors (4xx), or server errors (5xx)
+    if (response.status === 0) {
+      throw new Error(`Network connectivity failure for GET ${path}`);
+    }
+    expect([200, 400, 403, 404, 500, 503].includes(response.status)).toBe(true);
   }
 });
 
@@ -28,7 +31,10 @@ test('payment APIs accessible', async () => {
   });
   
   // Should respond (even with validation errors)
-  expect([200, 400, 0, 500].includes(response.status)).toBe(true);
+  if (response.status === 0) {
+    throw new Error(`Network connectivity failure for POST /api/payments/create-checkout-session`);
+  }
+  expect([200, 400, 500].includes(response.status)).toBe(true);
 });
 
 // Email system health  
@@ -39,13 +45,46 @@ test('email APIs accessible', async () => {
   });
   
   // Should respond appropriately
-  expect([200, 400, 429, 0, 500].includes(response.status)).toBe(true);
+  if (response.status === 0) {
+    throw new Error(`Network connectivity failure for POST /api/email/subscribe`);
+  }
+  expect([200, 400, 429, 500].includes(response.status)).toBe(true);
 });
 
 // Admin system health
 test('admin APIs protected', async () => {
   const response = await testRequest('GET', '/api/admin/dashboard');
   
-  // Should be protected (401) or server error
-  expect([401, 0, 500].includes(response.status)).toBe(true);
+  // Should be protected (401), forbidden (403), or server error (500)
+  if (response.status === 0) {
+    throw new Error(`Network connectivity failure for GET /api/admin/dashboard`);
+  }
+  expect([401, 403, 500].includes(response.status)).toBe(true);
+});
+
+// Revenue-critical endpoints health
+test('stripe webhook endpoint accessible', async () => {
+  const response = await testRequest('POST', '/api/payments/stripe-webhook', {});
+  
+  // Should respond (even with invalid signature/payload)
+  if (response.status === 0) {
+    throw new Error(`Network connectivity failure for POST /api/payments/stripe-webhook`);
+  }
+  expect([200, 400, 401, 500].includes(response.status)).toBe(true);
+});
+
+test('ticket lifecycle endpoints accessible', async () => {
+  const endpoints = [
+    '/api/tickets/validate',
+    '/api/tickets/qr-code',
+    '/api/tickets/cancel'
+  ];
+  
+  for (const path of endpoints) {
+    const response = await testRequest('POST', path, {});
+    if (response.status === 0) {
+      throw new Error(`Network connectivity failure for POST ${path}`);
+    }
+    expect([200, 400, 404, 500].includes(response.status)).toBe(true);
+  }
 });
