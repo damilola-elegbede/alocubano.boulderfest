@@ -2,16 +2,13 @@
  * Test Helpers - Essential utilities for streamlined testing
  * Minimal helper functions under 100 lines total
  */
-
 // Simple HTTP client for API testing with timeout and error boundaries
 export async function testRequest(method, path, data = null, customHeaders = {}) {
   const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000';
   const url = `${baseUrl}${path}`;
-  
   // Setup AbortController for timeout handling
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
-  
   const options = {
     method,
     headers: { 
@@ -20,20 +17,16 @@ export async function testRequest(method, path, data = null, customHeaders = {})
     },
     signal: controller.signal
   };
-  
   if (data && method !== 'GET') {
     options.body = JSON.stringify(data);
   }
-
   try {
     const response = await fetch(url, options);
     clearTimeout(timeoutId);
-    
     // Handle unexpected status codes explicitly
     if (!response.ok && ![400, 401, 404, 422, 429, 500, 503].includes(response.status)) {
       throw new Error(`Unexpected status code: ${response.status}`);
     }
-    
     let responseData;
     const isJson = response.headers.get('content-type')?.includes('application/json');
     if (isJson) {
@@ -45,7 +38,6 @@ export async function testRequest(method, path, data = null, customHeaders = {})
     } else {
       responseData = await response.text();
     }
-    
     return {
       status: response.status,
       data: responseData,
@@ -53,7 +45,6 @@ export async function testRequest(method, path, data = null, customHeaders = {})
     };
   } catch (error) {
     clearTimeout(timeoutId);
-    
     // Handle timeout errors
     if (error.name === 'AbortError') {
       return {
@@ -62,7 +53,6 @@ export async function testRequest(method, path, data = null, customHeaders = {})
         ok: false
       };
     }
-    
     // Handle network and other errors with context
     return {
       status: 0,
@@ -71,13 +61,10 @@ export async function testRequest(method, path, data = null, customHeaders = {})
     };
   }
 }
-
 // Generate test email
 export function generateTestEmail() {
   return `test-${Date.now()}-${Math.random().toString(36).substring(7)}@example.com`;
 }
-
-
 // Generate test payment data
 export function generateTestPayment(overrides = {}) {
   return {
