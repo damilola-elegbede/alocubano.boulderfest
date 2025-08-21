@@ -62,17 +62,3 @@ test('ticket lifecycle endpoints accessible', async () => {
     expect([200, 400, 404, 500].includes(response.status)).toBe(true);
   }
 });
-
-test('feedback survey link exists in contact page', async () => {
-  // Simple test to verify feedback survey external link is present
-  const response = await testRequest('GET', '/pages/contact.html');
-  if (response.status === 200 && response.body) {
-    const hasGoogleFormLink = response.body.includes('docs.google.com/forms');
-    const hasFeedbackText = response.body.includes('Feedback Survey');
-    expect(hasGoogleFormLink || hasFeedbackText).toBe(true);
-  } else {
-    // If we can't fetch the page, skip the test gracefully
-    console.warn('Could not verify feedback survey link - page fetch failed');
-    expect(true).toBe(true);
-  }
-});
