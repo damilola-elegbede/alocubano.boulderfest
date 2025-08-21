@@ -2313,3 +2313,12 @@
   height: clamp(60px, 8vw, 78px);
   width: auto;
 }
+
+/* ==========================================================================
+   FEEDBACK SURVEY - Minimal Implementation
+   ========================================================================== */
+
+/* Simple feedback link styling - inherits from contact-link */
+.feedback-link {
+  /* Uses existing contact-link styles */
+}
