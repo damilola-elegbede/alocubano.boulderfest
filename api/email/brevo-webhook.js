@@ -55,15 +55,18 @@ function isIpInCidr(ip, cidr) {
  * This implementation follows Brevo's security best practices.
  */
 function validateWebhookRequest(req) {
-  // Get the client IP (considering proxies)
-  const clientIp = (
+  // Get the client IP (prefer Vercel's trusted header for security)
+  const forwarded =
+    req.headers["x-vercel-forwarded-for"] || // Vercel-managed, sanitized
     req.headers["x-forwarded-for"] ||
+    req.socket?.remoteAddress ||
     req.connection?.remoteAddress ||
-    ""
-  )
-    .split(",")[0]
-    .trim()
-    .replace(/^::ffff:/, ""); // Remove IPv6 prefix for IPv4 addresses
+    "";
+  const ipChain = String(forwarded)
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const clientIp = (ipChain[0] || "").replace(/^::ffff:/, ""); // Remove IPv6 prefix for IPv4
 
   // Brevo webhook IP ranges (from official documentation)
   const BREVO_WEBHOOK_IPS = [
@@ -71,8 +74,10 @@ function validateWebhookRequest(req) {
     "172.246.240.0/20", // 172.246.240.0 to 172.246.255.255
   ];
 
-  // Check if IP whitelisting is enabled
-  const enableIpWhitelist = process.env.BREVO_ENABLE_IP_WHITELIST === "true";
+  // Enforce IP whitelist by default in production; allow explicit opt-out via env
+  const enableIpWhitelist = process.env.BREVO_ENABLE_IP_WHITELIST
+    ? process.env.BREVO_ENABLE_IP_WHITELIST === "true"
+    : process.env.NODE_ENV === "production";
 
   if (enableIpWhitelist) {
     // Allow localhost IPs in development/test mode
@@ -116,15 +121,25 @@ function validateWebhookRequest(req) {
     }
   }
 
-  // Optional: Check for custom header if configured in Brevo
-  const customToken = process.env.BREVO_WEBHOOK_TOKEN;
-  if (customToken) {
-    const receivedToken =
-      req.headers["x-brevo-token"] || req.headers["x-webhook-token"];
-    if (receivedToken !== customToken) {
-      console.warn("Invalid webhook token received");
-      return false;
-    }
+  // Check for webhook token (required in production)
+  const customToken =
+    process.env.BREVO_WEBHOOK_TOKEN || process.env.BREVO_WEBHOOK_SECRET;
+  const receivedToken =
+    (req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer ") &&
+      req.headers.authorization.slice(7)) ||
+    req.headers["x-brevo-token"] ||
+    req.headers["x-webhook-token"];
+
+  // Enforce token in production; allow opt-in bypass only for test/dev
+  const isProd = process.env.NODE_ENV === "production";
+  if (isProd && !customToken) {
+    console.warn("Missing BREVO webhook token/secret in production");
+    return false;
+  }
+  if (customToken && receivedToken !== customToken) {
+    console.warn("Invalid webhook token received");
+    return false;
   }
 
   // Log webhook receipt for monitoring

@@ -183,7 +183,7 @@ Automatically identifies navigation links based on:
 
 Recognizes social media platforms:
 
-- Instagram (`instagram.com/alocubanoboulder`)
+- Instagram (`instagram.com/alocubano.boulderfest`)
 - WhatsApp (`chat.whatsapp.com/...`)
 - Facebook, Twitter, YouTube, etc.
 
