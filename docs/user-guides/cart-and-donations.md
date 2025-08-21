@@ -262,7 +262,7 @@ If you experience any issues:
 ### Support
 
 - **Email**: alocubanoboulderfest@gmail.com
-- **Instagram**: [@alocubano.boulderfest](https://instagram.com/alocubanoboulder)
+- **Instagram**: [@alocubano.boulderfest](https://www.instagram.com/alocubano.boulderfest/)
 - **WhatsApp**: [Join our community](https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH)
 
 ---

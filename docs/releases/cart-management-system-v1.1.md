@@ -565,7 +565,7 @@ npm run test:coverage
 
 - **Email:** alocubanoboulderfest@gmail.com
 - **Documentation:** `/docs/user-guides/cart-and-donations.md`
-- **Instagram:** [@alocubano.boulderfest](https://instagram.com/alocubanoboulder)
+- **Instagram:** [@alocubano.boulderfest](https://www.instagram.com/alocubano.boulderfest/)
 
 ### For Developers
 

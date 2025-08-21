@@ -38,7 +38,7 @@ async function loginHandler(req, res) {
       }
 
       // In CI/test environments, return 401 for authentication failures to match test expectations
-      if (process.env.CI || process.env.NODE_ENV === 'test') {
+      if (process.env.CI || process.env.NODE_ENV === "test") {
         return res.status(401).json({ error: "Authentication failed" });
       }
 

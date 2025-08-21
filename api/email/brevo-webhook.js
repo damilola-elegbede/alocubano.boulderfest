@@ -3,7 +3,6 @@
  * Processes incoming webhook events from Brevo
  */
 
-import crypto from "crypto";
 import { getEmailSubscriberService } from "../lib/email-subscriber-service.js";
 
 /**
@@ -24,21 +23,133 @@ function getRawBody(req) {
 }
 
 /**
- * Validate webhook signature
+ * Check if IP is in CIDR range
  */
-function validateSignature(rawBody, signature) {
-  const secret = process.env.BREVO_WEBHOOK_SECRET;
-  if (!secret) {
-    console.warn("BREVO_WEBHOOK_SECRET not configured, skipping signature validation");
-    return true; // Skip validation if not configured
+function isIpInCidr(ip, cidr) {
+  const [range, bits = 32] = cidr.split("/");
+  const mask = ~(2 ** (32 - bits) - 1);
+
+  const ipToNum = (ip) => {
+    const parts = ip.split(".");
+    return parts.reduce(
+      (sum, part, i) => sum + (parseInt(part) << (8 * (3 - i))),
+      0,
+    );
+  };
+
+  const rangeNum = ipToNum(range);
+  const ipNum = ipToNum(ip);
+
+  return (rangeNum & mask) === (ipNum & mask);
+}
+
+/**
+ * Validate webhook request
+ * 
+ * Security Note: Brevo does NOT provide HMAC signatures for webhooks.
+ * Per Brevo's official documentation (https://developers.brevo.com/docs/username-and-password-authentication),
+ * they recommend:
+ * 1. IP whitelisting (implemented below with official CIDR ranges)
+ * 2. Basic auth or Bearer token authentication (optional via BREVO_WEBHOOK_TOKEN)
+ * 
+ * This implementation follows Brevo's security best practices.
+ */
+function validateWebhookRequest(req) {
+  // Get the client IP (prefer Vercel's trusted header for security)
+  const forwarded =
+    req.headers["x-vercel-forwarded-for"] || // Vercel-managed, sanitized
+    req.headers["x-forwarded-for"] ||
+    req.socket?.remoteAddress ||
+    req.connection?.remoteAddress ||
+    "";
+  const ipChain = String(forwarded)
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const clientIp = (ipChain[0] || "").replace(/^::ffff:/, ""); // Remove IPv6 prefix for IPv4
+
+  // Brevo webhook IP ranges (from official documentation)
+  const BREVO_WEBHOOK_IPS = [
+    "1.179.112.0/20", // 1.179.112.0 to 1.179.127.255
+    "172.246.240.0/20", // 172.246.240.0 to 172.246.255.255
+  ];
+
+  // Enforce IP whitelist by default in production; allow explicit opt-out via env
+  const enableIpWhitelist = process.env.BREVO_ENABLE_IP_WHITELIST
+    ? process.env.BREVO_ENABLE_IP_WHITELIST === "true"
+    : process.env.NODE_ENV === "production";
+
+  if (enableIpWhitelist) {
+    // Allow localhost IPs in development/test mode
+    const isTestMode =
+      process.env.NODE_ENV === "development" ||
+      process.env.NODE_ENV === "test" ||
+      process.env.BREVO_TEST_MODE === "development";
+
+    const isLocalhost =
+      clientIp === "127.0.0.1" ||
+      clientIp === "::1" ||
+      clientIp === "localhost" ||
+      clientIp === "";
+
+    if (isTestMode && isLocalhost) {
+      console.log(
+        `Webhook accepted from localhost in test mode: ${clientIp || "local"}`,
+      );
+    } else {
+      // Validate IP is from Brevo
+      const isValidIp = BREVO_WEBHOOK_IPS.some((cidr) => {
+        try {
+          return isIpInCidr(clientIp, cidr);
+        } catch (error) {
+          console.error(
+            `Error checking IP ${clientIp} against ${cidr}:`,
+            error,
+          );
+          return false;
+        }
+      });
+
+      if (!isValidIp) {
+        console.warn(
+          `Webhook rejected - IP ${clientIp} not in Brevo whitelist`,
+        );
+        return false;
+      }
+
+      console.log(`Webhook accepted from Brevo IP: ${clientIp}`);
+    }
   }
 
-  const expectedSignature = crypto
-    .createHmac("sha256", secret)
-    .update(rawBody)
-    .digest("hex");
+  // Check for webhook token (required in production)
+  const customToken =
+    process.env.BREVO_WEBHOOK_TOKEN || process.env.BREVO_WEBHOOK_SECRET;
+  const receivedToken =
+    (req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer ") &&
+      req.headers.authorization.slice(7)) ||
+    req.headers["x-brevo-token"] ||
+    req.headers["x-webhook-token"];
 
-  return signature === expectedSignature;
+  // Enforce token in production; allow opt-in bypass only for test/dev
+  const isProd = process.env.NODE_ENV === "production";
+  if (isProd && !customToken) {
+    console.warn("Missing BREVO webhook token/secret in production");
+    return false;
+  }
+  if (customToken && receivedToken !== customToken) {
+    console.warn("Invalid webhook token received");
+    return false;
+  }
+
+  // Log webhook receipt for monitoring
+  if (!enableIpWhitelist) {
+    console.log(
+      `Brevo webhook received from IP: ${clientIp} (IP whitelist disabled)`,
+    );
+  }
+
+  return true; // Accept webhook if it passes all configured checks
 }
 
 /**
@@ -55,14 +166,13 @@ export default async function handler(req, res) {
   let webhookData = null;
 
   try {
+    // Validate webhook request (custom token, IP whitelist, etc.)
+    if (!validateWebhookRequest(req)) {
+      return res.status(401).json({ error: "Unauthorized webhook request" });
+    }
+
     // Get raw body
     const rawBody = await getRawBody(req);
-
-    // Validate signature if provided
-    const signature = req.headers["x-brevo-signature"];
-    if (signature && !validateSignature(rawBody, signature)) {
-      return res.status(401).json({ error: "Invalid signature" });
-    }
 
     // Parse webhook data
     try {

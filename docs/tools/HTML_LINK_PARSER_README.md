@@ -183,7 +183,7 @@ Automatically identifies navigation links based on:
 
 Recognizes social media platforms:
 
-- Instagram (`instagram.com/alocubanoboulder`)
+- Instagram (`instagram.com/alocubano.boulderfest`)
 - WhatsApp (`chat.whatsapp.com/...`)
 - Facebook, Twitter, YouTube, etc.
 
@@ -230,7 +230,7 @@ python3 tools/link-validation/link_analyzer.py --category social
 ```
 SOCIAL LINKS (16 found)
 ==================================================
-https://instagram.com/alocubanoboulder | home.html     |
+https://www.instagram.com/alocubano.boulderfest/ | home.html     |
 https://chat.whatsapp.com/...          | home.html     |
 ...
 ```
