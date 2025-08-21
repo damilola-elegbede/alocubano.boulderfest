@@ -2,15 +2,15 @@
  * Simple Vitest Configuration - No Complexity
  * Minimal configuration that just works.
  */
-import { defineConfig } from "vitest/config";
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    environment: "jsdom",
+    environment: 'jsdom',
     testTimeout: 10000,
-    setupFiles: ["./tests/setup.js"],
+    setupFiles: ['./tests/setup.js'],
     globals: true,
-    include: ["tests/**/*.test.js"],
-    exclude: ["node_modules/**", "tests/e2e/**"],
-  },
+    include: ['tests/**/*.test.js'],
+    exclude: ['node_modules/**', 'tests/e2e/**']
+  }
 });
