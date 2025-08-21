@@ -358,7 +358,9 @@ class BrevoService {
     return {
       eventType,
       email,
-      occurredAt: date ? new Date(date).toISOString() : new Date().toISOString(),
+      occurredAt: date
+        ? new Date(date).toISOString()
+        : new Date().toISOString(),
       data: eventData,
     };
   }

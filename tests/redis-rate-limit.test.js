@@ -1,86 +1,110 @@
-import { test, expect } from 'vitest';
-import { testRequest } from './helpers.js';
-test('rate limiting prevents abuse on email subscription', async () => {
+import { test, expect } from "vitest";
+import { testRequest } from "./helpers.js";
+test("rate limiting prevents abuse on email subscription", async () => {
   const email = `test-${Date.now()}@example.com`;
   const requests = [];
   // Make 10 rapid requests (should trigger rate limit)
   for (let i = 0; i < 10; i++) {
-    requests.push(testRequest('POST', '/api/email/subscribe', {
-      email: email,
-      name: `Test User ${i}`
-    }));
+    requests.push(
+      testRequest("POST", "/api/email/subscribe", {
+        email: email,
+        name: `Test User ${i}`,
+      }),
+    );
   }
   const responses = await Promise.all(requests);
-  const statusCodes = responses.map(r => r.status);
+  const statusCodes = responses.map((r) => r.status);
   // Some requests should be rate limited (429) or at least handled gracefully
   // In test environment without Redis, might get 200s or 400s
-  const hasNetworkFailure = statusCodes.some(code => code === 0);
+  const hasNetworkFailure = statusCodes.some((code) => code === 0);
   if (hasNetworkFailure) {
-    throw new Error(`Network connectivity failure for POST /api/email/subscribe`);
+    throw new Error(
+      `Network connectivity failure for POST /api/email/subscribe`,
+    );
   }
-  const hasRateLimiting = statusCodes.some(code => code === 429);
-  const allHandled = statusCodes.every(code => [200, 400, 429, 500].includes(code));
+  const hasRateLimiting = statusCodes.some((code) => code === 429);
+  const allHandled = statusCodes.every((code) =>
+    [200, 400, 429, 500].includes(code),
+  );
   expect(allHandled).toBe(true);
   // Note: actual rate limiting (429) only works with Redis or after multiple attempts
 });
-test('rate limiting on ticket validation endpoint', async () => {
+test("rate limiting on ticket validation endpoint", async () => {
   const requests = [];
   // Simulate rapid QR code scanning attempts
   for (let i = 0; i < 15; i++) {
-    requests.push(testRequest('POST', '/api/tickets/validate', {
-      qr_code: `test-qr-${i}`
-    }));
+    requests.push(
+      testRequest("POST", "/api/tickets/validate", {
+        qr_code: `test-qr-${i}`,
+      }),
+    );
   }
   const responses = await Promise.all(requests);
-  const statusCodes = responses.map(r => r.status);
+  const statusCodes = responses.map((r) => r.status);
   // All requests should be handled gracefully
-  const hasNetworkFailure = statusCodes.some(code => code === 0);
+  const hasNetworkFailure = statusCodes.some((code) => code === 0);
   if (hasNetworkFailure) {
-    throw new Error(`Network connectivity failure for POST /api/tickets/validate`);
+    throw new Error(
+      `Network connectivity failure for POST /api/tickets/validate`,
+    );
   }
-  const allHandled = statusCodes.every(code => [200, 400, 404, 429, 500].includes(code));
+  const allHandled = statusCodes.every((code) =>
+    [200, 400, 404, 429, 500].includes(code),
+  );
   expect(allHandled).toBe(true);
 });
-test('rate limiting on admin login attempts', async () => {
+test("rate limiting on admin login attempts", async () => {
   const requests = [];
   // Simulate brute force login attempts
   for (let i = 0; i < 8; i++) {
-    requests.push(testRequest('POST', '/api/admin/login', {
-      username: 'admin',
-      password: `wrong-password-${i}`
-    }));
+    requests.push(
+      testRequest("POST", "/api/admin/login", {
+        username: "admin",
+        password: `wrong-password-${i}`,
+      }),
+    );
   }
   const responses = await Promise.all(requests);
-  const statusCodes = responses.map(r => r.status);
+  const statusCodes = responses.map((r) => r.status);
   // Should see 400s for validation, 401s for wrong password, potentially 429 for rate limiting
-  const hasNetworkFailure = statusCodes.some(code => code === 0);
+  const hasNetworkFailure = statusCodes.some((code) => code === 0);
   if (hasNetworkFailure) {
     throw new Error(`Network connectivity failure for POST /api/admin/login`);
   }
-  const allHandled = statusCodes.every(code => [400, 401, 403, 429, 500].includes(code));
+  const allHandled = statusCodes.every((code) =>
+    [400, 401, 403, 429, 500].includes(code),
+  );
   expect(allHandled).toBe(true);
   // After many attempts, should potentially see rate limiting or account protection
-  const hasProtection = statusCodes.some(code => code === 429 || code === 403);
+  const hasProtection = statusCodes.some(
+    (code) => code === 429 || code === 403,
+  );
   // Note: Protection behavior depends on Redis availability
 });
-test('payment and webhook endpoints handle concurrent requests', async () => {
+test("payment and webhook endpoints handle concurrent requests", async () => {
   // Test both payment creation and webhook handling in one test
-  const paymentRequests = Array(3).fill().map(() =>
-    testRequest('POST', '/api/payments/create-checkout-session', {
-      cartItems: [{ name: 'Test', price: 10, quantity: 1 }],
-      customerInfo: { email: 'test@example.com' }
-    })
-  );
-  const webhookRequests = Array(2).fill().map(() =>
-    testRequest('POST', '/api/payments/stripe-webhook', {})
-  );
+  const paymentRequests = Array(3)
+    .fill()
+    .map(() =>
+      testRequest("POST", "/api/payments/create-checkout-session", {
+        cartItems: [{ name: "Test", price: 10, quantity: 1 }],
+        customerInfo: { email: "test@example.com" },
+      }),
+    );
+  const webhookRequests = Array(2)
+    .fill()
+    .map(() => testRequest("POST", "/api/payments/stripe-webhook", {}));
   const allRequests = [...paymentRequests, ...webhookRequests];
   const responses = await Promise.all(allRequests);
-  const statusCodes = responses.map(r => r.status);
-  const hasNetworkFailure = statusCodes.some(code => code === 0);
+  const statusCodes = responses.map((r) => r.status);
+  const hasNetworkFailure = statusCodes.some((code) => code === 0);
   if (hasNetworkFailure) {
-    throw new Error(`Network connectivity failure for payment/webhook endpoints`);
+    throw new Error(
+      `Network connectivity failure for payment/webhook endpoints`,
+    );
   }
-  const allHandled = statusCodes.every(code => [200, 400, 401, 422, 429, 500].includes(code));
+  const allHandled = statusCodes.every((code) =>
+    [200, 400, 401, 422, 429, 500].includes(code),
+  );
   expect(allHandled).toBe(true);
 });

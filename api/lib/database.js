@@ -98,30 +98,38 @@ class DatabaseService {
     // Check for empty string as well as undefined first (before any transformation)
     // In strict test mode, be even more strict about environment validation
     const strictMode = process.env.DATABASE_TEST_STRICT_MODE === "true";
-    
-    if (!databaseUrl || databaseUrl.trim() === "" || (strictMode && !databaseUrl)) {
+
+    if (
+      !databaseUrl ||
+      databaseUrl.trim() === "" ||
+      (strictMode && !databaseUrl)
+    ) {
       throw new Error("TURSO_DATABASE_URL environment variable is required");
     }
 
     // Integration test specific handling
-    if (process.env.TEST_TYPE === 'integration' || process.env.NODE_ENV === 'test') {
+    if (
+      process.env.TEST_TYPE === "integration" ||
+      process.env.NODE_ENV === "test"
+    ) {
       // For integration tests, ensure we have a valid file path
-      if (databaseUrl.startsWith('file:')) {
+      if (databaseUrl.startsWith("file:")) {
         // Ensure the database file path is absolute and accessible
-        const dbPath = databaseUrl.replace('file:', '');
-        if (!dbPath.startsWith('/') && !dbPath.match(/^[A-Za-z]:/)) {
+        const dbPath = databaseUrl.replace("file:", "");
+        if (!dbPath.startsWith("/") && !dbPath.match(/^[A-Za-z]:/)) {
           // Convert relative path to absolute for better reliability
-          const path = await import('path');
+          const path = await import("path");
           const absolutePath = path.resolve(process.cwd(), dbPath);
           databaseUrl = `file:${absolutePath}`;
-          console.log(`✅ Converted relative database path to absolute: ${databaseUrl}`);
+          console.log(
+            `✅ Converted relative database path to absolute: ${databaseUrl}`,
+          );
         }
-      } else if (databaseUrl === ':memory:') {
+      } else if (databaseUrl === ":memory:") {
         // In-memory database is fine for tests
         console.log(`✅ Using in-memory database for tests`);
       }
     }
-
 
     const config = {
       url: databaseUrl,
@@ -133,14 +141,14 @@ class DatabaseService {
     }
 
     // Add SQLite-specific configuration for busy timeout and WAL mode
-    if (databaseUrl.startsWith('file:') || databaseUrl === ':memory:') {
+    if (databaseUrl.startsWith("file:") || databaseUrl === ":memory:") {
       config.pragmas = [
-        'PRAGMA busy_timeout = 30000',  // 30 second timeout
-        'PRAGMA journal_mode = WAL',     // Write-Ahead Logging for better concurrency
-        'PRAGMA synchronous = NORMAL',   // Balance safety and performance
-        'PRAGMA temp_store = memory',    // Store temp tables in memory
-        'PRAGMA mmap_size = 268435456',  // Enable memory mapping (256MB)
-        'PRAGMA cache_size = -2000',     // 2MB cache
+        "PRAGMA busy_timeout = 30000", // 30 second timeout
+        "PRAGMA journal_mode = WAL", // Write-Ahead Logging for better concurrency
+        "PRAGMA synchronous = NORMAL", // Balance safety and performance
+        "PRAGMA temp_store = memory", // Store temp tables in memory
+        "PRAGMA mmap_size = 268435456", // Enable memory mapping (256MB)
+        "PRAGMA cache_size = -2000", // 2MB cache
       ];
     }
 
@@ -150,65 +158,100 @@ class DatabaseService {
 
       // Test connection to verify client is working
       const testResult = await client.execute("SELECT 1 as test");
-      
+
       // Validate the client returns proper LibSQL response format
       if (!testResult || !testResult.rows || !Array.isArray(testResult.rows)) {
-        throw new Error("Database client test query returned invalid response format");
+        throw new Error(
+          "Database client test query returned invalid response format",
+        );
       }
 
       // Integration test specific validation
-      if (process.env.TEST_TYPE === 'integration' || process.env.NODE_ENV === 'test') {
+      if (
+        process.env.TEST_TYPE === "integration" ||
+        process.env.NODE_ENV === "test"
+      ) {
         // Verify client has required methods for integration tests
-        if (typeof client.execute !== 'function') {
-          throw new Error("Database client missing execute method - invalid for integration tests");
+        if (typeof client.execute !== "function") {
+          throw new Error(
+            "Database client missing execute method - invalid for integration tests",
+          );
         }
-        
+
         // Test that we can get lastInsertRowid (required for transaction tests)
         try {
-          const insertTest = await client.execute("CREATE TEMPORARY TABLE test_insert (id INTEGER PRIMARY KEY, value TEXT)");
-          const insertResult = await client.execute("INSERT INTO test_insert (value) VALUES (?)", ["test"]);
-          
-          if (!insertResult.hasOwnProperty('lastInsertRowid')) {
-            console.warn("⚠️ Database client may not support lastInsertRowid - some tests may fail");
+          const insertTest = await client.execute(
+            "CREATE TEMPORARY TABLE test_insert (id INTEGER PRIMARY KEY, value TEXT)",
+          );
+          const insertResult = await client.execute(
+            "INSERT INTO test_insert (value) VALUES (?)",
+            ["test"],
+          );
+
+          if (!insertResult.hasOwnProperty("lastInsertRowid")) {
+            console.warn(
+              "⚠️ Database client may not support lastInsertRowid - some tests may fail",
+            );
           } else {
-            console.log("✅ Database client supports lastInsertRowid for integration tests");
+            console.log(
+              "✅ Database client supports lastInsertRowid for integration tests",
+            );
           }
-          
+
           // Clean up test table
           await client.execute("DROP TABLE test_insert");
         } catch (insertTestError) {
-          console.warn("⚠️ Could not test lastInsertRowid support:", insertTestError.message);
+          console.warn(
+            "⚠️ Could not test lastInsertRowid support:",
+            insertTestError.message,
+          );
         }
       }
 
       this.client = client;
       this.initialized = true;
-      
+
       // Track this connection
       this.activeConnections.add(client);
 
-      console.log(`✅ Database client initialized successfully (${process.env.NODE_ENV || 'production'} mode)`);
+      console.log(
+        `✅ Database client initialized successfully (${process.env.NODE_ENV || "production"} mode)`,
+      );
       return this.client;
     } catch (error) {
       // Enhanced error reporting for debugging
       console.error("❌ Database initialization failed:", {
         error: error.message,
-        databaseUrl: config.url ? config.url.substring(0, 20) + '...' : 'undefined',
+        databaseUrl: config.url
+          ? config.url.substring(0, 20) + "..."
+          : "undefined",
         hasAuthToken: !!config.authToken,
         environment: process.env.NODE_ENV,
         testType: process.env.TEST_TYPE,
         timestamp: new Date().toISOString(),
       });
-      
+
       // More specific error message based on error type
-      if (error.message.includes('ENOENT') || error.message.includes('no such file')) {
-        throw new Error(`Database file not found or inaccessible: ${error.message}`);
-      } else if (error.message.includes('permission') || error.message.includes('EACCES')) {
+      if (
+        error.message.includes("ENOENT") ||
+        error.message.includes("no such file")
+      ) {
+        throw new Error(
+          `Database file not found or inaccessible: ${error.message}`,
+        );
+      } else if (
+        error.message.includes("permission") ||
+        error.message.includes("EACCES")
+      ) {
         throw new Error(`Database file permission denied: ${error.message}`);
-      } else if (error.message.includes('invalid response format')) {
-        throw new Error(`Database client configuration error: ${error.message}`);
+      } else if (error.message.includes("invalid response format")) {
+        throw new Error(
+          `Database client configuration error: ${error.message}`,
+        );
       } else {
-        throw new Error(`Failed to initialize database client: ${error.message}`);
+        throw new Error(
+          `Failed to initialize database client: ${error.message}`,
+        );
       }
     }
   }
@@ -243,35 +286,38 @@ class DatabaseService {
     }
 
     // Add SQLite-specific configuration for busy timeout and WAL mode
-    if (databaseUrl.startsWith('file:') || databaseUrl === ':memory:') {
+    if (databaseUrl.startsWith("file:") || databaseUrl === ":memory:") {
       config.pragmas = [
-        'PRAGMA busy_timeout = 30000',  // 30 second timeout
-        'PRAGMA journal_mode = WAL',     // Write-Ahead Logging for better concurrency
-        'PRAGMA synchronous = NORMAL',   // Balance safety and performance
-        'PRAGMA temp_store = memory',    // Store temp tables in memory
-        'PRAGMA mmap_size = 268435456',  // Enable memory mapping (256MB)
-        'PRAGMA cache_size = -2000',     // 2MB cache
+        "PRAGMA busy_timeout = 30000", // 30 second timeout
+        "PRAGMA journal_mode = WAL", // Write-Ahead Logging for better concurrency
+        "PRAGMA synchronous = NORMAL", // Balance safety and performance
+        "PRAGMA temp_store = memory", // Store temp tables in memory
+        "PRAGMA mmap_size = 268435456", // Enable memory mapping (256MB)
+        "PRAGMA cache_size = -2000", // 2MB cache
       ];
     }
 
     try {
       const createClient = await importLibSQLClient();
       this.client = createClient(config);
-      
+
       // Track this connection
       this.activeConnections.add(this.client);
-      
+
       // Apply pragmas if configured
       if (config.pragmas && Array.isArray(config.pragmas)) {
         for (const pragma of config.pragmas) {
           try {
             await this.client.execute(pragma);
           } catch (pragmaError) {
-            console.warn(`Failed to apply pragma: ${pragma}`, pragmaError.message);
+            console.warn(
+              `Failed to apply pragma: ${pragma}`,
+              pragmaError.message,
+            );
           }
         }
       }
-      
+
       this.initialized = true;
       return this.client;
     } catch (error) {
@@ -375,43 +421,45 @@ class DatabaseService {
   async transaction() {
     try {
       const client = await this.ensureInitialized();
-      
+
       // Check if client has transaction support
-      if (typeof client.transaction === 'function') {
+      if (typeof client.transaction === "function") {
         return await client.transaction();
       }
-      
+
       // Fallback for clients without native transaction support:
       // emulate a transaction boundary with explicit SQL
-      console.warn('Database client lacks native transactions; using explicit BEGIN/COMMIT/ROLLBACK fallback');
+      console.warn(
+        "Database client lacks native transactions; using explicit BEGIN/COMMIT/ROLLBACK fallback",
+      );
       let started = false;
       let completed = false;
       return {
         execute: async (sql, params = []) => {
-          if (completed) throw new Error('Transaction already completed');
+          if (completed) throw new Error("Transaction already completed");
           if (!started) {
             // Use IMMEDIATE to acquire a write lock early and reduce deadlocks
             // Call client.execute with proper object format
-            await client.execute({ sql: 'BEGIN IMMEDIATE', args: [] });
+            await client.execute({ sql: "BEGIN IMMEDIATE", args: [] });
             started = true;
           }
           // Execute within the explicit transaction using proper object format
           return await client.execute({ sql, args: params });
         },
         commit: async () => {
-          if (completed) throw new Error('Transaction already completed');
+          if (completed) throw new Error("Transaction already completed");
           if (started) {
             // Call client.execute with proper object format
-            await client.execute({ sql: 'COMMIT', args: [] });
+            await client.execute({ sql: "COMMIT", args: [] });
           }
           completed = true;
           return true;
         },
         rollback: async () => {
-          if (completed) throw new Error('Transaction already completed');
+          if (completed) throw new Error("Transaction already completed");
           if (started) {
             // Call client.execute with proper object format
-            await client.execute({ sql: 'ROLLBACK', args: [] });
+            await client.execute({ sql: "ROLLBACK", args: [] });
           }
           completed = true;
           return true;
@@ -438,24 +486,29 @@ class DatabaseService {
 
     try {
       // Create an array of promises for closing all active connections
-      const closePromises = Array.from(this.activeConnections).map(async (connection) => {
-        try {
-          if (connection && typeof connection.close === 'function') {
-            await Promise.race([
-              connection.close(),
-              new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Connection close timeout')), timeout)
-              )
-            ]);
-            closedCount++;
-            return true;
+      const closePromises = Array.from(this.activeConnections).map(
+        async (connection) => {
+          try {
+            if (connection && typeof connection.close === "function") {
+              await Promise.race([
+                connection.close(),
+                new Promise((_, reject) =>
+                  setTimeout(
+                    () => reject(new Error("Connection close timeout")),
+                    timeout,
+                  ),
+                ),
+              ]);
+              closedCount++;
+              return true;
+            }
+          } catch (error) {
+            console.error("Error closing database connection:", error.message);
+            errorCount++;
+            return false;
           }
-        } catch (error) {
-          console.error("Error closing database connection:", error.message);
-          errorCount++;
-          return false;
-        }
-      });
+        },
+      );
 
       // Wait for all connections to close
       await Promise.allSettled(closePromises);
@@ -469,18 +522,20 @@ class DatabaseService {
       this.initializationPromise = null;
 
       const duration = Date.now() - startTime;
-      console.log(`Database connections closed: ${closedCount} successful, ${errorCount} errors (${duration}ms)`);
-      
+      console.log(
+        `Database connections closed: ${closedCount} successful, ${errorCount} errors (${duration}ms)`,
+      );
+
       return errorCount === 0;
     } catch (error) {
       console.error("Error in close operation:", error.message);
-      
+
       // Force reset even if close failed
       this.activeConnections.clear();
       this.client = null;
       this.initialized = false;
       this.initializationPromise = null;
-      
+
       return false;
     }
   }
@@ -495,9 +550,12 @@ class DatabaseService {
       // Close all active connections first
       await this.close();
     } catch (error) {
-      console.warn("Error during resetForTesting close operation:", error.message);
+      console.warn(
+        "Error during resetForTesting close operation:",
+        error.message,
+      );
     }
-    
+
     // Force clear all state even if close failed
     this.activeConnections.clear();
     this.client = null;
@@ -569,19 +627,21 @@ export function getDatabase() {
 /**
  * Get database client directly
  * @returns {Promise<Object>} LibSQL client instance
- * 
+ *
  * This is the PRIMARY method for getting a database client.
  * It ALWAYS returns the raw LibSQL client with execute() method.
  */
 export async function getDatabaseClient() {
   const service = getDatabase();
   const client = await service.getClient();
-  
+
   // Verify we're returning the raw client, not the service
-  if (!client || typeof client.execute !== 'function') {
-    throw new Error('Database client initialization failed - invalid client returned');
+  if (!client || typeof client.execute !== "function") {
+    throw new Error(
+      "Database client initialization failed - invalid client returned",
+    );
   }
-  
+
   return client;
 }
 

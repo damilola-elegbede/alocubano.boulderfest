@@ -117,7 +117,7 @@ The framework can be customized through `link_validation_config.json`:
 
 ### External Links
 
-- Social Media: `https://instagram.com/alocubanoboulder`
+- Social Media: `https://www.instagram.com/alocubano.boulderfest/`
 - Email: `mailto:alocubanoboulderfest@gmail.com`
 - WhatsApp: `https://chat.whatsapp.com/...`
 

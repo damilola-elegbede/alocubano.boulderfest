@@ -19,9 +19,10 @@
 class PerformanceMonitor {
     constructor() {
     // Detect test environment to suppress warnings
-        this.isTestEnvironment = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
-        
-    // Core metrics storage
+        this.isTestEnvironment =
+      typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+
+        // Core metrics storage
         this.metrics = {
             // Core Web Vitals
             lcp: { value: 0, measurements: [] },

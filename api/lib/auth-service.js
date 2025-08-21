@@ -27,7 +27,7 @@ export class AuthService {
       return false;
     }
 
-    if (!password || typeof password !== 'string') {
+    if (!password || typeof password !== "string") {
       // Invalid password input
       return false;
     }

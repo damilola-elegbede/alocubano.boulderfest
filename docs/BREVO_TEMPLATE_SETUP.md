@@ -190,7 +190,7 @@ Your A Lo Cubano Boulder Fest Tickets - {{params.TRANSACTION_ID}}
         <p>© 2026 All rights reserved</p>
         <p>
           <a href="https://alocubanoboulderfest.com">Website</a> |
-          <a href="https://instagram.com/alocubano.boulderfest">Instagram</a>
+          <a href="https://www.instagram.com/alocubano.boulderfest/">Instagram</a>
         </p>
       </div>
     </div>
