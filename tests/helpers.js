@@ -11,7 +11,6 @@ const RETRY_CONFIG = {
   ci: { maxRetries: 2, timeout: 10000 },
   postMerge: { maxRetries: 2, timeout: 8000 }
 };
-
 // Get current environment configuration
 function getRetryConfig() {
   if (RETRY_DISABLED) return { maxRetries: 0, timeout: RETRY_CONFIG.local.timeout };
@@ -19,7 +18,6 @@ function getRetryConfig() {
   if (CI_ENV) return RETRY_CONFIG.ci;
   return RETRY_CONFIG.local;
 }
-
 // Sleep utility for exponential backoff
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -27,7 +25,9 @@ function sleep(ms) {
 // Simple HTTP client for API testing with intelligent retry and timeout handling
 export async function testRequest(method, path, data = null, customHeaders = {}) {
   const config = getRetryConfig();
-  const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000';
+  // Support dynamic port allocation from CI environment
+  const port = process.env.CI_PORT || process.env.PORT || '3000';
+  const baseUrl = process.env.TEST_BASE_URL || `http://localhost:${port}`;
   const url = `${baseUrl}${path}`;
   
   // Retry loop with exponential backoff

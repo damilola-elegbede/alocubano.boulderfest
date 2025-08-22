@@ -1,240 +1,26 @@
-name: Integration Tests
+# DEPRECATED: This workflow has been replaced by post-merge-validation.yml
+#
+# The new workflow fixes:
+# - Port conflicts from hardcoded port 3000
+# - Process cleanup issues
+# - Test redundancy (running same tests multiple times)
+# - Inconsistent environment configurations
+#
+# This file is kept for reference only and will be removed in a future update.
+# DO NOT USE THIS WORKFLOW
+
+name: "[DEPRECATED] Integration Tests"
 
 on:
-  push:
-    branches: [main, develop, 'feature/**', 'refactor/**']
-  pull_request:
-    branches: [main, develop]
-
-env:
-  NODE_ENV: test
-  CI: true
-  # Test environment variables
-  TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL_TEST }}
-  TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_TEST }}
-  STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_TEST }}
-  STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET_TEST }}
-  STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY_TEST }}
-  BREVO_API_KEY: ${{ secrets.BREVO_API_KEY_TEST }}
-  BREVO_NEWSLETTER_LIST_ID: ${{ secrets.BREVO_NEWSLETTER_LIST_ID }}
-  BREVO_WEBHOOK_SECRET: ${{ secrets.BREVO_WEBHOOK_SECRET }}
-  ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD_TEST }}
-  ADMIN_SECRET: ${{ secrets.ADMIN_SECRET_TEST || 'test-admin-secret-key-32-characters-long' }}
-  QR_SECRET_KEY: ${{ secrets.QR_SECRET_KEY }}
+  workflow_dispatch:  # Manual trigger only to prevent automatic runs
 
 jobs:
-  integration-tests:
+  deprecated-notice:
     runs-on: ubuntu-latest
-    env:
-      NODE_OPTIONS: --max-old-space-size=1024
-    timeout-minutes: 5
-
-    strategy:
-      matrix:
-        node-version: [20.x, 22.x]
-        shard: [1, 2]
-
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Setup test database
+      - name: Deprecation Notice
         run: |
-          echo "Setting up test database..."
-          mkdir -p data
-          export DATABASE_URL="file:./ci-test.db"
-          export TURSO_DATABASE_URL="file:./ci-test.db"
-          npm run migrate:up || true
-
-      - name: Start API server
-        run: |
-          echo "🚀 Starting API server for integration tests..."
-          
-          # Kill any existing processes on port 3000
-          sudo lsof -ti:3000 | xargs kill -9 || true
-          sleep 2
-          
-          # Start the server in background
-          npm run start:ci &
-          SERVER_PID=$!
-          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
-          echo "Server started with PID: $SERVER_PID"
-          
-          # Wait for server to be ready with multiple checks
-          echo "⏳ Waiting for server to be ready..."
-          for i in {1..30}; do
-            echo "Attempt $i/30: Testing /health endpoint..."
-            if curl -f http://localhost:3000/health >/dev/null 2>&1; then
-              echo "✅ Health check successful"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "❌ Server failed to start after 30 attempts"
-              ps aux | grep node || true
-              exit 1
-            fi
-            sleep 2
-          done
-          
-          # Phase 3: Server warm-up sequence for serverless functions
-          echo "🔥 Warming up serverless functions..."
-          for endpoint in health/check health/database gallery featured-photos; do
-            echo "Warming up: /api/$endpoint"
-            for i in {1..3}; do
-              curl -f "http://localhost:3000/api/$endpoint" >/dev/null 2>&1 || true
-              sleep 1
-            done
-          done
-          echo "✅ Server warm-up complete"
-          
-          # Verify critical API endpoints
-          echo "🔧 Verifying critical API endpoints..."
-          sleep 3
-          curl -f http://localhost:3000/api/health/check || echo "⚠️ /api/health/check not ready"
-          curl -f http://localhost:3000/api/gallery || echo "⚠️ /api/gallery not ready"
-          
-          echo "✅ API server is ready at http://localhost:3000"
-        env:
-          TEST_BASE_URL: http://localhost:3000
-          NODE_ENV: test
-          CI: true
-          DATABASE_URL: "file:./ci-test.db"
-          TURSO_DATABASE_URL: "file:./ci-test.db"
-          ADMIN_SECRET: "test-admin-secret-key-32-characters-long"
-
-      - name: Run streamlined integration tests (2 shards)
-        run: |
-          echo "Running streamlined integration tests (shard ${{ matrix.shard }}/2)..."
-          npm run test:integration -- --shard=${{ matrix.shard }}/2
-        env:
-          TEST_TIMEOUT: 30000
-          TEST_BASE_URL: http://localhost:3000
-          DATABASE_URL: 'file:./ci-test.db'
-          MOCK_EXTERNAL_APIS: 'true'
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-${{ matrix.node-version }}-shard-${{ matrix.shard }}
-          path: tests/
-          retention-days: 7
-
-  test-coverage:
-    runs-on: ubuntu-latest
-    needs: integration-tests
-    if: github.event_name == 'pull_request'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Start API server for coverage tests
-        run: |
-          echo "🚀 Starting API server for coverage tests..."
-          
-          # Kill any existing processes on port 3000
-          sudo lsof -ti:3000 | xargs kill -9 || true
-          sleep 2
-          
-          npm run start:ci &
-          SERVER_PID=$!
-          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
-          echo "Server started with PID: $SERVER_PID"
-          
-          # Wait for server to be ready with multiple checks
-          echo "⏳ Waiting for server to be ready..."
-          for i in {1..30}; do
-            echo "Attempt $i/30: Testing /health endpoint..."
-            if curl -f http://localhost:3000/health >/dev/null 2>&1; then
-              echo "✅ Health check successful"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "❌ Server failed to start after 30 attempts"
-              exit 1
-            fi
-            sleep 2
-          done
-          
-          # Phase 3: Server warm-up sequence for serverless functions
-          echo "🔥 Warming up serverless functions..."
-          for endpoint in health/check health/database gallery featured-photos; do
-            echo "Warming up: /api/$endpoint"
-            for i in {1..3}; do
-              curl -f "http://localhost:3000/api/$endpoint" >/dev/null 2>&1 || true
-              sleep 1
-            done
-          done
-          echo "✅ Server warm-up complete"
-          
-          echo "✅ API server is ready at http://localhost:3000"
-        env:
-          TEST_BASE_URL: http://localhost:3000
-          NODE_ENV: test
-          CI: true
-          DATABASE_URL: "file:./ci-test.db"
-          TURSO_DATABASE_URL: "file:./ci-test.db"
-          ADMIN_SECRET: "test-admin-secret-key-32-characters-long"
-
-      - name: Run tests with coverage
-        run: |
-          npm run test:coverage
-        env:
-          TEST_BASE_URL: http://localhost:3000
-
-      - name: Log coverage summary  
-        if: github.event_name == 'pull_request'
-        run: |
-          echo "## Integration Test Coverage Report"
-          echo "✅ Streamlined test framework integration tests completed successfully (15 tests)."
-          echo "✅ Includes ticket validation and QR endpoint testing."
-
-  security-scan:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run security audit
-        run: npm audit --audit-level=critical || npm audit --audit-level=high --production
-
-      - name: Check for exposed secrets
-        run: |
-          # Check for exposed API keys or secrets (excluding test files and fixtures)
-          # Only fail if we find actual production keys, not test keys
-          
-          # Check for Stripe live keys (not test keys) - exclude workflow files with examples
-          if grep -r "sk_live" . --exclude-dir=node_modules --exclude-dir=tests --exclude-dir=.github --exclude="*.test.js" --exclude="*.md" 2>/dev/null; then
-            echo "❌ Found exposed Stripe live key!"
-            exit 1
-          fi
-          
-          # Check for Brevo production keys (xkeysib- prefix) - but allow in test files
-          if grep -r "xkeysib-[a-zA-Z0-9]*-[a-zA-Z0-9]*" . --exclude-dir=node_modules --exclude-dir=tests --exclude="*.test.js" --exclude="*.md" 2>/dev/null | grep -v "test" | grep -v "mock"; then
-            echo "❌ Found exposed Brevo production key!"
-            exit 1
-          fi
-          
-          # Webhook secrets are expected in test files, so only check for production patterns
-          if grep -r "whsec_[a-zA-Z0-9]{32,}" . --exclude-dir=node_modules --exclude-dir=tests --exclude="*.test.js" --exclude="*.md" 2>/dev/null | grep -v "test" | grep -v "mock"; then
-            echo "⚠️ Found potential webhook secret (may be test fixture)"
-          fi
-          
-          echo "✅ No production secrets found in code"
+          echo "❌ This workflow is deprecated!"
+          echo "Please use 'Post-Merge Validation' workflow instead."
+          echo "Location: .github/workflows/post-merge-validation.yml"
+          exit 1

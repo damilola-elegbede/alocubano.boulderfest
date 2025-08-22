@@ -17,7 +17,16 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.join(__dirname, '..');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// Support dynamic port allocation with fallback
+const PORT = process.env.PORT || process.env.CI_PORT || 3000;
+
+// Log server configuration
+console.log(`🚀 CI Server Configuration:`);
+console.log(`   Port: ${PORT}`);
+console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+if (process.env.NGROK_URL) {
+  console.log(`   ngrok URL: ${process.env.NGROK_URL}`);
+}
 
 // Set CI-specific environment variables
 if (process.env.CI || process.env.NODE_ENV === 'ci') {
@@ -71,9 +80,31 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Sanitize API paths to prevent traversal attacks
+function sanitizePath(inputPath) {
+  // Remove any path traversal attempts and dangerous characters
+  return inputPath
+    .replace(/\.\./g, '')  // Remove directory traversal
+    .replace(/[^a-zA-Z0-9\/\-_\[\]]/g, '')  // Allow only safe characters
+    .split('/')
+    .filter(Boolean)
+    .join('/');
+}
+
 // API route handler - dynamically load serverless functions
 app.all(/^\/api\/(.*)/, async (req, res) => {
-  const apiPath = req.path.replace('/api/', '');
+  const unsafePath = req.path.replace('/api/', '');
+  const apiPath = sanitizePath(unsafePath);
+  
+  // Reject if path was modified by sanitization
+  if (apiPath !== unsafePath.replace(/\/$/, '')) {
+    console.warn(`Rejected unsafe API path: ${unsafePath}`);
+    return res.status(400).json({ 
+      error: 'Invalid API path',
+      code: 'INVALID_PATH'
+    });
+  }
+  
   const segments = apiPath.split('/').filter(Boolean);
   
   // Try different possible file locations
@@ -103,20 +134,7 @@ app.all(/^\/api\/(.*)/, async (req, res) => {
     }
   }
   
-  // 3. Parameterized routes (api/tickets/[ticketId].js)
-  if (!apiFile && segments.length >= 2) {
-    const basePath = segments.slice(0, -1).join('/');
-    const paramValue = segments[segments.length - 1];
-    const paramName = segments[segments.length - 2] || 'id';
-    
-    const paramFile = path.join(rootDir, 'api', basePath, `[${paramName}].js`);
-    if (fs.existsSync(paramFile)) {
-      apiFile = paramFile;
-      paramValues[paramName] = paramValue;
-    }
-  }
-  
-  // 4. Try different parameter patterns
+  // 3. Try different parameter patterns for dynamic routes
   if (!apiFile && segments.length >= 2) {
     const basePath = segments.slice(0, -1).join('/');
     const paramValue = segments[segments.length - 1];
@@ -255,14 +273,22 @@ app.all(/^\/api\/(.*)/, async (req, res) => {
     
     // Call the handler with timeout
     const handlerTimeout = 30000; // 30 seconds
+    let timeoutId;
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Handler timeout')), handlerTimeout);
+      timeoutId = setTimeout(() => reject(new Error('Handler timeout')), handlerTimeout);
     });
     
-    await Promise.race([
-      handler(vercelReq, vercelRes),
-      timeoutPromise
-    ]);
+    try {
+      await Promise.race([
+        handler(vercelReq, vercelRes),
+        timeoutPromise
+      ]);
+    } finally {
+      // Clear the timeout to prevent memory leak
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
     
   } catch (error) {
     console.error(`Error in API handler ${apiPath}:`, error);
