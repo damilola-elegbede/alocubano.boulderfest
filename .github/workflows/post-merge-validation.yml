@@ -74,6 +74,12 @@ jobs:
           pkill -TERM -f "node.*ci-server" 2>/dev/null || true
           sleep 2
 
+      - name: 📁 Create database directory
+        run: |
+          # Ensure data directory exists for SQLite database
+          mkdir -p data
+          echo "✅ Created data directory for database"
+
       - name: 🚀 Start CI Server with Dynamic Port
         id: server
         run: |
