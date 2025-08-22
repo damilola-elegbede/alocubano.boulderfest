@@ -27,7 +27,9 @@ function sleep(ms) {
 // Simple HTTP client for API testing with intelligent retry and timeout handling
 export async function testRequest(method, path, data = null, customHeaders = {}) {
   const config = getRetryConfig();
-  const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000';
+  // Support dynamic port allocation from CI environment
+  const port = process.env.CI_PORT || process.env.PORT || '3000';
+  const baseUrl = process.env.TEST_BASE_URL || `http://localhost:${port}`;
   const url = `${baseUrl}${path}`;
   
   // Retry loop with exponential backoff

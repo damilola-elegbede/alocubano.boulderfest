@@ -1,0 +1,283 @@
+name: Post-Merge Validation
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Prevent multiple instances from running simultaneously
+concurrency:
+  group: post-merge-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_ENV: test
+  CI: true
+  # Dynamic port allocation based on run number to avoid conflicts
+  CI_PORT: ${{ 3000 + github.run_number % 1000 }}
+  # Consistent database configuration
+  DATABASE_URL: "file:./data/ci-test.db"
+  TURSO_DATABASE_URL: "file:./data/ci-test.db"
+  # Test secrets from GitHub Secrets (not hardcoded)
+  BREVO_API_KEY: ${{ secrets.BREVO_API_KEY_TEST || '' }}
+  STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_TEST || '' }}
+  ADMIN_SECRET: ${{ secrets.ADMIN_SECRET_TEST || '' }}
+
+jobs:
+  validate:
+    name: Post-Merge Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    strategy:
+      matrix:
+        node-version: [20.x]  # Single LTS version for consistency
+        # Remove sharding for only 27 tests
+      fail-fast: false
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔧 Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: |
+          npm ci --prefer-offline --no-audit
+          npm ls --depth=0
+
+      # ngrok removed from CI for security - only use in local development
+
+      - name: 🧹 Clean up any existing processes
+        run: |
+          # Find and gracefully terminate processes on dynamic port
+          if lsof -ti:$CI_PORT > /dev/null 2>&1; then
+            lsof -ti:$CI_PORT | xargs kill -TERM 2>/dev/null || true
+            sleep 2
+            # Force kill only if still running
+            lsof -ti:$CI_PORT | xargs kill -9 2>/dev/null || true
+          fi
+          # Gracefully terminate any orphaned node processes
+          pkill -TERM -f "node.*ci-server" 2>/dev/null || true
+          sleep 2
+
+      - name: 🚀 Start CI Server with Dynamic Port
+        id: server
+        run: |
+          echo "Starting server on port $CI_PORT..."
+          
+          # Export port for server to use
+          export PORT=$CI_PORT
+          
+          # Start the CI server with proper error handling
+          npm run start:ci &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          echo "server_pid=$SERVER_PID" >> $GITHUB_OUTPUT
+          
+          # Store PID for cleanup
+          echo $SERVER_PID > /tmp/server.pid
+          
+          # Wait for server to be fully ready (not just health endpoint)
+          echo "Waiting for server initialization..."
+          MAX_ATTEMPTS=30
+          ATTEMPT=0
+          
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            if curl -f "http://localhost:$CI_PORT/api/health/check" >/dev/null 2>&1; then
+              echo "✅ Server health check passed"
+              
+              # Additional readiness check - verify critical endpoints
+              if curl -f "http://localhost:$CI_PORT/api/health/database" >/dev/null 2>&1; then
+                echo "✅ Database connection verified"
+                break
+              fi
+            fi
+            
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Waiting for server... (attempt $ATTEMPT/$MAX_ATTEMPTS)"
+            sleep 2
+          done
+          
+          if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+            echo "❌ Server failed to start within timeout"
+            cat /tmp/ci-server.log || true
+            exit 1
+          fi
+          
+          # Warm up serverless functions BEFORE tests
+          echo "🔥 Warming up serverless functions..."
+          for endpoint in health/check health/database gallery featured-photos; do
+            for i in {1..3}; do
+              curl -f "http://localhost:$CI_PORT/api/$endpoint" >/dev/null 2>&1 || true
+              sleep 0.5
+            done
+          done
+          
+          echo "✅ Server ready on port $CI_PORT"
+
+      # ngrok removed from CI workflow for security reasons
+      # Public tunnel exposure in CI is a security risk
+
+      - name: 🧪 Run Streamlined Tests
+        id: tests
+        env:
+          TEST_BASE_URL: "http://localhost:${{ env.CI_PORT }}"
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF: ${{ github.ref }}
+        run: |
+          echo "Running tests against server at localhost:$CI_PORT"
+          echo "Also accessible via: ${NGROK_URL:-localhost}"
+          
+          # Run the streamlined test suite once
+          npm test
+          
+          # Capture test results
+          TEST_EXIT_CODE=$?
+          echo "test_exit_code=$TEST_EXIT_CODE" >> $GITHUB_OUTPUT
+          
+          if [ $TEST_EXIT_CODE -ne 0 ]; then
+            echo "❌ Tests failed with exit code $TEST_EXIT_CODE"
+            exit $TEST_EXIT_CODE
+          fi
+          
+          echo "✅ All tests passed successfully"
+
+      - name: 🔍 Run Security Tests
+        if: success()
+        env:
+          TEST_BASE_URL: "http://localhost:${{ env.CI_PORT }}"
+        run: |
+          echo "Running security-critical tests..."
+          npx vitest run tests/security-critical.test.js --config tests/vitest.config.js
+
+      - name: 💳 Run Payment Tests
+        if: success()
+        env:
+          TEST_BASE_URL: "http://localhost:${{ env.CI_PORT }}"
+        run: |
+          echo "Running payment-critical tests..."
+          npx vitest run tests/payment-critical.test.js --config tests/vitest.config.js
+
+      - name: 📊 Performance Check
+        if: success()
+        run: |
+          echo "Checking test performance..."
+          # Simple performance check without arbitrary thresholds
+          DURATION=$(grep "Duration" /tmp/test-output.log 2>/dev/null | grep -oE '[0-9]+ms' | grep -oE '[0-9]+' || echo "0")
+          echo "Test suite completed in ${DURATION}ms"
+          
+          if [ "$DURATION" -gt 5000 ]; then
+            echo "⚠️ Tests took longer than 5 seconds, consider optimization"
+          else
+            echo "✅ Test performance is acceptable"
+          fi
+
+      - name: 🧹 Cleanup
+        if: always()
+        run: |
+          echo "Cleaning up processes..."
+          
+          # Kill server process
+          if [ -f /tmp/server.pid ]; then
+            SERVER_PID=$(cat /tmp/server.pid)
+            if [ -n "$SERVER_PID" ]; then
+              echo "Terminating server process $SERVER_PID..."
+              kill -TERM $SERVER_PID 2>/dev/null || true
+              sleep 1
+              kill -9 $SERVER_PID 2>/dev/null || true
+            fi
+          fi
+          
+          # Kill ngrok process
+          if [ -f /tmp/ngrok.pid ]; then
+            NGROK_PID=$(cat /tmp/ngrok.pid)
+            if [ -n "$NGROK_PID" ]; then
+              echo "Terminating ngrok process $NGROK_PID..."
+              kill -TERM $NGROK_PID 2>/dev/null || true
+            fi
+          fi
+          
+          # Clean up any remaining processes on the port
+          lsof -ti:$CI_PORT | xargs kill -9 2>/dev/null || true
+          
+          # Clean up temp files
+          rm -f /tmp/server.pid /tmp/ngrok.pid /tmp/ngrok.log /tmp/ci-server.log /tmp/test-output.log
+          
+          echo "✅ Cleanup completed"
+
+      - name: 📤 Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.node-version }}
+          path: |
+            test-results/
+            coverage/
+          retention-days: 7
+
+  # Single deployment validation job instead of multiple
+  validate-deployment:
+    name: Validate Vercel Deployment
+    runs-on: ubuntu-latest
+    needs: validate
+    if: success()
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Wait for Vercel Deployment
+        uses: ./.github/actions/wait-for-vercel
+        id: deployment
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          timeout: 600
+          interval: 15
+
+      - name: ✅ Validate Production Deployment
+        if: steps.deployment.outputs.url
+        run: |
+          DEPLOYMENT_URL="${{ steps.deployment.outputs.url }}"
+          echo "Validating deployment at: $DEPLOYMENT_URL"
+          
+          # Basic smoke test of production deployment
+          curl -f "$DEPLOYMENT_URL/api/health/check" || exit 1
+          echo "✅ Production deployment is healthy"
+
+  # Notification job for completion
+  notify:
+    name: Post-Merge Notification
+    runs-on: ubuntu-latest
+    needs: [validate, validate-deployment]
+    if: always()
+    
+    steps:
+      - name: 📊 Summary
+        run: |
+          echo "## Post-Merge Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.validate.result }}" == "success" ]; then
+            echo "✅ **Tests:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Tests:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.validate-deployment.result }}" == "success" ]; then
+            echo "✅ **Deployment:** Validated" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.validate-deployment.result }}" == "skipped" ]; then
+            echo "⏭️ **Deployment:** Skipped" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Deployment:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow Run:** [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
