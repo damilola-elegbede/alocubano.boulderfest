@@ -11,7 +11,6 @@ const RETRY_CONFIG = {
   ci: { maxRetries: 2, timeout: 10000 },
   postMerge: { maxRetries: 2, timeout: 8000 }
 };
-
 // Get current environment configuration
 function getRetryConfig() {
   if (RETRY_DISABLED) return { maxRetries: 0, timeout: RETRY_CONFIG.local.timeout };
@@ -19,7 +18,6 @@ function getRetryConfig() {
   if (CI_ENV) return RETRY_CONFIG.ci;
   return RETRY_CONFIG.local;
 }
-
 // Sleep utility for exponential backoff
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
