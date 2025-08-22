@@ -1,8 +1,8 @@
 # DEPRECATED: This workflow has been replaced by post-merge-validation.yml
-# 
+#
 # The new workflow fixes:
 # - Port conflicts from hardcoded port 3000
-# - Process cleanup issues  
+# - Process cleanup issues
 # - Test redundancy (running same tests multiple times)
 # - Inconsistent environment configurations
 #

@@ -134,20 +134,7 @@ app.all(/^\/api\/(.*)/, async (req, res) => {
     }
   }
   
-  // 3. Parameterized routes (api/tickets/[ticketId].js)
-  if (!apiFile && segments.length >= 2) {
-    const basePath = segments.slice(0, -1).join('/');
-    const paramValue = segments[segments.length - 1];
-    const paramName = segments[segments.length - 2] || 'id';
-    
-    const paramFile = path.join(rootDir, 'api', basePath, `[${paramName}].js`);
-    if (fs.existsSync(paramFile)) {
-      apiFile = paramFile;
-      paramValues[paramName] = paramValue;
-    }
-  }
-  
-  // 4. Try different parameter patterns
+  // 3. Try different parameter patterns for dynamic routes
   if (!apiFile && segments.length >= 2) {
     const basePath = segments.slice(0, -1).join('/');
     const paramValue = segments[segments.length - 1];
@@ -286,14 +273,22 @@ app.all(/^\/api\/(.*)/, async (req, res) => {
     
     // Call the handler with timeout
     const handlerTimeout = 30000; // 30 seconds
+    let timeoutId;
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Handler timeout')), handlerTimeout);
+      timeoutId = setTimeout(() => reject(new Error('Handler timeout')), handlerTimeout);
     });
     
-    await Promise.race([
-      handler(vercelReq, vercelRes),
-      timeoutPromise
-    ]);
+    try {
+      await Promise.race([
+        handler(vercelReq, vercelRes),
+        timeoutPromise
+      ]);
+    } finally {
+      // Clear the timeout to prevent memory leak
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
     
   } catch (error) {
     console.error(`Error in API handler ${apiPath}:`, error);

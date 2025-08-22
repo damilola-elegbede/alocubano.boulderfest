@@ -1,5 +1,5 @@
 # DEPRECATED: This functionality has been integrated into post-merge-validation.yml
-# 
+#
 # The new workflow includes deployment validation as a single job
 # instead of a separate workflow, reducing complexity and duplication.
 #

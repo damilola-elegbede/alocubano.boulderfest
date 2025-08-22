@@ -1,5 +1,5 @@
 # DEPRECATED: This workflow has been replaced by post-merge-validation.yml
-# 
+#
 # The new workflow fixes:
 # - Port conflicts from hardcoded port 3000
 # - Process cleanup issues
