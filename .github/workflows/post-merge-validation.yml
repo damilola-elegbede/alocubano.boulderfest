@@ -13,8 +13,6 @@ concurrency:
 env:
   NODE_ENV: test
   CI: true
-  # Dynamic port allocation based on run number to avoid conflicts
-  CI_PORT: ${{ 3000 + github.run_number % 1000 }}
   # Consistent database configuration
   DATABASE_URL: "file:./data/ci-test.db"
   TURSO_DATABASE_URL: "file:./data/ci-test.db"
@@ -40,6 +38,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: 🔢 Calculate Dynamic Port
+        id: port
+        run: |
+          # Dynamic port allocation based on run number to avoid conflicts
+          PORT=$((3000 + ${{ github.run_number }} % 1000))
+          echo "CI_PORT=$PORT" >> $GITHUB_ENV
+          echo "port=$PORT" >> $GITHUB_OUTPUT
+          echo "Using port: $PORT"
 
       - name: 🔧 Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -128,7 +135,7 @@ jobs:
       - name: 🧪 Run Streamlined Tests
         id: tests
         env:
-          TEST_BASE_URL: "http://localhost:${{ env.CI_PORT }}"
+          TEST_BASE_URL: "http://localhost:${{ steps.port.outputs.port }}"
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_REF: ${{ github.ref }}
         run: |
@@ -152,7 +159,7 @@ jobs:
       - name: 🔍 Run Security Tests
         if: success()
         env:
-          TEST_BASE_URL: "http://localhost:${{ env.CI_PORT }}"
+          TEST_BASE_URL: "http://localhost:${{ steps.port.outputs.port }}"
         run: |
           echo "Running security-critical tests..."
           npx vitest run tests/security-critical.test.js --config tests/vitest.config.js
@@ -160,7 +167,7 @@ jobs:
       - name: 💳 Run Payment Tests
         if: success()
         env:
-          TEST_BASE_URL: "http://localhost:${{ env.CI_PORT }}"
+          TEST_BASE_URL: "http://localhost:${{ steps.port.outputs.port }}"
         run: |
           echo "Running payment-critical tests..."
           npx vitest run tests/payment-critical.test.js --config tests/vitest.config.js
