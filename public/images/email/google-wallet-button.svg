@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="140" height="44" viewBox="0 0 140 44" xmlns="http://www.w3.org/2000/svg">
+  <!-- Black background with rounded corners -->
+  <rect width="140" height="44" rx="8" fill="#000000"/>
+  
+  <!-- Google Wallet logo -->
+  <g transform="translate(15, 12)">
+    <!-- Wallet icon shape -->
+    <path d="M8,20 L8,18 C8,16.9 8.9,16 10,16 L18,16 C19.1,16 20,16.9 20,18 L20,20 C20,21.1 19.1,22 18,22 L10,22 C8.9,22 8,21.1 8,20 Z" 
+          fill="#4285F4"/>
+    <path d="M8,14 L8,12 C8,10.9 8.9,10 10,10 L18,10 C19.1,10 20,10.9 20,12 L20,14 L18,14 L18,12 L10,12 L10,14 L8,14 Z" 
+          fill="#34A853"/>
+    <path d="M8,8 L8,6 C8,4.9 8.9,4 10,4 L18,4 C19.1,4 20,4.9 20,6 L20,8 L18,8 L18,6 L10,6 L10,8 L8,8 Z" 
+          fill="#FBBC04"/>
+  </g>
+  
+  <!-- Text: Add to Google Wallet -->
+  <text x="45" y="27" font-family="'Google Sans', 'Product Sans', 'Roboto', Arial, sans-serif" 
+        font-size="14" font-weight="500" fill="#FFFFFF">Add to Google Wallet</text>
+</svg>
