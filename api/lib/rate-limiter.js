@@ -19,8 +19,8 @@ export class RateLimiter {
     const key = this.getKey(identifier);
     
     // Check for previous violations (progressive backoff)
-    const violationCount = this.violations.get(key) || 0;
-    const backoffMultiplier = Math.pow(2, violationCount); // Exponential backoff
+    const violationMeta = this.violations.get(key) || { count: 0, lastViolationAt: 0 };
+    const backoffMultiplier = Math.pow(2, violationMeta.count); // Exponential backoff
     const effectiveWindow = this.windowMs * backoffMultiplier;
     
     // Get or create attempt record
@@ -37,7 +37,11 @@ export class RateLimiter {
     // Check if limit exceeded
     if (record.attempts.length >= this.maxAttempts) {
       // Record violation
-      this.violations.set(key, violationCount + 1);
+      const nowTs = Date.now();
+      this.violations.set(key, {
+        count: violationMeta.count + 1,
+        lastViolationAt: nowTs,
+      });
       
       // Calculate reset time
       const oldestAttempt = Math.min(...record.attempts);
@@ -55,7 +59,7 @@ export class RateLimiter {
     record.attempts.push(now);
     
     // Clear violations on successful attempt
-    if (violationCount > 0 && record.attempts.length === 1) {
+    if (violationMeta.count > 0 && record.attempts.length === 1) {
       this.violations.delete(key);
     }
     
@@ -83,9 +87,9 @@ export class RateLimiter {
       }
     }
     
-    // Clean violations older than 1 hour
-    for (const [key, timestamp] of this.violations.entries()) {
-      if (now - timestamp > 60 * 60 * 1000) {
+    // Clean violations older than 1 hour since last violation
+    for (const [key, meta] of this.violations.entries()) {
+      if (!meta?.lastViolationAt || (now - meta.lastViolationAt) > 60 * 60 * 1000) {
         this.violations.delete(key);
       }
     }

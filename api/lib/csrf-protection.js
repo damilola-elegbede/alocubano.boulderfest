@@ -52,21 +52,32 @@ export class CSRFProtection {
     return true;
   }
   
-  validateOrigin(origin, allowedOrigins) {
-    if (!origin) {
+  validateOrigin(originHeader, allowedOrigins) {
+    if (!originHeader || !Array.isArray(allowedOrigins) || allowedOrigins.length === 0) {
       return false;
     }
-    
-    return allowedOrigins.some(allowed => {
-      if (allowed === origin) return true;
-      
-      // Support wildcard subdomains
-      if (allowed.startsWith('*.')) {
-        const domain = allowed.substring(2);
-        return origin.endsWith(domain);
-      }
-      
+    let originUrl;
+    try {
+      originUrl = new URL(originHeader);
+    } catch {
+      // If Referer is a full URL with path, or malformed, reject
       return false;
+    }
+    const origin = `${originUrl.protocol}//${originUrl.host}`;
+    const host = originUrl.hostname;
+
+    return allowedOrigins.some((allowed) => {
+      // Support full origin entries like https://app.example.com
+      if (/^https?:\/\//i.test(allowed)) {
+        return allowed.toLowerCase() === origin.toLowerCase();
+      }
+      // Support exact host match: example.com or app.example.com
+      if (!allowed.startsWith('*.')) {
+        return host.toLowerCase() === allowed.toLowerCase();
+      }
+      // Wildcard subdomains: *.example.com -> match foo.example.com but not example.com
+      const domain = allowed.slice(2).toLowerCase();
+      return host.toLowerCase().endsWith(`.${domain}`);
     });
   }
   
@@ -81,8 +92,9 @@ export class CSRFProtection {
   
   middleware(allowedOrigins = []) {
     return async (req, res, next) => {
-      // Skip for GET requests
-      if (req.method === 'GET' || req.method === 'HEAD') {
+      // Skip safe and preflight methods
+      const method = req.method?.toUpperCase();
+      if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
         return next();
       }
       

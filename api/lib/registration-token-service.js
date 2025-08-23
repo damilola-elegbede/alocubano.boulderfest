@@ -4,11 +4,29 @@ import { getDatabaseClient } from './database.js';
 
 export class RegistrationTokenService {
   constructor() {
-    this.secret = process.env.REGISTRATION_SECRET || crypto.randomBytes(32).toString('hex');
+    this.secret = null;
     this.tokenExpiry = 72 * 60 * 60; // 72 hours in seconds
+    this._initPromise = null;
+  }
+
+  async ensureInitialized() {
+    if (this._initPromise) return this._initPromise;
+    this._initPromise = (async () => {
+      const secret = process.env.REGISTRATION_SECRET;
+      if (!secret || secret.length < 32) {
+        throw new Error('REGISTRATION_SECRET must be set (>=32 chars) for token signing');
+      }
+      this.secret = secret;
+    })().catch((err) => {
+      // allow retry on next call
+      this._initPromise = null;
+      throw err;
+    });
+    return this._initPromise;
   }
 
   async createToken(transactionId) {
+    await this.ensureInitialized();
     const tokenId = crypto.randomUUID();
     const now = Date.now();
     const expiresAt = now + (this.tokenExpiry * 1000);
@@ -38,6 +56,7 @@ export class RegistrationTokenService {
   }
 
   async validateAndConsumeToken(token, ipAddress) {
+    await this.ensureInitialized();
     const startTime = Date.now();
     
     try {
@@ -64,6 +83,16 @@ export class RegistrationTokenService {
         throw new Error('Registration already completed');
       }
       
+      // Atomically consume the token to enforce single-use
+      await db.execute({
+        sql: `UPDATE transactions
+              SET registration_token = NULL,
+                  registration_token_expires = NULL
+              WHERE id = ?
+                AND registration_token = ?`,
+        args: [transaction.id, token]
+      });
+      
       // Log token usage
       const validationTime = Date.now() - startTime;
       await this.logTokenUsage(decoded.tid, ipAddress, 'validated');
@@ -85,6 +114,7 @@ export class RegistrationTokenService {
   }
 
   async revokeToken(transactionId) {
+    await this.ensureInitialized();
     const db = await getDatabaseClient();
     await db.execute({
       sql: `UPDATE transactions 
