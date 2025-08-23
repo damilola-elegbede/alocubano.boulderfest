@@ -12,7 +12,7 @@ CREATE TABLE registration_reminders (
   ),
   scheduled_at DATETIME NOT NULL,
   sent_at DATETIME,
-  status TEXT DEFAULT 'scheduled' CHECK (
+  status TEXT NOT NULL DEFAULT 'scheduled' CHECK (
     status IN ('scheduled', 'sent', 'failed', 'cancelled')
   ),
   error_message TEXT,

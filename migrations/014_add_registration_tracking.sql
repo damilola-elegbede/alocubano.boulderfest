@@ -4,7 +4,7 @@
 -- Created: 2025-01-23
 
 -- Up Migration
-ALTER TABLE tickets ADD COLUMN registration_status TEXT DEFAULT 'pending' 
+ALTER TABLE tickets ADD COLUMN registration_status TEXT NOT NULL DEFAULT 'pending' 
   CHECK (registration_status IN ('pending', 'completed', 'expired'));
 
 ALTER TABLE tickets ADD COLUMN registered_at DATETIME;
