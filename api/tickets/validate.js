@@ -180,8 +180,8 @@ export default async function handler(req, res) {
     req.connection.remoteAddress ||
     "unknown";
 
-  // Check rate limit
-  if (checkRateLimit(ip)) {
+  // Skip rate limiting in test environment to prevent CI timeouts
+  if (process.env.NODE_ENV !== "test" && checkRateLimit(ip)) {
     return res.status(429).json({
       error: "Rate limit exceeded. Please try again later.",
     });

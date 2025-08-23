@@ -91,11 +91,6 @@ const mockResponses = {
     fromCache: false
   },
   
-  'GET:/api/admin/dashboard': {
-    status: 401,
-    body: { error: 'Unauthorized - Authentication required' }
-  },
-  
   'POST:/api/admin/login': {
     token: 'mock_jwt_token',
     user: { username: 'admin' }
@@ -120,6 +115,22 @@ app.get('/health', (req, res) => {
 app.all(/^\/api\/(.*)/, (req, res) => {
   const apiPath = req.path.replace('/api/', '').replace(/\/$/, '');
   const mockKey = `${req.method}:${req.path}`;
+  
+  // Admin dashboard: 401 when missing auth, 200 when present
+  if (mockKey === 'GET:/api/admin/dashboard') {
+    if (!req.headers.authorization) {
+      return res.status(401).json({ error: 'Unauthorized - Authentication required' });
+    }
+    return res.status(200).json({
+      success: true,
+      mock: true,
+      dashboard: { 
+        registrations: 42,
+        revenue: 5250.00,
+        widgets: 3 
+      }
+    });
+  }
   
   // Special handling for specific endpoints that need dynamic values
   if (mockKey === 'POST:/api/email/subscribe' && req.body) {
@@ -149,8 +160,14 @@ app.all(/^\/api\/(.*)/, (req, res) => {
   }
   
   if (mockKey === 'POST:/api/tickets/validate' && req.body) {
-    // Return 404 for specific invalid codes
+    // Return 400 when qr_code is missing
     const qrCode = req.body.qr_code || req.body.qrCode;
+    if (!qrCode) {
+      return res.status(400).json({
+        error: 'qr_code is required'
+      });
+    }
+    // Return 404 for specific invalid codes
     if (qrCode === 'event-day-test-code-invalid') {
       return res.status(404).json({ 
         error: 'Ticket not found'

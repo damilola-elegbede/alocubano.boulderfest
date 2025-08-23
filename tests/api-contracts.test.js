@@ -38,7 +38,7 @@ test('payment API creates valid Stripe checkout session', async () => {
   }
   // Should not return unexpected status codes
   else {
-    expect([HTTP_STATUS.OK, HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(response.status)).toBe(true);
+    expect([HTTP_STATUS.OK, HTTP_STATUS.BAD_REQUEST].includes(response.status)).toBe(true);
   }
 });
 
@@ -71,7 +71,7 @@ test('email subscription API validates and processes requests correctly', async 
     expect(response.data).toHaveProperty('error');
   }
   else {
-    expect([200, 201, HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.TOO_MANY_REQUESTS, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(response.status)).toBe(true);
+    expect([200, 201, HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.TOO_MANY_REQUESTS].includes(response.status)).toBe(true);
   }
 });
 
@@ -94,7 +94,7 @@ test('ticket validation API handles QR codes correctly', async () => {
     expect(response.data).toHaveProperty('error');
   }
   // Should not return unexpected status codes
-  expect([HTTP_STATUS.OK, HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.NOT_FOUND, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(response.status)).toBe(true);
+  expect([HTTP_STATUS.OK, HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.NOT_FOUND].includes(response.status)).toBe(true);
 });
 
 test('gallery API returns proper data structure', async () => {
@@ -115,7 +115,7 @@ test('gallery API returns proper data structure', async () => {
     expect(response.data).toHaveProperty('error');
   }
   
-  expect([HTTP_STATUS.OK, 403, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(response.status)).toBe(true);
+  expect([HTTP_STATUS.OK, 403].includes(response.status)).toBe(true);
 });
 
 test('admin dashboard enforces authentication', async () => {

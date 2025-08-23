@@ -35,7 +35,7 @@ test('ticket purchase user journey validation', async () => {
     expect(response.data).toHaveProperty('orderId');
     expect(response.data.totalAmount).toBe(125.00);
   } else {
-    expect([HTTP_STATUS.OK, HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(response.status)).toBe(true);
+    expect([HTTP_STATUS.OK, HTTP_STATUS.BAD_REQUEST].includes(response.status)).toBe(true);
     if (response.status === HTTP_STATUS.BAD_REQUEST) {
       expect(response.data).toHaveProperty('error');
     }
@@ -57,7 +57,7 @@ test('newsletter subscription user journey validation', async () => {
     expect(response.data.success).toBe(true);
     expect(response.data.subscriber.email).toBe(subscriptionData.email);
   } else {
-    expect([200, 201, HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.TOO_MANY_REQUESTS, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(response.status)).toBe(true);
+    expect([200, 201, HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.TOO_MANY_REQUESTS].includes(response.status)).toBe(true);
     if (response.data?.error) expect(response.data.error).toBeDefined();
   }
 });
