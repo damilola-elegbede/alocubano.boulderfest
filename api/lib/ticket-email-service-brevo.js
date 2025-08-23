@@ -211,6 +211,221 @@ export class TicketEmailService {
   }
 
   /**
+   * Send registration invitation email for pending tickets
+   */
+  async sendRegistrationInvitation(options) {
+    const {
+      transactionId,
+      customerEmail,
+      customerName,
+      ticketCount,
+      registrationToken,
+      registrationDeadline,
+      tickets
+    } = options;
+
+    try {
+      // Initialize Brevo if needed
+      const brevo = await this.initializeBrevo();
+
+      // Format deadline for display
+      const deadlineDate = new Date(registrationDeadline);
+      const deadlineDisplay = deadlineDate.toLocaleString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short"
+      });
+
+      // Create registration URL
+      const registrationUrl = `${this.baseUrl}/pages/register-tickets?token=${registrationToken}`;
+
+      // Prepare email parameters
+      const emailParams = {
+        to: [
+          {
+            email: customerEmail,
+            name: customerName || "Valued Customer",
+          },
+        ],
+        templateId: parseInt(process.env.BREVO_REGISTRATION_INVITATION_TEMPLATE_ID) || 3,
+        params: {
+          CUSTOMER_NAME: customerName || "Valued Customer",
+          TRANSACTION_ID: transactionId,
+          TICKET_COUNT: ticketCount,
+          EVENT_DATES: this.eventDatesDisplay,
+          VENUE_NAME: this.venueName,
+          VENUE_ADDRESS: this.venueAddress,
+          REGISTRATION_URL: registrationUrl,
+          REGISTRATION_DEADLINE: deadlineDisplay,
+          TICKET_TYPES: this.formatTicketTypesForEmail(tickets),
+        },
+        headers: {
+          "X-Mailin-Tag": "registration-invitation",
+          "X-Transaction-ID": transactionId,
+        },
+      };
+
+      // Send via Brevo API
+      const response = await brevo.makeRequest("/smtp/email", {
+        method: "POST",
+        body: JSON.stringify(emailParams),
+      });
+
+      console.log("Registration invitation email sent:", {
+        to: customerEmail,
+        transactionId,
+        messageId: response.messageId,
+      });
+
+      return {
+        success: true,
+        email: customerEmail,
+        messageId: response.messageId,
+      };
+    } catch (error) {
+      console.error("Failed to send registration invitation:", error);
+
+      // Fallback: Log email details for manual sending if needed
+      console.log("Registration invitation details for manual sending:", {
+        to: customerEmail,
+        transactionId,
+        ticketCount,
+        registrationToken,
+      });
+
+      throw error;
+    }
+  }
+
+  /**
+   * Send registration reminder email
+   */
+  async sendRegistrationReminder(options) {
+    const {
+      ticketId,
+      transactionId,
+      customerEmail,
+      customerName,
+      reminderType,
+      registrationToken,
+      registrationDeadline,
+      ticketsRemaining
+    } = options;
+
+    try {
+      // Initialize Brevo if needed
+      const brevo = await this.initializeBrevo();
+
+      // Format deadline for display
+      const deadlineDate = new Date(registrationDeadline);
+      const deadlineDisplay = deadlineDate.toLocaleString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short"
+      });
+
+      // Calculate time remaining
+      const now = new Date();
+      const hoursRemaining = Math.max(0, Math.floor((deadlineDate - now) / (1000 * 60 * 60)));
+
+      // Create registration URL
+      const registrationUrl = `${this.baseUrl}/pages/register-tickets?token=${registrationToken}`;
+
+      // Determine reminder urgency text
+      let urgencyText = "";
+      switch (reminderType) {
+        case "72hr":
+          urgencyText = "You have 3 days to complete your registration";
+          break;
+        case "48hr":
+          urgencyText = "Only 2 days left to register your tickets";
+          break;
+        case "24hr":
+          urgencyText = "Last day to register - don't miss out!";
+          break;
+        case "final":
+          urgencyText = "FINAL REMINDER: Only 2 hours left!";
+          break;
+      }
+
+      // Prepare email parameters
+      const emailParams = {
+        to: [
+          {
+            email: customerEmail,
+            name: customerName || "Valued Customer",
+          },
+        ],
+        templateId: parseInt(process.env.BREVO_REGISTRATION_REMINDER_TEMPLATE_ID) || 4,
+        params: {
+          CUSTOMER_NAME: customerName || "Valued Customer",
+          TRANSACTION_ID: transactionId,
+          URGENCY_TEXT: urgencyText,
+          HOURS_REMAINING: hoursRemaining,
+          TICKETS_REMAINING: ticketsRemaining,
+          EVENT_DATES: this.eventDatesDisplay,
+          VENUE_NAME: this.venueName,
+          REGISTRATION_URL: registrationUrl,
+          REGISTRATION_DEADLINE: deadlineDisplay,
+          REMINDER_TYPE: reminderType,
+        },
+        headers: {
+          "X-Mailin-Tag": `registration-reminder-${reminderType}`,
+          "X-Transaction-ID": transactionId,
+          "X-Ticket-ID": ticketId,
+        },
+      };
+
+      // Send via Brevo API
+      const response = await brevo.makeRequest("/smtp/email", {
+        method: "POST",
+        body: JSON.stringify(emailParams),
+      });
+
+      console.log(`Registration reminder (${reminderType}) email sent:`, {
+        to: customerEmail,
+        transactionId,
+        ticketId,
+        messageId: response.messageId,
+      });
+
+      return {
+        success: true,
+        email: customerEmail,
+        messageId: response.messageId,
+      };
+    } catch (error) {
+      console.error(`Failed to send registration reminder (${reminderType}):`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Format ticket types for email display
+   */
+  formatTicketTypesForEmail(tickets) {
+    if (!tickets || tickets.length === 0) return "";
+
+    const typeCounts = {};
+    for (const ticket of tickets) {
+      const type = ticket.type || "General";
+      typeCounts[type] = (typeCounts[type] || 0) + 1;
+    }
+
+    return Object.entries(typeCounts)
+      .map(([type, count]) => `${count}x ${this.formatTicketType(type)}`)
+      .join(", ");
+  }
+
+  /**
    * Send ticket reminder email (24 hours before event)
    */
   async sendTicketReminder(transaction, tickets) {

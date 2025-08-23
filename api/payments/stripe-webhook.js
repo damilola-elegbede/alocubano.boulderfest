@@ -18,10 +18,34 @@ import transactionService from "../lib/transaction-service.js";
 import paymentEventLogger from "../lib/payment-event-logger.js";
 import ticketService from "../lib/ticket-service.js";
 import { getTicketEmailService } from "../lib/ticket-email-service-brevo.js";
+import { RegistrationTokenService } from "../lib/registration-token-service.js";
+import { generateTicketId } from "../lib/ticket-id-generator.js";
+import { scheduleRegistrationReminders } from "../lib/reminder-scheduler.js";
+import { getDatabaseClient } from "../lib/database.js";
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+// Helper to parse Stripe's single name field into first and last name
+function parseCustomerName(stripeCustomerName) {
+  if (!stripeCustomerName) {
+    return { firstName: 'Guest', lastName: 'Attendee' };
+  }
+  
+  const parts = stripeCustomerName.trim().split(/\s+/);
+  
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: '' };
+  } else if (parts.length === 2) {
+    return { firstName: parts[0], lastName: parts[1] };
+  } else {
+    // Multiple parts - everything except last is first name
+    const lastName = parts[parts.length - 1];
+    const firstName = parts.slice(0, -1).join(' ');
+    return { firstName, lastName };
+  }
+}
 
 // For Vercel, we need the raw body for webhook verification
 export const config = {
@@ -111,34 +135,114 @@ export default async function handler(req, res) {
             transaction.id,
           );
 
-          // Create tickets from the transaction
+          // Universal registration flow for all tickets
+          const db = await getDatabaseClient();
+          const tokenService = new RegistrationTokenService();
+          const ticketEmailService = getTicketEmailService();
+          
           try {
-            const tickets = await ticketService.createTicketsFromTransaction(
-              transaction,
-              fullSession.line_items?.data || [],
+            // Start transaction
+            await db.execute('BEGIN IMMEDIATE');
+            
+            // Parse customer name for default values
+            const { firstName, lastName } = parseCustomerName(
+              fullSession.customer_details?.name || 'Guest'
             );
-            console.log(
-              `Created ${tickets.length} tickets for transaction ${transaction.uuid}`,
-            );
-
-            // Send confirmation email with tickets
-            if (tickets.length > 0) {
-              const ticketEmailService = getTicketEmailService();
-              await ticketEmailService.sendTicketConfirmation(
-                transaction,
-                tickets,
-              );
-              console.log(
-                `Sent ticket confirmation to ${transaction.customer_email}`,
-              );
+            
+            // Calculate registration deadline (72 hours from now)
+            const now = new Date();
+            const registrationDeadline = new Date(now.getTime() + (72 * 60 * 60 * 1000));
+            
+            // Create tickets with pending registration status
+            const tickets = [];
+            const lineItems = fullSession.line_items?.data || [];
+            
+            for (const item of lineItems) {
+              const quantity = item.quantity || 1;
+              const ticketType = item.price?.lookup_key || item.price?.nickname || 'general';
+              const priceInCents = item.amount_total || 0;
+              
+              for (let i = 0; i < quantity; i++) {
+                const ticketId = await generateTicketId();
+                
+                // Create ticket with pending registration
+                await db.execute({
+                  sql: `INSERT INTO tickets (
+                    ticket_id, transaction_id, ticket_type, event_id,
+                    event_date, price_cents,
+                    attendee_first_name, attendee_last_name,
+                    registration_status, registration_deadline,
+                    status, created_at
+                  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                  args: [
+                    ticketId,
+                    transaction.id,
+                    ticketType,
+                    'boulder-fest-2026',
+                    '2026-05-15',
+                    Math.floor(priceInCents / quantity), // Price per ticket
+                    firstName, // Default first name from purchaser
+                    lastName,  // Default last name from purchaser
+                    'pending', // All tickets start pending
+                    registrationDeadline.toISOString(),
+                    'valid',
+                    now.toISOString()
+                  ]
+                });
+                
+                // Schedule reminders for this ticket
+                await scheduleRegistrationReminders(ticketId, registrationDeadline);
+                
+                tickets.push({
+                  id: ticketId,
+                  type: ticketType,
+                  ticket_id: ticketId
+                });
+              }
             }
+            
+            // Generate registration token
+            const registrationToken = await tokenService.createToken(transaction.id);
+            
+            // Send registration invitation email
+            await ticketEmailService.sendRegistrationInvitation({
+              transactionId: transaction.uuid,
+              customerEmail: fullSession.customer_details?.email,
+              customerName: fullSession.customer_details?.name || 'Guest',
+              ticketCount: tickets.length,
+              registrationToken,
+              registrationDeadline,
+              tickets
+            });
+            
+            // Log email sent
+            await db.execute({
+              sql: `INSERT INTO registration_emails (
+                ticket_id, transaction_id, email_type, 
+                recipient_email, sent_at
+              ) VALUES (?, ?, ?, ?, ?)`,
+              args: [
+                tickets[0].id, // Associate with first ticket
+                transaction.id,
+                'registration_invitation',
+                fullSession.customer_details?.email,
+                now.toISOString()
+              ]
+            });
+            
+            // Commit transaction
+            await db.execute('COMMIT');
+            
+            console.log(`Universal registration initiated for transaction ${transaction.uuid}`);
+            console.log(`${tickets.length} tickets created with pending status`);
+            console.log(`Registration deadline: ${registrationDeadline.toISOString()}`);
+            
           } catch (ticketError) {
-            console.error("Failed to create tickets:", ticketError);
+            await db.execute('ROLLBACK');
+            console.error("Failed to process checkout with registration:", ticketError);
             // Log the error but don't fail the webhook
             await paymentEventLogger.logError(event, ticketError);
           }
-
-          // TODO: In Phase 4, we'll generate QR codes here
         } catch (error) {
           console.error("Failed to process checkout session:", error);
           await paymentEventLogger.logError(event, error);
@@ -170,28 +274,110 @@ export default async function handler(req, res) {
               `Created transaction from async payment: ${transaction.uuid}`,
             );
 
-            // Create tickets from the transaction
+            // Universal registration flow for async payments
+            const db = await getDatabaseClient();
+            const tokenService = new RegistrationTokenService();
+            const ticketEmailService = getTicketEmailService();
+            
             try {
-              const tickets = await ticketService.createTicketsFromTransaction(
-                transaction,
-                fullSession.line_items?.data || [],
+              // Start transaction
+              await db.execute('BEGIN IMMEDIATE');
+              
+              // Parse customer name for default values
+              const { firstName, lastName } = parseCustomerName(
+                fullSession.customer_details?.name || 'Guest'
               );
-              console.log(
-                `Created ${tickets.length} tickets for async payment transaction ${transaction.uuid}`,
-              );
-
-              // Send confirmation email with tickets
-              if (tickets.length > 0) {
-                const ticketEmailService = getTicketEmailService();
-                await ticketEmailService.sendTicketConfirmation(
-                  transaction,
-                  tickets,
-                );
-                console.log(
-                  `Sent ticket confirmation to ${transaction.customer_email}`,
-                );
+              
+              // Calculate registration deadline (72 hours from now)
+              const now = new Date();
+              const registrationDeadline = new Date(now.getTime() + (72 * 60 * 60 * 1000));
+              
+              // Create tickets with pending registration status
+              const tickets = [];
+              const lineItems = fullSession.line_items?.data || [];
+              
+              for (const item of lineItems) {
+                const quantity = item.quantity || 1;
+                const ticketType = item.price?.lookup_key || item.price?.nickname || 'general';
+                const priceInCents = item.amount_total || 0;
+                
+                for (let i = 0; i < quantity; i++) {
+                  const ticketId = await generateTicketId();
+                  
+                  // Create ticket with pending registration
+                  await db.execute({
+                    sql: `INSERT INTO tickets (
+                      ticket_id, transaction_id, ticket_type, event_id,
+                      event_date, price_cents,
+                      attendee_first_name, attendee_last_name,
+                      registration_status, registration_deadline,
+                      status, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    args: [
+                      ticketId,
+                      transaction.id,
+                      ticketType,
+                      'boulder-fest-2026',
+                      '2026-05-15',
+                      Math.floor(priceInCents / quantity), // Price per ticket
+                      firstName, // Default first name from purchaser
+                      lastName,  // Default last name from purchaser
+                      'pending', // All tickets start pending
+                      registrationDeadline.toISOString(),
+                      'valid',
+                      now.toISOString()
+                    ]
+                  });
+                  
+                  // Schedule reminders for this ticket
+                  await scheduleRegistrationReminders(ticketId, registrationDeadline);
+                  
+                  tickets.push({
+                    id: ticketId,
+                    type: ticketType,
+                    ticket_id: ticketId
+                  });
+                }
               }
+              
+              // Generate registration token
+              const registrationToken = await tokenService.createToken(transaction.id);
+              
+              // Send registration invitation email
+              await ticketEmailService.sendRegistrationInvitation({
+                transactionId: transaction.uuid,
+                customerEmail: fullSession.customer_details?.email,
+                customerName: fullSession.customer_details?.name || 'Guest',
+                ticketCount: tickets.length,
+                registrationToken,
+                registrationDeadline,
+                tickets
+              });
+              
+              // Log email sent
+              await db.execute({
+                sql: `INSERT INTO registration_emails (
+                  ticket_id, transaction_id, email_type, 
+                  recipient_email, sent_at
+                ) VALUES (?, ?, ?, ?, ?)`,
+                args: [
+                  tickets[0].id, // Associate with first ticket
+                  transaction.id,
+                  'registration_invitation',
+                  fullSession.customer_details?.email,
+                  now.toISOString()
+                ]
+              });
+              
+              // Commit transaction
+              await db.execute('COMMIT');
+              
+              console.log(`Universal registration initiated for async payment transaction ${transaction.uuid}`);
+              console.log(`${tickets.length} tickets created with pending status`);
+              console.log(`Registration deadline: ${registrationDeadline.toISOString()}`);
+              
             } catch (ticketError) {
+              await db.execute('ROLLBACK');
               console.error(
                 "Failed to create tickets for async payment:",
                 ticketError,
