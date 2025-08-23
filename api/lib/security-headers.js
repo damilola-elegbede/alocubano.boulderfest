@@ -94,7 +94,7 @@ function buildCSP() {
     workerSrc: ["'self'", "blob:"],
     childSrc: ["'self'", "blob:"],
     manifestSrc: ["'self'"],
-    upgradeInsecureRequests: isProduction(),
+    ...(isProduction() && { upgradeInsecureRequests: true }),
     reportUri: reportUri,
   };
 
