@@ -220,12 +220,20 @@ test('APIs properly sanitize and reject SQL injection attempts', async () => {
       }
     }
     
-    // CRITICAL: Should never return 500 errors from SQL injection
+    // CRITICAL: Verify 500 errors are service failures, not SQL injection
     if (emailResponse.status === HTTP_STATUS.INTERNAL_SERVER_ERROR) {
-      console.error(`⚠️ SECURITY CONCERN: SQL injection payload caused server error - ${payload}`);
-      console.error('This may indicate insufficient input sanitization');
-      // In test environment, we'll treat this as a warning rather than hard failure
-      // In production, this should be investigated immediately
+      // Verify error is service initialization failure, not SQL injection vulnerability
+      if (emailResponse.data?.error) {
+        const errorMsg = emailResponse.data.error.toLowerCase();
+        // Should be service errors, not SQL-related errors
+        expect(errorMsg).not.toMatch(/sql|query|syntax|database.*error/i);
+        expect(errorMsg).toMatch(/service.*initializing|temporarily.*unavailable|processing.*subscription/i);
+        console.log(`✓ Confirmed service failure (not SQL vulnerability): ${payload.substring(0, 20)}...`);
+      }
+      // Also check error response doesn't expose sensitive information
+      const errorText = JSON.stringify(emailResponse.data).toLowerCase();
+      expect(errorText).not.toMatch(/\/users\/|\/api\/|stack|trace|\.js:|error:.*at/i);
+      expect(errorText).not.toMatch(/turso_|brevo_|stripe_|auth_token/i);
     }
   }
 });
