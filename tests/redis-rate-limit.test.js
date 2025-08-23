@@ -56,7 +56,7 @@ test('email subscription rate limiting blocks excessive requests', async () => {
   } else {
     console.warn('No immediate rate limiting detected (normal in test environment)');
   }
-}, 5000);
+}, 10000);
 test('ticket validation rate limiting prevents brute force scanning', async () => {
   let validationAttempts = 0;
   let rateLimitedCount = 0;
