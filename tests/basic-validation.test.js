@@ -28,7 +28,8 @@ test('ticket validation handles invalid QR codes', async () => {
     const response = await testRequest('POST', '/api/tickets/validate', { qr_code });
     if (response.status === 0) continue;
     
-    expect([HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.NOT_FOUND, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(response.status)).toBe(true);
+    // Should return 404 for invalid QR codes or 400 for malformed requests (removed 500 to prevent masking regressions)
+    expect([HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.NOT_FOUND].includes(response.status)).toBe(true);
     if (response.data?.error) {
       expect(response.data.error).toMatch(/invalid|format|required|not found|does not exist/i);
     }
@@ -101,7 +102,7 @@ test('APIs sanitize and reject SQL injection attempts', async () => {
       expect(errorText).not.toMatch(/\/users\/|\/api\/|stack|trace|\\.js:|turso_|brevo_|stripe_|auth_token/i);
     } else {
       // Should reject with validation error (most common case)
-      const validStatuses = [HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.TOO_MANY_REQUESTS, 503, 422];
+      const validStatuses = [HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.TOO_MANY_REQUESTS, 503, HTTP_STATUS.UNPROCESSABLE_ENTITY];
       expect(validStatuses.includes(response.status)).toBe(true);
       if (response.data && response.data.error) {
         expect(response.data.error).toBeDefined();

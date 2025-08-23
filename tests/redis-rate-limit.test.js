@@ -79,7 +79,7 @@ test('admin login rate limiting prevents brute force attacks', async () => {
   expect(authFailures + rateLimitedCount + loginAttempts).toBeGreaterThan(0);
 }, 10000);
 test('payment endpoint rate limiting prevents checkout spam', async () => {
-  let totalRequests = 0, rateLimitedCount = 0;
+  let totalRequests = 0, successCount = 0, rateLimitedCount = 0;
   
   for (let i = 0; i < 3; i++) {
     const response = await testRequest('POST', '/api/payments/create-checkout-session', {
@@ -89,6 +89,7 @@ test('payment endpoint rate limiting prevents checkout spam', async () => {
     
     totalRequests++;
     if (response.status === 0) return;
+    successCount++;
     if (response.status === HTTP_STATUS.TOO_MANY_REQUESTS) {
       rateLimitedCount++;
       break;
@@ -97,5 +98,10 @@ test('payment endpoint rate limiting prevents checkout spam', async () => {
     await sleep(20);
   }
   
-  expect(totalRequests).toBeGreaterThan(0);
+  // If the server didn't respond (network status 0), skip to avoid false positives
+  if (successCount === 0) {
+    console.warn('Skipping assertion: no successful responses received from payments endpoint');
+    return;
+  }
+  expect(successCount).toBeGreaterThanOrEqual(1);
 }, 15000);
