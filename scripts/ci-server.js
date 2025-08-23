@@ -50,6 +50,13 @@ const mockResponses = {
     }
   },
   
+  'GET:/api/health/simple': {
+    body: {
+      status: 'healthy',
+      timestamp: new Date().toISOString()
+    }
+  },
+  
   'POST:/api/payments/create-checkout-session': {
     checkoutUrl: 'https://checkout.stripe.com/test',
     orderId: 'order_test_123',
@@ -174,16 +181,21 @@ app.all(/^\/api\/(.*)/, (req, res) => {
     });
   }
   
-  // Default response for unmocked endpoints
-  console.log(`CI Mock: No mock for ${mockKey}, returning default`);
-  return res.status(200).json({
-    success: true,
-    mock: true,
-    message: 'CI mock response'
+  // Default response for unmocked endpoints - return 404 for undefined API routes
+  console.log(`CI Mock: No mock for ${mockKey}, returning 404`);
+  return res.status(404).json({
+    error: 'Endpoint not found',
+    message: `The API endpoint ${req.path} is not found`,
+    mock: true
   });
 });
 
-// Static file serving
+// Handle root path explicitly to serve index.html from pages/
+app.get('/', (req, res) => {
+  res.sendFile(path.join(rootDir, 'pages', 'index.html'));
+});
+
+// Static file serving for other assets
 app.use(express.static(rootDir));
 
 // Start server
