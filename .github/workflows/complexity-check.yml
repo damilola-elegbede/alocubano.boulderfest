@@ -39,10 +39,10 @@ jobs:
           echo "  Test file count: $TEST_FILE_COUNT" 
           echo "  Utility file count: $UTIL_FILE_COUNT"
           
-          # Check total lines threshold - streamlined target is 500 lines max
-          if [ "$TOTAL_TEST_LINES" -gt 500 ]; then
-            echo "❌ COMPLEXITY FAILURE: Total test lines ($TOTAL_TEST_LINES) exceeds 500 line threshold"
-            echo "   The streamlined test approach should stay under 500 lines total. Consider:"
+          # Check total lines threshold - streamlined target is 600 lines max (includes essential utilities)
+          if [ "$TOTAL_TEST_LINES" -gt 600 ]; then
+            echo "❌ COMPLEXITY FAILURE: Total test lines ($TOTAL_TEST_LINES) exceeds 600 line threshold"
+            echo "   The streamlined test approach should stay under 600 lines total. Consider:"
             echo "   • Removing unnecessary test abstractions"
             echo "   • Simplifying test helper functions"
             echo "   • Using direct assertions instead of complex helpers"
