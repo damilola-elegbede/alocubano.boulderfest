@@ -20,7 +20,13 @@ test('email subscription rate limiting blocks excessive requests', async () => {
     }
   }
   
-  expect(requestCount).toBeGreaterThanOrEqual(0);
+  // If the server didn't respond (network status 0), skip to avoid false positives
+  if (requestCount === 0) {
+    console.warn('Skipping assertion: no successful responses received from subscription endpoint');
+    return;
+  }
+  // Verify we at least made one successful request
+  expect(requestCount).toBeGreaterThanOrEqual(1);
 }, 10000);
 test('ticket validation rate limiting prevents brute force scanning', async () => {
   let validationAttempts = 0, rateLimitedCount = 0;
@@ -38,7 +44,8 @@ test('ticket validation rate limiting prevents brute force scanning', async () =
       break;
     } else {
       validationAttempts++;
-      expect([HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.NOT_FOUND, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(response.status)).toBe(true);
+      // Should return 404 for invalid QR codes or 400 for malformed requests
+      expect([HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.NOT_FOUND].includes(response.status)).toBe(true);
     }
     
     await sleep(50);

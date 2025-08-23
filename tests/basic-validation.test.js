@@ -80,14 +80,32 @@ test('APIs sanitize and reject SQL injection attempts', async () => {
     
     if (response.status === 0) continue;
     
-    const validStatuses = [HTTP_STATUS.OK, 201, HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.TOO_MANY_REQUESTS, HTTP_STATUS.INTERNAL_SERVER_ERROR, 503, 422];
-    expect(validStatuses.includes(response.status)).toBe(true);
+    console.log(`Testing payload: ${payload.substring(0, 30)}... -> Status: ${response.status}`);
     
-    if (response.status === HTTP_STATUS.INTERNAL_SERVER_ERROR && response.data?.error) {
-      const errorMsg = response.data.error.toLowerCase();
-      expect(errorMsg).not.toMatch(/sql|query|syntax|database.*error/i);
+    // Should either succeed with proper sanitization or reject appropriately
+    if (response.status === HTTP_STATUS.OK || response.status === 201) {
+      expect(response.data).toHaveProperty('success');
+      expect(response.data.success).toBe(true);
+      console.log(`✓ SQL payload sanitized successfully: ${payload.substring(0, 20)}...`);
+    } else if (response.status === HTTP_STATUS.INTERNAL_SERVER_ERROR) {
+      // CRITICAL: Verify 500 errors are service failures, not SQL injection
+      if (response.data?.error) {
+        const errorMsg = response.data.error.toLowerCase();
+        // Should be service errors, not SQL-related errors
+        expect(errorMsg).not.toMatch(/sql|query|syntax|database.*error/i);
+        expect(errorMsg).toMatch(/service.*initializing|temporarily.*unavailable|processing.*subscription|invalid.*header/i);
+        console.log(`✓ Confirmed service failure (not SQL vulnerability): ${payload.substring(0, 20)}...`);
+      }
+      // Also check error response doesn't expose sensitive information
       const errorText = JSON.stringify(response.data).toLowerCase();
-      expect(errorText).not.toMatch(/\/users\/|\/api\/|stack|trace|\.js:|turso_|brevo_|stripe_|auth_token/i);
+      expect(errorText).not.toMatch(/\/users\/|\/api\/|stack|trace|\\.js:|turso_|brevo_|stripe_|auth_token/i);
+    } else {
+      // Should reject with validation error (most common case)
+      const validStatuses = [HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.TOO_MANY_REQUESTS, 503, 422];
+      expect(validStatuses.includes(response.status)).toBe(true);
+      if (response.data && response.data.error) {
+        expect(response.data.error).toBeDefined();
+      }
     }
   }
 });
