@@ -1,6 +1,5 @@
 /**
- * API Contract Tests - Validates actual API contracts and response structures
- * Tests that APIs behave correctly with valid input and return expected structures
+ * API Contract Tests - Validates API contracts and response structures
  */
 import { test, expect } from 'vitest';
 import { testRequest, generateTestEmail, HTTP_STATUS } from './helpers.js';
