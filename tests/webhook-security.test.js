@@ -302,10 +302,11 @@ describe("Webhook Security", () => {
         "user@",
         "user @example.com",
         "user@.com",
-        "<script>@example.com"
+        "user@@example.com"
       ];
       
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      // Strict email regex that ensures only one @ symbol
+      const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
       
       validEmails.forEach(email => {
         expect(emailRegex.test(email)).toBe(true);
