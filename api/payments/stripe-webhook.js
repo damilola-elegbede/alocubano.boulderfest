@@ -54,6 +54,9 @@ async function processUniversalRegistration(fullSession, transaction) {
   const tokenService = new RegistrationTokenService();
   const ticketEmailService = getTicketEmailService();
   
+  let committed = false;
+  const ticketsToSchedule = []; // Track tickets for post-commit reminder scheduling
+  
   try {
     // Start transaction
     await db.execute('BEGIN IMMEDIATE');
@@ -76,7 +79,19 @@ async function processUniversalRegistration(fullSession, transaction) {
       const ticketType = item.price?.lookup_key || item.price?.nickname || 'general';
       const priceInCents = item.amount_total || 0;
       
+      // Extract event metadata from product or use defaults
+      const product = item.price?.product;
+      const meta = product?.metadata || {};
+      const eventId = meta.event_id || process.env.DEFAULT_EVENT_ID || 'boulder-fest-2026';
+      const eventDate = meta.event_date || process.env.DEFAULT_EVENT_DATE || '2026-05-15';
+      
+      // Calculate cent-accurate price distribution
+      const perTicketBase = Math.floor(priceInCents / quantity);
+      const remainder = priceInCents % quantity;
+      
       for (let i = 0; i < quantity; i++) {
+        // Distribute remainder cents across first tickets
+        const priceForThisTicket = perTicketBase + (i < remainder ? 1 : 0);
         const ticketId = await generateTicketId();
         
         // Create ticket with pending registration
@@ -92,9 +107,9 @@ async function processUniversalRegistration(fullSession, transaction) {
             ticketId,
             transaction.id,
             ticketType,
-            'boulder-fest-2026',
-            '2026-05-15',
-            Math.floor(priceInCents / quantity), // Price per ticket
+            eventId,
+            eventDate,
+            priceForThisTicket, // Preserves total cents across all tickets
             firstName, // Default first name from purchaser
             lastName,  // Default last name from purchaser
             'pending', // All tickets start pending
@@ -104,8 +119,8 @@ async function processUniversalRegistration(fullSession, transaction) {
           ]
         });
         
-        // Schedule reminders for this ticket
-        await scheduleRegistrationReminders(ticketId, registrationDeadline);
+        // Defer scheduling reminders until after COMMIT
+        ticketsToSchedule.push({ ticketId, registrationDeadline });
         
         tickets.push({
           id: ticketId,
@@ -115,10 +130,15 @@ async function processUniversalRegistration(fullSession, transaction) {
       }
     }
     
-    // Generate registration token
+    // Commit DB work before external side effects
+    await db.execute('COMMIT');
+    committed = true;
+    
+    // Post-commit side effects (best-effort, non-transactional)
+    // 1) Generate registration token (uses its own DB client)
     const registrationToken = await tokenService.createToken(transaction.id);
     
-    // Send registration invitation email
+    // 2) Send registration invitation email
     await ticketEmailService.sendRegistrationInvitation({
       transactionId: transaction.uuid,
       customerEmail: fullSession.customer_details?.email,
@@ -129,23 +149,27 @@ async function processUniversalRegistration(fullSession, transaction) {
       tickets
     });
     
-    // Log email sent
-    await db.execute({
-      sql: `INSERT INTO registration_emails (
-        ticket_id, transaction_id, email_type, 
-        recipient_email, sent_at
-      ) VALUES (?, ?, ?, ?, ?)`,
-      args: [
-        tickets[0].id, // Associate with first ticket
-        transaction.id,
-        'registration_invitation',
-        fullSession.customer_details?.email,
-        now.toISOString()
-      ]
-    });
+    // 3) Log email sent (best-effort)
+    if (tickets.length && fullSession.customer_details?.email) {
+      await db.execute({
+        sql: `INSERT INTO registration_emails (
+          ticket_id, transaction_id, email_type, 
+          recipient_email, sent_at
+        ) VALUES (?, ?, ?, ?, ?)`,
+        args: [
+          tickets[0].id, // Associate with first ticket
+          transaction.id,
+          'registration_invitation',
+          fullSession.customer_details?.email,
+          now.toISOString()
+        ]
+      });
+    }
     
-    // Commit transaction
-    await db.execute('COMMIT');
+    // 4) Schedule reminders for each ticket
+    for (const { ticketId, registrationDeadline } of ticketsToSchedule) {
+      await scheduleRegistrationReminders(ticketId, registrationDeadline);
+    }
     
     console.log(`Universal registration initiated for transaction ${transaction.uuid}`);
     console.log(`${tickets.length} tickets created with pending status`);
@@ -153,7 +177,9 @@ async function processUniversalRegistration(fullSession, transaction) {
     
     return { success: true, tickets };
   } catch (ticketError) {
-    await db.execute('ROLLBACK');
+    if (!committed) {
+      await db.execute('ROLLBACK');
+    }
     throw ticketError;
   }
 }
@@ -251,8 +277,8 @@ export default async function handler(req, res) {
             await processUniversalRegistration(fullSession, transaction);
           } catch (ticketError) {
             console.error("Failed to process checkout with registration:", ticketError);
-            // Log the error but don't fail the webhook
             await paymentEventLogger.logError(event, ticketError);
+            throw ticketError; // Let top-level catch return non-2xx for retry
           }
         } catch (error) {
           console.error("Failed to process checkout session:", error);
@@ -294,6 +320,7 @@ export default async function handler(req, res) {
                 ticketError,
               );
               await paymentEventLogger.logError(event, ticketError);
+              throw ticketError; // Let top-level catch return non-2xx for retry
             }
           }
         } catch (error) {
