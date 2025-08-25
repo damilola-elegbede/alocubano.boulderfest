@@ -269,17 +269,17 @@ app.all(/^\/api\/(.*)/, (req, res) => {
       });
     }
     
+    // Return 400 for malformed codes (validate format first)
+    if (qrCode.length === 0 || qrCode.length > 500 || qrCode.includes('invalid-format')) {
+      return res.status(400).json({
+        error: 'Invalid QR code format'
+      });
+    }
+
     // Return 404 for specific invalid codes
     if (qrCode === 'event-day-test-code-invalid' || qrCode.includes('invalid') || qrCode.includes('does-not-exist')) {
       return res.status(404).json({ 
         error: 'Ticket not found'
-      });
-    }
-    
-    // Return 400 for malformed codes
-    if (qrCode.length === 0 || qrCode.length > 500 || qrCode.includes('invalid-format')) {
-      return res.status(400).json({
-        error: 'Invalid QR code format'
       });
     }
     
@@ -354,6 +354,39 @@ app.all(/^\/api\/(.*)/, (req, res) => {
         email,
         registrationDate: new Date().toISOString()
       }
+    });
+  }
+
+  // Registration batch processing
+  if (mockKey === 'POST:/api/registration/batch') {
+    if (!req.body || !Array.isArray(req.body.registrations)) {
+      return res.status(400).json({ error: 'registrations must be a non-empty array' });
+    }
+    const regs = req.body.registrations.filter(Boolean);
+    if (regs.length === 0) {
+      return res.status(400).json({ error: 'registrations must be a non-empty array' });
+    }
+    // Basic validation per item (reuse rules from tickets/register)
+    let processed = 0;
+    for (const r of regs) {
+      if (
+        r?.ticketId &&
+        r?.firstName?.length >= 2 &&
+        r?.lastName?.length >= 2 &&
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r?.email)
+      ) {
+        processed++;
+      }
+    }
+    return res.status(200).json({ success: true, processedCount: processed });
+  }
+
+  // Registration health
+  if (mockKey === 'GET:/api/registration/health') {
+    return res.status(200).json({
+      service: 'registration',
+      status: 'healthy',
+      timestamp: new Date().toISOString()
     });
   }
   

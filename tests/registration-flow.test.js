@@ -11,11 +11,11 @@ test('registration flow works end-to-end', async () => {
   
   const response = await testRequest('POST', '/api/tickets/register', registrationData);
   
-  if (response.status === HTTP_STATUS.OK) {
-    expect(response.data.success).toBe(true);
-    expect(response.data.attendee.email).toBe(registrationData.email);
-    expect(response.data.attendee.ticketId).toBe(registrationData.ticketId);
-  }
+  expect(response.status).toBe(HTTP_STATUS.OK);
+  expect(response.data.success).toBe(true);
+  expect(response.data.attendee.email).toBe(registrationData.email);
+  expect(response.data.attendee.ticketId).toBe(registrationData.ticketId);
+  expect(response.data.attendee).toHaveProperty('registrationDate');
 });
 
 test('batch registration and health checks work', async () => {
@@ -28,16 +28,16 @@ test('batch registration and health checks work', async () => {
   }];
   
   const batchResponse = await testRequest('POST', '/api/registration/batch', { registrations });
-  if (batchResponse.status === HTTP_STATUS.OK) {
-    expect(batchResponse.data.success).toBe(true);
-  }
+  expect(batchResponse.status).toBe(HTTP_STATUS.OK);
+  expect(batchResponse.data.success).toBe(true);
+  expect(batchResponse.data).toHaveProperty('processedCount');
+  expect(batchResponse.data.processedCount).toBe(registrations.length);
   
   // Test health check
   const healthResponse = await testRequest('GET', '/api/registration/health');
-  if (healthResponse.status === HTTP_STATUS.OK) {
-    expect(healthResponse.data).toHaveProperty('service');
-    expect(healthResponse.data).toHaveProperty('status');
-  }
+  expect(healthResponse.status).toBe(HTTP_STATUS.OK);
+  expect(healthResponse.data).toHaveProperty('service');
+  expect(healthResponse.data).toHaveProperty('status');
 });
 
 test('registration validation and performance', async () => {
