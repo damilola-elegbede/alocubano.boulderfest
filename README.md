@@ -224,6 +224,21 @@ Focus on **user-visible behavior** with **minimal complexity**:
 - **Touch-optimized**: Mobile-friendly design with smooth animations
 - **Quick checkout**: Direct access to ticket purchasing flow
 
+## 📚 Documentation
+
+### API Documentation
+- [Main API Documentation](/docs/api/API_DOCUMENTATION.md) - Gallery, performance, and core APIs
+- [Registration API](/docs/api/REGISTRATION_API.md) - Ticket registration system endpoints
+- [Async Initialization Guide](/docs/ASYNC_INITIALIZATION_GUIDE.md) - Database service patterns
+- [Testing Strategy](/docs/testing/TESTING_STRATEGY.md) - Streamlined testing approach
+
+### Key Features Documentation
+- **Registration System**: JWT-based ticket registration with 72-hour window
+- **Email Integration**: Brevo/SendinBlue for transactional emails
+- **Payment Processing**: Stripe Checkout with webhook handling
+- **Wallet Passes**: Apple Wallet and Google Wallet integration
+- **Gallery System**: Google Drive integration with AVIF/WebP optimization
+
 ## 🎪 About the Festival
 
 Founded by Marcela Lay in 2023, A Lo Cubano Boulder Fest has grown from a single-day event with 500 attendees to a premier 3-day festival expecting over 5,000 participants in 2026. Nestled in the Rockies of Boulder, Colorado, the festival celebrates authentic Cuban salsa culture through workshops, social dancing, and community connection.
