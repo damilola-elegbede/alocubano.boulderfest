@@ -60,15 +60,14 @@ function validateRegistration(registration) {
 }
 
 export default async function handler(req, res) {
-  // Apply rate limiting
-  await new Promise((resolve, reject) => {
-    limiter(req, res, (err) => {
-      if (err) reject(err);
-      else resolve();
+  // Apply rate limiting with early return on limit
+  try {
+    await new Promise((resolve, reject) => {
+      limiter(req, res, (err) => (err ? reject(err) : resolve()));
     });
-  }).catch(() => {
+  } catch {
     return res.status(429).json({ error: 'Too many registration attempts' });
-  });
+  }
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -159,8 +158,8 @@ export default async function handler(req, res) {
       for (const registration of sanitizedRegistrations) {
         const ticket = ticketsResult.rows.find(t => t.ticket_id === registration.ticketId);
         
-        // Update ticket
-        await db.execute({
+        // Update ticket (guard against concurrent completion)
+        const updateRes = await db.execute({
           sql: `
             UPDATE tickets 
             SET 
@@ -169,7 +168,7 @@ export default async function handler(req, res) {
               attendee_email = ?,
               registration_status = ?,
               registered_at = datetime('now')
-            WHERE ticket_id = ?
+            WHERE ticket_id = ? AND registration_status != 'completed'
           `,
           args: [
             registration.firstName,
@@ -179,6 +178,11 @@ export default async function handler(req, res) {
             registration.ticketId
           ]
         });
+        
+        // Check if update affected any rows
+        if (updateRes?.rowsAffected !== undefined && updateRes.rowsAffected === 0) {
+          throw new Error(`Concurrent update detected for ticket ${registration.ticketId}`);
+        }
 
         // Cancel reminders
         await db.execute({

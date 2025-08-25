@@ -86,6 +86,7 @@ class BrevoClient {
       // Use the Brevo service to make the API request
       const response = await this.service.makeRequest('/smtp/email', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 

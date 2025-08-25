@@ -26,15 +26,14 @@ function sanitizeInput(input) {
 }
 
 export default async function handler(req, res) {
-  // Apply rate limiting
-  await new Promise((resolve, reject) => {
-    limiter(req, res, (err) => {
-      if (err) reject(err);
-      else resolve();
+  // Apply rate limiting with early return on limit
+  try {
+    await new Promise((resolve, reject) => {
+      limiter(req, res, (err) => (err ? reject(err) : resolve()));
     });
-  }).catch(() => {
+  } catch {
     return res.status(429).json({ error: 'Too many registration attempts' });
-  });
+  }
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -113,8 +112,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Registration deadline has passed' });
     }
 
-    // Update ticket with attendee information
-    await db.execute({
+    // Update ticket with attendee information (guard against concurrent completion)
+    const updateRes = await db.execute({
       sql: `
         UPDATE tickets 
         SET 
@@ -123,10 +122,15 @@ export default async function handler(req, res) {
           attendee_email = ?,
           registration_status = ?,
           registered_at = datetime('now')
-        WHERE ticket_id = ?
+        WHERE ticket_id = ? AND registration_status != 'completed'
       `,
       args: [cleanFirstName, cleanLastName, cleanEmail, 'completed', ticketId]
     });
+    
+    // Check if update affected any rows (prevents double registration)
+    if (updateRes?.rowsAffected !== undefined && updateRes.rowsAffected === 0) {
+      return res.status(409).json({ error: 'Ticket was registered concurrently; please refresh.' });
+    }
 
     // Cancel remaining reminders
     await db.execute({

@@ -14,8 +14,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Verify JWT token
-    const decoded = jwt.verify(token, process.env.REGISTRATION_JWT_SECRET || process.env.ADMIN_SECRET);
+    // Verify JWT token strictly with the registration secret
+    const secret = process.env.REGISTRATION_JWT_SECRET;
+    if (!secret) {
+      console.error('Missing REGISTRATION_JWT_SECRET');
+      return res.status(503).json({ error: 'Service misconfigured' });
+    }
+    const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
     
     if (!decoded.transactionId) {
       return res.status(400).json({ error: 'Invalid token format' });

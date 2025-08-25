@@ -6,7 +6,11 @@ The A Lo Cubano Boulder Fest registration system enables ticket purchasers to re
 
 ## Authentication
 
-All registration endpoints use JWT tokens for authentication. Tokens are generated during the Stripe webhook processing when a payment is completed.
+Tokens are generated during Stripe webhook processing after successful payment.
+
+- GET `/api/registration/[token]`: token is supplied in the path segment (`[token]`).
+- POST `/api/tickets/register` and `/api/registration/batch`: ticket ID and registration data in request body.
+- GET `/api/registration/health`: does not require authentication.
 
 ### Token Structure
 ```json
@@ -85,10 +89,10 @@ Registers attendee information for a single ticket.
 ```
 
 **Validation Rules:**
-- `firstName`: 2-50 characters, letters/spaces/hyphens only
-- `lastName`: 2-50 characters, letters/spaces/hyphens only
-- `email`: Valid RFC 5322 email format
-- All inputs are sanitized for XSS prevention
+- `firstName`: 2-50 characters, letters/spaces/hyphens/apostrophes only
+- `lastName`: 2-50 characters, letters/spaces/hyphens/apostrophes only
+- `email`: Valid basic email format (local@domain.tld)
+- All inputs are sanitized (HTML-escaped) to prevent XSS
 
 **Response (200 OK):**
 ```json
@@ -236,9 +240,9 @@ Checks the health of the registration system components.
 ## Security Features
 
 ### JWT Token Security
-- 256-bit signing secret minimum
-- Token expiry enforcement (default 24 hours)
-- Single-use token validation
+- Secret with at least 32 bytes of entropy (256-bit key)
+- Token expiry enforcement (default 72 hours via `REGISTRATION_TOKEN_EXPIRY`)
+- Algorithm restricted to HS256 for security
 - Secure token transmission via HTTPS only
 
 ### Input Validation
