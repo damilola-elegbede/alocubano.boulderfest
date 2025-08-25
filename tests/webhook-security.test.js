@@ -3,7 +3,8 @@ import crypto from "crypto";
 
 describe("Webhook Security", () => {
   describe("Stripe Webhook Validation", () => {
-    const testSecret = "whsec_test_secret_key_12345";
+    // Generate test secret at runtime to avoid secret scanner false positives
+    const testSecret = `test_${crypto.randomBytes(16).toString('hex')}`;
     const testPayload = JSON.stringify({ id: "evt_test", type: "checkout.session.completed" });
 
     it("should generate valid Stripe webhook signature", () => {
@@ -24,7 +25,8 @@ describe("Webhook Security", () => {
     });
   });
   describe("Brevo Webhook Validation", () => {
-    const testSecret = "brevo_webhook_secret_12345";
+    // Generate test secret at runtime to avoid secret scanner false positives
+    const testSecret = `test_${crypto.randomBytes(16).toString('hex')}`;
     const testPayload = { event: "delivered", email: "test@example.com" };
 
     it("should generate valid Brevo webhook signature", () => {
@@ -55,9 +57,13 @@ describe("Webhook Security", () => {
   });
   describe("Admin JWT Authentication", () => {
     it("should validate JWT and bcrypt formats", () => {
-      expect("test_admin_jwt_secret_minimum_32_characters_long".length).toBeGreaterThanOrEqual(32);
-      expect("eyJhbGciOiJIUzI1NiJ9.eyJhZG1pbiI6dHJ1ZX0.sig".split(".")).toHaveLength(3);
-      expect("$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy").toMatch(/^\$2[aby]\$\d{2}\$.{53}$/);
+      // Use clearly marked test values to avoid secret scanner false positives
+      const testJwtSecret = 'TEST_NOT_A_REAL_SECRET_' + 'x'.repeat(32);
+      const mockJwt = 'header.payload.signature'; // Simplified JWT format
+      const mockBcrypt = '$2b$10$' + 'x'.repeat(53);
+      expect(testJwtSecret.length).toBeGreaterThanOrEqual(32);
+      expect(mockJwt.split(".")).toHaveLength(3);
+      expect(mockBcrypt).toMatch(/^\$2[aby]\$\d{2}\$.{53}$/);
     });
   });
 
