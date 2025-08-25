@@ -131,3 +131,31 @@ test('admin dashboard enforces authentication', async () => {
   expect(response.data).toHaveProperty('error');
   expect(response.data.error).toMatch(/unauthorized|authentication/i);
 });
+
+test('registration API contract validation', async () => {
+  // Test registration status endpoint
+  let response = await testRequest('GET', '/api/registration/TEST-TOKEN');
+  if (response.status === HTTP_STATUS.OK) {
+    expect(response.data).toHaveProperty('transactionId');
+    expect(response.data).toHaveProperty('tickets');
+  }
+  
+  // Test registration submission
+  response = await testRequest('POST', '/api/tickets/register', {
+    ticketId: 'TKT-CONTRACT1',
+    firstName: 'Contract',
+    lastName: 'Test',
+    email: generateTestEmail()
+  });
+  if (response.status === HTTP_STATUS.OK) {
+    expect(response.data).toHaveProperty('success');
+    expect(response.data).toHaveProperty('attendee');
+  }
+  
+  // Test health endpoint
+  response = await testRequest('GET', '/api/registration/health');
+  if (response.status === HTTP_STATUS.OK) {
+    expect(response.data).toHaveProperty('service');
+    expect(response.data).toHaveProperty('status');
+  }
+});

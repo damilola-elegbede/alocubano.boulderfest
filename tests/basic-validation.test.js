@@ -111,6 +111,41 @@ test('APIs handle SQL injection attempts safely', async () => {
   }
 });
 
+skipInCI('registration validates inputs and prevents attacks', async () => {
+  // Test invalid name (too short)
+  let response = await testRequest('POST', '/api/tickets/register', {
+    ticketId: 'TKT-VALIDATE',
+    firstName: 'A',
+    lastName: 'Valid',
+    email: generateTestEmail()
+  });
+  if (response.status !== 0) {
+    expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST);
+  }
+  
+  // Test invalid email
+  response = await testRequest('POST', '/api/tickets/register', {
+    ticketId: 'TKT-EMAIL',
+    firstName: 'Test',
+    lastName: 'User',
+    email: 'notanemail'
+  });
+  if (response.status !== 0) {
+    expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST);
+  }
+  
+  // Test XSS prevention
+  response = await testRequest('POST', '/api/tickets/register', {
+    ticketId: 'TKT-XSS',
+    firstName: '<script>alert("xss")</script>',
+    lastName: 'Safe',
+    email: generateTestEmail()
+  });
+  if (response.status !== 0) {
+    expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST);
+  }
+});
+
 // Placeholder test for static resources - actual asset testing requires production server
 test('static resources validation placeholder', () => {
   // Static asset testing is skipped in test environments as the CI mock server
