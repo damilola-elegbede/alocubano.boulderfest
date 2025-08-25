@@ -4,6 +4,7 @@
  */
 import { getStripePaymentHandler } from './lib/stripe-integration.js';
 import { getPaymentSelector } from './components/payment-selector.js';
+import { setSafeHTML, escapeHtml } from './utils/dom-sanitizer.js';
 
 export function initializeFloatingCart(cartManager) {
     // Check if already initialized
@@ -433,18 +434,10 @@ function renderCartItems(container, tickets, donations) {
         html += '</div>';
     }
 
-    container.innerHTML = html;
+    setSafeHTML(container, html);
 }
 
-// Security utility
-function escapeHtml(unsafe) {
-    return unsafe
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
+// Security utility is now imported from dom-sanitizer.js
 
 // Clear cart confirmation dialog
 async function showClearCartConfirmation(cartState) {
@@ -483,15 +476,15 @@ async function showClearCartConfirmation(cartState) {
         const donationCount = cartState.donations.length;
         const totalItems = ticketCount + donationCount;
 
-        modal.innerHTML = `
+        setSafeHTML(modal, `
             <h3 style="color: var(--color-blue); margin-bottom: var(--space-lg); font-family: var(--font-display);">
                 Clear Cart?
             </h3>
             <p style="margin-bottom: var(--space-xl); color: var(--color-text); line-height: 1.4;">
-                This will remove all ${totalItems} item${totalItems !== 1 ? 's' : ''} from your cart 
-                ${ticketCount > 0 ? `(${ticketCount} ticket${ticketCount !== 1 ? 's' : ''})` : ''}
+                This will remove all ${escapeHtml(totalItems.toString())} item${totalItems !== 1 ? 's' : ''} from your cart 
+                ${ticketCount > 0 ? `(${escapeHtml(ticketCount.toString())} ticket${ticketCount !== 1 ? 's' : ''})` : ''}
                 ${ticketCount > 0 && donationCount > 0 ? ' and ' : ''}
-                ${donationCount > 0 ? `(${donationCount} donation${donationCount !== 1 ? 's' : ''})` : ''}.
+                ${donationCount > 0 ? `(${escapeHtml(donationCount.toString())} donation${donationCount !== 1 ? 's' : ''})` : ''}.
                 This action cannot be undone.
             </p>
             <div class="confirmation-buttons" style="display: flex; gap: var(--space-md); justify-content: center;">
