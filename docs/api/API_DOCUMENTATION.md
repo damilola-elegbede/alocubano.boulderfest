@@ -2,7 +2,7 @@
 
 ## Overview
 
-The A Lo Cubano Boulder Fest API provides comprehensive access to festival media, performance monitoring, and image optimization services. Built on Vercel's serverless platform, the API emphasizes performance, caching, and modern web standards.
+The A Lo Cubano Boulder Fest API provides comprehensive access to festival media, performance monitoring, image optimization services, and ticket registration management. Built on Vercel's serverless platform, the API emphasizes performance, caching, security, and modern web standards.
 
 ### Base URL
 
@@ -84,6 +84,27 @@ All API endpoints return consistent error formats:
 - **Format Optimization**: Automatic format selection (AVIF → WebP → JPEG)
 - **Compression**: Brotli/Gzip compression for JSON responses
 - **Monitoring**: Real-time performance tracking and analytics
+
+## Registration API
+
+The registration system enables ticket purchasers to register attendee information within a 72-hour window after purchase. See [REGISTRATION_API.md](./REGISTRATION_API.md) for complete documentation.
+
+### Quick Reference
+
+| Endpoint | Method | Description | Rate Limit |
+|----------|--------|-------------|------------|
+| `/api/registration/[token]` | GET | Get registration status for all tickets | - |
+| `/api/tickets/register` | POST | Register single ticket | 3/15min |
+| `/api/registration/batch` | POST | Register multiple tickets | 3/15min |
+| `/api/registration/health` | GET | System health check | - |
+
+### Key Features
+- JWT-based authentication
+- 72-hour registration window
+- Automatic email confirmations
+- Rate limiting (3 attempts per 15 minutes)
+- Input validation and XSS prevention
+- Atomic batch registration
 
 ## Gallery API
 
