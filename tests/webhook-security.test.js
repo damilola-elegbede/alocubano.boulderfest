@@ -1,12 +1,9 @@
 import { describe, it, expect } from "vitest";
 import crypto from "crypto";
-
 describe("Webhook Security", () => {
   describe("Stripe Webhook Validation", () => {
-    // Generate test secret at runtime to avoid secret scanner false positives
     const testSecret = `test_${crypto.randomBytes(16).toString('hex')}`;
     const testPayload = JSON.stringify({ id: "evt_test", type: "checkout.session.completed" });
-
     it("should generate valid Stripe webhook signature", () => {
       const timestamp = Math.floor(Date.now() / 1000);
       const sig = crypto.createHmac("sha256", testSecret).update(`${timestamp}.${testPayload}`).digest("hex");
@@ -20,15 +17,13 @@ describe("Webhook Security", () => {
     });
     it("should validate webhook timestamp tolerance", () => {
       const now = Math.floor(Date.now() / 1000);
-      expect(now - (now - 360) > 300).toBe(true); // expired
-      expect(now - (now - 120) > 300).toBe(false); // valid
+      expect(now - (now - 360) > 300).toBe(true);
+      expect(now - (now - 120) > 300).toBe(false);
     });
   });
   describe("Brevo Webhook Validation", () => {
-    // Generate test secret at runtime to avoid secret scanner false positives
     const testSecret = `test_${crypto.randomBytes(16).toString('hex')}`;
     const testPayload = { event: "delivered", email: "test@example.com" };
-
     it("should generate valid Brevo webhook signature", () => {
       const body = JSON.stringify(testPayload);
       
@@ -57,16 +52,14 @@ describe("Webhook Security", () => {
   });
   describe("Admin JWT Authentication", () => {
     it("should validate JWT and bcrypt formats", () => {
-      // Use clearly marked test values to avoid secret scanner false positives
       const testJwtSecret = 'TEST_NOT_A_REAL_SECRET_' + 'x'.repeat(32);
-      const mockJwt = 'header.payload.signature'; // Simplified JWT format
+      const mockJwt = 'header.payload.signature';
       const mockBcrypt = '$2b$10$' + 'x'.repeat(53);
       expect(testJwtSecret.length).toBeGreaterThanOrEqual(32);
       expect(mockJwt.split(".")).toHaveLength(3);
       expect(mockBcrypt).toMatch(/^\$2[aby]\$\d{2}\$.{53}$/);
     });
   });
-
   describe("Security Headers", () => {
     it("should validate security headers", () => {
       const csp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com";
