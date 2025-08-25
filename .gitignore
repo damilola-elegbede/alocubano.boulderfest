@@ -90,6 +90,11 @@ certificates/
 .cache/
 .tmp/
 
+# Backup files
+*.backup
+*.bak
+*.orig
+
 
 # Git hooks
 .husky/
