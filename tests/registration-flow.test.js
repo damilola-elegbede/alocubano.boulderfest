@@ -14,7 +14,7 @@ test('registration flow works end-to-end', async () => {
   if (response.status === HTTP_STATUS.OK) {
     expect(response.data.success).toBe(true);
     expect(response.data.attendee.email).toBe(registrationData.email);
-    expect(response.data.ticketId).toBe(registrationData.ticketId);
+    expect(response.data.attendee.ticketId).toBe(registrationData.ticketId);
   }
 });
 

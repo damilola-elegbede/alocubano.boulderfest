@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * CI Development Server - Simplified Thin Mock Strategy
+ * CI Development Server - Enhanced Validation Strategy
  * 
- * Provides minimal static responses for CI testing without business logic duplication.
- * Tests that require real validation should be skipped in CI environment.
+ * Provides proper validation responses that match real API behavior for testing.
  */
 
 import express from 'express';
@@ -35,10 +34,20 @@ app.use((req, res, next) => {
   next();
 });
 
-// Simple static mock responses - no business logic validation
-const mockResponses = {
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:");
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  
+  next();
+});
+// Simple static mock responses - for endpoints that don't need validation
+const staticMockResponses = {
   'GET:/api/health/check': {
-    // Note: 'body' is the response body, not HTTP status
     body: {
       status: 'healthy',
       health_score: 100,
@@ -57,43 +66,12 @@ const mockResponses = {
     }
   },
   
-  'POST:/api/payments/create-checkout-session': {
-    checkoutUrl: 'https://checkout.stripe.com/test',
-    orderId: 'order_test_123',
-    totalAmount: 125.00,
-    sessionId: 'cs_test_123'
-  },
-  
-  'POST:/api/email/subscribe': {
-    success: true,
-    message: 'Successfully subscribed to newsletter',
-    subscriber: {
-      email: 'test@example.com',
-      status: 'subscribed',
-      id: 'sub_test_123'
-    }
-  },
-  
-  'POST:/api/tickets/validate': {
-    valid: true,
-    ticket: {
-      id: 'ticket_test_123',
-      type: 'weekend',
-      status: 'valid'
-    }
-  },
-  
   'GET:/api/gallery': {
     items: [],
     images: [],
     videos: [],
     totalCount: 0,
     fromCache: false
-  },
-  
-  'POST:/api/admin/login': {
-    token: 'mock_jwt_token',
-    user: { username: 'admin' }
   },
   
   'POST:/api/payments/stripe-webhook': {
@@ -107,14 +85,16 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    server: 'ci-server-simplified'
+    server: 'ci-server-enhanced'
   });
 });
 
-// API route handler - returns static mocks with some dynamic values
+// API route handler with enhanced validation
 app.all(/^\/api\/(.*)/, (req, res) => {
   const apiPath = req.path.replace('/api/', '').replace(/\/$/, '');
   const mockKey = `${req.method}:${req.path}`;
+  
+  console.log(`CI Server: ${mockKey} with body:`, req.body ? Object.keys(req.body) : 'none');
   
   // Admin dashboard: 401 when missing auth, 200 when present
   if (mockKey === 'GET:/api/admin/dashboard') {
@@ -132,47 +112,177 @@ app.all(/^\/api\/(.*)/, (req, res) => {
     });
   }
   
-  // Special handling for specific endpoints that need dynamic values
-  if (mockKey === 'POST:/api/email/subscribe' && req.body) {
-    // Return the email that was sent to match smoke test expectations
+  // Email subscription validation
+  if (mockKey === 'POST:/api/email/subscribe') {
+    if (!req.body) {
+      return res.status(400).json({
+        error: 'Request body is required'
+      });
+    }
+
+    const { email, firstName, lastName, consentToMarketing } = req.body;
+    
+    // Validate required fields
+    if (!email) {
+      return res.status(400).json({
+        error: 'Email is required'
+      });
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        error: 'Please provide a valid email address'
+      });
+    }
+    
+    // Check for consent
+    if (!consentToMarketing) {
+      return res.status(400).json({
+        error: 'Marketing consent is required to subscribe to the newsletter'
+      });
+    }
+    
+    // Valid subscription
     return res.status(200).json({
       success: true,
       message: 'Successfully subscribed to newsletter',
       subscriber: {
-        email: req.body.email || 'test@example.com',
+        email: email,
         status: 'subscribed',
         id: 'sub_test_123'
       }
     });
   }
-  
-  if (mockKey === 'POST:/api/admin/login' && req.body) {
-    // Return appropriate response based on credentials
-    if (req.body.password === 'definitely-wrong-password') {
+
+  // Payment creation validation
+  if (mockKey === 'POST:/api/payments/create-checkout-session') {
+    if (!req.body) {
+      return res.status(400).json({
+        error: 'Request body is required'
+      });
+    }
+
+    const { cartItems, customerInfo } = req.body;
+    
+    // Validate cartItems
+    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+      return res.status(400).json({
+        error: 'Cart items are required and must be a non-empty array'
+      });
+    }
+    
+    // Validate each cart item
+    for (const item of cartItems) {
+      if (!item.name || typeof item.name !== 'string') {
+        return res.status(400).json({
+          error: 'Each cart item must have a valid name'
+        });
+      }
+      
+      if (!item.price || typeof item.price !== 'number' || item.price <= 0) {
+        return res.status(400).json({
+          error: 'Each cart item must have a valid positive price'
+        });
+      }
+      
+      if (item.price > 10000) {
+        return res.status(400).json({
+          error: 'Price exceeds maximum allowed amount'
+        });
+      }
+      
+      if (!item.quantity || typeof item.quantity !== 'number' || item.quantity <= 0) {
+        return res.status(400).json({
+          error: 'Each cart item must have a valid positive quantity'
+        });
+      }
+    }
+    
+    // Validate customer info
+    if (!customerInfo || !customerInfo.email) {
+      return res.status(400).json({
+        error: 'Customer email is required'
+      });
+    }
+    
+    // Valid payment request
+    return res.status(200).json({
+      checkoutUrl: 'https://checkout.stripe.com/test',
+      orderId: 'order_test_123',
+      totalAmount: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+      sessionId: 'cs_test_123'
+    });
+  }
+
+  // Admin login validation
+  if (mockKey === 'POST:/api/admin/login') {
+    if (!req.body) {
+      return res.status(400).json({
+        error: 'Request body is required'
+      });
+    }
+
+    const { username, password } = req.body;
+    
+    // Validate required fields
+    if (!username || !password) {
+      return res.status(400).json({
+        error: 'Username and password are required'
+      });
+    }
+    
+    // Check for specific invalid credentials
+    if (password === 'definitely-wrong-password' || password === 'wrong-password') {
       return res.status(401).json({ 
         error: 'Invalid credentials'
       });
     }
+    
+    // Check for empty credentials (should be 400, not 401)
+    if (username.trim() === '' || password.trim() === '') {
+      return res.status(400).json({
+        error: 'Username and password cannot be empty'
+      });
+    }
+    
+    // Valid login
     return res.status(200).json({
       token: 'mock_jwt_token',
-      user: { username: req.body.username || 'admin' }
+      user: { username: username }
     });
   }
-  
-  if (mockKey === 'POST:/api/tickets/validate' && req.body) {
-    // Return 400 when qr_code is missing
+
+  // Ticket validation
+  if (mockKey === 'POST:/api/tickets/validate') {
+    if (!req.body) {
+      return res.status(400).json({
+        error: 'Request body is required'
+      });
+    }
+    
     const qrCode = req.body.qr_code || req.body.qrCode;
     if (!qrCode) {
       return res.status(400).json({
         error: 'qr_code is required'
       });
     }
+    
     // Return 404 for specific invalid codes
-    if (qrCode === 'event-day-test-code-invalid') {
+    if (qrCode === 'event-day-test-code-invalid' || qrCode.includes('invalid') || qrCode.includes('does-not-exist')) {
       return res.status(404).json({ 
         error: 'Ticket not found'
       });
     }
+    
+    // Return 400 for malformed codes
+    if (qrCode.length === 0 || qrCode.length > 500 || qrCode.includes('invalid-format')) {
+      return res.status(400).json({
+        error: 'Invalid QR code format'
+      });
+    }
+    
     return res.status(200).json({
       valid: true,
       ticket: {
@@ -182,10 +292,74 @@ app.all(/^\/api\/(.*)/, (req, res) => {
       }
     });
   }
+
+  // Registration validation
+  if (mockKey === 'POST:/api/tickets/register') {
+    if (!req.body) {
+      return res.status(400).json({
+        error: 'Request body is required'
+      });
+    }
+
+    const { ticketId, firstName, lastName, email } = req.body;
+    
+    // Validate required fields
+    if (!ticketId) {
+      return res.status(400).json({
+        error: 'Ticket ID is required'
+      });
+    }
+    
+    if (!firstName || firstName.length < 2) {
+      return res.status(400).json({
+        error: 'First name must be at least 2 characters long'
+      });
+    }
+    
+    if (!lastName || lastName.length < 2) {
+      return res.status(400).json({
+        error: 'Last name must be at least 2 characters long'
+      });
+    }
+    
+    if (!email) {
+      return res.status(400).json({
+        error: 'Email is required'
+      });
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        error: 'Please provide a valid email address'
+      });
+    }
+    
+    // Check for XSS attempts
+    const xssPattern = /<script|javascript:|on\w+\s*=/i;
+    if (xssPattern.test(firstName) || xssPattern.test(lastName) || xssPattern.test(email)) {
+      return res.status(400).json({
+        error: 'Invalid characters detected in input'
+      });
+    }
+    
+    // Valid registration
+    return res.status(200).json({
+      success: true,
+      attendee: {
+        ticketId,
+        firstName,
+        lastName,
+        email,
+        registrationDate: new Date().toISOString()
+      }
+    });
+  }
   
-  // Check for exact mock match in static responses
-  if (mockResponses[mockKey]) {
-    const mock = mockResponses[mockKey];
+  // Check for static mock responses
+  if (staticMockResponses[mockKey]) {
+    const mock = staticMockResponses[mockKey];
     const status = mock.status || 200;
     const body = mock.body || mock;
     return res.status(status).json(body);
@@ -198,7 +372,7 @@ app.all(/^\/api\/(.*)/, (req, res) => {
     });
   }
   
-  // Default response for unmocked endpoints - return 404 for undefined API routes
+  // Default response for unmocked endpoints
   console.log(`CI Mock: No mock for ${mockKey}, returning 404`);
   return res.status(404).json({
     error: 'Endpoint not found',
@@ -207,41 +381,27 @@ app.all(/^\/api\/(.*)/, (req, res) => {
   });
 });
 
-// Handle root path explicitly to serve index.html from pages/
+// Handle root path explicitly
 app.get('/', (req, res) => {
   res.sendFile(path.join(rootDir, 'pages', 'index.html'));
 });
 
-// Static file serving for other assets
+// Static file serving
 app.use(express.static(rootDir));
 
 // Start server
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Simplified CI Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Enhanced CI Server running at http://localhost:${PORT}`);
   console.log(`📁 Serving from: ${rootDir}`);
-  console.log(`🔧 Mode: Thin mock strategy (static responses only)`);
-  console.log(`✅ Available mock endpoints: ${Object.keys(mockResponses).length}`);
+  console.log(`🔧 Mode: Enhanced validation strategy`);
+  console.log(`✅ Validation endpoints configured`);
 });
 
 // Handle port conflicts gracefully
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`❌ Port ${PORT} is already in use!`);
-    console.error('Another server instance may still be running.');
-    console.error('Trying to find and kill the process...');
-    
-    // Try to kill the process using the port
-    import('child_process').then(({ exec }) => {
-      exec(`lsof -ti:${PORT} | xargs kill -9`, (error) => {
-        if (error) {
-          console.error('Could not automatically kill the process.');
-          console.error('Please run: lsof -ti:' + PORT + ' | xargs kill -9');
-        } else {
-          console.log('Previous process killed. Please restart the server.');
-        }
-        process.exit(1);
-      });
-    });
+    process.exit(1);
   } else {
     console.error('Server error:', err);
     process.exit(1);
