@@ -108,7 +108,7 @@ test.describe('Cross-Browser Purchase Flow', () => {
           
           if (await cardFrame.locator('[placeholder*="card number" i]').isVisible({ timeout: 5000 }).catch(() => false)) {
             await cardFrame.locator('[placeholder*="card number" i]').fill('4242424242424242');
-            await cardFrame.locator('[placeholder*="MM" i]').fill('12/25');
+            await cardFrame.locator('[placeholder*="MM" i]').fill('12/34');
             await cardFrame.locator('[placeholder*="cvc" i]').fill('123');
             await cardFrame.locator('[placeholder*="zip" i]').fill('80301');
             
@@ -199,7 +199,7 @@ test.describe('Cross-Browser Purchase Flow', () => {
           const cardFrame = page.frameLocator('iframe[src*="js.stripe.com"]').first();
           
           await cardFrame.locator('[placeholder*="card number" i]').fill('4242424242424242');
-          await cardFrame.locator('[placeholder*="MM" i]').fill('12/25');
+          await cardFrame.locator('[placeholder*="MM" i]').fill('12/34');
           await cardFrame.locator('[placeholder*="cvc" i]').fill('123');
           
           const payButton = page.locator('button[type="submit"]').first();
@@ -267,10 +267,8 @@ test.describe('Cross-Browser Purchase Flow', () => {
         const nameInput = page.locator('input[name="name"]').first();
         if (await nameInput.isVisible({ timeout: 5000 }).catch(() => false)) {
           // Safari has stricter autocomplete behavior
-          await nameInput.setAttribute('autocomplete', 'off');
-          await fillForm(page, {
-            name: testData.customer.name,
-            email: testData.customer.email,
+          await nameInput.evaluate((el) => el.setAttribute('autocomplete', 'off'));
+          await fillForm(page, {            email: testData.customer.email,
             phone: testData.customer.phone
           });
           

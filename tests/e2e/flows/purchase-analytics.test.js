@@ -676,22 +676,26 @@ test.describe('Purchase Performance and Analytics', () => {
           // Expected to fail
         }
         
+        
         // Trigger network timeout (mock)
-        await page.route('**/api/slow-endpoint', route => {
-          setTimeout(() => {
-            route.fulfill({
+        await page.route('**/api/slow-endpoint', async route => {
+          setTimeout(async () => {
+            await route.fulfill({
               status: 408,
+              contentType: 'application/json',
               body: JSON.stringify({ error: 'Request timeout' })
             });
-          }, 5000);
+          }, 1000); // Reduced timeout for faster testing
         });
         
+        // Use page context request instead of page.request for route interception
         try {
-          await page.request.get('/api/slow-endpoint');
+          const response = await page.evaluate(async () => {
+            return await fetch('/api/slow-endpoint').then(r => r.status);
+          });
         } catch (error) {
-          // Expected to timeout
-        }
-        
+          // Expected to fail/timeout
+        }        
         await page.waitForTimeout(1000);
         
         console.log('Captured error events:', errorEvents);
