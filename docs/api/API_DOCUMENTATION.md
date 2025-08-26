@@ -99,12 +99,344 @@ The registration system enables ticket purchasers to register attendee informati
 | `/api/registration/health` | GET | System health check | - |
 
 ### Key Features
-- JWT-based authentication
+- Registration token-based authentication
 - 72-hour registration window
 - Automatic email confirmations
 - Rate limiting (3 attempts per 15 minutes)
 - Input validation and XSS prevention
 - Atomic batch registration
+
+## Email API
+
+Handles newsletter subscriptions, email management, and webhook processing.
+
+### Newsletter Subscription
+
+#### Endpoint
+
+```
+POST /api/email/subscribe
+```
+
+Subscribes users to the festival newsletter with double opt-in confirmation.
+
+#### Request Format
+
+```json
+{
+  "email": "user@example.com",
+  "firstName": "John",
+  "lastName": "Doe",
+  "consentToMarketing": true
+}
+```
+
+#### Response Format
+
+##### Success Response (200)
+
+```json
+{
+  "success": true,
+  "message": "Subscription successful",
+  "subscriber": {
+    "email": "user@example.com",
+    "status": "subscribed",
+    "id": "subscriber-123"
+  }
+}
+```
+
+##### Error Responses
+
+```json
+{
+  "error": "Email is required",
+  "code": "MISSING_EMAIL"
+}
+```
+
+### Unsubscribe
+
+#### Endpoints
+
+```
+GET /api/email/unsubscribe?token=TOKEN
+POST /api/email/unsubscribe
+```
+
+Allows users to unsubscribe from the newsletter using secure tokens.
+
+### Brevo Webhook
+
+#### Endpoint
+
+```
+POST /api/email/brevo-webhook
+```
+
+Processes webhook events from Brevo email service for delivery tracking and bounce handling.
+
+## Payment API
+
+Handles Stripe payment processing with secure checkout sessions.
+
+### Create Checkout Session
+
+#### Endpoint
+
+```
+POST /api/payments/create-checkout-session
+```
+
+Creates a Stripe Checkout session for ticket purchases.
+
+#### Request Format
+
+```json
+{
+  "cartItems": [
+    {
+      "name": "Weekend Pass",
+      "price": 125.00,
+      "quantity": 1
+    }
+  ],
+  "customerInfo": {
+    "email": "customer@example.com",
+    "firstName": "Jane",
+    "lastName": "Smith"
+  }
+}
+```
+
+#### Response Format
+
+```json
+{
+  "checkoutUrl": "https://checkout.stripe.com/session/...",
+  "sessionId": "cs_test_...",
+  "orderId": "ORD-12345",
+  "totalAmount": 125.00
+}
+```
+
+### Stripe Webhook
+
+#### Endpoint
+
+```
+POST /api/payments/stripe-webhook
+```
+
+Processes Stripe webhook events for payment confirmation and order fulfillment.
+
+### Checkout Success
+
+#### Endpoint
+
+```
+GET /api/payments/checkout-success?session_id=SESSION_ID
+```
+
+Handles post-payment processing and redirects users to success page.
+
+## Tickets API
+
+Manages ticket operations including validation, details, and wallet passes.
+
+### Ticket Details
+
+#### Endpoint
+
+```
+GET /api/tickets/[ticketId]
+```
+
+Retrieves detailed information about a specific ticket.
+
+#### Response Format
+
+```json
+{
+  "ticketId": "TKT-ABC123",
+  "eventName": "A Lo Cubano Boulder Fest 2026",
+  "attendeeName": "John Doe",
+  "ticketType": "Weekend Pass",
+  "qrCode": "data:image/png;base64,...",
+  "status": "valid",
+  "eventDate": "2026-05-15T10:00:00-06:00",
+  "venue": {
+    "name": "Avalon Ballroom",
+    "address": "6185 Arapahoe Rd, Boulder, CO 80303"
+  }
+}
+```
+
+### Ticket Validation
+
+#### Endpoint
+
+```
+POST /api/tickets/validate
+```
+
+Validates QR codes for ticket authentication at the event.
+
+#### Request Format
+
+```json
+{
+  "qr_code": "TKT-ABC123-SECURE-CODE"
+}
+```
+
+#### Response Format
+
+```json
+{
+  "valid": true,
+  "ticket": {
+    "ticketId": "TKT-ABC123",
+    "attendeeName": "John Doe",
+    "ticketType": "Weekend Pass",
+    "scannedAt": "2026-05-15T18:30:00-06:00"
+  }
+}
+```
+
+### Ticket Registration
+
+#### Endpoint
+
+```
+POST /api/tickets/register
+```
+
+Registers attendee information for purchased tickets within the 72-hour window.
+
+#### Request Format
+
+```json
+{
+  "ticketId": "TKT-ABC123",
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john@example.com"
+}
+```
+
+### Apple Wallet Pass
+
+#### Endpoint
+
+```
+GET /api/tickets/apple-wallet/[ticketId]
+```
+
+Generates Apple Wallet pass for ticket storage on iOS devices.
+
+### Google Wallet Pass
+
+#### Endpoint
+
+```
+GET /api/tickets/google-wallet/[ticketId]
+```
+
+Generates Google Wallet pass for ticket storage on Android devices.
+
+## Admin API
+
+Secure administrative endpoints for festival management.
+
+### Admin Login
+
+#### Endpoint
+
+```
+POST /api/admin/login
+```
+
+Authenticates admin users with bcrypt password hashing and JWT session management.
+
+#### Request Format
+
+```json
+{
+  "username": "admin",
+  "password": "secure-password"
+}
+```
+
+#### Response Format
+
+```json
+{
+  "success": true,
+  "token": "jwt-token-here",
+  "expiresIn": 3600,
+  "user": {
+    "username": "admin",
+    "role": "administrator"
+  }
+}
+```
+
+### Admin Dashboard
+
+#### Endpoint
+
+```
+GET /api/admin/dashboard
+```
+
+Provides dashboard data including ticket sales, registrations, and system health.
+
+**Authentication Required**: Bearer token in Authorization header.
+
+#### Response Format
+
+```json
+{
+  "ticketSales": {
+    "total": 1250,
+    "thisWeek": 87,
+    "revenue": 156250.00
+  },
+  "registrations": {
+    "completed": 1180,
+    "pending": 70,
+    "completionRate": 0.944
+  },
+  "systemHealth": {
+    "database": "healthy",
+    "payments": "healthy",
+    "email": "healthy"
+  }
+}
+```
+
+### Registration Management
+
+#### Endpoint
+
+```
+GET /api/admin/registrations
+```
+
+Lists all ticket registrations with filtering and pagination options.
+
+**Authentication Required**: Bearer token in Authorization header.
+
+#### Query Parameters
+
+| Parameter | Type    | Description                    |
+|-----------|---------|--------------------------------|
+| `page`    | integer | Page number (default: 1)      |
+| `limit`   | integer | Items per page (default: 50)  |
+| `status`  | string  | Filter by status               |
+| `search`  | string  | Search by name or email        |
 
 ## Health & Monitoring APIs
 
@@ -1552,293 +1884,67 @@ GET /api/image-proxy/health
 }
 ```
 
-## Phase 3 API Integration Guide
+## API Endpoint Summary
 
-### Complete Gallery Integration
+### Email
+| Endpoint | Method | Description | Authentication | Rate Limit |
+|----------|--------|-------------|---------------|------------|
+| `/api/email/subscribe` | POST | Newsletter subscription | None | 5/min per IP |
+| `/api/email/unsubscribe` | GET/POST | Unsubscribe from newsletter | Token-based | None |
+| `/api/email/brevo-webhook` | POST | Process Brevo webhooks | Webhook signature | None |
 
-For a full-featured gallery implementation using all Phase 3 APIs:
+### Payments
+| Endpoint | Method | Description | Authentication | Rate Limit |
+|----------|--------|-------------|---------------|------------|
+| `/api/payments/create-checkout-session` | POST | Create Stripe checkout | None | 10/min per IP |
+| `/api/payments/stripe-webhook` | POST | Process payment webhooks | Webhook signature | None |
+| `/api/payments/checkout-success` | GET | Post-payment processing | None | None |
 
-```javascript
-class FestivalGalleryManager {
-  constructor(config = {}) {
-    this.baseUrl = config.baseUrl || "/api";
-    this.cache = new Map();
-    this.performanceMetrics = [];
-  }
+### Tickets
+| Endpoint | Method | Description | Authentication | Rate Limit |
+|----------|--------|-------------|---------------|------------|
+| `/api/tickets/[ticketId]` | GET | Ticket details | None | 30/min per IP |
+| `/api/tickets/validate` | POST | QR code validation | JWT token (QR code) | 20/min per IP |
+| `/api/tickets/register` | POST | Register ticket attendee | Registration token | 3/15min per IP |
+| `/api/tickets/apple-wallet/[ticketId]` | GET | Apple Wallet pass | None | 10/min per IP |
+| `/api/tickets/google-wallet/[ticketId]` | GET | Google Wallet pass | None | 10/min per IP |
 
-  // Initialize multi-year gallery
-  async initializeGallery() {
-    try {
-      // Mark start of gallery initialization
-      performance.mark("gallery-init-start");
+### Registration
+| Endpoint | Method | Description | Authentication | Rate Limit |
+|----------|--------|-------------|---------------|------------|
+| `/api/registration/[token]` | GET | Registration status | Registration token (URL) | None |
+| `/api/registration/batch` | POST | Batch registration | Registration token | 3/15min per IP |
+| `/api/registration/health` | GET | Registration health | None | None |
 
-      // Load available years
-      const yearsResponse = await fetch(`${this.baseUrl}/gallery/years`);
-      const yearsData = await yearsResponse.json();
+### Admin
+| Endpoint | Method | Description | Authentication | Rate Limit |
+|----------|--------|-------------|---------------|------------|
+| `/api/admin/login` | POST | Admin authentication | Credentials | 5 attempts/30min |
+| `/api/admin/dashboard` | GET | Dashboard data | JWT token | None |
+| `/api/admin/registrations` | GET | Registration management | JWT token | None |
 
-      // Build year navigation
-      this.renderYearNavigation(yearsData.years);
+### Gallery
+| Endpoint | Method | Description | Authentication | Rate Limit |
+|----------|--------|-------------|---------------|------------|
+| `/api/gallery` | GET | Festival photos/videos | None | 60/min per IP |
+| `/api/gallery/years` | GET | Multi-year navigation | None | 30/min per IP |
+| `/api/featured-photos` | GET | Curated photo selection | None | 30/min per IP |
 
-      // Load default year gallery
-      await this.loadGallery(yearsData.defaultYear);
+### Health & Monitoring
+| Endpoint | Method | Description | Authentication | Rate Limit |
+|----------|--------|-------------|---------------|------------|
+| `/api/health/check` | GET | General health status | None | None |
+| `/api/health/database` | GET | Database health | None | None |
+| `/api/health/e2e-database` | GET | E2E database health | E2E mode only | None |
 
-      // Load featured photos for hero section
-      await this.loadFeaturedPhotos();
+### Performance & Media
+| Endpoint | Method | Description | Authentication | Rate Limit |
+|----------|--------|-------------|---------------|------------|
+| `/api/performance-metrics` | POST | Performance data collection | None | 100/min per IP |
+| `/api/image-proxy/[fileId]` | GET | Image optimization | None | 100/min per IP |
+| `/api/hero-image/[pageId]` | GET | Page hero images | None | 60/min per IP |
 
-      performance.mark("gallery-init-end");
-      performance.measure(
-        "gallery-initialization",
-        "gallery-init-start",
-        "gallery-init-end",
-      );
-
-      // Send performance metrics
-      this.sendPerformanceMetrics();
-    } catch (error) {
-      console.error("Failed to initialize gallery:", error);
-      this.showFallbackContent();
-    }
-  }
-
-  // Load gallery for specific year
-  async loadGallery(year) {
-    try {
-      const folderId = this.getFolderIdForYear(year);
-      const response = await fetch(
-        `${this.baseUrl}/gallery?folderId=${folderId}`,
-      );
-      const galleryData = await response.json();
-
-      this.renderGallery(galleryData.items);
-      this.cache.set(`gallery-${year}`, galleryData);
-    } catch (error) {
-      console.error(`Failed to load gallery for ${year}:`, error);
-    }
-  }
-
-  // Load featured photos
-  async loadFeaturedPhotos(options = {}) {
-    try {
-      const params = new URLSearchParams({
-        limit: options.limit || 8,
-        size: options.size || "medium",
-        format: this.getSupportedFormat(),
-      });
-
-      const response = await fetch(`${this.baseUrl}/featured-photos?${params}`);
-      const featuredData = await response.json();
-
-      this.renderFeaturedPhotos(featuredData.photos);
-    } catch (error) {
-      console.error("Failed to load featured photos:", error);
-    }
-  }
-
-  // Detect optimal image format for browser
-  getSupportedFormat() {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1;
-    canvas.height = 1;
-
-    // Check AVIF support
-    if (canvas.toDataURL("image/avif").startsWith("data:image/avif")) {
-      return "avif";
-    }
-
-    // Check WebP support
-    if (canvas.toDataURL("image/webp").startsWith("data:image/webp")) {
-      return "webp";
-    }
-
-    return "jpeg";
-  }
-
-  // Create responsive image element
-  createResponsiveImage(photo, sizes = "(max-width: 768px) 100vw, 50vw") {
-    const picture = document.createElement("picture");
-
-    // AVIF source
-    const avifSource = document.createElement("source");
-    avifSource.srcset = `
-      ${this.getImageUrl(photo.id, { w: 400, format: "avif" })} 400w,
-      ${this.getImageUrl(photo.id, { w: 800, format: "avif" })} 800w,
-      ${this.getImageUrl(photo.id, { w: 1200, format: "avif" })} 1200w
-    `;
-    avifSource.sizes = sizes;
-    avifSource.type = "image/avif";
-    picture.appendChild(avifSource);
-
-    // WebP source
-    const webpSource = document.createElement("source");
-    webpSource.srcset = `
-      ${this.getImageUrl(photo.id, { w: 400, format: "webp" })} 400w,
-      ${this.getImageUrl(photo.id, { w: 800, format: "webp" })} 800w,
-      ${this.getImageUrl(photo.id, { w: 1200, format: "webp" })} 1200w
-    `;
-    webpSource.sizes = sizes;
-    webpSource.type = "image/webp";
-    picture.appendChild(webpSource);
-
-    // JPEG fallback
-    const img = document.createElement("img");
-    img.srcSet = `
-      ${this.getImageUrl(photo.id, { w: 400, format: "jpeg" })} 400w,
-      ${this.getImageUrl(photo.id, { w: 800, format: "jpeg" })} 800w,
-      ${this.getImageUrl(photo.id, { w: 1200, format: "jpeg" })} 1200w
-    `;
-    img.src = this.getImageUrl(photo.id, { w: 800, format: "jpeg" });
-    img.sizes = sizes;
-    img.alt = photo.name || photo.title || "Festival photo";
-    img.loading = "lazy";
-    picture.appendChild(img);
-
-    return picture;
-  }
-
-  // Generate optimized image URL
-  getImageUrl(fileId, options = {}) {
-    const params = new URLSearchParams({
-      w: options.w || 800,
-      format: options.format || "auto",
-      q: options.q || 75,
-      dpr: options.dpr || window.devicePixelRatio || 1,
-      ...options,
-    });
-
-    return `${this.baseUrl}/image-proxy/${fileId}?${params}`;
-  }
-
-  // Send performance metrics
-  async sendPerformanceMetrics() {
-    try {
-      const navigation = performance.getEntriesByType("navigation")[0];
-      const resources = performance
-        .getEntriesByType("resource")
-        .filter((entry) => entry.name.includes("/api/"));
-      const marks = performance.getEntriesByType("mark");
-      const measures = performance.getEntriesByType("measure");
-
-      const metricsData = {
-        metrics: {
-          navigation: this.formatNavigationTiming(navigation),
-          resources: resources.map(this.formatResourceTiming),
-          marks: marks.map(this.formatPerformanceEntry),
-          measures: measures.map(this.formatPerformanceEntry),
-        },
-        context: {
-          page: window.location.pathname,
-          userAgent: navigator.userAgent,
-          connection: this.getConnectionInfo(),
-          device: this.getDeviceInfo(),
-          timestamp: new Date().toISOString(),
-        },
-      };
-
-      await fetch(`${this.baseUrl}/performance-metrics`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(metricsData),
-      });
-    } catch (error) {
-      console.error("Failed to send performance metrics:", error);
-    }
-  }
-
-  // Format navigation timing for metrics
-  formatNavigationTiming(navigation) {
-    return {
-      type: navigation.entryType,
-      name: navigation.name,
-      startTime: navigation.startTime,
-      duration: navigation.duration,
-      entries: {
-        fetchStart: navigation.fetchStart,
-        domainLookupStart: navigation.domainLookupStart,
-        domainLookupEnd: navigation.domainLookupEnd,
-        connectStart: navigation.connectStart,
-        connectEnd: navigation.connectEnd,
-        requestStart: navigation.requestStart,
-        responseStart: navigation.responseStart,
-        responseEnd: navigation.responseEnd,
-        domContentLoadedEventStart: navigation.domContentLoadedEventStart,
-        domContentLoadedEventEnd: navigation.domContentLoadedEventEnd,
-        loadEventStart: navigation.loadEventStart,
-        loadEventEnd: navigation.loadEventEnd,
-      },
-    };
-  }
-
-  // Format resource timing for metrics
-  formatResourceTiming(resource) {
-    return {
-      name: resource.name,
-      entryType: resource.entryType,
-      startTime: resource.startTime,
-      duration: resource.duration,
-      transferSize: resource.transferSize,
-      encodedBodySize: resource.encodedBodySize,
-      decodedBodySize: resource.decodedBodySize,
-    };
-  }
-
-  // Format performance entry
-  formatPerformanceEntry(entry) {
-    return {
-      name: entry.name,
-      entryType: entry.entryType,
-      startTime: entry.startTime,
-      duration: entry.duration || 0,
-    };
-  }
-
-  // Get connection information
-  getConnectionInfo() {
-    const connection =
-      navigator.connection ||
-      navigator.mozConnection ||
-      navigator.webkitConnection;
-    return connection
-      ? {
-          effectiveType: connection.effectiveType,
-          downlink: connection.downlink,
-          rtt: connection.rtt,
-        }
-      : {};
-  }
-
-  // Get device information
-  getDeviceInfo() {
-    return {
-      memory: navigator.deviceMemory,
-      hardwareConcurrency: navigator.hardwareConcurrency,
-      platform: navigator.platform,
-      cookieEnabled: navigator.cookieEnabled,
-    };
-  }
-}
-
-// Initialize gallery on page load
-document.addEventListener("DOMContentLoaded", () => {
-  const galleryManager = new FestivalGalleryManager();
-  galleryManager.initializeGallery();
-});
-```
-
-### API Endpoint Summary
-
-| Endpoint                    | Purpose               | Phase | Key Features                      |
-| --------------------------- | --------------------- | ----- | --------------------------------- |
-| `/api/gallery`              | Main gallery data     | 1,2,3 | Google Drive integration, caching |
-| `/api/gallery/years`        | Multi-year navigation | 3     | Year filtering, metadata          |
-| `/api/featured-photos`      | Curated highlights    | 3     | Social media optimization         |
-| `/api/image-proxy/[fileId]` | Image optimization    | 1,2,3 | AVIF, WebP, responsive delivery   |
-| `/api/performance-metrics`  | Performance tracking  | 3     | Real-time monitoring              |
-| `/api/hero-image/[pageId]`  | Page-specific heroes  | 2,3   | Context-aware optimization        |
-| `/api/health/check`         | General health        | 3     | System-wide monitoring            |
-| `/api/health/database`      | Dev DB health         | 3     | Database connectivity             |
-| `/api/health/e2e-database`  | E2E DB health         | 3     | E2E test environment monitoring   |
-
-### Best Practices for Integration
+## Best Practices for Integration
 
 1. **Progressive Enhancement**: Always provide fallbacks for modern formats
 2. **Performance Monitoring**: Integrate metrics collection for continuous optimization
@@ -1849,37 +1955,23 @@ document.addEventListener("DOMContentLoaded", () => {
 7. **Mobile First**: Optimize for mobile devices and slower connections
 8. **Security**: Validate all inputs and sanitize outputs
 
-### Migration from Earlier Phases
+## Support and Troubleshooting
 
-#### Phase 1 → Phase 3
-
-- Update image URLs to use enhanced proxy with AVIF support
-- Implement performance metrics collection
-- Add multi-year gallery support
-
-#### Phase 2 → Phase 3
-
-- Integrate performance metrics API
-- Update service worker for AVIF format handling
-- Add featured photos endpoint integration
-
-### Support and Troubleshooting
-
-#### Common Issues
+### Common Issues
 
 1. **AVIF not loading**: Check browser support, ensure fallback chain is complete
 2. **Rate limiting**: Implement exponential backoff and request queuing
 3. **Large payload errors**: Reduce image sizes and implement pagination
 4. **Cache misses**: Verify cache keys and warming strategies
 
-#### Debug Endpoints
+### Debug Endpoints
 
 - `/api/image-proxy/health` - Image processing health status
 - `/api/health/check` - General API debugging information
 - `/api/health/e2e-database` - E2E database status (E2E mode only)
 - Browser DevTools Network tab - Monitor request/response patterns
 
-#### Performance Optimization Tips
+### Performance Optimization Tips
 
 - Preload critical images using `<link rel="preload">`
 - Use Intersection Observer for lazy loading

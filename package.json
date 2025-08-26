@@ -136,7 +136,7 @@
     "@axe-core/playwright": "^4.10.2",
     "@axe-core/puppeteer": "^4.8.0",
     "@faker-js/faker": "^9.9.0",
-    "@playwright/test": "^1.54.2",
+    "@playwright/test": "^1.55.0",
     "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
     "better-sqlite3": "^12.2.0",

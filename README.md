@@ -8,22 +8,45 @@ The official website for **A Lo Cubano Boulder Fest**, Boulder's premier Cuban s
 
 ### Prerequisites
 
-1. Copy `.env.example` to `.env.local` and add your Google Drive credentials
-2. Install Node.js dependencies: `npm install`
+- Node.js 18+ and npm
+- SQLite 3.9.0+ (for database migrations with JSON support)
+- Modern web browser (Chrome, Firefox, Safari, Edge)
 
-### Start the server
+### Installation
 
-```bash
-# Full development server with API support
-npm start
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-org/alocubano.boulderfest.git
+   cd alocubano.boulderfest
+   ```
 
-# Alternative commands
-npm run start-vercel-dev    # Same as npm start
-./scripts/start.sh          # Legacy script wrapper
-npm run serve:simple        # Simple HTTP server (no API functions)
-```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-Then open: **http://localhost:3000**
+3. **Environment setup**
+   ```bash
+   # Copy environment template
+   cp .env.example .env.local
+   
+   # Edit .env.local with your configuration
+   # See INSTALLATION.md for detailed setup instructions
+   ```
+
+4. **Start the development server**
+   ```bash
+   # Full development server with API support (recommended)
+   npm start
+   
+   # Alternative: local development without ngrok
+   npm run start:local
+   
+   # Simple HTTP server (no API functions)
+   npm run serve:simple
+   ```
+
+5. **Open in browser**: http://localhost:3000
 
 ## 📅 Festival Information
 
@@ -129,28 +152,14 @@ alocubano.boulderfest/
 
 ## 🛠️ Development
 
-### Requirements
-
-- Node.js 18+ and npm
-- Modern web browser (Chrome, Firefox, Safari, Edge)
-- SQLite 3.9.0+ (for database migrations with JSON support)
-  - JSON1 extension required for SQLite versions below 3.38.0
-
-### Running Locally
-
-1. Clone the repository
-2. Navigate to project directory
-3. Run `npm install` to install dependencies
-4. Run `npm start` (recommended) or `./scripts/start.sh`
-5. Open http://localhost:3000 in your browser
-
 ### Available Scripts
 
 - `npm start` - Start Vercel development server with full API support (port 3000)
-- `npm run start-vercel-dev` - Same as npm start
+- `npm run start:local` - Local development without ngrok tunnel
 - `npm run serve:simple` - Simple HTTP server without API functions (port 8000)
-- `npm test` - Run streamlined test suite (13 tests, ~234ms)
+- `npm test` - Run streamlined test suite
 - `npm run test:all` - Run all tests including E2E validation
+- `npm run test:e2e` - Run Playwright end-to-end tests
 - `npm run lint` - Run ESLint and HTMLHint
 - `npm run build` - Build for production
 - `npm run prebuild` - Generate cache files for gallery
@@ -162,28 +171,34 @@ alocubano.boulderfest/
 We've achieved a **96% complexity reduction** by eliminating complex test infrastructure in favor of radical simplicity:
 
 - **419 total lines** vs 11,411 lines previously (96% reduction)
-- **13 essential tests** covering critical API contracts
-- **234ms execution time** for complete test suite
+- **Essential tests** covering critical API contracts
+- **Fast execution** for complete test suite
 - **Zero abstractions** - every test readable by any JavaScript developer
 
 ### Quick Start
 
 ```bash
 # Run all tests
-npm test                    # 13 tests, ~234ms
+npm test                    # Run test suite
 
 # Development mode
 npm run test:simple:watch   # Watch mode
 
 # With coverage
 npm run test:coverage       # Coverage report
+
+# E2E testing
+npm run test:e2e           # Playwright end-to-end tests
+npm run test:e2e:ui        # Interactive UI mode
 ```
 
 ### Test Structure
 
-- **api-contracts.test.js** (5 tests) - API contract validation
-- **basic-validation.test.js** (4 tests) - Input validation and security
-- **smoke-tests.test.js** (4 tests) - Basic functionality verification
+- **api-contracts.test.js** - API contract validation
+- **basic-validation.test.js** - Input validation and security
+- **smoke-tests.test.js** - Basic functionality verification
+- **registration-api.test.js** - Registration API contracts
+- **registration-flow.test.js** - Registration flow tests
 
 ### Quality Gates
 
@@ -271,6 +286,11 @@ npm run migrate:e2e:reset   # Reset E2E migrations completely
 - [Registration API](/docs/api/REGISTRATION_API.md) - Ticket registration system endpoints
 - [Async Initialization Guide](/docs/ASYNC_INITIALIZATION_GUIDE.md) - Database service patterns
 - [Testing Strategy](/docs/testing/TESTING_STRATEGY.md) - Streamlined testing approach
+
+### Setup Documentation
+- [Installation Guide](INSTALLATION.md) - Complete setup instructions
+- [Security Policy](SECURITY.md) - Security practices and vulnerability reporting
+- [Changelog](CHANGELOG.md) - Version history and release notes
 
 ### Key Features Documentation
 - **Registration System**: JWT-based ticket registration with 72-hour window
