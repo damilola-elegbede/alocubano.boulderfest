@@ -482,9 +482,9 @@ async function showClearCartConfirmation(cartState) {
             </h3>
             <p style="margin-bottom: var(--space-xl); color: var(--color-text); line-height: 1.4;">
                 This will remove all ${escapeHtml(totalItems.toString())} item${totalItems !== 1 ? 's' : ''} from your cart 
-                ${ticketCount > 0 ? `(${escapeHtml(ticketCount.toString())} ticket${ticketCount !== 1 ? 's' : ''})` : ''}
+                ${ticketCount > 0 ? '(' + escapeHtml(ticketCount.toString()) + ' ticket' + (ticketCount !== 1 ? 's' : '') + ')' : ''}
                 ${ticketCount > 0 && donationCount > 0 ? ' and ' : ''}
-                ${donationCount > 0 ? `(${escapeHtml(donationCount.toString())} donation${donationCount !== 1 ? 's' : ''})` : ''}.
+                ${donationCount > 0 ? '(' + escapeHtml(donationCount.toString()) + ' donation' + (donationCount !== 1 ? 's' : '') + ')' : ''}.
                 This action cannot be undone.
             </p>
             <div class="confirmation-buttons" style="display: flex; gap: var(--space-md); justify-content: center;">
@@ -511,7 +511,7 @@ async function showClearCartConfirmation(cartState) {
                     transition: all 0.2s;
                 ">Clear Cart</button>
             </div>
-        `;
+        `);
 
         backdrop.appendChild(modal);
         document.body.appendChild(backdrop);
