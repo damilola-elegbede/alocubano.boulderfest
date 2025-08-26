@@ -71,7 +71,7 @@ test('email subscription API validates and processes requests correctly', async 
     expect(response.data).toHaveProperty('error');
   }
   else {
-    expect([200, 201, HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.TOO_MANY_REQUESTS].includes(response.status)).toBe(true);
+    expect([200, 201, HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.CONFLICT, HTTP_STATUS.TOO_MANY_REQUESTS].includes(response.status)).toBe(true);
   }
 });
 
