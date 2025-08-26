@@ -73,10 +73,16 @@ We provide security updates for the following versions:
 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
 'X-Content-Type-Options': 'nosniff',
 'X-Frame-Options': 'DENY',
-'X-XSS-Protection': '1; mode=block',
 'Referrer-Policy': 'strict-origin-when-cross-origin',
-'Content-Security-Policy': "default-src 'self'",
-'Permissions-Policy': 'geolocation=(), microphone=(), camera=()'
+'Content-Security-Policy': [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://js.stripe.com",
+  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://m.stripe.network",
+  "connect-src 'self' https://api.stripe.com https://m.stripe.network",
+  "img-src 'self' data:",
+  "style-src 'self' 'unsafe-inline'"
+].join('; '),
+'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), browsing-topics=()'
 ```
 
 ## Vulnerability Reporting

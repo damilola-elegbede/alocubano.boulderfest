@@ -6,6 +6,7 @@
 import { test, expect } from '@playwright/test';
 import { TestDataFactory } from '../helpers/test-data-factory.js';
 import { DatabaseCleanup } from '../helpers/database-cleanup.js';
+import { testScenarios } from '../helpers/scenarios.js';
 
 test.describe('Payment Failure Scenarios', () => {
   let testDataFactory;

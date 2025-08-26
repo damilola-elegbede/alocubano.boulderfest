@@ -275,7 +275,9 @@ Features:
 - **Reliable**: Direct API testing with minimal mocking
 
 ### Test Architecture
-- **3 test files**: api-contracts.test.js, basic-validation.test.js, smoke-tests.test.js
+- **Test suites**:
+  - Unit/contract (Vitest): api-contracts.test.js, basic-validation.test.js, smoke-tests.test.js, registration-api.test.js, registration-flow.test.js (24 tests)
+  - E2E (Playwright): tests/e2e/flows/*.test.js, tests/e2e/smoke/*.spec.js (15+ tests)
 - **419 total lines**: Massive reduction from 11,411 lines (96% complexity reduction)
 - **Zero test frameworks**: No complex test builders, managers, or abstractions
 - **Real API testing**: Tests interact with actual endpoints and services

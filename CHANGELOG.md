@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Complete installation guide with service configuration steps
 
 ### Changed
-- Standardized test count references across all documentation (17 tests, ~395ms)
+- Standardized test count references across all documentation (24 tests)
 - Updated API endpoint listings in CLAUDE.md to include registration endpoints
 - Improved project structure documentation with accurate test file descriptions
 
@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Missing critical documentation file references
 - Incomplete environment setup instructions
 
-## [1.0.0] - 2025-01-XX (Current)
+## [1.0.0] - 2025-01-26
 
 ### Added
 - **Core Website Features**
@@ -55,8 +55,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Testing & Quality**
   - Streamlined test suite with 96% complexity reduction
-  - 17 essential tests covering critical API contracts (419 lines vs 11,411 previously)
-  - 395ms execution time for complete test suite
+  - 24 essential tests covering critical API contracts (419 lines vs 11,411 previously)
+  - Typical execution time: ~1-2s (machine/CI dependent)
   - Playwright E2E testing with browser automation
   - Zero abstractions - readable by any JavaScript developer
 

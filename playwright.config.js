@@ -75,8 +75,8 @@ export default defineConfig({
     // Browser viewport size
     viewport: { width: 1280, height: 720 },
 
-    // Ignore HTTPS errors for local testing
-    ignoreHTTPSErrors: true,
+    // Ignore HTTPS errors only when explicitly allowed (e.g., local self-signed certs)
+    ignoreHTTPSErrors: process.env.ALLOW_INSECURE === 'true',
 
     // User agent suffix to identify Playwright tests
     userAgent: 'Playwright/E2E-Test',

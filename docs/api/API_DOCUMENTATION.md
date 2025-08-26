@@ -1886,39 +1886,60 @@ GET /api/image-proxy/health
 
 ## API Endpoint Summary
 
+### Email
 | Endpoint | Method | Description | Authentication | Rate Limit |
 |----------|--------|-------------|---------------|------------|
-| **Email** |
 | `/api/email/subscribe` | POST | Newsletter subscription | None | 5/min per IP |
 | `/api/email/unsubscribe` | GET/POST | Unsubscribe from newsletter | Token-based | None |
 | `/api/email/brevo-webhook` | POST | Process Brevo webhooks | Webhook signature | None |
-| **Payments** |
+
+### Payments
+| Endpoint | Method | Description | Authentication | Rate Limit |
+|----------|--------|-------------|---------------|------------|
 | `/api/payments/create-checkout-session` | POST | Create Stripe checkout | None | 10/min per IP |
 | `/api/payments/stripe-webhook` | POST | Process payment webhooks | Webhook signature | None |
 | `/api/payments/checkout-success` | GET | Post-payment processing | None | None |
-| **Tickets** |
+
+### Tickets
+| Endpoint | Method | Description | Authentication | Rate Limit |
+|----------|--------|-------------|---------------|------------|
 | `/api/tickets/[ticketId]` | GET | Ticket details | None | 30/min per IP |
-| `/api/tickets/validate` | POST | QR code validation | None | 20/min per IP |
-| `/api/tickets/register` | POST | Register ticket attendee | None | 3/15min per IP |
+| `/api/tickets/validate` | POST | QR code validation | JWT token (QR code) | 20/min per IP |
+| `/api/tickets/register` | POST | Register ticket attendee | Registration token | 3/15min per IP |
 | `/api/tickets/apple-wallet/[ticketId]` | GET | Apple Wallet pass | None | 10/min per IP |
 | `/api/tickets/google-wallet/[ticketId]` | GET | Google Wallet pass | None | 10/min per IP |
-| **Registration** |
-| `/api/registration/[token]` | GET | Registration status | JWT token | None |
-| `/api/registration/batch` | POST | Batch registration | None | 3/15min per IP |
+
+### Registration
+| Endpoint | Method | Description | Authentication | Rate Limit |
+|----------|--------|-------------|---------------|------------|
+| `/api/registration/[token]` | GET | Registration status | Registration token (URL) | None |
+| `/api/registration/batch` | POST | Batch registration | Registration token | 3/15min per IP |
 | `/api/registration/health` | GET | Registration health | None | None |
-| **Admin** |
+
+### Admin
+| Endpoint | Method | Description | Authentication | Rate Limit |
+|----------|--------|-------------|---------------|------------|
 | `/api/admin/login` | POST | Admin authentication | Credentials | 5 attempts/30min |
 | `/api/admin/dashboard` | GET | Dashboard data | JWT token | None |
 | `/api/admin/registrations` | GET | Registration management | JWT token | None |
-| **Gallery** |
+
+### Gallery
+| Endpoint | Method | Description | Authentication | Rate Limit |
+|----------|--------|-------------|---------------|------------|
 | `/api/gallery` | GET | Festival photos/videos | None | 60/min per IP |
 | `/api/gallery/years` | GET | Multi-year navigation | None | 30/min per IP |
 | `/api/featured-photos` | GET | Curated photo selection | None | 30/min per IP |
-| **Health & Monitoring** |
+
+### Health & Monitoring
+| Endpoint | Method | Description | Authentication | Rate Limit |
+|----------|--------|-------------|---------------|------------|
 | `/api/health/check` | GET | General health status | None | None |
 | `/api/health/database` | GET | Database health | None | None |
 | `/api/health/e2e-database` | GET | E2E database health | E2E mode only | None |
-| **Performance & Media** |
+
+### Performance & Media
+| Endpoint | Method | Description | Authentication | Rate Limit |
+|----------|--------|-------------|---------------|------------|
 | `/api/performance-metrics` | POST | Performance data collection | None | 100/min per IP |
 | `/api/image-proxy/[fileId]` | GET | Image optimization | None | 100/min per IP |
 | `/api/hero-image/[pageId]` | GET | Page hero images | None | 60/min per IP |

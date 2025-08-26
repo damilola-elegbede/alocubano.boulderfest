@@ -35,14 +35,14 @@ function validateEnvironment() {
       console.error(`❌ SAFETY CHECK FAILED: Cannot run E2E tests against ${prohibited} URL`);
       console.error(`   Current URL: ${baseUrl}`);
       console.error(`   Set TEST_BASE_URL or PLAYWRIGHT_BASE_URL to a test environment`);
-      process.exit(1);
+      throw new Error(`Safety check failed for base URL: ${baseUrl}`);
     }
   }
   
   // Ensure we're in test mode
   if (process.env.NODE_ENV === 'production') {
     console.error('❌ Cannot run E2E tests in production mode');
-    process.exit(1);
+    throw new Error('NODE_ENV must not be production for E2E tests');
   }
   
   console.log('✅ Environment validation passed');
