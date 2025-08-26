@@ -9,7 +9,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "prebuild": "node ./scripts/generate-gallery-cache.js && node ./scripts/generate-featured-photos.js",
+    "prebuild": "echo 'Skipping gallery cache generation for Vercel deployment'",
     "build": "npm run verify-structure && echo 'Build process completed'",
     "postbuild": "node ./scripts/verify-structure.js",
     "cache-warm": "node ./api/cache-warm.js",
