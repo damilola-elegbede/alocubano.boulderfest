@@ -2,156 +2,296 @@
 
 ## Overview
 
-This document outlines the streamlined testing strategy implemented for the A Lo Cubano Boulder Fest website, emphasizing simplicity, speed, and maintainability with a single unified test suite.
+This document outlines the comprehensive testing strategy implemented for the A Lo Cubano Boulder Fest website, emphasizing simplicity, speed, and maintainability with streamlined unit tests and comprehensive end-to-end testing.
 
-## Streamlined Test Architecture
+## Test Architecture
 
-### Single Test Suite Implementation
+### Dual Testing Approach
 
 ```
-Streamlined Tests (13 tests in 234ms) - 96% COMPLEXITY REDUCTION ACHIEVED
-├── API Contract Tests (5 tests)
-├── Basic Validation Tests (4 tests)  
-└── Smoke Tests (4 tests)
+Testing Infrastructure (2-tier approach)
+├── Unit Test Suite (26 tests) - Vitest - 419 lines
+│   ├── API Contract Tests (7 tests)
+│   ├── Basic Validation Tests (8 tests)  
+│   ├── Smoke Tests (3 tests)
+│   ├── Registration API Tests (5 tests)
+│   └── Registration Flow Tests (3 tests)
+├── E2E Test Suite - Playwright - Comprehensive browser automation
+│   ├── Browser Coverage (Chrome, Firefox, Safari, Edge)
+│   ├── Multi-Device Testing (Desktop, Mobile, Tablet)
+│   ├── Real User Workflows (Purchase, Registration flows)
+│   └── Automated Database Management (Isolated test environment)
 
-Execution: Single command (npm test)
-Performance: 234ms total duration  
-Memory: <50MB usage
-Files: 3 test files (419 total lines vs 11,411 previously)
+Execution: npm test (unit) | npm run test:e2e (E2E)
+Performance: <1 second (unit) | 2-5 minutes (E2E)
+Complexity: 96% reduction achieved (419 vs 11,411 lines previously)
 ```
 
 ## Test Categories
 
-### Streamlined Test Suite (100% of testing)
+### Unit Test Suite (26 Tests - 100% of API testing)
 
-- **Location**: `tests/` (3 files total)
-- **Test Count**: 13 tests across all categories
+- **Location**: `tests/` (5 test files)
+- **Test Count**: 26 tests across all categories
 - **Coverage Target**: API contracts and critical functionality
-- **Execution Time**: 234ms (achieved 96% reduction from complex framework)
+- **Execution Time**: Fast completion (typically under 1 second)
 - **Memory Usage**: <50MB
-- **Command**: `npm test` (single command for all testing)
+- **Command**: `npm test` (single command for all unit testing)
 - **Complexity**: 419 total lines vs 11,411 lines previously (96% reduction)
 
 ### Test File Breakdown
 
 1. **API Contract Tests** (`tests/api-contracts.test.js`)
-   - 5 tests covering API functionality
-   - Focus: Essential API endpoints and contracts
+   - **7 tests** covering core API functionality
+   - Focus: Payment, email, tickets, gallery, admin, registration contracts
+   - Validates response structures and status codes
 
 2. **Basic Validation Tests** (`tests/basic-validation.test.js`)
-   - 4 tests for core functionality validation
-   - Focus: Input validation and security
+   - **8 tests** for input validation and security
+   - Focus: SQL injection prevention, XSS protection, input sanitization
+   - Includes CI-conditional tests for business logic validation
 
 3. **Smoke Tests** (`tests/smoke-tests.test.js`)
-   - 4 tests for system health checks
-   - Focus: Critical system availability
+   - **3 tests** for system health checks
+   - Focus: Health endpoints, core user journeys, security readiness
 
-### End-to-End Tests (Separate E2E Suite)
+4. **Registration API Tests** (`tests/registration-api.test.js`)
+   - **5 tests** for registration system unit testing
+   - Focus: JWT validation, input formats, XSS sanitization, batch limits
 
-- **Location**: `tests/e2e/` (Playwright-based)
-- **Focus**: Complete user workflows
-- **Tools**: Playwright with multiple browsers
-- **Execution**: Separate from unit test suite
+5. **Registration Flow Tests** (`tests/registration-flow.test.js`)
+   - **3 tests** for registration workflow validation
+   - Focus: End-to-end registration, batch operations, performance testing
+
+### End-to-End Test Suite (Playwright)
+
+#### Infrastructure Features
+- **Location**: `tests/e2e/` with global setup/teardown
+- **Browser Coverage**: Chrome, Firefox, Safari (WebKit), Edge
+- **Device Testing**: Desktop, mobile (iPhone, Pixel), tablet (iPad)
+- **Execution Environment**: Isolated test database with safety controls
+
+#### E2E Database Management
+- **Automated Setup**: `npm run db:e2e:setup` - Creates isolated test environment
+- **Schema Validation**: `npm run db:e2e:validate` - Verifies database integrity
+- **Test Data Management**: Automatic cleanup with `%@e2e-test.%` patterns
+- **Migration Isolation**: Separate tracking from development database
+- **Health Monitoring**: Dedicated `/api/health/e2e-database` endpoint
+
+#### Safety Features
+- **Environment Controls**: Requires `E2E_TEST_MODE=true` or `ENVIRONMENT=e2e-test`
+- **Database URL Validation**: Warns if database doesn't contain "test" or "staging"
+- **Production Protection**: Cannot run against production environments
+- **Automatic Cleanup**: Removes test data after completion
+
+#### Playwright Configuration
+- **Global Setup**: Browser warming, database initialization, server startup
+- **Global Teardown**: Database cleanup, server shutdown, resource verification
+- **Multi-browser**: Parallel execution across browser engines
+- **CI Optimization**: Headless mode, artifact collection, result reporting
 
 ## Quality Gates
 
 ### Pre-commit Requirements
 
 - All linting passes (ESLint, HTMLHint)
-- Streamlined tests pass (13 tests in <5 seconds)
+- Unit tests pass (26 tests)
 - No new test failures introduced
+- Complexity check passes
 
 ### Pre-push Requirements
 
-- Full streamlined test suite passes (13 tests in 234ms)
-- E2E tests pass (separate from unit tests)
-- Performance benchmarks met (sub-second execution)
+- Full unit test suite passes (26 tests)
+- E2E tests pass (separate validation)
+- Performance benchmarks met
 - Zero flaky tests detected
 
 ### CI/CD Requirements
 
 - Multi-node version compatibility (18.x, 20.x)
-- Streamlined test execution under 5 seconds
+- Unit test execution under 5 seconds
+- E2E test execution under 10 minutes
 - API contract validation
-- Performance regression detection (execution time monitoring)
+- Performance regression detection
 
 ## Test Execution Commands
 
-| Command                              | Purpose                  | When to Use        | Expected Time |
-| ------------------------------------ | ------------------------ | ------------------ | ------------- |
-| `npm test`                           | Run all 13 tests        | Always             | 234ms         |
-| `npm run test:simple`                | Same as npm test         | Development        | 234ms         |
-| `npm run test:simple:watch`          | Watch mode               | Development        | Continuous    |
-| `npm run test:coverage`              | Generate coverage report | Quality check      | ~500ms        |
-| `npm run test:e2e`                   | End-to-end tests         | Pre-deployment     | ~2-5 minutes  |
+| Command                              | Purpose                  | Test Count | Expected Time | When to Use        |
+| ------------------------------------ | ------------------------ | ---------- | ------------- | ------------------ |
+| `npm test`                           | Run all unit tests       | 26 tests   | <1 second     | Always             |
+| `npm run test:simple`                | Same as npm test         | 26 tests   | <1 second     | Development        |
+| `npm run test:simple:watch`          | Watch mode               | 26 tests   | Continuous    | Development        |
+| `npm run test:coverage`              | Generate coverage report | 26 tests   | ~2 seconds    | Quality check      |
+| `npm run test:e2e`                   | End-to-end tests         | Variable   | 2-5 minutes   | Pre-deployment     |
+| `npm run test:e2e:ui`                | Interactive E2E mode     | Variable   | Manual        | E2E development    |
+| `npm run test:all`                   | Unit + E2E tests         | All        | 3-6 minutes   | Full validation    |
+
+## E2E Testing Infrastructure
+
+### Database Setup and Isolation
+
+#### Automated E2E Database Management
+```bash
+# Complete E2E environment setup
+npm run db:e2e:setup        # Creates tables, inserts test data
+npm run db:e2e:validate     # Validates schema integrity
+npm run db:e2e:clean        # Removes only test data
+npm run db:e2e:reset        # Full reset and recreation
+
+# Migration management
+npm run migrate:e2e:up      # Apply E2E migrations
+npm run migrate:e2e:status  # Check migration status
+npm run migrate:e2e:reset   # Reset all E2E migrations
+```
+
+#### Health Monitoring
+```bash
+# Monitor E2E database health
+curl -f http://localhost:3000/api/health/e2e-database | jq '.'
+
+# Automated health validation in tests
+await page.goto('/api/health/e2e-database');
+const health = await page.locator('body').textContent();
+expect(JSON.parse(health).status).toBe('healthy');
+```
+
+### Global Setup and Teardown
+
+#### Global Setup (`tests/e2e/global-setup.js`)
+1. **Environment Validation**: Prevents running against production
+2. **Database Setup**: Initializes E2E test database
+3. **Server Management**: Starts local test server if needed
+4. **Browser Warming**: Pre-loads browser engines for faster tests
+
+#### Global Teardown (`tests/e2e/global-teardown.js`)
+1. **Server Shutdown**: Graceful server termination
+2. **Database Cleanup**: Removes test data (unless `KEEP_TEST_DATA=true`)
+3. **Process Verification**: Checks for leaked browser processes
+4. **Report Generation**: Creates HTML reports and result summaries
+
+### Multi-Browser and Multi-Device Testing
+
+#### Browser Matrix
+- **Chrome (Chromium)**: Primary testing browser, latest features
+- **Firefox**: Cross-engine compatibility, different rendering engine
+- **Safari (WebKit)**: Apple ecosystem compatibility
+- **Edge**: Windows compatibility (CI only)
+
+#### Device Viewports
+- **Desktop**: 1280x720 standard resolution
+- **Mobile**: iPhone 13, Pixel 5 viewports
+- **Tablet**: iPad Mini viewport
+- **High-DPI**: Device pixel ratio testing up to 3.0
 
 ## Performance Benchmarks
 
-### Test Execution Performance
+### Unit Test Performance
 
-- **Target Execution Time**: <5 seconds total
-- **Baseline Performance**: 234ms (13 tests)
-- **Memory Usage**: <256MB
-- **CI Performance**: Same performance in CI/CD
-- **Regression Detection**: Execution time monitoring
+- **Target Execution Time**: <1 second total
+- **Baseline Performance**: Typically completes in milliseconds
+- **Memory Usage**: <50MB for entire test suite
+- **CI Performance**: Same performance in CI/CD environments
+- **Regression Detection**: Execution time monitoring in CI
 
-### API Response Performance (tested in streamlined suite)
+### E2E Test Performance
 
-- **API contract validation**: Included in 13 tests
-- **Response time validation**: Built into tests
-- **Memory efficiency**: <256MB for entire test suite
+- **Setup Time**: <30 seconds for complete environment
+- **Test Execution**: 2-5 minutes depending on test scope
+- **Parallel Execution**: 2-4 workers depending on environment
+- **Resource Cleanup**: <10 seconds for full teardown
+- **Browser Startup**: Pre-warmed engines reduce latency
+
+### API Response Performance (tested in unit suite)
+
+- **API contract validation**: Included in 26 unit tests
+- **Response time validation**: Built into contract tests
+- **Health check performance**: Sub-100ms target for health endpoints
+- **Database query performance**: Migration and schema validation timing
 
 ### Streamlined Test Benefits
 
-- **Single Command**: `npm test` for all testing
-- **Fast Feedback**: 255ms execution provides instant feedback
-- **Low Memory**: <256MB usage enables CI/CD efficiency
-- **Simple Maintenance**: 3 files, 13 tests total
+- **Single Command**: `npm test` for all unit testing
+- **Fast Feedback**: Immediate results for development workflow
+- **Low Resource Usage**: Minimal CI/CD resource consumption
+- **Simple Maintenance**: 5 test files, 26 tests total
+- **Comprehensive E2E**: Full browser automation when needed
 
-## Accessibility Requirements
+## Accessibility and Compliance Testing
 
-### WCAG Compliance
+### WCAG Compliance (via E2E tests)
 
-- **Level**: AA compliance required
-- **Testing**: Automated accessibility tests
+- **Level**: AA compliance validation
+- **Automated Testing**: Axe-core integration with Playwright
 - **Manual Testing**: Periodic screen reader validation
-- **Focus Management**: All interactive elements accessible via keyboard
+- **Focus Management**: Keyboard navigation testing
+- **Color Contrast**: Automated contrast ratio validation
+
+### E2E Accessibility Integration
+```javascript
+// Accessibility testing in E2E flows
+import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+
+test('gallery page meets accessibility standards', async ({ page }) => {
+  await page.goto('/gallery');
+  
+  const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
+  
+  expect(accessibilityScanResults.violations).toEqual([]);
+});
+```
 
 ## Maintenance Procedures
 
 ### Weekly
-
-- Monitor test execution time (should remain ~234ms)
-- Verify all 13 tests still pass consistently
-- Check for any performance regression in execution
+- Monitor unit test execution time (should remain <1 second)
+- Verify all 26 unit tests pass consistently
+- Check E2E test success rate and execution time
+- Review any new test failures or flaky tests
 
 ### Monthly
-
-- Update test dependencies (minimal due to simple setup)
-- Review test file organization (3 files only)
-- Validate streamlined architecture benefits
+- Update test dependencies (Vitest, Playwright)
+- Review test file organization and structure
+- Validate E2E database management automation
+- Assess test coverage and identify gaps
 
 ### Quarterly
-
-- Comprehensive accessibility audit (via E2E tests)
-- Performance baseline reassessment (execution time trends)
-- Evaluate if additional streamlined tests needed
+- Comprehensive accessibility audit via E2E tests
+- Performance baseline reassessment
+- Browser compatibility testing updates
+- E2E test infrastructure optimization
 
 ## Migration from Complex Test Suite
 
 ### Before Streamlining
-
 - Multiple test frameworks and configurations
 - Complex test environment setup
-- Longer execution times
-- Higher memory usage
-- Difficult maintenance
+- Longer execution times and higher resource usage
+- Difficult maintenance and debugging
+- Over-engineered abstractions
 
 ### After Streamlining (Current)
+- **Single framework**: Vitest for unit tests, Playwright for E2E
+- **Simple configuration**: Minimal config files
+- **Fast execution**: <1 second for 26 unit tests, 2-5 minutes for E2E
+- **Low resource usage**: <50MB for unit tests
+- **Easy maintenance**: 5 unit test files, automated E2E infrastructure
+- **Clear separation**: Unit tests for API contracts, E2E for user workflows
 
-- **Single framework**: Vitest only
-- **Simple configuration**: One config file
-- **Fast execution**: 255ms for 13 tests
-- **Low memory**: <256MB usage
-- **Easy maintenance**: 3 test files total
-- **Single command**: `npm test` does everything
+## Integration with Development Workflow
+
+### Developer Experience
+1. **Fast Feedback Loop**: Unit tests provide immediate validation
+2. **Watch Mode**: `npm run test:simple:watch` for continuous testing
+3. **Pre-commit Hooks**: Automatic test execution before commits
+4. **E2E on Demand**: Full browser testing when needed
+5. **Health Monitoring**: Real-time database and API health checks
+
+### CI/CD Integration
+1. **Parallel Execution**: Unit and E2E tests can run in parallel
+2. **Artifact Collection**: Screenshots, videos, and HTML reports
+3. **Environment Isolation**: Separate databases for different test types
+4. **Quality Gates**: Prevent deployment on test failures
+5. **Performance Monitoring**: Track test execution trends
+
+This comprehensive testing strategy ensures reliable, fast, and maintainable testing for the A Lo Cubano Boulder Fest website, combining the speed of streamlined unit tests with the thoroughness of comprehensive end-to-end browser automation.

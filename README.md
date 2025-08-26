@@ -179,7 +179,7 @@ We've achieved a **96% complexity reduction** by eliminating complex test infras
 
 ```bash
 # Run all tests
-npm test                    # Run test suite
+npm test                    # Run 26 essential unit tests
 
 # Development mode
 npm run test:simple:watch   # Watch mode
@@ -194,16 +194,25 @@ npm run test:e2e:ui        # Interactive UI mode
 
 ### Test Structure
 
-- **api-contracts.test.js** - API contract validation
-- **basic-validation.test.js** - Input validation and security
-- **smoke-tests.test.js** - Basic functionality verification
-- **registration-api.test.js** - Registration API contracts
-- **registration-flow.test.js** - Registration flow tests
+#### Unit Test Suite (26 Tests)
+
+- **api-contracts.test.js** (7 tests) - API contract validation
+- **basic-validation.test.js** (8 tests) - Input validation and security
+- **smoke-tests.test.js** (3 tests) - Basic functionality verification
+- **registration-api.test.js** (5 tests) - Registration API unit tests
+- **registration-flow.test.js** (3 tests) - Registration flow tests
+
+#### E2E Test Suite (Playwright)
+
+- **Comprehensive browser testing** - Chrome, Firefox, Safari, Edge
+- **Multi-device testing** - Desktop, mobile, tablet viewports
+- **Real user workflows** - Complete purchase and registration flows
+- **Automated database setup** - Isolated E2E test environment
 
 ### Quality Gates
 
 - **Simple execution**: Single command `npm test` 
-- **Fast feedback**: Complete suite runs in under 1 second
+- **Fast feedback**: Complete unit test suite runs quickly
 - **Real API testing**: Direct interaction with actual endpoints
 - **No mocking complexity**: Tests use real services and databases
 
@@ -246,6 +255,9 @@ npm run migrate:e2e:up      # Run E2E database migrations
 npm run migrate:e2e:status  # Check E2E migration status
 npm run migrate:e2e:validate # Validate E2E schema integrity
 npm run migrate:e2e:reset   # Reset E2E migrations completely
+
+# E2E Database Health Monitoring
+curl -f http://localhost:3000/api/health/e2e-database | jq '.'
 ```
 
 **Safety Features:**
@@ -298,6 +310,7 @@ npm run migrate:e2e:reset   # Reset E2E migrations completely
 - **Payment Processing**: Stripe Checkout with webhook handling
 - **Wallet Passes**: Apple Wallet and Google Wallet integration
 - **Gallery System**: Google Drive integration with AVIF/WebP optimization
+- **E2E Testing**: Comprehensive browser automation with Playwright
 
 ## 🎪 About the Festival
 
