@@ -16,54 +16,309 @@ export class AdminAuthHelper {
     this.page = page;
     this.baseUrl = options.baseUrl || 'http://localhost:3000';
     this.adminPassword = options.adminPassword || process.env.TEST_ADMIN_PASSWORD || 'test-admin-password';
-    this.adminSecret = options.adminSecret || process.env.ADMIN_SECRET || 'test-secret-key-that-is-at-least-32-characters-long';
+    this.adminSecret = this.validateAndGetAdminSecret(options.adminSecret);
     this.sessionDuration = options.sessionDuration || 3600000; // 1 hour
     this.currentSession = null;
+    this.logger = this.initializeLogger();
   }
 
   /**
-   * Perform admin login with full flow support
+   * Validate and retrieve admin secret with proper error handling
+   * @param {string} providedSecret - Optional secret provided in options
+   * @returns {string} Validated admin secret
+   * @throws {Error} If no valid secret is available
+   */
+  validateAndGetAdminSecret(providedSecret) {
+    const secret = providedSecret || process.env.ADMIN_SECRET;
+    
+    if (!secret) {
+      const error = new Error(
+        'ADMIN_SECRET environment variable is required for authentication tests. ' +
+        'Please set ADMIN_SECRET with a secure 32+ character key.'
+      );
+      this.logSecurityEvent('MISSING_ADMIN_SECRET', 'critical', { 
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+      throw error;
+    }
+    
+    if (secret.length < 32) {
+      const error = new Error(
+        'ADMIN_SECRET must be at least 32 characters long for security compliance. ' +
+        `Current length: ${secret.length} characters.`
+      );
+      this.logSecurityEvent('WEAK_ADMIN_SECRET', 'high', {
+        error: error.message,
+        secretLength: secret.length,
+        timestamp: new Date().toISOString()
+      });
+      throw error;
+    }
+    
+    // Validate secret doesn't contain obvious test patterns
+    const forbiddenPatterns = [
+      /test-secret/i,
+      /example/i,
+      /default/i,
+      /placeholder/i,
+      /changeme/i
+    ];
+    
+    for (const pattern of forbiddenPatterns) {
+      if (pattern.test(secret)) {
+        const error = new Error(
+          'ADMIN_SECRET appears to be a test or example value. ' +
+          'Please use a cryptographically secure random string.'
+        );
+        this.logSecurityEvent('INSECURE_ADMIN_SECRET_PATTERN', 'critical', {
+          error: error.message,
+          timestamp: new Date().toISOString()
+        });
+        throw error;
+      }
+    }
+    
+    this.logSecurityEvent('ADMIN_SECRET_VALIDATED', 'info', {
+      secretLength: secret.length,
+      timestamp: new Date().toISOString()
+    });
+    
+    return secret;
+  }
+
+  /**
+   * Initialize security event logger
+   * @returns {Object} Logger instance
+   */
+  initializeLogger() {
+    return {
+      events: [],
+      log: (level, message, data = {}) => {
+        const event = {
+          timestamp: new Date().toISOString(),
+          level,
+          message,
+          data,
+          testId: process.env.E2E_TEST_RUN_ID || 'unknown'
+        };
+        this.events.push(event);
+        
+        // Only log to console in development or if explicitly enabled
+        if (process.env.NODE_ENV !== 'production' || process.env.LOG_SECURITY_EVENTS === 'true') {
+          console.log(`[SECURITY-${level.toUpperCase()}]`, message, data);
+        }
+      }
+    };
+  }
+
+  /**
+   * Log security events for audit trail
+   * @param {string} eventType - Type of security event
+   * @param {string} severity - Severity level (info, warning, high, critical)
+   * @param {Object} details - Additional event details
+   */
+  logSecurityEvent(eventType, severity, details = {}) {
+    const event = {
+      eventType,
+      severity,
+      timestamp: new Date().toISOString(),
+      userAgent: this.page.context().browser().userAgent || 'unknown',
+      testEnvironment: process.env.NODE_ENV || 'development',
+      ...details
+    };
+    
+    if (this.logger) {
+      this.logger.log(severity, `Security Event: ${eventType}`, event);
+    }
+    
+    // Store in global security audit log if available
+    if (global.securityAuditLog) {
+      global.securityAuditLog.push(event);
+    }
+  }
+
+  /**
+   * Perform admin login with full flow support and security validation
    */
   async login(credentials = {}) {
-    const {
-      password = this.adminPassword,
-      mfaCode = null,
-      expectMfa = false,
-      skipNavigation = false,
-    } = credentials;
+    const loginStartTime = Date.now();
+    
+    try {
+      const {
+        password = this.adminPassword,
+        mfaCode = null,
+        expectMfa = false,
+        skipNavigation = false,
+        validateSecurity = true,
+      } = credentials;
 
-    if (!skipNavigation) {
-      await this.page.goto('/admin/login');
-      await this.page.waitForLoadState('networkidle');
+      this.logSecurityEvent('LOGIN_ATTEMPT_START', 'info', {
+        skipNavigation,
+        expectMfa,
+        passwordLength: password?.length || 0
+      });
+
+      if (!password) {
+        const error = new Error('Password is required for admin login');
+        this.logSecurityEvent('LOGIN_MISSING_PASSWORD', 'high', { 
+          error: error.message 
+        });
+        throw error;
+      }
+
+      if (!skipNavigation) {
+        await this.page.goto('/admin/login');
+        await this.page.waitForLoadState('networkidle', { timeout: 10000 });
+      }
+
+      // Step 1: Password authentication with security monitoring
+      await this.performSecurePasswordEntry(password);
+
+      // Wait for response with timeout
+      const loginResponse = await Promise.race([
+        this.waitForLoginResponse(),
+        this.createTimeoutPromise(15000, 'Login response timeout')
+      ]);
+
+      // Check if MFA is required
+      const currentUrl = this.page.url();
+      const pageContent = await this.page.textContent('body');
+
+      if (expectMfa || pageContent.includes('MFA') || pageContent.includes('authentication code')) {
+        if (!mfaCode) {
+          const error = new Error('MFA code required but not provided');
+          this.logSecurityEvent('LOGIN_MFA_REQUIRED', 'warning', { 
+            error: error.message 
+          });
+          throw error;
+        }
+
+        // Step 2: MFA authentication with validation
+        await this.performSecureMfaEntry(mfaCode);
+      }
+
+      // Verify successful login with security checks
+      await this.verifySecureLoginSuccess(validateSecurity);
+      
+      // Store session information with validation
+      this.currentSession = await this.getCurrentSessionWithValidation();
+      
+      const loginDuration = Date.now() - loginStartTime;
+      this.logSecurityEvent('LOGIN_SUCCESS', 'info', {
+        duration: loginDuration,
+        mfaUsed: !!mfaCode,
+        sessionId: this.currentSession?.token?.substring(0, 8) + '...'
+      });
+      
+      return this.currentSession;
+    } catch (error) {
+      const loginDuration = Date.now() - loginStartTime;
+      this.logSecurityEvent('LOGIN_FAILURE', 'high', {
+        error: error.message,
+        duration: loginDuration,
+        stackTrace: error.stack
+      });
+      throw error;
     }
+  }
 
-    // Step 1: Password authentication
-    await this.page.fill('input[type="password"]', password);
-    await this.page.click('button[type="submit"]');
+  /**
+   * Perform secure password entry with monitoring
+   */
+  async performSecurePasswordEntry(password) {
+    try {
+      // Fill password field securely
+      const passwordField = await this.page.waitForSelector('input[type="password"]', { timeout: 5000 });
+      if (!passwordField) {
+        throw new Error('Password field not found');
+      }
+      
+      await passwordField.fill(password);
+      
+      // Verify field was filled (without logging the actual password)
+      const fieldValue = await passwordField.inputValue();
+      if (!fieldValue || fieldValue.length === 0) {
+        throw new Error('Password field could not be filled');
+      }
+      
+      // Click submit button
+      await this.page.click('button[type="submit"]');
+      
+    } catch (error) {
+      this.logSecurityEvent('PASSWORD_ENTRY_FAILED', 'high', {
+        error: error.message
+      });
+      throw error;
+    }
+  }
 
-    // Wait for response
-    await this.page.waitForTimeout(1000);
+  /**
+   * Wait for login response with proper error handling
+   */
+  async waitForLoginResponse() {
+    return new Promise((resolve, reject) => {
+      let responseReceived = false;
+      
+      const responseHandler = (response) => {
+        if (response.url().includes('/api/admin/login') && !responseReceived) {
+          responseReceived = true;
+          resolve(response);
+        }
+      };
+      
+      const timeoutHandler = setTimeout(() => {
+        if (!responseReceived) {
+          this.page.off('response', responseHandler);
+          reject(new Error('No login response received within timeout'));
+        }
+      }, 10000);
+      
+      this.page.on('response', responseHandler);
+      
+      // Clean up after response
+      setTimeout(() => {
+        this.page.off('response', responseHandler);
+        clearTimeout(timeoutHandler);
+      }, 15000);
+    });
+  }
 
-    // Check if MFA is required
-    const currentUrl = this.page.url();
-    const pageContent = await this.page.textContent('body');
+  /**
+   * Create timeout promise helper
+   */
+  createTimeoutPromise(timeout, message) {
+    return new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(message)), timeout);
+    });
+  }
 
-    if (expectMfa || pageContent.includes('MFA') || pageContent.includes('authentication code')) {
-      if (!mfaCode) {
-        throw new Error('MFA code required but not provided');
+  /**
+   * Perform secure MFA entry with validation
+   */
+  async performSecureMfaEntry(mfaCode) {
+    try {
+      if (!mfaCode || !/^\d{6}$/.test(mfaCode)) {
+        const error = new Error('MFA code must be exactly 6 digits');
+        this.logSecurityEvent('INVALID_MFA_FORMAT', 'high', { 
+          error: error.message 
+        });
+        throw error;
       }
 
       // Step 2: MFA authentication
       await this.enterMfaCode(mfaCode);
+      
+      this.logSecurityEvent('MFA_CODE_ENTERED', 'info', {
+        codeLength: mfaCode.length
+      });
+      
+    } catch (error) {
+      this.logSecurityEvent('MFA_ENTRY_FAILED', 'high', {
+        error: error.message
+      });
+      throw error;
     }
-
-    // Verify successful login
-    await this.verifyLoginSuccess();
-    
-    // Store session information
-    this.currentSession = await this.getCurrentSession();
-    
-    return this.currentSession;
   }
 
   /**
@@ -104,62 +359,240 @@ export class AdminAuthHelper {
   }
 
   /**
-   * Verify login was successful
+   * Verify login was successful with enhanced security validation
    */
-  async verifyLoginSuccess() {
-    // Wait for navigation to admin dashboard or success indicators
+  async verifySecureLoginSuccess(validateSecurity = true) {
+    const verificationStart = Date.now();
+    
     try {
+      this.logSecurityEvent('LOGIN_VERIFICATION_START', 'info');
+      
+      // Wait for navigation to admin dashboard or success indicators
       await Promise.race([
-        this.page.waitForURL('**/admin/dashboard', { timeout: 5000 }),
-        this.page.waitForSelector('.admin-dashboard', { timeout: 5000 }),
-        this.page.waitForSelector('[data-testid="admin-content"]', { timeout: 5000 }),
+        this.page.waitForURL('**/admin/dashboard', { timeout: 8000 }),
+        this.page.waitForSelector('.admin-dashboard', { timeout: 8000 }),
+        this.page.waitForSelector('[data-testid="admin-content"]', { timeout: 8000 }),
       ]);
+      
+      if (validateSecurity) {
+        await this.performSecurityValidation();
+      }
+      
+      const verificationDuration = Date.now() - verificationStart;
+      this.logSecurityEvent('LOGIN_VERIFICATION_SUCCESS', 'info', {
+        duration: verificationDuration,
+        finalUrl: this.page.url()
+      });
+      
     } catch (error) {
-      // Check for error messages
-      const errorElement = await this.page.$('.error, .alert-error, [data-testid="error"]');
-      if (errorElement) {
-        const errorText = await errorElement.textContent();
-        throw new Error(`Login failed: ${errorText}`);
-      }
-      
-      // Check current URL for login failure
-      if (this.page.url().includes('/admin/login')) {
-        throw new Error('Login failed: Still on login page');
-      }
-      
-      throw new Error('Login verification failed: Could not confirm successful login');
+      // Enhanced error detection and logging
+      await this.handleLoginVerificationError(error, verificationStart);
     }
   }
 
   /**
-   * Get current session information from cookies and localStorage
+   * Perform additional security validation after login
+   */
+  async performSecurityValidation() {
+    try {
+      // Check for security headers
+      const response = await this.page.request.get('/api/admin/dashboard');
+      const headers = response.headers();
+      
+      const requiredHeaders = [
+        'x-frame-options',
+        'x-content-type-options',
+        'strict-transport-security'
+      ];
+      
+      const missingHeaders = requiredHeaders.filter(header => !headers[header]);
+      if (missingHeaders.length > 0) {
+        this.logSecurityEvent('MISSING_SECURITY_HEADERS', 'warning', {
+          missingHeaders
+        });
+      }
+      
+      // Validate session cookie security
+      const cookies = await this.page.context().cookies();
+      const sessionCookie = cookies.find(cookie => cookie.name === 'admin_session');
+      
+      if (sessionCookie) {
+        if (!sessionCookie.httpOnly) {
+          this.logSecurityEvent('INSECURE_SESSION_COOKIE', 'high', {
+            issue: 'Session cookie not marked HttpOnly'
+          });
+        }
+        
+        if (!sessionCookie.secure && this.page.url().startsWith('https:')) {
+          this.logSecurityEvent('INSECURE_SESSION_COOKIE', 'high', {
+            issue: 'Session cookie not marked Secure for HTTPS'
+          });
+        }
+      }
+      
+    } catch (error) {
+      this.logSecurityEvent('SECURITY_VALIDATION_ERROR', 'warning', {
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Handle login verification errors with detailed logging
+   */
+  async handleLoginVerificationError(originalError, verificationStart) {
+    const verificationDuration = Date.now() - verificationStart;
+    
+    try {
+      // Check for error messages
+      const errorElement = await this.page.$('.error, .alert-error, [data-testid="error"]');
+      if (errorElement) {
+        const errorText = await errorElement.textContent();
+        const error = new Error(`Login failed: ${errorText}`);
+        this.logSecurityEvent('LOGIN_ERROR_DETECTED', 'high', {
+          errorText,
+          duration: verificationDuration,
+          url: this.page.url()
+        });
+        throw error;
+      }
+      
+      // Check current URL for login failure
+      const currentUrl = this.page.url();
+      if (currentUrl.includes('/admin/login')) {
+        const error = new Error('Login failed: Still on login page');
+        this.logSecurityEvent('LOGIN_REDIRECT_FAILED', 'high', {
+          currentUrl,
+          duration: verificationDuration
+        });
+        throw error;
+      }
+      
+      // Check for potential security blocks
+      if (currentUrl.includes('blocked') || currentUrl.includes('unauthorized')) {
+        const error = new Error('Login blocked by security policy');
+        this.logSecurityEvent('LOGIN_SECURITY_BLOCKED', 'critical', {
+          currentUrl,
+          duration: verificationDuration
+        });
+        throw error;
+      }
+      
+    } catch (detailedError) {
+      this.logSecurityEvent('LOGIN_VERIFICATION_FAILED', 'high', {
+        originalError: originalError.message,
+        detailedError: detailedError.message,
+        duration: verificationDuration,
+        url: this.page.url()
+      });
+      throw detailedError;
+    }
+    
+    // If no specific error found, throw original with enhanced context
+    const error = new Error(`Login verification failed: ${originalError.message}`);
+    this.logSecurityEvent('LOGIN_VERIFICATION_TIMEOUT', 'high', {
+      originalError: originalError.message,
+      duration: verificationDuration,
+      url: this.page.url()
+    });
+    throw error;
+  }
+
+  /**
+   * Get current session information with comprehensive validation
+   */
+  async getCurrentSessionWithValidation() {
+    try {
+      this.logSecurityEvent('SESSION_RETRIEVAL_START', 'info');
+      
+      const cookies = await this.page.context().cookies();
+      const sessionCookie = cookies.find(cookie => cookie.name === 'admin_session');
+      
+      if (!sessionCookie) {
+        this.logSecurityEvent('SESSION_COOKIE_MISSING', 'warning');
+        return null;
+      }
+
+      // Validate cookie properties
+      this.validateSessionCookieProperties(sessionCookie);
+
+      try {
+        const decoded = jwt.verify(sessionCookie.value, this.adminSecret, {
+          issuer: 'alocubano-admin',
+          algorithms: ['HS256'], // Explicitly specify allowed algorithms
+          maxAge: '24h' // Maximum session age
+        });
+        
+        const session = {
+          token: sessionCookie.value,
+          admin: decoded,
+          expiresAt: new Date(decoded.exp * 1000),
+          isValid: Date.now() < (decoded.exp * 1000),
+          securityValidated: true
+        };
+        
+        this.logSecurityEvent('SESSION_VALIDATED', 'info', {
+          adminId: decoded.id,
+          expiresAt: session.expiresAt,
+          isValid: session.isValid,
+          issuer: decoded.iss
+        });
+        
+        return session;
+        
+      } catch (jwtError) {
+        this.logSecurityEvent('SESSION_TOKEN_INVALID', 'high', {
+          error: jwtError.message,
+          tokenLength: sessionCookie.value?.length || 0
+        });
+        
+        return {
+          token: sessionCookie.value,
+          admin: null,
+          expiresAt: null,
+          isValid: false,
+          error: jwtError.message,
+          securityValidated: false
+        };
+      }
+    } catch (error) {
+      this.logSecurityEvent('SESSION_RETRIEVAL_ERROR', 'high', {
+        error: error.message
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Validate session cookie security properties
+   */
+  validateSessionCookieProperties(sessionCookie) {
+    const securityIssues = [];
+    
+    if (!sessionCookie.httpOnly) {
+      securityIssues.push('Cookie not marked HttpOnly');
+    }
+    
+    if (!sessionCookie.secure && this.page.url().startsWith('https:')) {
+      securityIssues.push('Cookie not marked Secure for HTTPS');
+    }
+    
+    if (!sessionCookie.sameSite || sessionCookie.sameSite === 'None') {
+      securityIssues.push('Cookie SameSite policy not restrictive enough');
+    }
+    
+    if (securityIssues.length > 0) {
+      this.logSecurityEvent('SESSION_COOKIE_SECURITY_ISSUES', 'warning', {
+        issues: securityIssues
+      });
+    }
+  }
+
+  /**
+   * Fallback method for backward compatibility
    */
   async getCurrentSession() {
-    const cookies = await this.page.context().cookies();
-    const sessionCookie = cookies.find(cookie => cookie.name === 'admin_session');
-    
-    if (!sessionCookie) {
-      return null;
-    }
-
-    try {
-      const decoded = jwt.verify(sessionCookie.value, this.adminSecret);
-      return {
-        token: sessionCookie.value,
-        admin: decoded,
-        expiresAt: new Date(decoded.exp * 1000),
-        isValid: Date.now() < (decoded.exp * 1000),
-      };
-    } catch (error) {
-      console.warn('Failed to decode session token:', error.message);
-      return {
-        token: sessionCookie.value,
-        admin: null,
-        expiresAt: null,
-        isValid: false,
-        error: error.message,
-      };
-    }
+    return await this.getCurrentSessionWithValidation();
   }
 
   /**
@@ -229,45 +662,108 @@ export class AdminAuthHelper {
   }
 
   /**
-   * Create mock session token for testing
+   * Create mock session token for testing with security validation
+   * WARNING: This method should only be used in test environments
    */
   createMockSessionToken(adminData = {}) {
+    // Security check: Only allow in test environments
+    if (process.env.NODE_ENV === 'production') {
+      const error = new Error('Mock authentication is not allowed in production environment');
+      this.logSecurityEvent('MOCK_AUTH_PRODUCTION_BLOCK', 'critical', {
+        error: error.message,
+        environment: process.env.NODE_ENV
+      });
+      throw error;
+    }
+
+    this.logSecurityEvent('MOCK_SESSION_TOKEN_CREATED', 'warning', {
+      adminId: adminData.id || 'admin',
+      environment: process.env.NODE_ENV,
+      testMode: true
+    });
+
     const payload = {
       id: adminData.id || 'admin',
       role: 'admin',
       loginTime: Date.now(),
+      testMode: true, // Mark as test token
+      mockSession: true,
       ...adminData,
     };
 
     return jwt.sign(payload, this.adminSecret, {
       expiresIn: Math.floor(this.sessionDuration / 1000) + 's',
       issuer: 'alocubano-admin',
+      algorithm: 'HS256'
     });
   }
 
   /**
-   * Set mock authentication state
+   * Set mock authentication state with security constraints
+   * WARNING: This method bypasses normal authentication - use only for testing
    */
   async setMockAuthState(sessionData = {}) {
-    const token = this.createMockSessionToken(sessionData);
-    
-    await this.page.context().addCookies([{
-      name: 'admin_session',
-      value: token,
-      domain: new URL(this.baseUrl).hostname,
-      path: '/',
-      httpOnly: true,
-      secure: false, // Set to true for HTTPS in production
-    }]);
+    // Enhanced security checks
+    if (process.env.NODE_ENV === 'production') {
+      const error = new Error('Mock authentication state cannot be set in production environment');
+      this.logSecurityEvent('MOCK_AUTH_STATE_PRODUCTION_BLOCK', 'critical', {
+        error: error.message,
+        environment: process.env.NODE_ENV
+      });
+      throw error;
+    }
 
-    this.currentSession = {
-      token,
-      admin: sessionData,
-      expiresAt: new Date(Date.now() + this.sessionDuration),
-      isValid: true,
-    };
+    // Log security warning
+    this.logSecurityEvent('MOCK_AUTH_STATE_SET', 'warning', {
+      adminId: sessionData.id || 'admin',
+      sessionDuration: this.sessionDuration,
+      testEnvironment: process.env.NODE_ENV,
+      warning: 'Authentication security bypassed for testing'
+    });
 
-    return this.currentSession;
+    try {
+      const token = this.createMockSessionToken(sessionData);
+      
+      // Set secure cookie properties based on environment
+      const isHttps = this.baseUrl.startsWith('https:');
+      
+      await this.page.context().addCookies([{
+        name: 'admin_session',
+        value: token,
+        domain: new URL(this.baseUrl).hostname,
+        path: '/',
+        httpOnly: true,
+        secure: isHttps, // Use HTTPS detection instead of hardcoded false
+        sameSite: 'Strict', // Enhanced security
+        expires: Math.floor((Date.now() + this.sessionDuration) / 1000)
+      }]);
+
+      this.currentSession = {
+        token,
+        admin: {
+          ...sessionData,
+          testMode: true,
+          mockSession: true
+        },
+        expiresAt: new Date(Date.now() + this.sessionDuration),
+        isValid: true,
+        securityValidated: false, // Mark as mock
+        mockSession: true
+      };
+
+      this.logSecurityEvent('MOCK_AUTH_STATE_SUCCESS', 'info', {
+        sessionSet: true,
+        expiresAt: this.currentSession.expiresAt,
+        cookieSecure: isHttps
+      });
+
+      return this.currentSession;
+    } catch (error) {
+      this.logSecurityEvent('MOCK_AUTH_STATE_FAILED', 'high', {
+        error: error.message
+      });
+      throw error;
+    }
   }
 }
 
@@ -567,7 +1063,63 @@ export class SecurityTestHelper {
  */
 export class JWTTestHelper {
   constructor(options = {}) {
-    this.adminSecret = options.adminSecret || process.env.ADMIN_SECRET || 'test-secret-key-that-is-at-least-32-characters-long';
+    this.adminSecret = this.validateAdminSecret(options.adminSecret);
+    this.logger = this.initializeLogger();
+  }
+
+  /**
+   * Validate admin secret with the same security standards
+   */
+  validateAdminSecret(providedSecret) {
+    const secret = providedSecret || process.env.ADMIN_SECRET;
+    
+    if (!secret) {
+      throw new Error(
+        'ADMIN_SECRET environment variable is required for JWT testing. ' +
+        'Please set ADMIN_SECRET with a secure 32+ character key.'
+      );
+    }
+    
+    if (secret.length < 32) {
+      throw new Error(
+        'ADMIN_SECRET must be at least 32 characters long for security compliance. ' +
+        `Current length: ${secret.length} characters.`
+      );
+    }
+    
+    // Validate secret doesn't contain obvious test patterns
+    const forbiddenPatterns = [
+      /test-secret/i,
+      /example/i,
+      /default/i,
+      /placeholder/i,
+      /changeme/i
+    ];
+    
+    for (const pattern of forbiddenPatterns) {
+      if (pattern.test(secret)) {
+        throw new Error(
+          'ADMIN_SECRET appears to be a test or example value. ' +
+          'Please use a cryptographically secure random string.'
+        );
+      }
+    }
+    
+    return secret;
+  }
+
+  /**
+   * Initialize logger for JWT operations
+   */
+  initializeLogger() {
+    return {
+      events: [],
+      log: (level, message, data = {}) => {
+        if (process.env.NODE_ENV !== 'production' || process.env.LOG_SECURITY_EVENTS === 'true') {
+          console.log(`[JWT-${level.toUpperCase()}]`, message, data);
+        }
+      }
+    };
   }
 
   /**
@@ -749,9 +1301,85 @@ export class SessionTestHelper {
   }
 }
 
+  /**
+   * Get security audit summary for the current session
+   */
+  getSecurityAuditSummary() {
+    if (!this.logger) {
+      return { events: [], summary: 'No security logging available' };
+    }
+    
+    const events = this.logger.events;
+    const summary = {
+      totalEvents: events.length,
+      criticalEvents: events.filter(e => e.level === 'critical').length,
+      highEvents: events.filter(e => e.level === 'high').length,
+      warningEvents: events.filter(e => e.level === 'warning').length,
+      infoEvents: events.filter(e => e.level === 'info').length,
+      lastEvent: events.length > 0 ? events[events.length - 1] : null,
+      securityStatus: this.calculateSecurityStatus(events)
+    };
+    
+    return { events, summary };
+  }
+  
+  /**
+   * Calculate overall security status based on events
+   */
+  calculateSecurityStatus(events) {
+    const criticalCount = events.filter(e => e.level === 'critical').length;
+    const highCount = events.filter(e => e.level === 'high').length;
+    
+    if (criticalCount > 0) {
+      return 'CRITICAL_ISSUES_DETECTED';
+    } else if (highCount > 2) {
+      return 'MULTIPLE_HIGH_RISK_ISSUES';
+    } else if (highCount > 0) {
+      return 'HIGH_RISK_ISSUES_DETECTED';
+    } else {
+      return 'SECURITY_VALIDATED';
+    }
+  }
+
+  /**
+   * Clean up all security event listeners and state
+   */
+  async cleanupSecurity() {
+    try {
+      this.logSecurityEvent('SECURITY_CLEANUP_START', 'info');
+      
+      // Clear session state
+      this.currentSession = null;
+      
+      // Clear security event log
+      if (this.logger) {
+        this.logger.events = [];
+      }
+      
+      // Remove any remaining event listeners
+      try {
+        await this.page.removeAllListeners();
+      } catch (error) {
+        console.warn('Could not remove all page listeners during cleanup:', error);
+      }
+      
+      this.logSecurityEvent('SECURITY_CLEANUP_COMPLETE', 'info');
+    } catch (error) {
+      console.error('Error during security cleanup:', error);
+    }
+  }
+}
+
 // Export default factory function
 export default function createAdminAuth(page, options = {}) {
   return new AdminAuthHelper(page, options);
+}
+
+/**
+ * Global security audit log for cross-test tracking
+ */
+if (typeof global !== 'undefined') {
+  global.securityAuditLog = global.securityAuditLog || [];
 }
 
 // All utility classes are already exported with 'export class' above

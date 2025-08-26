@@ -99,6 +99,16 @@ alocubano.boulderfest/
 │   └── donations.html
 ├── api/
 │   └── gallery.js (Serverless function for Google Drive API)
+├── tests/e2e/flows/ (E2E Test Flows)
+│   ├── gallery-browsing.test.js (Gallery performance & functionality)
+│   ├── admin-dashboard.test.js (Admin panel & authentication)
+│   ├── mobile-registration-experience.test.js (Mobile registration flow)
+│   └── newsletter-simple.test.js (Newsletter subscription testing)
+├── tests/e2e/helpers/ (E2E Test Utilities)
+│   ├── performance-gallery.js (Gallery performance testing utilities)
+│   ├── admin-auth.js (Admin authentication helpers)
+│   ├── google-drive-mock.js (Gallery API mocking utilities)
+│   └── mobile-test-scenarios.js (Mobile testing scenarios)
 └── images/
     ├── logo.png (Main logo)
     ├── social/ (Social media icons folder)
@@ -160,6 +170,7 @@ alocubano.boulderfest/
 - `npm test` - Run streamlined test suite
 - `npm run test:all` - Run all tests including E2E validation
 - `npm run test:e2e` - Run Playwright end-to-end tests
+- `npm run test:e2e:ui` - Interactive E2E test development mode
 - `npm run lint` - Run ESLint and HTMLHint
 - `npm run build` - Build for production
 - `npm run prebuild` - Generate cache files for gallery
@@ -202,12 +213,52 @@ npm run test:e2e:ui        # Interactive UI mode
 - **registration-api.test.js** (5 tests) - Registration API unit tests
 - **registration-flow.test.js** (3 tests) - Registration flow tests
 
-#### E2E Test Suite (Playwright)
+#### E2E Test Suite (Playwright) - Phase 2 Coverage
 
-- **Comprehensive browser testing** - Chrome, Firefox, Safari, Edge
-- **Multi-device testing** - Desktop, mobile, tablet viewports
-- **Real user workflows** - Complete purchase and registration flows
-- **Automated database setup** - Isolated E2E test environment
+**Phase 2 Gallery Testing** (`tests/e2e/flows/gallery-browsing.test.js`):
+- **Google Drive API Integration**: Gallery loading, error handling, metadata display
+- **Lazy Loading Performance**: Virtual scrolling with 1000+ images, progressive loading
+- **Image Optimization**: AVIF/WebP/JPEG format selection, responsive images
+- **Virtual Scrolling**: Memory management, DOM optimization, performance monitoring
+- **Cache Effectiveness**: Cache hit ratios, invalidation testing, performance metrics
+- **Network Conditions**: Progressive loading under slow-3g, fast-3g, and 4g
+- **Accessibility**: WCAG compliance, keyboard navigation, screen reader compatibility
+- **Core Web Vitals**: LCP, CLS, FID measurement and validation
+
+**Phase 2 Admin Panel Testing** (`tests/e2e/flows/admin-dashboard.test.js`):
+- **Authentication Security**: JWT validation, session management, MFA support
+- **Rate Limiting**: Brute force protection, failed login handling
+- **Dashboard Operations**: Ticket validation, QR code scanning, bulk operations
+- **Data Management**: Registration management, search/filter functionality
+- **Analytics & Reporting**: Performance metrics, export functionality, data accuracy
+- **Audit Logging**: Activity tracking, security monitoring, compliance features
+- **Configuration Management**: System settings, security parameters, validation
+- **Session Security**: Timeout handling, concurrent sessions, token management
+
+**Multi-Browser & Device Coverage**:
+- **Browser Matrix**: Chrome, Firefox, Safari (WebKit), Edge
+- **Device Testing**: Desktop (1920x1080), Tablet (768x1024), Mobile (375x667)
+- **Viewport Adaptation**: Responsive design validation, touch target testing
+- **Performance Validation**: Cross-browser performance benchmarks
+
+### Phase 2 Performance Testing
+
+#### Gallery Performance Utilities (`tests/e2e/helpers/performance-gallery.js`)
+
+- **Comprehensive Performance Monitoring**: Memory usage, scroll performance, image loading metrics
+- **Cache Effectiveness Testing**: Cache hit ratios, invalidation strategies, performance impact
+- **Network Simulation**: Testing under various network conditions (slow-3g to 4g)
+- **Memory Leak Detection**: Long-term browsing sessions, garbage collection effectiveness
+- **Performance Regression Detection**: Baseline comparison, automated alerts
+- **Core Web Vitals Monitoring**: LCP, CLS, FID measurement and reporting
+
+#### Admin Security Testing (`tests/e2e/helpers/admin-auth.js`)
+
+- **Authentication Flow Testing**: Login, logout, session management
+- **JWT Security Validation**: Token verification, expiration handling, signature validation
+- **Security Attack Simulation**: Rate limiting, brute force protection, CSRF prevention
+- **MFA Testing**: Multi-factor authentication flow validation
+- **Session Management**: Persistence, timeout, concurrent session handling
 
 ### Quality Gates
 
@@ -215,6 +266,7 @@ npm run test:e2e:ui        # Interactive UI mode
 - **Fast feedback**: Complete unit test suite runs quickly
 - **Real API testing**: Direct interaction with actual endpoints
 - **No mocking complexity**: Tests use real services and databases
+- **Comprehensive E2E Coverage**: Full user workflows with performance validation
 
 ### Test Philosophy
 
@@ -223,6 +275,7 @@ Focus on **user-visible behavior** with **minimal complexity**:
 - Keep each test under 20 lines
 - Use direct HTTP requests, not elaborate abstractions
 - Clean up test data explicitly in each test
+- Validate performance alongside functionality
 
 ## Database Management
 
@@ -299,6 +352,11 @@ curl -f http://localhost:3000/api/health/e2e-database | jq '.'
 - [Async Initialization Guide](/docs/ASYNC_INITIALIZATION_GUIDE.md) - Database service patterns
 - [Testing Strategy](/docs/testing/TESTING_STRATEGY.md) - Streamlined testing approach
 
+### Testing Documentation
+- [E2E Test Flows](/tests/e2e/flows/README.md) - Phase 2 gallery and admin panel test flows
+- [Performance Testing Guide](/tests/e2e/helpers/performance-gallery.js) - Gallery performance utilities
+- [Admin Authentication Testing](/tests/e2e/helpers/admin-auth.js) - Security and authentication helpers
+
 ### Setup Documentation
 - [Installation Guide](INSTALLATION.md) - Complete setup instructions
 - [Security Policy](SECURITY.md) - Security practices and vulnerability reporting
@@ -310,7 +368,8 @@ curl -f http://localhost:3000/api/health/e2e-database | jq '.'
 - **Payment Processing**: Stripe Checkout with webhook handling
 - **Wallet Passes**: Apple Wallet and Google Wallet integration
 - **Gallery System**: Google Drive integration with AVIF/WebP optimization
-- **E2E Testing**: Comprehensive browser automation with Playwright
+- **E2E Testing**: Comprehensive browser automation with performance validation
+- **Admin Panel**: Complete administration dashboard with security features
 
 ## 🎪 About the Festival
 

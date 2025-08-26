@@ -15,6 +15,13 @@
  */
 
 import { expect } from '@playwright/test';
+import { 
+    CircularBuffer, 
+    TimeoutManager, 
+    EventHandlerManager, 
+    MemoryMonitor,
+    TestTimeouts
+} from './performance-utils.js';
 
 export class GalleryPerformanceHelper {
     constructor(page, options = {}) {
@@ -26,6 +33,9 @@ export class GalleryPerformanceHelper {
             maxCacheRetrievalTime: options.maxCacheRetrievalTime || 100, // 100ms for cached resources
             minCacheHitRatio: options.minCacheHitRatio || 0.8, // 80% cache hit ratio
             maxMemoryIncreasePercentage: options.maxMemoryIncreasePercentage || 150, // 150% memory increase threshold
+            
+            // Circular buffer limits to prevent memory issues
+            maxMetricsSize: options.maxMetricsSize || 1000, // Maximum metrics per buffer
             
             // Network simulation options
             networkProfiles: {
@@ -56,17 +66,21 @@ export class GalleryPerformanceHelper {
             regressionThreshold: options.regressionThreshold || 0.2 // 20% performance degradation threshold
         };
         
+        // Use circular buffers for memory-efficient metrics collection
         this.metrics = {
             initialLoad: {},
-            imageLoading: [],
+            imageLoading: new CircularBuffer(this.config.maxMetricsSize),
             cachePerformance: {},
-            memoryUsage: [],
-            scrollPerformance: [],
-            networkRequests: [],
-            performanceEntries: [],
-            errors: []
+            memoryUsage: new CircularBuffer(this.config.maxMetricsSize),
+            scrollPerformance: new CircularBuffer(this.config.maxMetricsSize),
+            networkRequests: new CircularBuffer(this.config.maxMetricsSize),
+            performanceEntries: new CircularBuffer(this.config.maxMetricsSize),
+            errors: new CircularBuffer(200) // Smaller buffer for errors
         };
         
+        // Performance optimization utilities
+        this.timeoutManager = new TimeoutManager();
+        this.eventHandlerManager = new EventHandlerManager();
         this.observers = new Map();
         this.isMonitoring = false;
         this.initialMemory = null;
@@ -112,7 +126,7 @@ export class GalleryPerformanceHelper {
     }
 
     /**
-     * Stop performance monitoring and collect final metrics
+     * Stop performance monitoring and collect final metrics with comprehensive cleanup
      */
     async stopPerformanceMonitoring() {
         if (!this.isMonitoring) {
@@ -120,25 +134,106 @@ export class GalleryPerformanceHelper {
         }
         
         this.isMonitoring = false;
-        console.log('[GalleryPerf] Stopping performance monitoring');
+        console.log('[GalleryPerf] Stopping performance monitoring with full cleanup');
         
-        // Disconnect all observers
+        try {
+            // Collect final metrics before cleanup
+            const finalMetrics = await this.collectFinalMetrics();
+            
+            // Comprehensive cleanup
+            await this.performComprehensiveCleanup();
+            
+            console.log('[GalleryPerf] Performance monitoring stopped with cleanup completed');
+            return finalMetrics;
+        } catch (error) {
+            console.error('[GalleryPerf] Error during monitoring stop:', error);
+            // Force cleanup even if metrics collection failed
+            await this.performComprehensiveCleanup();
+            throw error;
+        }
+    }
+
+    /**
+     * Perform comprehensive cleanup to prevent memory leaks
+     */
+    async performComprehensiveCleanup() {
+        console.log('[GalleryPerf] Starting comprehensive cleanup');
+        
+        // 1. Remove all managed event handlers
+        this.eventHandlerManager.removeAllHandlers();
+        
+        // 2. Disconnect all performance observers
         this.observers.forEach((observer, name) => {
             try {
-                observer.disconnect?.();
-                console.log(`[GalleryPerf] Disconnected ${name} observer`);
+                if (observer && typeof observer.disconnect === 'function') {
+                    observer.disconnect();
+                    console.log(`[GalleryPerf] Disconnected ${name} observer`);
+                } else if (observer && typeof observer.stop === 'function') {
+                    observer.stop();
+                    console.log(`[GalleryPerf] Stopped ${name} monitor`);
+                }
             } catch (error) {
-                console.warn(`[GalleryPerf] Error disconnecting ${name} observer:`, error);
+                console.warn(`[GalleryPerf] Error cleaning up ${name} observer:`, error);
             }
         });
-        
         this.observers.clear();
         
-        // Collect final metrics
-        const finalMetrics = await this.collectFinalMetrics();
+        // 3. Clear all browser-based observers and metrics
+        try {
+            await this.page.evaluate(() => {
+                // Clear browser-based observers
+                if (window.galleryPerfObservers) {
+                    window.galleryPerfObservers.forEach((observer, name) => {
+                        try {
+                            observer.disconnect?.();
+                            observer.stop?.();
+                            console.log(`[Browser] Disconnected ${name} observer`);
+                        } catch (error) {
+                            console.warn(`[Browser] Error disconnecting ${name}:`, error);
+                        }
+                    });
+                    window.galleryPerfObservers.clear();
+                    delete window.galleryPerfObservers;
+                }
+                
+                // Clear performance metrics
+                if (window.galleryPerfMetrics) {
+                    delete window.galleryPerfMetrics;
+                }
+                
+                if (window.cacheMetrics) {
+                    delete window.cacheMetrics;
+                }
+                
+                // Force garbage collection if available
+                if (window.gc && typeof window.gc === 'function') {
+                    try {
+                        window.gc();
+                        console.log('[Browser] Forced garbage collection');
+                    } catch (gcError) {
+                        console.warn('[Browser] Could not force GC:', gcError);
+                    }
+                }
+            });
+        } catch (error) {
+            console.warn('[GalleryPerf] Error clearing browser observers:', error);
+        }
         
-        console.log('[GalleryPerf] Performance monitoring stopped');
-        return finalMetrics;
+        // 4. Clear circular buffers to free memory
+        this.metrics.imageLoading.clear();
+        this.metrics.memoryUsage.clear();
+        this.metrics.scrollPerformance.clear();
+        this.metrics.networkRequests.clear();
+        this.metrics.performanceEntries.clear();
+        this.metrics.errors.clear();
+        
+        // 5. Reset initial memory reference
+        this.initialMemory = null;
+        
+        // 6. Use optimized cleanup timeout
+        await this.page.waitForTimeout(this.timeoutManager.getTimeout('cleanup', 'final cleanup delay'));
+        
+        console.log('[GalleryPerf] Comprehensive cleanup completed');
     }
 
     /**
@@ -158,9 +253,10 @@ export class GalleryPerformanceHelper {
         // Check initial cache state
         cacheResults.initialState = await this.inspectCacheState();
         
-        // Load gallery for the first time
+        // Load gallery for the first time with optimized timeout
         const firstLoadStart = performance.now();
-        await this.page.waitForSelector(this.config.gallerySelectors.container, { timeout: 10000 });
+        const initialLoadTimeout = this.timeoutManager.getTimeout('initialGalleryLoad', 'gallery container load');
+        await this.page.waitForSelector(this.config.gallerySelectors.container, { timeout: initialLoadTimeout });
         await this.waitForGalleryImagesLoad();
         const firstLoadTime = performance.now() - firstLoadStart;
         
@@ -170,7 +266,7 @@ export class GalleryPerformanceHelper {
         // Reload page to test cache effectiveness
         const reloadStart = performance.now();
         await this.page.reload();
-        await this.page.waitForSelector(this.config.gallerySelectors.container, { timeout: 10000 });
+        await this.page.waitForSelector(this.config.gallerySelectors.container, { timeout: initialLoadTimeout });
         await this.waitForGalleryImagesLoad();
         const reloadTime = performance.now() - reloadStart;
         
@@ -221,24 +317,27 @@ export class GalleryPerformanceHelper {
         // Set up image load monitoring
         const imageLoadPromises = await this.setupImageLoadMonitoring();
         
-        // Wait for initial images to load or timeout
+        // Wait for initial images to load with optimized timeout
         try {
-            await Promise.race([
+            await this.timeoutManager.withTimeout(
+                'imageLoad',
                 Promise.allSettled(imageLoadPromises),
-                this.page.waitForTimeout(this.config.maxImageLoadTime * 2)
-            ]);
+                'image loading batch'
+            );
         } catch (error) {
             console.warn('[GalleryPerf] Image loading timeout or error:', error);
         }
         
-        // Calculate metrics
+        // Calculate metrics from circular buffer
         const totalTime = performance.now() - measurementStart;
+        const imageLoadingData = this.metrics.imageLoading.getAll();
+        
         loadingMetrics.totalImages = imageLoadPromises.length;
-        loadingMetrics.loadedImages = this.metrics.imageLoading.filter(img => img.loaded).length;
-        loadingMetrics.failedImages = this.metrics.imageLoading.filter(img => img.error).length;
+        loadingMetrics.loadedImages = imageLoadingData.filter(img => img.loaded).length;
+        loadingMetrics.failedImages = imageLoadingData.filter(img => img.error).length;
         
         if (loadingMetrics.loadedImages > 0) {
-            const successfulLoads = this.metrics.imageLoading.filter(img => img.loaded);
+            const successfulLoads = imageLoadingData.filter(img => img.loaded);
             loadingMetrics.loadTimes = successfulLoads.map(img => img.loadTime);
             loadingMetrics.averageLoadTime = successfulLoads.reduce((sum, img) => sum + img.loadTime, 0) / successfulLoads.length;
             loadingMetrics.timeToFirstImage = Math.min(...loadingMetrics.loadTimes);
@@ -424,7 +523,7 @@ export class GalleryPerformanceHelper {
         
         // Force garbage collection if supported
         await this.forceGarbageCollection();
-        await this.page.waitForTimeout(2000); // Allow GC to complete
+        await this.page.waitForTimeout(this.timeoutManager.getTimeout('memorySnapshot', 'GC completion delay'));
         
         // Capture final memory
         memoryResults.finalMemory = await this.captureMemorySnapshot();
@@ -437,8 +536,9 @@ export class GalleryPerformanceHelper {
             memoryResults.memoryIncrease = memoryResults.finalMemory.used - memoryResults.initialMemory.used;
             memoryResults.memoryIncreasePercentage = (memoryResults.memoryIncrease / memoryResults.initialMemory.used) * 100;
             
-            // Find peak memory usage
-            memoryResults.peakMemory = this.metrics.memoryUsage.reduce((max, current) => 
+            // Find peak memory usage from circular buffer
+            const memoryData = this.metrics.memoryUsage.getAll();
+            memoryResults.peakMemory = memoryData.reduce((max, current) => 
                 current.used > max.used ? current : max, memoryResults.initialMemory);
         }
         
@@ -529,8 +629,13 @@ export class GalleryPerformanceHelper {
         
         // Check memory usage regression
         if (currentMetrics.memoryUsage && performanceBaseline.memoryUsage) {
-            const currentPeak = Math.max(...currentMetrics.memoryUsage.map(m => m.used));
-            const baselinePeak = Math.max(...performanceBaseline.memoryUsage.map(m => m.used));
+            const currentMemoryData = Array.isArray(currentMetrics.memoryUsage) ? 
+                currentMetrics.memoryUsage : currentMetrics.memoryUsage.getAll();
+            const baselineMemoryData = Array.isArray(performanceBaseline.memoryUsage) ? 
+                performanceBaseline.memoryUsage : performanceBaseline.memoryUsage.getAll();
+            
+            const currentPeak = Math.max(...currentMemoryData.map(m => m.used));
+            const baselinePeak = Math.max(...baselineMemoryData.map(m => m.used));
             const regression = this.calculateRegression(currentPeak, baselinePeak, threshold);
             
             if (regression.isRegression) {
@@ -574,15 +679,16 @@ export class GalleryPerformanceHelper {
                 initialLoad: this.metrics.initialLoad,
                 imageLoading: {
                     summary: this.summarizeImageLoadingMetrics(),
-                    details: this.metrics.imageLoading
+                    details: this.metrics.imageLoading.getAll()
                 },
                 cachePerformance: this.metrics.cachePerformance,
                 memoryUsage: {
                     summary: this.summarizeMemoryMetrics(),
-                    timeline: this.metrics.memoryUsage
+                    timeline: this.metrics.memoryUsage.getAll()
                 },
-                scrollPerformance: this.metrics.scrollPerformance,
-                errors: this.metrics.errors
+                scrollPerformance: this.metrics.scrollPerformance.getAll(),
+                networkRequests: this.metrics.networkRequests.getAll(),
+                errors: this.metrics.errors.getAll()
             },
             performanceScore: await this.calculateOverallPerformanceScore(),
             recommendations: this.generatePerformanceRecommendations(),
@@ -604,6 +710,11 @@ export class GalleryPerformanceHelper {
 
     async setupPerformanceObservers() {
         await this.page.evaluate(() => {
+            // Initialize observer storage to prevent memory leaks
+            if (!window.galleryPerfObservers) {
+                window.galleryPerfObservers = new Map();
+            }
+            
             // Set up performance monitoring in browser context
             window.galleryPerfMetrics = {
                 navigationStart: performance.now(),
@@ -613,63 +724,129 @@ export class GalleryPerformanceHelper {
                 errors: []
             };
             
-            // LCP Observer
+            // LCP Observer with proper cleanup
             if ('PerformanceObserver' in window) {
-                const lcpObserver = new PerformanceObserver((list) => {
-                    const entries = list.getEntries();
-                    entries.forEach(entry => {
-                        window.galleryPerfMetrics.lcp = entry.startTime;
-                    });
-                });
-                lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
-                
-                // FID Observer
-                const fidObserver = new PerformanceObserver((list) => {
-                    const entries = list.getEntries();
-                    entries.forEach(entry => {
-                        window.galleryPerfMetrics.fid = entry.processingStart - entry.startTime;
-                    });
-                });
-                fidObserver.observe({ entryTypes: ['first-input'] });
-                
-                // CLS Observer
-                let clsValue = 0;
-                const clsObserver = new PerformanceObserver((list) => {
-                    const entries = list.getEntries();
-                    entries.forEach(entry => {
-                        if (!entry.hadRecentInput) {
-                            clsValue += entry.value;
-                        }
-                    });
-                    window.galleryPerfMetrics.cls = clsValue;
-                });
-                clsObserver.observe({ entryTypes: ['layout-shift'] });
-                
-                // Resource timing observer
-                const resourceObserver = new PerformanceObserver((list) => {
-                    const entries = list.getEntries();
-                    entries.forEach(entry => {
-                        if (entry.initiatorType === 'img' || entry.name.includes('/api/')) {
-                            window.galleryPerfMetrics.resourceTimings.push({
-                                name: entry.name,
-                                type: entry.initiatorType,
-                                duration: entry.duration,
-                                transferSize: entry.transferSize,
-                                startTime: entry.startTime
+                try {
+                    const lcpObserver = new PerformanceObserver((list) => {
+                        try {
+                            const entries = list.getEntries();
+                            entries.forEach(entry => {
+                                if (window.galleryPerfMetrics) {
+                                    window.galleryPerfMetrics.lcp = entry.startTime;
+                                }
                             });
+                        } catch (error) {
+                            console.warn('[LCP Observer] Error processing entries:', error);
                         }
                     });
-                });
-                resourceObserver.observe({ entryTypes: ['resource'] });
+                    lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+                    window.galleryPerfObservers.set('lcp', lcpObserver);
+                } catch (error) {
+                    console.warn('[Performance] Could not set up LCP observer:', error);
+                }
+                
+                // FID Observer with error handling
+                try {
+                    const fidObserver = new PerformanceObserver((list) => {
+                        try {
+                            const entries = list.getEntries();
+                            entries.forEach(entry => {
+                                if (window.galleryPerfMetrics) {
+                                    window.galleryPerfMetrics.fid = entry.processingStart - entry.startTime;
+                                }
+                            });
+                        } catch (error) {
+                            console.warn('[FID Observer] Error processing entries:', error);
+                        }
+                    });
+                    fidObserver.observe({ entryTypes: ['first-input'] });
+                    window.galleryPerfObservers.set('fid', fidObserver);
+                } catch (error) {
+                    console.warn('[Performance] Could not set up FID observer:', error);
+                }
+                
+                // CLS Observer with proper cleanup
+                try {
+                    let clsValue = 0;
+                    const clsObserver = new PerformanceObserver((list) => {
+                        try {
+                            const entries = list.getEntries();
+                            entries.forEach(entry => {
+                                if (!entry.hadRecentInput) {
+                                    clsValue += entry.value;
+                                }
+                            });
+                            if (window.galleryPerfMetrics) {
+                                window.galleryPerfMetrics.cls = clsValue;
+                            }
+                        } catch (error) {
+                            console.warn('[CLS Observer] Error processing entries:', error);
+                        }
+                    });
+                    clsObserver.observe({ entryTypes: ['layout-shift'] });
+                    window.galleryPerfObservers.set('cls', clsObserver);
+                } catch (error) {
+                    console.warn('[Performance] Could not set up CLS observer:', error);
+                }
+                
+                // Resource timing observer with memory management
+                try {
+                    const resourceObserver = new PerformanceObserver((list) => {
+                        try {
+                            const entries = list.getEntries();
+                            entries.forEach(entry => {
+                                // Only monitor relevant resources and prevent memory overflow
+                                if ((entry.initiatorType === 'img' || entry.name.includes('/api/')) 
+                                    && window.galleryPerfMetrics 
+                                    && window.galleryPerfMetrics.resourceTimings.length < 500) { // Reduced limit for memory efficiency
+                                    window.galleryPerfMetrics.resourceTimings.push({
+                                        name: entry.name,
+                                        type: entry.initiatorType,
+                                        duration: entry.duration,
+                                        transferSize: entry.transferSize,
+                                        startTime: entry.startTime
+                                    });
+                                }
+                            });
+                        } catch (error) {
+                            console.warn('[Resource Observer] Error processing entries:', error);
+                        }
+                    });
+                    resourceObserver.observe({ entryTypes: ['resource'] });
+                    window.galleryPerfObservers.set('resource', resourceObserver);
+                } catch (error) {
+                    console.warn('[Performance] Could not set up Resource observer:', error);
+                }
+                
+                // Set up cleanup on page unload
+                const cleanupHandler = () => {
+                    if (window.galleryPerfObservers) {
+                        window.galleryPerfObservers.forEach((observer, name) => {
+                            try {
+                                observer.disconnect();
+                                console.log(`[Cleanup] Disconnected ${name} observer`);
+                            } catch (error) {
+                                console.warn(`[Cleanup] Error disconnecting ${name}:`, error);
+                            }
+                        });
+                        window.galleryPerfObservers.clear();
+                    }
+                    
+                    if (window.galleryPerfMetrics) {
+                        delete window.galleryPerfMetrics;
+                    }
+                };
+                
+                window.addEventListener('beforeunload', cleanupHandler);
+                window.addEventListener('unload', cleanupHandler);
             }
         });
     }
 
     async setupNetworkMonitoring() {
-        // Monitor network requests
-        this.page.on('request', request => {
-            if (request.url().includes('image') || request.url().includes('/api/gallery') || 
-                request.url().includes('/api/image-proxy')) {
+        // Selective network request monitoring to avoid excessive event handlers
+        const requestHandler = (request) => {
+            if (this.shouldMonitorRequest(request.url())) {
                 this.metrics.networkRequests.push({
                     url: request.url(),
                     method: request.method(),
@@ -677,11 +854,10 @@ export class GalleryPerformanceHelper {
                     type: 'request'
                 });
             }
-        });
+        };
         
-        this.page.on('response', response => {
-            if (response.url().includes('image') || response.url().includes('/api/gallery') || 
-                response.url().includes('/api/image-proxy')) {
+        const responseHandler = (response) => {
+            if (this.shouldMonitorRequest(response.url())) {
                 this.metrics.networkRequests.push({
                     url: response.url(),
                     status: response.status(),
@@ -690,7 +866,21 @@ export class GalleryPerformanceHelper {
                     fromCache: response.fromServiceWorker()
                 });
             }
-        });
+        };
+        
+        // Use managed event handlers for proper cleanup
+        this.eventHandlerManager.addHandler(this.page, 'request', requestHandler);
+        this.eventHandlerManager.addHandler(this.page, 'response', responseHandler);
+    }
+
+    /**
+     * Selective request monitoring to reduce event handler overhead
+     */
+    shouldMonitorRequest(url) {
+        return url.includes('image') || 
+               url.includes('/api/gallery') || 
+               url.includes('/api/image-proxy') ||
+               url.includes('/api/featured-photos');
     }
 
     async setupCacheMonitoring() {
@@ -729,16 +919,16 @@ export class GalleryPerformanceHelper {
     }
 
     async setupErrorMonitoring() {
-        this.page.on('pageerror', error => {
+        const pageErrorHandler = (error) => {
             this.metrics.errors.push({
                 type: 'javascript',
                 message: error.message,
                 timestamp: Date.now()
             });
-        });
+        };
         
-        this.page.on('requestfailed', request => {
-            if (request.url().includes('image') || request.url().includes('/api/gallery')) {
+        const requestFailedHandler = (request) => {
+            if (this.shouldMonitorRequest(request.url())) {
                 this.metrics.errors.push({
                     type: 'network',
                     url: request.url(),
@@ -746,7 +936,11 @@ export class GalleryPerformanceHelper {
                     timestamp: Date.now()
                 });
             }
-        });
+        };
+        
+        // Use managed event handlers
+        this.eventHandlerManager.addHandler(this.page, 'pageerror', pageErrorHandler);
+        this.eventHandlerManager.addHandler(this.page, 'requestfailed', requestFailedHandler);
     }
 
     async setupImageLoadMonitoring() {
@@ -783,7 +977,8 @@ export class GalleryPerformanceHelper {
                         img.addEventListener('load', onLoad, { once: true });
                         img.addEventListener('error', onError, { once: true });
                         
-                        // Timeout after max load time
+                        // Timeout after optimized load time
+                        const timeoutMs = this.timeoutManager.getTimeout('imageLoad');
                         setTimeout(() => {
                             resolve({
                                 src,
@@ -791,7 +986,7 @@ export class GalleryPerformanceHelper {
                                 timeout: true,
                                 timestamp: Date.now()
                             });
-                        }, this.config.maxImageLoadTime * 2);
+                        }, timeoutMs);
                     }
                 });
             }, image);
@@ -992,7 +1187,7 @@ export class GalleryPerformanceHelper {
 
     async simulateExtendedBrowsing(scrollDistance) {
         const scrollStep = 200;
-        const scrollDelay = 100;
+        const scrollDelay = this.timeoutManager.getTimeout('scrollDelay', 'scroll simulation');
         
         for (let scrolled = 0; scrolled < scrollDistance; scrolled += scrollStep) {
             await this.page.evaluate((step) => {
@@ -1027,12 +1222,13 @@ export class GalleryPerformanceHelper {
     }
 
     detectMemoryLeaks() {
-        if (this.metrics.memoryUsage.length < 3) {
+        const memoryData = this.metrics.memoryUsage.getAll();
+        if (memoryData.length < 3) {
             return [];
         }
         
         const leaks = [];
-        const samples = this.metrics.memoryUsage.slice(-10); // Look at last 10 samples
+        const samples = memoryData.slice(-10); // Look at last 10 samples
         
         // Check for consistent memory increase
         let increasingTrend = 0;
@@ -1099,34 +1295,36 @@ export class GalleryPerformanceHelper {
     }
 
     summarizeImageLoadingMetrics() {
-        if (this.metrics.imageLoading.length === 0) {
+        const imageLoadingData = this.metrics.imageLoading.getAll();
+        if (imageLoadingData.length === 0) {
             return null;
         }
         
-        const loaded = this.metrics.imageLoading.filter(img => img.loaded);
-        const failed = this.metrics.imageLoading.filter(img => img.error);
-        const timeouts = this.metrics.imageLoading.filter(img => img.timeout);
+        const loaded = imageLoadingData.filter(img => img.loaded);
+        const failed = imageLoadingData.filter(img => img.error);
+        const timeouts = imageLoadingData.filter(img => img.timeout);
         
         return {
-            total: this.metrics.imageLoading.length,
+            total: imageLoadingData.length,
             loaded: loaded.length,
             failed: failed.length,
             timeouts: timeouts.length,
             averageLoadTime: loaded.length > 0 ? 
                 loaded.reduce((sum, img) => sum + img.loadTime, 0) / loaded.length : 0,
-            successRate: this.metrics.imageLoading.length > 0 ?
-                loaded.length / this.metrics.imageLoading.length : 0
+            successRate: imageLoadingData.length > 0 ?
+                loaded.length / imageLoadingData.length : 0
         };
     }
 
     summarizeMemoryMetrics() {
-        if (this.metrics.memoryUsage.length === 0) {
+        const memoryData = this.metrics.memoryUsage.getAll();
+        if (memoryData.length === 0) {
             return null;
         }
         
-        const initial = this.metrics.memoryUsage[0];
-        const final = this.metrics.memoryUsage[this.metrics.memoryUsage.length - 1];
-        const peak = this.metrics.memoryUsage.reduce((max, current) => 
+        const initial = memoryData[0];
+        const final = memoryData[memoryData.length - 1];
+        const peak = memoryData.reduce((max, current) => 
             current.used > max.used ? current : max, initial);
         
         return {
@@ -1168,7 +1366,7 @@ export class GalleryPerformanceHelper {
         }
         
         // Error score (0-100)
-        const errorScore = Math.max(0, 100 - this.metrics.errors.length * 10);
+        const errorScore = Math.max(0, 100 - this.metrics.errors.length() * 10);
         scores.push({ metric: 'errors', score: errorScore, weight: 0.1 });
         
         // Calculate weighted average
@@ -1242,13 +1440,13 @@ export class GalleryPerformanceHelper {
     resetMetrics() {
         this.metrics = {
             initialLoad: {},
-            imageLoading: [],
+            imageLoading: new CircularBuffer(this.config.maxMetricsSize),
             cachePerformance: {},
-            memoryUsage: [],
-            scrollPerformance: [],
-            networkRequests: [],
-            performanceEntries: [],
-            errors: []
+            memoryUsage: new CircularBuffer(this.config.maxMetricsSize),
+            scrollPerformance: new CircularBuffer(this.config.maxMetricsSize),
+            networkRequests: new CircularBuffer(this.config.maxMetricsSize),
+            performanceEntries: new CircularBuffer(this.config.maxMetricsSize),
+            errors: new CircularBuffer(200) // Smaller buffer for errors
         };
     }
 
