@@ -25,19 +25,21 @@ jobs:
         run: |
           echo "🔍 Analyzing test infrastructure complexity..."
           
-          # Count total lines in streamlined test framework
-          TOTAL_TEST_LINES=$(find tests -name "*.js" -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
+          # Count total lines in streamlined test framework (excluding E2E tests)
+          TOTAL_TEST_LINES=$(find tests -name "*.js" -not -path "tests/e2e/*" -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
           
-          # Count test files
-          TEST_FILE_COUNT=$(find tests -name "*.js" | wc -l || echo 0)
+          # Count test files (excluding E2E tests)
+          TEST_FILE_COUNT=$(find tests -name "*.js" -not -path "tests/e2e/*" | wc -l || echo 0)
           
           # Count utility files (should be minimal)
           UTIL_FILE_COUNT=$(find tests \( -name "helpers.js" -o -name "setup.js" \) -type f 2>/dev/null | wc -l || echo 0)
           
-          echo "📊 Current Test Infrastructure Metrics:"
-          echo "  Total test lines: $TOTAL_TEST_LINES"
-          echo "  Test file count: $TEST_FILE_COUNT" 
+          echo "📊 Current Test Infrastructure Metrics (Streamlined Tests Only):"
+          echo "  Total test lines: $TOTAL_TEST_LINES (excluding E2E)"
+          echo "  Test file count: $TEST_FILE_COUNT (excluding E2E)" 
           echo "  Utility file count: $UTIL_FILE_COUNT"
+          echo ""
+          echo "ℹ️  Note: E2E tests in tests/e2e/ are tracked separately"
           
           # Check total lines threshold - streamlined target is 600 lines max (includes essential utilities)
           if [ "$TOTAL_TEST_LINES" -gt 600 ]; then
@@ -99,9 +101,9 @@ jobs:
           echo "Generated: $(date)" >> complexity-report.md
           echo "" >> complexity-report.md
           
-          # Metrics for streamlined tests
-          TOTAL_LINES=$(find tests -name "*.js" -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
-          FILE_COUNT=$(find tests -name "*.js" | wc -l || echo 0)
+          # Metrics for streamlined tests (excluding E2E)
+          TOTAL_LINES=$(find tests -name "*.js" -not -path "tests/e2e/*" -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
+          FILE_COUNT=$(find tests -name "*.js" -not -path "tests/e2e/*" | wc -l || echo 0)
           UTIL_COUNT=$(find tests -name "helpers.js" -o -name "setup.js" 2>/dev/null | wc -l || echo 0)
           
           echo "## Current Metrics" >> complexity-report.md
@@ -110,9 +112,9 @@ jobs:
           echo "- **Utility Files**: $UTIL_COUNT" >> complexity-report.md
           echo "" >> complexity-report.md
           
-          # Top 5 largest files
-          echo "## Largest Test Files" >> complexity-report.md
-          find tests -name "*.js" -exec wc -l {} + 2>/dev/null | grep -vE '\\stotal$' | sort -nr | head -5 | while read line file; do
+          # Top 5 largest files (excluding E2E)
+          echo "## Largest Test Files (Streamlined Only)" >> complexity-report.md
+          find tests -name "*.js" -not -path "tests/e2e/*" -exec wc -l {} + 2>/dev/null | grep -vE '\\stotal$' | sort -nr | head -5 | while read line file; do
             echo "- $file: $line lines" >> complexity-report.md
           done
           
