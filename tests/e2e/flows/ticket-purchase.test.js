@@ -200,7 +200,7 @@ test.describe('Complete Ticket Purchase Journey', () => {
         
         if (await cardFrame.locator('[placeholder*="card number" i], [data-testid*="card"]').isVisible({ timeout: 5000 }).catch(() => false)) {
           await cardFrame.locator('[placeholder*="card number" i], [data-testid*="card"]').first().fill('4242424242424242');
-          await cardFrame.locator('[placeholder*="expiry" i], [placeholder*="MM" i]').first().fill('12/25');
+          await cardFrame.locator('[placeholder*="expiry" i], [placeholder*="MM" i]').first().fill('12/34');
           await cardFrame.locator('[placeholder*="cvc" i], [placeholder*="security" i]').first().fill('123');
           await cardFrame.locator('[placeholder*="zip" i], [placeholder*="postal" i]').first().fill('80301');
         }
@@ -274,14 +274,14 @@ test.describe('Complete Ticket Purchase Journey', () => {
       const cartToggle = page.locator('.floating-cart, .cart-icon').first();
       await cartToggle.click();
       
-      const checkoutButton = page.locator('button').filter({ hasText: /checkout/i }).first();
-      await checkoutButton.click();
-      
-      // Mock successful payment
+      // Mock successful payment BEFORE triggering checkout
       await mockAPI(page, '**/api/payments/**', {
         status: 200,
         body: { success: true, ticketId: qrTestData.ticket.ticketId }
       });
+      
+      const checkoutButton = page.locator('button').filter({ hasText: /checkout/i }).first();
+      await checkoutButton.click();
     });
 
     await test.step('Test QR code generation endpoint', async () => {
