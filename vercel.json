@@ -1,8 +1,5 @@
 {
-  "buildCommand": "echo 'Static site ready'",
-  "outputDirectory": ".",
   "framework": null,
-  "devCommand": "npx http-server . --cors",
   "crons": [
     {
       "path": "/api/sheets/scheduled-sync",
