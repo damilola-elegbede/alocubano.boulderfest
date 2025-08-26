@@ -10,7 +10,7 @@
   },
   "scripts": {
     "prebuild": "node -e \"if(process.env.VERCEL === '1') { console.log('🚀 Vercel build detected - skipping build scripts, using runtime API'); process.exit(0); } else { console.log('🔧 Local build - running prebuild scripts'); import('./build/prebuild.js').catch(e => { console.error('Prebuild error:', e); process.exit(1); }); }\"",
-    "build": "npm run verify-structure && echo 'Build process completed'",
+    "build": "node -e \"if(process.env.VERCEL === '1') { console.log('🚀 Vercel build complete - skipping verification'); } else { console.log('🔧 Local build - running verification'); require('child_process').execSync('npm run verify-structure', {stdio:'inherit'}); }\" && echo 'Build process completed'",
     "postbuild": "node -e \"if(process.env.VERCEL === '1') { console.log('🚀 Vercel postbuild - skipping verify-structure'); } else { import('./build/verify-structure.js').catch(e => console.log('Verify-structure skipped:', e.message)); }\"",
     "cache-warm": "node ./api/cache-warm.js",
     "performance:audit": "lighthouse http://localhost:8000 --output-path=./performance-audit.html --save-assets",
