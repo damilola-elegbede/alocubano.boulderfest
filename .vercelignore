@@ -48,12 +48,12 @@ docs/
 *.md
 LICENSE
 
-# Scripts and migrations (allow build scripts)
+# Scripts and migrations
 scripts/
-!scripts/generate-gallery-cache.js
-!scripts/generate-featured-photos.js
-!scripts/verify-structure.js
 migrations/
+
+# Build directory is allowed for Vercel build scripts
+# build/ directory contains only Vercel-specific build scripts
 # Only ignore root config directory, not api/config
 /config/
 

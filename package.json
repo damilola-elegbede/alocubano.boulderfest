@@ -9,9 +9,9 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "prebuild": "node ./scripts/generate-gallery-cache.js && node ./scripts/generate-featured-photos.js",
+    "prebuild": "node ./build/generate-gallery-cache.mjs && node ./build/generate-featured-photos.mjs",
     "build": "npm run verify-structure && echo 'Build process completed'",
-    "postbuild": "node ./scripts/verify-structure.js",
+    "postbuild": "node ./build/verify-structure.js",
     "cache-warm": "node ./api/cache-warm.js",
     "performance:audit": "lighthouse http://localhost:8000 --output-path=./performance-audit.html --save-assets",
     "test": "npm run test:simple",
@@ -47,7 +47,7 @@
     "test:ci-server": "node scripts/test-ci-server.js",
     "dev": "./scripts/start-with-ngrok.sh",
     "serve:simple": "npx http-server . -p 8000",
-    "verify-structure": "node scripts/verify-structure.js",
+    "verify-structure": "node build/verify-structure.js",
     "create-event": "node scripts/create-new-event.js",
     "update-navigation": "node scripts/update-navigation.js",
     "update-navigation:dry-run": "node scripts/update-navigation.js --dry-run",
