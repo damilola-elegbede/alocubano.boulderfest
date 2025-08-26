@@ -67,8 +67,8 @@ runs:
         DEPLOYMENT_ID=""
         ENVIRONMENT="Preview"
 
-        # Optimized detection interval - reduced from 15s to 5s
-        DETECTION_INTERVAL=5
+        # Calculate max attempts based on timeout and check interval
+        DETECTION_INTERVAL=15  # Fixed 15-second interval
         MAX_ATTEMPTS=$(( (TIMEOUT_MINUTES * 60) / DETECTION_INTERVAL ))
 
         # Guard against zero or invalid MAX_ATTEMPTS
@@ -80,9 +80,6 @@ runs:
           echo "environment=" >> $GITHUB_OUTPUT
           exit 1
         fi
-
-        # Start checking immediately - Vercel creates deployments quickly
-        echo "🚀 Starting immediate deployment detection (${DETECTION_INTERVAL}s intervals)..."
 
         # Try up to MAX_ATTEMPTS times for deployment to appear
         for attempt in $(seq 1 $MAX_ATTEMPTS); do
@@ -105,15 +102,12 @@ runs:
               ENVIRONMENT=$(echo "$DEPLOYMENT_DATA" | jq -r '.environment // "Preview"')
               CREATED_AT=$(echo "$DEPLOYMENT_DATA" | jq -r '.created_at // empty')
 
-              echo "✅ Found deployment ID: $DEPLOYMENT_ID (created: $CREATED_AT)"
+              echo "Found deployment ID: $DEPLOYMENT_ID (created: $CREATED_AT)"
 
-              # Fast status checking - reduced from 10s to 3s intervals, fewer attempts
+              # Now wait for deployment status to be ready
               STATUS_READY="false"
-              STATUS_CHECK_INTERVAL=3
-              MAX_STATUS_CHECKS=15  # Reduced from 20 to 15 (45s max vs 200s)
-              
-              for status_check in $(seq 1 $MAX_STATUS_CHECKS); do
-                echo "  ⚡ Checking deployment status (attempt $status_check/$MAX_STATUS_CHECKS)..."
+              for status_check in {1..20}; do
+                echo "  Checking deployment status (attempt $status_check/20)..."
 
                 # Get deployment status
                 STATUS_DATA=$(gh api \
@@ -131,7 +125,7 @@ runs:
                   if [ "$STATUS_STATE" = "success" ] && \
                      [ -n "$DEPLOYMENT_URL" ] && \
                      [ "$DEPLOYMENT_URL" != "null" ]; then
-                    echo "🎉 Deployment is ready! (found in ${attempt} detection attempts, ${status_check} status checks)"
+                    echo "✅ Deployment is ready!"
                     DEPLOYMENT_FOUND="true"
                     STATUS_READY="true"
                     break 2  # Break out of both loops
@@ -142,42 +136,24 @@ runs:
                   fi
                 fi
 
-                # Faster status checking - wait only 3 seconds instead of 10
-                if [ $status_check -lt $MAX_STATUS_CHECKS ]; then
-                  sleep $STATUS_CHECK_INTERVAL
+                # Wait 10 seconds before checking status again
+                if [ $status_check -lt 20 ]; then
+                  sleep 10
                 fi
               done
 
               # If deployment exists but status isn't ready, break
               if [ "$STATUS_READY" = "false" ] && \
                  [ -n "$DEPLOYMENT_ID" ]; then
-                echo "⚠️ Deployment exists but status not ready after ${MAX_STATUS_CHECKS} checks"
+                echo "⚠️ Deployment exists but status not ready"
                 break
               fi
             fi
           fi
 
-          # Early detection patterns - check for common Vercel deployment indicators
-          if [ "$DEPLOYMENT_FOUND" = "false" ] && [ $attempt -le 3 ]; then
-            echo "  🔍 Early detection: Checking for recent Vercel activity..."
-            
-            # Look for very recent deployments (within last 2 minutes)
-            RECENT_TIME=$(date -u -d '2 minutes ago' '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date -u -v-2M '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo "")
-            if [ -n "$RECENT_TIME" ]; then
-              RECENT_DEPLOYMENTS=$(gh api \
-                "repos/${{ github.repository }}/deployments?per_page=5" \
-                --jq "[.[] | select(.creator.login == \"vercel[bot]\" and .created_at > \"$RECENT_TIME\")]" \
-                2>/dev/null || echo "[]")
-              
-              if [ "$RECENT_DEPLOYMENTS" != "[]" ] && [ -n "$RECENT_DEPLOYMENTS" ]; then
-                echo "  ⚡ Found recent Vercel activity, deployment likely coming soon..."
-              fi
-            fi
-          fi
-
-          # If deployment not found yet, wait before trying again (reduced interval)
+          # If deployment not found yet, wait before trying again
           if [ "$DEPLOYMENT_FOUND" = "false" ] && [ $attempt -lt $MAX_ATTEMPTS ]; then
-            echo "  ⏳ No deployment found yet, waiting ${DETECTION_INTERVAL} seconds..."
+            echo "  No deployment found yet, waiting ${DETECTION_INTERVAL} seconds..."
             sleep $DETECTION_INTERVAL
           fi
         done
@@ -241,7 +217,7 @@ runs:
         echo "deployment-id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
         echo "environment=${ENVIRONMENT:-Preview}" >> $GITHUB_OUTPUT
 
-        echo "🎯 Deployment detection complete"
+        echo "✅ Deployment detection complete"
         echo "URL: $DEPLOYMENT_URL"
         echo "Environment: ${ENVIRONMENT:-Preview}"
         echo "Deployment ID: ${DEPLOYMENT_ID:-none}"
@@ -275,7 +251,7 @@ runs:
         fi
 
         for i in $(seq 1 $MAX_ATTEMPTS); do
-          echo "🔍 Attempt $i/$MAX_ATTEMPTS: Checking deployment readiness..."
+          echo "🔍 Attempt $i/$MAX_ATTEMPTS: Checking deployment..."
 
           # Check if deployment responds with 200 (follow redirects)
           HTTP_CODE=$(curl -sL -o /dev/null -w "%{http_code}" \
