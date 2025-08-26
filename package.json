@@ -9,7 +9,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "prebuild": "node ./build/generate-gallery-cache.mjs && node ./build/generate-featured-photos.mjs",
+    "prebuild": "node ./build/prebuild.js",
     "build": "npm run verify-structure && echo 'Build process completed'",
     "postbuild": "node ./build/verify-structure.js",
     "cache-warm": "node ./api/cache-warm.js",
