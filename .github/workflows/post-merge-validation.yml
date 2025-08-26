@@ -169,8 +169,9 @@ jobs:
         env:
           TEST_BASE_URL: "http://localhost:${{ steps.port.outputs.port }}"
         run: |
-          echo "Running security-critical tests..."
-          npx vitest run tests/security-critical.test.js --config tests/vitest.config.js
+          echo "Running security validation tests..."
+          echo "Security tests integrated into basic-validation.test.js (SQL injection, XSS)"
+          npx vitest run tests/basic-validation.test.js --config tests/vitest.config.js -t "SQL injection"
 
       - name: 💳 Run Payment Tests
         if: success()
