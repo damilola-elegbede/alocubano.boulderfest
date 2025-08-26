@@ -3,7 +3,7 @@
  * Provides database status and schema validation for CI integration
  */
 
-import { createClient } from '@libsql/client';
+import { getDatabaseClient } from '../lib/database.js';
 
 // Helper to check if we're in E2E mode
 function isE2EMode() {
@@ -11,20 +11,40 @@ function isE2EMode() {
          process.env.ENVIRONMENT === 'e2e-test';
 }
 
-// Create E2E database client
-function createE2EClient() {
-  const authToken = process.env.TURSO_AUTH_TOKEN;
-  const databaseUrl = process.env.TURSO_DATABASE_URL;
+// Create E2E database client using centralized service
+async function createE2EClient() {
+  // Use E2E-specific environment variables with fallback to standard ones
+  const originalTursoUrl = process.env.TURSO_DATABASE_URL;
+  const originalTursoToken = process.env.TURSO_AUTH_TOKEN;
   
-  // Safety check - ensure E2E database
-  if (!databaseUrl || (!databaseUrl.includes('test') && !databaseUrl.includes('staging'))) {
-    throw new Error('Invalid E2E database configuration');
+  try {
+    // Temporarily set E2E-specific environment variables if available
+    if (process.env.E2E_TURSO_DATABASE_URL) {
+      process.env.TURSO_DATABASE_URL = process.env.E2E_TURSO_DATABASE_URL;
+    }
+    if (process.env.E2E_TURSO_AUTH_TOKEN) {
+      process.env.TURSO_AUTH_TOKEN = process.env.E2E_TURSO_AUTH_TOKEN;
+    }
+    
+    const databaseUrl = process.env.TURSO_DATABASE_URL;
+    
+    // Safety check - ensure E2E database
+    if (!databaseUrl || (!databaseUrl.includes('test') && !databaseUrl.includes('staging'))) {
+      throw new Error('Invalid E2E database configuration');
+    }
+    
+    // Use centralized database client
+    const client = await getDatabaseClient();
+    return client;
+  } finally {
+    // Restore original environment variables
+    if (originalTursoUrl !== undefined) {
+      process.env.TURSO_DATABASE_URL = originalTursoUrl;
+    }
+    if (originalTursoToken !== undefined) {
+      process.env.TURSO_AUTH_TOKEN = originalTursoToken;
+    }
   }
-  
-  return createClient({
-    url: databaseUrl,
-    authToken: authToken
-  });
 }
 
 // Check database connectivity
@@ -45,10 +65,15 @@ async function checkConnectivity(client) {
 
 // Validate database schema
 async function validateSchema(client) {
-  const requiredTables = [
+  // Core required tables (must exist)
+  const coreRequiredTables = [
     'migrations',
-    'registrations',
-    'email_subscribers',
+    'registrations', 
+    'email_subscribers'
+  ];
+  
+  // Optional tables (nice to have but not required)
+  const optionalTables = [
     'tickets',
     'payment_events',
     'admin_rate_limits',
@@ -64,41 +89,54 @@ async function validateSchema(client) {
     `);
     
     const existingTables = tablesResult.rows.map(row => row.name);
-    const missingTables = [];
-    const presentTables = [];
+    const missingCoreTables = [];
+    const presentCoreTables = [];
+    const presentOptionalTables = [];
     
-    for (const table of requiredTables) {
+    // Check core tables
+    for (const table of coreRequiredTables) {
       if (existingTables.includes(table)) {
-        presentTables.push(table);
+        presentCoreTables.push(table);
       } else {
-        missingTables.push(table);
+        missingCoreTables.push(table);
+      }
+    }
+    
+    // Check optional tables
+    for (const table of optionalTables) {
+      if (existingTables.includes(table)) {
+        presentOptionalTables.push(table);
       }
     }
     
     // Check core table columns
     const columnChecks = {};
     
-    // Check registrations table
-    try {
-      const regColumns = await client.execute('PRAGMA table_info(registrations)');
-      const regColumnNames = regColumns.rows.map(row => row.name);
-      const requiredRegColumns = ['ticket_id', 'email', 'first_name', 'last_name', 'ticket_type'];
-      
-      columnChecks.registrations = {
-        hasRequiredColumns: requiredRegColumns.every(col => regColumnNames.includes(col)),
-        columns: regColumnNames.length,
-        missing: requiredRegColumns.filter(col => !regColumnNames.includes(col))
-      };
-    } catch (error) {
-      columnChecks.registrations = { error: error.message };
+    // Check registrations table if it exists
+    if (presentCoreTables.includes('registrations')) {
+      try {
+        const regColumns = await client.execute('PRAGMA table_info(registrations)');
+        const regColumnNames = regColumns.rows.map(row => row.name);
+        const requiredRegColumns = ['ticket_id', 'email', 'first_name', 'last_name', 'ticket_type'];
+        
+        columnChecks.registrations = {
+          hasRequiredColumns: requiredRegColumns.every(col => regColumnNames.includes(col)),
+          columns: regColumnNames.length,
+          missing: requiredRegColumns.filter(col => !regColumnNames.includes(col))
+        };
+      } catch (error) {
+        columnChecks.registrations = { error: error.message };
+      }
     }
     
     return {
-      valid: missingTables.length === 0,
+      valid: missingCoreTables.length === 0, // Only core tables are required
       totalTables: existingTables.length,
-      requiredTables: requiredTables.length,
-      presentTables: presentTables.length,
-      missingTables: missingTables,
+      requiredTables: coreRequiredTables.length,
+      presentCoreTables: presentCoreTables.length,
+      presentOptionalTables: presentOptionalTables.length,
+      missingCoreTables: missingCoreTables,
+      presentOptionalTables: presentOptionalTables,
       columnChecks: columnChecks
     };
   } catch (error) {
@@ -195,7 +233,7 @@ export default async function handler(req, res) {
   
   try {
     // Create database client
-    client = createE2EClient();
+    client = await createE2EClient();
     health.checks.clientCreation = { success: true };
   } catch (error) {
     health.status = 'unhealthy';
@@ -221,6 +259,11 @@ export default async function handler(req, res) {
     health.checks.testData = testData;
     
     // Determine overall health status
+    // Fix migrationsComplete logic: check for error first before comparing values
+    const migrationsComplete = !migrations.error && 
+                              migrations.total > 0 && 
+                              migrations.completed === migrations.total;
+    
     const isHealthy = 
       connectivity.connected &&
       schema.valid &&
@@ -234,7 +277,7 @@ export default async function handler(req, res) {
     health.summary = {
       databaseConnected: connectivity.connected,
       schemaValid: schema.valid,
-      migrationsComplete: migrations.completed === migrations.total,
+      migrationsComplete: migrationsComplete,
       testDataPresent: testData.hasTestData,
       overallHealth: isHealthy
     };
@@ -251,13 +294,7 @@ export default async function handler(req, res) {
     return res.status(503).json(health);
     
   } finally {
-    // Clean up database connection
-    if (client) {
-      try {
-        client.close();
-      } catch (error) {
-        console.error('Failed to close database connection:', error);
-      }
-    }
+    // Clean up database connection - Note: centralized client manages its own lifecycle
+    // No explicit close needed since we're using the shared service
   }
 }

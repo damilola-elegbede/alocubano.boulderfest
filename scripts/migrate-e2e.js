@@ -26,7 +26,8 @@ if (!process.env.VERCEL && !process.env.CI) {
 
 // Safety check for E2E database
 function validateE2ESafety() {
-  const dbUrl = process.env.TURSO_DATABASE_URL;
+  // Use E2E_TURSO_* vars with fallback to standard vars
+  const dbUrl = process.env.E2E_TURSO_DATABASE_URL || process.env.TURSO_DATABASE_URL;
   const isE2E = process.env.E2E_TEST_MODE === 'true' || 
                 process.env.ENVIRONMENT === 'e2e-test' ||
                 process.env.NODE_ENV === 'test';
@@ -48,8 +49,9 @@ function validateE2ESafety() {
 
 // Create database client
 function createDatabaseClient() {
-  const authToken = process.env.TURSO_AUTH_TOKEN;
-  const databaseUrl = process.env.TURSO_DATABASE_URL;
+  // Use E2E_TURSO_* vars with fallback to standard vars
+  const authToken = process.env.E2E_TURSO_AUTH_TOKEN || process.env.TURSO_AUTH_TOKEN;
+  const databaseUrl = process.env.E2E_TURSO_DATABASE_URL || process.env.TURSO_DATABASE_URL;
   
   if (!authToken || !databaseUrl) {
     console.error('❌ Missing database credentials');
@@ -74,19 +76,76 @@ function calculateChecksum(content) {
 
 // Parse SQL file into individual statements
 function parseSQLStatements(content) {
-  // Remove comments
-  const withoutComments = content
+  // Remove single-line comments (-- comments)
+  let withoutComments = content
     .split('\n')
-    .filter(line => !line.trim().startsWith('--'))
+    .map(line => {
+      const commentIndex = line.indexOf('--');
+      if (commentIndex !== -1) {
+        // Check if the -- is inside a string literal
+        const beforeComment = line.substring(0, commentIndex);
+        const singleQuotes = (beforeComment.match(/'/g) || []).length;
+        const doubleQuotes = (beforeComment.match(/"/g) || []).length;
+        
+        // If we have an odd number of quotes before the comment, it's likely inside a string
+        if (singleQuotes % 2 === 0 && doubleQuotes % 2 === 0) {
+          return line.substring(0, commentIndex).trim();
+        }
+      }
+      return line;
+    })
     .join('\n');
-  
-  // Split by semicolons but handle multi-line statements
-  const statements = withoutComments
-    .split(';')
-    .map(stmt => stmt.trim())
-    .filter(stmt => stmt.length > 0);
-  
-  return statements;
+
+  // Remove multi-line comments (/* ... */)
+  withoutComments = withoutComments.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  // Split by semicolons but handle quoted strings properly
+  const statements = [];
+  let currentStatement = '';
+  let inSingleQuote = false;
+  let inDoubleQuote = false;
+  let escaped = false;
+
+  for (let i = 0; i < withoutComments.length; i++) {
+    const char = withoutComments[i];
+    const nextChar = withoutComments[i + 1];
+
+    if (escaped) {
+      escaped = false;
+      currentStatement += char;
+      continue;
+    }
+
+    if (char === '\\') {
+      escaped = true;
+      currentStatement += char;
+      continue;
+    }
+
+    if (char === "'" && !inDoubleQuote) {
+      inSingleQuote = !inSingleQuote;
+      currentStatement += char;
+    } else if (char === '"' && !inSingleQuote) {
+      inDoubleQuote = !inDoubleQuote;
+      currentStatement += char;
+    } else if (char === ';' && !inSingleQuote && !inDoubleQuote) {
+      const statement = currentStatement.trim();
+      if (statement.length > 0) {
+        statements.push(statement);
+      }
+      currentStatement = '';
+    } else {
+      currentStatement += char;
+    }
+  }
+
+  // Add the last statement if it doesn't end with semicolon
+  const lastStatement = currentStatement.trim();
+  if (lastStatement.length > 0) {
+    statements.push(lastStatement);
+  }
+
+  return statements.filter(stmt => stmt.length > 0);
 }
 
 // Initialize migrations table
@@ -166,10 +225,15 @@ async function executeMigration(client, migration) {
   await client.execute('BEGIN TRANSACTION');
   
   try {
-    // Record migration start
+    // Use UPSERT instead of INSERT to avoid conflicts on retry
     await client.execute(`
       INSERT INTO migrations (filename, checksum, status)
       VALUES (?, ?, 'running')
+      ON CONFLICT(filename) DO UPDATE SET 
+        checksum = excluded.checksum,
+        status = 'running',
+        executed_at = CURRENT_TIMESTAMP,
+        error_message = NULL
     `, [filename, checksum]);
     
     // Execute each statement
@@ -205,8 +269,12 @@ async function executeMigration(client, migration) {
     // Record failure
     try {
       await client.execute(`
-        INSERT OR REPLACE INTO migrations (filename, checksum, status, error_message)
+        INSERT INTO migrations (filename, checksum, status, error_message)
         VALUES (?, ?, 'failed', ?)
+        ON CONFLICT(filename) DO UPDATE SET 
+          status = 'failed',
+          error_message = excluded.error_message,
+          executed_at = CURRENT_TIMESTAMP
       `, [filename, checksum, error.message]);
     } catch (recordError) {
       console.error('   ⚠️ Failed to record migration failure:', recordError.message);
@@ -308,7 +376,7 @@ async function runMigrations() {
     await initMigrationsTable(client);
     
     switch (command) {
-      case 'up':
+      case 'up': {
         // Run pending migrations
         const executedMigrations = await getExecutedMigrations(client);
         const executedFilenames = new Set(executedMigrations.map(m => m.filename));
@@ -337,8 +405,9 @@ async function runMigrations() {
         // Validate schema
         await validateSchema(client);
         break;
+      }
         
-      case 'status':
+      case 'status': {
         // Show migration status
         const migrations = await client.execute(`
           SELECT filename, status, executed_at, error_message
@@ -365,13 +434,15 @@ async function runMigrations() {
           });
         }
         break;
+      }
         
-      case 'rollback':
+      case 'rollback': {
         // Rollback last migration (E2E testing only)
         await rollbackLastMigration(client);
         break;
+      }
         
-      case 'validate':
+      case 'validate': {
         // Just validate schema
         const isValid = await validateSchema(client);
         if (isValid) {
@@ -381,14 +452,16 @@ async function runMigrations() {
           process.exit(1);
         }
         break;
+      }
         
-      case 'reset':
+      case 'reset': {
         // Reset all migrations (E2E only)
         console.log('\n🔄 Resetting all migrations...');
         await client.execute('DELETE FROM migrations');
         console.log('✅ Migration history cleared');
         console.log('ℹ️ Run "migrate-e2e.js up" to rerun all migrations');
         break;
+      }
         
       default:
         console.log(`

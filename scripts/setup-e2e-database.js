@@ -25,7 +25,8 @@ if (!process.env.VERCEL && !process.env.CI) {
 
 // Safety check: Ensure we're using E2E database
 function validateDatabaseSafety() {
-  const dbUrl = process.env.TURSO_DATABASE_URL;
+  // Use E2E_TURSO_* vars with fallback to standard vars
+  const dbUrl = process.env.E2E_TURSO_DATABASE_URL || process.env.TURSO_DATABASE_URL;
   const isE2E = process.env.E2E_TEST_MODE === 'true' || 
                 process.env.ENVIRONMENT === 'e2e-test' ||
                 process.env.NODE_ENV === 'test';
@@ -47,12 +48,13 @@ function validateDatabaseSafety() {
 
 // Create database client
 function createDatabaseClient() {
-  const authToken = process.env.TURSO_AUTH_TOKEN;
-  const databaseUrl = process.env.TURSO_DATABASE_URL;
+  // Use E2E_TURSO_* vars with fallback to standard vars
+  const authToken = process.env.E2E_TURSO_AUTH_TOKEN || process.env.TURSO_AUTH_TOKEN;
+  const databaseUrl = process.env.E2E_TURSO_DATABASE_URL || process.env.TURSO_DATABASE_URL;
   
   if (!authToken || !databaseUrl) {
-    console.error('❌ Missing database credentials in .env.e2e');
-    console.error('   Required: TURSO_AUTH_TOKEN, TURSO_DATABASE_URL');
+    console.error('❌ Missing database credentials');
+    console.error('   Required: E2E_TURSO_AUTH_TOKEN (or TURSO_AUTH_TOKEN), E2E_TURSO_DATABASE_URL (or TURSO_DATABASE_URL)');
     process.exit(1);
   }
   
@@ -278,7 +280,7 @@ async function setupE2EDatabase() {
   const command = args[0] || 'setup';
   
   switch (command) {
-    case 'setup':
+    case 'setup': {
       // Create tables and insert test data
       const tablesCreated = await createCoreTables(client);
       if (!tablesCreated) {
@@ -297,8 +299,9 @@ async function setupE2EDatabase() {
       
       console.log('\n✅ E2E database setup completed successfully!');
       break;
+    }
       
-    case 'validate':
+    case 'validate': {
       // Just validate existing schema
       const isValid = await validateSchema(client);
       if (isValid) {
@@ -308,8 +311,9 @@ async function setupE2EDatabase() {
         process.exit(1);
       }
       break;
+    }
       
-    case 'clean':
+    case 'clean': {
       // Clean test data only
       const cleaned = await cleanupDatabase(client, false);
       if (cleaned) {
@@ -318,8 +322,9 @@ async function setupE2EDatabase() {
         process.exit(1);
       }
       break;
+    }
       
-    case 'reset':
+    case 'reset': {
       // Full reset - drop and recreate everything
       const reset = await cleanupDatabase(client, true);
       if (!reset) {
@@ -338,6 +343,7 @@ async function setupE2EDatabase() {
       
       console.log('\n✅ Database fully reset successfully!');
       break;
+    }
       
     default:
       console.log(`
