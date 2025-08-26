@@ -69,7 +69,20 @@ export async function setupMobileDevice(page, deviceName) {
   }
 
   await page.setViewportSize(device.viewport);
-  await page.setUserAgent(device.userAgent);
+  
+  // UA cannot be set per-page; this shim helps UI logic but not HTTP headers.
+  if (device.userAgent) {
+    await page.addInitScript(ua => {
+      Object.defineProperty(navigator, 'userAgent', { get: () => ua });
+    }, device.userAgent);
+  }
+  
+  // Set touch emulation for mobile devices
+  if (device.hasTouch !== undefined) {
+    await page.addInitScript(hasTouch => {
+      Object.defineProperty(navigator, 'maxTouchPoints', { get: () => hasTouch ? 5 : 0 });
+    }, device.hasTouch);
+  }
   
   // Set device pixel ratio
   if (device.deviceScaleFactor) {

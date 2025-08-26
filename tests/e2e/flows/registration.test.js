@@ -346,14 +346,16 @@ test.describe('Comprehensive User Registration Flow', () => {
     });
 
     await test.step('Test Apple Wallet pass generation API', async () => {
-      // Mock Apple Wallet service
-      await mockAPI(page, `**/api/tickets/apple-wallet/${registeredTicket.ticketId}`, {
-        status: 200,
-        body: Buffer.from('mock-pkpass-data'),
-        headers: {
-          'Content-Type': 'application/vnd.apple.pkpass',
-          'Content-Disposition': `attachment; filename="${registeredTicket.ticketId}.pkpass"`
-        }
+      // Mock Apple Wallet service (binary response)
+      await page.route(`**/api/tickets/apple-wallet/${registeredTicket.ticketId}`, route => {
+        route.fulfill({
+          status: 200,
+          contentType: 'application/vnd.apple.pkpass',
+          headers: {
+            'Content-Disposition': `attachment; filename="${registeredTicket.ticketId}.pkpass"`
+          },
+          body: Buffer.from('mock-pkpass-data')
+        });
       });
 
       const walletResponse = await page.request.get(`/api/tickets/apple-wallet/${registeredTicket.ticketId}`);

@@ -13,7 +13,7 @@ import { expect } from '@playwright/test';
  */
 export class BrevoIntegrationHelper {
   constructor(options = {}) {
-    this.testMode = options.testMode || true;
+    this.testMode = options.testMode ?? true;
     this.baseUrl = options.baseUrl || 'http://localhost:3000';
     this.apiKey = options.apiKey || process.env.BREVO_API_KEY || 'test-api-key';
     this.webhookSecret = options.webhookSecret || process.env.BREVO_WEBHOOK_SECRET || 'test-webhook-secret';
@@ -28,6 +28,7 @@ export class BrevoIntegrationHelper {
     
     // Track test data for cleanup
     this.testDataRegistry = new Set();
+    this.subscriberState = new Map();
   }
 
   /**
@@ -91,10 +92,14 @@ export class BrevoIntegrationHelper {
    */
   validateUnsubscribeToken(email, token) {
     const expectedToken = this.generateUnsubscribeToken(email);
-    return crypto.timingSafeEqual(
-      Buffer.from(token, 'hex'),
-      Buffer.from(expectedToken, 'hex')
-    );
+    try {
+      const provided = Buffer.from(token || '', 'hex');
+      const expected = Buffer.from(expectedToken, 'hex');
+      if (provided.length !== expected.length) return false;
+      return crypto.timingSafeEqual(provided, expected);
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -142,7 +147,13 @@ export class BrevoIntegrationHelper {
    */
   async getSubscriberStatus(email) {
     if (this.testMode) {
-      // Mock subscriber status response
+      // Use tracked state if available, otherwise return default
+      const trackedState = this.subscriberState.get(email);
+      if (trackedState) {
+        return trackedState;
+      }
+      
+      // Default mock subscriber status response
       return {
         email: email,
         status: 'active',
@@ -186,6 +197,8 @@ export class BrevoIntegrationHelper {
       
       if (response.ok()) {
         const responseData = await response.json();
+        // Update internal state after successful webhook processing
+        this._applyWebhookEvent(completeWebhookData);
         return responseData;
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -195,6 +208,53 @@ export class BrevoIntegrationHelper {
       console.error('Webhook simulation error:', error);
       throw error;
     }
+  }
+
+  /**
+   * Apply webhook event to internal state
+   * Updates subscriberState based on webhook event type
+   */
+  _applyWebhookEvent(webhookData) {
+    const email = webhookData.email;
+    if (!email) return;
+
+    const currentState = this.subscriberState.get(email) || {
+      email: email,
+      status: 'active',
+      lists: ['newsletter'],
+      attributes: {},
+      softBounceCount: 0,
+      hardBounceCount: 0,
+      lastActivity: new Date().toISOString()
+    };
+
+    switch (webhookData.event) {
+      case 'unsubscribed':
+        currentState.status = 'unsubscribed';
+        currentState.lists = [];
+        break;
+      case 'subscribed':
+        currentState.status = 'active';
+        if (!currentState.lists.includes('newsletter')) {
+          currentState.lists.push('newsletter');
+        }
+        break;
+      case 'spam':
+        currentState.status = 'spam';
+        break;
+      case 'bounced':
+        currentState.hardBounceCount += 1;
+        if (currentState.hardBounceCount >= 5) {
+          currentState.status = 'bounced';
+        }
+        break;
+      case 'soft_bounced':
+        currentState.softBounceCount += 1;
+        break;
+    }
+
+    currentState.lastActivity = new Date().toISOString();
+    this.subscriberState.set(email, currentState);
   }
 
   /**
@@ -277,6 +337,7 @@ export class BrevoIntegrationHelper {
       await Promise.all(cleanupPromises);
       console.log(`Cleaned up ${cleanupPromises.length} test items`);
       this.testDataRegistry.clear();
+      this.subscriberState.clear();
     } catch (error) {
       console.error('Error during test data cleanup:', error);
     }
@@ -411,14 +472,14 @@ export class BrevoIntegrationHelper {
   /**
    * Monitor webhook processing performance
    */
-  async monitorWebhookPerformance(webhookEvents = []) {
+  async monitorWebhookPerformance(request, webhookEvents = []) {
     const results = [];
     
     for (const event of webhookEvents) {
       const startTime = process.hrtime.bigint();
       
       try {
-        await this.simulateWebhookEvent(event);
+        await this.simulateWebhookEvent(request, event);
         const endTime = process.hrtime.bigint();
         const processingTime = Number(endTime - startTime) / 1000000; // Convert to milliseconds
         
@@ -500,6 +561,13 @@ export async function simulateWebhookEvent(request, webhookData) {
 export async function validateUnsubscribeToken(email) {
   const helper = new BrevoIntegrationHelper({ testMode: true });
   return helper.generateUnsubscribeToken(email);
+}
+
+/**
+ * Generate unsubscribe token (correctly named)
+ */
+export function generateUnsubscribeToken(email, secret = 'default-secret') {
+  return crypto.createHmac('sha256', secret).update(email).digest('hex');
 }
 
 /**

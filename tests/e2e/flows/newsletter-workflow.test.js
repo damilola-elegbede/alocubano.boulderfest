@@ -6,7 +6,6 @@
 
 import { test, expect } from '@playwright/test';
 import { 
-  generateTestData, 
   waitForAPI, 
   fillForm, 
   screenshot,
@@ -14,8 +13,7 @@ import {
   waitForNetworkIdle 
 } from '../helpers/test-utils.js';
 import { 
-  TestDataFactory,
-  createTestScenario 
+  TestDataFactory
 } from '../helpers/test-data-factory.js';
 import { 
   BrevoIntegrationHelper,
