@@ -19,7 +19,6 @@ describe('Registration API', () => {
     expect(NAME_REGEX.test('Mary-Jane')).toBe(true);
     expect(NAME_REGEX.test('J')).toBe(false);
     expect(NAME_REGEX.test('John123')).toBe(false);
-    
     expect(EMAIL_REGEX.test('user@example.com')).toBe(true);
     expect(EMAIL_REGEX.test('not-an-email')).toBe(false);
     expect(EMAIL_REGEX.test('user@@example.com')).toBe(false);
@@ -39,6 +38,6 @@ describe('Registration API', () => {
 
   it('validates security requirements', () => {
     expect(JWT_SECRET.length).toBeGreaterThanOrEqual(32);
-    expect(15 * 60 * 1000).toBe(900000); // Rate limit window
+    expect(15 * 60 * 1000).toBe(900000);
   });
 });

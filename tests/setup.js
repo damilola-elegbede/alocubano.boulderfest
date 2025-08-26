@@ -1,15 +1,16 @@
-/**
- * Test Setup - Minimal Configuration
- * Basic environment setup for streamlined tests.
- * Target: < 20 lines
- */
-
-// Set test environment variables
 process.env.NODE_ENV = 'test';
-
-// Set test base URL if not provided
+const CI_PORT = process.env.CI_PORT || process.env.PORT || '3000';
 if (!process.env.TEST_BASE_URL) {
-  process.env.TEST_BASE_URL = 'http://localhost:3000';
+  process.env.TEST_BASE_URL = `http://localhost:${CI_PORT}`;
 }
 
-console.log('🧪 Streamlined test setup complete - testing API contracts only');
+if (!globalThis.fetch) {
+  try {
+    const { default: fetch } = await import('node-fetch');
+    globalThis.fetch = fetch;
+  } catch (error) {
+    console.warn('⚠️ Could not import node-fetch for global fetch polyfill');
+  }
+}
+
+console.log('🧪 Test setup complete - environment configured for API contract testing');

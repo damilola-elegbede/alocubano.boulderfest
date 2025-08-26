@@ -2,7 +2,7 @@
 
 ## Overview
 
-The A Lo Cubano Boulder Fest API provides comprehensive access to festival media, performance monitoring, image optimization services, and ticket registration management. Built on Vercel's serverless platform, the API emphasizes performance, caching, security, and modern web standards.
+The A Lo Cubano Boulder Fest API provides comprehensive access to festival media, performance monitoring, image optimization services, ticket registration management, and health monitoring capabilities. Built on Vercel's serverless platform, the API emphasizes performance, caching, security, and modern web standards.
 
 ### Base URL
 
@@ -105,6 +105,311 @@ The registration system enables ticket purchasers to register attendee informati
 - Rate limiting (3 attempts per 15 minutes)
 - Input validation and XSS prevention
 - Atomic batch registration
+
+## Health & Monitoring APIs
+
+### General Health Check
+
+#### Endpoint
+
+```
+GET /api/health/check
+```
+
+Provides overall application health status including database connectivity, external service availability, and system performance metrics.
+
+#### Response Format
+
+##### Success Response (200)
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-08-26T15:30:00.000Z",
+  "version": "1.0.0",
+  "environment": "production",
+  "checks": {
+    "database": {
+      "status": "healthy",
+      "responseTime": 45,
+      "connectionPool": "available"
+    },
+    "externalServices": {
+      "stripe": "healthy",
+      "brevo": "healthy",
+      "googleDrive": "healthy"
+    },
+    "system": {
+      "memory": "normal",
+      "cpu": "normal",
+      "disk": "normal"
+    }
+  },
+  "uptime": 86400,
+  "responseTime": 125
+}
+```
+
+### Database Health Check
+
+#### Endpoint
+
+```
+GET /api/health/database
+```
+
+Monitors development database connectivity, migration status, and performance metrics.
+
+#### Response Format
+
+##### Success Response (200)
+
+```json
+{
+  "status": "healthy",
+  "database": {
+    "connected": true,
+    "responseTime": 35,
+    "migrations": {
+      "total": 15,
+      "completed": 15,
+      "failed": 0,
+      "lastMigration": {
+        "filename": "015_add_wallet_passes.sql",
+        "status": "completed",
+        "executedAt": "2025-08-20T10:15:00.000Z"
+      }
+    },
+    "tables": {
+      "count": 8,
+      "healthy": true
+    }
+  },
+  "timestamp": "2025-08-26T15:30:00.000Z"
+}
+```
+
+### E2E Database Health Check
+
+#### Endpoint
+
+```
+GET /api/health/e2e-database
+```
+
+**Availability**: Only available when `E2E_TEST_MODE=true` or `ENVIRONMENT=e2e-test`
+
+Provides comprehensive health monitoring for the E2E test database, including schema validation, migration status, and test data verification.
+
+#### Access Control
+
+This endpoint implements strict access controls for security:
+
+- **Environment Requirement**: Only accessible in E2E test environments
+- **Database Validation**: Ensures database URL contains "e2e-test" identifier
+- **Safe Operations**: Read-only health checks, no data modification
+
+#### Response Format
+
+##### Success Response (200)
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-08-26T15:30:00.000Z",
+  "environment": "e2e-test",
+  "checks": {
+    "clientCreation": {
+      "success": true
+    },
+    "connectivity": {
+      "connected": true,
+      "latency": null
+    },
+    "schema": {
+      "valid": true,
+      "totalTables": 8,
+      "requiredTables": 8,
+      "presentTables": 8,
+      "missingTables": [],
+      "columnChecks": {
+        "registrations": {
+          "hasRequiredColumns": true,
+          "columns": 12,
+          "missing": []
+        }
+      }
+    },
+    "migrations": {
+      "total": 15,
+      "completed": 15,
+      "failed": 0,
+      "pending": 0,
+      "lastMigration": {
+        "filename": "015_add_wallet_passes.sql",
+        "status": "completed",
+        "executed_at": "2025-08-25T14:20:00.000Z"
+      }
+    },
+    "testData": {
+      "testRegistrations": 1,
+      "testSubscribers": 1,
+      "hasTestData": true
+    }
+  },
+  "summary": {
+    "databaseConnected": true,
+    "schemaValid": true,
+    "migrationsComplete": true,
+    "testDataPresent": true,
+    "overallHealth": true
+  },
+  "responseTime": 245
+}
+```
+
+##### Access Denied Response (403)
+
+```json
+{
+  "error": "E2E health check endpoint is not available in this environment"
+}
+```
+
+##### Unhealthy Response (503)
+
+```json
+{
+  "status": "unhealthy",
+  "timestamp": "2025-08-26T15:30:00.000Z",
+  "environment": "e2e-test",
+  "checks": {
+    "connectivity": {
+      "connected": false,
+      "error": "Connection timeout after 5000ms"
+    },
+    "schema": {
+      "valid": false,
+      "error": "Table 'registrations' not found"
+    }
+  },
+  "responseTime": 5250
+}
+```
+
+#### Health Check Categories
+
+##### Client Creation
+- Database client initialization
+- Credential validation
+- Connection string parsing
+
+##### Connectivity
+- Basic database ping test  
+- Connection timeout handling
+- Network latency measurement
+
+##### Schema Validation
+- **Required Tables**: `migrations`, `registrations`, `email_subscribers`, `tickets`, `payment_events`, `admin_rate_limits`, `admin_sessions`, `wallet_passes`
+- **Column Validation**: Verifies critical columns exist in core tables
+- **Table Counts**: Tracks total vs expected table counts
+
+##### Migration Status
+- Migration completion tracking
+- Failed migration detection
+- Last migration metadata
+- Pending migration identification
+
+##### Test Data Verification
+- E2E test data presence (`%@e2e-test.%` email pattern)
+- Test registration count validation
+- Test subscriber verification
+
+#### Usage Examples
+
+##### cURL
+
+```bash
+# Check E2E database health
+curl -f http://localhost:3000/api/health/e2e-database | jq '.'
+
+# Health check in CI/CD pipeline
+curl -f https://your-e2e-environment.vercel.app/api/health/e2e-database \
+  -H "Accept: application/json" | jq '.status'
+```
+
+##### JavaScript
+
+```javascript
+// E2E test setup validation
+async function validateE2EEnvironment() {
+  try {
+    const response = await fetch('/api/health/e2e-database');
+    
+    if (!response.ok) {
+      throw new Error(`Health check failed: ${response.status}`);
+    }
+    
+    const health = await response.json();
+    
+    if (health.status !== 'healthy') {
+      throw new Error('E2E database is not healthy');
+    }
+    
+    console.log('✅ E2E environment is ready');
+    console.log(`Database: ${health.summary.databaseConnected ? 'Connected' : 'Disconnected'}`);
+    console.log(`Schema: ${health.summary.schemaValid ? 'Valid' : 'Invalid'}`);
+    console.log(`Test Data: ${health.summary.testDataPresent ? 'Present' : 'Missing'}`);
+    
+    return health;
+  } catch (error) {
+    console.error('❌ E2E environment validation failed:', error);
+    throw error;
+  }
+}
+
+// Use in test setup
+beforeAll(async () => {
+  await validateE2EEnvironment();
+});
+```
+
+##### CI/CD Integration
+
+```yaml
+# GitHub Actions workflow example
+- name: Validate E2E Database Health
+  run: |
+    # Wait for database to be ready
+    timeout 60 bash -c 'until curl -f ${{ env.E2E_BASE_URL }}/api/health/e2e-database; do sleep 2; done'
+    
+    # Verify health status
+    HEALTH_STATUS=$(curl -s ${{ env.E2E_BASE_URL }}/api/health/e2e-database | jq -r '.status')
+    
+    if [ "$HEALTH_STATUS" != "healthy" ]; then
+      echo "❌ E2E database health check failed"
+      curl -s ${{ env.E2E_BASE_URL }}/api/health/e2e-database | jq '.'
+      exit 1
+    fi
+    
+    echo "✅ E2E database is healthy and ready"
+```
+
+#### Error Recovery
+
+The endpoint provides detailed error information to help diagnose and resolve issues:
+
+1. **Connection Issues**: Check database credentials and network connectivity
+2. **Schema Problems**: Run E2E database setup: `npm run db:e2e:setup`
+3. **Missing Test Data**: Execute test data insertion: `npm run db:e2e:clean && npm run db:e2e:setup`
+4. **Migration Failures**: Reset and re-run migrations: `npm run migrate:e2e:reset`
+
+#### Security Considerations
+
+- **Environment Isolation**: Strict environment validation prevents production access
+- **Read-Only Operations**: Health checks perform no data modifications
+- **Credential Validation**: Database credentials verified before connection attempts
+- **Error Sanitization**: Sensitive information filtered from error responses
 
 ## Gallery API
 
@@ -1529,6 +1834,9 @@ document.addEventListener("DOMContentLoaded", () => {
 | `/api/image-proxy/[fileId]` | Image optimization    | 1,2,3 | AVIF, WebP, responsive delivery   |
 | `/api/performance-metrics`  | Performance tracking  | 3     | Real-time monitoring              |
 | `/api/hero-image/[pageId]`  | Page-specific heroes  | 2,3   | Context-aware optimization        |
+| `/api/health/check`         | General health        | 3     | System-wide monitoring            |
+| `/api/health/database`      | Dev DB health         | 3     | Database connectivity             |
+| `/api/health/e2e-database`  | E2E DB health         | 3     | E2E test environment monitoring   |
 
 ### Best Practices for Integration
 
@@ -1567,7 +1875,8 @@ document.addEventListener("DOMContentLoaded", () => {
 #### Debug Endpoints
 
 - `/api/image-proxy/health` - Image processing health status
-- `/api/debug` - General API debugging information
+- `/api/health/check` - General API debugging information
+- `/api/health/e2e-database` - E2E database status (E2E mode only)
 - Browser DevTools Network tab - Monitor request/response patterns
 
 #### Performance Optimization Tips
@@ -1578,8 +1887,4 @@ document.addEventListener("DOMContentLoaded", () => {
 - Monitor Core Web Vitals metrics
 - Optimize for 3G and slower connections
 
-This comprehensive API documentation provides developers with everything needed to integrate the Phase 3 features of the A Lo Cubano Boulder Fest website, ensuring optimal performance, modern image formats, and detailed monitoring capabilities.
-
-```
-
-```
+This comprehensive API documentation provides developers with everything needed to integrate the Phase 3 features of the A Lo Cubano Boulder Fest website, ensuring optimal performance, modern image formats, detailed monitoring capabilities, and comprehensive health checking for both development and E2E test environments.

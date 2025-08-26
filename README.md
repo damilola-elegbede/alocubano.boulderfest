@@ -56,6 +56,7 @@ alocubano.boulderfest/
 │   ├── test-maintenance.js (Test health monitoring)
 │   ├── test-runner.js (Advanced test execution)
 │   ├── verify-structure.js (Project structure validation)
+│   ├── setup-e2e-database.js (E2E database automation)
 │   └── debug/ (Debug utilities)
 ├── css/
 │   ├── base.css (Design system)
@@ -198,6 +199,45 @@ Focus on **user-visible behavior** with **minimal complexity**:
 - Keep each test under 20 lines
 - Use direct HTTP requests, not elaborate abstractions
 - Clean up test data explicitly in each test
+
+## Database Management
+
+### Development Database
+
+```bash
+# Migrations
+npm run migrate:up           # Run pending migrations
+npm run migrate:status       # Check migration status
+npm run migrate:verify       # Verify integrity
+
+# Database access
+npm run db:shell            # SQLite shell
+npm run health:database     # Health check
+```
+
+### E2E Test Database
+
+For comprehensive end-to-end testing, separate database commands are available:
+
+```bash
+# E2E Database Setup
+npm run db:e2e:setup        # Create tables and insert test data
+npm run db:e2e:validate     # Validate existing database schema
+npm run db:e2e:clean        # Remove test data only
+npm run db:e2e:reset        # Full reset - drop and recreate everything
+
+# E2E Database Migration Management  
+npm run migrate:e2e:up      # Run E2E database migrations
+npm run migrate:e2e:status  # Check E2E migration status
+npm run migrate:e2e:validate # Validate E2E schema integrity
+npm run migrate:e2e:reset   # Reset E2E migrations completely
+```
+
+**Safety Features:**
+- All E2E database operations require `E2E_TEST_MODE=true` or `ENVIRONMENT=e2e-test`
+- Database URLs are validated to contain "test" or "staging" keywords
+- Automatic test data cleanup prevents contamination
+- Separate migration tracking for E2E vs development environments
 
 ## 📱 Browser Support
 

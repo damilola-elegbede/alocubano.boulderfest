@@ -19,7 +19,6 @@ test('registration flow works end-to-end', async () => {
 });
 
 test('batch registration and health checks work', async () => {
-  // Test batch registration
   const registrations = [{
     ticketId: 'TKT-BATCH001',
     firstName: 'Alice',
@@ -33,7 +32,6 @@ test('batch registration and health checks work', async () => {
   expect(batchResponse.data).toHaveProperty('processedCount');
   expect(batchResponse.data.processedCount).toBe(registrations.length);
   
-  // Test health check
   const healthResponse = await testRequest('GET', '/api/registration/health');
   expect(healthResponse.status).toBe(HTTP_STATUS.OK);
   expect(healthResponse.data).toHaveProperty('service');
@@ -41,7 +39,6 @@ test('batch registration and health checks work', async () => {
 });
 
 test('registration validation and performance', async () => {
-  // Test expired/invalid tickets
   const startTime = Date.now();
   const response = await testRequest('POST', '/api/tickets/register', {
     ticketId: 'TKT-EXPIRED01',
@@ -55,7 +52,6 @@ test('registration validation and performance', async () => {
     expect(response.data?.error).toMatch(/expired|deadline|not found/i);
   }
   
-  // Performance check - CI mode gets more time due to retries
   const timeLimit = process.env.CI ? 5000 : 1000;
   expect(responseTime).toBeLessThan(timeLimit);
 });
