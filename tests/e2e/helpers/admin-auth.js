@@ -6,6 +6,7 @@
 import { test, expect } from '@playwright/test';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 /**
  * Admin Authentication Helper
@@ -15,7 +16,7 @@ export class AdminAuthHelper {
   constructor(page, options = {}) {
     this.page = page;
     this.baseUrl = options.baseUrl || 'http://localhost:3000';
-    this.adminPassword = options.adminPassword || process.env.TEST_ADMIN_PASSWORD || 'test-admin-password';
+    this.adminPassword = options.adminPassword || process.env.TEST_ADMIN_PASSWORD || this.generateSecureTestPassword();
     this.adminSecret = this.validateAndGetAdminSecret(options.adminSecret);
     this.sessionDuration = options.sessionDuration || 3600000; // 1 hour
     this.currentSession = null;
@@ -88,6 +89,21 @@ export class AdminAuthHelper {
   }
 
   /**
+   * Generate a secure test password when environment variables are not available
+   * @returns {string} Cryptographically secure password
+   */
+  generateSecureTestPassword() {
+    // Generate a secure 16-character random password with required complexity
+    const randomBytes = crypto.randomBytes(12).toString('hex');
+    const specialChars = '!@#$%^&*';
+    const randomSpecial = specialChars[crypto.randomInt(0, specialChars.length)];
+    const randomNumber = crypto.randomInt(0, 10);
+    
+    // Combine to create a secure password: randomBytes + number + special + uppercase
+    return randomBytes + randomNumber + randomSpecial + 'A';
+  }
+
+  /**
    * Initialize security event logger
    * @returns {Object} Logger instance
    */
@@ -102,7 +118,7 @@ export class AdminAuthHelper {
           data,
           testId: process.env.E2E_TEST_RUN_ID || 'unknown'
         };
-        this.events.push(event);
+        events.push(event);
         
         // Only log to console in development or if explicitly enabled
         if (process.env.NODE_ENV !== 'production' || process.env.LOG_SECURITY_EVENTS === 'true') {
@@ -123,7 +139,7 @@ export class AdminAuthHelper {
       eventType,
       severity,
       timestamp: new Date().toISOString(),
-      userAgent: this.page.context().browser().userAgent || 'unknown',
+      userAgent: 'playwright-browser' || 'unknown',
       testEnvironment: process.env.NODE_ENV || 'development',
       ...details
     };
@@ -344,7 +360,7 @@ export class AdminAuthHelper {
       throw new Error('MFA input field not found');
     }
 
-    await this.page.fill(mfaInput, code);
+    await mfaInput.fill(code);
     
     // Find and click submit button
     const submitButton = await this.page.$('button[type="submit"]') || 
@@ -775,7 +791,22 @@ export class SecurityTestHelper {
   constructor(page, options = {}) {
     this.page = page;
     this.baseUrl = options.baseUrl || 'http://localhost:3000';
-    this.adminPassword = options.adminPassword || process.env.TEST_ADMIN_PASSWORD || 'test-admin-password';
+    this.adminPassword = options.adminPassword || process.env.TEST_ADMIN_PASSWORD || this.generateSecureTestPassword();
+  }
+
+  /**
+   * Generate a secure test password when environment variables are not available
+   * @returns {string} Cryptographically secure password
+   */
+  generateSecureTestPassword() {
+    // Generate a secure 16-character random password with required complexity
+    const randomBytes = crypto.randomBytes(12).toString('hex');
+    const specialChars = '!@#$%^&*';
+    const randomSpecial = specialChars[crypto.randomInt(0, specialChars.length)];
+    const randomNumber = crypto.randomInt(0, 10);
+    
+    // Combine to create a secure password: randomBytes + number + special + uppercase
+    return randomBytes + randomNumber + randomSpecial + 'A';
   }
 
   /**
@@ -1301,76 +1332,6 @@ export class SessionTestHelper {
   }
 }
 
-  /**
-   * Get security audit summary for the current session
-   */
-  getSecurityAuditSummary() {
-    if (!this.logger) {
-      return { events: [], summary: 'No security logging available' };
-    }
-    
-    const events = this.logger.events;
-    const summary = {
-      totalEvents: events.length,
-      criticalEvents: events.filter(e => e.level === 'critical').length,
-      highEvents: events.filter(e => e.level === 'high').length,
-      warningEvents: events.filter(e => e.level === 'warning').length,
-      infoEvents: events.filter(e => e.level === 'info').length,
-      lastEvent: events.length > 0 ? events[events.length - 1] : null,
-      securityStatus: this.calculateSecurityStatus(events)
-    };
-    
-    return { events, summary };
-  }
-  
-  /**
-   * Calculate overall security status based on events
-   */
-  calculateSecurityStatus(events) {
-    const criticalCount = events.filter(e => e.level === 'critical').length;
-    const highCount = events.filter(e => e.level === 'high').length;
-    
-    if (criticalCount > 0) {
-      return 'CRITICAL_ISSUES_DETECTED';
-    } else if (highCount > 2) {
-      return 'MULTIPLE_HIGH_RISK_ISSUES';
-    } else if (highCount > 0) {
-      return 'HIGH_RISK_ISSUES_DETECTED';
-    } else {
-      return 'SECURITY_VALIDATED';
-    }
-  }
-
-  /**
-   * Clean up all security event listeners and state
-   */
-  async cleanupSecurity() {
-    try {
-      this.logSecurityEvent('SECURITY_CLEANUP_START', 'info');
-      
-      // Clear session state
-      this.currentSession = null;
-      
-      // Clear security event log
-      if (this.logger) {
-        this.logger.events = [];
-      }
-      
-      // Remove any remaining event listeners
-      try {
-        await this.page.removeAllListeners();
-      } catch (error) {
-        console.warn('Could not remove all page listeners during cleanup:', error);
-      }
-      
-      this.logSecurityEvent('SECURITY_CLEANUP_COMPLETE', 'info');
-    } catch (error) {
-      console.error('Error during security cleanup:', error);
-    }
-  }
-}
-
-// Export default factory function
 export default function createAdminAuth(page, options = {}) {
   return new AdminAuthHelper(page, options);
 }

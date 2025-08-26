@@ -255,7 +255,7 @@ test('admin login flow', async ({ page }) => {
   
   // Login with credentials
   const session = await auth.login({
-    password: 'test-admin-password'
+    password: process.env.TEST_ADMIN_PASSWORD
   });
   
   // Verify successful login
@@ -588,6 +588,9 @@ jobs:
           E2E_TEST_MODE: true
           TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          
+      # Security Note: Always use GitHub Secrets for sensitive data in CI
+      # Never commit actual passwords or secrets to the repository
           
       - name: Upload Performance Reports
         uses: actions/upload-artifact@v3

@@ -9,6 +9,7 @@ import { TestDataFactory } from '../helpers/test-data-factory.js';
 import { DatabaseCleanup } from '../helpers/database-cleanup.js';
 import { generateTestData, waitForAPI, mockAPI, retry, fillForm } from '../helpers/test-utils.js';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 test.describe('Admin Panel Authentication and Dashboard', () => {
   let basePage;
@@ -16,10 +17,10 @@ test.describe('Admin Panel Authentication and Dashboard', () => {
   let databaseCleanup;
   let testRunId;
 
-  // Test credentials
+  // Test credentials - use environment variables or generate secure passwords
   const testAdmin = {
     username: 'admin',
-    password: 'TestAdminPassword123!',
+    password: process.env.TEST_ADMIN_PASSWORD || crypto.randomBytes(16).toString('hex') + 'A1!',
     invalidPassword: 'WrongPassword123!'
   };
 
@@ -589,10 +590,18 @@ test.describe('Admin Panel Authentication and Dashboard', () => {
         // Test first check-in button
         const firstButton = checkinButtons.first();
         if (await firstButton.isVisible().catch(() => false)) {
-          // Mock confirmation dialog
-          page.on('dialog', dialog => dialog.accept());
-          
+          // Handle confirmation dialog with one-off pattern for better cleanup
+          const dialogPromise = page.waitForEvent('dialog');
           await firstButton.click();
+          
+          try {
+            const dialog = await dialogPromise;
+            await dialog.accept();
+          } catch (error) {
+            // No dialog appeared, which is also acceptable
+            console.log('No confirmation dialog appeared');
+          }
+          
           await page.waitForTimeout(1000);
           console.log('Check-in functionality tested');
         }
@@ -735,11 +744,11 @@ test.describe('Admin Panel Authentication and Dashboard', () => {
       const response = await page.request.get('/pages/admin/dashboard.html');
       const headers = response.headers();
       
-      // Check for basic security headers
+      // Check for modern security headers (excluding deprecated x-xss-protection)
       const securityHeaders = [
         'x-frame-options',
         'x-content-type-options',
-        'x-xss-protection'
+        'content-security-policy'
       ];
       
       for (const header of securityHeaders) {
@@ -747,6 +756,9 @@ test.describe('Admin Panel Authentication and Dashboard', () => {
           console.log(`Security header ${header}: ${headers[header]}`);
         }
       }
+      
+      // Note: x-xss-protection header is deprecated and should not be tested
+      // Modern CSP headers provide better XSS protection
     });
 
     await test.step('Test XSS prevention in error messages', async () => {
@@ -782,10 +794,10 @@ test.describe('Admin Operations and Data Management', () => {
   let testRunId;
   let testTickets = [];
 
-  // Test admin credentials
+  // Test admin credentials - use environment variables or generate secure passwords
   const testAdmin = {
     username: 'admin',
-    password: 'TestAdminPassword123!'
+    password: process.env.TEST_ADMIN_PASSWORD || crypto.randomBytes(16).toString('hex') + 'A1!'
   };
 
   test.beforeAll(async () => {
@@ -1151,10 +1163,18 @@ test.describe('Admin Operations and Data Management', () => {
       if (buttonCount > 0) {
         const firstButton = checkinButtons.first();
         if (await firstButton.isVisible().catch(() => false)) {
-          // Handle confirmation dialog
-          page.on('dialog', dialog => dialog.accept());
-          
+          // Handle confirmation dialog with one-off pattern for better cleanup
+          const dialogPromise = page.waitForEvent('dialog');
           await firstButton.click();
+          
+          try {
+            const dialog = await dialogPromise;
+            await dialog.accept();
+          } catch (error) {
+            // No dialog appeared, which is also acceptable
+            console.log('No confirmation dialog appeared for individual check-in');
+          }
+          
           await page.waitForTimeout(2000);
           
           // Verify success message or status update
@@ -1599,10 +1619,18 @@ test.describe('Admin Operations and Data Management', () => {
       
       const bulkCheckinButton = page.locator('button').filter({ hasText: /bulk.*check.*in|batch.*check.*in/i });
       if (await bulkCheckinButton.isVisible({ timeout: 5000 }).catch(() => false)) {
-        // Handle confirmation dialog
-        page.on('dialog', dialog => dialog.accept());
-        
+        // Handle confirmation dialog with one-off pattern for better cleanup
+        const dialogPromise = page.waitForEvent('dialog');
         await bulkCheckinButton.click();
+        
+        try {
+          const dialog = await dialogPromise;
+          await dialog.accept();
+        } catch (error) {
+          // No dialog appeared, which is also acceptable
+          console.log('No confirmation dialog appeared for bulk check-in');
+        }
+        
         await page.waitForTimeout(3000);
         
         // Check for bulk operation results

@@ -371,15 +371,17 @@ export class GalleryMockHelper {
     let response;
     
     switch (scenario) {
-      case 'success':
+      case 'success': {
         const data = this.generator.generateGalleryData(year, options);
         response = APIResponseScenarios.success(data, delay);
         break;
+      }
         
-      case 'slow':
+      case 'slow': {
         const slowData = this.generator.generateGalleryData(year, options);
         response = APIResponseScenarios.slowNetwork(slowData, delay || 5000);
         break;
+      }
         
       case 'error':
         response = APIResponseScenarios.serverError(options.message);
@@ -413,6 +415,7 @@ export class GalleryMockHelper {
       });
     });
   }
+
 
   /**
    * Mock gallery years API endpoint
@@ -503,7 +506,7 @@ export class GalleryMockHelper {
   async verifyGalleryAPICalls(expectedCalls = ['gallery']) {
     const apiCalls = [];
     
-    this.page.on('request', (request) => {
+    const requestHandler = (request) => {
       const url = request.url();
       if (url.includes('/api/gallery')) {
         apiCalls.push({
@@ -512,12 +515,17 @@ export class GalleryMockHelper {
           timestamp: Date.now(),
         });
       }
-    });
+    };
+    
+    this.page.on('request', requestHandler);
 
     return {
       getCalls: () => apiCalls,
       hasCall: (pattern) => apiCalls.some(call => call.url.includes(pattern)),
       getCallCount: (pattern) => apiCalls.filter(call => call.url.includes(pattern)).length,
+      cleanup: () => {
+        this.page.off('request', requestHandler);
+      }
     };
   }
 }

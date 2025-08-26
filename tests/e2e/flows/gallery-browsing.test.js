@@ -455,7 +455,8 @@ test.describe('Gallery Browsing E2E Tests', () => {
       await test.step('Test performance with extensive scrolling', async () => {
         const performanceMetrics = await page.evaluate(async () => {
           const metrics = {
-            initialMemory: performance.memory ? performance.memory.usedJSHeapSize : 0,
+            // Fix browser-specific performance API usage - use null when not available
+            initialMemory: (performance.memory && performance.memory.usedJSHeapSize) ? performance.memory.usedJSHeapSize : null,
             scrollStart: performance.now(),
             renderTimes: [],
             scrollEvents: 0
@@ -486,7 +487,8 @@ test.describe('Gallery Browsing E2E Tests', () => {
           
           window.removeEventListener('scroll', scrollHandler);
           
-          metrics.finalMemory = performance.memory ? performance.memory.usedJSHeapSize : 0;
+          // Fix browser-specific performance API usage - use null when not available
+          metrics.finalMemory = (performance.memory && performance.memory.usedJSHeapSize) ? performance.memory.usedJSHeapSize : null;
           metrics.scrollEnd = performance.now();
           
           return metrics;
@@ -498,7 +500,9 @@ test.describe('Gallery Browsing E2E Tests', () => {
           avgRenderTime: performanceMetrics.renderTimes.length > 0 
             ? `${(performanceMetrics.renderTimes.reduce((a, b) => a + b, 0) / performanceMetrics.renderTimes.length).toFixed(2)}ms`
             : 'N/A',
-          memoryChange: performanceMetrics.finalMemory - performanceMetrics.initialMemory
+          memoryChange: (performanceMetrics.finalMemory !== null && performanceMetrics.initialMemory !== null) 
+            ? performanceMetrics.finalMemory - performanceMetrics.initialMemory 
+            : 'N/A (memory API not available)'
         });
         
         // Verify performance expectations

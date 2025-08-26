@@ -4,7 +4,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import createGalleryMock, { GoogleDriveMockGenerator, APIResponseScenarios } from '../helpers/google-drive-mock.js';
+import createGalleryMock, { GoogleDriveMockGenerator, APIResponseScenarios, GalleryPerformanceMock } from '../helpers/google-drive-mock.js';
 import createAdminAuth, { SecurityTestHelper, JWTTestHelper } from '../helpers/admin-auth.js';
 
 test.describe('Helper Usage Examples', () => {
@@ -32,6 +32,11 @@ test.describe('Helper Usage Examples', () => {
     // Verify API calls were made
     const apiTracker = await galleryMock.verifyGalleryAPICalls();
     expect(apiTracker.hasCall('gallery')).toBe(true);
+    
+    // Clean up API tracker event listeners
+    if (typeof apiTracker.cleanup === 'function') {
+      apiTracker.cleanup();
+    }
   });
 
   test('Gallery Mock - Error Scenarios', async ({ page }) => {
@@ -221,8 +226,8 @@ test.describe('Helper Usage Examples', () => {
     const galleryMock = createGalleryMock(page);
     
     // Create performance testing mock with large dataset
-    const performanceMock = new galleryMock.constructor(page);
-    await galleryMock.mockLargeGallery(500); // 500 items
+    const performanceMock = new GalleryPerformanceMock(page);
+    await performanceMock.mockLargeGallery(500); // 500 items
     
     // Measure page load time
     const startTime = Date.now();
@@ -298,5 +303,10 @@ test.describe('Helper Integration Tests', () => {
     const apiTracker = await galleryMock.verifyGalleryAPICalls();
     // Note: API might not be called on home page, this is just to verify the tracker works
     expect(typeof apiTracker.getCalls).toBe('function');
+    
+    // Clean up API tracker event listeners
+    if (typeof apiTracker.cleanup === 'function') {
+      apiTracker.cleanup();
+    }
   });
 });
