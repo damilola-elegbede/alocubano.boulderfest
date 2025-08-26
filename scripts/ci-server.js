@@ -17,6 +17,49 @@ const rootDir = path.join(__dirname, '..');
 const app = express();
 const PORT = process.env.PORT || process.env.CI_PORT || 3000;
 
+// Health endpoints FIRST (before any middleware)
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    server: 'context-aware-ci-server'
+  });
+});
+
+app.get('/api/health/simple', (req, res) => {
+  res.json({
+    status: 'healthy',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/health/check', (req, res) => {
+  res.json({ 
+    status: 'healthy',
+    health_score: 0.987,
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    services: {
+      database: { 
+        status: 'healthy', 
+        uptime: 99.9,
+        details: { connection: 'active', queries_per_second: 450 }
+      },
+      stripe: { 
+        status: 'healthy', 
+        uptime: 99.8,
+        details: { api_latency: '45ms', success_rate: 99.9 }
+      },
+      brevo: { 
+        status: 'healthy', 
+        uptime: 99.5,
+        details: { email_queue: 12, delivery_rate: 98.7 }
+      }
+    }
+  });
+});
+
 // Context-aware architecture for isolated test execution
 class TestContextManager {
   constructor() {
@@ -140,54 +183,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health endpoints (before context middleware)
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    server: 'context-aware-ci-server'
-  });
-});
-
-app.get('/api/health/simple', (req, res) => {
-  console.log('Health simple endpoint hit!');
-  res.json({
-    status: 'healthy',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Debug test route
-app.get('/api/test-route', (req, res) => {
-  res.json({ working: true });
-});
-
-app.get('/api/health/check', (req, res) => {
-  res.json({ 
-    status: 'healthy',
-    health_score: 0.987,
-    timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    services: {
-      database: { 
-        status: 'healthy', 
-        uptime: 99.9,
-        details: { connection: 'active', queries_per_second: 450 }
-      },
-      stripe: { 
-        status: 'healthy', 
-        uptime: 99.8,
-        details: { api_latency: '45ms', success_rate: 99.9 }
-      },
-      brevo: { 
-        status: 'healthy', 
-        uptime: 99.5,
-        details: { email_queue: 12, delivery_rate: 98.7 }
-      }
-    }
-  });
-});
 
 // Request classifier for context precedence
 class RequestClassifier {
@@ -285,11 +280,6 @@ class RequestClassifier {
 
 // Context detection middleware  
 app.use((req, res, next) => {
-  // Skip context detection for health endpoints
-  if (req.path.startsWith('/api/health/') || req.path === '/health') {
-    return next();
-  }
-  
   // Detect context from test headers or classification
   let contextId = 'default';
   
@@ -1304,17 +1294,6 @@ app.post('/api/test/context', (req, res) => {
 });
 
 
-// Static file serving for other paths
-app.use(express.static(rootDir, {
-  index: 'index.html',
-  dotfiles: 'ignore',
-  setHeaders: (res, path) => {
-    if (path.endsWith('.html')) {
-      res.setHeader('Cache-Control', 'no-cache');
-    }
-  }
-}));
-
 // Handle empty ticket ID lookup
 app.get('/api/tickets/', (req, res) => {
   res.status(400).json({ 
@@ -1322,14 +1301,41 @@ app.get('/api/tickets/', (req, res) => {
   });
 });
 
-// Fallback for unmatched API routes
-app.use('/api/*', (req, res) => {
-  console.log(`CI Mock: No mock for ${req.method}:${req.path}, returning 404`);
-  res.status(404).json({ 
-    error: 'Endpoint not found',
-    path: req.path,
-    method: req.method
-  });
+// Static file serving for non-API paths
+app.use((req, res, next) => {
+  // Skip static serving for API routes
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  
+  // Serve static files
+  express.static(rootDir, {
+    index: 'index.html',
+    dotfiles: 'ignore',
+    setHeaders: (res, path) => {
+      if (path.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+    }
+  })(req, res, next);
+});
+
+// Fallback for unmatched routes (after all specific routes)
+app.use((req, res) => {
+  if (req.path.startsWith('/api/')) {
+    console.log(`CI Mock: No mock for ${req.method}:${req.path}, returning 404`);
+    res.status(404).json({ 
+      error: 'Endpoint not found',
+      path: req.path,
+      method: req.method
+    });
+  } else {
+    // Let Express static serve or 404
+    res.status(404).json({ 
+      error: 'Page not found',
+      path: req.path 
+    });
+  }
 });
 
 // Start server
