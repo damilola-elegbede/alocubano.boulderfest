@@ -62,7 +62,7 @@ npm run test:all            # Complete test suite
 ### Database
 
 ```bash
-# Migrations
+# Development Database Migrations
 npm run migrate:up           # Run pending migrations
 npm run migrate:status       # Check migration status
 npm run migrate:verify       # Verify integrity
@@ -71,6 +71,34 @@ npm run migrate:verify       # Verify integrity
 npm run db:shell            # SQLite shell
 npm run health:database     # Health check
 ```
+
+### E2E Test Database Management
+
+End-to-end testing requires isolated database operations with built-in safety mechanisms:
+
+```bash
+# E2E Database Setup
+npm run db:e2e:setup        # Create tables and insert test data
+npm run db:e2e:validate     # Validate existing database schema
+npm run db:e2e:clean        # Remove test data only
+npm run db:e2e:reset        # Full reset - drop and recreate everything
+
+# E2E Database Migration Management
+npm run migrate:e2e:up      # Run E2E database migrations
+npm run migrate:e2e:status  # Check E2E migration status
+npm run migrate:e2e:validate # Validate E2E schema integrity
+npm run migrate:e2e:reset   # Reset E2E migrations completely
+
+# E2E Database Health Check
+curl -f http://localhost:3000/api/health/e2e-database | jq '.'
+```
+
+**E2E Database Safety Features:**
+- **Environment Flags**: Requires `E2E_TEST_MODE=true` or `ENVIRONMENT=e2e-test`
+- **Database URL Validation**: Warns if database URL doesn't contain "test" or "staging"
+- **Automatic Test Data Cleanup**: Removes test data matching `%@e2e-test.%` patterns
+- **Schema Validation**: Verifies required tables and columns exist
+- **Migration Isolation**: Separate migration tracking from development database
 
 ### Deployment
 
@@ -183,6 +211,10 @@ ADMIN_SECRET=            # min 32 chars
 # Wallet Passes
 APPLE_PASS_KEY=          # base64 encoded
 WALLET_AUTH_SECRET=      # JWT signing
+
+# E2E Testing (optional)
+E2E_TEST_MODE=true       # Enables E2E database operations
+ENVIRONMENT=e2e-test     # Alternative way to enable E2E mode
 ```
 
 ## API Endpoints
@@ -212,6 +244,11 @@ WALLET_AUTH_SECRET=      # JWT signing
 - `GET /api/gallery` - Google Drive photos/videos
 - `GET /api/gallery/years` - Available years
 - `GET /api/featured-photos` - Featured photos
+
+### Health & Monitoring
+- `GET /api/health/check` - General application health
+- `GET /api/health/database` - Development database health
+- `GET /api/health/e2e-database` - E2E database health (E2E mode only)
 
 ## Database Migrations
 
@@ -277,7 +314,9 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 │   ├── email/          # Email endpoints
 │   ├── payments/       # Payment processing
 │   ├── tickets/        # Ticket management
-│   └── gallery/        # Gallery endpoints
+│   ├── gallery/        # Gallery endpoints
+│   └── health/         # Health check endpoints
+│       └── e2e-database.js # E2E database health monitoring
 ├── pages/              # HTML pages
 ├── js/                 # Frontend JavaScript
 ├── css/                # Stylesheets
@@ -290,6 +329,8 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 │   └── vitest.config.js         # Vitest configuration
 ├── migrations/         # Database migrations
 ├── scripts/            # Build and utility scripts
+│   ├── setup-e2e-database.js   # E2E database automation
+│   └── migrate-e2e.js          # E2E migration management
 └── config/             # ESLint, HTMLHint configs
 ```
 
