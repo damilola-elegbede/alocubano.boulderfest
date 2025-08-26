@@ -40,7 +40,7 @@ npm run serve:simple  # http://localhost:8000
 
 ```bash
 # Run streamlined test suite (default)
-npm test                     # All essential tests (24 tests)
+npm test                     # All essential tests (26 unit tests)
 
 # Test execution modes
 npm run test:simple         # Same as npm test
@@ -131,9 +131,9 @@ git push origin main        # Auto-deploy to production
 
 ### Testing
 - **Streamlined test suite** with Vitest - 96% complexity reduction (419 vs 11,411 lines)
-- **24 essential tests** covering critical API contracts and business flows
-- **Fast execution** for complete test suite
-- **Playwright** for E2E tests
+- **26 essential unit tests** covering critical API contracts and business flows
+- **Fast execution** for complete unit test suite
+- **Playwright** for comprehensive E2E tests with multi-browser support
 - **Zero abstractions** - every test readable by any JavaScript developer
 - **Direct API calls** - no complex mocking or test infrastructure
 
@@ -251,6 +251,11 @@ ENVIRONMENT=e2e-test     # Alternative way to enable E2E mode
 - `GET /api/gallery/years` - Available years
 - `GET /api/featured-photos` - Featured photos
 
+### Performance & Media (Phase 3)
+- `POST /api/performance-metrics` - Performance data collection
+- `GET /api/image-proxy/[fileId]` - Image optimization and format conversion
+- `GET /api/hero-image/[pageId]` - Page-specific hero images
+
 ### Health & Monitoring
 - `GET /api/health/check` - General application health
 - `GET /api/health/database` - Development database health
@@ -269,16 +274,24 @@ Features:
 ## CI/CD Configuration
 
 ### GitHub Actions
-- **Streamlined testing**: Single test command `npm test` runs 24 essential tests
-- **Fast execution**: Complete test suite typically finishes quickly
+- **Streamlined testing**: Single test command `npm test` runs 26 essential unit tests
+- **Fast execution**: Complete unit test suite typically finishes quickly
 - **Memory efficient**: No complex test infrastructure or high memory usage
+- **E2E validation**: Separate Playwright test execution for comprehensive coverage
 - **Reliable**: Direct API testing with minimal mocking
 
 ### Test Architecture
-- **Test suites**:
-  - Unit/contract (Vitest): api-contracts.test.js, basic-validation.test.js, smoke-tests.test.js, registration-api.test.js, registration-flow.test.js (24 tests)
-  - E2E (Playwright): tests/e2e/flows/*.test.js, tests/e2e/smoke/*.spec.js (15+ tests)
-- **419 total lines**: Massive reduction from 11,411 lines (96% complexity reduction)
+- **Unit Test Suite (26 tests)**:
+  - api-contracts.test.js (7 tests) - API contract validation
+  - basic-validation.test.js (8 tests) - Input validation and security
+  - smoke-tests.test.js (3 tests) - Basic functionality verification  
+  - registration-api.test.js (5 tests) - Registration API unit tests
+  - registration-flow.test.js (3 tests) - Registration flow tests
+- **E2E Test Suite (Playwright)**:
+  - Multi-browser testing (Chrome, Firefox, Safari, Edge)
+  - Multi-device testing (desktop, mobile, tablet)
+  - Real user workflows and database isolation
+- **419 total unit test lines**: Massive reduction from 11,411 lines (96% complexity reduction)
 - **Zero test frameworks**: No complex test builders, managers, or abstractions
 - **Real API testing**: Tests interact with actual endpoints and services
 
@@ -296,7 +309,8 @@ Managed by `determineCartVisibility()` in `floating-cart.js`:
 - **Images**: Progressive loading (AVIF → WebP → JPEG)
 - **API response**: <100ms target
 - **Browser cache**: 24-hour for static assets
-- **Test execution**: Fast completion for test suite (24 tests)
+- **Unit test execution**: Fast completion for 26 unit tests
+- **E2E test execution**: 2-5 minutes for comprehensive browser testing
 - **Test simplicity**: Zero abstractions, readable by any JavaScript developer
 
 ## Debugging
@@ -325,16 +339,20 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 │   ├── registration/   # Registration endpoints
 │   ├── gallery/        # Gallery endpoints
 │   └── health/         # Health check endpoints
+│       ├── database.js    # Development database health
 │       └── e2e-database.js # E2E database health monitoring
 ├── pages/              # HTML pages
 ├── js/                 # Frontend JavaScript
 ├── css/                # Stylesheets
 ├── tests/
-│   ├── api-contracts.test.js        # API contract validation
-│   ├── basic-validation.test.js     # Input validation
-│   ├── smoke-tests.test.js          # Smoke tests
-│   ├── registration-api.test.js     # Registration API contracts
-│   └── registration-flow.test.js    # Registration flow tests
+│   ├── api-contracts.test.js        # API contract validation (7 tests)
+│   ├── basic-validation.test.js     # Input validation (8 tests)
+│   ├── smoke-tests.test.js          # Smoke tests (3 tests)
+│   ├── registration-api.test.js     # Registration API contracts (5 tests)
+│   ├── registration-flow.test.js    # Registration flow tests (3 tests)
+│   ├── e2e/                         # E2E test infrastructure
+│   │   ├── global-setup.js          # E2E environment setup
+│   │   └── global-teardown.js       # E2E environment cleanup
 │   ├── helpers.js               # Simple test utilities
 │   ├── setup.js                 # Minimal test setup
 │   └── vitest.config.js         # Vitest configuration
@@ -342,6 +360,7 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 ├── scripts/            # Build and utility scripts
 │   ├── setup-e2e-database.js   # E2E database automation
 │   └── migrate-e2e.js          # E2E migration management
+├── playwright.config.js        # Playwright E2E configuration
 └── config/             # ESLint, HTMLHint configs
 ```
 

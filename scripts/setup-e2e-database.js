@@ -138,6 +138,43 @@ async function createCoreTables(client) {
     try {
       await client.execute(table.sql);
       console.log(`   ✅ Table "${table.name}" created/verified`);
+      
+      // Add missing columns to existing tables
+      if (table.name === 'email_subscribers') {
+        // Check if source column exists
+        try {
+          const columnsResult = await client.execute(`PRAGMA table_info(email_subscribers)`);
+          const hasSourceColumn = columnsResult.rows.some(row => row.name === 'source');
+          
+          if (!hasSourceColumn) {
+            // Add source column to existing table
+            await client.execute(`ALTER TABLE email_subscribers ADD COLUMN source TEXT DEFAULT 'website'`);
+            console.log(`   ✅ Added missing "source" column to email_subscribers`);
+          }
+        } catch (alterError) {
+          console.log(`   ⚠️  ALTER TABLE warning: ${alterError.message}`);
+          // Check if error is due to duplicate column (acceptable)
+          if (alterError.message.includes('duplicate column') || 
+              alterError.message.includes('already exists')) {
+            console.log(`   ℹ️  Column "source" already exists, continuing...`);
+          } else {
+            console.error(`   ❌ Unexpected ALTER TABLE error: ${alterError.message}`);
+            return false;
+          }
+          
+          // Verify the column exists after error
+          try {
+            const verifyResult = await client.execute(`PRAGMA table_info(email_subscribers)`);
+            const columnExists = verifyResult.rows.some(row => row.name === 'source');
+            if (!columnExists) {
+              console.error(`   ❌ Failed to verify "source" column existence`);
+              return false;
+            }
+          } catch (verifyError) {
+            console.error(`   ❌ Failed to verify column after ALTER: ${verifyError.message}`);
+            return false;
+          }
+        }      }
     } catch (error) {
       console.error(`   ❌ Failed to create table "${table.name}":`, error.message);
       return false;

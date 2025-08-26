@@ -142,7 +142,7 @@ test.describe('Ticket Purchase Flow - Complete Journey', () => {
         // Fill test card details in Stripe iframe
         const cardFrame = page.frameLocator('iframe').first();
         await cardFrame.locator('[placeholder*="Card number"]').fill('4242424242424242');
-        await cardFrame.locator('[placeholder*="MM / YY"]').fill('12/25');
+        await cardFrame.locator('[placeholder*="MM / YY"]').fill('12/34');
         await cardFrame.locator('[placeholder*="CVC"]').fill('123');
         await cardFrame.locator('[placeholder*="ZIP"]').fill('80301');
         
