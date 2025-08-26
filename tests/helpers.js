@@ -29,16 +29,28 @@ export async function testRequest(method, path, data = null) {
     const response = await fetch(url, options);
     const responseData = await response.json().catch(() => ({}));
     
+    // Ensure status is always a number
+    const status = typeof response.status === 'number' ? response.status : 500;
+    
     return {
-      status: response.status,
+      status: status,
       data: responseData
     };
   } catch (error) {
     console.warn(`Request failed: ${method} ${path} - ${error.message}`);
-    return { status: 0, data: {} };
+    return { status: 500, data: { error: 'Connection failed' } };
   }
 }
 
+// Deterministic email generation to prevent race conditions
+let emailSequence = 0;
+const baseTimestamp = Date.now();
+
 export function generateTestEmail() {
-  return `test.${Date.now()}@example.com`;
+  const id = `${baseTimestamp}.${++emailSequence}`;
+  return `test.${id}@example.com`;
+}
+
+export function resetEmailSequence() {
+  emailSequence = 0;
 }

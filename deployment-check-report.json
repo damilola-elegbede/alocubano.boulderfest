@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-08-18T23:22:47.756Z",
+  "timestamp": "2025-08-25T22:05:30.127Z",
   "overallResult": "FAIL",
   "checks": [
     {
@@ -12,7 +12,7 @@
     },
     {
       "name": "Performance",
-      "passed": true
+      "passed": false
     }
   ]
 }

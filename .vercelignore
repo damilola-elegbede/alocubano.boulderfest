@@ -51,6 +51,9 @@ LICENSE
 # Scripts and migrations
 scripts/
 migrations/
+
+# Build directory is allowed for Vercel build scripts
+# build/ directory contains only Vercel-specific build scripts
 # Only ignore root config directory, not api/config
 /config/
 
