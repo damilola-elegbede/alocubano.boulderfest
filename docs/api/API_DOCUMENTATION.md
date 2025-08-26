@@ -99,7 +99,7 @@ The registration system enables ticket purchasers to register attendee informati
 | `/api/registration/health` | GET | System health check | - |
 
 ### Key Features
-- JWT-based authentication
+- Registration token-based authentication
 - 72-hour registration window
 - Automatic email confirmations
 - Rate limiting (3 attempts per 15 minutes)

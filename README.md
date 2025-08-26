@@ -157,7 +157,7 @@ alocubano.boulderfest/
 - `npm start` - Start Vercel development server with full API support (port 3000)
 - `npm run start:local` - Local development without ngrok tunnel
 - `npm run serve:simple` - Simple HTTP server without API functions (port 8000)
-- `npm test` - Run streamlined test suite (17 tests, ~395ms)
+- `npm test` - Run streamlined test suite
 - `npm run test:all` - Run all tests including E2E validation
 - `npm run test:e2e` - Run Playwright end-to-end tests
 - `npm run lint` - Run ESLint and HTMLHint
@@ -171,15 +171,15 @@ alocubano.boulderfest/
 We've achieved a **96% complexity reduction** by eliminating complex test infrastructure in favor of radical simplicity:
 
 - **419 total lines** vs 11,411 lines previously (96% reduction)
-- **17 essential tests** covering critical API contracts
-- **395ms execution time** for complete test suite
+- **Essential tests** covering critical API contracts
+- **Fast execution** for complete test suite
 - **Zero abstractions** - every test readable by any JavaScript developer
 
 ### Quick Start
 
 ```bash
 # Run all tests
-npm test                    # 17 tests, ~395ms
+npm test                    # Run test suite
 
 # Development mode
 npm run test:simple:watch   # Watch mode
@@ -194,9 +194,11 @@ npm run test:e2e:ui        # Interactive UI mode
 
 ### Test Structure
 
-- **api-contracts.test.js** (6 tests) - API contract validation
-- **basic-validation.test.js** (8 tests) - Input validation and security
-- **smoke-tests.test.js** (3 tests) - Basic functionality verification
+- **api-contracts.test.js** - API contract validation
+- **basic-validation.test.js** - Input validation and security
+- **smoke-tests.test.js** - Basic functionality verification
+- **registration-api.test.js** - Registration API contracts
+- **registration-flow.test.js** - Registration flow tests
 
 ### Quality Gates
 

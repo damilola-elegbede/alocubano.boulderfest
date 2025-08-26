@@ -22,20 +22,35 @@ let browsers = [];
  */
 function validateEnvironment() {
   const prohibitedUrls = [
-    'alocubanoboulderfest.com',
-    'alocubano.com',
+    '://alocubanoboulderfest.com',
+    '://www.alocubanoboulderfest.com',
+    '://alocubano.com',
+    '://www.alocubano.com',
     'production',
     'prod.vercel'
   ];
   
   const baseUrl = process.env.PLAYWRIGHT_BASE_URL || process.env.TEST_BASE_URL || 'http://localhost:3000';
   
-  for (const prohibited of prohibitedUrls) {
-    if (baseUrl.includes(prohibited)) {
-      console.error(`❌ SAFETY CHECK FAILED: Cannot run E2E tests against ${prohibited} URL`);
-      console.error(`   Current URL: ${baseUrl}`);
-      console.error(`   Set TEST_BASE_URL or PLAYWRIGHT_BASE_URL to a test environment`);
-      throw new Error(`Safety check failed for base URL: ${baseUrl}`);
+  // Allow staging and test subdomains explicitly
+  const allowedPatterns = [
+    'staging.alocubanoboulderfest.com',
+    'test.alocubanoboulderfest.com',
+    'e2e.alocubanoboulderfest.com'
+  ];
+  
+  // Check if URL is explicitly allowed
+  const isAllowed = allowedPatterns.some(pattern => baseUrl.includes(pattern));
+  
+  if (!isAllowed) {
+    // Check for prohibited patterns
+    for (const prohibited of prohibitedUrls) {
+      if (baseUrl.includes(prohibited)) {
+        console.error(`❌ SAFETY CHECK FAILED: Cannot run E2E tests against ${prohibited} URL`);
+        console.error(`   Current URL: ${baseUrl}`);
+        console.error(`   Set TEST_BASE_URL or PLAYWRIGHT_BASE_URL to a test environment`);
+        throw new Error(`Safety check failed for base URL: ${baseUrl}`);
+      }
     }
   }
   

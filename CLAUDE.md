@@ -40,7 +40,7 @@ npm run serve:simple  # http://localhost:8000
 
 ```bash
 # Run streamlined test suite (default)
-npm test                     # All essential tests (24 tests, ~1.3s)
+npm test                     # All essential tests (24 tests)
 
 # Test execution modes
 npm run test:simple         # Same as npm test
@@ -132,7 +132,7 @@ git push origin main        # Auto-deploy to production
 ### Testing
 - **Streamlined test suite** with Vitest - 96% complexity reduction (419 vs 11,411 lines)
 - **24 essential tests** covering critical API contracts and business flows
-- **395ms execution time** for complete test suite
+- **Fast execution** for complete test suite
 - **Playwright** for E2E tests
 - **Zero abstractions** - every test readable by any JavaScript developer
 - **Direct API calls** - no complex mocking or test infrastructure
@@ -270,7 +270,7 @@ Features:
 
 ### GitHub Actions
 - **Streamlined testing**: Single test command `npm test` runs 24 essential tests
-- **Fast execution**: Complete test suite finishes in under 1 second
+- **Fast execution**: Complete test suite typically finishes quickly
 - **Memory efficient**: No complex test infrastructure or high memory usage
 - **Reliable**: Direct API testing with minimal mocking
 
@@ -296,7 +296,7 @@ Managed by `determineCartVisibility()` in `floating-cart.js`:
 - **Images**: Progressive loading (AVIF → WebP → JPEG)
 - **API response**: <100ms target
 - **Browser cache**: 24-hour for static assets
-- **Test execution**: 1.3s for complete test suite (24 tests)
+- **Test execution**: Fast completion for test suite (24 tests)
 - **Test simplicity**: Zero abstractions, readable by any JavaScript developer
 
 ## Debugging
@@ -330,9 +330,11 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 ├── js/                 # Frontend JavaScript
 ├── css/                # Stylesheets
 ├── tests/
-│   ├── api-contracts.test.js    # API contract validation (6 tests)
-│   ├── basic-validation.test.js # Input validation (8 tests)  
-│   ├── smoke-tests.test.js      # Smoke tests (3 tests)
+│   ├── api-contracts.test.js        # API contract validation
+│   ├── basic-validation.test.js     # Input validation
+│   ├── smoke-tests.test.js          # Smoke tests
+│   ├── registration-api.test.js     # Registration API contracts
+│   └── registration-flow.test.js    # Registration flow tests
 │   ├── helpers.js               # Simple test utilities
 │   ├── setup.js                 # Minimal test setup
 │   └── vitest.config.js         # Vitest configuration
