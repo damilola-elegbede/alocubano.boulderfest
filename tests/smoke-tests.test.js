@@ -1,6 +1,3 @@
-/**
- * Smoke Tests - System health and critical user journey validation
- */
 import { test, expect } from 'vitest';
 import { testRequest, generateTestEmail, HTTP_STATUS } from './helpers.js';
 
@@ -26,7 +23,6 @@ test('system health check validates critical services', async () => {
 });
 
 test('core user journeys validation', async () => {
-  // Ticket purchase flow
   const purchaseData = {
     cartItems: [{ name: 'Weekend Pass', price: 125.00, quantity: 1 }],
     customerInfo: { email: generateTestEmail(), firstName: 'Test', lastName: 'User' }
@@ -37,7 +33,6 @@ test('core user journeys validation', async () => {
     expect(purchaseResponse.data.totalAmount).toBe(125.00);
   }
   
-  // Newsletter subscription
   const subscribeResponse = await testRequest('POST', '/api/email/subscribe', { 
     email: generateTestEmail(), consentToMarketing: true 
   });
@@ -47,13 +42,11 @@ test('core user journeys validation', async () => {
 });
 
 test('security and operations readiness', async () => {
-  // Admin security - dashboard should require authentication
   const dashboardResponse = await testRequest('GET', '/api/admin/dashboard');
   if (dashboardResponse.status !== 0) {
     expect(dashboardResponse.status).toBe(HTTP_STATUS.UNAUTHORIZED);
   }
   
-  // Webhook security - should reject invalid signatures  
   const webhookResponse = await testRequest('POST', '/api/payments/stripe-webhook', {
     type: 'checkout.session.completed', data: { object: { id: 'test' } }
   });
@@ -61,7 +54,6 @@ test('security and operations readiness', async () => {
     expect([HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.UNAUTHORIZED].includes(webhookResponse.status)).toBe(true);
   }
   
-  // Ticket validation - should handle invalid QR codes
   const ticketResponse = await testRequest('POST', '/api/tickets/validate', {
     qr_code: 'invalid-test-code'
   });
