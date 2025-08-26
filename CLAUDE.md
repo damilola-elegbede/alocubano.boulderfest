@@ -40,7 +40,7 @@ npm run serve:simple  # http://localhost:8000
 
 ```bash
 # Run streamlined test suite (default)
-npm test                     # All essential tests (17 tests, ~395ms)
+npm test                     # All essential tests (24 tests, ~1.3s)
 
 # Test execution modes
 npm run test:simple         # Same as npm test
@@ -131,7 +131,7 @@ git push origin main        # Auto-deploy to production
 
 ### Testing
 - **Streamlined test suite** with Vitest - 96% complexity reduction (419 vs 11,411 lines)
-- **13 essential tests** covering critical API contracts and business flows
+- **24 essential tests** covering critical API contracts and business flows
 - **395ms execution time** for complete test suite
 - **Playwright** for E2E tests
 - **Zero abstractions** - every test readable by any JavaScript developer
@@ -232,8 +232,14 @@ ENVIRONMENT=e2e-test     # Alternative way to enable E2E mode
 ### Tickets
 - `GET /api/tickets/[ticketId]` - Ticket details
 - `POST /api/tickets/validate` - Validate QR code
+- `POST /api/tickets/register` - Register ticket attendee information
 - `GET /api/tickets/apple-wallet/[ticketId]` - Apple Wallet pass
 - `GET /api/tickets/google-wallet/[ticketId]` - Google Wallet pass
+
+### Registration
+- `GET /api/registration/[token]` - Registration status for all tickets
+- `POST /api/registration/batch` - Register multiple tickets
+- `GET /api/registration/health` - Registration system health
 
 ### Admin
 - `POST /api/admin/login` - Admin authentication
@@ -263,7 +269,7 @@ Features:
 ## CI/CD Configuration
 
 ### GitHub Actions
-- **Streamlined testing**: Single test command `npm test` runs 13 essential tests
+- **Streamlined testing**: Single test command `npm test` runs 24 essential tests
 - **Fast execution**: Complete test suite finishes in under 1 second
 - **Memory efficient**: No complex test infrastructure or high memory usage
 - **Reliable**: Direct API testing with minimal mocking
@@ -288,7 +294,7 @@ Managed by `determineCartVisibility()` in `floating-cart.js`:
 - **Images**: Progressive loading (AVIF → WebP → JPEG)
 - **API response**: <100ms target
 - **Browser cache**: 24-hour for static assets
-- **Test execution**: 395ms for complete test suite (17 tests)
+- **Test execution**: 1.3s for complete test suite (24 tests)
 - **Test simplicity**: Zero abstractions, readable by any JavaScript developer
 
 ## Debugging
@@ -314,6 +320,7 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 │   ├── email/          # Email endpoints
 │   ├── payments/       # Payment processing
 │   ├── tickets/        # Ticket management
+│   ├── registration/   # Registration endpoints
 │   ├── gallery/        # Gallery endpoints
 │   └── health/         # Health check endpoints
 │       └── e2e-database.js # E2E database health monitoring
@@ -321,9 +328,9 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 ├── js/                 # Frontend JavaScript
 ├── css/                # Stylesheets
 ├── tests/
-│   ├── api-contracts.test.js    # API contract validation (5 tests)
-│   ├── basic-validation.test.js # Input validation (4 tests)  
-│   ├── smoke-tests.test.js      # Smoke tests (4 tests)
+│   ├── api-contracts.test.js    # API contract validation (6 tests)
+│   ├── basic-validation.test.js # Input validation (8 tests)  
+│   ├── smoke-tests.test.js      # Smoke tests (3 tests)
 │   ├── helpers.js               # Simple test utilities
 │   ├── setup.js                 # Minimal test setup
 │   └── vitest.config.js         # Vitest configuration
@@ -340,6 +347,9 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 **Instagram**: [@alocubano.boulderfest](https://www.instagram.com/alocubano.boulderfest/)
 
 **Documentation**:
+- [Installation Guide](INSTALLATION.md)
+- [Security Policy](SECURITY.md)
+- [Changelog](CHANGELOG.md)
 - [Async Initialization Guide](/docs/ASYNC_INITIALIZATION_GUIDE.md)
 - [Testing Strategy](/docs/testing/TESTING_STRATEGY.md)
 - [API Documentation](/docs/api/API_DOCUMENTATION.md)

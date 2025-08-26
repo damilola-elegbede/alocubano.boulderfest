@@ -6,6 +6,9 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e",
 
+  // Test file patterns
+  testMatch: ['**/*.spec.js', '**/*.e2e.js', '**/*.test.js'],
+
   // Run tests in files in parallel
   fullyParallel: true,
 
@@ -13,20 +16,24 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
 
   // Retry on CI only
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 2 : 1,
 
   // Opt out of parallel tests on CI
-  workers: process.env.CI ? 4 : undefined,
+  workers: process.env.CI ? 2 : 4,
 
   // Reporter configuration
   reporter: process.env.CI
     ? [
-        ["html", { outputFolder: "./playwright-report" }],
+        ["list"],
+        ["html", { outputFolder: "./playwright-report", open: "never" }],
         ["junit", { outputFile: "./test-results/e2e-results.xml" }],
         ["json", { outputFile: "./test-results/e2e-results.json" }],
         ["github"],
       ]
-    : [["html", { open: "never" }]],
+    : [
+        ["list"],
+        ["html", { outputFolder: "./playwright-report", open: "on-failure" }]
+      ],
 
   // Global test timeout
   timeout: 30 * 1000,
@@ -39,79 +46,105 @@ export default defineConfig({
   // Shared settings for all projects
   use: {
     // Base URL for all tests
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || process.env.TEST_BASE_URL || "http://localhost:3000",
 
     // Collect trace when retrying failed test
     trace: "on-first-retry",
 
     // Capture screenshot on failure
-    screenshot: "only-on-failure",
+    screenshot: {
+      mode: "only-on-failure",
+      fullPage: true
+    },
 
     // Record video on failure
-    video: "retain-on-failure",
+    video: process.env.CI ? "retain-on-failure" : "off",
 
     // Global timeout for actions
     actionTimeout: 10 * 1000,
 
     // Navigation timeout
     navigationTimeout: 15 * 1000,
+
+    // Disable animations for consistent testing
+    reducedMotion: 'reduce',
+
+    // Accept downloads
+    acceptDownloads: true,
+
+    // Browser viewport size
+    viewport: { width: 1280, height: 720 },
+
+    // Ignore HTTPS errors for local testing
+    ignoreHTTPSErrors: true,
+
+    // User agent suffix to identify Playwright tests
+    userAgent: 'Playwright/E2E-Test',
   },
 
   // Configure projects for major browsers
   projects: [
+    // Desktop browsers
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
-      testMatch: /.*\.test\.js$/,
+      use: { 
+        ...devices["Desktop Chrome"],
+        channel: undefined, // Use Playwright's bundled Chromium
+        headless: process.env.CI ? true : false,
+      },
     },
 
     {
       name: "firefox",
       use: { 
         ...devices["Desktop Firefox"],
-        // Pass browser type to global setup
-        launchOptions: {
-          env: { PLAYWRIGHT_BROWSER: 'firefox' }
-        }
+        headless: process.env.CI ? true : false,
       },
-      testMatch: /.*\.test\.js$/,
     },
 
     {
       name: "webkit",
-      use: { ...devices["Desktop Safari"] },
-      testMatch: /.*\.test\.js$/,
+      use: { 
+        ...devices["Desktop Safari"],
+        headless: process.env.CI ? true : false,
+      },
     },
 
-    // Test against mobile viewports
+    // Mobile viewports
     {
-      name: "Mobile Chrome",
-      use: { ...devices["Pixel 5"] },
-      testMatch: /.*mobile.*\.test\.js$/,
+      name: "mobile-chrome",
+      use: {
+        ...devices["Pixel 5"],
+        headless: process.env.CI ? true : false,
+      },
     },
     {
-      name: "Mobile Safari",
-      use: { ...devices["iPhone 12"] },
-      testMatch: /.*mobile.*\.test\.js$/,
+      name: "mobile-safari",
+      use: {
+        ...devices["iPhone 13"],
+        headless: process.env.CI ? true : false,
+      },
     },
 
-    // Test against branded browsers (CI only)
+    // Tablet viewports
+    {
+      name: "tablet-ipad",
+      use: {
+        ...devices["iPad Mini"],
+        headless: process.env.CI ? true : false,
+      },
+    },
+
+    // Edge browser (optional, CI only)
     ...(process.env.CI
       ? [
           {
-            name: "Microsoft Edge",
-            use: { ...devices["Desktop Edge"], channel: "msedge" },
-            testMatch: /.*\.test\.js$/,
-          },
-        ]
-      : []),
-
-    ...(process.env.CI
-      ? [
-          {
-            name: "Google Chrome",
-            use: { ...devices["Desktop Chrome"], channel: "chrome" },
-            testMatch: /.*\.test\.js$/,
+            name: "edge",
+            use: {
+              ...devices["Desktop Edge"],
+              channel: "msedge",
+              headless: true,
+            },
           },
         ]
       : []),
@@ -124,7 +157,16 @@ export default defineConfig({
         command: "npm run start:local",
         port: 3000,
         timeout: 120 * 1000,
-        reuseExistingServer: !process.env.CI,
+        reuseExistingServer: true,
+        stderr: 'pipe',
+        stdout: 'pipe',
+        env: {
+          NODE_ENV: 'test',
+          PORT: '3000',
+          // E2E tests use TURSO_DATABASE_URL from .env.local (dev/test database)
+          // Unit/integration tests use local SQLite
+          E2E_TEST_MODE: 'true',
+        },
       },
 
   // Global setup and teardown
