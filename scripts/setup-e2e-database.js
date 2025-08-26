@@ -138,6 +138,23 @@ async function createCoreTables(client) {
     try {
       await client.execute(table.sql);
       console.log(`   ✅ Table "${table.name}" created/verified`);
+      
+      // Add missing columns to existing tables
+      if (table.name === 'email_subscribers') {
+        // Check if source column exists
+        try {
+          const columnsResult = await client.execute(`PRAGMA table_info(email_subscribers)`);
+          const hasSourceColumn = columnsResult.rows.some(row => row.name === 'source');
+          
+          if (!hasSourceColumn) {
+            // Add source column to existing table
+            await client.execute(`ALTER TABLE email_subscribers ADD COLUMN source TEXT DEFAULT 'website'`);
+            console.log(`   ✅ Added missing "source" column to email_subscribers`);
+          }
+        } catch (alterError) {
+          // Ignore if column already exists
+        }
+      }
     } catch (error) {
       console.error(`   ❌ Failed to create table "${table.name}":`, error.message);
       return false;
