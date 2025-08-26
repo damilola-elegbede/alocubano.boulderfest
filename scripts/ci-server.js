@@ -140,6 +140,55 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health endpoints (before context middleware)
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    server: 'context-aware-ci-server'
+  });
+});
+
+app.get('/api/health/simple', (req, res) => {
+  console.log('Health simple endpoint hit!');
+  res.json({
+    status: 'healthy',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Debug test route
+app.get('/api/test-route', (req, res) => {
+  res.json({ working: true });
+});
+
+app.get('/api/health/check', (req, res) => {
+  res.json({ 
+    status: 'healthy',
+    health_score: 0.987,
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    services: {
+      database: { 
+        status: 'healthy', 
+        uptime: 99.9,
+        details: { connection: 'active', queries_per_second: 450 }
+      },
+      stripe: { 
+        status: 'healthy', 
+        uptime: 99.8,
+        details: { api_latency: '45ms', success_rate: 99.9 }
+      },
+      brevo: { 
+        status: 'healthy', 
+        uptime: 99.5,
+        details: { email_queue: 12, delivery_rate: 98.7 }
+      }
+    }
+  });
+});
+
 // Request classifier for context precedence
 class RequestClassifier {
   static classify(req) {
@@ -236,6 +285,11 @@ class RequestClassifier {
 
 // Context detection middleware  
 app.use((req, res, next) => {
+  // Skip context detection for health endpoints
+  if (req.path.startsWith('/api/health/') || req.path === '/health') {
+    return next();
+  }
+  
   // Detect context from test headers or classification
   let contextId = 'default';
   
@@ -1187,32 +1241,6 @@ app.get('/api/featured-photos', (req, res) => {
   res.json({ photos: mockFeaturedPhotos });
 });
 
-// Health check endpoints
-app.get('/api/health/check', (req, res) => {
-  res.json({ 
-    status: 'healthy',
-    health_score: 0.987,  // Add health score for smoke tests
-    timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    services: {
-      database: { 
-        status: 'healthy', 
-        uptime: 99.9,
-        details: { connection: 'active', queries_per_second: 450 }
-      },
-      stripe: { 
-        status: 'healthy', 
-        uptime: 99.8,
-        details: { api_latency: '45ms', success_rate: 99.9 }
-      },
-      brevo: { 
-        status: 'healthy', 
-        uptime: 99.5,
-        details: { email_queue: 12, delivery_rate: 98.7 }
-      }
-    }
-  });
-});
 
 app.get('/api/registration/health', (req, res) => {
   res.json({
@@ -1275,14 +1303,6 @@ app.post('/api/test/context', (req, res) => {
   }
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    server: 'context-aware-ci-server'
-  });
-});
 
 // Static file serving for other paths
 app.use(express.static(rootDir, {
@@ -1303,7 +1323,7 @@ app.get('/api/tickets/', (req, res) => {
 });
 
 // Fallback for unmatched API routes
-app.all(/^\/api\/(.*)/, (req, res) => {
+app.use('/api/*', (req, res) => {
   console.log(`CI Mock: No mock for ${req.method}:${req.path}, returning 404`);
   res.status(404).json({ 
     error: 'Endpoint not found',
