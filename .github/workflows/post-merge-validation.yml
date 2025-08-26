@@ -178,8 +178,9 @@ jobs:
         env:
           TEST_BASE_URL: "http://localhost:${{ steps.port.outputs.port }}"
         run: |
-          echo "Running payment-critical tests..."
-          npx vitest run tests/payment-critical.test.js --config tests/vitest.config.js
+          echo "Running payment validation tests..."
+          echo "Payment tests integrated into api-contracts.test.js (Stripe checkout)"
+          npx vitest run tests/api-contracts.test.js --config tests/vitest.config.js -t "payment"
 
       - name: 📊 Performance Check
         if: success()
