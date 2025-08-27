@@ -51,6 +51,12 @@ npm run test:coverage       # With coverage report
 npm run test:e2e            # Playwright end-to-end tests
 npm run test:e2e:ui         # Interactive UI mode
 
+# Phase 2 E2E test flows
+npm run test:e2e -- tests/e2e/flows/gallery-browsing.test.js      # Gallery performance & functionality
+npm run test:e2e -- tests/e2e/flows/admin-dashboard.test.js       # Admin panel & security
+npm run test:e2e -- tests/e2e/flows/mobile-registration-experience.test.js  # Mobile registration
+npm run test:e2e -- tests/e2e/flows/newsletter-simple.test.js     # Newsletter subscription
+
 # Health checks
 npm run test:health         # API health verification
 npm run test:smoke          # Quick smoke tests
@@ -137,6 +143,34 @@ git push origin main        # Auto-deploy to production
 - **Zero abstractions** - every test readable by any JavaScript developer
 - **Direct API calls** - no complex mocking or test infrastructure
 
+### Phase 2 E2E Testing Enhancements
+- **Gallery Performance Testing** (`tests/e2e/flows/gallery-browsing.test.js`):
+  - Google Drive API integration with comprehensive error handling
+  - Lazy loading and virtual scrolling performance (1000+ images)
+  - Image optimization testing (AVIF → WebP → JPEG)
+  - Core Web Vitals compliance (LCP, CLS, FID)
+  - Memory leak detection and cache effectiveness
+  - Cross-browser and multi-device responsive testing
+
+- **Admin Panel Security Testing** (`tests/e2e/flows/admin-dashboard.test.js`):
+  - JWT authentication and session management
+  - Rate limiting and brute force protection
+  - MFA flow validation and security auditing
+  - Dashboard operations and bulk ticket management
+  - Analytics accuracy and export functionality
+  - System configuration and compliance monitoring
+
+- **Performance Testing Utilities** (`tests/e2e/helpers/performance-gallery.js`):
+  - Comprehensive performance monitoring and metrics collection
+  - Network simulation (slow-3g to 4g) and cache optimization
+  - Memory usage tracking and garbage collection effectiveness
+  - Performance regression detection with baseline comparison
+
+- **Admin Authentication Helpers** (`tests/e2e/helpers/admin-auth.js`):
+  - Complete authentication flow testing and JWT security validation
+  - Security attack simulation (CSRF, XSS, session hijacking)
+  - Multi-factor authentication and session timeout testing
+
 ## Key API Patterns
 
 ### Database Service Pattern
@@ -215,6 +249,7 @@ WALLET_AUTH_SECRET=      # JWT signing
 # E2E Testing (optional)
 E2E_TEST_MODE=true       # Enables E2E database operations
 ENVIRONMENT=e2e-test     # Alternative way to enable E2E mode
+TEST_ADMIN_PASSWORD=     # For admin panel E2E testing
 ```
 
 ## API Endpoints
@@ -291,6 +326,8 @@ Features:
   - Multi-browser testing (Chrome, Firefox, Safari, Edge)
   - Multi-device testing (desktop, mobile, tablet)
   - Real user workflows and database isolation
+  - **Phase 2 Gallery Testing**: Performance, API integration, optimization
+  - **Phase 2 Admin Panel Testing**: Security, operations, compliance
 - **419 total unit test lines**: Massive reduction from 11,411 lines (96% complexity reduction)
 - **Zero test frameworks**: No complex test builders, managers, or abstractions
 - **Real API testing**: Tests interact with actual endpoints and services
@@ -312,6 +349,22 @@ Managed by `determineCartVisibility()` in `floating-cart.js`:
 - **Unit test execution**: Fast completion for 26 unit tests
 - **E2E test execution**: 2-5 minutes for comprehensive browser testing
 - **Test simplicity**: Zero abstractions, readable by any JavaScript developer
+
+### Phase 2 Performance Benchmarks
+
+#### Gallery Performance
+- **Initial Load Time**: <2 seconds for gallery container
+- **Image Load Time**: <1.5 seconds average per image
+- **Cache Hit Ratio**: >80% for repeat visits
+- **Memory Usage**: <150% increase during extended browsing (1000+ images)
+- **Virtual Scrolling**: Maintain 60fps during rapid scrolling operations
+
+#### Admin Dashboard Performance
+- **Authentication Response**: <500ms for login operations
+- **Dashboard Load**: <1 second for complete dashboard with data
+- **Bulk Operations**: <3 seconds for processing 50+ tickets
+- **Database Queries**: <100ms for admin queries and filters
+- **Export Operations**: <5 seconds for CSV generation and download
 
 ## Debugging
 
@@ -351,6 +404,16 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 │   ├── registration-api.test.js     # Registration API contracts (5 tests)
 │   ├── registration-flow.test.js    # Registration flow tests (3 tests)
 │   ├── e2e/                         # E2E test infrastructure
+│   │   ├── flows/                   # E2E test flows
+│   │   │   ├── gallery-browsing.test.js           # Gallery performance & functionality
+│   │   │   ├── admin-dashboard.test.js            # Admin panel & authentication
+│   │   │   ├── mobile-registration-experience.test.js  # Mobile registration flow
+│   │   │   └── newsletter-simple.test.js          # Newsletter subscription testing
+│   │   ├── helpers/                 # E2E test utilities
+│   │   │   ├── performance-gallery.js             # Gallery performance testing utilities
+│   │   │   ├── admin-auth.js                      # Admin authentication helpers
+│   │   │   ├── google-drive-mock.js               # Gallery API mocking utilities
+│   │   │   └── mobile-test-scenarios.js           # Mobile testing scenarios
 │   │   ├── global-setup.js          # E2E environment setup
 │   │   └── global-teardown.js       # E2E environment cleanup
 │   ├── helpers.js               # Simple test utilities
@@ -376,3 +439,4 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 - [Async Initialization Guide](/docs/ASYNC_INITIALIZATION_GUIDE.md)
 - [Testing Strategy](/docs/testing/TESTING_STRATEGY.md)
 - [API Documentation](/docs/api/API_DOCUMENTATION.md)
+- [E2E Test Flows Guide](/tests/e2e/flows/README.md) - Phase 2 gallery and admin panel test flows
