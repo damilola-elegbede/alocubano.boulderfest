@@ -23,10 +23,44 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs';
+import { mkdir } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+/**
+ * Escape HTML entities to prevent injection attacks
+ */
+function escapeHtml(text) {
+  if (typeof text !== 'string') {
+    return String(text || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Ensure directory exists
+ */
+async function ensureDirectory(dirPath) {
+  try {
+    await mkdir(dirPath, { recursive: true });
+  } catch (error) {
+    if (error.code !== 'EEXIST') {
+      throw error;
+    }
+  }
+}
 const projectRoot = join(__dirname, '..');
 
 // Configuration
@@ -95,7 +129,7 @@ class FlakyTestManager {
     });
     
     // Update flaky test database
-    this.updateFlakyTestDatabase(flakyTests);
+    await this.updateFlakyTestDatabase(flakyTests);
     
     return flakyTests;
   }
@@ -138,10 +172,10 @@ class FlakyTestManager {
       const status = test.quarantined ? '🚨 QUARANTINED' : '🔄 MONITORED';
       const failureRate = test.failureRate ? `${(test.failureRate * 100).toFixed(1)}%` : 'Unknown';
       
-      console.log(`${index + 1}. ${status} ${test.testName}`);
-      console.log(`   Suite: ${test.testSuite}`);
+      console.log(`${index + 1}. ${status} ${escapeHtml(test.testName)}`);
+      console.log(`   Suite: ${escapeHtml(test.testSuite)}`);
       console.log(`   Failure Rate: ${failureRate}`);
-      console.log(`   Last Seen: ${this.formatDate(test.lastFailure || test.detectedAt)}`);
+      console.log(`   Last Seen: ${escapeHtml(this.formatDate(test.lastFailure || test.detectedAt))}`);
       
       if (test.quarantined && test.quarantineUntil) {
         const until = new Date(test.quarantineUntil);
@@ -213,7 +247,7 @@ class FlakyTestManager {
       }
     }
     
-    this.saveFlakyTestData();
+    await this.saveFlakyTestData();
     return true;
   }
 
@@ -241,7 +275,8 @@ class FlakyTestManager {
       const jsonReport = JSON.stringify(report, null, 2);
       
       if (outputFile) {
-        writeFileSync(outputFile, jsonReport);
+        const dirPath = dirname(outputFile);
+        await ensureDirectory(dirPath);        writeFileSync(outputFile, jsonReport);
         console.log(`📄 JSON report saved to: ${outputFile}`);
       } else {
         console.log(jsonReport);
@@ -250,7 +285,8 @@ class FlakyTestManager {
       const htmlReport = this.generateHTMLReport(report);
       
       if (outputFile) {
-        writeFileSync(outputFile, htmlReport);
+        const dirPath = dirname(outputFile);
+        await ensureDirectory(dirPath);        writeFileSync(outputFile, htmlReport);
         console.log(`📄 HTML report saved to: ${outputFile}`);
       } else {
         console.log(htmlReport);
@@ -291,7 +327,7 @@ class FlakyTestManager {
               errorPatterns[key] = { count: 0, tests: [] };
             }
             errorPatterns[key].count++;
-            errorPatterns[key].tests.push(`${test.testSuite}/${test.testName}`);
+            errorPatterns[key].tests.push(`${escapeHtml(test.testSuite)}/${escapeHtml(test.testName)}`);
           });
         }
       });
@@ -341,7 +377,7 @@ class FlakyTestManager {
   /**
    * Clean up old flaky test data
    */
-  cleanup(options = {}) {
+  async cleanup(options = {}) {
     console.log('🧹 Cleaning up old flaky test data...');
     
     const { daysOld = CONFIG.thresholds.staleDataDays, dryRun = false } = options;
@@ -365,7 +401,7 @@ class FlakyTestManager {
     } else {
       this.flakyTests.tests = activeTests;
       this.flakyTests.lastCleanup = new Date().toISOString();
-      this.saveFlakyTestData();
+      await this.saveFlakyTestData();
       
       console.log(`✅ Removed ${removed} old test entries (kept ${activeTests.length})`);
     }
@@ -393,7 +429,9 @@ class FlakyTestManager {
     };
   }
 
-  saveFlakyTestData() {
+  async saveFlakyTestData() {
+    const dirPath = dirname(CONFIG.paths.flakyData);
+    await ensureDirectory(dirPath);
     this.flakyTests.updated = new Date().toISOString();
     writeFileSync(CONFIG.paths.flakyData, JSON.stringify(this.flakyTests, null, 2));
   }
@@ -581,7 +619,7 @@ class FlakyTestManager {
     return error.split('\n')[0].substring(0, 50);
   }
 
-  updateFlakyTestDatabase(newFlakyTests) {
+  async updateFlakyTestDatabase(newFlakyTests) {
     newFlakyTests.forEach(newTest => {
       const existingIndex = this.flakyTests.tests.findIndex(test => 
         test.testName === newTest.name && test.testSuite === newTest.suite
@@ -618,7 +656,7 @@ class FlakyTestManager {
       }
     });
     
-    this.saveFlakyTestData();
+    await this.saveFlakyTestData();
   }
 
   generateReportSummary() {
@@ -696,7 +734,7 @@ class FlakyTestManager {
   displayConsoleReport(report) {
     console.log('\n📊 Flaky Test Report');
     console.log('═'.repeat(60));
-    console.log(`Generated: ${this.formatDate(report.timestamp)}`);
+    console.log(`Generated: ${escapeHtml(this.formatDate(report.timestamp))}`);
     console.log('');
     
     const summary = report.summary;
@@ -755,21 +793,21 @@ class FlakyTestManager {
     <div class="container">
         <div class="header">
             <h1>🔄 Flaky Test Report</h1>
-            <p>Generated: ${this.formatDate(report.timestamp)}</p>
+            <p>Generated: ${escapeHtml(this.formatDate(report.timestamp))}</p>
         </div>
         
         <div class="summary">
             <div class="metric">
                 <h3>Total Flaky Tests</h3>
-                <div class="value">${report.summary.totalFlakyTests}</div>
+                <div class="value">${escapeHtml(String(report.summary.totalFlakyTests))}</div>
             </div>
             <div class="metric">
                 <h3>Quarantined</h3>
-                <div class="value">${report.summary.quarantinedTests}</div>
+                <div class="value">${escapeHtml(String(report.summary.quarantinedTests))}</div>
             </div>
             <div class="metric">
                 <h3>Active</h3>
-                <div class="value">${report.summary.activeTests}</div>
+                <div class="value">${escapeHtml(String(report.summary.activeTests))}</div>
             </div>
             <div class="metric">
                 <h3>Avg Failure Rate</h3>
@@ -782,7 +820,7 @@ class FlakyTestManager {
             <h2>💡 Recommendations</h2>
             <div class="recommendations">
                 ${report.recommendations.map(rec => `
-                    <p class="${rec.type}">${rec.message}</p>
+                    <p class="${(rec.type || '').replace(/[^a-zA-Z0-9_-]/g, '')}">${escapeHtml(rec.message)}</p>
                 `).join('')}
             </div>
         </div>
@@ -791,14 +829,14 @@ class FlakyTestManager {
         <div class="section">
             <h2>🔄 Flaky Tests</h2>
             ${report.tests.map(test => `
-                <div class="test-item severity-${test.severity} ${test.quarantined ? 'quarantined' : ''}">
-                    <h3>${test.testName} ${test.quarantined ? '🚨' : ''}</h3>
-                    <p><strong>Suite:</strong> ${test.testSuite}</p>
+                <div class="test-item severity-${(test.severity || '').replace(/[^a-zA-Z0-9_-]/g, '')} ${test.quarantined ? 'quarantined' : ''}">
+                    <h3>${escapeHtml(test.testName)} ${test.quarantined ? '🚨' : ''}</h3>
+                    <p><strong>Suite:</strong> ${escapeHtml(test.testSuite)}</p>
                     <p><strong>Failure Rate:</strong> ${(test.failureRate * 100).toFixed(1)}%</p>
-                    <p><strong>Age:</strong> ${test.age} days</p>
-                    <p><strong>Last Failure:</strong> ${this.formatDate(test.lastFailure || test.detectedAt)}</p>
+                    <p><strong>Age:</strong> ${escapeHtml(String(test.age))} days</p>
+                    <p><strong>Last Failure:</strong> ${escapeHtml(this.formatDate(test.lastFailure || test.detectedAt))}</p>
                     ${test.commonErrors && test.commonErrors.length > 0 ? `
-                        <p><strong>Common Errors:</strong> ${test.commonErrors.join(', ')}</p>
+                        <p><strong>Common Errors:</strong> ${test.commonErrors.map(error => escapeHtml(error)).join(', ')}</p>
                     ` : ''}
                 </div>
             `).join('')}

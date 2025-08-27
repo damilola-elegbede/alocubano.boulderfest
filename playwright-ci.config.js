@@ -1,4 +1,27 @@
 import { defineConfig, devices } from "@playwright/test";
+/**
+ * Safe RegExp creation with validation
+ * @param {string} pattern - RegExp pattern
+ * @returns {RegExp|undefined} - Valid RegExp or undefined if invalid
+ */
+function safeRegExp(pattern) {
+  if (!pattern || typeof pattern !== 'string') {
+    return undefined;
+  }
+  
+  // Basic validation to prevent obvious malicious patterns
+  if (pattern.length > 1000) {
+    console.warn('RegExp pattern too long, ignoring');
+    return undefined;
+  }
+  
+  try {
+    return new RegExp(pattern);
+  } catch (error) {
+    console.warn(`Invalid RegExp pattern: ${pattern}`, error.message);
+    return undefined;
+  }
+}
 
 /**
  * CI-specific Playwright configuration
@@ -256,8 +279,8 @@ export default defineConfig({
   outputDir: "./test-results/playwright",
 
   // CI-specific test filtering
-  grep: process.env.CI_TEST_FILTER ? new RegExp(process.env.CI_TEST_FILTER) : undefined,
-  grepInvert: process.env.CI_EXCLUDE_TESTS ? new RegExp(process.env.CI_EXCLUDE_TESTS) : undefined,
+  grep: safeRegExp(process.env.CI_TEST_FILTER),
+  grepInvert: safeRegExp(process.env.CI_EXCLUDE_TESTS),
 
   // Metadata for CI reporting
   metadata: {

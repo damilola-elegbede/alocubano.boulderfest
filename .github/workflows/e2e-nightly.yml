@@ -125,8 +125,7 @@ jobs:
           MATRIX+=']}'
           
           echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
-          echo "Generated test matrix with $(echo $MATRIX | grep -o '{"browser"' | wc -l) browser configurations"
-
+          echo "Generated test matrix with $(echo "$MATRIX" | grep -o '"browser"' | wc -l) browser configurations"
       - name: ✅ Validate Test Environment
         run: |
           TEST_URL="${{ steps.env.outputs.test_url }}"
@@ -672,8 +671,12 @@ jobs:
           # Prepare data for potential notification systems
           TOTAL_TESTS=$(find ./artifacts -name "*.json" | xargs grep -l "\"type\":\"test\"" | wc -l)
           FAILED_BROWSERS=$(find ./artifacts -name "*failures*" -type d | wc -l)
-          SUCCESS_RATE=$(( ($(find ./artifacts -name "*results*" -type d | wc -l) - FAILED_BROWSERS) * 100 / $(find ./artifacts -name "*results*" -type d | wc -l) ))
-          
+          TOTAL_RESULTS=$(find ./artifacts -name "*results*" -type d | wc -l)
+          if [ "$TOTAL_RESULTS" -gt 0 ]; then
+            SUCCESS_RATE=$(( (TOTAL_RESULTS - FAILED_BROWSERS) * 100 / TOTAL_RESULTS ))
+          else
+            SUCCESS_RATE=0
+          fi          
           echo "total_tests=$TOTAL_TESTS" >> $GITHUB_OUTPUT
           echo "failed_browsers=$FAILED_BROWSERS" >> $GITHUB_OUTPUT
           echo "success_rate=$SUCCESS_RATE" >> $GITHUB_OUTPUT

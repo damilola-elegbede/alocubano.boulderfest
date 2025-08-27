@@ -323,9 +323,13 @@ async function optimizeDependencyCaching() {
   }
   
   const duration = Date.now() - startTime;
-  console.log(`📊 Dependency caching completed in ${duration}ms`);
-}
+  performanceManager.recordExecutionMetric('parallelization_optimization', duration);
 
+  return {
+    totalWorkers,
+    estimatedTimeReduction: '30-50%'
+  };
+}
 /**
  * Browser Installation Optimization with Caching
  */
@@ -400,9 +404,13 @@ async function optimizeBrowserInstallation() {
   }
   
   const duration = Date.now() - startTime;
-  console.log(`📊 Browser optimization completed in ${duration}ms`);
-}
+  performanceManager.recordExecutionMetric('parallelization_optimization', duration);
 
+  return {
+    totalWorkers,
+    estimatedTimeReduction: '30-50%'
+  };
+}
 /**
  * Intelligent Test Parallelization
  */
@@ -418,32 +426,29 @@ async function optimizeTestParallelization() {
   
   console.log(`=📊 Found ${totalTests} test files`);
   
-  // Calculate optimal worker distribution per browser
-  const browsers = ['chromium', 'firefox', 'webkit', 'mobile-chrome', 'mobile-safari'];
-  const workersPerBrowser = Math.max(1, Math.floor(state.parallelization.optimalWorkers / browsers.length));
+  // Calculate optimal worker distribution globally (not per-browser)
+  const totalWorkers = Math.max(1, state.parallelization.optimalWorkers);
   
   // Set environment variables for optimal execution
-  process.env.PLAYWRIGHT_WORKERS = workersPerBrowser.toString();
+  // Note: PLAYWRIGHT_WORKERS is a global setting, not per-browser
+  process.env.PLAYWRIGHT_WORKERS = totalWorkers.toString();
   process.env.PLAYWRIGHT_MAX_FAILURES = '3'; // Fail fast to save time
   
-  console.log(`<📊 Optimized parallelization: ${workersPerBrowser} workers per browser`);
+  console.log(`📊 Optimized parallelization: ${totalWorkers} workers globally`);
   
   performanceManager.addOptimization(
     'parallelization',
-    `Set optimal worker count: ${workersPerBrowser} per browser`,
+    `Set optimal global worker count: ${totalWorkers}`,
     'high'
-  );
-  
+  );  
   const duration = Date.now() - startTime;
   performanceManager.recordExecutionMetric('parallelization_optimization', duration);
-  
+
   return {
-    workersPerBrowser,
-    totalWorkers: workersPerBrowser * browsers.length,
+    totalWorkers,
     estimatedTimeReduction: '30-50%'
   };
 }
-
 /**
  * Resource Usage Monitoring
  */
@@ -542,16 +547,13 @@ async function analyzePipelineEfficiency() {
   }
   
   const duration = Date.now() - startTime;
-  performanceManager.recordExecutionMetric('efficiency_analysis', duration);
-  
+  performanceManager.recordExecutionMetric('parallelization_optimization', duration);
+
   return {
-    totalDuration,
-    efficiencyScore,
-    phases,
-    recommendations: state.recommendations
+    totalWorkers,
+    estimatedTimeReduction: '30-50%'
   };
 }
-
 /**
  * Performance Metrics Tracking and Regression Detection
  */
@@ -591,11 +593,13 @@ async function trackPerformanceMetrics() {
   }
   
   const duration = Date.now() - startTime;
-  console.log(`📊 Performance tracking completed in ${duration}ms`);
-  
-  return report;
-}
+  performanceManager.recordExecutionMetric('parallelization_optimization', duration);
 
+  return {
+    totalWorkers,
+    estimatedTimeReduction: '30-50%'
+  };
+}
 /**
  * Performance Regression Detection
  */
