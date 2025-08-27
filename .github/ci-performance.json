@@ -1,0 +1,62 @@
+{
+  "performance": {
+    "targets": {
+      "totalExecutionTime": 300,
+      "testExecutionTime": 240,
+      "dependencyInstallTime": 60,
+      "browserInstallTime": 120
+    },
+    "thresholds": {
+      "regressionPercent": 15,
+      "cacheHitRateMin": 80,
+      "memoryUsageMaxMB": 1500,
+      "failFastMaxFailures": 3
+    },
+    "optimizations": {
+      "parallelization": {
+        "maxWorkersPerBrowser": 2,
+        "browserConcurrency": 5,
+        "testConcurrency": true
+      },
+      "caching": {
+        "enableDependencyCache": true,
+        "enableBrowserCache": true,
+        "enablePerformanceCache": true,
+        "cacheRetentionDays": 7
+      },
+      "monitoring": {
+        "enableResourceTracking": true,
+        "enablePerformanceMetrics": true,
+        "enableRegressionDetection": true,
+        "monitoringIntervalMs": 1000
+      }
+    }
+  },
+  "browsers": {
+    "required": ["chromium", "firefox", "webkit"],
+    "mobile": ["mobile-chrome", "mobile-safari"],
+    "optional": ["edge"],
+    "memoryUsage": {
+      "chromium": 500,
+      "firefox": 400,
+      "webkit": 450,
+      "mobile-chrome": 400,
+      "mobile-safari": 350,
+      "edge": 520
+    }
+  },
+  "environment": {
+    "ci": {
+      "cpuCores": 2,
+      "memoryGB": 7,
+      "nodeVersion": "20",
+      "timeoutMinutes": 20
+    },
+    "local": {
+      "cpuCores": 4,
+      "memoryGB": 8,
+      "nodeVersion": "20",
+      "timeoutMinutes": 30
+    }
+  }
+}

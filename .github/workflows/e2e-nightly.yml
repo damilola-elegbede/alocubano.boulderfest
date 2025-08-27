@@ -1,0 +1,725 @@
+---
+name: 🌙 Nightly E2E Comprehensive Testing
+
+# Comprehensive nightly testing with full browser matrix, performance profiling,
+# accessibility testing, and cross-device validation
+# Runs on production-like environments with extended timeouts and thorough coverage
+
+on:
+  schedule:
+    # Run at 2 AM UTC every day (adjust for your timezone)
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test against'
+        required: false
+        default: 'staging'
+        type: choice
+        options:
+          - 'staging'
+          - 'production'
+          - 'localhost'
+      extended_browsers:
+        description: 'Include extended browser matrix (Edge, older versions)'
+        required: false
+        default: true
+        type: boolean
+      performance_profiling:
+        description: 'Enable detailed performance profiling'
+        required: false
+        default: true
+        type: boolean
+      accessibility_testing:
+        description: 'Run accessibility validation tests'
+        required: false
+        default: true
+        type: boolean
+      load_testing:
+        description: 'Include load testing scenarios'
+        required: false
+        default: false
+        type: boolean
+
+# Allow only one nightly run at a time
+concurrency:
+  group: nightly-e2e
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "20"
+  NODE_ENV: test
+  CI: true
+  # Higher memory limit for comprehensive testing
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  # Nightly test configuration
+  E2E_TEST_MODE: true
+  NIGHTLY_TESTING: true
+  PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
+  # Extended timeouts for nightly runs
+  PLAYWRIGHT_TIMEOUT: 60000
+  PLAYWRIGHT_NAVIGATION_TIMEOUT: 30000
+  # Database configuration
+  DATABASE_URL: "file:./data/nightly-test.db"
+  TURSO_DATABASE_URL: "file:./data/nightly-test.db"
+
+jobs:
+  # Environment preparation and validation
+  prepare:
+    name: 🔧 Environment Preparation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      test_url: ${{ steps.env.outputs.test_url }}
+      environment: ${{ steps.env.outputs.environment }}
+      test_matrix: ${{ steps.matrix.outputs.matrix }}
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🌐 Determine Test Environment
+        id: env
+        run: |
+          # Determine test URL based on input or default to staging
+          case "${{ inputs.environment || 'staging' }}" in
+            "production")
+              TEST_URL="https://alocubanoboulderfest.com"
+              echo "⚠️  WARNING: Running against PRODUCTION environment"
+              ;;
+            "staging")
+              TEST_URL="https://staging.alocubanoboulderfest.com"
+              echo "✅ Using staging environment"
+              ;;
+            "localhost")
+              TEST_URL="http://localhost:3000"
+              echo "🏠 Using localhost environment"
+              ;;
+            *)
+              echo "❌ Invalid environment specified"
+              exit 1
+              ;;
+          esac
+          
+          echo "test_url=$TEST_URL" >> $GITHUB_OUTPUT
+          echo "environment=${{ inputs.environment || 'staging' }}" >> $GITHUB_OUTPUT
+          echo "Test URL: $TEST_URL"
+
+      - name: 🎭 Generate Test Matrix
+        id: matrix
+        run: |
+          # Base browser matrix
+          MATRIX='{"include":['
+          MATRIX+='{	"browser":"chromium","name":"Chrome Desktop","category":"desktop","device":"Desktop Chrome"},'
+          MATRIX+='{"browser":"firefox","name":"Firefox Desktop","category":"desktop","device":"Desktop Firefox"},'
+          MATRIX+='{"browser":"webkit","name":"Safari Desktop","category":"desktop","device":"Desktop Safari"},'
+          MATRIX+='{"browser":"mobile-chrome","name":"Chrome Mobile","category":"mobile","device":"Pixel 5"},'
+          MATRIX+='{"browser":"mobile-safari","name":"Safari Mobile","category":"mobile","device":"iPhone 13"},'
+          MATRIX+='{"browser":"tablet-ipad","name":"iPad Tablet","category":"tablet","device":"iPad Mini"}'
+          
+          # Add extended browsers if requested
+          if [ "${{ inputs.extended_browsers }}" == "true" ]; then
+            MATRIX+=',{"browser":"edge","name":"Edge Desktop","category":"desktop","device":"Desktop Edge"}'
+          fi
+          
+          MATRIX+=']}'
+          
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+          echo "Generated test matrix with $(echo $MATRIX | grep -o '{"browser"' | wc -l) browser configurations"
+
+      - name: ✅ Validate Test Environment
+        run: |
+          TEST_URL="${{ steps.env.outputs.test_url }}"
+          
+          # Skip validation for localhost (server not running yet)
+          if [[ "$TEST_URL" == *"localhost"* ]]; then
+            echo "⏭️  Skipping validation for localhost environment"
+            exit 0
+          fi
+          
+          echo "🔍 Validating test environment: $TEST_URL"
+          
+          # Basic connectivity test
+          if curl -f --max-time 10 "$TEST_URL/api/health/check" >/dev/null 2>&1; then
+            echo "✅ Environment is accessible and healthy"
+          else
+            echo "❌ Environment validation failed"
+            echo "URL: $TEST_URL"
+            exit 1
+          fi
+
+  # Comprehensive E2E testing with full browser matrix
+  comprehensive-e2e:
+    name: 🎭 ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    needs: prepare
+    timeout-minutes: 45
+    continue-on-error: true
+    
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix: ${{ fromJson(needs.prepare.outputs.test_matrix) }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: |
+          echo "Installing dependencies for comprehensive testing..."
+          npm ci --prefer-offline --no-audit --no-fund
+          
+          # Install additional testing dependencies
+          npm install --save-dev @axe-core/playwright
+          
+          echo "✅ Dependencies installed"
+
+      - name: 🎭 Cache Playwright Browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ${{ env.PLAYWRIGHT_BROWSERS_PATH }}
+          key: playwright-nightly-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v3
+          restore-keys: |
+            playwright-nightly-${{ runner.os }}-v3
+
+      - name: 🎬 Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: |
+          echo "Installing all Playwright browsers for comprehensive testing..."
+          npx playwright install --with-deps
+          echo "✅ All browsers installed"
+
+      - name: 🎬 Update Browser Dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: |
+          echo "Using cached browsers, updating system dependencies..."
+          npx playwright install-deps
+          echo "✅ Dependencies updated"
+
+      - name: 📁 Prepare Test Environment
+        run: |
+          # Create comprehensive test directories
+          mkdir -p data test-results/{playwright,screenshots,videos,traces,reports}
+          
+          # Configure browser-specific settings
+          echo "PLAYWRIGHT_BROWSER=${{ matrix.browser }}" >> $GITHUB_ENV
+          echo "TEST_DEVICE=${{ matrix.device }}" >> $GITHUB_ENV
+          echo "TEST_CATEGORY=${{ matrix.category }}" >> $GITHUB_ENV
+          
+          # Extended timeout configuration for nightly runs
+          echo "PLAYWRIGHT_TIMEOUT=60000" >> $GITHUB_ENV
+          echo "PLAYWRIGHT_NAVIGATION_TIMEOUT=30000" >> $GITHUB_ENV
+          
+          echo "✅ Environment prepared for ${{ matrix.name }}"
+
+      - name: 🚀 Start Local Server
+        if: needs.prepare.outputs.environment == 'localhost'
+        id: server
+        run: |
+          echo "Starting local test server for comprehensive testing..."
+          
+          npm run start:ci &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          
+          # Extended wait time for server startup
+          echo "Waiting for server to be fully ready..."
+          for i in {1..60}; do
+            if curl -f http://localhost:3000/api/health/check >/dev/null 2>&1; then
+              echo "✅ Server is ready"
+              break
+            fi
+            echo "Attempt $i/60: Server not ready yet..."
+            sleep 2
+          done
+          
+          if [ $i -eq 60 ]; then
+            echo "❌ Server failed to start within timeout"
+            exit 1
+          fi
+          
+          # Comprehensive endpoint warm-up
+          echo "🔥 Warming up all endpoints..."
+          endpoints=(
+            "/api/health/check"
+            "/api/health/database" 
+            "/api/gallery"
+            "/api/gallery/years"
+            "/api/featured-photos"
+            "/api/admin/login"
+            "/api/email/subscribe"
+          )
+          
+          for endpoint in "${endpoints[@]}"; do
+            curl -s "http://localhost:3000$endpoint" >/dev/null || true
+            sleep 0.5
+          done
+          
+          echo "✅ Server ready and all endpoints warmed up"
+
+      - name: 🧪 Run Comprehensive E2E Tests
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ needs.prepare.outputs.test_url }}
+          PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
+          # Extended workers for nightly comprehensive testing
+          PLAYWRIGHT_WORKERS: 4
+          # Security credentials for admin testing
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD || 'nightly-test-admin' }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY_TEST }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_TEST }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET_TEST || 'nightly-test-admin-secret-minimum-32-chars' }}
+          # Performance and accessibility testing
+          PERFORMANCE_TESTING: ${{ inputs.performance_profiling }}
+          ACCESSIBILITY_TESTING: ${{ inputs.accessibility_testing }}
+          NIGHTLY_COMPREHENSIVE: true
+          # Tracing enabled for detailed debugging
+          PLAYWRIGHT_TRACE: on-first-retry
+          PLAYWRIGHT_VIDEO: retain-on-failure
+        run: |
+          echo "🧪 Running comprehensive E2E tests for ${{ matrix.name }}..."
+          
+          # Base test command with comprehensive reporting
+          TEST_CMD="npx playwright test --project=${{ matrix.browser }}"
+          TEST_CMD="$TEST_CMD --reporter=list,html,json,junit"
+          TEST_CMD="$TEST_CMD --output-dir=test-results/playwright-${{ matrix.browser }}"
+          
+          # Add comprehensive test patterns
+          TEST_PATTERNS=""
+          
+          # Core functionality tests (always run)
+          TEST_PATTERNS="$TEST_PATTERNS tests/e2e/flows/"
+          
+          # Performance tests (if enabled)
+          if [ "${{ inputs.performance_profiling }}" == "true" ]; then
+            echo "🚀 Including performance profiling tests"
+            TEST_PATTERNS="$TEST_PATTERNS tests/e2e/performance/"
+          fi
+          
+          # Accessibility tests (if enabled) 
+          if [ "${{ inputs.accessibility_testing }}" == "true" ]; then
+            echo "♿ Including accessibility validation tests"
+            TEST_PATTERNS="$TEST_PATTERNS tests/e2e/accessibility/"
+          fi
+          
+          # Execute comprehensive test suite
+          echo "Executing: $TEST_CMD $TEST_PATTERNS"
+          timeout 35m $TEST_CMD $TEST_PATTERNS || {
+            TEST_EXIT_CODE=$?
+            echo "⚠️  Tests completed with exit code: $TEST_EXIT_CODE"
+            
+            # Continue with artifact collection even if tests failed
+            echo "test_exit_code=$TEST_EXIT_CODE" >> $GITHUB_ENV
+          }
+          
+          echo "✅ Comprehensive E2E testing completed for ${{ matrix.name }}"
+
+      - name: 🔍 Performance Analysis
+        if: inputs.performance_profiling == true
+        continue-on-error: true
+        run: |
+          echo "📊 Analyzing performance metrics..."
+          
+          # Extract performance data from test results
+          if [ -f "test-results/playwright-${{ matrix.browser }}/results.json" ]; then
+            node -e "
+              const fs = require('fs');
+              const results = JSON.parse(fs.readFileSync('test-results/playwright-${{ matrix.browser }}/results.json'));
+              
+              // Extract performance metrics
+              const performanceTests = results.suites
+                ?.flatMap(s => s.tests || [])
+                ?.filter(t => t.title.includes('performance') || t.title.includes('load'))
+                || [];
+              
+              console.log('Performance test results:');
+              performanceTests.forEach(test => {
+                console.log(\`- \${test.title}: \${test.outcome}\`);
+              });
+            " || echo "No performance data available"
+          fi
+
+      - name: ♿ Accessibility Analysis
+        if: inputs.accessibility_testing == true
+        continue-on-error: true
+        run: |
+          echo "♿ Analyzing accessibility test results..."
+          
+          # Process accessibility test results
+          if [ -d "test-results/playwright-${{ matrix.browser }}" ]; then
+            find test-results/playwright-${{ matrix.browser }} -name "*accessibility*" -type f | while read file; do
+              echo "Found accessibility result: $file"
+            done
+          fi
+
+      - name: 🧹 Cleanup Server
+        if: always() && needs.prepare.outputs.environment == 'localhost'
+        run: |
+          if [ -n "${SERVER_PID:-}" ]; then
+            echo "Stopping test server (PID: $SERVER_PID)..."
+            kill $SERVER_PID || true
+            sleep 3
+            kill -9 $SERVER_PID 2>/dev/null || true
+          fi
+          
+          # Comprehensive cleanup
+          lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+          pkill -f "vercel.*dev" 2>/dev/null || true
+          
+          echo "✅ Server cleanup completed"
+
+      - name: 📤 Upload Comprehensive Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-results-${{ matrix.browser }}-${{ github.run_number }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: 📸 Upload Failure Artifacts
+        if: failure() || env.test_exit_code != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-failures-${{ matrix.browser }}-${{ github.run_number }}
+          path: |
+            test-results/playwright-${{ matrix.browser }}/
+            test-results/screenshots/
+            test-results/videos/
+            test-results/traces/
+          retention-days: 45
+          if-no-files-found: ignore
+
+  # Load testing (optional, resource intensive)
+  load-testing:
+    name: 🚛 Load Testing
+    runs-on: ubuntu-latest
+    needs: [prepare, comprehensive-e2e]
+    if: inputs.load_testing == true
+    timeout-minutes: 30
+    continue-on-error: true
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: ⚡ Install k6 Load Testing Tool
+        run: |
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: 🚛 Run Load Tests
+        env:
+          TEST_URL: ${{ needs.prepare.outputs.test_url }}
+        run: |
+          echo "🚛 Running load tests against: $TEST_URL"
+          
+          # Create basic load test script
+          cat > load-test.js << 'EOF'
+          import http from 'k6/http';
+          import { check } from 'k6';
+          
+          export let options = {
+            stages: [
+              { duration: '2m', target: 10 },   // Ramp up
+              { duration: '3m', target: 10 },   // Stay at 10 users
+              { duration: '2m', target: 20 },   // Ramp to 20 users
+              { duration: '3m', target: 20 },   // Stay at 20 users
+              { duration: '2m', target: 0 },    // Ramp down
+            ],
+            thresholds: {
+              http_req_duration: ['p(95)<2000'], // 95% of requests under 2s
+              http_req_failed: ['rate<0.05'],    // Error rate under 5%
+            },
+          };
+          
+          export default function() {
+            const endpoints = [
+              '/api/health/check',
+              '/api/gallery',
+              '/api/featured-photos',
+            ];
+            
+            endpoints.forEach(endpoint => {
+              let response = http.get(`${__ENV.TEST_URL}${endpoint}`);
+              check(response, {
+                'status is 200': (r) => r.status === 200,
+                'response time < 2s': (r) => r.timings.duration < 2000,
+              });
+            });
+          }
+          EOF
+          
+          # Run load tests
+          k6 run --out json=load-test-results.json load-test.js
+          
+          echo "✅ Load testing completed"
+
+      - name: 📊 Analyze Load Test Results
+        if: always()
+        run: |
+          if [ -f load-test-results.json ]; then
+            echo "## 🚛 Load Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Extract key metrics
+            node -e "
+              const fs = require('fs');
+              const lines = fs.readFileSync('load-test-results.json', 'utf8').split('\n').filter(Boolean);
+              const metrics = lines.map(line => JSON.parse(line)).find(m => m.type === 'Point' && m.metric === 'http_req_duration');
+              
+              if (metrics) {
+                console.log('| Metric | Value |');
+                console.log('|--------|-------|');
+                console.log('| Average Response Time | ' + Math.round(metrics.data.value) + 'ms |');
+                console.log('| Test Duration | ' + Math.round((Date.now() - metrics.data.time) / 1000) + 's |');
+              } else {
+                console.log('Load test metrics not available');
+              }
+            " >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 📤 Upload Load Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-results-${{ github.run_number }}
+          path: |
+            load-test-results.json
+            load-test.js
+          retention-days: 30
+
+  # Comprehensive results analysis and reporting
+  analysis:
+    name: 📊 Comprehensive Analysis
+    runs-on: ubuntu-latest
+    needs: [prepare, comprehensive-e2e, load-testing]
+    if: always()
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📥 Download All Test Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: 🔧 Setup Analysis Environment
+        run: |
+          # Install analysis tools
+          npm install -g json-query lodash-cli
+          
+          # Prepare analysis directory
+          mkdir -p analysis/{reports,charts,data}
+
+      - name: 📊 Aggregate Test Results
+        run: |
+          echo "📊 Analyzing comprehensive test results..."
+          
+          # Count total artifacts
+          ARTIFACT_COUNT=$(find ./artifacts -type f | wc -l)
+          BROWSER_CONFIGS=$(find ./artifacts -name "*nightly-results-*" -type d | wc -l)
+          FAILURE_ARTIFACTS=$(find ./artifacts -name "*nightly-failures-*" -type d | wc -l)
+          
+          echo "Found $ARTIFACT_COUNT total files across $BROWSER_CONFIGS browser configurations"
+          echo "Detected $FAILURE_ARTIFACTS browser configurations with failures"
+          
+          # Generate comprehensive summary
+          echo "# 🌙 Nightly E2E Comprehensive Test Report" >> analysis/comprehensive-report.md
+          echo "" >> analysis/comprehensive-report.md
+          echo "**Test Date**: $(date -u +"%Y-%m-%d %H:%M UTC")" >> analysis/comprehensive-report.md
+          echo "**Environment**: ${{ needs.prepare.outputs.environment }}" >> analysis/comprehensive-report.md
+          echo "**Test URL**: ${{ needs.prepare.outputs.test_url }}" >> analysis/comprehensive-report.md
+          echo "" >> analysis/comprehensive-report.md
+          
+          echo "## Test Matrix Results" >> analysis/comprehensive-report.md
+          echo "" >> analysis/comprehensive-report.md
+          echo "| Browser | Status | Artifacts |" >> analysis/comprehensive-report.md
+          echo "|---------|--------|-----------|" >> analysis/comprehensive-report.md
+          
+          # Analyze each browser configuration
+          for browser_dir in ./artifacts/nightly-results-*; do
+            if [ -d "$browser_dir" ]; then
+              browser_name=$(basename "$browser_dir" | sed 's/nightly-results-//' | sed 's/-[0-9]*$//')
+              
+              # Check if there are failure artifacts for this browser
+              if [ -d "./artifacts/nightly-failures-$browser_name"* ]; then
+                status="❌ Failed"
+              else
+                status="✅ Passed"
+              fi
+              
+              artifact_count=$(find "$browser_dir" -type f | wc -l)
+              echo "| $browser_name | $status | $artifact_count files |" >> analysis/comprehensive-report.md
+            fi
+          done
+
+      - name: 🎯 Performance Analysis
+        if: inputs.performance_profiling == true
+        run: |
+          echo "" >> analysis/comprehensive-report.md
+          echo "## 🚀 Performance Analysis" >> analysis/comprehensive-report.md
+          echo "" >> analysis/comprehensive-report.md
+          
+          # Look for performance test results
+          PERF_FILES=$(find ./artifacts -name "*performance*" -o -name "*load*" | head -5)
+          
+          if [ -n "$PERF_FILES" ]; then
+            echo "Performance test artifacts found:" >> analysis/comprehensive-report.md
+            echo "$PERF_FILES" | while read file; do
+              echo "- 📊 $(basename "$file")" >> analysis/comprehensive-report.md
+            done
+          else
+            echo "No performance test artifacts found" >> analysis/comprehensive-report.md
+          fi
+
+      - name: ♿ Accessibility Analysis
+        if: inputs.accessibility_testing == true
+        run: |
+          echo "" >> analysis/comprehensive-report.md
+          echo "## ♿ Accessibility Analysis" >> analysis/comprehensive-report.md
+          echo "" >> analysis/comprehensive-report.md
+          
+          # Look for accessibility test results
+          A11Y_FILES=$(find ./artifacts -name "*accessibility*" -o -name "*a11y*" | head -5)
+          
+          if [ -n "$A11Y_FILES" ]; then
+            echo "Accessibility test artifacts found:" >> analysis/comprehensive-report.md
+            echo "$A11Y_FILES" | while read file; do
+              echo "- ♿ $(basename "$file")" >> analysis/comprehensive-report.md
+            done
+          else
+            echo "No accessibility test artifacts found" >> analysis/comprehensive-report.md
+          fi
+
+      - name: 🚛 Load Testing Analysis
+        if: needs.load-testing.result != 'skipped'
+        run: |
+          echo "" >> analysis/comprehensive-report.md
+          echo "## 🚛 Load Testing Results" >> analysis/comprehensive-report.md
+          echo "" >> analysis/comprehensive-report.md
+          
+          # Check load testing results
+          if [ "${{ needs.load-testing.result }}" == "success" ]; then
+            echo "✅ Load testing completed successfully" >> analysis/comprehensive-report.md
+          elif [ "${{ needs.load-testing.result }}" == "failure" ]; then
+            echo "❌ Load testing failed - check artifacts for details" >> analysis/comprehensive-report.md
+          else
+            echo "⏭️ Load testing was skipped or cancelled" >> analysis/comprehensive-report.md
+          fi
+
+      - name: 📋 Generate Final Summary
+        run: |
+          echo "" >> analysis/comprehensive-report.md
+          echo "## 📋 Summary" >> analysis/comprehensive-report.md
+          echo "" >> analysis/comprehensive-report.md
+          
+          # Overall test status
+          if [ "${{ needs.comprehensive-e2e.result }}" == "success" ]; then
+            echo "✅ **Overall Status**: All comprehensive E2E tests passed" >> analysis/comprehensive-report.md
+          else
+            echo "⚠️ **Overall Status**: Some tests failed or were incomplete" >> analysis/comprehensive-report.md
+          fi
+          
+          echo "" >> analysis/comprehensive-report.md
+          echo "**Test Configuration**:" >> analysis/comprehensive-report.md
+          echo "- Node.js: ${{ env.NODE_VERSION }}" >> analysis/comprehensive-report.md
+          echo "- Extended Browsers: ${{ inputs.extended_browsers }}" >> analysis/comprehensive-report.md
+          echo "- Performance Profiling: ${{ inputs.performance_profiling }}" >> analysis/comprehensive-report.md
+          echo "- Accessibility Testing: ${{ inputs.accessibility_testing }}" >> analysis/comprehensive-report.md
+          echo "- Load Testing: ${{ inputs.load_testing }}" >> analysis/comprehensive-report.md
+          echo "" >> analysis/comprehensive-report.md
+          echo "**Workflow Run**: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> analysis/comprehensive-report.md
+
+      - name: 📤 Upload Comprehensive Analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: comprehensive-analysis-${{ github.run_number }}
+          path: |
+            analysis/
+          retention-days: 60
+
+      - name: 📊 Add Summary to Workflow
+        run: |
+          # Add the comprehensive report to GitHub Step Summary
+          cat analysis/comprehensive-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: 📧 Prepare Notification Data
+        id: notification
+        run: |
+          # Prepare data for potential notification systems
+          TOTAL_TESTS=$(find ./artifacts -name "*.json" | xargs grep -l "\"type\":\"test\"" | wc -l)
+          FAILED_BROWSERS=$(find ./artifacts -name "*failures*" -type d | wc -l)
+          SUCCESS_RATE=$(( ($(find ./artifacts -name "*results*" -type d | wc -l) - FAILED_BROWSERS) * 100 / $(find ./artifacts -name "*results*" -type d | wc -l) ))
+          
+          echo "total_tests=$TOTAL_TESTS" >> $GITHUB_OUTPUT
+          echo "failed_browsers=$FAILED_BROWSERS" >> $GITHUB_OUTPUT
+          echo "success_rate=$SUCCESS_RATE" >> $GITHUB_OUTPUT
+          echo "environment=${{ needs.prepare.outputs.environment }}" >> $GITHUB_OUTPUT
+
+  # Optional: Send notifications about nightly test results
+  notify:
+    name: 📧 Test Completion Notification  
+    runs-on: ubuntu-latest
+    needs: [prepare, comprehensive-e2e, analysis]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+      - name: 📊 Determine Overall Status
+        id: status
+        run: |
+          # Determine overall test status
+          if [ "${{ needs.comprehensive-e2e.result }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "emoji=✅" >> $GITHUB_OUTPUT
+            echo "message=All nightly E2E tests passed successfully" >> $GITHUB_OUTPUT
+          elif [ "${{ needs.comprehensive-e2e.result }}" == "failure" ]; then
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "emoji=❌" >> $GITHUB_OUTPUT
+            echo "message=Some nightly E2E tests failed" >> $GITHUB_OUTPUT
+          else
+            echo "status=unknown" >> $GITHUB_OUTPUT
+            echo "emoji=⚠️" >> $GITHUB_OUTPUT
+            echo "message=Nightly E2E tests completed with unknown status" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📧 Log Completion Status
+        run: |
+          echo "${{ steps.status.outputs.emoji }} Nightly E2E Testing Complete"
+          echo ""
+          echo "Status: ${{ steps.status.outputs.message }}"
+          echo "Environment: ${{ needs.prepare.outputs.environment }}"
+          echo "Test URL: ${{ needs.prepare.outputs.test_url }}"
+          echo "Workflow: #${{ github.run_number }}"
+          
+          # Future: Add integration with notification services like:
+          # - Slack webhooks
+          # - Discord webhooks  
+          # - Email notifications
+          # - Microsoft Teams
+          
+          echo ""
+          echo "ℹ️  Configure notification integrations in this step for alerts"

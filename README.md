@@ -175,6 +175,91 @@ alocubano.boulderfest/
 - `npm run build` - Build for production
 - `npm run prebuild` - Generate cache files for gallery
 
+## 🔄 CI/CD Pipeline
+
+### GitHub Actions Integration
+
+Our CI/CD pipeline provides comprehensive automation for testing, quality assurance, and deployment:
+
+#### Workflow Features
+
+- **Multi-browser E2E Testing**: Chrome, Firefox, Safari, and Edge compatibility testing
+- **Performance Optimization**: Gallery performance testing and Core Web Vitals monitoring
+- **Security Testing**: Admin panel security validation and authentication flow testing
+- **Quality Gates**: Automated linting, unit testing, and E2E testing before deployment
+- **PR Status Reporting**: Real-time status updates and quality gate validation
+
+#### Available CI Commands
+
+```bash
+# CI Environment Setup
+npm run ci:setup              # Initialize CI environment with database and server
+npm run ci:cleanup            # Clean up resources and generate reports
+npm run ci:test               # Complete CI test pipeline
+npm run ci:pipeline           # Full CI/CD pipeline with quality gates
+
+# Performance Optimization
+npm run ci:performance:optimize    # Optimize CI performance settings
+npm run ci:performance:analyze     # Analyze CI performance metrics
+npm run ci:performance:monitor     # Monitor CI resource usage
+npm run ci:performance:report      # Generate performance reports
+
+# Quality Assurance
+npm run quality:gates         # Run quality gate validation
+npm run quality:check         # Complete quality assessment
+npm run pr:status-report      # Generate PR status report
+npm run pr:status-summary     # PR quality gate summary
+
+# Branch Protection
+npm run branch:validate       # Validate branch protection rules
+npm run branch:apply-protection    # Apply branch protection settings
+
+# Flaky Test Management
+npm run flaky:detect          # Detect flaky tests
+npm run flaky:report          # Generate flaky test reports
+npm run flaky:quarantine      # Quarantine unreliable tests
+```
+
+#### CI/CD Environment Variables
+
+Required for full CI/CD functionality:
+
+```bash
+# Core CI Settings
+CI=true
+NODE_ENV=test
+E2E_TEST_MODE=true
+
+# Database Configuration
+TURSO_DATABASE_URL=           # Production database URL
+TURSO_AUTH_TOKEN=            # Database authentication token
+E2E_TURSO_DATABASE_URL=      # E2E testing database URL
+E2E_TURSO_AUTH_TOKEN=        # E2E database authentication
+
+# Service Credentials (for integration testing)
+STRIPE_SECRET_KEY=           # Payment processing tests
+BREVO_API_KEY=              # Email service tests
+ADMIN_PASSWORD=             # Admin panel tests
+```
+
+#### Performance Benchmarks
+
+- **Setup Time**: < 60 seconds for complete environment initialization
+- **Unit Tests**: < 10 seconds for 26 essential tests
+- **E2E Tests**: 2-5 minutes for comprehensive browser testing
+- **Quality Gates**: < 30 seconds for linting and validation
+- **Resource Cleanup**: < 30 seconds with detailed reporting
+
+#### Quality Gates
+
+- **Code Quality**: ESLint + HTMLHint validation
+- **Security**: Input validation and XSS protection testing
+- **Performance**: Gallery performance and Core Web Vitals compliance
+- **Accessibility**: WCAG compliance validation
+- **Browser Compatibility**: Multi-browser E2E testing
+
+See [CI/CD Documentation](docs/ci-cd/README.md) for detailed setup and configuration.
+
 ## Testing
 
 ### Streamlined Test Philosophy
@@ -351,6 +436,12 @@ curl -f http://localhost:3000/api/health/e2e-database | jq '.'
 - [Registration API](/docs/api/REGISTRATION_API.md) - Ticket registration system endpoints
 - [Async Initialization Guide](/docs/ASYNC_INITIALIZATION_GUIDE.md) - Database service patterns
 - [Testing Strategy](/docs/testing/TESTING_STRATEGY.md) - Streamlined testing approach
+
+### CI/CD Documentation
+- [CI/CD Overview](docs/ci-cd/README.md) - Complete CI/CD pipeline documentation
+- [GitHub Actions Setup](docs/ci-cd/README.md#github-actions-setup) - Workflow configuration and secrets
+- [Performance Optimization](docs/ci-cd/README.md#performance-optimization) - CI performance tuning
+- [Quality Gates](docs/ci-cd/README.md#quality-gates) - Automated quality assurance
 
 ### Testing Documentation
 - [E2E Test Flows](/tests/e2e/flows/README.md) - Phase 2 gallery and admin panel test flows

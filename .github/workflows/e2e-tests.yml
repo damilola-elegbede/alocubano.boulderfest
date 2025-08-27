@@ -1,0 +1,507 @@
+---
+name: 🎭 E2E Testing Suite
+
+# Optimized E2E testing with parallel browser execution
+# Target: Under 5 minutes total execution time
+# Coverage: Chrome, Firefox, Safari with mobile viewport testing
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      test_pattern:
+        description: 'Test pattern to run (e.g., "gallery" or "admin")'
+        required: false
+        default: ''
+        type: string
+      browsers:
+        description: 'Browsers to test (comma-separated: chromium,firefox,webkit)'
+        required: false
+        default: 'chromium,firefox,webkit'
+        type: string
+      parallel_workers:
+        description: 'Number of parallel workers per browser'
+        required: false
+        default: '2'
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '4'
+
+# Prevent concurrent E2E runs for the same PR/branch
+concurrency:
+  group: e2e-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  NODE_ENV: test
+  CI: true
+  # Memory optimization for Node.js in CI
+  NODE_OPTIONS: "--max-old-space-size=2048"
+  # E2E test configuration
+  E2E_TEST_MODE: true
+  PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
+  # Disable telemetry and unnecessary features
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: false
+  DO_NOT_TRACK: 1
+  # Test database configuration
+  DATABASE_URL: "file:./data/e2e-test.db"
+  TURSO_DATABASE_URL: "file:./data/e2e-test.db"
+
+jobs:
+  # Pre-flight validation - fast feedback before expensive E2E tests
+  validate:
+    name: 🔍 Pre-flight Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      should_run_e2e: ${{ steps.changes.outputs.should_run_e2e }}
+      test_pattern: ${{ steps.patterns.outputs.test_pattern }}
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: 🔍 Detect Changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            frontend:
+              - 'js/**'
+              - 'css/**'
+              - 'pages/**'
+            backend:
+              - 'api/**'
+              - 'migrations/**'
+            e2e:
+              - 'tests/e2e/**'
+            config:
+              - 'playwright.config.js'
+              - 'package.json'
+              - '.github/workflows/e2e-*.yml'
+        
+      - name: 📋 Determine Test Scope
+        id: patterns
+        run: |
+          # Default to all tests
+          TEST_PATTERN=""
+          
+          # Override with manual input if provided
+          if [ -n "${{ inputs.test_pattern }}" ]; then
+            TEST_PATTERN="${{ inputs.test_pattern }}"
+            echo "Manual test pattern: $TEST_PATTERN"
+          fi
+          
+          # Set output for downstream jobs
+          echo "test_pattern=$TEST_PATTERN" >> $GITHUB_OUTPUT
+          
+          # Determine if E2E tests should run
+          SHOULD_RUN="true"
+          
+          # Skip E2E for draft PRs unless explicitly requested
+          if [ "${{ github.event.pull_request.draft }}" == "true" ] && [ -z "${{ inputs.test_pattern }}" ]; then
+            echo "Draft PR detected - skipping E2E tests"
+            SHOULD_RUN="false"
+          fi
+          
+          # Skip if no relevant changes detected (unless manual trigger)
+          if [ "${{ steps.changes.outputs.frontend }}" == "false" ] && 
+             [ "${{ steps.changes.outputs.backend }}" == "false" ] && 
+             [ "${{ steps.changes.outputs.e2e }}" == "false" ] && 
+             [ "${{ steps.changes.outputs.config }}" == "false" ] &&
+             [ "${{ github.event_name }}" == "pull_request" ] && 
+             [ -z "${{ inputs.test_pattern }}" ]; then
+            echo "No relevant changes detected - skipping E2E tests"
+            SHOULD_RUN="false"
+          fi
+          
+          echo "should_run_e2e=$SHOULD_RUN" >> $GITHUB_OUTPUT
+          echo "E2E tests will run: $SHOULD_RUN"
+
+  # Main E2E testing with parallel browser execution
+  e2e-tests:
+    name: 🎭 E2E Tests (${{ matrix.browser-name }})
+    runs-on: ubuntu-latest
+    needs: validate
+    if: needs.validate.outputs.should_run_e2e == 'true'
+    timeout-minutes: 15
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - browser: chromium
+            browser-name: Chrome
+            device-category: desktop
+          - browser: firefox  
+            browser-name: Firefox
+            device-category: desktop
+          - browser: webkit
+            browser-name: Safari
+            device-category: desktop
+          - browser: mobile-chrome
+            browser-name: Mobile Chrome
+            device-category: mobile
+          - browser: mobile-safari
+            browser-name: Mobile Safari  
+            device-category: mobile
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: |
+          echo "Installing npm dependencies..."
+          npm ci --prefer-offline --no-audit --no-fund
+          echo "✅ Dependencies installed"
+
+      - name: ⚡ Performance Optimization Pre-Setup
+        run: |
+          echo "🔧 Running CI performance optimizations..."
+          node scripts/ci-performance-optimizer.js optimize || echo "⚠️ Performance optimization failed, continuing..."
+
+      - name: 🎭 Setup Playwright Browsers (Optimized)
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ${{ env.PLAYWRIGHT_BROWSERS_PATH }}
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v3-optimized
+          restore-keys: |
+            playwright-${{ runner.os }}-v3-optimized
+            playwright-${{ runner.os }}-v2
+
+      - name: 🎬 Install Playwright Browsers (Cache Miss)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: |
+          echo "🎭 Installing browsers with performance optimization..."
+          # Use optimized browser installation
+          PLAYWRIGHT_BROWSERS="${{ matrix.browser }}" node scripts/ci-performance-optimizer.js optimize || npx playwright install --with-deps
+          echo "✅ Browsers installed with optimization"
+
+      - name: 🎬 Update System Dependencies (Cache Hit)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: |
+          echo "✅ Using cached browsers, updating system dependencies..."
+          npx playwright install-deps
+          echo "✅ Dependencies updated"
+
+      - name: 📁 Prepare Test Environment
+        run: |
+          # Create necessary directories
+          mkdir -p data test-results/playwright test-results/screenshots
+          
+          # Set environment variables for this specific browser
+          echo "PLAYWRIGHT_BROWSER=${{ matrix.browser }}" >> $GITHUB_ENV
+          
+          # Configure test parallelism
+          WORKERS="${{ inputs.parallel_workers || '2' }}"
+          echo "PLAYWRIGHT_WORKERS=$WORKERS" >> $GITHUB_ENV
+          
+          echo "✅ Environment prepared for ${{ matrix.browser-name }}"
+
+      - name: 🚀 Start Test Server
+        id: server
+        run: |
+          echo "Starting test server..."
+          
+          # Start server in background
+          npm run start:ci &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          
+          # Wait for server to be ready with timeout
+          echo "Waiting for server to start..."
+          for i in {1..30}; do
+            if curl -f http://localhost:3000/api/health/check >/dev/null 2>&1; then
+              echo "✅ Server is ready"
+              break
+            fi
+            echo "Attempt $i/30: Server not ready yet..."
+            sleep 2
+          done
+          
+          if [ $i -eq 30 ]; then
+            echo "❌ Server failed to start"
+            exit 1
+          fi
+          
+          # Warm up critical endpoints
+          echo "🔥 Warming up endpoints..."
+          curl -s http://localhost:3000/api/health/database >/dev/null || true
+          curl -s http://localhost:3000/api/gallery >/dev/null || true
+          curl -s http://localhost:3000/api/featured-photos >/dev/null || true
+          
+          echo "✅ Server ready and warmed up"
+
+      - name: 🧪 Run E2E Tests (Performance Optimized)
+        id: tests
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          # Performance-optimized test configuration
+          PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
+          PLAYWRIGHT_WORKERS: ${{ inputs.parallel_workers || '2' }}
+          PLAYWRIGHT_MAX_FAILURES: 3
+          # Security and secrets for tests
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD || 'test-admin-password' }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY_TEST || '' }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_TEST || '' }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET_TEST || 'test-admin-secret-key-minimum-32-characters' }}
+          # Performance testing and monitoring
+          PERFORMANCE_TESTING: true
+          PERFORMANCE_TARGET_SECONDS: 300
+          SKIP_BROWSER_WARMUP: false
+          CI_PERFORMANCE_TRACKING: true
+        run: |
+          echo "🚀 Running performance-optimized E2E tests for ${{ matrix.browser-name }}..."
+          
+          # Start performance monitoring
+          START_TIME=$(date +%s)
+          
+          # Construct optimized test command
+          TEST_CMD="npx playwright test --project=${{ matrix.browser }}"
+          
+          # Add test pattern if specified
+          if [ -n "${{ needs.validate.outputs.test_pattern }}" ]; then
+            TEST_CMD="$TEST_CMD tests/e2e/flows/*${{ needs.validate.outputs.test_pattern }}*"
+            echo "📊 Running filtered tests: ${{ needs.validate.outputs.test_pattern }}"
+          fi
+          
+          # Add optimized reporter configuration for CI
+          TEST_CMD="$TEST_CMD --reporter=list,html,github"
+          TEST_CMD="$TEST_CMD --workers=${{ env.PLAYWRIGHT_WORKERS }}"
+          TEST_CMD="$TEST_CMD --max-failures=${{ env.PLAYWRIGHT_MAX_FAILURES }}"
+          
+          # Run tests with performance monitoring and timeout
+          echo "🎯 Target: Complete in under 5 minutes per browser"
+          timeout 8m $TEST_CMD
+          
+          # Calculate execution time
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+          echo "⏱️ Test execution completed in ${DURATION}s for ${{ matrix.browser-name }}"
+          
+          # Performance check
+          if [ $DURATION -gt 300 ]; then
+            echo "⚠️ WARNING: Test execution exceeded 5-minute target by $((DURATION - 300))s"
+          else
+            echo "✅ Performance target met with $((300 - DURATION))s to spare"
+          fi
+          
+          echo "✅ E2E tests completed for ${{ matrix.browser-name }}"
+
+      - name: 🧹 Cleanup Server
+        if: always()
+        run: |
+          if [ -n "${SERVER_PID:-}" ]; then
+            echo "Stopping server (PID: $SERVER_PID)..."
+            kill $SERVER_PID || true
+            sleep 2
+            kill -9 $SERVER_PID 2>/dev/null || true
+          fi
+          
+          # Clean up any remaining processes on port 3000
+          lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+          
+          echo "✅ Cleanup completed"
+
+      - name: 📤 Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-${{ matrix.browser }}-${{ github.run_number }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: 📸 Upload Screenshots on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots-${{ matrix.browser }}-${{ github.run_number }}
+          path: |
+            test-results/playwright/
+            test-results/screenshots/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # Performance benchmarking for critical flows
+  performance-benchmark:
+    name: 📊 Performance Benchmark
+    runs-on: ubuntu-latest
+    needs: [validate, e2e-tests]
+    if: |
+      always() && 
+      needs.validate.outputs.should_run_e2e == 'true' && 
+      (needs.e2e-tests.result == 'success' || needs.e2e-tests.result == 'failure')
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: 🎭 Install Playwright
+        run: npx playwright install chromium --with-deps
+
+      - name: 🚀 Start Server
+        run: |
+          npm run start:ci &
+          sleep 10
+          curl -f http://localhost:3000/api/health/check
+
+      - name: 📊 Run Performance Tests
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          PERFORMANCE_TESTING: true
+        run: |
+          echo "Running performance benchmarks..."
+          
+          # Run specific performance-focused tests
+          npx playwright test \
+            --project=chromium \
+            --grep="performance|load|speed" \
+            --reporter=json:performance-results.json,list
+          
+          echo "✅ Performance tests completed"
+
+      - name: 📈 Generate Performance Report
+        if: always()
+        run: |
+          if [ -f performance-results.json ]; then
+            echo "## 📊 Performance Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Extract key metrics from results
+            node -e "
+              const results = require('./performance-results.json');
+              const tests = results.suites?.flatMap(s => s.tests) || [];
+              const passed = tests.filter(t => t.outcome === 'expected').length;
+              const failed = tests.filter(t => t.outcome !== 'expected').length;
+              const total = tests.length;
+              
+              console.log('| Metric | Value |');
+              console.log('|--------|-------|');
+              console.log('| Total Tests | ' + total + ' |');
+              console.log('| Passed | ' + passed + ' |'); 
+              console.log('| Failed | ' + failed + ' |');
+              console.log('| Success Rate | ' + Math.round(passed/total*100) + '% |');
+            " >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No performance results found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 📤 Upload Performance Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results-${{ github.run_number }}
+          path: |
+            performance-results.json
+            test-results/
+          retention-days: 30
+
+  # Results aggregation and reporting
+  report:
+    name: 📋 Test Results Summary
+    runs-on: ubuntu-latest
+    needs: [validate, e2e-tests, performance-benchmark]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+      - name: 📥 Download All Artifacts
+        if: needs.e2e-tests.result != 'skipped'
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: 📊 Generate Summary Report
+        run: |
+          echo "# 🎭 E2E Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## Test Execution Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Validation status
+          echo "- **Pre-flight Validation**: ${{ needs.validate.result == 'success' && '✅ Passed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          
+          # E2E test status
+          if [ "${{ needs.validate.outputs.should_run_e2e }}" == "true" ]; then
+            echo "- **E2E Tests**: ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || (needs.e2e-tests.result == 'failure' && '❌ Failed' || '⏭️ Skipped') }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Performance Benchmark**: ${{ needs.performance-benchmark.result == 'success' && '✅ Passed' || (needs.performance-benchmark.result == 'failure' && '❌ Failed' || '⏭️ Skipped') }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **E2E Tests**: ⏭️ Skipped (no relevant changes or draft PR)" >> $GITHUB_STEP_SUMMARY
+            echo "- **Performance Benchmark**: ⏭️ Skipped" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Test configuration
+          echo "## Test Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Node.js Version**: ${{ env.NODE_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Browsers**: Chrome, Firefox, Safari, Mobile" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workers**: ${{ inputs.parallel_workers || '2' }} per browser" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Pattern**: ${{ needs.validate.outputs.test_pattern || 'All tests' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow Run**: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔍 Check Test Artifacts
+        if: needs.e2e-tests.result != 'skipped'
+        run: |
+          if [ -d "./artifacts" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## Test Artifacts" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            find ./artifacts -name "*.html" -o -name "*.json" | head -10 | while read file; do
+              basename_file=$(basename "$file")
+              echo "- 📄 $basename_file" >> $GITHUB_STEP_SUMMARY
+            done
+            
+            if [ $(find ./artifacts -name "*.png" -o -name "*.jpg" | wc -l) -gt 0 ]; then
+              echo "- 📸 Screenshots available for failed tests" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+      - name: ❌ Report Failures
+        if: needs.e2e-tests.result == 'failure' || needs.performance-benchmark.result == 'failure'
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ❌ Test Failures Detected" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Some E2E tests have failed. Please review:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Check the test artifacts for detailed error logs" >> $GITHUB_STEP_SUMMARY  
+          echo "2. Review screenshots for visual failures" >> $GITHUB_STEP_SUMMARY
+          echo "3. Consider running tests locally: \`npm run test:e2e\`" >> $GITHUB_STEP_SUMMARY
+          
+          exit 1

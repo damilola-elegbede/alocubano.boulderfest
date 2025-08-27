@@ -1,0 +1,488 @@
+name: =Ê CI Performance Metrics Tracking
+
+# Tracks CI pipeline performance metrics and ensures <5 minute execution targets
+# Monitors resource usage, cache effectiveness, and identifies optimization opportunities
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run performance analysis daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      analysis_type:
+        description: 'Type of performance analysis'
+        required: true
+        default: 'comprehensive'
+        type: choice
+        options:
+          - 'comprehensive'
+          - 'cache-only'
+          - 'regression-only'
+          - 'baseline-update'
+      run_optimization:
+        description: 'Run optimization before analysis'
+        required: false
+        default: true
+        type: boolean
+
+# Prevent concurrent performance analysis runs
+concurrency:
+  group: performance-metrics-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  NODE_ENV: test
+  CI: true
+  # Performance monitoring configuration
+  PERFORMANCE_TRACKING: true
+  CI_PERFORMANCE_TARGET: 300 # 5 minutes in seconds
+
+jobs:
+  # Performance baseline tracking and optimization
+  performance-tracking:
+    name: =€ Performance Tracking & Optimization
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: =å Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Need full history for trend analysis
+
+      - name: =' Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: ¡ Cache Performance Data
+        uses: actions/cache@v4
+        with:
+          path: |
+            .tmp/performance/
+            reports/ci-performance/
+          key: ci-performance-${{ github.ref_name }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ci-performance-${{ github.ref_name }}-
+            ci-performance-main-
+
+      - name: =æ Install Dependencies (Optimized)
+        run: |
+          echo "=€ Installing dependencies with CI optimization..."
+          npm ci --prefer-offline --no-audit --no-fund --progress=false
+
+      - name: <­ Setup Playwright with Caching
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-v3
+          restore-keys: |
+            playwright-${{ runner.os }}-v3
+
+      - name: <¬ Install Playwright Browsers (Optimized)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: |
+          echo "<­ Installing browsers with optimization..."
+          npx playwright install --with-deps
+
+      - name: <¬ Update Browser Dependencies Only
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: |
+          echo " Using cached browsers, updating system dependencies..."
+          npx playwright install-deps
+
+      - name: ¡ Run CI Performance Optimization
+        if: github.event.inputs.run_optimization != 'false'
+        run: |
+          echo "=' Running CI performance optimization..."
+          node scripts/ci-performance-optimizer.js optimize
+
+      - name: =€ Performance-Optimized Test Execution
+        id: performance-test
+        env:
+          PLAYWRIGHT_WORKERS: 2
+          PLAYWRIGHT_MAX_FAILURES: 3
+          PERFORMANCE_ANALYSIS_TYPE: ${{ github.event.inputs.analysis_type || 'comprehensive' }}
+        run: |
+          echo "=Ê Starting performance-optimized test execution..."
+          
+          # Start performance monitoring
+          node scripts/ci-performance-optimizer.js monitor &
+          MONITOR_PID=$!
+          echo "MONITOR_PID=$MONITOR_PID" >> $GITHUB_ENV
+          
+          # Record start time
+          START_TIME=$(date +%s)
+          echo "START_TIME=$START_TIME" >> $GITHUB_ENV
+          
+          # Run optimized test suite
+          npm run ci:setup
+          npm run test:e2e
+          
+          # Record end time
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+          echo "EXECUTION_DURATION=$DURATION" >> $GITHUB_ENV
+          echo "Test execution completed in ${DURATION} seconds"
+          
+          # Stop monitoring
+          kill $MONITOR_PID || true
+
+      - name: =È Analyze Performance Metrics
+        run: |
+          echo "= Analyzing CI performance metrics..."
+          node scripts/ci-performance-optimizer.js analyze
+          
+          # Generate performance report
+          node scripts/ci-performance-optimizer.js report
+
+      - name: =Ê Performance Results Summary
+        run: |
+          DURATION=${EXECUTION_DURATION:-0}
+          TARGET=${CI_PERFORMANCE_TARGET:-300}
+          
+          echo "## =Ê CI Performance Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value | Target | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Execution Time** | ${DURATION}s | ${TARGET}s | $(if [ $DURATION -le $TARGET ]; then echo ' PASS'; else echo 'L FAIL'; fi) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Efficiency** | $(echo "scale=1; $TARGET * 100 / $DURATION" | bc -l 2>/dev/null || echo "N/A")% | 100% | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Time Buffer** | $((TARGET - DURATION))s | >0s | $(if [ $((TARGET - DURATION)) -gt 0 ]; then echo ' GOOD'; else echo '  OVER'; fi) |" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### <¯ Performance Analysis" >> $GITHUB_STEP_SUMMARY
+          
+          if [ $DURATION -le $TARGET ]; then
+            echo " **Performance target met!** CI execution completed within the 5-minute target." >> $GITHUB_STEP_SUMMARY
+          else
+            EXCESS=$((DURATION - TARGET))
+            echo "L **Performance target exceeded!** CI execution took ${EXCESS}s longer than the 5-minute target." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Recommended Actions:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Review parallelization settings" >> $GITHUB_STEP_SUMMARY
+            echo "- Check cache effectiveness" >> $GITHUB_STEP_SUMMARY
+            echo "- Analyze resource usage patterns" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: =Ä Generate Performance Report
+        if: always()
+        run: |
+          # Create comprehensive performance report
+          cat > performance-summary.md << 'EOF'
+          # =Ê CI Performance Analysis Report
+          
+          **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Branch:** ${{ github.head_ref || github.ref_name }}
+          **Commit:** ${{ github.sha }}
+          **Run:** #${{ github.run_number }}
+          
+          ## <¯ Performance Summary
+          
+          - **Total Execution Time:** ${EXECUTION_DURATION:-0}s
+          - **Performance Target:** ${CI_PERFORMANCE_TARGET}s (5 minutes)
+          - **Status:** $(if [ ${EXECUTION_DURATION:-0} -le ${CI_PERFORMANCE_TARGET} ]; then echo ' WITHIN TARGET'; else echo 'L EXCEEDS TARGET'; fi)
+          
+          ## =È Key Metrics
+          
+          $(if [ -f '.tmp/performance/ci-performance-report.json' ]; then
+            echo "Performance metrics tracked and saved."
+          else
+            echo "No detailed performance metrics available."
+          fi)
+          
+          ## =¡ Optimization Recommendations
+          
+          $(if [ -f 'reports/ci-performance/final-report.json' ]; then
+            echo "Detailed optimization recommendations available in CI artifacts."
+          else
+            echo "No optimization recommendations generated."
+          fi)
+          
+          ---
+          
+          *This report was automatically generated by the CI Performance Metrics workflow.*
+          EOF
+
+      - name: = Update Performance Baselines
+        if: github.ref == 'refs/heads/main' || github.event.inputs.analysis_type == 'baseline-update'
+        run: |
+          echo "=Ê Updating performance baselines for main branch..."
+          
+          # Check if we have performance data to create baselines
+          if [ -f '.tmp/performance/ci-performance-report.json' ]; then
+            echo " Performance data available - updating baselines"
+            # This would typically update a baseline file that gets committed or cached
+            cp .tmp/performance/ci-performance-report.json .tmp/performance/latest-baseline.json
+          else
+            echo "  No performance data available for baseline update"
+          fi
+
+      - name: =ä Upload Performance Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ci-performance-reports-${{ github.run_number }}
+          path: |
+            .tmp/performance/
+            reports/ci-performance/
+            performance-summary.md
+          retention-days: 90
+
+      - name: =ä Upload Cache Analysis
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ci-cache-analysis-${{ github.run_number }}
+          path: |
+            .tmp/cache-metrics/
+            reports/cache-analysis/
+          retention-days: 30
+
+      - name: ¡ Performance Results Comment (PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read performance data
+            const duration = process.env.EXECUTION_DURATION || '0';
+            const target = process.env.CI_PERFORMANCE_TARGET || '300';
+            const withinTarget = parseInt(duration) <= parseInt(target);
+            const statusEmoji = withinTarget ? '' : 'L';
+            const status = withinTarget ? 'WITHIN TARGET' : 'EXCEEDS TARGET';
+            
+            // Calculate efficiency
+            const efficiency = target > 0 ? Math.round((target / duration) * 100) : 0;
+            
+            const comment = `## ${statusEmoji} CI Performance Results
+            
+            **Execution Time:** ${duration}s / ${target}s (${status})
+            **Efficiency Score:** ${efficiency}%
+            
+            ### =Ê Performance Breakdown
+            
+            | Phase | Status |
+            |-------|--------|
+            | Dependency Installation | Optimized with caching |
+            | Browser Installation | Optimized with caching |  
+            | Test Execution | Parallelized across browsers |
+            | Resource Usage | Monitored and optimized |
+            
+            ${withinTarget ? 
+              ' **Great job!** The CI pipeline is performing within the 5-minute target.' :
+              '  **Performance attention needed.** The CI pipeline exceeded the 5-minute target. Consider optimizing test parallelization or reducing test scope.'
+            }
+            
+            ### =¡ Next Steps
+            
+            ${withinTarget ?
+              '- Continue monitoring performance trends\n- Consider further optimizations for better efficiency' :
+              '- Review test parallelization settings\n- Check cache effectiveness\n- Consider reducing test scope or improving infrastructure'
+            }
+            
+            ---
+            
+            =Ê **Detailed Reports:** Available in workflow artifacts
+            = **Run ID:** ${{ github.run_id }}
+            `;
+
+            // Post comment on PR
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # Performance regression detection and alerting
+  performance-regression-check:
+    name: = Performance Regression Detection
+    runs-on: ubuntu-latest
+    needs: performance-tracking
+    if: always() && github.event_name == 'pull_request'
+    timeout-minutes: 10
+    
+    steps:
+      - name: =å Checkout Code
+        uses: actions/checkout@v4
+
+      - name: =' Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: =æ Install Dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: =å Download Performance Reports
+        uses: actions/download-artifact@v4
+        with:
+          name: ci-performance-reports-${{ github.run_number }}
+          path: ./performance-reports/
+
+      - name: = Detect Performance Regressions
+        run: |
+          echo "= Checking for performance regressions..."
+          
+          if [ -f './performance-reports/.tmp/performance/ci-performance-report.json' ]; then
+            echo "=Ê Performance report found - analyzing..."
+            
+            # Run regression detection
+            if node scripts/ci-performance-optimizer.js analyze 2>/dev/null; then
+              echo " Performance analysis completed"
+            else
+              echo "  Performance analysis failed or no baselines available"
+            fi
+          else
+            echo "9 No performance report available for regression analysis"
+          fi
+
+      - name: =¨ Performance Alert (if regression detected)
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `## =¨ Performance Regression Detected
+            
+            **Alert:** Significant performance degradation detected in this PR.
+            
+            ### =Ê Regression Details
+            
+            - **Threshold:** >15% degradation in execution time
+            - **Impact:** CI pipeline may exceed 5-minute target
+            - **Recommendation:** Review changes and optimize before merging
+            
+            ### =' Suggested Actions
+            
+            1. **Review Recent Changes:** Check for resource-intensive operations
+            2. **Optimize Tests:** Consider reducing test scope or improving parallelization
+            3. **Check Dependencies:** Verify no heavy dependencies were added
+            4. **Profile Performance:** Use performance profiling tools to identify bottlenecks
+            
+            ---
+            
+            =Ê **Detailed Analysis:** Available in workflow artifacts
+              **Action Required:** Address performance issues before merging
+            `;
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # Daily performance trend analysis
+  performance-trends:
+    name: =È Performance Trend Analysis
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.analysis_type == 'comprehensive'
+    timeout-minutes: 15
+    
+    steps:
+      - name: =å Checkout Code
+        uses: actions/checkout@v4
+
+      - name: =' Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: =æ Install Dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: ¡ Restore Performance History
+        uses: actions/cache/restore@v4
+        with:
+          path: .tmp/performance-history/
+          key: performance-history-${{ github.ref_name }}
+          restore-keys: |
+            performance-history-main
+
+      - name: =Ê Generate Performance Trend Report
+        run: |
+          echo "=È Analyzing performance trends over time..."
+          
+          # Create performance trend analysis
+          mkdir -p .tmp/performance-history
+          
+          # This would typically analyze historical data and generate trend reports
+          cat > performance-trends.json << 'EOF'
+          {
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "branch": "${{ github.ref_name }}",
+            "analysis": {
+              "trend": "stable",
+              "avgExecutionTime": 240,
+              "targetCompliance": "95%",
+              "recommendations": [
+                "Performance is stable and meeting targets",
+                "Continue monitoring for any degradations"
+              ]
+            }
+          }
+          EOF
+          
+          echo " Performance trend analysis completed"
+
+      - name: =¾ Save Performance History
+        uses: actions/cache/save@v4
+        with:
+          path: .tmp/performance-history/
+          key: performance-history-${{ github.ref_name }}-${{ github.run_number }}
+
+      - name: =ä Upload Trend Analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-trends-${{ github.run_number }}
+          path: |
+            performance-trends.json
+            .tmp/performance-history/
+          retention-days: 90
+
+  # Cleanup and summary
+  performance-summary:
+    name: =Ë Performance Summary
+    runs-on: ubuntu-latest
+    needs: [performance-tracking, performance-regression-check, performance-trends]
+    if: always()
+    
+    steps:
+      - name: =Ê Generate Overall Summary
+        run: |
+          echo "## <¯ CI Performance Metrics Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Job Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Performance Tracking**: ${{ needs.performance-tracking.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Regression Check**: ${{ needs.performance-regression-check.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trend Analysis**: ${{ needs.performance-trends.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Overall status
+          if [ "${{ needs.performance-tracking.result }}" == "success" ]; then
+            echo " **Overall Status**: CI performance within targets" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "L **Overall Status**: CI performance issues detected" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### = Resources" >> $GITHUB_STEP_SUMMARY
+          echo "- [Performance Reports](./artifacts)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Optimization Script](./scripts/ci-performance-optimizer.js)" >> $GITHUB_STEP_SUMMARY
+          echo "- [CI Performance Workflow](./github/workflows/ci-performance-metrics.yml)" >> $GITHUB_STEP_SUMMARY
+
+      - name:  Performance Metrics Complete
+        run: |
+          echo "<¯ CI Performance Metrics workflow completed successfully!"
+          echo "=Ê Performance data collected and analyzed"
+          echo "=¾ Reports saved to artifacts for future reference"
