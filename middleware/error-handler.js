@@ -181,7 +181,7 @@ export function createErrorHandler(options = {}) {
       const requestId =
         req.headers?.["x-request-id"] ||
         req.headers?.["x-vercel-id"] ||
-        `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
       // Add request ID to error
       error.requestId = requestId;
