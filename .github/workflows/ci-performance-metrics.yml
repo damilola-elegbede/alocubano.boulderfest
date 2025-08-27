@@ -34,6 +34,12 @@ concurrency:
   group: performance-metrics-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+  issues: write
+
 env:
   NODE_VERSION: "20"
   NODE_ENV: test
@@ -254,6 +260,7 @@ EOF
             .tmp/performance/
             reports/ci-performance/
             performance-summary.md
+          if-no-files-found: ignore
           retention-days: 90
 
       - name: 📤 Upload Cache Analysis
@@ -264,6 +271,7 @@ EOF
           path: |
             .tmp/cache-metrics/
             reports/cache-analysis/
+          if-no-files-found: ignore
           retention-days: 30
 
       - name: 💬 Performance Results Comment (PR)

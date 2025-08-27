@@ -33,6 +33,12 @@ concurrency:
   group: pr-quality-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+  statuses: write
+
 env:
   NODE_VERSION: "20"
   CI: true
@@ -274,6 +280,7 @@ jobs:
           path: |
             coverage/
             test-results/
+          if-no-files-found: ignore
           retention-days: 30
 
       - name: ✅ Complete Unit Tests Gate

@@ -17,7 +17,15 @@
             "🎭 E2E Tests (Mobile Safari)",
             "📊 Performance Benchmark",
             "🧪 Pre-deployment Quality",
-            "pr-status-reporter"
+            "pr-status-reporter/validation",
+            "pr-status-reporter/e2e-chromium",
+            "pr-status-reporter/e2e-firefox",
+            "pr-status-reporter/e2e-webkit",
+            "pr-status-reporter/e2e-mobile-chrome",
+            "pr-status-reporter/e2e-mobile-safari",
+            "pr-status-reporter/performance",
+            "pr-status-reporter/coverage-report",
+            "pr-status-reporter/status-summary"
           ]
         },
         "enforce_admins": false,

@@ -303,6 +303,7 @@ jobs:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY_TEST || '' }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_TEST || '' }}
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET_TEST || 'test-admin-secret-key-minimum-32-characters' }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_CI || '' }}
           # Performance testing and monitoring
           PERFORMANCE_TESTING: true
           SKIP_BROWSER_WARMUP: false

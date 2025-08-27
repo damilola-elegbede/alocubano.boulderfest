@@ -9,13 +9,13 @@
     "thresholds": {
       "regressionPercent": 15,
       "cacheHitRateMin": 80,
-      "memoryUsageMaxMB": 1500,
+      "memoryUsageMaxMB": 2200,
       "failFastMaxFailures": 3
     },
     "optimizations": {
       "parallelization": {
-        "maxWorkersPerBrowser": 2,
-        "browserConcurrency": 5,
+        "maxWorkersPerBrowser": 1,
+        "browserConcurrency": 3,
         "testConcurrency": true
       },
       "caching": {

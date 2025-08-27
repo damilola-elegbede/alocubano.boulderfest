@@ -72,17 +72,35 @@ jobs:
     outputs:
       test_url: ${{ steps.env.outputs.test_url }}
       environment: ${{ steps.env.outputs.environment }}
+      extended_browsers: ${{ steps.env.outputs.extended_browsers }}
+      performance_profiling: ${{ steps.env.outputs.performance_profiling }}
+      accessibility_testing: ${{ steps.env.outputs.accessibility_testing }}
+      load_testing: ${{ steps.env.outputs.load_testing }}
       test_matrix: ${{ steps.matrix.outputs.matrix }}
     
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
-      - name: 🌐 Determine Test Environment
+      - name: 🌐 Determine Test Environment & Toggles
         id: env
         run: |
-          # Determine test URL based on input or default to staging
-          case "${{ inputs.environment || 'staging' }}" in
+          # Parse inputs safely from event payload (works for schedule and dispatch)
+          EVENT_FILE="${GITHUB_EVENT_PATH}"
+          ENV_INPUT="$(jq -r '.inputs.environment // empty' "$EVENT_FILE" 2>/dev/null || true)"
+          EXT_INPUT="$(jq -r '.inputs.extended_browsers // empty' "$EVENT_FILE" 2>/dev/null || true)"
+          PERF_INPUT="$(jq -r '.inputs.performance_profiling // empty' "$EVENT_FILE" 2>/dev/null || true)"
+          A11Y_INPUT="$(jq -r '.inputs.accessibility_testing // empty' "$EVENT_FILE" 2>/dev/null || true)"
+          LOAD_INPUT="$(jq -r '.inputs.load_testing // empty' "$EVENT_FILE" 2>/dev/null || true)"
+
+          ENVIRONMENT="${ENV_INPUT:-staging}"
+          EXTENDED="${EXT_INPUT:-true}"
+          PERF="${PERF_INPUT:-true}"
+          A11Y="${A11Y_INPUT:-true}"
+          LOAD="${LOAD_INPUT:-false}"
+
+          # Determine test URL based on environment
+          case "$ENVIRONMENT" in
             "production")
               TEST_URL="https://alocubanoboulderfest.com"
               echo "⚠️  WARNING: Running against PRODUCTION environment"
@@ -102,7 +120,11 @@ jobs:
           esac
           
           echo "test_url=$TEST_URL" >> $GITHUB_OUTPUT
-          echo "environment=${{ inputs.environment || 'staging' }}" >> $GITHUB_OUTPUT
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+          echo "extended_browsers=$EXTENDED" >> $GITHUB_OUTPUT
+          echo "performance_profiling=$PERF" >> $GITHUB_OUTPUT
+          echo "accessibility_testing=$A11Y" >> $GITHUB_OUTPUT
+          echo "load_testing=$LOAD" >> $GITHUB_OUTPUT
           echo "Test URL: $TEST_URL"
 
       - name: 🎭 Generate Test Matrix
@@ -118,7 +140,7 @@ jobs:
           MATRIX+='{"browser":"tablet-ipad","name":"iPad Tablet","category":"tablet","device":"iPad Mini"}'
           
           # Add extended browsers if requested
-          if [ "${{ inputs.extended_browsers }}" == "true" ]; then
+          if [ "${{ steps.env.outputs.extended_browsers }}" = "true" ]; then
             MATRIX+=',{"browser":"edge","name":"Edge Desktop","category":"desktop","device":"Desktop Edge"}'
           fi
           
@@ -153,7 +175,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: prepare
     timeout-minutes: 45
-    continue-on-error: true
+    continue-on-error: false
     
     strategy:
       fail-fast: false
@@ -275,6 +297,7 @@ jobs:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY_TEST }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_TEST }}
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET_TEST || 'nightly-test-admin-secret-minimum-32-chars' }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_CI || '' }}
           # Performance and accessibility testing
           PERFORMANCE_TESTING: ${{ inputs.performance_profiling }}
           ACCESSIBILITY_TESTING: ${{ inputs.accessibility_testing }}
@@ -287,7 +310,7 @@ jobs:
           
           # Base test command with comprehensive reporting
           TEST_CMD="npx playwright test --project=${{ matrix.browser }}"
-          TEST_CMD="$TEST_CMD --reporter=list,html,json,junit"
+          TEST_CMD="$TEST_CMD --reporter=list,html,json=test-results/playwright-${{ matrix.browser }}/results.json,junit=test-results/playwright-${{ matrix.browser }}/junit.xml"
           TEST_CMD="$TEST_CMD --output-dir=test-results/playwright-${{ matrix.browser }}"
           
           # Add comprehensive test patterns
@@ -322,7 +345,7 @@ jobs:
 
       - name: 🔍 Performance Analysis
         if: inputs.performance_profiling == true
-        continue-on-error: true
+        continue-on-error: false
         run: |
           echo "📊 Analyzing performance metrics..."
           
@@ -346,8 +369,8 @@ jobs:
           fi
 
       - name: ♿ Accessibility Analysis
-        if: inputs.accessibility_testing == true
-        continue-on-error: true
+        if: needs.prepare.outputs.accessibility_testing == 'true'
+        continue-on-error: false
         run: |
           echo "♿ Analyzing accessibility test results..."
           
@@ -405,7 +428,7 @@ jobs:
     needs: [prepare, comprehensive-e2e]
     if: inputs.load_testing == true
     timeout-minutes: 30
-    continue-on-error: true
+    continue-on-error: false
 
     steps:
       - name: 📥 Checkout Code
@@ -564,7 +587,7 @@ jobs:
               browser_name=$(basename "$browser_dir" | sed 's/nightly-results-//' | sed 's/-[0-9]*$//')
               
               # Check if there are failure artifacts for this browser
-              if [ -d "./artifacts/nightly-failures-$browser_name"* ]; then
+              if compgen -G "./artifacts/nightly-failures-${browser_name}-*" > /dev/null; then
                 status="❌ Failed"
               else
                 status="✅ Passed"
@@ -595,7 +618,7 @@ jobs:
           fi
 
       - name: ♿ Accessibility Analysis
-        if: inputs.accessibility_testing == true
+        if: needs.prepare.outputs.accessibility_testing == 'true'
         run: |
           echo "" >> analysis/comprehensive-report.md
           echo "## ♿ Accessibility Analysis" >> analysis/comprehensive-report.md
