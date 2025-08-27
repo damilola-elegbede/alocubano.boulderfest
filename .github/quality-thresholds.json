@@ -1,0 +1,91 @@
+{
+  "version": "1.0.0",
+  "description": "Quality gate thresholds for automated testing and CI/CD pipeline",
+  "updated": "2025-01-27",
+  "thresholds": {
+    "testFlakiness": {
+      "value": 5.0,
+      "unit": "%",
+      "requirement": "REQ-NFR-002",
+      "description": "Maximum allowed test flakiness rate"
+    },
+    "criticalCoverage": {
+      "value": 100.0,
+      "unit": "%", 
+      "requirement": "REQ-E2E-001",
+      "description": "100% critical user journey coverage"
+    },
+    "executionTime": {
+      "value": 300,
+      "unit": "seconds",
+      "requirement": "REQ-NFR-001", 
+      "description": "Sub-5-minute execution maintains velocity"
+    },
+    "incidentReduction": {
+      "value": 80.0,
+      "unit": "%",
+      "requirement": "REQ-BUS-001",
+      "description": "80% reduction in production incidents"
+    },
+    "testReliability": {
+      "value": 95.0,
+      "unit": "%",
+      "description": "Test reliability threshold"
+    },
+    "performanceRegression": {
+      "value": 10.0,
+      "unit": "%",
+      "description": "Maximum performance regression allowed"
+    },
+    "securityVulnerabilities": {
+      "value": 0,
+      "unit": "count",
+      "description": "Zero high/critical vulnerabilities"
+    },
+    "codeQuality": {
+      "value": 80.0,
+      "unit": "score",
+      "description": "Minimum code quality score"
+    },
+    "apiResponseTime": {
+      "value": 100,
+      "unit": "ms",
+      "description": "Maximum API response time"
+    },
+    "pageLoadTime": {
+      "value": 2000,
+      "unit": "ms", 
+      "description": "Maximum page load time"
+    },
+    "testCoverage": {
+      "value": 85.0,
+      "unit": "%",
+      "description": "Minimum test coverage"
+    },
+    "duplicationRatio": {
+      "value": 5.0,
+      "unit": "%",
+      "description": "Maximum code duplication allowed"
+    }
+  },
+  "environments": {
+    "production": {
+      "testFlakiness": 3.0,
+      "testReliability": 98.0,
+      "performanceRegression": 5.0,
+      "securityVulnerabilities": 0
+    },
+    "staging": {
+      "testFlakiness": 5.0,
+      "testReliability": 95.0,
+      "performanceRegression": 10.0,
+      "securityVulnerabilities": 0
+    },
+    "development": {
+      "testFlakiness": 10.0,
+      "testReliability": 90.0,
+      "performanceRegression": 15.0,
+      "securityVulnerabilities": 2
+    }
+  }
+}

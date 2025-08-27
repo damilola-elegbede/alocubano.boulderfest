@@ -12,6 +12,7 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_call:
     inputs:
       test_pattern:
         description: 'Test pattern to run (e.g., "gallery" or "admin")'

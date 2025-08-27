@@ -99,8 +99,8 @@ class QualityGatesTestSuite {
     for (const test of testsToRun) {
       this.log(`\n🔍 Testing: ${test.name}`);
       
+      const startTime = Date.now(); // Declare outside try-catch for proper scoping
       try {
-        const startTime = Date.now();
         const result = await Promise.race([
           test.fn(),
           new Promise((_, reject) => 

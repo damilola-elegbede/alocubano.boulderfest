@@ -13,7 +13,9 @@
 #   ./scripts/validate-quality-gates.sh [--verbose]
 #   bash scripts/validate-quality-gates.sh [--verbose]
 
-set -e  # Exit on any error
+# Strict mode - exit on errors, undefined variables, and pipe failures
+set -euo pipefail
+IFS=$'\n\t'
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -22,26 +24,33 @@ QUALITY_GATES_SCRIPT="$SCRIPT_DIR/quality-gates.js"
 OUTPUT_DIR="$PROJECT_ROOT/.tmp/quality-gates"
 VERBOSE=false
 
-# Parse arguments
-for arg in "$@"; do
-  case $arg in
+# Parse arguments safely
+while [[ $# -gt 0 ]]; do
+  case $1 in
     --verbose|-v)
       VERBOSE=true
       shift
       ;;
     --help|-h)
-      echo "Usage: $0 [--verbose] [--help]"
-      echo ""
-      echo "Validates the quality gates system after ES module fix"
-      echo ""
-      echo "Options:"
-      echo "  --verbose, -v    Show detailed output"
-      echo "  --help, -h       Show this help message"
+      cat << 'EOF'
+Usage: $0 [--verbose] [--help]
+
+Validates the quality gates system after ES module fix
+
+Options:
+  --verbose, -v    Show detailed output
+  --help, -h       Show this help message
+EOF
       exit 0
       ;;
+    -*)
+      echo "Error: Unknown option: $1" >&2
+      echo "Use --help for usage information" >&2
+      exit 1
+      ;;
     *)
-      echo "Unknown argument: $arg"
-      echo "Use --help for usage information"
+      echo "Error: Unexpected argument: $1" >&2
+      echo "Use --help for usage information" >&2
       exit 1
       ;;
   esac
@@ -91,9 +100,21 @@ log "📋 Step 1: Checking prerequisites..."
 
 if [ ! -f "$QUALITY_GATES_SCRIPT" ]; then
   error "Quality gates script not found: $QUALITY_GATES_SCRIPT"
+  error "Expected location: $QUALITY_GATES_SCRIPT"
+  error "Current working directory: $(pwd)"
+  error "Available files in scripts/: $(ls -la "$SCRIPT_DIR" 2>/dev/null || echo 'Directory not accessible')"
   exit 1
 fi
 success "Quality gates script found"
+
+# Check if quality thresholds config exists
+QUALITY_THRESHOLDS_CONFIG="$PROJECT_ROOT/.github/quality-thresholds.json"
+if [ ! -f "$QUALITY_THRESHOLDS_CONFIG" ]; then
+  error "Quality thresholds configuration not found: $QUALITY_THRESHOLDS_CONFIG"
+  error "This file is required for quality gates to function properly"
+  exit 1
+fi
+success "Quality thresholds configuration found"
 
 if ! command -v node &> /dev/null; then
   error "Node.js not found. Please install Node.js"

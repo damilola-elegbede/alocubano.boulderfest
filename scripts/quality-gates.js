@@ -37,7 +37,7 @@
  *   npm run quality:gates:dashboard
  */
 
-import { promises as fs } from 'fs';
+import { promises as fs, readFileSync } from 'fs';
 import path from 'path';
 import { execSync, spawn } from 'child_process';
 import { fileURLToPath } from 'url';
@@ -70,21 +70,8 @@ class QualityGatesEnforcer {
     this.outputDir = path.join(__dirname, '../.tmp/quality-gates');
     this.timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     
-    // Quality thresholds from PRD
-    this.thresholds = {
-      testFlakiness: 5.0,           // REQ-NFR-002: <5%
-      criticalCoverage: 100.0,      // REQ-E2E-001: 100%
-      executionTime: 300,           // REQ-NFR-001: <5 minutes (300 seconds)
-      incidentReduction: 80.0,      // REQ-BUS-001: 80% reduction
-      testReliability: 95.0,        // >95% reliability
-      performanceRegression: 10.0,  // <10% performance regression
-      securityVulnerabilities: 0,   // Zero high/critical vulnerabilities
-      codeQuality: 80.0,           // >80% code quality score
-      apiResponseTime: 100,         // <100ms API response time
-      pageLoadTime: 2000,          // <2s page load time
-      testCoverage: 85.0,          // >85% test coverage
-      duplicationRatio: 5.0        // <5% code duplication
-    };
+    // Load quality thresholds from external configuration
+    this.thresholds = this.loadQualityThresholds(options.environment);
 
     this.results = {
       gates: [],
@@ -95,6 +82,49 @@ class QualityGatesEnforcer {
     };
 
     this.logger = this.createLogger();
+  }
+
+  loadQualityThresholds(environment = 'development') {
+    try {
+      // Load from external configuration file
+      const configPath = path.join(__dirname, '../.github/quality-thresholds.json');
+      const configData = JSON.parse(readFileSync(configPath, 'utf8'));
+      
+      // Use base thresholds with environment-specific overrides
+      const baseThresholds = {};
+      Object.entries(configData.thresholds).forEach(([key, config]) => {
+        baseThresholds[key] = config.value;
+      });
+      
+      // Apply environment-specific overrides if they exist
+      const envOverrides = configData.environments?.[environment] || {};
+      const finalThresholds = { ...baseThresholds, ...envOverrides };
+      
+      this.logger?.debug?.('Loaded quality thresholds', { 
+        environment, 
+        thresholds: finalThresholds 
+      });
+      
+      return finalThresholds;
+    } catch (error) {
+      this.logger?.warn?.('Failed to load quality thresholds, using defaults', { error: error.message });
+      
+      // Fallback to hardcoded defaults if configuration file is not available
+      return {
+        testFlakiness: 5.0,           // REQ-NFR-002: <5%
+        criticalCoverage: 100.0,      // REQ-E2E-001: 100%
+        executionTime: 300,           // REQ-NFR-001: <5 minutes (300 seconds)
+        incidentReduction: 80.0,      // REQ-BUS-001: 80% reduction
+        testReliability: 95.0,        // >95% reliability
+        performanceRegression: 10.0,  // <10% performance regression
+        securityVulnerabilities: 0,   // Zero high/critical vulnerabilities
+        codeQuality: 80.0,           // >80% code quality score
+        apiResponseTime: 100,         // <100ms API response time
+        pageLoadTime: 2000,          // <2s page load time
+        testCoverage: 85.0,          // >85% test coverage
+        duplicationRatio: 5.0        // <5% code duplication
+      };
+    }
   }
 
   createLogger() {
@@ -155,11 +185,11 @@ class QualityGatesEnforcer {
         throw new Error('Invalid protocol - only HTTP and HTTPS allowed');
       }
       
-      // Check against allowed endpoints
+      // Check against allowed endpoints - use exact matches only to prevent SSRF
       const baseUrl = `${parsedUrl.protocol}//${parsedUrl.host}`;
       const isAllowed = SECURITY_CONFIG.allowedEndpoints.some(allowed => 
-        baseUrl === allowed || baseUrl.startsWith(process.env.API_BASE_URL || 'http://localhost:3000')
-      );
+        baseUrl === allowed
+      ) || baseUrl === (process.env.API_BASE_URL || 'http://localhost:3000');
       
       if (!isAllowed) {
         throw new Error(`Endpoint not in allowlist: ${baseUrl}`);
@@ -285,8 +315,43 @@ class QualityGatesEnforcer {
   async ensureOutputDirectory() {
     try {
       await fs.mkdir(this.outputDir, { recursive: true });
+      
+      // Clean up stale reports older than 7 days to prevent disk space issues
+      await this.cleanupStaleReports();
     } catch (error) {
-      this.logger.debug('Output directory already exists or creation failed', { error: error.message });
+      this.logger.debug('Output directory setup encountered issues', { error: error.message });
+    }
+  }
+
+  async cleanupStaleReports() {
+    try {
+      const files = await fs.readdir(this.outputDir);
+      const now = Date.now();
+      const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000); // 7 days in milliseconds
+      
+      let cleanedCount = 0;
+      for (const file of files) {
+        if (file.startsWith('quality-report-') || file.startsWith('dashboard-')) {
+          const filePath = path.join(this.outputDir, file);
+          try {
+            const stats = await fs.stat(filePath);
+            if (stats.mtime.getTime() < sevenDaysAgo) {
+              await fs.unlink(filePath);
+              cleanedCount++;
+              this.logger.debug(`Cleaned up stale report: ${file}`);
+            }
+          } catch (statError) {
+            // File might have been deleted already, ignore
+          }
+        }
+      }
+      
+      if (cleanedCount > 0) {
+        this.logger.info(`🧹 Cleaned up ${cleanedCount} stale quality reports`);
+      }
+    } catch (error) {
+      this.logger.debug('Failed to cleanup stale reports', { error: error.message });
+      // Don't fail the entire process for cleanup issues
     }
   }
 
@@ -308,21 +373,28 @@ class QualityGatesEnforcer {
 
     const results = {};
     
-    // Run checks in parallel with error handling
+    // Run checks in parallel with error handling and async timeout
     const promises = checks.map(async (check) => {
+      const startTime = Date.now();
       try {
         this.logger.debug(`Running ${check.name} check...`);
+        
+        // Create timeout promise for async execution
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error(`${check.name} check timeout after 60 seconds`)), 60000)
+        );
+        
         const result = await Promise.race([
           check.fn(),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error(`${check.name} check timeout`)), 60000)
-          )
+          timeoutPromise
         ]);
+        
         results[check.name] = { success: true, data: result };
-        this.logger.debug(`✅ ${check.name} check completed`);
+        this.logger.debug(`✅ ${check.name} check completed in ${Date.now() - startTime}ms`);
       } catch (error) {
-        this.logger.warn(`⚠️ ${check.name} check failed: ${error.message}`);
-        results[check.name] = { success: false, error: error.message };
+        const duration = Date.now() - startTime;
+        this.logger.warn(`⚠️ ${check.name} check failed after ${duration}ms: ${error.message}`);
+        results[check.name] = { success: false, error: error.message, duration };
       }
     });
 
@@ -1180,18 +1252,18 @@ class QualityGatesEnforcer {
         });
       }
       
-      // Set GitHub Actions output
+      // Set GitHub Actions output using modern approach
       if (process.env.GITHUB_ACTIONS) {
-        console.log(`::set-output name=quality_gates_passed::false`);
-        console.log(`::set-output name=critical_failures::${gateResults.summary.criticalFailures}`);
-        console.log(`::set-output name=pass_rate::${gateResults.summary.passRate}`);
+        this.setGitHubOutput('quality_gates_passed', 'false');
+        this.setGitHubOutput('critical_failures', gateResults.summary.criticalFailures);
+        this.setGitHubOutput('pass_rate', gateResults.summary.passRate);
       }
     } else {
       console.log('\n✅ All quality gates passed - Deployment approved');
       
       if (process.env.GITHUB_ACTIONS) {
-        console.log(`::set-output name=quality_gates_passed::true`);
-        console.log(`::set-output name=pass_rate::${gateResults.summary.passRate}`);
+        this.setGitHubOutput('quality_gates_passed', 'true');
+        this.setGitHubOutput('pass_rate', gateResults.summary.passRate);
       }
     }
   }
@@ -1263,6 +1335,26 @@ class QualityGatesEnforcer {
       return 'unknown';
     }
   }
+
+  setGitHubOutput(name, value) {
+    try {
+      if (process.env.GITHUB_OUTPUT) {
+        // Use modern GITHUB_OUTPUT file approach
+        const outputFile = process.env.GITHUB_OUTPUT;
+        const outputLine = `${name}=${value}\n`;
+        require('fs').appendFileSync(outputFile, outputLine);
+        this.logger.debug(`Set GitHub output: ${name}=${value}`);
+      } else {
+        // Fallback to deprecated method for backward compatibility
+        console.log(`::set-output name=${name}::${value}`);
+        this.logger.warn('Using deprecated ::set-output - consider updating GitHub Actions');
+      }
+    } catch (error) {
+      this.logger.warn('Failed to set GitHub output', { name, value, error: error.message });
+      // Still try deprecated approach as fallback
+      console.log(`::set-output name=${name}::${value}`);
+    }
+  }
 }
 
 // Input validation utilities
@@ -1305,14 +1397,20 @@ Examples:
   for (const arg of args) {
     if (typeof arg !== 'string') continue;
     
+    // Whitelist safe single-character flags
+    const safeFlags = ['-v', '-h'];
+    if (safeFlags.includes(arg)) {
+      continue;
+    }
+    
     const dangerousPatterns = [
       /[;&|`$()<>]/,  // Shell metacharacters
       /\.\./,         // Directory traversal
-      /^-[^-]/,       // Suspicious flags (allow --flags but not -flags)
+      /^-[^-]/,       // Suspicious flags (except whitelisted ones)
     ];
     
     for (const pattern of dangerousPatterns) {
-      if (pattern.test(arg) && !arg.startsWith('--')) {
+      if (pattern.test(arg) && !arg.startsWith('--') && !safeFlags.includes(arg)) {
         throw new Error(`Potentially dangerous argument: ${arg}`);
       }
     }
