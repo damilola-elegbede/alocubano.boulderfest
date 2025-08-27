@@ -678,7 +678,7 @@ class IncidentCorrelator {
   }
 
   generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
   }
 }
 
@@ -948,7 +948,7 @@ class AlertManager {
   }
 
   generateAlertId() {
-    return `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `alert_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }
 
@@ -1103,7 +1103,7 @@ class TestScenarioGenerator {
   }
 
   generateScenarioId() {
-    return `scenario_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `scenario_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }
 

@@ -322,7 +322,7 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
   test('Concurrent execution tracking demo', async ({ page }) => {
     const detector = getFlakinessDetector();
     const testKey = `${__filename}::concurrent-execution-demo`;
-    const executionId = `${testKey}::${Date.now()}::${Math.random().toString(36).substr(2, 9)}`;
+    const executionId = `${testKey}::${Date.now()}::${Math.random().toString(36).substring(2, 11)}`;
     
     // Manually track concurrent execution for demonstration
     await detector.trackConcurrentExecution(testKey, executionId);

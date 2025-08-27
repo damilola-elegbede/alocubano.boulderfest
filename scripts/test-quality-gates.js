@@ -184,26 +184,26 @@ class QualityGatesTestSuite {
         throw new Error(`Import test failed: ${output}`);
       }
     } catch (error) {
-      // Try CommonJS fallback since quality-gates.js uses module.exports
+      // Try CommonJS fallback since quality-gates.js is now an ES module
       const cjsTestScript = `
-        const QualityGatesEnforcer = require('${qualityGatesPath}');
-        console.log('CommonJS import successful, class available:', typeof QualityGatesEnforcer === 'function');
+        import QualityGatesEnforcer from '${qualityGatesPath}';
+        console.log('ES module import successful, class available:', typeof QualityGatesEnforcer === 'function');
       `;
       
-      const cjsTempFile = path.join(this.outputDir, 'import-test.cjs');
+      const cjsTempFile = path.join(this.outputDir, 'import-test-es.mjs');
       await fs.writeFile(cjsTempFile, cjsTestScript);
       
       try {
         const cjsOutput = execSync(`node "${cjsTempFile}"`, { encoding: 'utf8', timeout: 10000 });
         
-        if (cjsOutput.includes('CommonJS import successful, class available: true')) {
+        if (cjsOutput.includes('ES module import successful, class available: true')) {
           return { 
             importSuccessful: true, 
-            usedCommonJS: true, 
+            usedESModule: true, 
             output: cjsOutput.trim() 
           };
         } else {
-          throw new Error(`Both ES module and CommonJS import failed: ${error.message}`);
+          throw new Error(`ES module import test failed: ${error.message}`);
         }
       } finally {
         await fs.unlink(cjsTempFile).catch(() => {});
@@ -217,7 +217,7 @@ class QualityGatesTestSuite {
     this.log('Testing class instantiation with different options...');
     
     const testScript = `
-      const QualityGatesEnforcer = require('${path.join(__dirname, 'quality-gates.js')}');
+      import QualityGatesEnforcer from '${path.join(__dirname, 'quality-gates.js')}';
       
       try {
         // Test default options
@@ -243,7 +243,7 @@ class QualityGatesTestSuite {
       }
     `;
     
-    const tempFile = path.join(this.outputDir, 'instantiation-test.cjs');
+    const tempFile = path.join(this.outputDir, 'instantiation-test.mjs');
     await fs.writeFile(tempFile, testScript);
     
     try {
@@ -634,7 +634,7 @@ class QualityGatesTestSuite {
     this.log('Testing threshold enforcement...');
     
     const testScript = `
-      const QualityGatesEnforcer = require('${path.join(__dirname, 'quality-gates.js')}');
+      import QualityGatesEnforcer from '${path.join(__dirname, 'quality-gates.js')}';
       
       const enforcer = new QualityGatesEnforcer();
       
@@ -657,7 +657,7 @@ class QualityGatesTestSuite {
       console.log('Threshold Validation:', JSON.stringify(checks));
     `;
     
-    const tempFile = path.join(this.outputDir, 'threshold-test.cjs');
+    const tempFile = path.join(this.outputDir, 'threshold-test.mjs');
     await fs.writeFile(tempFile, testScript);
     
     try {

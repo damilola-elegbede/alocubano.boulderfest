@@ -184,7 +184,7 @@ export class AdvancedRateLimiter {
       headers["x-real-ip"] ||
       req.connection?.remoteAddress ||
       req.socket?.remoteAddress ||
-      `unknown-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      `unknown-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
     return `ip:${ip}`;
   }

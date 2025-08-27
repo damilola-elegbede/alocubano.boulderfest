@@ -163,7 +163,7 @@ export default async function handler(req, res) {
     }
 
     // Generate order ID for tracking (no database storage)
-    const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     console.log("Creating checkout session for order:", orderId);
 

@@ -54,7 +54,7 @@ class FlakinessReporter {
    */
   async onTestBegin(test, result) {
     const testKey = this.getTestKey(test);
-    const executionId = `${testKey}::${Date.now()}::${Math.random().toString(36).substr(2, 9)}`;
+    const executionId = `${testKey}::${Date.now()}::${Math.random().toString(36).substring(2, 11)}`;
     
     // Track concurrent execution
     await this.detector.trackConcurrentExecution(testKey, executionId);

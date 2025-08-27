@@ -1216,7 +1216,7 @@ export function getFlakinessDetector() {
 export async function executeTestWithMonitoring(testFunction, testInfo, options = {}) {
   const detector = getFlakinessDetector();
   const testKey = `${testInfo.file}::${testInfo.title}`;
-  const executionId = `${testKey}::${Date.now()}::${Math.random().toString(36).substr(2, 9)}`;
+  const executionId = `${testKey}::${Date.now()}::${Math.random().toString(36).substring(2, 11)}`;
   
   // Start resource monitoring if enabled
   if (options.enableResourceMonitoring) {

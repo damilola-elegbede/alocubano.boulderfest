@@ -37,7 +37,7 @@
  *   npm run quality:gates:dashboard
  */
 
-import { promises as fs, readFileSync } from 'fs';
+import { promises as fs, readFileSync, appendFileSync } from 'fs';
 import path from 'path';
 import { execSync, spawn } from 'child_process';
 import { fileURLToPath } from 'url';
@@ -1342,7 +1342,7 @@ class QualityGatesEnforcer {
         // Use modern GITHUB_OUTPUT file approach
         const outputFile = process.env.GITHUB_OUTPUT;
         const outputLine = `${name}=${value}\n`;
-        require('fs').appendFileSync(outputFile, outputLine);
+        appendFileSync(outputFile, outputLine);
         this.logger.debug(`Set GitHub output: ${name}=${value}`);
       } else {
         // Fallback to deprecated method for backward compatibility

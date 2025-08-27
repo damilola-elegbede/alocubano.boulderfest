@@ -139,7 +139,7 @@ function formatViolationLog(report, metadata) {
  */
 async function storeViolation(report, metadata) {
   const violation = {
-    id: `csp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: `csp_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
     ...report,
     severity: classifyViolation(report),
     userAgent: metadata.userAgent,

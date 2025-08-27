@@ -339,14 +339,14 @@ const mockFeaturedPhotos = [
 
 // Helper functions
 function generateTicketId() {
-  return 'TICKET_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  return 'TICKET_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
 }
 
 function generateSessionId(context) {
   if (context.config.sessionPersistence) {
-    return 'cs_test_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    return 'cs_test_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
   }
-  return 'cs_test_' + Math.random().toString(36).substr(2, 9);
+  return 'cs_test_' + Math.random().toString(36).substring(2, 11);
 }
 
 function isValidEmail(email) {
@@ -429,7 +429,7 @@ app.post('/api/email/subscribe', (req, res) => {
     lastName: lastName || 'User',
     subscribedAt: new Date().toISOString(),
     active: true,
-    unsubscribeToken: Math.random().toString(36).substr(2, 16),
+    unsubscribeToken: Math.random().toString(36).substring(2, 18),
     preferences: preferences || [],
     source: source || 'api'
   };
@@ -1055,7 +1055,7 @@ app.post('/api/admin/login', (req, res) => {
   if (isValidCredentials) {
     return res.json({
       success: true,
-      token: 'mock_jwt_token_' + Math.random().toString(36).substr(2, 9),
+      token: 'mock_jwt_token_' + Math.random().toString(36).substring(2, 11),
       user: { username: username }
     });
   }

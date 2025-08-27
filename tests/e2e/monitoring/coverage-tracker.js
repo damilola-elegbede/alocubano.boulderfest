@@ -147,7 +147,7 @@ export class CoverageTracker {
     const featureCoverage = await this.calculateFeatureCoverage(suite, results);
     
     // Critical path coverage
-    const criticalPathCoverage = await this.calculateCriticalPathCoverage(suite, results);
+    const criticalPathCoverage = await this.calculateCriticalPathCoverage(journeyCoverage);
     
     this.metrics.coverage = {
       ...this.metrics.coverage,
@@ -393,11 +393,11 @@ export class CoverageTracker {
   /**
    * Calculate critical path coverage
    */
-  async calculateCriticalPathCoverage(suite, results) {
+  async calculateCriticalPathCoverage(journeyCoverage) {
     const criticalPaths = {};
     
     for (const journey of this.config.criticalJourneys) {
-      const coverage = this.metrics.coverage.userJourneys?.[journey];
+      const coverage = journeyCoverage?.[journey];
       if (coverage) {
         criticalPaths[journey] = {
           percentage: coverage.percentage,
@@ -890,15 +890,31 @@ export class CoverageTracker {
   identifyRefactoringNeeds() { return ['Reduce test duplication', 'Simplify complex tests']; }
   generateGateSummary(gates) { return `${Object.values(gates).filter(g => g.passed).length}/${Object.keys(gates).length} gates passed`; }
   calculatePaybackPeriod() { return '3 months'; }
-  calculateBusinessImpact() { return { userSatisfaction: 95, revenuePotection: 98 }; }
+  calculateBusinessImpact() { return { userSatisfaction: 95, revenueProtection: 98 }; }
   async calculateDevelopmentTime() { return 40; }
   async calculateMaintenanceTime() { return 8; }
   calculateInfrastructureCosts() { return 500; }
   async estimatePreventedCriticalBugs() { return 2; }
   async estimatePreventedMinorBugs() { return 8; }
   async calculateRevenueProtection() { return 15000; }
-  async calculateRevenueProtection() { return 15000; }
   async calculateReputationValue() { return 5000; }
+  calculateTestValue(results) { 
+    return {
+      coverage: (results?.coverage || 0) * 0.3,
+      reliability: (results?.reliability || 0) * 0.25,
+      businessImpact: (results?.businessImpact || 0) * 0.25,
+      maintainability: (results?.maintainability || 0) * 0.2,
+      total: (results?.coverage || 0) * 0.3 + (results?.reliability || 0) * 0.25 + (results?.businessImpact || 0) * 0.25 + (results?.maintainability || 0) * 0.2
+    };
+  }
+  calculateEffectivenessTrends() {
+    return {
+      coverage: { current: 85, trend: 'improving', change: +5 },
+      reliability: { current: 92, trend: 'stable', change: 0 },
+      defectDetection: { current: 78, trend: 'improving', change: +3 },
+      testValue: { current: 82, trend: 'improving', change: +2 }
+    };
+  }
   calculateTrends() { return { coverage: 'improving', reliability: 'stable', maintenance: 'declining' }; }
   getReportingPeriod() { return 'Last 30 days'; }
   calculateRiskMitigation() { return { level: 'high', value: '$25,000' }; }

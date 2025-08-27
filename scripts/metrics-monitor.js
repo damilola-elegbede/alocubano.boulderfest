@@ -350,7 +350,7 @@ class MetricsMonitor {
 
   extractPerformanceMetric(output, testName) {
     // Simple regex to extract timing from test output
-    const regex = new RegExp(`${testName}.*?(\\d+)ms`, "i");
+    const regex = new RegExp(`${testName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}.*?(\\d+)ms`, "i");
     const match = output.match(regex);
     return match ? parseInt(match[1]) : null;
   }
