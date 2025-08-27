@@ -1,0 +1,229 @@
+{
+  "version": "1.0.0",
+  "description": "Branch protection rules configuration for A Lo Cubano Boulder Fest repository",
+  "documentation": "Apply these rules via GitHub API or web interface",
+  "rules": {
+    "main": {
+      "branch": "main",
+      "protection": {
+        "required_status_checks": {
+          "strict": true,
+          "contexts": [
+            "🔍 Pre-flight Validation",
+            "🎭 E2E Tests (Chrome)",
+            "🎭 E2E Tests (Firefox)",
+            "🎭 E2E Tests (Safari)",
+            "🎭 E2E Tests (Mobile Chrome)",
+            "🎭 E2E Tests (Mobile Safari)",
+            "📊 Performance Benchmark",
+            "🧪 Pre-deployment Quality",
+            "pr-status-reporter/validation",
+            "pr-status-reporter/e2e-chromium",
+            "pr-status-reporter/e2e-firefox",
+            "pr-status-reporter/e2e-webkit",
+            "pr-status-reporter/e2e-mobile-chrome",
+            "pr-status-reporter/e2e-mobile-safari",
+            "pr-status-reporter/performance",
+            "pr-status-reporter/coverage-report",
+            "pr-status-reporter/status-summary"
+          ]
+        },
+        "enforce_admins": false,
+        "required_pull_request_reviews": {
+          "required_approving_review_count": 1,
+          "dismiss_stale_reviews": true,
+          "require_code_owner_reviews": false,
+          "require_last_push_approval": true,
+          "bypass_pull_request_allowances": {
+            "users": [],
+            "teams": [],
+            "apps": []
+          }
+        },
+        "required_conversation_resolution": true,
+        "restrictions": null,
+        "required_linear_history": false,
+        "allow_force_pushes": false,
+        "allow_deletions": false,
+        "block_creations": false,
+        "required_signatures": false,
+        "lock_branch": false,
+        "allow_fork_syncing": true
+      }
+    }
+  },
+  "quality_gates": {
+    "description": "Quality gates that must pass before PR merge",
+    "gates": {
+      "unit_tests": {
+        "name": "Unit Tests",
+        "required": true,
+        "timeout_minutes": 5,
+        "retry_count": 1,
+        "failure_action": "block_merge"
+      },
+      "e2e_tests": {
+        "name": "End-to-End Tests",
+        "required": true,
+        "timeout_minutes": 15,
+        "retry_count": 2,
+        "failure_action": "block_merge",
+        "flaky_test_threshold": 3,
+        "browsers": ["chromium", "firefox", "webkit", "mobile-chrome", "mobile-safari"]
+      },
+      "performance_tests": {
+        "name": "Performance Benchmarks",
+        "required": true,
+        "timeout_minutes": 10,
+        "retry_count": 1,
+        "failure_action": "warning",
+        "thresholds": {
+          "page_load_time": "< 2000ms",
+          "api_response_time": "< 500ms",
+          "lighthouse_performance": "> 90"
+        }
+      },
+      "security_scan": {
+        "name": "Security Scan",
+        "required": true,
+        "timeout_minutes": 5,
+        "retry_count": 0,
+        "failure_action": "block_merge"
+      },
+      "code_quality": {
+        "name": "Code Quality",
+        "required": true,
+        "timeout_minutes": 3,
+        "retry_count": 0,
+        "failure_action": "block_merge",
+        "checks": ["linting", "formatting", "complexity"]
+      },
+      "test_coverage": {
+        "name": "Test Coverage",
+        "required": false,
+        "timeout_minutes": 5,
+        "retry_count": 0,
+        "failure_action": "warning",
+        "minimum_coverage": 80
+      }
+    }
+  },
+  "notifications": {
+    "description": "Notification settings for test failures and quality gate violations",
+    "settings": {
+      "test_failure_notifications": {
+        "enabled": true,
+        "channels": ["github_checks", "pr_comments"],
+        "notify_on": ["failure", "flaky_test_detected", "performance_regression"],
+        "suppress_duplicate": true,
+        "cooldown_minutes": 15
+      },
+      "quality_gate_violations": {
+        "enabled": true,
+        "channels": ["github_checks", "pr_comments", "github_status"],
+        "severity_levels": {
+          "critical": ["security_scan", "unit_tests"],
+          "high": ["e2e_tests", "code_quality"],
+          "medium": ["performance_tests"],
+          "low": ["test_coverage"]
+        }
+      }
+    }
+  },
+  "flaky_test_detection": {
+    "description": "Configuration for detecting and handling flaky tests",
+    "settings": {
+      "enabled": true,
+      "failure_threshold": 3,
+      "success_rate_threshold": 0.7,
+      "observation_window_hours": 24,
+      "auto_retry_enabled": true,
+      "max_retries": 3,
+      "retry_delay_seconds": 10,
+      "quarantine_enabled": true,
+      "quarantine_duration_hours": 168
+    }
+  },
+  "performance_monitoring": {
+    "description": "Performance regression detection and monitoring",
+    "settings": {
+      "baseline_comparison": {
+        "enabled": true,
+        "comparison_branch": "main",
+        "regression_threshold_percent": 15,
+        "metrics": [
+          "page_load_time",
+          "api_response_time",
+          "bundle_size",
+          "lighthouse_performance_score"
+        ]
+      },
+      "alerts": {
+        "performance_regression": {
+          "enabled": true,
+          "threshold_percent": 20,
+          "notification_channels": ["pr_comments", "github_status"]
+        },
+        "bundle_size_increase": {
+          "enabled": true,
+          "threshold_kb": 50,
+          "notification_channels": ["pr_comments"]
+        }
+      }
+    }
+  },
+  "auto_merge": {
+    "description": "Automatic merge configuration when all quality gates pass",
+    "settings": {
+      "enabled": false,
+      "require_all_checks": true,
+      "require_approval": true,
+      "merge_method": "squash",
+      "delete_branch_after_merge": true,
+      "conditions": {
+        "author_is_collaborator": true,
+        "no_failing_checks": true,
+        "approved_by_code_owner": false,
+        "branch_up_to_date": true,
+        "conversations_resolved": true
+      }
+    }
+  },
+  "emergency_bypass": {
+    "description": "Emergency bypass procedures for critical production fixes",
+    "settings": {
+      "enabled": true,
+      "authorized_users": [],
+      "requires_reason": true,
+      "requires_follow_up_issue": true,
+      "allowed_bypasses": ["unit_tests", "e2e_tests"],
+      "never_bypass": ["security_scan", "code_quality"],
+      "audit_log": true,
+      "notify_team": true
+    }
+  },
+  "setup_instructions": {
+    "description": "Instructions for applying these branch protection rules",
+    "github_api": {
+      "endpoint": "PUT /repos/:owner/:repo/branches/:branch/protection",
+      "authentication": "GitHub token with repo:admin permissions",
+      "example_command": "gh api repos/OWNER/REPO/branches/main/protection --method PUT --input branch-protection-payload.json"
+    },
+    "github_web": {
+      "steps": [
+        "1. Go to repository Settings > Branches",
+        "2. Click 'Add rule' or edit existing rule for 'main' branch",
+        "3. Configure required status checks based on contexts list",
+        "4. Enable 'Require branches to be up to date before merging'",
+        "5. Set required approving reviews to 1",
+        "6. Enable 'Dismiss stale PR approvals when new commits are pushed'",
+        "7. Enable 'Require conversation resolution before merging'",
+        "8. Save changes"
+      ]
+    },
+    "validation": {
+      "command": "node scripts/validate-branch-protection.js",
+      "description": "Validates current branch protection matches this configuration"
+    }
+  }
+}
