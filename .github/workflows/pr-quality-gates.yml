@@ -119,7 +119,29 @@ jobs:
         id: thresholds
         run: |
           echo "📊 Loading PRD-defined quality thresholds..."
-          THRESHOLDS='{"testFlakiness":5.0,"criticalCoverage":100.0,"executionTime":300,"testReliability":95.0,"securityVulnerabilities":0,"codeQuality":80.0,"apiResponseTime":100,"pageLoadTime":2000}'
+          
+          # Try to load from config file first
+          if [ -f ".github/quality-thresholds.json" ]; then
+            echo "Loading thresholds from configuration file..."
+            THRESHOLDS=$(node -e "
+              const config = require('./.github/quality-thresholds.json');
+              const thresholds = {
+                testFlakiness: config.thresholds?.testFlakiness?.value || 5.0,
+                criticalCoverage: config.thresholds?.criticalCoverage?.value || 100.0,
+                executionTime: config.thresholds?.executionTime?.value || 300,
+                testReliability: config.thresholds?.testReliability?.value || 95.0,
+                securityVulnerabilities: config.thresholds?.securityVulnerabilities?.value || 0,
+                codeQuality: config.thresholds?.codeQuality?.value || 80.0,
+                apiResponseTime: config.thresholds?.apiResponseTime?.value || 100,
+                pageLoadTime: config.thresholds?.pageLoadTime?.value || 2000
+              };
+              console.log(JSON.stringify(thresholds));
+            ")
+          else
+            echo "Config file not found, using fallback thresholds..."
+            THRESHOLDS='{"testFlakiness":5.0,"criticalCoverage":100.0,"executionTime":300,"testReliability":95.0,"securityVulnerabilities":0,"codeQuality":80.0,"apiResponseTime":100,"pageLoadTime":2000}'
+          fi
+          
           echo "thresholds=$THRESHOLDS" >> $GITHUB_OUTPUT
           echo "Quality thresholds loaded: $THRESHOLDS"
 

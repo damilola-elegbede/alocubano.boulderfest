@@ -130,8 +130,17 @@ success "Package.json found"
 
 verbose_log "Prerequisites check completed"
 
-# Step 2: Run quality gates in report mode
-log "📊 Step 2: Running quality gates in report mode..."
+# Step 2: Clear stale reports and run quality gates in report mode
+log "📊 Step 2: Clearing stale reports and running quality gates in report mode..."
+
+# Clear OUTPUT_DIR before running tests to avoid false positives from stale reports
+if [ -d "$OUTPUT_DIR" ]; then
+  verbose_log "Clearing existing reports from: $OUTPUT_DIR"
+  rm -rf "$OUTPUT_DIR"/*
+  success "Cleared stale reports"
+else
+  verbose_log "Output directory does not exist, will be created: $OUTPUT_DIR"
+fi
 
 cd "$PROJECT_ROOT"
 

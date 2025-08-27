@@ -7,7 +7,12 @@
 # Usage:
 #   ./scripts/run-quality-gates-tests.sh [--comprehensive] [--verbose]
 
-set -e
+# Strict bash modes for better error handling
+set -Eeuo pipefail
+IFS=$'\n\t'
+
+# Error trap for better diagnostics
+trap 'echo "Error occurred in script at line $LINENO. Exit code: $?" >&2; exit 1' ERR
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
