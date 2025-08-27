@@ -29,10 +29,18 @@ export default defineConfig({
         ["junit", { outputFile: "./test-results/e2e-results.xml" }],
         ["json", { outputFile: "./test-results/e2e-results.json" }],
         ["github"],
+        ["./tests/e2e/monitoring/test-reporter.js", { 
+          enableEnvironmentValidation: true,
+          generateDashboard: true 
+        }],
       ]
     : [
         ["list"],
-        ["html", { outputFolder: "./playwright-report", open: "on-failure" }]
+        ["html", { outputFolder: "./playwright-report", open: "on-failure" }],
+        ["./tests/e2e/monitoring/test-reporter.js", { 
+          enableEnvironmentValidation: true,
+          generateDashboard: true 
+        }],
       ],
 
   // Global test timeout

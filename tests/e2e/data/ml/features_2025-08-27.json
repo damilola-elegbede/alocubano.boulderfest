@@ -1,0 +1,44 @@
+{
+  "features": [],
+  "timestamp": "2025-08-27T04:14:37.273Z",
+  "version": "1.0",
+  "schema": {
+    "temporal": [
+      "timeToIncident",
+      "dayOfWeek",
+      "hourOfDay"
+    ],
+    "test": [
+      "testSeverity",
+      "testRetryCount",
+      "testFlakyScore",
+      "testDuration"
+    ],
+    "incident": [
+      "incidentSeverity",
+      "businessImpact",
+      "preventable",
+      "customerImpact",
+      "revenueImpact"
+    ],
+    "correlation": [
+      "correlationStrength",
+      "confidence",
+      "predictivePower",
+      "factorCount"
+    ],
+    "pattern": [
+      "cascadeRisk",
+      "recurringRisk",
+      "silentFailureRisk"
+    ],
+    "environment": [
+      "environment",
+      "userFlow",
+      "errorType"
+    ],
+    "target": [
+      "willCauseIncident"
+    ]
+  }
+}
