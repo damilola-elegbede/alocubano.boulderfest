@@ -4,17 +4,16 @@
  */
 
 import { createClient } from '@libsql/client';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env.local
+dotenv.config({ path: '.env.local' });
 
 /**
  * DatabaseCleanup - Manages test data cleanup operations
  */
 export class DatabaseCleanup {
   constructor(databaseUrl = null, authToken = null) {
-    // Load from .env.local if not in environment
-    if (!process.env.TURSO_DATABASE_URL) {
-      require('dotenv').config({ path: '.env.local' });
-    }
-    
     // Use TURSO_DATABASE_URL from environment (dev/test database for E2E)
     this.databaseUrl = databaseUrl || process.env.TURSO_DATABASE_URL || 'file:data/test.db';
     this.authToken = authToken || process.env.TURSO_AUTH_TOKEN;
