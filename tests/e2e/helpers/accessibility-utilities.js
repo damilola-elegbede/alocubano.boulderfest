@@ -966,17 +966,7 @@ export class WCAGComplianceTester {
   }
 }
 
-/**
- * Accessibility testing utilities export
- */
-export {
-  ScreenReaderTester,
-  KeyboardNavigationTester,
-  ColorContrastAnalyzer,
-  BrowserCompatibilityTester,
-  LocalizationTester,
-  WCAGComplianceTester
-};
+// Classes are already exported at their declarations
 
 /**
  * Quick accessibility check for any page
