@@ -511,8 +511,11 @@ curl -f http://localhost:3000/api/health/e2e-database | jq '.'
 
 ### Testing Documentation
 - [E2E Test Flows](/tests/e2e/flows/README.md) - Phase 2 gallery and admin panel test flows
+- [Advanced E2E Testing](/tests/e2e/advanced/README.md) - Phase 4 network, security, accessibility testing
 - [Performance Testing Guide](/tests/e2e/helpers/performance-gallery.js) - Gallery performance utilities
 - [Admin Authentication Testing](/tests/e2e/helpers/admin-auth.js) - Security and authentication helpers
+- [Security Testing](/tests/e2e/helpers/security-testing.js) - OWASP Top 10 vulnerability testing
+- [Accessibility Testing](/tests/e2e/helpers/accessibility-utilities.js) - WCAG 2.1 compliance utilities
 
 ### Setup Documentation
 - [Installation Guide](INSTALLATION.md) - Complete setup instructions

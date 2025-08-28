@@ -1,6 +1,6 @@
-# E2E Test Flows - Phase 2 Gallery and Admin Panel Testing
+# E2E Test Flows - Phase 2 Gallery, Admin Panel, and Phase 4 Network Failure Testing
 
-This directory contains comprehensive end-to-end test flows for the A Lo Cubano Boulder Fest website, focusing on Phase 2 Gallery functionality and Admin Panel operations.
+This directory contains comprehensive end-to-end test flows for the A Lo Cubano Boulder Fest website, including Phase 2 Gallery functionality, Admin Panel operations, and Phase 4 advanced network failure and recovery testing.
 
 ## 📋 Test Flow Overview
 
@@ -116,6 +116,72 @@ Complete testing suite for admin authentication, dashboard operations, and secur
 - Database performance validation for bulk queries
 - Error recovery and partial operation handling
 
+### Phase 4 Advanced Network Failure Testing (`../advanced/network-failures.test.js`)
+
+Comprehensive network failure and recovery testing ensuring the website maintains functionality and data integrity under adverse network conditions.
+
+#### Network Failure Test Coverage Areas
+
+**💳 Payment Processing Network Resilience**
+- Network interruption during payment processing without data corruption
+- Payment processes handle slow network conditions (slow-3g and slow-4g)
+- Timeout mechanisms prevent hung requests from blocking UI (10-second timeout max)
+- Payment retry mechanisms with exponential backoff
+- Data integrity validation after network recovery
+
+**🖼️ Gallery Network Resilience**
+- Gallery handles network interruption during image loading with proper fallback
+- Slow network conditions do not cause gallery failures or crashes
+- Virtual scrolling performance under network stress and packet loss
+- Image lazy loading continues to function during network issues
+- Progressive image format selection adapts to network conditions
+
+**🔐 Admin Panel Network Resilience**
+- Admin login handles network interruption with proper error handling
+- Admin dashboard operations handle connection recovery gracefully
+- Bulk operations handle network timeouts without data corruption
+- Session management maintains security during network interruptions
+- Audit logging continues to function during network issues
+
+**📝 Registration System Network Resilience**
+- Registration handles network interruption without data loss or corruption
+- Registration form handles slow network with proper user feedback
+- Form validation continues to work during network issues
+- Registration retry mechanisms prevent duplicate submissions
+- Data consistency checks after network recovery
+
+**🌐 Offline Behavior and Recovery**
+- Displays offline indicators when services become unavailable
+- Automatic retry mechanisms work after network restoration
+- Graceful degradation maintains core functionality during service outages
+- Cache mechanisms continue to serve content during network issues
+- Progressive enhancement ensures basic functionality remains available
+
+#### Comprehensive Network Resilience Testing
+
+**🔄 Connection Recovery Testing**
+- End-to-end purchase flow resilience under various network conditions
+- Comprehensive network failure recovery simulation with multiple scenarios
+- Network request retry patterns monitoring and validation
+- Connection recovery with exponential backoff algorithms
+- Network resilience testing across different user flows
+
+**📊 Network Condition Simulation**
+- **Offline Mode**: Complete network disconnection testing
+- **Slow-3G**: 500 Kbps, 2-second latency simulation
+- **Slow-4G**: 1.5 Mbps, 500ms latency simulation
+- **Fast-3G**: 1.6 Mbps, 150ms latency simulation
+- **4G**: 4 Mbps, 50ms latency simulation
+- **Packet Loss**: 10-30% packet loss simulation
+- **High Latency**: 3-8 second latency injection
+
+**⏱️ Timeout Handling Validation**
+- Payment operations: 10-second timeout maximum
+- API calls: 5-second timeout maximum
+- Image loading: 8-second timeout maximum
+- Gallery operations: 15-second timeout maximum
+- Admin operations: 7-second timeout maximum
+
 ## 🚀 Usage Examples
 
 ### Running Individual Test Flows
@@ -127,11 +193,17 @@ npx playwright test tests/e2e/flows/gallery-browsing.test.js
 # Run admin dashboard tests only  
 npx playwright test tests/e2e/flows/admin-dashboard.test.js
 
+# Run network failure tests only
+npx playwright test tests/e2e/advanced/network-failures.test.js
+
 # Run with specific browser
 npx playwright test tests/e2e/flows/gallery-browsing.test.js --browser=firefox
 
 # Run with UI for debugging
 npx playwright test tests/e2e/flows/admin-dashboard.test.js --ui
+
+# Run network failure tests in UI mode for debugging
+npx playwright test tests/e2e/advanced/network-failures.test.js --ui
 ```
 
 ### Running Test Suites by Category
@@ -148,6 +220,15 @@ npx playwright test --grep "Performance|performance"
 
 # Run mobile-specific tests
 npx playwright test --grep "Mobile|mobile|responsive"
+
+# Run network failure tests by category
+npx playwright test tests/e2e/advanced/network-failures.test.js --grep "Payment Processing"
+npx playwright test tests/e2e/advanced/network-failures.test.js --grep "Gallery Network"
+npx playwright test tests/e2e/advanced/network-failures.test.js --grep "Admin Panel Network"
+npx playwright test tests/e2e/advanced/network-failures.test.js --grep "Offline Behavior"
+
+# Run all network-related tests
+npx playwright test --grep "Network|network|offline|timeout"
 ```
 
 ### Development and Debugging
@@ -218,6 +299,15 @@ ADMIN_SECRET=your-admin-secret-key-32-chars-min
 - **Database Queries**: <100ms for admin queries
 - **Export Operations**: <5 seconds for CSV generation
 
+### Network Resilience Performance Targets
+
+- **Payment Processing**: Must complete or fail gracefully within 10 seconds under all network conditions
+- **Gallery Loading**: Should load initial content within 15 seconds even on slow-3g
+- **Admin Operations**: Should timeout gracefully within 7 seconds and provide user feedback
+- **Registration Forms**: Should handle slow network with loading indicators within 3 seconds
+- **Offline Recovery**: Should detect connectivity restoration within 5 seconds
+- **Retry Mechanisms**: Should use exponential backoff with maximum 3 retry attempts
+
 ## 🐛 Troubleshooting
 
 ### Common Issues
@@ -248,6 +338,19 @@ npx playwright test --browser=chromium --args="--memory-pressure-off"
 
 # Monitor resource usage
 htop # or Activity Monitor on macOS
+```
+
+**Network Failure Test Issues**
+```bash
+# Debug network simulation issues
+npx playwright test tests/e2e/advanced/network-failures.test.js --debug
+
+# Run specific network test with verbose logging
+DEBUG=pw:browser,pw:api npx playwright test tests/e2e/advanced/network-failures.test.js --grep "payment"
+
+# Test network conditions individually
+npx playwright test tests/e2e/advanced/network-failures.test.js --grep "slow-3g"
+npx playwright test tests/e2e/advanced/network-failures.test.js --grep "timeout"
 ```
 
 ### Test Data Cleanup
@@ -315,5 +418,10 @@ E2E tests serve as quality gates preventing deployment of:
 - Admin dashboard functionality breaks
 - Mobile responsiveness issues
 - Accessibility compliance violations
+- Network resilience failures and timeout issues
+- Data corruption during network interruptions
+- Inadequate error handling during connectivity issues
+- Missing offline indicators and graceful degradation
+- Poor user experience under slow network conditions
 
-This comprehensive E2E test suite ensures the A Lo Cubano Boulder Fest website maintains high quality, performance, and security standards across all Phase 2 gallery and admin panel features.
+This comprehensive E2E test suite ensures the A Lo Cubano Boulder Fest website maintains high quality, performance, security, and network resilience standards across all Phase 2 gallery features, admin panel operations, and Phase 4 advanced network failure scenarios.
