@@ -75,7 +75,8 @@ export class NetworkSimulation {
         }
 
         const settings = this.networkConditions[condition];
-        await this.context.setNetworkConditions(settings);
+        // Note: setNetworkConditions is not available in Playwright
+        // Network conditions are simulated via route interception in simulateNetworkCondition
         
         this.log(`Network condition set to: ${condition}`, settings);
         return settings;
@@ -447,12 +448,8 @@ export class NetworkSimulation {
         
         this.activeInterceptions.clear();
         await this.page.unroute('**/*');
-        await this.context.setNetworkConditions({
-            offline: false,
-            downloadThroughput: -1,
-            uploadThroughput: -1,
-            latency: 0
-        });
+        // Reset to normal network conditions
+        // Network simulation is handled via route interception
 
         this.log('Network interceptions cleared, normal connectivity restored');
     }
