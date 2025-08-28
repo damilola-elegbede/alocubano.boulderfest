@@ -8,7 +8,7 @@
  */
 
 import { test, expect, devices } from '@playwright/test';
-import { injectAxe, checkA11y, configureAxe } from '@axe-core/playwright';
+import AxeBuilder from '@axe-core/playwright';
 import {
   WCAGComplianceTester,
   ScreenReaderTester,
@@ -77,8 +77,7 @@ test.describe('WCAG 2.1 Level AA Compliance Testing', () => {
       });
 
       await test.step('Initialize accessibility testing', async () => {
-        await injectAxe(page);
-        await configureAxe(page, WCAG_CONFIG);
+        // AxeBuilder will be used for each specific test
       });
 
       const tester = new WCAGComplianceTester(page);
@@ -636,10 +635,11 @@ test.describe('Comprehensive Cross-Browser Accessibility', () => {
       await page.waitForLoadState('networkidle');
       
       await test.step(`${browserName}: axe-core compliance`, async () => {
-        await injectAxe(page);
-        await configureAxe(page, WCAG_CONFIG);
+        const accessibilityResults = await new AxeBuilder({ page })
+          .withTags(['wcag2a', 'wcag2aa'])
+          .analyze();
         
-        const violations = await checkA11y(page, null, WCAG_CONFIG, false, 'v2');
+        const violations = accessibilityResults.violations;
         
         console.log(`\n=== ${browserName} - ${pageInfo.name} ===`);
         console.log(`axe-core violations: ${violations.length}`);
