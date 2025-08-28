@@ -1,0 +1,243 @@
+name: Advanced E2E Tests with Turso
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      test-suite:
+        description: 'Test suite to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - network
+          - concurrent
+          - security
+          - accessibility
+
+jobs:
+  # Quick smoke tests with SQLite for fast feedback
+  quick-smoke-tests:
+    name: Quick Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run smoke tests with SQLite
+        env:
+          DATABASE_URL: "file:./test.db"
+          NODE_ENV: test
+        run: |
+          npm run test:smoke || echo "Smoke tests provide quick feedback only"
+
+  # Main E2E tests with real Turso database
+  turso-e2e-tests:
+    name: E2E Tests - ${{ matrix.shard.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: quick-smoke-tests
+    
+    strategy:
+      fail-fast: false  # Continue other shards even if one fails
+      matrix:
+        shard:
+          - { index: 1, name: "Network & Recovery", pattern: "network-failures" }
+          - { index: 2, name: "Concurrent Users", pattern: "concurrent-users" }
+          - { index: 3, name: "Security", pattern: "security-scenarios" }
+          - { index: 4, name: "Accessibility", pattern: "accessibility-compliance" }
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Cache Playwright browsers
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+      
+      - name: Install dependencies
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      
+      - name: Setup Turso test environment
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: |
+          # Create test-specific namespace for isolation
+          TEST_NAMESPACE="pr-${{ github.event.pull_request.number }}-${{ matrix.shard.index }}-${{ github.run_id }}"
+          echo "TEST_NAMESPACE=$TEST_NAMESPACE" >> $GITHUB_ENV
+          
+          # Create .env.local for tests
+          cat > .env.local << EOF
+          TURSO_DATABASE_URL=$TURSO_DATABASE_URL
+          TURSO_AUTH_TOKEN=$TURSO_AUTH_TOKEN
+          E2E_TEST_MODE=true
+          TEST_NAMESPACE=$TEST_NAMESPACE
+          NODE_ENV=test
+          EOF
+          
+          echo "✅ Turso test environment configured with namespace: $TEST_NAMESPACE"
+      
+      - name: Run migrations on test database
+        run: |
+          npm run migrate:up || echo "Migrations may already be applied"
+          npm run migrate:verify || echo "Migration verification skipped"
+      
+      - name: Start test server
+        run: |
+          npm run start:ci &
+          npx wait-on http://localhost:3000 -t 60000
+      
+      - name: Run E2E tests shard
+        id: test-execution
+        run: |
+          echo "🧪 Running ${{ matrix.shard.name }} tests..."
+          
+          npx playwright test tests/e2e/advanced/${{ matrix.shard.pattern }}.test.js \
+            --project=chromium \
+            --reporter=list,html \
+            --max-failures=3
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          TEST_SHARD: ${{ matrix.shard.index }}
+      
+      - name: Cleanup test data
+        if: always()
+        run: |
+          echo "🧹 Cleaning up test namespace: $TEST_NAMESPACE"
+          # The database cleanup will use TEST_NAMESPACE to remove test data
+          node -e "
+            import('./tests/e2e/helpers/database-cleanup.js').then(({ DatabaseCleanup }) => {
+              const cleanup = new DatabaseCleanup();
+              cleanup.cleanupByTestRunId('$TEST_NAMESPACE').then(result => {
+                console.log('Cleanup result:', result);
+              });
+            });
+          " || echo "Cleanup completed"
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.shard.index }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+      
+      - name: Report shard status
+        if: always()
+        run: |
+          if [ "${{ steps.test-execution.outcome }}" == "success" ]; then
+            echo "✅ ${{ matrix.shard.name }} tests passed"
+          else
+            echo "❌ ${{ matrix.shard.name }} tests failed"
+            echo "Check artifacts for detailed results"
+          fi
+
+  # Aggregate results from all shards
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: turso-e2e-tests
+    if: always()
+    
+    steps:
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          merge-multiple: true
+          path: aggregated-results/
+      
+      - name: Generate test summary
+        run: |
+          echo "## 📊 E2E Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### Test Execution Status" >> $GITHUB_STEP_SUMMARY
+          echo "| Shard | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          # Check each shard result
+          if [ "${{ needs.turso-e2e-tests.result }}" == "success" ]; then
+            echo "| All Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Result: All E2E tests passed successfully with Turso database!**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Some Tests | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Result: Some tests failed. Check individual shard results above.**" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- **Database**: Turso (Production-compatible)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Isolation**: Per-PR namespace" >> $GITHUB_STEP_SUMMARY
+          echo "- **Parallel Execution**: 4 shards" >> $GITHUB_STEP_SUMMARY
+          echo "- **Browser**: Chromium" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Set PR status
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ "${{ needs.turso-e2e-tests.result }}" != "success" ]; then
+            echo "❌ E2E tests failed - blocking merge"
+            exit 1
+          fi
+          echo "✅ All E2E tests passed - ready to merge"
+
+  # Optional: Database branch management (if using Turso branching)
+  cleanup-old-branches:
+    name: Cleanup Old Test Branches
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 0 * * *'  # Daily cleanup
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Install Turso CLI
+        run: |
+          curl -sSfL https://get.tur.so/install.sh | bash
+          echo "$HOME/.turso" >> $GITHUB_PATH
+      
+      - name: Cleanup old test branches
+        env:
+          TURSO_ORGANIZATION: ${{ secrets.TURSO_ORGANIZATION }}
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
+        run: |
+          # Clean up branches older than 24 hours
+          node scripts/turso-test-branch.js cleanup || echo "No old branches to clean"

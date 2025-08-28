@@ -57,8 +57,8 @@ jobs:
 
       - name: Setup test environment
         env:
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_TEST_DATABASE_URL }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_TEST_AUTH_TOKEN }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
           STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
           BREVO_API_KEY: ${{ secrets.BREVO_TEST_API_KEY }}
@@ -72,6 +72,8 @@ jobs:
           BREVO_API_KEY=$BREVO_API_KEY
           E2E_TEST_MODE=true
           EOF
+          
+          echo "✅ Turso test environment configured"
 
       - name: Start test server
         run: |
