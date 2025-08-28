@@ -4,7 +4,7 @@
  */
 
 import { expect } from '@playwright/test';
-import { injectAxe, checkA11y, getViolations, configureAxe } from '@axe-core/playwright';
+import AxeBuilder from '@axe-core/playwright';
 
 /**
  * WCAG 2.1 Level AA Configuration for axe-core
@@ -774,7 +774,11 @@ export class WCAGComplianceTester {
    */
   async runAutomatedTests() {
     try {
-      const violations = await checkA11y(this.page, null, WCAG_CONFIG, false, 'v2');
+      const accessibilityResults = await new AxeBuilder({ page: this.page })
+        .withTags(['wcag2a', 'wcag2aa'])
+        .analyze();
+      
+      const violations = accessibilityResults.violations;
       
       return {
         testType: 'automated',
