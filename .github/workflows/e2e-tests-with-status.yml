@@ -60,9 +60,8 @@ env:
   FLAKY_TEST_DETECTION: ${{ inputs.enable_flaky_detection || true }}
   # Performance monitoring
   PERFORMANCE_BASELINE_ENABLED: true
-  # Test database configuration
+  # Test database configuration (SQLite for CI reliability)
   DATABASE_URL: "file:./data/e2e-test.db"
-  TURSO_DATABASE_URL: "file:./data/e2e-test.db"
 
 jobs:
   # Pre-flight validation with status reporting initialization
@@ -299,20 +298,21 @@ jobs:
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
           PLAYWRIGHT_WORKERS: ${{ env.PLAYWRIGHT_WORKERS }}
           PLAYWRIGHT_RETRIES: ${{ matrix.retry-count }}
+          # Database configuration (SQLite for CI)
+          DATABASE_URL: "file:./data/e2e-test.db"
           # Security and secrets for tests
           TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD || 'test-admin-password' }}
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY_TEST || '' }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_TEST || '' }}
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET_TEST || 'test-admin-secret-key-minimum-32-characters' }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_CI || '' }}
           # Performance testing and monitoring
           PERFORMANCE_TESTING: true
           SKIP_BROWSER_WARMUP: false
         run: |
           echo "Running E2E tests for ${{ matrix.browser-name }}..."
           
-          # Construct test command
-          TEST_CMD="npx playwright test --project=${{ matrix.browser }}"
+          # Construct test command with CI-optimized config
+          TEST_CMD="npx playwright test --config=playwright-e2e-ci.config.js --project=${{ matrix.browser }}"
           
           # Add test pattern if specified
           if [ -n "${{ needs.validate.outputs.test_pattern }}" ]; then
@@ -490,8 +490,9 @@ jobs:
         run: |
           echo "Running performance benchmarks with regression detection..."
           
-          # Run specific performance-focused tests
+          # Run specific performance-focused tests with CI config
           npx playwright test \
+            --config=playwright-e2e-ci.config.js \
             --project=chromium \
             --grep="performance|load|speed" \
             --reporter=json:test-results/performance-results.json,list

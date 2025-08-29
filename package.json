@@ -29,7 +29,7 @@
     "test:e2e:fast": "ALL_BROWSERS=false playwright test --config=playwright-e2e-vercel-main.config.js",
     "test:e2e:report": "playwright show-report",
     "test:e2e:install": "playwright install --with-deps",
-    "test:e2e:ci": "playwright test --config=playwright-e2e-vercel.config.js",
+    "test:e2e:ci": "playwright test --config=playwright-e2e-ci.config.js",
     "test:e2e:ngrok": "node scripts/e2e-with-ngrok.js",
     "test:e2e:ngrok:ui": "node scripts/e2e-with-ngrok.js -- --ui",
     "test:e2e:ngrok:headed": "node scripts/e2e-with-ngrok.js -- --headed",

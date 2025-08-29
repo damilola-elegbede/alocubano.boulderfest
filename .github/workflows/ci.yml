@@ -157,8 +157,7 @@ jobs:
       - name: 🔧 Configure Environment Variables
         run: |
           cat > .env.local << EOF
-          TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN }}
+          DATABASE_URL="file:./data/e2e-test.db"
           E2E_TEST_MODE=true
           NODE_ENV=test
           ENVIRONMENT=ci-test
@@ -177,15 +176,13 @@ jobs:
         run: npm run db:e2e:setup
         env:
           E2E_TEST_MODE: true
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          DATABASE_URL: "file:./data/e2e-test.db"
 
       - name: 🔄 Run Database Migrations
         run: npm run migrate:e2e:up
         env:
           E2E_TEST_MODE: true
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          DATABASE_URL: "file:./data/e2e-test.db"
 
       - name: 🚀 Start Vercel Dev Server
         run: |
@@ -235,13 +232,12 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: 🎭 Run E2E Tests
-        run: npm run test:e2e:vercel:ci -- --project=${{ matrix.browser }}
+        run: npm run test:e2e:ci -- --project=${{ matrix.browser }}
         env:
           E2E_TEST_MODE: true
           BASE_URL: http://localhost:3000
           PLAYWRIGHT_BASE_URL: http://localhost:3000
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          DATABASE_URL: "file:./data/e2e-test.db"
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
 
       - name: 📤 Upload E2E Test Results
@@ -298,8 +294,7 @@ jobs:
         run: npm run db:e2e:clean
         env:
           E2E_TEST_MODE: true
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          DATABASE_URL: "file:./data/e2e-test.db"
 
   # Health Check with Vercel Dev
   health-check:

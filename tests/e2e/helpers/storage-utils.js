@@ -10,7 +10,7 @@ import { getTestNamespace } from './test-isolation.js';
 /**
  * Test-isolated localStorage operations
  */
-export class TestLocalStorage {
+class TestLocalStorage {
   constructor(testTitle) {
     this.testTitle = testTitle;
     this.namespace = getTestNamespace(testTitle);
@@ -94,7 +94,7 @@ export class TestLocalStorage {
 /**
  * Test-isolated sessionStorage operations
  */
-export class TestSessionStorage {
+class TestSessionStorage {
   constructor(testTitle) {
     this.testTitle = testTitle;
     this.namespace = getTestNamespace(testTitle);
@@ -147,7 +147,7 @@ export class TestSessionStorage {
 /**
  * Shopping cart storage utilities
  */
-export class TestCartStorage extends TestLocalStorage {
+class TestCartStorage extends TestLocalStorage {
   constructor(testTitle) {
     super(testTitle);
     this.cartKey = 'cart';
@@ -195,7 +195,7 @@ export class TestCartStorage extends TestLocalStorage {
 /**
  * User preferences storage utilities
  */
-export class TestUserPreferences extends TestLocalStorage {
+class TestUserPreferences extends TestLocalStorage {
   constructor(testTitle) {
     super(testTitle);
   }
@@ -235,7 +235,7 @@ export class TestUserPreferences extends TestLocalStorage {
 /**
  * Admin session storage utilities
  */
-export class TestAdminStorage extends TestSessionStorage {
+class TestAdminStorage extends TestSessionStorage {
   constructor(testTitle) {
     super(testTitle);
   }
@@ -277,7 +277,7 @@ export class TestAdminStorage extends TestSessionStorage {
 /**
  * Generic storage utilities
  */
-export class TestStorageUtils {
+class TestStorageUtils {
   constructor(testTitle) {
     this.testTitle = testTitle;
     this.localStorage = new TestLocalStorage(testTitle);

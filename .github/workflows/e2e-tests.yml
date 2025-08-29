@@ -37,7 +37,6 @@ env:
   E2E_TEST_MODE: true
   PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
   DATABASE_URL: "file:./data/e2e-test.db"
-  TURSO_DATABASE_URL: "file:./data/e2e-test.db"
 
 jobs:
   # Pre-flight validation
@@ -201,7 +200,7 @@ jobs:
           echo "🧪 Running E2E tests for ${{ matrix.browser-name }}..."
           
           # Construct test command
-          TEST_CMD="npx playwright test --project=${{ matrix.browser }}"
+          TEST_CMD="npx playwright test --config=playwright-e2e-ci.config.js --project=${{ matrix.browser }}"
           
           # Add test pattern if specified
           if [ -n "${{ needs.validate.outputs.test_pattern }}" ]; then
