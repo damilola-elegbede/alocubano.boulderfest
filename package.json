@@ -17,7 +17,6 @@
     "test": "npm run test:simple",
     "test:simple": "vitest run --config tests/vitest.config.js",
     "test:simple:watch": "vitest --config tests/vitest.config.js",
-    "test:coverage": "COVERAGE=true vitest run --coverage --config tests/vitest.config.js",
     "test:health": "node scripts/test-health-endpoint.js",
     "test:smoke": "npm run test:health",
     "test:all": "npm run test:simple && npm run test:e2e",
@@ -98,29 +97,36 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.10.2",
-    "@axe-core/puppeteer": "^4.8.0",
-    "@faker-js/faker": "^9.9.0",
-    "@playwright/test": "^1.55.0",
-    "@vitest/coverage-v8": "^3.2.4",
-    "@vitest/ui": "^3.2.4",
-    "better-sqlite3": "^12.2.0",
-    "cross-env": "^7.0.3",
-    "eslint": "^9.15.0",
-    "express": "^5.1.0",
-    "happy-dom": "^18.0.1",
-    "htmlhint": "^1.6.3",
+    "@babel/core": "^7.28.4",
+    "@babel/preset-env": "^7.28.4",
+    "@playwright/test": "^1.49.1",
+    "@vitest/coverage-v8": "^2.2.3",
+    "eslint": "^9.18.0",
+    "globals": "^15.14.0",
+    "htmlhint": "^1.1.4",
     "http-server": "^14.1.1",
-    "jsdom": "^26.1.0",
-    "lighthouse": "^12.8.1",
-    "nock": "^14.0.9",
-    "node-mocks-http": "^1.17.2",
-    "puppeteer": "^23.11.0",
-    "stylelint": "^16.21.1",
-    "stylelint-config-standard": "^36.0.1",
-    "supertest": "^7.1.4",
-    "vercel": "^41.0.2",
-    "vitest": "^3.2.4",
-    "wait-on": "^7.2.0"
+    "lighthouse": "^12.3.0",
+    "ngrok": "^5.0.0-beta.2",
+    "nodemon": "^3.1.10",
+    "vercel": "^39.3.0",
+    "vitest": "^2.2.3"
+  },
+  "description-features": {
+    "architecture": [
+      "Serverless API with Vercel functions",
+      "Vanilla JavaScript frontend (ES6 modules)",
+      "SQLite for development, Turso for production",
+      "Redis for caching (ioredis)",
+      "Google Drive gallery integration",
+      "Stripe payment processing",
+      "Apple & Google Wallet passes"
+    ],
+    "testing": [
+      "Simple unit tests with Vitest - 26 essential tests",
+      "E2E tests with Playwright - 12 comprehensive flows",
+      "SQLite for unit tests, Turso for E2E tests",
+      "No complex test abstractions",
+      "Direct API testing"
+    ]
   }
 }

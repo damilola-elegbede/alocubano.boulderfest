@@ -33,24 +33,71 @@ async function setupDatabase() {
     for (const file of sqlFiles) {
       const sql = await fs.readFile(join(migrationsDir, file), 'utf-8');
       
-      // Split by semicolons but handle statements properly
-      const statements = sql
-        .split(';')
-        .map(s => s.trim())
-        .filter(s => s.length > 0 && !s.startsWith('--'));
+      // Parse SQL statements more carefully
+      const statements = [];
+      let currentStatement = '';
+      let inTrigger = false;
       
+      const lines = sql.split('\n');
+      for (const line of lines) {
+        // Skip comment lines
+        if (line.trim().startsWith('--')) {
+          continue;
+        }
+        
+        const upperLine = line.toUpperCase().trim();
+        
+        // Detect trigger start
+        if (upperLine.startsWith('CREATE TRIGGER')) {
+          inTrigger = true;
+        }
+        
+        // Add line to current statement
+        if (line.trim()) {
+          currentStatement += line + '\n';
+        }
+        
+        // Check if statement is complete
+        if (inTrigger) {
+          // For triggers, wait for END; statement
+          if (upperLine === 'END;' || upperLine === 'END') {
+            statements.push(currentStatement.trim());
+            currentStatement = '';
+            inTrigger = false;
+          }
+        } else {
+          // For normal statements, split by semicolon at end of line
+          if (line.trim().endsWith(';')) {
+            statements.push(currentStatement.trim());
+            currentStatement = '';
+          }
+        }
+      }
+      
+      // Add any remaining statement
+      if (currentStatement.trim()) {
+        statements.push(currentStatement.trim());
+      }
+      
+      // Execute each statement
+      let statementCount = 0;
       for (const statement of statements) {
         if (statement.trim()) {
           try {
-            await client.execute(statement + ';');
-            console.log(`✅ Applied: ${file}`);
+            await client.execute(statement);
+            statementCount++;
           } catch (err) {
             // Ignore errors for existing tables/columns
-            if (!err.message.includes('already exists')) {
+            if (!err.message.includes('already exists') && 
+                !err.message.includes('duplicate column name')) {
               console.warn(`⚠️ Warning in ${file}: ${err.message}`);
             }
           }
         }
+      }
+      
+      if (statementCount > 0) {
+        console.log(`✅ Applied ${file} (${statementCount} statements)`);
       }
     }
     
