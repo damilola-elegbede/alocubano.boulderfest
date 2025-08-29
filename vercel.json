@@ -1,6 +1,6 @@
 {
   "framework": null,
-  "installCommand": "npm ci --omit=dev",
+  "installCommand": "npm install --production",
   "buildCommand": "npm run build",
   "outputDirectory": ".",
   "crons": [
