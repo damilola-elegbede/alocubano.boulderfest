@@ -43,10 +43,8 @@ if (fs.existsSync(pagesDir)) {
   });
 }
 
-// Copy API directory for serverless functions
-const apiDir = path.join(projectRoot, 'api');
-const apiDestDir = path.join(distDir, 'api');
-copyRecursive(apiDir, apiDestDir);
+// Note: API directory stays at root - Vercel handles serverless functions separately
+// Only static files go to dist
 
 // Copy other static directories
 ['css', 'js', 'images', 'public'].forEach(dir => {
@@ -56,11 +54,11 @@ copyRecursive(apiDir, apiDestDir);
 });
 
 // Copy root files
-['robots.txt', 'sitemap.xml'].forEach(file => {
+['index.html', 'robots.txt', 'sitemap.xml'].forEach(file => {
   const src = path.join(projectRoot, file);
   if (fs.existsSync(src)) {
     fs.copyFileSync(src, path.join(distDir, file));
   }
 });
 
-console.log('✅ Build complete: static files and API functions copied to dist/');
+console.log('✅ Build complete: static files copied to dist/');
