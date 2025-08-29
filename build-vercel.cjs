@@ -43,6 +43,11 @@ if (fs.existsSync(pagesDir)) {
   });
 }
 
+// Copy API directory for serverless functions
+const apiDir = path.join(projectRoot, 'api');
+const apiDestDir = path.join(distDir, 'api');
+copyRecursive(apiDir, apiDestDir);
+
 // Copy other static directories
 ['css', 'js', 'images', 'public'].forEach(dir => {
   const srcDir = path.join(projectRoot, dir);
@@ -58,4 +63,4 @@ if (fs.existsSync(pagesDir)) {
   }
 });
 
-console.log('✅ Build complete: static files copied to dist/');
+console.log('✅ Build complete: static files and API functions copied to dist/');
