@@ -1,4 +1,6 @@
 {
+  "buildCommand": "node vercel-build.js",
+  "outputDirectory": "public",
   "framework": null,
   "crons": [
     {
@@ -106,11 +108,11 @@
     },
     {
       "source": "/home",
-      "destination": "/pages/home.html"
+      "destination": "/home.html"
     },
     {
       "source": "/about",
-      "destination": "/pages/about.html"
+      "destination": "/about.html"
     },
     {
       "source": "/boulder-fest-2026/home",
@@ -118,7 +120,7 @@
     },
     {
       "source": "/boulder-fest-2026/about",
-      "destination": "/pages/about.html"
+      "destination": "/about.html"
     },
     {
       "source": "/boulder-fest-2026/donations",
@@ -174,11 +176,11 @@
     },
     {
       "source": "/about-festival",
-      "destination": "/pages/about.html"
+      "destination": "/about.html"
     },
     {
       "source": "/contact",
-      "destination": "/pages/contact.html"
+      "destination": "/contact.html"
     },
     {
       "source": "/donations",
@@ -234,27 +236,27 @@
     },
     {
       "source": "/success",
-      "destination": "/pages/success.html"
+      "destination": "/success.html"
     },
     {
       "source": "/failure",
-      "destination": "/pages/failure.html"
+      "destination": "/failure.html"
     },
     {
       "source": "/my-tickets",
-      "destination": "/pages/my-tickets.html"
+      "destination": "/my-tickets.html"
     },
     {
       "source": "/checkout-success",
-      "destination": "/pages/checkout-success.html"
+      "destination": "/checkout-success.html"
     },
     {
       "source": "/checkout-cancel",
-      "destination": "/pages/checkout-cancel.html"
+      "destination": "/checkout-cancel.html"
     },
     {
       "source": "/admin/checkin",
-      "destination": "/pages/admin/checkin.html"
+      "destination": "/admin/checkin.html"
     },
     {
       "source": "/manifest.json",
@@ -269,17 +271,17 @@
     },
     {
       "source": "/boulder-fest-2025/tickets",
-      "destination": "/pages/tickets.html",
+      "destination": "/tickets.html",
       "permanent": false
     },
     {
       "source": "/boulder-fest-2026/tickets",
-      "destination": "/pages/tickets.html",
+      "destination": "/tickets.html",
       "permanent": false
     },
     {
       "source": "/weekender-2026-09/tickets",
-      "destination": "/pages/tickets.html",
+      "destination": "/tickets.html",
       "permanent": false
     }
   ],
