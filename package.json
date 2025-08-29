@@ -97,10 +97,10 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.28.4",
-    "@babel/preset-env": "^7.28.4",
+    "@babel/core": "^7.28.3",
+    "@babel/preset-env": "^7.28.3",
     "@playwright/test": "^1.49.1",
-    "@vitest/coverage-v8": "^2.2.3",
+    "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.18.0",
     "globals": "^15.14.0",
     "htmlhint": "^1.1.4",
@@ -109,7 +109,7 @@
     "ngrok": "^5.0.0-beta.2",
     "nodemon": "^3.1.10",
     "vercel": "^39.3.0",
-    "vitest": "^2.2.3"
+    "vitest": "^2.1.9"
   },
   "description-features": {
     "architecture": [
