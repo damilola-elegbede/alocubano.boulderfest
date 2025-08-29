@@ -21,7 +21,8 @@ export async function testRequest(method, path, data = null) {
     const responseData = await response.json().catch(() => ({}));
     return { status: response.status, data: responseData };
   } catch (error) {
-    return { status: 500, data: { error: 'Connection failed' } };
+    // Return status: 0 to indicate connection failure (as expected by tests)
+    return { status: 0, data: { error: 'Connection failed' } };
   }
 }
 

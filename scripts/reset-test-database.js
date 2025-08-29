@@ -191,6 +191,99 @@ export const RESET_CONFIG = {
   }
 };
 
+/**
+ * Setup test database for E2E tests
+ * Wrapper function that provides database setup and migration for E2E test compatibility
+ * @param {Object} options - Setup options
+ * @returns {Promise<Object>} Setup result with health information
+ */
+export async function setupTestDatabase(options = {}) {
+  const startTime = Date.now();
+  const mode = options.mode || 'full';
+  
+  console.log('🔄 Setting up test database for E2E tests...');
+  
+  try {
+    // Ensure database is initialized
+    const client = await getDatabaseClient();
+    
+    // Apply any pending migrations first
+    console.log('📦 Checking database migrations...');
+    let migrationsApplied = 0;
+    
+    try {
+      // Check if migrations table exists
+      const migrationTableCheck = await client.execute(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='migrations'
+      `);
+      
+      if (migrationTableCheck.rows.length > 0) {
+        const migrationStatus = await client.execute('SELECT COUNT(*) as count FROM migrations');
+        migrationsApplied = migrationStatus.rows[0]?.count || 0;
+        console.log(`  ✅ Found ${migrationsApplied} applied migrations`);
+      } else {
+        console.log('  ℹ️  No migrations table found (fresh database)');
+      }
+    } catch (error) {
+      console.warn('  ⚠️  Could not check migrations:', error.message);
+    }
+    
+    // Perform database reset for clean test state
+    console.log('🧹 Resetting database to clean state...');
+    const resetResult = await resetTestDatabase(mode);
+    
+    // Get table count for health check
+    let tableCount = 0;
+    try {
+      const tablesResult = await client.execute(`
+        SELECT COUNT(*) as count FROM sqlite_master 
+        WHERE type='table' 
+        AND name NOT LIKE 'sqlite_%'
+      `);
+      tableCount = tablesResult.rows[0]?.count || 0;
+    } catch (error) {
+      console.warn('  ⚠️  Could not count tables:', error.message);
+    }
+    
+    const duration = Date.now() - startTime;
+    
+    const result = {
+      success: true,
+      mode,
+      duration,
+      health: {
+        tableCount,
+        migrationsApplied,
+        databaseType: process.env.TURSO_DATABASE_URL ? 'turso' : 'sqlite',
+        resetRecords: resetResult.recordsCleaned
+      },
+      resetResult
+    };
+    
+    console.log(`✅ Test database setup complete (${duration}ms)`);
+    return result;
+    
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error(`❌ Test database setup failed (${duration}ms):`, error.message);
+    
+    // Return partial result for debugging
+    return {
+      success: false,
+      mode,
+      duration,
+      error: error.message,
+      health: {
+        tableCount: 0,
+        migrationsApplied: 0,
+        databaseType: process.env.TURSO_DATABASE_URL ? 'turso' : 'sqlite',
+        resetRecords: 0
+      }
+    };
+  }
+}
+
 // CLI execution
 if (import.meta.url === `file://${process.argv[1]}`) {
   const mode = process.argv[2] || 'soft';

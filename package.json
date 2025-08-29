@@ -17,6 +17,8 @@
     "test": "npm run test:simple",
     "test:simple": "vitest run --config tests/vitest.config.js",
     "test:simple:watch": "vitest --config tests/vitest.config.js",
+    "test:ci": "node scripts/run-unit-tests-with-mock.js",
+    "test:coverage": "vitest run --coverage --config tests/vitest.config.js",
     "test:health": "node scripts/test-health-endpoint.js",
     "test:smoke": "npm run test:health",
     "test:all": "npm run test:simple && npm run test:e2e",

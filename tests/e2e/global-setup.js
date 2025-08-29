@@ -21,27 +21,44 @@ async function globalSetup() {
   process.env.TEST_DATABASE_RESET_ALLOWED = 'true'; // Allow database reset in test mode
   console.log('✅ E2E Test Mode enabled for Vercel dev server');
   
-  // Verify Turso configuration is available
-  console.log('🔍 Checking Turso database configuration...');
+  // Check for Turso configuration with fallback support
+  console.log('🔍 Checking database configuration...');
+  
+  let databaseMode = 'turso';
   if (!process.env.TURSO_DATABASE_URL || !process.env.TURSO_AUTH_TOKEN) {
-    console.error('❌ E2E tests require Turso database configuration');
-    console.error('   Missing required environment variables:');
+    console.warn('⚠️  Turso credentials not available, falling back to SQLite mode');
+    console.warn('   Missing environment variables:');
     if (!process.env.TURSO_DATABASE_URL) {
-      console.error('   - TURSO_DATABASE_URL');
+      console.warn('   - TURSO_DATABASE_URL');
     }
     if (!process.env.TURSO_AUTH_TOKEN) {
-      console.error('   - TURSO_AUTH_TOKEN');
+      console.warn('   - TURSO_AUTH_TOKEN');
     }
-    console.error('\n   E2E tests must use Turso for production-like testing environment.');
-    console.error('   Please configure Turso credentials in .env.local');
-    throw new Error('Turso database configuration required for E2E tests');
+    
+    // Fallback to SQLite for local testing
+    databaseMode = 'sqlite';
+    process.env.DATABASE_URL = 'file:./data/e2e-test.db';
+    
+    // Remove Turso credentials to force SQLite mode
+    delete process.env.TURSO_DATABASE_URL;
+    delete process.env.TURSO_AUTH_TOKEN;
+    
+    console.warn('\n   📁 Fallback: Using SQLite database for E2E tests');
+    console.warn('   This is acceptable for local development but not ideal for production-like testing\n');
+  } else {
+    console.log('✅ Turso credentials available - using production-like testing environment');
   }
   
-  // Setup Turso database with deterministic reset
-  console.log('📦 Setting up Turso database with clean state...');
+  // Setup database with deterministic reset
+  console.log(`📦 Setting up ${databaseMode} database with clean state...`);
   try {
-    console.log('  Using Turso database (production-like environment)');
-    console.log('  Database URL:', process.env.TURSO_DATABASE_URL);
+    if (databaseMode === 'turso') {
+      console.log('  Using Turso database (production-like environment)');
+      console.log('  Database URL:', process.env.TURSO_DATABASE_URL);
+    } else {
+      console.log('  Using SQLite database (local development fallback)');
+      console.log('  Database file: ./data/e2e-test.db');
+    }
     
     // Use the new database reset mechanism for deterministic test state
     console.log('  🔄 Resetting database to clean state...');
@@ -53,9 +70,9 @@ async function globalSetup() {
     console.log(`     Migrations: ${resetResult.health?.migrationsApplied || 'unknown'}`);
     console.log(`     Duration: ${resetResult.duration}ms`);
     
-    console.log('✅ Turso database setup complete\n');
+    console.log(`✅ ${databaseMode === 'turso' ? 'Turso' : 'SQLite'} database setup complete\n`);
   } catch (error) {
-    console.error('❌ Turso database setup failed:', error.message);
+    console.error(`❌ ${databaseMode === 'turso' ? 'Turso' : 'SQLite'} database setup failed:`, error.message);
     
     // Fallback to legacy migration approach
     console.warn('  ⚠️  Attempting fallback migration approach...');

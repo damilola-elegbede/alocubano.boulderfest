@@ -98,10 +98,11 @@ jobs:
           echo "✅ SQLite database directory created"
 
       - name: 🧪 Run Unit Tests
-        run: npm run test
+        run: npm run test:ci
         env:
           NODE_ENV: test
           DATABASE_URL: "file:./data/test.db"
+          CI_PORT: 3000
 
       - name: 📊 Generate Coverage Report
         if: always()

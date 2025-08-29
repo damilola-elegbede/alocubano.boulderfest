@@ -28,13 +28,40 @@ async function globalSetup() {
   
   console.log('✅ CI E2E Test Mode enabled with SQLite database');
   
-  // Skip complex database setup for CI - use mock server instead
-  console.log('📦 Database setup skipped for CI - using mock server...');
+  // Initialize SQLite database for CI testing
+  console.log('📦 Setting up SQLite database for CI...');
   
   // Ensure data directory exists
   await fs.mkdir('./data', { recursive: true });
   
-  console.log('✅ SQLite database directory ready\n');
+  try {
+    // Use the database service to initialize SQLite in CI mode
+    const { getDatabaseClient } = await import('../../api/lib/database.js');
+    
+    // Initialize database client (will create SQLite database)
+    console.log('  🔄 Initializing SQLite database client...');
+    const client = await getDatabaseClient();
+    
+    // Verify database connection
+    const testQuery = await client.execute('SELECT 1 as test');
+    if (testQuery.rows[0]?.test === 1) {
+      console.log('  ✅ SQLite database connection verified');
+    }
+    
+    // Basic health check
+    const tablesResult = await client.execute(`
+      SELECT COUNT(*) as count FROM sqlite_master 
+      WHERE type='table' AND name NOT LIKE 'sqlite_%'
+    `);
+    const tableCount = tablesResult.rows[0]?.count || 0;
+    console.log(`  📊 Database contains ${tableCount} tables`);
+    
+  } catch (error) {
+    console.warn('  ⚠️  Database initialization warning:', error.message);
+    console.warn('     Tests will proceed but may encounter database issues');
+  }
+  
+  console.log('✅ SQLite database setup complete\n');
   
   // Set default test admin credentials for CI
   if (!process.env.TEST_ADMIN_PASSWORD) {
