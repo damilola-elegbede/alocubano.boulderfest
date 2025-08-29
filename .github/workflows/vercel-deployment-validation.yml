@@ -65,7 +65,8 @@ jobs:
       - name: 🏥 Health Check Validation
         run: |
           DEPLOYMENT_URL="${{ steps.url.outputs.deployment_url }}"
-          HEALTH_URL="${DEPLOYMENT_URL}/api/health/check"
+          # Use deployment mode for health check to avoid external service dependencies
+          HEALTH_URL="${DEPLOYMENT_URL}/api/health/check?deployment=true"
           
           echo "🏥 Validating deployment health..."
           echo "Health URL: $HEALTH_URL"
@@ -80,6 +81,15 @@ jobs:
               # Get detailed health information
               HEALTH_RESPONSE=$(curl -s "$HEALTH_URL" || echo "Could not fetch health details")
               echo "Health response: $HEALTH_RESPONSE"
+              
+              # Check for configuration warnings
+              if echo "$HEALTH_RESPONSE" | grep -q '"missing_variables":\[\]'; then
+                echo "✅ All environment variables configured"
+              else
+                echo "⚠️ Some environment variables are not configured"
+                echo "This is expected for preview deployments"
+              fi
+              
               break
             fi
             
@@ -94,12 +104,12 @@ jobs:
             sleep 10
           done
 
-      - name: 🗃️ Database Health Validation
+      - name: 🗃️ Database Health Validation (Optional)
         run: |
           DEPLOYMENT_URL="${{ steps.url.outputs.deployment_url }}"
           DB_HEALTH_URL="${DEPLOYMENT_URL}/api/health/database"
           
-          echo "🗃️ Validating database health..."
+          echo "🗃️ Checking database health (optional for preview deployments)..."
           echo "Database health URL: $DB_HEALTH_URL"
           
           if curl -f -s --connect-timeout 30 --max-time 60 "$DB_HEALTH_URL" > /dev/null; then
@@ -109,9 +119,16 @@ jobs:
             DB_HEALTH_RESPONSE=$(curl -s "$DB_HEALTH_URL" || echo "Could not fetch database health details")
             echo "Database health response: $DB_HEALTH_RESPONSE"
           else
-            echo "⚠️ Database health check failed (may be expected for some deployments)"
-            echo "Attempting to get error details:"
-            curl -v --connect-timeout 30 --max-time 60 "$DB_HEALTH_URL" || true
+            echo "⚠️ Database health check failed or not configured"
+            echo "This is expected for preview deployments without TURSO_DATABASE_URL"
+            echo "Production deployments should have database configured"
+            
+            # Don't fail the workflow for database health in preview environments
+            if [[ "$DEPLOYMENT_URL" == *"vercel.app"* ]] && [[ "$DEPLOYMENT_URL" != *"alocubanoboulderfest.vercel.app"* ]]; then
+              echo "ℹ️ Preview deployment detected - database not required"
+            else
+              echo "⚠️ Production deployment may need database configuration"
+            fi
           fi
 
       - name: 🔗 API Endpoint Validation
@@ -120,9 +137,9 @@ jobs:
           
           echo "🔗 Validating critical API endpoints..."
           
-          # Test critical endpoints
+          # Test critical endpoints that don't require external services
           ENDPOINTS=(
-            "/api/health/check"
+            "/api/health/check?deployment=true"
             "/api/gallery"
             "/api/featured-photos"
           )
@@ -196,11 +213,20 @@ jobs:
           
           echo "## Validation Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Health Check**: Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Health Check**: Passed (deployment mode)" >> $GITHUB_STEP_SUMMARY
+          echo "- ℹ️ **Database**: Optional for preview deployments" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ **API Endpoints**: Core endpoints validated" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ **Static Assets**: Asset delivery validated" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
+          if [[ "$DEPLOYMENT_URL" == *"vercel.app"* ]] && [[ "$DEPLOYMENT_URL" != *"alocubanoboulderfest.vercel.app"* ]]; then
+            echo "**Deployment Type**: Preview" >> $GITHUB_STEP_SUMMARY
+            echo "**Note**: Some features may be limited without full environment configuration" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Deployment Type**: Production" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Overall Status**: ✅ Deployment validation successful" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Next Steps**: Deployment is ready for use" >> $GITHUB_STEP_SUMMARY
@@ -229,10 +255,10 @@ jobs:
           echo "⚡ Running performance smoke test..."
           echo "Target: $DEPLOYMENT_URL"
           
-          # Simple response time check
+          # Simple response time check using deployment mode
           start_time=$(date +%s%N)
           
-          if curl -f -s --connect-timeout 30 --max-time 60 "${DEPLOYMENT_URL}/api/health/check" > /dev/null; then
+          if curl -f -s --connect-timeout 30 --max-time 60 "${DEPLOYMENT_URL}/api/health/check?deployment=true" > /dev/null; then
             end_time=$(date +%s%N)
             response_time=$(( (end_time - start_time) / 1000000 )) # Convert to milliseconds
             

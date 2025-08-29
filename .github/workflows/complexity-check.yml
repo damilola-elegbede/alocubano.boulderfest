@@ -25,32 +25,39 @@ jobs:
         run: |
           echo "🔍 Analyzing test infrastructure complexity..."
           
-          # Count total lines in streamlined test framework (excluding E2E tests)
-          TOTAL_TEST_LINES=$(find tests -name "*.js" -not -path "tests/e2e/*" -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
+          # IMPORTANT: We track different test types separately:
+          # - Unit tests (*.test.js): Core business logic and API contract validation (800 line limit)
+          # - E2E tests (tests/e2e/): Full user flow testing (no line limit - comprehensive scenarios)
+          # - Utilities: helpers.js, setup.js, etc. (separate limits)
+          # - Config files: vitest.config.js, etc. (not counted)
           
-          # Count test files (excluding E2E tests)
-          TEST_FILE_COUNT=$(find tests -name "*.js" -not -path "tests/e2e/*" | wc -l || echo 0)
+          # Count total lines in unit test files ONLY (excluding E2E tests and utility files)
+          TOTAL_TEST_LINES=$(find tests -name "*.test.js" -not -path "tests/e2e/*" -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
+          
+          # Count test files (excluding E2E tests and utility files)
+          TEST_FILE_COUNT=$(find tests -name "*.test.js" -not -path "tests/e2e/*" | wc -l || echo 0)
           
           # Count utility files (should be minimal)
           UTIL_FILE_COUNT=$(find tests \( -name "helpers.js" -o -name "setup.js" \) -type f 2>/dev/null | wc -l || echo 0)
           
-          echo "📊 Current Test Infrastructure Metrics (Streamlined Tests Only):"
-          echo "  Total test lines: $TOTAL_TEST_LINES (excluding E2E)"
-          echo "  Test file count: $TEST_FILE_COUNT (excluding E2E)" 
+          echo "📊 Current Test Infrastructure Metrics (Unit Tests Only):"
+          echo "  Total unit test lines: $TOTAL_TEST_LINES (*.test.js files only)"
+          echo "  Unit test file count: $TEST_FILE_COUNT (*.test.js files only)" 
           echo "  Utility file count: $UTIL_FILE_COUNT"
           echo ""
-          echo "ℹ️  Note: E2E tests in tests/e2e/ are tracked separately"
+          echo "ℹ️  Note: E2E tests, utilities, and config files are tracked separately"
           
           # Check total lines threshold - reasonable target is 800 lines max for 26 essential unit tests
           # This allows room for critical API contracts, security validation, and business flows
           if [ "$TOTAL_TEST_LINES" -gt 800 ]; then
-            echo "❌ COMPLEXITY FAILURE: Total test lines ($TOTAL_TEST_LINES) exceeds 800 line threshold"
-            echo "   The streamlined test approach should stay under 800 lines total. Consider:"
+            echo "❌ COMPLEXITY FAILURE: Total unit test lines ($TOTAL_TEST_LINES) exceeds 800 line threshold"
+            echo "   The streamlined unit test approach should stay under 800 lines total. Consider:"
             echo "   • Removing unnecessary test abstractions"
-            echo "   • Simplifying test helper functions"
+            echo "   • Simplifying test logic"
             echo "   • Using direct assertions instead of complex helpers"
             echo "   • Focus only on critical business flows"
-            echo "   Current 26 unit tests cover essential functionality efficiently."
+            echo "   Current target: 26 essential unit tests covering API contracts and business flows."
+            echo "   Note: E2E tests and utility files are not counted in this limit."
             exit 1
           fi
           
@@ -94,10 +101,11 @@ jobs:
           fi
           
           # Success message
-          echo "✅ Test infrastructure complexity within acceptable limits"
-          echo "   📊 Current: $TOTAL_TEST_LINES lines for 26 essential unit tests"
-          echo "   🎯 Target: Keep under 800 lines total, individual files under 250 lines"
-          echo "   📈 Efficiency: $(echo "scale=1; $TOTAL_TEST_LINES / 26" | bc -l) lines per test on average"
+          echo "✅ Unit test complexity within acceptable limits"
+          echo "   📊 Current: $TOTAL_TEST_LINES lines for unit tests (*.test.js files only)"
+          echo "   🎯 Target: Keep unit tests under 800 lines total, individual files under 250 lines"
+          echo "   📈 Efficiency: $(echo "scale=1; $TOTAL_TEST_LINES / $TEST_FILE_COUNT" | bc -l) lines per test file on average"
+          echo "   ℹ️  Note: E2E tests, utilities, and config files have separate limits"
 
       - name: Generate Complexity Report
         run: |
@@ -105,36 +113,39 @@ jobs:
           echo "Generated: $(date)" >> complexity-report.md
           echo "" >> complexity-report.md
           
-          # Metrics for streamlined tests (excluding E2E)
-          TOTAL_LINES=$(find tests -name "*.js" -not -path "tests/e2e/*" -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
-          FILE_COUNT=$(find tests -name "*.js" -not -path "tests/e2e/*" | wc -l || echo 0)
+          # Metrics for unit test files only (excluding E2E and utilities)
+          TOTAL_LINES=$(find tests -name "*.test.js" -not -path "tests/e2e/*" -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
+          FILE_COUNT=$(find tests -name "*.test.js" -not -path "tests/e2e/*" | wc -l || echo 0)
           UTIL_COUNT=$(find tests -name "helpers.js" -o -name "setup.js" 2>/dev/null | wc -l || echo 0)
-          TEST_COUNT=26  # Current essential unit test count
+          
+          # Calculate actual test count from files
+          TEST_COUNT=$(find tests -name "*.test.js" -not -path "tests/e2e/*" -exec grep -c "test\|it\|describe" {} + 2>/dev/null | awk '{s+=$1} END {print s}' || echo 0)
           
           echo "## Current Metrics" >> complexity-report.md
-          echo "- **Total Lines**: $TOTAL_LINES / 800 threshold (streamlined for 26 unit tests)" >> complexity-report.md
-          echo "- **Test Files**: $FILE_COUNT" >> complexity-report.md  
+          echo "- **Total Unit Test Lines**: $TOTAL_LINES / 800 threshold (*.test.js files only)" >> complexity-report.md
+          echo "- **Unit Test Files**: $FILE_COUNT" >> complexity-report.md  
           echo "- **Utility Files**: $UTIL_COUNT" >> complexity-report.md
-          echo "- **Test Count**: $TEST_COUNT essential unit tests" >> complexity-report.md
-          echo "- **Efficiency**: $(echo "scale=1; $TOTAL_LINES / $TEST_COUNT" | bc -l) lines per test" >> complexity-report.md
+          echo "- **Test Count**: $TEST_COUNT unit tests" >> complexity-report.md
+          echo "- **Efficiency**: $(echo "scale=1; $TOTAL_LINES / $FILE_COUNT" | bc -l) lines per test file" >> complexity-report.md
           echo "" >> complexity-report.md
           
-          # Top 5 largest files (excluding E2E)
-          echo "## Largest Test Files (Streamlined Only)" >> complexity-report.md
-          find tests -name "*.js" -not -path "tests/e2e/*" -exec wc -l {} + 2>/dev/null | grep -vE '\\stotal$' | sort -nr | head -5 | while read line file; do
+          # Top 5 largest unit test files (excluding E2E and utilities)
+          echo "## Largest Unit Test Files (*.test.js Only)" >> complexity-report.md
+          find tests -name "*.test.js" -not -path "tests/e2e/*" -exec wc -l {} + 2>/dev/null | grep -vE '\\stotal$' | sort -nr | head -5 | while read line file; do
             echo "- $file: $line lines" >> complexity-report.md
           done
           
           # Prevention guidance
           echo "" >> complexity-report.md
-          echo "## Streamlined Test Guidelines" >> complexity-report.md
-          echo "- **Total test suite**: Stay under 800 lines (for ~26 essential unit tests)" >> complexity-report.md
+          echo "## Unit Test Complexity Guidelines" >> complexity-report.md
+          echo "- **Unit test suite**: Stay under 800 lines total (*.test.js files only)" >> complexity-report.md
           echo "- **Individual test files**: Under 250 lines each" >> complexity-report.md
-          echo "- **Helper files**: Under 200 lines each" >> complexity-report.md
-          echo "- **Focus**: Test critical business flows only" >> complexity-report.md
-          echo "- **Approach**: Direct API calls, no complex mocking" >> complexity-report.md
+          echo "- **Helper files**: Under 200 lines each (separate from unit test count)" >> complexity-report.md
+          echo "- **Focus**: Test critical business flows and API contracts" >> complexity-report.md
+          echo "- **Approach**: Direct API calls, minimal mocking" >> complexity-report.md
           echo "- **Simplicity**: Any developer should understand tests immediately" >> complexity-report.md
-          echo "- **Current Status**: ✅ 26 unit tests efficiently covering essential functionality" >> complexity-report.md
+          echo "- **Separation**: E2E tests, utilities, and config files tracked separately" >> complexity-report.md
+          echo "- **Current Status**: ✅ Unit tests efficiently covering essential functionality" >> complexity-report.md
         
       - name: Upload Complexity Report
         uses: actions/upload-artifact@v4

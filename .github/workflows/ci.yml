@@ -167,65 +167,20 @@ jobs:
           ENVIRONMENT=ci-test
           CI_PORT=3000
           PORT=3000
+          SKIP_DATABASE_INIT=true
+          CI_ENVIRONMENT=true
           # API credentials for E2E tests
           STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }}
           BREVO_API_KEY=${{ secrets.BREVO_API_KEY }}
           ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
           ADMIN_SECRET=${{ secrets.ADMIN_SECRET }}
+          TEST_ADMIN_PASSWORD=test-password
           EOF
           echo "✅ Environment variables configured with SQLite database"
 
-      # Database setup removed - SQLite auto-initializes via database service
-      # The database service handles SQLite creation automatically when Turso credentials are not available
-      # No manual setup required for CI environment
-
-      - name: 🚀 Start Vercel Dev Server
-        run: |
-          echo "🚀 Starting Vercel dev server..."
-          vercel dev --yes --listen 3000 &
-          SERVER_PID=$!
-          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
-          echo "Started Vercel dev server with PID: $SERVER_PID"
-          
-          # Enhanced health check with retry logic
-          echo "⏳ Waiting for Vercel dev server to be ready..."
-          MAX_RETRIES=60
-          RETRY_INTERVAL=2
-          
-          for i in $(seq 1 $MAX_RETRIES); do
-            echo "  Attempt $i/$MAX_RETRIES..."
-            
-            # Check if server is responding
-            if curl -f -s http://localhost:3000/api/health/check >/dev/null 2>&1; then
-              echo "✅ Vercel dev server ready after $(($i * $RETRY_INTERVAL))s"
-              
-              # Verify API endpoints
-              echo "🔍 Verifying API endpoints..."
-              curl -f http://localhost:3000/api/health/check | jq '.' || true
-              curl -f http://localhost:3000/api/gallery >/dev/null && echo "  ✅ Gallery API" || echo "  ⚠️  Gallery API not ready"
-              curl -f http://localhost:3000/api/featured-photos >/dev/null && echo "  ✅ Featured Photos API" || echo "  ⚠️  Featured Photos API not ready"
-              
-              break
-            fi
-            
-            if [ $i -eq $MAX_RETRIES ]; then
-              echo "❌ Vercel dev server failed to start within $(($MAX_RETRIES * $RETRY_INTERVAL)) seconds"
-              
-              # Debug information
-              echo "🔍 Debug information:"
-              ps aux | grep vercel || true
-              netstat -tulpn | grep :3000 || true
-              curl -v http://localhost:3000/api/health/check || true
-              
-              exit 1
-            fi
-            
-            sleep $RETRY_INTERVAL
-          done
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      # Note: The Playwright config will automatically start the server via webServer configuration
+      # No manual server startup needed - Playwright handles it
 
       - name: 🎭 Run E2E Tests
         run: npm run test:e2e:ci -- --project=${{ matrix.browser }}
@@ -235,6 +190,8 @@ jobs:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
           DATABASE_URL: "file:./data/e2e-test.db"
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: 📤 Upload E2E Test Results
         if: always()
@@ -263,17 +220,10 @@ jobs:
             fi
           fi
 
-      - name: 🧹 Cleanup Vercel Dev Server
+      - name: 🧹 Cleanup Processes
         if: always()
         run: |
-          echo "🧹 Cleaning up Vercel dev server..."
-          
-          if [ -n "${SERVER_PID:-}" ]; then
-            echo "Stopping server PID: $SERVER_PID"
-            kill $SERVER_PID || true
-            sleep 3
-            kill -9 $SERVER_PID 2>/dev/null || true
-          fi
+          echo "🧹 Cleaning up any lingering processes..."
           
           # Cleanup any remaining processes on port 3000
           echo "Cleaning up port 3000..."
@@ -282,11 +232,9 @@ jobs:
           # Cleanup Vercel processes
           pkill -f "vercel dev" || true
           pkill -f "next-server" || true
+          pkill -f "vercel-dev" || true
           
           echo "✅ Cleanup completed"
-
-      # Database cleanup removed - SQLite database is ephemeral in CI environment
-      # No cleanup needed as the CI runner is destroyed after job completion
 
   # Health Check with Vercel Dev
   health-check:
@@ -313,16 +261,22 @@ jobs:
 
       - name: 🔧 Configure Environment Variables
         run: |
+          mkdir -p data
           cat > .env.local << EOF
           NODE_ENV=test
           E2E_TEST_MODE=true
           PORT=3000
+          SKIP_DATABASE_INIT=true
+          CI_ENVIRONMENT=true
+          DATABASE_URL="file:./data/health-test.db"
+          TEST_ADMIN_PASSWORD=test-password
           EOF
 
       - name: 🚀 Start Vercel Dev Server
         run: |
           echo "🚀 Starting Vercel dev server for health check..."
-          vercel dev --yes --listen 3000 &
+          # Use the wrapper script for proper initialization
+          node scripts/vercel-dev-wrapper.js &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           
