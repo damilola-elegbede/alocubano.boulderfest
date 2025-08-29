@@ -100,7 +100,17 @@ export default defineConfig({
     ] : []),
   ],
 
-  // Use external webServer for CI (started by CI workflow)
-  // This allows the CI to manage the server lifecycle
-  webServer: undefined,
+  // Web server configuration for CI
+  webServer: {
+    command: 'node scripts/vercel-dev-wrapper.js',
+    port: 3000,
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000, // 2 minutes startup timeout
+    env: {
+      NODE_ENV: 'test',
+      PORT: '3000',
+      SKIP_DATABASE_INIT: 'true',
+      CI_ENVIRONMENT: 'true'
+    }
+  },
 });

@@ -1,85 +1,10 @@
 /**
- * Global setup for E2E tests in CI environment
- * Uses SQLite database instead of Turso for faster, more reliable CI testing
- * Optimized for GitHub Actions with minimal external dependencies
+ * CI E2E global setup - minimal configuration
  */
-
 import { config } from 'dotenv';
-import { promises as fs } from 'fs';
+config({ path: '.env.local' });
 
-async function globalSetup() {
-  console.log('\n🚀 E2E Global Setup Starting (CI Environment - SQLite)...\n');
-  
-  // Load environment variables
-  config({ path: '.env.local' });
-  
-  // Set E2E test mode for CI compatibility
+export default async function() {
   process.env.E2E_TEST_MODE = 'true';
-  process.env.NODE_ENV = 'test';
-  process.env.TEST_DATABASE_RESET_ALLOWED = 'true';
-  
-  // Use SQLite for CI testing (faster and more reliable than external database)
-  if (process.env.CI) {
-    process.env.DATABASE_URL = 'file:./data/e2e-test.db';
-    // Don't require Turso credentials in CI
-    delete process.env.TURSO_DATABASE_URL;
-    delete process.env.TURSO_AUTH_TOKEN;
-  }
-  
-  console.log('✅ CI E2E Test Mode enabled with SQLite database');
-  
-  // Initialize SQLite database for CI testing
-  console.log('📦 Setting up SQLite database for CI...');
-  
-  // Ensure data directory exists
-  await fs.mkdir('./data', { recursive: true });
-  
-  try {
-    // Use the database service to initialize SQLite in CI mode
-    const { getDatabaseClient } = await import('../../api/lib/database.js');
-    
-    // Initialize database client (will create SQLite database)
-    console.log('  🔄 Initializing SQLite database client...');
-    const client = await getDatabaseClient();
-    
-    // Verify database connection
-    const testQuery = await client.execute('SELECT 1 as test');
-    if (testQuery.rows[0]?.test === 1) {
-      console.log('  ✅ SQLite database connection verified');
-    }
-    
-    // Basic health check
-    const tablesResult = await client.execute(`
-      SELECT COUNT(*) as count FROM sqlite_master 
-      WHERE type='table' AND name NOT LIKE 'sqlite_%'
-    `);
-    const tableCount = tablesResult.rows[0]?.count || 0;
-    console.log(`  📊 Database contains ${tableCount} tables`);
-    
-  } catch (error) {
-    console.warn('  ⚠️  Database initialization warning:', error.message);
-    console.warn('     Tests will proceed but may encounter database issues');
-  }
-  
-  console.log('✅ SQLite database setup complete\n');
-  
-  // Set default test admin credentials for CI
-  if (!process.env.TEST_ADMIN_PASSWORD) {
-    process.env.TEST_ADMIN_PASSWORD = 'test-admin-password';
-  }
-  if (!process.env.ADMIN_SECRET) {
-    process.env.ADMIN_SECRET = 'test-admin-secret-key-minimum-32-characters';
-  }
-  
-  // Log service configuration for CI debugging
-  console.log('📋 CI Service Configuration:');
-  console.log('  🔐 Admin authentication: Mock credentials set');
-  console.log('  📧 Email service: Mock mode (no external API calls)');
-  console.log('  💳 Payment service: Mock mode (no Stripe calls)');
-  console.log('  🗄️  Database: SQLite (CI-optimized)');
-  console.log('  🌐 External services: Mocked for reliability\n');
-  
-  console.log('✨ CI E2E Global Setup Complete\n');
+  process.env.DATABASE_URL = 'file:./data/e2e-test.db';
 }
-
-export default globalSetup;

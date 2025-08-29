@@ -1,7 +1,7 @@
 // CI Mock Server - Lightweight server for unit tests
 import http from 'http';
 
-const PORT = process.env.CI_PORT || process.env.PORT || 3000;
+const PORT = process.env.CI_PORT || process.env.PORT || 3001;
 
 // Mock responses for all endpoints used by unit tests
 const mockResponses = {
@@ -340,6 +340,7 @@ const server = http.createServer(handleRequest);
 server.listen(PORT, () => {
   console.log(`🚀 CI Mock Server running on port ${PORT}`);
   console.log(`📋 Available endpoints: ${Object.keys(mockResponses).length}`);
+  console.log(`🌐 Server URL: http://localhost:${PORT}`);
 });
 
 // Handle graceful shutdown

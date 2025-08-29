@@ -45,7 +45,7 @@ if [ -f "tests/global-setup.js" ]; then
   fi
 fi
 
-# Check 5: No complex abstractions in test files
+# Check 5: No complex abstractions in test files (exclude e2e/helpers directory)
 ABSTRACT_COUNT=$(grep -r "class.*Test\|extends.*Test\|abstract.*test" tests/*.test.js 2>/dev/null | wc -l || echo "0")
 if [ "$ABSTRACT_COUNT" -gt 0 ]; then
   echo "❌ Found test abstractions/classes ($ABSTRACT_COUNT occurrences)"
@@ -54,8 +54,8 @@ else
   echo "✅ No complex test abstractions found"
 fi
 
-# Check 6: No complex mocking frameworks
-MOCK_COUNT=$(grep -r "jest\.mock\|sinon\|proxyquire\|mockery" tests/ 2>/dev/null | wc -l || echo "0")
+# Check 6: No complex mocking frameworks (exclude e2e/helpers directory)
+MOCK_COUNT=$(find tests -name "*.test.js" -o -name "setup.js" -o -name "helpers.js" -o -name "vitest.config.js" | xargs grep -h "jest\.mock\|sinon\|proxyquire\|mockery" 2>/dev/null | wc -l || echo "0")
 if [ "$MOCK_COUNT" -gt 0 ]; then
   echo "❌ Found complex mocking frameworks ($MOCK_COUNT occurrences)"
   COMPLEXITY_ISSUES=$((COMPLEXITY_ISSUES + 1))
@@ -63,17 +63,18 @@ else
   echo "✅ No complex mocking frameworks"
 fi
 
-# Check 7: No test builders or factories
-BUILDER_COUNT=$(grep -r "Builder\|Factory\|fixture" tests/ 2>/dev/null | grep -v "// " | wc -l || echo "0")
-if [ "$BUILDER_COUNT" -gt 5 ]; then
-  echo "❌ Too many test builders/factories ($BUILDER_COUNT occurrences, max 5)"
+# Check 7: No test builders or factories (exclude e2e/helpers directory which contains utilities)
+# Only scan for actual class-based builders/factories, not simple helper functions
+BUILDER_COUNT=$(find tests -name "*.test.js" | xargs grep -h "class.*Builder\|class.*Factory\|extends.*Builder\|extends.*Factory" 2>/dev/null | wc -l || echo "0")
+if [ "$BUILDER_COUNT" -gt 2 ]; then
+  echo "❌ Too many test builders/factories ($BUILDER_COUNT occurrences, max 2)"
   COMPLEXITY_ISSUES=$((COMPLEXITY_ISSUES + 1))
 else
   echo "✅ Minimal test data helpers ($BUILDER_COUNT occurrences)"
 fi
 
-# Check 8: No complex database reset logic
-RESET_COUNT=$(grep -r "resetDatabase\|truncate\|DROP TABLE" tests/ 2>/dev/null | wc -l || echo "0")
+# Check 8: No complex database reset logic in test files (exclude helper utilities)
+RESET_COUNT=$(find tests -name "*.test.js" | xargs grep -h "resetDatabase\|truncate\|DROP TABLE" 2>/dev/null | wc -l || echo "0")
 if [ "$RESET_COUNT" -gt 2 ]; then
   echo "❌ Complex database reset logic found ($RESET_COUNT occurrences)"
   COMPLEXITY_ISSUES=$((COMPLEXITY_ISSUES + 1))

@@ -41,7 +41,7 @@ const waitForServer = async (port, maxRetries = 20, interval = 500) => {
 };
 
 async function runTestsWithMockServer() {
-  const port = process.env.CI_PORT || process.env.PORT || '3000';
+  const port = process.env.CI_PORT || process.env.PORT || '3001';
   
   console.log('🚀 Starting unit tests with mock server...');
   console.log(`📋 Target port: ${port}`);

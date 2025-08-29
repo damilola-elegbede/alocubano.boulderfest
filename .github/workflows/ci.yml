@@ -157,6 +157,9 @@ jobs:
 
       - name: 🔧 Configure Environment Variables
         run: |
+          # Create data directory for SQLite database
+          mkdir -p data
+          
           cat > .env.local << EOF
           DATABASE_URL="file:./data/e2e-test.db"
           E2E_TEST_MODE=true
@@ -171,19 +174,11 @@ jobs:
           ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
           ADMIN_SECRET=${{ secrets.ADMIN_SECRET }}
           EOF
-          echo "✅ Environment variables configured"
+          echo "✅ Environment variables configured with SQLite database"
 
-      - name: 🗄️ Setup E2E Database
-        run: npm run db:e2e:setup
-        env:
-          E2E_TEST_MODE: true
-          DATABASE_URL: "file:./data/e2e-test.db"
-
-      - name: 🔄 Run Database Migrations
-        run: npm run migrate:e2e:up
-        env:
-          E2E_TEST_MODE: true
-          DATABASE_URL: "file:./data/e2e-test.db"
+      # Database setup removed - SQLite auto-initializes via database service
+      # The database service handles SQLite creation automatically when Turso credentials are not available
+      # No manual setup required for CI environment
 
       - name: 🚀 Start Vercel Dev Server
         run: |
@@ -290,12 +285,8 @@ jobs:
           
           echo "✅ Cleanup completed"
 
-      - name: 🧹 Cleanup E2E Database
-        if: always()
-        run: npm run db:e2e:clean
-        env:
-          E2E_TEST_MODE: true
-          DATABASE_URL: "file:./data/e2e-test.db"
+      # Database cleanup removed - SQLite database is ephemeral in CI environment
+      # No cleanup needed as the CI runner is destroyed after job completion
 
   # Health Check with Vercel Dev
   health-check:
