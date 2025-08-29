@@ -4,6 +4,13 @@ name: 🚀 Main CI Pipeline
 # Primary CI workflow for A Lo Cubano Boulder Fest
 # Streamlined pipeline with unit tests (SQLite) and E2E tests (Vercel dev + Turso)
 # Features: Vercel dev server for E2E, comprehensive coverage, DevOps best practices
+#
+# NPM Optimizations Applied:
+# - Aggressive dependency caching with maxsockets=10, fetch-retries=3, 60s timeout
+# - Playwright browser caching to avoid repeated downloads
+# - prefer-offline mode to use cached packages when possible
+# - Disabled audit/fund/progress for faster installation
+# - Optimized for CI environment with /tmp/npm-cache
 
 on:
   push:
@@ -60,7 +67,20 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 📦 Install Dependencies
+      - name: ⚙️ Optimize NPM Configuration
+        run: |
+          # Apply NPM CI optimizations for faster dependency installation
+          npm config set maxsockets 10
+          npm config set fetch-retries 3
+          npm config set fetch-timeout 60000
+          npm config set prefer-offline true
+          npm config set no-audit true
+          npm config set no-fund true
+          npm config set progress false
+          npm config set loglevel warn
+          echo "✅ NPM CI optimizations applied"
+
+      - name: 📦 Install Dependencies (Optimized)
         run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: 🔍 Run ESLint
@@ -89,7 +109,20 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 📦 Install Dependencies
+      - name: ⚙️ Optimize NPM Configuration
+        run: |
+          # Apply NPM CI optimizations for faster dependency installation
+          npm config set maxsockets 10
+          npm config set fetch-retries 3
+          npm config set fetch-timeout 60000
+          npm config set prefer-offline true
+          npm config set no-audit true
+          npm config set no-fund true
+          npm config set progress false
+          npm config set loglevel warn
+          echo "✅ NPM CI optimizations applied"
+
+      - name: 📦 Install Dependencies (Optimized)
         run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: 🗄️ Setup SQLite Database
@@ -151,10 +184,37 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 📦 Install Dependencies
+      - name: ⚙️ Optimize NPM Configuration for E2E
+        run: |
+          # Apply aggressive NPM CI optimizations for E2E tests
+          npm config set maxsockets 10
+          npm config set fetch-retries 3
+          npm config set fetch-timeout 60000
+          npm config set prefer-offline true
+          npm config set no-audit true
+          npm config set no-fund true
+          npm config set progress false
+          npm config set loglevel warn
+          # Set cache location for CI
+          npm config set cache /tmp/npm-cache
+          npm config set cache-min 86400
+          echo "✅ Aggressive NPM CI optimizations applied for E2E tests"
+
+      - name: 📦 Install Dependencies (Optimized)
         run: npm ci --prefer-offline --no-audit --no-fund
 
+      - name: 🎭 Install Playwright Browsers (Cached)
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-${{ matrix.browser }}-
+            ${{ runner.os }}-playwright-
+
       - name: 🎭 Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install ${{ matrix.browser }} --with-deps
 
       - name: 📦 Install Vercel CLI
@@ -260,7 +320,20 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 📦 Install Dependencies
+      - name: ⚙️ Optimize NPM Configuration
+        run: |
+          # Apply NPM CI optimizations for faster dependency installation
+          npm config set maxsockets 10
+          npm config set fetch-retries 3
+          npm config set fetch-timeout 60000
+          npm config set prefer-offline true
+          npm config set no-audit true
+          npm config set no-fund true
+          npm config set progress false
+          npm config set loglevel warn
+          echo "✅ NPM CI optimizations applied"
+
+      - name: 📦 Install Dependencies (Optimized)
         run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: 📦 Install Vercel CLI
@@ -346,8 +419,20 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 📦 Install Dependencies
-        run: npm ci --prefer-offline --no-audit --no-fund
+      - name: ⚙️ Optimize NPM Configuration
+        run: |
+          # Apply NPM CI optimizations for faster dependency installation
+          npm config set maxsockets 10
+          npm config set fetch-retries 3
+          npm config set fetch-timeout 60000
+          npm config set prefer-offline true
+          npm config set no-fund true
+          npm config set progress false
+          npm config set loglevel warn
+          echo "✅ NPM CI optimizations applied"
+
+      - name: 📦 Install Dependencies (Optimized)
+        run: npm ci --prefer-offline --no-fund
 
       - name: 🔒 Run npm audit
         run: |
@@ -395,7 +480,20 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: 📦 Install Dependencies
+      - name: ⚙️ Optimize NPM Configuration
+        run: |
+          # Apply NPM CI optimizations for faster dependency installation
+          npm config set maxsockets 10
+          npm config set fetch-retries 3
+          npm config set fetch-timeout 60000
+          npm config set prefer-offline true
+          npm config set no-audit true
+          npm config set no-fund true
+          npm config set progress false
+          npm config set loglevel warn
+          echo "✅ NPM CI optimizations applied"
+
+      - name: 📦 Install Dependencies (Optimized)
         run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: 🔨 Verify Build Process

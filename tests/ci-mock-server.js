@@ -1,7 +1,7 @@
 // CI Mock Server - Lightweight server for unit tests
 import http from 'http';
 
-const PORT = process.env.CI_PORT || process.env.PORT || 3001;
+const PORT = process.env.CI_PORT || process.env.PORT || 3000;
 
 // Mock responses for all endpoints used by unit tests
 const mockResponses = {
