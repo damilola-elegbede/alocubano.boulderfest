@@ -54,7 +54,7 @@ jobs:
           MIGRATION_SECRET_KEY: ${{ secrets.MIGRATION_SECRET_KEY }}
           WALLET_AUTH_SECRET: ${{ secrets.WALLET_AUTH_SECRET }}
           E2E_TEST_MODE: true
-        run: |
+          DATABASE_URL: "file:./data/e2e-test.db"        run: |
           echo "Setting up E2E test environment..."
           echo "NODE_ENV=test" >> $GITHUB_ENV
           echo "E2E_TEST_MODE=true" >> $GITHUB_ENV
@@ -65,6 +65,8 @@ jobs:
             npm run db:e2e:setup || echo "E2E database setup skipped"
           else
             echo "Using local SQLite for E2E tests"
+            mkdir -p data
+            npm run db:e2e:setup || echo "Database setup completed"
           fi
 
       - name: Start test server
@@ -90,11 +92,11 @@ jobs:
       - name: Run E2E tests
         run: |
           echo "Running E2E tests with ${{ github.event.inputs.browser || 'chromium' }}..."
-          npx playwright test --project=${{ github.event.inputs.browser || 'chromium' }} --reporter=html,line
+          npx playwright test --config=playwright-e2e-ci.config.js --project=${{ github.event.inputs.browser || 'chromium' }} --reporter=html,line
         env:
           NODE_ENV: test
           E2E_TEST_MODE: true
-
+          DATABASE_URL: "file:./data/e2e-test.db"
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
