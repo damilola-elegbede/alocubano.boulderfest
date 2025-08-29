@@ -21,14 +21,14 @@ initSentry();
 function registerHealthChecks() {
   const healthChecker = getHealthChecker();
 
-  // Register database health check (critical)
+  // Register database health check (critical) with more resilient circuit breaker
   healthChecker.registerCheck("database", checkDatabaseHealth, {
     critical: true,
-    timeout: 3000,
+    timeout: 5000,
     weight: 2,
     circuitBreaker: {
-      threshold: 2,
-      timeout: 60000, // 1 minute
+      threshold: 5, // Increased from 2 to 5 failures
+      timeout: 30000, // Decreased from 60000ms to 30000ms
     },
   });
 

@@ -114,11 +114,18 @@ class DatabaseService {
     // Check for empty string as well as undefined first (before any transformation)
     // In strict test mode, be even more strict about environment validation
     const strictMode = process.env.DATABASE_TEST_STRICT_MODE === "true";
+    
+    // Detect environment context
+    const isVercelProduction = process.env.VERCEL === "1" && process.env.VERCEL_ENV === "production";
+    const isVercelPreview = process.env.VERCEL === "1" && process.env.VERCEL_ENV === "preview";
+    const isVercel = process.env.VERCEL === "1";
+    const isDevelopment = process.env.NODE_ENV === "development" || process.env.VERCEL_DEV_STARTUP === "true";
+    const isTest = process.env.NODE_ENV === "test" || process.env.TEST_TYPE === "integration";
 
     // Environment-specific database URL handling
     if (!databaseUrl || databaseUrl.trim() === "") {
-      // For development, fall back to SQLite if Turso not configured
-      if (process.env.NODE_ENV === "development" || process.env.VERCEL_DEV_STARTUP === "true") {
+      if (isDevelopment) {
+        // For development, fall back to SQLite if Turso not configured
         const path = await import("path");
         const fs = await import("fs");
         
@@ -130,22 +137,36 @@ class DatabaseService {
         
         databaseUrl = `file:${path.join(dataDir, "development.db")}`;
         console.log(`⚠️  TURSO_DATABASE_URL not set, using local SQLite: ${databaseUrl}`);
-      } else if (process.env.NODE_ENV === "test" || process.env.TEST_TYPE === "integration") {
+      } else if (isTest) {
         // For tests, use in-memory database by default
         databaseUrl = ":memory:";
         console.log("🧪 Using in-memory database for tests");
+      } else if (isVercelProduction) {
+        // In Vercel production, this is a critical configuration error
+        const error = new Error("TURSO_DATABASE_URL environment variable is required for production deployment");
+        error.code = "DB_CONFIG_ERROR";
+        error.context = "vercel-production";
+        throw error;
+      } else if (isVercelPreview || isVercel) {
+        // For Vercel preview deployments, try to fallback gracefully
+        console.warn("⚠️ TURSO_DATABASE_URL not configured in Vercel environment, attempting SQLite fallback");
+        databaseUrl = ":memory:";
       } else if (strictMode) {
-        throw new Error("TURSO_DATABASE_URL environment variable is required in strict mode");
+        const error = new Error("TURSO_DATABASE_URL environment variable is required in strict mode");
+        error.code = "DB_CONFIG_ERROR";
+        error.context = "strict-mode";
+        throw error;
       } else {
-        throw new Error("TURSO_DATABASE_URL environment variable is required for production");
+        // Generic production environment - still require Turso
+        const error = new Error("TURSO_DATABASE_URL environment variable is required for production");
+        error.code = "DB_CONFIG_ERROR";
+        error.context = "generic-production";
+        throw error;
       }
     }
 
     // Integration test specific handling
-    if (
-      process.env.TEST_TYPE === "integration" ||
-      process.env.NODE_ENV === "test"
-    ) {
+    if (isTest) {
       // For integration tests, ensure we have a valid file path
       if (databaseUrl.startsWith("file:")) {
         // Ensure the database file path is absolute and accessible
@@ -172,6 +193,16 @@ class DatabaseService {
     // Add auth token if provided (not needed for :memory: databases)
     if (authToken && databaseUrl !== ":memory:") {
       config.authToken = authToken;
+    } else if (!authToken && databaseUrl !== ":memory:" && !databaseUrl.startsWith("file:")) {
+      // Auth token is required for remote Turso databases
+      if (isVercelProduction) {
+        const error = new Error("TURSO_AUTH_TOKEN environment variable is required for remote database connections in production");
+        error.code = "DB_AUTH_ERROR";
+        error.context = "vercel-production";
+        throw error;
+      } else {
+        console.warn("⚠️ TURSO_AUTH_TOKEN not provided for remote database connection");
+      }
     }
 
     // Add SQLite-specific configuration for busy timeout and WAL mode
@@ -201,10 +232,7 @@ class DatabaseService {
       }
 
       // Integration test specific validation
-      if (
-        process.env.TEST_TYPE === "integration" ||
-        process.env.NODE_ENV === "test"
-      ) {
+      if (isTest) {
         // Verify client has required methods for integration tests
         if (typeof client.execute !== "function") {
           throw new Error(
@@ -261,6 +289,8 @@ class DatabaseService {
           : "undefined",
         hasAuthToken: !!config.authToken,
         environment: process.env.NODE_ENV,
+        vercelEnv: process.env.VERCEL_ENV,
+        isVercel: !!process.env.VERCEL,
         testType: process.env.TEST_TYPE,
         timestamp: new Date().toISOString(),
       });
@@ -282,6 +312,10 @@ class DatabaseService {
         throw new Error(
           `Database client configuration error: ${error.message}`,
         );
+      } else if (error.code === "DB_CONFIG_ERROR" || error.code === "DB_AUTH_ERROR") {
+        // Re-throw configuration errors with additional context
+        error.message = `${error.message} (context: ${error.context})`;
+        throw error;
       } else {
         throw new Error(
           `Failed to initialize database client: ${error.message}`,
