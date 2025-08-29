@@ -19,3 +19,8 @@ CREATE TABLE IF NOT EXISTS transaction_items (
     fulfilled_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Indexes for transaction_items
+CREATE INDEX IF NOT EXISTS idx_transaction_items_transaction_id ON transaction_items(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_transaction_items_type ON transaction_items(item_type);
+CREATE INDEX IF NOT EXISTS idx_transaction_items_transaction_type ON transaction_items(transaction_id, item_type);

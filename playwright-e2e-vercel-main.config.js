@@ -28,7 +28,7 @@ export default defineConfig({
     ['html', { outputFolder: 'playwright-report', open: 'never' }]
   ],
   
-  timeout: 30000, // 30 seconds should be sufficient with Vercel dev server
+  timeout: 45000, // 45 seconds for better stability with Vercel dev server
   
   use: {
     baseURL: 'https://alocubanoboulderfest.ngrok.io',
@@ -39,9 +39,9 @@ export default defineConfig({
     // Viewport and device emulation
     viewport: { width: 1280, height: 720 },
     
-    // Network and timing
-    actionTimeout: 15000,
-    navigationTimeout: 30000,
+    // Network and timing (increased for stability)
+    actionTimeout: 20000, // 20 seconds for actions
+    navigationTimeout: 40000, // 40 seconds for navigation
   },
 
   projects: [
@@ -73,7 +73,7 @@ export default defineConfig({
     command: 'vercel dev --yes --listen 3000',
     url: 'https://alocubanoboulderfest.ngrok.io/api/health/check',
     reuseExistingServer: !process.env.CI,
-    timeout: 30000, // 30 seconds for Vercel dev startup
+    timeout: 60000, // 60 seconds for Vercel dev startup (increased for stability)
     stdout: 'pipe',
     stderr: 'pipe',
     

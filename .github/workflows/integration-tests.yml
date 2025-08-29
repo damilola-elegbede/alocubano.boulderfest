@@ -57,7 +57,7 @@ jobs:
       - name: 🗃️ Setup Test Database
         run: |
           echo "🗃️ Setting up integration test database..."
-          node scripts/setup-database.js
+          npm run migrate:up
           echo "✅ Database setup complete"
 
       - name: 🧪 Run Integration Tests
@@ -161,7 +161,7 @@ jobs:
       - name: 🗃️ Setup API Test Database
         run: |
           echo "🗃️ Setting up API test database..."
-          node scripts/setup-database.js
+          npm run migrate:up
           echo "✅ API database setup complete"
 
       - name: 📡 Run API Contract Tests

@@ -161,9 +161,8 @@ The streamlined script collection focuses on essential operations:
 ### Development Scripts
 
 #### Database Management
-- `scripts/migrate.js` - Database migrations
+- `scripts/migrate.js` - Database migration system (primary database setup)
 - `scripts/migrate-e2e.js` - E2E database migrations
-- `scripts/setup-database.js` - Database initialization
 - `scripts/setup-e2e-database.js` - E2E database setup
 
 **Reason retained**: Core database operations for development and testing.

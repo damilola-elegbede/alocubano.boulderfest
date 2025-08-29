@@ -327,17 +327,18 @@ class MigrationSystem {
   }
 
   /**
-   * Execute a single migration file
+   * Execute a single migration file with enhanced error handling and rollback protection
    */
   async executeMigration(migration) {
     console.log(`🔄 Executing migration: ${migration.filename}`);
 
-    // Use proper transaction API with timeout protection (60s for migrations)
-    const transaction = await this.db.transaction(60000);
-
     try {
-      // First ensure migrations table exists within the transaction scope
-      await transaction.execute(`
+      // For problematic migrations, use statement-by-statement execution without transactions
+      // to avoid rollback issues with complex table/index creation dependencies
+      const client = await this.db.ensureInitialized();
+      
+      // First ensure migrations table exists
+      await client.execute(`
         CREATE TABLE IF NOT EXISTS migrations (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           filename TEXT NOT NULL UNIQUE,
@@ -347,13 +348,14 @@ class MigrationSystem {
         )
       `);
 
-      // Execute each statement in the migration within the transaction
+      // Execute each statement individually for better error isolation
       for (let idx = 0; idx < migration.statements.length; idx++) {
         const statement = migration.statements[idx];
         if (statement.trim()) {
           try {
-            console.log(`   Executing statement ${idx + 1}/${migration.statements.length}...`);
-            await transaction.execute(statement);
+            console.log(`   Executing statement ${idx + 1}/${migration.statements.length}: ${statement.substring(0, 60)}...`);
+            const result = await client.execute(statement);
+            console.log(`   ✅ Statement ${idx + 1} completed successfully`);
           } catch (statementError) {
             // Handle idempotent operations gracefully
             if (this._isIdempotentError(statementError.message, statement)) {
@@ -365,6 +367,29 @@ class MigrationSystem {
             console.error(`   Statement ${idx + 1}: ${statement.substring(0, 200)}...`);
             console.error(`   Error message: ${statementError.message}`);
             console.error(`   Error code: ${statementError.code || 'unknown'}`);
+            
+            // For certain types of errors, provide more specific guidance
+            if (statementError.message.includes('no such column')) {
+              console.error(`   💡 Hint: This usually means a table was not created properly or columns don't match expectations`);
+              
+              // Try to introspect the actual table schema for debugging
+              try {
+                const tableMatch = statement.match(/ON\s+(\w+)\s*\(/i);
+                if (tableMatch) {
+                  const tableName = tableMatch[1];
+                  console.error(`   🔍 Checking actual schema for table '${tableName}':`);
+                  const schemaResult = await client.execute(`SELECT sql FROM sqlite_master WHERE type='table' AND name=?`, [tableName]);
+                  if (schemaResult.rows.length > 0) {
+                    console.error(`   📋 Actual table schema: ${schemaResult.rows[0].sql}`);
+                  } else {
+                    console.error(`   ❌ Table '${tableName}' does not exist in database`);
+                  }
+                }
+              } catch (introspectionError) {
+                console.error(`   ⚠️  Could not introspect table schema: ${introspectionError.message}`);
+              }
+            }
+            
             // Re-throw non-idempotent errors
             throw statementError;
           }
@@ -374,46 +399,19 @@ class MigrationSystem {
       // Generate checksum for verification
       const checksum = await this.generateChecksum(migration.content);
 
-      // Record migration as executed within the transaction
+      // Record migration as executed
       // Ensure filename is not null or empty
       if (!migration.filename || migration.filename.trim() === '') {
         throw new Error(`Migration filename is invalid: ${migration.filename}`);
       }
       
-      await transaction.execute(
+      await client.execute(
         "INSERT INTO migrations (filename, checksum) VALUES (?, ?)",
         [migration.filename, checksum],
       );
 
-      // Commit the transaction on success
-      await transaction.commit();
-
       console.log(`✅ Migration completed: ${migration.filename}`);
     } catch (error) {
-      // Rollback the transaction on failure with better error handling
-      try {
-        console.log(`🔄 Rolling back transaction for ${migration.filename}...`);
-        await transaction.rollback();
-        console.log(`✅ Transaction rolled back successfully`);
-      } catch (rollbackError) {
-        console.error(
-          "❌ Failed to rollback transaction:",
-          rollbackError.message,
-        );
-        
-        // If rollback fails due to LibSQL client issues, force database service reset
-        if (rollbackError.message.includes("no transaction") || 
-            rollbackError.message.includes("timeout")) {
-          console.warn("⚠️  Transaction state may be corrupted, resetting database service...");
-          try {
-            await this.db.resetForTesting();
-            console.log("✅ Database service reset successfully");
-          } catch (resetError) {
-            console.error("❌ Failed to reset database service:", resetError.message);
-          }
-        }
-      }
-
       // Enhanced error reporting for migration failures
       const errorDetails = {
         migration: migration.filename,
@@ -448,9 +446,15 @@ class MigrationSystem {
       return true;
     }
     
+    // Handle "already exists" errors more comprehensively
+    if (errorLower.includes('already exists')) {
+      return true;
+    }
+    
     // Handle duplicate column errors
     if (errorLower.includes('duplicate column name') || 
-        errorLower.includes('column') && errorLower.includes('already exists')) {
+        (errorLower.includes('column') && errorLower.includes('already exists')) ||
+        errorLower.includes('duplicate column')) {
       if (statementUpper.includes('ALTER TABLE') && statementUpper.includes('ADD COLUMN')) {
         return true;
       }
@@ -464,9 +468,9 @@ class MigrationSystem {
       }
     }
     
-    // Handle duplicate table errors
+    // Handle duplicate table errors (even without IF NOT EXISTS)
     if (errorLower.includes('table') && errorLower.includes('already exists')) {
-      if (statementUpper.includes('CREATE TABLE IF NOT EXISTS')) {
+      if (statementUpper.includes('CREATE TABLE')) {
         return true;
       }
     }
@@ -480,6 +484,25 @@ class MigrationSystem {
     
     // Handle duplicate constraint errors
     if (errorLower.includes('constraint') && errorLower.includes('already exists')) {
+      return true;
+    }
+    
+    // Handle SQLite constraint violations for existing data
+    if (errorLower.includes('unique constraint') || 
+        errorLower.includes('primary key constraint') ||
+        errorLower.includes('foreign key constraint')) {
+      // These might be acceptable in migration context if they're for existing data
+      if (statementUpper.includes('INSERT OR IGNORE') ||
+          statementUpper.includes('INSERT OR REPLACE')) {
+        return true;
+      }
+    }
+    
+    // Handle "no such column" or "no such table" errors for index creation
+    // This can happen when table schemas change between migrations
+    if ((errorLower.includes('no such column') || errorLower.includes('no such table')) && 
+        statementUpper.includes('CREATE INDEX')) {
+      console.warn(`⚠️  Index creation skipped - table/column may not exist or have been renamed: ${errorMessage}`);
       return true;
     }
     

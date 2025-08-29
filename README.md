@@ -73,9 +73,8 @@ alocubano.boulderfest/
 ├── scripts/
 │   ├── ci-setup.js (CI environment setup)
 │   ├── express-dev-server.js (Express development server)
-│   ├── migrate.js (Database migrations)
+│   ├── migrate.js (Database migration system)
 │   ├── migrate-e2e.js (E2E database migrations)
-│   ├── setup-database.js (Database initialization)
 │   ├── setup-e2e-database.js (E2E database setup)
 │   ├── vercel-dev-doctor.js (Development diagnostics)
 │   ├── vercel-dev-wrapper.js (Vercel dev wrapper)

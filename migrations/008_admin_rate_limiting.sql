@@ -53,23 +53,10 @@ CREATE INDEX IF NOT EXISTS idx_admin_activity_action ON admin_activity_log(actio
 CREATE INDEX IF NOT EXISTS idx_admin_activity_created_at ON admin_activity_log(created_at);
 CREATE INDEX IF NOT EXISTS idx_admin_activity_ip ON admin_activity_log(ip_address);
 
--- Additional indexes for admin queries performance (补充现有的不足)
-
--- Tickets table composite indexes for common admin queries
-CREATE INDEX IF NOT EXISTS idx_tickets_status_created_at ON tickets(status, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_tickets_type_created_at ON tickets(ticket_type, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_tickets_attendee_name_search ON tickets(attendee_last_name, attendee_first_name);
-CREATE INDEX IF NOT EXISTS idx_tickets_transaction_status ON tickets(transaction_id, status);
-
--- Transactions table additional indexes
-CREATE INDEX IF NOT EXISTS idx_transactions_status_created_at ON transactions(status, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_transactions_customer_email_created_at ON transactions(customer_email, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_transactions_type_status ON transactions(type, status);
-CREATE INDEX IF NOT EXISTS idx_transactions_amount_range ON transactions(amount_cents, created_at DESC);
+-- Additional indexes for admin queries performance
+-- Note: Most performance indexes are now defined in their respective table definition files
+-- to avoid dependency issues
 
 -- Payment events table indexes (if not already created in migration 004)
 CREATE INDEX IF NOT EXISTS idx_payment_events_event_type_created_at ON payment_events(event_type, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_payment_events_processing_status ON payment_events(processing_status);
-
--- Transaction items indexes for admin transaction details
-CREATE INDEX IF NOT EXISTS idx_transaction_items_transaction_type ON transaction_items(transaction_id, item_type);

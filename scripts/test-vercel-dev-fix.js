@@ -48,22 +48,25 @@ class VercelDevTester {
       existsSync(resolve(process.cwd(), 'scripts/vercel-dev-start.js'))
     );
 
-    // Test 2: Check database setup script
-    this.recordTest('Database setup script updated', 
-      existsSync(resolve(process.cwd(), 'scripts/setup-database.js'))
+    // Test 2: Check migration system
+    this.recordTest('Migration system available', 
+      existsSync(resolve(process.cwd(), 'scripts/migrate.js'))
     );
 
-    // Test 3: Check package.json scripts
+    // Test 3: Check package.json uses migration system
     try {
       const fs = await import('fs');
       const packageJson = JSON.parse(
         fs.readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')
       );
-      this.recordTest('Package.json scripts updated', 
-        packageJson.scripts['start:local']?.includes('vercel-dev-start.js')
+      const hasMigrateUp = packageJson.scripts['migrate:up']?.includes('migrate.js');
+      const prestart = packageJson.scripts['prestart']?.includes('migrate:up');
+      this.recordTest('Package.json uses migration system', 
+        hasMigrateUp && prestart,
+        `migrate:up script exists: ${hasMigrateUp}, prestart uses migrate:up: ${prestart}`
       );
     } catch (error) {
-      this.recordTest('Package.json scripts updated', false, error.message);
+      this.recordTest('Package.json uses migration system', false, error.message);
     }
 
     // Test 4: Environment variables check
@@ -82,29 +85,30 @@ class VercelDevTester {
     console.log('\n🗃️  Testing database initialization...');
 
     try {
-      // Test database setup with skip flags
+      // Test database migration system
       const startTime = Date.now();
       
-      const { setupDatabase } = await import('./setup-database.js');
-      await setupDatabase();
+      const { MigrationSystem } = await import('./migrate.js');
+      const migrationSystem = new MigrationSystem();
+      await migrationSystem.runMigrations();
       
       const duration = Date.now() - startTime;
       
-      this.recordTest('Database setup completes quickly', duration < 5000, 
+      this.recordTest('Migration system completes quickly', duration < 5000, 
         `Took ${duration}ms (should be <5000ms)`
       );
 
-      this.recordTest('Database setup respects skip flags', true,
-        'Setup completed without hanging'
+      this.recordTest('Migration system runs successfully', true,
+        'Migrations completed without hanging'
       );
 
     } catch (error) {
       if (error.message.includes('timeout')) {
-        this.recordTest('Database setup prevents hanging', true,
+        this.recordTest('Migration system prevents hanging', true,
           'Timeout protection working'
         );
       } else {
-        this.recordTest('Database setup handles errors', false, error.message);
+        this.recordTest('Migration system handles errors', false, error.message);
       }
     }
   }

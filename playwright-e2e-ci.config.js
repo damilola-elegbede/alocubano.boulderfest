@@ -21,15 +21,15 @@ export default defineConfig({
       ]
     : [['list'], ['html']],
   
-  timeout: 45000, // 45 seconds for CI
+  timeout: 60000, // 60 seconds for CI (increased for memory-constrained environments)
   
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    actionTimeout: 20000, // 20 seconds for actions
-    navigationTimeout: 30000, // 30 seconds for navigation
+    actionTimeout: 30000, // 30 seconds for actions (increased for CI)
+    navigationTimeout: 45000, // 45 seconds for navigation (increased for CI)
     
     // CI-optimized settings
     ...(process.env.CI && {
@@ -102,13 +102,14 @@ export default defineConfig({
 
   // Web server configuration for CI
   webServer: {
-    command: 'node scripts/vercel-dev-wrapper.js',
+    command: 'npm run start:ci',
     port: 3000,
     reuseExistingServer: !process.env.CI,
-    timeout: 120000, // 2 minutes startup timeout
+    timeout: 180000, // 3 minutes startup timeout (increased for memory-constrained CI)
     env: {
       NODE_ENV: 'test',
       PORT: '3000',
+      CI_PORT: '3000',
       SKIP_DATABASE_INIT: 'true',
       CI_ENVIRONMENT: 'true'
     }

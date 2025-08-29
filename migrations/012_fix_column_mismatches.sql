@@ -1,20 +1,6 @@
--- Migration 012: Fix database schema column mismatches
-
--- Add uuid column to transactions table
-ALTER TABLE transactions ADD COLUMN uuid TEXT;
-
--- Add metadata column to transactions table
-ALTER TABLE transactions ADD COLUMN metadata TEXT;
-
--- Add total_amount column to transactions table
-ALTER TABLE transactions ADD COLUMN total_amount INTEGER;
-
--- Add cancellation_reason column to tickets table
-ALTER TABLE tickets ADD COLUMN cancellation_reason TEXT;
-
--- Create indexes for the new columns
-CREATE INDEX IF NOT EXISTS idx_transactions_uuid ON transactions(uuid);
-CREATE INDEX IF NOT EXISTS idx_transactions_total_amount ON transactions(total_amount);
+-- Migration 012: Fix database schema column mismatches (IDEMPOTENT)
+-- Note: These columns are now defined in core tables (001_core_tables.sql and 018_tickets_table.sql)
+-- This migration only handles data population for existing records
 
 -- Populate uuid with transaction_id for existing records
 UPDATE transactions 

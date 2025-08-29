@@ -2,11 +2,13 @@
 name: 🚦 Comprehensive PR Quality Gates
 
 # Advanced quality gate system with integrated monitoring and enforcement
-# This workflow orchestrates all quality checks with comprehensive quality gates enforcement
-# Features: Integrated monitoring systems, PRD-defined quality thresholds, comprehensive reporting,
-# actionable feedback, and deployment blocking for quality failures
+# This workflow orchestrates all quality checks with comprehensive quality
+# gates enforcement
+# Features: Integrated monitoring systems, PRD-defined quality thresholds,
+# comprehensive reporting, actionable feedback, and deployment blocking for
+# quality failures
 
-on:
+"on":
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
@@ -78,7 +80,7 @@ jobs:
       pr_number: ${{ steps.pr-info.outputs.pr_number }}
       quality_session_id: ${{ steps.init-session.outputs.session_id }}
       baseline_thresholds: ${{ steps.thresholds.outputs.thresholds }}
-    
+
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
@@ -98,9 +100,10 @@ jobs:
           PR_NUMBER="${{ github.event.pull_request.number }}"
           if [ -z "$PR_NUMBER" ]; then
             # Extract from ref for push events
-            PR_NUMBER=$(echo "${{ github.ref }}" | sed -n 's/refs\/pull\/\([0-9]*\)\/merge/\1/p')
+            PR_NUMBER=$(echo "${{ github.ref }}" | \
+              sed -n 's/refs\/pull\/\([0-9]*\)\/merge/\1/p')
           fi
-          
+
           echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
           echo "📋 PR Number: $PR_NUMBER"
 
@@ -109,17 +112,20 @@ jobs:
         run: |
           SESSION_ID="qg-$(date +%Y%m%d-%H%M%S)-${{ github.run_id }}"
           echo "session_id=$SESSION_ID" >> $GITHUB_OUTPUT
-          
+
           echo "🎯 Initializing comprehensive quality gate session: $SESSION_ID"
           if [ -f "scripts/pr-status-reporter.js" ]; then
-            node scripts/pr-status-reporter.js --event=test-start --test-suite=quality-gates --session-id="$SESSION_ID" || true
+            node scripts/pr-status-reporter.js \
+              --event=test-start \
+              --test-suite=quality-gates \
+              --session-id="$SESSION_ID" || true
           fi
 
       - name: 📊 Load Quality Thresholds
         id: thresholds
         run: |
           echo "📊 Loading PRD-defined quality thresholds..."
-          
+
           # Try to load from config file first
           if [ -f ".github/quality-thresholds.json" ]; then
             echo "Loading thresholds from configuration file..."
@@ -127,12 +133,16 @@ jobs:
               const config = require('./.github/quality-thresholds.json');
               const thresholds = {
                 testFlakiness: config.thresholds?.testFlakiness?.value || 5.0,
-                criticalCoverage: config.thresholds?.criticalCoverage?.value || 100.0,
+                criticalCoverage: \
+                  config.thresholds?.criticalCoverage?.value || 100.0,
                 executionTime: config.thresholds?.executionTime?.value || 300,
-                testReliability: config.thresholds?.testReliability?.value || 95.0,
-                securityVulnerabilities: config.thresholds?.securityVulnerabilities?.value || 0,
+                testReliability: \
+                  config.thresholds?.testReliability?.value || 95.0,
+                securityVulnerabilities: \
+                  config.thresholds?.securityVulnerabilities?.value || 0,
                 codeQuality: config.thresholds?.codeQuality?.value || 80.0,
-                apiResponseTime: config.thresholds?.apiResponseTime?.value || 100,
+                apiResponseTime: \
+                  config.thresholds?.apiResponseTime?.value || 100,
                 pageLoadTime: config.thresholds?.pageLoadTime?.value || 2000
               };
               console.log(JSON.stringify(thresholds));
@@ -141,7 +151,7 @@ jobs:
             echo "Config file not found, using fallback thresholds..."
             THRESHOLDS='{"testFlakiness":5.0,"criticalCoverage":100.0,"executionTime":300,"testReliability":95.0,"securityVulnerabilities":0,"codeQuality":80.0,"apiResponseTime":100,"pageLoadTime":2000}'
           fi
-          
+
           echo "thresholds=$THRESHOLDS" >> $GITHUB_OUTPUT
           echo "Quality thresholds loaded: $THRESHOLDS"
 
@@ -153,34 +163,36 @@ jobs:
           SKIP_E2E="${{ inputs.skip_e2e || 'false' }}"
           EMERGENCY_MODE="${{ inputs.emergency_bypass || 'false' }}"
           VERBOSE_REPORTING="${{ inputs.verbose_reporting || 'false' }}"
-          
+
           # Check for draft PR (unless forced)
-          if [ "${{ github.event.pull_request.draft }}" == "true" ] && [ "${{ inputs.force_run }}" != "true" ]; then
+          if [ "${{ github.event.pull_request.draft }}" == "true" ] && \
+             [ "${{ inputs.force_run }}" != "true" ]; then
             echo "Draft PR detected - quality gates will run with reduced scope"
             SKIP_E2E="true"
           fi
-          
+
           # Emergency bypass audit
           if [ "$EMERGENCY_MODE" == "true" ]; then
             echo "🚨 EMERGENCY BYPASS ACTIVATED - Creating audit log"
             echo "Emergency bypass requested by: ${{ github.actor }}"
             echo "Reason: Emergency fix requiring bypass"
             echo "Timestamp: $(date -Iseconds)"
-            
+
             # Log emergency bypass
             if [ -f "scripts/pr-status-reporter.js" ]; then
-              node scripts/pr-status-reporter.js --event=emergency-bypass \
+              node scripts/pr-status-reporter.js \
+                --event=emergency-bypass \
                 --actor="${{ github.actor }}" \
                 --reason="Emergency bypass via workflow dispatch" \
                 --pr-number="${{ steps.pr-info.outputs.pr_number }}" || true
             fi
           fi
-          
+
           echo "should_run_gates=$SHOULD_RUN" >> $GITHUB_OUTPUT
           echo "skip_e2e=$SKIP_E2E" >> $GITHUB_OUTPUT
           echo "emergency_mode=$EMERGENCY_MODE" >> $GITHUB_OUTPUT
           echo "verbose_reporting=$VERBOSE_REPORTING" >> $GITHUB_OUTPUT
-          
+
           echo "🚪 Quality Gate Configuration:"
           echo "  Run Gates: $SHOULD_RUN"
           echo "  Skip E2E: $SKIP_E2E"
@@ -191,7 +203,8 @@ jobs:
         run: |
           echo "✅ Comprehensive quality gates initialization completed"
           if [ -f "scripts/pr-status-reporter.js" ]; then
-            node scripts/pr-status-reporter.js --event=test-complete \
+            node scripts/pr-status-reporter.js \
+              --event=test-complete \
               --test-suite=quality-gates-init \
               --results='{"total":1,"passed":1,"failed":0,"skipped":0}' \
               --session-id="${{ steps.init-session.outputs.session_id }}" || true
@@ -209,7 +222,7 @@ jobs:
       quality_report: ${{ steps.quality-gates.outputs.quality_report }}
       critical_failures: ${{ steps.quality-gates.outputs.critical_failures }}
       recommendations: ${{ steps.quality-gates.outputs.recommendations }}
-    
+
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
@@ -228,10 +241,11 @@ jobs:
           npm run start:ci &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
-          
+
           # Wait for server
           for i in {1..30}; do
-            if curl -f http://localhost:3000/api/health/check >/dev/null 2>&1; then
+            if curl -f http://localhost:3000/api/health/check \
+               >/dev/null 2>&1; then
               echo "✅ Test server ready"
               break
             fi
@@ -242,66 +256,69 @@ jobs:
         id: quality-gates
         run: |
           echo "🚦 Executing comprehensive quality gates system..."
-          
+
           # Set verbose mode if requested
+          VERBOSE_FLAG=""
           if [ "${{ needs.initialize.outputs.verbose_reporting }}" == "true" ]; then
             VERBOSE_FLAG="--verbose"
-          else
-            VERBOSE_FLAG=""
           fi
-          
+
           # Run comprehensive quality gates in CI mode
           if node scripts/quality-gates.js ci $VERBOSE_FLAG; then
             echo "quality_passed=true" >> $GITHUB_OUTPUT
             echo "✅ All quality gates passed"
-            
+
             # Generate success report
             REPORT_PATH=".tmp/quality-gates/latest-quality-report.html"
             if [ -f "$REPORT_PATH" ]; then
               echo "quality_report=success" >> $GITHUB_OUTPUT
             fi
-            
+
             echo "critical_failures=0" >> $GITHUB_OUTPUT
             echo "recommendations=" >> $GITHUB_OUTPUT
-            
+
           else
             EXIT_CODE=$?
             echo "quality_passed=false" >> $GITHUB_OUTPUT
             echo "❌ Quality gates failed with exit code: $EXIT_CODE"
-            
+
             # Extract failure information from quality gates output
             QUALITY_OUTPUT_DIR=".tmp/quality-gates"
             if [ -d "$QUALITY_OUTPUT_DIR" ]; then
               # Find latest quality report
-              LATEST_REPORT=$(find "$QUALITY_OUTPUT_DIR" -name "quality-report-*.json" | sort -r | head -n1)
+              LATEST_REPORT=$(find "$QUALITY_OUTPUT_DIR" \
+                -name "quality-report-*.json" | sort -r | head -n1)
               if [ -f "$LATEST_REPORT" ]; then
                 echo "📊 Quality gate report found: $LATEST_REPORT"
-                
+
                 # Extract critical failures count
                 CRITICAL_FAILURES=$(node -e "
                   try {
-                    const report = JSON.parse(require('fs').readFileSync('$LATEST_REPORT', 'utf8'));
+                    const report = JSON.parse(
+                      require('fs').readFileSync('$LATEST_REPORT', 'utf8'));
                     console.log(report.summary?.criticalFailures || 0);
                   } catch(e) { console.log('0'); }
                 " 2>/dev/null || echo "0")
-                
+
                 echo "critical_failures=$CRITICAL_FAILURES" >> $GITHUB_OUTPUT
-                
+
                 # Extract top recommendations
                 RECOMMENDATIONS=$(node -e "
                   try {
-                    const report = JSON.parse(require('fs').readFileSync('$LATEST_REPORT', 'utf8'));
-                    const recs = report.recommendations?.slice(0, 3)?.map(r => r.action)?.join('; ') || '';
+                    const report = JSON.parse(
+                      require('fs').readFileSync('$LATEST_REPORT', 'utf8'));
+                    const recs = report.recommendations?.slice(0, 3)?.\
+                      map(r => r.action)?.join('; ') || '';
                     console.log(recs);
                   } catch(e) { console.log(''); }
                 " 2>/dev/null || echo "")
-                
+
                 echo "recommendations=$RECOMMENDATIONS" >> $GITHUB_OUTPUT
-                
+
                 echo "quality_report=failed" >> $GITHUB_OUTPUT
               fi
             fi
-            
+
             exit $EXIT_CODE
           fi
 
@@ -333,22 +350,26 @@ jobs:
           if [ "${{ steps.quality-gates.outputs.quality_passed }}" == "true" ]; then
             echo "✅ All comprehensive quality gates passed"
             if [ -f "scripts/pr-status-reporter.js" ]; then
-              node scripts/pr-status-reporter.js --event=test-complete \
+              node scripts/pr-status-reporter.js \
+                --event=test-complete \
                 --test-suite=comprehensive-quality-gates \
                 --results='{"total":12,"passed":12,"failed":0,"skipped":0}' \
-                --session-id="${{ needs.initialize.outputs.quality_session_id }}" || true
+                --session-id="${{ needs.initialize.outputs.quality_session_id }}" \
+                || true
             fi
           else
             echo "❌ Quality gates failed"
             CRITICAL_FAILURES="${{ steps.quality-gates.outputs.critical_failures }}"
             echo "Critical failures: $CRITICAL_FAILURES"
-            
+
             if [ -f "scripts/pr-status-reporter.js" ]; then
-              node scripts/pr-status-reporter.js --event=test-failure \
+              node scripts/pr-status-reporter.js \
+                --event=test-failure \
                 --test-suite=comprehensive-quality-gates \
                 --test-name="quality-enforcement" \
                 --error="$CRITICAL_FAILURES critical quality gate failures" \
-                --session-id="${{ needs.initialize.outputs.quality_session_id }}" || true
+                --session-id="${{ needs.initialize.outputs.quality_session_id }}" \
+                || true
             fi
           fi
 
@@ -358,9 +379,9 @@ jobs:
     uses: ./.github/workflows/e2e-tests-with-status.yml
     needs: [initialize, comprehensive-quality-gates]
     if: |
-      always() && 
-      needs.initialize.outputs.should_run_gates == 'true' && 
-      needs.initialize.outputs.skip_e2e != 'true' && 
+      always() &&
+      needs.initialize.outputs.should_run_gates == 'true' &&
+      needs.initialize.outputs.skip_e2e != 'true' &&
       needs.comprehensive-quality-gates.outputs.quality_passed == 'true'
     secrets: inherit
 
@@ -371,7 +392,7 @@ jobs:
     needs: [initialize, comprehensive-quality-gates, e2e-tests]
     if: always() && needs.initialize.outputs.should_run_gates == 'true'
     timeout-minutes: 10
-    
+
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
@@ -388,25 +409,31 @@ jobs:
       - name: 📊 Generate Final Quality Assessment
         run: |
           echo "📊 Generating comprehensive final quality assessment..."
-          
+
           # Collect all results
           QUALITY_RESULTS="{"
-          QUALITY_RESULTS="$QUALITY_RESULTS\"comprehensive_quality_gates\":\"${{ needs.comprehensive-quality-gates.result }}\","
-          QUALITY_RESULTS="$QUALITY_RESULTS\"e2e_tests\":\"${{ needs.e2e-tests.result || 'skipped' }}\","
-          QUALITY_RESULTS="$QUALITY_RESULTS\"critical_failures\":${{ needs.comprehensive-quality-gates.outputs.critical_failures || 0 }},"
-          QUALITY_RESULTS="$QUALITY_RESULTS\"emergency_mode\":\"${{ needs.initialize.outputs.emergency_mode }}\","
-          QUALITY_RESULTS="$QUALITY_RESULTS\"quality_passed\":\"${{ needs.comprehensive-quality-gates.outputs.quality_passed }}\""
-          QUALITY_RESULTS="$QUALITY_RESULTS}"
-          
+          QUALITY_RESULTS="${QUALITY_RESULTS}\"comprehensive_quality_gates\":\
+\"${{ needs.comprehensive-quality-gates.result }}\","
+          QUALITY_RESULTS="${QUALITY_RESULTS}\"e2e_tests\":\
+\"${{ needs.e2e-tests.result || 'skipped' }}\","
+          QUALITY_RESULTS="${QUALITY_RESULTS}\"critical_failures\":\
+${{ needs.comprehensive-quality-gates.outputs.critical_failures || 0 }},"
+          QUALITY_RESULTS="${QUALITY_RESULTS}\"emergency_mode\":\
+\"${{ needs.initialize.outputs.emergency_mode }}\","
+          QUALITY_RESULTS="${QUALITY_RESULTS}\"quality_passed\":\
+\"${{ needs.comprehensive-quality-gates.outputs.quality_passed }}\""
+          QUALITY_RESULTS="${QUALITY_RESULTS}}"
+
           echo "Final quality assessment: $QUALITY_RESULTS"
-          
+
           # Generate comprehensive final report
           if [ -f "scripts/pr-status-reporter.js" ]; then
-            node scripts/pr-status-reporter.js --event=status-summary \
+            node scripts/pr-status-reporter.js \
+              --event=status-summary \
               --session-id="${{ needs.initialize.outputs.quality_session_id }}" \
               --quality-results="$QUALITY_RESULTS" || true
           fi
-          
+
           # Additional quality gates reporting
           if [ -f "scripts/quality-gates.js" ]; then
             echo "📋 Generating comprehensive quality report..."
@@ -416,80 +443,115 @@ jobs:
       - name: 🎉 All Quality Gates Passed
         if: |
           needs.comprehensive-quality-gates.outputs.quality_passed == 'true' &&
-          (needs.e2e-tests.result == 'success' || needs.initialize.outputs.skip_e2e == 'true')
+          (needs.e2e-tests.result == 'success' ||
+           needs.initialize.outputs.skip_e2e == 'true')
         run: |
           echo "🎉 All Comprehensive Quality Gates Passed!"
           echo ""
-          echo "## ✅ Comprehensive Quality Assessment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Comprehensive Quality Assessment Complete" \
+            >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**All quality gates have passed successfully:**" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Test Flakiness**: <5% (REQ-NFR-002)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Critical Journey Coverage**: 100% (REQ-E2E-001)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Execution Time**: <5 minutes (REQ-NFR-001)" >> $GITHUB_STEP_SUMMARY
+          echo "**All quality gates have passed successfully:**" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Test Flakiness**: <5% (REQ-NFR-002)" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Critical Journey Coverage**: 100% (REQ-E2E-001)" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Execution Time**: <5 minutes (REQ-NFR-001)" \
+            >> $GITHUB_STEP_SUMMARY
           echo "- ✅ **Test Reliability**: >95%" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Security**: Zero high/critical vulnerabilities" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Performance**: API response <100ms, page load <2s" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Code Quality**: >80% quality score" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **E2E Tests**: ${{ needs.initialize.outputs.skip_e2e == 'true' && 'Skipped (as requested)' || 'Cross-browser testing completed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Security**: Zero high/critical vulnerabilities" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Performance**: API response <100ms, page load <2s" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Code Quality**: >80% quality score" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **E2E Tests**: \
+${{ needs.initialize.outputs.skip_e2e == 'true' && 
+    'Skipped (as requested)' || 
+    'Cross-browser testing completed' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📊 Quality Metrics Achievement" >> $GITHUB_STEP_SUMMARY
-          echo "- **Incident Reduction**: 80% target achieved (REQ-BUS-001)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Monitoring Integration**: Flakiness detector, coverage tracker, incident correlator active" >> $GITHUB_STEP_SUMMARY
-          echo "- **Performance Optimization**: All thresholds met with comprehensive monitoring" >> $GITHUB_STEP_SUMMARY
+          echo "- **Incident Reduction**: 80% target achieved (REQ-BUS-001)" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "- **Monitoring Integration**: Flakiness detector, \
+coverage tracker, incident correlator active" >> $GITHUB_STEP_SUMMARY
+          echo "- **Performance Optimization**: All thresholds met \
+with comprehensive monitoring" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🚀 **This PR is ready for review and merge!**" >> $GITHUB_STEP_SUMMARY
-          
+          echo "🚀 **This PR is ready for review and merge!**" \
+            >> $GITHUB_STEP_SUMMARY
+
           if [ "${{ needs.initialize.outputs.emergency_mode }}" == "true" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "⚠️ **Emergency Mode**: Some checks may have been bypassed. Review the audit log." >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Emergency Mode**: Some checks may have been bypassed. \
+Review the audit log." >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: ❌ Quality Gates Failed
         if: |
           needs.comprehensive-quality-gates.outputs.quality_passed != 'true' ||
-          (needs.e2e-tests.result == 'failure' && needs.initialize.outputs.skip_e2e != 'true')
+          (needs.e2e-tests.result == 'failure' &&
+           needs.initialize.outputs.skip_e2e != 'true')
         run: |
           echo "❌ Comprehensive Quality Gates Failed"
           echo ""
           CRITICAL_FAILURES="${{ needs.comprehensive-quality-gates.outputs.critical_failures }}"
           RECOMMENDATIONS="${{ needs.comprehensive-quality-gates.outputs.recommendations }}"
-          
+
           echo "## ❌ Quality Gate Failures" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Quality gates enforcement detected failures:**" >> $GITHUB_STEP_SUMMARY
-          echo "- **Critical Failures**: $CRITICAL_FAILURES" >> $GITHUB_STEP_SUMMARY
-          
+          echo "**Quality gates enforcement detected failures:**" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "- **Critical Failures**: $CRITICAL_FAILURES" \
+            >> $GITHUB_STEP_SUMMARY
+
           if [ "${{ needs.comprehensive-quality-gates.result }}" == "failure" ]; then
-            echo "- ❌ **Comprehensive Quality Gates**: Failed multiple quality thresholds" >> $GITHUB_STEP_SUMMARY
+            echo "- ❌ **Comprehensive Quality Gates**: \
+Failed multiple quality thresholds" >> $GITHUB_STEP_SUMMARY
           fi
-          
-          if [ "${{ needs.e2e-tests.result }}" == "failure" ] && [ "${{ needs.initialize.outputs.skip_e2e }}" != "true" ]; then
-            echo "- ❌ **E2E Tests**: Cross-browser testing failed" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.e2e-tests.result }}" == "failure" ] && \
+             [ "${{ needs.initialize.outputs.skip_e2e }}" != "true" ]; then
+            echo "- ❌ **E2E Tests**: Cross-browser testing failed" \
+              >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🎯 PRD Quality Requirements Not Met:" >> $GITHUB_STEP_SUMMARY
-          echo "- **REQ-NFR-002**: Test flakiness may exceed 5% threshold" >> $GITHUB_STEP_SUMMARY
-          echo "- **REQ-E2E-001**: Critical user journey coverage incomplete" >> $GITHUB_STEP_SUMMARY
-          echo "- **REQ-NFR-001**: Test execution time may exceed 5-minute velocity target" >> $GITHUB_STEP_SUMMARY
-          echo "- **REQ-BUS-001**: Risk of not achieving 80% incident reduction" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 PRD Quality Requirements Not Met:" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "- **REQ-NFR-002**: Test flakiness may exceed 5% threshold" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "- **REQ-E2E-001**: Critical user journey coverage incomplete" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "- **REQ-NFR-001**: Test execution time may exceed \
+5-minute velocity target" >> $GITHUB_STEP_SUMMARY
+          echo "- **REQ-BUS-001**: Risk of not achieving 80% incident reduction" \
+            >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ -n "$RECOMMENDATIONS" ]; then
             echo "### 🔧 Priority Recommendations:" >> $GITHUB_STEP_SUMMARY
-            echo "$RECOMMENDATIONS" | sed 's/; /\n- /g' | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+            echo "$RECOMMENDATIONS" | sed 's/; /\n- /g' | sed 's/^/- /' \
+              >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "### 📋 Next Steps:" >> $GITHUB_STEP_SUMMARY
-          echo "1. **Download quality report**: Review comprehensive analysis in artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "2. **Run local quality check**: \`npm run quality:gates\`" >> $GITHUB_STEP_SUMMARY
-          echo "3. **Fix critical issues**: Address high-priority quality gate failures first" >> $GITHUB_STEP_SUMMARY
-          echo "4. **Monitor improvements**: Use \`npm run quality:gates:report\` for progress tracking" >> $GITHUB_STEP_SUMMARY
-          echo "5. **Re-run quality gates**: Push commits to automatically re-validate" >> $GITHUB_STEP_SUMMARY
+          echo "1. **Download quality report**: Review comprehensive analysis \
+in artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "2. **Run local quality check**: \`npm run quality:gates\`" \
+            >> $GITHUB_STEP_SUMMARY
+          echo "3. **Fix critical issues**: Address high-priority quality \
+gate failures first" >> $GITHUB_STEP_SUMMARY
+          echo "4. **Monitor improvements**: Use \`npm run quality:gates:report\` \
+for progress tracking" >> $GITHUB_STEP_SUMMARY
+          echo "5. **Re-run quality gates**: Push commits to automatically \
+re-validate" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**🚫 This PR is blocked until all quality gates pass.**" >> $GITHUB_STEP_SUMMARY
-          
+          echo "**🚫 This PR is blocked until all quality gates pass.**" \
+            >> $GITHUB_STEP_SUMMARY
+
           exit 1
 
       - name: 📤 Upload Final Assessment
@@ -509,7 +571,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [initialize, quality-assessment]
     if: always() && needs.initialize.outputs.emergency_mode == 'true'
-    
+
     steps:
       - name: 🚨 Log Emergency Bypass
         run: |
@@ -523,14 +585,20 @@ jobs:
           echo "Emergency Mode: ${{ needs.initialize.outputs.emergency_mode }}"
           echo "Quality Results: ${{ toJson(needs) }}"
           echo "=============================="
-          
+
           echo "## 🚨 Emergency Bypass Activated" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**This PR used emergency bypass mode.**" >> $GITHUB_STEP_SUMMARY
+          echo "**This PR used emergency bypass mode.**" \
+            >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Requested by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Requested by**: ${{ github.actor }}" \
+            >> $GITHUB_STEP_SUMMARY
           echo "- **Timestamp**: $(date -Iseconds)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Audit Trail**: [Workflow Run #${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Audit Trail**: [Workflow Run #${{ github.run_number }}]\
+(${{ github.server_url }}/${{ github.repository }}/actions/runs/\
+${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "⚠️ **Follow-up required**: Create issue to address bypassed quality checks." >> $GITHUB_STEP_SUMMARY
-          echo "⚠️ **Quality standards**: Emergency bypasses should be exceptional and require post-merge validation." >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Follow-up required**: Create issue to address \
+bypassed quality checks." >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Quality standards**: Emergency bypasses should be \
+exceptional and require post-merge validation." >> $GITHUB_STEP_SUMMARY

@@ -34,20 +34,6 @@ CREATE TABLE IF NOT EXISTS webhook_events (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_webhook_events_provider_event 
 ON webhook_events(provider, event_id);
 
--- Add missing columns to existing tables (idempotent)
--- These will be skipped if columns already exist
-
--- Add dietary_restrictions to registrations
-ALTER TABLE registrations ADD COLUMN dietary_restrictions TEXT;
-
--- Add emergency_contact to registrations  
-ALTER TABLE registrations ADD COLUMN emergency_contact TEXT;
-
--- Add phone_number to registrations
-ALTER TABLE registrations ADD COLUMN phone_number TEXT;
-
--- Add marketing_consent to registrations
-ALTER TABLE registrations ADD COLUMN marketing_consent INTEGER DEFAULT 0;
-
--- Add registration_completed to registrations
-ALTER TABLE registrations ADD COLUMN registration_completed INTEGER DEFAULT 0;
+-- Note: Previously this migration added columns to registrations table
+-- These columns are now part of the core table definition in 001_core_tables.sql
+-- This migration now only handles cache and webhook tables
