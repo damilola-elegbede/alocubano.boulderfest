@@ -155,7 +155,7 @@ jobs:
             
             if curl -f -s --connect-timeout 30 --max-time 60 "$FULL_URL" > /dev/null; then
               echo "✅ $endpoint - OK"
-              ((SUCCESS_COUNT++))
+              SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
             else
               echo "❌ $endpoint - Failed"
             fi
@@ -194,7 +194,7 @@ jobs:
             
             if curl -f -s --connect-timeout 30 --max-time 60 "$FULL_URL" > /dev/null; then
               echo "✅ $asset - OK"
-              ((SUCCESS_COUNT++))
+              SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
             else
               echo "⚠️ $asset - Failed (may not exist)"
             fi
