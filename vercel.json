@@ -106,11 +106,11 @@
     },
     {
       "source": "/home",
-      "destination": "/home.html"
+      "destination": "/pages/home.html"
     },
     {
       "source": "/about",
-      "destination": "/about.html"
+      "destination": "/pages/about.html"
     },
     {
       "source": "/boulder-fest-2026/home",
@@ -118,7 +118,7 @@
     },
     {
       "source": "/boulder-fest-2026/about",
-      "destination": "/about.html"
+      "destination": "/pages/about.html"
     },
     {
       "source": "/boulder-fest-2026/donations",
@@ -174,11 +174,11 @@
     },
     {
       "source": "/about-festival",
-      "destination": "/about.html"
+      "destination": "/pages/about.html"
     },
     {
       "source": "/contact",
-      "destination": "/contact.html"
+      "destination": "/pages/contact.html"
     },
     {
       "source": "/donations",
@@ -234,27 +234,27 @@
     },
     {
       "source": "/success",
-      "destination": "/success.html"
+      "destination": "/pages/success.html"
     },
     {
       "source": "/failure",
-      "destination": "/failure.html"
+      "destination": "/pages/failure.html"
     },
     {
       "source": "/my-tickets",
-      "destination": "/my-tickets.html"
+      "destination": "/pages/my-tickets.html"
     },
     {
       "source": "/checkout-success",
-      "destination": "/checkout-success.html"
+      "destination": "/pages/checkout-success.html"
     },
     {
       "source": "/checkout-cancel",
-      "destination": "/checkout-cancel.html"
+      "destination": "/pages/checkout-cancel.html"
     },
     {
       "source": "/admin/checkin",
-      "destination": "/admin/checkin.html"
+      "destination": "/pages/admin/checkin.html"
     },
     {
       "source": "/manifest.json",
@@ -269,17 +269,17 @@
     },
     {
       "source": "/boulder-fest-2025/tickets",
-      "destination": "/tickets.html",
+      "destination": "/pages/tickets.html",
       "permanent": false
     },
     {
       "source": "/boulder-fest-2026/tickets",
-      "destination": "/tickets.html",
+      "destination": "/pages/tickets.html",
       "permanent": false
     },
     {
       "source": "/weekender-2026-09/tickets",
-      "destination": "/tickets.html",
+      "destination": "/pages/tickets.html",
       "permanent": false
     }
   ],
