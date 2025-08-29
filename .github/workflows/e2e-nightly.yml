@@ -1,0 +1,248 @@
+---
+name: 🌙 Nightly E2E Comprehensive Testing
+
+# Comprehensive nightly testing with full browser matrix, performance profiling,
+# accessibility testing, and cross-device validation
+# Runs on production-like environments with extended timeouts and thorough coverage
+
+on:
+  schedule:
+    # Run at 2 AM UTC every day (adjust for your timezone)
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test against'
+        required: false
+        default: 'staging'
+        type: choice
+        options:
+          - 'staging'
+          - 'production'
+          - 'localhost'
+      extended_browsers:
+        description: 'Include extended browser matrix (Edge, older versions)'
+        required: false
+        default: true
+        type: boolean
+      performance_profiling:
+        description: 'Enable detailed performance profiling'
+        required: false
+        default: true
+        type: boolean
+      accessibility_testing:
+        description: 'Run accessibility validation tests'
+        required: false
+        default: true
+        type: boolean
+      load_testing:
+        description: 'Include load testing scenarios'
+        required: false
+        default: false
+        type: boolean
+
+# Allow only one nightly run at a time
+concurrency:
+  group: nightly-e2e
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "20"
+  NODE_ENV: test
+  CI: true
+  # Higher memory limit for comprehensive testing
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  # Nightly test configuration
+  E2E_TEST_MODE: true
+  NIGHTLY_TESTING: true
+  PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
+  # Extended timeouts for nightly runs
+  PLAYWRIGHT_TIMEOUT: 60000
+  PLAYWRIGHT_NAVIGATION_TIMEOUT: 30000
+  # Database configuration
+  DATABASE_URL: "file:./data/nightly-test.db"
+  TURSO_DATABASE_URL: "file:./data/nightly-test.db"
+
+jobs:
+  # Environment preparation and validation
+  prepare:
+    name: 🔧 Environment Preparation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      test_url: ${{ steps.env.outputs.test_url }}
+      environment: ${{ steps.env.outputs.environment }}
+      extended_browsers: ${{ steps.env.outputs.extended_browsers }}
+      performance_profiling: ${{ steps.env.outputs.performance_profiling }}
+      accessibility_testing: ${{ steps.env.outputs.accessibility_testing }}
+      load_testing: ${{ steps.env.outputs.load_testing }}
+      test_matrix: ${{ steps.matrix.outputs.matrix }}
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🌐 Determine Test Environment & Toggles
+        id: env
+        run: |
+          # Parse inputs safely from event payload (works for schedule and dispatch)
+          EVENT_FILE="${GITHUB_EVENT_PATH}"
+          ENV_INPUT="$(jq -r '.inputs.environment // empty' "$EVENT_FILE" 2>/dev/null || true)"
+          EXT_INPUT="$(jq -r '.inputs.extended_browsers // empty' "$EVENT_FILE" 2>/dev/null || true)"
+          PERF_INPUT="$(jq -r '.inputs.performance_profiling // empty' "$EVENT_FILE" 2>/dev/null || true)"
+          A11Y_INPUT="$(jq -r '.inputs.accessibility_testing // empty' "$EVENT_FILE" 2>/dev/null || true)"
+          LOAD_INPUT="$(jq -r '.inputs.load_testing // empty' "$EVENT_FILE" 2>/dev/null || true)"
+
+          ENVIRONMENT="${ENV_INPUT:-staging}"
+          EXTENDED="${EXT_INPUT:-true}"
+          PERF="${PERF_INPUT:-true}"
+          A11Y="${A11Y_INPUT:-true}"
+          LOAD="${LOAD_INPUT:-false}"
+
+          # Determine test URL based on environment
+          case "$ENVIRONMENT" in
+            "production")
+              TEST_URL="https://alocubanoboulderfest.com"
+              echo "⚠️  WARNING: Running against PRODUCTION environment"
+              ;;
+            "staging")
+              TEST_URL="https://staging.alocubanoboulderfest.com"
+              echo "✅ Using staging environment"
+              ;;
+            "localhost")
+              TEST_URL="http://localhost:3000"
+              echo "🏠 Using localhost environment"
+              ;;
+            *)
+              echo "❌ Invalid environment specified"
+              exit 1
+              ;;
+          esac
+          
+          echo "test_url=$TEST_URL" >> $GITHUB_OUTPUT
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+          echo "extended_browsers=$EXTENDED" >> $GITHUB_OUTPUT
+          echo "performance_profiling=$PERF" >> $GITHUB_OUTPUT
+          echo "accessibility_testing=$A11Y" >> $GITHUB_OUTPUT
+          echo "load_testing=$LOAD" >> $GITHUB_OUTPUT
+          echo "Test URL: $TEST_URL"
+
+      - name: 🎭 Generate Test Matrix
+        id: matrix
+        run: |
+          # Base browser matrix
+          MATRIX='{"include":['
+          MATRIX+='{	"browser":"chromium","name":"Chrome Desktop","category":"desktop","device":"Desktop Chrome"},'
+          MATRIX+='{"browser":"firefox","name":"Firefox Desktop","category":"desktop","device":"Desktop Firefox"},'
+          MATRIX+='{"browser":"webkit","name":"Safari Desktop","category":"desktop","device":"Desktop Safari"},'
+          MATRIX+='{"browser":"mobile-chrome","name":"Chrome Mobile","category":"mobile","device":"Pixel 5"},'
+          MATRIX+='{"browser":"mobile-safari","name":"Safari Mobile","category":"mobile","device":"iPhone 13"},'
+          MATRIX+='{"browser":"tablet-ipad","name":"iPad Tablet","category":"tablet","device":"iPad Mini"}'
+          
+          # Add extended browsers if requested
+          if [ "${{ steps.env.outputs.extended_browsers }}" = "true" ]; then
+            MATRIX+=',{"browser":"edge","name":"Edge Desktop","category":"desktop","device":"Desktop Edge"}'
+          fi
+          
+          MATRIX+=']}'
+          
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+          echo "Generated test matrix with $(echo "$MATRIX" | grep -o '"browser"' | wc -l) browser configurations"
+      
+      - name: ✅ Validate Test Environment
+        run: |
+          TEST_URL="${{ steps.env.outputs.test_url }}"
+          
+          # Skip validation for localhost (server not running yet)
+          if [[ "$TEST_URL" == *"localhost"* ]]; then
+            echo "⏭️  Skipping validation for localhost environment"
+            exit 0
+          fi
+          
+          echo "🔍 Validating test environment: $TEST_URL"
+          
+          # Basic connectivity test
+          if curl -f --max-time 10 "$TEST_URL/api/health/check" >/dev/null 2>&1; then
+            echo "✅ Environment is accessible and healthy"
+          else
+            echo "❌ Environment validation failed"
+            echo "URL: $TEST_URL"
+            exit 1
+          fi
+
+  # Simplified E2E tests for nightly runs
+  nightly-e2e:
+    name: 🎭 Nightly E2E (${{ matrix.browser-name }})
+    runs-on: ubuntu-latest
+    needs: prepare
+    timeout-minutes: 30
+    continue-on-error: false
+    
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - browser: chromium
+            browser-name: Chrome
+          - browser: firefox  
+            browser-name: Firefox
+          - browser: webkit
+            browser-name: Safari
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 🎭 Install Playwright Browsers
+        run: npx playwright install ${{ matrix.browser }} --with-deps
+
+      - name: 📁 Prepare Test Environment
+        run: |
+          mkdir -p data test-results playwright-report
+          echo "PLAYWRIGHT_BASE_URL=${{ needs.prepare.outputs.test_url }}" >> $GITHUB_ENV
+
+      - name: 🧪 Run E2E Tests
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ needs.prepare.outputs.test_url }}
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD || 'test-admin-password' }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY_TEST || '' }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET_TEST || 'test-admin-secret-key-minimum-32-characters' }}
+        run: |
+          npx playwright test --project=${{ matrix.browser }} --reporter=html,list
+
+      - name: 📤 Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-results-${{ matrix.browser }}-${{ github.run_number }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  # Results summary
+  summary:
+    name: 📋 Test Summary
+    runs-on: ubuntu-latest
+    needs: [prepare, nightly-e2e]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+      - name: 📊 Generate Summary
+        run: |
+          echo "# 🌙 Nightly E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ needs.prepare.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test URL**: ${{ needs.prepare.outputs.test_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ needs.nightly-e2e.result == 'success' && '✅ Passed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY

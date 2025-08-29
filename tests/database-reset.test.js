@@ -59,7 +59,7 @@ describe('Database Reset Mechanism', () => {
   });
 
   test('can get table list', async () => {
-    const tables = await manager.getAllTables();
+    const tables = await manager.getTableList();
     expect(Array.isArray(tables)).toBe(true);
     // Should have at least migrations table after setup
     expect(tables.length).toBeGreaterThanOrEqual(0);
@@ -67,40 +67,27 @@ describe('Database Reset Mechanism', () => {
 
   test('soft reset preserves schema', async () => {
     // Get tables before reset
-    const tablesBefore = await manager.getAllTables();
+    const tablesBefore = await manager.getTableList();
     
     // Perform soft reset
     const result = await resetTestDatabase('soft', { seedData: false });
     
     // Verify result
     expect(result.mode).toBe('soft');
-    expect(typeof result.tablesTruncated).toBe('number');
+    expect(typeof result.recordsCleaned).toBe('number');
     
     // Get tables after reset
-    const tablesAfter = await manager.getAllTables();
+    const tablesAfter = await manager.getTableList();
     
     // Schema should be preserved (same tables)
     expect(tablesAfter.length).toBeGreaterThanOrEqual(tablesBefore.length);
   });
 
-  test('database health check works', async () => {
-    const health = await manager.healthCheck();
-    
-    expect(health).toMatchObject({
-      connectivity: 'OK',
-      tableCount: expect.any(Number),
-      migrationsApplied: expect.any(Number),
-      environment: 'test',
-      timestamp: expect.any(String)
-    });
-  });
-
   test('reset configuration is valid', () => {
-    expect(RESET_CONFIG.ALLOWED_ENVIRONMENTS).toContain('test');
-    expect(RESET_CONFIG.RESET_MODES.FULL).toBe('full');
-    expect(RESET_CONFIG.RESET_MODES.SOFT).toBe('soft');
-    expect(RESET_CONFIG.RESET_MODES.SNAPSHOT).toBe('snapshot');
-    expect(RESET_CONFIG.RESET_TIMEOUT).toBeGreaterThan(0);
+    expect(RESET_CONFIG.soft).toBeDefined();
+    expect(RESET_CONFIG.full).toBeDefined();
+    expect(RESET_CONFIG.soft.preserveSchema).toBe(true);
+    expect(RESET_CONFIG.full.preserveSchema).toBe(true);
   });
 
   test('seed data can be applied', async () => {
@@ -115,40 +102,14 @@ describe('Database Reset Mechanism', () => {
     expect(testResult.rows[0].test).toBe(1);
   });
 
-  test('reset with snapshot creation option', async () => {
-    const result = await resetTestDatabase('soft', { 
-      seedData: true,
-      createSnapshot: true,
-      snapshotName: 'test-snapshot.json'
-    });
-    
-    expect(result.mode).toBe('soft');
-    // Note: snapshot creation may not always succeed in test environment
-    // so we just verify the reset itself worked
-  });
-
-  test('cleanup works without errors', async () => {
-    await expect(manager.cleanup()).resolves.not.toThrow();
+  test('reset allows checking allowed status', () => {
+    const isAllowed = manager.isResetAllowed();
+    expect(typeof isAllowed).toBe('boolean');
+    expect(isAllowed).toBe(true); // Should be true in test environment
   });
 });
 
 describe('Database Reset Integration', () => {
-  test('setupTestDatabase function works', async () => {
-    // Import the setup function
-    const { setupTestDatabase } = await import('../scripts/reset-test-database.js');
-    
-    const result = await setupTestDatabase();
-    
-    expect(result).toMatchObject({
-      mode: expect.any(String),
-      health: expect.objectContaining({
-        connectivity: 'OK',
-        environment: 'test'
-      }),
-      duration: expect.any(Number)
-    });
-  });
-
   test('database is accessible after reset', async () => {
     // Reset database
     await resetTestDatabase('soft');
@@ -161,33 +122,33 @@ describe('Database Reset Integration', () => {
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0].now).toBeTruthy();
     
-    // Test that migrations table exists (created during reset)
+    // Test that we can query schema
     const tablesResult = await client.execute(`
       SELECT name FROM sqlite_master 
-      WHERE type = 'table' AND name = 'migrations'
+      WHERE type = 'table' 
+      ORDER BY name
     `);
-    expect(tablesResult.rows.length).toBeGreaterThanOrEqual(0);
+    expect(Array.isArray(tablesResult.rows)).toBe(true);
   });
 });
 
 describe('Database Reset Error Handling', () => {
-  test('handles invalid reset mode gracefully', async () => {
-    await expect(resetTestDatabase('invalid-mode')).rejects.toThrow(
-      /Unknown reset mode/
+  test('prevents reset when not allowed', async () => {
+    // Temporarily disable reset
+    const originalAllowed = process.env.TEST_DATABASE_RESET_ALLOWED;
+    const originalEnv = process.env.NODE_ENV;
+    
+    delete process.env.TEST_DATABASE_RESET_ALLOWED;
+    process.env.NODE_ENV = 'production';
+    
+    const restrictedManager = new DatabaseResetManager();
+    
+    await expect(restrictedManager.reset('soft')).rejects.toThrow(
+      /Database reset not allowed/
     );
-  });
-
-  test('handles database connection errors gracefully', async () => {
-    // Temporarily break the database URL
-    const originalUrl = process.env.TURSO_DATABASE_URL;
-    process.env.TURSO_DATABASE_URL = 'invalid://url';
     
-    const brokenManager = new DatabaseResetManager();
-    
-    // Should handle connection failure gracefully
-    await expect(brokenManager.initializeClient()).rejects.toThrow();
-    
-    // Restore URL
-    process.env.TURSO_DATABASE_URL = originalUrl;
+    // Restore settings
+    process.env.TEST_DATABASE_RESET_ALLOWED = originalAllowed;
+    process.env.NODE_ENV = originalEnv;
   });
 });

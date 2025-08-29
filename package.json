@@ -46,6 +46,7 @@
     "prestart:local": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/setup-database.js",
     "start:local": "node scripts/vercel-dev-wrapper.js",
     "start:clean": "rm -rf .vercel && node scripts/vercel-dev-wrapper.js",
+    "start:ci": "node scripts/ci-server.js",
     "serve:simple": "npx http-server . -p 8000",
     
     "migrate:up": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/migrate.js",
