@@ -48,14 +48,30 @@ npm run test:simple:watch   # Watch mode for development
 npm run test:coverage       # With coverage report
 
 # E2E testing
-npm run test:e2e            # Playwright end-to-end tests
+npm run test:e2e            # 12 comprehensive E2E tests
 npm run test:e2e:ui         # Interactive UI mode
 
-# Phase 2 E2E test flows
-npm run test:e2e -- tests/e2e/flows/gallery-browsing.test.js      # Gallery performance & functionality
-npm run test:e2e -- tests/e2e/flows/admin-dashboard.test.js       # Admin panel & security
-npm run test:e2e -- tests/e2e/flows/mobile-registration-experience.test.js  # Mobile registration
-npm run test:e2e -- tests/e2e/flows/newsletter-simple.test.js     # Newsletter subscription
+# E2E testing with ngrok (automated environment setup)
+npm run test:e2e:ngrok         # Full E2E tests with ngrok tunnel
+npm run test:e2e:ngrok:ui      # Interactive UI mode with ngrok
+npm run test:e2e:ngrok:headed  # Headed browser mode with ngrok
+npm run test:e2e:ngrok:debug   # Debug mode with ngrok
+npm run test:e2e:ngrok:fast    # Fast mode (Chromium only) with ngrok
+npm run test:e2e:validate       # Validate E2E setup prerequisites
+
+# E2E test flows (12 total)
+npm run test:e2e -- tests/e2e/flows/admin-auth.test.js                      # Admin authentication
+npm run test:e2e -- tests/e2e/flows/admin-dashboard.test.js                 # Admin panel & security
+npm run test:e2e -- tests/e2e/flows/basic-navigation.test.js                # Basic navigation
+npm run test:e2e -- tests/e2e/flows/cart-functionality.test.js              # Cart operations
+npm run test:e2e -- tests/e2e/flows/gallery-basic.test.js                   # Gallery browsing
+npm run test:e2e -- tests/e2e/flows/gallery-browsing.test.js                # Gallery performance & functionality
+npm run test:e2e -- tests/e2e/flows/mobile-registration-experience.test.js  # Mobile registration flow
+npm run test:e2e -- tests/e2e/flows/newsletter-simple.test.js               # Newsletter subscription
+npm run test:e2e -- tests/e2e/flows/payment-flow.test.js                    # Payment processing
+npm run test:e2e -- tests/e2e/flows/registration-flow.test.js               # Registration process
+npm run test:e2e -- tests/e2e/flows/ticket-validation.test.js               # Ticket validation
+npm run test:e2e -- tests/e2e/flows/user-engagement.test.js                 # User engagement metrics
 
 # Health checks
 npm run test:health         # API health verification
@@ -68,7 +84,7 @@ npm run test:all            # Complete test suite
 ### Database
 
 ```bash
-# Development Database Migrations
+# Development Database (SQLite)
 npm run migrate:up           # Run pending migrations
 npm run migrate:status       # Check migration status
 npm run migrate:verify       # Verify integrity
@@ -77,34 +93,6 @@ npm run migrate:verify       # Verify integrity
 npm run db:shell            # SQLite shell
 npm run health:database     # Health check
 ```
-
-### E2E Test Database Management
-
-End-to-end testing requires isolated database operations with built-in safety mechanisms:
-
-```bash
-# E2E Database Setup
-npm run db:e2e:setup        # Create tables and insert test data
-npm run db:e2e:validate     # Validate existing database schema
-npm run db:e2e:clean        # Remove test data only
-npm run db:e2e:reset        # Full reset - drop and recreate everything
-
-# E2E Database Migration Management
-npm run migrate:e2e:up      # Run E2E database migrations
-npm run migrate:e2e:status  # Check E2E migration status
-npm run migrate:e2e:validate # Validate E2E schema integrity
-npm run migrate:e2e:reset   # Reset E2E migrations completely
-
-# E2E Database Health Check
-curl -f http://localhost:3000/api/health/e2e-database | jq '.'
-```
-
-**E2E Database Safety Features:**
-- **Environment Flags**: Requires `E2E_TEST_MODE=true` or `ENVIRONMENT=e2e-test`
-- **Database URL Validation**: Warns if database URL doesn't contain "test" or "staging"
-- **Automatic Test Data Cleanup**: Removes test data matching `%@e2e-test.%` patterns
-- **Schema Validation**: Verifies required tables and columns exist
-- **Migration Isolation**: Separate migration tracking from development database
 
 ### Deployment
 
@@ -135,41 +123,14 @@ git push origin main        # Auto-deploy to production
 - **Wallet passes** for Apple/Google with JWT authentication
 - **Admin panel** with bcrypt auth and JWT sessions
 
-### Testing
-- **Streamlined test suite** with Vitest - 96% complexity reduction (419 vs 11,411 lines)
-- **26 essential unit tests** covering critical API contracts and business flows
-- **Fast execution** for complete unit test suite
-- **Playwright** for comprehensive E2E tests with multi-browser support
-- **Zero abstractions** - every test readable by any JavaScript developer
-- **Direct API calls** - no complex mocking or test infrastructure
-
-### Phase 2 E2E Testing Enhancements
-- **Gallery Performance Testing** (`tests/e2e/flows/gallery-browsing.test.js`):
-  - Google Drive API integration with comprehensive error handling
-  - Lazy loading and virtual scrolling performance (1000+ images)
-  - Image optimization testing (AVIF → WebP → JPEG)
-  - Core Web Vitals compliance (LCP, CLS, FID)
-  - Memory leak detection and cache effectiveness
-  - Cross-browser and multi-device responsive testing
-
-- **Admin Panel Security Testing** (`tests/e2e/flows/admin-dashboard.test.js`):
-  - JWT authentication and session management
-  - Rate limiting and brute force protection
-  - MFA flow validation and security auditing
-  - Dashboard operations and bulk ticket management
-  - Analytics accuracy and export functionality
-  - System configuration and compliance monitoring
-
-- **Performance Testing Utilities** (`tests/e2e/helpers/performance-gallery.js`):
-  - Comprehensive performance monitoring and metrics collection
-  - Network simulation (slow-3g to 4g) and cache optimization
-  - Memory usage tracking and garbage collection effectiveness
-  - Performance regression detection with baseline comparison
-
-- **Admin Authentication Helpers** (`tests/e2e/helpers/admin-auth.js`):
-  - Complete authentication flow testing and JWT security validation
-  - Security attack simulation (CSRF, XSS, session hijacking)
-  - Multi-factor authentication and session timeout testing
+### Streamlined Testing Strategy
+- **Simple test suite** with Vitest - 26 essential unit tests covering critical functionality
+- **Fast execution** - complete unit test suite finishes in seconds
+- **12 comprehensive E2E tests** - focused Playwright tests covering core user workflows and advanced scenarios
+- **SQLite for unit tests** - fast, reliable local testing
+- **Turso for E2E tests** - realistic production-like testing environment
+- **Zero test abstractions** - every test readable by any JavaScript developer
+- **Direct API testing** - no complex mocking or test infrastructure
 
 ## Key API Patterns
 
@@ -246,10 +207,8 @@ ADMIN_SECRET=            # min 32 chars
 APPLE_PASS_KEY=          # base64 encoded
 WALLET_AUTH_SECRET=      # JWT signing
 
-# E2E Testing (optional)
-E2E_TEST_MODE=true       # Enables E2E database operations
-ENVIRONMENT=e2e-test     # Alternative way to enable E2E mode
-TEST_ADMIN_PASSWORD=     # For admin panel E2E testing
+# Testing (optional)
+TEST_ADMIN_PASSWORD=     # Plain text password for admin panel E2E testing (not bcrypt hashed)
 ```
 
 ## API Endpoints
@@ -294,7 +253,6 @@ TEST_ADMIN_PASSWORD=     # For admin panel E2E testing
 ### Health & Monitoring
 - `GET /api/health/check` - General application health
 - `GET /api/health/database` - Development database health
-- `GET /api/health/e2e-database` - E2E database health (E2E mode only)
 
 ## Database Migrations
 
@@ -310,9 +268,9 @@ Features:
 
 ### GitHub Actions
 - **Streamlined testing**: Single test command `npm test` runs 26 essential unit tests
-- **Fast execution**: Complete unit test suite typically finishes quickly
+- **Fast execution**: Complete unit test suite finishes in seconds
 - **Memory efficient**: No complex test infrastructure or high memory usage
-- **E2E validation**: Separate Playwright test execution for comprehensive coverage
+- **Comprehensive E2E validation**: 12 focused Playwright tests for complete coverage
 - **Reliable**: Direct API testing with minimal mocking
 
 ### Test Architecture
@@ -322,14 +280,23 @@ Features:
   - smoke-tests.test.js (3 tests) - Basic functionality verification  
   - registration-api.test.js (5 tests) - Registration API unit tests
   - registration-flow.test.js (3 tests) - Registration flow tests
-- **E2E Test Suite (Playwright)**:
-  - Multi-browser testing (Chrome, Firefox, Safari, Edge)
-  - Multi-device testing (desktop, mobile, tablet)
-  - Real user workflows and database isolation
-  - **Phase 2 Gallery Testing**: Performance, API integration, optimization
-  - **Phase 2 Admin Panel Testing**: Security, operations, compliance
-- **419 total unit test lines**: Massive reduction from 11,411 lines (96% complexity reduction)
-- **Zero test frameworks**: No complex test builders, managers, or abstractions
+- **E2E Test Suite (12 comprehensive tests)**:
+  - admin-auth.test.js - Admin authentication flow
+  - admin-dashboard.test.js - Admin panel & security testing
+  - basic-navigation.test.js - Page navigation and routing
+  - cart-functionality.test.js - Shopping cart operations
+  - gallery-basic.test.js - Gallery browsing functionality
+  - gallery-browsing.test.js - Gallery performance & API integration
+  - mobile-registration-experience.test.js - Mobile-optimized registration flow
+  - newsletter-simple.test.js - Newsletter subscription
+  - payment-flow.test.js - Payment processing workflow
+  - registration-flow.test.js - Registration process
+  - ticket-validation.test.js - QR code validation
+  - user-engagement.test.js - User engagement metrics and tracking
+- **Database Strategy**:
+  - **Unit tests**: SQLite for fast, isolated testing
+  - **E2E tests**: Turso for production-like environment
+- **Simple execution**: No complex test builders, managers, or abstractions
 - **Real API testing**: Tests interact with actual endpoints and services
 
 ## Floating Cart Visibility
@@ -347,24 +314,8 @@ Managed by `determineCartVisibility()` in `floating-cart.js`:
 - **API response**: <100ms target
 - **Browser cache**: 24-hour for static assets
 - **Unit test execution**: Fast completion for 26 unit tests
-- **E2E test execution**: 2-5 minutes for comprehensive browser testing
+- **E2E test execution**: 2-5 minutes for 12 comprehensive tests
 - **Test simplicity**: Zero abstractions, readable by any JavaScript developer
-
-### Phase 2 Performance Benchmarks
-
-#### Gallery Performance
-- **Initial Load Time**: <2 seconds for gallery container
-- **Image Load Time**: <1.5 seconds average per image
-- **Cache Hit Ratio**: >80% for repeat visits
-- **Memory Usage**: <150% increase during extended browsing (1000+ images)
-- **Virtual Scrolling**: Maintain 60fps during rapid scrolling operations
-
-#### Admin Dashboard Performance
-- **Authentication Response**: <500ms for login operations
-- **Dashboard Load**: <1 second for complete dashboard with data
-- **Bulk Operations**: <3 seconds for processing 50+ tickets
-- **Database Queries**: <100ms for admin queries and filters
-- **Export Operations**: <5 seconds for CSV generation and download
 
 ## Debugging
 
@@ -392,8 +343,6 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 │   ├── registration/   # Registration endpoints
 │   ├── gallery/        # Gallery endpoints
 │   └── health/         # Health check endpoints
-│       ├── database.js    # Development database health
-│       └── e2e-database.js # E2E database health monitoring
 ├── pages/              # HTML pages
 ├── js/                 # Frontend JavaScript
 ├── css/                # Stylesheets
@@ -403,27 +352,25 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 │   ├── smoke-tests.test.js          # Smoke tests (3 tests)
 │   ├── registration-api.test.js     # Registration API contracts (5 tests)
 │   ├── registration-flow.test.js    # Registration flow tests (3 tests)
-│   ├── e2e/                         # E2E test infrastructure
-│   │   ├── flows/                   # E2E test flows
-│   │   │   ├── gallery-browsing.test.js           # Gallery performance & functionality
-│   │   │   ├── admin-dashboard.test.js            # Admin panel & authentication
-│   │   │   ├── mobile-registration-experience.test.js  # Mobile registration flow
-│   │   │   └── newsletter-simple.test.js          # Newsletter subscription testing
-│   │   ├── helpers/                 # E2E test utilities
-│   │   │   ├── performance-gallery.js             # Gallery performance testing utilities
-│   │   │   ├── admin-auth.js                      # Admin authentication helpers
-│   │   │   ├── google-drive-mock.js               # Gallery API mocking utilities
-│   │   │   └── mobile-test-scenarios.js           # Mobile testing scenarios
-│   │   ├── global-setup.js          # E2E environment setup
-│   │   └── global-teardown.js       # E2E environment cleanup
+│   ├── e2e/                         # Comprehensive E2E test structure
+│   │   └── flows/                   # 12 focused E2E tests
+│   │       ├── admin-auth.test.js                      # Admin authentication
+│   │       ├── admin-dashboard.test.js                 # Admin panel & security
+│   │       ├── basic-navigation.test.js                # Basic navigation
+│   │       ├── cart-functionality.test.js              # Cart operations
+│   │       ├── gallery-basic.test.js                   # Gallery browsing
+│   │       ├── gallery-browsing.test.js                # Gallery performance & functionality
+│   │       ├── mobile-registration-experience.test.js  # Mobile registration flow
+│   │       ├── newsletter-simple.test.js               # Newsletter subscription
+│   │       ├── payment-flow.test.js                    # Payment processing
+│   │       ├── registration-flow.test.js               # Registration process
+│   │       ├── ticket-validation.test.js               # Ticket validation
+│   │       └── user-engagement.test.js                 # User engagement metrics
 │   ├── helpers.js               # Simple test utilities
 │   ├── setup.js                 # Minimal test setup
 │   └── vitest.config.js         # Vitest configuration
 ├── migrations/         # Database migrations
 ├── scripts/            # Build and utility scripts
-│   ├── setup-e2e-database.js   # E2E database automation
-│   └── migrate-e2e.js          # E2E migration management
-├── playwright.config.js        # Playwright E2E configuration
 └── config/             # ESLint, HTMLHint configs
 ```
 
@@ -438,5 +385,4 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 - [Changelog](CHANGELOG.md)
 - [Async Initialization Guide](/docs/ASYNC_INITIALIZATION_GUIDE.md)
 - [Testing Strategy](/docs/testing/TESTING_STRATEGY.md)
-- [API Documentation](/docs/api/API_DOCUMENTATION.md)
-- [E2E Test Flows Guide](/tests/e2e/flows/README.md) - Phase 2 gallery and admin panel test flows
+- [API Documentation](/docs/api/README.md)

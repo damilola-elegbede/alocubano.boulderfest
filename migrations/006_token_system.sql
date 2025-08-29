@@ -27,8 +27,10 @@ CREATE TABLE IF NOT EXISTS action_tokens (
 );
 
 -- Phase 3: Add validation fields to existing tickets table for QR codes
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS validation_signature TEXT;
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS qr_code_data TEXT;
+-- Note: SQLite doesn't support IF NOT EXISTS for ALTER TABLE ADD COLUMN
+-- Migration runner will handle duplicate column errors gracefully
+ALTER TABLE tickets ADD COLUMN validation_signature TEXT;
+ALTER TABLE tickets ADD COLUMN qr_code_data TEXT;
 
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_access_tokens_hash ON access_tokens(token_hash);

@@ -231,47 +231,146 @@ class MigrationSystem {
   async executeMigration(migration) {
     console.log(`🔄 Executing migration: ${migration.filename}`);
 
-    // Start transaction to ensure atomicity
-    await this.db.execute("BEGIN TRANSACTION");
+    // Use proper transaction API with timeout protection (60s for migrations)
+    const transaction = await this.db.transaction(60000);
 
     try {
-      // Execute each statement in the migration
+      // First ensure migrations table exists within the transaction scope
+      await transaction.execute(`
+        CREATE TABLE IF NOT EXISTS migrations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          filename TEXT NOT NULL UNIQUE,
+          executed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          checksum TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Execute each statement in the migration within the transaction
       for (const statement of migration.statements) {
         if (statement.trim()) {
-          await this.db.execute(statement);
+          try {
+            await transaction.execute(statement);
+          } catch (statementError) {
+            // Handle idempotent operations gracefully
+            if (this._isIdempotentError(statementError.message, statement)) {
+              console.log(`   ⚠️  Idempotent operation skipped: ${statementError.message}`);
+              continue; // Skip this statement and continue with the migration
+            }
+            // Enhanced error logging for debugging
+            console.error(`   ❌ Statement execution failed:`);
+            console.error(`   Statement: ${statement.substring(0, 200)}...`);
+            console.error(`   Error message: ${statementError.message}`);
+            console.error(`   Error code: ${statementError.code || 'unknown'}`);
+            // Re-throw non-idempotent errors
+            throw statementError;
+          }
         }
       }
 
       // Generate checksum for verification
       const checksum = await this.generateChecksum(migration.content);
 
-      // Record migration as executed
-      await this.db.execute(
+      // Record migration as executed within the transaction
+      await transaction.execute(
         "INSERT INTO migrations (filename, checksum) VALUES (?, ?)",
         [migration.filename, checksum],
       );
 
       // Commit the transaction on success
-      await this.db.execute("COMMIT");
+      await transaction.commit();
 
       console.log(`✅ Migration completed: ${migration.filename}`);
     } catch (error) {
-      // Rollback the transaction on failure
+      // Rollback the transaction on failure with better error handling
       try {
-        await this.db.execute("ROLLBACK");
+        console.log(`🔄 Rolling back transaction for ${migration.filename}...`);
+        await transaction.rollback();
+        console.log(`✅ Transaction rolled back successfully`);
       } catch (rollbackError) {
         console.error(
           "❌ Failed to rollback transaction:",
           rollbackError.message,
         );
+        
+        // If rollback fails due to LibSQL client issues, force database service reset
+        if (rollbackError.message.includes("no transaction") || 
+            rollbackError.message.includes("timeout")) {
+          console.warn("⚠️  Transaction state may be corrupted, resetting database service...");
+          try {
+            await this.db.resetForTesting();
+            console.log("✅ Database service reset successfully");
+          } catch (resetError) {
+            console.error("❌ Failed to reset database service:", resetError.message);
+          }
+        }
       }
 
-      console.error(
-        `❌ Migration failed: ${migration.filename}`,
-        error.message,
+      // Enhanced error reporting for migration failures
+      const errorDetails = {
+        migration: migration.filename,
+        error: error.message,
+        statements: migration.statements.length,
+        timestamp: new Date().toISOString(),
+      };
+
+      console.error(`❌ Migration failed:`, errorDetails);
+      
+      // Re-throw with enhanced error message for better debugging
+      const enhancedError = new Error(
+        `Migration ${migration.filename} failed: ${error.message}`
       );
-      throw error;
+      enhancedError.originalError = error;
+      enhancedError.migrationDetails = errorDetails;
+      throw enhancedError;
     }
+  }
+
+  /**
+   * Check if an error is from an idempotent operation that can be safely ignored
+   * @private
+   */
+  _isIdempotentError(errorMessage, statement) {
+    const statementUpper = statement.toUpperCase().trim();
+    
+    // Handle LibSQL success messages that are reported as errors
+    if (errorMessage.includes('SQLITE_OK: not an error') || 
+        errorMessage === 'not an error') {
+      return true;
+    }
+    
+    // Handle duplicate column errors
+    if (errorMessage.includes('duplicate column name') || 
+        errorMessage.includes('already exists')) {
+      if (statementUpper.includes('ALTER TABLE') && statementUpper.includes('ADD COLUMN')) {
+        return true;
+      }
+    }
+    
+    // Handle duplicate index errors  
+    if (errorMessage.includes('already exists') || 
+        errorMessage.includes('duplicate index')) {
+      if (statementUpper.includes('CREATE INDEX') || 
+          statementUpper.includes('CREATE UNIQUE INDEX')) {
+        return true;
+      }
+    }
+    
+    // Handle duplicate table errors (CREATE TABLE IF NOT EXISTS should not fail, but just in case)
+    if (errorMessage.includes('table') && errorMessage.includes('already exists')) {
+      if (statementUpper.includes('CREATE TABLE IF NOT EXISTS')) {
+        return true;
+      }
+    }
+    
+    // Handle duplicate trigger errors
+    if (errorMessage.includes('trigger') && errorMessage.includes('already exists')) {
+      if (statementUpper.includes('CREATE TRIGGER IF NOT EXISTS')) {
+        return true;
+      }
+    }
+    
+    return false;
   }
 
   /**
@@ -289,6 +388,13 @@ class MigrationSystem {
     console.log("🚀 Starting database migrations...");
 
     try {
+      // Test database connection first to catch early issues
+      const connectionTest = await this.db.testConnection();
+      if (!connectionTest) {
+        throw new Error("Database connection test failed - cannot proceed with migrations");
+      }
+      console.log("✅ Database connection verified");
+
       // Initialize migrations table
       await this.initializeMigrationsTable();
 
@@ -326,6 +432,16 @@ class MigrationSystem {
       };
     } catch (error) {
       console.error("❌ Migration system failed:", error.message);
+      
+      // Attempt to clean up database connections on failure
+      try {
+        console.log("🧹 Cleaning up database connections after migration failure...");
+        await this.db.close(5000);
+        console.log("✅ Database connections cleaned up");
+      } catch (cleanupError) {
+        console.warn("⚠️  Failed to clean up database connections:", cleanupError.message);
+      }
+      
       throw error;
     }
   }

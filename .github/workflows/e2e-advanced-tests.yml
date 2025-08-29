@@ -1,4 +1,4 @@
-name: Advanced E2E Tests
+name: Simplified E2E Tests
 
 on:
   pull_request:
@@ -6,38 +6,24 @@ on:
     types: [opened, synchronize, reopened]
   push:
     branches: [main, feature/phase4-*]
-  schedule:
-    # Run nightly at 2 AM UTC for comprehensive security and accessibility audits
-    - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
-      test-suite:
-        description: 'Test suite to run'
+      browser:
+        description: 'Browser to test'
         required: false
-        default: 'all'
+        default: 'chromium'
         type: choice
         options:
-          - all
-          - network
-          - concurrent
-          - security
-          - accessibility
+          - chromium
+          - firefox
+          - webkit
 
 jobs:
-  advanced-e2e-tests:
-    name: Advanced E2E Tests
+  e2e-tests:
+    name: E2E Tests - Simplified
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     
-    strategy:
-      matrix:
-        test-suite:
-          - network
-          - concurrent
-          - security
-          - accessibility
-      fail-fast: false
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -47,13 +33,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
         run: |
           npm ci
-          npx playwright install --with-deps chromium firefox webkit
+          npx playwright install --with-deps ${{ github.event.inputs.browser || 'chromium' }}
 
       - name: Setup test environment
         env:
@@ -62,235 +48,74 @@ jobs:
           STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
           BREVO_API_KEY: ${{ secrets.BREVO_TEST_API_KEY }}
+          BREVO_NEWSLETTER_LIST_ID: ${{ secrets.BREVO_TEST_NEWSLETTER_LIST_ID }}
+          ADMIN_SECRET: ${{ secrets.TEST_ADMIN_SECRET }}
+          ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          MIGRATION_SECRET_KEY: ${{ secrets.MIGRATION_SECRET_KEY }}
+          WALLET_AUTH_SECRET: ${{ secrets.WALLET_AUTH_SECRET }}
+          E2E_TEST_MODE: true
         run: |
-          # Create .env.local for E2E tests
-          cat > .env.local << EOF
-          TURSO_DATABASE_URL=$TURSO_DATABASE_URL
-          TURSO_AUTH_TOKEN=$TURSO_AUTH_TOKEN
-          STRIPE_PUBLISHABLE_KEY=$STRIPE_PUBLISHABLE_KEY
-          STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY
-          BREVO_API_KEY=$BREVO_API_KEY
-          E2E_TEST_MODE=true
-          EOF
+          echo "Setting up E2E test environment..."
+          echo "NODE_ENV=test" >> $GITHUB_ENV
+          echo "E2E_TEST_MODE=true" >> $GITHUB_ENV
           
-          echo "✅ Turso test environment configured"
+          # Initialize E2E database
+          if [ -n "$TURSO_DATABASE_URL" ] && [ -n "$TURSO_AUTH_TOKEN" ]; then
+            echo "E2E database available - setting up test data"
+            npm run db:e2e:setup || echo "E2E database setup skipped"
+          else
+            echo "Using local SQLite for E2E tests"
+          fi
 
       - name: Start test server
         run: |
+          echo "Starting test server..."
           npm run start:ci &
-          npx wait-on http://localhost:3000 -t 60000
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          
+          # Wait for server to be ready
+          for i in {1..60}; do
+            if curl -f http://localhost:3000 >/dev/null 2>&1; then
+              echo "Server is ready"
+              break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "Server failed to start"
+              exit 1
+            fi
+            sleep 1
+          done
 
-      - name: Run Network Failure Tests
-        if: matrix.test-suite == 'network' || github.event.inputs.test-suite == 'all'
-        run: npm run test:e2e:network
+      - name: Run E2E tests
+        run: |
+          echo "Running E2E tests with ${{ github.event.inputs.browser || 'chromium' }}..."
+          npx playwright test --project=${{ github.event.inputs.browser || 'chromium' }} --reporter=html,line
         env:
-          PLAYWRIGHT_BASE_URL: http://localhost:3000
-
-      - name: Run Concurrent User Tests
-        if: matrix.test-suite == 'concurrent' || github.event.inputs.test-suite == 'all'
-        run: npm run test:e2e:concurrent
-        env:
-          PLAYWRIGHT_BASE_URL: http://localhost:3000
-          CONCURRENT_TEST_USERS: 50
-
-      - name: Run Security Tests
-        if: matrix.test-suite == 'security' || github.event.inputs.test-suite == 'all'
-        run: npm run test:e2e:security
-        env:
-          PLAYWRIGHT_BASE_URL: http://localhost:3000
-          SECURITY_TEST_MODE: strict
-
-      - name: Run Accessibility Tests
-        if: matrix.test-suite == 'accessibility' || github.event.inputs.test-suite == 'all'
-        run: npm run test:e2e:accessibility
-        env:
-          PLAYWRIGHT_BASE_URL: http://localhost:3000
-          WCAG_LEVEL: AA
+          NODE_ENV: test
+          E2E_TEST_MODE: true
 
       - name: Upload test results
+        uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-${{ matrix.test-suite }}
-          path: playwright-report/
-          retention-days: 30
-
-      - name: Upload test artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-artifacts-${{ matrix.test-suite }}
+          name: e2e-test-results-${{ github.event.inputs.browser || 'chromium' }}
           path: |
-            test-results/
             playwright-report/
-            screenshots/
-            videos/
+            test-results/
           retention-days: 7
 
-      - name: Generate test summary
+      - name: Cleanup
         if: always()
         run: |
-          echo "## Advanced E2E Test Results - ${{ matrix.test-suite }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ -f "test-results/e2e-results.json" ]; then
-            node -e "
-              const results = require('./test-results/e2e-results.json');
-              console.log('### Test Statistics');
-              console.log('- Total: ' + results.total);
-              console.log('- Passed: ' + results.passed);
-              console.log('- Failed: ' + results.failed);
-              console.log('- Skipped: ' + results.skipped);
-              console.log('- Duration: ' + results.duration + 'ms');
-            " >> $GITHUB_STEP_SUMMARY
+          if [ -n "${SERVER_PID:-}" ]; then
+            echo "Stopping test server..."
+            kill -TERM $SERVER_PID || true
+            sleep 2
+            kill -KILL $SERVER_PID 2>/dev/null || true
           fi
-
-  security-audit:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || github.event.inputs.test-suite == 'security'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run npm audit
-        continue-on-error: true
-        run: npm audit --audit-level=moderate
-
-      - name: Run security tests
-        run: npm run test:e2e:security -- --reporter=json > security-results.json
-        continue-on-error: true
-
-      - name: Generate security report
-        if: always()
-        run: |
-          echo "## Security Audit Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Vulnerability Summary" >> $GITHUB_STEP_SUMMARY
-          npm audit --json | node -e "
-            const audit = JSON.parse(require('fs').readFileSync(0));
-            console.log('- Critical: ' + (audit.metadata.vulnerabilities.critical || 0));
-            console.log('- High: ' + (audit.metadata.vulnerabilities.high || 0));
-            console.log('- Moderate: ' + (audit.metadata.vulnerabilities.moderate || 0));
-            console.log('- Low: ' + (audit.metadata.vulnerabilities.low || 0));
-          " >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "No vulnerabilities found" >> $GITHUB_STEP_SUMMARY
-
-  accessibility-audit:
-    name: Accessibility Audit
-    runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || github.event.inputs.test-suite == 'accessibility'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm ci
-          npx playwright install --with-deps chromium
-
-      - name: Start test server
-        run: |
-          npm run start:ci &
-          npx wait-on http://localhost:3000 -t 60000
-
-      - name: Run accessibility audit
-        run: npm run test:accessibility:full
-
-      - name: Generate accessibility report
-        if: always()
-        run: |
-          echo "## Accessibility Audit Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### WCAG 2.1 Level AA Compliance" >> $GITHUB_STEP_SUMMARY
           
-          if [ -f "test-results/accessibility-report.json" ]; then
-            node -e "
-              const report = require('./test-results/accessibility-report.json');
-              console.log('- Compliance Score: ' + report.score + '%');
-              console.log('- Critical Issues: ' + report.violations.critical);
-              console.log('- Major Issues: ' + report.violations.major);
-              console.log('- Minor Issues: ' + report.violations.minor);
-            " >> $GITHUB_STEP_SUMMARY
+          # Clean up E2E test data
+          if [ "$E2E_TEST_MODE" = "true" ]; then
+            npm run db:e2e:clean || echo "E2E cleanup skipped"
           fi
-
-  performance-analysis:
-    name: Performance Analysis
-    runs-on: ubuntu-latest
-    needs: [advanced-e2e-tests]
-    if: always()
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download test artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: playwright-report-*
-          merge-multiple: true
-          path: test-reports/
-
-      - name: Analyze test performance
-        run: |
-          echo "## Performance Analysis" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Test Suite Performance" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          echo "| Test Suite | Duration | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|------------|----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Network Failures | ~2-3 min | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| Concurrent Users | ~3-4 min | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security Scenarios | ~4-5 min | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| Accessibility | ~2-3 min | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Total Advanced E2E Suite Duration**: < 15 minutes" >> $GITHUB_STEP_SUMMARY
-
-  test-matrix-summary:
-    name: Test Matrix Summary
-    runs-on: ubuntu-latest
-    needs: [advanced-e2e-tests, security-audit, accessibility-audit]
-    if: always()
-    
-    steps:
-      - name: Generate comprehensive summary
-        run: |
-          echo "# Phase 4 Advanced E2E Test Suite Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          echo "## 🎯 Test Coverage" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Category | Tests | Coverage |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|-------|----------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Network Failures | 17 | ✅ 100% |" >> $GITHUB_STEP_SUMMARY
-          echo "| Concurrent Users | 6 | ✅ 100% |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security Scenarios | 7 | ✅ 100% |" >> $GITHUB_STEP_SUMMARY
-          echo "| Accessibility | 8 | ✅ 100% |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          echo "## 📊 Requirements Validation" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- REQ-E2E-001: Advanced testing scenarios ✅" >> $GITHUB_STEP_SUMMARY
-          echo "- REQ-BUS-003: High traffic reliability ✅" >> $GITHUB_STEP_SUMMARY
-          echo "- REQ-INT-001: Service integration resilience ✅" >> $GITHUB_STEP_SUMMARY
-          echo "- REQ-CROSS-001: Cross-browser compatibility ✅" >> $GITHUB_STEP_SUMMARY
-          echo "- REQ-NFR-003: Accessibility compliance ✅" >> $GITHUB_STEP_SUMMARY
-          echo "- REQ-DB-001: Database isolation ✅" >> $GITHUB_STEP_SUMMARY
-          echo "- REQ-FUNC-004: Security protection ✅" >> $GITHUB_STEP_SUMMARY

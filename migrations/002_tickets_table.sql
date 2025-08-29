@@ -23,11 +23,18 @@ CREATE TABLE IF NOT EXISTS tickets (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Trigger to automatically update updated_at timestamp when tickets table is modified
-CREATE TRIGGER IF NOT EXISTS update_tickets_updated_at 
-    AFTER UPDATE ON tickets 
-BEGIN
-    UPDATE tickets 
-    SET updated_at = CURRENT_TIMESTAMP 
-    WHERE id = NEW.id;
-END;
+-- Email subscribers table for newsletter and marketing
+CREATE TABLE IF NOT EXISTS email_subscribers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    first_name TEXT,
+    last_name TEXT,
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'unsubscribed', 'bounced')),
+    subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    unsubscribed_at TIMESTAMP,
+    bounce_count INTEGER DEFAULT 0,
+    last_bounce_at TIMESTAMP,
+    source TEXT DEFAULT 'website',
+    preferences TEXT,
+    tags TEXT
+);

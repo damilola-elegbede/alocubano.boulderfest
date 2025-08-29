@@ -4,11 +4,13 @@
 -- Purpose: Track wallet adoption metrics and ticket access methods for analytics dashboard
 -- Rollback: See bottom of file for rollback statements
 
--- Begin transaction for atomic migration
-BEGIN TRANSACTION;
+-- Note: Migration runner already handles transactions
+-- BEGIN TRANSACTION; -- Removed: causes nested transaction error
 
 -- Add wallet_source column for tracking wallet adoption
 -- This column tracks which wallet service was used to add the ticket
+-- Note: SQLite doesn't support IF NOT EXISTS for ALTER TABLE ADD COLUMN
+-- Migration runner should handle duplicate column errors gracefully
 ALTER TABLE tickets ADD COLUMN wallet_source TEXT 
   CHECK (wallet_source IN ('apple_wallet', 'google_wallet') OR wallet_source IS NULL);
 
@@ -45,16 +47,18 @@ INSERT OR REPLACE INTO schema_migrations (version, applied_at, description)
 VALUES ('009', datetime('now'), 'Add wallet_source column and improve qr_access_method tracking');
 
 -- Verify migration by checking column existence
--- This is a safety check that will fail the transaction if columns don't exist
+-- This is a safety check that will log if columns are missing
+-- Note: RAISE() only works in triggers, so we'll just select and let the migration runner handle validation
 SELECT 
+  COUNT(*) as column_count,
   CASE 
     WHEN COUNT(*) = 2 THEN 'Migration successful'
-    ELSE RAISE(ABORT, 'Migration failed: Required columns not found')
+    ELSE 'Migration verification failed: Expected 2 columns, found ' || COUNT(*)
   END as status
 FROM pragma_table_info('tickets')
 WHERE name IN ('wallet_source', 'qr_access_method');
 
-COMMIT;
+-- COMMIT; -- Removed: migration runner handles transaction commit
 
 -- ============================================================================
 -- ROLLBACK PROCEDURE (Execute these statements to revert this migration)

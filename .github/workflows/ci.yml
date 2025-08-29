@@ -1,0 +1,547 @@
+---
+name: 🚀 Main CI Pipeline
+
+# Primary CI workflow for A Lo Cubano Boulder Fest
+# Streamlined pipeline with unit tests (SQLite) and E2E tests (Vercel dev + Turso)
+# Features: Vercel dev server for E2E, comprehensive coverage, DevOps best practices
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      skip_e2e:
+        description: 'Skip E2E tests (for quick validation)'
+        required: false
+        default: false
+        type: boolean
+      test_environment:
+        description: 'Test environment (development or staging)'
+        required: false
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+
+# Prevent concurrent runs for same branch/PR
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+env:
+  NODE_VERSION: "20"
+  CI: true
+  NODE_OPTIONS: "--max-old-space-size=2048"
+
+jobs:
+  # Code Quality & Linting
+  lint:
+    name: 🔍 Code Quality Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 🔍 Run ESLint
+        run: npm run lint:js
+
+      - name: 🌐 Run HTMLHint
+        run: npm run lint:html
+
+      - name: ✅ Linting Complete
+        run: echo "✅ All code quality checks passed"
+
+  # Unit Tests with SQLite
+  unit-tests:
+    name: 🧪 Unit Tests (SQLite)
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 🗄️ Setup SQLite Database
+        run: |
+          mkdir -p data
+          echo "✅ SQLite database directory created"
+
+      - name: 🧪 Run Unit Tests
+        run: npm run test
+        env:
+          NODE_ENV: test
+          DATABASE_URL: "file:./data/test.db"
+
+      - name: 📊 Generate Coverage Report
+        if: always()
+        run: npm run test:coverage
+        continue-on-error: true
+
+      - name: 📤 Upload Coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-coverage-${{ github.run_number }}
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: ✅ Unit Tests Complete
+        run: |
+          echo "✅ Unit tests completed successfully"
+          echo "📊 Coverage report generated and uploaded"
+
+  # E2E Tests with Vercel Dev Server and Turso Database
+  e2e-tests:
+    name: 🎭 E2E Tests (Vercel + Turso)
+    runs-on: ubuntu-latest
+    needs: [lint, unit-tests]
+    if: github.event.inputs.skip_e2e != 'true'
+    timeout-minutes: 20
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 🎭 Install Playwright Browsers
+        run: npx playwright install ${{ matrix.browser }} --with-deps
+
+      - name: 📦 Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: 🔧 Configure Environment Variables
+        run: |
+          cat > .env.local << EOF
+          TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN }}
+          E2E_TEST_MODE=true
+          NODE_ENV=test
+          ENVIRONMENT=ci-test
+          CI_PORT=3000
+          PORT=3000
+          # API credentials for E2E tests
+          STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          BREVO_API_KEY=${{ secrets.BREVO_API_KEY }}
+          ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_SECRET=${{ secrets.ADMIN_SECRET }}
+          EOF
+          echo "✅ Environment variables configured"
+
+      - name: 🗄️ Setup E2E Database
+        run: npm run db:e2e:setup
+        env:
+          E2E_TEST_MODE: true
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+
+      - name: 🔄 Run Database Migrations
+        run: npm run migrate:e2e:up
+        env:
+          E2E_TEST_MODE: true
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+
+      - name: 🚀 Start Vercel Dev Server
+        run: |
+          echo "🚀 Starting Vercel dev server..."
+          vercel dev --yes --listen 3000 &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          echo "Started Vercel dev server with PID: $SERVER_PID"
+          
+          # Enhanced health check with retry logic
+          echo "⏳ Waiting for Vercel dev server to be ready..."
+          MAX_RETRIES=60
+          RETRY_INTERVAL=2
+          
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "  Attempt $i/$MAX_RETRIES..."
+            
+            # Check if server is responding
+            if curl -f -s http://localhost:3000/api/health/check >/dev/null 2>&1; then
+              echo "✅ Vercel dev server ready after $(($i * $RETRY_INTERVAL))s"
+              
+              # Verify API endpoints
+              echo "🔍 Verifying API endpoints..."
+              curl -f http://localhost:3000/api/health/check | jq '.' || true
+              curl -f http://localhost:3000/api/gallery >/dev/null && echo "  ✅ Gallery API" || echo "  ⚠️  Gallery API not ready"
+              curl -f http://localhost:3000/api/featured-photos >/dev/null && echo "  ✅ Featured Photos API" || echo "  ⚠️  Featured Photos API not ready"
+              
+              break
+            fi
+            
+            if [ $i -eq $MAX_RETRIES ]; then
+              echo "❌ Vercel dev server failed to start within $(($MAX_RETRIES * $RETRY_INTERVAL)) seconds"
+              
+              # Debug information
+              echo "🔍 Debug information:"
+              ps aux | grep vercel || true
+              netstat -tulpn | grep :3000 || true
+              curl -v http://localhost:3000/api/health/check || true
+              
+              exit 1
+            fi
+            
+            sleep $RETRY_INTERVAL
+          done
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: 🎭 Run E2E Tests
+        run: npm run test:e2e:vercel:ci -- --project=${{ matrix.browser }}
+        env:
+          E2E_TEST_MODE: true
+          BASE_URL: http://localhost:3000
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
+
+      - name: 📤 Upload E2E Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-${{ matrix.browser }}-${{ github.run_number }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: 📊 Upload Test Report Summary
+        if: always()
+        run: |
+          if [ -f "playwright-report/index.html" ]; then
+            echo "## 🎭 E2E Test Results (${{ matrix.browser }})" >> $GITHUB_STEP_SUMMARY
+            echo "Test report generated and uploaded as artifact: e2e-results-${{ matrix.browser }}-${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+            
+            # Extract test summary if available
+            if command -v grep >/dev/null 2>&1 && [ -f "playwright-report/index.html" ]; then
+              PASSED_TESTS=$(grep -o 'passed">[0-9]*' playwright-report/index.html | sed 's/passed">//' | head -1 || echo "0")
+              FAILED_TESTS=$(grep -o 'failed">[0-9]*' playwright-report/index.html | sed 's/failed">//' | head -1 || echo "0")
+              echo "- ✅ Passed: $PASSED_TESTS" >> $GITHUB_STEP_SUMMARY
+              echo "- ❌ Failed: $FAILED_TESTS" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+      - name: 🧹 Cleanup Vercel Dev Server
+        if: always()
+        run: |
+          echo "🧹 Cleaning up Vercel dev server..."
+          
+          if [ -n "${SERVER_PID:-}" ]; then
+            echo "Stopping server PID: $SERVER_PID"
+            kill $SERVER_PID || true
+            sleep 3
+            kill -9 $SERVER_PID 2>/dev/null || true
+          fi
+          
+          # Cleanup any remaining processes on port 3000
+          echo "Cleaning up port 3000..."
+          lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+          
+          # Cleanup Vercel processes
+          pkill -f "vercel dev" || true
+          pkill -f "next-server" || true
+          
+          echo "✅ Cleanup completed"
+
+      - name: 🧹 Cleanup E2E Database
+        if: always()
+        run: npm run db:e2e:clean
+        env:
+          E2E_TEST_MODE: true
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+
+  # Health Check with Vercel Dev
+  health-check:
+    name: 🏥 Health Check (Vercel)
+    runs-on: ubuntu-latest
+    needs: [lint, unit-tests]
+    timeout-minutes: 8
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 📦 Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: 🔧 Configure Environment Variables
+        run: |
+          cat > .env.local << EOF
+          NODE_ENV=test
+          E2E_TEST_MODE=true
+          PORT=3000
+          EOF
+
+      - name: 🚀 Start Vercel Dev Server
+        run: |
+          echo "🚀 Starting Vercel dev server for health check..."
+          vercel dev --yes --listen 3000 &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          
+          # Wait for server to be ready
+          for i in {1..30}; do
+            if curl -f http://localhost:3000/api/health/check >/dev/null 2>&1; then
+              echo "✅ Vercel dev server ready for health check"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Health check server failed to start"
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: 🏥 Run Health Checks
+        run: |
+          echo "🏥 Running comprehensive health checks..."
+          
+          # Check main health endpoint
+          echo "Checking /api/health/check..."
+          curl -f http://localhost:3000/api/health/check | jq '.'
+          
+          # Check database health if available
+          echo "Checking database health..."
+          curl -f http://localhost:3000/api/health/database || echo "Database health check skipped (optional)"
+          
+          # Check API endpoints
+          echo "Checking API endpoints..."
+          curl -f http://localhost:3000/api/gallery >/dev/null && echo "✅ Gallery API healthy"
+          curl -f http://localhost:3000/api/featured-photos >/dev/null && echo "✅ Featured Photos API healthy"
+          
+          echo "✅ All health checks passed"
+
+      - name: 🧹 Cleanup
+        if: always()
+        run: |
+          if [ -n "${SERVER_PID:-}" ]; then
+            kill $SERVER_PID || true
+            sleep 2
+            kill -9 $SERVER_PID 2>/dev/null || true
+          fi
+          lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+
+  # Security Check
+  security:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 🔒 Run npm audit
+        run: |
+          npm audit --audit-level=high --production
+          echo "✅ Security scan completed"
+
+      - name: 🔍 Check for sensitive files
+        run: |
+          echo "🔍 Scanning for sensitive files..."
+          
+          # Check for common sensitive patterns
+          SENSITIVE_FILES=""
+          
+          # Check for .env files (except templates)
+          if find . -name "*.env" -not -name "*.env.template" -not -name "*.env.example" | grep -v node_modules | head -1; then
+            SENSITIVE_FILES="$SENSITIVE_FILES .env files found"
+          fi
+          
+          # Check for private keys
+          if find . -name "*.pem" -o -name "*.key" -o -name "id_rsa" | grep -v node_modules | head -1; then
+            SENSITIVE_FILES="$SENSITIVE_FILES private keys found"
+          fi
+          
+          if [ -n "$SENSITIVE_FILES" ]; then
+            echo "⚠️ Warning: Potential sensitive files detected: $SENSITIVE_FILES"
+            echo "Please verify these files are properly excluded from version control"
+          else
+            echo "✅ No sensitive files detected"
+          fi
+
+  # Build Verification
+  build-check:
+    name: 🔨 Build Verification
+    runs-on: ubuntu-latest
+    needs: [lint, unit-tests]
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: 🔨 Verify Build Process
+        run: |
+          npm run deploy:check
+          echo "✅ Build verification completed"
+
+  # Final Status Report
+  ci-summary:
+    name: 📊 CI Summary
+    runs-on: ubuntu-latest
+    needs: [lint, unit-tests, e2e-tests, health-check, security, build-check]
+    if: always()
+    timeout-minutes: 5
+    
+    steps:
+      - name: 📊 Generate CI Summary
+        run: |
+          echo "# 🚀 CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## 📋 Job Status Overview" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Code Quality | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} | ESLint & HTMLHint |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} | SQLite Database |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎭 E2E Tests | ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || needs.e2e-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} | Vercel + Turso |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🏥 Health Check | ${{ needs.health-check.result == 'success' && '✅ Passed' || '❌ Failed' }} | Vercel Dev Server |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔒 Security | ${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }} | Vulnerability Scan |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔨 Build Check | ${{ needs.build-check.result == 'success' && '✅ Passed' || '❌ Failed' }} | Deployment Ready |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Overall status
+          OVERALL_SUCCESS="${{ 
+            needs.lint.result == 'success' && 
+            needs.unit-tests.result == 'success' && 
+            (needs.e2e-tests.result == 'success' || needs.e2e-tests.result == 'skipped') && 
+            needs.health-check.result == 'success' && 
+            needs.security.result == 'success' && 
+            needs.build-check.result == 'success' 
+          }}"
+          
+          if [ "$OVERALL_SUCCESS" == "true" ]; then
+            echo "## ✅ Pipeline Success" >> $GITHUB_STEP_SUMMARY
+            echo "All CI checks passed successfully! 🎉" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 📊 Test Coverage" >> $GITHUB_STEP_SUMMARY
+            echo "- **Unit Tests**: 26 essential tests covering API contracts and business flows" >> $GITHUB_STEP_SUMMARY
+            echo "- **E2E Tests**: Cross-browser testing with Playwright + Vercel dev server" >> $GITHUB_STEP_SUMMARY
+            echo "- **Database**: SQLite (unit) + Turso (E2E) validation" >> $GITHUB_STEP_SUMMARY
+            echo "- **Security**: Vulnerability scanning and sensitive file detection" >> $GITHUB_STEP_SUMMARY
+            echo "- **Infrastructure**: Vercel dev server health validation" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🚀 **Ready for merge/deployment!**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Pipeline Failures" >> $GITHUB_STEP_SUMMARY
+            echo "One or more CI checks failed. Please review the logs above." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🔧 Common Fixes" >> $GITHUB_STEP_SUMMARY
+            echo "- **Linting**: Run \`npm run lint\` and fix issues" >> $GITHUB_STEP_SUMMARY
+            echo "- **Unit Tests**: Run \`npm test\` locally to debug failures" >> $GITHUB_STEP_SUMMARY
+            echo "- **E2E Tests**: Check test-results artifacts for browser-specific issues" >> $GITHUB_STEP_SUMMARY
+            echo "- **Vercel Issues**: Verify environment variables and API endpoints" >> $GITHUB_STEP_SUMMARY
+            echo "- **Security**: Review \`npm audit\` output and update dependencies" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "📋 **Next Steps**: Fix failing checks and push updates to re-run CI" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: ✅ CI Pipeline Complete
+        if: |
+          needs.lint.result == 'success' && 
+          needs.unit-tests.result == 'success' && 
+          (needs.e2e-tests.result == 'success' || needs.e2e-tests.result == 'skipped') && 
+          needs.health-check.result == 'success' && 
+          needs.security.result == 'success' && 
+          needs.build-check.result == 'success'
+        run: |
+          echo "🎉 CI Pipeline completed successfully!"
+          echo "✅ All quality gates passed"
+          echo "🚀 Ready for production deployment"
+          echo "🎭 E2E tests ran with Vercel dev server + Turso database"
+
+      - name: ❌ CI Pipeline Failed
+        if: |
+          needs.lint.result == 'failure' || 
+          needs.unit-tests.result == 'failure' || 
+          needs.e2e-tests.result == 'failure' || 
+          needs.health-check.result == 'failure' || 
+          needs.security.result == 'failure' || 
+          needs.build-check.result == 'failure'
+        run: |
+          echo "❌ CI Pipeline failed"
+          echo "🔍 Check job logs for specific failure details"
+          echo "📋 Fix issues and push updates to re-run pipeline"
+          echo "🎭 E2E tests require Vercel dev server + Turso database"
+          exit 1

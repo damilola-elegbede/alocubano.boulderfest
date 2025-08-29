@@ -25,11 +25,22 @@ CREATE TABLE IF NOT EXISTS transactions (
     completed_at TIMESTAMP
 );
 
--- Trigger to automatically update updated_at timestamp when transactions table is modified
-CREATE TRIGGER IF NOT EXISTS update_transactions_updated_at 
-    AFTER UPDATE ON transactions 
-BEGIN
-    UPDATE transactions 
-    SET updated_at = CURRENT_TIMESTAMP 
-    WHERE id = NEW.id;
-END;
+-- Registrations table for tracking ticket holder information
+CREATE TABLE IF NOT EXISTS registrations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_id TEXT NOT NULL,
+    email TEXT NOT NULL,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    ticket_type TEXT NOT NULL,
+    dietary_restrictions TEXT,
+    accessibility_needs TEXT,
+    emergency_contact_name TEXT,
+    emergency_contact_phone TEXT,
+    registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_primary_purchaser BOOLEAN DEFAULT FALSE,
+    transaction_id TEXT,
+    status TEXT DEFAULT 'registered' CHECK (status IN ('registered', 'checked_in', 'cancelled')),
+    checked_in_at TIMESTAMP,
+    notes TEXT
+);

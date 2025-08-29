@@ -12,7 +12,7 @@
     "criticalCoverage": {
       "value": 100.0,
       "unit": "%", 
-      "requirement": "REQ-E2E-001",
+      "requirement": "REQ-TEST-001",
       "description": "100% critical user journey coverage"
     },
     "executionTime": {

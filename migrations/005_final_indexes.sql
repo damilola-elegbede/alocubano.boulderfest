@@ -1,14 +1,16 @@
 -- Create indexes for performance based on actual existing table schemas
 
--- Transactions table indexes
+-- Transactions table indexes (with proper column name validation)
 CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
 CREATE INDEX IF NOT EXISTS idx_transactions_customer_email ON transactions(customer_email);
-CREATE INDEX IF NOT EXISTS idx_transactions_stripe_session ON transactions(stripe_checkout_session_id);
+-- Fix: Use actual column name 'stripe_session_id' not 'stripe_checkout_session_id'
+CREATE INDEX IF NOT EXISTS idx_transactions_stripe_session ON transactions(stripe_session_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at);
 
--- Tickets table indexes
+-- Tickets table indexes (only for columns that exist)
 CREATE INDEX IF NOT EXISTS idx_tickets_transaction_id ON tickets(transaction_id);
-CREATE INDEX IF NOT EXISTS idx_tickets_event_name ON tickets(event_name);
+-- Note: event_name column doesn't exist in current schema, using event_id instead
+CREATE INDEX IF NOT EXISTS idx_tickets_event_id ON tickets(event_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
 CREATE INDEX IF NOT EXISTS idx_tickets_attendee_email ON tickets(attendee_email);
 

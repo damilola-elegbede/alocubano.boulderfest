@@ -10,6 +10,9 @@ class TicketSelection {
     }
 
     async init() {
+        // Initialize ticket cards with default attributes for testing
+        this.initializeTicketCards();
+        
         this.bindEvents();
 
         // CRITICAL FIX: Wait for cart manager to be fully initialized
@@ -17,6 +20,38 @@ class TicketSelection {
 
         this.syncWithCartState();
         this.updateDisplay();
+    }
+    
+    initializeTicketCards() {
+        // Set up initial test attributes on all ticket cards
+        document.querySelectorAll('.ticket-card').forEach((card) => {
+            // Initialize with default state for E2E test reliability
+            card.setAttribute('data-quantity', '0');
+            card.setAttribute('data-selected', 'false');
+            card.setAttribute('aria-pressed', 'false');
+            card.setAttribute('data-initialized', 'true');
+            
+            // Make sure quantity displays are initialized
+            const quantitySpan = card.querySelector('.quantity');
+            if (quantitySpan && !quantitySpan.textContent) {
+                quantitySpan.textContent = '0';
+            }
+            
+            // Initialize add to cart buttons with ready state
+            const addToCartBtn = card.querySelector('.add-to-cart-btn');
+            if (addToCartBtn) {
+                addToCartBtn.setAttribute('data-action-state', 'ready');
+                // Ensure button is immediately clickable for E2E tests
+                addToCartBtn.disabled = false;
+            }
+            
+            // Set up quantity control buttons
+            const qtyButtons = card.querySelectorAll('.qty-btn');
+            qtyButtons.forEach(btn => {
+                btn.setAttribute('data-ready', 'true');
+                btn.disabled = false;
+            });
+        });
     }
 
     async waitForCartManager() {
@@ -48,6 +83,11 @@ class TicketSelection {
     // Quantity button events
         document.querySelectorAll('.qty-btn').forEach((btn) => {
             btn.addEventListener('click', (e) => this.handleQuantityChange(e));
+        });
+
+        // Add to cart button events
+        document.querySelectorAll('.add-to-cart-btn').forEach((btn) => {
+            btn.addEventListener('click', (e) => this.handleAddToCartClick(e));
         });
 
         // Ticket card click events and keyboard accessibility
@@ -141,10 +181,14 @@ class TicketSelection {
             });
             card.classList.add('selected');
             card.setAttribute('aria-pressed', 'true');
+            card.setAttribute('data-quantity', currentQuantity.toString());
+            card.setAttribute('data-selected', 'true');
         } else {
             this.selectedTickets.delete(ticketType);
             card.classList.remove('selected');
             card.setAttribute('aria-pressed', 'false');
+            card.setAttribute('data-quantity', '0');
+            card.setAttribute('data-selected', 'false');
         }
 
         this.updateDisplay();
@@ -163,6 +207,74 @@ class TicketSelection {
                 detail: eventDetail
             })
         );
+    }
+
+    handleAddToCartClick(event) {
+        event.stopPropagation();
+        const btn = event.target;
+        const ticketType = btn.dataset.ticketType;
+        const price = parseInt(btn.dataset.price);
+        
+        if (!ticketType || !price) {
+            console.error('Missing ticket data for add to cart button');
+            return;
+        }
+
+        // Find corresponding ticket card
+        const card = document.querySelector(`[data-ticket-type="${ticketType}"]`);
+        if (!card) {
+            console.error('Could not find ticket card for', ticketType);
+            return;
+        }
+
+        // Get current quantity
+        const quantitySpan = card.querySelector('.quantity');
+        let currentQuantity = parseInt(quantitySpan.textContent) || 0;
+        
+        // Add one ticket
+        currentQuantity++;
+        quantitySpan.textContent = currentQuantity;
+
+        // Update internal state
+        this.selectedTickets.set(ticketType, {
+            quantity: currentQuantity,
+            price: price,
+            name: card.querySelector('h4').textContent
+        });
+        card.classList.add('selected');
+        card.setAttribute('aria-pressed', 'true');
+        
+        // Add test attributes for better E2E testing
+        card.setAttribute('data-quantity', currentQuantity.toString());
+        card.setAttribute('data-selected', 'true');
+
+        this.updateDisplay();
+
+        // Emit event for cart system integration
+        const eventDetail = {
+            ticketType,
+            quantity: currentQuantity,
+            price,
+            name: card.querySelector('h4').textContent,
+            eventId: 'alocubano-boulderfest-2026'
+        };
+
+        document.dispatchEvent(
+            new CustomEvent('ticket-quantity-changed', {
+                detail: eventDetail
+            })
+        );
+
+        // Show visual feedback with test-friendly attributes
+        btn.textContent = 'Added!';
+        btn.setAttribute('data-action-state', 'added');
+        btn.style.backgroundColor = 'var(--color-green, #28a745)';
+        
+        setTimeout(() => {
+            btn.textContent = 'Add to Cart';
+            btn.setAttribute('data-action-state', 'ready');
+            btn.style.backgroundColor = 'var(--color-blue)';
+        }, 1000);
     }
 
     handleTicketCardClick(event) {
@@ -226,10 +338,14 @@ class TicketSelection {
                     });
                     card.classList.add('selected');
                     card.setAttribute('aria-pressed', 'true');
+                    card.setAttribute('data-quantity', quantity.toString());
+                    card.setAttribute('data-selected', 'true');
                 } else {
                     this.selectedTickets.delete(ticketType);
                     card.classList.remove('selected');
                     card.setAttribute('aria-pressed', 'false');
+                    card.setAttribute('data-quantity', '0');
+                    card.setAttribute('data-selected', 'false');
                 }
             }
         });
