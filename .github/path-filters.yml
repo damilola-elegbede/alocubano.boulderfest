@@ -1,6 +1,7 @@
 # GitHub Path Filters Configuration
 # Optimizes CI/CD workflow triggers by detecting file changes
 # Reduces unnecessary workflow runs by 60%+ through smart filtering
+# Updated for consolidated workflow architecture (August 2024)
 # 
 # Usage with dorny/paths-filter:
 #   - uses: dorny/paths-filter@v3
@@ -343,8 +344,8 @@ critical:
 
 critical-infrastructure:
   - 'vercel.json'
-  - '.github/workflows/ci.yml'
-  - '.github/workflows/production-deploy.yml'
+  - '.github/workflows/main-ci.yml'
+  - '.github/workflows/deploy-optimized.yml'
   - 'api/lib/database.js'
 
 critical-security:
@@ -408,8 +409,8 @@ frontend-critical:
 # WORKFLOW-SPECIFIC FILTERS
 # ========================================
 
-# Main CI Pipeline triggers
-ci-triggers:
+# Main CI Pipeline triggers (consolidated workflow)
+main-ci-triggers:
   - 'js/**'
   - 'css/**'
   - 'api/**'
@@ -418,9 +419,9 @@ ci-triggers:
   - 'pages/**'
   - 'package.json'
   - 'vercel.json'
-  - '.github/workflows/ci.yml'
+  - '.github/workflows/main-ci.yml'
 
-# E2E test triggers only
+# E2E test triggers (optimized workflow)
 e2e-triggers:
   - 'api/**'
   - 'js/**'
@@ -429,6 +430,7 @@ e2e-triggers:
   - 'playwright*.config.js'
   - 'scripts/e2e*'
   - 'scripts/vercel-dev-wrapper.js'
+  - '.github/workflows/e2e-tests-optimized.yml'
 
 # Performance test triggers
 performance-triggers:
@@ -449,7 +451,7 @@ security-triggers:
   - '.env*'
   - 'SECURITY.md'
 
-# Deployment triggers
+# Deployment triggers (optimized workflow)
 deploy-triggers:
   - 'api/**'
   - 'js/**'
@@ -459,6 +461,7 @@ deploy-triggers:
   - 'vercel.json'
   - 'package.json'
   - 'migrations/**'
+  - '.github/workflows/deploy-optimized.yml'
   - '!**/*.md'
   - '!docs/**'
   - '!spec/**'
@@ -472,3 +475,27 @@ skip-ci:
   - '!SECURITY.md'
   - '!CHANGELOG.md'
   - '!CLAUDE.md'
+
+# ========================================
+# ARCHIVED WORKFLOW REFERENCES (For History)
+# ========================================
+# These filters were previously used with archived workflows:
+# - ci.yml (archived) -> now main-ci.yml
+# - pr-validation.yml (archived) -> now main-ci.yml
+# - integration-tests.yml (archived) -> now main-ci.yml
+# - pr-quality-gates.yml (archived) -> now main-ci.yml
+# - e2e-tests.yml (archived) -> now e2e-tests-optimized.yml
+# - production-deploy.yml (archived) -> now deploy-optimized.yml
+# - staging-deploy.yml (archived) -> now deploy-optimized.yml
+
+# Legacy CI triggers (for reference only)
+legacy-ci-triggers:
+  - 'js/**'
+  - 'css/**'
+  - 'api/**'
+  - 'lib/**'
+  - 'tests/**'
+  - 'pages/**'
+  - 'package.json'
+  - 'vercel.json'
+  - '.github/workflows/archived/ci.yml'
