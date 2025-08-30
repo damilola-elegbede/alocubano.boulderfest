@@ -4,7 +4,7 @@
 -- Created: 2025-01-23
 
 -- Up Migration
-CREATE TABLE registration_reminders (
+CREATE TABLE IF NOT EXISTS registration_reminders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   ticket_id TEXT NOT NULL,
   reminder_type TEXT NOT NULL CHECK (
@@ -22,12 +22,12 @@ CREATE TABLE registration_reminders (
 );
 
 -- Index for efficient queries of scheduled reminders
-CREATE INDEX idx_reminders_scheduled 
+CREATE INDEX IF NOT EXISTS idx_reminders_scheduled 
   ON registration_reminders(scheduled_at, status) 
   WHERE status = 'scheduled';
 
 -- Index for ticket-based queries
-CREATE INDEX idx_reminders_ticket 
+CREATE INDEX IF NOT EXISTS idx_reminders_ticket 
   ON registration_reminders(ticket_id);
 
 -- Down Migration (Rollback)

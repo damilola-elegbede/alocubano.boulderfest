@@ -33,6 +33,11 @@ test-*.db
 test-output.json
 test-result.json
 
+# Playwright test artifacts
+playwright-report/
+e2e-test-results.json
+*.test-results.json
+
 # Build outputs
 dist/
 build/
@@ -90,16 +95,28 @@ certificates/
 .cache/
 .tmp/
 
+# ngrok files and logs
+.ngrok2/
+ngrok.log
+ngrok.yml
+
 # Backup files
 *.backup
 *.bak
 *.orig
 
-
 # Git hooks
 .husky/
 .githooks/
-.githooks/
+
+# Vercel files
 .vercel
+.vercelrc
+
+# Development scripts
+scripts/vercel-dev-*.js
+
+# Service account and deployment files
+*.serviceaccount.json
+deployment-check-report.json
 *-tickets-*.json
-*.serviceaccount.jsondeployment-check-report.json

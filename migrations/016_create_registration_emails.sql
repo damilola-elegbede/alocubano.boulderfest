@@ -4,7 +4,7 @@
 -- Created: 2025-01-23
 
 -- Up Migration
-CREATE TABLE registration_emails (
+CREATE TABLE IF NOT EXISTS registration_emails (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   ticket_id TEXT NOT NULL,
   transaction_id TEXT,
@@ -28,15 +28,15 @@ CREATE TABLE registration_emails (
 );
 
 -- Index for ticket-based queries
-CREATE INDEX idx_registration_emails_ticket 
+CREATE INDEX IF NOT EXISTS idx_registration_emails_ticket 
   ON registration_emails(ticket_id);
 
 -- Index for email analytics by type and time
-CREATE INDEX idx_registration_emails_type 
+CREATE INDEX IF NOT EXISTS idx_registration_emails_type 
   ON registration_emails(email_type, sent_at);
 
 -- Index for Brevo webhook correlation
-CREATE INDEX idx_registration_emails_brevo 
+CREATE INDEX IF NOT EXISTS idx_registration_emails_brevo 
   ON registration_emails(brevo_message_id);
 
 -- Down Migration (Rollback)

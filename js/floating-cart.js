@@ -15,6 +15,12 @@ export function initializeFloatingCart(cartManager) {
     // Create cart HTML structure
     const cartHTML = createCartHTML();
     document.body.insertAdjacentHTML('beforeend', cartHTML);
+    
+    // Immediately add initialization indicator for E2E tests
+    const container = document.querySelector('.floating-cart-container');
+    if (container) {
+        container.setAttribute('data-floating-cart-initialized', 'true');
+    }
 
     // Get DOM references
     const elements = {
@@ -376,8 +382,14 @@ function updateCartUI(elements, cartState) {
         elements.container.style.display = 'block';
         elements.button.style.opacity = '1';
         elements.button.style.pointerEvents = 'auto';
+        
+        // Add test-ready state attribute for E2E tests
+        elements.container.setAttribute('data-cart-state', 'visible');
+        elements.button.setAttribute('data-cart-items', totalItems.toString());
     } else {
         elements.container.style.display = 'none';
+        elements.container.setAttribute('data-cart-state', 'hidden');
+        elements.button.setAttribute('data-cart-items', '0');
     }
 }
 

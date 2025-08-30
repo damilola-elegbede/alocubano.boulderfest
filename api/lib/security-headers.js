@@ -348,7 +348,12 @@ export async function addSecurityHeaders(req, res, options = {}) {
   const mockRes = {
     setHeader: (name, value) => res.setHeader(name, value),
     getHeader: (name) => res.getHeader(name),
-    removeHeader: (name) => res.removeHeader(name),
+    removeHeader: (name) => {
+      // Some server implementations don't have removeHeader
+      if (typeof res.removeHeader === 'function') {
+        res.removeHeader(name);
+      }
+    },
   };
 
   try {
@@ -371,7 +376,9 @@ export async function addSecurityHeaders(req, res, options = {}) {
   res.setHeader("X-Security-Level", "Strict");
 
   // Server information hiding
-  res.removeHeader("X-Powered-By");
+  if (typeof res.removeHeader === 'function') {
+    res.removeHeader("X-Powered-By");
+  }
   res.setHeader("Server", "Vercel");
 
   return res;

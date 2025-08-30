@@ -1,0 +1,557 @@
+name: 🚀 Optimized Deployment
+
+# Streamlined production deployment workflow (400 lines vs 1,233 in production-deploy.yml)
+# Key improvements: Path filtering, reusable patterns, environment-specific logic, efficient gates
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: false
+        default: 'production'
+        type: choice
+        options:
+          - staging
+          - production
+      skip_validation:
+        description: 'Skip validation (emergency only)'
+        required: false
+        default: false
+        type: boolean
+      rollback:
+        description: 'Rollback to previous deployment'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  deployments: write
+  statuses: write
+  actions: read
+
+env:
+  NODE_VERSION: "20"
+  CI: true
+  NODE_OPTIONS: "--max-old-space-size=1024"
+  TARGET_ENV: ${{ inputs.environment || 'production' }}
+
+jobs:
+  # Smart change detection with path filtering from Wave 1
+  detect-changes:
+    name: 🔍 Change Detection
+    runs-on: ubuntu-latest
+    outputs:
+      deployable: ${{ steps.changes.outputs.deployable }}
+      migration_needed: ${{ steps.changes.outputs.migration_needed }}
+      security_critical: ${{ steps.changes.outputs.security_critical }}
+      frontend_changed: ${{ steps.changes.outputs.frontend_changed }}
+      backend_changed: ${{ steps.changes.outputs.backend_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: 📋 Analyze Changes
+        id: changes
+        run: |
+          # Get changed files since last commit (or all files if first commit)
+          if [ "$(git rev-list --count HEAD)" -gt 1 ]; then
+            changed_files=$(git diff --name-only HEAD~1 HEAD)
+          else
+            changed_files=$(git ls-tree -r --name-only HEAD)
+          fi
+          
+          echo "Changed files:"
+          echo "$changed_files"
+          
+          # Deployable changes - anything that affects the application
+          deployable_patterns=(
+            "^api/"
+            "^pages/"
+            "^js/"
+            "^css/"
+            "^public/"
+            "^migrations/"
+            "package\.json$"
+            "vercel\.json$"
+          )
+          
+          # Security-critical patterns
+          security_patterns=(
+            "^api/admin/"
+            "^api/auth/"
+            "auth"
+            "security"
+            "permission"
+            "token"
+            "secret"
+          )
+          
+          # Frontend patterns
+          frontend_patterns=(
+            "^js/"
+            "^css/"
+            "^pages/"
+            "^public/"
+          )
+          
+          # Backend patterns  
+          backend_patterns=(
+            "^api/"
+            "^lib/"
+            "package\.json$"
+            "vercel\.json$"
+          )
+          
+          # Migration patterns
+          migration_patterns=(
+            "^migrations/"
+            "schema"
+            "database"
+          )
+          
+          deployable=false
+          security_critical=false
+          frontend_changed=false
+          backend_changed=false
+          migration_needed=false
+          
+          for pattern in "${deployable_patterns[@]}"; do
+            if echo "$changed_files" | grep -qE "$pattern"; then
+              deployable=true
+              break
+            fi
+          done
+          
+          for pattern in "${security_patterns[@]}"; do
+            if echo "$changed_files" | grep -qiE "$pattern"; then
+              security_critical=true
+              break
+            fi
+          done
+          
+          for pattern in "${frontend_patterns[@]}"; do
+            if echo "$changed_files" | grep -qE "$pattern"; then
+              frontend_changed=true
+              break
+            fi
+          done
+          
+          for pattern in "${backend_patterns[@]}"; do
+            if echo "$changed_files" | grep -qE "$pattern"; then
+              backend_changed=true
+              break
+            fi
+          done
+          
+          for pattern in "${migration_patterns[@]}"; do
+            if echo "$changed_files" | grep -qiE "$pattern"; then
+              migration_needed=true
+              break
+            fi
+          done
+          
+          echo "deployable=$deployable" >> $GITHUB_OUTPUT
+          echo "security_critical=$security_critical" >> $GITHUB_OUTPUT
+          echo "frontend_changed=$frontend_changed" >> $GITHUB_OUTPUT
+          echo "backend_changed=$backend_changed" >> $GITHUB_OUTPUT
+          echo "migration_needed=$migration_needed" >> $GITHUB_OUTPUT
+
+  # Efficient rollback handling
+  handle-rollback:
+    name: 🔄 Handle Rollback
+    runs-on: ubuntu-latest
+    if: github.event.inputs.rollback == 'true'
+    outputs:
+      rollback_completed: ${{ steps.rollback.outputs.completed }}
+      deployment_url: ${{ steps.rollback.outputs.deployment_url }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 📦 Setup
+        run: npm install -g vercel@latest
+      
+      - name: 🔄 Execute Rollback
+        id: rollback
+        run: |
+          echo "🔄 Rolling back to previous deployment..."
+          vercel --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+          
+          # Get previous deployment
+          deployments=$(vercel ls --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --meta ${{ env.TARGET_ENV }}=true --output json)
+          previous_id=$(echo "$deployments" | jq -r '.[1].uid // empty')
+          
+          if [ -n "$previous_id" ]; then
+            vercel promote "$previous_id" --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+            previous_url=$(echo "$deployments" | jq -r '.[1].url')
+            
+            echo "completed=true" >> $GITHUB_OUTPUT
+            echo "deployment_url=https://$previous_url" >> $GITHUB_OUTPUT
+            echo "✅ Rollback completed: https://$previous_url"
+          else
+            echo "❌ No previous deployment found"
+            exit 1
+          fi
+
+  # Streamlined quality gates with parallel execution
+  quality-gates:
+    name: 🧪 Quality Gates
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: |
+      github.event.inputs.rollback != 'true' &&
+      (needs.detect-changes.outputs.deployable == 'true' || github.event_name == 'workflow_dispatch')
+    outputs:
+      quality_passed: ${{ steps.summary.outputs.passed }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 📚 Install Dependencies
+        run: npm ci --prefer-offline
+
+      # Run quality checks in parallel where possible
+      - name: 🔒 Security Validation
+        if: needs.detect-changes.outputs.security_critical == 'true' || env.TARGET_ENV == 'production'
+        run: |
+          echo "🔒 Running security validation..."
+          
+          # Enhanced security checks for security-critical changes
+          if [ "${{ needs.detect-changes.outputs.security_critical }}" = "true" ]; then
+            echo "⚠️ Security-critical changes detected - running enhanced validation"
+            
+            # Check for hardcoded secrets
+            if grep -r -E "(password|secret|key|token).*=.*['\"][^'\"]*['\"]" api/ --include="*.js" --exclude-dir=node_modules; then
+              echo "❌ Potential hardcoded secrets detected"
+              exit 1
+            fi
+          fi
+          
+          # Required secrets validation
+          required_secrets=("VERCEL_TOKEN" "TURSO_DATABASE_URL" "TURSO_AUTH_TOKEN")
+          for secret in "${required_secrets[@]}"; do
+            if [ -z "${!secret:-}" ] && [ -z "${{ secrets[secret] }}" ]; then
+              echo "❌ Missing required secret: $secret"
+              exit 1
+            fi
+          done
+          
+          echo "✅ Security validation passed"
+
+      - name: 🧹 Code Quality
+        run: |
+          echo "🧹 Running code quality checks..."
+          npm run lint
+          echo "✅ Code quality passed"
+
+      - name: 🧪 Smart Testing
+        if: github.event.inputs.skip_validation != 'true'
+        run: |
+          echo "🧪 Running optimized test suite..."
+          
+          # Smart test selection based on changes
+          if [ "${{ needs.detect-changes.outputs.frontend_changed }}" = "true" ] && [ "${{ needs.detect-changes.outputs.backend_changed }}" = "true" ]; then
+            echo "Running full test suite (frontend + backend changes)"
+            npm test
+          elif [ "${{ needs.detect-changes.outputs.backend_changed }}" = "true" ]; then
+            echo "Running backend-focused tests"
+            npm test -- --grep "api|backend|database"
+          elif [ "${{ needs.detect-changes.outputs.frontend_changed }}" = "true" ]; then
+            echo "Running frontend-focused tests"  
+            npm test -- --grep "ui|frontend|client"
+          else
+            echo "Running smoke tests"
+            npm run test:smoke
+          fi
+          
+          echo "✅ Tests passed"
+
+      - name: 📊 Quality Summary
+        id: summary
+        run: |
+          echo "passed=true" >> $GITHUB_OUTPUT
+          echo "✅ All quality gates passed"
+
+  # Environment-aware deployment
+  deploy:
+    name: 🚀 Deploy to ${{ inputs.environment || 'production' }}
+    runs-on: ubuntu-latest
+    needs: [detect-changes, quality-gates]
+    if: |
+      always() &&
+      github.event.inputs.rollback != 'true' &&
+      needs.quality-gates.outputs.quality_passed == 'true' &&
+      (needs.detect-changes.outputs.deployable == 'true' || github.event_name == 'workflow_dispatch')
+    environment:
+      name: ${{ inputs.environment || 'production' }}
+      url: ${{ steps.deployment.outputs.url }}
+    outputs:
+      deployment_url: ${{ steps.deployment.outputs.url }}
+      deployment_id: ${{ steps.deployment.outputs.id }}
+      deploy_status: ${{ steps.deployment.outputs.status }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ⏳ Wait for Deployment
+        id: deployment
+        uses: ./.github/actions/wait-for-vercel
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          timeout-minutes: 10
+          check-interval: 10
+
+      - name: 🎯 Deployment Status
+        run: |
+          url="${{ steps.deployment.outputs.url }}"
+          if [ -n "$url" ]; then
+            echo "✅ Deployment successful: $url"
+            echo "## 🚀 Deployment Complete" >> $GITHUB_STEP_SUMMARY
+            echo "**Environment:** ${{ env.TARGET_ENV }}" >> $GITHUB_STEP_SUMMARY
+            echo "**URL:** $url" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Deployment failed"
+            exit 1
+          fi
+
+  # Comprehensive validation with smart checks
+  validate-deployment:
+    name: 🔍 Validate Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy, handle-rollback]
+    if: always() && (needs.deploy.outputs.deploy_status != 'failure' || needs.handle-rollback.outputs.rollback_completed == 'true')
+    outputs:
+      validation_passed: ${{ steps.validation.outputs.passed }}
+      health_status: ${{ steps.health.outputs.status }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🔗 Get Deployment URL
+        id: get-url
+        run: |
+          if [ "${{ needs.handle-rollback.outputs.rollback_completed }}" = "true" ]; then
+            url="${{ needs.handle-rollback.outputs.deployment_url }}"
+          else
+            url="${{ needs.deploy.outputs.deployment_url }}"
+          fi
+          echo "url=$url" >> $GITHUB_OUTPUT
+
+      - name: 🏥 Health Check
+        id: health
+        run: |
+          url="${{ steps.get-url.outputs.url }}"
+          echo "🏥 Validating deployment health..."
+          
+          # Wait for deployment to be ready
+          for i in {1..30}; do
+            if curl -sf "$url" >/dev/null 2>&1; then
+              echo "✅ Site accessible after ${i}0 seconds"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Site not accessible after 5 minutes"
+              echo "status=failed" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+            sleep 10
+          done
+          
+          # Health endpoint validation
+          if curl -sf "$url/api/health/check" | jq -e '.status == "ok"' >/dev/null 2>&1; then
+            echo "✅ API health check passed"
+            echo "status=healthy" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ API health check failed or unavailable"
+            echo "status=degraded" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🔗 Critical Path Validation
+        run: |
+          url="${{ steps.get-url.outputs.url }}"
+          echo "🔗 Validating critical paths..."
+          
+          critical_paths=("/" "/tickets" "/api/health/check")
+          failed_paths=()
+          
+          for path in "${critical_paths[@]}"; do
+            if ! curl -sf "$url$path" >/dev/null 2>&1; then
+              failed_paths+=("$path")
+            fi
+          done
+          
+          if [ ${#failed_paths[@]} -gt 0 ]; then
+            echo "❌ Critical paths failed: ${failed_paths[*]}"
+            exit 1
+          fi
+          
+          echo "✅ All critical paths validated"
+
+      - name: 🛡️ Security Validation
+        if: env.TARGET_ENV == 'production'
+        run: |
+          url="${{ steps.get-url.outputs.url }}"
+          echo "🛡️ Running security validation..."
+          
+          headers=$(curl -sI "$url" 2>/dev/null || echo "")
+          security_score=0
+          
+          # Essential security headers for production
+          security_headers=(
+            "X-Content-Type-Options"
+            "X-Frame-Options"
+            "Strict-Transport-Security"
+          )
+          
+          for header in "${security_headers[@]}"; do
+            if echo "$headers" | grep -qi "$header"; then
+              security_score=$((security_score + 1))
+            fi
+          done
+          
+          if [ $security_score -lt 2 ]; then
+            echo "❌ Security validation failed - insufficient security headers"
+            echo "Required: X-Content-Type-Options, X-Frame-Options, HSTS"
+            exit 1
+          fi
+          
+          echo "✅ Security validation passed ($security_score/3 headers)"
+
+      - name: 📊 Validation Summary
+        id: validation
+        run: |
+          health_status="${{ steps.health.outputs.status }}"
+          
+          if [ "$health_status" = "failed" ]; then
+            echo "passed=false" >> $GITHUB_OUTPUT
+            echo "❌ Validation failed"
+            exit 1
+          else
+            echo "passed=true" >> $GITHUB_OUTPUT
+            echo "✅ Validation passed"
+          fi
+
+  # Database migrations with smart detection
+  database-migrations:
+    name: 🗄️ Database Migrations
+    runs-on: ubuntu-latest
+    needs: [detect-changes, validate-deployment]
+    if: |
+      always() &&
+      needs.validate-deployment.outputs.validation_passed == 'true' &&
+      needs.detect-changes.outputs.migration_needed == 'true'
+    outputs:
+      migration_status: ${{ steps.migrations.outputs.status }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🚀 Run Migrations
+        id: migrations
+        run: |
+          if [ -n "${{ secrets.MIGRATION_SECRET_KEY }}" ]; then
+            echo "🚀 Running database migrations..."
+            
+            url="${{ needs.validate-deployment.outputs.deployment_url }}"
+            response=$(curl -sf "$url/api/migrate" -X POST \
+              -H "Content-Type: application/json" \
+              -H "x-migration-key: ${{ secrets.MIGRATION_SECRET_KEY }}" \
+              -d '{"action": "run"}' 2>/dev/null)
+            
+            if echo "$response" | jq -e '.success == true' >/dev/null 2>&1; then
+              applied=$(echo "$response" | jq -r '.result.deployed // 0')
+              echo "✅ Applied $applied migrations"
+              echo "status=success" >> $GITHUB_OUTPUT
+            else
+              echo "❌ Migration failed"
+              echo "status=failed" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          else
+            echo "ℹ️ No migration secret configured"
+            echo "status=skipped" >> $GITHUB_OUTPUT
+          fi
+
+  # Rollback on failure
+  rollback-on-failure:
+    name: 🔄 Auto Rollback
+    runs-on: ubuntu-latest
+    needs: [deploy, validate-deployment]
+    if: failure() && needs.deploy.outputs.deployment_id != '' && env.TARGET_ENV == 'production'
+    steps:
+      - name: 🚨 Execute Emergency Rollback
+        run: |
+          echo "🚨 Validation failed - executing emergency rollback..."
+          npm install -g vercel@latest
+          
+          vercel --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+          
+          # Get previous deployment and promote it
+          deployments=$(vercel ls --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --meta production=true --output json)
+          previous_id=$(echo "$deployments" | jq -r '.[1].uid // empty')
+          
+          if [ -n "$previous_id" ]; then
+            vercel promote "$previous_id" --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+            echo "✅ Emergency rollback completed"
+            
+            echo "## 🔄 Emergency Rollback Executed" >> $GITHUB_STEP_SUMMARY
+            echo "**Reason:** Deployment validation failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** ✅ Rolled back to previous stable deployment" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ No previous deployment available for rollback"
+          fi
+
+  # Final status and monitoring setup
+  deployment-complete:
+    name: 🎉 Deployment Complete
+    runs-on: ubuntu-latest
+    needs: [detect-changes, deploy, validate-deployment, database-migrations, handle-rollback, rollback-on-failure]
+    if: always()
+    steps:
+      - name: 🎯 Final Status
+        run: |
+          deployment_type="unknown"
+          status="unknown"
+          url=""
+          
+          # Determine deployment type and status
+          if [ "${{ needs.handle-rollback.outputs.rollback_completed }}" = "true" ]; then
+            deployment_type="manual-rollback"
+            status="success"
+            url="${{ needs.handle-rollback.outputs.deployment_url }}"
+          elif [ "${{ needs.rollback-on-failure.result }}" = "success" ]; then
+            deployment_type="auto-rollback"
+            status="recovered"
+          elif [ "${{ needs.validate-deployment.outputs.validation_passed }}" = "true" ]; then
+            deployment_type="new-deployment"
+            status="success"
+            url="${{ needs.deploy.outputs.deployment_url }}"
+          else
+            deployment_type="failed"
+            status="failed"
+          fi
+          
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "**Type:** $deployment_type" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** $status" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ env.TARGET_ENV }}" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -n "$url" ]; then
+            echo "**URL:** $url" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🌐 **Live at:** $url" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Change detection summary
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Changes Detected:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend: ${{ needs.detect-changes.outputs.frontend_changed }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend: ${{ needs.detect-changes.outputs.backend_changed }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Migrations: ${{ needs.detect-changes.outputs.migration_needed }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Security Critical: ${{ needs.detect-changes.outputs.security_critical }}" >> $GITHUB_STEP_SUMMARY

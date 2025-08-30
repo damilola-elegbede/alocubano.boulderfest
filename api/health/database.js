@@ -213,41 +213,7 @@ export const checkDatabaseHealth = async () => {
   const startTime = Date.now();
 
   try {
-    // Check if required environment variables are present
-    if (!process.env.TURSO_DATABASE_URL) {
-      return {
-        status: HealthStatus.UNHEALTHY,
-        response_time: `${Date.now() - startTime}ms`,
-        error: "TURSO_DATABASE_URL environment variable not configured",
-        details: {
-          connection: "failed",
-          error_type: "ConfigurationError",
-          has_database_url: false,
-          has_auth_token: !!process.env.TURSO_AUTH_TOKEN,
-        },
-      };
-    }
-
-    // Check if auth token is required (not needed for local/test databases)
-    const dbUrl = process.env.TURSO_DATABASE_URL;
-    const isLocalDatabase = dbUrl === ":memory:" || dbUrl.startsWith("file:");
-
-    if (!process.env.TURSO_AUTH_TOKEN && !isLocalDatabase) {
-      return {
-        status: HealthStatus.UNHEALTHY,
-        response_time: `${Date.now() - startTime}ms`,
-        error: "TURSO_AUTH_TOKEN environment variable not configured",
-        details: {
-          connection: "failed",
-          error_type: "ConfigurationError",
-          has_database_url: !!process.env.TURSO_DATABASE_URL,
-          has_auth_token: false,
-          database_type: isLocalDatabase ? "local" : "remote",
-        },
-      };
-    }
-
-    // Get database client directly to avoid mocking issues
+    // Get database client directly - let database service handle environment variable logic
     const dbService = await getDatabaseClient();
 
     // Debug logging for tests
@@ -320,6 +286,8 @@ export const checkDatabaseHealth = async () => {
       connection: "active",
       read_write: "operational",
       schema_valid: schemaValidation.valid,
+      database_url: process.env.TURSO_DATABASE_URL ? "configured" : "fallback",
+      database_type: process.env.TURSO_DATABASE_URL?.startsWith("file:") || process.env.TURSO_DATABASE_URL === ":memory:" ? "local" : "remote",
       ...stats,
       ...migrationStatus,
     };
@@ -347,6 +315,9 @@ export const checkDatabaseHealth = async () => {
       details: {
         connection: "failed",
         error_type: error.name || "DatabaseError",
+        has_database_url: !!process.env.TURSO_DATABASE_URL,
+        has_auth_token: !!process.env.TURSO_AUTH_TOKEN,
+        environment: process.env.NODE_ENV || "production",
       },
     };
   }

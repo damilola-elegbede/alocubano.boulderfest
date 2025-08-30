@@ -26,9 +26,7 @@ CREATE TABLE IF NOT EXISTS action_tokens (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Phase 3: Add validation fields to existing tickets table for QR codes
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS validation_signature TEXT;
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS qr_code_data TEXT;
+-- Phase 3: Validation fields are now part of the tickets table schema (018_tickets_table.sql)
 
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_access_tokens_hash ON access_tokens(token_hash);
@@ -41,10 +39,6 @@ CREATE INDEX IF NOT EXISTS idx_action_tokens_target ON action_tokens(target_id);
 CREATE INDEX IF NOT EXISTS idx_action_tokens_email ON action_tokens(email);
 CREATE INDEX IF NOT EXISTS idx_action_tokens_expires ON action_tokens(expires_at);
 CREATE INDEX IF NOT EXISTS idx_action_tokens_action_target ON action_tokens(action_type, target_id);
-
--- Add indexes for validation fields
-CREATE INDEX IF NOT EXISTS idx_tickets_validation_signature ON tickets(validation_signature);
-CREATE INDEX IF NOT EXISTS idx_tickets_qr_code ON tickets(qr_code_data);
 
 -- Trigger to clean up related tokens when transactions are deleted
 CREATE TRIGGER IF NOT EXISTS cleanup_tokens_on_transaction_delete

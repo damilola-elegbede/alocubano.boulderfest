@@ -29,17 +29,44 @@ async function runMigrations() {
       .filter((line) => !line.trim().startsWith("--"))
       .join("\n");
 
-    const statements = cleanedSql
-      .split(";")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0)
-      .map((s) => {
-        // Don't add semicolon if statement already ends with one or contains END
-        if (s.endsWith(";") || s.toUpperCase().includes("END")) {
-          return s;
+    // Better handling of SQL statements - preserve triggers with BEGIN/END
+    const statements = [];
+    let currentStatement = "";
+    let inTrigger = false;
+    
+    const lines = cleanedSql.split("\n");
+    for (const line of lines) {
+      const upperLine = line.toUpperCase().trim();
+      
+      // Detect trigger start
+      if (upperLine.startsWith("CREATE TRIGGER")) {
+        inTrigger = true;
+      }
+      
+      // Add line to current statement
+      currentStatement += line + "\n";
+      
+      // Check if statement is complete
+      if (inTrigger) {
+        // For triggers, wait for END; statement
+        if (upperLine === "END;" || upperLine === "END") {
+          statements.push(currentStatement.trim());
+          currentStatement = "";
+          inTrigger = false;
         }
-        return s + ";";
-      });
+      } else {
+        // For normal statements, split by semicolon at end of line
+        if (line.trim().endsWith(";")) {
+          statements.push(currentStatement.trim());
+          currentStatement = "";
+        }
+      }
+    }
+    
+    // Add any remaining statement
+    if (currentStatement.trim()) {
+      statements.push(currentStatement.trim());
+    }
 
     // Execute statements individually (Turso doesn't support transactions)
     for (const statement of statements) {

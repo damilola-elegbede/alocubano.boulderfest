@@ -5,6 +5,7 @@ Complete setup instructions for A Lo Cubano Boulder Fest website development env
 ## System Requirements
 
 ### Minimum Requirements
+
 - **Node.js**: 18.0.0 or higher
 - **npm**: 8.0.0 or higher (included with Node.js)
 - **SQLite**: 3.9.0 or higher with JSON support
@@ -12,10 +13,37 @@ Complete setup instructions for A Lo Cubano Boulder Fest website development env
 - **Operating System**: macOS, Linux, or Windows 10/11
 
 ### Recommended Requirements
+
 - **Node.js**: 20+ LTS
 - **RAM**: 8GB or more
 - **Storage**: 2GB free space
 - **Internet**: Stable connection for dependencies and API integrations
+
+## Quick Start
+
+For immediate setup with testing:
+
+```bash
+# Clone and install
+git clone https://github.com/damilola-elegbede/alocubano.boulderfest.git
+cd alocubano.boulderfest
+npm install
+
+# Environment setup
+cp .env.example .env.local
+npm run generate-admin-password  # Follow prompts to set ADMIN_PASSWORD
+
+# Database initialization
+npm run migrate:up
+
+# Verification
+npm test                    # Run unit tests (26 tests, fast execution)
+npm run test:e2e:install   # Install E2E browsers
+npm run test:e2e          # Run E2E tests (requires Turso setup)
+
+# Start development
+npm start  # With ngrok tunnel (recommended)
+```
 
 ## Installation Steps
 
@@ -44,6 +72,7 @@ npm ls --depth=0
 ### 3. Environment Configuration
 
 #### Create Environment File
+
 ```bash
 # Copy the example environment file
 cp .env.example .env.local
@@ -58,13 +87,13 @@ Edit `.env.local` with the following minimum configuration:
 # REQUIRED FOR LOCAL DEVELOPMENT
 # ================================================
 
-# Database (SQLite - no setup required for local development)
-# Production database will use Turso
-TURSO_DATABASE_URL=    # Leave empty for local SQLite
-TURSO_AUTH_TOKEN=      # Leave empty for local SQLite
+# Database Configuration
+# Local development uses SQLite automatically
+TURSO_DATABASE_URL=         # Required for E2E tests and production
+TURSO_AUTH_TOKEN=          # Required for E2E tests and production
 
 # Admin Access
-ADMIN_PASSWORD=        # Generate with: npm run generate-admin-password
+ADMIN_PASSWORD=            # Generate with: npm run generate-admin-password
 ADMIN_SECRET=your-secure-session-secret-min-32-chars
 
 # ================================================
@@ -84,11 +113,17 @@ GOOGLE_DRIVE_FOLDER_ID=your-folder-id
 GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account@project.iam.gserviceaccount.com
 GOOGLE_PRIVATE_KEY="your-private-key"
 
+# E2E Testing Mode (optional)
+E2E_TEST_MODE=true         # Enables E2E database operations
+ENVIRONMENT=e2e-test       # Alternative way to enable E2E mode
+
 # Environment
 NODE_ENV=development
 ```
 
 ### 4. Database Setup
+
+#### Local Development Database
 
 The application uses SQLite for local development, automatically creating the database file:
 
@@ -103,7 +138,81 @@ npm run migrate:status
 npm run health:database
 ```
 
-### 5. Verification
+#### Turso Database Setup for E2E Testing and Production
+
+Turso is required for E2E testing and production deployments:
+
+##### 1. Create Turso Account
+
+```bash
+# Install Turso CLI
+curl -sSfL https://get.tur.so/install.sh | bash
+
+# Login to Turso
+turso auth login
+```
+
+##### 2. Create Development Database
+
+```bash
+# Create a database for development/testing
+turso db create alocubano-boulderfest-dev
+
+# Get database URL and auth token
+turso db show alocubano-boulderfest-dev
+turso db tokens create alocubano-boulderfest-dev
+```
+
+##### 3. Configure Environment Variables
+
+Add to your `.env.local`:
+
+```bash
+# Turso Configuration for E2E Tests
+TURSO_DATABASE_URL=libsql://your-database-name.turso.io
+TURSO_AUTH_TOKEN=your-auth-token-here
+```
+
+##### 4. Initialize Turso Database
+
+```bash
+# Run migrations on Turso database
+npm run migrate:up
+
+# Verify Turso connection
+npm run health:database
+```
+
+### 5. E2E Database Management
+
+End-to-end testing requires isolated database operations with comprehensive safety mechanisms:
+
+```bash
+# Setup E2E database (creates tables and test data)
+npm run db:e2e:setup
+
+# Validate E2E database schema
+npm run db:e2e:validate
+
+# Clean E2E test data (preserves schema)
+npm run db:e2e:clean
+
+# Full E2E database reset (use with caution)
+npm run db:e2e:reset
+
+# E2E database health check
+curl -f http://localhost:3000/api/health/e2e-database | jq '.'
+```
+
+**E2E Database Safety Features:**
+
+- **Environment Validation**: Requires `E2E_TEST_MODE=true` or `ENVIRONMENT=e2e-test`
+- **URL Validation**: Warns if database URL doesn't contain "test" or "staging"
+- **Automatic Cleanup**: Removes test data matching `%@e2e-test.%` patterns
+- **Schema Validation**: Verifies required tables and columns exist
+- **Migration Isolation**: Separate migration tracking from development database
+
+### 6. Verification
 
 Start the development server to verify installation:
 
@@ -118,19 +227,25 @@ npm run start:local
 npm run serve:simple
 ```
 
-### 6. Run Tests
+### 7. Run Tests
 
 Verify everything works correctly:
 
 ```bash
-# Run all tests
+# Run unit tests (26 tests, fast execution)
 npm test
 
 # Run with coverage
 npm run test:coverage
 
-# Run E2E tests (after setting up E2E database)
+# Install E2E testing browsers
+npm run test:e2e:install
+
+# Run E2E tests (requires Turso database)
 npm run test:e2e
+
+# Run all tests (unit + E2E)
+npm run test:all
 ```
 
 ## Service Configurations
@@ -180,6 +295,7 @@ GOOGLE_PRIVATE_KEY="your-private-key-with-newlines"
 ## Development Commands
 
 ### Server Management
+
 ```bash
 npm start              # Start with ngrok tunnel (recommended)
 npm run start:local    # Local development server
@@ -187,27 +303,52 @@ npm run serve:simple   # Simple HTTP server (no APIs)
 ```
 
 ### Testing
+
 ```bash
-npm test               # Run all tests (26 tests, ~10s)
-npm run test:watch     # Watch mode
-npm run test:coverage  # With coverage report
-npm run test:e2e       # End-to-end tests
-npm run test:all       # All tests including E2E
+npm test                          # Run unit tests (26 tests, fast execution)
+npm run test:watch               # Watch mode for development
+npm run test:coverage            # With coverage report
+npm run test:e2e           # End-to-end tests (requires Turso)
+npm run test:e2e:ui              # E2E tests with interactive UI
+npm run test:all                 # All tests including E2E
+
+# E2E browser management
+npm run test:e2e:install         # Install Playwright browsers
+npm run test:e2e:update          # Update browsers to latest version
+
+# Health checks
+npm run test:health              # API health verification
+npm run test:smoke               # Quick smoke tests
 ```
 
 ### Database Management
+
 ```bash
-npm run migrate:up     # Run pending migrations
-npm run migrate:status # Check migration status
-npm run db:shell       # SQLite shell access
-npm run health:database # Database health check
+# Development Database
+npm run migrate:up               # Run pending migrations
+npm run migrate:status           # Check migration status
+npm run db:shell                 # SQLite shell access
+npm run health:database          # Database health check
+
+# E2E Database Management
+npm run db:e2e:setup            # Create E2E tables and test data
+npm run db:e2e:validate         # Validate E2E database schema
+npm run db:e2e:clean            # Remove E2E test data only
+npm run db:e2e:reset            # Full E2E database reset
+
+# E2E Database Migrations
+npm run migrate:e2e:up          # Run E2E database migrations
+npm run migrate:e2e:status      # Check E2E migration status
+npm run migrate:e2e:validate    # Validate E2E schema integrity
+npm run migrate:e2e:reset       # Reset E2E migrations completely
 ```
 
 ### Quality & Deployment
+
 ```bash
-npm run lint           # ESLint + HTMLHint
-npm run deploy:check   # Pre-deployment validation
-npm run build          # Build for production
+npm run lint                    # ESLint + HTMLHint
+npm run deploy:check            # Pre-deployment validation
+npm run build                   # Build for production
 ```
 
 ## CI/CD Setup
@@ -223,12 +364,11 @@ The project includes comprehensive CI/CD automation using GitHub Actions for tes
 Configure the following secrets in your GitHub repository (Settings → Secrets and variables → Actions):
 
 **Required Secrets:**
+
 ```bash
 # Database Configuration
 TURSO_DATABASE_URL          # Production database URL
-TURSO_AUTH_TOKEN           # Database authentication token
-E2E_TURSO_DATABASE_URL     # E2E testing database URL
-E2E_TURSO_AUTH_TOKEN       # E2E database authentication
+TURSO_AUTH_TOKEN           # Production database authentication token
 
 # Service API Keys
 STRIPE_SECRET_KEY          # Payment processing (use test keys)
@@ -287,8 +427,8 @@ jobs:
           CI: true
           NODE_ENV: test
           E2E_TEST_MODE: true
-          E2E_TURSO_DATABASE_URL: ${{ secrets.E2E_TURSO_DATABASE_URL }}
-          E2E_TURSO_AUTH_TOKEN: ${{ secrets.E2E_TURSO_AUTH_TOKEN }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
 
   unit-tests:
     needs: setup
@@ -356,8 +496,8 @@ jobs:
           CI: true
           NODE_ENV: test
           E2E_TEST_MODE: true
-          E2E_TURSO_DATABASE_URL: ${{ secrets.E2E_TURSO_DATABASE_URL }}
-          E2E_TURSO_AUTH_TOKEN: ${{ secrets.E2E_TURSO_AUTH_TOKEN }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
           
@@ -409,35 +549,6 @@ jobs:
         with:
           name: quality-report
           path: .tmp/ci/
-
-  cleanup:
-    needs: [quality-gates]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          
-      - name: Restore dependencies
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-          
-      - name: CI cleanup
-        run: npm run ci:cleanup
-        
-      - name: Upload cleanup report
-        uses: actions/upload-artifact@v4
-        with:
-          name: cleanup-report
-          path: .tmp/ci/cleanup-report.json
 ```
 
 #### 3. Branch Protection Rules
@@ -478,67 +589,14 @@ npm run ci:pipeline
 npm run ci:test               # Run tests in CI mode
 npm run quality:gates         # Test quality gates
 npm run ci:cleanup           # Test cleanup procedures
-
-# Performance testing
-npm run ci:performance:optimize   # Optimize CI performance
-npm run ci:performance:monitor    # Monitor resource usage
 ```
-
-### CI/CD Commands Reference
-
-```bash
-# Environment Management
-npm run ci:setup              # Initialize CI environment
-npm run ci:cleanup            # Clean up CI resources
-npm run ci:test               # Run CI test suite
-npm run ci:pipeline           # Full CI/CD pipeline
-
-# Performance Optimization
-npm run ci:performance:optimize    # Optimize CI performance
-npm run ci:performance:analyze     # Analyze performance metrics
-npm run ci:performance:monitor     # Monitor resource usage
-npm run ci:performance:report      # Generate performance reports
-
-# Quality Assurance
-npm run quality:gates         # Run quality gate validation
-npm run quality:check         # Complete quality assessment
-npm run pr:status-report      # Generate PR status report
-npm run pr:status-summary     # PR quality gate summary
-
-# Branch Management
-npm run branch:validate       # Validate branch protection rules
-npm run branch:apply-protection    # Apply branch protection settings
-
-# Test Management
-npm run flaky:detect          # Detect flaky tests
-npm run flaky:report          # Generate flaky test reports
-npm run flaky:quarantine      # Quarantine unreliable tests
-```
-
-### Performance Benchmarks
-
-The CI/CD pipeline is optimized for speed and reliability:
-
-- **Setup Time**: < 60 seconds for complete environment initialization
-- **Unit Tests**: < 10 seconds for 26 essential tests
-- **E2E Tests**: 2-5 minutes for comprehensive multi-browser testing
-- **Quality Gates**: < 30 seconds for complete quality assessment
-- **Cleanup Time**: < 30 seconds with detailed reporting
-
-### Monitoring and Alerts
-
-The CI/CD pipeline provides comprehensive monitoring:
-
-- **Real-time Status**: PR status comments with detailed results
-- **Performance Tracking**: Execution time and resource usage monitoring
-- **Failure Analysis**: Detailed error reporting and artifact collection
-- **Trend Analysis**: Performance regression detection and reporting
 
 ## Troubleshooting
 
 ### Common Issues
 
 #### Node.js Version Issues
+
 ```bash
 # Check version
 node --version
@@ -550,16 +608,83 @@ node --version
 ```
 
 #### Database Connection Issues
+
 ```bash
-# Reset database
+# Reset local database
 rm -f data/development.db
 npm run migrate:up
 
 # Check SQLite installation
 sqlite3 --version
+
+# Test database connectivity
+npm run health:database
+```
+
+#### Turso Connection Issues
+
+Common Turso connection problems and solutions:
+
+**Issue**: `TURSO_DATABASE_URL` not set
+```bash
+# Verify environment variables
+echo $TURSO_DATABASE_URL
+echo $TURSO_AUTH_TOKEN
+
+# Set in .env.local (development)
+TURSO_DATABASE_URL=libsql://your-database.turso.io
+TURSO_AUTH_TOKEN=your-token-here
+```
+
+**Issue**: Authentication failed
+```bash
+# Regenerate auth token
+turso db tokens create your-database-name
+
+# Verify token has correct permissions
+turso db tokens list your-database-name
+```
+
+**Issue**: Database not found
+```bash
+# List available databases
+turso db list
+
+# Create database if missing
+turso db create your-database-name
+
+# Verify database exists
+turso db show your-database-name
+```
+
+**Issue**: Migration failures on Turso
+```bash
+# Check migration status
+npm run migrate:status
+
+# Manually verify schema
+turso db shell your-database-name
+.schema
+
+# Reset and re-run migrations (use with caution)
+npm run migrate:reset
+npm run migrate:up
+```
+
+**Issue**: E2E database setup fails
+```bash
+# Enable E2E mode
+export E2E_TEST_MODE=true
+
+# Verify E2E database setup
+npm run db:e2e:validate
+
+# Reset E2E database if corrupted
+npm run db:e2e:reset
 ```
 
 #### Port Already in Use
+
 ```bash
 # Find process using port 3000
 lsof -ti:3000
@@ -572,6 +697,7 @@ PORT=3001 npm start
 ```
 
 #### Environment Variable Issues
+
 ```bash
 # Verify environment file exists
 ls -la .env.local
@@ -580,7 +706,41 @@ ls -la .env.local
 node -e "require('dotenv').config({ path: '.env.local' }); console.log(process.env.NODE_ENV);"
 ```
 
+#### E2E Testing Issues
+
+**Issue**: Playwright browsers not installed
+```bash
+# Install all browsers
+npm run test:e2e:install
+
+# Install specific browser
+npx playwright install chromium
+```
+
+**Issue**: E2E tests timeout
+```bash
+# Increase timeout in playwright.config.js
+timeout: 60000  # 60 seconds
+
+# Run with debug mode
+npm run test:e2e:ui
+```
+
+**Issue**: E2E database connection fails
+```bash
+# Check E2E environment variables
+echo $E2E_TEST_MODE
+echo $TURSO_DATABASE_URL
+
+# Validate E2E database schema
+npm run db:e2e:validate
+
+# Reset E2E database
+npm run db:e2e:reset
+```
+
 #### Permission Issues
+
 ```bash
 # Fix npm permissions (macOS/Linux)
 sudo chown -R $(whoami) ~/.npm
@@ -589,32 +749,15 @@ sudo chown -R $(whoami) ~/.npm
 npm cache clean --force
 ```
 
-### E2E Testing Setup
+#### CI/CD Troubleshooting
 
-For comprehensive end-to-end testing:
-
-```bash
-# Install Playwright browsers
-npm run test:e2e:install
-
-# Set up E2E database
-npm run db:e2e:setup
-
-# Verify E2E environment
-npm run test:e2e:debug
-```
-
-### CI/CD Troubleshooting
-
-#### GitHub Actions Issues
-
-**Issue**: Workflow fails on secrets
+**Issue**: GitHub Actions fails on secrets
 ```bash
 # Verify all required secrets are configured
 # Check secrets in GitHub repository settings
 ```
 
-**Issue**: E2E tests timeout
+**Issue**: E2E tests timeout in CI
 ```bash
 # Increase timeout in workflow file
 env:
@@ -624,8 +767,8 @@ env:
 
 **Issue**: Database connection fails in CI
 ```bash
-# Verify E2E database credentials
-# Check E2E_TURSO_DATABASE_URL and E2E_TURSO_AUTH_TOKEN
+# Verify Turso credentials in GitHub secrets
+# Check TURSO_DATABASE_URL and TURSO_AUTH_TOKEN
 ```
 
 #### Performance Issues
@@ -642,22 +785,10 @@ npm install
 npm run serve:simple
 ```
 
-#### CI Performance Issues
-
-```bash
-# Optimize CI performance
-npm run ci:performance:optimize
-
-# Monitor CI resource usage
-npm run ci:performance:monitor
-
-# Analyze CI bottlenecks
-npm run ci:performance:analyze
-```
-
 ## IDE Setup
 
 ### VS Code Extensions
+
 - **ESLint** - JavaScript linting
 - **Prettier** - Code formatting
 - **SQLite Viewer** - Database inspection
@@ -666,6 +797,7 @@ npm run ci:performance:analyze
 - **GitHub Actions** - Workflow editing
 
 ### VS Code Settings
+
 Add to `.vscode/settings.json`:
 
 ```json
@@ -689,6 +821,7 @@ Add to `.vscode/settings.json`:
 ## Production Deployment
 
 ### Vercel Deployment
+
 ```bash
 # Install Vercel CLI
 npm i -g vercel
@@ -701,7 +834,9 @@ vercel --prod
 ```
 
 ### Environment Variables for Production
+
 Set these in Vercel dashboard:
+
 - `TURSO_DATABASE_URL` - Production database
 - `TURSO_AUTH_TOKEN` - Database authentication
 - `BREVO_API_KEY` - Email service
@@ -712,6 +847,7 @@ Set these in Vercel dashboard:
 ### CI/CD for Production
 
 The GitHub Actions workflow automatically deploys to production when:
+
 - Code is pushed to `main` branch
 - All quality gates pass
 - E2E tests pass across all browsers
@@ -720,22 +856,26 @@ The GitHub Actions workflow automatically deploys to production when:
 ## Support
 
 ### Getting Help
+
 - **Documentation**: Check `/docs` folder
 - **CI/CD Guide**: See [docs/ci-cd/README.md](docs/ci-cd/README.md)
 - **Issues**: Report on GitHub repository
 - **Email**: alocubanoboulderfest@gmail.com
 
 ### Development Resources
+
 - [Node.js Documentation](https://nodejs.org/docs)
+- [Turso Documentation](https://docs.turso.tech)
 - [Vercel Documentation](https://vercel.com/docs)
 - [Stripe API Documentation](https://stripe.com/docs/api)
 - [Brevo API Documentation](https://developers.brevo.com)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [Playwright Documentation](https://playwright.dev/docs/intro)
 
-### CI/CD Resources
-- [GitHub Actions Marketplace](https://github.com/marketplace?type=actions)
-- [Playwright CI Guide](https://playwright.dev/docs/ci)
-- [Node.js CI Best Practices](https://docs.github.com/en/actions/guides/building-and-testing-nodejs)
+### Database Resources
 
-This installation guide provides everything needed to set up a complete development environment with comprehensive CI/CD integration. For specific feature development or advanced CI/CD configuration, refer to the relevant documentation in the `/docs` folder.
+- [SQLite Documentation](https://sqlite.org/docs.html)
+- [Turso CLI Guide](https://docs.turso.tech/reference/turso-cli)
+- [LibSQL Documentation](https://docs.turso.tech/libsql)
+
+This installation guide provides everything needed to set up a complete development environment with comprehensive database configuration, E2E testing, and CI/CD integration.

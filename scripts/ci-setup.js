@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * CI Environment Setup and Validation
- * Comprehensive CI/CD pipeline setup script with validation, optimization, and warmup procedures
+ * CI Environment Setup and Validation for Vercel Dev Server E2E Testing
+ * Comprehensive CI/CD pipeline setup with Vercel dev server support
  * Implements async initialization pattern and follows project conventions
  */
 
@@ -59,7 +59,7 @@ class CISetupManager {
   }
 
   async _performInitialization() {
-    console.log('🚀 Initializing CI Setup Manager...');
+    console.log('🚀 Initializing CI Setup Manager for Vercel E2E...');
     
     // Load environment configuration
     this._loadEnvironment();
@@ -89,6 +89,9 @@ class CISetupManager {
     process.env.CI = 'true';
     process.env.E2E_TEST_MODE = 'true';
     process.env.ENVIRONMENT = 'ci-test';
+    
+    // Ensure port configuration
+    process.env.PORT = process.env.PORT || process.env.CI_PORT || '3000';
   }
 
   _validateCIEnvironment() {
@@ -109,6 +112,7 @@ class CISetupManager {
     console.log('✅ CI environment validation passed');
     console.log(`   Node.js: ${nodeVersion}`);
     console.log(`   Environment: ${process.env.NODE_ENV}`);
+    console.log(`   Port: ${process.env.PORT}`);
   }
 
   async _initializeDirectories() {
@@ -118,7 +122,8 @@ class CISetupManager {
       'coverage',
       '.tmp/ci',
       '.tmp/metrics',
-      '.tmp/artifacts'
+      '.tmp/artifacts',
+      'data'  // For SQLite databases
     ];
 
     for (const dir of directories) {
@@ -159,7 +164,7 @@ class CISetupManager {
 const ciSetup = new CISetupManager();
 
 /**
- * Environment Variable Validation
+ * Environment Variable Validation for Vercel E2E Testing
  */
 async function validateEnvironmentVariables() {
   console.log('\n🔧 Validating environment variables...');
@@ -169,17 +174,20 @@ async function validateEnvironmentVariables() {
     { name: 'NODE_ENV', required: true, value: process.env.NODE_ENV },
     { name: 'CI', required: true, value: process.env.CI },
     { name: 'E2E_TEST_MODE', required: true, value: process.env.E2E_TEST_MODE },
+    { name: 'PORT', required: true, value: process.env.PORT },
     
     // Database credentials (optional for CI)
     { name: 'TURSO_DATABASE_URL', required: false, value: process.env.TURSO_DATABASE_URL },
     { name: 'TURSO_AUTH_TOKEN', required: false, value: process.env.TURSO_AUTH_TOKEN },
-    { name: 'E2E_TURSO_DATABASE_URL', required: false, value: process.env.E2E_TURSO_DATABASE_URL },
-    { name: 'E2E_TURSO_AUTH_TOKEN', required: false, value: process.env.E2E_TURSO_AUTH_TOKEN },
     
     // API credentials (optional for CI)
     { name: 'STRIPE_SECRET_KEY', required: false, value: process.env.STRIPE_SECRET_KEY ? '***' : undefined },
     { name: 'BREVO_API_KEY', required: false, value: process.env.BREVO_API_KEY ? '***' : undefined },
     { name: 'ADMIN_PASSWORD', required: false, value: process.env.ADMIN_PASSWORD ? '***' : undefined },
+    
+    // Vercel configuration (optional)
+    { name: 'VERCEL_ORG_ID', required: false, value: process.env.VERCEL_ORG_ID ? '***' : undefined },
+    { name: 'VERCEL_PROJECT_ID', required: false, value: process.env.VERCEL_PROJECT_ID ? '***' : undefined },
   ];
 
   let hasErrors = false;
@@ -193,7 +201,8 @@ async function validateEnvironmentVariables() {
       const isCredential = validation.name.toLowerCase().includes('token') || 
                           validation.name.toLowerCase().includes('key') || 
                           validation.name.toLowerCase().includes('password') ||
-                          validation.name.toLowerCase().includes('secret');
+                          validation.name.toLowerCase().includes('secret') ||
+                          validation.name.toLowerCase().includes('id');
       
       const displayValue = isCredential ? '***' : (validation.value === '***' ? '***' : validation.value);
       console.log(`   ✅ ${validation.name}: ${displayValue}`);
@@ -213,15 +222,62 @@ async function validateEnvironmentVariables() {
 }
 
 /**
+ * Vercel CLI Installation and Configuration
+ */
+async function validateVercelCLI() {
+  console.log('\n📦 Validating Vercel CLI...');
+  const startTime = Date.now();
+
+  try {
+    // Check if Vercel CLI is available
+    const vercelVersion = await new Promise((resolve, reject) => {
+      const vercel = spawn('vercel', ['--version'], { stdio: 'pipe' });
+      let version = '';
+      
+      vercel.stdout.on('data', (data) => {
+        version += data.toString().trim();
+      });
+      
+      vercel.on('close', (code) => {
+        if (code === 0) {
+          resolve(version);
+        } else {
+          reject(new Error(`Vercel CLI check failed with code ${code}`));
+        }
+      });
+      
+      setTimeout(() => {
+        vercel.kill();
+        reject(new Error('Vercel CLI check timeout'));
+      }, 10000);
+    });
+    
+    console.log(`   ✅ Vercel CLI version: ${vercelVersion}`);
+    
+    const duration = Date.now() - startTime;
+    ciSetup.recordValidation('vercel_cli', true, duration);
+    console.log(`   ⏱️  Vercel CLI validation completed in ${duration}ms`);
+    
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    ciSetup.recordValidation('vercel_cli', false, duration);
+    console.error(`   ❌ Vercel CLI validation failed: ${error.message}`);
+    
+    // For CI, Vercel CLI is required for E2E tests
+    throw new Error('Vercel CLI is required for E2E testing with Vercel dev server');
+  }
+}
+
+/**
  * Database Connection Validation
  */
 async function validateDatabaseConnection() {
   console.log('\n🗄️  Validating E2E database connection...');
   const startTime = Date.now();
 
-  // Use E2E database credentials with fallbacks
-  const authToken = process.env.E2E_TURSO_AUTH_TOKEN || process.env.TURSO_AUTH_TOKEN;
-  const databaseUrl = process.env.E2E_TURSO_DATABASE_URL || process.env.TURSO_DATABASE_URL;
+  // Use standard Turso database credentials
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+  const databaseUrl = process.env.TURSO_DATABASE_URL;
 
   if (!authToken || !databaseUrl) {
     console.log('   ℹ️  Database credentials not configured, skipping database validation');
@@ -301,99 +357,146 @@ async function validateDatabaseConnection() {
 }
 
 /**
- * Test Server Startup and Health Check
+ * Playwright Installation and Browser Setup
  */
-async function setupAndValidateTestServer() {
-  console.log('\n🚀 Setting up test server...');
+async function validatePlaywrightSetup() {
+  console.log('\n🎭 Validating Playwright installation...');
   const startTime = Date.now();
 
-  const port = process.env.PORT || process.env.CI_PORT || 3000;
+  try {
+    const playwrightVersion = await new Promise((resolve, reject) => {
+      const playwright = spawn('npx', ['playwright', '--version'], { 
+        stdio: 'pipe',
+        cwd: projectRoot 
+      });
+      let version = '';
+      
+      playwright.stdout.on('data', (data) => {
+        version += data.toString().trim();
+      });
+      
+      playwright.on('close', (code) => {
+        if (code === 0) {
+          resolve(version);
+        } else {
+          reject(new Error(`Playwright check failed with code ${code}`));
+        }
+      });
+      
+      setTimeout(() => {
+        playwright.kill();
+        reject(new Error('Playwright version check timeout'));
+      }, 10000);
+    });
+    
+    console.log(`   ✅ ${playwrightVersion}`);
+    
+    const duration = Date.now() - startTime;
+    ciSetup.recordValidation('playwright_setup', true, duration);
+    console.log(`   ⏱️  Playwright validation completed in ${duration}ms`);
+    
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    ciSetup.recordValidation('playwright_setup', false, duration);
+    console.error(`   ❌ Playwright validation failed: ${error.message}`);
+    
+    // Playwright is required for E2E tests
+    throw new Error('Playwright is required for E2E testing');
+  }
+}
+
+/**
+ * Vercel Dev Server Health Check
+ */
+async function validateVercelDevServer() {
+  console.log('\n🚀 Validating Vercel dev server startup...');
+  const startTime = Date.now();
+
+  const port = process.env.PORT || 3000;
   const serverUrl = `http://localhost:${port}`;
 
-  // Check if server is already running
   try {
-    const response = await fetch(`${serverUrl}/api/health/check`);
-    if (response.ok) {
-      console.log('   ✅ Test server already running');
-      ciSetup.recordValidation('test_server', true, Date.now() - startTime);
-      return serverUrl;
+    // Check if server is already running
+    try {
+      const response = await fetch(`${serverUrl}/api/health/check`);
+      if (response.ok) {
+        console.log('   ✅ Vercel dev server already running');
+        ciSetup.recordValidation('vercel_dev_server', true, Date.now() - startTime);
+        return serverUrl;
+      }
+    } catch (error) {
+      // Server not running, which is expected in CI setup
     }
-  } catch (error) {
-    // Server not running, we'll start it
-  }
 
-  // Start CI server
-  const serverProcess = spawn('node', [resolve(projectRoot, 'scripts/ci-server.js')], {
-    cwd: projectRoot,
-    env: {
-      ...process.env,
-      PORT: port,
-      CI_PORT: port,
-      NODE_ENV: 'test',
-      E2E_TEST_MODE: 'true'
-    },
-    stdio: 'pipe',
-    detached: false
-  });
+    // Test that Vercel dev can start (we'll stop it immediately)
+    const testProcess = spawn('vercel', ['dev', '--yes', '--listen', port.toString()], {
+      cwd: projectRoot,
+      env: {
+        ...process.env,
+        PORT: port.toString(),
+        NODE_ENV: 'test',
+        E2E_TEST_MODE: 'true'
+      },
+      stdio: 'pipe',
+      detached: false
+    });
 
-  ciSetup.recordProcess('test_server', serverProcess);
+    const serverReady = new Promise((resolve, reject) => {
+      let output = '';
+      const timeout = setTimeout(() => {
+        testProcess.kill();
+        reject(new Error('Vercel dev server test startup timeout after 45 seconds'));
+      }, 45000);
 
-  // Wait for server to be ready
-  return new Promise((resolve, reject) => {
-    let output = '';
-    const timeout = setTimeout(() => {
-      reject(new Error('Server startup timeout after 30 seconds'));
-    }, 30000);
-
-    serverProcess.stdout.on('data', (data) => {
-      output += data.toString();
-      const message = data.toString();
-      
-      if (message.includes('running at') || message.includes('Server running')) {
-        clearTimeout(timeout);
-        console.log('   ✅ Test server started successfully');
+      testProcess.stdout.on('data', (data) => {
+        output += data.toString();
+        const message = data.toString();
         
-        // Health check the server
-        setTimeout(async () => {
-          try {
-            const response = await fetch(`${serverUrl}/api/health/check`);
-            if (response.ok) {
-              const health = await response.json();
-              console.log(`   ✅ Health check passed: ${health.status}`);
-              
-              const duration = Date.now() - startTime;
-              ciSetup.recordValidation('test_server', true, duration);
-              console.log(`   ⏱️  Server setup completed in ${duration}ms`);
-              resolve(serverUrl);
-            } else {
-              reject(new Error(`Health check failed with status: ${response.status}`));
-            }
-          } catch (error) {
-            reject(new Error(`Health check request failed: ${error.message}`));
-          }
-        }, 2000);
-      }
-    });
+        if (message.includes('ready') || message.includes('Ready') || message.includes('running')) {
+          clearTimeout(timeout);
+          testProcess.kill();
+          console.log('   ✅ Vercel dev server can start successfully');
+          resolve(true);
+        }
+      });
 
-    serverProcess.stderr.on('data', (data) => {
-      const error = data.toString();
-      if (!error.includes('Warning') && !error.includes('ExperimentalWarning')) {
-        console.error(`   Server stderr: ${error}`);
-      }
-    });
+      testProcess.stderr.on('data', (data) => {
+        const error = data.toString();
+        if (error.includes('Error') && !error.includes('Warning') && !error.includes('ExperimentalWarning')) {
+          clearTimeout(timeout);
+          testProcess.kill();
+          reject(new Error(`Vercel dev server error: ${error.trim()}`));
+        }
+      });
 
-    serverProcess.on('error', (error) => {
-      clearTimeout(timeout);
-      reject(new Error(`Failed to start server: ${error.message}`));
-    });
-
-    serverProcess.on('exit', (code, signal) => {
-      if (code !== 0 && !signal) {
+      testProcess.on('error', (error) => {
         clearTimeout(timeout);
-        reject(new Error(`Server exited with code ${code}`));
-      }
+        reject(new Error(`Failed to start Vercel dev server test: ${error.message}`));
+      });
+
+      testProcess.on('exit', (code, signal) => {
+        clearTimeout(timeout);
+        if (signal === 'SIGTERM' || signal === 'SIGKILL') {
+          // Expected termination
+          resolve(true);
+        } else if (code !== 0) {
+          reject(new Error(`Vercel dev server test exited with code ${code}`));
+        }
+      });
     });
-  });
+
+    await serverReady;
+    
+    const duration = Date.now() - startTime;
+    ciSetup.recordValidation('vercel_dev_server', true, duration);
+    console.log(`   ⏱️  Vercel dev server validation completed in ${duration}ms`);
+    
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    ciSetup.recordValidation('vercel_dev_server', false, duration);
+    console.error(`   ❌ Vercel dev server validation failed: ${error.message}`);
+    throw error;
+  }
 }
 
 /**
@@ -479,123 +582,25 @@ async function executeDatabaseMigrations() {
 }
 
 /**
- * Node.js, npm, and Playwright Installation Optimization
- */
-async function optimizeInstallations() {
-  console.log('\n⚡ Optimizing installations...');
-  const startTime = Date.now();
-
-  // Verify npm is available and working
-  try {
-    const npmVersion = await new Promise((resolve, reject) => {
-      const npm = spawn('npm', ['--version'], { stdio: 'pipe' });
-      let version = '';
-      
-      npm.stdout.on('data', (data) => {
-        version += data.toString().trim();
-      });
-      
-      npm.on('close', (code) => {
-        if (code === 0) {
-          resolve(version);
-        } else {
-          reject(new Error(`npm check failed with code ${code}`));
-        }
-      });
-    });
-    
-    console.log(`   ✅ npm version: ${npmVersion}`);
-  } catch (error) {
-    throw new Error(`npm validation failed: ${error.message}`);
-  }
-
-  // Verify Playwright installation
-  try {
-    const playwrightVersion = await new Promise((resolve, reject) => {
-      const playwright = spawn('npx', ['playwright', '--version'], { 
-        stdio: 'pipe',
-        cwd: projectRoot 
-      });
-      let version = '';
-      
-      playwright.stdout.on('data', (data) => {
-        version += data.toString().trim();
-      });
-      
-      playwright.on('close', (code) => {
-        if (code === 0) {
-          resolve(version);
-        } else {
-          reject(new Error(`Playwright check failed with code ${code}`));
-        }
-      });
-      
-      setTimeout(() => {
-        playwright.kill();
-        reject(new Error('Playwright version check timeout'));
-      }, 10000);
-    });
-    
-    console.log(`   ✅ ${playwrightVersion}`);
-  } catch (error) {
-    console.error(`   ❌ Playwright validation failed: ${error.message}`);
-    
-    // Try to install Playwright browsers
-    console.log('   🔧 Installing Playwright browsers...');
-    
-    return new Promise((resolve, reject) => {
-      const install = spawn('npx', ['playwright', 'install', '--with-deps'], {
-        cwd: projectRoot,
-        stdio: 'pipe',
-        timeout: 300000 // 5 minutes timeout
-      });
-
-      install.stdout.on('data', (data) => {
-        console.log(`      ${data.toString().trim()}`);
-      });
-
-      install.stderr.on('data', (data) => {
-        console.error(`      ${data.toString().trim()}`);
-      });
-
-      install.on('close', (code) => {
-        if (code === 0) {
-          console.log('   ✅ Playwright browsers installed');
-          const duration = Date.now() - startTime;
-          ciSetup.recordValidation('playwright_installation', true, duration);
-          resolve();
-        } else {
-          ciSetup.recordValidation('playwright_installation', false, Date.now() - startTime);
-          reject(new Error(`Playwright installation failed with code ${code}`));
-        }
-      });
-    });
-  }
-
-  const duration = Date.now() - startTime;
-  ciSetup.recordValidation('installation_optimization', true, duration);
-  console.log(`   ⏱️  Installation optimization completed in ${duration}ms`);
-}
-
-/**
- * Pre-test Warmup Procedures
+ * Pre-test Warmup Procedures for Vercel Dev Server
  */
 async function executeWarmupProcedures() {
   console.log('\n🔥 Executing pre-test warmup procedures...');
   const startTime = Date.now();
 
-  const serverUrl = process.env.PLAYWRIGHT_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+  const port = process.env.PORT || 3000;
+  const serverUrl = `http://localhost:${port}`;
 
   try {
-    // Warmup essential endpoints
+    // Essential endpoints to warmup
     const endpoints = [
       '/api/health/check',
-      '/api/health/simple', 
+      '/api/health/database', 
       '/api/gallery',
       '/api/featured-photos'
     ];
 
-    console.log(`   🌐 Warming up ${endpoints.length} endpoints...`);
+    console.log(`   🌐 Warming up ${endpoints.length} endpoints on ${serverUrl}...`);
     
     const warmupPromises = endpoints.map(async (endpoint) => {
       try {
@@ -626,12 +631,6 @@ async function executeWarmupProcedures() {
     });
 
     console.log(`   ✅ Warmed up ${successCount}/${endpoints.length} endpoints`);
-
-    // Pre-compile test files (optional)
-    if (process.env.PRECOMPILE_TESTS === 'true') {
-      console.log('   🔧 Pre-compiling test files...');
-      // This would typically be handled by the test framework
-    }
 
     const duration = Date.now() - startTime;
     ciSetup.recordValidation('warmup_procedures', true, duration);
@@ -670,7 +669,9 @@ async function generateSetupReport() {
       nodeVersion: process.version,
       platform: process.platform,
       ci: process.env.CI,
-      environment: process.env.NODE_ENV
+      environment: process.env.NODE_ENV,
+      port: process.env.PORT,
+      vercelMode: true
     },
     processes: Array.from(state.processes.keys()),
     summary: {
@@ -699,11 +700,11 @@ async function generateSetupReport() {
 }
 
 /**
- * Main CI setup function
+ * Main CI setup function for Vercel E2E Testing
  */
 async function main() {
-  console.log('\n🎯 CI Environment Setup and Validation');
-  console.log('═'.repeat(60));
+  console.log('\n🎯 CI Environment Setup and Validation - Vercel E2E Mode');
+  console.log('═'.repeat(70));
   console.log(`Started at: ${new Date().toISOString()}`);
   
   try {
@@ -712,17 +713,19 @@ async function main() {
     
     // Execute setup phases
     await validateEnvironmentVariables();
+    await validateVercelCLI();
     await validateDatabaseConnection();
-    await optimizeInstallations();
+    await validatePlaywrightSetup();
     await executeDatabaseMigrations();
-    await setupAndValidateTestServer();
+    await validateVercelDevServer();
     await executeWarmupProcedures();
     
     // Generate final report
     const report = await generateSetupReport();
     
     console.log('\n✅ CI setup completed successfully!');
-    console.log('═'.repeat(60));
+    console.log('🚀 Ready for Vercel E2E testing with dev server');
+    console.log('═'.repeat(70));
     
     // Exit with success
     process.exit(0);
@@ -737,7 +740,7 @@ async function main() {
       console.error('   Failed to generate error report:', reportError.message);
     }
     
-    console.log('═'.repeat(60));
+    console.log('═'.repeat(70));
     process.exit(1);
   }
 }

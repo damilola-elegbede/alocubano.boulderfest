@@ -1,6 +1,6 @@
 {
-  "buildCommand": "npm run build:vercel",
-  "outputDirectory": "dist",
+  "buildCommand": "node vercel-build.cjs",
+  "outputDirectory": "public",
   "framework": null,
   "crons": [
     {

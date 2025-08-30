@@ -16,7 +16,7 @@ The official website for **A Lo Cubano Boulder Fest**, Boulder's premier Cuban s
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-org/alocubano.boulderfest.git
+   git clone https://github.com/damilola/alocubano.boulderfest.git
    cd alocubano.boulderfest
    ```
 
@@ -71,16 +71,14 @@ alocubano.boulderfest/
 ├── index.html (Main home page)
 ├── vercel.json (Deployment configuration)
 ├── scripts/
-│   ├── start.sh (Quick launcher)
-│   ├── deployment-check.js (Pre-deployment validation)
-│   ├── generate-featured-photos.js (Featured photos cache)
-│   ├── generate-gallery-cache.js (Gallery data generation)
-│   ├── metrics-monitor.js (Performance monitoring)
-│   ├── test-maintenance.js (Test health monitoring)
-│   ├── test-runner.js (Advanced test execution)
-│   ├── verify-structure.js (Project structure validation)
-│   ├── setup-e2e-database.js (E2E database automation)
-│   └── debug/ (Debug utilities)
+│   ├── ci-setup.js (CI environment setup)
+│   ├── express-dev-server.js (Express development server)
+│   ├── migrate.js (Database migration system)
+│   ├── migrate-e2e.js (E2E database migrations)
+│   ├── setup-e2e-database.js (E2E database setup)
+│   ├── vercel-dev-doctor.js (Development diagnostics)
+│   ├── vercel-dev-wrapper.js (Vercel dev wrapper)
+│   └── verify-database-setup.js (Database verification)
 ├── css/
 │   ├── base.css (Design system)
 │   ├── components.css (Reusable components)
@@ -99,16 +97,13 @@ alocubano.boulderfest/
 │   └── donations.html
 ├── api/
 │   └── gallery.js (Serverless function for Google Drive API)
-├── tests/e2e/flows/ (E2E Test Flows)
-│   ├── gallery-browsing.test.js (Gallery performance & functionality)
-│   ├── admin-dashboard.test.js (Admin panel & authentication)
-│   ├── mobile-registration-experience.test.js (Mobile registration flow)
-│   └── newsletter-simple.test.js (Newsletter subscription testing)
-├── tests/e2e/helpers/ (E2E Test Utilities)
-│   ├── performance-gallery.js (Gallery performance testing utilities)
-│   ├── admin-auth.js (Admin authentication helpers)
-│   ├── google-drive-mock.js (Gallery API mocking utilities)
-│   └── mobile-test-scenarios.js (Mobile testing scenarios)
+├── tests/ (Unit & E2E Testing)
+│   ├── api-contracts.test.js (API contract validation)
+│   ├── basic-validation.test.js (Input validation and security)
+│   ├── smoke-tests.test.js (Basic functionality verification)
+│   ├── registration-api.test.js (Registration API unit tests)
+│   ├── registration-flow.test.js (Registration flow tests)
+│   └── e2e/ (Playwright E2E tests)
 └── images/
     ├── logo.png (Main logo)
     ├── social/ (Social media icons folder)
@@ -167,13 +162,110 @@ alocubano.boulderfest/
 - `npm start` - Start Vercel development server with full API support (port 3000)
 - `npm run start:local` - Local development without ngrok tunnel
 - `npm run serve:simple` - Simple HTTP server without API functions (port 8000)
-- `npm test` - Run streamlined test suite
+- `npm test` - Run streamlined test suite (26 unit tests)
 - `npm run test:all` - Run all tests including E2E validation
-- `npm run test:e2e` - Run Playwright end-to-end tests
+- `npm run test:e2e` - Run Playwright E2E tests (requires Turso database)
 - `npm run test:e2e:ui` - Interactive E2E test development mode
 - `npm run lint` - Run ESLint and HTMLHint
 - `npm run build` - Build for production
 - `npm run prebuild` - Generate cache files for gallery
+
+## 🧪 Testing Strategy
+
+### Streamlined Test Architecture
+
+We've achieved a **96% complexity reduction** by eliminating complex test infrastructure in favor of radical simplicity:
+
+- **419 total lines** vs 11,411 lines previously (96% reduction)
+- **26 essential unit tests** covering critical API contracts
+- **Comprehensive E2E tests** for essential user workflows
+- **Fast execution** for complete test suite
+- **Zero abstractions** - every test readable by any JavaScript developer
+
+### Database Strategy
+
+- **Unit Tests**: Use SQLite development database (`development.db`)
+- **E2E Tests**: Use Turso production database for real-world validation
+
+### Test Commands
+
+```bash
+# Unit Tests (SQLite database)
+npm test                    # Run 26 essential unit tests
+npm run test:simple         # Same as npm test
+npm run test:simple:watch   # Watch mode for development
+npm run test:coverage       # Coverage report
+
+# E2E Tests (Turso database)
+npm run test:e2e            # Run comprehensive E2E tests
+npm run test:e2e:ui         # Interactive UI mode
+npm run test:e2e:headed     # Run with browser visible
+npm run test:e2e:debug      # Debug mode
+
+# Complete Testing
+npm run test:all            # Unit tests + E2E tests
+npm run test:smoke          # Quick smoke tests
+npm run test:health         # API health verification
+
+# Test Data Management
+npm run setup:e2e-data      # Seed E2E test data (standard profile)
+npm run setup:e2e-data:minimal  # Minimal test data (admin only)
+npm run setup:e2e-data:full     # Full test data (all scenarios)
+npm run setup:e2e-data:info     # Show test data configuration
+npm run db:reset            # Reset database to clean state
+```
+
+### Unit Test Suite (26 Tests)
+
+- **api-contracts.test.js** (7 tests) - API contract validation
+- **basic-validation.test.js** (8 tests) - Input validation and security
+- **smoke-tests.test.js** (3 tests) - Basic functionality verification
+- **registration-api.test.js** (5 tests) - Registration API unit tests
+- **registration-flow.test.js** (3 tests) - Registration flow tests
+
+### E2E Test Suite (6 Core Test Files)
+
+- **admin-login-simple.test.js**: Admin authentication and security
+- **newsletter-simple.test.js**: Newsletter subscription flow
+- **ticket-purchase-simple.test.js**: Ticket purchase and Stripe integration
+- **mobile-navigation-simple.test.js**: Mobile responsiveness and navigation
+- **newsletter-isolated.test.js**: Isolated newsletter functionality
+- **brevo-cleanup-integration.test.js**: Brevo email integration testing
+
+### Environment Configuration
+
+#### Unit Tests
+```bash
+# No special configuration required
+# Uses SQLite development database automatically
+npm test
+```
+
+#### E2E Tests
+```bash
+# Required for E2E testing
+TURSO_DATABASE_URL=your_turso_database_url
+TURSO_AUTH_TOKEN=your_turso_auth_token
+
+npm run test:e2e
+```
+
+### Quality Gates
+
+- **Simple execution**: Single command `npm test` for unit tests
+- **Fast feedback**: Complete unit test suite runs quickly
+- **Real API testing**: Direct interaction with actual endpoints
+- **No mocking complexity**: Tests use real services and databases
+- **Production validation**: E2E tests use Turso for real-world scenarios
+
+### Test Philosophy
+
+Focus on **user-visible behavior** with **minimal complexity**:
+- Test real API endpoints, not implementation details
+- Keep each test under 20 lines
+- Use direct HTTP requests, not elaborate abstractions
+- Clean up test data explicitly in each test
+- Separate unit tests (SQLite) from E2E tests (Turso)
 
 ## 🔄 CI/CD Pipeline
 
@@ -183,11 +275,11 @@ Our CI/CD pipeline provides comprehensive automation for testing, quality assura
 
 #### Workflow Features
 
-- **Multi-browser E2E Testing**: Chrome, Firefox, Safari, and Edge compatibility testing
-- **Performance Optimization**: Gallery performance testing and Core Web Vitals monitoring
-- **Security Testing**: Admin panel security validation and authentication flow testing
+- **Unit Testing**: Fast execution of 26 essential tests with SQLite
+- **E2E Testing**: Production validation with Turso database
 - **Quality Gates**: Automated linting, unit testing, and E2E testing before deployment
 - **PR Status Reporting**: Real-time status updates and quality gate validation
+- **Multi-browser Support**: Chrome-based E2E testing with Playwright
 
 #### Available CI Commands
 
@@ -228,13 +320,10 @@ Required for full CI/CD functionality:
 # Core CI Settings
 CI=true
 NODE_ENV=test
-E2E_TEST_MODE=true
 
 # Database Configuration
-TURSO_DATABASE_URL=           # Production database URL
+TURSO_DATABASE_URL=           # Production database URL for E2E tests
 TURSO_AUTH_TOKEN=            # Database authentication token
-E2E_TURSO_DATABASE_URL=      # E2E testing database URL
-E2E_TURSO_AUTH_TOKEN=        # E2E database authentication
 
 # Service Credentials (for integration testing)
 STRIPE_SECRET_KEY=           # Payment processing tests
@@ -245,8 +334,8 @@ ADMIN_PASSWORD=             # Admin panel tests
 #### Performance Benchmarks
 
 - **Setup Time**: < 60 seconds for complete environment initialization
-- **Unit Tests**: < 10 seconds for 26 essential tests
-- **E2E Tests**: 2-5 minutes for comprehensive browser testing
+- **Unit Tests**: < 10 seconds for 26 essential tests (SQLite)
+- **E2E Tests**: 2-3 minutes for comprehensive tests (Turso)
 - **Quality Gates**: < 30 seconds for linting and validation
 - **Resource Cleanup**: < 30 seconds with detailed reporting
 
@@ -254,113 +343,11 @@ ADMIN_PASSWORD=             # Admin panel tests
 
 - **Code Quality**: ESLint + HTMLHint validation
 - **Security**: Input validation and XSS protection testing
-- **Performance**: Gallery performance and Core Web Vitals compliance
-- **Accessibility**: WCAG compliance validation
-- **Browser Compatibility**: Multi-browser E2E testing
+- **Performance**: Core API response testing
+- **Database**: SQLite (unit tests) and Turso (E2E tests) validation
+- **Browser Compatibility**: Chrome-based E2E testing
 
 See [CI/CD Documentation](docs/ci-cd/README.md) for detailed setup and configuration.
-
-## Testing
-
-### Streamlined Test Philosophy
-
-We've achieved a **96% complexity reduction** by eliminating complex test infrastructure in favor of radical simplicity:
-
-- **419 total lines** vs 11,411 lines previously (96% reduction)
-- **Essential tests** covering critical API contracts
-- **Fast execution** for complete test suite
-- **Zero abstractions** - every test readable by any JavaScript developer
-
-### Quick Start
-
-```bash
-# Run all tests
-npm test                    # Run 26 essential unit tests
-
-# Development mode
-npm run test:simple:watch   # Watch mode
-
-# With coverage
-npm run test:coverage       # Coverage report
-
-# E2E testing
-npm run test:e2e           # Playwright end-to-end tests
-npm run test:e2e:ui        # Interactive UI mode
-```
-
-### Test Structure
-
-#### Unit Test Suite (26 Tests)
-
-- **api-contracts.test.js** (7 tests) - API contract validation
-- **basic-validation.test.js** (8 tests) - Input validation and security
-- **smoke-tests.test.js** (3 tests) - Basic functionality verification
-- **registration-api.test.js** (5 tests) - Registration API unit tests
-- **registration-flow.test.js** (3 tests) - Registration flow tests
-
-#### E2E Test Suite (Playwright) - Phase 2 Coverage
-
-**Phase 2 Gallery Testing** (`tests/e2e/flows/gallery-browsing.test.js`):
-- **Google Drive API Integration**: Gallery loading, error handling, metadata display
-- **Lazy Loading Performance**: Virtual scrolling with 1000+ images, progressive loading
-- **Image Optimization**: AVIF/WebP/JPEG format selection, responsive images
-- **Virtual Scrolling**: Memory management, DOM optimization, performance monitoring
-- **Cache Effectiveness**: Cache hit ratios, invalidation testing, performance metrics
-- **Network Conditions**: Progressive loading under slow-3g, fast-3g, and 4g
-- **Accessibility**: WCAG compliance, keyboard navigation, screen reader compatibility
-- **Core Web Vitals**: LCP, CLS, FID measurement and validation
-
-**Phase 2 Admin Panel Testing** (`tests/e2e/flows/admin-dashboard.test.js`):
-- **Authentication Security**: JWT validation, session management, MFA support
-- **Rate Limiting**: Brute force protection, failed login handling
-- **Dashboard Operations**: Ticket validation, QR code scanning, bulk operations
-- **Data Management**: Registration management, search/filter functionality
-- **Analytics & Reporting**: Performance metrics, export functionality, data accuracy
-- **Audit Logging**: Activity tracking, security monitoring, compliance features
-- **Configuration Management**: System settings, security parameters, validation
-- **Session Security**: Timeout handling, concurrent sessions, token management
-
-**Multi-Browser & Device Coverage**:
-- **Browser Matrix**: Chrome, Firefox, Safari (WebKit), Edge
-- **Device Testing**: Desktop (1920x1080), Tablet (768x1024), Mobile (375x667)
-- **Viewport Adaptation**: Responsive design validation, touch target testing
-- **Performance Validation**: Cross-browser performance benchmarks
-
-### Phase 2 Performance Testing
-
-#### Gallery Performance Utilities (`tests/e2e/helpers/performance-gallery.js`)
-
-- **Comprehensive Performance Monitoring**: Memory usage, scroll performance, image loading metrics
-- **Cache Effectiveness Testing**: Cache hit ratios, invalidation strategies, performance impact
-- **Network Simulation**: Testing under various network conditions (slow-3g to 4g)
-- **Memory Leak Detection**: Long-term browsing sessions, garbage collection effectiveness
-- **Performance Regression Detection**: Baseline comparison, automated alerts
-- **Core Web Vitals Monitoring**: LCP, CLS, FID measurement and reporting
-
-#### Admin Security Testing (`tests/e2e/helpers/admin-auth.js`)
-
-- **Authentication Flow Testing**: Login, logout, session management
-- **JWT Security Validation**: Token verification, expiration handling, signature validation
-- **Security Attack Simulation**: Rate limiting, brute force protection, CSRF prevention
-- **MFA Testing**: Multi-factor authentication flow validation
-- **Session Management**: Persistence, timeout, concurrent session handling
-
-### Quality Gates
-
-- **Simple execution**: Single command `npm test` 
-- **Fast feedback**: Complete unit test suite runs quickly
-- **Real API testing**: Direct interaction with actual endpoints
-- **No mocking complexity**: Tests use real services and databases
-- **Comprehensive E2E Coverage**: Full user workflows with performance validation
-
-### Test Philosophy
-
-Focus on **user-visible behavior** with **minimal complexity**:
-- Test real API endpoints, not implementation details
-- Keep each test under 20 lines
-- Use direct HTTP requests, not elaborate abstractions
-- Clean up test data explicitly in each test
-- Validate performance alongside functionality
 
 ## Quality Gates & Monitoring
 
@@ -510,9 +497,13 @@ curl -f http://localhost:3000/api/health/e2e-database | jq '.'
 - [Quality Gates](docs/ci-cd/README.md#quality-gates) - Automated quality assurance
 
 ### Testing Documentation
+- [E2E Test Data Guide](/docs/testing/E2E_TEST_DATA_GUIDE.md) - Deterministic test data seeding system
 - [E2E Test Flows](/tests/e2e/flows/README.md) - Phase 2 gallery and admin panel test flows
+- [Advanced E2E Testing](/tests/e2e/advanced/README.md) - Phase 4 network, security, accessibility testing
 - [Performance Testing Guide](/tests/e2e/helpers/performance-gallery.js) - Gallery performance utilities
 - [Admin Authentication Testing](/tests/e2e/helpers/admin-auth.js) - Security and authentication helpers
+- [Security Testing](/tests/e2e/helpers/security-testing.js) - OWASP Top 10 vulnerability testing
+- [Accessibility Testing](/tests/e2e/helpers/accessibility-utilities.js) - WCAG 2.1 compliance utilities
 
 ### Setup Documentation
 - [Installation Guide](INSTALLATION.md) - Complete setup instructions
@@ -525,7 +516,7 @@ curl -f http://localhost:3000/api/health/e2e-database | jq '.'
 - **Payment Processing**: Stripe Checkout with webhook handling
 - **Wallet Passes**: Apple Wallet and Google Wallet integration
 - **Gallery System**: Google Drive integration with AVIF/WebP optimization
-- **E2E Testing**: Comprehensive browser automation with performance validation
+- **E2E Testing**: Comprehensive browser automation with Turso database validation
 - **Admin Panel**: Complete administration dashboard with security features
 
 ## 🎪 About the Festival

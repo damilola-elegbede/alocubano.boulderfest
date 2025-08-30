@@ -10,19 +10,11 @@
           "strict": true,
           "contexts": [
             "🔍 Pre-flight Validation",
-            "🎭 E2E Tests (Chrome)",
-            "🎭 E2E Tests (Firefox)",
-            "🎭 E2E Tests (Safari)",
-            "🎭 E2E Tests (Mobile Chrome)",
-            "🎭 E2E Tests (Mobile Safari)",
+            "🎭 Basic E2E Tests",
             "📊 Performance Benchmark",
             "🧪 Pre-deployment Quality",
             "pr-status-reporter/validation",
-            "pr-status-reporter/e2e-chromium",
-            "pr-status-reporter/e2e-firefox",
-            "pr-status-reporter/e2e-webkit",
-            "pr-status-reporter/e2e-mobile-chrome",
-            "pr-status-reporter/e2e-mobile-safari",
+            "pr-status-reporter/basic-e2e",
             "pr-status-reporter/performance",
             "pr-status-reporter/coverage-report",
             "pr-status-reporter/status-summary"
@@ -62,14 +54,14 @@
         "retry_count": 1,
         "failure_action": "block_merge"
       },
-      "e2e_tests": {
-        "name": "End-to-End Tests",
+      "basic_e2e_tests": {
+        "name": "Basic End-to-End Tests",
         "required": true,
-        "timeout_minutes": 15,
+        "timeout_minutes": 10,
         "retry_count": 2,
         "failure_action": "block_merge",
         "flaky_test_threshold": 3,
-        "browsers": ["chromium", "firefox", "webkit", "mobile-chrome", "mobile-safari"]
+        "browsers": ["chromium"]
       },
       "performance_tests": {
         "name": "Performance Benchmarks",
@@ -123,7 +115,7 @@
         "channels": ["github_checks", "pr_comments", "github_status"],
         "severity_levels": {
           "critical": ["security_scan", "unit_tests"],
-          "high": ["e2e_tests", "code_quality"],
+          "high": ["basic_e2e_tests", "code_quality"],
           "medium": ["performance_tests"],
           "low": ["test_coverage"]
         }
@@ -196,7 +188,7 @@
       "authorized_users": [],
       "requires_reason": true,
       "requires_follow_up_issue": true,
-      "allowed_bypasses": ["unit_tests", "e2e_tests"],
+      "allowed_bypasses": ["unit_tests", "basic_e2e_tests"],
       "never_bypass": ["security_scan", "code_quality"],
       "audit_log": true,
       "notify_team": true

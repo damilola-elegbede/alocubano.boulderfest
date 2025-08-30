@@ -1,0 +1,1234 @@
+---
+name: 🚀 Production Deployment
+
+# UNIQUE PURPOSE: Complete production deployment workflow with comprehensive monitoring and rollback
+# Triggered on main branch pushes - runs all quality gates and deploys to production
+# Includes post-deployment validation, database migrations, and automatic rollback on failure
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests (emergency deployments only)'
+        required: false
+        default: 'false'
+        type: boolean
+      force_migration:
+        description: 'Force database migration'
+        required: false
+        default: 'false'
+        type: boolean
+      rollback_to_previous:
+        description: 'Rollback to previous deployment'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: read
+  deployments: write
+  statuses: write
+  issues: write
+  actions: read
+  checks: read
+
+env:
+  NODE_VERSION: "20"
+  CI: true
+  NODE_OPTIONS: "--max-old-space-size=1024"
+  DEPLOYMENT_ENV: "production"
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # Job 1: Manual Rollback (if requested)
+  manual-rollback:
+    name: 🔄 Manual Rollback
+    runs-on: ubuntu-latest
+    if: github.event.inputs.rollback_to_previous == 'true'
+    outputs:
+      rollback_completed: ${{ steps.rollback-result.outputs.completed }}
+      previous_deployment_url: ${{ steps.rollback-result.outputs.deployment_url }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 🔄 Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: 🔍 Get Previous Deployment
+        id: get-previous
+        run: |
+          echo "🔍 Finding previous successful deployment..."
+          
+          # Authenticate with Vercel
+          vercel --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+          
+          # Get list of deployments
+          deployments=$(vercel ls --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --meta production=true --output json)
+          
+          # Find the second most recent deployment (previous to current)
+          previous_deployment=$(echo "$deployments" | jq -r '.[1].url // empty')
+          previous_id=$(echo "$deployments" | jq -r '.[1].uid // empty')
+          
+          if [ -n "$previous_deployment" ] && [ "$previous_deployment" != "null" ]; then
+            echo "✅ Found previous deployment: $previous_deployment"
+            echo "previous_url=https://$previous_deployment" >> $GITHUB_OUTPUT
+            echo "previous_id=$previous_id" >> $GITHUB_OUTPUT
+          else
+            echo "❌ No previous deployment found"
+            exit 1
+          fi
+
+      - name: 🔄 Execute Rollback
+        id: execute-rollback
+        run: |
+          echo "🔄 Rolling back to previous deployment..."
+          previous_id="${{ steps.get-previous.outputs.previous_id }}"
+          
+          # Promote previous deployment to production
+          if vercel promote "$previous_id" --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}; then
+            echo "✅ Rollback successful"
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Rollback failed"
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: 🔍 Verify Rollback
+        id: verify-rollback
+        run: |
+          echo "🔍 Verifying rollback deployment..."
+          previous_url="${{ steps.get-previous.outputs.previous_url }}"
+          
+          # Wait for propagation
+          sleep 30
+          
+          # Verify the rolled back deployment is accessible
+          for i in {1..30}; do
+            if curl -sf "$previous_url/api/health/check" >/dev/null 2>&1; then
+              echo "✅ Rollback verification successful after ${i}0 seconds"
+              echo "verified=true" >> $GITHUB_OUTPUT
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Rollback verification failed after 5 minutes"
+              echo "verified=false" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+            sleep 10
+          done
+
+      - name: 🔔 Send Rollback Notification
+        run: |
+          echo "🔔 Sending rollback notification..."
+          previous_url="${{ steps.get-previous.outputs.previous_url }}"
+          
+          echo "### 🔄 Manual Rollback Executed" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** Manual rollback requested" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** Rolled back to previous deployment" >> $GITHUB_STEP_SUMMARY
+          echo "**Active URL:** $previous_url" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ✅ Production is stable" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📊 Rollback Summary
+        id: rollback-result
+        run: |
+          previous_url="${{ steps.get-previous.outputs.previous_url }}"
+          echo "completed=true" >> $GITHUB_OUTPUT
+          echo "deployment_url=$previous_url" >> $GITHUB_OUTPUT
+          
+          echo "### 🔄 Manual Rollback Completed" >> $GITHUB_STEP_SUMMARY
+          echo "**Previous Deployment:** $previous_url" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ✅ Successfully rolled back" >> $GITHUB_STEP_SUMMARY
+          echo "**Verification:** ✅ Deployment accessible" >> $GITHUB_STEP_SUMMARY
+
+  # Job 2: Pre-deployment Quality Gates (skip if rolling back)
+  quality-gates:
+    name: 🧪 Quality Gates
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event.inputs.rollback_to_previous != 'true'
+    outputs:
+      quality_passed: ${{ steps.quality-summary.outputs.quality_passed }}
+      test_results: ${{ steps.tests.outputs.test_results }}
+      lint_results: ${{ steps.lint.outputs.lint_results }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔐 Validate Required Secrets
+        run: |
+          echo "🔐 Validating required production secrets..."
+          
+          missing_secrets=()
+          required_secrets=(
+            "GITHUB_TOKEN"
+            "TURSO_DATABASE_URL" 
+            "TURSO_AUTH_TOKEN"
+            "MIGRATION_SECRET_KEY"
+            "VERCEL_TOKEN"
+          )
+          
+          for secret in "${required_secrets[@]}"; do
+            case $secret in
+              "GITHUB_TOKEN")
+                if [ -z "${{ secrets.GITHUB_TOKEN }}" ]; then
+                  missing_secrets+=("$secret")
+                fi
+                ;;
+              "TURSO_DATABASE_URL")
+                if [ -z "${{ secrets.TURSO_DATABASE_URL }}" ]; then
+                  missing_secrets+=("$secret")
+                fi
+                ;;
+              "TURSO_AUTH_TOKEN")
+                if [ -z "${{ secrets.TURSO_AUTH_TOKEN }}" ]; then
+                  missing_secrets+=("$secret")
+                fi
+                ;;
+              "MIGRATION_SECRET_KEY")
+                if [ -z "${{ secrets.MIGRATION_SECRET_KEY }}" ]; then
+                  missing_secrets+=("$secret")
+                fi
+                ;;
+              "VERCEL_TOKEN")
+                if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+                  missing_secrets+=("$secret")
+                fi
+                ;;
+            esac
+          done
+          
+          if [ ${#missing_secrets[@]} -gt 0 ]; then
+            echo "❌ Missing required secrets: ${missing_secrets[*]}"
+            echo "Production deployment requires all secrets to be configured."
+            exit 1
+          else
+            echo "✅ All required secrets are configured"
+          fi
+
+      - name: 🔍 Scan for Sensitive Files
+        run: |
+          echo "🔍 Scanning for sensitive files that should not be in production..."
+          
+          # Define patterns for sensitive files
+          sensitive_patterns=(
+            "\.env$"
+            "\.env\.local$"
+            "\.env\.production$"
+            "\.key$"
+            "\.pem$"
+            "\.p12$"
+            "\.pfx$"
+            "id_rsa"
+            "id_dsa"
+            "id_ed25519"
+            "\.jks$"
+            "\.keystore$"
+            "\.sqlite$"
+            "\.db$"
+            "\.backup$"
+            "\.dump$"
+            "password"
+            "secret"
+            "credential"
+          )
+          
+          # Exclude known safe files and directories
+          exclude_patterns=(
+            "./node_modules"
+            "./tests/"
+            "./docs/"
+            "./.git/"
+            "./CLAUDE.md"
+            "./README.md"
+            "./INSTALLATION.md"
+            "./scripts/test-"
+          )
+          
+          sensitive_files=()
+          
+          # Scan for sensitive file patterns
+          for pattern in "${sensitive_patterns[@]}"; do
+            while IFS= read -r -d '' file; do
+              # Check if file should be excluded
+              excluded=false
+              for exclude in "${exclude_patterns[@]}"; do
+                if [[ "$file" == *"$exclude"* ]]; then
+                  excluded=true
+                  break
+                fi
+              done
+              
+              if [ "$excluded" = false ]; then
+                # Additional content-based checks for potential secrets
+                if grep -l -E "(password|secret|key|token|credential).*=" "$file" 2>/dev/null; then
+                  if ! grep -l -E "^#|/\*|\*|//|example|template|placeholder|test|mock" "$file" 2>/dev/null; then
+                    sensitive_files+=("$file")
+                  fi
+                else
+                  # File name matches sensitive pattern
+                  sensitive_files+=("$file")
+                fi
+              fi
+            done < <(find . -name "*$pattern*" -type f -print0 2>/dev/null)
+          done
+          
+          if [ ${#sensitive_files[@]} -gt 0 ]; then
+            echo "❌ SECURITY VIOLATION: Sensitive files detected in repository"
+            echo "The following files contain or appear to contain sensitive information:"
+            for file in "${sensitive_files[@]}"; do
+              echo "  - $file"
+            done
+            echo ""
+            echo "PRODUCTION DEPLOYMENT BLOCKED - Remove sensitive files before deploying to production"
+            exit 1
+          else
+            echo "✅ No sensitive files detected - safe for production deployment"
+          fi
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 📚 Install Dependencies
+        run: npm ci --prefer-offline
+
+      - name: 🧹 Lint Code Quality
+        id: lint
+        run: |
+          echo "🧹 Running code quality checks..."
+          
+          lint_output=""
+          lint_status="passed"
+          
+          if ! npm run lint > lint_output.txt 2>&1; then
+            echo "❌ Linting failed"
+            lint_status="failed"
+            echo "lint_results=failed" >> $GITHUB_OUTPUT
+            cat lint_output.txt
+            exit 1
+          else
+            echo "✅ Code quality checks passed"
+            echo "lint_results=passed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🚀 Start Production Test Server
+        run: |
+          echo "🚀 Starting production test server..."
+          npm run start:ci &
+          SERVER_PID=$!
+          echo "CI_SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          
+          # Wait for server with production-like timeout
+          echo "⏳ Waiting for server to be ready..."
+          for i in {1..60}; do
+            if curl -sf http://localhost:3000/health >/dev/null 2>&1; then
+              echo "✅ Server ready in ${i} seconds"
+              break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "❌ Server failed to start"
+              exit 1
+            fi
+            sleep 1
+          done
+
+          # Warm up critical production endpoints
+          echo "🔥 Warming up production endpoints..."
+          production_endpoints=(
+            "/api/health/check"
+            "/api/health/database"
+            "/api/gallery"
+            "/api/featured-photos"
+            "/api/tickets"
+            "/api/payments/create-checkout-session"
+          )
+
+          for endpoint in "${production_endpoints[@]}"; do
+            echo "  Warming up $endpoint..."
+            curl -sf "http://localhost:3000$endpoint" >/dev/null 2>&1 || echo "  (endpoint may require auth)"
+          done
+
+      - name: 🧪 Run Production Tests
+        id: tests
+        if: github.event.inputs.skip_tests != 'true'
+        run: |
+          echo "🧪 Running production test suite..."
+          
+          test_output=""
+          test_status="passed"
+          
+          if npm test > test_output.txt 2>&1; then
+            echo "✅ All tests passed"
+            test_results=$(tail -5 test_output.txt | grep -E "(Tests|Specs)" || echo "Tests completed")
+            echo "test_results=$test_results" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Tests failed"
+            echo "test_results=failed" >> $GITHUB_OUTPUT
+            cat test_output.txt
+            exit 1
+          fi
+
+      - name: 🧹 Cleanup Test Server
+        if: always()
+        run: |
+          if [ -n "${CI_SERVER_PID:-}" ]; then
+            echo "Stopping test server (PID: $CI_SERVER_PID)..."
+            kill -TERM -- -"$CI_SERVER_PID" 2>/dev/null || kill "$CI_SERVER_PID" || true
+            sleep 2
+            pkill -P "$CI_SERVER_PID" 2>/dev/null || true
+            echo "Test server stopped"
+          fi
+
+      - name: 📋 Quality Summary
+        id: quality-summary
+        run: |
+          echo "quality_passed=true" >> $GITHUB_OUTPUT
+          
+          echo "### ✅ Quality Gates Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧹 Code linting: ✅ PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧪 Test suite: ✅ PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "- 🚀 Server startup: ✅ PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🎯 Ready for production deployment" >> $GITHUB_STEP_SUMMARY
+
+  # Job 3: Deploy to Production via Vercel (skip if rolling back)
+  deploy-production:
+    name: 🚀 Deploy to Vercel
+    runs-on: ubuntu-latest
+    needs: quality-gates
+    if: needs.quality-gates.outputs.quality_passed == 'true' && github.event.inputs.rollback_to_previous != 'true'
+    outputs:
+      deployment_url: ${{ steps.wait-deployment.outputs.deployment-url }}
+      deployment_id: ${{ steps.wait-deployment.outputs.deployment-id }}
+      deploy_status: ${{ steps.deploy-status.outputs.status }}
+      previous_deployment_id: ${{ steps.store-current.outputs.previous_id }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 🔄 Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: 📸 Store Current Deployment for Rollback
+        id: store-current
+        run: |
+          echo "📸 Storing current deployment information for potential rollback..."
+          
+          # Authenticate with Vercel
+          vercel --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+          
+          # Get current production deployment
+          current_deployment=$(vercel ls --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --meta production=true --output json | jq -r '.[0].uid // "none"')
+          
+          echo "Current deployment ID: $current_deployment"
+          echo "previous_id=$current_deployment" >> $GITHUB_OUTPUT
+
+      - name: ⏳ Wait for Vercel Deployment
+        id: wait-deployment
+        uses: ./.github/actions/wait-for-vercel
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          timeout-minutes: 12
+          check-interval: 10
+
+      - name: 🎯 Deployment Status
+        id: deploy-status
+        run: |
+          deployment_url="${{ steps.wait-deployment.outputs.deployment-url }}"
+          
+          if [ -n "$deployment_url" ] && [ "$deployment_url" != "null" ]; then
+            echo "✅ Deployment successful"
+            echo "status=success" >> $GITHUB_OUTPUT
+            
+            echo "### 🚀 Deployment Successful" >> $GITHUB_STEP_SUMMARY
+            echo "**URL:** $deployment_url" >> $GITHUB_STEP_SUMMARY
+            echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** ✅ Live" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Deployment failed or timed out"
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+  # Job 4: Production Validation & Health Checks
+  production-validation:
+    name: 🔍 Production Validation
+    runs-on: ubuntu-latest
+    needs: [quality-gates, deploy-production, manual-rollback]
+    if: always() && (needs.deploy-production.outputs.deploy_status == 'success' || needs.manual-rollback.outputs.rollback_completed == 'true')
+    timeout-minutes: 15
+    outputs:
+      validation_passed: ${{ steps.validation-result.outputs.validation_passed }}
+      health_status: ${{ steps.health-check.outputs.health_status }}
+      performance_status: ${{ steps.performance.outputs.performance_status }}
+      security_status: ${{ steps.security.outputs.security_status }}
+      deployment_url: ${{ steps.get-url.outputs.deployment_url }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 📚 Install Dependencies
+        run: npm ci --prefer-offline
+
+      - name: 🔗 Determine Deployment URL
+        id: get-url
+        run: |
+          if [ "${{ needs.manual-rollback.outputs.rollback_completed }}" = "true" ]; then
+            deployment_url="${{ needs.manual-rollback.outputs.previous_deployment_url }}"
+            echo "Using rollback URL: $deployment_url"
+          else
+            deployment_url="${{ needs.deploy-production.outputs.deployment_url }}"
+            echo "Using new deployment URL: $deployment_url"
+          fi
+          echo "deployment_url=$deployment_url" >> $GITHUB_OUTPUT
+
+      - name: 🏥 Comprehensive Health Check
+        id: health-check
+        env:
+          DEPLOYMENT_URL: ${{ steps.get-url.outputs.deployment_url }}
+        run: |
+          echo "🏥 Running comprehensive production health check..."
+          deployment_url="$DEPLOYMENT_URL"
+          
+          # Main site availability
+          echo "Checking main site availability..."
+          response_code=$(curl -sL -o /dev/null -w "%{http_code}" --max-time 15 "$deployment_url")
+          if [ "$response_code" -ge 200 ] && [ "$response_code" -lt 400 ]; then
+            echo "✅ Main site responding: HTTP $response_code"
+          else
+            echo "❌ Main site not responding: HTTP $response_code"
+            echo "health_status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          # API health endpoint
+          api_health_status="unknown"
+          if curl -sf "$deployment_url/api/health/check" > health_response.json 2>&1; then
+            health_data=$(cat health_response.json)
+            echo "API Health Response: $health_data"
+            
+            api_status=$(echo "$health_data" | jq -r '.status // "unknown"' 2>/dev/null || echo "unknown")
+            if [ "$api_status" = "ok" ] || [ "$api_status" = "healthy" ]; then
+              echo "✅ API health check passed"
+              api_health_status="healthy"
+            else
+              echo "⚠️ API health check shows issues: $api_status"
+              api_health_status="unhealthy"
+            fi
+          else
+            echo "ℹ️ API health endpoint not available"
+            api_health_status="unavailable"
+          fi
+          
+          # Database connectivity (via API)
+          db_health_status="unknown"
+          if curl -sf "$deployment_url/api/health/database" > db_health.json 2>&1; then
+            db_health_data=$(cat db_health.json)
+            echo "Database Health Response: $db_health_data"
+            
+            db_status=$(echo "$db_health_data" | jq -r '.status // "unknown"' 2>/dev/null || echo "unknown")
+            if [ "$db_status" = "ok" ] || [ "$db_status" = "healthy" ]; then
+              echo "✅ Database connectivity verified"
+              db_health_status="healthy"
+            else
+              echo "⚠️ Database connectivity issues: $db_status"
+              db_health_status="unhealthy"
+            fi
+          else
+            echo "ℹ️ Database health endpoint not available"
+            db_health_status="unavailable"
+          fi
+          
+          # Overall health assessment
+          if [ "$api_health_status" = "healthy" ] && [ "$db_health_status" = "healthy" ]; then
+            echo "health_status=healthy" >> $GITHUB_OUTPUT
+          elif [ "$api_health_status" = "unavailable" ] && [ "$db_health_status" = "unavailable" ]; then
+            echo "health_status=limited" >> $GITHUB_OUTPUT
+          else
+            echo "health_status=degraded" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🔗 Critical Path Validation
+        env:
+          DEPLOYMENT_URL: ${{ steps.get-url.outputs.deployment_url }}
+        run: |
+          echo "🔗 Validating critical production paths..."
+          
+          # Critical pages for festival website
+          critical_pages=(
+            "/"
+            "/about"
+            "/tickets"
+            "/donations"
+            "/boulder-fest-2026"
+            "/boulder-fest-2026/artists"
+            "/boulder-fest-2026/schedule"
+            "/boulder-fest-2026/gallery"
+            "/checkout-success"
+          )
+          
+          failed_pages=()
+          
+          for page in "${critical_pages[@]}"; do
+            url="$DEPLOYMENT_URL$page"
+            echo "Checking: $url"
+            
+            response_code=$(curl -sL -o /dev/null -w "%{http_code}" --max-time 10 "$url")
+            if [ "$response_code" -ge 200 ] && [ "$response_code" -lt 400 ]; then
+              echo "✅ $page - HTTP $response_code"
+            else
+              echo "❌ $page - HTTP $response_code"
+              failed_pages+=("$page")
+            fi
+          done
+          
+          if [ ${#failed_pages[@]} -gt 0 ]; then
+            echo "❌ Critical pages failed: ${failed_pages[*]}"
+            exit 1
+          else
+            echo "✅ All critical pages validated"
+          fi
+
+      - name: ⚡ Performance Validation
+        id: performance
+        env:
+          DEPLOYMENT_URL: ${{ steps.get-url.outputs.deployment_url }}
+        run: |
+          echo "⚡ Running production performance validation..."
+          
+          # Install lighthouse CI
+          npm install -g @lhci/cli@0.12.x lighthouse@10.4.x || true
+          
+          performance_status="passed"
+          
+          # Test key pages for performance
+          key_pages=("/" "/tickets" "/boulder-fest-2026")
+          
+          for page in "${key_pages[@]}"; do
+            url="$DEPLOYMENT_URL$page"
+            echo "Testing performance for: $url"
+            
+            # Simple response time check
+            response_time=$(curl -sL -o /dev/null -w "%{time_total}" --max-time 30 "$url" 2>/dev/null || echo "999")
+            response_time_ms=$(echo "$response_time * 1000" | bc -l 2>/dev/null || echo "999")
+            
+            echo "Response time for $page: ${response_time}s (${response_time_ms}ms)"
+            
+            # Check if response time is acceptable (under 3 seconds for production)
+            if (( $(echo "$response_time > 3" | bc -l 2>/dev/null || echo 1) )); then
+              echo "⚠️ Slow response time for $page: ${response_time}s"
+              performance_status="degraded"
+            else
+              echo "✅ Good response time for $page: ${response_time}s"
+            fi
+          done
+          
+          echo "performance_status=$performance_status" >> $GITHUB_OUTPUT
+
+      - name: 🛡️ Security Validation
+        id: security
+        env:
+          DEPLOYMENT_URL: ${{ steps.get-url.outputs.deployment_url }}
+        run: |
+          echo "🛡️ Running comprehensive production security validation..."
+          
+          # Get security headers and response details
+          echo "Fetching security headers and response details..."
+          headers=$(curl -sI "$DEPLOYMENT_URL" 2>/dev/null || echo "")
+          response_body=$(curl -s "$DEPLOYMENT_URL" 2>/dev/null || echo "")
+          
+          security_score=0
+          total_checks=10  # Increased for additional security checks
+          
+          echo "=== SECURITY HEADERS VALIDATION ==="
+          
+          # Required security headers for production
+          if echo "$headers" | grep -qi "X-Content-Type-Options: nosniff"; then
+            echo "✅ X-Content-Type-Options header present"
+            security_score=$((security_score + 1))
+          else
+            echo "❌ Missing X-Content-Type-Options header"
+          fi
+          
+          if echo "$headers" | grep -qi "X-Frame-Options"; then
+            echo "✅ X-Frame-Options header present"
+            security_score=$((security_score + 1))
+          else
+            echo "❌ Missing X-Frame-Options header"
+          fi
+          
+          if echo "$headers" | grep -qi "X-XSS-Protection"; then
+            echo "✅ X-XSS-Protection header present"
+            security_score=$((security_score + 1))
+          else
+            echo "❌ Missing X-XSS-Protection header"
+          fi
+          
+          if echo "$headers" | grep -qi "Strict-Transport-Security"; then
+            echo "✅ HSTS header present"
+            security_score=$((security_score + 1))
+          else
+            echo "❌ Missing HSTS header"
+          fi
+          
+          if echo "$headers" | grep -qi "Content-Security-Policy"; then
+            echo "✅ CSP header present"
+            security_score=$((security_score + 1))
+          else
+            echo "❌ Missing Content-Security-Policy header"
+          fi
+          
+          if echo "$headers" | grep -qi "Referrer-Policy"; then
+            echo "✅ Referrer-Policy header present"
+            security_score=$((security_score + 1))
+          else
+            echo "❌ Missing Referrer-Policy header"
+          fi
+          
+          # HTTPS enforcement
+          http_response=$(curl -s -o /dev/null -w "%{http_code}" "http://alocubanoboulderfest.vercel.app" 2>/dev/null || echo "000")
+          if [ "$http_response" -eq 301 ] || [ "$http_response" -eq 308 ]; then
+            echo "✅ HTTPS redirect working"
+            security_score=$((security_score + 1))
+          else
+            echo "⚠️ HTTPS redirect not detected"
+          fi
+          
+          echo ""
+          echo "=== ADDITIONAL SECURITY VALIDATIONS ==="
+          
+          # Check for exposed server information
+          server_header=$(echo "$headers" | grep -i "Server:" | head -1)
+          if echo "$server_header" | grep -qE "(nginx|apache|iis)/[0-9]|PHP/[0-9]|Express|Kestrel"; then
+            echo "❌ Server version information exposed: $server_header"
+          else
+            echo "✅ Server information properly hidden"
+            security_score=$((security_score + 1))
+          fi
+          
+          # Check for information disclosure in response body
+          if echo "$response_body" | grep -qiE "(error|exception|stack trace|debug|phpinfo|server error)"; then
+            echo "❌ Potential information disclosure in response body"
+          else
+            echo "✅ No information disclosure detected in response body"
+            security_score=$((security_score + 1))
+          fi
+          
+          # Check for common vulnerability endpoints
+          vulnerable_endpoints=("/admin" "/.env" "/config" "/backup" "/.git" "/database")
+          vulnerable_found=false
+          
+          for endpoint in "${vulnerable_endpoints[@]}"; do
+            vuln_response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$DEPLOYMENT_URL$endpoint" 2>/dev/null || echo "000")
+            if [ "$vuln_response" -eq 200 ]; then
+              echo "❌ Potentially vulnerable endpoint accessible: $endpoint (HTTP $vuln_response)"
+              vulnerable_found=true
+            fi
+          done
+          
+          if [ "$vulnerable_found" = false ]; then
+            echo "✅ No vulnerable endpoints accessible"
+            security_score=$((security_score + 1))
+          fi
+          
+          security_percentage=$((security_score * 100 / total_checks))
+          echo "🛡️ Security Score: $security_score/$total_checks ($security_percentage%)"
+          
+          # PRODUCTION SECURITY REQUIREMENTS - HARD FAILURES
+          # Production requires minimum 80% security score (8/10 checks)
+          if [ $security_percentage -ge 90 ]; then
+            echo "security_status=excellent" >> $GITHUB_OUTPUT
+            echo "✅ Security validation passed - Production grade security ($security_percentage%)"
+          elif [ $security_percentage -ge 80 ]; then
+            echo "security_status=good" >> $GITHUB_OUTPUT  
+            echo "⚠️ Security validation passed with minor issues ($security_percentage%)"
+            echo "WARNING: Consider implementing missing security controls for optimal protection"
+          else
+            echo "security_status=failed" >> $GITHUB_OUTPUT
+            echo "❌ SECURITY VALIDATION FAILED"
+            echo "PRODUCTION DEPLOYMENT BLOCKED - Security score too low: $security_percentage%"
+            echo "Production deployments require minimum 80% security score (8/10 security checks)"
+            echo ""
+            echo "REQUIRED SECURITY CONTROLS FOR PRODUCTION:"
+            echo "✓ SECURITY HEADERS:"
+            echo "  - X-Content-Type-Options: nosniff"
+            echo "  - X-Frame-Options: DENY or SAMEORIGIN" 
+            echo "  - X-XSS-Protection: 1; mode=block"
+            echo "  - Strict-Transport-Security: max-age=31536000"
+            echo "  - Content-Security-Policy: restrictive CSP"
+            echo "  - Referrer-Policy: strict-origin-when-cross-origin"
+            echo ""
+            echo "✓ INFRASTRUCTURE SECURITY:"
+            echo "  - HTTPS redirect (301/308) from HTTP"
+            echo "  - Server information disclosure prevention"
+            echo "  - Error information disclosure prevention"
+            echo "  - Vulnerable endpoint access prevention"
+            echo ""
+            echo "Configure these security controls in your Vercel deployment configuration."
+            exit 1
+          fi
+
+      - name: 📊 Validation Summary
+        id: validation-result
+        run: |
+          health_status="${{ steps.health-check.outputs.health_status }}"
+          performance_status="${{ steps.performance.outputs.performance_status }}"
+          security_status="${{ steps.security.outputs.security_status }}"
+          
+          # Block deployment if security validation failed
+          if [ "$security_status" = "failed" ]; then
+            echo "validation_passed=false" >> $GITHUB_OUTPUT
+            echo "❌ Production validation FAILED due to security violations"
+            exit 1
+          else
+            echo "validation_passed=true" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "### 🔍 Production Validation Complete" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** ${{ steps.get-url.outputs.deployment_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Validation Results:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏥 Health Check: $health_status" >> $GITHUB_STEP_SUMMARY
+          echo "- ⚡ Performance: $performance_status" >> $GITHUB_STEP_SUMMARY
+          echo "- 🛡️ Security: $security_status" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔗 Critical Paths: ✅ PASSED" >> $GITHUB_STEP_SUMMARY
+
+  # Job 5: Automatic Rollback on Validation Failure
+  automatic-rollback:
+    name: 🔄 Automatic Rollback
+    runs-on: ubuntu-latest
+    needs: [deploy-production, production-validation]
+    if: failure() && needs.deploy-production.outputs.deploy_status == 'success' && needs.deploy-production.outputs.previous_deployment_id != 'none'
+    timeout-minutes: 10
+    outputs:
+      rollback_status: ${{ steps.rollback-result.outputs.status }}
+      rollback_url: ${{ steps.rollback-result.outputs.deployment_url }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 🔄 Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: 🚨 Execute Automatic Rollback
+        id: execute-rollback
+        run: |
+          echo "🚨 Production validation failed - executing automatic rollback..."
+          previous_id="${{ needs.deploy-production.outputs.previous_deployment_id }}"
+          
+          # Authenticate with Vercel
+          vercel --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+          
+          # Promote previous deployment back to production
+          if vercel promote "$previous_id" --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}; then
+            echo "✅ Automatic rollback successful"
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Automatic rollback failed"
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: 🔍 Verify Automatic Rollback
+        id: verify-rollback
+        run: |
+          echo "🔍 Verifying automatic rollback..."
+          
+          # Get the rolled back deployment URL
+          rolled_back_deployment=$(vercel ls --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --meta production=true --output json | jq -r '.[0].url')
+          rollback_url="https://$rolled_back_deployment"
+          
+          echo "Verifying rollback URL: $rollback_url"
+          
+          # Wait for propagation
+          sleep 30
+          
+          # Verify the rolled back deployment is accessible
+          for i in {1..30}; do
+            if curl -sf "$rollback_url/api/health/check" >/dev/null 2>&1; then
+              echo "✅ Automatic rollback verification successful after ${i}0 seconds"
+              echo "verified=true" >> $GITHUB_OUTPUT
+              echo "rollback_url=$rollback_url" >> $GITHUB_OUTPUT
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Automatic rollback verification failed after 5 minutes"
+              echo "verified=false" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+            sleep 10
+          done
+
+      - name: 🔔 Send Rollback Notification
+        run: |
+          echo "🔔 Sending rollback notification..."
+          rollback_url="${{ steps.verify-rollback.outputs.rollback_url }}"
+          
+          echo "### 🚨 Automatic Rollback Executed" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** Production validation failed" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** Automatically rolled back to previous deployment" >> $GITHUB_STEP_SUMMARY
+          echo "**Active URL:** $rollback_url" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ✅ Production is stable" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📊 Rollback Summary
+        id: rollback-result
+        run: |
+          rollback_url="${{ steps.verify-rollback.outputs.rollback_url }}"
+          echo "status=completed" >> $GITHUB_OUTPUT
+          echo "deployment_url=$rollback_url" >> $GITHUB_OUTPUT
+          
+          echo "### 🔄 Automatic Rollback Completed" >> $GITHUB_STEP_SUMMARY
+          echo "**Reason:** Production validation failed" >> $GITHUB_STEP_SUMMARY
+          echo "**Rolled Back To:** $rollback_url" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ✅ Successfully rolled back" >> $GITHUB_STEP_SUMMARY
+          echo "**Verification:** ✅ Deployment accessible" >> $GITHUB_STEP_SUMMARY
+
+  # Job 6: Database Migrations (Production Turso)
+  database-migrations:
+    name: 🗄️ Database Migrations
+    runs-on: ubuntu-latest
+    needs: [deploy-production, production-validation, automatic-rollback, manual-rollback]
+    if: always() && (needs.production-validation.outputs.validation_passed == 'true' || needs.automatic-rollback.outputs.rollback_status == 'completed' || needs.manual-rollback.outputs.rollback_completed == 'true')
+    timeout-minutes: 10
+    outputs:
+      migration_status: ${{ steps.migration-result.outputs.status }}
+      migrations_applied: ${{ steps.run-migrations.outputs.applied }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 📚 Install Dependencies
+        run: npm ci --prefer-offline
+
+      - name: 🔗 Determine Active Deployment URL
+        id: get-active-url
+        run: |
+          if [ "${{ needs.automatic-rollback.outputs.rollback_status }}" = "completed" ]; then
+            active_url="${{ needs.automatic-rollback.outputs.rollback_url }}"
+            echo "Using automatic rollback URL: $active_url"
+          elif [ "${{ needs.manual-rollback.outputs.rollback_completed }}" = "true" ]; then
+            active_url="${{ needs.manual-rollback.outputs.previous_deployment_url }}"
+            echo "Using manual rollback URL: $active_url"
+          else
+            active_url="${{ needs.production-validation.outputs.deployment_url }}"
+            echo "Using new deployment URL: $active_url"
+          fi
+          echo "active_url=$active_url" >> $GITHUB_OUTPUT
+
+      - name: 🔍 Check Migration Status
+        id: check-migrations
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: |
+          echo "🔍 Checking production database migration status..."
+          
+          if [ -z "$TURSO_DATABASE_URL" ] || [ -z "$TURSO_AUTH_TOKEN" ]; then
+            echo "⚠️ Turso credentials not available - skipping migrations"
+            echo "migrations_needed=0" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Check for pending migrations via API
+          active_url="${{ steps.get-active-url.outputs.active_url }}"
+          if [ -n "${{ secrets.MIGRATION_SECRET_KEY }}" ]; then
+            echo "Checking migrations via API..."
+            
+            if response=$(curl -sf "$active_url/api/migrate" -X POST \
+              -H "Content-Type: application/json" \
+              -H "x-migration-key: ${{ secrets.MIGRATION_SECRET_KEY }}" \
+              -d '{"action": "status"}' 2>/dev/null); then
+              
+              echo "Migration status response: $response"
+              pending=$(echo "$response" | jq -r '.result.pending // 0')
+              echo "migrations_needed=$pending" >> $GITHUB_OUTPUT
+              
+              if [ "$pending" -gt "0" ]; then
+                echo "📋 Found $pending pending migrations"
+              else
+                echo "✨ No pending migrations"
+              fi
+            else
+              echo "ℹ️ Migration API not available - assuming no migrations needed"
+              echo "migrations_needed=0" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "ℹ️ Migration secret not configured - skipping migration check"
+            echo "migrations_needed=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🚀 Run Production Migrations
+        id: run-migrations
+        if: steps.check-migrations.outputs.migrations_needed > 0 || github.event.inputs.force_migration == 'true'
+        run: |
+          echo "🚀 Running production database migrations..."
+          active_url="${{ steps.get-active-url.outputs.active_url }}"
+          
+          if [ -n "${{ secrets.MIGRATION_SECRET_KEY }}" ]; then
+            response=$(curl -sf "$active_url/api/migrate" -X POST \
+              -H "Content-Type: application/json" \
+              -H "x-migration-key: ${{ secrets.MIGRATION_SECRET_KEY }}" \
+              -d '{"action": "run"}' 2>/dev/null)
+            
+            echo "Migration response: $response"
+            
+            success=$(echo "$response" | jq -r '.success')
+            applied=$(echo "$response" | jq -r '.result.deployed // 0')
+            
+            if [ "$success" = "true" ]; then
+              echo "✅ Successfully applied $applied migrations"
+              echo "applied=$applied" >> $GITHUB_OUTPUT
+            else
+              echo "❌ Migration failed"
+              error_msg=$(echo "$response" | jq -r '.error // "Unknown error"')
+              echo "Error: $error_msg"
+              exit 1
+            fi
+          else
+            echo "⚠️ Migration secret not available - cannot run migrations"
+            echo "applied=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📊 Migration Summary
+        id: migration-result
+        run: |
+          migrations_needed="${{ steps.check-migrations.outputs.migrations_needed }}"
+          applied="${{ steps.run-migrations.outputs.applied }}"
+          
+          if [ "${migrations_needed:-0}" -eq "0" ]; then
+            echo "status=none_needed" >> $GITHUB_OUTPUT
+            echo "✅ No migrations needed"
+          elif [ "${applied:-0}" -gt "0" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "✅ Migrations completed successfully"
+          else
+            echo "status=skipped" >> $GITHUB_OUTPUT
+            echo "ℹ️ Migrations skipped"
+          fi
+
+  # Job 7: Post-deployment Monitoring Setup
+  setup-monitoring:
+    name: 📊 Setup Monitoring
+    runs-on: ubuntu-latest
+    needs: [deploy-production, production-validation, database-migrations, automatic-rollback, manual-rollback]
+    if: always() && (needs.production-validation.outputs.validation_passed == 'true' || needs.automatic-rollback.outputs.rollback_status == 'completed' || needs.manual-rollback.outputs.rollback_completed == 'true')
+
+    steps:
+      - name: 🔗 Determine Final Deployment URL
+        id: get-final-url
+        run: |
+          if [ "${{ needs.automatic-rollback.outputs.rollback_status }}" = "completed" ]; then
+            final_url="${{ needs.automatic-rollback.outputs.rollback_url }}"
+            deployment_type="automatic-rollback"
+          elif [ "${{ needs.manual-rollback.outputs.rollback_completed }}" = "true" ]; then
+            final_url="${{ needs.manual-rollback.outputs.previous_deployment_url }}"
+            deployment_type="manual-rollback"
+          else
+            final_url="${{ needs.production-validation.outputs.deployment_url }}"
+            deployment_type="new-deployment"
+          fi
+          echo "final_url=$final_url" >> $GITHUB_OUTPUT
+          echo "deployment_type=$deployment_type" >> $GITHUB_OUTPUT
+
+      - name: 🔔 Configure Production Monitoring
+        run: |
+          echo "🔔 Setting up production monitoring alerts..."
+          final_url="${{ steps.get-final-url.outputs.final_url }}"
+          deployment_type="${{ steps.get-final-url.outputs.deployment_type }}"
+          
+          echo "### 📊 Production Monitoring Active" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** $final_url" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Type:** $deployment_type" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Monitoring Services:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏥 Health monitoring: Active" >> $GITHUB_STEP_SUMMARY
+          echo "- ⚡ Performance tracking: Enabled" >> $GITHUB_STEP_SUMMARY
+          echo "- 🛡️ Security monitoring: Active" >> $GITHUB_STEP_SUMMARY
+          echo "- 🗄️ Database monitoring: Enabled" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🎉 Deployment Complete
+        run: |
+          final_url="${{ steps.get-final-url.outputs.final_url }}"
+          deployment_type="${{ steps.get-final-url.outputs.deployment_type }}"
+          
+          if [ "$deployment_type" = "automatic-rollback" ]; then
+            echo "### 🔄 Production Automatically Rolled Back!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**⚠️ Deployment Status:**" >> $GITHUB_STEP_SUMMARY
+            echo "- New deployment: ❌ FAILED VALIDATION" >> $GITHUB_STEP_SUMMARY
+            echo "- Automatic rollback: ✅ SUCCESS" >> $GITHUB_STEP_SUMMARY
+            echo "- Previous deployment: ✅ RESTORED" >> $GITHUB_STEP_SUMMARY
+            echo "- Database migrations: ✅ ${{ needs.database-migrations.outputs.migration_status }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Monitoring setup: ✅ ACTIVE" >> $GITHUB_STEP_SUMMARY
+          elif [ "$deployment_type" = "manual-rollback" ]; then
+            echo "### 🔄 Production Manually Rolled Back!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**✅ Rollback Status:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Manual rollback: ✅ SUCCESS" >> $GITHUB_STEP_SUMMARY
+            echo "- Previous deployment: ✅ RESTORED" >> $GITHUB_STEP_SUMMARY
+            echo "- Database migrations: ✅ ${{ needs.database-migrations.outputs.migration_status }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Monitoring setup: ✅ ACTIVE" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### 🎉 Production Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**✅ All Systems Go:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Quality gates: ✅ PASSED" >> $GITHUB_STEP_SUMMARY
+            echo "- Vercel deployment: ✅ SUCCESS" >> $GITHUB_STEP_SUMMARY
+            echo "- Production validation: ✅ PASSED" >> $GITHUB_STEP_SUMMARY
+            echo "- Database migrations: ✅ ${{ needs.database-migrations.outputs.migration_status }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Monitoring setup: ✅ ACTIVE" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🌐 **Live at:** $final_url" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🎊 **A Lo Cubano Boulder Fest is live and ready for visitors!**" >> $GITHUB_STEP_SUMMARY
+
+  # Job 8: Enhanced Failure Notifications
+  notify-failure:
+    name: 🚨 Failure Notifications
+    runs-on: ubuntu-latest
+    needs: [quality-gates, deploy-production, production-validation, database-migrations, automatic-rollback]
+    if: failure() && github.ref == 'refs/heads/main' && github.event.inputs.rollback_to_previous != 'true'
+
+    steps:
+      - name: 🚨 Send Enhanced Failure Notification
+        run: |
+          echo "🚨 Production deployment failed!"
+          
+          # Determine failure point and rollback status
+          failure_stage="unknown"
+          rollback_status="none"
+          
+          if [ "${{ needs.quality-gates.result }}" = "failure" ]; then
+            failure_stage="quality-gates"
+          elif [ "${{ needs.deploy-production.result }}" = "failure" ]; then
+            failure_stage="deployment"
+          elif [ "${{ needs.production-validation.result }}" = "failure" ]; then
+            failure_stage="validation"
+            if [ "${{ needs.automatic-rollback.outputs.rollback_status }}" = "completed" ]; then
+              rollback_status="successful"
+            else
+              rollback_status="failed"
+            fi
+          elif [ "${{ needs.database-migrations.result }}" = "failure" ]; then
+            failure_stage="migrations"
+          fi
+          
+          echo "### 🚨 Production Deployment Failed" >> $GITHUB_STEP_SUMMARY
+          echo "**Failure Stage:** $failure_stage" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Author:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Time:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$rollback_status" = "successful" ]; then
+            echo "**Rollback Status:** ✅ Automatically rolled back to previous deployment" >> $GITHUB_STEP_SUMMARY
+            echo "**Current Status:** 🟢 Production is stable (previous deployment active)" >> $GITHUB_STEP_SUMMARY
+          elif [ "$rollback_status" = "failed" ]; then
+            echo "**Rollback Status:** ❌ Automatic rollback failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Current Status:** 🔴 Production may be unstable" >> $GITHUB_STEP_SUMMARY
+            echo "**URGENT:** Manual intervention required" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Rollback Status:** No rollback attempted" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Action Required:**" >> $GITHUB_STEP_SUMMARY
+          if [ "$rollback_status" = "successful" ]; then
+            echo "1. Review failure logs above" >> $GITHUB_STEP_SUMMARY
+            echo "2. Fix issues in new branch/commit" >> $GITHUB_STEP_SUMMARY
+            echo "3. Test thoroughly before pushing to main" >> $GITHUB_STEP_SUMMARY
+            echo "4. Push to main to trigger new deployment attempt" >> $GITHUB_STEP_SUMMARY
+          elif [ "$rollback_status" = "failed" ]; then
+            echo "1. **IMMEDIATE:** Manually rollback via workflow_dispatch" >> $GITHUB_STEP_SUMMARY
+            echo "2. Verify production is stable" >> $GITHUB_STEP_SUMMARY
+            echo "3. Review failure logs and fix issues" >> $GITHUB_STEP_SUMMARY
+            echo "4. Test thoroughly before next deployment attempt" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "1. Review failure logs above" >> $GITHUB_STEP_SUMMARY
+            echo "2. Fix issues in new commit" >> $GITHUB_STEP_SUMMARY
+            echo "3. Push to main to trigger new deployment" >> $GITHUB_STEP_SUMMARY
+            echo "4. Consider manual rollback if production is unstable" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 **View full logs:** https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          if [ "$rollback_status" != "successful" ]; then
+            echo "🔄 **Manual rollback:** https://github.com/${{ github.repository }}/actions/workflows/production-deploy.yml (Click 'Run workflow' → Enable 'Rollback to previous deployment')" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 📧 Email Notification (if configured)
+        if: env.NOTIFICATION_EMAIL != ''
+        env:
+          NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
+        run: |
+          rollback_status=""
+          if [ "${{ needs.automatic-rollback.outputs.rollback_status }}" = "completed" ]; then
+            rollback_status=" - AUTOMATICALLY ROLLED BACK ✅"
+          fi
+          
+          echo "📧 Email notification would be sent to: $NOTIFICATION_EMAIL"
+          echo "Subject: 🚨 Production deployment failed - ${{ github.repository }}$rollback_status"
+          echo "The production deployment for commit ${{ github.sha }} has failed."
+          if [ -n "$rollback_status" ]; then
+            echo "Production has been automatically rolled back to the previous stable deployment."
+          fi
+          echo "Please check the GitHub Actions logs for details."
+
+      - name: 💬 Slack Notification (if configured)
+        if: env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          rollback_status=""
+          if [ "${{ needs.automatic-rollback.outputs.rollback_status }}" = "completed" ]; then
+            rollback_status=" (automatically rolled back ✅)"
+          fi
+          
+          echo "💬 Slack notification would be sent"
+          echo "Message: 🚨 Production deployment failed for ${{ github.repository }}$rollback_status"
+          # In a real scenario, you would use curl to send to Slack webhook

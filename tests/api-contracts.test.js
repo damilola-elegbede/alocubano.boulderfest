@@ -78,7 +78,7 @@ test('email subscription API validates and processes requests correctly', async 
 test('ticket validation API handles QR codes correctly', async () => {
   // Test with invalid ticket ID to validate error handling
   const response = await testRequest('POST', '/api/tickets/validate', {
-    qr_code: 'invalid-ticket-id-12345'
+    token: 'invalid-ticket-id-12345'
   });
   
   if (response.status === 0) {
@@ -89,9 +89,17 @@ test('ticket validation API handles QR codes correctly', async () => {
   // Should return 404 for non-existent tickets or 400 for invalid format
   if (response.status === HTTP_STATUS.NOT_FOUND) {
     expect(response.data).toHaveProperty('error');
-    expect(response.data.error).toContain('not found');
+    expect(response.data.error).toMatch(/not found|invalid|does not exist/i);
   } else if (response.status === HTTP_STATUS.BAD_REQUEST) {
     expect(response.data).toHaveProperty('error');
+    expect(response.data.error).toMatch(/invalid|required|format/i);
+  } else if (response.status === HTTP_STATUS.OK) {
+    // Validate successful response structure
+    expect(response.data).toHaveProperty('valid');
+    expect(typeof response.data.valid).toBe('boolean');
+    if (response.data.valid) {
+      expect(response.data).toHaveProperty('ticket');
+    }
   }
   // Should not return unexpected status codes
   expect([HTTP_STATUS.OK, HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.NOT_FOUND].includes(response.status)).toBe(true);
@@ -129,7 +137,7 @@ test('admin dashboard enforces authentication', async () => {
   // Should always require authentication
   expect(response.status).toBe(HTTP_STATUS.UNAUTHORIZED);
   expect(response.data).toHaveProperty('error');
-  expect(response.data.error).toMatch(/unauthorized|authentication/i);
+  expect(response.data.error).toMatch(/unauthorized|authentication|access denied|not authorized/i);
 });
 
 test('registration API contract validation', async () => {

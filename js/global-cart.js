@@ -28,6 +28,16 @@ async function initializeGlobalCart() {
 
         // Set up global debugging
         setupGlobalDebugging(cartManager);
+
+        // Emit initialization event for components that need to sync
+        document.dispatchEvent(new CustomEvent('cart:initialized', {
+            detail: cartManager.getState()
+        }));
+
+        // Set global cart debug for easy access
+        if (typeof window !== 'undefined') {
+            window.globalCartManager = cartManager;
+        }
     } catch (error) {
         console.error('Failed to initialize global cart:', error);
     }

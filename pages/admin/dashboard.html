@@ -314,6 +314,42 @@
         color: #7f8c8d;
       }
 
+      /* Hide dashboard content until auth is verified */
+      body:not([data-auth-status="authenticated"]) .dashboard-container {
+        display: none;
+      }
+
+      body:not([data-auth-status="authenticated"]) .admin-header {
+        display: none;
+      }
+
+      /* Show auth loading state */
+      body[data-auth-status="checking"] {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+
+      body[data-auth-status="checking"]::after {
+        content: "Checking authentication...";
+        font-size: 18px;
+        color: #7f8c8d;
+      }
+
+      /* Show error state for unauthenticated/failed */
+      body[data-auth-status="unauthenticated"]::after,
+      body[data-auth-status="failed"]::after {
+        content: "Redirecting to login...";
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 18px;
+        color: #e74c3c;
+        z-index: 9999;
+      }
+
       .error {
         background: #f8d7da;
         color: #721c24;
@@ -457,29 +493,52 @@
 
       // Check authentication on load
       async function checkAuth() {
+        // Add auth check status indicator immediately
+        document.body.setAttribute('data-auth-status', 'checking');
+        
         try {
-          // Try to use existing session
-          const response = await fetch("/api/admin/dashboard");
+          // Try to use existing session - use a faster endpoint for auth check
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+          
+          const response = await fetch("/api/admin/dashboard", {
+            signal: controller.signal,
+            headers: {
+              'Cache-Control': 'no-cache'
+            }
+          });
+          
+          clearTimeout(timeoutId);
 
           if (!response.ok) {
-            // Not authenticated, redirect to login
-            window.location.href = "/pages/admin/login.html";
+            // Not authenticated, redirect to login immediately
+            document.body.setAttribute('data-auth-status', 'unauthenticated');
+            // Use replace to prevent back button issues
+            window.location.replace("/pages/admin/login.html");
             return false;
           }
 
           // Fetch CSRF token after successful auth check
           await fetchCSRFToken();
+          document.body.setAttribute('data-auth-status', 'authenticated');
 
           return true;
         } catch (error) {
           console.error("Auth check failed:", error);
-          window.location.href = "/pages/admin/login.html";
+          document.body.setAttribute('data-auth-status', 'failed');
+          // Use replace to prevent back button issues
+          window.location.replace("/pages/admin/login.html");
           return false;
         }
       }
 
       // Load dashboard data
       async function loadDashboard() {
+        // Ensure auth status is set immediately
+        if (!document.body.getAttribute('data-auth-status')) {
+          document.body.setAttribute('data-auth-status', 'checking');
+        }
+        
         if (!(await checkAuth())) return;
 
         try {
@@ -891,7 +950,8 @@
           }
         });
 
-      // Initialize dashboard
+      // Initialize dashboard immediately
+      document.body.setAttribute('data-auth-status', 'checking');
       loadDashboard();
 
       // Refresh data every 30 seconds

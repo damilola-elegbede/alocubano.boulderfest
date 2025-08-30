@@ -1,0 +1,15 @@
+# CI Performance Optimizations
+
+# Registry and caching
+registry=https://registry.npmjs.org/
+cache=.npm-cache
+prefer-offline=true
+prefer-dedupe=true
+
+# Install optimizations
+audit=false
+fund=false
+update-notifier=false
+progress=false
+
+# CI-specific optimizations

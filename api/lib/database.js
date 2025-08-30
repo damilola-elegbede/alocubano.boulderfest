@@ -57,8 +57,11 @@ class DatabaseService {
       return this.initializationPromise;
     }
 
-    // Start new initialization with retry logic
-    this.initializationPromise = this._initializeWithRetry();
+    // Start new initialization with timeout protection
+    this.initializationPromise = Promise.race([
+      this._initializeWithRetry(),
+      this._createTimeoutPromise()
+    ]);
 
     try {
       const client = await this.initializationPromise;
@@ -68,6 +71,19 @@ class DatabaseService {
       this.initializationPromise = null;
       throw error;
     }
+  }
+
+  /**
+   * Create a timeout promise to prevent hanging during initialization
+   */
+  _createTimeoutPromise() {
+    const timeoutMs = process.env.DATABASE_INIT_TIMEOUT || 10000; // 10 seconds default
+    
+    return new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Database initialization timeout after ${timeoutMs}ms`));
+      }, timeoutMs);
+    });
   }
 
   /**
@@ -98,20 +114,59 @@ class DatabaseService {
     // Check for empty string as well as undefined first (before any transformation)
     // In strict test mode, be even more strict about environment validation
     const strictMode = process.env.DATABASE_TEST_STRICT_MODE === "true";
+    
+    // Detect environment context
+    const isVercelProduction = process.env.VERCEL === "1" && process.env.VERCEL_ENV === "production";
+    const isVercelPreview = process.env.VERCEL === "1" && process.env.VERCEL_ENV === "preview";
+    const isVercel = process.env.VERCEL === "1";
+    const isDevelopment = process.env.NODE_ENV === "development" || process.env.VERCEL_DEV_STARTUP === "true";
+    const isTest = process.env.NODE_ENV === "test" || process.env.TEST_TYPE === "integration";
 
-    if (
-      !databaseUrl ||
-      databaseUrl.trim() === "" ||
-      (strictMode && !databaseUrl)
-    ) {
-      throw new Error("TURSO_DATABASE_URL environment variable is required");
+    // Environment-specific database URL handling
+    if (!databaseUrl || databaseUrl.trim() === "") {
+      if (isDevelopment) {
+        // For development, fall back to SQLite if Turso not configured
+        const path = await import("path");
+        const fs = await import("fs");
+        
+        // Create data directory if it doesn't exist
+        const dataDir = path.join(process.cwd(), "data");
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
+        }
+        
+        databaseUrl = `file:${path.join(dataDir, "development.db")}`;
+        console.log(`⚠️  TURSO_DATABASE_URL not set, using local SQLite: ${databaseUrl}`);
+      } else if (isTest) {
+        // For tests, use in-memory database by default
+        databaseUrl = ":memory:";
+        console.log("🧪 Using in-memory database for tests");
+      } else if (isVercelProduction) {
+        // In Vercel production, this is a critical configuration error
+        const error = new Error("TURSO_DATABASE_URL environment variable is required for production deployment");
+        error.code = "DB_CONFIG_ERROR";
+        error.context = "vercel-production";
+        throw error;
+      } else if (isVercelPreview || isVercel) {
+        // For Vercel preview deployments, try to fallback gracefully
+        console.warn("⚠️ TURSO_DATABASE_URL not configured in Vercel environment, attempting SQLite fallback");
+        databaseUrl = ":memory:";
+      } else if (strictMode) {
+        const error = new Error("TURSO_DATABASE_URL environment variable is required in strict mode");
+        error.code = "DB_CONFIG_ERROR";
+        error.context = "strict-mode";
+        throw error;
+      } else {
+        // Generic production environment - still require Turso
+        const error = new Error("TURSO_DATABASE_URL environment variable is required for production");
+        error.code = "DB_CONFIG_ERROR";
+        error.context = "generic-production";
+        throw error;
+      }
     }
 
     // Integration test specific handling
-    if (
-      process.env.TEST_TYPE === "integration" ||
-      process.env.NODE_ENV === "test"
-    ) {
+    if (isTest) {
       // For integration tests, ensure we have a valid file path
       if (databaseUrl.startsWith("file:")) {
         // Ensure the database file path is absolute and accessible
@@ -138,6 +193,16 @@ class DatabaseService {
     // Add auth token if provided (not needed for :memory: databases)
     if (authToken && databaseUrl !== ":memory:") {
       config.authToken = authToken;
+    } else if (!authToken && databaseUrl !== ":memory:" && !databaseUrl.startsWith("file:")) {
+      // Auth token is required for remote Turso databases
+      if (isVercelProduction) {
+        const error = new Error("TURSO_AUTH_TOKEN environment variable is required for remote database connections in production");
+        error.code = "DB_AUTH_ERROR";
+        error.context = "vercel-production";
+        throw error;
+      } else {
+        console.warn("⚠️ TURSO_AUTH_TOKEN not provided for remote database connection");
+      }
     }
 
     // Add SQLite-specific configuration for busy timeout and WAL mode
@@ -167,10 +232,7 @@ class DatabaseService {
       }
 
       // Integration test specific validation
-      if (
-        process.env.TEST_TYPE === "integration" ||
-        process.env.NODE_ENV === "test"
-      ) {
+      if (isTest) {
         // Verify client has required methods for integration tests
         if (typeof client.execute !== "function") {
           throw new Error(
@@ -227,6 +289,8 @@ class DatabaseService {
           : "undefined",
         hasAuthToken: !!config.authToken,
         environment: process.env.NODE_ENV,
+        vercelEnv: process.env.VERCEL_ENV,
+        isVercel: !!process.env.VERCEL,
         testType: process.env.TEST_TYPE,
         timestamp: new Date().toISOString(),
       });
@@ -248,6 +312,10 @@ class DatabaseService {
         throw new Error(
           `Database client configuration error: ${error.message}`,
         );
+      } else if (error.code === "DB_CONFIG_ERROR" || error.code === "DB_AUTH_ERROR") {
+        // Re-throw configuration errors with additional context
+        error.message = `${error.message} (context: ${error.context})`;
+        throw error;
       } else {
         throw new Error(
           `Failed to initialize database client: ${error.message}`,
@@ -416,15 +484,27 @@ class DatabaseService {
 
   /**
    * Create a database transaction
+   * @param {number} timeoutMs - Transaction timeout in milliseconds (default: 30000)
    * @returns {Promise<Object>} Transaction object with execute, commit, and rollback methods
    */
-  async transaction() {
+  async transaction(timeoutMs = 30000) {
     try {
       const client = await this.ensureInitialized();
 
       // Check if client has transaction support
       if (typeof client.transaction === "function") {
-        return await client.transaction();
+        try {
+          const nativeTransaction = await client.transaction();
+          console.log("✅ Using native LibSQL transaction support");
+          // Wrap native transaction with timeout protection
+          return this._wrapTransactionWithTimeout(nativeTransaction, timeoutMs);
+        } catch (transactionError) {
+          console.warn(
+            "⚠️  Native transaction creation failed, falling back to explicit SQL:",
+            transactionError.message
+          );
+          // Fall through to the explicit SQL fallback
+        }
       }
 
       // Fallback for clients without native transaction support:
@@ -434,37 +514,86 @@ class DatabaseService {
       );
       let started = false;
       let completed = false;
-      return {
+      let hasError = false;
+      
+      const fallbackTransaction = {
         execute: async (sql, params = []) => {
           if (completed) throw new Error("Transaction already completed");
+          
           if (!started) {
-            // Use IMMEDIATE to acquire a write lock early and reduce deadlocks
-            // Call client.execute with proper object format
-            await client.execute({ sql: "BEGIN IMMEDIATE", args: [] });
-            started = true;
+            try {
+              // Use IMMEDIATE to acquire a write lock early and reduce deadlocks
+              await client.execute({ sql: "BEGIN IMMEDIATE", args: [] });
+              started = true;
+            } catch (error) {
+              hasError = true;
+              throw new Error(`Failed to begin transaction: ${error.message}`);
+            }
           }
-          // Execute within the explicit transaction using proper object format
-          return await client.execute({ sql, args: params });
+          
+          try {
+            // Execute within the explicit transaction using proper object format
+            return await client.execute({ sql, args: params });
+          } catch (error) {
+            hasError = true;
+            throw error;
+          }
         },
         commit: async () => {
           if (completed) throw new Error("Transaction already completed");
-          if (started) {
-            // Call client.execute with proper object format
-            await client.execute({ sql: "COMMIT", args: [] });
+          
+          if (!started) {
+            completed = true;
+            return true; // Nothing to commit
           }
-          completed = true;
+          
+          try {
+            if (!hasError) {
+              await client.execute({ sql: "COMMIT", args: [] });
+            } else {
+              // If there were errors, rollback instead of commit
+              await client.execute({ sql: "ROLLBACK", args: [] });
+              throw new Error("Transaction had errors, rolled back instead of commit");
+            }
+          } catch (error) {
+            hasError = true;
+            // Try to rollback if commit failed
+            try {
+              await client.execute({ sql: "ROLLBACK", args: [] });
+            } catch (rollbackError) {
+              console.error("Failed to rollback after commit failure:", rollbackError.message);
+            }
+            throw new Error(`Failed to commit transaction: ${error.message}`);
+          } finally {
+            completed = true;
+          }
+          
           return true;
         },
         rollback: async () => {
           if (completed) throw new Error("Transaction already completed");
-          if (started) {
-            // Call client.execute with proper object format
-            await client.execute({ sql: "ROLLBACK", args: [] });
+          
+          if (!started) {
+            completed = true;
+            return true; // Nothing to rollback
           }
-          completed = true;
+          
+          try {
+            await client.execute({ sql: "ROLLBACK", args: [] });
+          } catch (error) {
+            console.error("Failed to rollback transaction:", error.message);
+            throw new Error(`Failed to rollback transaction: ${error.message}`);
+          } finally {
+            completed = true;
+            hasError = true;
+          }
+          
           return true;
         },
       };
+      
+      // Wrap fallback transaction with timeout protection too
+      return this._wrapTransactionWithTimeout(fallbackTransaction, timeoutMs);
     } catch (error) {
       console.error("Database transaction creation failed:", {
         error: error.message,
@@ -472,6 +601,62 @@ class DatabaseService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Wrap transaction with timeout protection to prevent hanging
+   * @private
+   */
+  _wrapTransactionWithTimeout(transaction, timeoutMs) {
+    let isTimedOut = false;
+    const timeoutId = setTimeout(() => {
+      isTimedOut = true;
+      console.error(`⏰ Transaction timed out after ${timeoutMs}ms - attempting rollback`);
+      // Attempt to rollback the timed-out transaction
+      transaction.rollback().catch(error => {
+        console.error("Failed to rollback timed-out transaction:", error.message);
+      });
+    }, timeoutMs);
+
+    const clearTimeoutAndCheck = () => {
+      clearTimeout(timeoutId);
+      if (isTimedOut) {
+        throw new Error(`Transaction timed out after ${timeoutMs}ms`);
+      }
+    };
+
+    return {
+      execute: async (sql, params = []) => {
+        clearTimeoutAndCheck();
+        try {
+          return await transaction.execute(sql, params);
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
+      },
+      commit: async () => {
+        clearTimeoutAndCheck();
+        try {
+          const result = await transaction.commit();
+          clearTimeout(timeoutId);
+          return result;
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
+      },
+      rollback: async () => {
+        try {
+          const result = await transaction.rollback();
+          clearTimeout(timeoutId);
+          return result;
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
+      }
+    };
   }
 
   /**

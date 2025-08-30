@@ -88,7 +88,7 @@ jobs:
           # Export PID for cleanup
           echo "CI_SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
 
-      - name: 🧪 Run Streamlined Tests (13 tests in 255ms)
+      - name: 🧪 Run Streamlined Tests
         run: npm run test
 
       - name: 🧹 Cleanup CI Server
@@ -105,17 +105,11 @@ jobs:
             echo "CI server stopped"
           fi
 
-      - name: 🗄️ Database Tests (included in streamlined suite)
-        run: |
-          echo "✅ Database tests included in streamlined test suite"
-          echo "   No separate database tests needed"
-
       - name: ✅ Pre-deployment Summary
         run: |
           echo "### ✅ Pre-deployment Quality Checks Passed" >> $GITHUB_STEP_SUMMARY
           echo "- 🧹 Code linting: PASSED" >> $GITHUB_STEP_SUMMARY
-          echo "- 🧪 Streamlined tests (13 tests in 255ms): PASSED" >> $GITHUB_STEP_SUMMARY
-          echo "- 🗄️ Database tests (included): PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧪 Streamlined tests: PASSED" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "🚀 Ready for Vercel deployment" >> $GITHUB_STEP_SUMMARY
 

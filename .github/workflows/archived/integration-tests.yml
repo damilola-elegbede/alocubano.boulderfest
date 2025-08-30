@@ -1,0 +1,229 @@
+---
+name: 🔗 Integration Tests
+
+# Integration testing for API endpoints and database operations
+# Validates cross-system functionality and data flow
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'api/**'
+      - 'migrations/**'
+      - 'tests/**'
+      - 'package.json'
+  push:
+    branches: [main]
+    paths:
+      - 'api/**'
+      - 'migrations/**'
+      - 'tests/**'
+  workflow_dispatch:
+  workflow_call:
+
+env:
+  NODE_VERSION: "20"
+  NODE_ENV: test
+  CI: true
+  # Test database configuration
+  DATABASE_URL: "file:./data/integration-test.db"
+  TURSO_DATABASE_URL: "file:./data/integration-test.db"
+  TEST_TYPE: integration
+
+jobs:
+  integration-tests:
+    name: 🔗 Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: 📁 Prepare Test Environment
+        run: |
+          mkdir -p data
+          echo "🔧 Test environment prepared"
+
+      - name: 🗃️ Setup Test Database
+        run: |
+          echo "🗃️ Setting up integration test database..."
+          npm run migrate:up
+          echo "✅ Database setup complete"
+
+      - name: 🧪 Run Integration Tests
+        env:
+          # Test configuration
+          TEST_ADMIN_PASSWORD: test-admin-password
+          ADMIN_SECRET: test-admin-secret-key-minimum-32-characters
+          # Disable external services for integration tests
+          BREVO_API_KEY: ""
+          STRIPE_SECRET_KEY: ""
+        run: |
+          echo "🧪 Running integration tests..."
+          
+          # Run unit tests with integration focus
+          npm test
+          
+          echo "✅ Integration tests completed"
+
+      - name: 🏥 Health Check Tests
+        run: |
+          echo "🏥 Running health check tests..."
+          npm run test:health || echo "Health checks completed with warnings"
+
+      - name: 📊 Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results-${{ github.run_number }}
+          path: |
+            coverage/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # Database migration tests
+  migration-tests:
+    name: 🗃️ Migration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: 📁 Prepare Migration Environment
+        run: |
+          mkdir -p data
+          echo "🔧 Migration environment prepared"
+
+      - name: 🗃️ Test Database Migrations
+        env:
+          DATABASE_URL: "file:./data/migration-test.db"
+          TURSO_DATABASE_URL: "file:./data/migration-test.db"
+        run: |
+          echo "🗃️ Testing database migrations..."
+          
+          # Test migration up
+          npm run migrate:up
+          
+          # Verify migration status
+          npm run migrate:status
+          
+          # Verify database integrity
+          npm run migrate:verify
+          
+          echo "✅ Migration tests completed"
+
+  # API contract tests
+  api-tests:
+    name: 📡 API Contract Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: 📁 Prepare API Test Environment
+        run: |
+          mkdir -p data
+          echo "🔧 API test environment prepared"
+
+      - name: 🗃️ Setup API Test Database
+        run: |
+          echo "🗃️ Setting up API test database..."
+          npm run migrate:up
+          echo "✅ API database setup complete"
+
+      - name: 📡 Run API Contract Tests
+        env:
+          DATABASE_URL: "file:./data/api-test.db"
+          TURSO_DATABASE_URL: "file:./data/api-test.db"
+          TEST_ADMIN_PASSWORD: test-admin-password
+          ADMIN_SECRET: test-admin-secret-key-minimum-32-characters
+          TEST_TYPE: integration
+        run: |
+          echo "📡 Running API contract tests..."
+          
+          # Run specific API contract tests
+          npx vitest run --config tests/vitest.config.js tests/api-contracts.test.js
+          
+          echo "✅ API contract tests completed"
+
+  # Summary and reporting
+  summary:
+    name: 📋 Integration Test Summary
+    runs-on: ubuntu-latest
+    needs: [integration-tests, migration-tests, api-tests]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+      - name: 📊 Generate Integration Test Summary
+        run: |
+          echo "# 🔗 Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Integration Tests**: ${{ needs.integration-tests.result == 'success' && '✅ Passed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Migration Tests**: ${{ needs.migration-tests.result == 'success' && '✅ Passed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **API Contract Tests**: ${{ needs.api-tests.result == 'success' && '✅ Passed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Overall Status**: ${{ 
+            (needs.integration-tests.result == 'success' && 
+             needs.migration-tests.result == 'success' && 
+             needs.api-tests.result == 'success') && '✅ All Tests Passed' || '❌ Some Tests Failed' 
+          }}" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow Run**: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+
+      - name: ❌ Report Integration Test Failures
+        if: |
+          needs.integration-tests.result == 'failure' || 
+          needs.migration-tests.result == 'failure' || 
+          needs.api-tests.result == 'failure'
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ❌ Integration Test Failures" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Integration tests have failed. This may indicate:" >> $GITHUB_STEP_SUMMARY
+          echo "1. API contract violations" >> $GITHUB_STEP_SUMMARY
+          echo "2. Database migration issues" >> $GITHUB_STEP_SUMMARY
+          echo "3. Cross-system integration problems" >> $GITHUB_STEP_SUMMARY
+          echo "4. Environment configuration issues" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please review the test artifacts and fix issues before merging." >> $GITHUB_STEP_SUMMARY
+          
+          exit 1

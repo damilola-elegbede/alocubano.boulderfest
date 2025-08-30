@@ -1,0 +1,584 @@
+---
+name: 🔍 Reusable Quality Checks
+
+# Comprehensive quality gate enforcement with configurable standards
+# Supports: linting, security scanning, dependency auditing, code formatting, accessibility
+# Implements parallel execution and smart failure handling for optimal CI performance
+
+on:
+  workflow_call:
+    inputs:
+      check-types:
+        description: 'Types of quality checks to run (JSON array)'
+        required: false
+        type: string
+        default: '["lint", "security", "format", "dependencies"]'
+      node-version:
+        description: 'Node.js version'
+        required: false
+        type: string
+        default: '20'
+      fail-fast:
+        description: 'Stop on first quality gate failure'
+        required: false
+        type: boolean
+        default: false
+      working-directory:
+        description: 'Working directory for checks'
+        required: false
+        type: string
+        default: '.'
+      lint-config:
+        description: 'Linting configuration level'
+        required: false
+        type: string
+        default: 'standard'  # minimal, standard, strict
+      security-level:
+        description: 'Security check strictness'
+        required: false
+        type: string
+        default: 'high'  # low, moderate, high, critical
+      include-experimental:
+        description: 'Include experimental quality checks'
+        required: false
+        type: boolean
+        default: false
+      cache-enabled:
+        description: 'Enable caching for quality checks'
+        required: false
+        type: boolean
+        default: true
+      report-format:
+        description: 'Quality report output format'
+        required: false
+        type: string
+        default: 'summary'  # minimal, summary, detailed
+      auto-fix:
+        description: 'Attempt automatic fixes for fixable issues'
+        required: false
+        type: boolean
+        default: false
+    outputs:
+      overall-result:
+        description: 'Overall quality gate status'
+        value: ${{ jobs.quality-gate.outputs.overall-result }}
+      lint-result:
+        description: 'Linting check result'
+        value: ${{ jobs.quality-gate.outputs.lint-result }}
+      security-result:
+        description: 'Security check result'
+        value: ${{ jobs.quality-gate.outputs.security-result }}
+      format-result:
+        description: 'Code formatting check result'
+        value: ${{ jobs.quality-gate.outputs.format-result }}
+      dependencies-result:
+        description: 'Dependencies check result'
+        value: ${{ jobs.quality-gate.outputs.dependencies-result }}
+      quality-score:
+        description: 'Overall quality score (0-100)'
+        value: ${{ jobs.quality-gate.outputs.quality-score }}
+      issues-found:
+        description: 'Total number of issues found'
+        value: ${{ jobs.quality-gate.outputs.issues-found }}
+
+env:
+  NODE_OPTIONS: --max-old-space-size=2048
+  FORCE_COLOR: 1
+
+jobs:
+  quality-gate:
+    name: 🔍 Quality Gate Enforcement
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    outputs:
+      overall-result: ${{ steps.consolidation.outputs.overall-result }}
+      lint-result: ${{ steps.linting.outputs.result }}
+      security-result: ${{ steps.security.outputs.result }}
+      format-result: ${{ steps.formatting.outputs.result }}
+      dependencies-result: ${{ steps.dependencies.outputs.result }}
+      quality-score: ${{ steps.scoring.outputs.quality-score }}
+      issues-found: ${{ steps.consolidation.outputs.total-issues }}
+    
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        include:
+          # Parallel execution matrix for quality checks
+          - check-group: "primary"
+            checks: '["lint", "format"]'
+          - check-group: "security" 
+            checks: '["security", "dependencies"]'
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need recent history for diff-based checks
+
+      - name: 🔧 Setup Quality Check Environment
+        uses: ./.github/workflows/reusable/npm-setup.yml
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache-strategy: ${{ inputs.cache-enabled && 'aggressive' || 'minimal' }}
+          optimization-profile: 'ci'
+
+      - name: 💾 Cache Quality Check Tools
+        if: inputs.cache-enabled == true
+        uses: ./.github/workflows/reusable/cache-strategy.yml
+        with:
+          cache-type: 'custom'
+          cache-key-base: 'quality-tools-${{ inputs.lint-config }}-${{ inputs.security-level }}'
+          cache-paths: |
+            ~/.cache/eslint
+            ~/.cache/htmlhint
+            node_modules/.cache/eslint
+            .eslintcache
+
+      - name: 🔍 JavaScript/TypeScript Linting
+        id: linting
+        if: contains(fromJson(inputs.check-types), 'lint')
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          echo "🔍 Running JavaScript/TypeScript linting..."
+          LINT_RESULT="success"
+          LINT_ERRORS=0
+          LINT_WARNINGS=0
+          
+          # Configure linting based on level
+          case "${{ inputs.lint-config }}" in
+            "minimal")
+              ESLINT_FLAGS="--quiet"
+              ;;
+            "standard")  
+              ESLINT_FLAGS="--max-warnings 10"
+              ;;
+            "strict")
+              ESLINT_FLAGS="--max-warnings 0"
+              ;;
+          esac
+          
+          # Run ESLint
+          if [ -f "config/eslint.config.js" ]; then
+            echo "📋 Using project ESLint configuration"
+            
+            if npm run lint:js -- $ESLINT_FLAGS --format=json --output-file=eslint-results.json; then
+              echo "✅ ESLint passed"
+            else
+              LINT_RESULT="failure"
+              echo "❌ ESLint failed"
+            fi
+            
+            # Parse results if available
+            if [ -f "eslint-results.json" ]; then
+              LINT_ERRORS=$(jq '[.[] | .errorCount] | add // 0' eslint-results.json)
+              LINT_WARNINGS=$(jq '[.[] | .warningCount] | add // 0' eslint-results.json)
+            fi
+          else
+            echo "⚠️ No ESLint configuration found, skipping JavaScript linting"
+          fi
+          
+          # Run HTML linting if applicable
+          if ls pages/**/*.html 1> /dev/null 2>&1; then
+            echo "🌐 Running HTML linting..."
+            if npm run lint:html; then
+              echo "✅ HTML linting passed"
+            else
+              LINT_RESULT="failure"
+              echo "❌ HTML linting failed"
+              LINT_ERRORS=$((LINT_ERRORS + 1))
+            fi
+          fi
+          
+          # Auto-fix if enabled and not in strict mode
+          if [ "${{ inputs.auto-fix }}" == "true" ] && [ "${{ inputs.lint-config }}" != "strict" ]; then
+            echo "🔧 Attempting automatic fixes..."
+            npm run lint:js -- --fix 2>/dev/null || echo "Some issues could not be auto-fixed"
+          fi
+          
+          echo "result=$LINT_RESULT" >> $GITHUB_OUTPUT
+          echo "errors=$LINT_ERRORS" >> $GITHUB_OUTPUT
+          echo "warnings=$LINT_WARNINGS" >> $GITHUB_OUTPUT
+          echo "📊 Linting: $LINT_ERRORS errors, $LINT_WARNINGS warnings"
+
+      - name: 🔒 Security Scanning
+        id: security
+        if: contains(fromJson(inputs.check-types), 'security')
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          echo "🔒 Running security scans..."
+          SECURITY_RESULT="success"
+          SECURITY_ISSUES=0
+          
+          # Set audit level based on security level
+          case "${{ inputs.security-level }}" in
+            "low")
+              AUDIT_LEVEL="low"
+              ;;
+            "moderate")
+              AUDIT_LEVEL="moderate" 
+              ;;
+            "high")
+              AUDIT_LEVEL="high"
+              ;;
+            "critical")
+              AUDIT_LEVEL="critical"
+              ;;
+          esac
+          
+          echo "🔍 Running npm security audit (level: $AUDIT_LEVEL)..."
+          if npm audit --audit-level=$AUDIT_LEVEL --json > security-audit.json; then
+            echo "✅ Security audit passed"
+          else
+            AUDIT_EXIT_CODE=$?
+            SECURITY_RESULT="failure"
+            echo "❌ Security vulnerabilities found"
+            
+            # Parse audit results
+            if [ -f "security-audit.json" ]; then
+              SECURITY_ISSUES=$(jq '.metadata.vulnerabilities.total // 0' security-audit.json 2>/dev/null || echo "0")
+            fi
+            
+            # Display summary for moderate+ levels
+            if [ "$AUDIT_LEVEL" != "low" ]; then
+              echo "📋 Security Summary:"
+              npm audit --audit-level=$AUDIT_LEVEL || true
+            fi
+          fi
+          
+          # Check for sensitive files
+          echo "🔍 Checking for sensitive files..."
+          SENSITIVE_FOUND="false"
+          
+          # Check for common sensitive patterns
+          if find . -name "*.env" -not -name "*.env.*" -not -path "./node_modules/*" | head -1 | grep -q .; then
+            echo "⚠️ Found .env files - verify they're properly excluded"
+            SENSITIVE_FOUND="true"
+          fi
+          
+          if find . -name "*.pem" -o -name "*.key" -o -name "*.p12" -not -path "./node_modules/*" | head -1 | grep -q .; then
+            echo "⚠️ Found private key files"
+            SENSITIVE_FOUND="true"
+          fi
+          
+          # Check for hardcoded secrets (basic patterns)
+          if grep -r -i "password.*=.*[\"'][^\"']*[\"']" --include="*.js" --include="*.json" --exclude-dir=node_modules . | head -1 | grep -q .; then
+            echo "⚠️ Potential hardcoded passwords detected"
+            SENSITIVE_FOUND="true"
+          fi
+          
+          if [ "$SENSITIVE_FOUND" == "true" ]; then
+            SECURITY_RESULT="warning"
+            SECURITY_ISSUES=$((SECURITY_ISSUES + 1))
+          fi
+          
+          echo "result=$SECURITY_RESULT" >> $GITHUB_OUTPUT
+          echo "issues=$SECURITY_ISSUES" >> $GITHUB_OUTPUT
+          echo "📊 Security: $SECURITY_ISSUES issues found"
+
+      - name: 💅 Code Formatting Check
+        id: formatting
+        if: contains(fromJson(inputs.check-types), 'format')
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          echo "💅 Checking code formatting..."
+          FORMAT_RESULT="success"
+          FORMAT_ISSUES=0
+          
+          # Check if Prettier is available
+          if [ -f ".prettierrc" ] || [ -f ".prettierrc.json" ] || [ -f "prettier.config.js" ]; then
+            echo "📋 Using Prettier for formatting checks"
+            
+            if npx prettier --check "**/*.{js,html,css,json,md}" 2>/dev/null; then
+              echo "✅ Code formatting is consistent"
+            else
+              FORMAT_RESULT="failure" 
+              FORMAT_ISSUES=1
+              echo "❌ Code formatting issues found"
+              
+              # Auto-fix if enabled
+              if [ "${{ inputs.auto-fix }}" == "true" ]; then
+                echo "🔧 Applying automatic formatting fixes..."
+                npx prettier --write "**/*.{js,html,css,json,md}" 2>/dev/null || true
+                echo "✅ Automatic formatting applied"
+              fi
+            fi
+          else
+            # Basic formatting checks without Prettier
+            echo "📋 Running basic formatting checks"
+            
+            # Check for mixed line endings
+            if find . -name "*.js" -o -name "*.html" -o -name "*.css" | xargs file | grep -q "CRLF"; then
+              echo "⚠️ Mixed line endings detected"
+              FORMAT_ISSUES=$((FORMAT_ISSUES + 1))
+              FORMAT_RESULT="warning"
+            fi
+            
+            # Check for trailing whitespace
+            if find . -name "*.js" -o -name "*.html" -o -name "*.css" | xargs grep -l " $" | head -1 | grep -q .; then
+              echo "⚠️ Trailing whitespace detected"
+              FORMAT_ISSUES=$((FORMAT_ISSUES + 1))
+              FORMAT_RESULT="warning"
+            fi
+          fi
+          
+          echo "result=$FORMAT_RESULT" >> $GITHUB_OUTPUT
+          echo "issues=$FORMAT_ISSUES" >> $GITHUB_OUTPUT
+          echo "📊 Formatting: $FORMAT_ISSUES issues found"
+
+      - name: 📦 Dependencies Check
+        id: dependencies
+        if: contains(fromJson(inputs.check-types), 'dependencies')
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          echo "📦 Checking dependencies..."
+          DEPS_RESULT="success"
+          DEPS_ISSUES=0
+          
+          # Check for outdated packages
+          echo "🔍 Checking for outdated packages..."
+          if npm outdated --json > outdated.json 2>/dev/null; then
+            OUTDATED_COUNT=$(jq 'length' outdated.json 2>/dev/null || echo "0")
+            if [ "$OUTDATED_COUNT" -gt "0" ]; then
+              echo "⚠️ Found $OUTDATED_COUNT outdated packages"
+              DEPS_ISSUES=$((DEPS_ISSUES + OUTDATED_COUNT))
+              DEPS_RESULT="warning"
+            fi
+          fi
+          
+          # Check for unused dependencies
+          if command -v depcheck >/dev/null 2>&1; then
+            echo "🔍 Checking for unused dependencies..."
+            if ! depcheck --json > depcheck.json 2>/dev/null; then
+              UNUSED_COUNT=$(jq '.dependencies | length' depcheck.json 2>/dev/null || echo "0")
+              if [ "$UNUSED_COUNT" -gt "0" ]; then
+                echo "⚠️ Found $UNUSED_COUNT potentially unused dependencies"
+                DEPS_ISSUES=$((DEPS_ISSUES + UNUSED_COUNT))
+                DEPS_RESULT="warning"
+              fi
+            fi
+          fi
+          
+          # Validate package.json
+          echo "🔍 Validating package.json..."
+          if ! jq empty package.json 2>/dev/null; then
+            echo "❌ package.json is not valid JSON"
+            DEPS_RESULT="failure"
+            DEPS_ISSUES=$((DEPS_ISSUES + 1))
+          else
+            echo "✅ package.json is valid"
+          fi
+          
+          # Check for package-lock.json consistency
+          if [ -f "package-lock.json" ]; then
+            echo "🔍 Checking package-lock.json consistency..."
+            if npm ls --depth=0 >/dev/null 2>&1; then
+              echo "✅ package-lock.json is consistent"
+            else
+              echo "⚠️ package-lock.json inconsistency detected"
+              DEPS_RESULT="warning"
+              DEPS_ISSUES=$((DEPS_ISSUES + 1))
+            fi
+          fi
+          
+          echo "result=$DEPS_RESULT" >> $GITHUB_OUTPUT
+          echo "issues=$DEPS_ISSUES" >> $GITHUB_OUTPUT
+          echo "📊 Dependencies: $DEPS_ISSUES issues found"
+
+      - name: 🧪 Experimental Quality Checks
+        id: experimental
+        if: inputs.include-experimental == true
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          echo "🧪 Running experimental quality checks..."
+          
+          # Check for TODO/FIXME comments
+          TODO_COUNT=$(grep -r "TODO\|FIXME\|HACK" --include="*.js" --include="*.html" --exclude-dir=node_modules . | wc -l)
+          echo "📝 Found $TODO_COUNT TODO/FIXME comments"
+          
+          # Check for console.log statements in production code
+          CONSOLE_COUNT=$(grep -r "console\." --include="*.js" --exclude-dir=node_modules --exclude-dir=tests . | wc -l)
+          echo "🖥️ Found $CONSOLE_COUNT console statements"
+          
+          # Check for large files
+          LARGE_FILES=$(find . -name "*.js" -o -name "*.css" -o -name "*.html" | xargs ls -la | awk '$5 > 100000 {print $9}' | wc -l)
+          echo "📏 Found $LARGE_FILES files > 100KB"
+          
+          echo "📊 Experimental checks completed"
+
+      - name: 📊 Calculate Quality Score
+        id: scoring
+        run: |
+          echo "📊 Calculating overall quality score..."
+          
+          # Initialize scoring variables
+          TOTAL_SCORE=100
+          DEDUCTIONS=0
+          
+          # Lint score impact
+          LINT_ERRORS=${{ steps.linting.outputs.errors || '0' }}
+          LINT_WARNINGS=${{ steps.linting.outputs.warnings || '0' }}
+          DEDUCTIONS=$((DEDUCTIONS + LINT_ERRORS * 5 + LINT_WARNINGS * 1))
+          
+          # Security score impact
+          SECURITY_ISSUES=${{ steps.security.outputs.issues || '0' }}
+          DEDUCTIONS=$((DEDUCTIONS + SECURITY_ISSUES * 10))
+          
+          # Format score impact
+          FORMAT_ISSUES=${{ steps.formatting.outputs.issues || '0' }}
+          DEDUCTIONS=$((DEDUCTIONS + FORMAT_ISSUES * 3))
+          
+          # Dependencies score impact
+          DEPS_ISSUES=${{ steps.dependencies.outputs.issues || '0' }}
+          DEDUCTIONS=$((DEDUCTIONS + DEPS_ISSUES * 2))
+          
+          # Calculate final score
+          QUALITY_SCORE=$((TOTAL_SCORE - DEDUCTIONS))
+          if [ $QUALITY_SCORE -lt 0 ]; then
+            QUALITY_SCORE=0
+          fi
+          
+          echo "quality-score=$QUALITY_SCORE" >> $GITHUB_OUTPUT
+          echo "📊 Quality Score: $QUALITY_SCORE/100 (deducted $DEDUCTIONS points)"
+
+      - name: 📋 Consolidate Results
+        id: consolidation
+        run: |
+          echo "📋 Consolidating quality check results..."
+          
+          # Gather all results
+          LINT_RESULT="${{ steps.linting.outputs.result || 'skipped' }}"
+          SECURITY_RESULT="${{ steps.security.outputs.result || 'skipped' }}"
+          FORMAT_RESULT="${{ steps.formatting.outputs.result || 'skipped' }}"
+          DEPS_RESULT="${{ steps.dependencies.outputs.result || 'skipped' }}"
+          
+          # Calculate total issues
+          TOTAL_ISSUES=$(( ${{ steps.linting.outputs.errors || '0' }} + ${{ steps.linting.outputs.warnings || '0' }} + ${{ steps.security.outputs.issues || '0' }} + ${{ steps.formatting.outputs.issues || '0' }} + ${{ steps.dependencies.outputs.issues || '0' }} ))
+          
+          # Determine overall result
+          OVERALL_RESULT="success"
+          
+          if [ "$LINT_RESULT" == "failure" ] || [ "$SECURITY_RESULT" == "failure" ] || [ "$FORMAT_RESULT" == "failure" ] || [ "$DEPS_RESULT" == "failure" ]; then
+            OVERALL_RESULT="failure"
+          elif [ "$LINT_RESULT" == "warning" ] || [ "$SECURITY_RESULT" == "warning" ] || [ "$FORMAT_RESULT" == "warning" ] || [ "$DEPS_RESULT" == "warning" ]; then
+            OVERALL_RESULT="warning"
+          fi
+          
+          echo "overall-result=$OVERALL_RESULT" >> $GITHUB_OUTPUT
+          echo "total-issues=$TOTAL_ISSUES" >> $GITHUB_OUTPUT
+          
+          echo "📊 Quality Gate Summary:"
+          echo "  Overall: $OVERALL_RESULT"
+          echo "  Total Issues: $TOTAL_ISSUES"
+          echo "  Quality Score: ${{ steps.scoring.outputs.quality-score }}/100"
+
+      - name: 📤 Upload Quality Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-reports-${{ github.run_number }}
+          path: |
+            eslint-results.json
+            security-audit.json
+            outdated.json
+            depcheck.json
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: 📋 Generate Quality Summary
+        if: always()
+        run: |
+          echo "# 🔍 Quality Gate Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Overall status
+          OVERALL_STATUS="${{ steps.consolidation.outputs.overall-result }}"
+          case "$OVERALL_STATUS" in
+            "success")
+              OVERALL_ICON="✅"
+              OVERALL_MESSAGE="All quality gates passed!"
+              ;;
+            "warning")
+              OVERALL_ICON="⚠️"
+              OVERALL_MESSAGE="Quality gates passed with warnings"
+              ;;
+            "failure")
+              OVERALL_ICON="❌"
+              OVERALL_MESSAGE="Quality gate failures detected"
+              ;;
+          esac
+          
+          echo "## $OVERALL_ICON $OVERALL_MESSAGE" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Quality score
+          QUALITY_SCORE="${{ steps.scoring.outputs.quality-score }}"
+          if [ "$QUALITY_SCORE" -ge 90 ]; then
+            SCORE_ICON="🏆"
+          elif [ "$QUALITY_SCORE" -ge 80 ]; then
+            SCORE_ICON="🥇"
+          elif [ "$QUALITY_SCORE" -ge 70 ]; then
+            SCORE_ICON="🥈"
+          elif [ "$QUALITY_SCORE" -ge 60 ]; then
+            SCORE_ICON="🥉"
+          else
+            SCORE_ICON="⚠️"
+          fi
+          
+          echo "**$SCORE_ICON Quality Score: ${QUALITY_SCORE}/100**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Detailed results table
+          echo "## Quality Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status | Issues | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          # Lint results
+          if [ "${{ steps.linting.outputs.result || 'skipped' }}" != "skipped" ]; then
+            LINT_STATUS="${{ steps.linting.outputs.result }}"
+            LINT_ISSUES="${{ steps.linting.outputs.errors || '0' }} errors, ${{ steps.linting.outputs.warnings || '0' }} warnings"
+            LINT_ICON=$([[ "$LINT_STATUS" == "success" ]] && echo "✅" || echo "❌")
+            echo "| Linting | $LINT_ICON $LINT_STATUS | $LINT_ISSUES | JavaScript/HTML validation |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Security results
+          if [ "${{ steps.security.outputs.result || 'skipped' }}" != "skipped" ]; then
+            SECURITY_STATUS="${{ steps.security.outputs.result }}"
+            SECURITY_ISSUES="${{ steps.security.outputs.issues || '0' }} issues"
+            SECURITY_ICON=$([[ "$SECURITY_STATUS" == "success" ]] && echo "✅" || ([[ "$SECURITY_STATUS" == "warning" ]] && echo "⚠️" || echo "❌"))
+            echo "| Security | $SECURITY_ICON $SECURITY_STATUS | $SECURITY_ISSUES | Vulnerability scan |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Format results
+          if [ "${{ steps.formatting.outputs.result || 'skipped' }}" != "skipped" ]; then
+            FORMAT_STATUS="${{ steps.formatting.outputs.result }}"
+            FORMAT_ISSUES="${{ steps.formatting.outputs.issues || '0' }} issues"
+            FORMAT_ICON=$([[ "$FORMAT_STATUS" == "success" ]] && echo "✅" || ([[ "$FORMAT_STATUS" == "warning" ]] && echo "⚠️" || echo "❌"))
+            echo "| Formatting | $FORMAT_ICON $FORMAT_STATUS | $FORMAT_ISSUES | Code style consistency |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Dependencies results
+          if [ "${{ steps.dependencies.outputs.result || 'skipped' }}" != "skipped" ]; then
+            DEPS_STATUS="${{ steps.dependencies.outputs.result }}"
+            DEPS_ISSUES="${{ steps.dependencies.outputs.issues || '0' }} issues"
+            DEPS_ICON=$([[ "$DEPS_STATUS" == "success" ]] && echo "✅" || ([[ "$DEPS_STATUS" == "warning" ]] && echo "⚠️" || echo "❌"))
+            echo "| Dependencies | $DEPS_ICON $DEPS_STATUS | $DEPS_ISSUES | Package validation |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Total Issues Found**: ${{ steps.consolidation.outputs.total-issues }}" >> $GITHUB_STEP_SUMMARY
+          
+          # Recommendations
+          if [ "$OVERALL_STATUS" != "success" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## 🔧 Recommendations" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "${{ inputs.auto-fix }}" == "true" ]; then
+              echo "- ✅ Auto-fix was enabled - some issues may have been resolved automatically" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- 💡 Consider enabling auto-fix for automatic resolution of fixable issues" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            echo "- 🔍 Review the uploaded quality reports for detailed issue information" >> $GITHUB_STEP_SUMMARY
+            echo "- 📚 Check project documentation for coding standards and guidelines" >> $GITHUB_STEP_SUMMARY
+          fi

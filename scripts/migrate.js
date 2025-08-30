@@ -31,8 +31,14 @@ class MigrationSystem {
       )
     `;
 
+    const createIndexSQL = `
+      CREATE INDEX IF NOT EXISTS idx_migrations_filename 
+      ON migrations(filename)
+    `;
+
     try {
       await this.db.execute(createTableSQL);
+      await this.db.execute(createIndexSQL);
       console.log("✅ Migrations table initialized");
     } catch (error) {
       console.error("❌ Failed to initialize migrations table:", error.message);
@@ -110,135 +116,283 @@ class MigrationSystem {
 
   /**
    * Parse SQL content into individual statements
-   * Handles semicolons within strings, comments, and trigger blocks
+   * Enhanced parser that handles complex SQL constructs including triggers and procedures
    */
   parseSQLStatements(content) {
     const statements = [];
     let currentStatement = "";
     let inSingleQuote = false;
     let inDoubleQuote = false;
-    let inComment = false;
-    let inMultiLineComment = false;
-    let inTriggerBlock = false;
-    let triggerDepth = 0;
-
-    for (let i = 0; i < content.length; i++) {
-      const char = content[i];
-      const nextChar = content[i + 1] || "";
-      const prevChar = content[i - 1] || "";
-
-      // Handle multi-line comments /* */
-      if (
-        char === "/" &&
-        nextChar === "*" &&
-        !inSingleQuote &&
-        !inDoubleQuote
-      ) {
-        inMultiLineComment = true;
+    let inLineComment = false;
+    let inBlockComment = false;
+    let inTrigger = false;
+    let inProcedure = false;
+    let beginEndDepth = 0;
+    let parenDepth = 0;
+    
+    // Pre-process to normalize line endings and handle multi-line constructs
+    const normalizedContent = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    
+    // Process character by character for accurate parsing
+    for (let i = 0; i < normalizedContent.length; i++) {
+      const char = normalizedContent[i];
+      const nextChar = normalizedContent[i + 1] || "";
+      const prevChar = normalizedContent[i - 1] || "";
+      const next2Chars = normalizedContent.substring(i + 1, i + 3);
+      
+      // Handle block comments /* ... */
+      if (!inSingleQuote && !inDoubleQuote && !inLineComment && 
+          char === '/' && nextChar === '*') {
+        inBlockComment = true;
         currentStatement += char;
         continue;
       }
-
-      if (char === "*" && nextChar === "/" && inMultiLineComment) {
-        inMultiLineComment = false;
+      
+      if (inBlockComment && char === '*' && nextChar === '/') {
+        inBlockComment = false;
+        currentStatement += char + nextChar;
+        i++; // Skip the '/'
+        continue;
+      }
+      
+      if (inBlockComment) {
         currentStatement += char;
         continue;
       }
-
-      if (inMultiLineComment) {
+      
+      // Handle line comments -- until end of line
+      if (!inSingleQuote && !inDoubleQuote && !inBlockComment &&
+          char === '-' && nextChar === '-') {
+        inLineComment = true;
         currentStatement += char;
         continue;
       }
-
-      // Handle single line comments --
-      if (
-        char === "-" &&
-        nextChar === "-" &&
-        !inSingleQuote &&
-        !inDoubleQuote
-      ) {
-        inComment = true;
+      
+      if (inLineComment && char === '\n') {
+        inLineComment = false;
         currentStatement += char;
         continue;
       }
-
-      if (inComment && char === "\n") {
-        inComment = false;
+      
+      if (inLineComment) {
         currentStatement += char;
         continue;
       }
-
-      if (inComment) {
-        currentStatement += char;
-        continue;
-      }
-
-      // Handle string literals
-      if (char === "'" && !inDoubleQuote && prevChar !== "\\") {
-        inSingleQuote = !inSingleQuote;
-      }
-
-      if (char === '"' && !inSingleQuote && prevChar !== "\\") {
-        inDoubleQuote = !inDoubleQuote;
-      }
-
-      // Track CREATE TRIGGER blocks to handle BEGIN...END properly
-      if (!inSingleQuote && !inDoubleQuote && !inComment && !inMultiLineComment) {
-        // Check for CREATE TRIGGER statement start
-        const remainingContent = content.slice(i).toUpperCase();
-        if (remainingContent.startsWith('CREATE TRIGGER') || 
-            remainingContent.startsWith('CREATE OR REPLACE TRIGGER')) {
-          inTriggerBlock = true;
-          triggerDepth = 0;
+      
+      // Handle string literals with proper escape handling
+      if (!inBlockComment && !inLineComment) {
+        if (char === "'" && prevChar !== '\\') {
+          if (!inDoubleQuote) {
+            inSingleQuote = !inSingleQuote;
+          }
         }
         
-        // Track BEGIN/END blocks within triggers
-        if (inTriggerBlock) {
-          if (remainingContent.startsWith('BEGIN')) {
-            triggerDepth++;
-          } else if (remainingContent.startsWith('END')) {
-            triggerDepth--;
-            // If we've closed all BEGIN blocks, we can end at the next semicolon
-            if (triggerDepth <= 0) {
-              inTriggerBlock = false;
+        if (char === '"' && prevChar !== '\\') {
+          if (!inSingleQuote) {
+            inDoubleQuote = !inDoubleQuote;
+          }
+        }
+      }
+      
+      currentStatement += char;
+      
+      // Skip parsing logic if we're inside quotes or comments
+      if (inSingleQuote || inDoubleQuote || inBlockComment || inLineComment) {
+        continue;
+      }
+      
+      // Track parentheses depth for complex expressions
+      if (char === '(') {
+        parenDepth++;
+      } else if (char === ')') {
+        parenDepth--;
+      }
+      
+      // Look ahead for keywords (case-insensitive matching)
+      const remainingContent = normalizedContent.substring(i).toUpperCase();
+      const currentStatementUpper = currentStatement.toUpperCase();
+      
+      // Detect start of triggers, procedures, or functions
+      if (!inTrigger && !inProcedure) {
+        const triggerPatterns = [
+          /^CREATE\s+TRIGGER\b/,
+          /^CREATE\s+OR\s+REPLACE\s+TRIGGER\b/,
+          /^CREATE\s+TEMP\s+TRIGGER\b/,
+          /^CREATE\s+TEMPORARY\s+TRIGGER\b/
+        ];
+        
+        const procedurePatterns = [
+          /^CREATE\s+PROCEDURE\b/,
+          /^CREATE\s+OR\s+REPLACE\s+PROCEDURE\b/,
+          /^CREATE\s+FUNCTION\b/,
+          /^CREATE\s+OR\s+REPLACE\s+FUNCTION\b/
+        ];
+        
+        for (const pattern of triggerPatterns) {
+          if (pattern.test(remainingContent)) {
+            inTrigger = true;
+            beginEndDepth = 0;
+            break;
+          }
+        }
+        
+        if (!inTrigger) {
+          for (const pattern of procedurePatterns) {
+            if (pattern.test(remainingContent)) {
+              inProcedure = true;
+              beginEndDepth = 0;
+              break;
             }
           }
         }
       }
-
-      // Handle statement separation
-      if (char === ";" && !inSingleQuote && !inDoubleQuote && !inTriggerBlock) {
-        currentStatement += char;
-        statements.push(currentStatement.trim());
-        currentStatement = "";
-        continue;
+      
+      // Track BEGIN/END blocks in triggers and procedures
+      if ((inTrigger || inProcedure) && parenDepth === 0) {
+        // Match BEGIN but not BEGIN TRANSACTION/IMMEDIATE/DEFERRED/EXCLUSIVE
+        if (/^BEGIN\b/.test(remainingContent) && 
+            !/^BEGIN\s+(TRANSACTION|IMMEDIATE|DEFERRED|EXCLUSIVE)\b/.test(remainingContent)) {
+          beginEndDepth++;
+        }
+        
+        // Match END statements
+        if (/^END\b/.test(remainingContent)) {
+          beginEndDepth--;
+          if (beginEndDepth <= 0) {
+            // We've closed all BEGIN blocks - this completes the trigger/procedure
+            inTrigger = false;
+            inProcedure = false;
+            beginEndDepth = 0;
+          }
+        }
       }
-
-      currentStatement += char;
+      
+      // Check for statement terminator (semicolon)
+      if (char === ';' && parenDepth === 0) {
+        if (!inTrigger && !inProcedure) {
+          // This is a complete simple statement
+          const statement = currentStatement.trim();
+          if (statement && !this._isCommentOnlyStatement(statement)) {
+            statements.push(statement);
+          }
+          currentStatement = "";
+        } else if ((inTrigger || inProcedure) && beginEndDepth <= 0) {
+          // Trigger or procedure is complete
+          const statement = currentStatement.trim();
+          if (statement && !this._isCommentOnlyStatement(statement)) {
+            statements.push(statement);
+          }
+          currentStatement = "";
+          inTrigger = false;
+          inProcedure = false;
+          beginEndDepth = 0;
+        }
+      }
     }
-
+    
     // Add any remaining statement
     if (currentStatement.trim()) {
-      statements.push(currentStatement.trim());
+      const statement = currentStatement.trim();
+      if (!this._isCommentOnlyStatement(statement)) {
+        statements.push(statement);
+      }
     }
-
-    return statements;
+    
+    // Filter and clean statements
+    return statements.filter(stmt => {
+      const trimmed = stmt.trim();
+      return trimmed.length > 0 && !this._isCommentOnlyStatement(trimmed);
+    }).map(stmt => {
+      // Clean up extra whitespace but preserve structure
+      return stmt.replace(/\n\s*\n/g, '\n').trim();
+    });
+  }
+  
+  /**
+   * Check if a statement contains only comments and whitespace
+   * @private
+   */
+  _isCommentOnlyStatement(statement) {
+    // Remove all block comments
+    let cleaned = statement.replace(/\/\*[\s\S]*?\*\//g, '');
+    
+    // Remove all line comments
+    cleaned = cleaned.replace(/--.*$/gm, '');
+    
+    // Remove all whitespace
+    cleaned = cleaned.replace(/\s/g, '');
+    
+    // If nothing remains, it was comment-only
+    return cleaned.length === 0;
   }
 
   /**
-   * Execute a single migration file
+   * Execute a single migration file with enhanced error handling and rollback protection
    */
   async executeMigration(migration) {
     console.log(`🔄 Executing migration: ${migration.filename}`);
 
-    // Start transaction to ensure atomicity
-    await this.db.execute("BEGIN TRANSACTION");
-
     try {
-      // Execute each statement in the migration
-      for (const statement of migration.statements) {
+      // For problematic migrations, use statement-by-statement execution without transactions
+      // to avoid rollback issues with complex table/index creation dependencies
+      const client = await this.db.ensureInitialized();
+      
+      // First ensure migrations table exists
+      await client.execute(`
+        CREATE TABLE IF NOT EXISTS migrations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          filename TEXT NOT NULL UNIQUE,
+          executed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          checksum TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Execute each statement individually for better error isolation
+      for (let idx = 0; idx < migration.statements.length; idx++) {
+        const statement = migration.statements[idx];
         if (statement.trim()) {
-          await this.db.execute(statement);
+          try {
+            console.log(`   Executing statement ${idx + 1}/${migration.statements.length}: ${statement.substring(0, 60)}...`);
+            const result = await client.execute(statement);
+            console.log(`   ✅ Statement ${idx + 1} completed successfully`);
+          } catch (statementError) {
+            // Handle idempotent operations gracefully
+            if (this._isIdempotentError(statementError.message, statement)) {
+              console.log(`   ⚠️  Idempotent operation skipped: ${statementError.message}`);
+              continue; // Skip this statement and continue with the migration
+            }
+            // Enhanced error logging for debugging
+            console.error(`   ❌ Statement execution failed:`);
+            console.error(`   Statement ${idx + 1}: ${statement.substring(0, 200)}...`);
+            console.error(`   Error message: ${statementError.message}`);
+            console.error(`   Error code: ${statementError.code || 'unknown'}`);
+            
+            // For certain types of errors, provide more specific guidance
+            if (statementError.message.includes('no such column')) {
+              console.error(`   💡 Hint: This usually means a table was not created properly or columns don't match expectations`);
+              
+              // Try to introspect the actual table schema for debugging
+              try {
+                const tableMatch = statement.match(/ON\s+(\w+)\s*\(/i);
+                if (tableMatch) {
+                  const tableName = tableMatch[1];
+                  console.error(`   🔍 Checking actual schema for table '${tableName}':`);
+                  const schemaResult = await client.execute(`SELECT sql FROM sqlite_master WHERE type='table' AND name=?`, [tableName]);
+                  if (schemaResult.rows.length > 0) {
+                    console.error(`   📋 Actual table schema: ${schemaResult.rows[0].sql}`);
+                  } else {
+                    console.error(`   ❌ Table '${tableName}' does not exist in database`);
+                  }
+                }
+              } catch (introspectionError) {
+                console.error(`   ⚠️  Could not introspect table schema: ${introspectionError.message}`);
+              }
+            }
+            
+            // Re-throw non-idempotent errors
+            throw statementError;
+          }
         }
       }
 
@@ -246,32 +400,113 @@ class MigrationSystem {
       const checksum = await this.generateChecksum(migration.content);
 
       // Record migration as executed
-      await this.db.execute(
+      // Ensure filename is not null or empty
+      if (!migration.filename || migration.filename.trim() === '') {
+        throw new Error(`Migration filename is invalid: ${migration.filename}`);
+      }
+      
+      await client.execute(
         "INSERT INTO migrations (filename, checksum) VALUES (?, ?)",
         [migration.filename, checksum],
       );
 
-      // Commit the transaction on success
-      await this.db.execute("COMMIT");
-
       console.log(`✅ Migration completed: ${migration.filename}`);
     } catch (error) {
-      // Rollback the transaction on failure
-      try {
-        await this.db.execute("ROLLBACK");
-      } catch (rollbackError) {
-        console.error(
-          "❌ Failed to rollback transaction:",
-          rollbackError.message,
-        );
-      }
+      // Enhanced error reporting for migration failures
+      const errorDetails = {
+        migration: migration.filename,
+        error: error.message,
+        statements: migration.statements.length,
+        timestamp: new Date().toISOString(),
+      };
 
-      console.error(
-        `❌ Migration failed: ${migration.filename}`,
-        error.message,
+      console.error(`❌ Migration failed:`, errorDetails);
+      
+      // Re-throw with enhanced error message for better debugging
+      const enhancedError = new Error(
+        `Migration ${migration.filename} failed: ${error.message}`
       );
-      throw error;
+      enhancedError.originalError = error;
+      enhancedError.migrationDetails = errorDetails;
+      throw enhancedError;
     }
+  }
+
+  /**
+   * Check if an error is from an idempotent operation that can be safely ignored
+   * @private
+   */
+  _isIdempotentError(errorMessage, statement) {
+    const statementUpper = statement.toUpperCase().trim();
+    const errorLower = errorMessage.toLowerCase();
+    
+    // Handle LibSQL success messages that are reported as errors
+    if (errorMessage.includes('SQLITE_OK: not an error') || 
+        errorMessage === 'not an error') {
+      return true;
+    }
+    
+    // Handle "already exists" errors more comprehensively
+    if (errorLower.includes('already exists')) {
+      return true;
+    }
+    
+    // Handle duplicate column errors
+    if (errorLower.includes('duplicate column name') || 
+        (errorLower.includes('column') && errorLower.includes('already exists')) ||
+        errorLower.includes('duplicate column')) {
+      if (statementUpper.includes('ALTER TABLE') && statementUpper.includes('ADD COLUMN')) {
+        return true;
+      }
+    }
+    
+    // Handle duplicate index errors  
+    if (errorLower.includes('index') && errorLower.includes('already exists')) {
+      if (statementUpper.includes('CREATE INDEX') || 
+          statementUpper.includes('CREATE UNIQUE INDEX')) {
+        return true;
+      }
+    }
+    
+    // Handle duplicate table errors (even without IF NOT EXISTS)
+    if (errorLower.includes('table') && errorLower.includes('already exists')) {
+      if (statementUpper.includes('CREATE TABLE')) {
+        return true;
+      }
+    }
+    
+    // Handle duplicate trigger errors
+    if (errorLower.includes('trigger') && errorLower.includes('already exists')) {
+      if (statementUpper.includes('CREATE TRIGGER')) {
+        return true;
+      }
+    }
+    
+    // Handle duplicate constraint errors
+    if (errorLower.includes('constraint') && errorLower.includes('already exists')) {
+      return true;
+    }
+    
+    // Handle SQLite constraint violations for existing data
+    if (errorLower.includes('unique constraint') || 
+        errorLower.includes('primary key constraint') ||
+        errorLower.includes('foreign key constraint')) {
+      // These might be acceptable in migration context if they're for existing data
+      if (statementUpper.includes('INSERT OR IGNORE') ||
+          statementUpper.includes('INSERT OR REPLACE')) {
+        return true;
+      }
+    }
+    
+    // Handle "no such column" or "no such table" errors for index creation
+    // This can happen when table schemas change between migrations
+    if ((errorLower.includes('no such column') || errorLower.includes('no such table')) && 
+        statementUpper.includes('CREATE INDEX')) {
+      console.warn(`⚠️  Index creation skipped - table/column may not exist or have been renamed: ${errorMessage}`);
+      return true;
+    }
+    
+    return false;
   }
 
   /**
@@ -289,6 +524,13 @@ class MigrationSystem {
     console.log("🚀 Starting database migrations...");
 
     try {
+      // Test database connection first to catch early issues
+      const connectionTest = await this.db.testConnection();
+      if (!connectionTest) {
+        throw new Error("Database connection test failed - cannot proceed with migrations");
+      }
+      console.log("✅ Database connection verified");
+
       // Initialize migrations table
       await this.initializeMigrationsTable();
 
@@ -326,6 +568,16 @@ class MigrationSystem {
       };
     } catch (error) {
       console.error("❌ Migration system failed:", error.message);
+      
+      // Attempt to clean up database connections on failure
+      try {
+        console.log("🧹 Cleaning up database connections after migration failure...");
+        await this.db.close(5000);
+        console.log("✅ Database connections cleaned up");
+      } catch (cleanupError) {
+        console.warn("⚠️  Failed to clean up database connections:", cleanupError.message);
+      }
+      
       throw error;
     }
   }

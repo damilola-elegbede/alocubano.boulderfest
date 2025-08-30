@@ -21,6 +21,7 @@ export class AuthService {
    */
   async verifyPassword(password) {
     const adminPasswordHash = process.env.ADMIN_PASSWORD;
+    const testAdminPassword = process.env.TEST_ADMIN_PASSWORD;
 
     if (!adminPasswordHash) {
       // Password not configured - return false without logging sensitive info
@@ -33,8 +34,14 @@ export class AuthService {
     }
 
     try {
-      // For simple implementation, we're using a single admin account
-      // In production, you might want to store multiple users in database
+      // For E2E testing, support plain text TEST_ADMIN_PASSWORD
+      if (testAdminPassword && (process.env.NODE_ENV === "test" || process.env.E2E_TEST_MODE === "true")) {
+        if (password === testAdminPassword) {
+          return true;
+        }
+      }
+
+      // For production and development, use bcrypt hashed ADMIN_PASSWORD
       return await bcrypt.compare(password, adminPasswordHash);
     } catch (error) {
       // Handle bcrypt comparison errors gracefully

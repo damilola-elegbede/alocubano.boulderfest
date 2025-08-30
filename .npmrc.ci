@@ -1,0 +1,18 @@
+# NPM CI Optimization Configuration
+# Generated on 2025-08-29T21:22:23.802Z
+
+# Performance optimizations
+maxsockets=10
+fetch-retries=3
+fetch-timeout=60000
+
+# CI-specific settings
+prefer-offline=true
+no-audit=true
+no-fund=true
+progress=false
+loglevel=warn
+
+# Cache optimization
+cache=~/.npm
+cache-min=86400
