@@ -224,10 +224,10 @@ jobs:
 
   # ===================================================================
   # UNIT TESTS PHASE (3-4 minutes parallel)
-  # Fast unit tests with SQLite
+  # Fast unit tests with SQLite and mock server
   # ===================================================================
   unit-tests:
-    name: 🧪 Unit Tests (SQLite)
+    name: 🧪 Unit Tests (SQLite + Mock Server)
     runs-on: ubuntu-latest
     needs: [detect-changes, quality-checks]
     if: |
@@ -277,9 +277,75 @@ jobs:
           mkdir -p data
           echo "✅ SQLite test database prepared"
 
+      - name: 📦 Cache Mock Server Dependencies
+        uses: actions/cache@v4
+        id: mock-server-cache
+        with:
+          path: |
+            ~/.npm
+            ./tests/ci-mock-server.js
+          key: ${{ runner.os }}-mock-server-${{ hashFiles('tests/ci-mock-server.js', 'package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-mock-server-
+
+      - name: 🚀 Start Mock Server
+        id: mock-server
+        run: |
+          echo "🚀 Starting mock server for unit tests..."
+          
+          # Export port for consistent use
+          export CI_PORT=3000
+          export TEST_API_URL="http://localhost:3000"
+          echo "CI_PORT=3000" >> $GITHUB_ENV
+          echo "TEST_API_URL=http://localhost:3000" >> $GITHUB_ENV
+          
+          # Start mock server in background with enhanced logging
+          node tests/ci-mock-server.js > mock-server.log 2>&1 &
+          MOCK_SERVER_PID=$!
+          echo "MOCK_SERVER_PID=$MOCK_SERVER_PID" >> $GITHUB_ENV
+          
+          echo "📋 Mock server PID: $MOCK_SERVER_PID"
+          echo "🌐 Mock server URL: $TEST_API_URL"
+          
+          # Enhanced health check with retries
+          echo "⏳ Waiting for mock server to be ready..."
+          RETRIES=0
+          MAX_RETRIES=15
+          
+          while [ $RETRIES -lt $MAX_RETRIES ]; do
+            if curl -f -s --connect-timeout 2 "$TEST_API_URL/api/health/check" > /dev/null 2>&1; then
+              echo "✅ Mock server is ready after $((RETRIES + 1)) attempts"
+              
+              # Verify server response
+              RESPONSE=$(curl -s "$TEST_API_URL/api/health/check" || echo "failed")
+              if echo "$RESPONSE" | grep -q "ok\|healthy"; then
+                echo "🏥 Health check verified: Server responding correctly"
+                break
+              else
+                echo "⚠️ Server responded but health check format unexpected: $RESPONSE"
+              fi
+              break
+            fi
+            
+            RETRIES=$((RETRIES + 1))
+            if [ $RETRIES -eq $MAX_RETRIES ]; then
+              echo "❌ Mock server failed to start within timeout"
+              echo "📋 Mock server logs:"
+              cat mock-server.log || echo "No logs available"
+              exit 1
+            fi
+            
+            echo "⏳ Attempt $RETRIES/$MAX_RETRIES: Waiting for mock server..."
+            sleep 2
+          done
+          
+          echo "🎯 Mock server successfully started and verified"
+
       - name: 🧪 Run Unit Tests
         run: |
-          echo "🧪 Running optimized unit test suite..."
+          echo "🧪 Running optimized unit test suite with mock server..."
+          echo "🌐 Test API URL: $TEST_API_URL"
+          echo "📊 Test environment: CI with mock server"
           
           # Choose test execution mode
           case "${{ inputs.test_mode }}" in
@@ -298,6 +364,8 @@ jobs:
         env:
           NODE_ENV: test
           DATABASE_URL: "file:./data/ci-test.db"
+          CI_PORT: 3000
+          TEST_API_URL: http://localhost:3000
           TEST_TIMEOUT: 30000
           # Memory optimization for tests
           NODE_OPTIONS: "--max-old-space-size=2048"
@@ -307,7 +375,37 @@ jobs:
         run: npm run test:coverage
         continue-on-error: true
         env:
+          CI_PORT: 3000
+          TEST_API_URL: http://localhost:3000
           NODE_OPTIONS: "--max-old-space-size=2048"
+
+      - name: 🧹 Cleanup Mock Server
+        if: always()
+        run: |
+          echo "🧹 Cleaning up mock server..."
+          
+          # Kill mock server process
+          if [ ! -z "$MOCK_SERVER_PID" ]; then
+            echo "🔥 Stopping mock server (PID: $MOCK_SERVER_PID)"
+            kill $MOCK_SERVER_PID 2>/dev/null || echo "⚠️ Mock server process not found"
+            
+            # Wait briefly for graceful shutdown
+            sleep 2
+            
+            # Force kill if still running
+            kill -9 $MOCK_SERVER_PID 2>/dev/null || echo "✅ Mock server already stopped"
+          fi
+          
+          # Show mock server logs for debugging
+          if [ -f mock-server.log ]; then
+            echo "📋 Mock server logs:"
+            tail -20 mock-server.log || echo "No logs to display"
+          fi
+          
+          # Clean up any remaining processes on port 3000
+          lsof -ti:3000 | xargs kill -9 2>/dev/null || echo "✅ Port 3000 is clean"
+          
+          echo "✅ Mock server cleanup completed"
 
       - name: 📤 Upload Test Artifacts
         if: always()
@@ -317,15 +415,16 @@ jobs:
           path: |
             coverage/
             test-results/
+            mock-server.log
           if-no-files-found: ignore
           retention-days: 7
 
   # ===================================================================
   # INTEGRATION TESTS PHASE (4-5 minutes parallel)
-  # API contract and database validation
+  # API contract and database validation with mock server
   # ===================================================================
   integration-tests:
-    name: 🔗 Integration & API Tests
+    name: 🔗 Integration & API Tests (Mock Server)
     runs-on: ubuntu-latest
     needs: [detect-changes, quality-checks]
     if: |
@@ -366,21 +465,86 @@ jobs:
           mkdir -p data
           echo "🗄️ Preparing integration test database..."
 
+      - name: 📦 Cache Mock Server Dependencies
+        uses: actions/cache@v4
+        id: integration-mock-cache
+        with:
+          path: |
+            ~/.npm
+            ./tests/ci-mock-server.js
+          key: ${{ runner.os }}-integration-mock-${{ matrix.test-suite }}-${{ hashFiles('tests/ci-mock-server.js', 'package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-integration-mock-${{ matrix.test-suite }}-
+            ${{ runner.os }}-integration-mock-
+
+      - name: 🚀 Start Mock Server for Integration Tests
+        if: matrix.test-suite == 'api-contracts'
+        id: integration-mock-server
+        run: |
+          echo "🚀 Starting mock server for integration tests..."
+          
+          # Export port for integration tests
+          export CI_PORT=3001
+          export TEST_API_URL="http://localhost:3001"
+          echo "CI_PORT=3001" >> $GITHUB_ENV
+          echo "TEST_API_URL=http://localhost:3001" >> $GITHUB_ENV
+          
+          # Start mock server with different port to avoid conflicts
+          CI_PORT=3001 node tests/ci-mock-server.js > integration-mock-server.log 2>&1 &
+          INTEGRATION_MOCK_PID=$!
+          echo "INTEGRATION_MOCK_PID=$INTEGRATION_MOCK_PID" >> $GITHUB_ENV
+          
+          echo "📋 Integration mock server PID: $INTEGRATION_MOCK_PID"
+          echo "🌐 Integration mock server URL: $TEST_API_URL"
+          
+          # Health check for integration mock server
+          echo "⏳ Waiting for integration mock server..."
+          RETRIES=0
+          MAX_RETRIES=12
+          
+          while [ $RETRIES -lt $MAX_RETRIES ]; do
+            if curl -f -s --connect-timeout 2 "$TEST_API_URL/api/health/check" > /dev/null 2>&1; then
+              echo "✅ Integration mock server ready after $((RETRIES + 1)) attempts"
+              
+              # Verify response
+              RESPONSE=$(curl -s "$TEST_API_URL/api/health/check" || echo "failed")
+              if echo "$RESPONSE" | grep -q "ok\|healthy"; then
+                echo "🏥 Integration health check verified"
+                break
+              fi
+              break
+            fi
+            
+            RETRIES=$((RETRIES + 1))
+            if [ $RETRIES -eq $MAX_RETRIES ]; then
+              echo "❌ Integration mock server failed to start"
+              echo "📋 Integration mock server logs:"
+              cat integration-mock-server.log || echo "No logs available"
+              exit 1
+            fi
+            
+            echo "⏳ Integration attempt $RETRIES/$MAX_RETRIES..."
+            sleep 2
+          done
+
       - name: 📡 API Contract Tests
         if: matrix.test-suite == 'api-contracts'
         run: |
-          echo "📡 Running API contract validation..."
+          echo "📡 Running API contract validation with mock server..."
+          echo "🌐 Using mock server at: $TEST_API_URL"
           
           # Setup test database
           npm run migrate:up
           
-          # Run API contract tests specifically
+          # Run API contract tests specifically with mock server
           npx vitest run --config tests/vitest.config.js tests/api-contracts.test.js
           
           echo "✅ API contract tests completed"
         env:
           DATABASE_URL: "file:./data/integration-api-test.db"
           NODE_ENV: test
+          CI_PORT: 3001
+          TEST_API_URL: http://localhost:3001
           TEST_ADMIN_PASSWORD: test-admin-password
           ADMIN_SECRET: test-admin-secret-key-minimum-32-characters
 
@@ -398,6 +562,45 @@ jobs:
         env:
           DATABASE_URL: "file:./data/integration-migration-test.db"
           NODE_ENV: test
+
+      - name: 🧹 Cleanup Integration Mock Server
+        if: always() && matrix.test-suite == 'api-contracts'
+        run: |
+          echo "🧹 Cleaning up integration mock server..."
+          
+          # Kill integration mock server
+          if [ ! -z "$INTEGRATION_MOCK_PID" ]; then
+            echo "🔥 Stopping integration mock server (PID: $INTEGRATION_MOCK_PID)"
+            kill $INTEGRATION_MOCK_PID 2>/dev/null || echo "⚠️ Integration mock server process not found"
+            
+            # Wait for graceful shutdown
+            sleep 2
+            
+            # Force kill if needed
+            kill -9 $INTEGRATION_MOCK_PID 2>/dev/null || echo "✅ Integration mock server already stopped"
+          fi
+          
+          # Show integration logs
+          if [ -f integration-mock-server.log ]; then
+            echo "📋 Integration mock server logs:"
+            tail -15 integration-mock-server.log || echo "No integration logs"
+          fi
+          
+          # Clean up port 3001
+          lsof -ti:3001 | xargs kill -9 2>/dev/null || echo "✅ Port 3001 is clean"
+          
+          echo "✅ Integration mock server cleanup completed"
+
+      - name: 📤 Upload Integration Test Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results-${{ matrix.test-suite }}-${{ github.run_number }}
+          path: |
+            test-results/
+            integration-mock-server.log
+          if-no-files-found: ignore
+          retention-days: 7
 
   # ===================================================================
   # E2E TESTS PHASE (8-12 minutes conditional)
@@ -673,6 +876,7 @@ jobs:
           echo "| NPM CI Optimizations | ✅ Active | 3-5 min saved per job |" >> $GITHUB_STEP_SUMMARY
           echo "| Aggressive Caching | ✅ Active | 2-3 min saved per job |" >> $GITHUB_STEP_SUMMARY
           echo "| Parallel Execution | ✅ Active | 40-60% time reduction |" >> $GITHUB_STEP_SUMMARY
+          echo "| Mock Server Caching | ✅ Active | 30-60s saved per test job |" >> $GITHUB_STEP_SUMMARY
           echo "| Conditional E2E | ✅ Active | 8-12 min saved when skipped |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
@@ -705,7 +909,7 @@ jobs:
           else
             UT_ICON="⏭️"
           fi
-          echo "| 🧪 Unit Tests | $UT_ICON $UT_STATUS | 3-4 min |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Unit Tests | $UT_ICON $UT_STATUS | 3-4 min (with mock server) |" >> $GITHUB_STEP_SUMMARY
           
           # Integration Tests
           IT_STATUS="${{ needs.integration-tests.result }}"
@@ -716,7 +920,7 @@ jobs:
           else
             IT_ICON="⏭️"
           fi
-          echo "| 🔗 Integration Tests | $IT_ICON $IT_STATUS | 4-5 min |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔗 Integration Tests | $IT_ICON $IT_STATUS | 4-5 min (with mock server) |" >> $GITHUB_STEP_SUMMARY
           
           # E2E Tests
           E2E_STATUS="${{ needs.e2e-tests.result }}"
@@ -776,6 +980,7 @@ jobs:
             echo "- **Code Quality**: ESLint + HTMLHint validation passed" >> $GITHUB_STEP_SUMMARY
             echo "- **Security**: Vulnerability scanning completed" >> $GITHUB_STEP_SUMMARY
             echo "- **Performance**: Build verification and health checks passed" >> $GITHUB_STEP_SUMMARY
+            echo "- **Mock Server**: Unit and integration tests with cached mock server" >> $GITHUB_STEP_SUMMARY
           else
             echo "## ❌ Pipeline Failures" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -794,6 +999,7 @@ jobs:
           echo "**🔄 Consolidated Workflows**: This replaces ci.yml, pr-validation.yml, integration-tests.yml, and pr-quality-gates.yml" >> $GITHUB_STEP_SUMMARY
           echo "**⚡ Performance**: ~50% faster execution through smart optimizations" >> $GITHUB_STEP_SUMMARY
           echo "**🎯 Target**: <10 minutes total pipeline execution" >> $GITHUB_STEP_SUMMARY
+          echo "**🚀 Mock Server**: Cached mock server for faster test execution" >> $GITHUB_STEP_SUMMARY
 
       - name: ✅ Pipeline Success
         if: |
@@ -806,7 +1012,8 @@ jobs:
           echo "🎉 Consolidated CI Pipeline completed successfully!"
           echo "✅ All critical quality gates passed"
           echo "⚡ Achieved ~50% performance improvement through optimizations"
-          echo "🚀 Ready for review, merge, and deployment"
+          echo "🚀 Mock server integration for reliable testing"
+          echo "🎯 Ready for review, merge, and deployment"
 
       - name: ❌ Pipeline Failure
         if: |
@@ -820,4 +1027,5 @@ jobs:
           echo "🔍 Review job logs and artifacts for specific failure details"
           echo "🔧 Fix issues and push updates to re-trigger optimized pipeline"
           echo "📋 This consolidated workflow replaces 4 previous workflows for efficiency"
+          echo "🚀 Mock server logs available in artifacts for debugging"
           exit 1

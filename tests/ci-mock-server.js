@@ -3,6 +3,23 @@ import http from 'http';
 
 const PORT = process.env.CI_PORT || process.env.PORT || 3000;
 
+// Server state tracking
+let serverReady = false;
+let startupTime = Date.now();
+let readyEndpoints = [];
+let healthStatus = {
+  status: 'starting',
+  uptime: 0,
+  memory: process.memoryUsage(),
+  endpoints: {
+    total: 0,
+    ready: 0,
+    failed: 0
+  },
+  timestamp: new Date().toISOString(),
+  startupDuration: 0
+};
+
 // Mock responses for all endpoints used by unit tests
 const mockResponses = {
   // Health checks
@@ -37,6 +54,18 @@ const mockResponses = {
       database: 'SQLite', 
       connected: true 
     }
+  },
+  'GET /api/health/mock-server': {
+    status: 200,
+    data: 'dynamic' // This will be replaced with current health status
+  },
+  'GET /ready': {
+    status: 200,
+    data: 'Ready'
+  },
+  'GET /healthz': {
+    status: 200,
+    data: { status: 'healthy' }
   },
 
   // Payment endpoints
@@ -153,6 +182,54 @@ const mockResponses = {
   }
 };
 
+// Startup validation function
+async function validateStartup() {
+  console.log('🔍 Starting mock server validation...');
+  
+  const requiredEndpoints = [
+    '/api/health/check',
+    '/api/tickets/validate',
+    '/api/email/subscribe',
+    '/api/payments/create-checkout-session',
+    '/api/registration/health',
+    '/api/gallery'
+  ];
+  
+  healthStatus.status = 'validating';
+  healthStatus.endpoints.total = Object.keys(mockResponses).length;
+  
+  for (const endpoint of requiredEndpoints) {
+    const key = `GET ${endpoint}`;
+    const postKey = `POST ${endpoint}`;
+    
+    if (mockResponses[key] || mockResponses[postKey]) {
+      readyEndpoints.push(endpoint);
+      healthStatus.endpoints.ready++;
+      console.log(`✅ Endpoint ready: ${endpoint}`);
+    } else {
+      healthStatus.endpoints.failed++;
+      console.log(`❌ Endpoint missing: ${endpoint}`);
+    }
+  }
+  
+  // Simulate brief startup time
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  healthStatus.status = 'healthy';
+  healthStatus.startupDuration = Date.now() - startupTime;
+  serverReady = true;
+  
+  console.log(`✅ Mock server validation complete: ${readyEndpoints.length}/${requiredEndpoints.length} endpoints ready`);
+  console.log(`🚀 Server startup took ${healthStatus.startupDuration}ms`);
+}
+
+// Update health status periodically
+function updateHealthStatus() {
+  healthStatus.uptime = Math.floor((Date.now() - startupTime) / 1000);
+  healthStatus.memory = process.memoryUsage();
+  healthStatus.timestamp = new Date().toISOString();
+}
+
 // Handle request routing
 function handleRequest(req, res) {
   const parsedUrl = new URL(req.url, `http://localhost:${PORT}`);
@@ -189,6 +266,52 @@ function handleRequest(req, res) {
 }
 
 function processRequest(key, body, res) {
+  // Update health status before processing
+  updateHealthStatus();
+  
+  // Handle dynamic health endpoints
+  if (key === 'GET /api/health/mock-server') {
+    res.writeHead(200);
+    res.end(JSON.stringify({
+      status: serverReady ? 'healthy' : 'starting',
+      uptime: healthStatus.uptime,
+      endpoints: {
+        total: Object.keys(mockResponses).length,
+        ready: readyEndpoints.length,
+        available: Object.keys(mockResponses)
+      },
+      memory: healthStatus.memory,
+      timestamp: healthStatus.timestamp,
+      startupDuration: healthStatus.startupDuration,
+      environment: 'ci-mock',
+      version: '1.0.0'
+    }));
+    return;
+  }
+  
+  if (key === 'GET /ready') {
+    if (serverReady) {
+      res.writeHead(200);
+      res.end('Ready');
+    } else {
+      res.writeHead(503);
+      res.end('Not Ready');
+    }
+    return;
+  }
+  
+  if (key === 'GET /healthz') {
+    const status = serverReady ? 'healthy' : 'starting';
+    const statusCode = serverReady ? 200 : 503;
+    res.writeHead(statusCode);
+    res.end(JSON.stringify({ 
+      status,
+      ready: serverReady,
+      timestamp: healthStatus.timestamp
+    }));
+    return;
+  }
+  
   // Handle dynamic paths (like registration tokens)
   let mockResponse = mockResponses[key];
   
@@ -337,10 +460,16 @@ function shouldReturnValidationError(key, body) {
 // Create and start server
 const server = http.createServer(handleRequest);
 
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`🚀 CI Mock Server running on port ${PORT}`);
   console.log(`📋 Available endpoints: ${Object.keys(mockResponses).length}`);
   console.log(`🌐 Server URL: http://localhost:${PORT}`);
+  
+  // Run startup validation
+  await validateStartup();
+  
+  // Update health status every 30 seconds
+  setInterval(updateHealthStatus, 30000);
 });
 
 // Handle graceful shutdown

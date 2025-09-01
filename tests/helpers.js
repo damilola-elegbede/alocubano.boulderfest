@@ -5,12 +5,15 @@ export const HTTP_STATUS = {
   OK: 200, BAD_REQUEST: 400, UNAUTHORIZED: 401, NOT_FOUND: 404, CONFLICT: 409, TOO_MANY_REQUESTS: 429
 };
 
-export async function testRequest(method, path, data = null) {
+export async function testRequest(method, path, data = null, customHeaders = {}) {
   const url = getApiUrl(path);
   
   const options = { 
     method, 
-    headers: { 'Content-Type': 'application/json' }
+    headers: { 
+      'Content-Type': 'application/json',
+      ...customHeaders
+    }
   };
   
   if (data && method !== 'GET') { 

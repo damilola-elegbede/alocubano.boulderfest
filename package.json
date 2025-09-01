@@ -21,6 +21,7 @@
     "test:coverage": "vitest run --coverage --config tests/vitest.config.js",
     "test:health": "node scripts/test-health-endpoint.js",
     "test:smoke": "npm run test:health",
+    "test:wait-mock": "node scripts/wait-for-mock-server.js",
     "test:all": "NODE_OPTIONS='--max-old-space-size=3072' npm run test:simple && npm run test:e2e",
     "test:all:memory-optimized": "NODE_OPTIONS='--max-old-space-size=4096' npm run test:simple && npm run test:e2e",
     "test:e2e": "NODE_OPTIONS='--max-old-space-size=3072' playwright test --config=playwright-e2e-vercel-main.config.js",
@@ -79,6 +80,15 @@
     "deploy:check": "NODE_OPTIONS='--max-old-space-size=3072' node scripts/deployment-check.js",
     "deploy:staging": "NODE_OPTIONS='--max-old-space-size=3072' npm run lint && npm run test:all && vercel --target preview",
     "deploy:production": "NODE_OPTIONS='--max-old-space-size=4096' npm run lint && npm run test:all && vercel --target production",
+    "drift:detect": "node scripts/mock-drift-detector.js",
+    "drift:detect:verbose": "node scripts/mock-drift-detector.js --verbose",
+    "drift:detect:weekly": "node scripts/mock-drift-detector.js",
+    "drift:quick": "node scripts/drift-helper.js quick",
+    "drift:list": "node scripts/drift-helper.js list",
+    "drift:generate": "node scripts/drift-helper.js generate",
+    "drift:sync": "node scripts/drift-helper.js sync",
+    "drift:specific": "node scripts/drift-helper.js specific",
+    "drift:test": "node scripts/test-drift-detection.js",
     "pre-commit": "npm run lint && npm test"
   },
   "dependencies": {
