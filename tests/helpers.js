@@ -1,18 +1,25 @@
-// Simple test helpers - no complexity
+// Essential test helpers - zero abstractions, maximum readability
 import { getApiUrl } from './setup.js';
 
+// HTTP status codes for readable test assertions
 export const HTTP_STATUS = {
-  OK: 200, BAD_REQUEST: 400, UNAUTHORIZED: 401, NOT_FOUND: 404, CONFLICT: 409, TOO_MANY_REQUESTS: 429
+  OK: 200,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  TOO_MANY_REQUESTS: 429
 };
 
-export async function testRequest(method, path, data = null, customHeaders = {}) {
+// Simple HTTP request wrapper for API testing
+export async function testRequest(method, path, data = null, headers = {}) {
   const url = getApiUrl(path);
   
   const options = { 
     method, 
     headers: { 
       'Content-Type': 'application/json',
-      ...customHeaders
+      ...headers
     }
   };
   
@@ -20,29 +27,25 @@ export async function testRequest(method, path, data = null, customHeaders = {})
     options.body = JSON.stringify(data); 
   }
   
-  // Create timeout promise for CI environment
-  const timeout = 30000; // 30 seconds
+  // CI-friendly timeout handling
   const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Request timeout')), timeout);
+    setTimeout(() => reject(new Error('Request timeout')), 30000);
   });
   
   try {
-    const response = await Promise.race([
-      fetch(url, options),
-      timeoutPromise
-    ]);
+    const response = await Promise.race([fetch(url, options), timeoutPromise]);
     const responseData = await response.json().catch(() => ({}));
     return { status: response.status, data: responseData };
   } catch (error) {
-    // Return status: 0 to indicate connection failure (as expected by tests)
-    if (error.message === 'Request timeout') {
-      console.warn(`⚠️ Request timeout for ${method} ${path}`);
-      return { status: 0, data: { error: 'Request timeout' } };
-    }
-    return { status: 0, data: { error: 'Connection failed' } };
+    // Tests expect status: 0 for connection failures
+    return { 
+      status: 0, 
+      data: { error: error.message === 'Request timeout' ? 'Request timeout' : 'Connection failed' } 
+    };
   }
 }
 
+// Generate unique test email addresses
 export function generateTestEmail() {
   return `test.${Date.now()}.${Math.random().toString(36).slice(2)}@example.com`;
 }

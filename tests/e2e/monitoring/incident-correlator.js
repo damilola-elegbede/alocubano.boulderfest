@@ -47,7 +47,7 @@ class IncidentCorrelator {
    * Main correlation workflow
    */
   async correlateIncidents(testResults, productionIncidents) {
-    console.log('= Starting incident correlation analysis...');
+    console.log('🔍 Starting incident correlation analysis...');
     
     try {
       // 1. Store and normalize data
@@ -84,7 +84,7 @@ class IncidentCorrelator {
       return results;
       
     } catch (error) {
-      console.error('L Correlation analysis failed:', error);
+      console.error('❌ Correlation analysis failed:', error);
       throw error;
     }
   }
@@ -883,7 +883,7 @@ class AlertManager {
   }
 
   async sendAlert(alert) {
-    console.log(`=� ALERT [${alert.severity}]: ${alert.message}`);
+    console.log(`🚨 ALERT [${alert.severity}]: ${alert.message}`);
     
     // Store alert for tracking
     await this.storeAlert(alert);
@@ -900,7 +900,7 @@ class AlertManager {
 
   async sendCriticalAlert(alert) {
     // Critical alerts go to all channels immediately
-    console.log('=� CRITICAL ALERT sent to all channels');
+    console.log('🔥 CRITICAL ALERT sent to all channels');
     await this.notifyOnCall(alert);
     await this.notifySlack(alert, '#incidents');
     await this.notifyEmail(alert, 'ops-team@company.com');
@@ -908,30 +908,30 @@ class AlertManager {
 
   async sendHighPriorityAlert(alert) {
     // High priority alerts go to primary channels
-    console.log('�  HIGH PRIORITY ALERT sent to primary channels');
+    console.log('⚠️  HIGH PRIORITY ALERT sent to primary channels');
     await this.notifySlack(alert, '#alerts');
     await this.notifyEmail(alert, 'dev-team@company.com');
   }
 
   async sendStandardAlert(alert) {
     // Standard alerts go to monitoring channels
-    console.log('9  STANDARD ALERT sent to monitoring channels');
+    console.log('ℹ️  STANDARD ALERT sent to monitoring channels');
     await this.notifySlack(alert, '#monitoring');
   }
 
   async notifyOnCall(alert) {
     // In production, integrate with PagerDuty, OpsGenie, etc.
-    console.log('=� On-call notification sent');
+    console.log('📞 On-call notification sent');
   }
 
   async notifySlack(alert, channel) {
     // In production, integrate with Slack API
-    console.log(`=� Slack notification sent to ${channel}`);
+    console.log(`💬 Slack notification sent to ${channel}`);
   }
 
   async notifyEmail(alert, recipient) {
     // In production, integrate with email service
-    console.log(`=� Email notification sent to ${recipient}`);
+    console.log(`📧 Email notification sent to ${recipient}`);
   }
 
   async storeAlert(alert) {
@@ -944,7 +944,7 @@ class AlertManager {
     };
     
     // In production, this would integrate with your monitoring system
-    console.log('=� Alert stored for tracking:', alertData.id);
+    console.log('💾 Alert stored for tracking:', alertData.id);
   }
 
   generateAlertId() {
@@ -1122,7 +1122,7 @@ class MLPredictiveAnalyzer {
     this.features.push(...features);
     
     // In production, this would train/update ML models
-    console.log(`=� ML models updated with ${features.length} new features`);
+    console.log(`🤖 ML models updated with ${features.length} new features`);
     
     // Store features for external ML training
     await this.storeFeatures(features);
@@ -1190,7 +1190,7 @@ class MLPredictiveAnalyzer {
       const filepath = path.join(dataDir, filename);
       
       await fs.writeFile(filepath, JSON.stringify(featureData, null, 2));
-      console.log(`> ML features stored: ${filepath}`);
+      console.log(`>📊 ML features stored: ${filepath}`);
     } catch (error) {
       console.warn('Could not store ML features:', error.message);
     }
@@ -1275,7 +1275,7 @@ class IncidentDataStore {
     
     try {
       await fs.writeFile(filepath, JSON.stringify(results, null, 2));
-      console.log(`=� Analysis results stored: ${filepath}`);
+      console.log(`💾 Analysis results stored: ${filepath}`);
     } catch (error) {
       console.warn('Could not store analysis results:', error.message);
     }
@@ -1308,7 +1308,7 @@ class IncidentDataStore {
     
     try {
       await fs.writeFile(filepath, JSON.stringify(incidents, null, 2));
-      console.log(`=� Incident data stored: ${filepath}`);
+      console.log(`💾 Incident data stored: ${filepath}`);
     } catch (error) {
       console.warn('Could not store incident data:', error.message);
     }
@@ -1320,7 +1320,7 @@ class IncidentDataStore {
     
     try {
       await fs.writeFile(filepath, JSON.stringify(testResults, null, 2));
-      console.log(`>� Test results stored: ${filepath}`);
+      console.log(`📋 Test results stored: ${filepath}`);
     } catch (error) {
       console.warn('Could not store test results:', error.message);
     }
@@ -1512,7 +1512,7 @@ export const CorrelatorHelpers = {
    * Run a complete correlation analysis with sample data
    */
   async runSampleAnalysis() {
-    console.log('=� Running sample incident correlation analysis...\n');
+    console.log('🔍 Running sample incident correlation analysis...\n');
     
     const correlator = await this.setupForProduction();
     const incidents = this.generateSampleIncidents();
@@ -1520,7 +1520,7 @@ export const CorrelatorHelpers = {
     
     const results = await correlator.correlateIncidents(testResults, incidents);
     
-    console.log('\n=� Analysis Results:');
+    console.log('\n📈 Analysis Results:');
     console.log('====================');
     console.log(`Total Correlations: ${results.correlations.length}`);
     console.log(`Risk Patterns Detected: ${results.riskPatterns.length}`);
@@ -1543,7 +1543,7 @@ export const CorrelatorHelpers = {
     }
     
     if (results.recommendations.length > 0) {
-      console.log('\n=� Top Recommendations:');
+      console.log('\n💡 Top Recommendations:');
       results.recommendations.slice(0, 3).forEach((rec, index) => {
         console.log(`${index + 1}. [${rec.priority.toUpperCase()}] ${rec.description}`);
       });

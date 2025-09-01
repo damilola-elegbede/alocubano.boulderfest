@@ -35,34 +35,18 @@ if (!globalThis.fetch) {
   }
 }
 
-// Mock server detection and environment setup
-let mockServerDetected = false;
-
 // Test lifecycle management
 beforeAll(async () => {
-  // Check if we're running against a mock server
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/health/check`);
-    const data = await response.json();
-    mockServerDetected = data.environment === 'ci-mock';
-  } catch (error) {
-    // Server not available, tests will handle gracefully
-    mockServerDetected = false;
-  }
-
   console.log('🧪 Test environment initialized');
   console.log(`📍 API Base URL: ${API_BASE_URL}`);
   console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🤖 Mock Server: ${mockServerDetected ? 'detected' : 'not detected'}`);
+  console.log(`🗄️ Database: SQLite in-memory (no external dependencies)`);
 }, 10000); // 10 second timeout for setup
 
 afterAll(async () => {
   // Cleanup any test resources if needed
   console.log('🧹 Test environment cleanup completed');
 }, 5000); // 5 second timeout for cleanup
-
-// Export mock server detection for tests
-export const isMockServer = () => mockServerDetected;
 
 // Environment helpers
 export const isCI = () => process.env.CI === 'true';
