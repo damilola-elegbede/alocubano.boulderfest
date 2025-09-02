@@ -8,6 +8,7 @@ Complete setup instructions for A Lo Cubano Boulder Fest website development env
 
 - **Node.js**: 18.0.0 or higher
 - **npm**: 8.0.0 or higher (included with Node.js)
+- **Vercel CLI**: Global installation required for E2E testing (`npm i -g vercel`)
 - **SQLite**: 3.9.0 or higher with JSON support
 - **Git**: 2.20 or higher
 - **Operating System**: macOS, Linux, or Windows 10/11
@@ -29,6 +30,9 @@ git clone https://github.com/damilola-elegbede/alocubano.boulderfest.git
 cd alocubano.boulderfest
 npm install
 
+# Install Vercel CLI for E2E testing
+npm i -g vercel
+
 # Environment setup
 cp .env.example .env.local
 npm run generate-admin-password  # Follow prompts to set ADMIN_PASSWORD
@@ -39,7 +43,7 @@ npm run migrate:up
 # Verification
 npm test                    # Run unit tests (26 tests, fast execution)
 npm run test:e2e:install   # Install E2E browsers
-npm run test:e2e          # Run E2E tests (uses local development server)
+npm run test:e2e          # Run E2E tests (uses Vercel Dev server)
 
 # Start development
 npm start  # With ngrok tunnel (recommended)
@@ -65,8 +69,12 @@ npm --version   # Should be 8.0.0+
 # Install all dependencies
 npm install
 
+# Install Vercel CLI globally (REQUIRED for E2E testing)
+npm i -g vercel
+
 # Verify installation
 npm ls --depth=0
+vercel --version  # Should show Vercel CLI version
 ```
 
 ### 3. Environment Configuration
@@ -185,7 +193,7 @@ npm run health:database
 
 ### 5. E2E Database Management
 
-End-to-end testing requires isolated database operations with comprehensive safety mechanisms:
+End-to-end testing with **Vercel Dev** requires isolated database operations with comprehensive safety mechanisms:
 
 ```bash
 # Setup E2E database (creates tables and test data)
@@ -212,7 +220,25 @@ curl -f http://localhost:3000/api/health/e2e-database | jq '.'
 - **Schema Validation**: Verifies required tables and columns exist
 - **Migration Isolation**: Separate migration tracking from development database
 
-### 6. Verification
+### 6. Vercel Dev Setup for E2E Testing
+
+**NEW**: E2E testing now uses **Vercel Dev** instead of custom CI server for production-like testing:
+
+```bash
+# Verify Vercel CLI installation
+vercel --version
+
+# Login to Vercel (if deploying)
+vercel login
+
+# Test Vercel dev server
+npm run start:local  # Should start Vercel dev on port 3000
+
+# Validate E2E setup
+npm run test:e2e:validate
+```
+
+### 7. Verification
 
 Start the development server to verify installation:
 
@@ -220,14 +246,14 @@ Start the development server to verify installation:
 # Start development server with ngrok tunnel (recommended)
 npm start
 
-# Alternative: Start local development server
+# Alternative: Start Vercel dev server locally
 npm run start:local
 
 # Simple HTTP server (no API functions)
 npm run serve:simple
 ```
 
-### 7. Run Tests
+### 8. Run Tests
 
 Verify everything works correctly:
 
@@ -241,7 +267,7 @@ npm run test:coverage
 # Install E2E testing browsers
 npm run test:e2e:install
 
-# Run E2E tests (uses local development server)
+# Run E2E tests with Vercel Dev server
 npm run test:e2e
 
 # Run all tests (unit + E2E)
@@ -298,7 +324,7 @@ GOOGLE_PRIVATE_KEY="your-private-key-with-newlines"
 
 ```bash
 npm start              # Start with ngrok tunnel (recommended)
-npm run start:local    # Local development server
+npm run start:local    # Vercel dev server locally
 npm run serve:simple   # Simple HTTP server (no APIs)
 ```
 
@@ -308,7 +334,7 @@ npm run serve:simple   # Simple HTTP server (no APIs)
 npm test                          # Run unit tests (26 tests, fast execution)
 npm run test:watch               # Watch mode for development
 npm run test:coverage            # With coverage report
-npm run test:e2e           # End-to-end tests (uses local server)
+npm run test:e2e           # End-to-end tests (uses Vercel Dev server)
 npm run test:e2e:ui              # E2E tests with interactive UI
 npm run test:all                 # All tests including E2E
 
@@ -330,7 +356,7 @@ npm run migrate:status           # Check migration status
 npm run db:shell                 # SQLite shell access
 npm run health:database          # Database health check
 
-# E2E Database Management
+# E2E Database Management (works with Vercel Dev)
 npm run db:e2e:setup            # Create E2E tables and test data
 npm run db:e2e:validate         # Validate E2E database schema
 npm run db:e2e:clean            # Remove E2E test data only
@@ -355,7 +381,7 @@ npm run build                   # Build for production
 
 ### Overview
 
-The project includes comprehensive CI/CD automation using GitHub Actions for testing, quality assurance, and deployment.
+The project includes comprehensive CI/CD automation using GitHub Actions for testing, quality assurance, and deployment with **Vercel Dev** for E2E testing.
 
 ### GitHub Actions Configuration
 
@@ -384,7 +410,7 @@ GOOGLE_PRIVATE_KEY        # Google service account private key (base64 encoded)
 
 #### 2. Workflow Files
 
-Create `.github/workflows/ci.yml`:
+Create `.github/workflows/ci.yml` with **Vercel Dev** integration:
 
 ```yaml
 name: CI/CD Pipeline
@@ -409,6 +435,9 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel
           
       - name: Cache dependencies
         id: cache-deps
@@ -421,8 +450,8 @@ jobs:
         if: steps.cache-deps.outputs.cache-hit != 'true'
         run: npm ci
         
-      - name: Setup CI environment
-        run: npm run ci:setup
+      - name: Setup environment with Vercel Dev
+        run: npm run db:e2e:setup
         env:
           CI: true
           NODE_ENV: test
@@ -480,6 +509,9 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel
           
       - name: Restore dependencies
         uses: actions/cache@v4
@@ -490,8 +522,8 @@ jobs:
       - name: Install Playwright browsers
         run: npm run test:e2e:install
         
-      - name: Setup E2E environment
-        run: npm run ci:setup
+      - name: Setup E2E environment with Vercel Dev
+        run: npm run db:e2e:setup
         env:
           CI: true
           NODE_ENV: test
@@ -501,8 +533,8 @@ jobs:
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
           
-      - name: Run E2E tests
-        run: npm run test:e2e:ci
+      - name: Run E2E tests with Vercel Dev
+        run: npm run test:e2e
         env:
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
           CI: true
@@ -576,19 +608,21 @@ Configure branch protection rules in GitHub (Settings → Branches):
 
 ### Local CI Testing
 
-Test CI workflows locally before pushing:
+Test CI workflows locally with Vercel Dev before pushing:
 
 ```bash
-# Setup CI environment locally
-npm run ci:setup
+# Install Vercel CLI globally
+npm i -g vercel
+
+# Setup E2E environment locally
+npm run db:e2e:setup
 
 # Run complete CI pipeline
-npm run ci:pipeline
+npm run test:all
 
 # Test specific CI components
-npm run ci:test               # Run tests in CI mode
-npm run quality:gates         # Test quality gates
-npm run ci:cleanup           # Test cleanup procedures
+npm run test:e2e            # Test E2E with Vercel Dev
+npm run quality:gates       # Test quality gates
 ```
 
 ## Troubleshooting
@@ -605,6 +639,22 @@ node --version
 # macOS: brew install node
 # Windows: Download from nodejs.org
 # Linux: Use package manager or nvm
+```
+
+#### Vercel CLI Issues
+
+```bash
+# Install Vercel CLI globally
+npm i -g vercel
+
+# Verify installation
+vercel --version
+
+# Login if needed
+vercel login
+
+# Test Vercel dev server
+npm run start:local
 ```
 
 #### Database Connection Issues
@@ -683,6 +733,45 @@ npm run db:e2e:validate
 npm run db:e2e:reset
 ```
 
+#### E2E Testing Issues with Vercel Dev
+
+**Issue**: Vercel CLI not installed
+```bash
+# Install globally
+npm i -g vercel
+
+# Verify installation
+vercel --version
+
+# Test Vercel dev server
+npm run start:local
+```
+
+**Issue**: E2E tests timeout with Vercel Dev
+```bash
+# Increase timeout in playwright.config.js
+timeout: 60000  # 60 seconds
+
+# Run with debug mode
+npm run test:e2e:debug
+
+# Validate setup
+npm run test:e2e:validate
+```
+
+**Issue**: E2E database connection fails
+```bash
+# Check E2E environment variables
+echo $E2E_TEST_MODE
+echo $TURSO_DATABASE_URL
+
+# Validate E2E database schema
+npm run db:e2e:validate
+
+# Reset E2E database
+npm run db:e2e:reset
+```
+
 #### Port Already in Use
 
 ```bash
@@ -704,71 +793,6 @@ ls -la .env.local
 
 # Check environment loading
 node -e "require('dotenv').config({ path: '.env.local' }); console.log(process.env.NODE_ENV);"
-```
-
-#### E2E Testing Issues
-
-**Issue**: Playwright browsers not installed
-```bash
-# Install all browsers
-npm run test:e2e:install
-
-# Install specific browser
-npx playwright install chromium
-```
-
-**Issue**: E2E tests timeout
-```bash
-# Increase timeout in playwright.config.js
-timeout: 60000  # 60 seconds
-
-# Run with debug mode
-npm run test:e2e:ui
-```
-
-**Issue**: E2E database connection fails
-```bash
-# Check E2E environment variables
-echo $E2E_TEST_MODE
-echo $TURSO_DATABASE_URL
-
-# Validate E2E database schema
-npm run db:e2e:validate
-
-# Reset E2E database
-npm run db:e2e:reset
-```
-
-#### Permission Issues
-
-```bash
-# Fix npm permissions (macOS/Linux)
-sudo chown -R $(whoami) ~/.npm
-
-# Clean npm cache
-npm cache clean --force
-```
-
-#### CI/CD Troubleshooting
-
-**Issue**: GitHub Actions fails on secrets
-```bash
-# Verify all required secrets are configured
-# Check secrets in GitHub repository settings
-```
-
-**Issue**: E2E tests timeout in CI
-```bash
-# Increase timeout in workflow file
-env:
-  CI_TIMEOUT: 600  # 10 minutes
-  E2E_TIMEOUT: 900 # 15 minutes
-```
-
-**Issue**: Database connection fails in CI
-```bash
-# Verify Turso credentials in GitHub secrets
-# Check TURSO_DATABASE_URL and TURSO_AUTH_TOKEN
 ```
 
 #### Performance Issues
@@ -823,7 +847,7 @@ Add to `.vscode/settings.json`:
 ### Vercel Deployment
 
 ```bash
-# Install Vercel CLI
+# Install Vercel CLI (if not already installed)
 npm i -g vercel
 
 # Deploy to preview
@@ -850,8 +874,34 @@ The GitHub Actions workflow automatically deploys to production when:
 
 - Code is pushed to `main` branch
 - All quality gates pass
-- E2E tests pass across all browsers
+- E2E tests pass across all browsers with **Vercel Dev**
 - Performance benchmarks are met
+
+## Migration Notes
+
+### Breaking Changes - CI Server to Vercel Dev
+
+**What Changed:**
+- E2E tests now use **Vercel Dev** server instead of custom CI server (`scripts/ci-server.js`)
+- Improved testing accuracy by using the same serverless environment as production
+- Better API endpoint testing with real Vercel function execution
+
+**Migration Required:**
+1. **Install Vercel CLI globally**: `npm i -g vercel`
+2. **Update E2E test commands**: Use `npm run test:e2e` (now uses Vercel Dev)
+3. **Environment variables**: Ensure Turso credentials are set for E2E testing
+4. **CI/CD adjustments**: Update workflows to use Vercel Dev for E2E testing
+
+**Benefits:**
+- **Production Parity**: Tests run in the same serverless environment as production
+- **Real API Testing**: Actual Vercel function execution instead of mocked responses
+- **Better Reliability**: More accurate testing of serverless architecture
+- **Simplified Setup**: No need for custom CI server maintenance
+
+**Troubleshooting:**
+- If E2E tests fail, ensure `vercel` CLI is installed globally
+- Verify `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` are set
+- Run `npm run test:e2e:validate` to check E2E prerequisites
 
 ## Support
 
@@ -865,8 +915,9 @@ The GitHub Actions workflow automatically deploys to production when:
 ### Development Resources
 
 - [Node.js Documentation](https://nodejs.org/docs)
-- [Turso Documentation](https://docs.turso.tech)
 - [Vercel Documentation](https://vercel.com/docs)
+- [Vercel CLI Documentation](https://vercel.com/docs/cli)
+- [Turso Documentation](https://docs.turso.tech)
 - [Stripe API Documentation](https://stripe.com/docs/api)
 - [Brevo API Documentation](https://developers.brevo.com)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
@@ -878,4 +929,4 @@ The GitHub Actions workflow automatically deploys to production when:
 - [Turso CLI Guide](https://docs.turso.tech/reference/turso-cli)
 - [LibSQL Documentation](https://docs.turso.tech/libsql)
 
-This installation guide provides everything needed to set up a complete development environment with comprehensive database configuration, E2E testing, and CI/CD integration.
+This installation guide provides everything needed to set up a complete development environment with comprehensive database configuration, **Vercel Dev** for E2E testing, and CI/CD integration.

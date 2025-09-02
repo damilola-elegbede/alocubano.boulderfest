@@ -20,6 +20,8 @@ env:
   NODE_VERSION: "20"
   CI: true
   NODE_OPTIONS: "--max-old-space-size=1024"
+  # Vercel configuration for production-like testing
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN || '' }}
 
 jobs:
   # Job 1: Pre-deployment Quality Checks (fast feedback)
@@ -42,18 +44,27 @@ jobs:
       - name: 📚 Install Dependencies
         run: npm ci
 
+      - name: 🚀 Install Vercel CLI
+        run: |
+          echo "📦 Installing Vercel CLI for production-like testing..."
+          npm install -g vercel@latest
+          
+          # Verify installation
+          vercel --version
+          echo "✅ Vercel CLI installed successfully"
+
       - name: 🧹 Lint Code
         run: npm run lint
 
-      - name: 🚀 Start CI Server & Warm Up
+      - name: 🚀 Start Vercel Dev Server & Warm Up
         run: |
-          echo "🚀 Starting CI server on port 3000..."
-          npm run start:ci &
+          echo "🚀 Starting Vercel dev server on port 3000..."
+          node scripts/vercel-dev-wrapper.js &
           SERVER_PID=$!
-          echo "Server started with PID: $SERVER_PID"
+          echo "Vercel dev server started with PID: $SERVER_PID"
 
           # Wait for server to be ready with multiple checks
-          echo "⏳ Waiting for server to be ready..."
+          echo "⏳ Waiting for Vercel dev server to be ready..."
           for i in {1..30}; do
             echo "Attempt $i/30: Testing /health endpoint..."
             if curl -f http://localhost:3000/health >/dev/null 2>&1; then
@@ -61,7 +72,7 @@ jobs:
               break
             fi
             if [ $i -eq 30 ]; then
-              echo "❌ Server failed to start after 30 attempts"
+              echo "❌ Vercel dev server failed to start after 30 attempts"
               exit 1
             fi
             sleep 2
@@ -83,35 +94,39 @@ jobs:
               "http://localhost:3000$endpoint" || true
           done
 
-          echo "✅ Server ready and warmed up!"
+          echo "✅ Vercel dev server ready and warmed up!"
 
           # Export PID for cleanup
-          echo "CI_SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          echo "VERCEL_SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
 
       - name: 🧪 Run Streamlined Tests
         run: npm run test
 
-      - name: 🧹 Cleanup CI Server
+      - name: 🧹 Cleanup Vercel Dev Server
         if: always()
         run: |
-          if [ -n "${CI_SERVER_PID:-}" ]; then
-            echo "Stopping CI server (PID: $CI_SERVER_PID)..."
+          if [ -n "${VERCEL_SERVER_PID:-}" ]; then
+            echo "Stopping Vercel dev server (PID: $VERCEL_SERVER_PID)..."
             # Try to kill the entire process group (works if group leader)
-            kill -TERM -- -"$CI_SERVER_PID" 2>/dev/null || kill "$CI_SERVER_PID" || true
+            kill -TERM -- -"$VERCEL_SERVER_PID" 2>/dev/null || kill "$VERCEL_SERVER_PID" || true
             sleep 2
             # Ensure nothing lingers
-            pkill -P "$CI_SERVER_PID" 2>/dev/null || true
-            wait "$CI_SERVER_PID" 2>/dev/null || true
-            echo "CI server stopped"
+            pkill -P "$VERCEL_SERVER_PID" 2>/dev/null || true
+            # Clean up Vercel processes specifically
+            pkill -f "vercel dev" || true
+            pkill -f "next-server" || true
+            wait "$VERCEL_SERVER_PID" 2>/dev/null || true
+            echo "Vercel dev server stopped"
           fi
 
       - name: ✅ Pre-deployment Summary
         run: |
           echo "### ✅ Pre-deployment Quality Checks Passed" >> $GITHUB_STEP_SUMMARY
           echo "- 🧹 Code linting: PASSED" >> $GITHUB_STEP_SUMMARY
-          echo "- 🧪 Streamlined tests: PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧪 Streamlined tests: PASSED (with Vercel Dev)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "🚀 Ready for Vercel deployment" >> $GITHUB_STEP_SUMMARY
+          echo "🌟 Tests executed in production-like serverless environment" >> $GITHUB_STEP_SUMMARY
 
   # Job 2: Wait for Vercel and Run Post-deployment Validation
   post-deployment-validation:
@@ -468,6 +483,7 @@ jobs:
           echo "### 🚀 Production Deployment Validated" >> $GITHUB_STEP_SUMMARY
           echo "**URL:** ${{ steps.wait-vercel.outputs.deployment-url }}" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** ${{ steps.wait-vercel.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Pre-deployment Testing:** Vercel Dev (production-like serverless)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Validations Passed:**" >> $GITHUB_STEP_SUMMARY
           echo "- 🏥 Health Check: ✅" >> $GITHUB_STEP_SUMMARY
@@ -576,9 +592,10 @@ jobs:
           echo "### 🎉 Production Deployment Complete!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**✅ All Quality Gates Passed**" >> $GITHUB_STEP_SUMMARY
-          echo "- Pre-deployment checks" >> $GITHUB_STEP_SUMMARY
+          echo "- Pre-deployment checks (with Vercel Dev)" >> $GITHUB_STEP_SUMMARY
           echo "- Post-deployment validation" >> $GITHUB_STEP_SUMMARY
           echo "- Database migrations" >> $GITHUB_STEP_SUMMARY
           echo "- Production monitoring" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🌟 **Quality Assurance**: Tests executed in production-like serverless environment" >> $GITHUB_STEP_SUMMARY
           echo "🌐 **Live at:** ${{ needs.post-deployment-validation.outputs.deployment_url }}" >> $GITHUB_STEP_SUMMARY

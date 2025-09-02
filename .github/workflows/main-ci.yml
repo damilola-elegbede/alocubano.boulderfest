@@ -552,6 +552,15 @@ jobs:
       - name: 📦 Install Dependencies (Optimized)
         run: npm ci
 
+      - name: 🚀 Install Vercel CLI
+        run: |
+          echo "📦 Installing Vercel CLI for server startup..."
+          npm install -g vercel@latest
+          
+          # Verify installation
+          vercel --version
+          echo "✅ Vercel CLI installed successfully"
+
       - name: 🎭 Cache Playwright Browsers
         uses: actions/cache@v4
         id: playwright-cache
@@ -589,15 +598,17 @@ jobs:
           GOOGLE_WALLET_ISSUER_ID=${{ secrets.GOOGLE_WALLET_ISSUER_ID_TEST || '' }}
           TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL_CI || 'file:./data/e2e-ci-test.db' }}
           TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN_CI || '' }}
+          # Vercel configuration
+          VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN || '' }}
           EOF
           
           echo "✅ E2E environment configured for ${{ matrix.suite-name }}"
 
-      - name: 🚀 Start Test Server (Optimized)
+      - name: 🚀 Start Test Server (Vercel Dev)
         run: |
-          echo "🚀 Starting optimized Vercel dev server..."
+          echo "🚀 Starting Vercel dev server for E2E tests..."
           
-          # Use the CI-optimized server startup
+          # Use the Vercel dev wrapper for CI
           node scripts/vercel-dev-wrapper.js &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
@@ -847,6 +858,7 @@ jobs:
           echo "| Parallel Execution | ✅ Active | 40-60% time reduction |" >> $GITHUB_STEP_SUMMARY
           echo "| Smart E2E Suite Selection | ✅ Active | 5-12 min saved when filtered |" >> $GITHUB_STEP_SUMMARY
           echo "| Memory Optimization | ✅ Active | 4GB memory allocation |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Vercel Dev Integration** | ✅ Active | Production-like E2E testing |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Job results summary
@@ -900,7 +912,7 @@ jobs:
           else
             E2E_ICON="⏭️"
           fi
-          echo "| 🎭 E2E Tests | $E2E_ICON $E2E_STATUS | 8-20 min (smart suites) |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎭 E2E Tests | $E2E_ICON $E2E_STATUS | 8-20 min (Vercel Dev) |" >> $GITHUB_STEP_SUMMARY
           
           # Build Verification
           BV_STATUS="${{ needs.build-verification.result }}"
@@ -950,7 +962,7 @@ jobs:
             echo "- **Security**: Vulnerability scanning completed" >> $GITHUB_STEP_SUMMARY
             echo "- **Performance**: Build verification and health checks passed" >> $GITHUB_STEP_SUMMARY
             echo "- **Advanced Testing**: 9 new E2E scenarios for comprehensive coverage" >> $GITHUB_STEP_SUMMARY
-            echo "- **Simple Testing**: Direct SQLite testing - radical simplicity approach" >> $GITHUB_STEP_SUMMARY
+            echo "- **Production Readiness**: Vercel Dev provides production-like testing environment" >> $GITHUB_STEP_SUMMARY
           else
             echo "## ❌ Pipeline Failures" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -966,7 +978,7 @@ jobs:
           # Workflow replacement info
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "**🔄 Advanced E2E Integration**: Now includes 26 comprehensive E2E tests with smart suite selection" >> $GITHUB_STEP_SUMMARY
+          echo "**🔄 Vercel Dev Integration**: Now uses Vercel Dev for production-like E2E testing environment" >> $GITHUB_STEP_SUMMARY
           echo "**⚡ Performance**: ~50% faster execution through smart optimizations and selective test execution" >> $GITHUB_STEP_SUMMARY
           echo "**🎯 Target**: <10 minutes for standard suite, <20 minutes for comprehensive testing" >> $GITHUB_STEP_SUMMARY
           echo "**🚀 Advanced Testing**: 9 new E2E scenarios covering accessibility, performance, security, and wallet integration" >> $GITHUB_STEP_SUMMARY
@@ -984,6 +996,7 @@ jobs:
           echo "⚡ Achieved ~50% performance improvement through optimizations"
           echo "🎭 Advanced E2E test integration with 26 comprehensive scenarios"
           echo "🚀 Smart suite selection for optimal CI performance"
+          echo "🌟 Vercel Dev integration for production-like testing"
           echo "🎯 Ready for review, merge, and deployment"
 
       - name: ❌ Pipeline Failure
@@ -999,4 +1012,5 @@ jobs:
           echo "🔧 Fix issues and push updates to re-trigger optimized pipeline"
           echo "📋 This consolidated workflow includes 26 comprehensive E2E tests"
           echo "🎭 E2E test artifacts available for debugging advanced scenarios"
+          echo "🌟 Tests now run using Vercel Dev for production-like environment"
           exit 1

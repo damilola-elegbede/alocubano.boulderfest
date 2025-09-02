@@ -1,6 +1,6 @@
 /**
- * Playwright E2E Configuration - Advanced CI Environment
- * Optimized for GitHub Actions CI with comprehensive test coverage
+ * Playwright E2E Configuration - Vercel Dev Environment for CI
+ * Uses Vercel Dev server instead of CI server for production-like testing
  * Supports all 26 E2E tests including advanced scenarios:
  * - Accessibility compliance (WCAG 2.1)
  * - Performance load testing
@@ -153,18 +153,17 @@ export default defineConfig({
     ] : []),
   ],
 
-  // Web server configuration for CI with advanced scenario support
+  // Web server configuration using Vercel Dev with advanced scenario support
   webServer: {
     command: 'npm run start:ci',
-    port: 3000,
+    url: 'http://localhost:3000/api/health/check',
     reuseExistingServer: !process.env.CI,
     timeout: process.env.ADVANCED_SCENARIOS === 'true' ? 240000 : 180000, // Extended for advanced setup
+    stdout: 'pipe',
+    stderr: 'pipe',
     env: {
-      NODE_ENV: 'test',
+      NODE_ENV: 'development', // Use development for Vercel Dev compatibility
       PORT: '3000',
-      CI_PORT: '3000',
-      SKIP_DATABASE_INIT: 'false', // Enable for advanced scenario setup
-      CI_ENVIRONMENT: 'true',
       // Advanced scenario environment variables
       ADVANCED_SCENARIOS: process.env.ADVANCED_SCENARIOS || 'false',
       PERFORMANCE_TESTING: process.env.PERFORMANCE_TESTING || 'false',

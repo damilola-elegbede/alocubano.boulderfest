@@ -3,8 +3,7 @@
  * Uses Vercel dev server with Turso database for production-like testing environment
  * REQUIRES: TURSO_DATABASE_URL and TURSO_AUTH_TOKEN environment variables
  * 
- * Note: Uses ngrok tunnel (alocubanoboulderfest.ngrok.io) for external access
- * while server runs locally on port 3000 via Vercel dev
+ * Note: Uses localhost:3000 with Vercel dev for local development and testing
  */
 
 import { defineConfig, devices } from '@playwright/test';
@@ -31,7 +30,7 @@ export default defineConfig({
   timeout: 45000, // 45 seconds for better stability with Vercel dev server
   
   use: {
-    baseURL: 'https://alocubanoboulderfest.ngrok.io',
+    baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -69,9 +68,10 @@ export default defineConfig({
 
   webServer: {
     // Use Vercel dev server for production-like environment
-    // Server runs locally on port 3000, accessed via ngrok tunnel
-    command: 'vercel dev --yes --listen 3000',
-    url: 'https://alocubanoboulderfest.ngrok.io/api/health/check',
+    // Server runs locally on port 3000
+    command: 'npm run dev',
+    url: 'http://localhost:3000/api/health/check',
+    port: 3000,
     reuseExistingServer: !process.env.CI,
     timeout: 60000, // 60 seconds for Vercel dev startup (increased for stability)
     stdout: 'pipe',

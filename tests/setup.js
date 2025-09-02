@@ -13,11 +13,9 @@ process.env.DATABASE_URL = 'file::memory:';
 // Remove auth token for local testing
 delete process.env.TURSO_AUTH_TOKEN;
 
-// Configure API base URL based on environment
-const CI_PORT = process.env.CI_PORT || process.env.PORT || '3000';
-const API_BASE_URL = process.env.CI === 'true' 
-  ? `http://localhost:${CI_PORT}`
-  : 'http://localhost:3000';
+// Configure API base URL for Vercel Dev (no CI server)
+const PORT = process.env.PORT || '3000';
+const API_BASE_URL = `http://localhost:${PORT}`;
 
 // Set test base URL
 process.env.TEST_BASE_URL = API_BASE_URL;
@@ -40,7 +38,7 @@ beforeAll(async () => {
   console.log('🧪 Test environment initialized');
   console.log(`📍 API Base URL: ${API_BASE_URL}`);
   console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🗄️ Database: SQLite in-memory (no external dependencies)`);
+  console.log(`🗄️ Database: SQLite in-memory for unit tests, Turso for E2E tests`);
 }, 10000); // 10 second timeout for setup
 
 afterAll(async () => {

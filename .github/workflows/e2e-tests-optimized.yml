@@ -7,6 +7,7 @@ name: 🎭 Advanced E2E Testing Suite
 # - Memory optimization (NODE_OPTIONS='--max-old-space-size=4096')
 # - Smart browser matrix execution
 # - Advanced test scenarios integration
+# - **NOW USES VERCEL DEV** for production-like testing environment
 # Target: 40% execution time reduction with enhanced reliability
 
 on:
@@ -289,6 +290,7 @@ jobs:
           echo "| Browser Matrix | ${{ steps.planning.outputs.browser_matrix }} | Browser testing strategy |" >> $GITHUB_STEP_SUMMARY
           echo "| Parallel Workers | ${{ steps.planning.outputs.parallel_workers }} | Concurrent test execution |" >> $GITHUB_STEP_SUMMARY
           echo "| Memory Profile | ${{ inputs.memory_profile || 'standard' }} | Memory allocation strategy |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Server Type** | **Vercel Dev** | **Production-like testing environment** |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [ "${{ steps.planning.outputs.advanced_tests_enabled }}" == "true" ]; then
@@ -354,6 +356,15 @@ jobs:
           # NPM optimization with caching
           npm ci --prefer-offline --no-audit --no-fund
           echo "✅ Dependencies installed and cached"
+
+      - name: 🚀 Install Vercel CLI
+        run: |
+          echo "📦 Installing Vercel CLI for development server..."
+          npm install -g vercel@latest
+          
+          # Verify installation
+          vercel --version
+          echo "✅ Vercel CLI installed successfully"
 
       - name: 🎭 Cache Playwright Browsers
         uses: actions/cache@v4
@@ -422,6 +433,9 @@ jobs:
           TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL_CI || '' }}
           TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN_CI || '' }}
           
+          # Vercel configuration
+          VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN || '' }}
+          
           # Performance and testing flags
           PERFORMANCE_TESTING=${{ needs.validate.outputs.test_suite == 'performance' }}
           ACCESSIBILITY_TESTING=${{ needs.validate.outputs.test_suite == 'accessibility' }}
@@ -431,25 +445,25 @@ jobs:
           
           echo "✅ Advanced environment prepared for ${{ matrix.browser-name }}"
 
-      - name: 🚀 Start Optimized Test Server
+      - name: 🚀 Start Optimized Test Server (Vercel Dev)
         id: server
         run: |
-          echo "Starting optimized test server for advanced scenarios..."
+          echo "Starting Vercel dev server for advanced E2E scenarios..."
           
-          # Start server in background with CI configuration
-          npm run start:ci &
+          # Start Vercel dev server in background with CI configuration
+          node scripts/vercel-dev-wrapper.js &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           
           # Optimized health check with shorter intervals
-          echo "Waiting for server to be ready..."
+          echo "Waiting for Vercel dev server to be ready..."
           for i in {1..40}; do
             if curl -f --max-time 3 http://localhost:3000/api/health/check >/dev/null 2>&1; then
-              echo "✅ Server is ready (attempt $i/40)"
+              echo "✅ Vercel dev server is ready (attempt $i/40)"
               break
             fi
             if [ $i -eq 40 ]; then
-              echo "❌ Server failed to start within timeout"
+              echo "❌ Vercel dev server failed to start within timeout"
               exit 1
             fi
             echo "⏳ Attempt $i/40: Server not ready, waiting..."
@@ -463,7 +477,7 @@ jobs:
           curl -s --max-time 5 http://localhost:3000/api/featured-photos >/dev/null || true
           curl -s --max-time 5 http://localhost:3000/api/admin/dashboard >/dev/null || true
           
-          echo "✅ Server ready and optimized for advanced testing"
+          echo "✅ Vercel dev server ready and optimized for advanced testing"
 
       - name: 🧪 Run Advanced E2E Tests
         env:
@@ -489,6 +503,7 @@ jobs:
           echo "Test suite: ${{ needs.validate.outputs.test_suite }}"
           echo "Advanced scenarios: ${{ needs.validate.outputs.advanced_tests_enabled }}"
           echo "Total tests expected: ${{ needs.validate.outputs.total_test_count }}"
+          echo "Server: Vercel Dev (production-like environment)"
           
           # Construct optimized test command
           TEST_CMD="npx playwright test --config=playwright-e2e-ci.config.js --project=${{ matrix.browser }}"
@@ -535,7 +550,7 @@ jobs:
           # Run tests with timeout protection
           TIMEOUT_MINUTES="${{ matrix.timeout-minutes }}"
           if timeout ${TIMEOUT_MINUTES}m $TEST_CMD; then
-            echo "✅ Advanced E2E tests completed successfully for ${{ matrix.browser-name }}"
+            echo "✅ Advanced E2E tests completed successfully for ${{ matrix.browser-name }} with Vercel Dev"
           else
             EXIT_CODE=$?
             echo "❌ Advanced E2E tests failed for ${{ matrix.browser-name }} (exit code: $EXIT_CODE)"
@@ -557,7 +572,7 @@ jobs:
             
             # Check for advanced test execution
             if [ "${{ needs.validate.outputs.advanced_tests_enabled }}" == "true" ]; then
-              echo "🆕 Advanced test scenarios executed:"
+              echo "🆕 Advanced test scenarios executed with Vercel Dev:"
               echo "  - Accessibility compliance testing"
               echo "  - Performance load testing"  
               echo "  - Wallet integration testing"
@@ -592,7 +607,7 @@ jobs:
         if: always()
         run: |
           if [ -n "${SERVER_PID:-}" ]; then
-            echo "Stopping server (PID: $SERVER_PID)..."
+            echo "Stopping Vercel dev server (PID: $SERVER_PID)..."
             kill -TERM $SERVER_PID || true
             sleep 3
             kill -KILL $SERVER_PID 2>/dev/null || true
@@ -602,6 +617,10 @@ jobs:
           lsof -ti:3000 | xargs kill -TERM 2>/dev/null || true
           sleep 2
           lsof -ti:3000 | xargs kill -KILL 2>/dev/null || true
+          
+          # Clean up Vercel processes specifically
+          pkill -f "vercel dev" || true
+          pkill -f "next-server" || true
           
           echo "✅ Server cleanup completed"
 
@@ -658,16 +677,22 @@ jobs:
           # Install only Chromium for performance testing
           npx playwright install chromium --with-deps
 
-      - name: 🚀 Start Performance Test Server
+      - name: 🚀 Install Vercel CLI for Performance Tests
         run: |
-          npm run start:ci &
+          echo "📦 Installing Vercel CLI for performance testing..."
+          npm install -g vercel@latest
+          echo "✅ Vercel CLI installed for performance benchmarking"
+
+      - name: 🚀 Start Performance Test Server (Vercel Dev)
+        run: |
+          node scripts/vercel-dev-wrapper.js &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           
           # Wait for server with extended timeout for performance tests
           for i in {1..20}; do
             if curl -f http://localhost:3000/api/health/check >/dev/null 2>&1; then
-              echo "✅ Performance server ready"
+              echo "✅ Performance server ready (Vercel Dev)"
               break
             fi
             sleep 3
@@ -680,7 +705,7 @@ jobs:
           # High memory allocation for performance testing
           NODE_OPTIONS: "--max-old-space-size=6144"
         run: |
-          echo "Running advanced performance benchmarks..."
+          echo "Running advanced performance benchmarks with Vercel Dev..."
           
           # Run performance-focused tests with comprehensive metrics
           npx playwright test \
@@ -691,7 +716,7 @@ jobs:
             --retries=1 \
             --reporter=json:test-results/performance-results.json,list || true
           
-          echo "✅ Advanced performance tests completed"
+          echo "✅ Advanced performance tests completed with Vercel Dev environment"
 
       - name: 📊 Generate Performance Report
         if: always()
@@ -707,6 +732,7 @@ jobs:
           - Browser: Chromium
           - Test Suite: Performance Load Testing
           - Advanced Scenarios: Enabled
+          - **Server Environment**: Vercel Dev (Production-like)
           
           ## Key Metrics
           - Page Load Performance: Measured
@@ -721,6 +747,12 @@ jobs:
           - API endpoint response times
           - Database query optimization
           - Memory leak detection
+          
+          ## Server Environment Benefits
+          - Production-like routing behavior
+          - Real serverless function execution
+          - Authentic API response patterns
+          - Realistic performance characteristics
           EOF
           
           echo "✅ Performance report generated"
@@ -733,6 +765,10 @@ jobs:
             sleep 2
             kill -KILL $SERVER_PID 2>/dev/null || true
           fi
+          
+          # Clean up Vercel processes
+          pkill -f "vercel dev" || true
+          lsof -ti:3000 | xargs kill -KILL 2>/dev/null || true
 
       - name: 📤 Upload Performance Results
         if: always()
@@ -766,11 +802,11 @@ jobs:
           
           # E2E test status
           if [ "${{ needs.validate.outputs.should_run_e2e }}" == "true" ]; then
-            echo "- **Advanced E2E Tests**: ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || (needs.e2e-tests.result == 'failure' && '❌ Failed' || '⏭️ Skipped') }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Advanced E2E Tests (Vercel Dev)**: ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || (needs.e2e-tests.result == 'failure' && '❌ Failed' || '⏭️ Skipped') }}" >> $GITHUB_STEP_SUMMARY
             
             # Performance benchmark status
             if [ "${{ needs.performance-benchmark.result }}" != "skipped" ]; then
-              echo "- **Advanced Performance Benchmark**: ${{ needs.performance-benchmark.result == 'success' && '✅ Passed' || (needs.performance-benchmark.result == 'failure' && '❌ Failed' || '⏭️ Skipped') }}" >> $GITHUB_STEP_SUMMARY
+              echo "- **Advanced Performance Benchmark (Vercel Dev)**: ${{ needs.performance-benchmark.result == 'success' && '✅ Passed' || (needs.performance-benchmark.result == 'failure' && '❌ Failed' || '⏭️ Skipped') }}" >> $GITHUB_STEP_SUMMARY
             fi
           else
             echo "- **E2E Tests**: ⏭️ Skipped (no relevant changes or draft PR)" >> $GITHUB_STEP_SUMMARY
@@ -783,6 +819,7 @@ jobs:
             echo "## 🆕 Advanced Test Features Executed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "✅ **Total Tests**: ${{ needs.validate.outputs.total_test_count }} comprehensive E2E scenarios" >> $GITHUB_STEP_SUMMARY
+            echo "🌟 **Server Environment**: Vercel Dev (production-like testing)" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "### New Advanced Scenarios:" >> $GITHUB_STEP_SUMMARY
             echo "- ♿ **Accessibility Compliance** - WCAG 2.1 standards with axe-core" >> $GITHUB_STEP_SUMMARY
@@ -806,6 +843,7 @@ jobs:
           echo "- **Selective Browser Install**: ✅ Individual browser caching and updates" >> $GITHUB_STEP_SUMMARY
           echo "- **Nightly Scheduling**: ✅ Comprehensive testing at 2 AM UTC" >> $GITHUB_STEP_SUMMARY
           echo "- **Advanced Artifact Management**: ✅ Extended retention for nightly runs" >> $GITHUB_STEP_SUMMARY
+          echo "- **🌟 Vercel Dev Integration**: ✅ Production-like serverless testing environment" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Test configuration
@@ -820,6 +858,7 @@ jobs:
           echo "- **Parallel Workers**: ${{ needs.validate.outputs.parallel_workers }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Memory Profile**: ${{ inputs.memory_profile || 'standard' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **🌟 Server Type**: **Vercel Dev** (production-like environment)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Workflow Run**: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
 
@@ -838,6 +877,7 @@ jobs:
           echo "- **Smart suite selection** based on code changes and context" >> $GITHUB_STEP_SUMMARY
           echo "- **Dynamic memory allocation** (3GB-6GB based on test complexity)" >> $GITHUB_STEP_SUMMARY
           echo "- **Extended browser support** with mobile testing capabilities" >> $GITHUB_STEP_SUMMARY
+          echo "- **🌟 Vercel Dev integration** for production-like serverless testing" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📊 **Performance Targets**:" >> $GITHUB_STEP_SUMMARY
           echo "- **Standard suite**: 10-12 minutes (6 core tests)" >> $GITHUB_STEP_SUMMARY
@@ -851,6 +891,7 @@ jobs:
           echo "- **Security**: Enhanced admin protection and webhook validation" >> $GITHUB_STEP_SUMMARY
           echo "- **Integration**: Wallet passes, email delivery, database integrity" >> $GITHUB_STEP_SUMMARY
           echo "- **Resilience**: Network failure scenarios and offline handling" >> $GITHUB_STEP_SUMMARY
+          echo "- **🌟 Production Parity**: Vercel Dev provides authentic serverless execution" >> $GITHUB_STEP_SUMMARY
 
       - name: ❌ Report Advanced Test Failures
         if: needs.e2e-tests.result == 'failure' || needs.performance-benchmark.result == 'failure'
@@ -867,6 +908,7 @@ jobs:
           echo "4. **Run locally**: \`npm run test:e2e -- --grep=\"failing-test-pattern\"\`" >> $GITHUB_STEP_SUMMARY
           echo "5. **Check memory usage** if tests are timing out (consider higher memory profile)" >> $GITHUB_STEP_SUMMARY
           echo "6. **Verify environment variables** for advanced features (wallet, email, payments)" >> $GITHUB_STEP_SUMMARY
+          echo "7. **🌟 Local Vercel Dev**: Use \`npm run start:local\` to replicate CI environment" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📋 **Available Artifacts**:" >> $GITHUB_STEP_SUMMARY
           echo "- Playwright HTML reports with screenshots and traces" >> $GITHUB_STEP_SUMMARY
@@ -895,6 +937,7 @@ jobs:
           echo "- ✅ **Performance benchmarks passed** with optimized resource usage" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ **Security validations completed** including webhook and admin protection" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ **Integration tests successful** for wallet passes, email, and database operations" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **🌟 Production-like environment** validated with Vercel Dev" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📊 **Quality Metrics Achieved**:" >> $GITHUB_STEP_SUMMARY
           echo "- **Test Coverage**: Comprehensive E2E scenarios covering all user flows" >> $GITHUB_STEP_SUMMARY
@@ -903,3 +946,4 @@ jobs:
           echo "- **Security**: Enhanced protection mechanisms validated" >> $GITHUB_STEP_SUMMARY
           echo "- **Integration**: External services and wallet generation tested" >> $GITHUB_STEP_SUMMARY
           echo "- **Resilience**: Network failure and offline scenarios handled" >> $GITHUB_STEP_SUMMARY
+          echo "- **🌟 Production Parity**: Authentic serverless behavior validated" >> $GITHUB_STEP_SUMMARY

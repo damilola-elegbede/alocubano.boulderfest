@@ -29,7 +29,7 @@ npm test && git push
 # Start with ngrok tunnel (recommended)
 npm start  # https://alocubanoboulderfest.ngrok.io
 
-# Local development
+# Local development with Vercel Dev
 npm run start:local  # http://localhost:3000
 
 # Simple HTTP server (no API)
@@ -47,21 +47,21 @@ npm run test:simple         # Same as npm test
 npm run test:simple:watch   # Watch mode for development
 npm run test:coverage       # With coverage report
 
-# E2E testing (default - uses local development server)
-npm run test:e2e            # 12 comprehensive E2E tests with CI config
-npm run test:e2e:ui         # Interactive UI mode with CI config
-npm run test:e2e:headed     # Headed browser mode with CI config
-npm run test:e2e:debug      # Debug mode with CI config
-npm run test:e2e:fast       # Fast mode (Chromium only) with CI config
+# E2E testing with Vercel Dev (NEW DEFAULT)
+npm run test:e2e            # 12 comprehensive E2E tests with Vercel dev server
+npm run test:e2e:ui         # Interactive UI mode with Vercel dev
+npm run test:e2e:headed     # Headed browser mode with Vercel dev
+npm run test:e2e:debug      # Debug mode with Vercel dev
+npm run test:e2e:fast       # Fast mode (Chromium only) with Vercel dev
 
-# E2E testing with Vercel dev server (requires ngrok setup)
+# E2E testing with advanced configurations
 npm run test:e2e:vercel        # Full E2E tests with Vercel dev server
 npm run test:e2e:vercel:ui     # Interactive UI mode with Vercel config
 npm run test:e2e:vercel:headed # Headed browser mode with Vercel config
 npm run test:e2e:vercel:debug  # Debug mode with Vercel config
 npm run test:e2e:vercel:fast   # Fast mode (Chromium only) with Vercel config
 
-# E2E testing with ngrok (automated environment setup)
+# E2E testing with ngrok (for external access)
 npm run test:e2e:ngrok         # Full E2E tests with ngrok tunnel
 npm run test:e2e:ngrok:ui      # Interactive UI mode with ngrok
 npm run test:e2e:ngrok:headed  # Headed browser mode with ngrok
@@ -133,12 +133,35 @@ git push origin main        # Auto-deploy to production
 - **Wallet passes** for Apple/Google with JWT authentication
 - **Admin panel** with bcrypt auth and JWT sessions
 
+### E2E Testing Strategy with Vercel Dev
+
+**Migration from CI Server to Vercel Dev** (Breaking Change):
+
+- **Before**: Custom CI server (`scripts/ci-server.js`) for E2E testing
+- **After**: **Vercel Dev** server via `vercel dev` command for production-like testing
+- **Benefit**: More accurate testing environment matching production Vercel deployment
+- **Requirement**: Vercel CLI must be installed globally (`npm i -g vercel`)
+
+#### New E2E Testing Setup
+
+```bash
+# Prerequisites
+npm i -g vercel  # Install Vercel CLI globally
+
+# Run E2E tests with Vercel dev server
+npm run test:e2e  # Uses Vercel dev for production-like testing
+
+# Test data management
+npm run db:e2e:setup     # Setup E2E database with Vercel dev
+npm run db:e2e:validate  # Validate E2E database schema
+```
+
 ### Streamlined Testing Strategy
 - **Simple test suite** with Vitest - 26 essential unit tests covering critical functionality
 - **Fast execution** - complete unit test suite finishes in seconds
-- **12 comprehensive E2E tests** - focused Playwright tests covering core user workflows and advanced scenarios
+- **12 comprehensive E2E tests** - focused Playwright tests with **Vercel Dev** server
 - **SQLite for unit tests** - fast, reliable local testing
-- **Turso for E2E tests** - realistic production-like testing environment
+- **Turso for E2E tests** - realistic production-like testing environment via Vercel dev
 - **Zero test abstractions** - every test readable by any JavaScript developer
 - **Direct API testing** - no complex mocking or test infrastructure
 
@@ -206,8 +229,8 @@ STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 
 # Database
-TURSO_DATABASE_URL=      # Production only
-TURSO_AUTH_TOKEN=        # Production only
+TURSO_DATABASE_URL=      # Production only (required for E2E tests)
+TURSO_AUTH_TOKEN=        # Production only (required for E2E tests)
 
 # Admin
 ADMIN_PASSWORD=          # bcrypt hash
@@ -280,7 +303,7 @@ Features:
 - **Streamlined testing**: Single test command `npm test` runs 26 essential unit tests
 - **Fast execution**: Complete unit test suite finishes in seconds
 - **Memory efficient**: No complex test infrastructure or high memory usage
-- **Comprehensive E2E validation**: 12 focused Playwright tests for complete coverage
+- **Comprehensive E2E validation**: 12 focused Playwright tests with **Vercel Dev** server
 - **Reliable**: Direct API testing with minimal mocking
 
 ### Test Architecture
@@ -290,7 +313,7 @@ Features:
   - smoke-tests.test.js (3 tests) - Basic functionality verification  
   - registration-api.test.js (5 tests) - Registration API unit tests
   - registration-flow.test.js (3 tests) - Registration flow tests
-- **E2E Test Suite (12 comprehensive tests)**:
+- **E2E Test Suite (12 comprehensive tests)** with **Vercel Dev**:
   - admin-auth.test.js - Admin authentication flow
   - admin-dashboard.test.js - Admin panel & security testing
   - basic-navigation.test.js - Page navigation and routing
@@ -305,9 +328,9 @@ Features:
   - user-engagement.test.js - User engagement metrics and tracking
 - **Database Strategy**:
   - **Unit tests**: SQLite for fast, isolated testing
-  - **E2E tests**: Turso for production-like environment
+  - **E2E tests**: Turso via **Vercel Dev** for production-like environment
 - **Simple execution**: No complex test builders, managers, or abstractions
-- **Real API testing**: Tests interact with actual endpoints and services
+- **Real API testing**: Tests interact with actual endpoints via Vercel dev server
 
 ## Floating Cart Visibility
 
@@ -324,7 +347,7 @@ Managed by `determineCartVisibility()` in `floating-cart.js`:
 - **API response**: <100ms target
 - **Browser cache**: 24-hour for static assets
 - **Unit test execution**: Fast completion for 26 unit tests
-- **E2E test execution**: 2-5 minutes for 12 comprehensive tests
+- **E2E test execution**: 2-5 minutes for 12 comprehensive tests via **Vercel Dev**
 - **Test simplicity**: Zero abstractions, readable by any JavaScript developer
 
 ## Debugging
@@ -363,7 +386,7 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 │   ├── registration-api.test.js     # Registration API contracts (5 tests)
 │   ├── registration-flow.test.js    # Registration flow tests (3 tests)
 │   ├── e2e/                         # Comprehensive E2E test structure
-│   │   └── flows/                   # 12 focused E2E tests
+│   │   └── flows/                   # 12 focused E2E tests (use Vercel Dev)
 │   │       ├── admin-auth.test.js                      # Admin authentication
 │   │       ├── admin-dashboard.test.js                 # Admin panel & security
 │   │       ├── basic-navigation.test.js                # Basic navigation
@@ -383,6 +406,32 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 ├── scripts/            # Build and utility scripts
 └── config/             # ESLint, HTMLHint configs
 ```
+
+## Migration Notes
+
+### Breaking Changes - CI Server to Vercel Dev
+
+**What Changed:**
+- E2E tests now use **Vercel Dev** server instead of custom CI server (`scripts/ci-server.js`)
+- Improved testing accuracy by using the same serverless environment as production
+- Better API endpoint testing with real Vercel function execution
+
+**Migration Required:**
+1. **Install Vercel CLI globally**: `npm i -g vercel`
+2. **Update E2E test commands**: Use `npm run test:e2e` (now uses Vercel Dev)
+3. **Environment variables**: Ensure Turso credentials are set for E2E testing
+4. **CI/CD adjustments**: Update workflows to use Vercel Dev for E2E testing
+
+**Benefits:**
+- **Production Parity**: Tests run in the same serverless environment as production
+- **Real API Testing**: Actual Vercel function execution instead of mocked responses
+- **Better Reliability**: More accurate testing of serverless architecture
+- **Simplified Setup**: No need for custom CI server maintenance
+
+**Troubleshooting:**
+- If E2E tests fail, ensure `vercel` CLI is installed globally
+- Verify `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` are set
+- Run `npm run test:e2e:validate` to check E2E prerequisites
 
 ## Contact & Resources
 

@@ -2,20 +2,20 @@
  * Default Playwright Configuration
  * 
  * This file serves as the default entry point for Playwright commands.
- * Always uses the CI configuration for maximum compatibility.
+ * Uses Vercel Dev configuration for maximum compatibility with serverless functions.
  */
 
 // Log available configurations for developers
 if (!process.env.CI) {
-  console.log('\n🎯 Playwright Configuration (Default: CI Config)');
+  console.log('\n🎯 Playwright Configuration (Default: Vercel Dev Config)');
   console.log('Available configurations:');
-  console.log('  • playwright-e2e-ci.config.js (CI optimized with SQLite)');
-  console.log('  • playwright-e2e-vercel.config.js (Vercel dev server + Turso)');
-  console.log('  • playwright-e2e-vercel-main.config.js (Vercel production)');
+  console.log('  • playwright-e2e-vercel-main.config.js (Primary: Vercel dev + Turso)');
+  console.log('  • playwright-e2e-ci.config.js (Vercel dev optimized for CI)');
+  console.log('  • playwright-e2e-vercel.config.js (Alternative Vercel config)');
   console.log('\nRecommended usage:');
-  console.log('  npm run test:e2e:ci');
-  console.log('  npm run test:e2e:ngrok\n');
+  console.log('  npm run test:e2e (uses primary Vercel config)');
+  console.log('  npm run test:e2e:vercel (explicit Vercel config)\n');
 }
 
-// Always export the CI configuration for maximum compatibility
-export { default } from './playwright-e2e-ci.config.js';
+// Export the Vercel main configuration as primary
+export { default } from './playwright-e2e-vercel-main.config.js';

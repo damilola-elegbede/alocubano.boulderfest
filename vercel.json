@@ -2,6 +2,7 @@
   "buildCommand": "node vercel-build.cjs",
   "outputDirectory": "public",
   "framework": null,
+  "devCommand": "npm run start:local",
   "crons": [
     {
       "path": "/api/sheets/scheduled-sync",
@@ -74,6 +75,21 @@
     },
     "api/wallet/google/[ticketId].js": {
       "maxDuration": 10
+    },
+    "api/admin/**/*.js": {
+      "maxDuration": 15
+    },
+    "api/email/**/*.js": {
+      "maxDuration": 20
+    },
+    "api/registration/**/*.js": {
+      "maxDuration": 15
+    },
+    "api/health/**/*.js": {
+      "maxDuration": 5
+    },
+    "api/**/*.js": {
+      "maxDuration": 30
     }
   },
   "images": {

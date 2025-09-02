@@ -9,6 +9,7 @@ The official website for **A Lo Cubano Boulder Fest**, Boulder's premier Cuban s
 ### Prerequisites
 
 - Node.js 18+ and npm
+- **Vercel CLI** (for E2E testing): `npm i -g vercel`
 - SQLite 3.9.0+ (for database migrations with JSON support)
 - Modern web browser (Chrome, Firefox, Safari, Edge)
 
@@ -71,13 +72,12 @@ alocubano.boulderfest/
 ├── index.html (Main home page)
 ├── vercel.json (Deployment configuration)
 ├── scripts/
-│   ├── ci-setup.js (CI environment setup)
+│   ├── vercel-dev-wrapper.js (Vercel development server wrapper)
 │   ├── express-dev-server.js (Express development server)
 │   ├── migrate.js (Database migration system)
 │   ├── migrate-e2e.js (E2E database migrations)
 │   ├── setup-e2e-database.js (E2E database setup)
 │   ├── vercel-dev-doctor.js (Development diagnostics)
-│   ├── vercel-dev-wrapper.js (Vercel dev wrapper)
 │   └── verify-database-setup.js (Database verification)
 ├── css/
 │   ├── base.css (Design system)
@@ -164,7 +164,7 @@ alocubano.boulderfest/
 - `npm run serve:simple` - Simple HTTP server without API functions (port 8000)
 - `npm test` - Run streamlined test suite (26 unit tests)
 - `npm run test:all` - Run all tests including E2E validation
-- `npm run test:e2e` - Run Playwright E2E tests (uses local development server)
+- `npm run test:e2e` - Run Playwright E2E tests with **Vercel Dev** server
 - `npm run test:e2e:ui` - Interactive E2E test development mode
 - `npm run lint` - Run ESLint and HTMLHint
 - `npm run build` - Build for production
@@ -182,10 +182,19 @@ We've achieved a **96% complexity reduction** by eliminating complex test infras
 - **Fast execution** for complete test suite
 - **Zero abstractions** - every test readable by any JavaScript developer
 
+### E2E Testing with Vercel Dev
+
+**Migration from CI Server to Vercel Dev** (Breaking Change):
+
+- **Before**: Custom CI server (`scripts/ci-server.js`) for E2E testing
+- **After**: **Vercel Dev** server via `vercel dev` command for production-like testing
+- **Benefit**: More accurate testing environment matching production Vercel deployment
+- **Requirement**: Vercel CLI must be installed globally (`npm i -g vercel`)
+
 ### Database Strategy
 
 - **Unit Tests**: Use SQLite development database (`development.db`)
-- **E2E Tests**: Use Turso production database for real-world validation
+- **E2E Tests**: Use Turso production database for real-world validation via **Vercel Dev**
 
 ### Test Commands
 
@@ -196,15 +205,16 @@ npm run test:simple         # Same as npm test
 npm run test:simple:watch   # Watch mode for development
 npm run test:coverage       # Coverage report
 
-# E2E Tests (default - uses local development server)
-npm run test:e2e            # Run comprehensive E2E tests with CI config
-npm run test:e2e:ui         # Interactive UI mode with CI config
+# E2E Tests (with Vercel Dev server - NEW)
+npm run test:e2e            # Run E2E tests with Vercel dev server
+npm run test:e2e:ui         # Interactive UI mode with Vercel dev
 npm run test:e2e:headed     # Run with browser visible
 npm run test:e2e:debug      # Debug mode
 
-# E2E Tests (with Vercel dev server, requires ngrok setup)
-npm run test:e2e:vercel     # Run E2E tests with Vercel dev server
-npm run test:e2e:vercel:ui  # Interactive UI mode with Vercel config
+# E2E Tests (with ngrok for external access)
+npm run test:e2e:ngrok      # Run E2E tests with Vercel dev + ngrok tunnel
+npm run test:e2e:ngrok:ui   # Interactive UI mode with ngrok
+npm run test:e2e:ngrok:fast # Fast mode (Chromium only) with ngrok
 
 # Complete Testing
 npm run test:all            # Unit tests + E2E tests
@@ -245,34 +255,36 @@ npm run db:reset            # Reset database to clean state
 npm test
 ```
 
-#### E2E Tests
+#### E2E Tests (Vercel Dev)
 ```bash
-# Default configuration - no special setup required
-# Uses local development server and SQLite database
+# NEW: Vercel CLI installation required
+npm i -g vercel
+
+# E2E tests with Vercel dev server (default)
 npm run test:e2e
 
-# For Vercel dev server testing (requires Turso database)
+# For Turso database (production-like testing)
 TURSO_DATABASE_URL=your_turso_database_url
 TURSO_AUTH_TOKEN=your_turso_auth_token
-npm run test:e2e:vercel
+npm run test:e2e
 ```
 
 ### Quality Gates
 
 - **Simple execution**: Single command `npm test` for unit tests
 - **Fast feedback**: Complete unit test suite runs quickly
-- **Real API testing**: Direct interaction with actual endpoints
+- **Real API testing**: Direct interaction with actual endpoints via **Vercel Dev**
 - **No mocking complexity**: Tests use real services and databases
 - **Production validation**: E2E tests use Turso for real-world scenarios
 
 ### Test Philosophy
 
 Focus on **user-visible behavior** with **minimal complexity**:
-- Test real API endpoints, not implementation details
+- Test real API endpoints via **Vercel Dev**, not implementation details
 - Keep each test under 20 lines
 - Use direct HTTP requests, not elaborate abstractions
 - Clean up test data explicitly in each test
-- Separate unit tests (SQLite) from E2E tests (Turso)
+- Separate unit tests (SQLite) from E2E tests (Turso via Vercel Dev)
 
 ## 🔄 CI/CD Pipeline
 
@@ -283,7 +295,7 @@ Our CI/CD pipeline provides comprehensive automation for testing, quality assura
 #### Workflow Features
 
 - **Unit Testing**: Fast execution of 26 essential tests with SQLite
-- **E2E Testing**: Production validation with Turso database
+- **E2E Testing**: Production validation with **Vercel Dev** and Turso database
 - **Quality Gates**: Automated linting, unit testing, and E2E testing before deployment
 - **PR Status Reporting**: Real-time status updates and quality gate validation
 - **Multi-browser Support**: Chrome-based E2E testing with Playwright
@@ -291,10 +303,10 @@ Our CI/CD pipeline provides comprehensive automation for testing, quality assura
 #### Available CI Commands
 
 ```bash
-# CI Environment Setup
-npm run ci:setup              # Initialize CI environment with database and server
+# CI Environment Setup (uses Vercel Dev for E2E)
+npm run ci:setup              # Initialize CI environment with Vercel dev server
 npm run ci:cleanup            # Clean up resources and generate reports
-npm run ci:test               # Complete CI test pipeline
+npm run ci:test               # Complete CI test pipeline with Vercel dev
 npm run ci:pipeline           # Full CI/CD pipeline with quality gates
 
 # Performance Optimization
@@ -342,7 +354,7 @@ ADMIN_PASSWORD=             # Admin panel tests
 
 - **Setup Time**: < 60 seconds for complete environment initialization
 - **Unit Tests**: < 10 seconds for 26 essential tests (SQLite)
-- **E2E Tests**: 2-3 minutes for comprehensive tests (Turso)
+- **E2E Tests**: 2-3 minutes for comprehensive tests (**Vercel Dev** + Turso)
 - **Quality Gates**: < 30 seconds for linting and validation
 - **Resource Cleanup**: < 30 seconds with detailed reporting
 
@@ -352,7 +364,7 @@ ADMIN_PASSWORD=             # Admin panel tests
 - **Security**: Input validation and XSS protection testing
 - **Performance**: Core API response testing
 - **Database**: SQLite (unit tests) and Turso (E2E tests) validation
-- **Browser Compatibility**: Chrome-based E2E testing
+- **Browser Compatibility**: Chrome-based E2E testing with **Vercel Dev**
 
 See [CI/CD Documentation](docs/ci-cd/README.md) for detailed setup and configuration.
 
@@ -439,10 +451,10 @@ npm run health:database     # Health check
 
 ### E2E Test Database
 
-For comprehensive end-to-end testing, separate database commands are available:
+For comprehensive end-to-end testing with **Vercel Dev** server, separate database commands are available:
 
 ```bash
-# E2E Database Setup
+# E2E Database Setup (works with Vercel Dev)
 npm run db:e2e:setup        # Create tables and insert test data
 npm run db:e2e:validate     # Validate existing database schema
 npm run db:e2e:clean        # Remove test data only
@@ -523,8 +535,34 @@ curl -f http://localhost:3000/api/health/e2e-database | jq '.'
 - **Payment Processing**: Stripe Checkout with webhook handling
 - **Wallet Passes**: Apple Wallet and Google Wallet integration
 - **Gallery System**: Google Drive integration with AVIF/WebP optimization
-- **E2E Testing**: Comprehensive browser automation with Turso database validation
+- **E2E Testing**: Comprehensive browser automation with **Vercel Dev** and Turso database validation
 - **Admin Panel**: Complete administration dashboard with security features
+
+## Migration Notes
+
+### Breaking Changes - CI Server to Vercel Dev
+
+**What Changed:**
+- E2E tests now use **Vercel Dev** server instead of custom CI server (`scripts/ci-server.js`)
+- Improved testing accuracy by using the same serverless environment as production
+- Better API endpoint testing with real Vercel function execution
+
+**Migration Required:**
+1. **Install Vercel CLI globally**: `npm i -g vercel`
+2. **Update E2E test commands**: Use `npm run test:e2e` (now uses Vercel Dev)
+3. **Environment variables**: Ensure Turso credentials are set for E2E testing
+4. **CI/CD adjustments**: Update workflows to use Vercel Dev for E2E testing
+
+**Benefits:**
+- **Production Parity**: Tests run in the same serverless environment as production
+- **Real API Testing**: Actual Vercel function execution instead of mocked responses
+- **Better Reliability**: More accurate testing of serverless architecture
+- **Simplified Setup**: No need for custom CI server maintenance
+
+**Troubleshooting:**
+- If E2E tests fail, ensure `vercel` CLI is installed globally
+- Verify `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` are set
+- Run `npm run test:e2e:validate` to check E2E prerequisites
 
 ## 🎪 About the Festival
 

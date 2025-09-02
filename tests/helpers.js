@@ -27,7 +27,7 @@ export async function testRequest(method, path, data = null, headers = {}) {
     options.body = JSON.stringify(data); 
   }
   
-  // CI-friendly timeout handling
+  // Request timeout handling
   const timeoutPromise = new Promise((_, reject) => {
     setTimeout(() => reject(new Error('Request timeout')), 30000);
   });
