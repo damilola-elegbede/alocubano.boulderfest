@@ -27,7 +27,10 @@ const args = [
 ];
 
 // Add token if available (for CI authentication)
-if (process.env.VERCEL_TOKEN) {
+// GitHub provides VERCEL_OIDC_TOKEN in CI environment
+if (process.env.VERCEL_OIDC_TOKEN) {
+  args.push('--token', process.env.VERCEL_OIDC_TOKEN);
+} else if (process.env.VERCEL_TOKEN) {
   args.push('--token', process.env.VERCEL_TOKEN);
 }
 
