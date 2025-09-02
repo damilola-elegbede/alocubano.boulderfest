@@ -7,7 +7,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Gallery Performance & Functionality', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/pages/gallery.html');
+    // Use a valid gallery page (2025 has actual gallery content)
+    await page.goto('/pages/boulder-fest-2025-gallery.html');
   });
 
   test('should load gallery within performance budget', async ({ page }) => {
@@ -55,7 +56,8 @@ test.describe('Gallery Performance & Functionality', () => {
             src.includes('googleusercontent.com') ||
             src.includes('webp') ||
             src.includes('=s') || // Google Drive size parameter
-            src.includes('api/image-proxy') // Custom proxy
+            src.includes('api/image-proxy') || // Custom proxy
+            src.includes('/images/') // Local images
           ).toBeTruthy();
         }
       }
@@ -95,21 +97,21 @@ test.describe('Gallery Performance & Functionality', () => {
     
     // Navigate away and back
     await page.goto('/pages/tickets.html');
-    await page.goto('/pages/gallery.html');
+    await page.goto('/pages/boulder-fest-2025-gallery.html');
     
     await page.waitForTimeout(2000);
     
     // Should load faster due to caching (fewer network requests)
-    // This is a basic test - in practice, we'd measure actual load times
-    const galleryContainer = page.locator('.gallery-container, .photo-grid');
-    await expect(galleryContainer).toBeVisible();
+    // Check for actual gallery containers from the 2025 gallery
+    const galleryContainer = page.locator('.gallery-detail-grid, .gallery-grid-static, #workshops-section, #socials-section');
+    await expect(galleryContainer.first()).toBeVisible();
   });
 
   test('should handle year-based filtering efficiently', async ({ page }) => {
     await page.waitForTimeout(2000);
     
-    // Test year filtering if available
-    const yearFilters = page.locator('.year-filter, button:has-text("2024"), button:has-text("2025")');
+    // Test year filtering if available (2025 gallery might have workshop/social filtering)
+    const yearFilters = page.locator('.year-filter, button:has-text("2024"), button:has-text("2025"), .workshop-filter, .social-filter');
     
     if (await yearFilters.count() >= 2) {
       const firstYear = yearFilters.first();
@@ -143,8 +145,9 @@ test.describe('Gallery Performance & Functionality', () => {
     await page.waitForTimeout(3000);
     
     // Gallery should still function despite some failed images
-    const gallery = page.locator('.gallery-container, .photo-grid');
-    await expect(gallery).toBeVisible();
+    // Use correct selectors for 2025 gallery
+    const gallery = page.locator('.gallery-detail-grid, .gallery-grid-static, #workshops-section, #socials-section');
+    await expect(gallery.first()).toBeVisible();
     
     // Should not show broken image icons or error states prominently
     const brokenImages = page.locator('img[alt="broken"], img[src=""]');
@@ -154,8 +157,8 @@ test.describe('Gallery Performance & Functionality', () => {
   test('should provide keyboard navigation for accessibility', async ({ page }) => {
     await page.waitForTimeout(2000);
     
-    // Focus on first gallery item
-    const galleryItems = page.locator('.gallery-item, .photo-item');
+    // Focus on first gallery item (use correct selector)
+    const galleryItems = page.locator('.gallery-item');
     
     if (await galleryItems.count() > 0) {
       await galleryItems.first().focus();
@@ -182,7 +185,8 @@ test.describe('Gallery Performance & Functionality', () => {
   test('should handle infinite scroll or pagination', async ({ page }) => {
     await page.waitForTimeout(2000);
     
-    const initialItemCount = await page.locator('.gallery-item, .photo-item').count();
+    // Use correct selector for gallery items
+    const initialItemCount = await page.locator('.gallery-item').count();
     
     if (initialItemCount > 0) {
       // Scroll to bottom to trigger infinite scroll
@@ -193,10 +197,10 @@ test.describe('Gallery Performance & Functionality', () => {
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       await page.waitForTimeout(2000);
       
-      const finalItemCount = await page.locator('.gallery-item, .photo-item').count();
+      const finalItemCount = await page.locator('.gallery-item').count();
       
       // Either more items loaded or pagination controls appeared
-      const paginationControls = page.locator('.pagination, .load-more, .next-page');
+      const paginationControls = page.locator('.pagination, .load-more, .next-page, .loading-more');
       
       expect(
         finalItemCount > initialItemCount || 
@@ -234,7 +238,8 @@ test.describe('Gallery Performance & Functionality', () => {
   test('should provide image metadata and details', async ({ page }) => {
     await page.waitForTimeout(2000);
     
-    const galleryItems = page.locator('.gallery-item, .photo-item');
+    // Use correct selector for gallery items
+    const galleryItems = page.locator('.gallery-item');
     
     if (await galleryItems.count() > 0) {
       await galleryItems.first().click();

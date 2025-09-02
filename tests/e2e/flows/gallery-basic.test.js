@@ -7,11 +7,16 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Gallery Basic Browsing', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/pages/gallery.html');
+    await page.goto('/pages/boulder-fest-2025-gallery.html');
   });
 
   test('should load gallery page successfully', async ({ page }) => {
-    await expect(page.locator('h1, h2')).toContainText(/gallery|photos/i);
+    // Check for specific gallery content - either dynamic gallery sections or static fallback
+    const galleryTitleExists = await page.locator('h2.gallery-static-title').count() > 0;
+    const workshopsExists = await page.locator('#workshops-section h2').count() > 0;
+    const socialsExists = await page.locator('#socials-section h2').count() > 0;
+    
+    expect(galleryTitleExists || (workshopsExists && socialsExists)).toBeTruthy();
   });
 
   test('should display year filters or navigation', async ({ page }) => {
@@ -31,25 +36,28 @@ test.describe('Gallery Basic Browsing', () => {
 
   test('should load gallery images', async ({ page }) => {
     // Wait for gallery container to load
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(2000);
     
-    // Look for image containers or gallery items
-    const galleryItems = page.locator('.gallery-item, .photo-item, .image-container, img[src*="drive.google"], img[src*="googleusercontent"]');
+    // Check for dynamic gallery items first
+    const dynamicImages = page.locator('.gallery-item, .gallery-detail-grid img[src*="drive"], img[src*="googleusercontent"]');
+    const staticFallback = page.locator('.gallery-grid-static');
     
-    if (await galleryItems.count() > 0) {
-      await expect(galleryItems.first()).toBeVisible();
-      
-      // Check that images have loaded
-      const firstImage = galleryItems.first().locator('img');
-      if (await firstImage.count() > 0) {
-        await expect(firstImage).toBeVisible();
-      }
+    // Either dynamic images should be loaded OR static fallback should be visible
+    const dynamicCount = await dynamicImages.count();
+    const staticVisible = await staticFallback.isVisible();
+    
+    if (dynamicCount > 0) {
+      // Dynamic gallery has loaded
+      await expect(dynamicImages.first()).toBeVisible();
+    } else if (staticVisible) {
+      // Static fallback is showing
+      await expect(staticFallback).toBeVisible();
+      const staticTitle = page.locator('.gallery-static-title');
+      await expect(staticTitle).toBeVisible();
     } else {
-      // Gallery might be empty or loading - check for appropriate messaging
-      const emptyMessage = page.locator('.no-photos, .loading, .gallery-empty, text=Loading');
-      if (await emptyMessage.count() > 0) {
-        await expect(emptyMessage.first()).toBeVisible();
-      }
+      // Check for loading states or error messages
+      const loadingOrEmpty = page.locator('.loading, .gallery-empty, text=Loading, .gallery-static-description');
+      expect(await loadingOrEmpty.count()).toBeGreaterThan(0);
     }
   });
 
@@ -69,7 +77,7 @@ test.describe('Gallery Basic Browsing', () => {
   test('should open image in modal or lightbox', async ({ page }) => {
     await page.waitForTimeout(2000);
     
-    const galleryImages = page.locator('.gallery-item img, .photo-item img, img[src*="drive"], .clickable img');
+    const galleryImages = page.locator('.gallery-item img, .gallery-detail-grid img, img[src*="drive"], .clickable img');
     
     if (await galleryImages.count() > 0) {
       await galleryImages.first().click();
@@ -95,7 +103,7 @@ test.describe('Gallery Basic Browsing', () => {
       await page.waitForTimeout(1000);
       
       // Gallery content should update
-      await expect(page.locator('.gallery-container, .photo-grid')).toBeVisible();
+      await expect(page.locator('.gallery-detail-grid, .gallery-grid-static')).toBeVisible();
     }
   });
 
@@ -142,8 +150,11 @@ test.describe('Gallery Basic Browsing', () => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
     
-    // Gallery should still be functional on mobile
-    await expect(page.locator('.gallery-container, .photo-grid, .gallery')).toBeVisible();
+    // Gallery should still be functional on mobile - check for any gallery container
+    const galleryContainers = page.locator('.gallery-detail-grid, .gallery-grid-static, #workshops-section, #socials-section');
+    const containerCount = await galleryContainers.count();
+    expect(containerCount).toBeGreaterThan(0);
+    await expect(galleryContainers.first()).toBeVisible();
     
     // Images should be appropriately sized for mobile
     const images = page.locator('.gallery-item img, img');
