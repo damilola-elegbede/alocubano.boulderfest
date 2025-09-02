@@ -143,8 +143,10 @@ jobs:
       always() &&
       (needs.detect-changes.outputs.ci-triggers == 'true' ||
        needs.detect-changes.outputs.critical == 'true' ||
+       needs.detect-changes.outputs.tests == 'true' ||
        inputs.force_all_checks == true) &&
-      needs.detect-changes.outputs.skip-ci != 'true'
+      (needs.detect-changes.outputs.skip-ci != 'true' || 
+       needs.detect-changes.outputs.tests == 'true')
     timeout-minutes: 5
     
     strategy:
@@ -255,7 +257,8 @@ jobs:
        needs.detect-changes.outputs.backend == 'true' ||
        needs.detect-changes.outputs.tests == 'true' ||
        inputs.force_all_checks == true) &&
-      needs.detect-changes.outputs.skip-ci != 'true'
+      (needs.detect-changes.outputs.skip-ci != 'true' || 
+       needs.detect-changes.outputs.tests == 'true')
     timeout-minutes: 8
     
     steps:
@@ -359,8 +362,10 @@ jobs:
       needs.quality-checks.result != 'failure' &&
       (needs.detect-changes.outputs.backend == 'true' ||
        needs.detect-changes.outputs.critical == 'true' ||
+       needs.detect-changes.outputs.tests == 'true' ||
        inputs.force_all_checks == true) &&
-      needs.detect-changes.outputs.skip-ci != 'true'
+      (needs.detect-changes.outputs.skip-ci != 'true' || 
+       needs.detect-changes.outputs.tests == 'true')
     timeout-minutes: 5
     
     steps:
@@ -444,8 +449,10 @@ jobs:
        needs.detect-changes.outputs.critical == 'true' ||
        needs.detect-changes.outputs.performance-triggers == 'true' ||
        needs.detect-changes.outputs.security-triggers == 'true' ||
+       needs.detect-changes.outputs.tests-e2e == 'true' ||
        inputs.force_all_checks == true) &&
-      needs.detect-changes.outputs.skip-ci != 'true'
+      (needs.detect-changes.outputs.skip-ci != 'true' || 
+       needs.detect-changes.outputs.tests-e2e == 'true')
     timeout-minutes: 20
     
     strategy:
@@ -693,8 +700,10 @@ jobs:
       needs.quality-checks.result != 'failure' &&
       (needs.detect-changes.outputs.deployment-triggers == 'true' ||
        needs.detect-changes.outputs.critical == 'true' ||
+       needs.detect-changes.outputs.tests == 'true' ||
        inputs.force_all_checks == true) &&
-      needs.detect-changes.outputs.skip-ci != 'true'
+      (needs.detect-changes.outputs.skip-ci != 'true' || 
+       needs.detect-changes.outputs.tests == 'true')
     timeout-minutes: 6
     
     steps:

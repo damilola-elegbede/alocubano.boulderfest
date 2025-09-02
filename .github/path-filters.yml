@@ -466,7 +466,7 @@ deploy-triggers:
   - '!docs/**'
   - '!spec/**'
 
-# Skip CI for docs-only changes
+# Skip CI for docs-only changes (only when no other changes)
 skip-ci:
   - 'docs/**/*.md'
   - 'spec/**/*.md'
@@ -475,6 +475,11 @@ skip-ci:
   - '!SECURITY.md'
   - '!CHANGELOG.md'
   - '!CLAUDE.md'
+  - '!tests/**'
+  - '!api/**'
+  - '!js/**'
+  - '!css/**'
+  - '!pages/**'
 
 # ========================================
 # ARCHIVED WORKFLOW REFERENCES (For History)
