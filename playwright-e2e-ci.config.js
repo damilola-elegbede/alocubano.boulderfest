@@ -63,6 +63,10 @@ export default defineConfig({
       ]
     : [['list'], ['html']],
   
+  // Global setup for database migrations and configuration
+  globalSetup: ADVANCED_SCENARIOS ? './tests/e2e/global-setup-ci.js' : './tests/e2e/global-setup-ci.js',
+  globalTeardown: './tests/e2e/global-teardown.js',
+  
   // Extended timeout for advanced scenarios and CI environment
   timeout: ADVANCED_SCENARIOS ? 120000 : (CI_MODE ? 90000 : 60000),
   
@@ -191,7 +195,7 @@ export default defineConfig({
   // **CRITICAL FIX**: Use Playwright's webServer with dynamic port allocation
   // This eliminates the dual server startup problem and port conflicts
   webServer: {
-    command: `vercel dev --yes --listen ${PORT}`,
+    command: `vercel dev --yes --listen ${PORT}${process.env.VERCEL_TOKEN ? ' --token=' + process.env.VERCEL_TOKEN : ''}`,
     url: `${BASE_URL}/api/health/check`,
     reuseExistingServer: false, // Always start fresh in CI for test isolation
     timeout: ADVANCED_SCENARIOS ? 240000 : 180000, // Extended for advanced setup
