@@ -668,9 +668,9 @@ jobs:
           
           # Add reporters based on suite
           if [ "${{ matrix.suite }}" == "performance" ]; then
-            TEST_CMD="$TEST_CMD --reporter=list --reporter=json --reporter-option=outputFile=test-results/performance-${{ matrix.browser }}.json"
+            TEST_CMD="$TEST_CMD --reporter=list --reporter=json:test-results/performance-${{ matrix.browser }}.json"
           elif [ "${{ matrix.suite }}" == "accessibility" ]; then
-            TEST_CMD="$TEST_CMD --reporter=list --reporter=json --reporter-option=outputFile=test-results/accessibility-${{ matrix.browser }}.json"
+            TEST_CMD="$TEST_CMD --reporter=list --reporter=json:test-results/accessibility-${{ matrix.browser }}.json"
           else
             TEST_CMD="$TEST_CMD --reporter=list,html"
           fi
