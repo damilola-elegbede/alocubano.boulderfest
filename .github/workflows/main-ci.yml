@@ -491,7 +491,6 @@ jobs:
             memory-limit: "4096"
             retry-count: 2
             required: false
-            condition: ${{ inputs.e2e_suite == 'advanced' || needs.detect-changes.outputs.critical == 'true' }}
           
           # Firefox Validation (Secondary browser - critical changes only)
           - suite: firefox
@@ -502,18 +501,16 @@ jobs:
             memory-limit: "3072"
             retry-count: 3
             required: false
-            condition: ${{ needs.detect-changes.outputs.critical == 'true' || inputs.force_all_checks == true }}
           
           # Performance Tests (Performance-sensitive changes)
           - suite: performance
             suite-name: "Performance"
             browser: chromium
-            test-pattern: "performance-load|gallery-browsing"
+            test-pattern: "performance-load|gallery-browsing|network-resilience"
             timeout-minutes: 15
             memory-limit: "4096"
             retry-count: 1
             required: false
-            condition: ${{ inputs.e2e_suite == 'performance' || needs.detect-changes.outputs.performance-triggers == 'true' }}
           
           # Accessibility Tests (Frontend changes)
           - suite: accessibility
@@ -524,18 +521,16 @@ jobs:
             memory-limit: "3072"
             retry-count: 2
             required: false
-            condition: ${{ inputs.e2e_suite == 'accessibility' || needs.detect-changes.outputs.frontend == 'true' }}
           
           # Security Tests (Security-sensitive changes)
           - suite: security
             suite-name: "Security"
             browser: chromium
-            test-pattern: "admin-security-enhanced|stripe-webhook-security|database-integrity"
+            test-pattern: "admin-security-enhanced|stripe-webhook-security|database-integrity|wallet-pass-apple|wallet-pass-google|email-transactional"
             timeout-minutes: 12
             memory-limit: "3072"
             retry-count: 2
             required: false
-            condition: ${{ inputs.e2e_suite == 'security' || needs.detect-changes.outputs.security-triggers == 'true' }}
 
     steps:
       - name: 📥 Checkout Code
