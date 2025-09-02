@@ -67,19 +67,19 @@ export default defineConfig({
   ],
 
   webServer: {
-    // Use Vercel dev server for production-like environment
-    // Server runs locally on port 3000
-    command: 'npm run dev',
+    // Use our optimized Vercel dev E2E script
+    // This avoids all recursion and configuration issues
+    command: 'node scripts/vercel-dev-e2e.js',
     url: 'http://localhost:3000/api/health/check',
     port: 3000,
     reuseExistingServer: !process.env.CI,
-    timeout: 60000, // 60 seconds for Vercel dev startup (increased for stability)
+    timeout: 60000, // 60 seconds for Vercel dev startup
     stdout: 'pipe',
     stderr: 'pipe',
     
     // Environment variables for the server
     env: {
-      NODE_ENV: 'development', // Use development mode to avoid test-specific behavior
+      NODE_ENV: 'development',
       PORT: '3000',
       // E2E testing configuration
       E2E_TEST_MODE: 'true',
@@ -87,9 +87,11 @@ export default defineConfig({
       // Pass through authentication variables
       ADMIN_SECRET: process.env.ADMIN_SECRET,
       ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
-      // Database configuration
+      // Database configuration (required)
       TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL,
       TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN,
+      // Skip database init to prevent hanging
+      SKIP_DATABASE_INIT: 'true',
     },
   },
   

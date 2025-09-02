@@ -2,7 +2,6 @@
   "buildCommand": "node vercel-build.cjs",
   "outputDirectory": "public",
   "framework": null,
-  "devCommand": "npm run start:local",
   "crons": [
     {
       "path": "/api/sheets/scheduled-sync",

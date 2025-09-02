@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Tickets - A Lo Cubano Boulder Fest</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/forms.css" />
+    <style>
+      .ticket-lookup {
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 30px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .ticket-list {
+        margin-top: 30px;
+      }
+
+      .ticket-card {
+        background: #f8f9fa;
+        border-left: 4px solid #667eea;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 5px;
+      }
+
+      .ticket-card h3 {
+        margin: 0 0 10px 0;
+        color: #333;
+      }
+
+      .ticket-details {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+        margin-top: 15px;
+      }
+
+      .ticket-details dt {
+        font-weight: bold;
+        color: #666;
+      }
+
+      .ticket-details dd {
+        margin: 0;
+        color: #333;
+      }
+
+      .ticket-id {
+        font-family: monospace;
+        background: #e9ecef;
+        padding: 5px 10px;
+        border-radius: 3px;
+        display: inline-block;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+
+      .status-valid {
+        background: #d4edda;
+        color: #155724;
+      }
+      .status-used {
+        background: #cce5ff;
+        color: #004085;
+      }
+      .status-cancelled {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .status-transferred {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .lookup-form {
+        display: flex;
+        gap: 10px;
+      }
+
+      .lookup-form input {
+        flex: 1;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 16px;
+      }
+
+      .lookup-form button {
+        padding: 12px 30px;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      .lookup-form button:hover {
+        background: #5a67d8;
+      }
+
+      .message {
+        padding: 15px;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+
+      .message.error {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .message.info {
+        background: #d1ecf1;
+        color: #0c5460;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+      }
+
+      .btn-small {
+        display: inline-block;
+        padding: 6px 12px;
+        margin: 0 5px 5px 0;
+        border: none;
+        border-radius: 4px;
+        background: #667eea;
+        color: white;
+        font-size: 12px;
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      .btn-small:hover {
+        background: #5a67d8;
+      }
+
+      .btn-small.btn-warning {
+        background: #ed8936;
+      }
+
+      .btn-small.btn-warning:hover {
+        background: #dd6b20;
+      }
+
+      .btn-small.btn-danger {
+        background: #e53e3e;
+      }
+
+      .btn-small.btn-danger:hover {
+        background: #c53030;
+      }
+
+      .ticket-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+
+      .modal-content {
+        background-color: white;
+        margin: 5% auto;
+        padding: 30px;
+        border-radius: 10px;
+        max-width: 600px;
+        width: 90%;
+        position: relative;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .close {
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        background: none;
+        border: none;
+      }
+
+      .close:hover {
+        color: #000;
+      }
+
+      .qr-code-display {
+        text-align: center;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin: 20px 0;
+      }
+
+      .qr-code-data {
+        word-break: break-all;
+        font-family: monospace;
+        font-size: 10px;
+        margin-top: 10px;
+        color: #666;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #333;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 20px;
+      }
+
+      .btn-primary {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      .btn-secondary {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="main-nav">
+      <a href="/" class="nav-logo">A Lo Cubano</a>
+    </nav>
+
+    <div class="ticket-lookup">
+      <h1>My Tickets</h1>
+      <p>
+        Enter your email address to view your tickets for A Lo Cubano Boulder
+        Fest.
+      </p>
+
+      <form class="lookup-form" id="ticketLookupForm">
+        <input
+          type="email"
+          id="emailInput"
+          placeholder="Enter your email address"
+          required
+        />
+        <button type="submit">Find Tickets</button>
+      </form>
+
+      <div id="messageContainer"></div>
+      <div id="ticketContainer"></div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="qrModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Ticket QR Code</h2>
+          <button class="close" onclick="closeModal('qrModal')">&times;</button>
+        </div>
+        <div class="qr-code-display">
+          <div id="qrCodeContainer">
+            <p>QR Code will appear here</p>
+          </div>
+          <div class="qr-code-data" id="qrCodeData"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-secondary" onclick="closeModal('qrModal')">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transfer Modal -->
+    <div id="transferModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Transfer Ticket</h2>
+          <button class="close" onclick="closeModal('transferModal')">
+            &times;
+          </button>
+        </div>
+        <form id="transferForm">
+          <div class="form-group">
+            <label for="transferEmail">New Attendee Email *</label>
+            <input type="email" id="transferEmail" required />
+          </div>
+          <div class="form-group">
+            <label for="transferFirstName">First Name *</label>
+            <input type="text" id="transferFirstName" required />
+          </div>
+          <div class="form-group">
+            <label for="transferLastName">Last Name</label>
+            <input type="text" id="transferLastName" />
+          </div>
+          <div class="form-group">
+            <label for="transferPhone">Phone</label>
+            <input type="tel" id="transferPhone" />
+          </div>
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn-secondary"
+              onclick="closeModal('transferModal')"
+            >
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary">Transfer Ticket</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Cancel Modal -->
+    <div id="cancelModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Cancel Ticket</h2>
+          <button class="close" onclick="closeModal('cancelModal')">
+            &times;
+          </button>
+        </div>
+        <p>Are you sure you want to cancel this ticket?</p>
+        <div class="form-group">
+          <label for="cancelReason">Cancellation Reason (optional)</label>
+          <input
+            type="text"
+            id="cancelReason"
+            placeholder="e.g., Unable to attend"
+          />
+        </div>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn-secondary"
+            onclick="closeModal('cancelModal')"
+          >
+            No, Keep Ticket
+          </button>
+          <button type="button" class="btn-primary" onclick="confirmCancel()">
+            Yes, Cancel Ticket
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Check for token or email in URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get("token");
+      const emailParam = urlParams.get("email");
+
+      if (token) {
+        // Use secure token-based access
+        lookupTicketsByToken(token);
+      } else if (emailParam) {
+        // Fallback to email-based lookup (legacy)
+        document.getElementById("emailInput").value = emailParam;
+        lookupTickets(emailParam);
+      }
+
+      // Handle form submission
+      document
+        .getElementById("ticketLookupForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const email = document.getElementById("emailInput").value;
+          await lookupTickets(email);
+        });
+
+      async function lookupTicketsByToken(token) {
+        const messageContainer = document.getElementById("messageContainer");
+        const ticketContainer = document.getElementById("ticketContainer");
+
+        // Show loading
+        ticketContainer.innerHTML =
+          '<div class="loading">Loading your tickets...</div>';
+        messageContainer.innerHTML = "";
+
+        try {
+          const response = await fetch(
+            `/api/tickets?token=${encodeURIComponent(token)}`,
+          );
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Failed to fetch tickets");
+          }
+
+          if (data.tickets.length === 0) {
+            messageContainer.innerHTML = `
+                        <div class="message info">
+                            No tickets found. Please contact support if you believe this is an error.
+                        </div>
+                    `;
+            ticketContainer.innerHTML = "";
+            return;
+          }
+
+          // Try to extract email from first ticket for session management
+          if (data.tickets && data.tickets.length > 0) {
+            currentUserEmail =
+              data.tickets[0].attendee_email || data.tickets[0].email;
+          }
+
+          // Display tickets with enhanced functionality
+          displayTickets(data.tickets, token);
+        } catch (error) {
+          console.error("Error fetching tickets:", error);
+          messageContainer.innerHTML = `
+                    <div class="message error">
+                        ${error.message || "Failed to load tickets. Please try again."}
+                    </div>
+                `;
+          ticketContainer.innerHTML = "";
+        }
+      }
+
+      async function lookupTickets(email) {
+        const messageContainer = document.getElementById("messageContainer");
+        const ticketContainer = document.getElementById("ticketContainer");
+
+        // Show loading
+        ticketContainer.innerHTML =
+          '<div class="loading">Looking up your tickets...</div>';
+        messageContainer.innerHTML = "";
+
+        try {
+          const response = await fetch(
+            `/api/tickets?email=${encodeURIComponent(email)}`,
+          );
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Failed to fetch tickets");
+          }
+
+          if (data.tickets.length === 0) {
+            messageContainer.innerHTML = `
+                        <div class="message info">
+                            No tickets found for ${email}. 
+                            Please check your email address or contact support.
+                        </div>
+                    `;
+            ticketContainer.innerHTML = "";
+            return;
+          }
+
+          // Store current user email for token operations
+          currentUserEmail = email;
+
+          // Display tickets (legacy mode without enhanced features)
+          displayTickets(data.tickets);
+        } catch (error) {
+          console.error("Error fetching tickets:", error);
+          messageContainer.innerHTML = `
+                    <div class="message error">
+                        ${error.message || "Failed to load tickets. Please try again."}
+                    </div>
+                `;
+          ticketContainer.innerHTML = "";
+        }
+      }
+
+      function displayTickets(tickets, accessToken = null) {
+        const ticketContainer = document.getElementById("ticketContainer");
+
+        const ticketsHtml = tickets
+          .map((ticket) => {
+            const actionsHtml = accessToken
+              ? `
+                    <div class="ticket-actions" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                        <button class="btn-small" onclick="generateQRCode('${ticket.ticket_id}', '${accessToken}')">Generate QR Code</button>
+                        <button class="btn-small btn-warning" onclick="initiateTransfer('${ticket.ticket_id}')">Transfer</button>
+                        <button class="btn-small btn-danger" onclick="initiateCancel('${ticket.ticket_id}')">Cancel</button>
+                    </div>
+                `
+              : "";
+
+            return `
+                    <div class="ticket-card" id="ticket-${ticket.ticket_id}">
+                        <h3>${ticket.formatted_type || formatTicketType(ticket.ticket_type)}</h3>
+                        <span class="status-badge status-${ticket.status}">${ticket.status}</span>
+                        
+                        <dl class="ticket-details">
+                            <dt>Ticket ID:</dt>
+                            <dd><span class="ticket-id">${ticket.ticket_id}</span></dd>
+                            
+                            <dt>Attendee:</dt>
+                            <dd>${ticket.attendee_first_name || ""} ${ticket.attendee_last_name || ""}</dd>
+                            
+                            <dt>Event:</dt>
+                            <dd>A Lo Cubano Boulder Fest 2026</dd>
+                            
+                            <dt>Date:</dt>
+                            <dd>${ticket.formatted_date || formatDate(ticket.event_date)}</dd>
+                            
+                            <dt>Order:</dt>
+                            <dd>${ticket.order_number || "N/A"}</dd>
+                        </dl>
+                        
+                        <!-- Add wallet buttons -->
+                        <div style="margin-top: 20px; text-align: center;">
+                            <a href="/api/tickets/apple-wallet/${ticket.ticket_id}" 
+                               class="wallet-button apple-wallet"
+                               style="display: inline-block; margin: 5px; padding: 10px 20px; 
+                                      background: #000; color: white; text-decoration: none; 
+                                      border-radius: 5px;">
+                              📱 Apple Wallet
+                            </a>
+                            <a href="/api/tickets/google-wallet/${ticket.ticket_id}" 
+                               class="wallet-button google-wallet"
+                               style="display: inline-block; margin: 5px; padding: 10px 20px; 
+                                      background: #4285f4; color: white; text-decoration: none; 
+                                      border-radius: 5px;">
+                              📱 Google Wallet
+                            </a>
+                        </div>
+                        
+                        ${actionsHtml}
+                    </div>
+                `;
+          })
+          .join("");
+
+        const headerText = accessToken
+          ? `Your Tickets (${tickets.length}) - Secure Access`
+          : `Your Tickets (${tickets.length})`;
+
+        ticketContainer.innerHTML = `
+                <div class="ticket-list">
+                    <h2>${headerText}</h2>
+                    ${ticketsHtml}
+                </div>
+            `;
+      }
+
+      function formatTicketType(type) {
+        const typeMap = {
+          "vip-pass": "VIP Pass",
+          "weekend-pass": "Weekend Pass",
+          "friday-pass": "Friday Pass",
+          "saturday-pass": "Saturday Pass",
+          "sunday-pass": "Sunday Pass",
+          "workshop-beginner": "Beginner Workshop",
+          "workshop-intermediate": "Intermediate Workshop",
+          "workshop-advanced": "Advanced Workshop",
+          workshop: "Workshop",
+          "social-dance": "Social Dance",
+          "general-admission": "General Admission",
+        };
+        return typeMap[type] || type;
+      }
+
+      // Modal management
+      let currentTicketId = null;
+      let currentAccessToken = null;
+      let currentUserEmail = null;
+
+      function getCurrentUserEmail() {
+        // Try to get from URL parameter first
+        const urlParams = new URLSearchParams(window.location.search);
+        const emailFromUrl = urlParams.get("email");
+        if (emailFromUrl) return emailFromUrl;
+
+        // Try to get from the email input field
+        const emailInput = document.getElementById("emailInput");
+        if (emailInput && emailInput.value) return emailInput.value;
+
+        // If we've stored it globally
+        if (currentUserEmail) return currentUserEmail;
+
+        return null;
+      }
+
+      function showError(message) {
+        const messageContainer = document.getElementById("messageContainer");
+        messageContainer.innerHTML = `
+                <div class="message error">
+                    ${message}
+                </div>
+            `;
+        setTimeout(() => {
+          messageContainer.innerHTML = "";
+        }, 5000);
+      }
+
+      function showSuccess(message) {
+        const messageContainer = document.getElementById("messageContainer");
+        messageContainer.innerHTML = `
+                <div class="message" style="background: #d4edda; color: #155724;">
+                    ${message}
+                </div>
+            `;
+        setTimeout(() => {
+          messageContainer.innerHTML = "";
+        }, 5000);
+      }
+
+      function openModal(modalId) {
+        document.getElementById(modalId).style.display = "block";
+      }
+
+      function closeModal(modalId) {
+        document.getElementById(modalId).style.display = "none";
+        if (modalId === "transferModal") {
+          document.getElementById("transferForm").reset();
+        }
+        if (modalId === "cancelModal") {
+          document.getElementById("cancelReason").value = "";
+        }
+      }
+
+      // Close modal when clicking outside
+      window.onclick = function (event) {
+        const modals = document.querySelectorAll(".modal");
+        modals.forEach((modal) => {
+          if (event.target === modal) {
+            modal.style.display = "none";
+          }
+        });
+      };
+
+      // Enhanced ticket management functions
+      async function generateQRCode(ticketId, accessToken) {
+        try {
+          const response = await fetch("/api/tickets/qr-code", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ticketId, accessToken }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error);
+          }
+
+          // Display QR code in modal
+          document.getElementById("qrCodeContainer").innerHTML = `
+                    <h3>Ticket ${ticketId}</h3>
+                    <p>Show this QR code at the event entrance</p>
+                    <div style="background: white; padding: 20px; border-radius: 8px; border: 2px solid #ddd;">
+                        <p style="font-size: 18px; margin: 0;">📱 QR Code Generated</p>
+                        <p style="font-size: 14px; color: #666; margin: 5px 0 0 0;">Ready for scanning</p>
+                    </div>
+                `;
+          document.getElementById("qrCodeData").textContent = data.qrData;
+          openModal("qrModal");
+        } catch (error) {
+          showError(`Failed to generate QR code: ${error.message}`);
+        }
+      }
+
+      function initiateTransfer(ticketId) {
+        currentTicketId = ticketId;
+        openModal("transferModal");
+      }
+
+      function initiateCancel(ticketId) {
+        currentTicketId = ticketId;
+        openModal("cancelModal");
+      }
+
+      function confirmCancel() {
+        const reason =
+          document.getElementById("cancelReason").value || "Customer request";
+        performTicketCancel(currentTicketId, reason);
+        closeModal("cancelModal");
+      }
+
+      // Handle transfer form submission
+      document
+        .getElementById("transferForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          const newAttendee = {
+            email: document.getElementById("transferEmail").value,
+            firstName: document.getElementById("transferFirstName").value,
+            lastName: document.getElementById("transferLastName").value,
+            phone: document.getElementById("transferPhone").value,
+          };
+          performTicketTransfer(currentTicketId, newAttendee);
+          closeModal("transferModal");
+        });
+
+      async function performTicketTransfer(ticketId, newAttendee) {
+        try {
+          // Get current user email from the lookup
+          const userEmail = getCurrentUserEmail();
+          if (!userEmail) {
+            throw new Error(
+              "Unable to determine current user. Please refresh the page and try again.",
+            );
+          }
+
+          // First get action token
+          const tokenResponse = await fetch("/api/tickets/action-token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "transfer",
+              targetId: ticketId,
+              email: userEmail,
+            }),
+          });
+
+          const tokenData = await tokenResponse.json();
+          if (!tokenResponse.ok) throw new Error(tokenData.error);
+
+          // Perform transfer
+          const transferResponse = await fetch("/api/tickets/transfer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ticketId,
+              actionToken: tokenData.actionToken,
+              newAttendee,
+            }),
+          });
+
+          const transferData = await transferResponse.json();
+          if (!transferResponse.ok) throw new Error(transferData.error);
+
+          showSuccess("Ticket transferred successfully!");
+          setTimeout(() => location.reload(), 2000);
+        } catch (error) {
+          showError(`Transfer failed: ${error.message}`);
+        }
+      }
+
+      async function performTicketCancel(ticketId, reason) {
+        try {
+          // Get current user email from the lookup
+          const userEmail = getCurrentUserEmail();
+          if (!userEmail) {
+            throw new Error(
+              "Unable to determine current user. Please refresh the page and try again.",
+            );
+          }
+
+          // First get action token
+          const tokenResponse = await fetch("/api/tickets/action-token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "cancel",
+              targetId: ticketId,
+              email: userEmail,
+            }),
+          });
+
+          const tokenData = await tokenResponse.json();
+          if (!tokenResponse.ok) throw new Error(tokenData.error);
+
+          // Perform cancellation
+          const cancelResponse = await fetch("/api/tickets/cancel", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ticketId,
+              actionToken: tokenData.actionToken,
+              reason,
+            }),
+          });
+
+          const cancelData = await cancelResponse.json();
+          if (!cancelResponse.ok) throw new Error(cancelData.error);
+
+          showSuccess("Ticket cancelled successfully!");
+          setTimeout(() => location.reload(), 2000);
+        } catch (error) {
+          showError(`Cancellation failed: ${error.message}`);
+        }
+      }
+
+      function formatDate(dateStr) {
+        if (!dateStr) return "May 15-17, 2026";
+        const date = new Date(dateStr + "T00:00:00");
+        return date.toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      }
+    </script>
+  </body>
+</html>
