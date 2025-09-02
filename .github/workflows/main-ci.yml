@@ -611,11 +611,11 @@ jobs:
           TEST_ADMIN_PASSWORD=test-password-123
           ADMIN_SECRET=${{ secrets.ADMIN_SECRET || 'fallback-test-secret-minimum-32-chars' }}
           # Advanced test environment variables
-          BREVO_API_KEY=${{ secrets.BREVO_API_KEY_TEST || '' }}
-          STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY_TEST || '' }}
-          STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET_TEST || '' }}
-          APPLE_PASS_KEY=${{ secrets.APPLE_PASS_KEY_TEST || '' }}
-          GOOGLE_WALLET_ISSUER_ID=${{ secrets.GOOGLE_WALLET_ISSUER_ID_TEST || '' }}
+          BREVO_API_KEY=${{ secrets.BREVO_API_KEY || '' }}
+          STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY || '' }}
+          STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET || '' }}
+          APPLE_PASS_KEY=${{ secrets.APPLE_PASS_KEY || '' }}
+          GOOGLE_WALLET_ISSUER_ID=${{ secrets.GOOGLE_WALLET_ISSUER_ID || '' }}
           TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN }}
           # Vercel configuration
@@ -700,6 +700,16 @@ jobs:
           # Test credentials for all suites
           TEST_ADMIN_PASSWORD: test-password-123
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET || 'fallback-test-secret-minimum-32-chars' }}
+          # API keys for advanced test scenarios
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY || '' }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || '' }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET || '' }}
+          APPLE_PASS_KEY: ${{ secrets.APPLE_PASS_KEY || '' }}
+          GOOGLE_WALLET_ISSUER_ID: ${{ secrets.GOOGLE_WALLET_ISSUER_ID || '' }}
+          # Vercel configuration
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN || '' }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID || '' }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID || '' }}
 
       - name: 📤 Upload E2E Results
         if: always()
