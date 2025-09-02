@@ -404,15 +404,16 @@ jobs:
         run: |
           echo "🔍 Validating database migrations..."
           
-          # Verify migration status
-          npm run migrate:status
+          # Verify migration status with proper database file
+          NODE_ENV=test TURSO_DATABASE_URL="file:./data/integration-test.db" npm run migrate:status
           
-          # Test migration verification
-          npm run migrate:verify
+          # Test migration verification with proper database file
+          NODE_ENV=test TURSO_DATABASE_URL="file:./data/integration-test.db" npm run migrate:verify
           
           echo "✅ Migration validation completed"
         env:
           DATABASE_URL: "file:./data/integration-test.db"
+          TURSO_DATABASE_URL: "file:./data/integration-test.db"
           NODE_ENV: test
 
       - name: 🧪 Basic API Validation
