@@ -303,12 +303,12 @@ jobs:
         env:
           NODE_ENV: test
           CI: true
-          TURSO_DATABASE_URL: "file:./data/ci-test.db"
+          DATABASE_URL: "file:./data/ci-test.db"
         run: |
           echo "🗄️ Setting up SQLite test database..."
           mkdir -p data
           # Initialize test database with test environment and correct path
-          NODE_ENV=test TURSO_DATABASE_URL="file:./data/ci-test.db" npm run migrate:up
+          NODE_ENV=test DATABASE_URL="file:./data/ci-test.db" npm run migrate:up
           echo "✅ Test database ready at ./data/ci-test.db"
 
       - name: 🧪 Run Unit Tests (Simple)
@@ -330,7 +330,6 @@ jobs:
         env:
           NODE_ENV: test
           DATABASE_URL: "file:./data/ci-test.db"
-          TURSO_DATABASE_URL: "file:./data/ci-test.db"
           TEST_TIMEOUT: 30000
           # Memory optimization for tests
           NODE_OPTIONS: "--max-old-space-size=2048"
@@ -342,7 +341,6 @@ jobs:
         env:
           NODE_ENV: test
           DATABASE_URL: "file:./data/ci-test.db"
-          TURSO_DATABASE_URL: "file:./data/ci-test.db"
           NODE_OPTIONS: "--max-old-space-size=2048"
 
       - name: 📤 Upload Test Artifacts
@@ -398,11 +396,11 @@ jobs:
         env:
           NODE_ENV: test
           CI: true
-          TURSO_DATABASE_URL: "file:./data/integration-test.db"
+          DATABASE_URL: "file:./data/integration-test.db"
         run: |
           mkdir -p data
           echo "🗄️ Setting up simple test database..."
-          NODE_ENV=test TURSO_DATABASE_URL="file:./data/integration-test.db" npm run migrate:up
+          NODE_ENV=test DATABASE_URL="file:./data/integration-test.db" npm run migrate:up
           echo "✅ Database ready at ./data/integration-test.db"
 
       - name: 🔍 Database Migration Validation
@@ -410,15 +408,14 @@ jobs:
           echo "🔍 Validating database migrations..."
           
           # Verify migration status with proper database file
-          NODE_ENV=test TURSO_DATABASE_URL="file:./data/integration-test.db" npm run migrate:status
+          NODE_ENV=test DATABASE_URL="file:./data/integration-test.db" npm run migrate:status
           
           # Test migration verification with proper database file
-          NODE_ENV=test TURSO_DATABASE_URL="file:./data/integration-test.db" npm run migrate:verify
+          NODE_ENV=test DATABASE_URL="file:./data/integration-test.db" npm run migrate:verify
           
           echo "✅ Migration validation completed"
         env:
           DATABASE_URL: "file:./data/integration-test.db"
-          TURSO_DATABASE_URL: "file:./data/integration-test.db"
           NODE_ENV: test
 
       - name: 🧪 Basic API Validation

@@ -110,78 +110,107 @@ class DatabaseService {
    * Perform the actual database initialization
    */
   async _performInitialization() {
-    let databaseUrl = process.env.TURSO_DATABASE_URL;
-    const authToken = process.env.TURSO_AUTH_TOKEN;
-
-    // Check for empty string as well as undefined first (before any transformation)
-    // In strict test mode, be even more strict about environment validation
-    const strictMode = process.env.DATABASE_TEST_STRICT_MODE === "true";
-    
-    // Detect environment context
+    // Detect environment context first
     const isVercelProduction = process.env.VERCEL === "1" && process.env.VERCEL_ENV === "production";
     const isVercelPreview = process.env.VERCEL === "1" && process.env.VERCEL_ENV === "preview";
     const isVercel = process.env.VERCEL === "1";
     const isDevelopment = process.env.NODE_ENV === "development" || process.env.VERCEL_DEV_STARTUP === "true";
     const isTest = process.env.NODE_ENV === "test" || process.env.TEST_TYPE === "integration";
     const isCI = process.env.CI === "true";
+    
+    // Determine if this is specifically an E2E test context
+    const isE2ETest = process.env.E2E_TEST_MODE === "true" || 
+                      process.env.PLAYWRIGHT_BROWSER || 
+                      process.env.VERCEL_DEV_STARTUP === "true";
 
+    let databaseUrl;
+    const authToken = process.env.TURSO_AUTH_TOKEN;
 
-    // Environment-specific database URL handling
-    if (!databaseUrl || databaseUrl.trim() === "") {
-      if (isTest) {
-        // For E2E tests, require Turso - no fallback allowed
-        const error = new Error("TURSO_DATABASE_URL environment variable is required for E2E tests - no SQLite fallback allowed");
+    // Database URL selection logic
+    if (isE2ETest) {
+      // E2E tests MUST use Turso
+      databaseUrl = process.env.TURSO_DATABASE_URL;
+      
+      if (!databaseUrl || databaseUrl.trim() === "") {
+        const error = new Error("TURSO_DATABASE_URL environment variable is required for E2E tests");
         error.code = "DB_CONFIG_ERROR";
         error.context = "e2e-tests";
         throw error;
-      } else if (isDevelopment) {
-        // For development, fall back to SQLite if Turso not configured
-        const path = await import("path");
-        const fs = await import("fs");
-        
-        // Create data directory if it doesn't exist
-        const dataDir = path.join(process.cwd(), "data");
-        if (!fs.existsSync(dataDir)) {
-          fs.mkdirSync(dataDir, { recursive: true });
-        }
-        
-        databaseUrl = `file:${path.join(dataDir, "development.db")}`;
-        logger.log(`⚠️  TURSO_DATABASE_URL not set, using local SQLite: ${databaseUrl}`);
-      } else if (isVercelProduction) {
-        // In Vercel production, this is a critical configuration error
-        const error = new Error("TURSO_DATABASE_URL environment variable is required for production deployment");
-        error.code = "DB_CONFIG_ERROR";
-        error.context = "vercel-production";
-        throw error;
-      } else if (isVercelPreview || isVercel) {
-        // For Vercel preview deployments, require Turso
-        const error = new Error("TURSO_DATABASE_URL environment variable is required for Vercel deployments");
-        error.code = "DB_CONFIG_ERROR";
-        error.context = "vercel-preview";
-        throw error;
-      } else if (strictMode) {
-        const error = new Error("TURSO_DATABASE_URL environment variable is required in strict mode");
-        error.code = "DB_CONFIG_ERROR";
-        error.context = "strict-mode";
-        throw error;
-      } else {
-        // Generic production environment - still require Turso
-        const error = new Error("TURSO_DATABASE_URL environment variable is required for production");
-        error.code = "DB_CONFIG_ERROR";
-        error.context = "generic-production";
-        throw error;
       }
-    }
-
-    // Test environment validation - E2E tests must use Turso
-    if (isTest) {
+      
+      // Validate that E2E tests use actual Turso URLs
       if (!databaseUrl.startsWith("libsql://") && !databaseUrl.startsWith("https://")) {
         const error = new Error("E2E tests must use Turso database - local file or memory databases not allowed");
         error.code = "DB_CONFIG_ERROR";
         error.context = "e2e-tests-turso-required";
         throw error;
       }
+      
       logger.log(`✅ Using Turso database for E2E tests: ${databaseUrl.substring(0, 30)}...`);
+      
+    } else if (isTest) {
+      // Unit and Integration tests can use DATABASE_URL (SQLite files)
+      databaseUrl = process.env.DATABASE_URL || process.env.TURSO_DATABASE_URL;
+      
+      if (!databaseUrl || databaseUrl.trim() === "") {
+        const error = new Error("DATABASE_URL environment variable is required for unit/integration tests");
+        error.code = "DB_CONFIG_ERROR";
+        error.context = "unit-integration-tests";
+        throw error;
+      }
+      
+      logger.log(`✅ Using database for unit/integration tests: ${databaseUrl}`);
+      
+    } else if (isDevelopment) {
+      // Development: Try Turso first, fallback to SQLite
+      databaseUrl = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL;
+      
+      if (!databaseUrl || databaseUrl.trim() === "") {
+        // Fall back to SQLite for development
+        const path = await import("path");
+        const fs = await import("fs");
+        
+        const dataDir = path.join(process.cwd(), "data");
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
+        }
+        
+        databaseUrl = `file:${path.join(dataDir, "development.db")}`;
+        logger.log(`⚠️  No database URL set, using local SQLite: ${databaseUrl}`);
+      }
+      
+    } else if (isVercelProduction) {
+      // Production: Require Turso
+      databaseUrl = process.env.TURSO_DATABASE_URL;
+      
+      if (!databaseUrl || databaseUrl.trim() === "") {
+        const error = new Error("TURSO_DATABASE_URL environment variable is required for production deployment");
+        error.code = "DB_CONFIG_ERROR";
+        error.context = "vercel-production";
+        throw error;
+      }
+      
+    } else if (isVercelPreview || isVercel) {
+      // Vercel deployments: Require Turso
+      databaseUrl = process.env.TURSO_DATABASE_URL;
+      
+      if (!databaseUrl || databaseUrl.trim() === "") {
+        const error = new Error("TURSO_DATABASE_URL environment variable is required for Vercel deployments");
+        error.code = "DB_CONFIG_ERROR";
+        error.context = "vercel-preview";
+        throw error;
+      }
+      
+    } else {
+      // Generic production: Require Turso
+      databaseUrl = process.env.TURSO_DATABASE_URL;
+      
+      if (!databaseUrl || databaseUrl.trim() === "") {
+        const error = new Error("TURSO_DATABASE_URL environment variable is required for production");
+        error.code = "DB_CONFIG_ERROR";
+        error.context = "generic-production";
+        throw error;
+      }
     }
 
     const config = {
