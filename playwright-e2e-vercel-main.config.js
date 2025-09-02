@@ -98,7 +98,6 @@ export default defineConfig({
     // This avoids all recursion and configuration issues
     command: `node scripts/vercel-dev-e2e.js --port ${testPort}`,
     url: `${baseURL}/api/health/check`,
-    port: testPort,
     reuseExistingServer: false, // Always false for CI isolation and test safety
     timeout: 60000, // 60 seconds for Vercel dev startup
     stdout: 'pipe',
