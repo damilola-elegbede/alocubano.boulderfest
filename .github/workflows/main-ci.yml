@@ -600,6 +600,8 @@ jobs:
           TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN_CI || '' }}
           # Vercel configuration
           VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN || '' }}
+          VERCEL_ORG_ID=${{ secrets.VERCEL_ORG_ID || '' }}
+          VERCEL_PROJECT_ID=${{ secrets.VERCEL_PROJECT_ID || '' }}
           EOF
           
           echo "✅ E2E environment configured for ${{ matrix.suite-name }}"

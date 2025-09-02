@@ -22,6 +22,8 @@ env:
   NODE_OPTIONS: "--max-old-space-size=1024"
   # Vercel configuration for production-like testing
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN || '' }}
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID || '' }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID || '' }}
 
 jobs:
   # Job 1: Pre-deployment Quality Checks (fast feedback)
