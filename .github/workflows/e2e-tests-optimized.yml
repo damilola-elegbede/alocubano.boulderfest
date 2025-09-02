@@ -100,7 +100,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      should_run_e2e: ${{ steps.changes.outputs.should_run_e2e }}
+      should_run_e2e: ${{ steps.planning.outputs.should_run_e2e }}
       test_suite: ${{ steps.planning.outputs.test_suite }}
       test_pattern: ${{ steps.planning.outputs.test_pattern }}
       browser_matrix: ${{ steps.planning.outputs.browser_matrix }}
