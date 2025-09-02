@@ -614,8 +614,14 @@ jobs:
           BREVO_API_KEY=${{ secrets.BREVO_API_KEY || '' }}
           STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY || '' }}
           STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET || '' }}
+          # Apple Wallet configuration
+          APPLE_PASS_TYPE_ID=${{ secrets.APPLE_PASS_TYPE_ID || '' }}
+          APPLE_PASS_CERT=${{ secrets.APPLE_PASS_CERT || '' }}
           APPLE_PASS_KEY=${{ secrets.APPLE_PASS_KEY || '' }}
+          APPLE_PASS_PASSWORD=${{ secrets.APPLE_PASS_PASSWORD || '' }}
+          # Google Wallet configuration  
           GOOGLE_WALLET_ISSUER_ID=${{ secrets.GOOGLE_WALLET_ISSUER_ID || '' }}
+          GOOGLE_WALLET_SERVICE_ACCOUNT=${{ secrets.GOOGLE_WALLET_SERVICE_ACCOUNT || '' }}
           TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN }}
           # Vercel configuration
@@ -704,8 +710,14 @@ jobs:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY || '' }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || '' }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET || '' }}
+          # Apple Wallet configuration
+          APPLE_PASS_TYPE_ID: ${{ secrets.APPLE_PASS_TYPE_ID || '' }}
+          APPLE_PASS_CERT: ${{ secrets.APPLE_PASS_CERT || '' }}
           APPLE_PASS_KEY: ${{ secrets.APPLE_PASS_KEY || '' }}
+          APPLE_PASS_PASSWORD: ${{ secrets.APPLE_PASS_PASSWORD || '' }}
+          # Google Wallet configuration
           GOOGLE_WALLET_ISSUER_ID: ${{ secrets.GOOGLE_WALLET_ISSUER_ID || '' }}
+          GOOGLE_WALLET_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_WALLET_SERVICE_ACCOUNT || '' }}
           # Vercel configuration
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN || '' }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID || '' }}
