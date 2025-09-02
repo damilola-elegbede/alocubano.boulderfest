@@ -19,12 +19,19 @@ console.log(`📡 Port: ${port}`);
 console.log('');
 
 // Direct spawn of Vercel dev with minimal configuration
-const vercelProcess = spawn('npx', [
+const args = [
   'vercel', 
   'dev',
   '--yes',           // Skip all prompts
   '--listen', port.toString()
-], {
+];
+
+// Add token if available (for CI authentication)
+if (process.env.VERCEL_TOKEN) {
+  args.push('--token', process.env.VERCEL_TOKEN);
+}
+
+const vercelProcess = spawn('npx', args, {
   cwd: projectRoot,
   stdio: 'inherit',  // Direct output to console
   env: {
