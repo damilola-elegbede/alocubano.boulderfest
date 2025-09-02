@@ -83,6 +83,7 @@ jobs:
       frontend: ${{ steps.changes.outputs.frontend }}
       backend: ${{ steps.changes.outputs.backend }}
       tests: ${{ steps.changes.outputs.tests }}
+      tests-e2e: ${{ steps.changes.outputs.tests-e2e }}
       docs-only: ${{ steps.changes.outputs.docs-only }}
       critical: ${{ steps.changes.outputs.critical }}
       ci-triggers: ${{ steps.changes.outputs.ci-triggers }}
@@ -90,8 +91,8 @@ jobs:
       e2e-triggers: ${{ steps.changes.outputs.e2e-triggers }}
       deployment-triggers: ${{ steps.changes.outputs.deployment-triggers }}
       accessibility-changes: ${{ steps.changes.outputs.frontend }}
-      performance-changes: ${{ steps.changes.outputs.performance-triggers }}
-      security-changes: ${{ steps.changes.outputs.security-triggers }}
+      performance-triggers: ${{ steps.changes.outputs.performance-triggers }}
+      security-triggers: ${{ steps.changes.outputs.security-triggers }}
       
     steps:
       - name: 📥 Checkout Code
