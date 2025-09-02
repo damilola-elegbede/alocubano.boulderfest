@@ -22,7 +22,7 @@ test.describe('Basic Navigation', () => {
     
     await ticketsLink.first().click();
     await expect(page).toHaveURL(/tickets/);
-    await expect(page.locator('h1, h2')).toContainText(/tickets/i);
+    await expect(page.locator('h1')).toContainText(/tickets/i);
   });
 
   test('should navigate to about page', async ({ page }) => {
@@ -62,15 +62,30 @@ test.describe('Basic Navigation', () => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
     
-    // Look for mobile menu toggle
-    const mobileToggle = page.locator('.menu-toggle, .hamburger, .mobile-menu-toggle, button[aria-label*="menu"]');
+    // Look for the actual mobile menu toggle button
+    const menuToggle = page.locator('.menu-toggle');
+    await expect(menuToggle).toBeVisible();
     
-    if (await mobileToggle.count() > 0) {
-      await mobileToggle.first().click();
-      
-      // Menu should be visible
-      const mobileMenu = page.locator('.mobile-menu, .nav-mobile, .slide-menu, nav[aria-expanded="true"]');
-      await expect(mobileMenu.first()).toBeVisible();
+    // Click the menu toggle to open the mobile menu
+    await menuToggle.click();
+    
+    // Wait for the navigation list to become visible with the 'is-open' class
+    const navList = page.locator('.nav-list.is-open');
+    await expect(navList).toBeVisible({ timeout: 5000 });
+    
+    // Verify the toggle has the active state
+    await expect(menuToggle).toHaveClass(/is-active/);
+    
+    // Verify ARIA expanded state
+    await expect(menuToggle).toHaveAttribute('aria-expanded', 'true');
+    
+    // Test that clicking a navigation link closes the menu
+    const homeLink = navList.locator('a[href="/home"]');
+    if (await homeLink.count() > 0) {
+      await homeLink.click();
+      // Menu should close after clicking a navigation link
+      await expect(navList).not.toHaveClass(/is-open/);
+      await expect(menuToggle).not.toHaveClass(/is-active/);
     }
   });
 
@@ -105,7 +120,7 @@ test.describe('Basic Navigation', () => {
     const homeLink = page.locator('a[href="/"], a[href*="index"], .logo a, nav a:has-text("Home")');
     if (await homeLink.count() > 0) {
       await homeLink.first().click();
-      await expect(page).toHaveURL(/^\//);
+      await expect(page).toHaveURL(/^\/(home)?$/);
     }
   });
 
