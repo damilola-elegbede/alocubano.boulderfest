@@ -299,11 +299,14 @@ jobs:
           echo "✅ SQLite test database prepared"
 
       - name: 🗄️ Setup Test Database
+        env:
+          NODE_ENV: test
+          CI: true
         run: |
           echo "🗄️ Setting up SQLite test database..."
           mkdir -p data
-          # Initialize test database
-          npm run migrate:up
+          # Initialize test database with test environment
+          NODE_ENV=test npm run migrate:up
           echo "✅ Test database ready"
 
       - name: 🧪 Run Unit Tests (Simple)
@@ -388,10 +391,13 @@ jobs:
         run: npm ci
 
       - name: 🗄️ Setup Test Database
+        env:
+          NODE_ENV: test
+          CI: true
         run: |
           mkdir -p data
           echo "🗄️ Setting up simple test database..."
-          npm run migrate:up
+          NODE_ENV=test npm run migrate:up
           echo "✅ Database ready"
 
       - name: 🔍 Database Migration Validation
