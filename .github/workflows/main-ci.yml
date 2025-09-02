@@ -607,6 +607,10 @@ jobs:
           echo "✅ E2E environment configured for ${{ matrix.suite-name }}"
 
       - name: 🚀 Start Test Server (Vercel Dev)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           echo "🚀 Starting Vercel dev server for E2E tests..."
           

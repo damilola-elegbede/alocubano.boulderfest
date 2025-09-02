@@ -98,6 +98,10 @@ jobs:
 
       - name: 🚀 Start Vercel Dev Server
         id: server
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           echo "Starting Vercel dev server on port $CI_PORT..."
 

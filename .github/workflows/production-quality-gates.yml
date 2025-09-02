@@ -59,6 +59,10 @@ jobs:
         run: npm run lint
 
       - name: 🚀 Start Vercel Dev Server & Warm Up
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           echo "🚀 Starting Vercel dev server on port 3000..."
           # Using simplified CI launcher to bypass complex wrapper logic
