@@ -12,7 +12,7 @@ test.describe('Cart Functionality', () => {
 
   test('should display floating cart widget', async ({ page }) => {
     // Cart should be visible on tickets page
-    const cart = page.locator('.floating-cart, .cart-widget, #cart');
+    const cart = page.locator('.floating-cart-container, .floating-cart, .cart-widget, #cart');
     await expect(cart).toBeVisible();
   });
 
@@ -40,7 +40,7 @@ test.describe('Cart Functionality', () => {
       await saturdayButton.click();
       
       // Verify cart updated
-      const cartIndicator = page.locator('.cart-count, .cart-badge, .floating-cart');
+      const cartIndicator = page.locator('.cart-count, .cart-badge, .floating-cart-container, .floating-cart');
       await expect(cartIndicator).toBeVisible();
     }
   });
@@ -52,7 +52,7 @@ test.describe('Cart Functionality', () => {
       await sundayButton.click();
       
       // Verify cart updated
-      const cartIndicator = page.locator('.cart-count, .cart-badge, .floating-cart');
+      const cartIndicator = page.locator('.cart-count, .cart-badge, .floating-cart-container, .floating-cart');
       await expect(cartIndicator).toBeVisible();
     }
   });
@@ -89,7 +89,7 @@ test.describe('Cart Functionality', () => {
     }
     
     // Click on cart to open details
-    const cart = page.locator('.floating-cart, .cart-widget, .cart-button');
+    const cart = page.locator('.floating-cart-container, .floating-cart, .cart-widget, .cart-button');
     await cart.click();
     
     // Cart details should be visible
@@ -128,7 +128,7 @@ test.describe('Cart Functionality', () => {
       await page.waitForTimeout(500);
       
       // Click cart to open details
-      const cart = page.locator('.floating-cart');
+      const cart = page.locator('.floating-cart-container, .floating-cart');
       await cart.click();
       
       // Look for remove button

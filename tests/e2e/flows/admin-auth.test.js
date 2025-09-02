@@ -40,15 +40,9 @@ test.describe('Admin Authentication', () => {
     await page.fill('input[name="username"]', adminCredentials.email);
     await page.fill('input[type="password"]', adminCredentials.password);
     
-    // Wait for navigation to complete
-    const navigationPromise = page.waitForNavigation();
+    // Click submit and wait for URL change
     await page.click('button[type="submit"]');
-    
-    try {
-      await navigationPromise;
-    } catch (error) {
-      console.log('Navigation did not occur within timeout');
-    }
+    await page.waitForURL('**/admin/dashboard.html', { timeout: 10000 });
     
     // Should redirect to dashboard
     await expect(page).toHaveURL(/admin\/dashboard/);

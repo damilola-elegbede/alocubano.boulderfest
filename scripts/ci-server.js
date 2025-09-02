@@ -183,6 +183,31 @@ app.use((req, res, next) => {
   next();
 });
 
+// URL rewrite middleware to match Vercel rewrites
+app.use((req, res, next) => {
+  // Map clean URLs to actual HTML files
+  const rewrites = {
+    '/home': '/pages/home.html',
+    '/tickets': '/pages/tickets.html',
+    '/about': '/pages/about.html',
+    '/artists': '/pages/artists.html',
+    '/schedule': '/pages/schedule.html',
+    '/gallery': '/pages/gallery.html',
+    '/donations': '/pages/donations.html',
+    '/admin/login': '/pages/admin/login.html',
+    '/admin/dashboard': '/pages/admin/dashboard.html',
+    '/admin/checkin': '/pages/admin/checkin.html',
+    '/404': '/pages/404.html'
+  };
+
+  // Check if the URL needs rewriting
+  if (rewrites[req.path]) {
+    req.url = rewrites[req.path];
+  }
+  
+  next();
+});
+
 
 // Request classifier for context precedence
 class RequestClassifier {
@@ -1303,6 +1328,40 @@ app.get('/api/tickets/', (req, res) => {
   res.status(400).json({ 
     error: 'ticket ID required' 
   });
+});
+
+// URL rewrites middleware (before static file serving)
+app.use((req, res, next) => {
+  // Skip rewriting for API routes
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  
+  // URL rewrites based on vercel.json configuration
+  const rewrites = {
+    '/home': '/home.html',
+    '/tickets': '/tickets.html', 
+    '/about': '/about.html',
+    '/artists': '/artists.html',
+    '/schedule': '/schedule.html',
+    '/gallery': '/gallery.html',
+    '/donations': '/donations.html',
+    '/contact': '/contact.html',
+    '/success': '/success.html',
+    '/failure': '/failure.html',
+    '/my-tickets': '/my-tickets.html',
+    '/checkout-success': '/checkout-success.html',
+    '/checkout-cancel': '/checkout-cancel.html',
+    '/admin/checkin': '/admin/checkin.html',
+    '/about-festival': '/about.html'
+  };
+  
+  // Apply rewrite if path matches
+  if (rewrites[req.path]) {
+    req.url = rewrites[req.path];
+  }
+  
+  next();
 });
 
 // Static file serving for non-API paths

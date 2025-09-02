@@ -16,7 +16,7 @@ test.describe('Ticket Validation', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to ticket validation page (if exists) or admin area
     try {
-      await page.goto('/pages/admin/validation.html');
+      await page.goto('/pages/admin/checkin.html');
     } catch {
       await page.goto('/pages/admin/dashboard.html');
     }
