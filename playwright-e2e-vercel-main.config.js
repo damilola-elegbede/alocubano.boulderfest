@@ -8,8 +8,8 @@
  * - Always starts fresh server (reuseExistingServer: false) for test isolation
  * 
  * Environment Variables:
- * - DYNAMIC_PORT: CI matrix port allocation (3000-3005)
- * - PORT: Standard port environment variable
+ * - DYNAMIC_PORT: CI matrix port allocation (3000-3005) - PRIMARY
+ * - PORT: Standard port environment variable - FALLBACK
  * - PLAYWRIGHT_BASE_URL: Override base URL if needed
  * - TURSO_DATABASE_URL & TURSO_AUTH_TOKEN: Required for E2E tests
  * 
@@ -32,12 +32,8 @@ if (!process.env.TURSO_DATABASE_URL || !process.env.TURSO_AUTH_TOKEN) {
   process.exit(1);
 }
 
-// Dynamic port allocation for parallel test execution
-// Support multiple environment variables for maximum flexibility:
-// - DYNAMIC_PORT: Used by CI matrix for port allocation (3000-3005)
-// - PORT: Standard environment variable
-// - Default: 3000 for local development
-const testPort = process.env.DYNAMIC_PORT || process.env.PORT || 3000;
+// Standardized port configuration: DYNAMIC_PORT takes precedence, fallback to PORT, default to 3000
+const testPort = parseInt(process.env.DYNAMIC_PORT || process.env.PORT || '3000', 10);
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || `http://localhost:${testPort}`;
 
 console.log(`🎭 Playwright E2E Vercel Config:`);
@@ -102,7 +98,7 @@ export default defineConfig({
     // This avoids all recursion and configuration issues
     command: `node scripts/vercel-dev-e2e.js --port ${testPort}`,
     url: `${baseURL}/api/health/check`,
-    port: parseInt(testPort, 10),
+    port: testPort,
     reuseExistingServer: false, // Always false for CI isolation and test safety
     timeout: 60000, // 60 seconds for Vercel dev startup
     stdout: 'pipe',
@@ -112,7 +108,7 @@ export default defineConfig({
     env: {
       NODE_ENV: 'development',
       PORT: testPort.toString(),
-      DYNAMIC_PORT: testPort.toString(), // Ensure both are set for compatibility
+      DYNAMIC_PORT: testPort.toString(), // Ensure both are set for standardized configuration
       // E2E testing configuration
       E2E_TEST_MODE: 'true',
       TEST_ADMIN_PASSWORD: process.env.TEST_ADMIN_PASSWORD || 'test-password',
@@ -131,7 +127,7 @@ export default defineConfig({
     },
   },
   
-  // Global setup/teardown can still be used with Vercel dev
-  globalSetup: './tests/e2e/global-setup.js',
+  // Global setup/teardown standardized across all configs
+  globalSetup: './tests/e2e/global-setup-ci.js',
   globalTeardown: './tests/e2e/global-teardown.js',
 });

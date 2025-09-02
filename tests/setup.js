@@ -14,7 +14,8 @@ process.env.DATABASE_URL = 'file::memory:';
 delete process.env.TURSO_AUTH_TOKEN;
 
 // Configure API base URL for Vercel Dev (no CI server)
-const PORT = process.env.PORT || '3000';
+// Standardized port configuration: DYNAMIC_PORT takes precedence, fallback to PORT, default to 3000
+const PORT = parseInt(process.env.DYNAMIC_PORT || process.env.PORT || '3000', 10);
 const API_BASE_URL = `http://localhost:${PORT}`;
 
 // Set test base URL
@@ -37,17 +38,18 @@ if (!globalThis.fetch) {
 beforeAll(async () => {
   console.log('🧪 Test environment initialized');
   console.log(`📍 API Base URL: ${API_BASE_URL}`);
+  console.log(`📡 Port: ${PORT} (DYNAMIC_PORT=${process.env.DYNAMIC_PORT}, PORT=${process.env.PORT})`);
   console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
   console.log(`🗄️ Database: SQLite in-memory for unit tests, Turso for E2E tests`);
-}, 10000); // 10 second timeout for setup
+}, Number(process.env.VITEST_SETUP_TIMEOUT || 10000)); // Configurable setup timeout
 
 afterAll(async () => {
   // Cleanup any test resources if needed
   console.log('🧹 Test environment cleanup completed');
-}, 5000); // 5 second timeout for cleanup
+}, Number(process.env.VITEST_CLEANUP_TIMEOUT || 5000)); // Configurable cleanup timeout
 
 // Environment helpers
 export const isCI = () => process.env.CI === 'true';
-export const getTestTimeout = () => isCI() ? 30000 : 15000; // 30s for CI, 15s for local
+export const getTestTimeout = () => Number(process.env.VITEST_TEST_TIMEOUT || (isCI() ? 30000 : 15000)); // Configurable test timeout
 
 console.log('🧪 Test environment ready');

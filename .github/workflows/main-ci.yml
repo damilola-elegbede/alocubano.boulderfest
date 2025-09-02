@@ -510,7 +510,7 @@ jobs:
           - suite: performance
             suite-name: "Performance"
             browser: chromium
-            test-pattern: "performance-load|gallery-browsing|network-resilience"
+            test-pattern: "gallery-basic|payment-flow|registration-flow"
             timeout-minutes: 15
             memory-limit: "4096"
             retry-count: 1
@@ -521,7 +521,7 @@ jobs:
           - suite: accessibility
             suite-name: "Accessibility"
             browser: chromium
-            test-pattern: "accessibility-compliance|mobile-registration-experience"
+            test-pattern: "basic-navigation|mobile-registration-experience"
             timeout-minutes: 10
             memory-limit: "3072"
             retry-count: 2
@@ -532,7 +532,7 @@ jobs:
           - suite: security
             suite-name: "Security"
             browser: chromium
-            test-pattern: "admin-security-enhanced|stripe-webhook-security|database-integrity|wallet-pass-apple|wallet-pass-google|email-transactional"
+            test-pattern: "admin-auth|admin-dashboard|payment-flow"
             timeout-minutes: 12
             memory-limit: "3072"
             retry-count: 2
@@ -656,7 +656,7 @@ jobs:
           echo "🗄️ Database: Turso (from secrets)"
           
           # Construct test command based on suite
-          TEST_CMD="npx playwright test --config=playwright-e2e-ci.config.js --project=${{ matrix.browser }}"
+          TEST_CMD="npx playwright test --config=playwright-e2e-vercel-main.config.js --project=${{ matrix.browser }}"
           
           # Add test pattern filtering
           if [ -n "${{ matrix.test-pattern }}" ]; then

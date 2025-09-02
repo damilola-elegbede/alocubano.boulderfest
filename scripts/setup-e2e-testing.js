@@ -13,7 +13,7 @@ const execAsync = promisify(exec);
 
 class E2ETestingSetup {
   constructor() {
-    this.port = process.env.PORT || 3000;
+    this.port = parseInt(process.env.DYNAMIC_PORT || process.env.PORT || '3000', 10);
     this.vercelProcess = null;
     this.setupTimeout = 120000; // 2 minutes
   }

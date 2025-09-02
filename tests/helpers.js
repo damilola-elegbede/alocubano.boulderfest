@@ -29,7 +29,7 @@ export async function testRequest(method, path, data = null, headers = {}) {
   
   // Request timeout handling
   const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Request timeout')), 30000);
+    setTimeout(() => reject(new Error('Request timeout')), Number(process.env.VITEST_REQUEST_TIMEOUT || 30000));
   });
   
   try {

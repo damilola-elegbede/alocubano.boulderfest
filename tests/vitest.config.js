@@ -3,8 +3,9 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
-    testTimeout: process.env.CI === 'true' ? 60000 : 30000, // 60s for CI, 30s for local
-    hookTimeout: process.env.CI === 'true' ? 15000 : 10000, // 15s for CI, 10s for local
+    // Configurable timeouts via environment variables for CI/CD flexibility
+    testTimeout: Number(process.env.VITEST_TEST_TIMEOUT || (process.env.CI === 'true' ? 60000 : 30000)), // Configurable test timeout
+    hookTimeout: Number(process.env.VITEST_HOOK_TIMEOUT || (process.env.CI === 'true' ? 15000 : 10000)), // Configurable hook timeout
     setupFiles: ['./tests/setup.js'],
     globals: true,
     include: ['tests/**/*.test.js'],

@@ -4,6 +4,8 @@
  * Supports both Node.js and Edge runtime environments
  */
 
+import { logger } from './logger.js';
+
 // Dynamic import based on environment for LibSQL client compatibility
 async function importLibSQLClient() {
   try {
@@ -22,7 +24,7 @@ async function importLibSQLClient() {
       return createClient;
     }
   } catch (error) {
-    console.warn(
+    logger.warn(
       "Failed to import LibSQL client, falling back to web client:",
       error.message,
     );
@@ -94,7 +96,7 @@ class DatabaseService {
       return await this._performInitialization();
     } catch (error) {
       if (retryCount < this.maxRetries) {
-        console.warn(
+        logger.warn(
           `Database initialization failed, retrying... (attempt ${retryCount + 1}/${this.maxRetries})`,
         );
         await this._delay(this.retryDelay * Math.pow(2, retryCount)); // Exponential backoff
@@ -126,7 +128,13 @@ class DatabaseService {
 
     // Environment-specific database URL handling
     if (!databaseUrl || databaseUrl.trim() === "") {
-      if (isDevelopment) {
+      if (isTest) {
+        // For E2E tests, require Turso - no fallback allowed
+        const error = new Error("TURSO_DATABASE_URL environment variable is required for E2E tests - no SQLite fallback allowed");
+        error.code = "DB_CONFIG_ERROR";
+        error.context = "e2e-tests";
+        throw error;
+      } else if (isDevelopment) {
         // For development, fall back to SQLite if Turso not configured
         const path = await import("path");
         const fs = await import("fs");
@@ -138,11 +146,7 @@ class DatabaseService {
         }
         
         databaseUrl = `file:${path.join(dataDir, "development.db")}`;
-        console.log(`⚠️  TURSO_DATABASE_URL not set, using local SQLite: ${databaseUrl}`);
-      } else if (isTest) {
-        // For tests, use in-memory database by default
-        databaseUrl = ":memory:";
-        console.log("🧪 Using in-memory database for tests");
+        logger.log(`⚠️  TURSO_DATABASE_URL not set, using local SQLite: ${databaseUrl}`);
       } else if (isVercelProduction) {
         // In Vercel production, this is a critical configuration error
         const error = new Error("TURSO_DATABASE_URL environment variable is required for production deployment");
@@ -150,9 +154,11 @@ class DatabaseService {
         error.context = "vercel-production";
         throw error;
       } else if (isVercelPreview || isVercel) {
-        // For Vercel preview deployments, try to fallback gracefully
-        console.warn("⚠️ TURSO_DATABASE_URL not configured in Vercel environment, attempting SQLite fallback");
-        databaseUrl = ":memory:";
+        // For Vercel preview deployments, require Turso
+        const error = new Error("TURSO_DATABASE_URL environment variable is required for Vercel deployments");
+        error.code = "DB_CONFIG_ERROR";
+        error.context = "vercel-preview";
+        throw error;
       } else if (strictMode) {
         const error = new Error("TURSO_DATABASE_URL environment variable is required in strict mode");
         error.code = "DB_CONFIG_ERROR";
@@ -167,34 +173,15 @@ class DatabaseService {
       }
     }
 
-    // Integration test specific handling
+    // Test environment validation - E2E tests must use Turso
     if (isTest) {
-      // For integration tests, ensure we have a valid file path
-      if (databaseUrl.startsWith("file:")) {
-        // Ensure the database file path is absolute and accessible
-        const dbPath = databaseUrl.replace("file:", "");
-        if (!dbPath.startsWith("/") && !dbPath.match(/^[A-Za-z]:/)) {
-          // Convert relative path to absolute for better reliability
-          const path = await import("path");
-          const absolutePath = path.resolve(process.cwd(), dbPath);
-          databaseUrl = `file:${absolutePath}`;
-          console.log(
-            `✅ Converted relative database path to absolute: ${databaseUrl}`,
-          );
-        }
-        
-        // **FIX: Ensure data directory exists for CI test databases**
-        const path = await import("path");
-        const fs = await import("fs");
-        const dbDir = path.dirname(dbPath.startsWith("/") ? dbPath : path.resolve(process.cwd(), dbPath));
-        if (!fs.existsSync(dbDir)) {
-          fs.mkdirSync(dbDir, { recursive: true });
-          console.log(`📁 Created database directory: ${dbDir}`);
-        }
-      } else if (databaseUrl === ":memory:") {
-        // In-memory database is fine for tests
-        console.log(`✅ Using in-memory database for tests`);
+      if (!databaseUrl.startsWith("libsql://") && !databaseUrl.startsWith("https://")) {
+        const error = new Error("E2E tests must use Turso database - local file or memory databases not allowed");
+        error.code = "DB_CONFIG_ERROR";
+        error.context = "e2e-tests-turso-required";
+        throw error;
       }
+      logger.log(`✅ Using Turso database for E2E tests: ${databaseUrl.substring(0, 30)}...`);
     }
 
     const config = {
@@ -206,13 +193,18 @@ class DatabaseService {
       config.authToken = authToken;
     } else if (!authToken && databaseUrl !== ":memory:" && !databaseUrl.startsWith("file:")) {
       // Auth token is required for remote Turso databases
-      if (isVercelProduction) {
+      if (isTest) {
+        const error = new Error("TURSO_AUTH_TOKEN environment variable is required for E2E tests with remote database");
+        error.code = "DB_AUTH_ERROR";
+        error.context = "e2e-tests";
+        throw error;
+      } else if (isVercelProduction) {
         const error = new Error("TURSO_AUTH_TOKEN environment variable is required for remote database connections in production");
         error.code = "DB_AUTH_ERROR";
         error.context = "vercel-production";
         throw error;
       } else {
-        console.warn("⚠️ TURSO_AUTH_TOKEN not provided for remote database connection");
+        logger.warn("⚠️ TURSO_AUTH_TOKEN not provided for remote database connection");
       }
     }
 
@@ -242,42 +234,27 @@ class DatabaseService {
         );
       }
 
-      // Integration test specific validation
+      // E2E test specific validation
       if (isTest) {
-        // Verify client has required methods for integration tests
+        // Verify client has required methods for E2E tests
         if (typeof client.execute !== "function") {
           throw new Error(
-            "Database client missing execute method - invalid for integration tests",
+            "Database client missing execute method - invalid for E2E tests",
           );
         }
 
-        // Test that we can get lastInsertRowid (required for transaction tests)
+        // Test that we can execute basic queries (Turso validation)
         try {
-          const insertTest = await client.execute(
-            "CREATE TEMPORARY TABLE test_insert (id INTEGER PRIMARY KEY, value TEXT)",
-          );
-          const insertResult = await client.execute(
-            "INSERT INTO test_insert (value) VALUES (?)",
-            ["test"],
-          );
-
-          if (!insertResult.hasOwnProperty("lastInsertRowid")) {
-            console.warn(
-              "⚠️ Database client may not support lastInsertRowid - some tests may fail",
-            );
+          const versionTest = await client.execute("SELECT sqlite_version() as version");
+          
+          if (versionTest.rows && versionTest.rows.length > 0) {
+            logger.log(`✅ Turso database connected successfully (SQLite version: ${versionTest.rows[0].version})`);
           } else {
-            console.log(
-              "✅ Database client supports lastInsertRowid for integration tests",
-            );
+            throw new Error("Invalid response from Turso database");
           }
-
-          // Clean up test table
-          await client.execute("DROP TABLE test_insert");
-        } catch (insertTestError) {
-          console.warn(
-            "⚠️ Could not test lastInsertRowid support:",
-            insertTestError.message,
-          );
+        } catch (versionTestError) {
+          logger.error("❌ Failed to validate Turso database connection:", versionTestError.message);
+          throw new Error(`Turso database validation failed: ${versionTestError.message}`);
         }
       }
 
@@ -287,13 +264,13 @@ class DatabaseService {
       // Track this connection
       this.activeConnections.add(client);
 
-      console.log(
+      logger.log(
         `✅ Database client initialized successfully (${process.env.NODE_ENV || "production"} mode)`,
       );
       return this.client;
     } catch (error) {
       // Enhanced error reporting for debugging
-      console.error("❌ Database initialization failed:", {
+      logger.error("❌ Database initialization failed:", {
         error: error.message,
         databaseUrl: config.url
           ? config.url.substring(0, 20) + "..."
@@ -389,7 +366,7 @@ class DatabaseService {
           try {
             await this.client.execute(pragma);
           } catch (pragmaError) {
-            console.warn(
+            logger.warn(
               `Failed to apply pragma: ${pragma}`,
               pragmaError.message,
             );
@@ -427,17 +404,17 @@ class DatabaseService {
       const result = await client.execute("SELECT 1 as test");
 
       if (result && result.rows && result.rows.length > 0) {
-        console.log("Database connection test successful");
+        logger.debug("Database connection test successful");
         return true;
       }
 
-      console.error(
+      logger.error(
         "Database connection test failed: unexpected result",
         result,
       );
       return false;
     } catch (error) {
-      console.error("Database connection test failed:", {
+      logger.error("Database connection test failed:", {
         error: error.message,
         code: error.code,
         timestamp: new Date().toISOString(),
@@ -464,7 +441,7 @@ class DatabaseService {
       const sqlString =
         typeof queryOrObject === "string" ? queryOrObject : queryOrObject.sql;
 
-      console.error("Database query execution failed:", {
+      logger.error("Database query execution failed:", {
         sql:
           sqlString.substring(0, 100) + (sqlString.length > 100 ? "..." : ""),
         error: error.message,
@@ -484,7 +461,7 @@ class DatabaseService {
       const client = await this.ensureInitialized();
       return await client.batch(statements);
     } catch (error) {
-      console.error("Database batch execution failed:", {
+      logger.error("Database batch execution failed:", {
         statementCount: statements.length,
         error: error.message,
         timestamp: new Date().toISOString(),
@@ -506,11 +483,11 @@ class DatabaseService {
       if (typeof client.transaction === "function") {
         try {
           const nativeTransaction = await client.transaction();
-          console.log("✅ Using native LibSQL transaction support");
+          logger.debug("✅ Using native LibSQL transaction support");
           // Wrap native transaction with timeout protection
           return this._wrapTransactionWithTimeout(nativeTransaction, timeoutMs);
         } catch (transactionError) {
-          console.warn(
+          logger.warn(
             "⚠️  Native transaction creation failed, falling back to explicit SQL:",
             transactionError.message
           );
@@ -520,7 +497,7 @@ class DatabaseService {
 
       // Fallback for clients without native transaction support:
       // emulate a transaction boundary with explicit SQL
-      console.warn(
+      logger.warn(
         "Database client lacks native transactions; using explicit BEGIN/COMMIT/ROLLBACK fallback",
       );
       let started = false;
@@ -572,7 +549,7 @@ class DatabaseService {
             try {
               await client.execute({ sql: "ROLLBACK", args: [] });
             } catch (rollbackError) {
-              console.error("Failed to rollback after commit failure:", rollbackError.message);
+              logger.error("Failed to rollback after commit failure:", rollbackError.message);
             }
             throw new Error(`Failed to commit transaction: ${error.message}`);
           } finally {
@@ -592,7 +569,7 @@ class DatabaseService {
           try {
             await client.execute({ sql: "ROLLBACK", args: [] });
           } catch (error) {
-            console.error("Failed to rollback transaction:", error.message);
+            logger.error("Failed to rollback transaction:", error.message);
             throw new Error(`Failed to rollback transaction: ${error.message}`);
           } finally {
             completed = true;
@@ -606,7 +583,7 @@ class DatabaseService {
       // Wrap fallback transaction with timeout protection too
       return this._wrapTransactionWithTimeout(fallbackTransaction, timeoutMs);
     } catch (error) {
-      console.error("Database transaction creation failed:", {
+      logger.error("Database transaction creation failed:", {
         error: error.message,
         timestamp: new Date().toISOString(),
       });
@@ -622,10 +599,10 @@ class DatabaseService {
     let isTimedOut = false;
     const timeoutId = setTimeout(() => {
       isTimedOut = true;
-      console.error(`⏰ Transaction timed out after ${timeoutMs}ms - attempting rollback`);
+      logger.error(`⏰ Transaction timed out after ${timeoutMs}ms - attempting rollback`);
       // Attempt to rollback the timed-out transaction
       transaction.rollback().catch(error => {
-        console.error("Failed to rollback timed-out transaction:", error.message);
+        logger.error("Failed to rollback timed-out transaction:", error.message);
       });
     }, timeoutMs);
 
@@ -699,7 +676,7 @@ class DatabaseService {
               return true;
             }
           } catch (error) {
-            console.error("Error closing database connection:", error.message);
+            logger.error("Error closing database connection:", error.message);
             errorCount++;
             return false;
           }
@@ -718,13 +695,13 @@ class DatabaseService {
       this.initializationPromise = null;
 
       const duration = Date.now() - startTime;
-      console.log(
+      logger.debug(
         `Database connections closed: ${closedCount} successful, ${errorCount} errors (${duration}ms)`,
       );
 
       return errorCount === 0;
     } catch (error) {
-      console.error("Error in close operation:", error.message);
+      logger.error("Error in close operation:", error.message);
 
       // Force reset even if close failed
       this.activeConnections.clear();
@@ -746,7 +723,7 @@ class DatabaseService {
       // Close all active connections first
       await this.close();
     } catch (error) {
-      console.warn(
+      logger.warn(
         "Error during resetForTesting close operation:",
         error.message,
       );

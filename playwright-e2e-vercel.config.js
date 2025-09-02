@@ -16,6 +16,13 @@ if (!process.env.TURSO_DATABASE_URL || !process.env.TURSO_AUTH_TOKEN) {
   process.exit(1);
 }
 
+// Configurable timeouts via environment variables for CI/CD flexibility
+const STARTUP_TIMEOUT = Number(process.env.E2E_STARTUP_TIMEOUT || 60000);
+const TEST_TIMEOUT = Number(process.env.E2E_TEST_TIMEOUT || 90000);
+const ACTION_TIMEOUT = Number(process.env.E2E_ACTION_TIMEOUT || 30000);
+const NAVIGATION_TIMEOUT = Number(process.env.E2E_NAVIGATION_TIMEOUT || 45000);
+const WEBSERVER_TIMEOUT = Number(process.env.E2E_WEBSERVER_TIMEOUT || 30000);
+
 export default defineConfig({
   testDir: './tests/e2e/flows',
   fullyParallel: false, // Run sequentially to avoid database conflicts with Turso
@@ -26,15 +33,15 @@ export default defineConfig({
     ? [['list'], ['html', { open: 'never' }], ['junit', { outputFile: 'test-results/junit.xml' }]]
     : [['list'], ['html']],
   
-  timeout: 90000, // 90 seconds for Vercel dev server + network latency
+  timeout: TEST_TIMEOUT, // Configurable test timeout for Vercel dev server + network latency
   
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    actionTimeout: 30000, // 30 seconds for actions
-    navigationTimeout: 45000, // 45 seconds for navigation
+    actionTimeout: ACTION_TIMEOUT, // Configurable action timeout
+    navigationTimeout: NAVIGATION_TIMEOUT, // Configurable navigation timeout
     
     // Enhanced debugging
     ...(process.env.CI && {
@@ -43,8 +50,8 @@ export default defineConfig({
     })
   },
 
-  // Global setup and teardown
-  globalSetup: './tests/e2e/global-setup.js',
+  // Global setup and teardown standardized across all configs
+  globalSetup: './tests/e2e/global-setup-ci.js',
   globalTeardown: './tests/e2e/global-teardown.js',
 
   projects: [
@@ -93,7 +100,7 @@ export default defineConfig({
     url: 'http://localhost:3000/api/health/check',
     port: 3000,
     reuseExistingServer: !process.env.CI,
-    timeout: 30000, // 30 seconds for Vercel dev startup
+    timeout: WEBSERVER_TIMEOUT, // Configurable Vercel dev startup timeout
     stdout: 'pipe',
     stderr: 'pipe',
     

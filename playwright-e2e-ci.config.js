@@ -7,6 +7,7 @@
  * - Optimized for CI environments with proper timeouts and retries
  * - Uses Playwright's webServer for reliable server management
  * - Eliminates dual server startup problem
+ * - **FIXED**: Vercel authentication with --token, --scope, and --no-clipboard flags
  * 
  * Compatible with all 26 E2E tests including advanced scenarios:
  * - Accessibility compliance (WCAG 2.1)
@@ -19,30 +20,73 @@
  */
 
 import { defineConfig, devices } from '@playwright/test';
+import { E2E_CONFIG, validateE2EEnvironment, logE2EEnvironment, getWebServerEnv } from './config/e2e-env-config.js';
 
-// Dynamic port configuration for CI parallel execution
-// Support multiple environment variables for maximum flexibility
-const PORT = process.env.DYNAMIC_PORT || process.env.PORT || '3000';
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || `http://localhost:${PORT}`;
+// Validate environment variables for CI with all possible test scenarios
+validateE2EEnvironment({
+  adminTests: true,
+  ciMode: true,
+  emailTests: E2E_CONFIG.ADVANCED_SCENARIOS,
+  paymentTests: E2E_CONFIG.ADVANCED_SCENARIOS,
+  walletTests: E2E_CONFIG.ADVANCED_SCENARIOS,
+  throwOnMissing: true,
+});
 
-// CI-specific configuration
-const CI_MODE = !!process.env.CI;
-const E2E_TEST_MODE = process.env.E2E_TEST_MODE === 'true';
-const ADVANCED_SCENARIOS = process.env.ADVANCED_SCENARIOS === 'true';
+// Log comprehensive environment configuration for CI debugging
+logE2EEnvironment(true);
 
-// Test suite configurations
-const PERFORMANCE_TESTING = process.env.PERFORMANCE_TESTING === 'true';
-const ACCESSIBILITY_TESTING = process.env.ACCESSIBILITY_TESTING === 'true';
-const SECURITY_TESTING = process.env.SECURITY_TESTING === 'true';
+// Configurable timeouts via environment variables for CI/CD flexibility
+const STARTUP_TIMEOUT = Number(process.env.E2E_STARTUP_TIMEOUT || 60000);
+const TEST_TIMEOUT = Number(process.env.E2E_TEST_TIMEOUT || (E2E_CONFIG.ADVANCED_SCENARIOS ? 120000 : (E2E_CONFIG.CI ? 90000 : 60000)));
+const ACTION_TIMEOUT = Number(process.env.E2E_ACTION_TIMEOUT || (E2E_CONFIG.ADVANCED_SCENARIOS ? 45000 : (E2E_CONFIG.CI ? 35000 : 30000)));
+const NAVIGATION_TIMEOUT = Number(process.env.E2E_NAVIGATION_TIMEOUT || (E2E_CONFIG.ADVANCED_SCENARIOS ? 60000 : (E2E_CONFIG.CI ? 50000 : 45000)));
+const WEBSERVER_TIMEOUT = Number(process.env.E2E_WEBSERVER_TIMEOUT || (E2E_CONFIG.ADVANCED_SCENARIOS ? 240000 : 180000));
+const EXPECT_TIMEOUT = Number(process.env.E2E_EXPECT_TIMEOUT || (E2E_CONFIG.ADVANCED_SCENARIOS ? 30000 : (E2E_CONFIG.CI ? 20000 : 15000)));
+
+// Test suite configurations - use centralized config
+const PERFORMANCE_TESTING = E2E_CONFIG.PERFORMANCE_TESTING;
+const ACCESSIBILITY_TESTING = E2E_CONFIG.ACCESSIBILITY_TESTING;
+const SECURITY_TESTING = E2E_CONFIG.SECURITY_TESTING;
+
+/**
+ * Build Vercel dev command with authentication using centralized config
+ */
+function buildVercelCommand(port) {
+  const args = [
+    'vercel',
+    'dev',
+    '--yes', // Skip all prompts
+    '--listen', port.toString(),
+    '--no-clipboard' // Prevent clipboard operations in CI
+  ];
+  
+  // Add authentication if token is available
+  if (process.env.VERCEL_TOKEN) {
+    args.push('--token', process.env.VERCEL_TOKEN);
+    console.log('   ✅ Using VERCEL_TOKEN for authentication');
+  }
+  
+  // Add scope if org ID is available
+  if (process.env.VERCEL_ORG_ID) {
+    args.push('--scope', process.env.VERCEL_ORG_ID);
+    console.log('   ✅ Using VERCEL_ORG_ID as scope');
+  }
+  
+  return args.join(' ');
+}
+
+const VERCEL_COMMAND = buildVercelCommand(PORT);
 
 console.log(`🎭 Playwright E2E CI Config with Dynamic Port Allocation:`);
-console.log(`  Dynamic Port: ${PORT} (from DYNAMIC_PORT=${process.env.DYNAMIC_PORT} or PORT=${process.env.PORT})`);
+console.log(`  Dynamic Port: ${PORT} (DYNAMIC_PORT=${process.env.DYNAMIC_PORT}, PORT=${process.env.PORT})`);
 console.log(`  Base URL: ${BASE_URL}`);
 console.log(`  Health Check URL: ${BASE_URL}/api/health/check`);
-console.log(`  CI Mode: ${CI_MODE}`);
+console.log(`  CI Mode: ${E2E_CONFIG.CI}`);
 console.log(`  Database: Turso (${process.env.TURSO_DATABASE_URL ? 'configured' : 'not configured'})`);
 console.log(`  Advanced Scenarios: ${ADVANCED_SCENARIOS}`);
 console.log(`  Reuse Existing Server: false (ensures test isolation)`);
+console.log(`  Vercel Command: ${VERCEL_COMMAND}`);
+console.log(`  Vercel Auth: ${process.env.VERCEL_TOKEN ? 'configured' : 'not configured'}`);
 
 export default defineConfig({
   testDir: './tests/e2e/flows',
@@ -68,20 +112,20 @@ export default defineConfig({
   globalTeardown: './tests/e2e/global-teardown.js',
   
   // Extended timeout for advanced scenarios and CI environment
-  timeout: ADVANCED_SCENARIOS ? 120000 : (CI_MODE ? 90000 : 60000),
+  timeout: E2E_CONFIG.ADVANCED_SCENARIOS ? 120000 : (E2E_CONFIG.CI ? 90000 : 60000),
   
   use: {
-    baseURL: BASE_URL,
+    baseURL: E2E_CONFIG.PLAYWRIGHT_BASE_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     
     // Extended timeouts for advanced scenarios and CI stability
-    actionTimeout: ADVANCED_SCENARIOS ? 45000 : (CI_MODE ? 35000 : 30000),
-    navigationTimeout: ADVANCED_SCENARIOS ? 60000 : (CI_MODE ? 50000 : 45000),
+    actionTimeout: ACTION_TIMEOUT,
+    navigationTimeout: NAVIGATION_TIMEOUT,
     
     // CI-optimized settings for reliability and performance
-    ...(CI_MODE && {
+    ...(E2E_CONFIG.CI && {
       headless: true,
       viewport: { width: 1280, height: 720 },
     })
@@ -184,48 +228,26 @@ export default defineConfig({
     ] : []),
   ],
 
-  // **CRITICAL FIX**: Use Playwright's webServer with dynamic port allocation
+  // **CRITICAL FIX**: Use Playwright's webServer with dynamic port allocation and authentication
   // This eliminates the dual server startup problem and port conflicts
   webServer: {
-    command: `vercel dev --yes --listen ${PORT}${process.env.VERCEL_TOKEN ? ' --token=' + process.env.VERCEL_TOKEN : ''}`,
-    url: `${BASE_URL}/api/health/check`,
+    command: VERCEL_COMMAND,
+    url: `${E2E_CONFIG.PLAYWRIGHT_BASE_URL}/api/health/check`,
     reuseExistingServer: false, // Always start fresh in CI for test isolation
-    timeout: ADVANCED_SCENARIOS ? 240000 : 180000, // Extended for advanced setup
+    timeout: WEBSERVER_TIMEOUT, // Extended for advanced setup
     stdout: 'pipe',
     stderr: 'pipe',
-    env: {
-      NODE_ENV: 'test',
-      PORT: PORT,
-      DYNAMIC_PORT: PORT, // Ensure both PORT and DYNAMIC_PORT are set
-      TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL,
-      TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN,
-      // Advanced scenario environment variables
-      ADVANCED_SCENARIOS: ADVANCED_SCENARIOS ? 'true' : 'false',
-      PERFORMANCE_TESTING: PERFORMANCE_TESTING ? 'true' : 'false',
-      ACCESSIBILITY_TESTING: ACCESSIBILITY_TESTING ? 'true' : 'false',
-      SECURITY_TESTING: SECURITY_TESTING ? 'true' : 'false',
-      // Pass through test credentials for advanced scenarios
-      TEST_ADMIN_PASSWORD: process.env.TEST_ADMIN_PASSWORD || 'test-password',
-      ADMIN_SECRET: process.env.ADMIN_SECRET || 'test-admin-secret-key-minimum-32-characters',
-      // Advanced test service configuration
-      BREVO_API_KEY: process.env.BREVO_API_KEY || '',
-      STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
-      STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
-      APPLE_PASS_KEY: process.env.APPLE_PASS_KEY || '',
-      GOOGLE_WALLET_ISSUER_ID: process.env.GOOGLE_WALLET_ISSUER_ID || '',
-      // Vercel configuration for CI
-      VERCEL_TOKEN: process.env.VERCEL_TOKEN || '',
-      VERCEL_ORG_ID: process.env.VERCEL_ORG_ID || '',
-      VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID || '',
-      // CI environment markers
-      CI: 'true',
-      E2E_TEST_MODE: 'true'
-    }
+    // Environment variables managed by centralized E2E configuration
+    env: getWebServerEnv({
+      port: E2E_CONFIG.DYNAMIC_PORT,
+      includeServices: true,  // Include all service credentials for CI
+      includeVercel: true,    // Include Vercel credentials for CI authentication
+    })
   },
   
   // Expect configuration optimized for CI and advanced scenarios
   expect: {
     // Extended timeout for accessibility and performance tests
-    timeout: ADVANCED_SCENARIOS ? 30000 : (CI_MODE ? 20000 : 15000),
+    timeout: EXPECT_TIMEOUT,
   },
 });

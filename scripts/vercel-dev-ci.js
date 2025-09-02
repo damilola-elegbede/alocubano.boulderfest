@@ -15,6 +15,7 @@
  * - Graceful shutdown with process cleanup
  * - CI-optimized startup with non-interactive mode
  * - Production-like environment setup
+ * - **FIXED**: Vercel authentication with --token, --scope, and --no-clipboard flags
  * 
  * Port Allocation Matrix:
  * - Standard Suite: 3000
@@ -51,6 +52,34 @@ class VercelDevCIServer {
     console.log(`   URL: ${this.serverUrl}`);
     console.log(`   Environment: ${process.env.NODE_ENV || 'test'}`);
     console.log(`   Database: Port-isolated (${this.port})`);
+    console.log(`   Auth: ${process.env.VERCEL_TOKEN ? 'configured' : 'not configured'}`);
+  }
+
+  /**
+   * Build Vercel command with authentication
+   */
+  buildVercelCommand() {
+    const args = [
+      'vercel',
+      'dev',
+      '--yes', // Non-interactive mode
+      '--listen', `0.0.0.0:${this.port}`,
+      '--no-clipboard' // Prevent clipboard operations in CI
+    ];
+    
+    // Add authentication if token is available
+    if (process.env.VERCEL_TOKEN) {
+      args.push('--token', process.env.VERCEL_TOKEN);
+      console.log('   ✅ Using VERCEL_TOKEN for authentication');
+    }
+    
+    // Add scope if org ID is available
+    if (process.env.VERCEL_ORG_ID) {
+      args.push('--scope', process.env.VERCEL_ORG_ID);
+      console.log('   ✅ Using VERCEL_ORG_ID as scope');
+    }
+    
+    return args;
   }
 
   /**
@@ -70,6 +99,7 @@ class VercelDevCIServer {
       console.log('\n✅ Vercel Dev CI Server ready!');
       console.log(`🌐 Health check: ${this.serverUrl}/api/health/check`);
       console.log(`📊 Database: Port-isolated for test safety`);
+      console.log(`🔐 Authentication: ${process.env.VERCEL_TOKEN ? 'enabled' : 'disabled'}`);
       console.log('═'.repeat(60));
       
       this.setupSignalHandlers();
@@ -245,12 +275,7 @@ LOG_LEVEL=info
     console.log(`🚀 Starting Vercel dev server on port ${this.port}...`);
     
     return new Promise((resolve, reject) => {
-      const args = [
-        'vercel',
-        'dev',
-        '--yes', // Non-interactive mode
-        '--listen', `0.0.0.0:${this.port}`
-      ];
+      const args = this.buildVercelCommand();
       
       // CI-optimized environment
       const env = {
@@ -270,6 +295,7 @@ LOG_LEVEL=info
       
       console.log(`   📦 Command: npx ${args.join(' ')}`);
       console.log(`   🌍 Environment: CI-optimized, non-interactive`);
+      console.log(`   🔐 Authentication: ${process.env.VERCEL_TOKEN ? 'enabled' : 'disabled'}`);
       
       this.vercelProcess = spawn('npx', args, {
         cwd: projectRoot,

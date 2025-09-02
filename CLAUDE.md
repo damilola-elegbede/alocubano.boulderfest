@@ -248,6 +248,20 @@ WALLET_AUTH_SECRET=      # JWT signing
 
 # Testing (optional)
 TEST_ADMIN_PASSWORD=     # Plain text password for admin panel E2E testing (not bcrypt hashed)
+
+# Timeout Configuration (optional - for CI/CD flexibility)
+E2E_STARTUP_TIMEOUT=     # Server startup timeout in ms (default: 60000)
+E2E_TEST_TIMEOUT=        # Individual test timeout in ms (default: varies by scenario)
+E2E_ACTION_TIMEOUT=      # Action timeout (clicks, inputs) in ms (default: varies by scenario)
+E2E_NAVIGATION_TIMEOUT=  # Page navigation timeout in ms (default: varies by scenario) 
+E2E_WEBSERVER_TIMEOUT=   # Webserver startup timeout in ms (default: varies by scenario)
+E2E_EXPECT_TIMEOUT=      # Expect assertion timeout in ms (default: varies by scenario)
+E2E_HEALTH_CHECK_INTERVAL= # Health check interval in ms (default: 2000)
+VITEST_TEST_TIMEOUT=     # Vitest test timeout in ms (default: varies by environment)
+VITEST_HOOK_TIMEOUT=     # Vitest hook timeout in ms (default: varies by environment)
+VITEST_SETUP_TIMEOUT=    # Vitest setup timeout in ms (default: 10000)
+VITEST_CLEANUP_TIMEOUT=  # Vitest cleanup timeout in ms (default: 5000)
+VITEST_REQUEST_TIMEOUT=  # HTTP request timeout in ms (default: 30000)
 ```
 
 ## API Endpoints

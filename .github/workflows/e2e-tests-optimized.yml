@@ -513,7 +513,7 @@ jobs:
           echo "Server: Vercel Dev (production-like environment)"
           
           # Construct optimized test command
-          TEST_CMD="npx playwright test --config=playwright-e2e-ci.config.js --project=${{ matrix.browser }}"
+          TEST_CMD="npx playwright test --config=playwright-e2e-vercel-main.config.js --project=${{ matrix.browser }}"
           
           # Add test pattern if specified
           if [ -n "${{ needs.validate.outputs.test_pattern }}" ]; then
@@ -717,7 +717,7 @@ jobs:
           
           # Run performance-focused tests with comprehensive metrics
           npx playwright test \
-            --config=playwright-e2e-ci.config.js \
+            --config=playwright-e2e-vercel-main.config.js \
             --project=chromium \
             --grep="performance|load|speed|gallery-browsing" \
             --timeout=300000 \

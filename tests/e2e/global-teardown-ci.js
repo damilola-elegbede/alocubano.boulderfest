@@ -18,11 +18,12 @@ async function globalTeardown() {
   console.log('🧹 Global E2E Teardown - CI Environment');
   console.log('========================================');
   
-  const port = process.env.PORT || process.env.DYNAMIC_PORT || '3000';
+  // Standardized port configuration: DYNAMIC_PORT takes precedence, fallback to PORT, default to 3000
+  const port = parseInt(process.env.DYNAMIC_PORT || process.env.PORT || '3000', 10);
   const databaseFile = process.env.DATABASE_URL || `./data/e2e-ci-test.db`;
   const suite = process.env.PLAYWRIGHT_BROWSER || 'chromium';
   
-  console.log(`📡 Port: ${port}`);
+  console.log(`📡 Port: ${port} (DYNAMIC_PORT=${process.env.DYNAMIC_PORT}, PORT=${process.env.PORT})`);
   console.log(`🗄️ Database: ${databaseFile}`);
   console.log(`🎭 Suite: ${suite}`);
   
@@ -93,7 +94,7 @@ async function globalTeardown() {
     // Display cleanup summary
     console.log('');
     console.log('📊 Teardown Summary:');
-    console.log(`   Port cleaned: ${port}`);
+    console.log(`   Port cleaned: ${port} (standardized DYNAMIC_PORT configuration)`);
     console.log(`   Database: ${cleanupDatabase ? 'Cleaned' : 'Preserved'}`);
     console.log(`   Suite: ${suite}`);
     console.log(`   CI Mode: ${process.env.CI ? 'Yes' : 'No'}`);

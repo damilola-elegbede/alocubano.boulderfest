@@ -91,7 +91,7 @@ class CISetupManager {
     process.env.ENVIRONMENT = 'ci-test';
     
     // Ensure port configuration
-    process.env.PORT = process.env.PORT || process.env.CI_PORT || '3000';
+    process.env.PORT = process.env.DYNAMIC_PORT || process.env.PORT || process.env.CI_PORT || '3000';
   }
 
   _validateCIEnvironment() {
@@ -412,7 +412,7 @@ async function validateVercelDevServer() {
   console.log('\n🚀 Validating Vercel dev server startup...');
   const startTime = Date.now();
 
-  const port = process.env.PORT || 3000;
+  const port = parseInt(process.env.DYNAMIC_PORT || process.env.PORT || '3000', 10);
   const serverUrl = `http://localhost:${port}`;
 
   try {
@@ -588,7 +588,7 @@ async function executeWarmupProcedures() {
   console.log('\n🔥 Executing pre-test warmup procedures...');
   const startTime = Date.now();
 
-  const port = process.env.PORT || 3000;
+  const port = parseInt(process.env.DYNAMIC_PORT || process.env.PORT || '3000', 10);
   const serverUrl = `http://localhost:${port}`;
 
   try {

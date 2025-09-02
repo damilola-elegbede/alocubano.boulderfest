@@ -66,7 +66,7 @@ async function detectServerPort() {
   }
 
   // 3. Fallback to environment or default port
-  const fallbackPort = process.env.PORT || process.env.CI_PORT || 3000;
+  const fallbackPort = parseInt(process.env.DYNAMIC_PORT || process.env.PORT || process.env.CI_PORT || '3000', 10);
   
   if (process.env.CI || process.env.GITHUB_ACTIONS) {
     console.log(`   ℹ️ Running in CI environment - will use port ${fallbackPort}`);
@@ -170,7 +170,7 @@ async function main() {
   
   if (!baseUrl) {
     // First check environment variables
-    const envPort = process.env.PORT || process.env.CI_PORT;
+    const envPort = process.env.DYNAMIC_PORT || process.env.PORT || process.env.CI_PORT;
     
     if (envPort) {
       baseUrl = `http://localhost:${envPort}`;

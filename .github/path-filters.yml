@@ -409,7 +409,19 @@ frontend-critical:
 # WORKFLOW-SPECIFIC FILTERS
 # ========================================
 
-# Main CI Pipeline triggers (consolidated workflow)
+# CI triggers for main consolidated pipeline (matches workflow expectation: ci-triggers)
+ci-triggers:
+  - 'js/**'
+  - 'css/**'
+  - 'api/**'
+  - 'lib/**'
+  - 'tests/**'
+  - 'pages/**'
+  - 'package.json'
+  - 'vercel.json'
+  - '.github/workflows/main-ci.yml'
+
+# Main CI Pipeline triggers (consolidated workflow) - legacy name for reference
 main-ci-triggers:
   - 'js/**'
   - 'css/**'
@@ -451,7 +463,22 @@ security-triggers:
   - '.env*'
   - 'SECURITY.md'
 
-# Deployment triggers (optimized workflow)
+# Deployment triggers for main consolidated pipeline (matches workflow expectation: deployment-triggers)
+deployment-triggers:
+  - 'api/**'
+  - 'js/**'
+  - 'css/**'
+  - 'pages/**'
+  - 'public/**'
+  - 'vercel.json'
+  - 'package.json'
+  - 'migrations/**'
+  - '.github/workflows/deploy-optimized.yml'
+  - '!**/*.md'
+  - '!docs/**'
+  - '!spec/**'
+
+# Deployment triggers (optimized workflow) - legacy name for reference
 deploy-triggers:
   - 'api/**'
   - 'js/**'
