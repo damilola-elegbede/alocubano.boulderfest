@@ -318,27 +318,28 @@ jobs:
       fail-fast: false
       max-parallel: ${{ fromJson(needs.validate.outputs.parallel_workers) }}
       matrix:
-        include: ${{
-          (needs.validate.outputs.browser_matrix == 'chromium-only' && fromJson('[
-            {"browser": "chromium", "browser-name": "Chrome", "category": "standard", "timeout-minutes": 10, "retry-count": 2}
-          ]')) ||
-          (needs.validate.outputs.browser_matrix == 'standard' && fromJson('[
-            {"browser": "chromium", "browser-name": "Chrome", "category": "standard", "timeout-minutes": 12, "retry-count": 2},
-            {"browser": "firefox", "browser-name": "Firefox", "category": "standard", "timeout-minutes": 15, "retry-count": 3}
-          ]')) ||
-          (needs.validate.outputs.browser_matrix == 'extended' && fromJson('[
-            {"browser": "chromium", "browser-name": "Chrome", "category": "standard", "timeout-minutes": 12, "retry-count": 2},
-            {"browser": "firefox", "browser-name": "Firefox", "category": "standard", "timeout-minutes": 15, "retry-count": 3},
-            {"browser": "webkit", "browser-name": "Safari", "category": "extended", "timeout-minutes": 18, "retry-count": 3}
-          ]')) ||
-          fromJson('[
-            {"browser": "chromium", "browser-name": "Chrome", "category": "standard", "timeout-minutes": 12, "retry-count": 2},
-            {"browser": "firefox", "browser-name": "Firefox", "category": "standard", "timeout-minutes": 15, "retry-count": 3},
-            {"browser": "webkit", "browser-name": "Safari", "category": "extended", "timeout-minutes": 18, "retry-count": 3},
-            {"browser": "mobile-chrome", "browser-name": "Mobile Chrome", "category": "mobile", "timeout-minutes": 20, "retry-count": 2},
-            {"browser": "mobile-safari", "browser-name": "Mobile Safari", "category": "mobile", "timeout-minutes": 22, "retry-count": 3}
-          ]')
-        }}
+        include: >-
+          ${{
+            (needs.validate.outputs.browser_matrix == 'chromium-only' && fromJson('[
+              {"browser": "chromium", "browser-name": "Chrome", "category": "standard", "timeout-minutes": 10, "retry-count": 2}
+            ]')) ||
+            (needs.validate.outputs.browser_matrix == 'standard' && fromJson('[
+              {"browser": "chromium", "browser-name": "Chrome", "category": "standard", "timeout-minutes": 12, "retry-count": 2},
+              {"browser": "firefox", "browser-name": "Firefox", "category": "standard", "timeout-minutes": 15, "retry-count": 3}
+            ]')) ||
+            (needs.validate.outputs.browser_matrix == 'extended' && fromJson('[
+              {"browser": "chromium", "browser-name": "Chrome", "category": "standard", "timeout-minutes": 12, "retry-count": 2},
+              {"browser": "firefox", "browser-name": "Firefox", "category": "standard", "timeout-minutes": 15, "retry-count": 3},
+              {"browser": "webkit", "browser-name": "Safari", "category": "extended", "timeout-minutes": 18, "retry-count": 3}
+            ]')) ||
+            fromJson('[
+              {"browser": "chromium", "browser-name": "Chrome", "category": "standard", "timeout-minutes": 12, "retry-count": 2},
+              {"browser": "firefox", "browser-name": "Firefox", "category": "standard", "timeout-minutes": 15, "retry-count": 3},
+              {"browser": "webkit", "browser-name": "Safari", "category": "extended", "timeout-minutes": 18, "retry-count": 3},
+              {"browser": "mobile-chrome", "browser-name": "Mobile Chrome", "category": "mobile", "timeout-minutes": 20, "retry-count": 2},
+              {"browser": "mobile-safari", "browser-name": "Mobile Safari", "category": "mobile", "timeout-minutes": 22, "retry-count": 3}
+            ]')
+          }}
 
     steps:
       - name: 📥 Checkout Code
