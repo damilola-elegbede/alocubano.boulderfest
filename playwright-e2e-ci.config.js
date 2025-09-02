@@ -40,7 +40,7 @@ console.log(`  Dynamic Port: ${PORT} (from DYNAMIC_PORT=${process.env.DYNAMIC_PO
 console.log(`  Base URL: ${BASE_URL}`);
 console.log(`  Health Check URL: ${BASE_URL}/api/health/check`);
 console.log(`  CI Mode: ${CI_MODE}`);
-console.log(`  Database: ${process.env.DATABASE_URL || `e2e-ci-test-${PORT}.db`}`);
+console.log(`  Database: Turso (${process.env.TURSO_DATABASE_URL ? 'configured' : 'not configured'})`);
 console.log(`  Advanced Scenarios: ${ADVANCED_SCENARIOS}`);
 console.log(`  Reuse Existing Server: false (ensures test isolation)`);
 
@@ -201,8 +201,8 @@ export default defineConfig({
       NODE_ENV: 'test',
       PORT: PORT,
       DYNAMIC_PORT: PORT, // Ensure both PORT and DYNAMIC_PORT are set
-      DATABASE_URL: process.env.DATABASE_URL || `./data/e2e-ci-test-${PORT}.db`, // Port-specific DB for isolation
-      TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || `./data/e2e-ci-test-${PORT}.db`,
+      TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL,
+      TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN,
       // Advanced scenario environment variables
       ADVANCED_SCENARIOS: ADVANCED_SCENARIOS ? 'true' : 'false',
       PERFORMANCE_TESTING: PERFORMANCE_TESTING ? 'true' : 'false',

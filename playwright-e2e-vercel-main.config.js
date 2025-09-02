@@ -122,8 +122,6 @@ export default defineConfig({
       // Database configuration (required for E2E tests)
       TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL,
       TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN,
-      // Port-isolated database for test safety
-      DATABASE_URL: process.env.DATABASE_URL || `./data/e2e-vercel-test-${testPort}.db`,
       // Skip database init to prevent hanging
       SKIP_DATABASE_INIT: 'true',
       // Vercel dev specific settings

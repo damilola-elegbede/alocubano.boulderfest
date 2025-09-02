@@ -121,6 +121,8 @@ class DatabaseService {
     const isVercel = process.env.VERCEL === "1";
     const isDevelopment = process.env.NODE_ENV === "development" || process.env.VERCEL_DEV_STARTUP === "true";
     const isTest = process.env.NODE_ENV === "test" || process.env.TEST_TYPE === "integration";
+    const isCI = process.env.CI === "true";
+
 
     // Environment-specific database URL handling
     if (!databaseUrl || databaseUrl.trim() === "") {
@@ -179,6 +181,15 @@ class DatabaseService {
           console.log(
             `✅ Converted relative database path to absolute: ${databaseUrl}`,
           );
+        }
+        
+        // **FIX: Ensure data directory exists for CI test databases**
+        const path = await import("path");
+        const fs = await import("fs");
+        const dbDir = path.dirname(dbPath.startsWith("/") ? dbPath : path.resolve(process.cwd(), dbPath));
+        if (!fs.existsSync(dbDir)) {
+          fs.mkdirSync(dbDir, { recursive: true });
+          console.log(`📁 Created database directory: ${dbDir}`);
         }
       } else if (databaseUrl === ":memory:") {
         // In-memory database is fine for tests

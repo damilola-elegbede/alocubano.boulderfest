@@ -589,22 +589,20 @@ jobs:
           
           echo "DYNAMIC_PORT=$DYNAMIC_PORT" >> $GITHUB_ENV
           echo "PLAYWRIGHT_BASE_URL=http://localhost:$DYNAMIC_PORT" >> $GITHUB_ENV
-          echo "DATABASE_FILE=./data/e2e-ci-test-${{ matrix.suite }}.db" >> $GITHUB_ENV
           
           echo "✅ Dynamic port allocation configured:"
           echo "  Suite: ${{ matrix.suite }}"
           echo "  Port: $DYNAMIC_PORT"
-          echo "  Database: ./data/e2e-ci-test-${{ matrix.suite }}.db"
+          echo "  Using Turso database from secrets"
 
       - name: 🔧 Configure E2E Environment
         run: |
-          mkdir -p data test-results
+          mkdir -p test-results
           
-          # Create optimized E2E configuration with isolated database per suite
+          # Create optimized E2E configuration using Turso database
           cat > .env.local << EOF
           NODE_ENV=test
           E2E_TEST_MODE=true
-          DATABASE_URL="${{ env.DATABASE_FILE }}"
           PORT=${{ env.DYNAMIC_PORT }}
           DYNAMIC_PORT=${{ env.DYNAMIC_PORT }}
           CI_ENVIRONMENT=true
@@ -618,8 +616,8 @@ jobs:
           STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET_TEST || '' }}
           APPLE_PASS_KEY=${{ secrets.APPLE_PASS_KEY_TEST || '' }}
           GOOGLE_WALLET_ISSUER_ID=${{ secrets.GOOGLE_WALLET_ISSUER_ID_TEST || '' }}
-          TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL_CI || env.DATABASE_FILE }}
-          TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN_CI || '' }}
+          TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN || '' }}
           # Vercel configuration
           VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN || '' }}
           VERCEL_ORG_ID=${{ secrets.VERCEL_ORG_ID || '' }}
@@ -628,17 +626,17 @@ jobs:
           
           echo "✅ E2E environment configured for ${{ matrix.suite-name }}"
 
-      - name: 🗄️ Setup Isolated Test Database
+      - name: 🗄️ Setup Test Database
         run: |
-          echo "🗄️ Setting up isolated test database for ${{ matrix.suite }}..."
+          echo "🗄️ Setting up test database for ${{ matrix.suite }}..."
           
-          # Initialize isolated database for this suite
-          NODE_ENV=test TURSO_DATABASE_URL="${{ env.DATABASE_FILE }}" npm run migrate:up
+          # Run migrations on Turso database
+          NODE_ENV=test npm run migrate:up
           
-          echo "✅ Isolated database ready at ${{ env.DATABASE_FILE }}"
+          echo "✅ Turso database ready for ${{ matrix.suite }}"
         env:
-          DATABASE_URL: ${{ env.DATABASE_FILE }}
-          TURSO_DATABASE_URL: ${{ env.DATABASE_FILE }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
           PORT: ${{ env.DYNAMIC_PORT }}
           DYNAMIC_PORT: ${{ env.DYNAMIC_PORT }}
 
@@ -649,7 +647,7 @@ jobs:
           echo "🌐 Browser: ${{ matrix.browser }}"
           echo "🎯 Pattern: ${{ matrix.test-pattern || 'All tests' }}"
           echo "📡 Port: ${{ env.DYNAMIC_PORT }}"
-          echo "🗄️ Database: ${{ env.DATABASE_FILE }}"
+          echo "🗄️ Database: Turso (from secrets)"
           
           # Construct test command based on suite
           TEST_CMD="npx playwright test --config=playwright-e2e-ci.config.js --project=${{ matrix.browser }}"
@@ -688,8 +686,8 @@ jobs:
           PLAYWRIGHT_BASE_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
           NODE_OPTIONS: "--max-old-space-size=${{ matrix.memory-limit }}"
           E2E_TEST_MODE: true
-          DATABASE_URL: ${{ env.DATABASE_FILE }}
-          TURSO_DATABASE_URL: ${{ env.DATABASE_FILE }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
           PORT: ${{ env.DYNAMIC_PORT }}
           DYNAMIC_PORT: ${{ env.DYNAMIC_PORT }}
