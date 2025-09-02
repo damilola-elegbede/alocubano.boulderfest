@@ -617,7 +617,7 @@ jobs:
           APPLE_PASS_KEY=${{ secrets.APPLE_PASS_KEY_TEST || '' }}
           GOOGLE_WALLET_ISSUER_ID=${{ secrets.GOOGLE_WALLET_ISSUER_ID_TEST || '' }}
           TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN || '' }}
+          TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN }}
           # Vercel configuration
           VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN || '' }}
           VERCEL_ORG_ID=${{ secrets.VERCEL_ORG_ID || '' }}

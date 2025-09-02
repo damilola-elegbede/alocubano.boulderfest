@@ -13,7 +13,6 @@ import { existsSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
 
 const PROJECT_ROOT = resolve(process.cwd());
-const DATA_DIR = resolve(PROJECT_ROOT, 'data');
 
 async function globalSetup() {
   console.log('🚀 Global E2E Setup - CI Environment');
