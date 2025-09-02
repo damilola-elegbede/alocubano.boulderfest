@@ -450,8 +450,8 @@ jobs:
         run: |
           echo "Starting Vercel dev server for advanced E2E scenarios..."
           
-          # Start Vercel dev server in background with CI configuration
-          node scripts/vercel-dev-wrapper.js &
+          # Start Vercel dev server in background with simplified CI launcher
+          node scripts/vercel-dev-ci.js &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           
@@ -685,7 +685,8 @@ jobs:
 
       - name: 🚀 Start Performance Test Server (Vercel Dev)
         run: |
-          node scripts/vercel-dev-wrapper.js &
+          # Using simplified CI launcher for performance testing
+          node scripts/vercel-dev-ci.js &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           

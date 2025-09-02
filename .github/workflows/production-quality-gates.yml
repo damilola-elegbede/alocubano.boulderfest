@@ -59,7 +59,8 @@ jobs:
       - name: 🚀 Start Vercel Dev Server & Warm Up
         run: |
           echo "🚀 Starting Vercel dev server on port 3000..."
-          node scripts/vercel-dev-wrapper.js &
+          # Using simplified CI launcher to bypass complex wrapper logic
+          node scripts/vercel-dev-ci.js &
           SERVER_PID=$!
           echo "Vercel dev server started with PID: $SERVER_PID"
 

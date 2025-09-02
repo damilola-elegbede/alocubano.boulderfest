@@ -102,8 +102,8 @@ jobs:
           # Export port for server to use
           export PORT=$CI_PORT
 
-          # Start Vercel dev server with proper error handling
-          node scripts/vercel-dev-wrapper.js &
+          # Start Vercel dev server directly for CI (bypass complex wrappers)
+          node scripts/vercel-dev-ci.js &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           echo "server_pid=$SERVER_PID" >> $GITHUB_OUTPUT
