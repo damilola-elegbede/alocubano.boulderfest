@@ -72,7 +72,6 @@ async function globalSetup() {
     console.log('📊 Setup Summary:');
     console.log(`   Port: ${port}`);
     console.log(`   Database: Turso (configured)`);
-    console.log(`   Data Directory: ${DATA_DIR}`);
     console.log(`   Working Directory: ${PROJECT_ROOT}`);
     console.log(`   CI Mode: ${process.env.CI ? 'Yes' : 'No'}`);
     console.log('');

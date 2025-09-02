@@ -64,7 +64,7 @@ export default defineConfig({
     : [['list'], ['html']],
   
   // Global setup for database migrations and configuration
-  globalSetup: ADVANCED_SCENARIOS ? './tests/e2e/global-setup-ci.js' : './tests/e2e/global-setup-ci.js',
+  globalSetup: './tests/e2e/global-setup-ci.js',
   globalTeardown: './tests/e2e/global-teardown.js',
   
   // Extended timeout for advanced scenarios and CI environment
@@ -86,14 +86,6 @@ export default defineConfig({
       viewport: { width: 1280, height: 720 },
     })
   },
-
-  // Global setup and teardown for isolated test environments
-  globalSetup: ADVANCED_SCENARIOS 
-    ? './tests/e2e/global-setup-advanced.js' 
-    : './tests/e2e/global-setup-ci.js',
-  globalTeardown: ADVANCED_SCENARIOS 
-    ? './tests/e2e/global-teardown-advanced.js' 
-    : './tests/e2e/global-teardown-ci.js',
 
   projects: [
     {
