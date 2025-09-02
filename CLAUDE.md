@@ -34,6 +34,12 @@ npm run start:local  # http://localhost:3000
 
 # Simple HTTP server (no API)
 npm run serve:simple  # http://localhost:8000
+
+# CI Server with Dynamic Port Allocation
+npm run start:ci                     # Start CI server (uses DYNAMIC_PORT or defaults to 3000)
+npm run start:ci:port               # Start CI server with explicit port
+npm run vercel:dev:ci               # Vercel dev in CI mode
+DYNAMIC_PORT=3001 npm run start:ci  # Start on specific port
 ```
 
 ### Testing
