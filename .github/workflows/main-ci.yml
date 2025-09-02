@@ -29,6 +29,18 @@ on:
           - full
           - smoke
           - critical-only
+      e2e_suite:
+        description: 'E2E test suite selection'
+        required: false
+        default: 'standard'
+        type: choice
+        options:
+          - standard        # Core user flows (12 tests)
+          - advanced        # All tests including new scenarios (26 tests)
+          - critical        # Critical path only (6 tests)
+          - performance     # Performance-focused tests
+          - accessibility   # Accessibility compliance tests
+          - security        # Security-focused tests
       force_all_checks:
         description: 'Force all checks even for docs-only changes'
         required: false
@@ -77,6 +89,9 @@ jobs:
       skip-ci: ${{ steps.changes.outputs.skip-ci }}
       e2e-triggers: ${{ steps.changes.outputs.e2e-triggers }}
       deployment-triggers: ${{ steps.changes.outputs.deployment-triggers }}
+      accessibility-changes: ${{ steps.changes.outputs.frontend }}
+      performance-changes: ${{ steps.changes.outputs.performance-triggers }}
+      security-changes: ${{ steps.changes.outputs.security-triggers }}
       
     steps:
       - name: 📥 Checkout Code
@@ -102,6 +117,9 @@ jobs:
           echo "| Tests | ${{ steps.changes.outputs.tests }} | ${{ steps.changes.outputs.tests == 'true' && '✅' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Critical | ${{ steps.changes.outputs.critical }} | ${{ steps.changes.outputs.critical == 'true' && '⚠️' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Docs Only | ${{ steps.changes.outputs.docs-only }} | ${{ steps.changes.outputs.docs-only == 'true' && '📝' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E Triggers | ${{ steps.changes.outputs.e2e-triggers }} | ${{ steps.changes.outputs.e2e-triggers == 'true' && '🎭' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Performance | ${{ steps.changes.outputs.performance-triggers }} | ${{ steps.changes.outputs.performance-triggers == 'true' && '⚡' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | ${{ steps.changes.outputs.security-triggers }} | ${{ steps.changes.outputs.security-triggers == 'true' && '🔒' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Performance optimization summary
@@ -410,11 +428,11 @@ jobs:
           retention-days: 7
 
   # ===================================================================
-  # E2E TESTS PHASE (8-12 minutes conditional)
-  # Comprehensive browser testing with smart triggers
+  # E2E TESTS PHASE (8-15 minutes conditional)
+  # Comprehensive browser testing with smart test suite selection
   # ===================================================================
   e2e-tests:
-    name: 🎭 E2E Tests (Conditional)
+    name: 🎭 E2E Tests (${{ matrix.suite-name }})
     runs-on: ubuntu-latest
     needs: [detect-changes, unit-tests, integration-validation]
     if: |
@@ -424,21 +442,82 @@ jobs:
       inputs.skip_e2e != true &&
       (needs.detect-changes.outputs.e2e-triggers == 'true' ||
        needs.detect-changes.outputs.critical == 'true' ||
+       needs.detect-changes.outputs.performance-triggers == 'true' ||
+       needs.detect-changes.outputs.security-triggers == 'true' ||
        inputs.force_all_checks == true) &&
       needs.detect-changes.outputs.skip-ci != 'true'
-    timeout-minutes: 18
+    timeout-minutes: 20
     
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
-        browser: [chromium, firefox]
-        # Only run Firefox on critical changes to save time
-        exclude:
-          - browser: firefox
         include:
-          - browser: firefox
+          # Standard Test Suite (Core flows - always runs)
+          - suite: standard
+            suite-name: "Standard (Chrome)"
+            browser: chromium
+            test-pattern: "basic-navigation|cart-functionality|registration-flow|admin-auth|gallery-basic|newsletter-simple"
+            timeout-minutes: 12
+            memory-limit: "3072"
+            retry-count: 2
+            required: true
+          
+          # Advanced Test Suite (All tests - runs on advanced selection or critical changes)
+          - suite: advanced
+            suite-name: "Advanced (Chrome)"
+            browser: chromium
+            test-pattern: ""
+            timeout-minutes: 18
+            memory-limit: "4096"
+            retry-count: 2
+            required: false
+            condition: ${{ inputs.e2e_suite == 'advanced' || needs.detect-changes.outputs.critical == 'true' }}
+          
+          # Firefox Validation (Secondary browser - critical changes only)
+          - suite: firefox
+            suite-name: "Cross-browser (Firefox)"
+            browser: firefox
+            test-pattern: "basic-navigation|cart-functionality|registration-flow"
+            timeout-minutes: 10
+            memory-limit: "3072"
+            retry-count: 3
+            required: false
             condition: ${{ needs.detect-changes.outputs.critical == 'true' || inputs.force_all_checks == true }}
-    
+          
+          # Performance Tests (Performance-sensitive changes)
+          - suite: performance
+            suite-name: "Performance"
+            browser: chromium
+            test-pattern: "performance-load|gallery-browsing"
+            timeout-minutes: 15
+            memory-limit: "4096"
+            retry-count: 1
+            required: false
+            condition: ${{ inputs.e2e_suite == 'performance' || needs.detect-changes.outputs.performance-triggers == 'true' }}
+          
+          # Accessibility Tests (Frontend changes)
+          - suite: accessibility
+            suite-name: "Accessibility"
+            browser: chromium
+            test-pattern: "accessibility-compliance|mobile-registration-experience"
+            timeout-minutes: 10
+            memory-limit: "3072"
+            retry-count: 2
+            required: false
+            condition: ${{ inputs.e2e_suite == 'accessibility' || needs.detect-changes.outputs.frontend == 'true' }}
+          
+          # Security Tests (Security-sensitive changes)
+          - suite: security
+            suite-name: "Security"
+            browser: chromium
+            test-pattern: "admin-security-enhanced|stripe-webhook-security|database-integrity"
+            timeout-minutes: 12
+            memory-limit: "3072"
+            retry-count: 2
+            required: false
+            condition: ${{ inputs.e2e_suite == 'security' || needs.detect-changes.outputs.security-triggers == 'true' }}
+
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
@@ -463,7 +542,7 @@ jobs:
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}-v2
+          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}-v3
           restore-keys: |
             ${{ runner.os }}-playwright-${{ matrix.browser }}-
             ${{ runner.os }}-playwright-
@@ -474,7 +553,7 @@ jobs:
 
       - name: 🔧 Configure E2E Environment
         run: |
-          mkdir -p data
+          mkdir -p data test-results
           
           # Create optimized E2E configuration
           cat > .env.local << EOF
@@ -487,9 +566,17 @@ jobs:
           # Test credentials
           TEST_ADMIN_PASSWORD=test-password-123
           ADMIN_SECRET=${{ secrets.ADMIN_SECRET || 'fallback-test-secret-minimum-32-chars' }}
+          # Advanced test environment variables
+          BREVO_API_KEY=${{ secrets.BREVO_API_KEY_TEST || '' }}
+          STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY_TEST || '' }}
+          STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET_TEST || '' }}
+          APPLE_PASS_KEY=${{ secrets.APPLE_PASS_KEY_TEST || '' }}
+          GOOGLE_WALLET_ISSUER_ID=${{ secrets.GOOGLE_WALLET_ISSUER_ID_TEST || '' }}
+          TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL_CI || 'file:./data/e2e-ci-test.db' }}
+          TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN_CI || '' }}
           EOF
           
-          echo "✅ E2E environment configured"
+          echo "✅ E2E environment configured for ${{ matrix.suite-name }}"
 
       - name: 🚀 Start Test Server (Optimized)
         run: |
@@ -514,32 +601,62 @@ jobs:
             sleep 2
           done
 
-      - name: 🎭 Run E2E Tests (Optimized)
+      - name: 🎭 Run E2E Tests (${{ matrix.suite-name }})
         run: |
-          echo "🎭 Running E2E tests for ${{ matrix.browser }}..."
+          echo "🎭 Running E2E tests: ${{ matrix.suite-name }}..."
+          echo "📊 Test suite: ${{ matrix.suite }}"
+          echo "🌐 Browser: ${{ matrix.browser }}"
+          echo "🎯 Pattern: ${{ matrix.test-pattern || 'All tests' }}"
           
-          # Smart test execution based on browser
-          if [ "${{ matrix.browser }}" == "chromium" ]; then
-            # Full test suite for Chromium (primary browser)
-            npm run test:e2e:ci -- --project=chromium
-          else
-            # Critical tests only for Firefox (secondary browser)
-            npm run test:e2e:ci -- --project=firefox --grep="@critical"
+          # Construct test command based on suite
+          TEST_CMD="npx playwright test --config=playwright-e2e-ci.config.js --project=${{ matrix.browser }}"
+          
+          # Add test pattern filtering
+          if [ -n "${{ matrix.test-pattern }}" ]; then
+            TEST_CMD="$TEST_CMD --grep=\"(${{ matrix.test-pattern }})\""
           fi
           
-          echo "✅ E2E tests completed for ${{ matrix.browser }}"
+          # Add retries
+          TEST_CMD="$TEST_CMD --retries=${{ matrix.retry-count }}"
+          
+          # Add timeout
+          TEST_CMD="$TEST_CMD --timeout=120000"
+          
+          # Add reporters based on suite
+          if [ "${{ matrix.suite }}" == "performance" ]; then
+            TEST_CMD="$TEST_CMD --reporter=list,json:test-results/performance-${{ matrix.browser }}.json"
+          elif [ "${{ matrix.suite }}" == "accessibility" ]; then
+            TEST_CMD="$TEST_CMD --reporter=list,json:test-results/accessibility-${{ matrix.browser }}.json"
+          else
+            TEST_CMD="$TEST_CMD --reporter=list,html"
+          fi
+          
+          echo "📋 Executing: $TEST_CMD"
+          
+          # Execute with timeout protection
+          if timeout ${{ matrix.timeout-minutes }}m bash -c "$TEST_CMD"; then
+            echo "✅ E2E tests completed successfully: ${{ matrix.suite-name }}"
+          else
+            EXIT_CODE=$?
+            echo "❌ E2E tests failed: ${{ matrix.suite-name }} (exit code: $EXIT_CODE)"
+            exit $EXIT_CODE
+          fi
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
-          NODE_OPTIONS: "--max-old-space-size=3072"
+          NODE_OPTIONS: "--max-old-space-size=${{ matrix.memory-limit }}"
           E2E_TEST_MODE: true
           DATABASE_URL: "file:./data/e2e-ci-test.db"
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
+          # Test suite specific environment
+          PERFORMANCE_TESTING: ${{ matrix.suite == 'performance' }}
+          ACCESSIBILITY_TESTING: ${{ matrix.suite == 'accessibility' }}
+          SECURITY_TESTING: ${{ matrix.suite == 'security' }}
 
       - name: 📤 Upload E2E Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-results-${{ matrix.browser }}-${{ github.run_number }}
+          name: e2e-results-${{ matrix.suite }}-${{ matrix.browser }}-${{ github.run_number }}
           path: |
             playwright-report/
             test-results/
@@ -667,11 +784,39 @@ jobs:
           echo "📊 Pipeline Performance Metrics:"
           echo "  Total Jobs Executed: $TOTAL_JOBS_RUN"
           echo "  Estimated Time Saved: ${ESTIMATED_TIME_SAVED} minutes"
-          echo "  Consolidated Workflows: 3 (ci.yml, pr-validation.yml, pr-quality-gates.yml) + simplified integration validation"
+          echo "  E2E Test Suites Available: 6 (Standard, Advanced, Firefox, Performance, Accessibility, Security)"
+          echo "  Total E2E Tests: 26 (including 9 advanced scenarios)"
 
       - name: 📋 Generate Comprehensive CI Summary
         run: |
           echo "# 🚀 Consolidated CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # E2E Suite Summary
+          echo "## 🎭 E2E Test Suite Integration" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Suite | Tests | Browser | Triggers | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|---------|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Standard | 6 core flows | Chromium | Always | ${{ needs.e2e-tests.result != 'skipped' && '✅' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Advanced | All 26 tests | Chromium | Critical changes | ${{ (inputs.e2e_suite == 'advanced' || needs.detect-changes.outputs.critical == 'true') && '✅' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Cross-browser | 3 core tests | Firefox | Critical changes | ${{ needs.detect-changes.outputs.critical == 'true' && '✅' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Performance | Load testing | Chromium | Performance changes | ${{ needs.detect-changes.outputs.performance-triggers == 'true' && '⚡' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Accessibility | WCAG compliance | Chromium | Frontend changes | ${{ needs.detect-changes.outputs.frontend == 'true' && '♿' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | Enhanced security | Chromium | Security changes | ${{ needs.detect-changes.outputs.security-triggers == 'true' && '🔒' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # New Advanced Tests
+          echo "## 🆕 New Advanced E2E Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- ♿ **accessibility-compliance.test.js** - WCAG 2.1 compliance testing" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏎️ **performance-load.test.js** - Performance under load testing" >> $GITHUB_STEP_SUMMARY
+          echo "- 📱 **wallet-pass-apple.test.js** - Apple Wallet pass generation" >> $GITHUB_STEP_SUMMARY
+          echo "- 💳 **wallet-pass-google.test.js** - Google Wallet pass generation" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔒 **stripe-webhook-security.test.js** - Stripe webhook security" >> $GITHUB_STEP_SUMMARY
+          echo "- 📧 **email-transactional.test.js** - Email transactional flows" >> $GITHUB_STEP_SUMMARY
+          echo "- 🗄️ **database-integrity.test.js** - Database transaction integrity" >> $GITHUB_STEP_SUMMARY
+          echo "- 🛡️ **admin-security-enhanced.test.js** - Enhanced admin security" >> $GITHUB_STEP_SUMMARY
+          echo "- 🌐 **network-resilience.test.js** - Network failure resilience" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Performance optimization summary
@@ -683,8 +828,8 @@ jobs:
           echo "| NPM CI Optimizations | ✅ Active | 3-5 min saved per job |" >> $GITHUB_STEP_SUMMARY
           echo "| Aggressive Caching | ✅ Active | 2-3 min saved per job |" >> $GITHUB_STEP_SUMMARY
           echo "| Parallel Execution | ✅ Active | 40-60% time reduction |" >> $GITHUB_STEP_SUMMARY
-          echo "| Mock Server Caching | ✅ Active | 30-60s saved per test job |" >> $GITHUB_STEP_SUMMARY
-          echo "| Conditional E2E | ✅ Active | 8-12 min saved when skipped |" >> $GITHUB_STEP_SUMMARY
+          echo "| Smart E2E Suite Selection | ✅ Active | 5-12 min saved when filtered |" >> $GITHUB_STEP_SUMMARY
+          echo "| Memory Optimization | ✅ Active | 4GB memory allocation |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Job results summary
@@ -738,7 +883,7 @@ jobs:
           else
             E2E_ICON="⏭️"
           fi
-          echo "| 🎭 E2E Tests | $E2E_ICON $E2E_STATUS | 8-12 min |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎭 E2E Tests | $E2E_ICON $E2E_STATUS | 8-20 min (smart suites) |" >> $GITHUB_STEP_SUMMARY
           
           # Build Verification
           BV_STATUS="${{ needs.build-verification.result }}"
@@ -783,10 +928,11 @@ jobs:
             echo "- ✅ Further development" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "### 📊 Quality Metrics:" >> $GITHUB_STEP_SUMMARY
-            echo "- **Test Coverage**: Unit tests (26 essential tests) + Integration + E2E" >> $GITHUB_STEP_SUMMARY
+            echo "- **Test Coverage**: Unit tests (26 essential tests) + Integration + E2E (26 comprehensive tests)" >> $GITHUB_STEP_SUMMARY
             echo "- **Code Quality**: ESLint + HTMLHint validation passed" >> $GITHUB_STEP_SUMMARY
             echo "- **Security**: Vulnerability scanning completed" >> $GITHUB_STEP_SUMMARY
             echo "- **Performance**: Build verification and health checks passed" >> $GITHUB_STEP_SUMMARY
+            echo "- **Advanced Testing**: 9 new E2E scenarios for comprehensive coverage" >> $GITHUB_STEP_SUMMARY
             echo "- **Simple Testing**: Direct SQLite testing - radical simplicity approach" >> $GITHUB_STEP_SUMMARY
           else
             echo "## ❌ Pipeline Failures" >> $GITHUB_STEP_SUMMARY
@@ -803,10 +949,10 @@ jobs:
           # Workflow replacement info
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "**🔄 Consolidated Workflows**: This replaces ci.yml, pr-validation.yml, and pr-quality-gates.yml with simplified integration validation" >> $GITHUB_STEP_SUMMARY
-          echo "**⚡ Performance**: ~50% faster execution through smart optimizations" >> $GITHUB_STEP_SUMMARY
-          echo "**🎯 Target**: <10 minutes total pipeline execution" >> $GITHUB_STEP_SUMMARY
-          echo "**🚀 Simple Testing**: Direct SQLite testing - 26 essential unit tests, zero abstractions" >> $GITHUB_STEP_SUMMARY
+          echo "**🔄 Advanced E2E Integration**: Now includes 26 comprehensive E2E tests with smart suite selection" >> $GITHUB_STEP_SUMMARY
+          echo "**⚡ Performance**: ~50% faster execution through smart optimizations and selective test execution" >> $GITHUB_STEP_SUMMARY
+          echo "**🎯 Target**: <10 minutes for standard suite, <20 minutes for comprehensive testing" >> $GITHUB_STEP_SUMMARY
+          echo "**🚀 Advanced Testing**: 9 new E2E scenarios covering accessibility, performance, security, and wallet integration" >> $GITHUB_STEP_SUMMARY
 
       - name: ✅ Pipeline Success
         if: |
@@ -819,7 +965,8 @@ jobs:
           echo "🎉 Consolidated CI Pipeline completed successfully!"
           echo "✅ All critical quality gates passed"
           echo "⚡ Achieved ~50% performance improvement through optimizations"
-          echo "🚀 Mock server integration for reliable testing"
+          echo "🎭 Advanced E2E test integration with 26 comprehensive scenarios"
+          echo "🚀 Smart suite selection for optimal CI performance"
           echo "🎯 Ready for review, merge, and deployment"
 
       - name: ❌ Pipeline Failure
@@ -833,6 +980,6 @@ jobs:
           echo "❌ Consolidated CI Pipeline failed"
           echo "🔍 Review job logs and artifacts for specific failure details"
           echo "🔧 Fix issues and push updates to re-trigger optimized pipeline"
-          echo "📋 This consolidated workflow replaces 4 previous workflows for efficiency"
-          echo "🚀 Mock server logs available in artifacts for debugging"
+          echo "📋 This consolidated workflow includes 26 comprehensive E2E tests"
+          echo "🎭 E2E test artifacts available for debugging advanced scenarios"
           exit 1

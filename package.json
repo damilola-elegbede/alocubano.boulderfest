@@ -30,6 +30,14 @@
     "test:e2e:report": "playwright show-report",
     "test:e2e:install": "playwright install --with-deps",
     "test:e2e:ci": "NODE_OPTIONS='--max-old-space-size=3072' playwright test --config=playwright-e2e-ci.config.js",
+    "test:e2e:advanced": "NODE_OPTIONS='--max-old-space-size=4096' ADVANCED_SCENARIOS=true playwright test --config=playwright-e2e-ci.config.js",
+    "test:e2e:accessibility": "NODE_OPTIONS='--max-old-space-size=3072' ACCESSIBILITY_TESTING=true playwright test --config=playwright-e2e-ci.config.js --grep=\"accessibility\"",
+    "test:e2e:performance": "NODE_OPTIONS='--max-old-space-size=6144' PERFORMANCE_TESTING=true playwright test --config=playwright-e2e-ci.config.js --grep=\"performance|load\"",
+    "test:e2e:security": "NODE_OPTIONS='--max-old-space-size=3072' SECURITY_TESTING=true playwright test --config=playwright-e2e-ci.config.js --grep=\"security|admin|stripe\"",
+    "test:e2e:wallet": "NODE_OPTIONS='--max-old-space-size=3072' playwright test --config=playwright-e2e-ci.config.js --grep=\"wallet-pass\"",
+    "test:e2e:database": "NODE_OPTIONS='--max-old-space-size=3072' playwright test --config=playwright-e2e-ci.config.js --grep=\"database-integrity\"",
+    "test:e2e:network": "NODE_OPTIONS='--max-old-space-size=3072' playwright test --config=playwright-e2e-ci.config.js --grep=\"network-resilience\"",
+    "test:e2e:email": "NODE_OPTIONS='--max-old-space-size=3072' playwright test --config=playwright-e2e-ci.config.js --grep=\"email-transactional\"",
     "test:e2e:ngrok": "NODE_OPTIONS='--max-old-space-size=3072' node scripts/e2e-with-ngrok.js",
     "test:e2e:ngrok:ui": "NODE_OPTIONS='--max-old-space-size=3072' node scripts/e2e-with-ngrok.js -- --ui",
     "test:e2e:ngrok:headed": "NODE_OPTIONS='--max-old-space-size=3072' node scripts/e2e-with-ngrok.js -- --headed",
@@ -137,10 +145,11 @@
     ],
     "testing": [
       "Simple unit tests with Vitest - 26 essential tests",
-      "E2E tests with Playwright - 12 comprehensive flows",
+      "Advanced E2E tests with Playwright - 26 comprehensive flows",
       "SQLite for unit tests, Turso for E2E tests",
-      "No complex test abstractions",
-      "Direct API testing"
+      "Advanced scenarios: accessibility, performance, security, wallet integration",
+      "Smart test suite selection with CI optimization",
+      "Direct API testing with minimal abstractions"
     ]
   }
 }
