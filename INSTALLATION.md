@@ -39,7 +39,7 @@ npm run migrate:up
 # Verification
 npm test                    # Run unit tests (26 tests, fast execution)
 npm run test:e2e:install   # Install E2E browsers
-npm run test:e2e          # Run E2E tests (requires Turso setup)
+npm run test:e2e          # Run E2E tests (uses local development server)
 
 # Start development
 npm start  # With ngrok tunnel (recommended)
@@ -241,7 +241,7 @@ npm run test:coverage
 # Install E2E testing browsers
 npm run test:e2e:install
 
-# Run E2E tests (requires Turso database)
+# Run E2E tests (uses local development server)
 npm run test:e2e
 
 # Run all tests (unit + E2E)
@@ -308,7 +308,7 @@ npm run serve:simple   # Simple HTTP server (no APIs)
 npm test                          # Run unit tests (26 tests, fast execution)
 npm run test:watch               # Watch mode for development
 npm run test:coverage            # With coverage report
-npm run test:e2e           # End-to-end tests (requires Turso)
+npm run test:e2e           # End-to-end tests (uses local server)
 npm run test:e2e:ui              # E2E tests with interactive UI
 npm run test:all                 # All tests including E2E
 

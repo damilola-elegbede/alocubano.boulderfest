@@ -30,16 +30,16 @@ function checkRateLimit(ip) {
 }
 
 /**
- * Extract ticket ID from token
- * @param {string} token - JWT token or raw ticket ID
- * @returns {string} - Ticket ID
+ * Extract validation code from token
+ * @param {string} token - JWT token or raw validation code
+ * @returns {string} - Validation code
  */
-function extractTicketId(token) {
+function extractValidationCode(token) {
   try {
     const decoded = jwt.verify(token, process.env.QR_SECRET_KEY);
-    return decoded.tid;
+    return decoded.tid || decoded.validation_code;
   } catch {
-    // Fallback to direct ticket ID for backward compatibility
+    // Fallback to direct validation code for backward compatibility
     return token;
   }
 }
@@ -63,25 +63,25 @@ function detectSource(req) {
 /**
  * Validate ticket and update scan count atomically
  * @param {object} db - Database instance
- * @param {string} ticketId - Ticket ID to validate
+ * @param {string} validationCode - Validation code from QR code
  * @param {string} source - Validation source
  * @returns {object} - Validation result
  */
-async function validateTicket(db, ticketId, source) {
+async function validateTicket(db, validationCode, source) {
   // Start transaction for atomic operations
   const tx = await db.transaction();
 
   try {
-    // Get ticket with lock for update (prevents race conditions)
+    // Get ticket by validation_code (QR codes contain validation_code, not ticket_id)
     const result = await tx.execute({
       sql: `
-        SELECT t.*, e.name as event_name, e.date as event_date
+        SELECT t.*,
+               'A Lo Cubano Boulder Fest' as event_name,
+               t.event_date
         FROM tickets t
-        JOIN events e ON t.event_id = e.id
-        WHERE t.ticket_id = ?
-        FOR UPDATE
+        WHERE t.validation_code = ?
       `,
-      args: [ticketId],
+      args: [validationCode],
     });
 
     const ticket = result.rows[0];
@@ -106,11 +106,11 @@ async function validateTicket(db, ticketId, source) {
             qr_access_method = ?,
             first_scanned_at = COALESCE(first_scanned_at, CURRENT_TIMESTAMP),
             last_scanned_at = CURRENT_TIMESTAMP
-        WHERE ticket_id = ? 
+        WHERE validation_code = ? 
           AND scan_count < max_scan_count
           AND status = 'valid'
       `,
-      args: [source, ticketId],
+      args: [source, validationCode],
     });
 
     if (updateResult.rowsAffected === 0) {
@@ -197,18 +197,19 @@ export default async function handler(req, res) {
   const db = await getDatabaseClient();
 
   try {
-    const ticketId = extractTicketId(token);
+    const validationCode = extractValidationCode(token);
 
     if (validateOnly) {
       // For preview only - no updates
       const result = await db.execute({
         sql: `
-          SELECT t.*, e.name as event_name, e.date as event_date
+          SELECT t.*,
+                 'A Lo Cubano Boulder Fest' as event_name,
+                 t.event_date
           FROM tickets t
-          JOIN events e ON t.event_id = e.id
-          WHERE t.ticket_id = ?
+          WHERE t.validation_code = ?
         `,
-        args: [ticketId],
+        args: [validationCode],
       });
 
       const ticket = result.rows[0];
@@ -224,7 +225,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         valid: true,
         ticket: {
-          id: ticketId,
+          id: ticket.ticket_id,
           type: ticket.ticket_type,
           eventName: ticket.event_name,
           eventDate: ticket.event_date,
@@ -239,7 +240,7 @@ export default async function handler(req, res) {
     }
 
     // Actual validation with scan count update
-    const validationResult = await validateTicket(db, ticketId, source);
+    const validationResult = await validateTicket(db, validationCode, source);
     const ticket = validationResult.ticket;
 
     // Log successful validation
@@ -255,7 +256,7 @@ export default async function handler(req, res) {
     res.status(200).json({
       valid: true,
       ticket: {
-        id: ticketId,
+        id: ticket.ticket_id,
         type: ticket.ticket_type,
         eventName: ticket.event_name,
         eventDate: ticket.event_date,

@@ -171,7 +171,7 @@ export default defineConfig({
       ACCESSIBILITY_TESTING: process.env.ACCESSIBILITY_TESTING || 'false',
       SECURITY_TESTING: process.env.SECURITY_TESTING || 'false',
       // Pass through test credentials for advanced scenarios
-      TEST_ADMIN_PASSWORD: process.env.TEST_ADMIN_PASSWORD || 'test-password-123',
+      TEST_ADMIN_PASSWORD: process.env.TEST_ADMIN_PASSWORD || 'test-password',
       ADMIN_SECRET: process.env.ADMIN_SECRET || 'test-admin-secret-key-minimum-32-characters',
       // Advanced test service configuration
       BREVO_API_KEY: process.env.BREVO_API_KEY || '',

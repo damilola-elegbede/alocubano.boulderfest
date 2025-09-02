@@ -20,14 +20,14 @@ test.describe('Admin Authentication', () => {
   });
 
   test('should display login form with required fields', async ({ page }) => {
-    await expect(page.locator('h1')).toHaveText(/Admin Login/i);
-    await expect(page.locator('input[name="email"]')).toBeVisible();
+    await expect(page.locator('h1')).toHaveText(/Admin Access/i);
+    await expect(page.locator('input[name="username"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();
   });
 
   test('should reject invalid credentials', async ({ page }) => {
-    await page.fill('input[name="email"]', 'wrong@email.com');
+    await page.fill('input[name="username"]', 'wrong@email.com');
     await page.fill('input[type="password"]', 'wrongpassword');
     
     await page.click('button[type="submit"]');
@@ -37,19 +37,26 @@ test.describe('Admin Authentication', () => {
   });
 
   test('should authenticate valid admin credentials', async ({ page }) => {
-    await page.fill('input[name="email"]', adminCredentials.email);
+    await page.fill('input[name="username"]', adminCredentials.email);
     await page.fill('input[type="password"]', adminCredentials.password);
     
+    // Wait for navigation to complete
+    const navigationPromise = page.waitForNavigation();
     await page.click('button[type="submit"]');
     
+    try {
+      await navigationPromise;
+    } catch (error) {
+      console.log('Navigation did not occur within timeout');
+    }
+    
     // Should redirect to dashboard
-    await page.waitForURL('**/admin/dashboard.html');
     await expect(page).toHaveURL(/admin\/dashboard/);
   });
 
   test('should maintain session after login', async ({ page }) => {
     // Login first
-    await page.fill('input[name="email"]', adminCredentials.email);
+    await page.fill('input[name="username"]', adminCredentials.email);
     await page.fill('input[type="password"]', adminCredentials.password);
     await page.click('button[type="submit"]');
     
@@ -66,7 +73,7 @@ test.describe('Admin Authentication', () => {
 
   test('should logout successfully', async ({ page }) => {
     // Login first
-    await page.fill('input[name="email"]', adminCredentials.email);
+    await page.fill('input[name="username"]', adminCredentials.email);
     await page.fill('input[type="password"]', adminCredentials.password);
     await page.click('button[type="submit"]');
     

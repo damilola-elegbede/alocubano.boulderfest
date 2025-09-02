@@ -295,7 +295,9 @@ function determineCartVisibility(hasItems) {
 
     // Define page behavior configuration
     const pageConfig = {
-    // Pages that never show cart (error pages, redirect pages)
+        // Pages that always show cart (main shopping pages)
+        alwaysShow: ['/tickets', '/donations'],
+        // Pages that never show cart (error pages, redirect pages)
         neverShow: ['/404', '/index.html']
     };
 
@@ -304,10 +306,14 @@ function determineCartVisibility(hasItems) {
         return false;
     }
 
-    // For all pages (including tickets and donations), show cart only when it has items
+    // Check if current page should always show cart
+    if (pageConfig.alwaysShow.some((path) => currentPath.includes(path))) {
+        return true;
+    }
+
+    // For other pages (about, artists, schedule, gallery), show cart only when it has items
     return hasItems;
 }
-
 function toggleCartPanel(elements, isOpen, cartManager) {
     if (isOpen) {
         elements.panel.classList.add('open');
@@ -335,10 +341,11 @@ function toggleCartPanel(elements, isOpen, cartManager) {
 
 function updateCartUI(elements, cartState) {
     const { totals = {}, isEmpty, tickets, donations } = cartState;
+    // Calculate total items for use throughout function
+    const totalItems = (totals.itemCount || 0) + (totals.donationCount || 0);
 
     // Update badge
     if (totals.itemCount > 0 || totals.donationCount > 0) {
-        const totalItems = totals.itemCount + (totals.donationCount || 0);
         elements.badge.textContent = totalItems || '•';
         elements.badge.style.display = 'flex';
 

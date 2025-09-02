@@ -17,7 +17,7 @@ test.describe('Admin Dashboard & Security', () => {
   // Helper function to login
   const loginAsAdmin = async (page) => {
     await page.goto('/pages/admin/login.html');
-    await page.fill('input[name="email"]', adminCredentials.email);
+    await page.fill('input[name="username"]', adminCredentials.email);
     await page.fill('input[type="password"]', adminCredentials.password);
     await page.click('button[type="submit"]');
     await page.waitForURL('**/admin/dashboard.html');

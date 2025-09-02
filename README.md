@@ -164,7 +164,7 @@ alocubano.boulderfest/
 - `npm run serve:simple` - Simple HTTP server without API functions (port 8000)
 - `npm test` - Run streamlined test suite (26 unit tests)
 - `npm run test:all` - Run all tests including E2E validation
-- `npm run test:e2e` - Run Playwright E2E tests (requires Turso database)
+- `npm run test:e2e` - Run Playwright E2E tests (uses local development server)
 - `npm run test:e2e:ui` - Interactive E2E test development mode
 - `npm run lint` - Run ESLint and HTMLHint
 - `npm run build` - Build for production
@@ -196,11 +196,15 @@ npm run test:simple         # Same as npm test
 npm run test:simple:watch   # Watch mode for development
 npm run test:coverage       # Coverage report
 
-# E2E Tests (Turso database)
-npm run test:e2e            # Run comprehensive E2E tests
-npm run test:e2e:ui         # Interactive UI mode
+# E2E Tests (default - uses local development server)
+npm run test:e2e            # Run comprehensive E2E tests with CI config
+npm run test:e2e:ui         # Interactive UI mode with CI config
 npm run test:e2e:headed     # Run with browser visible
 npm run test:e2e:debug      # Debug mode
+
+# E2E Tests (with Vercel dev server, requires ngrok setup)
+npm run test:e2e:vercel     # Run E2E tests with Vercel dev server
+npm run test:e2e:vercel:ui  # Interactive UI mode with Vercel config
 
 # Complete Testing
 npm run test:all            # Unit tests + E2E tests
@@ -243,11 +247,14 @@ npm test
 
 #### E2E Tests
 ```bash
-# Required for E2E testing
+# Default configuration - no special setup required
+# Uses local development server and SQLite database
+npm run test:e2e
+
+# For Vercel dev server testing (requires Turso database)
 TURSO_DATABASE_URL=your_turso_database_url
 TURSO_AUTH_TOKEN=your_turso_auth_token
-
-npm run test:e2e
+npm run test:e2e:vercel
 ```
 
 ### Quality Gates

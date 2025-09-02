@@ -203,6 +203,7 @@
       async function handleLogin(event) {
         event.preventDefault();
 
+        const username = document.getElementById("username").value;
         const password = document.getElementById("password").value;
         const errorDiv = document.getElementById("errorMessage");
         const loginBtn = document.getElementById("loginBtn");
@@ -217,7 +218,7 @@
           const response = await fetch("/api/admin/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ password }),
+            body: JSON.stringify({ username, password }),
           });
 
           const data = await response.json();

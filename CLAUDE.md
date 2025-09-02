@@ -47,9 +47,19 @@ npm run test:simple         # Same as npm test
 npm run test:simple:watch   # Watch mode for development
 npm run test:coverage       # With coverage report
 
-# E2E testing
-npm run test:e2e            # 12 comprehensive E2E tests
-npm run test:e2e:ui         # Interactive UI mode
+# E2E testing (default - uses local development server)
+npm run test:e2e            # 12 comprehensive E2E tests with CI config
+npm run test:e2e:ui         # Interactive UI mode with CI config
+npm run test:e2e:headed     # Headed browser mode with CI config
+npm run test:e2e:debug      # Debug mode with CI config
+npm run test:e2e:fast       # Fast mode (Chromium only) with CI config
+
+# E2E testing with Vercel dev server (requires ngrok setup)
+npm run test:e2e:vercel        # Full E2E tests with Vercel dev server
+npm run test:e2e:vercel:ui     # Interactive UI mode with Vercel config
+npm run test:e2e:vercel:headed # Headed browser mode with Vercel config
+npm run test:e2e:vercel:debug  # Debug mode with Vercel config
+npm run test:e2e:vercel:fast   # Fast mode (Chromium only) with Vercel config
 
 # E2E testing with ngrok (automated environment setup)
 npm run test:e2e:ngrok         # Full E2E tests with ngrok tunnel
@@ -57,7 +67,7 @@ npm run test:e2e:ngrok:ui      # Interactive UI mode with ngrok
 npm run test:e2e:ngrok:headed  # Headed browser mode with ngrok
 npm run test:e2e:ngrok:debug   # Debug mode with ngrok
 npm run test:e2e:ngrok:fast    # Fast mode (Chromium only) with ngrok
-npm run test:e2e:validate       # Validate E2E setup prerequisites
+npm run test:e2e:validate      # Validate E2E setup prerequisites
 
 # E2E test flows (12 total)
 npm run test:e2e -- tests/e2e/flows/admin-auth.test.js                      # Admin authentication
