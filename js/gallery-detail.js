@@ -72,7 +72,7 @@
         socialOffset: 0, // Current position in socials array
         // Image preloading optimization
         preloadedImages: new Set(), // Track preloaded images to avoid duplicates
-        preloadQueue: [] // Queue for managing preloads
+        preloadQueue: [], // Queue for managing preloads
         workshopTotal: 0, // Total workshop items available
         socialTotal: 0, // Total social items available
         currentCategory: 'workshops', // Which category we're currently loading
