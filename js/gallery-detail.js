@@ -844,7 +844,7 @@
             let isStaticFetch = false;
 
             // For the first page, load the static JSON file.
-            if (offset === 0) {
+            if (offset === 0 && false) { // Temporarily disable static JSON loading due to Vercel routing issue
                 isStaticFetch = true;
                 // Try event-specific file first, fallback to year-based
                 const event = getEventFromPage();
