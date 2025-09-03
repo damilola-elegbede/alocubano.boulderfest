@@ -5,6 +5,17 @@
 import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { configureEnvironment, cleanupEnvironment, validateEnvironment, TEST_ENVIRONMENTS } from './config/test-environment.js';
 
+// Force local SQLite for integration tests (prevent Turso usage)
+process.env.DATABASE_URL = 'file:./data/test-integration.db';
+delete process.env.TURSO_AUTH_TOKEN;
+delete process.env.TURSO_DATABASE_URL;
+// Ensure this is not detected as E2E test
+delete process.env.E2E_TEST_MODE;
+delete process.env.PLAYWRIGHT_BROWSER;
+delete process.env.VERCEL_DEV_STARTUP;
+// Set explicit integration test context
+process.env.INTEGRATION_TEST_MODE = 'true';
+
 // Configure integration test environment
 const config = configureEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
 
@@ -57,7 +68,13 @@ const cleanDatabase = async () => {
   if (!dbClient) return;
   
   try {
-    // Clean test data while preserving schema (tables must exist in database schema)
+    // Get all tables from database to avoid checking individual existence
+    const tableQuery = await dbClient.execute(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+    );
+    const existingTables = new Set(tableQuery.rows.map(row => row.name));
+    
+    // Clean test data while preserving schema (ordered by foreign key dependencies)
     const tables = [
       'email_events',           // Clean child tables first (foreign key dependencies)
       'email_audit_log',
@@ -73,41 +90,31 @@ const cleanDatabase = async () => {
       'admin_sessions'
     ];
     
-    // Check if table exists before attempting to clean
-    const checkTableExists = async (tableName) => {
-      try {
-        const result = await dbClient.execute(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-          [tableName]
-        );
-        return result.rows && result.rows.length > 0;
-      } catch (error) {
-        return false;
-      }
-    };
-    
+    // Batch cleanup using prepared statements for performance
+    const cleanupPromises = [];
     let cleanedTables = 0;
-    let skippedTables = 0;
     
     for (const table of tables) {
-      try {
-        const exists = await checkTableExists(table);
-        if (exists) {
-          const result = await dbClient.execute(`DELETE FROM ${table}`);
-          const deletedCount = result.changes || 0;
-          if (deletedCount > 0) {
-            console.log(`🧹 Cleaned ${deletedCount} records from ${table}`);
-          }
-          cleanedTables++;
-        } else {
-          console.log(`⚠️ Table ${table} does not exist, skipping cleanup`);
-          skippedTables++;
-        }
-      } catch (error) {
-        console.warn(`⚠️ Failed to clean table ${table}: ${error.message}`);
-        skippedTables++;
+      if (existingTables.has(table)) {
+        cleanupPromises.push(
+          dbClient.execute(`DELETE FROM ${table}`)
+            .then(result => {
+              const deletedCount = result.changes || 0;
+              if (deletedCount > 0) {
+                console.log(`🧹 Cleaned ${deletedCount} records from ${table}`);
+              }
+              cleanedTables++;
+            })
+            .catch(error => {
+              console.warn(`⚠️ Failed to clean table ${table}: ${error.message}`);
+            })
+        );
       }
     }
+    
+    // Execute cleanup in parallel for better performance
+    await Promise.all(cleanupPromises);
+    const skippedTables = tables.length - cleanedTables;
     
     console.log(`🧹 Database cleanup completed: ${cleanedTables} tables cleaned, ${skippedTables} skipped`);
   } catch (error) {

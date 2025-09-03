@@ -4,8 +4,8 @@
  */
 
 import { describe, test, expect, beforeAll } from 'vitest';
-import { resetTestDatabase, DatabaseResetManager, RESET_CONFIG } from '../scripts/reset-test-database.js';
-import { getDatabaseClient } from '../api/lib/database.js';
+import { resetTestDatabase, DatabaseResetManager, RESET_CONFIG } from '../../../scripts/reset-test-database.js';
+import { getDatabaseClient } from '../../../api/lib/database.js';
 
 describe('Database Reset Mechanism', () => {
   let manager;

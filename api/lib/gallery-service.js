@@ -90,6 +90,17 @@ class GalleryService {
       if (shouldUseBuildTimeCache()) {
         const cachedData = await this.getFeaturedPhotosCache();
         if (cachedData) {
+          // Convert cache format (items) to API format (photos) if needed
+          if (cachedData.items && !cachedData.photos) {
+            return {
+              photos: cachedData.items.map(item => ({
+                ...item,
+                featured: true
+              })),
+              totalCount: cachedData.totalCount,
+              cacheTimestamp: cachedData.cacheTimestamp
+            };
+          }
           return cachedData;
         }
       }

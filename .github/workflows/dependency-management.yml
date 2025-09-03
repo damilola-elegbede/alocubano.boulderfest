@@ -5,10 +5,6 @@ on:
     # Run weekly on Mondays at 3 AM UTC
     - cron: '0 3 * * 1'
   workflow_dispatch:
-  pull_request:
-    paths:
-      - 'package.json'
-      - 'package-lock.json'
 
 jobs:
   dependency-audit:
@@ -112,7 +108,7 @@ jobs:
               body: body,
               labels: ['security', 'dependencies', 'automated']
             });
-  
+ 
   license-check:
     name: License Compliance
     runs-on: ubuntu-latest
@@ -144,7 +140,7 @@ jobs:
           
           echo ""
           echo "✅ License check complete"
-  
+ 
   dependency-update:
     name: Automated Updates
     if: github.event_name == 'schedule'

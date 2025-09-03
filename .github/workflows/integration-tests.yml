@@ -1,0 +1,392 @@
+name: "🔗 Integration Tests"
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'api/**'
+      - 'js/**'
+      - 'css/**'
+      - 'pages/**'
+      - 'tests/e2e/**'
+      - 'package.json'
+      - 'playwright.config.js'
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: false
+        default: 'standard'
+        type: choice
+        options:
+          - 'standard'      # Core flows
+          - 'comprehensive' # Full suite
+          - 'smoke'         # Quick smoke tests
+      browsers:
+        description: 'Browser matrix'
+        required: false
+        default: 'standard'
+        type: choice
+        options:
+          - 'chromium-only'
+          - 'standard'     # chromium, firefox
+          - 'extended'     # chromium, firefox, webkit
+
+concurrency:
+  group: integration-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  NODE_VERSION: "20"
+  NODE_ENV: test
+  CI: true
+  NODE_OPTIONS: "--max-old-space-size=3072"
+
+jobs:
+  # Path-based test planning to avoid unnecessary runs
+  test-planning:
+    name: "📋 Test Planning"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      should_run: ${{ steps.planning.outputs.should_run }}
+      test_suite: ${{ steps.planning.outputs.test_suite }}
+      browser_matrix: ${{ steps.planning.outputs.browser_matrix }}
+      test_count: ${{ steps.planning.outputs.test_count }}
+    
+    steps:
+      - name: "📥 Checkout Code"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: "🔍 Detect Changes"
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            frontend:
+              - 'js/**'
+              - 'css/**'
+              - 'pages/**'
+            backend:
+              - 'api/**'
+            e2e:
+              - 'tests/e2e/**'
+            config:
+              - 'playwright*.config.js'
+              - 'package.json'
+
+      - name: "📋 Plan Test Execution"
+        id: planning
+        run: |
+          # Determine if tests should run
+          SHOULD_RUN="false"
+          TEST_SUITE="${{ inputs.test_suite || 'standard' }}"
+          BROWSER_MATRIX="${{ inputs.browsers || 'standard' }}"
+          TEST_COUNT="12"
+          
+          # Run tests if relevant changes detected or manual trigger
+          if [ "${{ steps.changes.outputs.frontend }}" == "true" ] || 
+             [ "${{ steps.changes.outputs.backend }}" == "true" ] || 
+             [ "${{ steps.changes.outputs.e2e }}" == "true" ] || 
+             [ "${{ steps.changes.outputs.config }}" == "true" ] || 
+             [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            SHOULD_RUN="true"
+          fi
+          
+          # Optimize for draft PRs
+          if [ "${{ github.event.pull_request.draft }}" == "true" ] && [ "${{ github.event_name }}" == "pull_request" ]; then
+            TEST_SUITE="smoke"
+            BROWSER_MATRIX="chromium-only"
+            TEST_COUNT="6"
+          fi
+          
+          echo "should_run=$SHOULD_RUN" >> $GITHUB_OUTPUT
+          echo "test_suite=$TEST_SUITE" >> $GITHUB_OUTPUT
+          echo "browser_matrix=$BROWSER_MATRIX" >> $GITHUB_OUTPUT
+          echo "test_count=$TEST_COUNT" >> $GITHUB_OUTPUT
+          
+          echo "🎯 Integration Test Planning:"
+          echo "  Will run: $SHOULD_RUN"
+          echo "  Test suite: $TEST_SUITE"
+          echo "  Browser matrix: $BROWSER_MATRIX"
+          echo "  Expected tests: $TEST_COUNT"
+
+  # E2E Integration Tests
+  e2e-tests:
+    name: "🔗 E2E Tests (${{ matrix.browser-name }})"
+    runs-on: ubuntu-latest
+    needs: test-planning
+    if: needs.test-planning.outputs.should_run == 'true'
+    timeout-minutes: 15
+    
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include: >-
+          ${{
+            (needs.test-planning.outputs.browser_matrix == 'chromium-only' && fromJson('[
+              {"browser": "chromium", "browser-name": "Chrome"}
+            ]')) ||
+            (needs.test-planning.outputs.browser_matrix == 'standard' && fromJson('[
+              {"browser": "chromium", "browser-name": "Chrome"},
+              {"browser": "firefox", "browser-name": "Firefox"}
+            ]')) ||
+            fromJson('[
+              {"browser": "chromium", "browser-name": "Chrome"},
+              {"browser": "firefox", "browser-name": "Firefox"},
+              {"browser": "webkit", "browser-name": "Safari"}
+            ]')
+          }}
+
+    steps:
+      - name: "📥 Checkout Code"
+        uses: actions/checkout@v4
+
+      - name: "🔧 Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: "📦 Install Dependencies"
+        run: npm ci --prefer-offline --no-audit
+
+      - name: "🎭 Install Playwright Browser"
+        run: npx playwright install ${{ matrix.browser }} --with-deps
+
+      - name: "🔧 Setup Test Environment"
+        run: |
+          mkdir -p data test-results .tmp
+          
+          # Create test environment configuration
+          cat > .env.local << EOF
+          NODE_ENV=test
+          CI=true
+          DATABASE_URL="file:./data/e2e-integration-${{ matrix.browser }}.db"
+          PORT=3000
+          
+          # Test credentials
+          TEST_ADMIN_PASSWORD=test-password-123
+          ADMIN_SECRET=test-admin-secret-key-minimum-32-characters
+          EOF
+
+      - name: "🚀 Start Development Server"
+        run: |
+          echo "Starting development server for E2E testing..."
+          npm run dev &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          
+          # Wait for server to be ready
+          echo "Waiting for server to start..."
+          for i in {1..30}; do
+            if curl -f --max-time 3 http://localhost:3000/api/health/check >/dev/null 2>&1; then
+              echo "✅ Server is ready (attempt $i/30)"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Server failed to start within timeout"
+              exit 1
+            fi
+            echo "⏳ Waiting for server... attempt $i/30"
+            sleep 2
+          done
+
+      - name: "🔗 Run Integration Tests"
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          DATABASE_URL: "file:./data/e2e-integration-${{ matrix.browser }}.db"
+        run: |
+          echo "🔗 Running E2E Integration Tests for ${{ matrix.browser-name }}..."
+          echo "Test suite: ${{ needs.test-planning.outputs.test_suite }}"
+          
+          # Configure test command based on suite
+          TEST_CMD="npx playwright test --project=${{ matrix.browser }} --timeout=120000"
+          
+          if [ "${{ needs.test-planning.outputs.test_suite }}" == "smoke" ]; then
+            TEST_CMD="$TEST_CMD --grep=\"basic-navigation|cart-functionality|newsletter-simple\""
+            echo "🏃‍♂️ Running smoke tests (quick validation)"
+          elif [ "${{ needs.test-planning.outputs.test_suite }}" == "comprehensive" ]; then
+            echo "🔬 Running comprehensive test suite"
+          else
+            TEST_CMD="$TEST_CMD --grep=\"basic-navigation|cart-functionality|registration-flow|admin-auth|gallery-basic|newsletter-simple\""
+            echo "📋 Running standard test suite (core flows)"
+          fi
+          
+          # Add reporter
+          TEST_CMD="$TEST_CMD --reporter=list,html"
+          
+          echo "📋 Executing: $TEST_CMD"
+          
+          if timeout 12m $TEST_CMD; then
+            echo "✅ E2E tests completed successfully for ${{ matrix.browser-name }}"
+          else
+            EXIT_CODE=$?
+            echo "❌ E2E tests failed for ${{ matrix.browser-name }} (exit code: $EXIT_CODE)"
+            exit $EXIT_CODE
+          fi
+
+      - name: "🧹 Cleanup Server"
+        if: always()
+        run: |
+          if [ -n "${SERVER_PID:-}" ]; then
+            echo "Stopping development server (PID: $SERVER_PID)..."
+            kill -TERM $SERVER_PID || true
+            sleep 2
+            kill -KILL $SERVER_PID 2>/dev/null || true
+          fi
+          
+          # Clean up any remaining processes on port 3000
+          lsof -ti:3000 | xargs kill -TERM 2>/dev/null || true
+          sleep 1
+          lsof -ti:3000 | xargs kill -KILL 2>/dev/null || true
+
+      - name: "📤 Upload Test Results"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-integration-results-${{ matrix.browser }}-${{ github.run_number }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # Test Results Summary
+  integration-summary:
+    name: "📊 Integration Test Summary"
+    runs-on: ubuntu-latest
+    needs: [test-planning, e2e-tests]
+    if: always()
+    
+    steps:
+      - name: "📊 Generate Test Summary"
+        run: |
+          echo "# 🔗 Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.test-planning.outputs.should_run }}" == "true" ]; then
+            echo "## Test Execution Status" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Test Suite**: ${{ needs.test-planning.outputs.test_suite }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Browser Matrix**: ${{ needs.test-planning.outputs.browser_matrix }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Expected Tests**: ${{ needs.test-planning.outputs.test_count }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **E2E Tests**: ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || (needs.e2e-tests.result == 'failure' && '❌ Failed' || '⏭️ Skipped') }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "${{ needs.e2e-tests.result }}" == "success" ]; then
+              echo "### ✅ Integration Tests Passed!" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "All E2E integration tests have passed successfully across the selected browser matrix." >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            elif [ "${{ needs.e2e-tests.result }}" == "failure" ]; then
+              echo "### ❌ Integration Test Failures" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "Some E2E integration tests have failed. Please review:" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "1. **Check test artifacts** for detailed failure information" >> $GITHUB_STEP_SUMMARY
+              echo "2. **Review browser-specific failures** in the workflow logs" >> $GITHUB_STEP_SUMMARY
+              echo "3. **Run locally**: \`npm run test:e2e\` to reproduce issues" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "- **E2E Tests**: ⏭️ Skipped (no relevant changes detected)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### ℹ️ Tests Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Integration tests were skipped because no relevant file changes were detected." >> $GITHUB_STEP_SUMMARY
+            echo "Tests will run automatically when changes are made to:" >> $GITHUB_STEP_SUMMARY
+            echo "- Frontend code (js/, css/, pages/)" >> $GITHUB_STEP_SUMMARY
+            echo "- Backend code (api/)" >> $GITHUB_STEP_SUMMARY
+            echo "- Test files (tests/e2e/)" >> $GITHUB_STEP_SUMMARY
+            echo "- Configuration (package.json, playwright.config.js)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: "💬 Comment on PR"
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const shouldRun = '${{ needs.test-planning.outputs.should_run }}';
+            const testResult = '${{ needs.e2e-tests.result }}';
+            
+            let status, statusText, summary;
+            
+            if (shouldRun === 'true') {
+              if (testResult === 'success') {
+                status = '✅';
+                statusText = 'PASSED';
+                summary = `### 🎉 All integration tests passed!
+                
+                E2E tests have been successfully executed across the selected browser matrix.
+                
+                **Test Configuration:**
+                - Test Suite: ${{ needs.test-planning.outputs.test_suite }}
+                - Browser Matrix: ${{ needs.test-planning.outputs.browser_matrix }}
+                - Tests Expected: ${{ needs.test-planning.outputs.test_count }}`;
+              } else {
+                status = '❌';
+                statusText = 'FAILED';
+                summary = `### ⚠️ Some integration tests failed
+                
+                Please review the workflow output and test artifacts for details.
+                
+                **Debugging Steps:**
+                1. Check the test artifacts for detailed failure information
+                2. Run tests locally with \`npm run test:e2e\`
+                3. Review browser-specific failures in workflow logs`;
+              }
+            } else {
+              status = '⏭️';
+              statusText = 'SKIPPED';
+              summary = `### ℹ️ Integration tests skipped
+              
+              No relevant changes detected. Tests will run when changes are made to:
+              - Frontend code (js/, css/, pages/)
+              - Backend code (api/)
+              - Test files or configuration`;
+            }
+
+            const comment = `## ${status} Integration Tests ${statusText}
+
+            ${summary}
+
+            ---
+            **Workflow Run:** [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Integration Tests')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }

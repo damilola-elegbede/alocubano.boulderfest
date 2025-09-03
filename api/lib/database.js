@@ -118,10 +118,13 @@ class DatabaseService {
     const isTest = process.env.NODE_ENV === "test" || process.env.TEST_TYPE === "integration";
     const isCI = process.env.CI === "true";
     
-    // Determine if this is specifically an E2E test context
-    const isE2ETest = process.env.E2E_TEST_MODE === "true" || 
+    // Determine if this is specifically an E2E test context (not integration tests)
+    const isIntegrationTest = process.env.INTEGRATION_TEST_MODE === "true" || process.env.TEST_TYPE === "integration";
+    const isE2ETest = !isIntegrationTest && (
+                      process.env.E2E_TEST_MODE === "true" || 
                       process.env.PLAYWRIGHT_BROWSER || 
-                      process.env.VERCEL_DEV_STARTUP === "true";
+                      process.env.VERCEL_DEV_STARTUP === "true"
+                     );
 
     let databaseUrl;
     const authToken = process.env.TURSO_AUTH_TOKEN;

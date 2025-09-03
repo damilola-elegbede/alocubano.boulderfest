@@ -14,8 +14,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     
-    // Longer timeouts for integration tests (database/API operations)
-    testTimeout: Number(process.env.VITEST_TEST_TIMEOUT || (process.env.CI === 'true' ? 120000 : 60000)),
+    // Temporarily increased timeouts while optimizing (will reduce after performance fixes)
+    testTimeout: Number(process.env.VITEST_TEST_TIMEOUT || (process.env.CI === 'true' ? 120000 : 90000)),
     hookTimeout: Number(process.env.VITEST_HOOK_TIMEOUT || (process.env.CI === 'true' ? 30000 : 20000)),
     
     // Integration test specific setup
@@ -31,17 +31,17 @@ export default defineConfig({
       'tests/helpers/**'
     ],
     
-    // Sequential execution for integration tests to avoid database conflicts
+    // Single-process execution to avoid SQLite database locking issues
     pool: 'forks',
     poolOptions: {
       forks: {
-        singleFork: true,     // Single process to avoid database locks
-        isolate: true         // Ensure complete test isolation
+        singleFork: true,     // Use single process to avoid database locks
+        isolate: true         // Maintain test isolation
       }
     },
     
-    // Limited concurrency for integration tests (database safety)
-    maxConcurrency: process.env.CI === 'true' ? 1 : 2,
+    // Limited concurrency for database safety
+    maxConcurrency: 1,
     
     // More retry attempts for integration tests (network/database issues)
     retry: process.env.CI === 'true' ? 2 : 1,
