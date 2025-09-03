@@ -475,10 +475,10 @@ class GoogleDriveService {
         type: isVideo ? 'video' : 'image',
         mimeType: file.mimeType,
         category: categoryName,
-        // Use image proxy for optimized loading and format conversion
-        thumbnailUrl: `/api/image-proxy/${file.id}`,
-        viewUrl: `/api/image-proxy/${file.id}`,
-        downloadUrl: `/api/image-proxy/${file.id}`,
+        // Use direct Google Drive URLs for fast loading without proxy overhead
+        thumbnailUrl: file.thumbnailLink || `https://drive.google.com/thumbnail?id=${file.id}&sz=w400`,
+        viewUrl: `https://drive.google.com/uc?export=view&id=${file.id}`,
+        downloadUrl: `https://drive.google.com/uc?export=download&id=${file.id}`,
         size: file.size ? parseInt(file.size, 10) : 0,
         createdAt: file.createdTime,
         createdTime: file.createdTime, // Keep both for compatibility
@@ -488,11 +488,13 @@ class GoogleDriveService {
           height: file.imageMediaMetadata.height,
           rotation: file.imageMediaMetadata.rotation || 0
         } : null,
-        // Keep original Google Drive URLs as backup
+        // Keep original URLs for reference
         originalUrl: file.webViewLink,
         originalThumbnailUrl: file.thumbnailLink,
         directDownloadUrl: `https://drive.google.com/uc?id=${file.id}`,
-        previewUrl: `https://drive.google.com/file/d/${file.id}/view`
+        previewUrl: `https://drive.google.com/file/d/${file.id}/view`,
+        // Keep proxy URL as optional for future optimization needs
+        proxyUrl: `/api/image-proxy/${file.id}`
       };
     } catch (error) {
       logger.warn(`Failed to process file ${file.id}:`, error.message);
