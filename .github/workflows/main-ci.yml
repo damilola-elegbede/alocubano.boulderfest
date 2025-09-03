@@ -72,7 +72,7 @@ jobs:
           echo "🔍 Running ESLint..."
           npm run lint:js 2>&1 | tee eslint-output.log
           ESLINT_EXIT_CODE=${PIPESTATUS[0]}
-          
+
           if [ $ESLINT_EXIT_CODE -ne 0 ]; then
             echo "❌ ESLint found issues"
             echo "eslint_failed=true" >> $GITHUB_OUTPUT
@@ -104,7 +104,7 @@ jobs:
           echo "🏗️ Validating HTML files..."
           npm run lint:html 2>&1 | tee html-output.log
           HTML_EXIT_CODE=${PIPESTATUS[0]}
-          
+
           if [ $HTML_EXIT_CODE -ne 0 ]; then
             echo "❌ HTML validation failed"
             echo "html_failed=true" >> $GITHUB_OUTPUT
@@ -150,11 +150,11 @@ jobs:
           echo "🔍 Running npm audit..."
           npm audit --audit-level=high --production 2>&1 | tee audit-output.log
           AUDIT_EXIT_CODE=${PIPESTATUS[0]}
-          
+
           if [ $AUDIT_EXIT_CODE -ne 0 ]; then
             echo "⚠️ npm audit found vulnerabilities"
             echo "audit_failed=true" >> $GITHUB_OUTPUT
-            
+
             # Check for critical vulnerabilities
             if grep -q "critical" audit-output.log; then
               echo "🚨 Critical vulnerabilities found!"
@@ -168,14 +168,14 @@ jobs:
       - name: 🔐 Check for secrets
         run: |
           echo "🔐 Checking for exposed secrets..."
-          
+
           # Check for common secret patterns
           if grep -r --include="*.js" --include="*.json" --exclude-dir=node_modules \
              -E "(api[_-]?key|secret|password|token|private[_-]?key)['\"]?\s*[:=]\s*['\"][^'\"]{10,}" . 2>/dev/null; then
             echo "🚨 Potential secrets found in code!"
             exit 1
           fi
-          
+
           echo "✅ No exposed secrets detected"
 
       - name: 📊 Security Summary
@@ -215,14 +215,14 @@ jobs:
       - name: 🗄️ Setup test database
         run: |
           echo "🗄️ Initializing SQLite database for testing..."
-          
+
           # Create database directory
           mkdir -p data
           touch data/test.db
-          
+
           # Initialize database schema
           npm run migrate:status || true
-          
+
           echo "✅ Test database ready"
 
       - name: 🧪 Run unit tests
@@ -239,18 +239,18 @@ jobs:
           echo "🧪 Running unit tests..."
           npm test 2>&1 | tee test-output.log
           TEST_EXIT_CODE=${PIPESTATUS[0]}
-          
+
           # Extract test summary
           if grep -q "Test Files" test-output.log; then
             echo "📊 Test Results:"
             grep -A 5 "Test Files" test-output.log || true
           fi
-          
+
           if [ $TEST_EXIT_CODE -ne 0 ]; then
             echo "❌ Unit tests failed"
             exit 1
           fi
-          
+
           echo "✅ All unit tests passed"
 
       - name: 📊 Generate coverage report
@@ -295,7 +295,7 @@ jobs:
       - name: 🔍 Verify API structure
         run: |
           echo "🔍 Checking API handler exports..."
-          
+
           # Check that all API files export default functions
           for file in api/**/*.js; do
             if [ -f "$file" ] && [[ ! "$file" =~ "/lib/" ]]; then
@@ -305,13 +305,13 @@ jobs:
               fi
             fi
           done
-          
+
           echo "✅ API structure verified"
 
       - name: 📝 Check migration files
         run: |
           echo "📝 Validating database migrations..."
-          
+
           # Check migration file format
           for file in migrations/*.sql; do
             if [ -f "$file" ]; then
@@ -319,23 +319,23 @@ jobs:
               if ! grep -q "BEGIN TRANSACTION\|BEGIN;" "$file"; then
                 echo "⚠️ Migration $file missing transaction block"
               fi
-              
+
               # Check for dangerous operations
               if grep -qi "drop table\|truncate\|delete from" "$file"; then
                 echo "⚠️ Migration $file contains potentially dangerous operations"
               fi
             fi
           done
-          
+
           echo "✅ Migration files validated"
 
       - name: 🏗️ Test build process
         run: |
           echo "🏗️ Verifying build process..."
-          
+
           # Check package.json scripts
           npm run --silent | grep -E "(build|deploy|test)" || true
-          
+
           # Verify critical files exist
           CRITICAL_FILES=(
             "package.json"
@@ -343,14 +343,14 @@ jobs:
             "api/lib/database.js"
             "pages/index.html"
           )
-          
+
           for file in "${CRITICAL_FILES[@]}"; do
             if [ ! -f "$file" ]; then
               echo "❌ Critical file missing: $file"
               exit 1
             fi
           done
-          
+
           echo "✅ Build verification complete"
 
   # ======================================================================
@@ -362,8 +362,8 @@ jobs:
     timeout-minutes: ${{ matrix.timeout-minutes }}
     needs: [build-check]
     if: |
-      github.event_name == 'push' || 
-      github.event_name == 'pull_request' || 
+      github.event_name == 'push' ||
+      github.event_name == 'pull_request' ||
       github.event_name == 'workflow_dispatch'
 
     strategy:
@@ -438,15 +438,15 @@ jobs:
         run: |
           echo "📦 Installing dependencies for ${{ matrix.suite-name }}..."
           npm ci --prefer-offline --no-audit --no-fund
-          
+
           # Install Playwright browsers
           echo "🎭 Installing Playwright browsers..."
           npx playwright install --with-deps ${{ matrix.browser }}
-          
+
           # Install Vercel CLI
           echo "▲ Installing Vercel CLI..."
           npm install -g vercel@latest
-          
+
           echo "✅ Dependencies ready"
 
       - name: 🏥 Verify Tools
@@ -456,7 +456,7 @@ jobs:
           echo "npm version: $(npm --version)"
           echo "Vercel CLI: $(vercel --version || echo 'Not installed')"
           echo "Playwright: $(npx playwright --version)"
-          
+
           # Check for required browsers
           npx playwright show-report || true
 
@@ -464,18 +464,18 @@ jobs:
         id: setup-env
         run: |
           echo "🔐 Configuring E2E environment for ${{ matrix.suite-name }}..."
-          
+
           # Allocate dynamic port
           DYNAMIC_PORT=$((3000 + RANDOM % 1000))
           echo "DYNAMIC_PORT=${DYNAMIC_PORT}" >> $GITHUB_ENV
           echo "dynamic_port=${DYNAMIC_PORT}" >> $GITHUB_OUTPUT
-          
+
           # Set base URL for Playwright
           echo "PLAYWRIGHT_BASE_URL=http://localhost:${DYNAMIC_PORT}" >> $GITHUB_ENV
-          
+
           # Export test mode flag
           echo "E2E_TEST_MODE=true" >> $GITHUB_ENV
-          
+
           echo "✅ Environment configured:"
           echo "  Port: ${DYNAMIC_PORT}"
           echo "  Suite: ${{ matrix.suite }}"
@@ -488,23 +488,23 @@ jobs:
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_CI || secrets.TURSO_AUTH_TOKEN || '' }}
         run: |
           echo "🗄️ Checking database configuration..."
-          
+
           if [ -n "$TURSO_DATABASE_URL" ] && [ -n "$TURSO_AUTH_TOKEN" ]; then
             echo "✅ Turso database configured"
             echo "db_type=turso" >> $GITHUB_OUTPUT
-            
+
             # Test connection
             echo "Testing Turso connection..."
             npm run health:database || echo "⚠️ Database health check failed"
           else
             echo "⚠️ Turso not configured, using SQLite fallback"
             echo "db_type=sqlite" >> $GITHUB_OUTPUT
-            
+
             # Setup SQLite
             mkdir -p data
             touch data/e2e-test.db
             echo "DATABASE_URL=file:./data/e2e-test.db" >> $GITHUB_ENV
-            
+
             # Initialize schema
             npm run migrate:up || echo "⚠️ Migration failed"
             echo "⚠️ SQLite fallback ready for ${{ matrix.suite }}"
@@ -555,40 +555,40 @@ jobs:
           echo "🎯 Pattern: ${{ matrix.test-pattern || 'All tests' }}"
           echo "📡 Port: ${{ env.DYNAMIC_PORT }}"
           echo "🗄️ Database: Turso (from secrets)"
-          
+
           # Export variables explicitly for the test process
           export TURSO_DATABASE_URL="${TURSO_DATABASE_URL}"
           export TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN}"
           export VERCEL_TOKEN="${VERCEL_TOKEN}"
           export VERCEL_ORG_ID="${VERCEL_ORG_ID}"
           export VERCEL_PROJECT_ID="${VERCEL_PROJECT_ID}"
-          
+
           # Debug output (without exposing secrets)
           echo "  Environment validation:"
           echo "    TURSO_DATABASE_URL: $([ -n "$TURSO_DATABASE_URL" ] && echo '✅ Set' || echo '❌ Not set')"
           echo "    TURSO_AUTH_TOKEN: $([ -n "$TURSO_AUTH_TOKEN" ] && echo '✅ Set' || echo '❌ Not set')"
           echo "    VERCEL_TOKEN: $([ -n "$VERCEL_TOKEN" ] && echo '✅ Set' || echo '❌ Not set')"
-          
+
           # Construct test command based on suite
           TEST_CMD="npx playwright test --config=playwright-e2e-vercel-main.config.js --project=${{ matrix.browser }}"
-          
+
           # Add test pattern filtering
           if [ -n "${{ matrix.test-pattern }}" ]; then
             TEST_CMD="$TEST_CMD --grep=\"(${{ matrix.test-pattern }})\""
           fi
-          
+
           # Add retries
           TEST_CMD="$TEST_CMD --retries=${{ matrix.retry-count }}"
-          
+
           # Add timeout
           TEST_CMD="$TEST_CMD --timeout=120000"
-          
+
           # CRITICAL FIX: Simplified reporter configuration
           # Just use list reporter to avoid syntax errors
           TEST_CMD="$TEST_CMD --reporter=list"
-          
+
           echo "📋 Executing: $TEST_CMD"
-          
+
           # Execute with timeout protection
           if timeout ${{ matrix.timeout-minutes }}m bash -c "$TEST_CMD"; then
             echo "✅ E2E tests completed successfully: ${{ matrix.suite-name }}"
@@ -621,13 +621,13 @@ jobs:
           echo "Database: ${{ steps.db-check.outputs.db_type }}"
           echo "Port: ${{ env.DYNAMIC_PORT }}"
           echo "========================================"
-          
+
           # Show test results if available
           if [ -d "test-results" ]; then
             echo "Test artifacts generated:"
             ls -la test-results/ || true
           fi
-          
+
           if [ -d "playwright-report" ]; then
             echo "Playwright report available"
           fi
@@ -641,8 +641,8 @@ jobs:
     timeout-minutes: 15
     needs: [code-quality, security-scan, unit-tests, e2e-tests]
     if: |
-      github.event_name == 'push' && 
-      (github.ref == 'refs/heads/main' || 
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' ||
        github.ref == 'refs/heads/develop' ||
        startsWith(github.ref, 'refs/heads/release/'))
     environment:
@@ -666,10 +666,10 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           echo "🚀 Deploying to Vercel..."
-          
+
           # Install Vercel CLI
           npm install -g vercel@latest
-          
+
           # Determine environment
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
             echo "📦 Deploying to production..."
@@ -678,7 +678,7 @@ jobs:
             echo "👁️ Deploying preview..."
             DEPLOYMENT_URL=$(vercel --token=$VERCEL_TOKEN --yes)
           fi
-          
+
           echo "✅ Deployed to: $DEPLOYMENT_URL"
           echo "url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
 
@@ -686,10 +686,10 @@ jobs:
         run: |
           DEPLOY_URL="${{ steps.deploy.outputs.url }}"
           echo "🔍 Verifying deployment at $DEPLOY_URL..."
-          
+
           # Wait for deployment to be ready
           sleep 10
-          
+
           # Check if site is accessible
           if curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL" | grep -q "200\|301\|302"; then
             echo "✅ Deployment verified successfully"
@@ -704,19 +704,19 @@ jobs:
           script: |
             const deployUrl = '${{ steps.deploy.outputs.url }}';
             const comment = `### 🚀 Deployment Preview Ready!
-            
+
             **Preview URL:** ${deployUrl}
             **Branch:** \`${{ github.head_ref || github.ref_name }}\`
             **Commit:** \`${{ github.sha.substr(0, 7) }}\`
-            
+
             #### Test Results:
             - ✅ Code Quality: Passed
             - ✅ Security Scan: Passed
             - ✅ Unit Tests: Passed
             - ✅ E2E Tests: Passed
-            
+
             [View Full CI Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -753,7 +753,7 @@ jobs:
           echo "  Build Check:   ${{ needs.build-check.result == 'success' && '✅ Passed' || '❌ Failed' }}"
           echo "  E2E Tests:     ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || '❌ Failed' }}"
           echo "========================================"
-          
+
           # Determine overall status
           if [ "${{ needs.code-quality.result }}" == "success" ] && \
              [ "${{ needs.security-scan.result }}" == "success" ] && \
