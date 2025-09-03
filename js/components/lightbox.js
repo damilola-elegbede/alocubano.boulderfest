@@ -283,6 +283,16 @@ if (typeof Lightbox === 'undefined') {
             const title = lightbox.querySelector('.lightbox-title');
             const counter = lightbox.querySelector('.lightbox-counter');
 
+            // Debug: Log what URLs we have
+            console.log('🔍 Lightbox item URLs:', {
+                name: item.name,
+                thumbnailUrl: item.thumbnailUrl,
+                viewUrl: item.viewUrl,
+                downloadUrl: item.downloadUrl,
+                src: item.src,
+                url: item.url
+            });
+
             // Use viewUrl for full resolution, fallback to other URLs if not available
             const imageSrc = item.viewUrl || item.downloadUrl || item.src || item.thumbnailUrl;
 

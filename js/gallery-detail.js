@@ -1303,6 +1303,18 @@
                 displayIndex: state.displayOrder.length,
                 categoryIndex: categoryIndex
             };
+            
+            // Debug: Check if URLs are present
+            if (state.displayOrder.length < 3) {  // Only log first few items
+                console.log('📦 Gallery item data:', {
+                    name: item.name,
+                    thumbnailUrl: item.thumbnailUrl,
+                    viewUrl: item.viewUrl,
+                    downloadUrl: item.downloadUrl,
+                    hasViewUrl: !!item.viewUrl
+                });
+            }
+            
             state.displayOrder.push(displayOrderItem);
 
             // Enhanced debug logging for category index tracking
