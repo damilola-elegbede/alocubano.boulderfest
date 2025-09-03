@@ -1,5 +1,5 @@
 ---
-name: 🚀 Vercel Deployment Validation
+name: "Deployment - Health Validation"
 
 # Validates Vercel deployments after they complete
 # Ensures deployments are healthy and properly configured

@@ -32,11 +32,21 @@ on:
         required: false
         type: string
         default: '2'
-      timeout-minutes:
-        description: 'Test timeout in minutes'
+      resource-profile:
+        description: 'Resource profile for memory/timeout allocation'
         required: false
         type: string
-        default: '15'
+        default: 'auto'  # auto, basic, standard, extended, performance
+      timeout-minutes:
+        description: 'Override timeout in minutes (0 = use profile default)'
+        required: false
+        type: string
+        default: '0'
+      memory-limit:
+        description: 'Override memory limit in MB (0 = use profile default)'
+        required: false
+        type: string
+        default: '0'
       fail-fast:
         description: 'Stop on first failure'
         required: false
@@ -57,11 +67,6 @@ on:
         required: false
         type: string
         default: 'sqlite'  # sqlite, turso, memory
-      memory-limit:
-        description: 'Memory limit for test execution (MB)'
-        required: false
-        type: string
-        default: '3072'
       artifacts-retention:
         description: 'Test artifacts retention in days'
         required: false
@@ -88,7 +93,6 @@ on:
         value: ${{ jobs.test-execution.outputs.performance-metrics }}
 
 env:
-  NODE_OPTIONS: --max-old-space-size=${{ inputs.memory-limit }}
   CI: true
   NODE_ENV: test
 
@@ -96,7 +100,6 @@ jobs:
   test-execution:
     name: 🧪 Test Suite (${{ inputs.test-type }})
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ fromJson(inputs.timeout-minutes) }}
     outputs:
       test-result: ${{ steps.test-results.outputs.test-result }}
       tests-passed: ${{ steps.test-results.outputs.tests-passed }}
@@ -129,13 +132,73 @@ jobs:
         with:
           fetch-depth: ${{ inputs.test-type == 'performance' && '0' || '1' }}
 
+      - name: 🧮 Calculate Resource Requirements
+        id: resources
+        run: |
+          echo "🧮 Calculating resource requirements for ${{ inputs.test-type }} tests"
+          
+          # Determine resource profile (auto-detect or use provided)
+          RESOURCE_PROFILE="${{ inputs.resource-profile }}"
+          if [ "$RESOURCE_PROFILE" = "auto" ]; then
+            case "${{ inputs.test-type }}" in
+              "unit"|"smoke") RESOURCE_PROFILE="basic" ;;
+              "integration") RESOURCE_PROFILE="basic" ;;
+              "e2e") RESOURCE_PROFILE="standard" ;;
+              "performance"|"load") RESOURCE_PROFILE="performance" ;;
+              *) RESOURCE_PROFILE="standard" ;;
+            esac
+          fi
+          
+          # Install yq for YAML parsing
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          
+          # Get base values from browser matrix config
+          MEMORY_MB=$(yq eval ".resource_management.memory_profiles.${RESOURCE_PROFILE}.memory_mb" .github/browser-matrix-config.yml)
+          JOB_TIMEOUT=$(yq eval ".resource_management.timeout_profiles.${RESOURCE_PROFILE}.job_timeout_minutes" .github/browser-matrix-config.yml)
+          NODE_OPTIONS=$(yq eval ".resource_management.memory_profiles.${RESOURCE_PROFILE}.node_options" .github/browser-matrix-config.yml)
+          
+          # Apply CI environment multipliers
+          MEMORY_BUFFER=$(yq eval ".resource_management.environment_multipliers.ci.memory_buffer_mb" .github/browser-matrix-config.yml)
+          TIMEOUT_MULT=$(yq eval ".resource_management.environment_multipliers.ci.timeout_multiplier" .github/browser-matrix-config.yml)
+          
+          # Calculate final values
+          FINAL_MEMORY=$((MEMORY_MB + MEMORY_BUFFER))
+          FINAL_TIMEOUT=$(echo "$JOB_TIMEOUT * $TIMEOUT_MULT" | bc -l | cut -d. -f1)
+          FINAL_NODE_OPTIONS="--max-old-space-size=${FINAL_MEMORY}"
+          
+          # Apply overrides if provided
+          if [ "${{ inputs.memory-limit }}" != "0" ]; then
+            FINAL_MEMORY="${{ inputs.memory-limit }}"
+            FINAL_NODE_OPTIONS="--max-old-space-size=${FINAL_MEMORY}"
+          fi
+          
+          if [ "${{ inputs.timeout-minutes }}" != "0" ]; then
+            FINAL_TIMEOUT="${{ inputs.timeout-minutes }}"
+          fi
+          
+          # Output calculated values
+          echo "memory_mb=$FINAL_MEMORY" >> $GITHUB_OUTPUT
+          echo "timeout_minutes=$FINAL_TIMEOUT" >> $GITHUB_OUTPUT
+          echo "node_options=$FINAL_NODE_OPTIONS" >> $GITHUB_OUTPUT
+          echo "resource_profile=$RESOURCE_PROFILE" >> $GITHUB_OUTPUT
+          
+          # Set environment variables for this job
+          echo "NODE_OPTIONS=$FINAL_NODE_OPTIONS" >> $GITHUB_ENV
+          
+          # Log calculated values
+          echo "📊 Resource Profile: $RESOURCE_PROFILE"
+          echo "💾 Memory Limit: ${FINAL_MEMORY}MB"
+          echo "⏰ Timeout: ${FINAL_TIMEOUT} minutes"
+          echo "🔧 Node Options: $FINAL_NODE_OPTIONS"
+
       - name: 🔧 Setup Test Environment
         uses: ./.github/workflows/reusable/npm-setup.yml
         with:
           node-version: ${{ inputs.node-version }}
           cache-strategy: 'aggressive'
           optimization-profile: ${{ inputs.test-environment }}
-          memory-limit: ${{ inputs.memory-limit }}
+          memory-limit: ${{ steps.resources.outputs.memory_mb }}
 
       - name: 🗄️ Setup Test Database
         id: database
@@ -179,7 +242,7 @@ jobs:
           
           # Set test-specific environment variables
           export TEST_PARALLEL_WORKERS="${{ inputs.parallel-workers }}"
-          export TEST_TIMEOUT_MINUTES="${{ matrix.test-config.timeout }}"
+          export TEST_TIMEOUT_MINUTES="${{ steps.resources.outputs.timeout_minutes }}"
           export TEST_RETRY_COUNT="${{ inputs.retry-count }}"
           
           # Configure test credentials
@@ -220,7 +283,7 @@ jobs:
               sleep 5  # Brief pause between retries
             fi
             
-            if timeout $((${{ matrix.test-config.timeout }} * 60)) bash -c "$TEST_COMMAND"; then
+            if timeout $((${{ steps.resources.outputs.timeout_minutes }} * 60)) bash -c "$TEST_COMMAND"; then
               echo "✅ Tests passed on attempt $((RETRY_COUNT + 1))"
               echo "test-success=true" >> $GITHUB_OUTPUT
               break
@@ -388,7 +451,9 @@ jobs:
           echo "| Node.js | ${{ inputs.node-version }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Database | ${{ matrix.test-config.database }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Workers | ${{ inputs.parallel-workers }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Memory | ${{ inputs.memory-limit }}MB |" >> $GITHUB_STEP_SUMMARY
+          echo "| Resource Profile | ${{ steps.resources.outputs.resource_profile }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Memory | ${{ steps.resources.outputs.memory_mb }}MB |" >> $GITHUB_STEP_SUMMARY
+          echo "| Timeout | ${{ steps.resources.outputs.timeout_minutes }} min |" >> $GITHUB_STEP_SUMMARY
           echo "| Pattern | ${{ inputs.test-pattern || 'All tests' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           

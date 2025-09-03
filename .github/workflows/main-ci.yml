@@ -6,9 +6,10 @@
 # - Conditional execution based on prerequisite success
 # - Maximum test coverage even with partial failures
 # - Clear reporting on execution vs skipped steps
+# - FIXED: Standardized environment variables (Issue #6)
 # ======================================================================
 
-name: Main CI Pipeline
+name: "CI/CD Pipeline"
 
 on:
   push:
@@ -23,12 +24,60 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Global environment variables
+# FIXED: Standardized global environment variables (Issue #6)
 env:
+  # Universal Configuration
   NODE_VERSION: "20"
   CI: true
+  NODE_ENV: test
+  
+  # Performance Optimization
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  NPM_CONFIG_CACHE: ${{ github.workspace }}/.npm-cache
+  
+  # Database Configuration (environment-specific)
+  DATABASE_URL: "file:./data/ci-test.db"
+  
+  # CI Environment Type
+  CI_ENVIRONMENT: "ci"
 
 jobs:
+  # ======================================================================
+  # Stage 0: Environment Validation (NEW)
+  # ======================================================================
+  validate-environment:
+    name: 🔍 Environment Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      validation_passed: ${{ steps.validate.outcome }}
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 📦 Install dependencies (validation only)
+        run: npm ci --prefer-offline --no-audit --ignore-scripts
+
+      - name: ✅ Validate Environment Configuration
+        id: validate
+        run: |
+          echo "🔍 Validating CI environment configuration..."
+          node scripts/ci/validate-environment.js --env=ci
+          
+          echo "✅ Environment validation passed"
+        env:
+          # Test configuration variables
+          BASE_URL: "http://localhost:3000"
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          CI_ENVIRONMENT: ${{ env.CI_ENVIRONMENT }}
+
   # ======================================================================
   # Stage 1: Unit Tests (Always Run - Foundation)
   # ======================================================================
@@ -36,6 +85,7 @@ jobs:
     name: 🧪 Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: validate-environment
     outputs:
       status: ${{ steps.test.outcome }}
       coverage: ${{ steps.coverage.outputs.coverage }}
@@ -57,8 +107,12 @@ jobs:
         id: test
         run: npm test
         env:
-          NODE_ENV: test
-          CI: true
+          NODE_ENV: ${{ env.NODE_ENV }}
+          CI: ${{ env.CI }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          # Vitest timeout configuration
+          VITEST_TEST_TIMEOUT: 60000
+          VITEST_HOOK_TIMEOUT: 30000
 
       - name: 📊 Extract coverage percentage
         id: coverage
@@ -87,6 +141,7 @@ jobs:
     name: 🏗️ Build Verification
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: validate-environment
     outputs:
       status: ${{ steps.build.outcome }}
       artifacts: ${{ steps.verify.outputs.artifacts }}
@@ -133,6 +188,7 @@ jobs:
     name: 🔒 Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: validate-environment
     outputs:
       status: ${{ steps.security.outcome }}
       vulnerabilities: ${{ steps.audit.outputs.vulnerabilities }}
@@ -203,18 +259,38 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ======================================================================
-  # Stage 5: E2E Tests (Only if Deploy Succeeds)
+  # Stage 5: E2E Tests (Only if Deploy Succeeds) - Unified Browser Matrix
   # ======================================================================
   e2e-tests:
-    name: 🎭 E2E Tests
+    name: 🎭 E2E Tests (${{ matrix.browser-name }})
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: ${{ matrix.timeout-minutes }}
     needs: [deploy-preview]
     if: github.event_name == 'pull_request' && needs.deploy-preview.outputs.status == 'success'
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
-        browser: [chromium, firefox]
+        include:
+          - browser: "chromium"
+            browser-name: "Chrome"
+            category: "core"
+            timeout-minutes: 12
+            retry-count: 2
+            memory-limit: "3GB"
+            priority: 1
+          - browser: "firefox"
+            browser-name: "Firefox"
+            category: "core"
+            timeout-minutes: 15
+            retry-count: 3
+            memory-limit: "4GB"
+            priority: 2
+    
+    # Unified concurrency control to prevent conflicts
+    concurrency:
+      group: e2e-standard-${{ github.ref }}-${{ matrix.browser }}-${{ github.workflow }}
+      cancel-in-progress: true
 
     steps:
       - name: 📥 Checkout code
@@ -229,29 +305,47 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci --prefer-offline --no-audit
 
-      - name: 🎭 Install Playwright
-        run: npx playwright install --with-deps ${{ matrix.browser }}
-
-      - name: 🌐 Run E2E tests against preview
+      - name: 🎭 Install Playwright (${{ matrix.browser-name }})
         run: |
-          echo "🎭 Running E2E tests against: ${{ needs.deploy-preview.outputs.preview-url }}"
-          npx playwright test --project=${{ matrix.browser }}
+          echo "Installing Playwright for ${{ matrix.browser-name }} (Memory: ${{ matrix.memory-limit }})"
+          npx playwright install --with-deps ${{ matrix.browser }}
         env:
-          PREVIEW_URL: ${{ needs.deploy-preview.outputs.preview-url }}
-          BASE_URL: ${{ needs.deploy-preview.outputs.preview-url }}
-          PLAYWRIGHT_BASE_URL: ${{ needs.deploy-preview.outputs.preview-url }}
+          # Memory optimization for browser installation
+          NODE_OPTIONS: "--max-old-space-size=${{ matrix.memory-limit == '3GB' && '3072' || '3072' }}"
 
-      - name: 📊 Upload E2E results
+      - name: 🌐 Run E2E tests against preview (${{ matrix.browser-name }})
+        run: |
+          echo "🎭 Running E2E tests with ${{ matrix.browser-name }} against: ${{ needs.deploy-preview.outputs.preview-url }}"
+          echo "Browser: ${{ matrix.browser }} (Priority: ${{ matrix.priority }})"
+          echo "Timeout: ${{ matrix.timeout-minutes }} minutes, Retries: ${{ matrix.retry-count }}"
+          
+          npx playwright test --project=${{ matrix.browser }} --retries=${{ matrix.retry-count }}
+        env:
+          # FIXED: Standardized environment variables (Issue #6)
+          BASE_URL: ${{ needs.deploy-preview.outputs.preview-url }}
+          PREVIEW_URL: ${{ needs.deploy-preview.outputs.preview-url }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          CI_ENVIRONMENT: "e2e"
+          
+          # E2E timeout configuration
+          E2E_TEST_TIMEOUT: 60000
+          E2E_ACTION_TIMEOUT: 30000
+          E2E_NAVIGATION_TIMEOUT: 60000
+          E2E_EXPECT_TIMEOUT: 10000
+          E2E_HEALTH_CHECK_INTERVAL: 5000
+
+      - name: 📊 Upload E2E results (${{ matrix.browser-name }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-results-${{ matrix.browser }}
+          name: e2e-results-${{ matrix.browser }}-${{ github.run_number }}
           path: |
             playwright-report/
             test-results/
+          retention-days: 7
 
   # ======================================================================
-  # Stage 6: Performance Tests (Runs if Deploy Available, Non-Blocking)
+  # Stage 6: Performance Tests (Runs if Deploy Available, Non-Blocking) - FIXED Environment Variables
   # ======================================================================
   performance-tests:
     name: ⚡ Performance Tests
@@ -281,52 +375,15 @@ jobs:
         run: |
           BASE_URL="${{ needs.deploy-preview.outputs.preview-url || 'https://alocubano-boulderfest.vercel.app' }}"
           echo "⚡ Running performance tests against: $BASE_URL"
-          
-          # Create simple performance test script if it doesn't exist
-          if [ ! -f "scripts/performance-test.js" ]; then
-            echo "Creating basic performance test..."
-            mkdir -p scripts
-            cat > scripts/performance-test.js << 'EOF'
-const https = require('https');
-const { performance } = require('perf_hooks');
-
-async function testEndpoint(url) {
-  return new Promise((resolve, reject) => {
-    const start = performance.now();
-    https.get(url, (res) => {
-      const end = performance.now();
-      const duration = end - start;
-      console.log(`${url}: ${res.statusCode} - ${duration.toFixed(2)}ms`);
-      resolve({ url, status: res.statusCode, duration });
-    }).on('error', reject);
-  });
-}
-
-async function runPerformanceTests() {
-  const baseUrl = process.env.BASE_URL || 'https://alocubano-boulderfest.vercel.app';
-  const endpoints = ['/', '/tickets', '/about', '/artists'];
-  
-  console.log(`Performance testing: ${baseUrl}`);
-  
-  for (const endpoint of endpoints) {
-    try {
-      const result = await testEndpoint(`${baseUrl}${endpoint}`);
-      if (result.duration > 2000) {
-        console.warn(`⚠️  Slow response: ${endpoint} took ${result.duration}ms`);
-      }
-    } catch (error) {
-      console.error(`❌ Failed to test ${endpoint}:`, error.message);
-    }
-  }
-}
-
-runPerformanceTests().catch(console.error);
-EOF
-          fi
-          
-          node scripts/performance-test.js
+          npm run test:performance
         env:
+          # FIXED: Standardized environment variables (Issue #6)
           BASE_URL: ${{ needs.deploy-preview.outputs.preview-url || 'https://alocubano-boulderfest.vercel.app' }}
+          CI_ENVIRONMENT: "performance"
+          
+          # Performance test timeout configuration
+          E2E_TEST_TIMEOUT: 180000  # 3 minutes for performance tests
+          NODE_OPTIONS: "--max-old-space-size=6144"  # 6GB for load testing
 
   # ======================================================================
   # Stage 7: Lint and Quality (Independent - Always Runs)
@@ -335,6 +392,7 @@ EOF
     name: 🔍 Lint & Quality
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: validate-environment
     outputs:
       status: ${{ steps.lint.outcome }}
 
@@ -368,13 +426,23 @@ EOF
     name: 📊 CI Status Report
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [unit-tests, build, security-scan, deploy-preview, e2e-tests, performance-tests, lint-and-quality]
+    needs: [validate-environment, unit-tests, build, security-scan, deploy-preview, e2e-tests, performance-tests, lint-and-quality]
     if: always()
 
     steps:
       - name: 📋 Generate CI Status Report
         run: |
           echo "# 📊 CI Pipeline Status Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Environment validation status (NEW)
+          echo "## 🔍 Environment Validation" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.validate-environment.outputs.validation_passed }}" = "success" ]; then
+            echo "✅ **Environment Configuration**: VALIDATED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Environment Configuration**: FAILED" >> $GITHUB_STEP_SUMMARY
+            ENVIRONMENT_FAILURE=true
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Core Requirements (Critical)
@@ -436,11 +504,24 @@ EOF
             fi
           fi
           
+          # Environment Configuration Summary (NEW)
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔧 Environment Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- **Node.js**: ${{ env.NODE_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ env.CI_ENVIRONMENT }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Database**: ${{ env.DATABASE_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Memory Allocation**: ${{ env.NODE_OPTIONS }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🆕 **Issue #6 Fixed**: Standardized environment variables across all workflows" >> $GITHUB_STEP_SUMMARY
+          
           # Final Status
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🏁 Final Status" >> $GITHUB_STEP_SUMMARY
           
-          if [ "$CORE_FAILURE" = "true" ]; then
+          if [ "$ENVIRONMENT_FAILURE" = "true" ]; then
+            echo "❌ **CI FAILED**: Environment configuration validation failed" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          elif [ "$CORE_FAILURE" = "true" ]; then
             echo "❌ **CI FAILED**: Core requirements not met" >> $GITHUB_STEP_SUMMARY
             exit 1
           elif [ "$BUILD_FAILED" = "true" ]; then
@@ -453,7 +534,12 @@ EOF
 
       - name: 🎯 Check Critical Requirements
         run: |
-          # Only fail CI if unit tests fail - everything else is warning/informational
+          # Fail CI if environment validation or unit tests fail
+          if [ "${{ needs.validate-environment.outputs.validation_passed }}" != "success" ]; then
+            echo "❌ Critical failure: Environment validation must pass"
+            exit 1
+          fi
+          
           if [ "${{ needs.unit-tests.outputs.status }}" != "success" ]; then
             echo "❌ Critical failure: Unit tests must pass"
             exit 1

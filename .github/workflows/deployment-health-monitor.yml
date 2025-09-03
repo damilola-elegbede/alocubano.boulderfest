@@ -1,4 +1,4 @@
-name: 🏥 Deployment Health Monitor
+name: "PR Preview - Deployment Monitor"
 
 # Vercel-native deployment health monitoring
 # UNIQUE PURPOSE: Monitors PR preview deployments for immediate feedback
@@ -14,6 +14,11 @@ permissions:
   issues: write
   deployments: read
 
+# FIXED: Enhanced concurrency control to prevent conflicts with main CI workflow
+concurrency:
+  group: deployment-health-${{ github.head_ref || github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
 env:
   CI: true
 
@@ -23,8 +28,8 @@ jobs:
     name: 🔍 Watch Vercel Deployment
     runs-on: ubuntu-latest
     timeout-minutes: 20 # Prevent indefinite hanging
-    # Conditional logic to prevent duplicate runs
-    if: github.event_name == 'pull_request'
+    # Conditional logic to prevent duplicate runs and conflicts with main CI
+    if: github.event_name == 'pull_request' && !contains(github.head_ref, 'feature/phase4-')
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4

@@ -1,4 +1,4 @@
-name: Performance Testing Pipeline
+name: "Performance Tests - Load & Speed Analysis"
 
 on:
   # UNIQUE PURPOSE: Comprehensive performance testing pipeline

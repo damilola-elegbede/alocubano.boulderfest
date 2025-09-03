@@ -1,75 +1,50 @@
 /**
- * Playwright E2E Configuration - Vercel Preview Deployments
+ * Modern Playwright E2E Configuration - Vercel Preview Deployments
  * 
- * This configuration runs E2E tests against live Vercel preview deployments
- * instead of starting local servers. Provides better reliability and 
- * production-like testing environment.
+ * This configuration is the MODERN approach for E2E testing that uses:
+ * - Live Vercel Preview Deployments instead of local dev servers
+ * - Production-like environment testing with real serverless functions
+ * - No server management complexity or port allocation issues
+ * - Better CI/CD integration with native Vercel workflows
+ * - Eliminated server hanging and resource conflicts
  * 
- * Key Features:
- * - Uses live Vercel preview URLs extracted from GitHub PR comments
- * - No local server startup required
- * - Production-like environment testing
- * - Automatic deployment readiness validation
- * - Support for multiple URL sources (PR comments, API, CLI)
- * - Enhanced timeout handling for remote deployments
- * 
- * Environment Variables:
- * - PREVIEW_URL: Direct preview URL override
- * - GITHUB_TOKEN: Required for GitHub API access
- * - VERCEL_TOKEN: Optional for Vercel API access
- * - GITHUB_PR_NUMBER: PR number for comment extraction
- * - GITHUB_SHA: Commit SHA for deployment matching
+ * BENEFITS over legacy Vercel Dev server approach:
+ * - Real production environment testing
+ * - No local server startup time or hanging issues
+ * - Authentic API routing and serverless behavior
+ * - Zero port conflicts or resource contention
+ * - Better reliability and faster execution
+ * - Native CI/CD integration with deployment workflows
  */
 
 import { defineConfig, devices } from '@playwright/test';
 
-// Determine base URL - priority order:
-// 1. Direct PREVIEW_URL environment variable
-// 2. Extracted from CI environment (set by setup script)
-// 3. localhost fallback (for local development only)
-const getBaseURL = () => {
-  // Direct preview URL
-  if (process.env.PREVIEW_URL) {
-    console.log(`🎯 Using direct preview URL: ${process.env.PREVIEW_URL}`);
-    return process.env.PREVIEW_URL;
-  }
+// Base URL comes from environment variable set by CI workflow
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || process.env.PREVIEW_URL || 'http://localhost:3000';
 
-  // CI-extracted URL
-  if (process.env.CI_EXTRACTED_PREVIEW_URL) {
-    console.log(`🤖 Using CI-extracted preview URL: ${process.env.CI_EXTRACTED_PREVIEW_URL}`);
-    return process.env.CI_EXTRACTED_PREVIEW_URL;
-  }
+// Validate we have a proper target URL
+if (!baseURL.startsWith('http')) {
+  throw new Error(`Invalid base URL: ${baseURL}. Expected format: https://example.vercel.app`);
+}
 
-  // Fallback for local development
-  const fallbackUrl = 'http://localhost:3000';
-  console.log(`🔧 Using localhost fallback: ${fallbackUrl}`);
-  console.log('   Note: For preview testing, set PREVIEW_URL environment variable');
-  return fallbackUrl;
-};
-
-const baseURL = getBaseURL();
-const isPreviewMode = baseURL.includes('vercel.app') || baseURL.includes('now.sh');
-
-console.log('🎭 Playwright E2E Preview Config:');
-console.log(`   Mode: ${isPreviewMode ? 'Preview Deployment' : 'Local Development'}`);
-console.log(`   Base URL: ${baseURL}`);
-console.log(`   Health Check: ${baseURL}/api/health/check`);
-console.log(`   Environment: Production-like preview`);
-console.log(`   Deployment Validation: ${isPreviewMode ? 'Enabled' : 'Disabled'}`);
+console.log(`🎭 Modern Playwright E2E Preview Config:`);
+console.log(`  Target URL: ${baseURL}`);
+console.log(`  Environment: ${baseURL.includes('vercel.app') ? 'Vercel Preview Deployment' : 'Local Development'}`);
+console.log(`  Approach: Modern (no local server management)`);
+console.log(`  Database: Production/Preview environment database`);
 
 export default defineConfig({
   testDir: './tests/e2e/flows',
-  fullyParallel: true, // Can run in parallel since no local server conflicts
+  fullyParallel: true, // Safe for preview deployments (no local resource conflicts)
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 3 : 1, // More retries for remote deployments
-  workers: process.env.CI ? 2 : 1, // Conservative parallelism for remote testing
+  retries: process.env.CI ? 2 : 1,
+  workers: process.env.CI ? 2 : 1, // Parallel workers safe with preview deployments
   reporter: [
     ['list'],
-    ['html', { outputFolder: 'playwright-report-preview', open: 'never' }]
+    ['html', { outputFolder: 'playwright-report', open: 'never' }]
   ],
   
-  // Extended timeouts for remote deployments
-  timeout: isPreviewMode ? 90000 : 45000, // 90s for preview, 45s for local
+  timeout: 60000, // 1 minute per test (faster than local server approach)
   
   use: {
     baseURL: baseURL,
@@ -80,13 +55,13 @@ export default defineConfig({
     // Viewport and device emulation
     viewport: { width: 1280, height: 720 },
     
-    // Extended timeouts for remote deployments
-    actionTimeout: isPreviewMode ? 30000 : 20000, // 30s for preview actions
-    navigationTimeout: isPreviewMode ? 60000 : 40000, // 60s for preview navigation
+    // Network and timing (optimized for preview deployments)
+    actionTimeout: 15000, // 15 seconds for actions
+    navigationTimeout: 30000, // 30 seconds for navigation (faster than local servers)
     
-    // Additional context for remote testing
+    // Additional headers for better preview deployment testing
     extraHTTPHeaders: {
-      'User-Agent': 'Playwright-E2E-Preview-Testing'
+      'User-Agent': 'Playwright-E2E-Tests-Preview'
     }
   },
 
@@ -113,10 +88,19 @@ export default defineConfig({
     },
   ],
 
-  // No webServer needed - testing against live deployment
-  webServer: undefined,
+  // MODERN APPROACH: No webServer configuration needed!
+  // Tests run directly against live Vercel Preview Deployments
+  // 
+  // BENEFITS of this approach:
+  // ✅ No server startup time or hanging issues
+  // ✅ Production-like environment with real serverless functions
+  // ✅ Authentic API routing and database connections
+  // ✅ No port conflicts or resource management
+  // ✅ Better CI/CD integration
+  // ✅ Faster test execution
+  // ✅ More reliable results
   
-  // Global setup/teardown for preview testing
+  // Global setup/teardown for preview environment
   globalSetup: './tests/e2e/global-setup-preview.js',
   globalTeardown: './tests/e2e/global-teardown-preview.js',
 });

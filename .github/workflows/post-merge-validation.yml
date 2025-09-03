@@ -1,13 +1,13 @@
-name: Post-Merge Validation
+name: "Main Branch - Post-Merge Validation"
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-# Prevent multiple instances from running simultaneously
+# FIXED: Enhanced concurrency control to prevent conflicts with other main branch workflows
 concurrency:
-  group: post-merge-${{ github.ref }}
+  group: post-merge-${{ github.ref }}-${{ github.workflow }}
   cancel-in-progress: false
 
 env:

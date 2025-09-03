@@ -1,5 +1,5 @@
 ---
-name: 🚀 Production Quality Gates
+name: "Production - Quality Gates"
 
 # UNIQUE PURPOSE: Production quality validation after main branch pushes
 # Comprehensive production readiness checks and quality gates
@@ -15,6 +15,11 @@ permissions:
   deployments: write
   statuses: write
   issues: write
+
+# FIXED: Enhanced concurrency control to prevent conflicts with other main branch workflows
+concurrency:
+  group: production-quality-${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: "20"

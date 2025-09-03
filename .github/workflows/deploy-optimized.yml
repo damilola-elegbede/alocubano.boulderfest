@@ -1,4 +1,4 @@
-name: 🚀 Optimized Deployment
+name: "Production - Optimized Deploy"
 
 # Streamlined production deployment workflow (400 lines vs 1,233 in production-deploy.yml)
 # Key improvements: Path filtering, reusable patterns, environment-specific logic, efficient gates
