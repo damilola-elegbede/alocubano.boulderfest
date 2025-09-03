@@ -1,5 +1,6 @@
 {
   "buildCommand": "node vercel-build.cjs",
+  "outputDirectory": "public",
   "framework": null,
   "crons": [
     {
@@ -110,175 +111,175 @@
     },
     {
       "source": "/gallery-data/:path*",
-      "destination": "/public/gallery-data/:path*"
+      "destination": "/gallery-data/:path*"
     },
     {
       "source": "/featured-photos.json",
-      "destination": "/public/featured-photos.json"
+      "destination": "/featured-photos.json"
     },
     {
       "source": "/",
-      "destination": "/pages/index.html"
+      "destination": "/index.html"
     },
     {
       "source": "/index.html",
-      "destination": "/pages/index.html"
+      "destination": "/index.html"
     },
     {
       "source": "/home",
-      "destination": "/pages/home.html"
+      "destination": "/home.html"
     },
     {
       "source": "/about",
-      "destination": "/pages/about.html"
+      "destination": "/about.html"
     },
     {
       "source": "/boulder-fest-2026/home",
-      "destination": "/pages/home.html"
+      "destination": "/home.html"
     },
     {
       "source": "/boulder-fest-2026/about",
-      "destination": "/pages/about.html"
+      "destination": "/about.html"
     },
     {
       "source": "/boulder-fest-2026/donations",
-      "destination": "/pages/donations.html"
+      "destination": "/donations.html"
     },
     {
       "source": "/boulder-fest-2025",
-      "destination": "/pages/boulder-fest-2025-index.html"
+      "destination": "/boulder-fest-2025-index.html"
     },
     {
       "source": "/boulder-fest-2025/artists",
-      "destination": "/pages/boulder-fest-2025-artists.html"
+      "destination": "/boulder-fest-2025-artists.html"
     },
     {
       "source": "/boulder-fest-2025/schedule",
-      "destination": "/pages/boulder-fest-2025-schedule.html"
+      "destination": "/boulder-fest-2025-schedule.html"
     },
     {
       "source": "/boulder-fest-2025/gallery",
-      "destination": "/pages/boulder-fest-2025-gallery.html"
+      "destination": "/boulder-fest-2025-gallery.html"
     },
     {
       "source": "/boulder-fest-2026",
-      "destination": "/pages/boulder-fest-2026-index.html"
+      "destination": "/boulder-fest-2026-index.html"
     },
     {
       "source": "/boulder-fest-2026/artists",
-      "destination": "/pages/boulder-fest-2026-artists.html"
+      "destination": "/boulder-fest-2026-artists.html"
     },
     {
       "source": "/boulder-fest-2026/schedule",
-      "destination": "/pages/boulder-fest-2026-schedule.html"
+      "destination": "/boulder-fest-2026-schedule.html"
     },
     {
       "source": "/boulder-fest-2026/gallery",
-      "destination": "/pages/boulder-fest-2026-gallery.html"
+      "destination": "/boulder-fest-2026-gallery.html"
     },
     {
       "source": "/weekender-2026-09",
-      "destination": "/pages/weekender-2026-09-index.html"
+      "destination": "/weekender-2026-09-index.html"
     },
     {
       "source": "/weekender-2026-09/artists",
-      "destination": "/pages/weekender-2026-09-artists.html"
+      "destination": "/weekender-2026-09-artists.html"
     },
     {
       "source": "/weekender-2026-09/schedule",
-      "destination": "/pages/weekender-2026-09-schedule.html"
+      "destination": "/weekender-2026-09-schedule.html"
     },
     {
       "source": "/weekender-2026-09/gallery",
-      "destination": "/pages/weekender-2026-09-gallery.html"
+      "destination": "/weekender-2026-09-gallery.html"
     },
     {
       "source": "/about-festival",
-      "destination": "/pages/about.html"
+      "destination": "/about.html"
     },
     {
       "source": "/contact",
-      "destination": "/pages/contact.html"
+      "destination": "/contact.html"
     },
     {
       "source": "/donations",
-      "destination": "/pages/donations.html"
+      "destination": "/donations.html"
     },
     {
       "source": "/2026-artists",
-      "destination": "/pages/boulder-fest-2026-artists.html"
+      "destination": "/boulder-fest-2026-artists.html"
     },
     {
       "source": "/2026-schedule",
-      "destination": "/pages/boulder-fest-2026-schedule.html"
+      "destination": "/boulder-fest-2026-schedule.html"
     },
     {
       "source": "/2026-gallery",
-      "destination": "/pages/boulder-fest-2026-gallery.html"
+      "destination": "/boulder-fest-2026-gallery.html"
     },
     {
       "source": "/2025-artists",
-      "destination": "/pages/boulder-fest-2025-artists.html"
+      "destination": "/boulder-fest-2025-artists.html"
     },
     {
       "source": "/2025-schedule",
-      "destination": "/pages/boulder-fest-2025-schedule.html"
+      "destination": "/boulder-fest-2025-schedule.html"
     },
     {
       "source": "/2025-gallery",
-      "destination": "/pages/boulder-fest-2025-gallery.html"
+      "destination": "/boulder-fest-2025-gallery.html"
     },
     {
       "source": "/2026-sept-artists",
-      "destination": "/pages/weekender-2026-09-artists.html"
+      "destination": "/weekender-2026-09-artists.html"
     },
     {
       "source": "/2026-sept-schedule",
-      "destination": "/pages/weekender-2026-09-schedule.html"
+      "destination": "/weekender-2026-09-schedule.html"
     },
     {
       "source": "/2026-sept-gallery",
-      "destination": "/pages/weekender-2026-09-gallery.html"
+      "destination": "/weekender-2026-09-gallery.html"
     },
     {
       "source": "/weekender-2026-09/:page",
-      "destination": "/pages/:page.html"
+      "destination": "/:page.html"
     },
     {
       "source": "/workshop-series-2026/:page",
-      "destination": "/pages/:page.html"
+      "destination": "/:page.html"
     },
     {
       "source": "/tickets",
-      "destination": "/pages/tickets.html"
+      "destination": "/tickets.html"
     },
     {
       "source": "/success",
-      "destination": "/pages/success.html"
+      "destination": "/success.html"
     },
     {
       "source": "/failure",
-      "destination": "/pages/failure.html"
+      "destination": "/failure.html"
     },
     {
       "source": "/my-tickets",
-      "destination": "/pages/my-tickets.html"
+      "destination": "/my-tickets.html"
     },
     {
       "source": "/checkout-success",
-      "destination": "/pages/checkout-success.html"
+      "destination": "/checkout-success.html"
     },
     {
       "source": "/checkout-cancel",
-      "destination": "/pages/checkout-cancel.html"
+      "destination": "/checkout-cancel.html"
     },
     {
       "source": "/admin/checkin",
-      "destination": "/pages/admin/checkin.html"
+      "destination": "/admin/checkin.html"
     },
     {
       "source": "/manifest.json",
-      "destination": "/public/manifest.json"
+      "destination": "/manifest.json"
     }
   ],
   "redirects": [
