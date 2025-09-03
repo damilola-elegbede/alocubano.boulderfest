@@ -5,7 +5,7 @@
  * Locally: Tests full business logic validation
  */
 import { test, expect } from 'vitest';
-import { testRequest, generateTestEmail, HTTP_STATUS } from './helpers.js';
+import { testRequest, generateTestEmail, HTTP_STATUS } from '../../helpers.js';
 
 // Skip business logic validation tests in CI - these need real API logic
 const skipInCI = process.env.CI ? test.skip : test;

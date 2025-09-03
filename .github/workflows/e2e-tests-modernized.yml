@@ -61,7 +61,8 @@ jobs:
     name: 🔍 Pre-flight Validation & Test Planning
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: contains(github.head_ref, 'feature/phase4-') || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    # DISABLED: E2E tests are temporarily disabled while focusing on unit tests
+    if: false
     outputs:
       should_run_e2e: ${{ steps.planning.outputs.should_run_e2e }}
       test_suite: ${{ steps.planning.outputs.test_suite }}

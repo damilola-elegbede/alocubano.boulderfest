@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { testRequest, generateTestEmail, HTTP_STATUS } from './helpers.js';
+import { testRequest, generateTestEmail, HTTP_STATUS } from '../../helpers.js';
 
 test('registration flow works end-to-end', async () => {
   const registrationData = {

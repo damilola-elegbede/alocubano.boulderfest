@@ -2,7 +2,7 @@
  * API Contract Tests - Validates API contracts and response structures
  */
 import { test, expect } from 'vitest';
-import { testRequest, generateTestEmail, HTTP_STATUS } from './helpers.js';
+import { testRequest, generateTestEmail, HTTP_STATUS } from '../../helpers.js';
 
 test('payment API creates valid Stripe checkout session', async () => {
   const validPaymentData = {

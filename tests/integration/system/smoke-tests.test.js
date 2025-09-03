@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { testRequest, generateTestEmail, HTTP_STATUS } from './helpers.js';
+import { testRequest, generateTestEmail, HTTP_STATUS } from '../../helpers.js';
 
 test('system health check validates critical services', async () => {
   const response = await testRequest('GET', '/api/health/check');

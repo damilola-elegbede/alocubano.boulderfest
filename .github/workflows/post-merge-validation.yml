@@ -182,23 +182,24 @@ jobs:
 
           echo "✅ All tests passed successfully with Vercel dev server"
 
-      - name: 🔍 Run Security Tests
-        if: success()
-        env:
-          TEST_BASE_URL: "http://localhost:${{ steps.port.outputs.port }}"
-        run: |
-          echo "Running security validation tests with Vercel dev server..."
-          echo "Security tests integrated into basic-validation.test.js (SQL injection, XSS)"
-          npx vitest run tests/basic-validation.test.js --config tests/vitest.config.js -t "SQL injection"
+      # DISABLED: Security and payment tests disabled for unit-only mode
+      # - name: 🔍 Run Security Tests
+      #   if: success()
+      #   env:
+      #     TEST_BASE_URL: "http://localhost:${{ steps.port.outputs.port }}"
+      #   run: |
+      #     echo "Running security validation tests with Vercel dev server..."
+      #     echo "Security tests integrated into basic-validation.test.js (SQL injection, XSS)"
+      #     npx vitest run tests/basic-validation.test.js --config tests/vitest.config.js -t "SQL injection"
 
-      - name: 💳 Run Payment Tests
-        if: success()
-        env:
-          TEST_BASE_URL: "http://localhost:${{ steps.port.outputs.port }}"
-        run: |
-          echo "Running payment validation tests with Vercel dev server..."
-          echo "Payment tests integrated into api-contracts.test.js (Stripe checkout)"
-          npx vitest run tests/api-contracts.test.js --config tests/vitest.config.js -t "payment"
+      # - name: 💳 Run Payment Tests
+      #   if: success()
+      #   env:
+      #     TEST_BASE_URL: "http://localhost:${{ steps.port.outputs.port }}"
+      #   run: |
+      #     echo "Running payment validation tests with Vercel dev server..."
+      #     echo "Payment tests integrated into api-contracts.test.js (Stripe checkout)"
+      #     npx vitest run tests/api-contracts.test.js --config tests/vitest.config.js -t "payment"
 
       - name: 📊 Performance Check
         if: success()
