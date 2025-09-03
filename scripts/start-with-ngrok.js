@@ -1,19 +1,29 @@
 #!/usr/bin/env node
 
 /**
- * Start Development Server with ngrok Tunnel
+ * DEPRECATED: Start Development Server with ngrok Tunnel
+ * 
+ * This script is DEPRECATED for E2E testing but PRESERVED for local development.
+ * 
+ * CURRENT STATUS:
+ * - ✅ Still used for local development with external access (npm start)
+ * - ❌ No longer used for E2E testing (switched to Vercel Preview Deployments)
+ * 
+ * LOCAL DEVELOPMENT USE:
+ * Still useful for local development when external access is needed,
+ * such as testing on mobile devices or sharing development URLs.
  * 
  * WARNING: This script is for LOCAL DEVELOPMENT ONLY.
  * DO NOT use ngrok in production or CI environments as it exposes
  * your local server to the public internet without proper security controls.
  * 
- * This script starts the development server and creates an ngrok tunnel
- * to provide a consistent URL for local testing purposes only.
- * 
  * Security considerations:
  * - ngrok tunnels are publicly accessible
  * - No authentication is enforced by default
  * - Use only for local development and testing
+ * 
+ * @deprecated For E2E testing - use Vercel Preview Deployments instead  
+ * @preserved For local development with external access
  */
 
 import { spawn, exec } from 'child_process';

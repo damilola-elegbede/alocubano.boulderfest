@@ -1,29 +1,23 @@
 #!/usr/bin/env node
 
 /**
- * Vercel Dev CI Server Script - Dynamic Port Allocation Support
+ * DEPRECATED: Vercel Dev CI Server Script
  * 
- * Critical CI pipeline script for starting Vercel Dev on dynamic ports (3000-3005).
- * Designed for parallel test execution with comprehensive health checking and
- * graceful shutdown handling.
+ * This script is DEPRECATED as of the migration to Vercel Preview Deployments for E2E testing.
+ * Local Vercel dev servers are no longer used for E2E testing in CI/CD pipelines.
  * 
- * Features:
- * - Dynamic port allocation from DYNAMIC_PORT or PORT environment variables
- * - Port conflict detection and resolution
- * - Database isolation per port for test safety
- * - Comprehensive health checks with retry logic
- * - Graceful shutdown with process cleanup
- * - CI-optimized startup with non-interactive mode
- * - Production-like environment setup
- * - **FIXED**: Vercel authentication with --token and --scope flags
+ * REPLACEMENT: E2E tests now use Vercel Preview Deployments which provide:
+ * - Real production environment testing
+ * - No local server management complexity
+ * - Better CI/CD integration
+ * - Eliminated port conflicts and server hanging issues
  * 
- * Port Allocation Matrix:
- * - Standard Suite: 3000
- * - Advanced Suite: 3001  
- * - Firefox Suite: 3002
- * - Performance Suite: 3003
- * - Accessibility Suite: 3004
- * - Security Suite: 3005
+ * LEGACY PURPOSE:
+ * This script was used for starting Vercel Dev on dynamic ports (3000-3005)
+ * for parallel test execution with comprehensive health checking.
+ * 
+ * @deprecated Use Vercel Preview Deployments for E2E testing instead
+ * @see CI/CD workflows for current E2E testing approach
  */
 
 import { spawn } from 'child_process';

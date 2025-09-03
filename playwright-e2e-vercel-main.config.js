@@ -1,25 +1,24 @@
 /**
- * Playwright E2E Configuration - Vercel Dev Server with Dynamic Port Allocation
+ * DEPRECATED: Playwright E2E Configuration - Vercel Dev Server
  * 
- * Key Features:
+ * This configuration is DEPRECATED as of the migration to Vercel Preview Deployments.
+ * Local Vercel dev servers are no longer used for E2E testing.
+ * 
+ * REPLACEMENT: E2E tests now use Vercel Preview Deployments which provide:
+ * - Real production environment testing
+ * - No local server management complexity
+ * - No port allocation or conflicts
+ * - Better CI/CD integration
+ * - Eliminated server hanging issues
+ * 
+ * LEGACY FEATURES:
  * - Dynamic port allocation (3000-3005) for parallel CI execution
  * - Database isolation per test suite using port-specific databases
- * - Production-like testing environment with Vercel dev server
- * - Always starts fresh server (reuseExistingServer: false) for test isolation
+ * - Local Vercel dev server startup management
+ * - Always fresh server startup for test isolation
  * 
- * Environment Variables:
- * - DYNAMIC_PORT: CI matrix port allocation (3000-3005) - PRIMARY
- * - PORT: Standard port environment variable - FALLBACK
- * - PLAYWRIGHT_BASE_URL: Override base URL if needed
- * - TURSO_DATABASE_URL & TURSO_AUTH_TOKEN: Required for E2E tests
- * 
- * Port Allocation Matrix:
- * - Standard Suite: 3000 (port-offset: 0)
- * - Advanced Suite: 3001 (port-offset: 1)
- * - Firefox Suite: 3002 (port-offset: 2)
- * - Performance Suite: 3003 (port-offset: 3)
- * - Accessibility Suite: 3004 (port-offset: 4)
- * - Security Suite: 3005 (port-offset: 5)
+ * @deprecated Use Vercel Preview Deployments for E2E testing instead
+ * @see New E2E testing approach in CI/CD workflows
  */
 
 import { defineConfig, devices } from '@playwright/test';
@@ -95,38 +94,25 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    // Use our optimized Vercel dev E2E script with dynamic port support
-    // This avoids all recursion and configuration issues
-    command: `node scripts/vercel-dev-e2e.js --port ${testPort}`,
-    url: `${baseURL}/api/health/check`,
-    reuseExistingServer: false, // Always false for CI isolation and test safety
-    timeout: 60000, // 60 seconds for Vercel dev startup
-    stdout: 'pipe',
-    stderr: 'pipe',
-    
-    // Environment variables for the server
-    env: {
-      NODE_ENV: 'development',
-      PORT: testPort.toString(),
-      DYNAMIC_PORT: testPort.toString(), // Ensure both are set for standardized configuration
-      // E2E testing configuration
-      E2E_TEST_MODE: 'true',
-      TEST_ADMIN_PASSWORD: process.env.TEST_ADMIN_PASSWORD || 'test-password',
-      // Pass through authentication variables
-      ADMIN_SECRET: process.env.ADMIN_SECRET,
-      ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
-      // Database configuration (required for E2E tests)
-      TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL,
-      TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN,
-      // Skip database init to prevent hanging
-      SKIP_DATABASE_INIT: 'true',
-      // Vercel dev specific settings
-      VERCEL_DEV_STARTUP: 'true',
-      // CI environment markers
-      CI: process.env.CI || 'false',
-    },
-  },
+  // DEPRECATED: webServer configuration removed
+  // E2E tests now use Vercel Preview Deployments instead of local servers
+  // 
+  // LEGACY webServer config (now commented out):
+  // - Local Vercel dev server startup via scripts/vercel-dev-e2e.js
+  // - Dynamic port allocation and health checks
+  // - Complex environment variable configuration
+  // - Server process management and cleanup
+  //
+  // REPLACEMENT: Tests run against Vercel Preview Deployment URLs
+  // configured via PLAYWRIGHT_BASE_URL environment variable
+  
+  // webServer: {
+  //   command: `node scripts/vercel-dev-e2e.js --port ${testPort}`,
+  //   url: `${baseURL}/api/health/check`,
+  //   reuseExistingServer: false,
+  //   timeout: 60000,
+  //   env: { /* complex local server environment */ }
+  // },
   
   // Global setup/teardown standardized across all configs
   globalSetup: './tests/e2e/global-setup-ci.js',

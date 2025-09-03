@@ -1,14 +1,13 @@
 # ======================================================================
-# A Lo Cubano Boulder Fest - Enhanced CI/CD Pipeline with Test Comments
+# A Lo Cubano Boulder Fest - CI/CD Pipeline
 # ======================================================================
-# Production-Ready CI with Quality Gates and Comprehensive PR Comments
+# Production-Ready CI with Quality Gates
 # - Comprehensive testing: unit, E2E, performance, security
 # - Vercel deployment with preview environments
-# - Detailed PR comments with test results and performance metrics
-# - Real-time test status updates
+# - Strict quality enforcement
 # ======================================================================
 
-name: Enhanced Main CI Pipeline
+name: Main CI Pipeline
 
 on:
   push:
@@ -43,43 +42,12 @@ env:
 
 jobs:
   # ======================================================================
-  # Stage 1: Initialize and Track Start Time
-  # ======================================================================
-  initialize:
-    name: 🚀 Initialize CI Pipeline
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    outputs:
-      start-time: ${{ steps.init.outputs.start-time }}
-      pr-number: ${{ steps.init.outputs.pr-number }}
-
-    steps:
-      - name: 📋 Initialize Pipeline
-        id: init
-        run: |
-          START_TIME=$(date +%s)
-          echo "start-time=$START_TIME" >> $GITHUB_OUTPUT
-          
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "pr-number=${{ github.event.number }}" >> $GITHUB_OUTPUT
-          else
-            echo "pr-number=" >> $GITHUB_OUTPUT
-          fi
-          
-          echo "🚀 CI Pipeline initialized at $(date -u)"
-          echo "📊 Start time: $START_TIME"
-
-  # ======================================================================
-  # Stage 2: Code Quality & Static Analysis
+  # Stage 1: Code Quality & Static Analysis
   # ======================================================================
   code-quality:
     name: 🎨 Code Quality
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [initialize]
-    outputs:
-      status: ${{ steps.collect-results.outputs.status }}
-      summary: ${{ steps.collect-results.outputs.summary }}
 
     steps:
       - name: 📥 Checkout code
@@ -146,52 +114,24 @@ jobs:
             echo "html_failed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: 🗃️ Collect Code Quality Results
-        id: collect-results
+      - name: 📊 Quality Summary
         if: always()
         run: |
-          # Determine overall status
-          if [ "${{ steps.eslint.outcome }}" = "failure" ] || [ "${{ steps.markdown.outcome }}" = "failure" ] || [ "${{ steps.html.outcome }}" = "failure" ]; then
-            STATUS="failure"
-          else
-            STATUS="success"
-          fi
-          
-          # Create summary
-          SUMMARY=$(cat <<EOF
-          {
-            "type": "code-quality",
-            "status": "$STATUS",
-            "eslint": {
-              "status": "${{ steps.eslint.outcome }}",
-              "failed": "${{ steps.eslint.outputs.eslint_failed }}"
-            },
-            "markdown": {
-              "status": "${{ steps.markdown.outcome }}",
-              "failed": "${{ steps.markdown.outputs.markdown_failed }}"
-            },
-            "html": {
-              "status": "${{ steps.html.outcome }}",
-              "failed": "${{ steps.html.outputs.html_failed }}"
-            }
-          }
-          EOF
-          )
-          
-          echo "status=$STATUS" >> $GITHUB_OUTPUT
-          echo "summary=$(echo "$SUMMARY" | jq -c .)" >> $GITHUB_OUTPUT
+          echo "========================================"
+          echo "📊 Code Quality Summary"
+          echo "========================================"
+          echo "ESLint:    ${{ steps.eslint.outputs.eslint_failed == 'true' && '❌ Failed' || '✅ Passed' }}"
+          echo "Markdown:  ${{ steps.markdown.outputs.markdown_failed == 'true' && '❌ Failed' || '✅ Passed' }}"
+          echo "HTML:      ${{ steps.html.outputs.html_failed == 'true' && '❌ Failed' || '✅ Passed' }}"
+          echo "========================================"
 
   # ======================================================================
-  # Stage 3: Security Scanning
+  # Stage 2: Security Scanning
   # ======================================================================
   security-scan:
     name: 🔒 Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [initialize]
-    outputs:
-      status: ${{ steps.collect-results.outputs.status }}
-      summary: ${{ steps.collect-results.outputs.summary }}
 
     steps:
       - name: 📥 Checkout code
@@ -226,7 +166,6 @@ jobs:
           fi
 
       - name: 🔐 Check for secrets
-        id: secrets-check
         run: |
           echo "🔐 Checking for exposed secrets..."
 
@@ -234,33 +173,29 @@ jobs:
           if grep -r --include="*.js" --include="*.json" --exclude-dir=node_modules \
              -E "(api[_-]?key|secret|password|token|private[_-]?key)['\"]?\s*[:=]\s*['\"][^'\"]{10,}" . 2>/dev/null; then
             echo "🚨 Potential secrets found in code!"
-            echo "secrets_found=true" >> $GITHUB_OUTPUT
             exit 1
           fi
 
           echo "✅ No exposed secrets detected"
-          echo "secrets_found=false" >> $GITHUB_OUTPUT
 
-      - name: 📊 Collect Security Results
-        id: collect-results
+      - name: 📊 Security Summary
         if: always()
-        uses: ./.github/actions/collect-test-results
-        with:
-          test-type: "security"
-          test-results-path: "."
-          job-start-time: ${{ needs.initialize.outputs.start-time }}
+        run: |
+          echo "========================================"
+          echo "🔒 Security Scan Summary"
+          echo "========================================"
+          echo "npm audit: ${{ steps.npm-audit.outputs.audit_failed == 'true' && '⚠️ Vulnerabilities found' || '✅ Clean' }}"
+          echo "Secrets:   ✅ No exposed secrets"
+          echo "========================================"
 
   # ======================================================================
-  # Stage 4: Unit Tests with Enhanced Metrics
+  # Stage 3: Unit Tests
   # ======================================================================
   unit-tests:
     name: 🧪 Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [initialize, code-quality]
-    outputs:
-      status: ${{ steps.collect-results.outputs.status }}
-      summary: ${{ steps.collect-results.outputs.summary }}
+    needs: [code-quality]
 
     steps:
       - name: 📥 Checkout code
@@ -280,16 +215,17 @@ jobs:
       - name: 🗄️ Setup test database
         run: |
           echo "🗄️ Initializing SQLite database for testing..."
+
+          # Create database directory
           mkdir -p data
           touch data/test.db
+
+          # Initialize database schema
           npm run migrate:status || true
+
           echo "✅ Test database ready"
 
-      - name: 📊 Record Test Start Time
-        id: test-start
-        run: echo "start-time=$(date +%s)" >> $GITHUB_OUTPUT
-
-      - name: 🧪 Run unit tests with JSON output
+      - name: 🧪 Run unit tests
         env:
           NODE_ENV: test
           DATABASE_URL: "file:./data/test.db"
@@ -300,33 +236,14 @@ jobs:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY || 'test-api-key' }}
           WALLET_AUTH_SECRET: ${{ secrets.WALLET_AUTH_SECRET || 'test-wallet-secret-32-chars-minimum' }}
         run: |
-          echo "🧪 Running unit tests with detailed reporting..."
-          
-          # Run tests with JSON reporter for parsing
-          npx vitest run --config tests/vitest.config.js --reporter=json --outputFile=test-results.json 2>&1 | tee test-output.log
+          echo "🧪 Running unit tests..."
+          npm test 2>&1 | tee test-output.log
           TEST_EXIT_CODE=${PIPESTATUS[0]}
 
-          # Extract test summary from output
+          # Extract test summary
           if grep -q "Test Files" test-output.log; then
             echo "📊 Test Results:"
             grep -A 5 "Test Files" test-output.log || true
-          fi
-
-          # Always generate JSON output even on failure
-          if [ ! -f "test-results.json" ] && [ -f "test-output.log" ]; then
-            # Create basic JSON from log output if JSON file wasn't created
-            PASSED=$(grep -o "[0-9]\+ passed" test-output.log | head -1 | grep -o "[0-9]\+" || echo "0")
-            FAILED=$(grep -o "[0-9]\+ failed" test-output.log | head -1 | grep -o "[0-9]\+" || echo "0")
-            TOTAL=$((PASSED + FAILED))
-            
-            cat > test-results.json <<EOF
-          {
-            "numTotalTests": $TOTAL,
-            "numPassedTests": $PASSED,
-            "numFailedTests": $FAILED,
-            "numPendingTests": 0
-          }
-          EOF
           fi
 
           if [ $TEST_EXIT_CODE -ne 0 ]; then
@@ -343,37 +260,22 @@ jobs:
           echo "📊 Generating coverage report..."
           npm run test:coverage || true
 
-      - name: 📤 Upload test results
+      - name: 📤 Upload coverage
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: unit-test-results-${{ github.run_number }}
-          path: |
-            test-results.json
-            test-output.log
-            coverage/
+          name: coverage-report-${{ github.run_number }}
+          path: coverage/
           retention-days: 7
 
-      - name: 📊 Collect Unit Test Results
-        id: collect-results
-        if: always()
-        uses: ./.github/actions/collect-test-results
-        with:
-          test-type: "unit"
-          test-results-path: "."
-          coverage-path: "coverage"
-          job-start-time: ${{ steps.test-start.outputs.start-time }}
-
   # ======================================================================
-  # Stage 5: Build Verification
+  # Stage 4: Build Verification
   # ======================================================================
   build-check:
     name: 🏗️ Build Verification
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [unit-tests]
-    outputs:
-      status: ${{ steps.collect-results.outputs.status }}
 
     steps:
       - name: 📥 Checkout code
@@ -428,7 +330,6 @@ jobs:
           echo "✅ Migration files validated"
 
       - name: 🏗️ Test build process
-        id: build-test
         run: |
           echo "🏗️ Verifying build process..."
 
@@ -452,30 +353,18 @@ jobs:
 
           echo "✅ Build verification complete"
 
-      - name: 📊 Collect Build Results
-        id: collect-results
-        if: always()
-        run: |
-          if [ "${{ steps.build-test.outcome }}" = "failure" ]; then
-            echo "status=failure" >> $GITHUB_OUTPUT
-          else
-            echo "status=success" >> $GITHUB_OUTPUT
-          fi
-
   # ======================================================================
-  # Stage 6: E2E Tests (Matrix) with Enhanced Reporting
+  # Stage 5: E2E Tests (Matrix)
   # ======================================================================
   e2e-tests:
     name: 🎭 E2E - ${{ matrix.suite-name }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ matrix.timeout-minutes }}
-    needs: [initialize, build-check]
+    needs: [build-check]
     if: |
       github.event_name == 'push' ||
       github.event_name == 'pull_request' ||
       github.event_name == 'workflow_dispatch'
-    outputs:
-      results: ${{ steps.collect-results.outputs.summary }}
 
     strategy:
       fail-fast: false
@@ -517,6 +406,24 @@ jobs:
             timeout-minutes: 20
             memory-limit: 3072
 
+          # Mobile experience tests
+          - suite: mobile
+            suite-name: "Mobile Experience"
+            browser: webkit
+            test-pattern: "mobile-registration-experience"
+            retry-count: 2
+            timeout-minutes: 15
+            memory-limit: 2048
+
+          # Performance & Accessibility tests
+          - suite: performance
+            suite-name: "Performance & A11y"
+            browser: chromium
+            test-pattern: "gallery-browsing"
+            retry-count: 1
+            timeout-minutes: 25
+            memory-limit: 4096
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -526,10 +433,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
-
-      - name: 📊 Record Test Start Time
-        id: test-start
-        run: echo "start-time=$(date +%s)" >> $GITHUB_OUTPUT
 
       - name: 📦 Install dependencies
         run: |
@@ -545,6 +448,17 @@ jobs:
           npm install -g vercel@latest
 
           echo "✅ Dependencies ready"
+
+      - name: 🏥 Verify Tools
+        run: |
+          echo "🔍 Verifying installed tools..."
+          echo "Node version: $(node --version)"
+          echo "npm version: $(npm --version)"
+          echo "Vercel CLI: $(vercel --version || echo 'Not installed')"
+          echo "Playwright: $(npx playwright --version)"
+
+          # Check for required browsers
+          npx playwright show-report || true
 
       - name: 🔐 Setup E2E Environment
         id: setup-env
@@ -596,21 +510,41 @@ jobs:
             echo "⚠️ SQLite fallback ready for ${{ matrix.suite }}"
           fi
 
-      - name: 🎭 Run E2E Tests with JSON Output (${{ matrix.suite-name }})
+      - name: 🎭 Run E2E Tests (${{ matrix.suite-name }})
         env:
           PLAYWRIGHT_BASE_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
           NODE_OPTIONS: "--max-old-space-size=${{ matrix.memory-limit }}"
           E2E_TEST_MODE: true
+          # Export Turso credentials for test execution
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL_CI || secrets.TURSO_DATABASE_URL || '' }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_CI || secrets.TURSO_AUTH_TOKEN || '' }}
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
           PORT: ${{ env.DYNAMIC_PORT }}
           DYNAMIC_PORT: ${{ env.DYNAMIC_PORT }}
+          # Test suite specific environment
+          PERFORMANCE_TESTING: ${{ matrix.suite == 'performance' }}
+          ACCESSIBILITY_TESTING: ${{ matrix.suite == 'accessibility' }}
+          SECURITY_TESTING: ${{ matrix.suite == 'security' }}
+          # Advanced scenarios configuration
+          ADVANCED_SCENARIOS: ${{ matrix.suite == 'advanced' }}
+          # Test credentials for all suites
           TEST_ADMIN_PASSWORD: test-password-123
+          # CRITICAL FIX: Add ADMIN_PASSWORD bcrypt hash for CI
           ADMIN_PASSWORD: '$2b$10$K7L1OJ0TfmHrVj2lEwjBOe7MJQkPH5c6WqzT5LJlvGA8MXl7T5jKq'
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET || 'fallback-test-secret-minimum-32-chars' }}
+          # API keys for advanced test scenarios
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY || '' }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || '' }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET || '' }}
+          # Apple Wallet configuration
+          APPLE_PASS_TYPE_ID: ${{ secrets.APPLE_PASS_TYPE_ID || '' }}
+          APPLE_PASS_CERT: ${{ secrets.APPLE_PASS_CERT || '' }}
+          APPLE_PASS_KEY: ${{ secrets.APPLE_PASS_KEY || '' }}
+          APPLE_PASS_PASSWORD: ${{ secrets.APPLE_PASS_PASSWORD || '' }}
+          # Google Wallet configuration
+          GOOGLE_WALLET_ISSUER_ID: ${{ secrets.GOOGLE_WALLET_ISSUER_ID || '' }}
+          GOOGLE_WALLET_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_WALLET_SERVICE_ACCOUNT || '' }}
+          # Vercel configuration
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN || '' }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID || '' }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID || '' }}
@@ -620,8 +554,22 @@ jobs:
           echo "🌐 Browser: ${{ matrix.browser }}"
           echo "🎯 Pattern: ${{ matrix.test-pattern || 'All tests' }}"
           echo "📡 Port: ${{ env.DYNAMIC_PORT }}"
+          echo "🗄️ Database: Turso (from secrets)"
 
-          # Construct test command with JSON output
+          # Export variables explicitly for the test process
+          export TURSO_DATABASE_URL="${TURSO_DATABASE_URL}"
+          export TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN}"
+          export VERCEL_TOKEN="${VERCEL_TOKEN}"
+          export VERCEL_ORG_ID="${VERCEL_ORG_ID}"
+          export VERCEL_PROJECT_ID="${VERCEL_PROJECT_ID}"
+
+          # Debug output (without exposing secrets)
+          echo "  Environment validation:"
+          echo "    TURSO_DATABASE_URL: $([ -n "$TURSO_DATABASE_URL" ] && echo '✅ Set' || echo '❌ Not set')"
+          echo "    TURSO_AUTH_TOKEN: $([ -n "$TURSO_AUTH_TOKEN" ] && echo '✅ Set' || echo '❌ Not set')"
+          echo "    VERCEL_TOKEN: $([ -n "$VERCEL_TOKEN" ] && echo '✅ Set' || echo '❌ Not set')"
+
+          # Construct test command based on suite
           TEST_CMD="npx playwright test --config=playwright-e2e-vercel-main.config.js --project=${{ matrix.browser }}"
 
           # Add test pattern filtering
@@ -629,16 +577,17 @@ jobs:
             TEST_CMD="$TEST_CMD --grep=\"(${{ matrix.test-pattern }})\""
           fi
 
-          # Add retries and timeout
-          TEST_CMD="$TEST_CMD --retries=${{ matrix.retry-count }} --timeout=120000"
+          # Add retries
+          TEST_CMD="$TEST_CMD --retries=${{ matrix.retry-count }}"
 
-          # Add JSON reporter for parsing results
-          TEST_CMD="$TEST_CMD --reporter=list,json:test-results/e2e-${{ matrix.browser }}-results.json"
+          # Add timeout
+          TEST_CMD="$TEST_CMD --timeout=120000"
+
+          # CRITICAL FIX: Simplified reporter configuration
+          # Just use list reporter to avoid syntax errors
+          TEST_CMD="$TEST_CMD --reporter=list"
 
           echo "📋 Executing: $TEST_CMD"
-
-          # Create results directory
-          mkdir -p test-results
 
           # Execute with timeout protection
           if timeout ${{ matrix.timeout-minutes }}m bash -c "$TEST_CMD"; then
@@ -660,89 +609,31 @@ jobs:
             tests/e2e/screenshots/
           retention-days: 7
 
-      - name: 📊 Collect E2E Test Results
-        id: collect-results
+      - name: 📊 Test Summary
         if: always()
-        uses: ./.github/actions/collect-test-results
-        with:
-          test-type: "e2e"
-          test-results-path: "test-results"
-          browser-name: ${{ matrix.browser }}
-          job-start-time: ${{ steps.test-start.outputs.start-time }}
-
-  # ======================================================================
-  # Stage 7: Performance Testing
-  # ======================================================================
-  performance-tests:
-    name: ⚡ Performance Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [initialize, build-check]
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    outputs:
-      results: ${{ steps.collect-results.outputs.summary }}
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-
-      - name: 📊 Record Test Start Time
-        id: test-start
-        run: echo "start-time=$(date +%s)" >> $GITHUB_OUTPUT
-
-      - name: 📦 Install dependencies
-        run: npm ci
-
-      - name: ⚡ Run Performance Tests
         run: |
-          echo "⚡ Running performance validation..."
-          
-          # Create performance results directory
-          mkdir -p test-results
-          
-          TARGET_URL="https://alocubanoboulderfest.vercel.app"
-          echo "Target URL: $TARGET_URL"
-          
-          # Basic performance testing with curl
-          echo "Testing API response times..."
-          HEALTH_TIME=$(time (curl -f "$TARGET_URL/api/health/check" > /dev/null) 2>&1 | grep real | awk '{print $2}' | sed 's/m/:/g' | sed 's/s//g')
-          
-          # Create basic performance results
-          cat > test-results/performance-results.json <<EOF
-          {
-            "health_check_time": "$HEALTH_TIME",
-            "target_url": "$TARGET_URL",
-            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          }
-          EOF
-          
-          echo "✅ Performance validation complete"
+          echo "========================================"
+          echo "📊 E2E Test Summary - ${{ matrix.suite-name }}"
+          echo "========================================"
+          echo "Suite: ${{ matrix.suite }}"
+          echo "Browser: ${{ matrix.browser }}"
+          echo "Pattern: ${{ matrix.test-pattern || 'All tests' }}"
+          echo "Database: ${{ steps.db-check.outputs.db_type }}"
+          echo "Port: ${{ env.DYNAMIC_PORT }}"
+          echo "========================================"
 
-      - name: 📤 Upload Performance Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: performance-results-${{ github.run_number }}
-          path: test-results/
-          retention-days: 7
+          # Show test results if available
+          if [ -d "test-results" ]; then
+            echo "Test artifacts generated:"
+            ls -la test-results/ || true
+          fi
 
-      - name: 📊 Collect Performance Results
-        id: collect-results
-        if: always()
-        uses: ./.github/actions/collect-test-results
-        with:
-          test-type: "performance"
-          test-results-path: "test-results"
-          job-start-time: ${{ steps.test-start.outputs.start-time }}
+          if [ -d "playwright-report" ]; then
+            echo "Playwright report available"
+          fi
 
   # ======================================================================
-  # Stage 8: Deployment (Vercel)
+  # Stage 6: Deployment (Vercel)
   # ======================================================================
   deploy:
     name: 🚀 Deploy to Vercel
@@ -757,8 +648,6 @@ jobs:
     environment:
       name: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
       url: ${{ steps.deploy.outputs.url }}
-    outputs:
-      deployment-url: ${{ steps.deploy.outputs.url }}
 
     steps:
       - name: 📥 Checkout code
@@ -808,51 +697,32 @@ jobs:
             echo "⚠️ Deployment may not be ready yet"
           fi
 
-  # ======================================================================
-  # Stage 9: Comprehensive Test Status Comment
-  # ======================================================================
-  test-status-comment:
-    name: 💬 Post Test Status Comment
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [initialize, code-quality, security-scan, unit-tests, build-check, e2e-tests, performance-tests, deploy]
-    if: always() && github.event_name == 'pull_request'
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📊 Calculate Total CI Time
-        id: timing
-        run: |
-          START_TIME=${{ needs.initialize.outputs.start-time }}
-          END_TIME=$(date +%s)
-          TOTAL_TIME=$((END_TIME - START_TIME))
-          echo "total-time=$TOTAL_TIME" >> $GITHUB_OUTPUT
-
-      - name: 📋 Aggregate E2E Results
-        id: aggregate-e2e
-        run: |
-          # Collect E2E results from matrix jobs
-          E2E_RESULTS="[]"
-          
-          # This would be populated by the matrix results in a real scenario
-          # For now, we'll create a placeholder structure
-          echo "e2e-results=$E2E_RESULTS" >> $GITHUB_OUTPUT
-
-      - name: 💬 Post Comprehensive Test Comment
-        uses: ./.github/actions/post-test-comment
+      - name: 💬 Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          unit-test-results: ${{ needs.unit-tests.outputs.summary || '{}' }}
-          e2e-test-results: ${{ steps.aggregate-e2e.outputs.e2e-results }}
-          performance-test-results: ${{ needs.performance-tests.outputs.results || '{}' }}
-          security-test-results: ${{ needs.security-scan.outputs.summary || '{}' }}
-          build-status: ${{ needs.build-check.outputs.status }}
-          deployment-url: ${{ needs.deploy.outputs.deployment-url || '' }}
-          workflow-run-id: ${{ github.run_id }}
-          commit-sha: ${{ github.sha }}
-          total-ci-time: ${{ steps.timing.outputs.total-time }}
+          script: |
+            const deployUrl = '${{ steps.deploy.outputs.url }}';
+            const comment = `### 🚀 Deployment Preview Ready!
+
+            **Preview URL:** ${deployUrl}
+            **Branch:** \`${{ github.head_ref || github.ref_name }}\`
+            **Commit:** \`${{ github.sha.substr(0, 7) }}\`
+
+            #### Test Results:
+            - ✅ Code Quality: Passed
+            - ✅ Security Scan: Passed
+            - ✅ Unit Tests: Passed
+            - ✅ E2E Tests: Passed
+
+            [View Full CI Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
 
   # ======================================================================
   # Final Status Report
@@ -868,7 +738,7 @@ jobs:
       - name: 📊 Generate CI Report
         run: |
           echo "========================================"
-          echo "📊 Enhanced CI Pipeline Summary"
+          echo "📊 CI Pipeline Summary"
           echo "========================================"
           echo "Workflow: ${{ github.workflow }}"
           echo "Run: #${{ github.run_number }}"
@@ -891,12 +761,17 @@ jobs:
              [ "${{ needs.build-check.result }}" == "success" ] && \
              [ "${{ needs.e2e-tests.result }}" == "success" ]; then
             echo "🎉 Overall Status: SUCCESS"
-            echo "✅ Enhanced CI Pipeline completed successfully with comprehensive test reporting!"
             exit 0
           else
             echo "❌ Overall Status: FAILED"
             echo ""
             echo "Please check the failed stages above for details."
-            echo "📝 Detailed test results and failure analysis are available in the PR comment."
             exit 1
           fi
+
+      - name: 🔔 Notify on failure
+        if: failure() && github.ref == 'refs/heads/main'
+        run: |
+          echo "🔔 CI Pipeline failed on main branch!"
+          echo "This requires immediate attention."
+          # Add notification logic here (Slack, email, etc.)

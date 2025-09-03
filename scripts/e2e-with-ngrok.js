@@ -1,20 +1,26 @@
 #!/usr/bin/env node
 
 /**
- * E2E Test Runner with ngrok Tunnel
+ * DEPRECATED: E2E Test Runner with ngrok Tunnel
  * 
- * This script orchestrates the complete E2E testing environment:
- * 1. Starts ngrok tunnel to localhost:3000 with subdomain 'alocubanoboulderfest'
- * 2. Verifies ngrok tunnel is accessible at https://alocubanoboulderfest.ngrok.io
- * 3. Starts Vercel dev server on port 3000
- * 4. Waits for both ngrok and Vercel to be ready
- * 5. Runs E2E tests with Playwright
- * 6. Cleans up all processes on exit
+ * This script is DEPRECATED as of the migration to Vercel Preview Deployments for E2E testing.
  * 
- * Usage:
- *   npm run test:e2e:ngrok                    # Run all E2E tests with ngrok
- *   npm run test:e2e:ngrok -- --grep "admin" # Run specific tests
- *   npm run test:e2e:ngrok -- --ui           # Run with UI mode
+ * REPLACEMENT: E2E tests now use Vercel Preview Deployments which provide:
+ * - Real production environment testing
+ * - No need for ngrok tunneling
+ * - No local server management
+ * - Better CI/CD integration
+ * - Eliminated complex orchestration
+ * 
+ * LEGACY PURPOSE:
+ * This script orchestrated ngrok tunneling + Vercel dev server + E2E tests:
+ * 1. Started ngrok tunnel with subdomain 'alocubanoboulderfest'  
+ * 2. Started Vercel dev server on port 3000
+ * 3. Ran E2E tests against the tunnel URL
+ * 4. Cleaned up all processes
+ * 
+ * @deprecated Use Vercel Preview Deployments for E2E testing instead
+ * @see CI/CD workflows for current E2E testing approach
  */
 
 import { spawn, exec } from 'child_process';

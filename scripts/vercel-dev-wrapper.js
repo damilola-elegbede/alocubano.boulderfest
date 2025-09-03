@@ -1,10 +1,20 @@
 #!/usr/bin/env node
 
 /**
- * Vercel Dev Wrapper Script
+ * DEPRECATED: Vercel Dev Wrapper Script
  * 
- * A simplified wrapper around the enhanced Vercel dev starter
- * for local development with proper port management and startup protection.
+ * This script is DEPRECATED for E2E testing but PRESERVED for local development.
+ * 
+ * CURRENT STATUS:
+ * - ✅ Still used for local development wrapper functionality  
+ * - ❌ No longer used for E2E testing (switched to Vercel Preview Deployments)
+ * 
+ * E2E TESTING MIGRATION:
+ * E2E tests now use Vercel Preview Deployments instead of local dev servers.
+ * This eliminates the need for complex wrapper scripts around Vercel dev.
+ * 
+ * @deprecated For E2E testing - use Vercel Preview Deployments instead
+ * @preserved For local development use cases
  */
 
 import VercelDevStarter from './vercel-dev-start.js';

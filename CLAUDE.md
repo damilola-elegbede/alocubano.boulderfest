@@ -67,13 +67,13 @@ npm run test:e2e:vercel:headed # Headed browser mode with Vercel config
 npm run test:e2e:vercel:debug  # Debug mode with Vercel config
 npm run test:e2e:vercel:fast   # Fast mode (Chromium only) with Vercel config
 
-# E2E testing with ngrok (for external access)
-npm run test:e2e:ngrok         # Full E2E tests with ngrok tunnel
-npm run test:e2e:ngrok:ui      # Interactive UI mode with ngrok
-npm run test:e2e:ngrok:headed  # Headed browser mode with ngrok
-npm run test:e2e:ngrok:debug   # Debug mode with ngrok
-npm run test:e2e:ngrok:fast    # Fast mode (Chromium only) with ngrok
-npm run test:e2e:validate      # Validate E2E setup prerequisites
+# DEPRECATED: E2E testing commands (Local servers no longer used)
+# npm run test:e2e:ngrok       # DEPRECATED: ngrok tunnel approach  
+# npm run test:e2e:ngrok:ui    # DEPRECATED: Interactive UI with ngrok
+# npm run test:e2e:validate    # DEPRECATED: Local E2E setup validation
+
+# NEW: E2E tests now use Vercel Preview Deployments
+# See CI/CD workflows for current E2E testing approach
 
 # E2E test flows (12 total)
 npm run test:e2e -- tests/e2e/flows/admin-auth.test.js                      # Admin authentication
@@ -139,37 +139,46 @@ git push origin main        # Auto-deploy to production
 - **Wallet passes** for Apple/Google with JWT authentication
 - **Admin panel** with bcrypt auth and JWT sessions
 
-### E2E Testing Strategy with Vercel Dev
+### E2E Testing Strategy with Vercel Preview Deployments
 
-**Migration from CI Server to Vercel Dev** (Breaking Change):
+**Migration to Vercel Preview Deployments** (Breaking Change):
 
-- **Before**: Custom CI server (`scripts/ci-server.js`) for E2E testing
-- **After**: **Vercel Dev** server via `vercel dev` command for production-like testing
-- **Benefit**: More accurate testing environment matching production Vercel deployment
-- **Requirement**: Vercel CLI must be installed globally (`npm i -g vercel`)
+- **Before**: Local Vercel dev servers with complex port allocation and server management
+- **After**: **Vercel Preview Deployments** for real production environment testing
+- **Benefits**: 
+  - Eliminates local server complexity and hanging issues
+  - No port conflicts or allocation management
+  - Real production environment testing
+  - Better CI/CD integration
+  - Simplified E2E testing infrastructure
 
-#### New E2E Testing Setup
+#### DEPRECATED E2E Testing Setup (Local Servers)
 
 ```bash
-# Prerequisites
-npm i -g vercel  # Install Vercel CLI globally
-
-# Run E2E tests with Vercel dev server
-npm run test:e2e  # Uses Vercel dev for production-like testing
-
-# Test data management
-npm run db:e2e:setup     # Setup E2E database with Vercel dev
-npm run db:e2e:validate  # Validate E2E database schema
+# DEPRECATED: These commands are no longer used
+# npm run test:e2e        # DEPRECATED: Local Vercel dev approach
+# npm run test:e2e:ngrok  # DEPRECATED: ngrok tunneling approach
+# npm run dev:e2e         # DEPRECATED: E2E dev server startup
+# npm run start:ci        # DEPRECATED: CI server management
 ```
+
+#### NEW E2E Testing Approach
+
+E2E tests now run against **Vercel Preview Deployments** which provide:
+- Real production environment testing
+- No local server management complexity  
+- Eliminated port conflicts and server hanging
+- Better reliability and faster execution
 
 ### Streamlined Testing Strategy
 - **Simple test suite** with Vitest - 26 essential unit tests covering critical functionality
 - **Fast execution** - complete unit test suite finishes in seconds
-- **12 comprehensive E2E tests** - focused Playwright tests with **Vercel Dev** server
+- **E2E tests with Vercel Preview Deployments** - real production environment testing
 - **SQLite for unit tests** - fast, reliable local testing
-- **Turso for E2E tests** - realistic production-like testing environment via Vercel dev
+- **Production database for E2E tests** - realistic testing environment via preview deployments
 - **Zero test abstractions** - every test readable by any JavaScript developer
 - **Direct API testing** - no complex mocking or test infrastructure
+- **Eliminated server complexity** - no local server management or port conflicts
 
 ## Key API Patterns
 
@@ -429,29 +438,32 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 
 ## Migration Notes
 
-### Breaking Changes - CI Server to Vercel Dev
+### Breaking Changes - Local Servers to Vercel Preview Deployments
 
 **What Changed:**
-- E2E tests now use **Vercel Dev** server instead of custom CI server (`scripts/ci-server.js`)
-- Improved testing accuracy by using the same serverless environment as production
-- Better API endpoint testing with real Vercel function execution
+- E2E tests now use **Vercel Preview Deployments** instead of local server management
+- Eliminated complex local server orchestration (Vercel dev, ngrok, port allocation)
+- Removed dependency on local server startup and health checks
 
-**Migration Required:**
-1. **Install Vercel CLI globally**: `npm i -g vercel`
-2. **Update E2E test commands**: Use `npm run test:e2e` (now uses Vercel Dev)
-3. **Environment variables**: Ensure Turso credentials are set for E2E testing
-4. **CI/CD adjustments**: Update workflows to use Vercel Dev for E2E testing
+**Migration Completed:**
+1. **Deprecated Scripts**: Local server scripts marked as deprecated
+2. **Updated Package.json**: E2E commands now show migration messages
+3. **Removed Dependencies**: ngrok removed from dependencies
+4. **Updated Configs**: Playwright configs marked as deprecated for local servers
 
 **Benefits:**
-- **Production Parity**: Tests run in the same serverless environment as production
-- **Real API Testing**: Actual Vercel function execution instead of mocked responses
-- **Better Reliability**: More accurate testing of serverless architecture
-- **Simplified Setup**: No need for custom CI server maintenance
+- **Real Production Environment**: Tests run against actual Vercel deployments
+- **Eliminated Complexity**: No server hanging, port conflicts, or startup issues  
+- **Better CI/CD Integration**: Seamless integration with deployment workflows
+- **Improved Reliability**: No local server infrastructure to manage
+- **Faster Execution**: No server startup time or orchestration overhead
 
-**Troubleshooting:**
-- If E2E tests fail, ensure `vercel` CLI is installed globally
-- Verify `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` are set
-- Run `npm run test:e2e:validate` to check E2E prerequisites
+**DEPRECATED Infrastructure:**
+- Local Vercel dev server startup scripts
+- ngrok tunneling for E2E testing  
+- Dynamic port allocation systems
+- Complex server health checking
+- Local server process management
 
 ## Contact & Resources
 

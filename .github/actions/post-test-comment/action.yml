@@ -1,0 +1,388 @@
+name: 'Post Test Status Comment'
+description: 'Posts comprehensive test status comments on PRs'
+inputs:
+  github-token:
+    description: 'GitHub token for commenting'
+    required: true
+  unit-test-results:
+    description: 'Unit test results JSON'
+    required: false
+    default: '{}'
+  e2e-test-results:
+    description: 'E2E test results JSON (array of results per browser)'
+    required: false
+    default: '[]'
+  performance-test-results:
+    description: 'Performance test results JSON'
+    required: false
+    default: '{}'
+  security-test-results:
+    description: 'Security test results JSON'
+    required: false
+    default: '{}'
+  build-status:
+    description: 'Build status'
+    required: false
+    default: 'success'
+  deployment-url:
+    description: 'Deployment preview URL'
+    required: false
+    default: ''
+  workflow-run-id:
+    description: 'Current workflow run ID'
+    required: true
+  commit-sha:
+    description: 'Commit SHA'
+    required: true
+  total-ci-time:
+    description: 'Total CI execution time in seconds'
+    required: false
+    default: '0'
+  previous-comment-id:
+    description: 'Previous comment ID to update'
+    required: false
+    default: ''
+
+outputs:
+  comment-id:
+    description: 'ID of the posted/updated comment'
+    value: ${{ steps.comment.outputs.comment-id }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate Test Comment
+      id: generate
+      shell: bash
+      run: |
+        # Parse all input results
+        UNIT_RESULTS='${{ inputs.unit-test-results }}'
+        E2E_RESULTS='${{ inputs.e2e-test-results }}'
+        PERFORMANCE_RESULTS='${{ inputs.performance-test-results }}'
+        SECURITY_RESULTS='${{ inputs.security-test-results }}'
+        BUILD_STATUS='${{ inputs.build-status }}'
+        DEPLOYMENT_URL='${{ inputs.deployment-url }}'
+        COMMIT_SHA='${{ inputs.commit-sha }}'
+        TOTAL_TIME='${{ inputs.total-ci-time }}'
+        
+        # Determine overall status
+        OVERALL_STATUS="success"
+        UNIT_STATUS=$(echo "$UNIT_RESULTS" | jq -r '.status // "skipped"' 2>/dev/null || echo "skipped")
+        E2E_STATUS="success"
+        if [ "$(echo "$E2E_RESULTS" | jq -r 'length' 2>/dev/null || echo "0")" -gt 0 ]; then
+          E2E_FAILED=$(echo "$E2E_RESULTS" | jq -r '[.[] | select(.status == "failure")] | length' 2>/dev/null || echo "0")
+          if [ "$E2E_FAILED" -gt 0 ]; then
+            E2E_STATUS="failure"
+          fi
+        fi
+        PERF_STATUS=$(echo "$PERFORMANCE_RESULTS" | jq -r '.status // "skipped"' 2>/dev/null || echo "skipped")
+        SECURITY_STATUS=$(echo "$SECURITY_RESULTS" | jq -r '.status // "skipped"' 2>/dev/null || echo "skipped")
+        
+        # Overall status is failure if any critical test fails
+        if [ "$UNIT_STATUS" = "failure" ] || [ "$E2E_STATUS" = "failure" ] || [ "$BUILD_STATUS" = "failure" ]; then
+          OVERALL_STATUS="failure"
+        elif [ "$PERF_STATUS" = "failure" ] || [ "$SECURITY_STATUS" = "failure" ]; then
+          OVERALL_STATUS="warning"
+        fi
+        
+        # Generate status emojis
+        get_status_emoji() {
+          case "$1" in
+            "success") echo "✅" ;;
+            "failure") echo "❌" ;;
+            "warning") echo "⚠️" ;;
+            *) echo "⏭️" ;;
+          esac
+        }
+        
+        UNIT_EMOJI=$(get_status_emoji "$UNIT_STATUS")
+        E2E_EMOJI=$(get_status_emoji "$E2E_STATUS")
+        PERF_EMOJI=$(get_status_emoji "$PERF_STATUS")
+        SECURITY_EMOJI=$(get_status_emoji "$SECURITY_STATUS")
+        BUILD_EMOJI=$(get_status_emoji "$BUILD_STATUS")
+        OVERALL_EMOJI=$(get_status_emoji "$OVERALL_STATUS")
+        
+        # Format execution time
+        format_duration() {
+          local seconds=$1
+          if [ "$seconds" -gt 3600 ]; then
+            printf "%dh %dm %ds" $((seconds/3600)) $(((seconds%3600)/60)) $((seconds%60))
+          elif [ "$seconds" -gt 60 ]; then
+            printf "%dm %ds" $((seconds/60)) $((seconds%60))
+          else
+            printf "%ds" "$seconds"
+          fi
+        }
+        
+        FORMATTED_TIME=$(format_duration "$TOTAL_TIME")
+        
+        # Start building comment
+        COMMENT="## $OVERALL_EMOJI Test Results Summary
+        
+        **Branch:** \`$(echo "${{ github.head_ref || github.ref_name }}" | sed 's/refs\/heads\///')\` | **Commit:** \`${COMMIT_SHA:0:8}\` | **Total Time:** $FORMATTED_TIME
+        
+        ### 🧪 Test Status Overview
+        
+        | Test Suite | Status | Details |
+        |------------|--------|---------|"
+        
+        # Unit Tests
+        if [ "$UNIT_STATUS" != "skipped" ]; then
+          UNIT_COUNT=$(echo "$UNIT_RESULTS" | jq -r '.test_count // 0')
+          UNIT_PASSED=$(echo "$UNIT_RESULTS" | jq -r '.passed_count // 0')
+          UNIT_FAILED=$(echo "$UNIT_RESULTS" | jq -r '.failed_count // 0')
+          UNIT_TIME=$(echo "$UNIT_RESULTS" | jq -r '.execution_time // 0')
+          UNIT_COVERAGE=$(echo "$UNIT_RESULTS" | jq -r '.coverage // "0"')
+          
+          COMMENT="$COMMENT
+        | **Unit Tests** | $UNIT_EMOJI | $UNIT_PASSED/$UNIT_COUNT passed • $(format_duration "$UNIT_TIME") • $UNIT_COVERAGE% coverage |"
+        fi
+        
+        # E2E Tests
+        if [ "$(echo "$E2E_RESULTS" | jq -r 'length' 2>/dev/null || echo "0")" -gt 0 ]; then
+          E2E_TOTAL_TESTS=$(echo "$E2E_RESULTS" | jq -r '[.[].test_count] | add // 0')
+          E2E_TOTAL_PASSED=$(echo "$E2E_RESULTS" | jq -r '[.[].passed_count] | add // 0')
+          E2E_TOTAL_FAILED=$(echo "$E2E_RESULTS" | jq -r '[.[].failed_count] | add // 0')
+          E2E_BROWSER_COUNT=$(echo "$E2E_RESULTS" | jq -r 'length')
+          E2E_MAX_TIME=$(echo "$E2E_RESULTS" | jq -r '[.[].execution_time] | max // 0')
+          
+          COMMENT="$COMMENT
+        | **E2E Tests** | $E2E_EMOJI | $E2E_TOTAL_PASSED/$E2E_TOTAL_TESTS passed • $E2E_BROWSER_COUNT browsers • $(format_duration "$E2E_MAX_TIME") max |"
+        fi
+        
+        # Performance Tests
+        if [ "$PERF_STATUS" != "skipped" ]; then
+          PERF_TIME=$(echo "$PERFORMANCE_RESULTS" | jq -r '.execution_time // 0')
+          COMMENT="$COMMENT
+        | **Performance** | $PERF_EMOJI | Load testing completed • $(format_duration "$PERF_TIME") |"
+        fi
+        
+        # Security Tests
+        if [ "$SECURITY_STATUS" != "skipped" ]; then
+          SECURITY_ISSUES=$(echo "$SECURITY_RESULTS" | jq -r '.failed_count // 0')
+          COMMENT="$COMMENT
+        | **Security Scan** | $SECURITY_EMOJI | $SECURITY_ISSUES vulnerabilities found |"
+        fi
+        
+        # Build Status
+        COMMENT="$COMMENT
+        | **Build** | $BUILD_EMOJI | $([ "$BUILD_STATUS" = "success" ] && echo "Deployment ready" || echo "Build failed") |"
+        
+        # Deployment URL
+        if [ -n "$DEPLOYMENT_URL" ]; then
+          COMMENT="$COMMENT
+        
+        ### 🚀 Deployment Preview
+        
+        **Preview URL:** $DEPLOYMENT_URL"
+        fi
+        
+        # Detailed Results Section
+        COMMENT="$COMMENT
+        
+        <details>
+        <summary>📊 Detailed Test Results</summary>
+        
+        "
+        
+        # Unit Test Details
+        if [ "$UNIT_STATUS" != "skipped" ]; then
+          COMMENT="$COMMENT
+        #### 🧪 Unit Tests
+        
+        - **Total Tests:** $UNIT_COUNT
+        - **Passed:** $UNIT_PASSED
+        - **Failed:** $UNIT_FAILED
+        - **Execution Time:** $(format_duration "$(echo "$UNIT_RESULTS" | jq -r '.execution_time // 0')")
+        - **Coverage:** $(echo "$UNIT_RESULTS" | jq -r '.coverage // "0"')%
+        "
+        fi
+        
+        # E2E Test Details
+        if [ "$(echo "$E2E_RESULTS" | jq -r 'length' 2>/dev/null || echo "0")" -gt 0 ]; then
+          COMMENT="$COMMENT
+        #### 🎭 E2E Tests
+        
+        "
+          
+          # Browser-specific results
+          echo "$E2E_RESULTS" | jq -r '.[] | "\(.browser):\(.test_count):\(.passed_count):\(.failed_count):\(.execution_time):\(.flaky_tests)"' | while IFS=':' read -r browser total passed failed time flaky; do
+            flaky_count=$(echo "$flaky" | jq -r 'length' 2>/dev/null || echo "0")
+            status_icon="✅"
+            if [ "$failed" -gt 0 ]; then
+              status_icon="❌"
+            elif [ "$flaky_count" -gt 0 ]; then
+              status_icon="⚠️"
+            fi
+            
+            COMMENT="$COMMENT
+        **$browser** $status_icon  
+        - Tests: $passed/$total passed
+        - Time: $(format_duration "$time")
+        $([ "$flaky_count" -gt 0 ] && echo "- Flaky tests: $flaky_count" || echo "")"
+          done
+        fi
+        
+        # Performance Test Details
+        if [ "$PERF_STATUS" != "skipped" ]; then
+          COMMENT="$COMMENT
+        #### ⚡ Performance Tests
+        
+        - **Status:** $([ "$PERF_STATUS" = "success" ] && echo "All benchmarks passed" || echo "Performance issues detected")
+        - **Execution Time:** $(format_duration "$(echo "$PERFORMANCE_RESULTS" | jq -r '.execution_time // 0')")
+        "
+        fi
+        
+        # Security Test Details
+        if [ "$SECURITY_STATUS" != "skipped" ]; then
+          SECURITY_VULNS=$(echo "$SECURITY_RESULTS" | jq -r '.failed_count // 0')
+          COMMENT="$COMMENT
+        #### 🔒 Security Scan
+        
+        - **Vulnerabilities Found:** $SECURITY_VULNS
+        - **Status:** $([ "$SECURITY_STATUS" = "success" ] && echo "No critical issues" || echo "Issues require attention")
+        "
+        fi
+        
+        COMMENT="$COMMENT
+        </details>"
+        
+        # Failure Details
+        if [ "$OVERALL_STATUS" = "failure" ]; then
+          COMMENT="$COMMENT
+        
+        <details>
+        <summary>❌ Failure Analysis</summary>
+        
+        "
+          
+          if [ "$UNIT_STATUS" = "failure" ]; then
+            COMMENT="$COMMENT
+        #### Unit Test Failures
+        - $UNIT_FAILED tests failed
+        - Check unit test logs for detailed error messages
+        "
+          fi
+          
+          if [ "$E2E_STATUS" = "failure" ]; then
+            COMMENT="$COMMENT
+        #### E2E Test Failures
+        - Check browser-specific artifacts for screenshots and videos
+        - Review Playwright HTML report for detailed traces
+        "
+          fi
+          
+          if [ "$BUILD_STATUS" = "failure" ]; then
+            COMMENT="$COMMENT
+        #### Build Failures
+        - Check build logs for compilation errors
+        - Verify all dependencies are properly installed
+        "
+          fi
+          
+          COMMENT="$COMMENT
+        </details>"
+        fi
+        
+        # Performance Warnings
+        if [ "$PERF_STATUS" = "failure" ] || [ "$SECURITY_STATUS" = "failure" ]; then
+          COMMENT="$COMMENT
+        
+        <details>
+        <summary>⚠️ Performance & Security Warnings</summary>
+        
+        "
+          
+          if [ "$PERF_STATUS" = "failure" ]; then
+            COMMENT="$COMMENT
+        #### Performance Issues
+        - Response times exceeded acceptable thresholds
+        - Review performance test results for optimization opportunities
+        "
+          fi
+          
+          if [ "$SECURITY_STATUS" = "failure" ]; then
+            COMMENT="$COMMENT
+        #### Security Vulnerabilities
+        - Critical security issues detected
+        - Run \`npm audit --fix\` to resolve known vulnerabilities
+        "
+          fi
+          
+          COMMENT="$COMMENT
+        </details>"
+        fi
+        
+        # Footer
+        COMMENT="$COMMENT
+        
+        ---
+        
+        📋 [Full CI Results](https://github.com/${{ github.repository }}/actions/runs/${{ inputs.workflow-run-id }}) | 🔄 **Last updated:** $(date -u +'%Y-%m-%d %H:%M UTC')
+        
+        *This comment will be automatically updated on new commits*"
+        
+        # Save comment to file for GitHub action
+        echo "$COMMENT" > comment.md
+        echo "Generated test status comment ($(wc -l < comment.md) lines)"
+    
+    - name: Post or Update PR Comment
+      id: comment
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const fs = require('fs');
+          const comment = fs.readFileSync('comment.md', 'utf8');
+          
+          const { owner, repo } = context.repo;
+          const pull_number = context.issue?.number;
+          
+          if (!pull_number) {
+            console.log('Not a pull request, skipping comment');
+            return;
+          }
+          
+          // Look for existing comment to update
+          const botCommentIdentifier = '## ✅ Test Results Summary\n## ❌ Test Results Summary\n## ⚠️ Test Results Summary';
+          
+          try {
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: pull_number,
+            });
+            
+            // Find existing test results comment
+            const existingComment = comments.find(c => 
+              c.user?.type === 'Bot' && 
+              (c.body.includes('Test Results Summary') || c.body.includes('📋 [Full CI Results]'))
+            );
+            
+            if (existingComment) {
+              // Update existing comment
+              const { data: updatedComment } = await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existingComment.id,
+                body: comment
+              });
+              
+              console.log(`Updated existing comment: ${updatedComment.html_url}`);
+              core.setOutput('comment-id', updatedComment.id);
+            } else {
+              // Create new comment
+              const { data: newComment } = await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: pull_number,
+                body: comment
+              });
+              
+              console.log(`Created new comment: ${newComment.html_url}`);
+              core.setOutput('comment-id', newComment.id);
+            }
+          } catch (error) {
+            console.error('Failed to post/update comment:', error);
+            core.setFailed(`Failed to post comment: ${error.message}`);
+          }

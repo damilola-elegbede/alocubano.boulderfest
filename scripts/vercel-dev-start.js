@@ -1,15 +1,26 @@
 #!/usr/bin/env node
 
 /**
- * Vercel Dev Server Startup Script - Enhanced Version
+ * DEPRECATED: Vercel Dev Server Startup Script
  * 
- * Comprehensive solution for Vercel dev hanging issues including:
- * - Interactive prompt bypassing
- * - Database initialization prevention
- * - Build configuration optimization
- * - Process timeout handling
- * - Environment variable validation
- * - **FIXED**: Vercel authentication with --token, --scope, and --no-clipboard flags
+ * This script is DEPRECATED for E2E testing but PRESERVED for local development.
+ * 
+ * CURRENT STATUS:
+ * - ✅ Still used for local development (npm start, npm run start:local)
+ * - ❌ No longer used for E2E testing (switched to Vercel Preview Deployments)
+ * - ⚠️  May be used for debugging or manual testing
+ * 
+ * E2E TESTING MIGRATION:
+ * E2E tests now use Vercel Preview Deployments instead of local dev servers.
+ * This eliminates server hanging, port conflicts, and startup complexity.
+ * 
+ * PRESERVED FOR:
+ * - Local development workflows
+ * - Manual testing scenarios
+ * - Debugging purposes
+ * 
+ * @deprecated For E2E testing - use Vercel Preview Deployments instead
+ * @preserved For local development use cases
  */
 
 import { spawn, exec } from 'child_process';
