@@ -1,0 +1,22 @@
+{
+  "MD013": false,
+  "MD022": false,
+  "MD032": false,
+  "MD031": false,
+  "MD034": false,
+  "MD047": false,
+  "MD024": false,
+  "MD009": false,
+  "MD040": false,
+  "MD026": false,
+  "line-length": false,
+  "blanks-around-headings": false,
+  "blanks-around-lists": false,
+  "blanks-around-fences": false,
+  "no-bare-urls": false,
+  "single-trailing-newline": false,
+  "no-duplicate-heading": false,
+  "no-trailing-spaces": false,
+  "fenced-code-language": false,
+  "no-trailing-punctuation": false
+}
