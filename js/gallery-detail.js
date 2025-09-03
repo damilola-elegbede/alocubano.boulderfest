@@ -822,6 +822,9 @@
 
         console.log(`📸 Loading page ${state.loadedPages + 1}...`);
 
+        // Declare apiUrl at function scope to avoid reference error in catch block
+        let apiUrl = '';
+        
         try {
             // Set loading mutex
             state.loadingMutex = true;
@@ -838,7 +841,6 @@
 
             // Calculate offset
             const offset = state.loadedPages * CONFIG.PAGINATION_SIZE;
-            let apiUrl;
             let isStaticFetch = false;
 
             // For the first page, load the static JSON file.
@@ -888,7 +890,7 @@
             console.log('Fetching from URL:', apiUrl);
             const startTime = performance.now();
 
-            const response = await RequestManager.cachedFetch(apiUrl, {
+            let response = await RequestManager.cachedFetch(apiUrl, {
                 method: 'GET',
                 headers: {
                     Accept: 'application/json'
@@ -906,11 +908,73 @@
                 headers: response.headers.get('content-type')
             });
 
-            if (!response.ok) {
+            // Handle static JSON fallback for first page loads
+            if (isStaticFetch && (!response.ok || !response.headers.get('content-type')?.includes('application/json'))) {
+                console.warn(`⚠️ Static JSON failed (status: ${response.status}), falling back to API endpoint`);
+                
+                const event = getEventFromPage();
+                const fallbackUrl = `${CONFIG.API_ENDPOINT}?year=${year}&event=${event}&limit=${CONFIG.PAGINATION_SIZE}&offset=0&timestamp=${Date.now()}`;
+                
+                console.log('🔄 Falling back to API endpoint:', fallbackUrl);
+                
+                try {
+                    response = await RequestManager.cachedFetch(fallbackUrl, {
+                        method: 'GET',
+                        headers: {
+                            Accept: 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Fallback API error: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    // Mark as no longer static fetch since we're using API
+                    isStaticFetch = false;
+                    console.log('✅ Successfully fell back to API endpoint');
+                } catch (fallbackError) {
+                    console.error('❌ Fallback API request also failed:', fallbackError);
+                    throw fallbackError;
+                }
+            } else if (!response.ok) {
                 throw new Error(`API error: ${response.status} ${response.statusText}`);
             }
 
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                if (isStaticFetch) {
+                    console.warn('⚠️ Static JSON parse failed, falling back to API endpoint');
+                    
+                    const event = getEventFromPage();
+                    const fallbackUrl = `${CONFIG.API_ENDPOINT}?year=${year}&event=${event}&limit=${CONFIG.PAGINATION_SIZE}&offset=0&timestamp=${Date.now()}`;
+                    
+                    console.log('🔄 Falling back to API endpoint due to parse error:', fallbackUrl);
+                    
+                    try {
+                        response = await RequestManager.cachedFetch(fallbackUrl, {
+                            method: 'GET',
+                            headers: {
+                                Accept: 'application/json'
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`Fallback API error: ${response.status} ${response.statusText}`);
+                        }
+                        
+                        data = await response.json();
+                        isStaticFetch = false;
+                        console.log('✅ Successfully fell back to API endpoint after parse error');
+                    } catch (fallbackError) {
+                        console.error('❌ Fallback API request failed after parse error:', fallbackError);
+                        throw fallbackError;
+                    }
+                } else {
+                    throw parseError;
+                }
+            }
             console.log('Data parsed successfully:', {
                 totalCount: data.totalCount,
                 hasCategories: !!data.categories,

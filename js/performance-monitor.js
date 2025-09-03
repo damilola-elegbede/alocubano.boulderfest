@@ -1377,9 +1377,13 @@ class PerformanceMonitor {
 
 // Initialize global performance monitor instance
 if (typeof window !== 'undefined' && !window.performanceMonitor) {
+    // Export the class constructor for direct instantiation
+    window.PerformanceMonitor = PerformanceMonitor;
+    
+    // Create singleton instance
     window.performanceMonitor = new PerformanceMonitor();
 
-    // Expose public API to global scope
+    // Expose public API to global scope for convenience
     window.PerfMonitor = {
         getMetrics: () => window.performanceMonitor.getMetrics(),
         getCoreWebVitals: () => window.performanceMonitor.getCoreWebVitals(),
@@ -1395,7 +1399,5 @@ if (typeof window !== 'undefined' && !window.performanceMonitor) {
     };
 }
 
-// CommonJS export removed to avoid conflicts with ES6 modules
-
-// Export for ES6 modules (handled by bundlers)
-export default PerformanceMonitor;
+// Browser-compatible exports only - no ES modules to avoid syntax errors
+// Use window.PerformanceMonitor or window.performanceMonitor instance
