@@ -1,14 +1,7 @@
--- Migration: Add check-in fields for admin functionality
+-- Migration: Add check-in fields for admin functionality (IDEMPOTENT)
 -- Date: 2025-01-10
--- Description: Adds fields to support admin check-in functionality
-
--- Add check-in fields to tickets table
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS checked_in_at TIMESTAMP;
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS checked_in_by INTEGER;
-
--- Create index for check-in queries
-CREATE INDEX IF NOT EXISTS idx_tickets_checked_in ON tickets(checked_in_at);
-CREATE INDEX IF NOT EXISTS idx_tickets_status_checkin ON tickets(status, checked_in_at);
+-- Description: Check-in indexes are now defined in 018_tickets_table.sql
+-- This migration is now a no-op as all structures are defined in the tickets table schema
 
 -- Admin activity logging (using existing payment_events table)
 -- Event types for admin actions:

@@ -1,0 +1,309 @@
+# ======================================================================
+# GitHub Actions Environment Configuration Standard
+# ======================================================================
+# Standardized environment variable configuration for all workflows.
+# This file ensures consistent variable usage across CI/CD pipelines.
+# 
+# Version: 2.0
+# Last Updated: 2025-01-03
+# ======================================================================
+
+# Universal Environment Variables
+# Used across all workflows for consistency
+universal:
+  NODE_VERSION: "20"
+  CI: true
+  NODE_ENV: test  # Default for CI environments
+  
+  # Performance optimization
+  NODE_OPTIONS: "--max-old-space-size=4096"  # 4GB default, can be overridden
+  NPM_CONFIG_CACHE: ${{ github.workspace }}/.npm-cache
+
+# Test Configuration Variables
+# Standardized naming convention to prevent conflicts
+test:
+  # PRIMARY: Standard base URL (replaces PLAYWRIGHT_BASE_URL)
+  BASE_URL: 
+    description: "Primary base URL for all testing"
+    default: "http://localhost:3000"
+    examples:
+      - "http://localhost:3000"              # Local development
+      - "https://preview-abc123.vercel.app"  # Vercel preview
+      - "https://staging.example.com"        # Staging environment
+    usage: "Used by Playwright, API tests, performance tests"
+    
+  # SECONDARY: Preview URL from Vercel deployment (output from deploy jobs)
+  PREVIEW_URL:
+    description: "Vercel preview deployment URL (set by CI, not manually)"
+    source: "Deploy job outputs"
+    examples:
+      - "https://alocubano-boulderfest-git-feature-xyz.vercel.app"
+    usage: "Populated by Vercel bot, consumed by E2E tests"
+    
+  # DATABASE: Environment-specific database URLs
+  DATABASE_URL:
+    description: "Database connection URL (environment-specific)"
+    environments:
+      local: "file:./data/test.db"
+      ci: "file:./data/e2e-test.db"  
+      staging: "${TURSO_DATABASE_URL}"
+      production: "${TURSO_DATABASE_URL}"
+    usage: "Automatically selected based on environment"
+
+  # DEPRECATED: Variables being phased out
+  deprecated:
+    PLAYWRIGHT_BASE_URL: 
+      replacement: "BASE_URL"
+      reason: "Standardization - BASE_URL is more generic"
+    VERCEL_DEV:
+      replacement: "BASE_URL with Vercel preview URL"
+      reason: "Vercel preview deployments replace local dev servers"
+
+# Timeout Configuration
+# Configurable timeouts for different CI environments and test scenarios
+timeouts:
+  # E2E Test Timeouts (milliseconds)
+  E2E_STARTUP_TIMEOUT: 
+    default: 60000    # 1 minute
+    ci: 120000        # 2 minutes for slower CI
+    description: "Server startup wait time"
+    
+  E2E_TEST_TIMEOUT:
+    default: 30000    # 30 seconds
+    ci: 60000         # 1 minute for CI
+    performance: 180000  # 3 minutes for performance tests
+    description: "Individual test execution timeout"
+    
+  E2E_ACTION_TIMEOUT:
+    default: 20000    # 20 seconds
+    ci: 30000         # 30 seconds for CI
+    description: "Action timeout (clicks, inputs, etc.)"
+    
+  E2E_NAVIGATION_TIMEOUT:
+    default: 40000    # 40 seconds
+    ci: 60000         # 1 minute for CI
+    description: "Page navigation timeout"
+    
+  E2E_EXPECT_TIMEOUT:
+    default: 5000     # 5 seconds
+    ci: 10000         # 10 seconds for CI
+    description: "Expect assertion timeout"
+    
+  E2E_HEALTH_CHECK_INTERVAL:
+    default: 2000     # 2 seconds
+    ci: 5000          # 5 seconds for CI
+    description: "Health check polling interval"
+
+  # Vitest Timeouts (milliseconds)
+  VITEST_TEST_TIMEOUT:
+    default: 30000    # 30 seconds
+    ci: 60000         # 1 minute for CI
+    unit: 5000        # 5 seconds for unit tests
+    integration: 30000  # 30 seconds for integration tests
+    description: "Vitest individual test timeout"
+    
+  VITEST_HOOK_TIMEOUT:
+    default: 10000    # 10 seconds
+    ci: 30000         # 30 seconds for CI
+    description: "Vitest beforeAll/afterAll timeout"
+    
+  VITEST_SETUP_TIMEOUT:
+    default: 10000    # 10 seconds
+    description: "Test setup timeout"
+    
+  VITEST_CLEANUP_TIMEOUT:
+    default: 5000     # 5 seconds
+    description: "Test cleanup timeout"
+    
+  VITEST_REQUEST_TIMEOUT:
+    default: 30000    # 30 seconds
+    description: "HTTP request timeout for API tests"
+
+# Database Configuration
+# Environment-specific database settings
+database:
+  TURSO_DATABASE_URL:
+    description: "Turso production database URL"
+    required_for: ["production", "e2e", "staging"]
+    example: "libsql://production-db.turso.io"
+    
+  TURSO_AUTH_TOKEN:
+    description: "Turso database authentication token"
+    required_when: "TURSO_DATABASE_URL is set"
+    security: "secret"
+
+# Application Secrets
+# Security-sensitive configuration
+secrets:
+  ADMIN_SECRET:
+    description: "JWT signing secret for admin authentication"
+    requirements:
+      - "Minimum 32 characters"
+      - "Alphanumeric with special characters recommended"
+    required_for: ["production", "staging", "e2e"]
+    
+  TEST_ADMIN_PASSWORD:
+    description: "Plain text admin password for E2E testing"
+    required_for: ["e2e"]
+    security: "test_only"
+    note: "NOT bcrypt hashed - plain text for test automation"
+
+  # External Service Credentials
+  BREVO_API_KEY:
+    description: "Brevo email service API key"
+    required_for: ["production", "staging"]
+    optional_for: ["e2e"]
+    
+  STRIPE_SECRET_KEY:
+    description: "Stripe payment processing secret key"
+    required_for: ["production", "staging"]
+    test_variant: "STRIPE_SECRET_KEY_TEST"
+    
+  VERCEL_TOKEN:
+    description: "Vercel deployment and management token"
+    required_for: ["deploy"]
+    permissions: ["deployment", "domain", "project"]
+
+# CI Environment Types
+# Standard environment classifications
+environments:
+  local:
+    description: "Local development environment"
+    database: "SQLite (file:./data/local.db)"
+    base_url: "http://localhost:3000"
+    timeouts: "default"
+    
+  ci:
+    description: "CI/CD testing environment"
+    database: "SQLite with port isolation"
+    base_url: "http://localhost:3000 or Vercel preview"
+    timeouts: "extended for stability"
+    
+  e2e:
+    description: "End-to-end testing environment"
+    database: "Turso for production-like testing"
+    base_url: "Vercel preview deployment"
+    timeouts: "extended for complex scenarios"
+    
+  staging:
+    description: "Pre-production staging environment"
+    database: "Turso staging instance"
+    base_url: "https://staging.alocubano.boulderfest.com"
+    timeouts: "production-like"
+    
+  production:
+    description: "Live production environment"
+    database: "Turso production instance"
+    base_url: "https://alocubano.boulderfest.com"
+    timeouts: "optimized for performance"
+
+# Workflow-Specific Configurations
+# Environment variables grouped by workflow purpose
+workflows:
+  unit_tests:
+    required:
+      - NODE_VERSION
+      - CI
+      - DATABASE_URL
+    optional:
+      - VITEST_TEST_TIMEOUT
+      - VITEST_HOOK_TIMEOUT
+      
+  e2e_tests:
+    required:
+      - BASE_URL
+      - NODE_VERSION
+      - CI
+      - DATABASE_URL
+    optional:
+      - E2E_TEST_TIMEOUT
+      - E2E_ACTION_TIMEOUT
+      - TEST_ADMIN_PASSWORD
+      - TURSO_DATABASE_URL
+      - TURSO_AUTH_TOKEN
+      
+  deployment:
+    required:
+      - NODE_VERSION
+      - VERCEL_TOKEN
+      - TURSO_DATABASE_URL
+      - TURSO_AUTH_TOKEN
+      - ADMIN_SECRET
+    optional:
+      - BREVO_API_KEY
+      - STRIPE_SECRET_KEY
+      
+  performance:
+    required:
+      - BASE_URL
+      - NODE_VERSION
+    optional:
+      - E2E_TEST_TIMEOUT  # Extended for load testing
+      - NODE_OPTIONS      # Increased memory allocation
+
+# Migration Plan
+# Strategy for updating existing workflows
+migration:
+  phase_1:
+    description: "Replace deprecated environment variables"
+    actions:
+      - "Replace PLAYWRIGHT_BASE_URL with BASE_URL"
+      - "Replace VERCEL_DEV patterns with BASE_URL"
+      - "Add environment validation scripts"
+      
+  phase_2:
+    description: "Standardize timeout configurations"
+    actions:
+      - "Add configurable timeout variables"
+      - "Update all workflow files with new timeouts"
+      - "Add environment-specific timeout values"
+      
+  phase_3:
+    description: "Implement environment validation"
+    actions:
+      - "Add pre-workflow environment validation"
+      - "Create environment templates"
+      - "Document all environment variables"
+
+# Validation Rules
+# Automated checks for environment consistency
+validation:
+  required_checks:
+    - "All workflows use BASE_URL instead of PLAYWRIGHT_BASE_URL"
+    - "Database URLs are environment-specific"
+    - "Timeout values are consistent within workflow types"
+    - "Secrets are properly namespaced (TEST_, CI_, etc.)"
+    
+  warning_checks:
+    - "Deprecated variables are flagged for replacement"
+    - "Missing optional environment variables are documented"
+    - "Environment-specific configurations are appropriate"
+    
+  tools:
+    - "scripts/ci/validate-environment.js - Environment validation"
+    - "GitHub Actions workflow validation"
+    - "Pre-deployment environment checks"
+
+# Documentation References
+# Links to relevant documentation
+documentation:
+  environment_setup: "docs/ENVIRONMENT_SETUP.md"
+  ci_cd_guide: "docs/CI_CD_GUIDE.md" 
+  deployment_guide: "docs/DEPLOYMENT_GUIDE.md"
+  troubleshooting: "docs/TROUBLESHOOTING.md"
+  
+# Version History
+version_history:
+  "2.0":
+    date: "2025-01-03"
+    changes:
+      - "Standardized BASE_URL as primary test URL"
+      - "Added configurable timeout system"
+      - "Introduced environment validation"
+      - "Deprecated PLAYWRIGHT_BASE_URL and VERCEL_DEV"
+      
+  "1.0":
+    date: "2024-12-01"
+    changes:
+      - "Initial environment variable documentation"
+      - "Basic workflow configurations"

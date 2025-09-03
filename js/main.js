@@ -70,16 +70,21 @@ if (typeof FormValidator === 'undefined') {
         }
 
         validate() {
-            const inputs = this.form.querySelectorAll('[required]');
-            let isValid = true;
+            try {
+                const inputs = this.form.querySelectorAll('[required]');
+                let isValid = true;
 
-            inputs.forEach((input) => {
-                if (!this.validateField(input)) {
-                    isValid = false;
-                }
-            });
+                inputs.forEach((input) => {
+                    if (!this.validateField(input)) {
+                        isValid = false;
+                    }
+                });
 
-            return isValid;
+                return isValid;
+            } catch (error) {
+                console.error('Form validation error:', error);
+                return false;
+            }
         }
 
         validateField(field) {
@@ -199,39 +204,98 @@ function initPerformanceOptimizations() {
 
 // Initialize based on page
 document.addEventListener('DOMContentLoaded', () => {
+    try {
+        initializeApplication();
+    } catch (error) {
+        console.error('Application initialization failed:', error);
+        // Show fallback UI or report error
+        handleInitializationFailure(error);
+    }
+});
+
+function initializeApplication() {
     // Initialize performance optimizations early
     initPerformanceOptimizations();
 
+    // Initialize page-specific components
+    initializePageComponents();
+    
+    // Initialize shared components
+    initializeSharedComponents();
+    
+    // Initialize forms
+    initializeForms();
+}
+
+function initializePageComponents() {
     // Landing page
-    if (
-        document.querySelector('.design-selector') &&
-    typeof DesignSelector !== 'undefined'
-    ) {
-        new DesignSelector();
+    if (hasElementAndClass('.design-selector', 'DesignSelector')) {
+        safeInitialize(() => new DesignSelector(), 'DesignSelector');
     }
+}
 
-    // All pages
+function initializeSharedComponents() {
+    // Smooth scroll for all pages
     if (typeof SmoothScroll !== 'undefined') {
-        new SmoothScroll();
+        safeInitialize(() => new SmoothScroll(), 'SmoothScroll');
     }
 
-    // Initialize shared lazy loading component
+    // Lazy loading component
     if (typeof LazyLoader !== 'undefined') {
-        new LazyLoader();
+        safeInitialize(() => new LazyLoader(), 'LazyLoader');
     }
 
-    // Initialize shared lightbox component for simple galleries
-    if (
-        document.querySelector('.gallery-grid') &&
-    typeof Lightbox !== 'undefined'
-    ) {
-        Lightbox.initializeFor('simple', { selector: '.gallery-image' });
+    // Lightbox for simple galleries
+    if (hasElementAndClass('.gallery-grid', 'Lightbox')) {
+        safeInitialize(() => {
+            Lightbox.initializeFor('simple', { selector: '.gallery-image' });
+        }, 'Lightbox');
     }
+}
 
-    // Forms
+function initializeForms() {
     if (typeof FormValidator !== 'undefined') {
-        document.querySelectorAll('form').forEach((form) => {
-            new FormValidator(form);
+        const forms = document.querySelectorAll('form');
+        forms.forEach((form, index) => {
+            safeInitialize(() => new FormValidator(form), `FormValidator-${index}`);
         });
     }
-});
+}
+
+function hasElementAndClass(selector, className) {
+    return document.querySelector(selector) && typeof window[className] !== 'undefined';
+}
+
+function safeInitialize(initFunction, componentName) {
+    try {
+        initFunction();
+        console.log(`✓ ${componentName} initialized successfully`);
+    } catch (error) {
+        console.error(`✗ Failed to initialize ${componentName}:`, error);
+    }
+}
+
+function handleInitializationFailure(error) {
+    // Create a simple error indicator for development
+    if (process.env.NODE_ENV === 'development') {
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 10000;
+            max-width: 300px;
+        `;
+        errorDiv.textContent = `Init Error: ${error.message}`;
+        document.body.appendChild(errorDiv);
+        
+        setTimeout(() => errorDiv.remove(), 10000);
+    }
+}

@@ -78,14 +78,44 @@ We **deliberately avoid** testing:
 - Framework behavior (Stripe SDK, database drivers)
 - Multiple variations of the same business flow
 
+## Mock Server Health Monitoring
+
+The CI mock server now includes comprehensive health check functionality:
+
+### Health Endpoints
+- **`/api/health/mock-server`** - Detailed server status, memory usage, endpoint availability
+- **`/ready`** - Simple readiness check (returns "Ready" when server is operational)
+- **`/healthz`** - Kubernetes-style health check with JSON response
+
+### Startup Validation
+- **Endpoint Discovery** - Automatically validates all required endpoints are available
+- **Performance Metrics** - Tracks startup duration and server uptime
+- **Memory Monitoring** - Real-time memory usage tracking
+- **Status Tracking** - Server state transitions from "starting" to "healthy"
+
+### Wait Helper Script
+Use `npm run test:wait-mock` or `node scripts/wait-for-mock-server.js` to wait for server readiness:
+
+```bash
+# Wait for server with default settings
+npm run test:wait-mock
+
+# Wait with custom timeout and detailed health info
+node scripts/wait-for-mock-server.js --timeout 60 --health-endpoint
+
+# Silent mode for CI scripts
+node scripts/wait-for-mock-server.js --quiet
+```
+
 ## Success Metrics
 
 - ✅ **419 lines total** - 96% reduction from complex approach (11,411 → 419 lines)
-- ✅ **13 essential API contract tests** - covering all critical endpoints
+- ✅ **13 essential API contract tests** - covering all critical endpoints  
 - ✅ **234ms execution time** - complete test suite runs in under 1 second
 - ✅ **Zero framework knowledge** required to understand tests
 - ✅ **Any developer can add tests** on day one
 - ✅ **Resilient design** - tests work with or without running server
+- ✅ **Robust health monitoring** - comprehensive mock server observability
 - ✅ **96% complexity reduction achieved** - transformation complete
 
 ---

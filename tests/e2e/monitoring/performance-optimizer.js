@@ -86,7 +86,7 @@ export class PerformanceOptimizer {
         this.currentSession.startTime = performance.now();
         this.currentSession.config = { ...this.config, ...sessionConfig };
         
-        console.log('=� Performance monitoring started');
+        console.log('🚀 Performance monitoring started');
         
         // Start resource monitoring
         this.startResourceMonitoring();

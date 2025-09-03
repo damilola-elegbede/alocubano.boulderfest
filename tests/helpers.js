@@ -1,34 +1,51 @@
+// Essential test helpers - zero abstractions, maximum readability
+import { getApiUrl } from './setup.js';
+
+// HTTP status codes for readable test assertions
 export const HTTP_STATUS = {
-  OK: 200, BAD_REQUEST: 400, UNAUTHORIZED: 401, NOT_FOUND: 404, CONFLICT: 409, TOO_MANY_REQUESTS: 429
+  OK: 200,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  TOO_MANY_REQUESTS: 429
 };
 
-export async function testRequest(method, path, data = null) {
-  const port = process.env.CI_PORT || process.env.PORT || '3000';
-  const baseUrl = process.env.TEST_BASE_URL || `http://localhost:${port}`;
-  const url = `${baseUrl}${path}`;
+// Simple HTTP request wrapper for API testing
+export async function testRequest(method, path, data = null, headers = {}) {
+  const url = getApiUrl(path);
   
-  const options = { method, headers: { 'Content-Type': 'application/json' } };
-  if (data && method !== 'GET') { options.body = JSON.stringify(data); }
+  const options = { 
+    method, 
+    headers: { 
+      'Content-Type': 'application/json',
+      ...headers
+    }
+  };
+  
+  if (data && method !== 'GET') { 
+    options.body = JSON.stringify(data); 
+  }
+  
+  // Request timeout handling
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Request timeout')), Number(process.env.VITEST_REQUEST_TIMEOUT || 30000));
+  });
   
   try {
-    const response = await fetch(url, options);
+    const response = await Promise.race([fetch(url, options), timeoutPromise]);
     const responseData = await response.json().catch(() => ({}));
-    const status = typeof response.status === 'number' ? response.status : 500;
-    return { status, data: responseData };
+    return { status: response.status, data: responseData };
   } catch (error) {
-    console.warn(`Request failed: ${method} ${path} - ${error.message}`);
-    return { status: 500, data: { error: 'Connection failed' } };
+    // Tests expect status: 0 for connection failures
+    return { 
+      status: 0, 
+      data: { error: error.message === 'Request timeout' ? 'Request timeout' : 'Connection failed' } 
+    };
   }
 }
 
-let emailSequence = 0;
-const baseTimestamp = Date.now();
-
+// Generate unique test email addresses
 export function generateTestEmail() {
-  const id = `${baseTimestamp}.${++emailSequence}`;
-  return `test.${id}@example.com`;
-}
-
-export function resetEmailSequence() {
-  emailSequence = 0;
+  return `test.${Date.now()}.${Math.random().toString(36).slice(2)}@example.com`;
 }

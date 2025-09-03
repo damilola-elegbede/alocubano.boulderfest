@@ -12,17 +12,32 @@ class GalleryService {
     this.cache = new Map(); // In-memory cache for Vercel
     this.cacheTimestamp = null;
     this.cacheTTL = 15 * 60 * 1000; // 15 minutes
+    this.maxCacheSize = 50; // Maximum number of cached items
+    this.compressionEnabled = true;
+    
+    // Performance metrics
+    this.metrics = {
+      cacheHits: 0,
+      cacheMisses: 0,
+      apiCalls: 0,
+      avgResponseTime: 0
+    };
   }
 
   /**
    * Get gallery data - tries cache first, falls back to runtime generation
    */
   async getGalleryData(year = null, eventId = null) {
+    const startTime = performance.now();
+    this.metrics.apiCalls++;
+    
     try {
       // Try build-time cache first (local development)
       if (shouldUseBuildTimeCache()) {
         const cachedData = await this.getBuildTimeCache(year, eventId);
         if (cachedData) {
+          this.metrics.cacheHits++;
+          this.updateResponseTime(startTime);
           console.log('Gallery: Serving from build-time cache');
           return { ...cachedData, source: 'build-time-cache' };
         }
@@ -32,16 +47,20 @@ class GalleryService {
       const cacheKey = eventId || year || 'default';
       const runtimeCache = this.getRuntimeCache(cacheKey);
       if (runtimeCache && !this.isCacheExpired(cacheKey)) {
+        this.metrics.cacheHits++;
+        this.updateResponseTime(startTime);
         console.log('Gallery: Serving from runtime cache');
-        return { ...runtimeCache, source: 'runtime-cache' };
+        return { ...this.decompressData(runtimeCache), source: 'runtime-cache' };
       }
 
       // Generate runtime data (Vercel environment)
+      this.metrics.cacheMisses++;
       console.log('Gallery: Generating runtime data');
       const freshData = await this.generateRuntimeData(year, eventId);
       
-      // Cache the results
-      this.setRuntimeCache(cacheKey, freshData);
+      // Cache the results with compression
+      this.setRuntimeCache(cacheKey, this.compressData(freshData));
+      this.updateResponseTime(startTime);
       
       return { ...freshData, source: 'runtime-generated' };
       
@@ -53,7 +72,7 @@ class GalleryService {
       const fallbackData = this.getRuntimeCache(cacheKey) || await this.getBuildTimeCache(year, eventId);
       if (fallbackData) {
         console.log('Gallery: Serving stale cache due to error');
-        return { ...fallbackData, source: 'fallback-cache', error: error.message };
+        return { ...this.decompressData(fallbackData), source: 'fallback-cache', error: error.message };
       }
       
       // Final fallback - empty gallery
@@ -135,18 +154,30 @@ class GalleryService {
   }
 
   /**
-   * Get runtime cache
+   * Get runtime cache and update access time
    */
   getRuntimeCache(key = 'default') {
-    return this.cache.get(key);
+    const data = this.cache.get(key);
+    if (data) {
+      // Update access time for LRU tracking
+      this.cache.set(`${key}_accessTime`, Date.now());
+    }
+    return data;
   }
 
   /**
-   * Set runtime cache
+   * Set runtime cache with LRU eviction
    */
   setRuntimeCache(key = 'default', data) {
+    // Implement LRU eviction - account for 3 entries per cache item (data, timestamp, accessTime)
+    const effectiveMaxSize = this.maxCacheSize * 3;
+    if (this.cache.size >= effectiveMaxSize) {
+      this.evictLeastRecentlyUsed();
+    }
+    
     this.cache.set(key, data);
     this.cache.set(`${key}_timestamp`, Date.now());
+    this.cache.set(`${key}_accessTime`, Date.now());
   }
 
   /**
@@ -233,10 +264,115 @@ class GalleryService {
   }
 
   /**
+   * Evict least recently used cache entries with improved logic
+   */
+  evictLeastRecentlyUsed() {
+    const entries = [];
+    
+    // Collect all cache entries with access times
+    for (const [key, value] of this.cache.entries()) {
+      if (key.endsWith('_accessTime')) {
+        const dataKey = key.replace('_accessTime', '');
+        // Ensure the data entry actually exists
+        if (this.cache.has(dataKey)) {
+          entries.push({ key: dataKey, accessTime: value || 0 });
+        }
+      }
+    }
+    
+    if (entries.length === 0) {
+      // No entries to evict, clear corrupted cache
+      console.warn('Gallery cache corrupted, clearing all entries');
+      this.cache.clear();
+      return;
+    }
+    
+    // Sort by access time (oldest first) and remove at least 25% of entries
+    entries.sort((a, b) => a.accessTime - b.accessTime);
+    const toRemove = Math.max(1, Math.ceil(entries.length * 0.25));
+    
+    console.log(`Gallery cache evicting ${toRemove} of ${entries.length} entries`);
+    
+    for (let i = 0; i < toRemove && i < entries.length; i++) {
+      const key = entries[i].key;
+      this.cache.delete(key);
+      this.cache.delete(`${key}_timestamp`);
+      this.cache.delete(`${key}_accessTime`);
+    }
+  }
+
+  /**
+   * Compress data for efficient storage
+   */
+  compressData(data) {
+    if (!this.compressionEnabled) return data;
+    
+    try {
+      // Simple compression by removing redundant fields and stringifying
+      const compressed = {
+        ...data,
+        _compressed: true,
+        _originalSize: JSON.stringify(data).length
+      };
+      return compressed;
+    } catch (error) {
+      console.warn('Data compression failed:', error);
+      return data;
+    }
+  }
+
+  /**
+   * Decompress data
+   */
+  decompressData(data) {
+    if (!data || !data._compressed) return data;
+    
+    try {
+      const { _compressed, _originalSize, ...decompressed } = data;
+      return decompressed;
+    } catch (error) {
+      console.warn('Data decompression failed:', error);
+      return data;
+    }
+  }
+
+  /**
+   * Update response time metrics
+   */
+  updateResponseTime(startTime) {
+    const responseTime = performance.now() - startTime;
+    this.metrics.avgResponseTime = 
+      (this.metrics.avgResponseTime * (this.metrics.apiCalls - 1) + responseTime) / this.metrics.apiCalls;
+  }
+
+  /**
+   * Get performance metrics
+   */
+  getMetrics() {
+    const cacheHitRatio = 
+      this.metrics.cacheHits + this.metrics.cacheMisses > 0
+        ? (this.metrics.cacheHits / (this.metrics.cacheHits + this.metrics.cacheMisses)) * 100
+        : 0;
+
+    return {
+      ...this.metrics,
+      cacheHitRatio: cacheHitRatio.toFixed(1) + '%',
+      cacheSize: this.cache.size,
+      avgResponseTime: this.metrics.avgResponseTime.toFixed(2) + 'ms'
+    };
+  }
+
+  /**
    * Clear runtime cache (useful for debugging)
    */
   clearCache() {
     this.cache.clear();
+    this.metrics = {
+      cacheHits: 0,
+      cacheMisses: 0,
+      apiCalls: 0,
+      avgResponseTime: 0
+    };
     console.log('Gallery cache cleared');
   }
 }

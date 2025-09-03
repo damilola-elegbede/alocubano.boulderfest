@@ -1,0 +1,1157 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics Dashboard - A Lo Cubano Boulder Fest Admin</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      /* Header */
+      .header {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      .header h1 {
+        font-size: 28px;
+        color: #1a202c;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #4a5568;
+        transition: all 0.2s;
+      }
+
+      .back-btn:hover {
+        background: #edf2f7;
+        border-color: #cbd5e0;
+      }
+
+      /* Controls Bar */
+      .controls-bar {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      .time-range-controls {
+        display: flex;
+        gap: 8px;
+      }
+
+      .time-range-btn {
+        padding: 8px 16px;
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 14px;
+      }
+
+      .time-range-btn:hover {
+        background: #edf2f7;
+      }
+
+      .time-range-btn.active {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+      }
+
+      .export-controls {
+        display: flex;
+        gap: 8px;
+      }
+
+      .export-btn {
+        padding: 8px 16px;
+        background: #48bb78;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .export-btn:hover {
+        background: #38a169;
+      }
+
+      /* Metrics Grid */
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+      }
+
+      .metric-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .metric-label {
+        font-size: 12px;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+      }
+
+      .metric-value {
+        font-size: 32px;
+        font-weight: bold;
+        color: #1a202c;
+        margin-bottom: 8px;
+      }
+
+      .metric-change {
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .metric-change.positive {
+        color: #48bb78;
+      }
+
+      .metric-change.negative {
+        color: #f56565;
+      }
+
+      /* Charts Section */
+      .charts-section {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      .chart-container {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .chart-header {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1a202c;
+        margin-bottom: 20px;
+      }
+
+      .chart-wrapper {
+        position: relative;
+        height: 300px;
+      }
+
+      .two-column-charts {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 24px;
+      }
+
+      /* Tables */
+      .table-container {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 24px;
+      }
+
+      .table-header {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1a202c;
+        margin-bottom: 20px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      thead th {
+        text-align: left;
+        padding: 12px;
+        border-bottom: 2px solid #e2e8f0;
+        font-size: 12px;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      tbody td {
+        padding: 12px;
+        border-bottom: 1px solid #f7fafc;
+        font-size: 14px;
+        color: #4a5568;
+      }
+
+      tbody tr:hover {
+        background: #f7fafc;
+      }
+
+      /* Recommendations */
+      .recommendations-container {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .recommendations-header {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1a202c;
+        margin-bottom: 20px;
+      }
+
+      .recommendation-item {
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .recommendation-item.success {
+        background: #f0fdf4;
+        border-left: 4px solid #48bb78;
+      }
+
+      .recommendation-item.warning {
+        background: #fffbeb;
+        border-left: 4px solid #f59e0b;
+      }
+
+      .recommendation-item.info {
+        background: #eff6ff;
+        border-left: 4px solid #3b82f6;
+      }
+
+      .recommendation-icon {
+        font-size: 20px;
+      }
+
+      .recommendation-content {
+        flex: 1;
+      }
+
+      .recommendation-title {
+        font-weight: 600;
+        color: #1a202c;
+        margin-bottom: 4px;
+      }
+
+      .recommendation-text {
+        font-size: 14px;
+        color: #4a5568;
+      }
+
+      /* Loading State */
+      .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 40px;
+        color: #718096;
+      }
+
+      .spinner {
+        border: 3px solid #f3f4f6;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin-right: 12px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .controls-bar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .time-range-controls,
+        .export-controls {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .metrics-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .two-column-charts {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* Utility Classes */
+      .text-right {
+        text-align: right;
+      }
+
+      .font-mono {
+        font-family: "Monaco", "Courier New", monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <div>
+          <a
+            href="/pages/admin/index.html"
+            class="back-btn"
+            style="margin-right: 10px"
+          >
+            🎯 Portal
+          </a>
+          <a href="/pages/admin/dashboard.html" class="back-btn">
+            📋 Dashboard
+          </a>
+          <h1>📊 Analytics Dashboard</h1>
+        </div>
+        <div id="last-updated" style="color: #718096; font-size: 14px">
+          Last updated: <span id="update-time">--</span>
+        </div>
+      </div>
+
+      <!-- Controls Bar -->
+      <div class="controls-bar">
+        <div class="time-range-controls">
+          <button class="time-range-btn" data-days="7">7 Days</button>
+          <button class="time-range-btn active" data-days="30">30 Days</button>
+          <button class="time-range-btn" data-days="90">90 Days</button>
+          <button class="time-range-btn" data-days="all">All Time</button>
+        </div>
+        <div class="export-controls">
+          <button class="export-btn" onclick="exportJSON()">
+            📥 Export JSON
+          </button>
+          <button class="export-btn" onclick="exportCSV()">
+            📥 Export CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Metrics Grid -->
+      <div class="metrics-grid" id="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Total Tickets Sold</div>
+          <div class="metric-value" id="total-tickets">--</div>
+          <div class="metric-change positive" id="tickets-change">--</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Gross Revenue</div>
+          <div class="metric-value" id="gross-revenue">--</div>
+          <div class="metric-change positive" id="revenue-change">--</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Unique Customers</div>
+          <div class="metric-value" id="unique-customers">--</div>
+          <div class="metric-change positive" id="customers-change">--</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Check-in Rate</div>
+          <div class="metric-value" id="checkin-rate">--</div>
+          <div class="metric-change" id="checkin-change">--</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Conversion Rate</div>
+          <div class="metric-value" id="conversion-rate">--</div>
+          <div class="metric-change" id="conversion-change">--</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Top Ticket Type</div>
+          <div class="metric-value" id="top-ticket" style="font-size: 18px">
+            --
+          </div>
+          <div class="metric-change" id="top-ticket-count">--</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Wallet Adoption</div>
+          <div class="metric-value" id="wallet-adoption">--</div>
+          <div class="metric-change positive" id="wallet-change">--</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Digital Revenue Share</div>
+          <div class="metric-value" id="digital-share">--</div>
+          <div class="metric-change" id="digital-change">--</div>
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="charts-section">
+        <!-- Sales Trend Chart -->
+        <div class="chart-container">
+          <div class="chart-header">Sales Trend</div>
+          <div class="chart-wrapper">
+            <canvas id="sales-trend-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Two Column Charts -->
+        <div class="two-column-charts">
+          <!-- Revenue Breakdown -->
+          <div class="chart-container">
+            <div class="chart-header">Revenue by Ticket Type</div>
+            <div class="chart-wrapper">
+              <canvas id="revenue-breakdown-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Hourly Sales Pattern -->
+          <div class="chart-container">
+            <div class="chart-header">Sales by Hour of Day</div>
+            <div class="chart-wrapper">
+              <canvas id="hourly-sales-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Check-in and Wallet Charts -->
+        <div class="two-column-charts">
+          <!-- Check-in Rate by Type -->
+          <div class="chart-container">
+            <div class="chart-header">Check-in Rate by Ticket Type</div>
+            <div class="chart-wrapper">
+              <canvas id="checkin-by-type-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Wallet Adoption Trend -->
+          <div class="chart-container">
+            <div class="chart-header">Apple Wallet Adoption Trend</div>
+            <div class="chart-wrapper">
+              <canvas id="wallet-trend-chart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Customers Table -->
+      <div class="table-container">
+        <div class="table-header">Top Customers</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Email</th>
+              <th>Tickets</th>
+              <th>Total Spent</th>
+              <th>Last Purchase</th>
+            </tr>
+          </thead>
+          <tbody id="top-customers-tbody">
+            <tr>
+              <td colspan="5" class="loading">
+                <div class="spinner"></div>
+                Loading customer data...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="recommendations-container">
+        <div class="recommendations-header">Insights & Recommendations</div>
+        <div id="recommendations-list">
+          <div class="loading">
+            <div class="spinner"></div>
+            Analyzing data...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Global variables
+      let analyticsData = null;
+      let currentTimeRange = 30;
+      let charts = {};
+      let refreshInterval = null;
+
+      // Initialize on page load
+      document.addEventListener("DOMContentLoaded", () => {
+        initializeTimeRangeButtons();
+        loadAnalytics();
+        // Auto-refresh every 5 minutes
+        refreshInterval = setInterval(loadAnalytics, 5 * 60 * 1000);
+      });
+
+      // Clean up on page unload
+      window.addEventListener("beforeunload", () => {
+        // Clear interval to prevent memory leaks
+        if (refreshInterval) {
+          clearInterval(refreshInterval);
+          refreshInterval = null;
+        }
+
+        // Destroy all charts
+        Object.values(charts).forEach((chart) => {
+          if (chart && typeof chart.destroy === "function") {
+            chart.destroy();
+          }
+        });
+        charts = {};
+      });
+
+      // Initialize time range buttons
+      function initializeTimeRangeButtons() {
+        const buttons = document.querySelectorAll(".time-range-btn");
+        buttons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            // Update active state
+            buttons.forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+
+            // Update time range and reload
+            const days = btn.dataset.days;
+            currentTimeRange = days === "all" ? "all" : parseInt(days);
+            loadAnalytics();
+          });
+        });
+      }
+
+      // Load analytics data
+      async function loadAnalytics() {
+        try {
+          const params =
+            currentTimeRange === "all" ? "" : `?days=${currentTimeRange}`;
+
+          const response = await fetch(`/api/admin/analytics${params}`);
+          if (!response.ok) throw new Error("Failed to load analytics");
+
+          analyticsData = await response.json();
+
+          // Update all components
+          updateMetrics();
+          updateCharts();
+          updateTopCustomers();
+          updateRecommendations();
+          updateLastUpdated();
+        } catch (error) {
+          console.error("Error loading analytics:", error);
+          showError("Failed to load analytics data");
+        }
+      }
+
+      // Update metrics cards
+      function updateMetrics() {
+        if (!analyticsData) return;
+
+        const { metrics, comparison } = analyticsData;
+
+        // Total Tickets - use textContent for safe display
+        document.getElementById("total-tickets").textContent =
+          metrics.totalTickets.toLocaleString();
+        updateChange("tickets-change", comparison.tickets);
+
+        // Gross Revenue - use textContent for safe display
+        document.getElementById("gross-revenue").textContent =
+          `$${metrics.grossRevenue.toLocaleString()}`;
+        updateChange("revenue-change", comparison.revenue);
+
+        // Unique Customers - use textContent for safe display
+        document.getElementById("unique-customers").textContent =
+          metrics.uniqueCustomers.toLocaleString();
+        updateChange("customers-change", comparison.customers);
+
+        // Check-in Rate - use textContent for safe display
+        document.getElementById("checkin-rate").textContent =
+          `${metrics.checkinRate.toFixed(1)}%`;
+        updateChange("checkin-change", comparison.checkinRate);
+
+        // Conversion Rate - use textContent for safe display
+        document.getElementById("conversion-rate").textContent =
+          `${metrics.conversionRate.toFixed(1)}%`;
+        updateChange("conversion-change", comparison.conversionRate);
+
+        // Top Ticket Type - use textContent for safe display
+        if (metrics.topTicketType) {
+          document.getElementById("top-ticket").textContent =
+            metrics.topTicketType.name;
+          document.getElementById("top-ticket-count").textContent =
+            `${metrics.topTicketType.count} sold`;
+        }
+
+        // Wallet Adoption - use textContent for safe display
+        document.getElementById("wallet-adoption").textContent =
+          `${metrics.walletAdoption.toFixed(1)}%`;
+        updateChange("wallet-change", comparison.walletAdoption);
+
+        // Digital Revenue Share - use textContent for safe display
+        document.getElementById("digital-share").textContent =
+          `${metrics.digitalShare.toFixed(1)}%`;
+        updateChange("digital-change", comparison.digitalShare);
+      }
+
+      // Update change indicator
+      function updateChange(elementId, change) {
+        const element = document.getElementById(elementId);
+        if (!element || change === undefined) return;
+
+        const isPositive = change >= 0;
+        // Remove old positive/negative classes before adding new one
+        element.classList.remove("positive", "negative");
+        element.classList.add(isPositive ? "positive" : "negative");
+        // Use textContent for safe display
+        element.textContent = `${isPositive ? "↑" : "↓"} ${Math.abs(change).toFixed(1)}%`;
+      }
+
+      // Update charts
+      function updateCharts() {
+        if (!analyticsData) return;
+
+        // Sales Trend Chart
+        updateSalesTrendChart();
+
+        // Revenue Breakdown Chart
+        updateRevenueBreakdownChart();
+
+        // Hourly Sales Chart
+        updateHourlySalesChart();
+
+        // Check-in by Type Chart
+        updateCheckinByTypeChart();
+
+        // Wallet Trend Chart
+        updateWalletTrendChart();
+      }
+
+      // Sales Trend Chart
+      function updateSalesTrendChart() {
+        const canvas = document.getElementById("sales-trend-chart");
+        if (!canvas) return; // Guard against missing element
+
+        const ctx = canvas.getContext("2d");
+        const { salesTrend } = analyticsData;
+
+        if (!salesTrend) return; // Guard against missing data
+
+        // Destroy existing chart if it exists
+        if (charts.salesTrend) {
+          charts.salesTrend.destroy();
+          charts.salesTrend = null; // Clear reference
+        }
+
+        charts.salesTrend = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: salesTrend.dates,
+            datasets: [
+              {
+                label: "Daily Sales",
+                data: salesTrend.daily,
+                borderColor: "#667eea",
+                backgroundColor: "rgba(102, 126, 234, 0.1)",
+                tension: 0.4,
+              },
+              {
+                label: "Cumulative",
+                data: salesTrend.cumulative,
+                borderColor: "#48bb78",
+                backgroundColor: "rgba(72, 187, 120, 0.1)",
+                tension: 0.4,
+                yAxisID: "y1",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: "index",
+              intersect: false,
+            },
+            scales: {
+              y: {
+                type: "linear",
+                display: true,
+                position: "left",
+                title: {
+                  display: true,
+                  text: "Daily Sales",
+                },
+              },
+              y1: {
+                type: "linear",
+                display: true,
+                position: "right",
+                title: {
+                  display: true,
+                  text: "Cumulative Sales",
+                },
+                grid: {
+                  drawOnChartArea: false,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Revenue Breakdown Chart
+      function updateRevenueBreakdownChart() {
+        const canvas = document.getElementById("revenue-breakdown-chart");
+        if (!canvas) return; // Guard against missing element
+
+        const ctx = canvas.getContext("2d");
+        const { revenueByType } = analyticsData;
+
+        if (!revenueByType) return; // Guard against missing data
+
+        if (charts.revenueBreakdown) {
+          charts.revenueBreakdown.destroy();
+          charts.revenueBreakdown = null; // Clear reference
+        }
+
+        charts.revenueBreakdown = new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: revenueByType.labels,
+            datasets: [
+              {
+                data: revenueByType.values,
+                backgroundColor: [
+                  "#667eea",
+                  "#764ba2",
+                  "#f6ad55",
+                  "#48bb78",
+                  "#4299e1",
+                  "#ed8936",
+                ],
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "bottom",
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    const value = context.parsed;
+                    const total = context.dataset.data.reduce(
+                      (a, b) => a + b,
+                      0,
+                    );
+                    const percentage = ((value / total) * 100).toFixed(1);
+                    return `${context.label}: $${value.toLocaleString()} (${percentage}%)`;
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Hourly Sales Chart
+      function updateHourlySalesChart() {
+        const canvas = document.getElementById("hourly-sales-chart");
+        if (!canvas) return; // Guard against missing element
+
+        const ctx = canvas.getContext("2d");
+        const { hourlySales } = analyticsData;
+
+        if (!hourlySales) return; // Guard against missing data
+
+        if (charts.hourlySales) {
+          charts.hourlySales.destroy();
+          charts.hourlySales = null; // Clear reference
+        }
+
+        charts.hourlySales = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: hourlySales.hours,
+            datasets: [
+              {
+                label: "Sales",
+                data: hourlySales.sales,
+                backgroundColor: "#667eea",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: "Number of Sales",
+                },
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: "Hour of Day",
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Check-in by Type Chart
+      function updateCheckinByTypeChart() {
+        const canvas = document.getElementById("checkin-by-type-chart");
+        if (!canvas) return; // Guard against missing element
+
+        const ctx = canvas.getContext("2d");
+        const { checkinByType } = analyticsData;
+
+        if (!checkinByType) return; // Guard against missing data
+
+        if (charts.checkinByType) {
+          charts.checkinByType.destroy();
+          charts.checkinByType = null; // Clear reference
+        }
+
+        charts.checkinByType = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: checkinByType.types,
+            datasets: [
+              {
+                label: "Check-in Rate (%)",
+                data: checkinByType.rates,
+                backgroundColor: "#48bb78",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                title: {
+                  display: true,
+                  text: "Check-in Rate (%)",
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Wallet Trend Chart
+      function updateWalletTrendChart() {
+        const canvas = document.getElementById("wallet-trend-chart");
+        if (!canvas) return; // Guard against missing element
+
+        const ctx = canvas.getContext("2d");
+        const { walletTrend } = analyticsData;
+
+        if (!walletTrend) return; // Guard against missing data
+
+        if (charts.walletTrend) {
+          charts.walletTrend.destroy();
+          charts.walletTrend = null; // Clear reference
+        }
+
+        charts.walletTrend = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: walletTrend.dates,
+            datasets: [
+              {
+                label: "Wallet Adoption (%)",
+                data: walletTrend.adoption,
+                borderColor: "#764ba2",
+                backgroundColor: "rgba(118, 75, 162, 0.1)",
+                tension: 0.4,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                title: {
+                  display: true,
+                  text: "Adoption Rate (%)",
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Update top customers table
+      function updateTopCustomers() {
+        if (!analyticsData || !analyticsData.topCustomers) return;
+
+        const tbody = document.getElementById("top-customers-tbody");
+        const customers = analyticsData.topCustomers;
+
+        if (customers.length === 0) {
+          tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #718096;">
+                            No customer data available
+                        </td>
+                    </tr>
+                `;
+          return;
+        }
+
+        tbody.innerHTML = customers
+          .map(
+            (customer) => `
+                <tr>
+                    <td>${escapeHtml(customer.name)}</td>
+                    <td>${escapeHtml(customer.email)}</td>
+                    <td>${escapeHtml(String(customer.ticketCount))}</td>
+                    <td>${escapeHtml("$" + customer.totalSpent.toLocaleString())}</td>
+                    <td>${escapeHtml(formatDate(customer.lastPurchase))}</td>
+                </tr>
+            `,
+          )
+          .join("");
+      }
+
+      // Update recommendations
+      function updateRecommendations() {
+        if (!analyticsData || !analyticsData.recommendations) return;
+
+        const container = document.getElementById("recommendations-list");
+        const recommendations = analyticsData.recommendations;
+
+        if (recommendations.length === 0) {
+          container.innerHTML = `
+                    <div class="recommendation-item info">
+                        <div class="recommendation-icon">ℹ️</div>
+                        <div class="recommendation-content">
+                            <div class="recommendation-title">No recommendations</div>
+                            <div class="recommendation-text">
+                                All metrics are performing well. Keep up the great work!
+                            </div>
+                        </div>
+                    </div>
+                `;
+          return;
+        }
+
+        container.innerHTML = recommendations
+          .map((rec) => {
+            const typeClass =
+              rec.type === "success"
+                ? "success"
+                : rec.type === "warning"
+                  ? "warning"
+                  : "info";
+            const icon =
+              rec.type === "success"
+                ? "✅"
+                : rec.type === "warning"
+                  ? "⚠️"
+                  : "ℹ️";
+
+            return `
+                    <div class="recommendation-item ${typeClass}">
+                        <div class="recommendation-icon">${icon}</div>
+                        <div class="recommendation-content">
+                            <div class="recommendation-title">${escapeHtml(rec.title)}</div>
+                            <div class="recommendation-text">${escapeHtml(rec.message)}</div>
+                        </div>
+                    </div>
+                `;
+          })
+          .join("");
+      }
+
+      // Export functions
+      async function exportJSON() {
+        if (!analyticsData) {
+          alert("No data to export");
+          return;
+        }
+
+        const dataStr = JSON.stringify(analyticsData, null, 2);
+        const dataUri =
+          "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+
+        const exportFileDefaultName = `analytics_${getDateString()}.json`;
+
+        const linkElement = document.createElement("a");
+        linkElement.setAttribute("href", dataUri);
+        linkElement.setAttribute("download", exportFileDefaultName);
+        linkElement.click();
+      }
+
+      async function exportCSV() {
+        if (!analyticsData) {
+          alert("No data to export");
+          return;
+        }
+
+        // Create CSV content
+        const csv = [];
+
+        // Add metrics
+        csv.push("Metrics Report");
+        csv.push("Metric,Value");
+        csv.push(`Total Tickets,${analyticsData.metrics.totalTickets}`);
+        csv.push(`Gross Revenue,$${analyticsData.metrics.grossRevenue}`);
+        csv.push(`Unique Customers,${analyticsData.metrics.uniqueCustomers}`);
+        csv.push(`Check-in Rate,${analyticsData.metrics.checkinRate}%`);
+        csv.push(`Conversion Rate,${analyticsData.metrics.conversionRate}%`);
+        csv.push(`Wallet Adoption,${analyticsData.metrics.walletAdoption}%`);
+        csv.push(
+          `Digital Revenue Share,${analyticsData.metrics.digitalShare}%`,
+        );
+        csv.push("");
+
+        // Add top customers
+        csv.push("Top Customers");
+        csv.push("Name,Email,Tickets,Total Spent,Last Purchase");
+        analyticsData.topCustomers.forEach((customer) => {
+          csv.push(
+            `"${customer.name}","${customer.email}",${customer.ticketCount},$${customer.totalSpent},"${customer.lastPurchase}"`,
+          );
+        });
+
+        const csvContent = csv.join("\n");
+        const dataUri =
+          "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent);
+
+        const exportFileDefaultName = `analytics_${getDateString()}.csv`;
+
+        const linkElement = document.createElement("a");
+        linkElement.setAttribute("href", dataUri);
+        linkElement.setAttribute("download", exportFileDefaultName);
+        linkElement.click();
+      }
+
+      // Utility functions
+      function escapeHtml(unsafe) {
+        return unsafe
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+      }
+
+      function getDateString() {
+        const now = new Date();
+        return now.toISOString().split("T")[0];
+      }
+
+      function updateLastUpdated() {
+        const now = new Date();
+        document.getElementById("update-time").textContent =
+          now.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+      }
+
+      function showError(message) {
+        console.error(message);
+        // You could show a toast notification here
+      }
+    </script>
+  </body>
+</html>

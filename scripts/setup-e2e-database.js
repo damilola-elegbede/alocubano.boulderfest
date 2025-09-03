@@ -25,8 +25,8 @@ if (!process.env.VERCEL && !process.env.CI) {
 
 // Safety check: Ensure we're using E2E database
 function validateDatabaseSafety() {
-  // Use E2E_TURSO_* vars with fallback to standard vars
-  const dbUrl = process.env.E2E_TURSO_DATABASE_URL || process.env.TURSO_DATABASE_URL;
+  // Use standard Turso environment variables
+  const dbUrl = process.env.TURSO_DATABASE_URL;
   const isE2E = process.env.E2E_TEST_MODE === 'true' || 
                 process.env.ENVIRONMENT === 'e2e-test' ||
                 process.env.NODE_ENV === 'test';
@@ -48,13 +48,13 @@ function validateDatabaseSafety() {
 
 // Create database client
 function createDatabaseClient() {
-  // Use E2E_TURSO_* vars with fallback to standard vars
-  const authToken = process.env.E2E_TURSO_AUTH_TOKEN || process.env.TURSO_AUTH_TOKEN;
-  const databaseUrl = process.env.E2E_TURSO_DATABASE_URL || process.env.TURSO_DATABASE_URL;
+  // Use standard Turso environment variables
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+  const databaseUrl = process.env.TURSO_DATABASE_URL;
   
   if (!authToken || !databaseUrl) {
     console.error('❌ Missing database credentials');
-    console.error('   Required: E2E_TURSO_AUTH_TOKEN (or TURSO_AUTH_TOKEN), E2E_TURSO_DATABASE_URL (or TURSO_DATABASE_URL)');
+    console.error('   Required: TURSO_AUTH_TOKEN, TURSO_DATABASE_URL');
     process.exit(1);
   }
   
@@ -123,10 +123,55 @@ async function createCoreTables(client) {
         CREATE TABLE IF NOT EXISTS email_subscribers (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           email TEXT NOT NULL UNIQUE,
-          subscribed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          unsubscribed_at DATETIME,
-          status TEXT DEFAULT 'active',
-          source TEXT DEFAULT 'website'
+          first_name TEXT,
+          last_name TEXT,
+          phone TEXT,
+          status TEXT DEFAULT 'pending' CHECK (
+            status IN ('pending', 'active', 'unsubscribed', 'bounced')
+          ),
+          brevo_contact_id TEXT,
+          list_ids TEXT DEFAULT '[]',
+          attributes TEXT DEFAULT '{}',
+          consent_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          consent_source TEXT DEFAULT 'website',
+          consent_ip TEXT,
+          verification_token TEXT,
+          verified_at TIMESTAMP,
+          unsubscribed_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `
+    },
+    {
+      name: 'email_events',
+      sql: `
+        CREATE TABLE IF NOT EXISTS email_events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          subscriber_id INTEGER NOT NULL,
+          event_type TEXT NOT NULL,
+          event_data TEXT DEFAULT '{}',
+          brevo_event_id TEXT,
+          occurred_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (subscriber_id) REFERENCES email_subscribers(id) ON DELETE CASCADE
+        )
+      `
+    },
+    {
+      name: 'email_audit_log',
+      sql: `
+        CREATE TABLE IF NOT EXISTS email_audit_log (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          entity_type TEXT NOT NULL,
+          entity_id INTEGER NOT NULL,
+          action TEXT NOT NULL,
+          actor_type TEXT NOT NULL,
+          actor_id TEXT,
+          changes TEXT NOT NULL,
+          ip_address TEXT,
+          user_agent TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `
     }
@@ -193,11 +238,11 @@ async function validateSchema(client) {
     const tablesResult = await client.execute(`
       SELECT name FROM sqlite_master 
       WHERE type='table' 
-      AND name IN ('migrations', 'registrations', 'email_subscribers')
+      AND name IN ('migrations', 'registrations', 'email_subscribers', 'email_events', 'email_audit_log')
       ORDER BY name
     `);
     
-    const expectedTables = ['email_subscribers', 'migrations', 'registrations'];
+    const expectedTables = ['email_subscribers', 'email_events', 'email_audit_log', 'migrations', 'registrations'];
     const actualTables = tablesResult.rows.map(row => row.name);
     
     const missingTables = expectedTables.filter(t => !actualTables.includes(t));
@@ -254,8 +299,13 @@ async function insertTestData(client) {
     
     // Insert test subscriber
     await client.execute(`
-      INSERT INTO email_subscribers (email, status, source)
-      VALUES ('fake-subscriber@e2e-test.invalid', 'active', 'e2e-test')
+      INSERT INTO email_subscribers (
+        email, first_name, last_name, status, consent_source, 
+        list_ids, attributes, brevo_contact_id
+      ) VALUES (
+        'fake-subscriber@e2e-test.invalid', 'Test', 'Subscriber', 'active', 
+        'e2e-test', '[]', '{}', NULL
+      )
     `);
     console.log('   ✅ Test subscriber created');
     
@@ -278,15 +328,19 @@ async function cleanupDatabase(client, fullReset = false) {
   
   try {
     if (fullReset) {
-      // Drop all tables for full reset
-      await client.execute("DROP TABLE IF EXISTS migrations");
-      await client.execute("DROP TABLE IF EXISTS registrations");
+      // Drop all tables for full reset (order matters due to foreign keys)
+      await client.execute("DROP TABLE IF EXISTS email_events");
+      await client.execute("DROP TABLE IF EXISTS email_audit_log");
       await client.execute("DROP TABLE IF EXISTS email_subscribers");
+      await client.execute("DROP TABLE IF EXISTS registrations");
+      await client.execute("DROP TABLE IF EXISTS migrations");
       console.log('   ✅ All tables dropped for full reset');
     } else {
-      // Just clean test data
-      await client.execute("DELETE FROM registrations WHERE email LIKE '%@e2e-test.%'");
+      // Just clean test data (order matters due to foreign keys)
+      await client.execute("DELETE FROM email_events WHERE subscriber_id IN (SELECT id FROM email_subscribers WHERE email LIKE '%@e2e-test.%')");
+      await client.execute("DELETE FROM email_audit_log WHERE entity_type = 'email_subscribers' AND entity_id IN (SELECT id FROM email_subscribers WHERE email LIKE '%@e2e-test.%')");
       await client.execute("DELETE FROM email_subscribers WHERE email LIKE '%@e2e-test.%'");
+      await client.execute("DELETE FROM registrations WHERE email LIKE '%@e2e-test.%'");
       console.log('   ✅ Test data cleaned');
     }
     return true;

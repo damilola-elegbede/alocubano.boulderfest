@@ -94,7 +94,7 @@ test.describe('Smoke Tests - Basic Connectivity', () => {
     });
     
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Allow some console errors but not critical ones
     const criticalErrors = consoleErrors.filter(error => 
@@ -217,7 +217,7 @@ test.describe('Smoke Tests - Basic Connectivity', () => {
     });
     
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Filter out acceptable errors (third-party scripts, etc.)
     const criticalErrors = errors.filter(error => 

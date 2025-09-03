@@ -60,11 +60,6 @@ CREATE INDEX IF NOT EXISTS idx_email_events_occurred_at ON email_events(occurred
 CREATE INDEX IF NOT EXISTS idx_email_audit_log_entity ON email_audit_log(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_email_audit_log_created_at ON email_audit_log(created_at);
 
--- Triggers to automatically update updated_at timestamp
-CREATE TRIGGER IF NOT EXISTS update_email_subscribers_updated_at
-    AFTER UPDATE ON email_subscribers
-BEGIN
-    UPDATE email_subscribers
-    SET updated_at = CURRENT_TIMESTAMP
-    WHERE id = NEW.id;
-END;
+-- Note: Triggers with BEGIN/END blocks can cause issues with migration parsers
+-- The trigger for updated_at has been removed to ensure compatibility
+-- Application code should handle updated_at timestamp updates

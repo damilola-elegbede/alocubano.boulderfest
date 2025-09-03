@@ -1,206 +1,134 @@
 /**
- * Global teardown for Playwright E2E tests
- * Runs once after all test suites complete
- * Handles cleanup, resource closure, and verification
+ * E2E Global Teardown - Database Cleanup
+ * Cleans up test data after E2E test runs to ensure clean state for future tests
  */
 
-import { spawn } from 'child_process';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { existsSync } from 'fs';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = path.join(__dirname, '..', '..');
+import { cleanTestData, getCleanupStats } from './helpers/database-cleanup.js';
+import { getDatabaseClient } from '../../api/lib/database.js';
 
 /**
- * Clean up E2E test database
+ * Reset database sequences/auto-increment counters
+ * Ensures predictable IDs in future test runs
  */
-async function cleanupDatabase() {
-  console.log('🧹 Cleaning up E2E test database...');
+async function resetSequences(client) {
+  console.log('🔄 Resetting database sequences...');
   
-  // Check if cleanup script exists
-  const setupScript = path.join(projectRoot, 'scripts', 'setup-e2e-database.js');
-  if (!existsSync(setupScript)) {
-    console.log('   ℹ️  E2E database cleanup script not found, skipping');
-    return;
-  }
-  
-  return new Promise((resolve) => {
-    const cleanup = spawn('node', [setupScript, 'clean'], {
-      cwd: projectRoot,
-      env: {
-        ...process.env,
-        E2E_TEST_MODE: 'true',
-        NODE_ENV: 'test'
-      },
-      stdio: 'pipe'
-    });
+  try {
+    // Get all tables with auto-increment columns
+    const tablesResult = await client.execute(`
+      SELECT name 
+      FROM sqlite_master 
+      WHERE type='table' 
+      AND name NOT LIKE 'sqlite_%'
+      AND name NOT IN ('schema_migrations', 'migrations')
+      ORDER BY name
+    `);
     
-    cleanup.stdout.on('data', (data) => {
-      console.log(`   ${data.toString().trim()}`);
-    });
+    let resetCount = 0;
     
-    cleanup.stderr.on('data', (data) => {
-      console.error(`   ⚠️  ${data.toString().trim()}`);
-    });
-    
-    cleanup.on('close', (code) => {
-      if (code !== 0) {
-        console.error(`   ⚠️  Database cleanup exited with code ${code}`);
-      } else {
-        console.log('   ✅ Database cleaned up');
-      }
-      resolve(); // Always resolve, don't fail teardown
-    });
-    
-    // Timeout after 10 seconds
-    setTimeout(() => {
-      if (!cleanup.killed) {
-        cleanup.kill();
-        resolve();
-      }
-    }, 10000);
-  });
-}
-
-/**
- * Stop the test server if it was started
- */
-async function stopTestServer() {
-  const serverProcess = global.__SERVER_PROCESS__;
-  
-  if (!serverProcess || serverProcess.killed) {
-    return;
-  }
-  
-  console.log('🛑 Stopping test server...');
-  
-  return new Promise((resolve) => {
-    // Try graceful shutdown first
-    serverProcess.kill('SIGTERM');
-    
-    // Give it time to shut down gracefully
-    setTimeout(() => {
-      if (!serverProcess.killed) {
-        // Force kill if still running
-        serverProcess.kill('SIGKILL');
-      }
-      console.log('   ✅ Test server stopped');
-      resolve();
-    }, 2000);
-  });
-}
-
-/**
- * Verify no resource leaks or dangling processes
- */
-async function verifyCleanState() {
-  console.log('🔍 Verifying clean state...');
-  
-  // Check for any leaked browser processes
-  const browserProcesses = ['chromium', 'firefox', 'webkit', 'chrome', 'msedge'];
-  
-  return new Promise((resolve) => {
-    const ps = spawn('ps', ['aux'], {
-      stdio: 'pipe'
-    });
-    
-    let output = '';
-    ps.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-    
-    ps.on('close', () => {
-      const lines = output.split('\n');
-      const leakedProcesses = lines.filter(line => {
-        const lowerLine = line.toLowerCase();
-        return browserProcesses.some(browser => 
-          lowerLine.includes(browser) && 
-          (lowerLine.includes('playwright') || lowerLine.includes('e2e'))
+    for (const table of tablesResult.rows) {
+      const tableName = table.name;
+      
+      try {
+        // Check if table has an autoincrement column (usually 'id')
+        const columnInfo = await client.execute(`PRAGMA table_info(${tableName})`);
+        const hasAutoIncrement = columnInfo.rows.some(col => 
+          col.name === 'id' && col.type.toUpperCase().includes('INTEGER')
         );
-      });
-      
-      if (leakedProcesses.length > 0) {
-        console.log(`   ⚠️  Found ${leakedProcesses.length} potential leaked browser processes`);
-        leakedProcesses.forEach(process => {
-          console.log(`      ${process.substring(0, 80)}...`);
-        });
-      } else {
-        console.log('   ✅ No leaked browser processes detected');
+        
+        if (hasAutoIncrement) {
+          // Reset the sqlite_sequence for this table
+          await client.execute(`DELETE FROM sqlite_sequence WHERE name = ?`, [tableName]);
+          resetCount++;
+          console.log(`   ✅ Reset sequence for ${tableName}`);
+        }
+      } catch (error) {
+        console.warn(`   ⚠️  Failed to reset sequence for ${tableName}:`, error.message);
       }
-      
-      resolve();
-    });
+    }
     
-    ps.on('error', () => {
-      // ps command not available, skip verification
-      console.log('   ℹ️  Process verification skipped');
-      resolve();
-    });
-  });
+    console.log(`🔄 Reset ${resetCount} database sequences`);
+    return resetCount;
+    
+  } catch (error) {
+    console.error('❌ Failed to reset database sequences:', error.message);
+    throw error;
+  }
 }
 
 /**
- * Generate summary report
+ * Vacuum database to reclaim space and optimize
  */
-function generateSummary() {
-  console.log('\n📊 Test Run Summary');
-  console.log('═'.repeat(50));
+async function vacuumDatabase(client) {
+  console.log('🧹 Vacuuming database...');
   
-  const reportPath = path.join(projectRoot, 'playwright-report', 'index.html');
-  const resultsPath = path.join(projectRoot, 'test-results');
-  
-  if (existsSync(reportPath)) {
-    console.log(`📈 HTML Report: ${reportPath}`);
+  try {
+    await client.execute('VACUUM');
+    console.log('✅ Database vacuum completed');
+  } catch (error) {
+    console.warn('⚠️  Database vacuum failed (non-critical):', error.message);
   }
-  
-  if (existsSync(resultsPath)) {
-    console.log(`📁 Test Results: ${resultsPath}`);
-  }
-  
-  console.log('\n💡 Tips:');
-  console.log('   - Run "npx playwright show-report" to view HTML report');
-  console.log('   - Check test-results/ for screenshots and videos');
-  console.log('   - Use --headed flag to run tests with browser UI');
 }
 
 /**
  * Main global teardown function
  */
-async function globalTeardown() {
-  console.log('\n🎭 Playwright E2E Test Teardown\n');
-  console.log('═'.repeat(50));
+export default async function globalTeardown() {
+  console.log('\n🧹 Starting E2E Global Teardown...\n');
   
   try {
-    // 1. Stop test server
-    await stopTestServer().catch(error => {
-      console.error('   ⚠️  Server stop error:', error.message);
-    });
+    // First, get cleanup statistics to show what will be cleaned
+    console.log('📊 Analyzing test data...');
+    const stats = await getCleanupStats({ testDataOnly: true });
     
-    // 2. Clean up database
-    if (!process.env.KEEP_TEST_DATA) {
-      await cleanupDatabase().catch(error => {
-        console.error('   ⚠️  Database cleanup error:', error.message);
-      });
-    } else {
-      console.log('ℹ️  Keeping test data (KEEP_TEST_DATA=true)');
+    if (!stats.success) {
+      console.error('❌ Failed to analyze test data:', stats.error);
+      return;
     }
     
-    // 3. Verify clean state
-    await verifyCleanState().catch(error => {
-      console.error('   ⚠️  Verification error:', error.message);
+    // Check if there's any test data to clean
+    const hasTestData = stats.totalTestData > 0;
+    
+    if (!hasTestData) {
+      console.log('✨ No test data found - database is clean');
+      console.log('✅ E2E Global Teardown completed\n');
+      return;
+    }
+    
+    console.log(`📋 Found ${stats.totalTestData} test records to clean`);
+    
+    // Perform the cleanup
+    console.log('\n🧹 Cleaning test data...');
+    const cleanupResult = await cleanTestData({
+      tables: ['all'],
+      useTransaction: true,
+      dryRun: false
     });
     
-    // 4. Generate summary
-    generateSummary();
+    if (!cleanupResult.success) {
+      throw new Error(`Cleanup failed: ${cleanupResult.error}`);
+    }
     
-    console.log('\n✅ Global teardown complete\n');
-    console.log('═'.repeat(50));
+    console.log(`✅ Cleaned ${cleanupResult.recordsCleaned} test records`);
+    
+    // Reset sequences for predictable IDs in future tests
+    const client = await getDatabaseClient();
+    await resetSequences(client);
+    
+    // Optimize database
+    await vacuumDatabase(client);
+    
+    console.log('\n🎉 E2E Global Teardown completed successfully');
+    console.log('   • Test data cleaned');
+    console.log('   • Sequences reset');
+    console.log('   • Database optimized');
+    console.log('   • Ready for next test run\n');
     
   } catch (error) {
-    console.error('\n⚠️  Global teardown encountered errors:', error);
-    // Don't throw - we want teardown to complete even with errors
+    console.error('\n❌ E2E Global Teardown failed:', error.message);
+    console.error('This may cause issues with subsequent test runs\n');
+    
+    // Log the error but don't fail the test run
+    // Teardown failures shouldn't cause CI to fail
   }
 }
-
-export default globalTeardown;

@@ -1,0 +1,533 @@
+# GitHub Path Filters Configuration
+# Optimizes CI/CD workflow triggers by detecting file changes
+# Reduces unnecessary workflow runs by 60%+ through smart filtering
+# Updated for consolidated workflow architecture (August 2024)
+# 
+# Usage with dorny/paths-filter:
+#   - uses: dorny/paths-filter@v3
+#     with:
+#       filters: .github/path-filters.yml
+
+# ========================================
+# FRONTEND CHANGES
+# ========================================
+frontend:
+  - 'js/**'
+  - 'css/**'
+  - 'pages/**'
+  - '*.html'
+  - 'public/**'
+  - 'images/**'
+  - 'dist/**'
+  - 'build/**'
+
+frontend-js:
+  - 'js/**/*.js'
+  - 'js/**/*.mjs'
+  - 'js/**/*.ts'
+
+frontend-css:
+  - 'css/**/*.css'
+  - 'css/**/*.scss'
+  - 'css/**/*.sass'
+
+frontend-html:
+  - 'pages/**/*.html'
+  - '*.html'
+  - 'index.html'
+
+frontend-assets:
+  - 'images/**'
+  - 'public/**'
+  - 'dist/images/**'
+  - 'dist/css/**'
+
+# ========================================
+# BACKEND CHANGES
+# ========================================
+backend:
+  - 'api/**'
+  - 'lib/**'
+  - 'middleware/**'
+  - 'migrations/**'
+  - 'vercel.json'
+  - '.vercel/**'
+
+backend-api:
+  - 'api/**/*.js'
+  - 'api/**/*.mjs'
+  - 'api/**/*.ts'
+
+backend-lib:
+  - 'lib/**/*.js'
+  - 'lib/**/*.mjs'
+  - 'lib/**/*.ts'
+
+backend-database:
+  - 'migrations/**/*.sql'
+  - 'migrations/**/*.js'
+  - 'data/**'
+  - 'api/db/**'
+  - 'api/lib/database.js'
+  - 'scripts/migrate.js'
+  - 'scripts/migrate-e2e.js'
+  - 'scripts/setup-e2e-database.js'
+
+backend-config:
+  - 'vercel.json'
+  - '.vercel/**'
+  - 'middleware/**'
+
+# ========================================
+# TESTING CHANGES
+# ========================================
+tests:
+  - 'tests/**'
+  - '**/*.test.js'
+  - '**/*.spec.js'
+  - 'playwright*.config.js'
+  - 'vitest.config.js'
+  - 'tests/vitest.config.js'
+
+tests-unit:
+  - 'tests/**/*.test.js'
+  - 'tests/**/*.spec.js'
+  - 'tests/vitest.config.js'
+  - 'tests/setup.js'
+  - 'tests/helpers.js'
+
+tests-e2e:
+  - 'tests/e2e/**'
+  - 'playwright*.config.js'
+  - 'scripts/e2e-with-ngrok.js'
+  - 'scripts/validate-e2e-setup.js'
+  - 'scripts/vercel-dev-wrapper.js'
+
+tests-config:
+  - 'playwright*.config.js'
+  - 'vitest.config.js'
+  - 'tests/vitest.config.js'
+  - 'jest.config.js'
+
+# ========================================
+# DOCUMENTATION CHANGES
+# ========================================
+docs:
+  - '**/*.md'
+  - 'docs/**'
+  - 'LICENSE'
+  - 'README*'
+  - 'CHANGELOG*'
+  - 'SECURITY.md'
+  - 'INSTALLATION.md'
+  - '.github/docs/**'
+  - 'spec/**'
+
+docs-api:
+  - 'docs/api/**'
+  - 'api/**/*.md'
+  - 'CLAUDE.md'
+
+docs-user:
+  - 'docs/user-guides/**'
+  - 'docs/setup/**'
+  - 'INSTALLATION.md'
+  - 'README.md'
+
+docs-development:
+  - 'docs/development/**'
+  - 'docs/architecture/**'
+  - 'docs/testing/**'
+  - 'CLAUDE.md'
+
+# ========================================
+# CI/CD & INFRASTRUCTURE
+# ========================================
+ci:
+  - '.github/**'
+  - 'scripts/**'
+  - '.husky/**'
+  - 'tools/**'
+
+ci-workflows:
+  - '.github/workflows/**'
+  - '.github/actions/**'
+
+ci-scripts:
+  - 'scripts/**/*.js'
+  - 'scripts/**/*.sh'
+  - 'scripts/**/*.py'
+
+ci-config:
+  - '.github/path-filters.yml'
+  - '.github/workflow-config.env'
+  - '.github/quality-thresholds.json'
+  - '.github/branch-protection-rules.json'
+  - '.github/ci-performance.json'
+
+ci-hooks:
+  - '.husky/**'
+  - '.git-hooks/**'
+
+# ========================================
+# DEPENDENCIES & CONFIGURATION
+# ========================================
+dependencies:
+  - 'package.json'
+  - 'package-lock.json'
+  - '.npmrc'
+  - 'npm-shrinkwrap.json'
+  - 'yarn.lock'
+  - 'pnpm-lock.yaml'
+
+dependencies-package:
+  - 'package.json'
+
+dependencies-lock:
+  - 'package-lock.json'
+  - 'yarn.lock'
+  - 'pnpm-lock.yaml'
+  - 'npm-shrinkwrap.json'
+
+# ========================================
+# CONFIGURATION FILES
+# ========================================
+config:
+  - '.env*'
+  - 'config/**'
+  - '*.config.js'
+  - '*.config.mjs'
+  - '*.config.ts'
+  - '.*rc'
+  - '.*rc.js'
+  - '.*rc.json'
+  - 'tsconfig.json'
+  - 'jsconfig.json'
+
+config-env:
+  - '.env'
+  - '.env.*'
+  - '.env.local'
+  - '.env.production'
+  - '.env.development'
+  - '.env.test'
+
+config-build:
+  - 'vercel.json'
+  - 'next.config.js'
+  - 'vite.config.js'
+  - 'webpack.config.js'
+  - 'rollup.config.js'
+  - 'esbuild.config.js'
+
+config-lint:
+  - 'config/eslint.config.js'
+  - 'config/.htmlhintrc'
+  - '.eslintrc*'
+  - '.prettierrc*'
+  - '.stylelintrc*'
+
+# ========================================
+# SECURITY & COMPLIANCE
+# ========================================
+security:
+  - 'SECURITY.md'
+  - '.gitignore'
+  - '.gitattributes'
+  - 'api/admin/**'
+  - 'api/security/**'
+  - 'lib/security/**'
+  - '.github/dependabot.yml'
+  - '.snyk'
+  - '.nvmrc'
+
+security-admin:
+  - 'api/admin/**'
+  - 'pages/admin/**'
+  - 'js/admin/**'
+
+security-auth:
+  - 'api/lib/auth.js'
+  - 'api/lib/jwt.js'
+  - 'lib/security/**'
+  - 'middleware/auth.js'
+
+security-config:
+  - '.gitignore'
+  - '.gitattributes'
+  - 'SECURITY.md'
+  - '.github/dependabot.yml'
+
+# ========================================
+# PERFORMANCE & MONITORING
+# ========================================
+performance:
+  - 'api/performance/**'
+  - 'lib/performance/**'
+  - 'js/performance/**'
+  - 'api/monitoring/**'
+  - 'lib/monitoring/**'
+  - 'api/cache/**'
+  - 'lib/cache/**'
+
+performance-monitoring:
+  - 'api/monitoring/**'
+  - 'lib/monitoring/**'
+  - 'api/analytics/**'
+  - 'scripts/*performance*'
+  - 'scripts/*monitoring*'
+
+performance-cache:
+  - 'api/cache/**'
+  - 'lib/cache/**'
+  - 'js/cache/**'
+  - 'middleware/cache.js'
+
+# ========================================
+# SPECIFIC FEATURE AREAS
+# ========================================
+payments:
+  - 'api/payments/**'
+  - 'js/payments/**'
+  - 'api/tickets/**'
+  - 'pages/tickets.html'
+
+gallery:
+  - 'api/gallery/**'
+  - 'js/gallery/**'
+  - 'pages/gallery.html'
+  - 'css/gallery.css'
+  - 'public/gallery-data/**'
+
+email:
+  - 'api/email/**'
+  - 'js/newsletter/**'
+
+registration:
+  - 'api/registration/**'
+  - 'js/registration/**'
+  - 'pages/register.html'
+
+# ========================================
+# DEPLOYMENT & RELEASE
+# ========================================
+deployment:
+  - 'vercel.json'
+  - '.vercel/**'
+  - 'scripts/deploy*'
+  - 'scripts/build*'
+  - 'build/**'
+  - 'CHANGELOG.md'
+
+deployment-config:
+  - 'vercel.json'
+  - '.vercel/**'
+  - 'next.config.js'
+
+deployment-scripts:
+  - 'scripts/deploy*'
+  - 'scripts/build*'
+  - 'scripts/migration*'
+  - 'scripts/health*'
+
+# ========================================
+# CRITICAL CHANGES (Always trigger CI)
+# ========================================
+critical:
+  - 'package.json'
+  - 'vercel.json'
+  - '.github/workflows/**'
+  - 'api/lib/database.js'
+  - 'migrations/**'
+  - '.env*'
+  - 'SECURITY.md'
+
+critical-infrastructure:
+  - 'vercel.json'
+  - '.github/workflows/main-ci.yml'
+  - '.github/workflows/deploy-optimized.yml'
+  - 'api/lib/database.js'
+
+critical-security:
+  - 'api/admin/**'
+  - 'api/security/**'
+  - '.env*'
+  - 'SECURITY.md'
+  - '.gitignore'
+
+# ========================================
+# NON-CRITICAL CHANGES (Skip some workflows)
+# ========================================
+docs-only:
+  - '**/*.md'
+  - 'docs/**'
+  - 'LICENSE'
+  - '!SECURITY.md'
+  - '!CHANGELOG.md'
+
+assets-only:
+  - 'images/**'
+  - 'public/images/**'
+  - 'dist/images/**'
+  - '**/*.png'
+  - '**/*.jpg'
+  - '**/*.jpeg'
+  - '**/*.gif'
+  - '**/*.svg'
+  - '**/*.ico'
+  - '!public/wallet/**'
+
+style-only:
+  - 'css/**/*.css'
+  - 'css/**/*.scss'
+  - '!css/critical.css'
+
+# ========================================
+# COMPOSITE FILTERS (Multiple Areas)
+# ========================================
+fullstack:
+  - 'api/**'
+  - 'js/**'
+  - 'pages/**'
+  - 'css/**'
+
+backend-critical:
+  - 'api/**'
+  - 'lib/**'
+  - 'migrations/**'
+  - 'vercel.json'
+  - 'package.json'
+
+frontend-critical:
+  - 'js/**'
+  - 'css/**'
+  - 'pages/**'
+  - 'public/**'
+  - '*.html'
+
+# ========================================
+# WORKFLOW-SPECIFIC FILTERS
+# ========================================
+
+# CI triggers for main consolidated pipeline (matches workflow expectation: ci-triggers)
+ci-triggers:
+  - 'js/**'
+  - 'css/**'
+  - 'api/**'
+  - 'lib/**'
+  - 'tests/**'
+  - 'pages/**'
+  - 'package.json'
+  - 'vercel.json'
+  - '.github/workflows/main-ci.yml'
+
+# Main CI Pipeline triggers (consolidated workflow) - legacy name for reference
+main-ci-triggers:
+  - 'js/**'
+  - 'css/**'
+  - 'api/**'
+  - 'lib/**'
+  - 'tests/**'
+  - 'pages/**'
+  - 'package.json'
+  - 'vercel.json'
+  - '.github/workflows/main-ci.yml'
+
+# E2E test triggers (optimized workflow)
+e2e-triggers:
+  - 'api/**'
+  - 'js/**'
+  - 'pages/**'
+  - 'tests/e2e/**'
+  - 'playwright*.config.js'
+  - 'scripts/e2e*'
+  - 'scripts/vercel-dev-wrapper.js'
+  - '.github/workflows/e2e-tests-optimized.yml'
+
+# Performance test triggers
+performance-triggers:
+  - 'api/performance/**'
+  - 'js/performance/**'
+  - 'lib/performance/**'
+  - 'api/cache/**'
+  - 'lib/cache/**'
+  - 'css/**'
+  - 'images/**'
+
+# Security scan triggers
+security-triggers:
+  - 'api/admin/**'
+  - 'api/security/**'
+  - 'lib/security/**'
+  - 'package.json'
+  - '.env*'
+  - 'SECURITY.md'
+
+# Deployment triggers for main consolidated pipeline (matches workflow expectation: deployment-triggers)
+deployment-triggers:
+  - 'api/**'
+  - 'js/**'
+  - 'css/**'
+  - 'pages/**'
+  - 'public/**'
+  - 'vercel.json'
+  - 'package.json'
+  - 'migrations/**'
+  - '.github/workflows/deploy-optimized.yml'
+  - '!**/*.md'
+  - '!docs/**'
+  - '!spec/**'
+
+# Deployment triggers (optimized workflow) - legacy name for reference
+deploy-triggers:
+  - 'api/**'
+  - 'js/**'
+  - 'css/**'
+  - 'pages/**'
+  - 'public/**'
+  - 'vercel.json'
+  - 'package.json'
+  - 'migrations/**'
+  - '.github/workflows/deploy-optimized.yml'
+  - '!**/*.md'
+  - '!docs/**'
+  - '!spec/**'
+
+# Skip CI for docs-only changes (only when no other changes)
+skip-ci:
+  - 'docs/**/*.md'
+  - 'spec/**/*.md'
+  - 'README.md'
+  - 'LICENSE'
+  - '!SECURITY.md'
+  - '!CHANGELOG.md'
+  - '!CLAUDE.md'
+  - '!tests/**'
+  - '!api/**'
+  - '!js/**'
+  - '!css/**'
+  - '!pages/**'
+
+# ========================================
+# ARCHIVED WORKFLOW REFERENCES (For History)
+# ========================================
+# These filters were previously used with archived workflows:
+# - ci.yml (archived) -> now main-ci.yml
+# - pr-validation.yml (archived) -> now main-ci.yml
+# - integration-tests.yml (archived) -> now main-ci.yml
+# - pr-quality-gates.yml (archived) -> now main-ci.yml
+# - e2e-tests.yml (archived) -> now e2e-tests-optimized.yml
+# - production-deploy.yml (archived) -> now deploy-optimized.yml
+# - staging-deploy.yml (archived) -> now deploy-optimized.yml
+
+# Legacy CI triggers (for reference only)
+legacy-ci-triggers:
+  - 'js/**'
+  - 'css/**'
+  - 'api/**'
+  - 'lib/**'
+  - 'tests/**'
+  - 'pages/**'
+  - 'package.json'
+  - 'vercel.json'
+  - '.github/workflows/archived/ci.yml'

@@ -1,39 +1,11 @@
-import { defineConfig } from 'vitest/config';
+/**
+ * Main Vitest Configuration - Delegates to Unit Test Config
+ * This maintains backward compatibility while supporting the three-layer test pyramid
+ */
+import unitConfig from './config/vitest.unit.config.js';
 
-export default defineConfig({
-  test: {
-    environment: 'node',
-    testTimeout: 30000,
-    setupFiles: ['./tests/setup.js'],
-    globalSetup: './tests/global-setup.js',
-    globals: true,
-    include: ['tests/**/*.test.js'],
-    exclude: ['node_modules/**', 'tests/e2e/**'],
-    pool: 'forks',
-    poolOptions: { forks: { singleFork: true } },
-    coverage: {
-      enabled: process.env.COVERAGE === 'true',
-      provider: 'v8',
-      reporter: ['text', 'json-summary', 'html'],
-      reportsDirectory: './coverage',
-      include: ['api/**/*.js'],
-      exclude: [
-        'node_modules/**',
-        'tests/**',
-        '.github/**',
-        'scripts/**',
-        'coverage/**',
-        'playwright.config.js',
-        'vercel.json'
-      ],
-      thresholds: {
-        global: {
-          branches: 50,
-          functions: 50,
-          lines: 60,
-          statements: 60
-        }
-      }
-    }
-  }
-});
+/**
+ * Default configuration delegates to optimized unit test configuration
+ * This ensures that 'npm test' and 'npm run test:unit' remain fast (<2 seconds for 806+ tests)
+ */
+export default unitConfig;

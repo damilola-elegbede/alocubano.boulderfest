@@ -1,0 +1,147 @@
+/**
+ * Test Isolation Helpers
+ * 
+ * Provides utilities for isolating tests and managing test data.
+ */
+
+// Generate unique test email addresses
+export const generateTestEmail = (prefix = 'test') => {
+  const timestamp = Date.now();
+  const randomId = Math.random().toString(36).substring(2, 8);
+  return `${prefix}-${randomId}-${timestamp}@example.com`;
+};
+
+// Generate unique test identifiers
+export const generateTestId = (prefix = 'test') => {
+  const timestamp = Date.now();
+  const randomId = Math.random().toString(36).substring(2, 8);
+  return `${prefix}-${randomId}-${timestamp}`;
+};
+
+// Create isolated test data
+export const createTestData = (type = 'user') => {
+  const baseData = {
+    id: generateTestId(type),
+    timestamp: Date.now()
+  };
+
+  switch (type) {
+    case 'user':
+      return {
+        ...baseData,
+        firstName: 'Test',
+        lastName: 'User',
+        email: generateTestEmail('user'),
+        phone: '+1234567890'
+      };
+      
+    case 'admin':
+      return {
+        ...baseData,
+        username: 'admin',
+        password: process.env.TEST_ADMIN_PASSWORD || 'test-admin-password',
+        email: generateTestEmail('admin')
+      };
+      
+    case 'ticket':
+      return {
+        ...baseData,
+        type: 'weekend-pass',
+        quantity: 1,
+        price: 85.00,
+        purchaseId: generateTestId('purchase')
+      };
+      
+    default:
+      return baseData;
+  }
+};
+
+// Clean up test data (placeholder for future implementation)
+export const cleanupTestData = async (testData) => {
+  console.log(`🧹 Cleaning up test data: ${testData.id}`);
+  // Add cleanup logic here when needed
+};
+
+// Generate payment test data
+export const generatePaymentData = (type = 'card') => {
+  const testId = generateTestId('payment');
+  
+  switch (type) {
+    case 'card':
+      return {
+        id: testId,
+        type: 'card',
+        // Test card numbers from Stripe documentation
+        number: '4242424242424242',
+        exp_month: 12,
+        exp_year: new Date().getFullYear() + 1,
+        cvc: '123',
+        amount: 8500, // $85.00 in cents
+        currency: 'usd'
+      };
+      
+    default:
+      return {
+        id: testId,
+        type,
+        amount: 8500,
+        currency: 'usd'
+      };
+  }
+};
+
+// Generate registration test data  
+export const generateRegistrationData = (ticketType = 'weekend-pass') => {
+  const testId = generateTestId('registration');
+  const email = generateTestEmail('registration');
+  
+  return {
+    id: testId,
+    ticketType,
+    firstName: 'Test',
+    lastName: 'Attendee', 
+    email,
+    phone: '+1234567890',
+    emergencyContact: {
+      name: 'Emergency Contact',
+      phone: '+1987654321',
+      relationship: 'Friend'
+    },
+    dietaryRestrictions: '',
+    accessibilityNeeds: '',
+    workshopPreferences: ['Salsa Basics', 'Bachata Fundamentals'],
+    timestamp: Date.now()
+  };
+};
+
+// Cleanup test isolation (placeholder)
+export const cleanupTestIsolation = async () => {
+  console.log('🧹 Cleaning up test isolation');
+  // Add any cleanup logic here
+  return { cleaned: 0 };
+};
+
+// Get test namespace for isolation
+export const getTestNamespace = (testName = 'default') => {
+  const timestamp = Date.now();
+  const randomId = Math.random().toString(36).substring(2, 8);
+  return `test_${testName}_${randomId}_${timestamp}`;
+};
+
+// Wait for a specified amount of time (useful for test stability)
+export const waitForStability = (ms = 1000) => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
+
+export default {
+  generateTestEmail,
+  generateTestId,
+  createTestData,
+  cleanupTestData,
+  generatePaymentData,
+  generateRegistrationData,
+  cleanupTestIsolation,
+  getTestNamespace,
+  waitForStability
+};

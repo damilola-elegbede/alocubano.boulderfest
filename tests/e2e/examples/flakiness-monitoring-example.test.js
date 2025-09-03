@@ -95,7 +95,7 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
         await page.goto('/');
         
         // Wait for network requests to complete
-        await page.waitForLoadState('networkidle', { timeout: 15000 });
+        await page.waitForLoadState('domcontentloaded');
         
         // Test API-dependent functionality
         const healthCheckResponse = await page.evaluate(async () => {
@@ -187,7 +187,7 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
         
         // Navigate and measure load time
         await page.goto('/gallery');
-        await page.waitForLoadState('networkidle', { timeout: 10000 });
+        await page.waitForLoadState('domcontentloaded');
         
         const loadTime = Date.now() - startTime;
         

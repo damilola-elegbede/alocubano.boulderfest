@@ -15,7 +15,7 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.join(__dirname, '..');
 
 const app = express();
-const PORT = process.env.PORT || process.env.CI_PORT || 3000;
+const PORT = parseInt(process.env.DYNAMIC_PORT || process.env.PORT || process.env.CI_PORT || '3000', 10);
 
 // Health endpoints FIRST (before any middleware)
 app.get('/health', (req, res) => {
@@ -65,11 +65,26 @@ class TestContextManager {
   constructor() {
     this.contexts = new Map();
     this.currentContext = 'default';
+    this.MAX_CONTEXTS = 1000; // Maximum contexts to prevent memory leaks
+    this.CONTEXT_EXPIRY_MS = 60 * 60 * 1000; // 1 hour expiration
+    this.RATE_LIMIT_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes for rate limit entries
+    
+    // Start periodic cleanup
+    this.cleanupInterval = setInterval(() => {
+      this.performCleanup();
+    }, 10 * 60 * 1000); // Cleanup every 10 minutes
   }
 
   createContext(contextId, options = {}) {
+    // Check if we need cleanup before creating new context
+    if (this.contexts.size >= this.MAX_CONTEXTS) {
+      this.performCleanup();
+    }
+    
     this.contexts.set(contextId, {
       id: contextId,
+      createdAt: Date.now(), // Add creation timestamp
+      lastAccessed: Date.now(), // Track last access
       subscribers: new Map(),
       tickets: new Map(),
       registrations: new Map(),
@@ -91,14 +106,18 @@ class TestContextManager {
       this.createContext(contextId);
     }
     this.currentContext = contextId;
-    return this.contexts.get(contextId);
+    const context = this.contexts.get(contextId);
+    context.lastAccessed = Date.now(); // Update last access time
+    return context;
   }
 
   getCurrentContext() {
     if (!this.contexts.has(this.currentContext)) {
       this.createContext(this.currentContext);
     }
-    return this.contexts.get(this.currentContext);
+    const context = this.contexts.get(this.currentContext);
+    context.lastAccessed = Date.now(); // Update last access time
+    return context;
   }
 
   resetContext(contextId) {
@@ -106,6 +125,87 @@ class TestContextManager {
       const config = this.contexts.get(contextId).config;
       this.createContext(contextId, config);
     }
+  }
+
+  // Memory leak prevention: cleanup old contexts and rate limit entries
+  performCleanup() {
+    const now = Date.now();
+    let contextsRemoved = 0;
+    let rateLimitEntriesRemoved = 0;
+
+    console.log(`[Memory Cleanup] Starting cleanup - ${this.contexts.size} contexts`);
+
+    // Clean up old contexts (older than 1 hour)
+    for (const [contextId, context] of this.contexts.entries()) {
+      const contextAge = now - context.createdAt;
+      const timeSinceAccess = now - context.lastAccessed;
+
+      // Remove contexts that are old AND haven't been accessed recently
+      if (contextAge > this.CONTEXT_EXPIRY_MS && timeSinceAccess > this.CONTEXT_EXPIRY_MS) {
+        // Don't remove the current context or 'default' context
+        if (contextId !== this.currentContext && contextId !== 'default') {
+          this.contexts.delete(contextId);
+          contextsRemoved++;
+          console.log(`[Memory Cleanup] Removed expired context: ${contextId}`);
+        }
+      } else {
+        // Clean up rate limit entries within remaining contexts
+        const rateLimitCleaned = this.cleanupRateLimitMap(context.rateLimitMap);
+        rateLimitEntriesRemoved += rateLimitCleaned;
+      }
+    }
+
+    // If still over limit after expiry cleanup, remove oldest accessed contexts
+    if (this.contexts.size > this.MAX_CONTEXTS * 0.8) { // Start cleanup at 80% capacity
+      const sortedContexts = Array.from(this.contexts.entries())
+        .filter(([id]) => id !== this.currentContext && id !== 'default')
+        .sort(([, a], [, b]) => a.lastAccessed - b.lastAccessed);
+
+      const toRemove = Math.min(sortedContexts.length, this.contexts.size - Math.floor(this.MAX_CONTEXTS * 0.7));
+      for (let i = 0; i < toRemove; i++) {
+        const [contextId] = sortedContexts[i];
+        this.contexts.delete(contextId);
+        contextsRemoved++;
+        console.log(`[Memory Cleanup] Removed LRU context: ${contextId}`);
+      }
+    }
+
+    console.log(`[Memory Cleanup] Complete - Removed ${contextsRemoved} contexts, ${rateLimitEntriesRemoved} rate limit entries`);
+    console.log(`[Memory Cleanup] Remaining contexts: ${this.contexts.size}`);
+  }
+
+  // Clean up old rate limit entries within a rate limit map
+  cleanupRateLimitMap(rateLimitMap) {
+    const now = Date.now();
+    let entriesRemoved = 0;
+
+    for (const [key, timestamps] of rateLimitMap.entries()) {
+      // Filter out old timestamps
+      const validTimestamps = timestamps.filter(timestamp => 
+        (now - timestamp) < this.RATE_LIMIT_EXPIRY_MS
+      );
+      
+      if (validTimestamps.length === 0) {
+        // Remove empty entries
+        rateLimitMap.delete(key);
+        entriesRemoved++;
+      } else if (validTimestamps.length !== timestamps.length) {
+        // Update with filtered timestamps
+        rateLimitMap.set(key, validTimestamps);
+        entriesRemoved += (timestamps.length - validTimestamps.length);
+      }
+    }
+
+    return entriesRemoved;
+  }
+
+  // Graceful shutdown cleanup
+  destroy() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+    console.log('[Memory Cleanup] TestContextManager destroyed');
   }
 }
 
@@ -178,6 +278,31 @@ app.use((req, res, next) => {
   
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
+  }
+  
+  next();
+});
+
+// URL rewrite middleware to match Vercel rewrites
+app.use((req, res, next) => {
+  // Map clean URLs to actual HTML files
+  const rewrites = {
+    '/home': '/pages/home.html',
+    '/tickets': '/pages/tickets.html',
+    '/about': '/pages/about.html',
+    '/artists': '/pages/artists.html',
+    '/schedule': '/pages/schedule.html',
+    '/gallery': '/pages/gallery.html',
+    '/donations': '/pages/donations.html',
+    '/admin/login': '/pages/admin/login.html',
+    '/admin/dashboard': '/pages/admin/dashboard.html',
+    '/admin/checkin': '/pages/admin/checkin.html',
+    '/404': '/pages/404.html'
+  };
+
+  // Check if the URL needs rewriting
+  if (rewrites[req.path]) {
+    req.url = rewrites[req.path];
   }
   
   next();
@@ -1050,7 +1175,11 @@ app.post('/api/admin/login', (req, res) => {
   // AUTHENTICATION BEFORE RATE LIMITING (principal-architect pattern)
   
   // First: Always validate credentials
-  const isValidCredentials = (username === 'admin' && password === 'secret123');
+  // Use environment variable for test password, default for compatibility
+  const expectedPassword = process.env.TEST_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || 'secret123';
+  // Accept both 'admin' and the test email as valid usernames
+  const validUsernames = ['admin', 'admin@e2etest.com'];
+  const isValidCredentials = (validUsernames.includes(username) && password === expectedPassword);
   
   if (isValidCredentials) {
     return res.json({
@@ -1301,6 +1430,40 @@ app.get('/api/tickets/', (req, res) => {
   });
 });
 
+// URL rewrites middleware (before static file serving)
+app.use((req, res, next) => {
+  // Skip rewriting for API routes
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  
+  // URL rewrites based on vercel.json configuration
+  const rewrites = {
+    '/home': '/home.html',
+    '/tickets': '/tickets.html', 
+    '/about': '/about.html',
+    '/artists': '/artists.html',
+    '/schedule': '/schedule.html',
+    '/gallery': '/gallery.html',
+    '/donations': '/donations.html',
+    '/contact': '/contact.html',
+    '/success': '/success.html',
+    '/failure': '/failure.html',
+    '/my-tickets': '/my-tickets.html',
+    '/checkout-success': '/checkout-success.html',
+    '/checkout-cancel': '/checkout-cancel.html',
+    '/admin/checkin': '/admin/checkin.html',
+    '/about-festival': '/about.html'
+  };
+  
+  // Apply rewrite if path matches
+  if (rewrites[req.path]) {
+    req.url = rewrites[req.path];
+  }
+  
+  next();
+});
+
 // Static file serving for non-API paths
 app.use((req, res, next) => {
   // Skip static serving for API routes
@@ -1345,3 +1508,14 @@ app.listen(PORT, () => {
   console.log('🔧 Mode: Context-aware validation with isolated state');
   console.log('✅ Available contexts: basic-validation, security-boundaries, critical-flows, user-experience, data-integrity');
 });
+
+// Graceful shutdown handling
+const shutdown = () => {
+  console.log('Shutting down CI server...');
+  contextManager.destroy();
+  process.exit(0);
+};
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+process.on('SIGQUIT', shutdown);
