@@ -142,9 +142,11 @@ function validateEventStructure() {
     });
   });
 
-  // Check gallery data files
+  // Check gallery data files - OPTIONAL in CI/CD environments
   console.log(`  📸 Validating gallery data files:`);
   const galleryDataDir = path.join(projectRoot, "public", "gallery-data");
+  const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
+  
   if (fs.existsSync(galleryDataDir)) {
     console.log(`    ✅ Gallery data directory exists`);
     events.forEach((event) => {
@@ -165,8 +167,13 @@ function validateEventStructure() {
       }
     });
   } else {
-    console.log(`    ❌ Gallery data directory missing: ${galleryDataDir}`);
-    eventStructureValid = false;
+    if (isCI) {
+      console.log(`    ⚠️  Gallery data directory missing in CI environment (expected)`);
+      console.log(`    📝 Gallery data is excluded from git and will be populated at runtime`);
+    } else {
+      console.log(`    ❌ Gallery data directory missing: ${galleryDataDir}`);
+      eventStructureValid = false;
+    }
   }
 
   return eventStructureValid;
