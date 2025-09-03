@@ -192,6 +192,7 @@ if (typeof Lightbox === 'undefined') {
             }
 
             this.updateAdvancedContent();
+            this.prefetchAdjacentImages(); // Prefetch adjacent images when opening
             this.show();
         }
 
@@ -235,6 +236,7 @@ if (typeof Lightbox === 'undefined') {
                 if (newIndex >= 0) {
                     this.currentIndex = newIndex;
                     this.updateAdvancedContent();
+                    this.prefetchAdjacentImages();
                 }
             } else {
                 this.currentIndex =
@@ -250,12 +252,37 @@ if (typeof Lightbox === 'undefined') {
                 if (newIndex < this.items.length) {
                     this.currentIndex = newIndex;
                     this.updateAdvancedContent();
+                    this.prefetchAdjacentImages();
                 }
             } else {
                 this.currentIndex = (this.currentIndex + 1) % this.images.length;
                 this.updateSimpleContent();
             }
             this.updateNavigationButtons();
+        }
+
+        // Prefetch adjacent images for smooth navigation
+        prefetchAdjacentImages() {
+            if (!this.items || this.items.length === 0) {
+                return;
+            }
+
+            const indices = [
+                this.currentIndex - 1,
+                this.currentIndex + 1,
+                this.currentIndex + 2,
+                this.currentIndex - 2
+            ];
+
+            indices.forEach(i => {
+                if (i >= 0 && i < this.items.length) {
+                    const item = this.items[i];
+                    if (item && item.viewUrl) {
+                        const img = new Image();
+                        img.src = item.viewUrl;
+                    }
+                }
+            });
         }
 
         updateSimpleContent() {
@@ -282,16 +309,6 @@ if (typeof Lightbox === 'undefined') {
             const img = lightbox.querySelector('.lightbox-image');
             const title = lightbox.querySelector('.lightbox-title');
             const counter = lightbox.querySelector('.lightbox-counter');
-
-            // Debug: Log what URLs we have
-            console.log('🔍 Lightbox item URLs:', {
-                name: item.name,
-                thumbnailUrl: item.thumbnailUrl,
-                viewUrl: item.viewUrl,
-                downloadUrl: item.downloadUrl,
-                src: item.src,
-                url: item.url
-            });
 
             // Use viewUrl for full resolution, fallback to other URLs if not available
             const imageSrc = item.viewUrl || item.downloadUrl || item.src || item.thumbnailUrl;

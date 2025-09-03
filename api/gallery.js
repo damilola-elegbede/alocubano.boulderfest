@@ -47,18 +47,6 @@ export default async function handler(req, res) {
     const galleryService = getGalleryService();
     const galleryData = await galleryService.getGalleryData(year, event);
     
-    // Debug: Check if URLs are present in the API response
-    if (galleryData.categories && galleryData.categories.workshops && galleryData.categories.workshops.length > 0) {
-      const firstItem = galleryData.categories.workshops[0];
-      console.log('🔍 API Response - First workshop item URLs:', {
-        name: firstItem.name,
-        thumbnailUrl: firstItem.thumbnailUrl,
-        viewUrl: firstItem.viewUrl,
-        downloadUrl: firstItem.downloadUrl,
-        hasViewUrl: !!firstItem.viewUrl
-      });
-    }
-    
     // Apply pagination if requested
     let paginatedData = galleryData;
     if (parsedOffset > 0 || parsedLimit < 1000) {

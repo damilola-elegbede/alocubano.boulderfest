@@ -70,6 +70,9 @@
         // New state for sequential category-aware pagination
         workshopOffset: 0, // Current position in workshops array
         socialOffset: 0, // Current position in socials array
+        // Image preloading optimization
+        preloadedImages: new Set(), // Track preloaded images to avoid duplicates
+        preloadQueue: [] // Queue for managing preloads
         workshopTotal: 0, // Total workshop items available
         socialTotal: 0, // Total social items available
         currentCategory: 'workshops', // Which category we're currently loading
@@ -700,6 +703,14 @@
             content: document.getElementById('gallery-detail-content'),
             static: document.getElementById('gallery-detail-static')
         });
+        
+        // Initialize preloading optimizations
+        setupHoverPreloading(); // Desktop hover preloading
+        
+        // Setup intersection preloading after a short delay to ensure gallery items are rendered
+        setTimeout(() => {
+            setupIntersectionPreloading(); // Mobile/scroll preloading
+        }, 500);
 
         // Clear any stale session storage that might interfere with workshop photos
         const event = getEventFromPage();
@@ -1304,17 +1315,6 @@
                 categoryIndex: categoryIndex
             };
             
-            // Debug: Check if URLs are present
-            if (state.displayOrder.length < 3) {  // Only log first few items
-                console.log('📦 Gallery item data:', {
-                    name: item.name,
-                    thumbnailUrl: item.thumbnailUrl,
-                    viewUrl: item.viewUrl,
-                    downloadUrl: item.downloadUrl,
-                    hasViewUrl: !!item.viewUrl
-                });
-            }
-            
             state.displayOrder.push(displayOrderItem);
 
             // Enhanced debug logging for category index tracking
@@ -1544,6 +1544,9 @@
                 items.forEach((item) => {
                     item.setAttribute('data-handler-loaded', 'true');
                 });
+                
+                // Re-initialize intersection preloading for new items
+                setupIntersectionPreloading();
             }, 100);
         }
 
@@ -1787,11 +1790,100 @@
         });
     }
 
+    // Preload image utility
+    function preloadImage(url) {
+        if (!url || state.preloadedImages.has(url)) {
+            return; // Already preloaded or invalid URL
+        }
+        
+        const img = new Image();
+        img.onload = () => {
+            state.preloadedImages.add(url);
+            // Silent success - no console spam
+        };
+        img.onerror = () => {
+            // Silent failure - browser will try again if needed
+        };
+        img.src = url;
+    }
+
+    // Preload adjacent images for smooth lightbox navigation
+    function preloadAdjacentImages(currentIndex) {
+        const indices = [
+            currentIndex - 1,  // Previous image
+            currentIndex + 1,  // Next image
+            currentIndex + 2,  // Next-next (for fast navigation)
+            currentIndex - 2   // Previous-previous
+        ];
+        
+        indices.forEach(i => {
+            if (i >= 0 && i < state.displayOrder.length) {
+                const item = state.displayOrder[i];
+                if (item && item.viewUrl) {
+                    preloadImage(item.viewUrl);
+                }
+            }
+        });
+    }
+
+    // Preload on hover (desktop optimization)
+    function setupHoverPreloading() {
+        document.addEventListener('mouseover', (e) => {
+            const galleryItem = e.target.closest('.gallery-item');
+            if (galleryItem) {
+                const index = parseInt(galleryItem.dataset.index);
+                if (!isNaN(index) && state.displayOrder[index]) {
+                    const item = state.displayOrder[index];
+                    if (item.viewUrl) {
+                        preloadImage(item.viewUrl);
+                        // Also preload adjacent images since user might navigate
+                        preloadAdjacentImages(index);
+                    }
+                }
+            }
+        }, { passive: true });
+    }
+
+    // Preload images that are about to come into view (mobile optimization)
+    function setupIntersectionPreloading() {
+        const preloadObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const galleryItem = entry.target;
+                    const index = parseInt(galleryItem.dataset.index);
+                    if (!isNaN(index) && state.displayOrder[index]) {
+                        const item = state.displayOrder[index];
+                        if (item.viewUrl) {
+                            // Preload this image's full version
+                            preloadImage(item.viewUrl);
+                            // On mobile, also preload nearby images
+                            if ('ontouchstart' in window) {
+                                preloadAdjacentImages(index);
+                            }
+                        }
+                    }
+                }
+            });
+        }, {
+            rootMargin: '100px' // Start preloading when 100px away from viewport
+        });
+
+        // Observe all gallery items
+        document.querySelectorAll('.gallery-item').forEach(item => {
+            preloadObserver.observe(item);
+        });
+
+        return preloadObserver;
+    }
+
     function openLightbox(items, index) {
         if (!state.lightbox) {
             console.error('Lightbox not initialized!');
             return;
         }
+        
+        // Preload adjacent images when lightbox opens
+        preloadAdjacentImages(index);
 
         const currentItem = items[index];
         // console.log('🏞️ Opening lightbox:', {
