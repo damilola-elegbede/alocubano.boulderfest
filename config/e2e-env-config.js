@@ -258,6 +258,7 @@ export const VALIDATION_RULES = {
   ],
   
   // Required for admin functionality tests
+  // Note: ADMIN_PASSWORD is optional in E2E test mode (only TEST_ADMIN_PASSWORD needed)
   ADMIN_TESTS: [
     'TEST_ADMIN_PASSWORD',
     'ADMIN_PASSWORD',
@@ -286,6 +287,12 @@ export const VALIDATION_RULES = {
 
 /**
  * Validate environment variables based on test requirements
+ * 
+ * Key Feature: ADMIN_PASSWORD is conditionally required:
+ * - Required in production mode (NODE_ENV=production, E2E_TEST_MODE=false, CI=false)
+ * - Optional in E2E test modes (NODE_ENV=test OR E2E_TEST_MODE=true OR CI=true)
+ * - When optional, shows helpful warning instead of failing validation
+ * - TEST_ADMIN_PASSWORD is always required for admin tests
  * 
  * @param {Object} options - Validation options
  * @param {boolean} options.adminTests - Whether admin tests will run
@@ -321,14 +328,23 @@ export function validateE2EEnvironment(options = {}) {
   
   // Check admin test requirements
   if (adminTests) {
+    // Determine if we're in pure E2E test mode
+    const isE2ETestMode = E2E_CONFIG.E2E_TEST_MODE || E2E_CONFIG.NODE_ENV === 'test' || E2E_CONFIG.CI;
+    
     VALIDATION_RULES.ADMIN_TESTS.forEach(key => {
       if (!E2E_CONFIG[key]) {
+        // ADMIN_PASSWORD is optional in pure E2E test mode since we only use TEST_ADMIN_PASSWORD
+        if (key === 'ADMIN_PASSWORD' && isE2ETestMode) {
+          warnings.push('ADMIN_PASSWORD not set - this is OK for E2E tests that only use TEST_ADMIN_PASSWORD');
+          return; // Skip adding to missing array
+        }
+        
         missing.push({
           key,
           description: key === 'TEST_ADMIN_PASSWORD' 
             ? 'Plain text password required for admin E2E tests'
             : key === 'ADMIN_PASSWORD' 
-            ? 'Bcrypt hashed admin password required'
+            ? 'Bcrypt hashed admin password required for production use'
             : key === 'ADMIN_SECRET' 
             ? 'JWT signing secret required (minimum 32 characters)'
             : 'Required for admin functionality'

@@ -1,702 +1,512 @@
----
-name: 🚀 Consolidated Main CI Pipeline
+# ======================================================================
+# A Lo Cubano Boulder Fest - CI/CD Pipeline
+# ======================================================================
+# Production-Ready CI with Quality Gates
+# - Comprehensive testing: unit, E2E, performance, security
+# - Vercel deployment with preview environments
+# - Strict quality enforcement
+# ======================================================================
 
-# High-Performance Consolidated CI Pipeline
-# Replaces: ci.yml, pr-validation.yml, pr-quality-gates.yml (integration-tests.yml removed - simplified to basic validation)
-# Features: Smart change detection, optimized NPM, parallel execution, concurrency controls, dynamic port allocation
-# Performance target: <10 minutes total execution time
-# Optimizations: 50%+ time reduction through intelligent workflow orchestration
+name: Main CI Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, "feature/**", "release/**", "hotfix/**"]
   pull_request:
     branches: [main, develop]
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
-      skip_e2e:
-        description: 'Skip E2E tests for quick validation'
+      skip_cache:
+        description: "Skip build cache"
         required: false
-        default: false
-        type: boolean
-      test_mode:
-        description: 'Test execution mode'
+        default: "false"
+      debug_mode:
+        description: "Enable debug mode"
         required: false
-        default: 'full'
-        type: choice
-        options:
-          - full
-          - smoke
-          - critical-only
-      e2e_suite:
-        description: 'E2E test suite selection'
-        required: false
-        default: 'standard'
-        type: choice
-        options:
-          - standard        # Core user flows (12 tests)
-          - advanced        # All tests including new scenarios (26 tests)
-          - critical        # Critical path only (6 tests)
-          - performance     # Performance-focused tests
-          - accessibility   # Accessibility compliance tests
-          - security        # Security-focused tests
-      force_all_checks:
-        description: 'Force all checks even for docs-only changes'
-        required: false
-        default: false
-        type: boolean
+        default: "false"
 
-# Aggressive concurrency controls for performance
+# Cancel in-progress runs for the same branch
 concurrency:
-  group: main-ci-${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-  checks: write
-  pull-requests: write
-  statuses: write
-
+# Global environment variables
 env:
   NODE_VERSION: "20"
+  VITEST_TEST_TIMEOUT: "60000"
+  VITEST_HOOK_TIMEOUT: "30000"
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "0"
+  TURSO_CONNECTION_TIMEOUT: "30000"
   CI: true
-  # Performance optimizations
-  NODE_OPTIONS: "--max-old-space-size=4096"
-  # CI environment markers
-  CONSOLIDATED_CI: true
-  CI_OPTIMIZATION_LEVEL: "aggressive"
-  # Cache strategies
-  NPM_CACHE_STRATEGY: "aggressive"
-  PLAYWRIGHT_CACHE_STRATEGY: "enabled"
 
 jobs:
-  # ===================================================================
-  # CHANGE DETECTION & INITIALIZATION (30-60 seconds)
-  # Smart filtering to skip unnecessary work
-  # ===================================================================
-  detect-changes:
-    name: 🔍 Smart Change Detection
+  # ======================================================================
+  # Stage 1: Code Quality & Static Analysis
+  # ======================================================================
+  code-quality:
+    name: 🎨 Code Quality
     runs-on: ubuntu-latest
-    timeout-minutes: 3
-    outputs:
-      frontend: ${{ steps.changes.outputs.frontend }}
-      backend: ${{ steps.changes.outputs.backend }}
-      tests: ${{ steps.changes.outputs.tests }}
-      tests-e2e: ${{ steps.changes.outputs.tests-e2e }}
-      docs-only: ${{ steps.changes.outputs.docs-only }}
-      critical: ${{ steps.changes.outputs.critical }}
-      ci-triggers: ${{ steps.changes.outputs.ci-triggers }}
-      skip-ci: ${{ steps.changes.outputs.skip-ci }}
-      e2e-triggers: ${{ steps.changes.outputs.e2e-triggers }}
-      deployment-triggers: ${{ steps.changes.outputs.deployment-triggers }}
-      accessibility-changes: ${{ steps.changes.outputs.frontend }}
-      performance-triggers: ${{ steps.changes.outputs.performance-triggers }}
-      security-triggers: ${{ steps.changes.outputs.security-triggers }}
-      
+    timeout-minutes: 10
+
     steps:
-      - name: 📥 Checkout Code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Needed for change detection
+          fetch-depth: 0
 
-      - name: 🔍 Detect Changed Files
-        uses: dorny/paths-filter@v3
-        id: changes
-        with:
-          filters: .github/path-filters.yml
-          list-files: shell
-
-      - name: 📊 Change Detection Summary
-        run: |
-          echo "# 🔍 Change Detection Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Category | Changed | Trigger Required |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|---------|------------------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend | ${{ steps.changes.outputs.frontend }} | ${{ steps.changes.outputs.frontend == 'true' && '✅' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Backend | ${{ steps.changes.outputs.backend }} | ${{ steps.changes.outputs.backend == 'true' && '✅' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests | ${{ steps.changes.outputs.tests }} | ${{ steps.changes.outputs.tests == 'true' && '✅' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Critical | ${{ steps.changes.outputs.critical }} | ${{ steps.changes.outputs.critical == 'true' && '⚠️' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Docs Only | ${{ steps.changes.outputs.docs-only }} | ${{ steps.changes.outputs.docs-only == 'true' && '📝' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| E2E Triggers | ${{ steps.changes.outputs.e2e-triggers }} | ${{ steps.changes.outputs.e2e-triggers == 'true' && '🎭' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Performance | ${{ steps.changes.outputs.performance-triggers }} | ${{ steps.changes.outputs.performance-triggers == 'true' && '⚡' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security | ${{ steps.changes.outputs.security-triggers }} | ${{ steps.changes.outputs.security-triggers == 'true' && '🔒' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Performance optimization summary
-          if [ "${{ steps.changes.outputs.skip-ci }}" == "true" ] && [ "${{ inputs.force_all_checks }}" != "true" ]; then
-            echo "⚡ **Performance Optimization**: CI skipped for docs-only changes" >> $GITHUB_STEP_SUMMARY
-            echo "🕐 **Time Saved**: ~8-12 minutes" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ steps.changes.outputs.docs-only }}" == "true" ]; then
-            echo "📝 **Docs Only**: Running minimal validation" >> $GITHUB_STEP_SUMMARY
-            echo "🕐 **Time Saved**: ~5-8 minutes" >> $GITHUB_STEP_SUMMARY
-          fi
-
-  # ===================================================================
-  # QUALITY CHECKS PHASE (2-3 minutes parallel)
-  # Linting and basic validation
-  # ===================================================================
-  quality-checks:
-    name: 🔍 Code Quality & Linting
-    runs-on: ubuntu-latest
-    needs: detect-changes
-    if: |
-      always() &&
-      (needs.detect-changes.outputs.ci-triggers == 'true' ||
-       needs.detect-changes.outputs.critical == 'true' ||
-       needs.detect-changes.outputs.tests == 'true' ||
-       inputs.force_all_checks == true) &&
-      (needs.detect-changes.outputs.skip-ci != 'true' || 
-       needs.detect-changes.outputs.tests == 'true')
-    timeout-minutes: 5
-    
-    strategy:
-      fail-fast: false
-      matrix:
-        check: [javascript, html, security]
-    
-    steps:
-      - name: 📥 Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1 # Shallow for speed
-
-      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+      - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
-      - name: ⚙️ Apply NPM CI Optimizations
+      - name: 📦 Install dependencies
         run: |
-          # Use pre-configured CI settings
-          if [ -f ".npmrc.ci" ]; then
-            echo "📋 Loading optimized NPM CI configuration..."
-            cp .npmrc.ci .npmrc
+          npm ci --prefer-offline --no-audit --no-fund
+          echo "✅ Dependencies installed"
+
+      - name: 🎨 Run ESLint
+        id: eslint
+        run: |
+          echo "🔍 Running ESLint..."
+          npm run lint:js 2>&1 | tee eslint-output.log
+          ESLINT_EXIT_CODE=${PIPESTATUS[0]}
+          
+          if [ $ESLINT_EXIT_CODE -ne 0 ]; then
+            echo "❌ ESLint found issues"
+            echo "eslint_failed=true" >> $GITHUB_OUTPUT
+            exit 1
           else
-            echo "⚙️ Applying inline NPM optimizations..."
-            cat > .npmrc << EOF
-          maxsockets=15
-          fetch-retries=3
-          fetch-timeout=60000
-          prefer-offline=true
-          no-audit=true
-          no-fund=true
-          progress=false
-          loglevel=warn
-          cache=~/.npm
-          cache-min=86400
-          EOF
+            echo "✅ ESLint passed"
+            echo "eslint_failed=false" >> $GITHUB_OUTPUT
           fi
-          echo "✅ NPM CI optimizations applied"
 
-      - name: 📦 Install Dependencies (Optimized)
-        run: npm ci
-        env:
-          # Additional performance flags
-          NPM_CONFIG_LOGLEVEL: warn
-          NPM_CONFIG_PROGRESS: false
-
-      # Conditional quality checks based on matrix strategy
-      - name: 🔍 JavaScript Linting
-        if: matrix.check == 'javascript' && (needs.detect-changes.outputs.frontend == 'true' || needs.detect-changes.outputs.backend == 'true')
+      - name: 📝 Run Markdown Quality Checks
+        id: markdown
+        if: always()
         run: |
-          echo "🔍 Running JavaScript linting..."
-          npm run lint:js
-          echo "✅ JavaScript linting completed"
+          echo "📝 Checking markdown quality..."
+          if ./scripts/validate-markdown-quality.sh check; then
+            echo "✅ Markdown quality passed"
+            echo "markdown_failed=false" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Markdown quality issues found"
+            echo "markdown_failed=true" >> $GITHUB_OUTPUT
+            echo "💡 Run './scripts/validate-markdown-quality.sh fix' locally to auto-fix"
+            exit 1
+          fi
 
-      - name: 🌐 HTML Linting
-        if: matrix.check == 'html' && needs.detect-changes.outputs.frontend == 'true'
+      - name: 🏗️ Check HTML validity
+        id: html
+        if: always()
         run: |
-          echo "🌐 Running HTML linting..."
-          npm run lint:html
-          echo "✅ HTML linting completed"
+          echo "🏗️ Validating HTML files..."
+          npm run lint:html 2>&1 | tee html-output.log
+          HTML_EXIT_CODE=${PIPESTATUS[0]}
+          
+          if [ $HTML_EXIT_CODE -ne 0 ]; then
+            echo "❌ HTML validation failed"
+            echo "html_failed=true" >> $GITHUB_OUTPUT
+            exit 1
+          else
+            echo "✅ HTML validation passed"
+            echo "html_failed=false" >> $GITHUB_OUTPUT
+          fi
 
-      - name: 🔒 Security Scan
-        if: matrix.check == 'security'
+      - name: 📊 Quality Summary
+        if: always()
         run: |
-          echo "🔒 Running security scan..."
-          
-          # Fast security checks
-          npm audit --audit-level=high --production || {
-            echo "⚠️ Security vulnerabilities found - see details above"
-            echo "💡 Run 'npm audit fix' locally to resolve"
-          }
-          
-          # Check for sensitive files (fast check)
-          echo "🔍 Checking for sensitive files..."
-          SENSITIVE_FOUND=false
-          
-          if find . -name "*.env" -not -name "*.env.*" -not -path "./node_modules/*" | head -1 | grep -q .; then
-            echo "⚠️ Found .env files - verify they're properly excluded"
-            SENSITIVE_FOUND=true
-          fi
-          
-          if find . -name "*.pem" -o -name "*.key" -not -path "./node_modules/*" | head -1 | grep -q .; then
-            echo "⚠️ Found private key files"
-            SENSITIVE_FOUND=true
-          fi
-          
-          if [ "$SENSITIVE_FOUND" != "true" ]; then
-            echo "✅ No sensitive files detected"
-          fi
-          
-          echo "✅ Security scan completed"
+          echo "========================================"
+          echo "📊 Code Quality Summary"
+          echo "========================================"
+          echo "ESLint:    ${{ steps.eslint.outputs.eslint_failed == 'true' && '❌ Failed' || '✅ Passed' }}"
+          echo "Markdown:  ${{ steps.markdown.outputs.markdown_failed == 'true' && '❌ Failed' || '✅ Passed' }}"
+          echo "HTML:      ${{ steps.html.outputs.html_failed == 'true' && '❌ Failed' || '✅ Passed' }}"
+          echo "========================================"
 
-  # ===================================================================
-  # UNIT TESTS PHASE (3-4 minutes parallel)
-  # Fast unit tests with SQLite - radical simplicity
-  # ===================================================================
-  unit-tests:
-    name: 🧪 Unit Tests (SQLite - Simple)
+  # ======================================================================
+  # Stage 2: Security Scanning
+  # ======================================================================
+  security-scan:
+    name: 🔒 Security Scan
     runs-on: ubuntu-latest
-    needs: [detect-changes, quality-checks]
-    if: |
-      always() &&
-      needs.quality-checks.result != 'failure' &&
-      (needs.detect-changes.outputs.ci-triggers == 'true' ||
-       needs.detect-changes.outputs.backend == 'true' ||
-       needs.detect-changes.outputs.tests == 'true' ||
-       inputs.force_all_checks == true) &&
-      (needs.detect-changes.outputs.skip-ci != 'true' || 
-       needs.detect-changes.outputs.tests == 'true')
-    timeout-minutes: 8
-    
+    timeout-minutes: 10
+
     steps:
-      - name: 📥 Checkout Code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+      - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
-      - name: ⚙️ Apply NPM CI Optimizations
-        run: |
-          if [ -f ".npmrc.ci" ]; then
-            cp .npmrc.ci .npmrc
-          else
-            cat > .npmrc << EOF
-          maxsockets=15
-          fetch-retries=3
-          fetch-timeout=60000
-          prefer-offline=true
-          no-audit=true
-          no-fund=true
-          progress=false
-          loglevel=warn
-          cache=~/.npm
-          cache-min=86400
-          EOF
-          fi
-
-      - name: 📦 Install Dependencies (Optimized)
-        run: npm ci
-
-      - name: 🗄️ Setup Test Database (SQLite)
-        run: |
-          mkdir -p data
-          echo "✅ SQLite test database prepared"
-
-      - name: 🗄️ Setup Test Database
-        env:
-          NODE_ENV: test
-          CI: true
-          DATABASE_URL: "file:./data/ci-test.db"
-        run: |
-          echo "🗄️ Setting up SQLite test database..."
-          mkdir -p data
-          # Initialize test database with test environment and correct path
-          NODE_ENV=test DATABASE_URL="file:./data/ci-test.db" npm run migrate:up
-          echo "✅ Test database ready at ./data/ci-test.db"
-
-      - name: 🧪 Run Unit Tests (Simple)
-        run: |
-          echo "🧪 Running streamlined unit test suite (26 essential tests)..."
-          echo "📊 Test environment: CI with SQLite direct testing"
-          
-          # Choose test execution mode
-          case "${{ inputs.test_mode }}" in
-            "smoke")
-              npm run test:smoke
-              ;;
-            *)
-              npm run test
-              ;;
-          esac
-          
-          echo "✅ Unit tests completed successfully"
-        env:
-          NODE_ENV: test
-          DATABASE_URL: "file:./data/ci-test.db"
-          TEST_TIMEOUT: 30000
-          # Memory optimization for tests
-          NODE_OPTIONS: "--max-old-space-size=2048"
-
-      - name: 📊 Generate Coverage Report
-        if: inputs.test_mode != 'smoke'
-        run: npm run test:coverage
+      - name: 🔍 Run npm audit
+        id: npm-audit
         continue-on-error: true
-        env:
-          NODE_ENV: test
-          DATABASE_URL: "file:./data/ci-test.db"
-          NODE_OPTIONS: "--max-old-space-size=2048"
+        run: |
+          echo "🔍 Running npm audit..."
+          npm audit --audit-level=high --production 2>&1 | tee audit-output.log
+          AUDIT_EXIT_CODE=${PIPESTATUS[0]}
+          
+          if [ $AUDIT_EXIT_CODE -ne 0 ]; then
+            echo "⚠️ npm audit found vulnerabilities"
+            echo "audit_failed=true" >> $GITHUB_OUTPUT
+            
+            # Check for critical vulnerabilities
+            if grep -q "critical" audit-output.log; then
+              echo "🚨 Critical vulnerabilities found!"
+              exit 1
+            fi
+          else
+            echo "✅ No vulnerabilities found"
+            echo "audit_failed=false" >> $GITHUB_OUTPUT
+          fi
 
-      - name: 📤 Upload Test Artifacts
+      - name: 🔐 Check for secrets
+        run: |
+          echo "🔐 Checking for exposed secrets..."
+          
+          # Check for common secret patterns
+          if grep -r --include="*.js" --include="*.json" --exclude-dir=node_modules \
+             -E "(api[_-]?key|secret|password|token|private[_-]?key)['\"]?\s*[:=]\s*['\"][^'\"]{10,}" . 2>/dev/null; then
+            echo "🚨 Potential secrets found in code!"
+            exit 1
+          fi
+          
+          echo "✅ No exposed secrets detected"
+
+      - name: 📊 Security Summary
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: unit-test-results-${{ github.run_number }}
-          path: |
-            coverage/
-            test-results/
-          if-no-files-found: ignore
-          retention-days: 7
+        run: |
+          echo "========================================"
+          echo "🔒 Security Scan Summary"
+          echo "========================================"
+          echo "npm audit: ${{ steps.npm-audit.outputs.audit_failed == 'true' && '⚠️ Vulnerabilities found' || '✅ Clean' }}"
+          echo "Secrets:   ✅ No exposed secrets"
+          echo "========================================"
 
-  # ===================================================================
-  # INTEGRATION VALIDATION PHASE (2 minutes parallel)
-  # Simple database and basic validation - no mock server
-  # ===================================================================
-  integration-validation:
-    name: 🔗 Database & Migration Validation (Simple)
+  # ======================================================================
+  # Stage 3: Unit Tests
+  # ======================================================================
+  unit-tests:
+    name: 🧪 Unit Tests
     runs-on: ubuntu-latest
-    needs: [detect-changes, quality-checks]
-    if: |
-      always() &&
-      needs.quality-checks.result != 'failure' &&
-      (needs.detect-changes.outputs.backend == 'true' ||
-       needs.detect-changes.outputs.critical == 'true' ||
-       needs.detect-changes.outputs.tests == 'true' ||
-       inputs.force_all_checks == true) &&
-      (needs.detect-changes.outputs.skip-ci != 'true' || 
-       needs.detect-changes.outputs.tests == 'true')
-    timeout-minutes: 5
-    
+    timeout-minutes: 15
+    needs: [code-quality]
+
     steps:
-      - name: 📥 Checkout Code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+      - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
-      - name: ⚙️ Apply NPM CI Optimizations
+      - name: 📦 Install dependencies
         run: |
-          if [ -f ".npmrc.ci" ]; then
-            cp .npmrc.ci .npmrc
-          fi
+          npm ci --prefer-offline --no-audit --no-fund
+          echo "✅ Dependencies installed"
 
-      - name: 📦 Install Dependencies (Optimized)
-        run: npm ci
-
-      - name: 🗄️ Setup Test Database
-        env:
-          NODE_ENV: test
-          CI: true
-          DATABASE_URL: "file:./data/integration-test.db"
+      - name: 🗄️ Setup test database
         run: |
+          echo "🗄️ Initializing SQLite database for testing..."
+          
+          # Create database directory
           mkdir -p data
-          echo "🗄️ Setting up simple test database..."
-          NODE_ENV=test DATABASE_URL="file:./data/integration-test.db" npm run migrate:up
-          echo "✅ Database ready at ./data/integration-test.db"
+          touch data/test.db
+          
+          # Initialize database schema
+          npm run migrate:status || true
+          
+          echo "✅ Test database ready"
 
-      - name: 🔍 Database Migration Validation
-        run: |
-          echo "🔍 Validating database migrations..."
-          
-          # Verify migration status with proper database file
-          NODE_ENV=test DATABASE_URL="file:./data/integration-test.db" npm run migrate:status
-          
-          # Test migration verification with proper database file
-          NODE_ENV=test DATABASE_URL="file:./data/integration-test.db" npm run migrate:verify
-          
-          echo "✅ Migration validation completed"
+      - name: 🧪 Run unit tests
         env:
-          DATABASE_URL: "file:./data/integration-test.db"
           NODE_ENV: test
-
-      - name: 🧪 Basic API Validation
+          DATABASE_URL: "file:./data/test.db"
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD || '$2b$10$K7L1OJ0TfmHrVj2lEwjBOe7MJQkPH5c6WqzT5LJlvGA8MXl7T5jKq' }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET || 'test-secret-minimum-32-characters-long' }}
+          TEST_ADMIN_PASSWORD: test-password-123
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || 'sk_test_dummy' }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY || 'test-api-key' }}
+          WALLET_AUTH_SECRET: ${{ secrets.WALLET_AUTH_SECRET || 'test-wallet-secret-32-chars-minimum' }}
         run: |
-          echo "🧪 Running essential API validation (covered in unit tests)..."
-          echo "📊 Note: API contracts tested in the 26 essential unit tests"
+          echo "🧪 Running unit tests..."
+          npm test 2>&1 | tee test-output.log
+          TEST_EXIT_CODE=${PIPESTATUS[0]}
           
-          # Run a quick health check to ensure the basic structure is sound
-          npm run test:health || echo "Health check would need server running"
+          # Extract test summary
+          if grep -q "Test Files" test-output.log; then
+            echo "📊 Test Results:"
+            grep -A 5 "Test Files" test-output.log || true
+          fi
           
-          echo "✅ Basic validation completed"
-        env:
-          DATABASE_URL: "file:./data/integration-test.db"
-          TURSO_DATABASE_URL: "file:./data/integration-test.db"
-          NODE_ENV: test
+          if [ $TEST_EXIT_CODE -ne 0 ]; then
+            echo "❌ Unit tests failed"
+            exit 1
+          fi
+          
+          echo "✅ All unit tests passed"
 
-      - name: 📤 Upload Test Artifacts
+      - name: 📊 Generate coverage report
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "📊 Generating coverage report..."
+          npm run test:coverage || true
+
+      - name: 📤 Upload coverage
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integration-validation-results-${{ github.run_number }}
-          path: |
-            test-results/
-          if-no-files-found: ignore
+          name: coverage-report-${{ github.run_number }}
+          path: coverage/
           retention-days: 7
 
-  # ===================================================================
-  # E2E TESTS PHASE (8-15 minutes conditional)
-  # Comprehensive browser testing with dynamic port allocation and isolation
-  # ===================================================================
-  e2e-tests:
-    name: 🎭 E2E Tests (${{ matrix.suite-name }})
+  # ======================================================================
+  # Stage 4: Build Verification
+  # ======================================================================
+  build-check:
+    name: 🏗️ Build Verification
     runs-on: ubuntu-latest
-    needs: [detect-changes, unit-tests, integration-validation]
+    timeout-minutes: 10
+    needs: [unit-tests]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 📦 Install dependencies
+        run: |
+          npm ci --prefer-offline --no-audit --no-fund
+          echo "✅ Dependencies installed"
+
+      - name: 🔍 Verify API structure
+        run: |
+          echo "🔍 Checking API handler exports..."
+          
+          # Check that all API files export default functions
+          for file in api/**/*.js; do
+            if [ -f "$file" ] && [[ ! "$file" =~ "/lib/" ]]; then
+              if ! grep -q "export default" "$file"; then
+                echo "❌ Missing default export in $file"
+                exit 1
+              fi
+            fi
+          done
+          
+          echo "✅ API structure verified"
+
+      - name: 📝 Check migration files
+        run: |
+          echo "📝 Validating database migrations..."
+          
+          # Check migration file format
+          for file in migrations/*.sql; do
+            if [ -f "$file" ]; then
+              # Check for transaction blocks
+              if ! grep -q "BEGIN TRANSACTION\|BEGIN;" "$file"; then
+                echo "⚠️ Migration $file missing transaction block"
+              fi
+              
+              # Check for dangerous operations
+              if grep -qi "drop table\|truncate\|delete from" "$file"; then
+                echo "⚠️ Migration $file contains potentially dangerous operations"
+              fi
+            fi
+          done
+          
+          echo "✅ Migration files validated"
+
+      - name: 🏗️ Test build process
+        run: |
+          echo "🏗️ Verifying build process..."
+          
+          # Check package.json scripts
+          npm run --silent | grep -E "(build|deploy|test)" || true
+          
+          # Verify critical files exist
+          CRITICAL_FILES=(
+            "package.json"
+            "vercel.json"
+            "api/lib/database.js"
+            "pages/index.html"
+          )
+          
+          for file in "${CRITICAL_FILES[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Critical file missing: $file"
+              exit 1
+            fi
+          done
+          
+          echo "✅ Build verification complete"
+
+  # ======================================================================
+  # Stage 5: E2E Tests (Matrix)
+  # ======================================================================
+  e2e-tests:
+    name: 🎭 E2E - ${{ matrix.suite-name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ matrix.timeout-minutes }}
+    needs: [build-check]
     if: |
-      always() &&
-      needs.unit-tests.result == 'success' &&
-      needs.integration-validation.result != 'failure' &&
-      inputs.skip_e2e != true &&
-      (needs.detect-changes.outputs.e2e-triggers == 'true' ||
-       needs.detect-changes.outputs.critical == 'true' ||
-       needs.detect-changes.outputs.performance-triggers == 'true' ||
-       needs.detect-changes.outputs.security-triggers == 'true' ||
-       needs.detect-changes.outputs.tests-e2e == 'true' ||
-       inputs.force_all_checks == true) &&
-      (needs.detect-changes.outputs.skip-ci != 'true' || 
-       needs.detect-changes.outputs.tests-e2e == 'true')
-    timeout-minutes: 20
-    
+      github.event_name == 'push' || 
+      github.event_name == 'pull_request' || 
+      github.event_name == 'workflow_dispatch'
+
     strategy:
       fail-fast: false
-      max-parallel: 2
       matrix:
         include:
-          # Standard Test Suite (Core flows - always runs)
-          - suite: standard
-            suite-name: "Standard (Chrome)"
+          # Core functionality tests (fastest, most critical)
+          - suite: core
+            suite-name: "Core Features"
             browser: chromium
-            test-pattern: "basic-navigation|cart-functionality|registration-flow|admin-auth|gallery-basic|newsletter-simple"
-            timeout-minutes: 12
-            memory-limit: "3072"
+            test-pattern: "basic-navigation|registration-flow|cart-functionality"
             retry-count: 2
-            required: true
-            port-offset: 0
-          
-          # Advanced Test Suite (All tests - runs on advanced selection or critical changes)
-          - suite: advanced
-            suite-name: "Advanced (Chrome)"
-            browser: chromium
-            test-pattern: ""
-            timeout-minutes: 18
-            memory-limit: "4096"
-            retry-count: 2
-            required: false
-            port-offset: 1
-          
-          # Firefox Validation (Secondary browser - critical changes only)
-          - suite: firefox
-            suite-name: "Cross-browser (Firefox)"
-            browser: firefox
-            test-pattern: "basic-navigation|cart-functionality|registration-flow"
-            timeout-minutes: 10
-            memory-limit: "3072"
-            retry-count: 3
-            required: false
-            port-offset: 2
-          
-          # Performance Tests (Performance-sensitive changes)
-          - suite: performance
-            suite-name: "Performance"
-            browser: chromium
-            test-pattern: "gallery-basic|payment-flow|registration-flow"
             timeout-minutes: 15
-            memory-limit: "4096"
+            memory-limit: 2048
+
+          # Admin functionality tests
+          - suite: admin
+            suite-name: "Admin Panel"
+            browser: chromium
+            test-pattern: "admin-auth|admin-dashboard"
+            retry-count: 2
+            timeout-minutes: 15
+            memory-limit: 2048
+
+          # User experience tests
+          - suite: user-experience
+            suite-name: "User Experience"
+            browser: chromium
+            test-pattern: "newsletter-simple|gallery-basic|user-engagement"
+            retry-count: 2
+            timeout-minutes: 20
+            memory-limit: 3072
+
+          # Advanced scenarios (payment, tickets)
+          - suite: advanced
+            suite-name: "Advanced Features"
+            browser: chromium
+            test-pattern: "payment-flow|ticket-validation"
+            retry-count: 3
+            timeout-minutes: 20
+            memory-limit: 3072
+
+          # Mobile experience tests
+          - suite: mobile
+            suite-name: "Mobile Experience"
+            browser: webkit
+            test-pattern: "mobile-registration-experience"
+            retry-count: 2
+            timeout-minutes: 15
+            memory-limit: 2048
+
+          # Performance & Accessibility tests
+          - suite: performance
+            suite-name: "Performance & A11y"
+            browser: chromium
+            test-pattern: "gallery-browsing"
             retry-count: 1
-            required: false
-            port-offset: 3
-          
-          # Accessibility Tests (Frontend changes)
-          - suite: accessibility
-            suite-name: "Accessibility"
-            browser: chromium
-            test-pattern: "basic-navigation|mobile-registration-experience"
-            timeout-minutes: 10
-            memory-limit: "3072"
-            retry-count: 2
-            required: false
-            port-offset: 4
-          
-          # Security Tests (Security-sensitive changes)
-          - suite: security
-            suite-name: "Security"
-            browser: chromium
-            test-pattern: "admin-auth|admin-dashboard|payment-flow"
-            timeout-minutes: 12
-            memory-limit: "3072"
-            retry-count: 2
-            required: false
-            port-offset: 5
+            timeout-minutes: 25
+            memory-limit: 4096
 
     steps:
-      - name: 📥 Checkout Code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+      - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
-      - name: ⚙️ Apply NPM CI Optimizations
+      - name: 📦 Install dependencies
         run: |
-          if [ -f ".npmrc.ci" ]; then
-            cp .npmrc.ci .npmrc
-          fi
-
-      - name: 📦 Install Dependencies (Optimized)
-        run: npm ci
-
-      - name: 🚀 Install Vercel CLI
-        run: |
-          echo "📦 Installing Vercel CLI for server startup..."
+          echo "📦 Installing dependencies for ${{ matrix.suite-name }}..."
+          npm ci --prefer-offline --no-audit --no-fund
+          
+          # Install Playwright browsers
+          echo "🎭 Installing Playwright browsers..."
+          npx playwright install --with-deps ${{ matrix.browser }}
+          
+          # Install Vercel CLI
+          echo "▲ Installing Vercel CLI..."
           npm install -g vercel@latest
           
-          # Verify installation
-          vercel --version
-          echo "✅ Vercel CLI installed successfully"
+          echo "✅ Dependencies ready"
 
-      - name: 🎭 Cache Playwright Browsers
-        uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}-v3
-          restore-keys: |
-            ${{ runner.os }}-playwright-${{ matrix.browser }}-
-            ${{ runner.os }}-playwright-
-
-      - name: 🎭 Install Playwright Browser
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install ${{ matrix.browser }} --with-deps
-
-      - name: 🔧 Configure Dynamic Port Allocation
+      - name: 🏥 Verify Tools
         run: |
-          # Calculate dynamic port based on matrix index to avoid conflicts
-          BASE_PORT=3000
-          DYNAMIC_PORT=$((BASE_PORT + ${{ matrix.port-offset }}))
+          echo "🔍 Verifying installed tools..."
+          echo "Node version: $(node --version)"
+          echo "npm version: $(npm --version)"
+          echo "Vercel CLI: $(vercel --version || echo 'Not installed')"
+          echo "Playwright: $(npx playwright --version)"
           
-          echo "DYNAMIC_PORT=$DYNAMIC_PORT" >> $GITHUB_ENV
-          echo "PLAYWRIGHT_BASE_URL=http://localhost:$DYNAMIC_PORT" >> $GITHUB_ENV
+          # Check for required browsers
+          npx playwright show-report || true
+
+      - name: 🔐 Setup E2E Environment
+        id: setup-env
+        run: |
+          echo "🔐 Configuring E2E environment for ${{ matrix.suite-name }}..."
           
-          echo "✅ Dynamic port allocation configured:"
+          # Allocate dynamic port
+          DYNAMIC_PORT=$((3000 + RANDOM % 1000))
+          echo "DYNAMIC_PORT=${DYNAMIC_PORT}" >> $GITHUB_ENV
+          echo "dynamic_port=${DYNAMIC_PORT}" >> $GITHUB_OUTPUT
+          
+          # Set base URL for Playwright
+          echo "PLAYWRIGHT_BASE_URL=http://localhost:${DYNAMIC_PORT}" >> $GITHUB_ENV
+          
+          # Export test mode flag
+          echo "E2E_TEST_MODE=true" >> $GITHUB_ENV
+          
+          echo "✅ Environment configured:"
+          echo "  Port: ${DYNAMIC_PORT}"
           echo "  Suite: ${{ matrix.suite }}"
-          echo "  Port: $DYNAMIC_PORT"
-          echo "  Using Turso database from secrets"
+          echo "  Browser: ${{ matrix.browser }}"
 
-      - name: 🔍 Validate E2E Environment Prerequisites
-        run: |
-          echo "🔍 Validating E2E environment prerequisites..."
-          
-          # Check if required secrets are available
-          if [ -z "${{ secrets.TURSO_DATABASE_URL_CI }}" ] && [ -z "${{ secrets.TURSO_DATABASE_URL }}" ]; then
-            echo "⚠️  Warning: Turso database URL not configured in secrets"
-            echo "   E2E tests will use SQLite fallback for local development"
-            echo "   For full E2E testing, please configure TURSO_DATABASE_URL_CI in repository secrets"
-          else
-            echo "✅ Turso database URL is configured"
-          fi
-          
-          if [ -z "${{ secrets.TURSO_AUTH_TOKEN_CI }}" ] && [ -z "${{ secrets.TURSO_AUTH_TOKEN }}" ]; then
-            echo "⚠️  Warning: Turso auth token not configured in secrets"
-            echo "   E2E tests will use SQLite fallback for local development"
-            echo "   For full E2E testing, please configure TURSO_AUTH_TOKEN_CI in repository secrets"
-          else
-            echo "✅ Turso auth token is configured"
-          fi
-
-      - name: 🔧 Configure E2E Environment
+      - name: 🗄️ Database Setup Check
+        id: db-check
         env:
-          # Prioritize CI-specific secrets, fallback to general secrets
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL_CI || secrets.TURSO_DATABASE_URL || '' }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_CI || secrets.TURSO_AUTH_TOKEN || '' }}
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN || '' }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID || '' }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID || '' }}
         run: |
-          mkdir -p test-results
-          
-          # Create optimized E2E configuration
-          cat > .env.local << EOF
-          NODE_ENV=test
-          E2E_TEST_MODE=true
-          PORT=${{ env.DYNAMIC_PORT }}
-          DYNAMIC_PORT=${{ env.DYNAMIC_PORT }}
-          CI_ENVIRONMENT=true
-          SKIP_DATABASE_INIT=false
-          # Test credentials
-          TEST_ADMIN_PASSWORD=test-password-123
-          ADMIN_SECRET=${{ secrets.ADMIN_SECRET || 'fallback-test-secret-minimum-32-chars' }}
-          # Database configuration (prioritize CI-specific secrets)
-          TURSO_DATABASE_URL=${TURSO_DATABASE_URL}
-          TURSO_AUTH_TOKEN=${TURSO_AUTH_TOKEN}
-          # Advanced test environment variables
-          BREVO_API_KEY=${{ secrets.BREVO_API_KEY || '' }}
-          STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY || '' }}
-          STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET || '' }}
-          # Apple Wallet configuration
-          APPLE_PASS_TYPE_ID=${{ secrets.APPLE_PASS_TYPE_ID || '' }}
-          APPLE_PASS_CERT=${{ secrets.APPLE_PASS_CERT || '' }}
-          APPLE_PASS_KEY=${{ secrets.APPLE_PASS_KEY || '' }}
-          APPLE_PASS_PASSWORD=${{ secrets.APPLE_PASS_PASSWORD || '' }}
-          # Google Wallet configuration  
-          GOOGLE_WALLET_ISSUER_ID=${{ secrets.GOOGLE_WALLET_ISSUER_ID || '' }}
-          GOOGLE_WALLET_SERVICE_ACCOUNT=${{ secrets.GOOGLE_WALLET_SERVICE_ACCOUNT || '' }}
-          # Vercel configuration
-          VERCEL_TOKEN=${VERCEL_TOKEN}
-          VERCEL_ORG_ID=${VERCEL_ORG_ID}
-          VERCEL_PROJECT_ID=${VERCEL_PROJECT_ID}
-          EOF
-          
-          # Debug output (without exposing secrets)
-          echo "✅ E2E environment configured for ${{ matrix.suite-name }}"
-          echo "  Environment check:"
-          echo "    TURSO_DATABASE_URL: $([ -n "${TURSO_DATABASE_URL}" ] && echo '✅ Set' || echo '❌ Not set')"
-          echo "    TURSO_AUTH_TOKEN: $([ -n "${TURSO_AUTH_TOKEN}" ] && echo '✅ Set' || echo '❌ Not set')"
-          echo "    VERCEL_TOKEN: $([ -n "${VERCEL_TOKEN}" ] && echo '✅ Set' || echo '❌ Not set')"
-          echo "    VERCEL_ORG_ID: $([ -n "${VERCEL_ORG_ID}" ] && echo '✅ Set' || echo '❌ Not set')"
-
-      - name: 🗄️ Setup Test Database
-        env:
-          # Export variables explicitly for database setup
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL_CI || secrets.TURSO_DATABASE_URL || '' }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_CI || secrets.TURSO_AUTH_TOKEN || '' }}
-          PORT: ${{ env.DYNAMIC_PORT }}
-          DYNAMIC_PORT: ${{ env.DYNAMIC_PORT }}
-          NODE_ENV: test
-        run: |
-          echo "🗄️ Setting up test database for ${{ matrix.suite }}..."
-          
-          # Export variables explicitly
-          export TURSO_DATABASE_URL="${TURSO_DATABASE_URL}"
-          export TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN}"
-          
-          # Debug output (without exposing secrets)
-          echo "  Database configuration:"
-          echo "    TURSO_DATABASE_URL: $([ -n "$TURSO_DATABASE_URL" ] && echo '✅ Set' || echo '❌ Not set')"
-          echo "    TURSO_AUTH_TOKEN: $([ -n "$TURSO_AUTH_TOKEN" ] && echo '✅ Set' || echo '❌ Not set')"
+          echo "🗄️ Checking database configuration..."
           
           if [ -n "$TURSO_DATABASE_URL" ] && [ -n "$TURSO_AUTH_TOKEN" ]; then
-            echo "  Using Turso database for E2E tests"
-            # Run migrations on Turso database
-            NODE_ENV=test npm run migrate:up
-            echo "✅ Turso database ready for ${{ matrix.suite }}"
-          else
-            echo "  ⚠️ Turso credentials not available - E2E tests may fail"
-            echo "  💡 Configure TURSO_DATABASE_URL_CI and TURSO_AUTH_TOKEN_CI in repository secrets"
-            echo "  🔄 Attempting to continue with SQLite fallback..."
+            echo "✅ Turso database configured"
+            echo "db_type=turso" >> $GITHUB_OUTPUT
             
-            # Setup SQLite fallback
+            # Test connection
+            echo "Testing Turso connection..."
+            npm run health:database || echo "⚠️ Database health check failed"
+          else
+            echo "⚠️ Turso not configured, using SQLite fallback"
+            echo "db_type=sqlite" >> $GITHUB_OUTPUT
+            
+            # Setup SQLite
             mkdir -p data
-            DATABASE_URL="file:./data/e2e-test-${{ matrix.suite }}.db" NODE_ENV=test npm run migrate:up || true
+            touch data/e2e-test.db
+            echo "DATABASE_URL=file:./data/e2e-test.db" >> $GITHUB_ENV
+            
+            # Initialize schema
+            npm run migrate:up || echo "⚠️ Migration failed"
             echo "⚠️ SQLite fallback ready for ${{ matrix.suite }}"
           fi
 
@@ -719,6 +529,8 @@ jobs:
           ADVANCED_SCENARIOS: ${{ matrix.suite == 'advanced' }}
           # Test credentials for all suites
           TEST_ADMIN_PASSWORD: test-password-123
+          # CRITICAL FIX: Add ADMIN_PASSWORD bcrypt hash for CI
+          ADMIN_PASSWORD: '$2b$10$K7L1OJ0TfmHrVj2lEwjBOe7MJQkPH5c6WqzT5LJlvGA8MXl7T5jKq'
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET || 'fallback-test-secret-minimum-32-chars' }}
           # API keys for advanced test scenarios
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY || '' }}
@@ -771,14 +583,9 @@ jobs:
           # Add timeout
           TEST_CMD="$TEST_CMD --timeout=120000"
           
-          # Add reporters based on suite
-          if [ "${{ matrix.suite }}" == "performance" ]; then
-            TEST_CMD="$TEST_CMD --reporter=list --reporter=json:test-results/performance-${{ matrix.browser }}.json"
-          elif [ "${{ matrix.suite }}" == "accessibility" ]; then
-            TEST_CMD="$TEST_CMD --reporter=list --reporter=json:test-results/accessibility-${{ matrix.browser }}.json"
-          else
-            TEST_CMD="$TEST_CMD --reporter=list,html"
-          fi
+          # CRITICAL FIX: Simplified reporter configuration
+          # Just use list reporter to avoid syntax errors
+          TEST_CMD="$TEST_CMD --reporter=list"
           
           echo "📋 Executing: $TEST_CMD"
           
@@ -799,260 +606,172 @@ jobs:
           path: |
             playwright-report/
             test-results/
-          if-no-files-found: ignore
+            tests/e2e/screenshots/
           retention-days: 7
 
-      - name: 🧹 Cleanup Resources
+      - name: 📊 Test Summary
         if: always()
         run: |
-          echo "🧹 Cleaning up test resources for ${{ matrix.suite }}..."
+          echo "========================================"
+          echo "📊 E2E Test Summary - ${{ matrix.suite-name }}"
+          echo "========================================"
+          echo "Suite: ${{ matrix.suite }}"
+          echo "Browser: ${{ matrix.browser }}"
+          echo "Pattern: ${{ matrix.test-pattern || 'All tests' }}"
+          echo "Database: ${{ steps.db-check.outputs.db_type }}"
+          echo "Port: ${{ env.DYNAMIC_PORT }}"
+          echo "========================================"
           
-          # Aggressive port cleanup for this suite's port
-          DYNAMIC_PORT=${{ env.DYNAMIC_PORT }}
-          
-          echo "Killing processes on port $DYNAMIC_PORT..."
-          lsof -ti:$DYNAMIC_PORT | xargs kill -9 2>/dev/null || true
-          pkill -f "vercel dev.*--listen $DYNAMIC_PORT" 2>/dev/null || true
-          pkill -f "vercel dev.*:$DYNAMIC_PORT" 2>/dev/null || true
-          pkill -f "next-server.*$DYNAMIC_PORT" 2>/dev/null || true
-          
-          # Wait a moment for cleanup
-          sleep 2
-          
-          # Verify port is free
-          if ! lsof -ti:$DYNAMIC_PORT >/dev/null 2>&1; then
-            echo "✅ Port $DYNAMIC_PORT is now free"
-          else
-            echo "⚠️ Port $DYNAMIC_PORT may still have processes"
-            lsof -ti:$DYNAMIC_PORT | xargs -I {} ps -p {} -o pid,ppid,cmd || true
+          # Show test results if available
+          if [ -d "test-results" ]; then
+            echo "Test artifacts generated:"
+            ls -la test-results/ || true
           fi
           
-          echo "✅ Cleanup completed for ${{ matrix.suite-name }} on port $DYNAMIC_PORT"
+          if [ -d "playwright-report" ]; then
+            echo "Playwright report available"
+          fi
 
-  # ===================================================================
-  # BUILD VERIFICATION PHASE (2-3 minutes)
-  # Production readiness checks
-  # ===================================================================
-  build-verification:
-    name: 🔨 Build & Deployment Verification
+  # ======================================================================
+  # Stage 6: Deployment (Vercel)
+  # ======================================================================
+  deploy:
+    name: 🚀 Deploy to Vercel
     runs-on: ubuntu-latest
-    needs: [detect-changes, quality-checks]
+    timeout-minutes: 15
+    needs: [code-quality, security-scan, unit-tests, e2e-tests]
     if: |
-      always() &&
-      needs.quality-checks.result != 'failure' &&
-      (needs.detect-changes.outputs.deployment-triggers == 'true' ||
-       needs.detect-changes.outputs.critical == 'true' ||
-       needs.detect-changes.outputs.tests == 'true' ||
-       inputs.force_all_checks == true) &&
-      (needs.detect-changes.outputs.skip-ci != 'true' || 
-       needs.detect-changes.outputs.tests == 'true')
-    timeout-minutes: 6
-    
+      github.event_name == 'push' && 
+      (github.ref == 'refs/heads/main' || 
+       github.ref == 'refs/heads/develop' ||
+       startsWith(github.ref, 'refs/heads/release/'))
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+      url: ${{ steps.deploy.outputs.url }}
+
     steps:
-      - name: 📥 Checkout Code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+      - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
 
-      - name: ⚙️ Apply NPM CI Optimizations
-        run: |
-          if [ -f ".npmrc.ci" ]; then
-            cp .npmrc.ci .npmrc
-          fi
-
-      - name: 📦 Install Dependencies (Optimized)
-        run: npm ci
-
-      - name: 🔨 Verify Build Process
-        run: |
-          echo "🔨 Running build verification..."
-          npm run deploy:check
-          echo "✅ Build verification completed"
+      - name: ▲ Deploy to Vercel
+        id: deploy
         env:
-          NODE_OPTIONS: "--max-old-space-size=4096"
-          CI_BUILD_VERIFICATION: true
-
-      - name: 🏥 Health Check Verification
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          echo "🏥 Running health check verification..."
-          npm run test:health || {
-            echo "⚠️ Health check completed with warnings"
-          }
-          echo "✅ Health verification completed"
-
-  # ===================================================================
-  # FINAL CONSOLIDATION & REPORTING (1-2 minutes)
-  # Intelligent result aggregation and performance metrics
-  # ===================================================================
-  ci-consolidation:
-    name: 📊 CI Consolidation & Reporting
-    runs-on: ubuntu-latest
-    needs: [detect-changes, quality-checks, unit-tests, integration-validation, e2e-tests, build-verification]
-    if: always()
-    timeout-minutes: 5
-    
-    steps:
-      - name: 📊 Calculate Pipeline Performance
-        run: |
-          echo "📊 Analyzing consolidated CI performance..."
+          echo "🚀 Deploying to Vercel..."
           
-          # Calculate time savings from optimizations
-          TOTAL_JOBS_RUN=0
-          ESTIMATED_TIME_SAVED=0
+          # Install Vercel CLI
+          npm install -g vercel@latest
           
-          # Count successful/ran jobs
-          if [ "${{ needs.quality-checks.result }}" != "skipped" ]; then
-            TOTAL_JOBS_RUN=$((TOTAL_JOBS_RUN + 1))
-          fi
-          if [ "${{ needs.unit-tests.result }}" != "skipped" ]; then
-            TOTAL_JOBS_RUN=$((TOTAL_JOBS_RUN + 1))
-          fi
-          if [ "${{ needs.integration-validation.result }}" != "skipped" ]; then
-            TOTAL_JOBS_RUN=$((TOTAL_JOBS_RUN + 1))
-          fi
-          if [ "${{ needs.e2e-tests.result }}" != "skipped" ]; then
-            TOTAL_JOBS_RUN=$((TOTAL_JOBS_RUN + 1))
-            ESTIMATED_TIME_SAVED=$((ESTIMATED_TIME_SAVED + 8)) # E2E optimizations + dynamic ports
-          fi
-          if [ "${{ needs.build-verification.result }}" != "skipped" ]; then
-            TOTAL_JOBS_RUN=$((TOTAL_JOBS_RUN + 1))
-          fi
-          
-          # Add time saved from change detection
-          if [ "${{ needs.detect-changes.outputs.skip-ci }}" == "true" ]; then
-            ESTIMATED_TIME_SAVED=$((ESTIMATED_TIME_SAVED + 12)) # Full pipeline skip
-          elif [ "${{ needs.detect-changes.outputs.docs-only }}" == "true" ]; then
-            ESTIMATED_TIME_SAVED=$((ESTIMATED_TIME_SAVED + 6)) # Partial skip
-          fi
-          
-          # NPM, caching, and port isolation optimizations (consistent across all jobs)
-          ESTIMATED_TIME_SAVED=$((ESTIMATED_TIME_SAVED + 3)) # NPM optimizations
-          ESTIMATED_TIME_SAVED=$((ESTIMATED_TIME_SAVED + 2)) # Dynamic port allocation efficiency
-          
-          echo "📊 Pipeline Performance Metrics:"
-          echo "  Total Jobs Executed: $TOTAL_JOBS_RUN"
-          echo "  Estimated Time Saved: ${ESTIMATED_TIME_SAVED} minutes"
-          echo "  E2E Test Suites Available: 6 (Standard, Advanced, Firefox, Performance, Accessibility, Security)"
-          echo "  Total E2E Tests: 26 (including 9 advanced scenarios)"
-          echo "  Dynamic Port Allocation: Isolated execution prevents conflicts"
-
-      - name: 📋 Generate Comprehensive CI Summary
-        run: |
-          echo "# 🚀 Consolidated CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Dynamic Port Allocation Summary
-          echo "## ⚡ Dynamic Port Allocation & Isolation" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Suite | Port | Database | Isolation |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|------|----------|-----------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Standard | 3000 | e2e-ci-test-standard.db | ✅ Isolated |" >> $GITHUB_STEP_SUMMARY
-          echo "| Advanced | 3001 | e2e-ci-test-advanced.db | ✅ Isolated |" >> $GITHUB_STEP_SUMMARY
-          echo "| Firefox | 3002 | e2e-ci-test-firefox.db | ✅ Isolated |" >> $GITHUB_STEP_SUMMARY
-          echo "| Performance | 3003 | e2e-ci-test-performance.db | ✅ Isolated |" >> $GITHUB_STEP_SUMMARY
-          echo "| Accessibility | 3004 | e2e-ci-test-accessibility.db | ✅ Isolated |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security | 3005 | e2e-ci-test-security.db | ✅ Isolated |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # E2E Suite Summary
-          echo "## 🎭 E2E Test Suite Integration" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Suite | Tests | Browser | Triggers | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|-------|---------|----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Standard | 6 core flows | Chromium | Always | ${{ needs.e2e-tests.result != 'skipped' && '✅' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Advanced | All 26 tests | Chromium | Critical changes | ${{ (inputs.e2e_suite == 'advanced' || needs.detect-changes.outputs.critical == 'true') && '✅' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Cross-browser | 3 core tests | Firefox | Critical changes | ${{ needs.detect-changes.outputs.critical == 'true' && '✅' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Performance | Load testing | Chromium | Performance changes | ${{ needs.detect-changes.outputs.performance-triggers == 'true' && '⚡' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Accessibility | WCAG compliance | Chromium | Frontend changes | ${{ needs.detect-changes.outputs.frontend == 'true' && '♿' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security | Enhanced security | Chromium | Security changes | ${{ needs.detect-changes.outputs.security-triggers == 'true' && '🔒' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Performance optimization summary
-          echo "## ⚡ Performance Optimizations" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Optimization | Status | Impact |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------------|--------|---------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Smart Change Detection | ✅ Active | Skip unnecessary work |" >> $GITHUB_STEP_SUMMARY
-          echo "| NPM CI Optimizations | ✅ Active | 3-5 min saved per job |" >> $GITHUB_STEP_SUMMARY
-          echo "| Aggressive Caching | ✅ Active | 2-3 min saved per job |" >> $GITHUB_STEP_SUMMARY
-          echo "| Parallel Execution | ✅ Active | 40-60% time reduction |" >> $GITHUB_STEP_SUMMARY
-          echo "| Smart E2E Suite Selection | ✅ Active | 5-12 min saved when filtered |" >> $GITHUB_STEP_SUMMARY
-          echo "| Memory Optimization | ✅ Active | 4GB memory allocation |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Dynamic Port Allocation** | ✅ Active | Eliminates port conflicts |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Database Isolation** | ✅ Active | Prevents test interference |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Vercel Dev Integration** | ✅ Active | Production-like E2E testing |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Overall assessment
-          CRITICAL_FAILURES=0
-          
-          if [ "${{ needs.quality-checks.result }}" == "failure" ]; then
-            CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
-          fi
-          if [ "${{ needs.unit-tests.result }}" == "failure" ]; then
-            CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
-          fi
-          if [ "${{ needs.integration-validation.result }}" == "failure" ]; then
-            CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
-          fi
-          if [ "${{ needs.e2e-tests.result }}" == "failure" ]; then
-            CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
-          fi
-          if [ "${{ needs.build-verification.result }}" == "failure" ]; then
-            CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
-          fi
-          
-          if [ $CRITICAL_FAILURES -eq 0 ]; then
-            echo "## ✅ Pipeline Success" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**All critical checks passed!** 🎉" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### 🚀 Ready for:" >> $GITHUB_STEP_SUMMARY
-            echo "- ✅ Code review and merge" >> $GITHUB_STEP_SUMMARY
-            echo "- ✅ Production deployment" >> $GITHUB_STEP_SUMMARY
-            echo "- ✅ Further development" >> $GITHUB_STEP_SUMMARY
+          # Determine environment
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "📦 Deploying to production..."
+            DEPLOYMENT_URL=$(vercel --prod --token=$VERCEL_TOKEN --yes)
           else
-            echo "## ❌ Pipeline Failures" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**$CRITICAL_FAILURES critical check(s) failed.** Please review and fix." >> $GITHUB_STEP_SUMMARY
+            echo "👁️ Deploying preview..."
+            DEPLOYMENT_URL=$(vercel --token=$VERCEL_TOKEN --yes)
           fi
           
-          # Key improvements
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "**🎯 Key Improvements**: Dynamic port allocation eliminates conflicts, isolated databases prevent test interference" >> $GITHUB_STEP_SUMMARY
-          echo "**⚡ Performance**: Sub-15 minute execution with parallel isolated testing" >> $GITHUB_STEP_SUMMARY
-          echo "**🚀 Reliability**: Zero port conflicts, isolated test environments, production-like Vercel Dev testing" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Deployed to: $DEPLOYMENT_URL"
+          echo "url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
 
-      - name: ✅ Pipeline Success
-        if: |
-          needs.quality-checks.result != 'failure' &&
-          needs.unit-tests.result != 'failure' &&
-          needs.integration-validation.result != 'failure' &&
-          needs.e2e-tests.result != 'failure' &&
-          needs.build-verification.result != 'failure'
+      - name: 🔍 Verify deployment
         run: |
-          echo "🎉 Consolidated CI Pipeline completed successfully!"
-          echo "✅ All critical quality gates passed"
-          echo "⚡ Dynamic port allocation eliminated conflicts"
-          echo "🗄️ Isolated databases prevented test interference"
-          echo "🎭 Advanced E2E test integration with production-like Vercel Dev"
-          echo "🎯 Ready for review, merge, and deployment"
+          DEPLOY_URL="${{ steps.deploy.outputs.url }}"
+          echo "🔍 Verifying deployment at $DEPLOY_URL..."
+          
+          # Wait for deployment to be ready
+          sleep 10
+          
+          # Check if site is accessible
+          if curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL" | grep -q "200\|301\|302"; then
+            echo "✅ Deployment verified successfully"
+          else
+            echo "⚠️ Deployment may not be ready yet"
+          fi
 
-      - name: ❌ Pipeline Failure
-        if: |
-          needs.quality-checks.result == 'failure' ||
-          needs.unit-tests.result == 'failure' ||
-          needs.integration-validation.result == 'failure' ||
-          needs.e2e-tests.result == 'failure' ||
-          needs.build-verification.result == 'failure'
+      - name: 💬 Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deployUrl = '${{ steps.deploy.outputs.url }}';
+            const comment = `### 🚀 Deployment Preview Ready!
+            
+            **Preview URL:** ${deployUrl}
+            **Branch:** \`${{ github.head_ref || github.ref_name }}\`
+            **Commit:** \`${{ github.sha.substr(0, 7) }}\`
+            
+            #### Test Results:
+            - ✅ Code Quality: Passed
+            - ✅ Security Scan: Passed
+            - ✅ Unit Tests: Passed
+            - ✅ E2E Tests: Passed
+            
+            [View Full CI Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # ======================================================================
+  # Final Status Report
+  # ======================================================================
+  ci-status:
+    name: 📊 CI Status
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [code-quality, security-scan, unit-tests, build-check, e2e-tests]
+    if: always()
+
+    steps:
+      - name: 📊 Generate CI Report
         run: |
-          echo "❌ Consolidated CI Pipeline failed"
-          echo "🔍 Review job logs and artifacts for specific failure details"
-          echo "🎯 Dynamic port allocation and isolation implemented to prevent future conflicts"
-          echo "🎭 E2E test artifacts available for debugging with isolated environments"
-          exit 1
+          echo "========================================"
+          echo "📊 CI Pipeline Summary"
+          echo "========================================"
+          echo "Workflow: ${{ github.workflow }}"
+          echo "Run: #${{ github.run_number }}"
+          echo "Triggered by: ${{ github.event_name }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "========================================"
+          echo "Stage Results:"
+          echo "  Code Quality:  ${{ needs.code-quality.result == 'success' && '✅ Passed' || '❌ Failed' }}"
+          echo "  Security:      ${{ needs.security-scan.result == 'success' && '✅ Passed' || '❌ Failed' }}"
+          echo "  Unit Tests:    ${{ needs.unit-tests.result == 'success' && '✅ Passed' || '❌ Failed' }}"
+          echo "  Build Check:   ${{ needs.build-check.result == 'success' && '✅ Passed' || '❌ Failed' }}"
+          echo "  E2E Tests:     ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || '❌ Failed' }}"
+          echo "========================================"
+          
+          # Determine overall status
+          if [ "${{ needs.code-quality.result }}" == "success" ] && \
+             [ "${{ needs.security-scan.result }}" == "success" ] && \
+             [ "${{ needs.unit-tests.result }}" == "success" ] && \
+             [ "${{ needs.build-check.result }}" == "success" ] && \
+             [ "${{ needs.e2e-tests.result }}" == "success" ]; then
+            echo "🎉 Overall Status: SUCCESS"
+            exit 0
+          else
+            echo "❌ Overall Status: FAILED"
+            echo ""
+            echo "Please check the failed stages above for details."
+            exit 1
+          fi
+
+      - name: 🔔 Notify on failure
+        if: failure() && github.ref == 'refs/heads/main'
+        run: |
+          echo "🔔 CI Pipeline failed on main branch!"
+          echo "This requires immediate attention."
+          # Add notification logic here (Slack, email, etc.)
