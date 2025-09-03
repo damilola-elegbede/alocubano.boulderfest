@@ -1,0 +1,429 @@
+# ======================================================================
+# Unified Browser Matrix Configuration
+# ======================================================================
+# Central configuration for all E2E workflows to eliminate conflicts
+# and ensure consistent browser testing strategy across the project.
+#
+# PROBLEM SOLVED:
+# - Multiple workflows with conflicting browser matrices
+# - Resource conflicts between parallel browser executions  
+# - Inconsistent test coverage across different environments
+# - Memory allocation issues causing timeouts and failures
+# ======================================================================
+
+# Browser Matrix Strategies
+browser_strategies:
+  # Standard - For regular PRs and fast feedback
+  standard:
+    browsers:
+      - browser: "chromium"
+        name: "Chrome"
+        category: "core"
+        memory_profile: "standard"
+        timeout_profile: "standard"
+        retry: 2
+        priority: 1
+      - browser: "firefox"
+        name: "Firefox" 
+        category: "core"
+        memory_profile: "standard"  # Standardized to same profile as Chrome
+        timeout_profile: "standard"
+        retry: 3
+        priority: 2
+    parallel_workers: 2
+    use_case: "Regular PRs, feature branches"
+    
+  # Extended - For comprehensive testing
+  extended:
+    browsers:
+      - browser: "chromium"
+        name: "Chrome"
+        category: "core"
+        memory_profile: "standard"
+        timeout_profile: "standard"
+        retry: 2
+        priority: 1
+      - browser: "firefox"
+        name: "Firefox"
+        category: "core" 
+        memory_profile: "standard"  # Standardized to same profile as Chrome
+        timeout_profile: "standard"
+        retry: 3
+        priority: 2
+      - browser: "webkit"
+        name: "Safari"
+        category: "extended"
+        memory_profile: "extended"  # Safari needs more resources
+        timeout_profile: "extended"
+        retry: 3
+        priority: 3
+    parallel_workers: 2
+    use_case: "Nightly runs, release branches"
+    
+  # Full - For comprehensive cross-browser testing
+  full:
+    browsers:
+      - browser: "chromium"
+        name: "Chrome"
+        category: "core"
+        memory_profile: "standard"
+        timeout_profile: "standard"
+        retry: 2
+        priority: 1
+      - browser: "firefox"
+        name: "Firefox"
+        category: "core"
+        memory_profile: "standard"  # Standardized to same profile as Chrome
+        timeout_profile: "standard"
+        retry: 3
+        priority: 2
+      - browser: "webkit"
+        name: "Safari"
+        category: "extended"
+        memory_profile: "extended"  # Safari needs more resources
+        timeout_profile: "extended"
+        retry: 3
+        priority: 3
+      - browser: "mobile-chrome"
+        name: "Mobile Chrome"
+        category: "mobile"
+        memory_profile: "standard"  # Mobile chrome is efficient
+        timeout_profile: "extended"  # But needs more time due to mobile complexity
+        retry: 2
+        priority: 4
+      - browser: "mobile-safari"
+        name: "Mobile Safari"
+        category: "mobile"
+        memory_profile: "standard"  # Similar memory to mobile chrome
+        timeout_profile: "extended"  # Mobile safari needs extra time
+        retry: 3
+        priority: 5
+    parallel_workers: 1
+    use_case: "Weekly comprehensive testing"
+    
+  # Fast - For draft PRs and quick validation
+  chromium-only:
+    browsers:
+      - browser: "chromium"
+        name: "Chrome"
+        category: "core"
+        memory_profile: "basic"     # Fastest tests use minimal resources
+        timeout_profile: "basic"
+        retry: 2
+        priority: 1
+    parallel_workers: 1
+    use_case: "Draft PRs, quick validation"
+
+# Workflow Browser Strategy Assignments
+workflow_assignments:
+  main-ci:
+    strategy: "standard"
+    description: "Core CI pipeline - standard browser coverage"
+    
+  main-ci-with-fallbacks:
+    strategy: "standard"
+    description: "Fallback pipeline - consistent with main CI"
+    
+  e2e-tests-optimized:
+    strategy: "dynamic"
+    description: "Dynamic strategy based on context"
+    rules:
+      - condition: "draft_pr"
+        strategy: "chromium-only"
+      - condition: "feature_branch"
+        strategy: "standard"
+      - condition: "nightly_run"
+        strategy: "extended"
+      - condition: "release_branch"
+        strategy: "full"
+      - condition: "manual_dispatch_full"
+        strategy: "full"
+        
+  performance-tests:
+    strategy: "chromium-only"
+    description: "Performance tests - single browser for consistency"
+
+# Resource Management
+resource_management:
+  # Memory allocation profiles matched to test complexity
+  memory_profiles:
+    # Basic: Unit tests, simple smoke tests
+    basic:
+      memory_mb: 2048
+      node_options: "--max-old-space-size=2048"
+      description: "Basic unit tests and smoke tests"
+      use_case: "npm test, simple validation"
+      
+    # Standard: Regular E2E tests, main CI pipeline
+    standard:
+      memory_mb: 3072
+      node_options: "--max-old-space-size=3072"
+      description: "Standard E2E testing with 2 browsers"
+      use_case: "main CI, feature branches"
+      
+    # Extended: Complex E2E scenarios, multiple browsers
+    extended:
+      memory_mb: 4096
+      node_options: "--max-old-space-size=4096"
+      description: "Extended testing with all browsers"
+      use_case: "comprehensive testing, release branches"
+      
+    # Performance: Load testing, performance analysis
+    performance:
+      memory_mb: 6144
+      node_options: "--max-old-space-size=6144"
+      description: "Performance and load testing"
+      use_case: "performance benchmarking, stress testing"
+
+  # Timeout profiles based on test complexity and environment
+  timeout_profiles:
+    # Basic profile for fast tests
+    basic:
+      job_timeout_minutes: 10
+      test_timeout_ms: 30000
+      action_timeout_ms: 15000
+      navigation_timeout_ms: 30000
+      webserver_timeout_ms: 60000
+      expect_timeout_ms: 10000
+      description: "Fast unit and smoke tests"
+      
+    # Standard profile for regular E2E tests  
+    standard:
+      job_timeout_minutes: 15
+      test_timeout_ms: 90000
+      action_timeout_ms: 30000
+      navigation_timeout_ms: 50000
+      webserver_timeout_ms: 180000
+      expect_timeout_ms: 15000
+      description: "Standard E2E testing"
+      
+    # Extended profile for complex scenarios
+    extended:
+      job_timeout_minutes: 20
+      test_timeout_ms: 120000
+      action_timeout_ms: 45000
+      navigation_timeout_ms: 60000
+      webserver_timeout_ms: 240000
+      expect_timeout_ms: 20000
+      description: "Extended testing scenarios"
+      
+    # Performance profile for load testing
+    performance:
+      job_timeout_minutes: 30
+      test_timeout_ms: 300000
+      action_timeout_ms: 60000
+      navigation_timeout_ms: 120000
+      webserver_timeout_ms: 300000
+      expect_timeout_ms: 30000
+      description: "Performance and load testing"
+
+  # Environment multipliers for CI vs local
+  environment_multipliers:
+    ci:
+      timeout_multiplier: 1.5
+      memory_buffer_mb: 512
+      description: "CI environments need extra time and memory"
+      
+    local:
+      timeout_multiplier: 1.0
+      memory_buffer_mb: 0
+      description: "Local development baseline"
+
+  # Browser-specific resource requirements
+  browser_resources:
+    chromium:
+      base_memory_mb: 1024
+      memory_multiplier: 1.0
+      timeout_multiplier: 1.0
+      
+    firefox:
+      base_memory_mb: 1280
+      memory_multiplier: 1.2
+      timeout_multiplier: 1.3
+      
+    webkit:
+      base_memory_mb: 1152
+      memory_multiplier: 1.1
+      timeout_multiplier: 1.5
+      
+    mobile-chrome:
+      base_memory_mb: 896
+      memory_multiplier: 0.9
+      timeout_multiplier: 1.8
+      
+    mobile-safari:
+      base_memory_mb: 1024
+      memory_multiplier: 1.0
+      timeout_multiplier: 2.0
+
+  # Test type to profile mapping
+  test_type_profiles:
+    unit:
+      memory_profile: "basic"
+      timeout_profile: "basic"
+      
+    integration:
+      memory_profile: "basic"
+      timeout_profile: "standard"
+      
+    smoke:
+      memory_profile: "basic"
+      timeout_profile: "basic"
+      
+    e2e:
+      memory_profile: "standard"
+      timeout_profile: "standard"
+      
+    e2e-extended:
+      memory_profile: "extended"
+      timeout_profile: "extended"
+      
+    performance:
+      memory_profile: "performance"
+      timeout_profile: "performance"
+      
+    load:
+      memory_profile: "performance"
+      timeout_profile: "performance"
+
+  # Concurrency control
+  concurrency:
+    standard:
+      max_parallel: 2
+      group_template: "e2e-standard-{ref}-{browser}"
+    extended:
+      max_parallel: 2
+      group_template: "e2e-extended-{ref}-{browser}"
+    full:
+      max_parallel: 1
+      group_template: "e2e-full-{ref}-{browser}"
+    chromium-only:
+      max_parallel: 1
+      group_template: "e2e-fast-{ref}"
+      
+  # Browser installation optimization
+  browser_caching:
+    cache_key_template: "playwright-{os}-{package-hash}-{browser}-{strategy}-v6"
+    selective_install: true
+    dependency_update: true
+
+# Quality Gates by Browser
+quality_gates:
+  core_browsers: ["chromium", "firefox"]
+  required_pass_rate: 100  # Core browsers must pass
+  
+  extended_browsers: ["webkit"]
+  extended_pass_rate: 90   # Extended browsers allow some flakiness
+  
+  mobile_browsers: ["mobile-chrome", "mobile-safari"]
+  mobile_pass_rate: 85     # Mobile browsers more tolerant due to complexity
+
+# Environment-specific Overrides
+environment_overrides:
+  ci:
+    timeout_multiplier: 1.5
+    retry_multiplier: 1.5
+    memory_buffer: "512MB"
+    
+  local:
+    timeout_multiplier: 1.0
+    retry_multiplier: 1.0
+    parallel_workers: 1
+
+# Migration Strategy
+migration:
+  phase1:
+    description: "Update main workflows to use unified config"
+    workflows: ["main-ci.yml", "main-ci-with-fallbacks.yml"]
+    
+  phase2:
+    description: "Migrate advanced E2E workflow"
+    workflows: ["e2e-tests-optimized.yml"]
+    
+  phase3:
+    description: "Update remaining workflows"
+    workflows: ["performance-tests.yml", "nightly-tests.yml"]
+
+# Resource Calculation Helpers
+resource_helpers:
+  # Script to calculate memory and timeout values based on profiles
+  calculation_script: |
+    #!/bin/bash
+    # Usage: ./calculate-resources.sh <memory_profile> <timeout_profile> <browser> <environment>
+    
+    MEMORY_PROFILE=${1:-standard}
+    TIMEOUT_PROFILE=${2:-standard}
+    BROWSER=${3:-chromium}
+    ENVIRONMENT=${4:-ci}
+    
+    # Get base values from profiles
+    MEMORY_MB=$(yq eval ".resource_management.memory_profiles.${MEMORY_PROFILE}.memory_mb" .github/browser-matrix-config.yml)
+    JOB_TIMEOUT=$(yq eval ".resource_management.timeout_profiles.${TIMEOUT_PROFILE}.job_timeout_minutes" .github/browser-matrix-config.yml)
+    
+    # Apply browser multipliers
+    BROWSER_MEMORY_MULT=$(yq eval ".resource_management.browser_resources.${BROWSER}.memory_multiplier" .github/browser-matrix-config.yml)
+    BROWSER_TIMEOUT_MULT=$(yq eval ".resource_management.browser_resources.${BROWSER}.timeout_multiplier" .github/browser-matrix-config.yml)
+    
+    # Apply environment multipliers
+    ENV_TIMEOUT_MULT=$(yq eval ".resource_management.environment_multipliers.${ENVIRONMENT}.timeout_multiplier" .github/browser-matrix-config.yml)
+    ENV_MEMORY_BUFFER=$(yq eval ".resource_management.environment_multipliers.${ENVIRONMENT}.memory_buffer_mb" .github/browser-matrix-config.yml)
+    
+    # Calculate final values
+    FINAL_MEMORY=$((MEMORY_MB + ENV_MEMORY_BUFFER))
+    FINAL_TIMEOUT=$(echo "$JOB_TIMEOUT * $BROWSER_TIMEOUT_MULT * $ENV_TIMEOUT_MULT" | bc -l | cut -d. -f1)
+    NODE_OPTIONS="--max-old-space-size=${FINAL_MEMORY}"
+    
+    # Output for GitHub Actions
+    echo "memory_mb=$FINAL_MEMORY" >> $GITHUB_OUTPUT
+    echo "timeout_minutes=$FINAL_TIMEOUT" >> $GITHUB_OUTPUT
+    echo "node_options=$NODE_OPTIONS" >> $GITHUB_OUTPUT
+    
+    # Also export as env vars for immediate use
+    export CALCULATED_MEMORY_MB=$FINAL_MEMORY
+    export CALCULATED_TIMEOUT_MINUTES=$FINAL_TIMEOUT
+    export CALCULATED_NODE_OPTIONS=$NODE_OPTIONS
+
+# Usage Instructions
+usage:
+  implementation: |
+    1. Include this config in workflow files
+    2. Use resource calculation helper to determine memory/timeout values
+    3. Apply browser strategy selection logic
+    4. Implement quality gate checks
+    
+  example_workflow_integration: |
+    # In workflow YAML:
+    - name: Calculate Resource Requirements
+      id: resources
+      run: |
+        # Determine profiles based on test type and browser
+        MEMORY_PROFILE="${{ matrix.memory_profile || 'standard' }}"
+        TIMEOUT_PROFILE="${{ matrix.timeout_profile || 'standard' }}"
+        BROWSER="${{ matrix.browser || 'chromium' }}"
+        ENVIRONMENT="${{ env.CI && 'ci' || 'local' }}"
+        
+        # Get base values
+        MEMORY_MB=$(yq eval ".resource_management.memory_profiles.${MEMORY_PROFILE}.memory_mb" .github/browser-matrix-config.yml)
+        JOB_TIMEOUT=$(yq eval ".resource_management.timeout_profiles.${TIMEOUT_PROFILE}.job_timeout_minutes" .github/browser-matrix-config.yml)
+        NODE_OPTIONS=$(yq eval ".resource_management.memory_profiles.${MEMORY_PROFILE}.node_options" .github/browser-matrix-config.yml)
+        
+        # Apply environment buffer for CI
+        if [ "$ENVIRONMENT" = "ci" ]; then
+          MEMORY_BUFFER=$(yq eval ".resource_management.environment_multipliers.ci.memory_buffer_mb" .github/browser-matrix-config.yml)
+          TIMEOUT_MULT=$(yq eval ".resource_management.environment_multipliers.ci.timeout_multiplier" .github/browser-matrix-config.yml)
+          MEMORY_MB=$((MEMORY_MB + MEMORY_BUFFER))
+          JOB_TIMEOUT=$(echo "$JOB_TIMEOUT * $TIMEOUT_MULT" | bc -l | cut -d. -f1)
+          NODE_OPTIONS="--max-old-space-size=${MEMORY_MB}"
+        fi
+        
+        # Output calculated values
+        echo "memory_mb=$MEMORY_MB" >> $GITHUB_OUTPUT
+        echo "timeout_minutes=$JOB_TIMEOUT" >> $GITHUB_OUTPUT
+        echo "node_options=$NODE_OPTIONS" >> $GITHUB_OUTPUT
+        
+    # Use in job
+    - name: Run Tests
+      timeout-minutes: ${{ steps.resources.outputs.timeout_minutes }}
+      env:
+        NODE_OPTIONS: ${{ steps.resources.outputs.node_options }}
+      run: npm run test:e2e

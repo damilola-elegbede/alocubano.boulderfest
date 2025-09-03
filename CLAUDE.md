@@ -26,56 +26,55 @@ npm test && git push
 ### Development
 
 ```bash
-# Start with ngrok tunnel (recommended)
-npm start  # https://alocubanoboulderfest.ngrok.io
+# Start development with ngrok tunnel (recommended)
+npm run dev                     # https://alocubanoboulderfest.ngrok.io
+# OR
+npm start                       # Same as npm run dev
 
-# Local development with Vercel Dev
-npm run start:local  # http://localhost:3000
+# Local development only
+npm run dev:local               # http://localhost:8080 (no API)
 
 # Simple HTTP server (no API)
-npm run serve:simple  # http://localhost:8000
+npm run serve:simple            # http://localhost:8000
 
-# CI Server with Dynamic Port Allocation
-npm run start:ci                     # Start CI server (uses DYNAMIC_PORT or defaults to 3000)
-npm run start:ci:port               # Start CI server with explicit port
-npm run vercel:dev:ci               # Vercel dev in CI mode
-DYNAMIC_PORT=3001 npm run start:ci  # Start on specific port
+# Clean development server
+npm run dev:clean               # Fresh Vercel config start
+
+# E2E development server
+npm run dev:e2e                 # Vercel dev for E2E testing
 ```
 
 ### Testing
 
 ```bash
-# Run streamlined test suite (default)
-npm test                     # All essential tests (26 unit tests)
+# Unit tests (26 essential tests)
+npm test                        # Run all unit tests
+npm run test:unit               # Same as npm test
+npm run test:unit:watch         # Watch mode for development
+npm run test:unit:coverage      # With coverage report
 
-# Test execution modes
-npm run test:simple         # Same as npm test
-npm run test:simple:watch   # Watch mode for development
-npm run test:coverage       # With coverage report
+# E2E testing with Vercel Preview Deployments (CURRENT)
+npm run test:e2e                # 12 comprehensive E2E tests
+npm run test:e2e:ui             # Interactive UI mode
+npm run test:e2e:headed         # Headed browser mode
+npm run test:e2e:debug          # Debug mode
+npm run test:e2e:fast           # Fast mode (Chromium only)
+npm run test:e2e:report         # View test report
+npm run test:e2e:install        # Install Playwright browsers
 
-# E2E testing with Vercel Dev (NEW DEFAULT)
-npm run test:e2e            # 12 comprehensive E2E tests with Vercel dev server
-npm run test:e2e:ui         # Interactive UI mode with Vercel dev
-npm run test:e2e:headed     # Headed browser mode with Vercel dev
-npm run test:e2e:debug      # Debug mode with Vercel dev
-npm run test:e2e:fast       # Fast mode (Chromium only) with Vercel dev
+# E2E test suites by category
+npm run test:e2e:standard       # Basic navigation, cart, newsletter
+npm run test:e2e:advanced       # Registration, payment, ticket validation
+npm run test:e2e:performance    # Gallery browsing, user engagement
+npm run test:e2e:accessibility  # Mobile registration experience
+npm run test:e2e:security       # Admin authentication and dashboard
 
-# E2E testing with advanced configurations
-npm run test:e2e:vercel        # Full E2E tests with Vercel dev server
-npm run test:e2e:vercel:ui     # Interactive UI mode with Vercel config
-npm run test:e2e:vercel:headed # Headed browser mode with Vercel config
-npm run test:e2e:vercel:debug  # Debug mode with Vercel config
-npm run test:e2e:vercel:fast   # Fast mode (Chromium only) with Vercel config
+# E2E tests by browser
+npm run test:e2e:chromium       # Chrome-based testing
+npm run test:e2e:firefox        # Firefox testing
+npm run test:e2e:webkit         # Safari testing
 
-# DEPRECATED: E2E testing commands (Local servers no longer used)
-# npm run test:e2e:ngrok       # DEPRECATED: ngrok tunnel approach  
-# npm run test:e2e:ngrok:ui    # DEPRECATED: Interactive UI with ngrok
-# npm run test:e2e:validate    # DEPRECATED: Local E2E setup validation
-
-# NEW: E2E tests now use Vercel Preview Deployments
-# See CI/CD workflows for current E2E testing approach
-
-# E2E test flows (12 total)
+# E2E test flows (12 total) - Can run individual tests:
 npm run test:e2e -- tests/e2e/flows/admin-auth.test.js                      # Admin authentication
 npm run test:e2e -- tests/e2e/flows/admin-dashboard.test.js                 # Admin panel & security
 npm run test:e2e -- tests/e2e/flows/basic-navigation.test.js                # Basic navigation
@@ -89,37 +88,60 @@ npm run test:e2e -- tests/e2e/flows/registration-flow.test.js               # Re
 npm run test:e2e -- tests/e2e/flows/ticket-validation.test.js               # Ticket validation
 npm run test:e2e -- tests/e2e/flows/user-engagement.test.js                 # User engagement metrics
 
-# Health checks
-npm run test:health         # API health verification
-npm run test:smoke          # Quick smoke tests
+# Health checks and utilities
+npm run test:health             # API health verification
+npm run test:performance        # Performance testing
 
-# All tests (streamlined + E2E)
-npm run test:all            # Complete test suite
+# Combined test suites
+npm run test:all                # Complete test suite (unit + E2E)
+npm run test:all:memory-optimized  # Higher memory allocation for large tests
+
+# DEPRECATED COMMANDS (Show warnings and redirect):
+# npm run test:simple           # ⚠️ DEPRECATED: Use npm run test:unit
+# npm run test:coverage         # ⚠️ DEPRECATED: Use npm run test:unit:coverage
+# npm run test:e2e:ci           # ❌ DEPRECATED: Use npm run test:e2e (Preview Deployments)
+# npm run test:e2e:ngrok        # ⚠️ DEPRECATED: Use npm run test:e2e (modern approach)
 ```
 
 ### Database
 
 ```bash
 # Development Database (SQLite)
-npm run migrate:up           # Run pending migrations
-npm run migrate:status       # Check migration status
-npm run migrate:verify       # Verify integrity
+npm run migrate:up              # Run pending migrations
+npm run migrate:status          # Check migration status
+npm run migrate:verify          # Verify integrity
 
-# Database access
-npm run db:shell            # SQLite shell
-npm run health:database     # Health check
+# E2E Database (Turso)
+npm run migrate:e2e:up          # Run E2E migrations
+npm run migrate:e2e:status      # Check E2E migration status
+
+# Database access and utilities
+npm run db:shell                # SQLite shell
+npm run db:e2e:setup            # Setup E2E database
+npm run db:e2e:clean            # Clean E2E database
+npm run db:e2e:reset            # Reset E2E database
+npm run db:e2e:validate         # Validate E2E database
+
+# Health checks
+npm run health:check            # General health check
+npm run health:database         # Database health check
 ```
 
 ### Deployment
 
 ```bash
-# Quality gates
-npm run lint                # ESLint + HTMLHint
-npm run deploy:check        # Pre-deployment validation
+# Quality gates and validation
+npm run lint                    # ESLint + HTMLHint
+npm run deploy:check            # Pre-deployment validation
 
-# Deployment
-npm run deploy:staging      # Stage with quality gates
-git push origin main        # Auto-deploy to production
+# Deployment commands
+npm run deploy:staging          # Deploy to staging with quality gates
+npm run deploy:production       # Deploy to production
+git push origin main            # Auto-deploy to production (via CI/CD)
+
+# DEPRECATED DEPLOYMENT:
+# npm run start:ci              # ❌ DEPRECATED: Use Vercel Preview Deployments
+# npm run vercel:dev:ci         # ❌ DEPRECATED: Use Vercel Preview Deployments
 ```
 
 ## Architecture Overview
@@ -155,14 +177,14 @@ git push origin main        # Auto-deploy to production
 #### DEPRECATED E2E Testing Setup (Local Servers)
 
 ```bash
-# DEPRECATED: These commands are no longer used
-# npm run test:e2e        # DEPRECATED: Local Vercel dev approach
-# npm run test:e2e:ngrok  # DEPRECATED: ngrok tunneling approach
-# npm run dev:e2e         # DEPRECATED: E2E dev server startup
-# npm run start:ci        # DEPRECATED: CI server management
+# ❌ DEPRECATED: These commands are no longer used
+# npm run test:e2e:ci           # DEPRECATED: Local Vercel dev approach
+# npm run test:e2e:ngrok        # DEPRECATED: ngrok tunneling approach  
+# npm run dev:e2e               # DEPRECATED: E2E dev server startup
+# npm run start:ci              # DEPRECATED: CI server management
 ```
 
-#### NEW E2E Testing Approach
+#### CURRENT E2E Testing Approach
 
 E2E tests now run against **Vercel Preview Deployments** which provide:
 - Real production environment testing
@@ -332,7 +354,7 @@ Features:
 - **Streamlined testing**: Single test command `npm test` runs 26 essential unit tests
 - **Fast execution**: Complete unit test suite finishes in seconds
 - **Memory efficient**: No complex test infrastructure or high memory usage
-- **Comprehensive E2E validation**: 12 focused Playwright tests with **Vercel Dev** server
+- **Comprehensive E2E validation**: 12 focused Playwright tests with **Vercel Preview Deployments**
 - **Reliable**: Direct API testing with minimal mocking
 
 ### Test Architecture
@@ -342,7 +364,7 @@ Features:
   - smoke-tests.test.js (3 tests) - Basic functionality verification  
   - registration-api.test.js (5 tests) - Registration API unit tests
   - registration-flow.test.js (3 tests) - Registration flow tests
-- **E2E Test Suite (12 comprehensive tests)** with **Vercel Dev**:
+- **E2E Test Suite (12 comprehensive tests)** with **Vercel Preview Deployments**:
   - admin-auth.test.js - Admin authentication flow
   - admin-dashboard.test.js - Admin panel & security testing
   - basic-navigation.test.js - Page navigation and routing
@@ -357,9 +379,9 @@ Features:
   - user-engagement.test.js - User engagement metrics and tracking
 - **Database Strategy**:
   - **Unit tests**: SQLite for fast, isolated testing
-  - **E2E tests**: Turso via **Vercel Dev** for production-like environment
+  - **E2E tests**: Production database via **Vercel Preview Deployments**
 - **Simple execution**: No complex test builders, managers, or abstractions
-- **Real API testing**: Tests interact with actual endpoints via Vercel dev server
+- **Real API testing**: Tests interact with actual endpoints via Vercel preview deployments
 
 ## Floating Cart Visibility
 
@@ -376,7 +398,7 @@ Managed by `determineCartVisibility()` in `floating-cart.js`:
 - **API response**: <100ms target
 - **Browser cache**: 24-hour for static assets
 - **Unit test execution**: Fast completion for 26 unit tests
-- **E2E test execution**: 2-5 minutes for 12 comprehensive tests via **Vercel Dev**
+- **E2E test execution**: 2-5 minutes for 12 comprehensive tests via **Vercel Preview Deployments**
 - **Test simplicity**: Zero abstractions, readable by any JavaScript developer
 
 ## Debugging
@@ -415,7 +437,7 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 │   ├── registration-api.test.js     # Registration API contracts (5 tests)
 │   ├── registration-flow.test.js    # Registration flow tests (3 tests)
 │   ├── e2e/                         # Comprehensive E2E test structure
-│   │   └── flows/                   # 12 focused E2E tests (use Vercel Dev)
+│   │   └── flows/                   # 12 focused E2E tests (use Vercel Preview Deployments)
 │   │       ├── admin-auth.test.js                      # Admin authentication
 │   │       ├── admin-dashboard.test.js                 # Admin panel & security
 │   │       ├── basic-navigation.test.js                # Basic navigation
@@ -438,32 +460,40 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 
 ## Migration Notes
 
-### Breaking Changes - Local Servers to Vercel Preview Deployments
+### Breaking Changes - Package Scripts Standardization (Issue #12)
 
 **What Changed:**
-- E2E tests now use **Vercel Preview Deployments** instead of local server management
-- Eliminated complex local server orchestration (Vercel dev, ngrok, port allocation)
-- Removed dependency on local server startup and health checks
+- **Script naming standardization**: Clear, consistent naming conventions
+- **Deprecated script warnings**: Old commands show deprecation warnings and redirect to new ones
+- **Removed duplicate functionality**: Eliminated scripts that did the same thing with different names
+- **Modern E2E approach**: All E2E commands now use Vercel Preview Deployments approach
+- **Developer-friendly organization**: Scripts grouped by purpose with clear descriptions
 
-**Migration Completed:**
-1. **Deprecated Scripts**: Local server scripts marked as deprecated
-2. **Updated Package.json**: E2E commands now show migration messages
-3. **Removed Dependencies**: ngrok removed from dependencies
-4. **Updated Configs**: Playwright configs marked as deprecated for local servers
+**Migration Required:**
+1. **Update development workflows**: Use `npm run dev` instead of legacy server commands
+2. **Update testing commands**: Use `npm run test:unit` instead of `test:simple`
+3. **Update E2E testing**: Use `npm run test:e2e` (Vercel Preview Deployments) instead of legacy CI server approaches
+4. **Update CI/CD pipelines**: Ensure workflows use current script names
+
+**New Script Organization:**
+- **Development**: `dev`, `dev:local`, `dev:clean`
+- **Unit Testing**: `test:unit`, `test:unit:watch`, `test:unit:coverage`
+- **E2E Testing**: `test:e2e`, `test:e2e:ui`, `test:e2e:headed`, `test:e2e:debug`
+- **E2E Suites**: `test:e2e:standard`, `test:e2e:advanced`, `test:e2e:performance`, etc.
+- **Database**: `migrate:up`, `db:e2e:setup`, `health:database`
+- **Deployment**: `deploy:staging`, `deploy:production`
 
 **Benefits:**
-- **Real Production Environment**: Tests run against actual Vercel deployments
-- **Eliminated Complexity**: No server hanging, port conflicts, or startup issues  
-- **Better CI/CD Integration**: Seamless integration with deployment workflows
-- **Improved Reliability**: No local server infrastructure to manage
-- **Faster Execution**: No server startup time or orchestration overhead
+- **Clear command purpose**: No confusion about which script does what
+- **Consistent naming**: Predictable script names following standard conventions
+- **Migration guidance**: Deprecated scripts show exact replacement command
+- **Better organization**: Scripts grouped logically with clear descriptions
+- **Reduced confusion**: No duplicate commands or conflicting approaches
 
-**DEPRECATED Infrastructure:**
-- Local Vercel dev server startup scripts
-- ngrok tunneling for E2E testing  
-- Dynamic port allocation systems
-- Complex server health checking
-- Local server process management
+**Troubleshooting:**
+- If you see deprecation warnings, use the suggested replacement command
+- Legacy CI server commands now exit with error and clear guidance
+- Run deprecated commands once to see migration path to new commands
 
 ## Contact & Resources
 
