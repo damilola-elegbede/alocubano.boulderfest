@@ -61,8 +61,10 @@ Images are automatically categorized based on filename patterns:
 ### Google Drive Management
 - `GET /api/google-drive-health` - Service health and configuration status
 - `GET /api/google-drive-cache` - Cache status and metrics
-- `POST /api/google-drive-cache` - Warm up cache with fresh data
-- `DELETE /api/google-drive-cache` - Clear cache
+- `POST /api/google-drive-cache` - Warm up cache with fresh data (requires authentication)
+- `DELETE /api/google-drive-cache` - Clear cache (requires authentication)
+
+**Note**: POST and DELETE operations on the cache management endpoint require an `X-API-Key` header with the `INTERNAL_API_KEY` value for security purposes.
 
 ## Usage Examples
 

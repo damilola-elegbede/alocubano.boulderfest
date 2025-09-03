@@ -25,7 +25,26 @@ export default async function handler(req, res) {
     }
 
     try {
-        const metrics = req.body;
+        let metrics = req.body;
+        
+        // Handle sendBeacon string bodies - parse JSON if needed
+        if (typeof metrics === 'string') {
+            try {
+                metrics = JSON.parse(metrics);
+            } catch (parseError) {
+                console.error('[Performance Final] Failed to parse JSON body:', parseError);
+                res.status(400).json({ 
+                    error: 'Invalid JSON',
+                    message: 'Request body must be valid JSON'
+                });
+                return;
+            }
+        }
+
+        // Handle text/plain content type from sendBeacon
+        if (req.headers['content-type'] === 'text/plain' && typeof metrics === 'object') {
+            // Body is already parsed correctly, continue
+        }
 
         // Log final metrics (in production, you'd store these)
         console.log('[Performance Final] Received final metrics:', {

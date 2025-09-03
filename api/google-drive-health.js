@@ -31,6 +31,9 @@ export default async function handler(req, res) {
     
     const googleDriveService = getGoogleDriveService();
     
+    // Ensure service is initialized before health check
+    await googleDriveService.ensureInitialized?.();
+    
     // Get health check and metrics
     const healthCheck = await googleDriveService.healthCheck();
     const metrics = getGoogleDriveMetrics();
@@ -45,11 +48,7 @@ export default async function handler(req, res) {
       metrics,
       configuration: {
         hasApiKey: !!process.env.GOOGLE_DRIVE_API_KEY,
-        hasFolderId: !!process.env.GOOGLE_DRIVE_FOLDER_ID,
-        apiKeyLength: process.env.GOOGLE_DRIVE_API_KEY ? process.env.GOOGLE_DRIVE_API_KEY.length : 0,
-        folderIdFormat: process.env.GOOGLE_DRIVE_FOLDER_ID ? 
-          process.env.GOOGLE_DRIVE_FOLDER_ID.substring(0, 8) + '...' : 
-          'Not set'
+        hasFolderId: !!process.env.GOOGLE_DRIVE_FOLDER_ID
       },
       api: {
         version: '1.0',
@@ -57,6 +56,14 @@ export default async function handler(req, res) {
         environment: process.env.VERCEL ? 'vercel' : 'local'
       }
     };
+
+    // Only expose sensitive config details when explicitly enabled for internal debugging
+    if (process.env.EXPOSE_INTERNAL_HEALTH_FIELDS === 'true') {
+      response.configuration.apiKeyLength = process.env.GOOGLE_DRIVE_API_KEY ? process.env.GOOGLE_DRIVE_API_KEY.length : 0;
+      response.configuration.folderIdFormat = process.env.GOOGLE_DRIVE_FOLDER_ID ? 
+        process.env.GOOGLE_DRIVE_FOLDER_ID.substring(0, 8) + '...' : 
+        'Not set';
+    }
 
     // Set cache headers based on health status
     if (healthCheck.status === 'healthy') {

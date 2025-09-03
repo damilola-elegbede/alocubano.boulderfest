@@ -248,8 +248,11 @@ class GoogleDriveService {
     try {
       return await this._performApiFetch(options);
     } catch (error) {
-      // Handle rate limiting
-      if (error.message.includes('429') || error.message.includes('quota')) {
+      // Handle rate limiting using proper status code checking
+      const statusCode = error.code || error.response?.status || 0;
+      const isRateLimited = statusCode === 429 || error.message.includes('429') || error.message.includes('quota');
+      
+      if (isRateLimited) {
         this.metrics.rateLimitHits++;
         
         if (retryCount < this.maxRetries) {
@@ -284,7 +287,12 @@ class GoogleDriveService {
       includeVideos = false
     } = options;
 
-    const displayYear = year || new Date().getFullYear().toString();
+    let displayYear = year || new Date().getFullYear().toString();
+    
+    // Sanitize year - must be exactly 4 digits
+    if (!/^\d{4}$/.test(displayYear)) {
+      throw new Error(`Invalid year format: ${displayYear}. Year must be 4 digits (e.g., 2025)`);
+    }
     
     logger.log(`🔄 Fetching images from Google Drive for year: ${displayYear}`);
 
@@ -444,7 +452,7 @@ class GoogleDriveService {
       cacheTimestamp: new Date().toISOString(),
       metadata: {
         apiCallTimestamp: new Date().toISOString(),
-        folderId: this.folderId,
+        folderId: this.rootFolderId,
         filesProcessed: files.length,
         categoryCounts: Object.fromEntries(
           Object.entries(categories).map(([key, items]) => [key, items.length])
@@ -592,14 +600,20 @@ class GoogleDriveService {
    * @private
    */
   _isRetryableError(error) {
+    // Check HTTP status codes first (more reliable)
+    const statusCode = error.code || error.response?.status || 0;
+    const retryableStatusCodes = [502, 503, 504];
+    
+    if (retryableStatusCodes.includes(statusCode)) {
+      return true;
+    }
+    
+    // Fallback to message checking for other retryable errors
     const retryableMessages = [
       'network',
-      'timeout',
+      'timeout', 
       'temporary',
-      'unavailable',
-      '502',
-      '503',
-      '504'
+      'unavailable'
     ];
     
     return retryableMessages.some(msg => 

@@ -202,6 +202,9 @@ class GalleryService {
       if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
         console.log('Gallery: Using Google Drive Service Account API for runtime data');
         
+        // Ensure Google Drive service is initialized before fetching
+        await googleDriveService.ensureInitialized?.();
+        
         const driveData = await googleDriveService.fetchImages({
           year,
           eventId,

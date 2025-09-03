@@ -6,15 +6,41 @@
 import { getGoogleDriveService, clearGoogleDriveCache, getGoogleDriveMetrics } from './lib/google-drive-service.js';
 
 export default async function handler(req, res) {
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Configure CORS with restricted origins for security
+  const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:8080'];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-API-Key');
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
+  }
+
+  // Authenticate POST/DELETE methods with internal API key
+  if (req.method === 'POST' || req.method === 'DELETE') {
+    const apiKey = req.headers['x-api-key'] || req.query.apiKey;
+    const internalApiKey = process.env.INTERNAL_API_KEY;
+    
+    if (!internalApiKey) {
+      res.status(500).json({
+        error: 'Internal server error',
+        message: 'INTERNAL_API_KEY not configured'
+      });
+      return;
+    }
+    
+    if (!apiKey || apiKey !== internalApiKey) {
+      res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Valid API key required for POST/DELETE operations'
+      });
+      return;
+    }
   }
 
   try {
@@ -23,7 +49,7 @@ export default async function handler(req, res) {
     const googleDriveService = getGoogleDriveService();
     
     switch (req.method) {
-      case 'GET':
+      case 'GET': {
         // Get cache status and metrics
         const metrics = getGoogleDriveMetrics();
         
@@ -43,8 +69,9 @@ export default async function handler(req, res) {
           }
         });
         break;
+      }
 
-      case 'DELETE':
+      case 'DELETE': {
         // Clear the cache
         clearGoogleDriveCache();
         
@@ -65,8 +92,9 @@ export default async function handler(req, res) {
           }
         });
         break;
+      }
 
-      case 'POST':
+      case 'POST': {
         // Warm up cache by fetching data
         const { year, eventId, maxResults = 100 } = req.body || {};
         
@@ -112,6 +140,7 @@ export default async function handler(req, res) {
           });
         }
         break;
+      }
 
       default:
         res.status(405).json({
