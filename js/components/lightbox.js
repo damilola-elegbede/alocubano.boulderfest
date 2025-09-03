@@ -283,19 +283,36 @@ if (typeof Lightbox === 'undefined') {
             const title = lightbox.querySelector('.lightbox-title');
             const counter = lightbox.querySelector('.lightbox-counter');
 
-            // Update image - check if the original gallery item has an updated src
-            const galleryItem = document.querySelector(
-                `[data-index="${this.currentIndex}"] .lazy-image`
-            );
-            let imageSrc = item.viewUrl || item.src;
+            // Use viewUrl for full resolution, fallback to other URLs if not available
+            const imageSrc = item.viewUrl || item.downloadUrl || item.src || item.thumbnailUrl;
 
-            // If the gallery item has a successfully loaded image, use that src
-            if (galleryItem?.src && !galleryItem.src.includes('data:image')) {
-                imageSrc = galleryItem.src;
-                // console.log('🔄 Using updated image source from gallery:', imageSrc);
+            // Add smooth transition: show thumbnail immediately, then load full image
+            if (item.thumbnailUrl && item.viewUrl && item.thumbnailUrl !== item.viewUrl) {
+                // Show thumbnail immediately for fast feedback
+                img.style.opacity = '0.8';
+                img.src = item.thumbnailUrl;
+
+                // Load full image in background
+                const fullImage = new Image();
+                fullImage.onload = () => {
+                    // Smooth transition to full image
+                    img.style.transition = 'opacity 0.3s ease';
+                    img.style.opacity = '1';
+                    img.src = fullImage.src;
+                };
+                fullImage.onerror = () => {
+                    // If full image fails, keep showing thumbnail
+                    img.style.opacity = '1';
+                    // Silent fail - thumbnail is already showing
+                };
+                fullImage.src = item.viewUrl;
+            } else {
+                // Direct load if no thumbnail or same URL
+                img.style.display = 'block';
+                img.style.opacity = '1';
+                img.src = imageSrc;
             }
-            img.style.display = 'block';
-            img.src = imageSrc;
+
             img.alt = item.name || item.alt || 'Gallery image';
 
             // Add error handling
