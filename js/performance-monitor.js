@@ -338,6 +338,7 @@ class PerformanceMonitor {
             const node = source.node;
             return (
                 node &&
+                node.classList &&
         (node.classList.contains('gallery-image') ||
           node.classList.contains('gallery-container') ||
           node.closest('.gallery-container') !== null)
