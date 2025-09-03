@@ -70,7 +70,6 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🎨 Running HTML Validation"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
           # Run HTMLHint and capture exit code
           set +e
           npm run lint:html 2>&1 | tee htmlhint-output.log
