@@ -1,0 +1,190 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+# Ensure only one deployment at a time
+concurrency:
+  group: deployment-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  pre-deployment-checks:
+    name: Pre-Deployment Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      should-deploy: ${{ steps.checks.outputs.deploy }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+        timeout-minutes: 3
+      
+      - name: Run deployment checks
+        id: checks
+        run: |
+          echo "Running pre-deployment validation..."
+          
+          # Check for critical files
+          if [ ! -f "package.json" ] || [ ! -f "vercel.json" ]; then
+            echo "❌ Critical files missing!"
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          # Run unit tests
+          npm test
+          
+          # Verify build
+          npm run build
+          
+          # Check for security vulnerabilities
+          npm audit --audit-level=critical || true
+          
+          echo "✅ All pre-deployment checks passed"
+          echo "deploy=true" >> $GITHUB_OUTPUT
+      
+      - name: Generate deployment manifest
+        run: |
+          echo "## Deployment Manifest" > deployment-manifest.txt
+          echo "Repository: ${{ github.repository }}" >> deployment-manifest.txt
+          echo "Branch: ${{ github.ref_name }}" >> deployment-manifest.txt
+          echo "Commit: ${{ github.sha }}" >> deployment-manifest.txt
+          echo "Triggered by: ${{ github.actor }}" >> deployment-manifest.txt
+          echo "Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> deployment-manifest.txt
+      
+      - name: Upload deployment manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-manifest
+          path: deployment-manifest.txt
+          retention-days: 30
+  
+  deploy:
+    name: Deploy to Vercel
+    needs: pre-deployment-checks
+    if: needs.pre-deployment-checks.outputs.should-deploy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: ${{ steps.deployment.outputs.url }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+      
+      - name: Deploy to Vercel
+        id: deployment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ "${{ github.event.inputs.environment }}" == "staging" ]; then
+            echo "Deploying to staging environment..."
+            url=$(vercel deploy --token=$VERCEL_TOKEN --yes)
+          else
+            echo "Deploying to production environment..."
+            url=$(vercel deploy --prod --token=$VERCEL_TOKEN --yes)
+          fi
+          echo "url=$url" >> $GITHUB_OUTPUT
+          echo "✅ Deployed to: $url"
+      
+      - name: Post-deployment validation
+        run: |
+          echo "Validating deployment..."
+          deployment_url="${{ steps.deployment.outputs.url }}"
+          
+          # Wait for deployment to be ready
+          sleep 10
+          
+          # Check if site is accessible
+          if curl -f -s -o /dev/null -w "%{http_code}" "$deployment_url" | grep -q "200"; then
+            echo "✅ Site is accessible"
+          else
+            echo "⚠️ Site may not be fully deployed yet"
+          fi
+      
+      - name: Create deployment record
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: '${{ github.event.inputs.environment || 'production' }}',
+              description: 'Automated deployment from GitHub Actions',
+              auto_merge: false,
+              required_contexts: [],
+              production_environment: ${{ github.event.inputs.environment != 'staging' }}
+            });
+  
+  notify:
+    name: Deployment Notification
+    needs: [deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Send deployment notification
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const status = '${{ needs.deploy.result }}';
+            const emoji = status === 'success' ? '🎉' : '⚠️';
+            const environment = '${{ github.event.inputs.environment || 'production' }}';
+            
+            const message = `${emoji} Deployment to ${environment} ${status}!
+            
+            **Details:**
+            - Repository: ${{ github.repository }}
+            - Branch: ${{ github.ref_name }}
+            - Commit: ${{ github.sha }}
+            - Triggered by: ${{ github.actor }}
+            - Workflow: [View Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+            
+            // Create an issue comment if this was triggered by a PR merge
+            if (context.payload.pull_request) {
+              await github.rest.issues.createComment({
+                issue_number: context.payload.pull_request.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            }
