@@ -862,9 +862,10 @@
                 });
             } else {
                 // Check if we've already loaded all available items
+                // IMPORTANT: Don't exit early if we haven't loaded anything yet (totalItemsAvailable > 0)
                 if (
                     state.hasCompleteDataset ||
-          state.itemsDisplayed >= state.totalItemsAvailable
+          (state.totalItemsAvailable > 0 && state.itemsDisplayed >= state.totalItemsAvailable)
                 ) {
                     console.log('✅ All items already displayed', {
                         hasCompleteDataset: state.hasCompleteDataset,
