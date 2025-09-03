@@ -1,16 +1,24 @@
 /**
  * Google Drive API Service
- * Fetches images from Google Drive folder using Drive API v3
+ * Fetches images from Google Drive folder using Drive API v3 with Service Account authentication
  * Implements caching, categorization, and structured data formatting
  * Compatible with existing gallery service architecture
+ * 
+ * Required environment variables:
+ * - GOOGLE_SERVICE_ACCOUNT_EMAIL: Service account email
+ * - GOOGLE_PRIVATE_KEY: Service account private key (base64 encoded or with escaped newlines)
  */
 
+import { google } from 'googleapis';
 import { logger } from './logger.js';
 
 class GoogleDriveService {
   constructor() {
-    this.apiKey = null;
-    this.folderId = null;
+    this.drive = null;
+    this.auth = null;
+    this.serviceAccountEmail = null;
+    this.privateKey = null;
+    this.rootFolderId = null;
     this.initialized = false;
     this.initializationPromise = null;
     this.cache = new Map();
@@ -59,7 +67,7 @@ class GoogleDriveService {
    */
   async ensureInitialized() {
     // Return immediately if already initialized (fast path)
-    if (this.initialized && this.apiKey && this.folderId) {
+    if (this.initialized && this.drive && this.auth) {
       return this;
     }
 
@@ -88,30 +96,48 @@ class GoogleDriveService {
   async _performInitialization() {
     try {
       // Load configuration from environment variables
-      this.apiKey = process.env.GOOGLE_DRIVE_API_KEY;
-      this.folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+      this.serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+      this.privateKey = process.env.GOOGLE_PRIVATE_KEY;
+      this.rootFolderId = process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID || process.env.GOOGLE_DRIVE_FOLDER_ID;
 
       // Validate required configuration
-      if (!this.apiKey || this.apiKey.trim() === '') {
-        throw new Error('GOOGLE_DRIVE_API_KEY environment variable is required');
+      if (!this.serviceAccountEmail || this.serviceAccountEmail.trim() === '') {
+        throw new Error('GOOGLE_SERVICE_ACCOUNT_EMAIL environment variable is required');
       }
 
-      if (!this.folderId || this.folderId.trim() === '') {
-        throw new Error('GOOGLE_DRIVE_FOLDER_ID environment variable is required');
+      if (!this.privateKey || this.privateKey.trim() === '') {
+        throw new Error('GOOGLE_PRIVATE_KEY environment variable is required');
       }
+
+      if (!this.rootFolderId || this.rootFolderId.trim() === '') {
+        throw new Error('GOOGLE_DRIVE_GALLERY_FOLDER_ID environment variable is required');
+      }
+
+      // Initialize Google Auth with Service Account
+      this.auth = new google.auth.GoogleAuth({
+        credentials: {
+          client_email: this.serviceAccountEmail,
+          private_key: this.privateKey.replace(/\\n/g, '\n'), // Handle escaped newlines
+        },
+        scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+      });
+
+      // Initialize Google Drive client
+      this.drive = google.drive({ version: 'v3', auth: this.auth });
 
       // Test API connectivity with a simple validation call
       await this._validateApiAccess();
 
       this.initialized = true;
-      logger.log('✅ Google Drive service initialized successfully');
+      logger.log('✅ Google Drive service initialized successfully with Service Account');
       
       return this;
     } catch (error) {
       logger.error('❌ Google Drive service initialization failed:', {
         error: error.message,
-        hasApiKey: !!this.apiKey,
-        hasFolderId: !!this.folderId,
+        hasServiceAccountEmail: !!this.serviceAccountEmail,
+        hasPrivateKey: !!this.privateKey,
+        hasRootFolderId: !!this.rootFolderId,
         timestamp: new Date().toISOString()
       });
       throw error;
@@ -124,33 +150,26 @@ class GoogleDriveService {
    */
   async _validateApiAccess() {
     try {
-      const testUrl = `https://www.googleapis.com/drive/v3/files/${this.folderId}?key=${this.apiKey}&fields=id,name`;
-      
-      const response = await fetch(testUrl);
-      
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Invalid Google Drive API key - authentication failed');
-        } else if (response.status === 404) {
-          throw new Error('Google Drive folder not found or inaccessible');
-        } else if (response.status === 403) {
-          throw new Error('Google Drive API access forbidden - check API key permissions');
-        } else {
-          throw new Error(`Google Drive API validation failed with status ${response.status}`);
-        }
-      }
+      const response = await this.drive.files.get({
+        fileId: this.rootFolderId,
+        fields: 'id,name'
+      });
 
-      const data = await response.json();
-      if (!data.id) {
+      if (!response.data || !response.data.id) {
         throw new Error('Invalid response from Google Drive API - folder validation failed');
       }
 
-      logger.log(`✅ Google Drive API access validated for folder: ${data.name || 'Unnamed Folder'}`);
+      logger.log(`✅ Google Drive API access validated for folder: ${response.data.name || 'Unnamed Folder'}`);
     } catch (error) {
-      if (error.message.includes('fetch')) {
-        throw new Error(`Network error connecting to Google Drive API: ${error.message}`);
+      if (error.code === 401) {
+        throw new Error('Invalid Google Drive Service Account credentials - authentication failed');
+      } else if (error.code === 404) {
+        throw new Error('Google Drive folder not found or inaccessible');
+      } else if (error.code === 403) {
+        throw new Error('Google Drive API access forbidden - check Service Account permissions');
+      } else {
+        throw new Error(`Google Drive API validation failed: ${error.message}`);
       }
-      throw error;
     }
   }
 
@@ -254,69 +273,138 @@ class GoogleDriveService {
   }
 
   /**
-   * Perform the actual API fetch
+   * Perform the actual API fetch using folder structure navigation
+   * Navigates: root folder → year folder → category folders → images
    * @private
    */
   async _performApiFetch(options) {
     const {
+      year,
       maxResults = 1000,
       includeVideos = false
     } = options;
 
-    // Build MIME type filter
-    let mimeTypes = [...this.imageMimeTypes];
-    if (includeVideos) {
-      mimeTypes.push('video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm');
-    }
+    const displayYear = year || new Date().getFullYear().toString();
     
-    // Build query string for file types
-    const mimeTypeQuery = mimeTypes.map(type => `mimeType='${type}'`).join(' or ');
-    
-    // Build API URL
-    const baseUrl = 'https://www.googleapis.com/drive/v3/files';
-    const params = new URLSearchParams({
-      key: this.apiKey,
-      q: `'${this.folderId}' in parents and (${mimeTypeQuery}) and trashed=false`,
-      fields: 'nextPageToken,files(id,name,mimeType,size,createdTime,modifiedTime,webViewLink,thumbnailLink,imageMediaMetadata)',
-      pageSize: Math.min(maxResults, 1000).toString(),
-      orderBy: 'createdTime desc'
+    logger.log(`🔄 Fetching images from Google Drive for year: ${displayYear}`);
+
+    // Step 1: Find year folder within root gallery folder
+    // Support multiple naming patterns: "2025", "ALoCubano_BoulderFest_2025", etc.
+    const yearFolders = await this.drive.files.list({
+      q: `'${this.rootFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and (name = '${displayYear}' or name contains '${displayYear}') and trashed = false`,
+      fields: 'files(id, name)',
     });
 
-    const url = `${baseUrl}?${params.toString()}`;
-    
-    logger.log(`🔄 Fetching images from Google Drive folder: ${this.folderId}`);
-    
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      if (response.status === 429) {
-        throw new Error(`Google Drive API quota exceeded (429)`);
-      } else if (response.status === 403) {
-        throw new Error(`Google Drive API access forbidden (403) - check API permissions`);
-      } else if (response.status === 404) {
-        throw new Error(`Google Drive folder not found (404)`);
-      } else {
-        throw new Error(`Google Drive API request failed with status ${response.status}`);
-      }
+    if (!yearFolders.data.files || yearFolders.data.files.length === 0) {
+      throw new Error(`No gallery found for year ${displayYear}`);
     }
 
-    const data = await response.json();
-    
-    if (!data.files || !Array.isArray(data.files)) {
-      throw new Error('Invalid response format from Google Drive API');
+    const yearFolder = yearFolders.data.files[0];
+    const yearFolderId = yearFolder.id;
+    logger.log(`📁 Found year folder: "${yearFolder.name}" (${yearFolderId})`);
+
+    // Step 2: Get category folders within the year folder
+    const categoryFolders = await this.drive.files.list({
+      q: `'${yearFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+      fields: 'files(id, name)',
+      orderBy: 'name',
+    });
+
+    const categories = {
+      workshops: [],
+      socials: [],
+      performances: [],
+      other: []
+    };
+    let totalFiles = 0;
+
+    // Step 3: Process each category folder
+    for (const folder of categoryFolders.data.files) {
+      const categoryName = this._mapCategoryName(folder.name.toLowerCase());
+      
+      logger.log(`📂 Processing category folder: ${folder.name} → ${categoryName}`);
+
+      // Get images from this category folder
+      const mimeTypeQuery = includeVideos 
+        ? "mimeType contains 'image/' or mimeType contains 'video/'"
+        : "mimeType contains 'image/'";
+
+      const filesResponse = await this.drive.files.list({
+        q: `'${folder.id}' in parents and (${mimeTypeQuery}) and trashed = false`,
+        fields: 'files(id, name, mimeType, thumbnailLink, webViewLink, webContentLink, size, createdTime, modifiedTime, imageMediaMetadata)',
+        pageSize: Math.min(maxResults, 1000),
+        orderBy: 'createdTime desc',
+      });
+
+      const files = filesResponse.data.files || [];
+      
+      // Process files to create gallery items
+      const galleryItems = files.map(file => this._processFile(file, categoryName));
+      
+      categories[categoryName] = galleryItems.filter(item => item !== null);
+      totalFiles += categories[categoryName].length;
+      
+      logger.log(`  ✅ Found ${categories[categoryName].length} items in ${categoryName}`);
     }
 
-    // Process and categorize the files
-    const processedData = this._processApiResponse(data.files, options);
+    // Process and return structured data
+    const processedData = this._processStructuredApiResponse(categories, options, totalFiles);
     
-    this.metrics.totalItemsFetched += data.files.length;
-    logger.log(`✅ Fetched ${data.files.length} files from Google Drive`);
+    this.metrics.totalItemsFetched += totalFiles;
+    logger.log(`✅ Fetched ${totalFiles} files from Google Drive across ${categoryFolders.data.files.length} categories`);
     
     return processedData;
   }
 
   /**
-   * Process API response and structure data for gallery
+   * Map folder names to standard category names
+   * @private
+   */
+  _mapCategoryName(folderName) {
+    const lowerName = folderName.toLowerCase();
+    
+    if (lowerName.includes('workshop') || lowerName.includes('class') || lowerName.includes('lesson')) {
+      return 'workshops';
+    } else if (lowerName.includes('social') || lowerName.includes('party') || lowerName.includes('dance')) {
+      return 'socials';
+    } else if (lowerName.includes('performance') || lowerName.includes('show') || lowerName.includes('stage')) {
+      return 'performances';
+    } else {
+      return 'other';
+    }
+  }
+
+  /**
+   * Process structured API response from folder navigation
+   * @private
+   */
+  _processStructuredApiResponse(categories, options, totalFiles) {
+    const { year, eventId } = options;
+    const currentYear = new Date().getFullYear();
+    const displayYear = year || currentYear;
+    const displayEventId = eventId || `boulder-fest-${displayYear}`;
+
+    return {
+      eventId: displayEventId,
+      event: displayEventId,
+      year: displayYear,
+      totalCount: totalFiles,
+      categories,
+      hasMore: false, // TODO: Implement pagination if needed
+      cacheTimestamp: new Date().toISOString(),
+      metadata: {
+        apiCallTimestamp: new Date().toISOString(),
+        rootFolderId: this.rootFolderId,
+        filesProcessed: totalFiles,
+        categoryCounts: Object.fromEntries(
+          Object.entries(categories).map(([key, items]) => [key, items.length])
+        )
+      }
+    };
+  }
+
+  /**
+   * Process API response and structure data for gallery (legacy method for backward compatibility)
    * @private
    */
   _processApiResponse(files, options) {
@@ -369,7 +457,7 @@ class GoogleDriveService {
    * Process individual file from API response
    * @private
    */
-  _processFile(file) {
+  _processFile(file, categoryName = 'other') {
     try {
       const isVideo = file.mimeType?.startsWith('video/');
       
@@ -378,17 +466,24 @@ class GoogleDriveService {
         name: file.name || 'Untitled',
         type: isVideo ? 'video' : 'image',
         mimeType: file.mimeType,
-        url: file.webViewLink,
-        thumbnailUrl: file.thumbnailLink || null,
-        size: file.size ? parseInt(file.size, 10) : null,
-        createdTime: file.createdTime,
+        category: categoryName,
+        // Use image proxy for optimized loading and format conversion
+        thumbnailUrl: `/api/image-proxy/${file.id}`,
+        viewUrl: `/api/image-proxy/${file.id}`,
+        downloadUrl: `/api/image-proxy/${file.id}`,
+        size: file.size ? parseInt(file.size, 10) : 0,
+        createdAt: file.createdTime,
+        createdTime: file.createdTime, // Keep both for compatibility
         modifiedTime: file.modifiedTime,
         dimensions: file.imageMediaMetadata ? {
           width: file.imageMediaMetadata.width,
           height: file.imageMediaMetadata.height,
           rotation: file.imageMediaMetadata.rotation || 0
         } : null,
-        downloadUrl: `https://drive.google.com/uc?id=${file.id}`,
+        // Keep original Google Drive URLs as backup
+        originalUrl: file.webViewLink,
+        originalThumbnailUrl: file.thumbnailLink,
+        directDownloadUrl: `https://drive.google.com/uc?id=${file.id}`,
         previewUrl: `https://drive.google.com/file/d/${file.id}/view`
       };
     } catch (error) {
@@ -568,8 +663,10 @@ class GoogleDriveService {
       cacheSize: this.cache.size,
       avgResponseTime: this.metrics.avgResponseTime.toFixed(2) + 'ms',
       initialized: this.initialized,
-      hasApiKey: !!this.apiKey,
-      hasFolderId: !!this.folderId
+      hasServiceAccountEmail: !!this.serviceAccountEmail,
+      hasPrivateKey: !!this.privateKey,
+      hasRootFolderId: !!this.rootFolderId,
+      authType: 'service-account'
     };
   }
 

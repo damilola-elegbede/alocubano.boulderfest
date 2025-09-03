@@ -198,9 +198,9 @@ class GalleryService {
       // Try to use Google Drive service if configured
       const googleDriveService = getGoogleDriveService();
       
-      // Check if Google Drive is configured
-      if (process.env.GOOGLE_DRIVE_API_KEY && process.env.GOOGLE_DRIVE_FOLDER_ID) {
-        console.log('Gallery: Using Google Drive API for runtime data');
+      // Check if Google Drive is configured with Service Account credentials
+      if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
+        console.log('Gallery: Using Google Drive Service Account API for runtime data');
         
         const driveData = await googleDriveService.fetchImages({
           year,
@@ -212,11 +212,11 @@ class GalleryService {
         // Add Google Drive source indicator
         return {
           ...driveData,
-          source: 'google-drive-api',
-          message: 'Data fetched from Google Drive API'
+          source: 'google-drive-service-account',
+          message: 'Data fetched from Google Drive API using Service Account authentication'
         };
       } else {
-        console.log('Gallery: Google Drive API not configured, using placeholder data');
+        console.log('Gallery: Google Drive Service Account API not configured, using placeholder data');
         
         // Fallback to placeholder data
         const currentYear = new Date().getFullYear();
@@ -237,7 +237,7 @@ class GalleryService {
           hasMore: false,
           cacheTimestamp: new Date().toISOString(),
           source: 'placeholder',
-          message: 'Google Drive API not configured - set GOOGLE_DRIVE_API_KEY and GOOGLE_DRIVE_FOLDER_ID environment variables'
+          message: 'Google Drive Service Account API not configured - set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY environment variables'
         };
       }
     } catch (error) {
