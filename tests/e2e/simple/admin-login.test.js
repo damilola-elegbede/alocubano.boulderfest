@@ -76,7 +76,7 @@ test.describe('Admin Login', () => {
     await page.goto('/pages/admin/dashboard.html');
     
     // Should be redirected back to login or show unauthorized
-    await page.waitForLoadState('networkidle', { timeout: 10000 });
+    await page.waitForLoadState('domcontentloaded');
     
     const currentUrl = page.url();
     const hasLoginForm = await page.locator('[data-testid="login-form"]').isVisible().catch(() => false);
@@ -114,7 +114,7 @@ test.describe('Admin Login', () => {
     await logoutButton.click();
     
     // Should redirect to login page or home
-    await page.waitForLoadState('networkidle', { timeout: 10000 });
+    await page.waitForLoadState('domcontentloaded');
     
     const currentUrl = page.url();
     const loggedOut = currentUrl.includes('/login.html') || currentUrl.includes('/index.html') || 

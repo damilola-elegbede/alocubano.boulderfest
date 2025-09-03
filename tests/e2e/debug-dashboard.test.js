@@ -21,7 +21,7 @@ test('DEBUG: Check dashboard page content', async ({ page }) => {
   await page.waitForURL('**/admin/dashboard.html');
 
   // Wait for page to load
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 
   // Debug: Print page content
   const url = page.url();

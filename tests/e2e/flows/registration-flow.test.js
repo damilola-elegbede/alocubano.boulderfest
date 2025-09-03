@@ -22,12 +22,12 @@ test.describe('Registration Process', () => {
     const addButton = page.locator('button:has-text("Weekend"), .weekend button').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      await page.waitForTimeout(1000);
+      await page.waitForLoadState('domcontentloaded');
       
       const checkoutBtn = page.locator('button:has-text("Checkout"), .checkout-btn');
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState('domcontentloaded');
         
         // Should proceed to registration or payment form
         const forms = page.locator('form');
@@ -61,7 +61,7 @@ test.describe('Registration Process', () => {
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState('domcontentloaded');
         
         // Look for registration form fields
         const requiredFields = [
@@ -88,7 +88,7 @@ test.describe('Registration Process', () => {
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState('domcontentloaded');
         
         // Try to submit form without filling required fields
         const submitBtn = page.locator('button[type="submit"], .submit-btn, button:has-text("Complete")');
@@ -113,7 +113,7 @@ test.describe('Registration Process', () => {
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState('domcontentloaded');
         
         // Look for optional fields
         const dietaryField = page.locator('input[name*="dietary"], textarea[placeholder*="dietary"], select[name*="dietary"]');
@@ -138,7 +138,7 @@ test.describe('Registration Process', () => {
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState('domcontentloaded');
         
         // Look for emergency contact fields
         const emergencyNameField = page.locator('input[name*="emergency"], input[placeholder*="emergency"]');
@@ -174,7 +174,7 @@ test.describe('Registration Process', () => {
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState('domcontentloaded');
         
         // Should show forms for multiple attendees
         const attendeeSections = page.locator('.attendee-form, .attendee-section, fieldset');
@@ -193,7 +193,7 @@ test.describe('Registration Process', () => {
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState('domcontentloaded');
         
         // Fill some form fields
         const nameField = page.locator('input[name*="name"]').first();
@@ -227,7 +227,7 @@ test.describe('Registration Process', () => {
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState('domcontentloaded');
         
         // Fill required fields
         const nameField = page.locator('input[name*="name"]').first();
@@ -249,7 +249,7 @@ test.describe('Registration Process', () => {
         const submitBtn = page.locator('button[type="submit"], button:has-text("Complete")').first();
         if (await submitBtn.count() > 0) {
           await submitBtn.click();
-          await page.waitForTimeout(3000);
+          await page.waitForLoadState('domcontentloaded');
           
           // Should proceed to payment or show confirmation
           const successElements = page.locator('.success, .confirmation, .payment-form');
@@ -270,7 +270,7 @@ test.describe('Registration Process', () => {
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState('domcontentloaded');
         
         // Fill registration form
         const forms = page.locator('form');
@@ -311,7 +311,7 @@ test.describe('Registration Process', () => {
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState('domcontentloaded');
         
         // Complete form and submit
         const submitBtn = page.locator('button[type="submit"]').first();

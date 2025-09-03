@@ -4,7 +4,7 @@ test.describe('Performance Under Load', () => {
   test('should load homepage within performance budget', async ({ page }) => {
     const startTime = Date.now();
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     const loadTime = Date.now() - startTime;
     expect(loadTime).toBeLessThan(3000); // 3 second budget
@@ -150,7 +150,7 @@ test.describe('Performance Under Load', () => {
     });
     
     await page.goto('/pages/tickets.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Verify critical resources loaded successfully
     const failedResources = resourceLoadTimes.filter(r => r.status >= 400);

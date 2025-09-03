@@ -61,7 +61,7 @@ test.describe('WCAG 2.1 AA Compliance', () => {
   // Homepage Accessibility Tests
   test('Homepage meets WCAG 2.1 AA standards', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const accessibility = createAccessibilityTestSuite(page);
     
@@ -97,7 +97,7 @@ test.describe('WCAG 2.1 AA Compliance', () => {
   // Tickets Page Accessibility
   test('Tickets page meets accessibility standards', async ({ page }) => {
     await page.goto('/tickets');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const accessibility = createAccessibilityTestSuite(page);
 
@@ -130,7 +130,7 @@ test.describe('WCAG 2.1 AA Compliance', () => {
   // Gallery Accessibility Tests
   test('Gallery meets accessibility standards with dynamic content', async ({ page }) => {
     await page.goto('/gallery');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const accessibility = createAccessibilityTestSuite(page);
 
@@ -170,7 +170,7 @@ test.describe('WCAG 2.1 AA Compliance', () => {
   test('Registration flow maintains accessibility', async ({ page }) => {
     // Start registration flow
     await page.goto('/tickets');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Select a ticket and proceed to registration
     await page.click('.ticket-card:first-child .btn-primary');
@@ -178,7 +178,7 @@ test.describe('WCAG 2.1 AA Compliance', () => {
 
     // Navigate to registration
     await page.click('.floating-cart .btn-primary');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const accessibility = createAccessibilityTestSuite(page);
 
@@ -235,11 +235,11 @@ test.describe('WCAG 2.1 AA Compliance', () => {
 
     // Login to admin dashboard
     await page.goto('/admin');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await page.fill('input[type="password"]', process.env.TEST_ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const accessibility = createAccessibilityTestSuite(page);
 
@@ -281,7 +281,7 @@ test.describe('WCAG 2.1 AA Compliance', () => {
     
     for (const pagePath of pagesToTest) {
       await page.goto(pagePath);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       
       const accessibility = createAccessibilityTestSuite(page);
       const contrastIssues = await accessibility.checkColorContrast();
@@ -313,7 +313,7 @@ test.describe('WCAG 2.1 AA Compliance', () => {
       for (const pagePath of pagesToTest) {
         await page.setViewportSize(viewport);
         await page.goto(pagePath);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         const accessibility = createAccessibilityTestSuite(page);
         const mobileIssues = await accessibility.checkMobileAccessibility();
@@ -336,7 +336,7 @@ test.describe('WCAG 2.1 AA Compliance', () => {
   // Comprehensive Accessibility Report Generation
   test('Generate comprehensive accessibility report', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const accessibility = createAccessibilityTestSuite(page);
     const report = await accessibility.generateAccessibilityReport({
@@ -362,7 +362,7 @@ test.describe('WCAG 2.1 AA Compliance', () => {
   // Focus Management Testing
   test('Focus management works correctly throughout application', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Test skip links (if present)
     await page.keyboard.press('Tab');
@@ -437,7 +437,7 @@ test.describe('WCAG 2.1 AA Compliance', () => {
   // Screen Reader Compatibility
   test('Screen reader landmarks and ARIA attributes', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Test landmark regions
     const landmarks = {

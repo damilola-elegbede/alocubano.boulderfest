@@ -101,32 +101,52 @@ class DropdownManager {
     }
 
     handleDropdownClick(event) {
-        const trigger = event.target.closest('.nav-trigger, .dropdown-trigger');
+        try {
+            const trigger = event.target.closest('.nav-trigger, .dropdown-trigger');
 
-        if (trigger) {
-            event.preventDefault();
-            this.toggleDropdown(trigger);
-        } else if (
-            !event.target.closest('.nav-item.has-dropdown, .dropdown-container')
-        ) {
-            // Click outside - close all dropdowns
+            if (trigger) {
+                event.preventDefault();
+                this.toggleDropdown(trigger);
+            } else if (
+                !event.target.closest('.nav-item.has-dropdown, .dropdown-container')
+            ) {
+                // Click outside - close all dropdowns
+                this.closeAllDropdowns();
+            }
+        } catch (error) {
+            console.error('Error handling dropdown click:', error);
+            // Gracefully close all dropdowns on error
             this.closeAllDropdowns();
         }
     }
 
     handleDropdownHover(event) {
-        const container = event.target.closest(
-            '.nav-item.has-dropdown, .dropdown-container'
-        );
-        if (!container || this.config.touchEnabled) {
-            return;
-        }
+        try {
+            const container = this._findDropdownContainer(event.target);
+            if (!container || this.config.touchEnabled) {
+                return;
+            }
 
-        const trigger = container.querySelector('.nav-trigger, .dropdown-trigger');
-        if (!trigger) {
-            return;
-        }
+            const trigger = this._findDropdownTrigger(container);
+            if (!trigger) {
+                return;
+            }
 
+            this._scheduleDropdownShow(container, trigger);
+        } catch (error) {
+            console.error('Error handling dropdown hover:', error);
+        }
+    }
+
+    _findDropdownContainer(target) {
+        return target.closest('.nav-item.has-dropdown, .dropdown-container');
+    }
+
+    _findDropdownTrigger(container) {
+        return container.querySelector('.nav-trigger, .dropdown-trigger');
+    }
+
+    _scheduleDropdownShow(container, trigger) {
         // Clear any pending hide timer
         this.clearTimer(container);
 
@@ -141,13 +161,19 @@ class DropdownManager {
     }
 
     handleDropdownLeave(event) {
-        const container = event.target.closest(
-            '.nav-item.has-dropdown, .dropdown-container'
-        );
-        if (!container) {
-            return;
-        }
+        try {
+            const container = this._findDropdownContainer(event.target);
+            if (!container) {
+                return;
+            }
 
+            this._scheduleDropdownHide(container);
+        } catch (error) {
+            console.error('Error handling dropdown leave:', error);
+        }
+    }
+
+    _scheduleDropdownHide(container) {
         // Clear show timer
         this.clearTimer(container);
 
@@ -207,22 +233,46 @@ class DropdownManager {
     }
 
     showDropdown(trigger) {
-        const container = trigger.closest(
-            '.nav-item.has-dropdown, .dropdown-container'
-        );
-        const menu = container.querySelector('.dropdown-menu');
+        try {
+            const container = trigger.closest('.nav-item.has-dropdown, .dropdown-container');
+            const menu = container.querySelector('.dropdown-menu');
 
-        // Set ARIA attributes
-        trigger.setAttribute('aria-expanded', 'true');
-        menu.setAttribute('aria-hidden', 'false');
+            if (!container || !menu) {
+                console.warn('Invalid dropdown structure - missing container or menu');
+                return;
+            }
 
-        // Add visual classes
-        menu.classList.add('is-open');
-        container.classList.add('dropdown-active');
+            this._setDropdownAttributes(trigger, menu, true);
+            this._setDropdownClasses(menu, container, true);
+            this._activateDropdown(container);
+            this._setupDropdownEnhancements(container, menu, trigger);
+            this._emitDropdownEvent('dropdownOpened', { container, trigger, menu });
+        } catch (error) {
+            console.error('Error showing dropdown:', error);
+        }
+    }
 
+    _setDropdownAttributes(trigger, menu, isOpen) {
+        trigger.setAttribute('aria-expanded', isOpen.toString());
+        menu.setAttribute('aria-hidden', (!isOpen).toString());
+    }
+
+    _setDropdownClasses(menu, container, isOpen) {
+        if (isOpen) {
+            menu.classList.add('is-open');
+            container.classList.add('dropdown-active');
+        } else {
+            menu.classList.remove('is-open');
+            container.classList.remove('dropdown-active');
+        }
+    }
+
+    _activateDropdown(container) {
         this.activeDropdown = container;
         this.keyboardFocusIndex = -1;
+    }
 
+    _setupDropdownEnhancements(container, menu, trigger) {
         // Position dropdown intelligently
         this.positionDropdown(menu, trigger);
 
@@ -232,46 +282,50 @@ class DropdownManager {
         // Announce to screen readers
         this.announceDropdownState(trigger, true);
 
-        // Emit event for analytics/other systems
-        this.nav.eventBus.emit('dropdownOpened', {
-            container,
-            trigger,
-            menu,
-            timestamp: Date.now()
-        });
-
         // Prefetch event pages on hover (performance optimization)
         this.prefetchEventPages(container);
     }
 
+    _emitDropdownEvent(eventName, data) {
+        this.nav.eventBus.emit(eventName, {
+            ...data,
+            timestamp: Date.now()
+        });
+    }
+
     hideDropdown(container) {
-        const trigger = container.querySelector('.nav-trigger, .dropdown-trigger');
-        const menu = container.querySelector('.dropdown-menu');
+        try {
+            const trigger = container.querySelector('.nav-trigger, .dropdown-trigger');
+            const menu = container.querySelector('.dropdown-menu');
 
-        // Set ARIA attributes
-        trigger.setAttribute('aria-expanded', 'false');
-        menu.setAttribute('aria-hidden', 'true');
+            if (!trigger || !menu) {
+                console.warn('Invalid dropdown structure - missing trigger or menu');
+                return;
+            }
 
-        // Remove visual classes
-        menu.classList.remove('is-open');
-        container.classList.remove('dropdown-active');
+            this._setDropdownAttributes(trigger, menu, false);
+            this._setDropdownClasses(menu, container, false);
+            this._deactivateDropdown(container);
+            this._announceDropdownStateChange(trigger, false);
+            this._emitDropdownEvent('dropdownClosed', { container, trigger, menu });
+        } catch (error) {
+            console.error('Error hiding dropdown:', error);
+        }
+    }
 
+    _deactivateDropdown(container) {
         if (this.activeDropdown === container) {
             this.activeDropdown = null;
         }
-
         this.keyboardFocusIndex = -1;
+    }
 
-        // Announce to screen readers
-        this.announceDropdownState(trigger, false);
-
-        // Emit event
-        this.nav.eventBus.emit('dropdownClosed', {
-            container,
-            trigger,
-            menu,
-            timestamp: Date.now()
-        });
+    _announceDropdownStateChange(trigger, isOpen) {
+        try {
+            this.announceDropdownState(trigger, isOpen);
+        } catch (error) {
+            console.error('Error announcing dropdown state:', error);
+        }
     }
 
     setupKeyboardNavigation() {

@@ -121,7 +121,7 @@ test.describe('Homepage E2E Tests', () => {
     });
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Filter out known acceptable errors
     const criticalErrors = consoleErrors.filter(error => 

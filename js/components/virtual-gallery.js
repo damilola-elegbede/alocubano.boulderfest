@@ -329,35 +329,75 @@ export class VirtualGalleryManager {
    * Render visible items in the viewport
    */
     render() {
-        if (!this.photos.length) {
-            return;
+        try {
+            if (!this.photos.length) {
+                return;
+            }
+
+            const startTime = performance.now();
+            const visibleRange = this._calculateVisibleRange();
+
+            this._updateVisibleItems(visibleRange);
+            this._trackRenderPerformance(startTime);
+        } catch (error) {
+            // Log error for debugging but don't fail rendering
+            if (this.config.enableAnalytics) {
+                this.emitEvent('gallery:render-error', { error: error.message });
+            }
         }
+    }
 
-        const startTime = performance.now();
-
-        // Calculate which photos should be visible
+    _calculateVisibleRange() {
         const startIndex = this.state.visibleStart * this.state.itemsPerRow;
         const endIndex = Math.min(
             (this.state.visibleEnd + 1) * this.state.itemsPerRow - 1,
             this.photos.length - 1
         );
+        return { startIndex, endIndex };
+    }
 
+    _updateVisibleItems({ startIndex, endIndex }) {
         // Remove items that are now outside visible range
-        for (const [index, item] of this.visibleItems) {
-            if (index < startIndex || index > endIndex) {
-                this.recycleItem(index, item);
-            }
-        }
+        this._removeOutOfRangeItems(startIndex, endIndex);
 
         // Add items that are now visible
-        for (let i = startIndex; i <= endIndex; i++) {
-            if (!this.visibleItems.has(i) && this.photos[i]) {
-                const item = this.createOrReuseItem(i);
-                this.visibleItems.set(i, item);
+        this._addVisibleItems(startIndex, endIndex);
+    }
+
+    _removeOutOfRangeItems(startIndex, endIndex) {
+        const itemsToRemove = [];
+
+        for (const [index, item] of this.visibleItems) {
+            if (index < startIndex || index > endIndex) {
+                itemsToRemove.push([index, item]);
             }
         }
 
-        // Update performance metrics
+        itemsToRemove.forEach(([index, item]) => {
+            this.recycleItem(index, item);
+        });
+    }
+
+    _addVisibleItems(startIndex, endIndex) {
+        for (let i = startIndex; i <= endIndex; i++) {
+            if (!this.visibleItems.has(i) && this.photos[i]) {
+                try {
+                    const item = this.createOrReuseItem(i);
+                    this.visibleItems.set(i, item);
+                } catch (error) {
+                    // Log error via analytics instead of console
+                    if (this.config.enableAnalytics) {
+                        this.emitEvent('gallery:item-creation-error', {
+                            itemIndex: i,
+                            error: error.message
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    _trackRenderPerformance(startTime) {
         const renderTime = performance.now() - startTime;
         this.updateMetrics('render', renderTime);
         this.metrics.renderCount++;

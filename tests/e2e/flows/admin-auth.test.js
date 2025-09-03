@@ -41,7 +41,7 @@ test.describe('Admin Authentication', () => {
     // Wait for either error message or navigation (shouldn't happen)
     await Promise.race([
       page.waitForSelector('.error-message:visible, .alert-danger:visible', { timeout: 10000 }),
-      page.waitForTimeout(5000) // Give some time for the error to appear
+      page.waitForLoadState('domcontentloaded', { timeout: 5000 })
     ]);
     
     // Should show error message and not navigate to dashboard
@@ -66,9 +66,9 @@ test.describe('Admin Authentication', () => {
     // Wait for either navigation to dashboard, error message, or loading to complete
     try {
       await Promise.race([
-        page.waitForURL('**/admin/dashboard.html', { timeout: 15000 }),
-        page.waitForSelector('.error-message:visible, .alert-danger:visible', { timeout: 15000 }),
-        page.waitForFunction(() => !document.querySelector('.loading:visible'), { timeout: 15000 })
+        page.waitForURL('**/admin/dashboard.html', { timeout: 10000 }),
+        page.waitForSelector('.error-message:visible, .alert-danger:visible', { timeout: 10000 }),
+        page.waitForFunction(() => !document.querySelector('.loading:visible'), { timeout: 10000 })
       ]);
       
       // Check if we're on the dashboard (success case)

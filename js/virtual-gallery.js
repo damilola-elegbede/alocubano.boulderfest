@@ -19,6 +19,7 @@ class VirtualGalleryManager {
         this.items = [];
         this.loadedItems = new Set();
         this.visibleItems = new Map();
+        this.renderedElements = new Map(); // Cache rendered elements for reuse
         this.scrollTop = 0;
         this.containerHeight = 0;
         this.totalHeight = 0;
@@ -26,6 +27,7 @@ class VirtualGalleryManager {
         this.hasMoreData = true;
         this.currentPage = 0;
         this.pageSize = 20;
+        this.lastVisibleRange = { start: -1, end: -1 }; // Track last rendered range
 
         // DOM elements
         this.scrollContainer = null;
@@ -37,12 +39,18 @@ class VirtualGalleryManager {
         this.performanceMetrics = {
             renderTimes: [],
             scrollEvents: 0,
-            itemsRendered: 0
+            itemsRendered: 0,
+            cacheHits: 0,
+            cacheMisses: 0
         };
 
-        // Throttled handlers
-        this.boundScrollHandler = this.throttle(this.handleScroll.bind(this), 16);
-        this.boundResizeHandler = this.throttle(this.handleResize.bind(this), 100);
+        // Enhanced throttling and debouncing
+        this.boundScrollHandler = this.debounce(this.handleScroll.bind(this), 8);
+        this.boundResizeHandler = this.debounce(this.handleResize.bind(this), 150);
+        
+        // API response cache
+        this.apiCache = new Map();
+        this.apiCacheTTL = 5 * 60 * 1000; // 5 minutes
 
         this.init();
     }
@@ -158,15 +166,26 @@ class VirtualGalleryManager {
     }
 
     /**
-   * Fetch data from API with pagination
+   * Fetch data from API with pagination and caching
    */
     async fetchData(offset, limit) {
-        const url = `${this.apiEndpoint}?year=${this.year}&offset=${offset}&limit=${limit}`;
+        const cacheKey = `${this.apiEndpoint}?year=${this.year}&offset=${offset}&limit=${limit}`;
+        
+        // Check cache first
+        const cached = this.apiCache.get(cacheKey);
+        if (cached && (Date.now() - cached.timestamp < this.apiCacheTTL)) {
+            this.performanceMetrics.cacheHits++;
+            return { json: () => Promise.resolve(cached.data) };
+        }
 
-        const response = await fetch(url, {
+        this.performanceMetrics.cacheMisses++;
+        
+        const response = await fetch(cacheKey, {
             method: 'GET',
             headers: {
-                Accept: 'application/json'
+                Accept: 'application/json',
+                'Cache-Control': 'public, max-age=300', // 5 minutes
+                'If-None-Match': cached?.etag || ''
             }
         });
 
@@ -174,7 +193,23 @@ class VirtualGalleryManager {
             throw new Error(`API error: ${response.status} ${response.statusText}`);
         }
 
-        return response;
+        // Cache the response
+        const data = await response.json();
+        const etag = response.headers.get('etag');
+        
+        this.apiCache.set(cacheKey, {
+            data,
+            etag,
+            timestamp: Date.now()
+        });
+        
+        // Limit cache size (LRU eviction)
+        if (this.apiCache.size > 20) {
+            const firstKey = this.apiCache.keys().next().value;
+            this.apiCache.delete(firstKey);
+        }
+
+        return { json: () => Promise.resolve(data) };
     }
 
     /**
@@ -310,7 +345,7 @@ class VirtualGalleryManager {
     }
 
     /**
-   * Render items using virtual scrolling
+   * Render items using virtual scrolling with element recycling
    */
     renderVirtual() {
     // Calculate visible range
@@ -333,11 +368,18 @@ class VirtualGalleryManager {
             bufferedEndRow * this.itemsPerRow
         );
 
-        // Clear existing items
-        this.virtualList.innerHTML = '';
-        this.visibleItems.clear();
+        // Early return if range hasn't changed
+        if (startIndex === this.lastVisibleRange.start && endIndex === this.lastVisibleRange.end) {
+            return;
+        }
+        
+        this.lastVisibleRange = { start: startIndex, end: endIndex };
 
-        // Render visible items
+        // Use fragment for batch DOM updates
+        const fragment = document.createDocumentFragment();
+        const newVisibleItems = new Map();
+
+        // Render visible items with element recycling
         for (let i = startIndex; i < endIndex; i++) {
             const item = this.items[i];
             if (!item) {
@@ -347,20 +389,38 @@ class VirtualGalleryManager {
             const row = Math.floor(i / this.itemsPerRow);
             const col = i % this.itemsPerRow;
 
-            const element = this.createItemElement(item, i);
+            // Try to reuse existing element
+            let element = this.renderedElements.get(i);
+            if (!element) {
+                element = this.createItemElement(item, i);
+                this.renderedElements.set(i, element);
+            }
+
+            // Update position efficiently
+            const transform = `translate3d(${(col / this.itemsPerRow) * 100}%, ${row * this.itemHeight}px, 0)`;
             element.style.cssText = `
                 position: absolute;
-                top: ${row * this.itemHeight}px;
-                left: ${(col / this.itemsPerRow) * 100}%;
+                top: 0;
+                left: 0;
                 width: ${100 / this.itemsPerRow}%;
                 height: ${this.itemHeight}px;
+                transform: ${transform};
+                will-change: transform;
             `;
 
-            this.virtualList.appendChild(element);
-            this.visibleItems.set(i, element);
+            fragment.appendChild(element);
+            newVisibleItems.set(i, element);
         }
 
+        // Batch update DOM
+        this.virtualList.innerHTML = '';
+        this.virtualList.appendChild(fragment);
+        this.visibleItems = newVisibleItems;
+
         this.performanceMetrics.itemsRendered = endIndex - startIndex;
+        
+        // Cleanup unused elements to prevent memory leaks
+        this.cleanupRenderedElements();
     }
 
     /**
@@ -614,7 +674,42 @@ class VirtualGalleryManager {
     }
 
     /**
-   * Throttle function for performance
+   * Cleanup unused rendered elements to prevent memory leaks
+   */
+    cleanupRenderedElements() {
+        if (this.renderedElements.size > 100) {
+            // Keep only currently visible and recently visible elements
+            const keysToDelete = [];
+            const visibleIndices = new Set(this.visibleItems.keys());
+            
+            for (const [index, element] of this.renderedElements) {
+                if (!visibleIndices.has(index) && 
+                    Math.abs(index - this.lastVisibleRange.start) > 50) {
+                    keysToDelete.push(index);
+                }
+            }
+            
+            // Remove oldest 25% of unused elements
+            keysToDelete.slice(0, Math.ceil(keysToDelete.length * 0.25)).forEach(key => {
+                this.renderedElements.delete(key);
+            });
+        }
+    }
+
+    /**
+   * Debounce function for better performance than throttling
+   */
+    debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }
+    
+    /**
+   * Throttle function for performance (fallback)
    */
     throttle(func, limit) {
         let inThrottle;
@@ -639,12 +734,21 @@ class VirtualGalleryManager {
           this.performanceMetrics.renderTimes.length
           : 0;
 
+        const cacheHitRatio = 
+            this.performanceMetrics.cacheHits + this.performanceMetrics.cacheMisses > 0
+                ? (this.performanceMetrics.cacheHits / (this.performanceMetrics.cacheHits + this.performanceMetrics.cacheMisses)) * 100
+                : 0;
+
         return {
             averageRenderTime: avgRenderTime.toFixed(2),
             scrollEvents: this.performanceMetrics.scrollEvents,
             itemsRendered: this.performanceMetrics.itemsRendered,
             totalItems: this.items.length,
-            visibleItems: this.visibleItems.size
+            visibleItems: this.visibleItems.size,
+            renderedElementsCache: this.renderedElements.size,
+            cacheHitRatio: cacheHitRatio.toFixed(1) + '%',
+            cacheHits: this.performanceMetrics.cacheHits,
+            cacheMisses: this.performanceMetrics.cacheMisses
         };
     }
 

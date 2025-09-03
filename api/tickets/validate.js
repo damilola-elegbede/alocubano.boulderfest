@@ -1,62 +1,213 @@
 import { getDatabaseClient } from "../lib/database.js";
+import { getRateLimitService } from "../lib/rate-limit-service.js";
+import { withSecurityHeaders } from "../lib/security-headers.js";
 import jwt from "jsonwebtoken";
 
-// Rate limiting map (simple in-memory for now, use Redis in production)
-const rateLimitMap = new Map();
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const RATE_LIMIT_MAX = 100; // 100 requests per minute
+// Enhanced rate limiting configuration
+const TICKET_RATE_LIMIT = {
+  window: 60000, // 1 minute
+  maxAttempts: 50, // Reduced from 100 for better security
+  lockoutDuration: 300000, // 5 minutes lockout after exceeding limit
+};
 
 /**
- * Check rate limiting for an IP address
- * @param {string} ip - IP address to check
- * @returns {boolean} - true if rate limit exceeded
+ * Enhanced input validation for ticket tokens
+ * @param {any} token - Token to validate
+ * @returns {Object} Validation result
  */
-function checkRateLimit(ip) {
-  const now = Date.now();
-  const record = rateLimitMap.get(ip);
-
-  if (!record) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
-    return false;
+function validateTicketToken(token) {
+  // Check if token exists and is a string
+  if (!token || typeof token !== 'string') {
+    return { 
+      isValid: false, 
+      error: 'Token must be a non-empty string',
+      securityRisk: false 
+    };
   }
 
-  if (now > record.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
-    return false;
+  // Check token length (JWT tokens are typically 100-500+ chars, validation codes are shorter)
+  if (token.length < 4 || token.length > 2000) {
+    return { 
+      isValid: false, 
+      error: 'Token format invalid',
+      securityRisk: false 
+    };
   }
 
-  record.count++;
-  return record.count > RATE_LIMIT_MAX;
+  // Security pattern detection for injection attempts
+  const suspiciousPatterns = [
+    /<script[^>]*>/i,           // Script tags
+    /javascript:/i,             // JavaScript protocol
+    /on\w+\s*=/i,              // Event handlers
+    /\$\{.*\}/,                // Template literals
+    /__proto__/,               // Prototype pollution
+    /constructor/,             // Constructor access
+    /prototype/,               // Prototype access
+    /eval\s*\(/i,              // Eval calls
+    /function\s*\(/i,          // Function declarations
+    /\.\.\/|\.\.\\|%2e%2e/i,   // Directory traversal
+    /union\s+select/i,         // SQL injection
+    /insert\s+into/i,          // SQL injection
+    /delete\s+from/i,          // SQL injection
+    /drop\s+table/i,           // SQL injection
+    /\bexec\b|\bexecute\b/i,   // Command execution
+  ];
+
+  for (const pattern of suspiciousPatterns) {
+    if (pattern.test(token)) {
+      console.warn(`Suspicious token pattern detected from IP: ${token.substring(0, 20)}...`);
+      return { 
+        isValid: false, 
+        error: 'Token contains invalid characters',
+        securityRisk: true 
+      };
+    }
+  }
+
+  // Additional validation for non-printable characters
+  if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/.test(token)) {
+    return { 
+      isValid: false, 
+      error: 'Token contains invalid characters',
+      securityRisk: true 
+    };
+  }
+
+  return { isValid: true };
 }
 
 /**
- * Extract validation code from token
+ * Enhanced rate limiting using the centralized rate limit service
+ * @param {string} clientIP - Client IP address  
+ * @returns {Promise<Object>} Rate limit status
+ */
+async function checkEnhancedRateLimit(clientIP) {
+  const rateLimitService = getRateLimitService();
+  
+  const result = await rateLimitService.checkLimit(clientIP, 'ticket_validation', {
+    maxAttempts: TICKET_RATE_LIMIT.maxAttempts,
+    windowMs: TICKET_RATE_LIMIT.window,
+  });
+
+  return {
+    isAllowed: result.allowed,
+    remaining: result.remaining,
+    retryAfter: result.retryAfter,
+  };
+}
+
+/**
+ * Extract validation code from token with enhanced security
  * @param {string} token - JWT token or raw validation code
- * @returns {string} - Validation code
+ * @returns {Object} - Extraction result with security validation
  */
 function extractValidationCode(token) {
+  // Validate QR_SECRET_KEY exists
+  if (!process.env.QR_SECRET_KEY) {
+    console.error('QR_SECRET_KEY not configured - security vulnerability');
+    throw new Error('Token validation service unavailable');
+  }
+
+  // Validate secret key strength (minimum 32 characters)
+  if (process.env.QR_SECRET_KEY.length < 32) {
+    console.error('QR_SECRET_KEY too short - security vulnerability');
+    throw new Error('Token validation service misconfigured');
+  }
+
   try {
-    const decoded = jwt.verify(token, process.env.QR_SECRET_KEY);
-    return decoded.tid || decoded.validation_code;
-  } catch {
-    // Fallback to direct validation code for backward compatibility
-    return token;
+    // Attempt JWT decoding with strict verification
+    const decoded = jwt.verify(token, process.env.QR_SECRET_KEY, {
+      algorithms: ['HS256'], // Specify allowed algorithm to prevent algorithm confusion attacks
+      maxAge: '7d', // Tokens expire after 7 days max
+      clockTolerance: 60, // Allow 60 second clock skew
+    });
+
+    // Validate JWT payload structure
+    if (!decoded || typeof decoded !== 'object') {
+      throw new Error('Invalid token payload structure');
+    }
+
+    const validationCode = decoded.tid || decoded.validation_code;
+    
+    if (!validationCode || typeof validationCode !== 'string') {
+      throw new Error('Invalid validation code in token');
+    }
+
+    return {
+      isJWT: true,
+      validationCode: validationCode,
+      issueTime: decoded.iat,
+      expirationTime: decoded.exp,
+    };
+
+  } catch (jwtError) {
+    // For non-JWT tokens, treat as direct validation code with additional security checks
+    if (jwtError.name === 'JsonWebTokenError' || 
+        jwtError.name === 'TokenExpiredError' || 
+        jwtError.name === 'NotBeforeError') {
+      
+      // Log JWT-specific errors for monitoring
+      console.warn('JWT token validation failed, treating as direct validation code:', {
+        error: jwtError.name,
+        tokenPrefix: token.substring(0, 10)
+      });
+
+      // Additional validation for direct validation codes
+      if (!/^[A-Za-z0-9\-_]{8,64}$/.test(token)) {
+        throw new Error('Invalid direct validation code format');
+      }
+
+      return {
+        isJWT: false,
+        validationCode: token,
+        issueTime: null,
+        expirationTime: null,
+      };
+    }
+    
+    // Re-throw configuration errors
+    throw jwtError;
   }
 }
 
 /**
- * Detect validation source from request
+ * Detect validation source from request with input sanitization
  * @param {object} req - Request object
  * @returns {string} - Validation source
  */
 function detectSource(req) {
-  if (req.headers["x-wallet-source"]) {
-    return req.headers["x-wallet-source"];
-  } else if (req.headers["user-agent"]?.includes("Apple")) {
-    return "apple_wallet";
-  } else if (req.headers["user-agent"]?.includes("Google")) {
-    return "google_wallet";
+  // Sanitize and validate wallet source header
+  const walletSource = req.headers["x-wallet-source"];
+  if (walletSource) {
+    // Only allow specific wallet source values
+    const allowedWalletSources = ['apple_wallet', 'google_wallet', 'samsung_wallet'];
+    const sanitizedSource = String(walletSource).toLowerCase().trim();
+    
+    if (allowedWalletSources.includes(sanitizedSource)) {
+      return sanitizedSource;
+    }
+    
+    // Log suspicious wallet source attempts
+    console.warn('Invalid wallet source header detected:', {
+      source: walletSource.substring(0, 50),
+      ip: req.headers["x-forwarded-for"]?.split(",")[0] || 'unknown'
+    });
+    
+    return "web"; // Default to web for invalid sources
   }
+
+  // Safely extract user agent with length limits
+  const userAgent = req.headers["user-agent"];
+  if (userAgent && typeof userAgent === 'string') {
+    const safeUserAgent = userAgent.substring(0, 500); // Limit length to prevent attacks
+    
+    if (/\bApple\b/i.test(safeUserAgent) || /\biOS\b/i.test(safeUserAgent)) {
+      return "apple_wallet";
+    } else if (/\bGoogle\b/i.test(safeUserAgent) || /\bAndroid\b/i.test(safeUserAgent)) {
+      return "google_wallet";
+    }
+  }
+  
   return "web";
 }
 
@@ -164,40 +315,118 @@ async function logValidation(db, params) {
 }
 
 /**
- * Handle ticket validation endpoint
+ * Enhanced IP address extraction and validation
+ * @param {object} req - Request object
+ * @returns {string} - Validated IP address
+ */
+function extractClientIP(req) {
+  // Handle multiple IP formats and validate
+  const forwardedFor = req.headers["x-forwarded-for"];
+  const realIP = req.headers["x-real-ip"];
+  const connectionIP = req.connection?.remoteAddress || req.socket?.remoteAddress;
+
+  let clientIP = "unknown";
+
+  if (forwardedFor && typeof forwardedFor === 'string') {
+    // Take the first IP from the forwarded chain and validate
+    const firstIP = forwardedFor.split(",")[0]?.trim();
+    if (firstIP && isValidIP(firstIP)) {
+      clientIP = firstIP;
+    }
+  } else if (realIP && typeof realIP === 'string' && isValidIP(realIP)) {
+    clientIP = realIP;
+  } else if (connectionIP && isValidIP(connectionIP)) {
+    clientIP = connectionIP;
+  }
+
+  return clientIP;
+}
+
+/**
+ * Basic IP address validation
+ * @param {string} ip - IP address to validate
+ * @returns {boolean} - Whether IP is valid format
+ */
+function isValidIP(ip) {
+  if (!ip || typeof ip !== 'string') return false;
+  
+  // Basic IPv4 validation
+  const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+  // Basic IPv6 validation (simplified)
+  const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+  // IPv4-mapped IPv6
+  const ipv4MappedRegex = /^::ffff:/;
+
+  return ipv4Regex.test(ip) || ipv6Regex.test(ip) || ipv4MappedRegex.test(ip);
+}
+
+/**
+ * Handle ticket validation endpoint with enhanced security
  * @param {object} req - Request object
  * @param {object} res - Response object
  */
-export default async function handler(req, res) {
+async function handler(req, res) {
   // Only accept POST for security (tokens should not be in URL)
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed - use POST" });
-  }
-
-  // Extract IP for rate limiting
-  const ip =
-    req.headers["x-forwarded-for"]?.split(",")[0] ||
-    req.connection.remoteAddress ||
-    "unknown";
-
-  // Skip rate limiting in test environment to prevent CI timeouts
-  if (process.env.NODE_ENV !== "test" && checkRateLimit(ip)) {
-    return res.status(429).json({
-      error: "Rate limit exceeded. Please try again later.",
+    res.setHeader("Allow", ["POST"]);
+    return res.status(405).json({ 
+      error: "Method not allowed - use POST",
+      allowedMethods: ["POST"]
     });
   }
 
-  const { token, validateOnly } = req.body;
+  // Enhanced IP extraction and validation
+  const clientIP = extractClientIP(req);
+  
+  if (clientIP === "unknown") {
+    console.warn('Unable to determine client IP address for rate limiting');
+  }
 
-  if (!token) {
-    return res.status(400).json({ error: "Token required in request body" });
+  // Enhanced rate limiting check (skip only in test environment)
+  if (process.env.NODE_ENV !== "test") {
+    try {
+      const rateLimitResult = await checkEnhancedRateLimit(clientIP);
+      
+      if (!rateLimitResult.isAllowed) {
+        return res.status(429).json({
+          error: "Rate limit exceeded. Please try again later.",
+          retryAfter: rateLimitResult.retryAfter,
+          remaining: rateLimitResult.remaining
+        });
+      }
+    } catch (rateLimitError) {
+      console.error('Rate limiting service error:', rateLimitError);
+      // Continue processing but log the error - don't block legitimate requests
+    }
+  }
+
+  const { token, validateOnly } = req.body || {};
+
+  // Enhanced token validation
+  const tokenValidation = validateTicketToken(token);
+  if (!tokenValidation.isValid) {
+    // Log security risks for monitoring
+    if (tokenValidation.securityRisk) {
+      console.warn('Security risk detected in ticket validation:', {
+        ip: clientIP,
+        error: tokenValidation.error,
+        timestamp: new Date().toISOString(),
+        userAgent: req.headers["user-agent"]?.substring(0, 100)
+      });
+    }
+    
+    return res.status(400).json({ 
+      error: "Invalid token format",
+      details: process.env.NODE_ENV === 'development' ? tokenValidation.error : undefined
+    });
   }
 
   const source = detectSource(req);
   const db = await getDatabaseClient();
 
   try {
-    const validationCode = extractValidationCode(token);
+    const extractionResult = extractValidationCode(token);
+    const validationCode = extractionResult.validationCode;
 
     if (validateOnly) {
       // For preview only - no updates
@@ -277,21 +506,47 @@ export default async function handler(req, res) {
       });
     }
 
-    // Sanitize error for logging
-    const safeError = {
-      message: error.message || "Validation failed",
+    // Enhanced error handling with security considerations
+    let safeErrorMessage = "Ticket validation failed";
+    let logDetails = {
+      message: error.message || "Unknown validation error",
       timestamp: new Date().toISOString(),
+      ip: clientIP,
+      source: source
     };
-    console.error("Validation error:", safeError);
+
+    // Categorize errors for appropriate responses
+    if (error.message.includes("Token validation service")) {
+      // Configuration errors - don't expose details to client
+      safeErrorMessage = "Service temporarily unavailable";
+      logDetails.category = "configuration_error";
+      console.error("Token validation service error:", logDetails);
+    } else if (error.message.includes("Invalid token") || 
+               error.message.includes("Token expired") ||
+               error.message.includes("Invalid validation code")) {
+      // Token-related errors - safe to show generic message
+      safeErrorMessage = "Invalid or expired ticket";
+      logDetails.category = "token_error";
+    } else if (error.message.includes("Ticket not found") ||
+               error.message.includes("Maximum scans exceeded") ||
+               error.message.includes("Ticket is")) {
+      // Ticket status errors - safe to show to user
+      safeErrorMessage = error.message;
+      logDetails.category = "ticket_status";
+    } else {
+      // Unknown errors - log but don't expose details
+      logDetails.category = "unknown_error";
+      console.error("Unknown validation error:", logDetails);
+    }
 
     // Log failed validation (only if db is available)
     try {
       await logValidation(db, {
         token: token ? token.substring(0, 10) + "..." : "invalid",
         result: "failed",
-        failureReason: error.message,
+        failureReason: safeErrorMessage,
         source: source,
-        ip: ip,
+        ip: clientIP,
       });
     } catch (logError) {
       console.error("Failed to log validation error:", logError.message);
@@ -299,7 +554,14 @@ export default async function handler(req, res) {
 
     res.status(400).json({
       valid: false,
-      error: error.message || "Invalid token",
+      error: safeErrorMessage,
+      // Only include error details in development
+      ...(process.env.NODE_ENV === 'development' && { 
+        details: error.message,
+        category: logDetails.category 
+      })
     });
   }
 }
+
+export default withSecurityHeaders(handler);

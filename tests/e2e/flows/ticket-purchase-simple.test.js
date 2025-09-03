@@ -26,7 +26,7 @@ test.describe('Ticket Purchase - Essential Flow', () => {
     await page.goto('/pages/tickets.html');
     
     // Wait for network requests to complete and JavaScript to initialize
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Verify main page title is present
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
@@ -48,7 +48,7 @@ test.describe('Ticket Purchase - Essential Flow', () => {
 
   test('should handle add to cart and display floating cart', async ({ page }) => {
     await page.goto('/pages/tickets.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Wait for ticket cards to be fully initialized
     await page.waitForSelector('[data-initialized="true"]', { timeout: 10000 });
@@ -96,7 +96,7 @@ test.describe('Ticket Purchase - Essential Flow', () => {
 
   test('should show functional quantity controls', async ({ page }) => {
     await page.goto('/pages/tickets.html');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Wait for ticket cards to be fully initialized
     await page.waitForSelector('[data-initialized="true"]', { timeout: 10000 });

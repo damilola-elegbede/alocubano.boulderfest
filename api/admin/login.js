@@ -7,14 +7,168 @@ import {
   markSessionMfaVerified,
 } from "../lib/mfa-middleware.js";
 
+/**
+ * Input validation schemas
+ */
+const INPUT_VALIDATION = {
+  password: {
+    minLength: 1,
+    maxLength: 200,
+    required: true
+  },
+  mfaCode: {
+    minLength: 6,
+    maxLength: 10,
+    pattern: /^[0-9A-Za-z]+$/,
+    required: false
+  },
+  step: {
+    allowedValues: ['mfa'],
+    required: false
+  }
+};
+
+/**
+ * Enhanced input validation with security checks
+ * @param {Object} input - Input to validate
+ * @param {string} field - Field name
+ * @returns {Object} Validation result
+ */
+function validateInput(input, field) {
+  const rules = INPUT_VALIDATION[field];
+  if (!rules) {
+    return { isValid: false, error: 'Unknown field' };
+  }
+
+  // Check required fields
+  if (rules.required && (!input || input === '')) {
+    return { isValid: false, error: `${field} is required` };
+  }
+
+  // Skip further validation if field is not required and empty
+  if (!rules.required && (!input || input === '')) {
+    return { isValid: true };
+  }
+
+  // Type validation
+  if (typeof input !== 'string') {
+    return { isValid: false, error: `${field} must be a string` };
+  }
+
+  // Length validation
+  if (rules.minLength && input.length < rules.minLength) {
+    return { isValid: false, error: `${field} too short` };
+  }
+
+  if (rules.maxLength && input.length > rules.maxLength) {
+    return { isValid: false, error: `${field} too long` };
+  }
+
+  // Pattern validation
+  if (rules.pattern && !rules.pattern.test(input)) {
+    return { isValid: false, error: `${field} format invalid` };
+  }
+
+  // Allowed values validation
+  if (rules.allowedValues && !rules.allowedValues.includes(input)) {
+    return { isValid: false, error: `${field} value not allowed` };
+  }
+
+  // Enhanced security checks - detect common injection attempts
+  const suspiciousPatterns = [
+    /<script[^>]*>/i,           // Script tags
+    /javascript:/i,             // JavaScript protocol  
+    /on\w+\s*=/i,              // Event handlers
+    /\$\{.*\}/,                // Template literals
+    /__proto__/,               // Prototype pollution
+    /constructor/,             // Constructor access
+    /prototype/,               // Prototype access
+    /eval\s*\(/i,              // Eval calls
+    /function\s*\(/i,          // Function declarations
+    /\.\.\/|\.\.\\|%2e%2e/i,   // Directory traversal
+    /union\s+select/i,         // SQL injection
+    /insert\s+into/i,          // SQL injection
+    /delete\s+from/i,          // SQL injection
+    /drop\s+table/i,           // SQL injection
+    /\bexec\b|\bexecute\b/i,   // Command execution
+    /\x00|\x08|\x0B|\x0C/,     // Null bytes and control chars
+  ];
+
+  for (const pattern of suspiciousPatterns) {
+    if (pattern.test(input)) {
+      return { isValid: false, error: 'Invalid characters detected' };
+    }
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Enhanced rate limiting with progressive delays
+ * @param {string} clientIP - Client IP address
+ * @returns {Object} Rate limit status
+ */
+async function checkEnhancedRateLimit(clientIP) {
+  const rateLimitService = getRateLimitService();
+  const result = await rateLimitService.checkRateLimit(clientIP);
+  
+  // Add progressive delay based on failed attempts
+  if (result.isLocked) {
+    const delayMs = Math.min(1000 * Math.pow(2, result.failedAttempts || 1), 30000);
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+  }
+
+  return result;
+}
+
 async function loginHandler(req, res) {
   if (req.method === "POST") {
-    const { password, mfaCode, step } = req.body;
+    const { password, mfaCode, step } = req.body || {};
     const clientIP =
-      req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
+      req.headers["x-forwarded-for"]?.split(',')[0]?.trim() || 
+      req.headers["x-real-ip"] ||
+      req.connection?.remoteAddress ||
+      'unknown';
 
-    if (!clientIP) {
+    // Enhanced IP validation
+    if (!clientIP || clientIP === 'unknown') {
       return res.status(400).json({ error: "Unable to identify client" });
+    }
+
+    // Validate IP format (basic check)
+    const ipPattern = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+    if (clientIP !== 'unknown' && !ipPattern.test(clientIP) && !clientIP.startsWith('::ffff:')) {
+      console.warn(`Suspicious IP format detected: ${clientIP}`);
+    }
+
+    // Enhanced input validation
+    if (step === "mfa" || mfaCode) {
+      const mfaValidation = validateInput(mfaCode, 'mfaCode');
+      if (!mfaValidation.isValid) {
+        return res.status(400).json({ error: mfaValidation.error });
+      }
+    } else {
+      const passwordValidation = validateInput(password, 'password');
+      if (!passwordValidation.isValid) {
+        return res.status(400).json({ error: passwordValidation.error });
+      }
+    }
+
+    if (step) {
+      const stepValidation = validateInput(step, 'step');
+      if (!stepValidation.isValid) {
+        return res.status(400).json({ error: stepValidation.error });
+      }
+    }
+
+    // Check enhanced rate limiting with progressive delays
+    const rateLimitResult = await checkEnhancedRateLimit(clientIP);
+    if (rateLimitResult.isLocked) {
+      return res.status(429).json({
+        error: `Too many failed attempts. Try again in ${rateLimitResult.remainingTime} minutes.`,
+        remainingTime: rateLimitResult.remainingTime,
+        retryAfter: rateLimitResult.remainingTime * 60
+      });
     }
 
     // Handle two-step authentication process
@@ -27,7 +181,12 @@ async function loginHandler(req, res) {
         return await handlePasswordStep(req, res, password, clientIP);
       }
     } catch (error) {
-      console.error("Login process failed:", error);
+      console.error("Login process failed:", {
+        error: error.message,
+        clientIP,
+        timestamp: new Date().toISOString(),
+        userAgent: req.headers["user-agent"]?.substring(0, 100) // Truncate for logging
+      });
 
       // Try to record the failed attempt even if other errors occurred
       try {
@@ -45,10 +204,25 @@ async function loginHandler(req, res) {
       res.status(500).json({ error: "Internal server error" });
     }
   } else if (req.method === "DELETE") {
-    // Logout
-    const cookie = authService.clearSessionCookie();
-    res.setHeader("Set-Cookie", cookie);
-    res.status(200).json({ success: true });
+    // Logout - enhanced with session cleanup
+    try {
+      const sessionToken = authService.getSessionFromRequest(req);
+      if (sessionToken) {
+        // Clean up session from database
+        const db = await getDatabaseClient();
+        await db.execute({
+          sql: 'UPDATE admin_sessions SET expires_at = CURRENT_TIMESTAMP WHERE session_token = ?',
+          args: [sessionToken]
+        });
+      }
+      
+      const cookie = authService.clearSessionCookie();
+      res.setHeader("Set-Cookie", cookie);
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Logout error:", error);
+      res.status(500).json({ error: "Logout failed" });
+    }
   } else {
     res.setHeader("Allow", ["POST", "DELETE"]);
     res.status(405).end(`Method ${req.method} Not Allowed`);
@@ -56,9 +230,10 @@ async function loginHandler(req, res) {
 }
 
 /**
- * Handle password verification step (Step 1)
+ * Handle password verification step (Step 1) with enhanced security
  */
 async function handlePasswordStep(req, res, password, clientIP) {
+  // Additional password validation
   if (!password || typeof password !== "string" || password.length > 200) {
     return res.status(400).json({ error: "Invalid password format" });
   }
@@ -66,25 +241,23 @@ async function handlePasswordStep(req, res, password, clientIP) {
   const rateLimitService = getRateLimitService();
   const db = await getDatabaseClient();
 
-  // Check rate limiting
-  const rateLimitResult = await rateLimitService.checkRateLimit(clientIP);
-
-  if (rateLimitResult.isLocked) {
-    return res.status(429).json({
-      error: `Too many failed attempts. Try again in ${rateLimitResult.remainingTime} minutes.`,
-      remainingTime: rateLimitResult.remainingTime,
-    });
-  }
-
-  // Verify password
+  // Verify password with timing attack protection
+  const startTime = Date.now();
   const isValid = await authService.verifyPassword(password);
+  const verificationTime = Date.now() - startTime;
+
+  // Add consistent delay to prevent timing attacks (minimum 200ms)
+  const minDelay = 200;
+  if (verificationTime < minDelay) {
+    await new Promise(resolve => setTimeout(resolve, minDelay - verificationTime));
+  }
 
   if (!isValid) {
     // Record failed attempt
     const attemptResult = await rateLimitService.recordFailedAttempt(clientIP);
 
     const response = {
-      error: "Invalid password",
+      error: "Invalid credentials",
       attemptsRemaining: attemptResult.attemptsRemaining,
     };
 
@@ -120,7 +293,7 @@ async function handlePasswordStep(req, res, password, clientIP) {
       args: [
         tempToken,
         clientIP,
-        req.headers["user-agent"] || null,
+        req.headers["user-agent"]?.substring(0, 255) || null, // Truncate user agent
         new Date(Date.now() + authService.sessionDuration).toISOString(),
       ],
     });
@@ -144,6 +317,12 @@ async function handleMfaStep(req, res, mfaCode, clientIP) {
     return res.status(400).json({ error: "MFA code is required" });
   }
 
+  // Enhanced MFA code validation
+  const mfaValidation = validateInput(mfaCode, 'mfaCode');
+  if (!mfaValidation.isValid) {
+    return res.status(400).json({ error: mfaValidation.error });
+  }
+
   // Get temp token from Authorization header or body
   const tempToken =
     authService.getSessionFromRequest(req) || req.body.tempToken;
@@ -162,7 +341,7 @@ async function handleMfaStep(req, res, mfaCode, clientIP) {
 
   const adminId = session.admin.id || "admin";
 
-  // Verify MFA code
+  // Verify MFA code with enhanced security
   const mfaResult = await verifyMfaCode(adminId, mfaCode, req);
 
   if (!mfaResult.success) {
@@ -229,7 +408,7 @@ async function completeLogin(
         args: [
           token,
           clientIP,
-          req.headers["user-agent"] || null,
+          req.headers["user-agent"]?.substring(0, 255) || null, // Truncate user agent
           mfaUsed,
           new Date(Date.now() + authService.sessionDuration).toISOString(),
         ],
@@ -239,7 +418,7 @@ async function completeLogin(
     }
   }
 
-  // Log successful login
+  // Log successful login with enhanced security logging
   try {
     await db.execute({
       sql: `INSERT INTO admin_activity_log (
@@ -249,11 +428,12 @@ async function completeLogin(
         token,
         mfaUsed ? "login_with_mfa" : "login",
         clientIP,
-        req.headers["user-agent"] || null,
+        req.headers["user-agent"]?.substring(0, 255) || null,
         JSON.stringify({
           timestamp: new Date().toISOString(),
           mfaUsed,
           adminId,
+          clientIP: clientIP.substring(0, 45) // Truncate IP for JSON storage
         }),
         true,
       ],

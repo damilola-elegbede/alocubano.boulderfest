@@ -70,7 +70,7 @@ test.describe('Payment Processing Flow', () => {
       expect(request.method()).toBe('POST');
       
       // Should redirect to Stripe or show processing state
-      await page.waitForTimeout(3000);
+      await page.waitForLoadState('domcontentloaded', { timeout: 3000 });
       const currentUrl = page.url();
       
       expect(
@@ -120,7 +120,7 @@ test.describe('Payment Processing Flow', () => {
     
     // Wait for Stripe redirect or form - in real scenarios this would redirect to Stripe
     // For testing, we mainly verify the flow works up to the redirect
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('domcontentloaded', { timeout: 2000 });
     
     // Verify we either redirected to Stripe or got some form of checkout page
     const currentUrl = page.url();
@@ -167,7 +167,7 @@ test.describe('Payment Processing Flow', () => {
     await stripePaymentMethod.click();
     
     // In test mode, we should get redirected to Stripe or see processing state
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('domcontentloaded', { timeout: 3000 });
     
     const currentUrl = page.url();
     const hasStripeRedirect = currentUrl.includes('stripe.com');
@@ -321,7 +321,7 @@ test.describe('Payment Processing Flow', () => {
     await stripePaymentMethod.click();
     
     // Wait for error to appear - could be in payment selector or as separate error message
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('domcontentloaded', { timeout: 2000 });
     
     // Look for error messages in various possible locations
     const errorElements = page.locator('.payment-selector-error, .error, .alert-danger, .payment-error, .checkout-error-message');

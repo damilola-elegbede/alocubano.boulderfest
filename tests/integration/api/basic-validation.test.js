@@ -18,15 +18,33 @@ skipInCI('APIs validate required fields and reject malformed requests', async ()
     { method: 'POST', path: '/api/email/subscribe', data: { email: generateTestEmail(), consentToMarketing: false }, expected: /consent.*required/i }
   ];
   
-  for (const { method, path, data, expected } of testCases) {
-    const response = await testRequest(method, path, data);
-    if (response.status === 0) continue;
-    
-    expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST);
-    expect(response.data).toHaveProperty('error');
-    expect(response.data.error).toMatch(expected);
+  for (const testCase of testCases) {
+    try {
+      await testApiValidation(testCase);
+    } catch (error) {
+      console.error(`API validation test failed for ${testCase.path}:`, error);
+      throw error;
+    }
   }
 });
+
+async function testApiValidation({ method, path, data, expected }) {
+  const response = await testRequest(method, path, data);
+  
+  if (response.status === 0) {
+    console.warn(`Skipping validation test for ${path} - server not responding`);
+    return;
+  }
+  
+  // Validate response structure
+  expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST);
+  expect(response.data).toHaveProperty('error');
+  expect(typeof response.data.error).toBe('string');
+  expect(response.data.error.length).toBeGreaterThan(0);
+  
+  // Validate error message content
+  expect(response.data.error).toMatch(expected);
+}
 
 skipInCI('ticket validation handles invalid QR codes', async () => {
   const testCases = ['', 'invalid-format-123', 'x'.repeat(1000), 'ticket-does-not-exist-456'];

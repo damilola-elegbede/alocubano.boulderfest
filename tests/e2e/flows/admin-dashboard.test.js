@@ -5,6 +5,7 @@
 
 import { test, expect } from '@playwright/test';
 import { getTestDataConstants } from '../../../scripts/seed-test-data.js';
+import { waitForPageReady, waitForConditions } from '../helpers/playwright-utils.js';
 
 const testConstants = getTestDataConstants();
 
@@ -45,9 +46,12 @@ test.describe('Admin Dashboard & Security', () => {
   });
 
   test('should load dashboard data via API', async ({ page }) => {
-    // FIXED: Simple approach - verify the dashboard displays loaded data
-    // Wait for data to load
-    await page.waitForLoadState('networkidle');
+    // FIXED: Modern approach using waitForPageReady instead of networkidle
+    await waitForPageReady(page, {
+      timeout: 10000,
+      waitForSelector: '[data-testid="dashboard-stats"]',
+      checkNetworkIdle: true
+    });
     
     // Verify statistics cards are visible and contain data
     await expect(page.locator('[data-testid="dashboard-stats"]')).toBeVisible();
@@ -78,7 +82,7 @@ test.describe('Admin Dashboard & Security', () => {
   });
 
   test('should handle API errors gracefully', async ({ page }) => {
-    // FIXED: Simplified error handling test
+    // FIXED: Simplified error handling test with modern waiting
     await page.route('**/api/admin/dashboard', route => {
       route.fulfill({
         status: 500,
@@ -89,6 +93,14 @@ test.describe('Admin Dashboard & Security', () => {
     
     // Navigate fresh to trigger error
     await page.goto('/pages/admin/dashboard.html');
+    
+    // Wait for page to stabilize with error handling
+    await waitForConditions(page, {
+      timeout: 8000,
+      domReady: true,
+      selector: 'h1',
+      noLoadingSpinners: true
+    });
     
     // Should still show basic page structure
     await expect(page.locator('h1')).toContainText('Admin Dashboard');
@@ -106,8 +118,17 @@ test.describe('Admin Dashboard & Security', () => {
     // Try to access dashboard directly
     await page.goto('/pages/admin/dashboard.html');
     
-    // Should redirect to login or show unauthorized message
-    await page.waitForTimeout(2000); // Give time for redirect
+    // Wait for redirect or unauthorized message with modern approach
+    await waitForConditions(page, {
+      timeout: 5000,
+      domReady: true,
+      customFunction: () => {
+        return window.location.href.includes('login') ||
+               document.body.textContent.toLowerCase().includes('unauthorized') ||
+               document.body.textContent.toLowerCase().includes('access denied');
+      }
+    });
+    
     const currentUrl = page.url();
     
     expect(

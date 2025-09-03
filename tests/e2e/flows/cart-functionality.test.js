@@ -62,14 +62,14 @@ test.describe('Cart Functionality', () => {
     const weekendBtn = page.locator('button:has-text("Weekend"), .weekend button').first();
     if (await weekendBtn.count() > 0) {
       await weekendBtn.click();
-      await page.waitForTimeout(500);
+      await page.waitForLoadState('domcontentloaded');
     }
     
     // Add Saturday ticket
     const saturdayBtn = page.locator('button:has-text("Saturday"), .saturday button').first();
     if (await saturdayBtn.count() > 0) {
       await saturdayBtn.click();
-      await page.waitForTimeout(500);
+      await page.waitForLoadState('domcontentloaded');
     }
     
     // Cart should show multiple items
@@ -85,7 +85,7 @@ test.describe('Cart Functionality', () => {
     const addButton = page.locator('button:has-text("Weekend"), button:has-text("Saturday"), button:has-text("Add")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      await page.waitForTimeout(500);
+      await page.waitForLoadState('domcontentloaded');
     }
     
     // Click on cart to open details
@@ -104,7 +104,7 @@ test.describe('Cart Functionality', () => {
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      await page.waitForTimeout(500);
+      await page.waitForLoadState('domcontentloaded');
       
       // Look for quantity controls
       const plusButton = page.locator('.quantity-plus, .qty-increase, button[data-action="increase"]');
@@ -125,7 +125,7 @@ test.describe('Cart Functionality', () => {
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      await page.waitForTimeout(500);
+      await page.waitForLoadState('domcontentloaded');
       
       // Click cart to open details
       const cart = page.locator('.floating-cart-container, .floating-cart');
@@ -165,7 +165,7 @@ test.describe('Cart Functionality', () => {
     const addButton = page.locator('button:has-text("Weekend"), button:has-text("Add")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      await page.waitForTimeout(500);
+      await page.waitForLoadState('domcontentloaded');
     }
     
     // Navigate to another page
@@ -187,7 +187,7 @@ test.describe('Cart Functionality', () => {
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      await page.waitForTimeout(500);
+      await page.waitForLoadState('domcontentloaded');
       
       // Look for checkout button
       const checkoutButton = page.locator('button:has-text("Checkout"), .checkout-btn, .proceed-to-checkout');
@@ -195,7 +195,7 @@ test.describe('Cart Functionality', () => {
         await checkoutButton.click();
         
         // Should navigate to checkout or show checkout form
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState('domcontentloaded');
         const currentUrl = page.url();
         const pageContent = await page.locator('body').textContent();
         

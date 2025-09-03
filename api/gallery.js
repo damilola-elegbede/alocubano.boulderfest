@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, If-None-Match');
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
@@ -29,29 +29,51 @@ export default async function handler(req, res) {
   try {
     console.log('Gallery API: Processing request');
     
-    const { event, year } = req.query;
+    const { event, year, offset = 0, limit = 20 } = req.query;
     
     const galleryService = getGalleryService();
     const galleryData = await galleryService.getGalleryData(year, event);
     
+    // Apply pagination if requested
+    let paginatedData = galleryData;
+    if (offset > 0 || limit < 1000) {
+      paginatedData = applyPagination(galleryData, parseInt(offset), parseInt(limit));
+    }
+    
+    // Generate ETag for caching
+    const dataHash = generateETag(paginatedData);
+    res.setHeader('ETag', `"${dataHash}"`);
+    
+    // Check if client has current version
+    const clientETag = req.headers['if-none-match'];
+    if (clientETag === `"${dataHash}"`) {
+      res.status(304).end();
+      return;
+    }
+    
     // Add API metadata
     const response = {
-      ...galleryData,
+      ...paginatedData,
       api: {
-        version: '2.0',
+        version: '2.1',
         timestamp: new Date().toISOString(),
         environment: process.env.VERCEL ? 'vercel' : 'local',
-        queryParams: { event, year }
+        queryParams: { event, year, offset, limit },
+        etag: dataHash
       }
     };
+    
+    // Set performance headers
+    res.setHeader('X-Response-Time', Date.now());
+    res.setHeader('Vary', 'Accept-Encoding');
     
     // Set caching headers based on data source
     if (galleryData.source === 'build-time-cache') {
       // Long cache for build-time data
-      res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hours
+      res.setHeader('Cache-Control', 'public, max-age=86400, immutable'); // 24 hours
     } else {
-      // Shorter cache for runtime data
-      res.setHeader('Cache-Control', 'public, max-age=900, stale-while-revalidate=1800'); // 15 minutes
+      // Shorter cache for runtime data with stale-while-revalidate
+      res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=900, stale-if-error=1800'); // 5 min, 15 min SWR, 30 min error
     }
     
     res.status(200).json(response);
@@ -66,4 +88,55 @@ export default async function handler(req, res) {
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
+}
+
+/**
+ * Apply pagination to gallery data
+ */
+function applyPagination(data, offset, limit) {
+  if (!data.categories) return data;
+  
+  // Flatten all items for pagination
+  const allItems = [];
+  Object.entries(data.categories).forEach(([category, items]) => {
+    items.forEach(item => allItems.push({ ...item, category }));
+  });
+  
+  // Apply pagination
+  const paginatedItems = allItems.slice(offset, offset + limit);
+  
+  // Group back into categories
+  const paginatedCategories = {};
+  paginatedItems.forEach(item => {
+    if (!paginatedCategories[item.category]) {
+      paginatedCategories[item.category] = [];
+    }
+    const { category, ...itemWithoutCategory } = item;
+    paginatedCategories[item.category].push(itemWithoutCategory);
+  });
+  
+  return {
+    ...data,
+    categories: paginatedCategories,
+    totalCount: allItems.length,
+    returnedCount: paginatedItems.length,
+    offset,
+    limit,
+    hasMore: offset + limit < allItems.length
+  };
+}
+
+/**
+ * Generate ETag hash for response caching
+ */
+function generateETag(data) {
+  // Simple hash generation for ETag
+  const str = JSON.stringify(data);
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash).toString(16);
 }

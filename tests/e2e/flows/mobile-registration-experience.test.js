@@ -47,7 +47,7 @@ test.describe('Mobile Registration Experience', () => {
       const checkoutBtn = page.locator('button:has-text("Checkout"), button:has-text("Continue"), .checkout-btn');
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState('domcontentloaded');
       }
     }
     
@@ -143,7 +143,7 @@ test.describe('Mobile Registration Experience', () => {
       window.scrollTo({ top: 300, behavior: 'smooth' });
     });
     
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('domcontentloaded');
     
     // Page should remain responsive during scroll
     const scrollPosition = await page.evaluate(() => window.scrollY);
@@ -167,7 +167,7 @@ test.describe('Mobile Registration Experience', () => {
       const checkoutBtn = page.locator('button:has-text("Checkout"), .checkout-btn');
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState('domcontentloaded');
         
         // Should either show Stripe checkout or payment form
         const paymentElements = page.locator('.payment-form, iframe[src*="stripe"], #stripe-card-element');
