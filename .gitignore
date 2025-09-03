@@ -124,3 +124,6 @@ scripts/vercel-dev-*.js
 *.serviceaccount.json
 deployment-check-report.json
 *-tickets-*.json
+
+# Temporary documentation and analysis
+.tmp/
