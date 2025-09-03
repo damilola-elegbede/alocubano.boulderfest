@@ -281,6 +281,9 @@ WALLET_AUTH_SECRET=      # JWT signing
 GOOGLE_DRIVE_API_KEY=    # Google Cloud API key with Drive API enabled
 GOOGLE_DRIVE_FOLDER_ID=  # Google Drive folder ID containing gallery images
 
+# Internal APIs Security
+INTERNAL_API_KEY=        # API key for secure internal operations (cache management)
+
 # Testing (optional)
 TEST_ADMIN_PASSWORD=     # Plain text password for admin panel E2E testing (not bcrypt hashed)
 
