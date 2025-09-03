@@ -2,7 +2,7 @@ name: "🧪 Unit Tests"
 
 on:
   push:
-    branches: [main, develop, 'feature/**', 'fix/**', 'cleanup/**']
+    branches: [main]
   pull_request:
     branches: [main, develop]
   workflow_dispatch:
@@ -82,7 +82,7 @@ jobs:
           echo "⏱️  Execution Time: ${duration}ms"
           
           # Performance evaluation
-          if [ $duration -lt $PHASE3_PERFORMANCE_TARGET_MS ]; then
+          if [ "$duration" -lt "$PHASE3_PERFORMANCE_TARGET_MS" ]; then
             echo "🏆 EXCELLENT: Execution under 2-second target!"
           else
             echo "⚠️  WARNING: Execution time (${duration}ms) exceeds target"

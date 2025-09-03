@@ -2,7 +2,7 @@ name: "🛡️ Quality Gates & Code Standards"
 
 on:
   push:
-    branches: [main, develop, 'feature/**', 'fix/**', 'cleanup/**']
+    branches: [main]
   pull_request:
     branches: [main, develop]
   schedule:
@@ -55,10 +55,10 @@ jobs:
           echo "eslint_errors=$errors" >> $GITHUB_OUTPUT
           echo "eslint_warnings=$warnings" >> $GITHUB_OUTPUT
           
-          if [ $errors -gt 0 ]; then
+          if [ "$errors" -gt 0 ]; then
             echo "❌ ESLint found $errors error(s)"
             exit 1
-          elif [ $warnings -gt 0 ]; then
+          elif [ "$warnings" -gt 0 ]; then
             echo "⚠️ ESLint found $warnings warning(s)"
           else
             echo "✅ ESLint: No issues found"
@@ -79,10 +79,10 @@ jobs:
           echo "html_errors=$html_errors" >> $GITHUB_OUTPUT
           echo "html_warnings=$html_warnings" >> $GITHUB_OUTPUT
           
-          if [ $html_errors -gt 0 ]; then
+          if [ "$html_errors" -gt 0 ]; then
             echo "❌ HTMLHint found $html_errors error(s)"
             exit 1
-          elif [ $html_warnings -gt 0 ]; then
+          elif [ "$html_warnings" -gt 0 ]; then
             echo "⚠️ HTMLHint found $html_warnings warning(s)"
           else
             echo "✅ HTML: Valid and well-formed"
@@ -105,7 +105,7 @@ jobs:
           md_issues=$(grep -c "MD" markdown-output.log || echo "0")
           echo "markdown_issues=$md_issues" >> $GITHUB_OUTPUT
           
-          if [ $md_issues -gt 0 ]; then
+          if [ "$md_issues" -gt 0 ]; then
             echo "⚠️ Markdown: $md_issues style issue(s) found"
           else
             echo "✅ Markdown: Well-formatted"
@@ -199,10 +199,10 @@ jobs:
           echo "🟡 Moderate: $moderate"
           echo "🟢 Low: $low"
           
-          if [ $critical -gt 0 ] || [ $high -gt 0 ]; then
+          if [ "$critical" -gt 0 ] || [ "$high" -gt 0 ]; then
             echo "❌ Security: Critical/High vulnerabilities found!"
             exit 1
-          elif [ $moderate -gt 0 ]; then
+          elif [ "$moderate" -gt 0 ]; then
             echo "⚠️ Security: Moderate vulnerabilities found"
           else
             echo "✅ Security: No significant vulnerabilities"
