@@ -24,7 +24,7 @@ jobs:
     name: "🔍 Code Quality Analysis"
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     steps:
       - name: "📥 Checkout Code"
         uses: actions/checkout@v4
@@ -47,14 +47,14 @@ jobs:
           echo "🔍 Running ESLint Analysis"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           npm run lint:js 2>&1 | tee eslint-output.log || true
-          
+
           # Count issues (use head -1 to ensure single value)
           errors=$(grep -c "error" eslint-output.log 2>/dev/null | head -1 || echo "0")
           warnings=$(grep -c "warning" eslint-output.log 2>/dev/null | head -1 || echo "0")
-          
+
           echo "eslint_errors=$errors" >> $GITHUB_OUTPUT
           echo "eslint_warnings=$warnings" >> $GITHUB_OUTPUT
-          
+
           if [ "$errors" -gt 0 ]; then
             echo "❌ ESLint found $errors error(s)"
             exit 1
@@ -71,14 +71,14 @@ jobs:
           echo "🎨 Running HTML Validation"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           npm run lint:html 2>&1 | tee htmlhint-output.log || true
-          
+
           # Count HTML issues (use head -1 to ensure single value)
           html_errors=$(grep -c "error" htmlhint-output.log 2>/dev/null | head -1 || echo "0")
           html_warnings=$(grep -c "warning" htmlhint-output.log 2>/dev/null | head -1 || echo "0")
-          
+
           echo "html_errors=$html_errors" >> $GITHUB_OUTPUT
           echo "html_warnings=$html_warnings" >> $GITHUB_OUTPUT
-          
+
           if [ "$html_errors" -gt 0 ]; then
             echo "❌ HTMLHint found $html_errors error(s)"
             exit 1
@@ -94,17 +94,13 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📝 Validating Markdown Files"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
-          # Install markdownlint-cli if not present
-          if ! command -v markdownlint &> /dev/null; then
-            npm install -g markdownlint-cli
-          fi
-          
-          markdownlint '**/*.md' --ignore node_modules 2>&1 | tee markdown-output.log || true
-          
+
+          # Use npx to avoid global install
+          npx --yes markdownlint-cli '**/*.md' --ignore node_modules 2>&1 | tee markdown-output.log || true
+
           md_issues=$(grep -c "MD" markdown-output.log 2>/dev/null | head -1 || echo "0")
           echo "markdown_issues=$md_issues" >> $GITHUB_OUTPUT
-          
+
           if [ "$md_issues" -gt 0 ]; then
             echo "⚠️ Markdown: $md_issues style issue(s) found"
           else
@@ -117,9 +113,13 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🏗️ Validating Project Structure"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          node scripts/verify-structure.js 2>&1 | tee structure-output.log || true
-          
-          if grep -q "error" structure-output.log; then
+          # Capture exit code properly
+          set +e
+          node scripts/verify-structure.js 2>&1 | tee structure-output.log
+          structure_exit_code=$?
+          set -e
+
+          if [ $structure_exit_code -ne 0 ]; then
             echo "structure_valid=false" >> $GITHUB_OUTPUT
             echo "❌ Structure: Issues detected"
             exit 1
@@ -134,11 +134,11 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "💅 Checking Code Formatting"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           # Check if prettier is configured
           if [ -f ".prettierrc" ] || [ -f ".prettierrc.json" ] || [ -f ".prettierrc.js" ]; then
             npx prettier --check "**/*.{js,html,css,md}" --ignore-path .gitignore 2>&1 | tee format-output.log || true
-            
+
             if grep -q "not formatted" format-output.log; then
               unformatted=$(grep -c "not formatted" format-output.log || echo "0")
               echo "formatting_issues=$unformatted" >> $GITHUB_OUTPUT
@@ -156,7 +156,7 @@ jobs:
     name: "🔒 Security Analysis"
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: "📥 Checkout Code"
         uses: actions/checkout@v4
@@ -176,21 +176,21 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🔒 Running Security Scan"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           # Run npm audit
           npm audit --audit-level=moderate 2>&1 | tee audit-output.log || true
-          
+
           # Extract vulnerability counts
           critical=$(grep -oP '(\d+) critical' audit-output.log | grep -oP '\d+' || echo "0")
           high=$(grep -oP '(\d+) high' audit-output.log | grep -oP '\d+' || echo "0")
           moderate=$(grep -oP '(\d+) moderate' audit-output.log | grep -oP '\d+' || echo "0")
           low=$(grep -oP '(\d+) low' audit-output.log | grep -oP '\d+' || echo "0")
-          
+
           echo "vuln_critical=$critical" >> $GITHUB_OUTPUT
           echo "vuln_high=$high" >> $GITHUB_OUTPUT
           echo "vuln_moderate=$moderate" >> $GITHUB_OUTPUT
           echo "vuln_low=$low" >> $GITHUB_OUTPUT
-          
+
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🔒 Security Scan Results:"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -198,7 +198,7 @@ jobs:
           echo "🟠 High: $high"
           echo "🟡 Moderate: $moderate"
           echo "🟢 Low: $low"
-          
+
           if [ "$critical" -gt 0 ]; then
             echo "❌ Security: Critical vulnerabilities found!"
             exit 1
@@ -216,7 +216,7 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🔍 Scanning for Exposed Secrets"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           # Basic secret detection patterns
           patterns=(
             "password.*=.*['\"].*['\"]"
@@ -225,15 +225,18 @@ jobs:
             "token.*=.*['\"].*['\"]"
             "private[_-]?key"
           )
-          
+
           found_secrets=false
           for pattern in "${patterns[@]}"; do
-            if grep -r -i "$pattern" --include="*.js" --include="*.json" --exclude-dir=node_modules --exclude-dir=.git . > /dev/null 2>&1; then
+            if grep -r -i "$pattern" \
+              --include="*.js" --include="*.ts" --include="*.json" \
+              --include="*.yml" --include="*.yaml" --include="*.env*" \
+              --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.tmp . > /dev/null 2>&1; then
               echo "⚠️ Potential secret pattern found: $pattern"
               found_secrets=true
             fi
           done
-          
+
           if [ "$found_secrets" = true ]; then
             echo "⚠️ Warning: Potential secrets detected. Please review."
           else
@@ -245,7 +248,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [code-quality, security-scan]
     if: always()
-    
+
     steps:
       - name: "📊 Generate Quality Report"
         uses: actions/github-script@v7
@@ -255,18 +258,18 @@ jobs:
           script: |
             const codeQuality = '${{ needs.code-quality.result }}';
             const securityScan = '${{ needs.security-scan.result }}';
-            
+
             const overallStatus = (codeQuality === 'success' && securityScan === 'success') ? '✅' : '❌';
             const statusText = (codeQuality === 'success' && securityScan === 'success') ? 'PASSED' : 'FAILED';
-            
+
             const comment = `## ${overallStatus} Quality Gates ${statusText}
-            
+
             ### 📊 Quality Check Summary
             | Check | Status |
             |-------|--------|
             | **Code Quality** | ${codeQuality === 'success' ? '✅ Passed' : '❌ Failed'} |
             | **Security Scan** | ${securityScan === 'success' ? '✅ Passed' : '❌ Failed'} |
-            
+
             ### 📋 Detailed Results
             - **ESLint**: JavaScript code analysis
             - **HTMLHint**: HTML validation
@@ -274,24 +277,24 @@ jobs:
             - **Structure**: Project organization
             - **Security**: Vulnerability scanning
             - **Secrets**: Sensitive data detection
-            
-            ${overallStatus === '✅' ? 
-              '### 🎉 All quality checks passed!' : 
+
+            ${overallStatus === '✅' ?
+              '### 🎉 All quality checks passed!' :
               '### ⚠️ Some quality checks failed. Please review the workflow output.'}
             `;
-            
+
             // Find existing comment
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            
-            const botComment = comments.find(comment => 
-              comment.user.type === 'Bot' && 
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
               comment.body.includes('Quality Gates')
             );
-            
+
             if (botComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,

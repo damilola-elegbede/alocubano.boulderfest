@@ -14,7 +14,6 @@ concurrency:
 permissions:
   contents: read
   pull-requests: write
-  checks: write
 
 env:
   NODE_ENV: test
@@ -27,11 +26,11 @@ jobs:
     name: "🧪 Unit Test Suite"
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     strategy:
       matrix:
         node-version: ['20.x', '22.x']
-    
+
     steps:
       - name: "📥 Checkout Code"
         uses: actions/checkout@v4
@@ -57,22 +56,22 @@ jobs:
           echo "🎯 Performance Target: <2 seconds"
           echo "📁 Categories: Security (248), Business Logic (300), Frontend (258)"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           # Run unit tests with precise timing
           start_time=$(date +%s%3N)
-          
+
           # Run tests and capture exit code
           npm test 2>&1 | tee test-output.log
           test_exit_code=${PIPESTATUS[0]}
-          
+
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
-          
+
           # Extract test counts from output
           total_tests=$(grep -oP '\d+(?= passing)' test-output.log | head -1 || echo "0")
           passing_tests=$(grep -oP '\d+(?= passing)' test-output.log | head -1 || echo "0")
           failing_tests=$(grep -oP '\d+(?= failing)' test-output.log | head -1 || echo "0")
-          
+
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📊 Test Results Summary"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -80,21 +79,21 @@ jobs:
           echo "❌ Tests Failed: $failing_tests"
           echo "📈 Total Tests: $total_tests"
           echo "⏱️  Execution Time: ${duration}ms"
-          
+
           # Performance evaluation
           if [ "$duration" -lt "$PHASE3_PERFORMANCE_TARGET_MS" ]; then
             echo "🏆 EXCELLENT: Execution under 2-second target!"
           else
             echo "⚠️  WARNING: Execution time (${duration}ms) exceeds target"
           fi
-          
+
           # Set outputs for PR comment
           echo "total_tests=$total_tests" >> $GITHUB_OUTPUT
           echo "passing_tests=$passing_tests" >> $GITHUB_OUTPUT
           echo "failing_tests=$failing_tests" >> $GITHUB_OUTPUT
           echo "duration=${duration}ms" >> $GITHUB_OUTPUT
           echo "node_version=${{ matrix.node-version }}" >> $GITHUB_OUTPUT
-          
+
           exit $test_exit_code
         env:
           NODE_ENV: ${{ env.NODE_ENV }}
@@ -133,12 +132,12 @@ jobs:
           script: |
             const fs = require('fs');
             const testReport = JSON.parse(fs.readFileSync('test-report.json', 'utf8'));
-            
+
             const status = testReport.status === 'success' ? '✅' : '❌';
             const statusText = testReport.status === 'success' ? 'PASSED' : 'FAILED';
-            
+
             const comment = `## ${status} Unit Tests ${statusText} - Node ${{ matrix.node-version }}
-            
+
             ### 📊 Test Summary
             | Metric | Value |
             |--------|-------|
@@ -147,32 +146,32 @@ jobs:
             | **Failed** | ❌ ${testReport.failing_tests} |
             | **Duration** | ⏱️ ${testReport.duration} |
             | **Node Version** | 🔧 ${{ matrix.node-version }} |
-            
-            ${testReport.status === 'success' ? 
-              '### 🏆 All tests passed successfully!' : 
+
+            ${testReport.status === 'success' ?
+              '### 🏆 All tests passed successfully!' :
               '### ⚠️ Some tests failed. Please review the test output.'}
-            
+
             <details>
             <summary>View detailed test output</summary>
-            
+
             \`\`\`
             Check the artifacts for full test output
             \`\`\`
             </details>`;
-            
+
             // Find existing comment
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            
-            const botComment = comments.find(comment => 
-              comment.user.type === 'Bot' && 
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
               comment.body.includes(`Unit Tests`) &&
               comment.body.includes(`Node ${{ matrix.node-version }}`)
             );
-            
+
             if (botComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
