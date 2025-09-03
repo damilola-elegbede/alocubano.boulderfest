@@ -1,26 +1,16 @@
 /**
- * Advanced Performance Monitor for A Lo Cubano Boulder Fest Gallery
+ * Advanced Performance Monitor for A Lo Cubano Boulder Fest Gallery - ES6 Module Version
  * Comprehensive monitoring system for performance optimization analysis
  *
- * Phase 3 Features:
- * - Core Web Vitals tracking (LCP, FID, CLS) using PerformanceObserver API
- * - Gallery-specific custom metrics and events
- * - Resource timing tracking for images and API calls
- * - Memory monitoring using performance.memory API
- * - Network monitoring using navigator.connection API
- * - Comprehensive error tracking for JavaScript errors and promise rejections
- * - Metrics buffering and batch reporting system
- * - SendBeacon API for reliable reporting on page unload
- * - Metric aggregation and analysis capabilities
- * - Virtual scrolling performance tracking
- * - Cache efficiency monitoring via service worker integration
+ * This is the ES6 module version with proper exports for modern JavaScript modules.
+ * Use this when importing into other ES modules or when using type="module".
  */
 
 class PerformanceMonitor {
     constructor() {
-    // Detect test environment to suppress warnings
+        // Detect test environment to suppress warnings
         this.isTestEnvironment =
-      typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+            typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
 
         // Core metrics storage
         this.metrics = {
@@ -80,7 +70,7 @@ class PerformanceMonitor {
         // Initialize monitoring
         this.isObserving = false;
         this.initializeMonitoring();
-        console.log('[PerfMonitor] Advanced Performance monitoring initialized');
+        console.log('[PerfMonitor] Advanced Performance monitoring initialized (ES6 Module)');
     }
 
     initializeMonitoring() {
@@ -117,7 +107,7 @@ class PerformanceMonitor {
 
             this.isObserving = true;
             console.log(
-                '[PerfMonitor] All monitoring systems initialized successfully'
+                '[PerfMonitor] All monitoring systems initialized successfully (ES6)'
             );
         } catch (error) {
             console.error('[PerfMonitor] Error initializing monitoring:', error);
@@ -139,12 +129,12 @@ class PerformanceMonitor {
         const navigation = performance.getEntriesByType('navigation')[0];
         if (navigation) {
             this.metrics.pageLoadTime =
-        navigation.loadEventEnd - navigation.navigationStart;
+                navigation.loadEventEnd - navigation.navigationStart;
 
             this.logEvent('page_load', {
                 loadTime: this.metrics.pageLoadTime,
                 domContentLoaded:
-          navigation.domContentLoadedEventEnd - navigation.navigationStart,
+                    navigation.domContentLoadedEventEnd - navigation.navigationStart,
                 firstContentfulPaint: this.getFirstContentfulPaint()
             });
         }
@@ -207,14 +197,14 @@ class PerformanceMonitor {
                         element: lastEntry.element ? lastEntry.element.tagName : 'unknown',
                         url: lastEntry.url || window.location.href,
                         isGalleryImage:
-              lastEntry.element &&
-              lastEntry.element.classList.contains('gallery-image')
+                            lastEntry.element &&
+                            lastEntry.element.classList.contains('gallery-image')
                     });
 
                     // Custom event for gallery-specific LCP tracking
                     if (
                         lastEntry.element &&
-            lastEntry.element.classList.contains('gallery-image')
+                        lastEntry.element.classList.contains('gallery-image')
                     ) {
                         this.recordCustomMetric('gallery_lcp', lcpValue);
                     }
@@ -254,9 +244,9 @@ class PerformanceMonitor {
                         target: entry.target ? entry.target.tagName : 'unknown',
                         processingTime: entry.processingEnd - entry.processingStart,
                         isGalleryInteraction:
-              entry.target &&
-              (entry.target.closest('.gallery-container') ||
-                entry.target.classList.contains('gallery-image'))
+                            entry.target &&
+                            (entry.target.closest('.gallery-container') ||
+                                entry.target.classList.contains('gallery-image'))
                     });
 
                     // Track gallery-specific FID
@@ -339,9 +329,9 @@ class PerformanceMonitor {
             return (
                 node &&
                 node.classList &&
-        (node.classList.contains('gallery-image') ||
-          node.classList.contains('gallery-container') ||
-          node.closest('.gallery-container') !== null)
+                (node.classList.contains('gallery-image') ||
+                    node.classList.contains('gallery-container') ||
+                    node.closest('.gallery-container') !== null)
             );
         });
     }
@@ -370,7 +360,7 @@ class PerformanceMonitor {
                         // Keep only recent resource timings (last 100)
                         if (this.metrics.resourceTimings.length > 100) {
                             this.metrics.resourceTimings =
-                this.metrics.resourceTimings.slice(-100);
+                                this.metrics.resourceTimings.slice(-100);
                         }
 
                         this.logEvent('resource_timing', resourceData);
@@ -425,18 +415,18 @@ class PerformanceMonitor {
         // Update success rate
         const successCount = isSuccess ? 1 : 0;
         this.metrics.imageLoadSuccessRate =
-      (this.metrics.imageLoadSuccessRate *
-        (this.metrics.totalImagesLoaded - 1) +
-        successCount) /
-      this.metrics.totalImagesLoaded;
+            (this.metrics.imageLoadSuccessRate *
+                (this.metrics.totalImagesLoaded - 1) +
+                successCount) /
+            this.metrics.totalImagesLoaded;
 
         // Update average load time
         if (isSuccess) {
             this.metrics.averageImageLoadTime =
-        (this.metrics.averageImageLoadTime *
-          (this.metrics.totalImagesLoaded - 1) +
-          duration) /
-        this.metrics.totalImagesLoaded;
+                (this.metrics.averageImageLoadTime *
+                    (this.metrics.totalImagesLoaded - 1) +
+                    duration) /
+                this.metrics.totalImagesLoaded;
         }
 
         this.recordCustomMetric('image_load_duration', duration);
@@ -496,9 +486,9 @@ class PerformanceMonitor {
 
         try {
             const connection =
-        navigator.connection ||
-        navigator.mozConnection ||
-        navigator.webkitConnection;
+                navigator.connection ||
+                navigator.mozConnection ||
+                navigator.webkitConnection;
 
             const updateNetworkInfo = () => {
                 this.metrics.networkInfo = {
@@ -607,20 +597,20 @@ class PerformanceMonitor {
     }
 
     trackImageLoadingResults() {
-    // Track successful image loads
+        // Track successful image loads
         document.addEventListener(
             'load',
             (event) => {
                 if (
                     event.target.tagName === 'IMG' &&
-          event.target.classList.contains('gallery-image')
+                    event.target.classList.contains('gallery-image')
                 ) {
                     this.recordCustomMetric('image_load_success', 1);
                     this.logEvent('gallery_image_loaded', {
                         src: event.target.src,
                         loadTime:
-              Date.now() -
-              (parseInt(event.target.dataset.loadStartTime) || Date.now())
+                            Date.now() -
+                            (parseInt(event.target.dataset.loadStartTime) || Date.now())
                     });
                 }
             },
@@ -633,7 +623,7 @@ class PerformanceMonitor {
             (event) => {
                 if (
                     event.target.tagName === 'IMG' &&
-          event.target.classList.contains('gallery-image')
+                    event.target.classList.contains('gallery-image')
                 ) {
                     this.recordCustomMetric('image_load_failure', 1);
                     this.recordError('image_load_error', {
@@ -647,7 +637,7 @@ class PerformanceMonitor {
     }
 
     trackCacheEfficiency() {
-    // Monitor service worker cache events
+        // Monitor service worker cache events
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.addEventListener('message', (event) => {
                 if (event.data && event.data.type === 'CACHE_PERFORMANCE') {
@@ -661,8 +651,8 @@ class PerformanceMonitor {
         this.metrics.cacheHits = cacheData.hits || 0;
         this.metrics.cacheMisses = cacheData.misses || 0;
         this.metrics.cacheHitRatio =
-      this.metrics.cacheHits /
-      (this.metrics.cacheHits + this.metrics.cacheMisses);
+            this.metrics.cacheHits /
+            (this.metrics.cacheHits + this.metrics.cacheMisses);
 
         this.logEvent('cache_efficiency', {
             hitRatio: this.metrics.cacheHitRatio,
@@ -711,155 +701,13 @@ class PerformanceMonitor {
         this.metrics.cacheHits = cacheData.hits || 0;
         this.metrics.cacheMisses = cacheData.misses || 0;
         this.metrics.cacheHitRatio =
-      this.metrics.cacheHits /
-        (this.metrics.cacheHits + this.metrics.cacheMisses) || 0;
+            this.metrics.cacheHits /
+            (this.metrics.cacheHits + this.metrics.cacheMisses) || 0;
 
         this.logEvent('cache_stats', {
             hitRatio: this.metrics.cacheHitRatio,
             totalRequests: this.metrics.cacheHits + this.metrics.cacheMisses,
             bandwidthSaved: cacheData.bandwidthSaved || 0
-        });
-    }
-
-    trackImageLoading() {
-    // Track gallery image loading times
-        document.addEventListener('progressiveload', (event) => {
-            const loadTime = event.detail.loadTime || 0;
-            this.trackImageLoadTime(event.detail.url, loadTime);
-        });
-
-        // Track regular image loads
-        document.addEventListener(
-            'load',
-            (event) => {
-                if (
-                    event.target.tagName === 'IMG' &&
-          event.target.classList.contains('gallery-image')
-                ) {
-                    this.trackImageLoad(event.target);
-                }
-            },
-            true
-        );
-    }
-
-    trackImageLoadTime(imageUrl, loadTime) {
-        this.metrics.totalImagesLoaded++;
-
-        const currentAverage = this.metrics.averageImageLoadTime;
-        this.metrics.averageImageLoadTime =
-      (currentAverage * (this.metrics.totalImagesLoaded - 1) + loadTime) /
-      this.metrics.totalImagesLoaded;
-
-        // Track time to first image
-        if (this.metrics.timeToFirstImage === 0) {
-            this.metrics.timeToFirstImage =
-        Date.now() - this.metrics.sessionStartTime;
-        }
-
-        this.logEvent('image_load', {
-            url: imageUrl,
-            loadTime: loadTime,
-            isFirstImage: this.metrics.totalImagesLoaded === 1
-        });
-    }
-
-    trackImageLoad(imgElement) {
-        const loadStartTime = imgElement.dataset.loadStartTime;
-        if (loadStartTime) {
-            const loadTime = Date.now() - parseInt(loadStartTime);
-            this.trackImageLoadTime(imgElement.src, loadTime);
-        }
-    }
-
-    trackPrefetchEffectiveness() {
-    // Track which prefetched images are actually viewed
-        if ('IntersectionObserver' in window) {
-            const viewObserver = new IntersectionObserver(
-                (entries) => {
-                    entries.forEach((entry) => {
-                        if (entry.isIntersecting) {
-                            this.trackImageViewed(entry.target);
-                        }
-                    });
-                },
-                { threshold: 0.5 }
-            );
-
-            // Observe gallery images
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === Node.ELEMENT_NODE) {
-                            const images = node.querySelectorAll
-                                ? node.querySelectorAll('img.gallery-image')
-                                : node.classList && node.classList.contains('gallery-image')
-                                    ? [node]
-                                    : [];
-
-                            images.forEach((img) => viewObserver.observe(img));
-                        }
-                    });
-                });
-            });
-
-            observer.observe(document.body, { childList: true, subtree: true });
-        }
-    }
-
-    trackImageViewed(imgElement) {
-        const wasPrefetched = imgElement.dataset.prefetched === 'true';
-
-        this.logEvent('image_viewed', {
-            url: imgElement.src,
-            wasPrefetched: wasPrefetched,
-            viewTime: Date.now() - this.metrics.sessionStartTime
-        });
-
-        // Calculate prefetch accuracy
-        if (wasPrefetched) {
-            this.updatePrefetchAccuracy(true);
-        }
-    }
-
-    updatePrefetchAccuracy(wasViewed) {
-    // This would be implemented with more sophisticated tracking
-    // of prefetched vs viewed images
-        this.logEvent('prefetch_accuracy', { wasViewed });
-    }
-
-    trackCacheHit(url, cacheType) {
-        this.metrics.cacheHits++;
-        this.updateCacheRatio();
-
-        this.logEvent('cache_hit', {
-            url: url,
-            cacheType: cacheType,
-            timestamp: Date.now()
-        });
-    }
-
-    trackCacheMiss(url, reason) {
-        this.metrics.cacheMisses++;
-        this.updateCacheRatio();
-
-        this.logEvent('cache_miss', {
-            url: url,
-            reason: reason,
-            timestamp: Date.now()
-        });
-    }
-
-    updateCacheRatio() {
-        const total = this.metrics.cacheHits + this.metrics.cacheMisses;
-        this.metrics.cacheHitRatio = total > 0 ? this.metrics.cacheHits / total : 0;
-    }
-
-    trackUserInteraction(interactionType, details = {}) {
-        this.logEvent('user_interaction', {
-            type: interactionType,
-            details: details,
-            timestamp: Date.now()
         });
     }
 
@@ -934,7 +782,7 @@ class PerformanceMonitor {
     }
 
     startPeriodicReporting() {
-    // Report metrics every 30 seconds
+        // Report metrics every 2 minutes
         this.reportingTimer = setInterval(() => {
             this.reportMetrics();
         }, this.reportingInterval);
@@ -945,7 +793,7 @@ class PerformanceMonitor {
     }
 
     setupUnloadReporting() {
-    // Use multiple unload events for better reliability
+        // Use multiple unload events for better reliability
         const unloadHandler = () => {
             this.sendFinalReport();
         };
@@ -992,7 +840,7 @@ class PerformanceMonitor {
     }
 
     fallbackFinalReport(reportData) {
-    // Synchronous XHR as last resort (deprecated but works for unload)
+        // Synchronous XHR as last resort (deprecated but works for unload)
         try {
             const xhr = new XMLHttpRequest();
             xhr.open('POST', '/api/performance-final', false); // synchronous
@@ -1100,12 +948,12 @@ class PerformanceMonitor {
             imageLoads: {
                 total: imageLoadEvents.length,
                 averageTime:
-          imageLoadEvents.length > 0
-              ? imageLoadEvents.reduce(
-                  (sum, e) => sum + (e.data.loadTime || 0),
-                  0
-              ) / imageLoadEvents.length
-              : 0,
+                    imageLoadEvents.length > 0
+                        ? imageLoadEvents.reduce(
+                            (sum, e) => sum + (e.data.loadTime || 0),
+                            0
+                        ) / imageLoadEvents.length
+                        : 0,
                 successRate: this.metrics.imageLoadSuccessRate
             },
             errors: {
@@ -1186,7 +1034,7 @@ class PerformanceMonitor {
     generateSessionId() {
         if (!this.sessionId) {
             this.sessionId =
-        'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
+                'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
         }
         return this.sessionId;
     }
@@ -1376,29 +1224,15 @@ class PerformanceMonitor {
     }
 }
 
-// Initialize global performance monitor instance
-if (typeof window !== 'undefined' && !window.performanceMonitor) {
-    // Export the class constructor for direct instantiation
-    window.PerformanceMonitor = PerformanceMonitor;
-    
-    // Create singleton instance
-    window.performanceMonitor = new PerformanceMonitor();
+// ES6 Module Exports
+export { PerformanceMonitor };
+export default PerformanceMonitor;
 
-    // Expose public API to global scope for convenience
-    window.PerfMonitor = {
-        getMetrics: () => window.performanceMonitor.getMetrics(),
-        getCoreWebVitals: () => window.performanceMonitor.getCoreWebVitals(),
-        getEvents: (type) => window.performanceMonitor.getEvents(type),
-        getResourceTimings: () => window.performanceMonitor.getResourceTimings(),
-        getMemoryInfo: () => window.performanceMonitor.getMemoryInfo(),
-        getNetworkInfo: () => window.performanceMonitor.getNetworkInfo(),
-        getErrorSummary: () => window.performanceMonitor.getErrorSummary(),
-        getPerformanceScore: () => window.performanceMonitor.getPerformanceScore(),
-        forceReport: () => window.performanceMonitor.forceReport(),
-        resetMetrics: () => window.performanceMonitor.resetMetrics(),
-        stopMonitoring: () => window.performanceMonitor.stopMonitoring()
-    };
+// Auto-initialize if not in a module context
+if (typeof window !== 'undefined' && typeof module === 'undefined') {
+    // Only initialize global instance if we're not in a proper module environment
+    if (!window.performanceMonitor) {
+        window.PerformanceMonitor = PerformanceMonitor;
+        window.performanceMonitor = new PerformanceMonitor();
+    }
 }
-
-// Browser-compatible exports only - no ES modules to avoid syntax errors
-// Use window.PerformanceMonitor or window.performanceMonitor instance

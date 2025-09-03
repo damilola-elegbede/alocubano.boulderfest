@@ -70,6 +70,9 @@
         // New state for sequential category-aware pagination
         workshopOffset: 0, // Current position in workshops array
         socialOffset: 0, // Current position in socials array
+        // Image preloading optimization
+        preloadedImages: new Set(), // Track preloaded images to avoid duplicates
+        preloadQueue: [], // Queue for managing preloads
         workshopTotal: 0, // Total workshop items available
         socialTotal: 0, // Total social items available
         currentCategory: 'workshops', // Which category we're currently loading
@@ -700,6 +703,14 @@
             content: document.getElementById('gallery-detail-content'),
             static: document.getElementById('gallery-detail-static')
         });
+        
+        // Initialize preloading optimizations
+        setupHoverPreloading(); // Desktop hover preloading
+        
+        // Setup intersection preloading after a short delay to ensure gallery items are rendered
+        setTimeout(() => {
+            setupIntersectionPreloading(); // Mobile/scroll preloading
+        }, 500);
 
         // Clear any stale session storage that might interfere with workshop photos
         const event = getEventFromPage();
@@ -739,7 +750,8 @@
         // Extract year from the page
         const year = getYearFromPage();
 
-        console.log('🚀 DEBUG - Starting loadGalleryDetailData:', {
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('🚀 GALLERY LOAD START - loadGalleryDetailData called', {
             year,
             loadingElExists: !!loadingEl,
             contentElExists: !!contentEl,
@@ -749,9 +761,13 @@
                 loadedPages: state.loadedPages,
                 itemsDisplayed: state.itemsDisplayed,
                 workshopOffset: state.workshopOffset,
-                socialOffset: state.socialOffset
+                socialOffset: state.socialOffset,
+                totalItemsAvailable: state.totalItemsAvailable,
+                hasCompleteDataset: state.hasCompleteDataset,
+                allCategoriesKeys: Object.keys(state.allCategories || {})
             }
         });
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
         // Initialize lazy loading observer
         initLazyLoading();
@@ -822,6 +838,9 @@
 
         console.log(`📸 Loading page ${state.loadedPages + 1}...`);
 
+        // Declare apiUrl at function scope to avoid reference error in catch block
+        let apiUrl = '';
+        
         try {
             // Set loading mutex
             state.loadingMutex = true;
@@ -838,11 +857,10 @@
 
             // Calculate offset
             const offset = state.loadedPages * CONFIG.PAGINATION_SIZE;
-            let apiUrl;
             let isStaticFetch = false;
 
             // For the first page, load the static JSON file.
-            if (offset === 0) {
+            if (offset === 0 && false) { // Temporarily disable static JSON loading due to Vercel routing issue
                 isStaticFetch = true;
                 // Try event-specific file first, fallback to year-based
                 const event = getEventFromPage();
@@ -860,9 +878,10 @@
                 });
             } else {
                 // Check if we've already loaded all available items
+                // IMPORTANT: Don't exit early if we haven't loaded anything yet (totalItemsAvailable > 0)
                 if (
                     state.hasCompleteDataset ||
-          state.itemsDisplayed >= state.totalItemsAvailable
+          (state.totalItemsAvailable > 0 && state.itemsDisplayed >= state.totalItemsAvailable)
                 ) {
                     console.log('✅ All items already displayed', {
                         hasCompleteDataset: state.hasCompleteDataset,
@@ -888,7 +907,7 @@
             console.log('Fetching from URL:', apiUrl);
             const startTime = performance.now();
 
-            const response = await RequestManager.cachedFetch(apiUrl, {
+            let response = await RequestManager.cachedFetch(apiUrl, {
                 method: 'GET',
                 headers: {
                     Accept: 'application/json'
@@ -906,11 +925,73 @@
                 headers: response.headers.get('content-type')
             });
 
-            if (!response.ok) {
+            // Handle static JSON fallback for first page loads
+            if (isStaticFetch && (!response.ok || !response.headers.get('content-type')?.includes('application/json'))) {
+                console.warn(`⚠️ Static JSON failed (status: ${response.status}), falling back to API endpoint`);
+                
+                const event = getEventFromPage();
+                const fallbackUrl = `${CONFIG.API_ENDPOINT}?year=${year}&event=${event}&limit=${CONFIG.PAGINATION_SIZE}&offset=0&timestamp=${Date.now()}`;
+                
+                console.log('🔄 Falling back to API endpoint:', fallbackUrl);
+                
+                try {
+                    response = await RequestManager.cachedFetch(fallbackUrl, {
+                        method: 'GET',
+                        headers: {
+                            Accept: 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Fallback API error: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    // Mark as no longer static fetch since we're using API
+                    isStaticFetch = false;
+                    console.log('✅ Successfully fell back to API endpoint');
+                } catch (fallbackError) {
+                    console.error('❌ Fallback API request also failed:', fallbackError);
+                    throw fallbackError;
+                }
+            } else if (!response.ok) {
                 throw new Error(`API error: ${response.status} ${response.statusText}`);
             }
 
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                if (isStaticFetch) {
+                    console.warn('⚠️ Static JSON parse failed, falling back to API endpoint');
+                    
+                    const event = getEventFromPage();
+                    const fallbackUrl = `${CONFIG.API_ENDPOINT}?year=${year}&event=${event}&limit=${CONFIG.PAGINATION_SIZE}&offset=0&timestamp=${Date.now()}`;
+                    
+                    console.log('🔄 Falling back to API endpoint due to parse error:', fallbackUrl);
+                    
+                    try {
+                        response = await RequestManager.cachedFetch(fallbackUrl, {
+                            method: 'GET',
+                            headers: {
+                                Accept: 'application/json'
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`Fallback API error: ${response.status} ${response.statusText}`);
+                        }
+                        
+                        data = await response.json();
+                        isStaticFetch = false;
+                        console.log('✅ Successfully fell back to API endpoint after parse error');
+                    } catch (fallbackError) {
+                        console.error('❌ Fallback API request failed after parse error:', fallbackError);
+                        throw fallbackError;
+                    }
+                } else {
+                    throw parseError;
+                }
+            }
             console.log('Data parsed successfully:', {
                 totalCount: data.totalCount,
                 hasCategories: !!data.categories,
@@ -1022,51 +1103,102 @@
                 // Save state after initial load
                 saveState();
             } else {
-                // For subsequent pages, use sequential algorithm with stored categories
-                console.log(
-                    `📦 Loading page ${state.loadedPages + 1} using sequential algorithm`
-                );
-
-                // Get next page using sequential algorithm
-                const pageItems = getNextPageItems(
-                    state.allCategories,
-                    CONFIG.PAGINATION_SIZE
-                );
-
-                // Organize items back into categories for display
-                const paginatedCategories = {
-                    workshops: [],
-                    socials: []
-                };
-
-                pageItems.forEach((item) => {
-                    if (item.category === 'workshops') {
-                        paginatedCategories.workshops.push(item);
-                    } else if (item.category === 'socials') {
-                        paginatedCategories.socials.push(item);
-                    }
+                // This is paginated API data from the server
+                // Use the data directly without client-side slicing
+                console.log('🔵 PAGINATED API PATH ENTERED', {
+                    page: state.loadedPages + 1,
+                    isStaticFetch: isStaticFetch,
+                    dataReceived: !!data,
+                    dataKeys: data ? Object.keys(data) : []
                 });
 
-                state.itemsDisplayed += pageItems.length;
-                state.loadedPages++;
+                // Debug: Log the raw API response structure
+                console.log('📊 API Response Structure:', {
+                    totalCount: data.totalCount,
+                    hasMore: data.hasMore,
+                    categoriesExist: !!data.categories,
+                    categoryNames: data.categories ? Object.keys(data.categories) : [],
+                    workshopsCount: data.categories?.workshops?.length || 0,
+                    socialsCount: data.categories?.socials?.length || 0,
+                    returnedCount: data.returnedCount,
+                    offset: data.offset,
+                    limit: data.limit
+                });
 
-                // Check if we've reached the total
-                if (
-                    state.itemsDisplayed >= state.totalItemsAvailable ||
-          !state.hasMorePages
-                ) {
+                // Update total counts from API response
+                state.totalItemsAvailable = data.totalCount || 0;
+                
+                // The API returns paginated categories directly
+                const paginatedCategories = data.categories || {};
+                
+                console.log('🔍 Processing categories:', {
+                    categoriesReceived: Object.keys(paginatedCategories),
+                    workshopsArray: Array.isArray(paginatedCategories.workshops),
+                    workshopsLength: paginatedCategories.workshops?.length || 0,
+                    socialsArray: Array.isArray(paginatedCategories.socials),
+                    socialsLength: paginatedCategories.socials?.length || 0
+                });
+                
+                // Count items in this page
+                let pageItemCount = 0;
+                const itemsByCategory = {};
+                
+                Object.entries(paginatedCategories).forEach(([category, items]) => {
+                    const itemCount = (items || []).length;
+                    pageItemCount += itemCount;
+                    itemsByCategory[category] = itemCount;
+                    
+                    console.log(`📁 Category "${category}":`, {
+                        itemCount: itemCount,
+                        firstItem: items?.[0]?.name || 'none',
+                        lastItem: items?.[items.length - 1]?.name || 'none'
+                    });
+                });
+
+                console.log('📈 State BEFORE update:', {
+                    itemsDisplayed: state.itemsDisplayed,
+                    loadedPages: state.loadedPages,
+                    workshopOffset: state.workshopOffset,
+                    socialOffset: state.socialOffset,
+                    hasMorePages: state.hasMorePages,
+                    hasCompleteDataset: state.hasCompleteDataset
+                });
+
+                state.itemsDisplayed += pageItemCount;
+                state.loadedPages++;
+                
+                // Update category-specific offsets for tracking
+                if (paginatedCategories.workshops) {
+                    state.workshopOffset += paginatedCategories.workshops.length;
+                }
+                if (paginatedCategories.socials) {
+                    state.socialOffset += paginatedCategories.socials.length;
+                }
+
+                // Use the API's hasMore flag or calculate based on total
+                state.hasMorePages = data.hasMore === true || 
+                                   (state.itemsDisplayed < state.totalItemsAvailable);
+                
+                if (!state.hasMorePages || state.itemsDisplayed >= state.totalItemsAvailable) {
                     state.hasCompleteDataset = true;
                     console.log('✅ All items now displayed');
                 }
 
+                console.log('📈 State AFTER update:', {
+                    itemsDisplayed: state.itemsDisplayed,
+                    loadedPages: state.loadedPages,
+                    workshopOffset: state.workshopOffset,
+                    socialOffset: state.socialOffset,
+                    hasMorePages: state.hasMorePages,
+                    hasCompleteDataset: state.hasCompleteDataset,
+                    totalItemsAvailable: state.totalItemsAvailable
+                });
+
                 console.log(
-                    `📦 Loaded page ${state.loadedPages}: ${pageItems.length} items, hasMore: ${state.hasMorePages}`
-                );
-                console.log(
-                    `📍 Offsets: workshops=${state.workshopOffset}/${state.workshopTotal}, socials=${state.socialOffset}/${state.socialTotal}`
+                    `📦 SUMMARY: Loaded ${pageItemCount} items from API. Total displayed: ${state.itemsDisplayed}/${state.totalItemsAvailable}, hasMore: ${state.hasMorePages}`
                 );
 
-                // Display the gallery with just the new items (append mode)
+                // Display the gallery with the paginated data from API (append mode for subsequent pages)
                 displayGalleryData(
                     {
                         categories: paginatedCategories,
@@ -1076,7 +1208,7 @@
                     contentEl,
                     staticEl,
                     loadingEl,
-                    true
+                    state.loadedPages > 1  // Append mode for pages after the first
                 );
 
                 // Update loading state (remove sentinel if complete)
@@ -1182,6 +1314,7 @@
                 displayIndex: state.displayOrder.length,
                 categoryIndex: categoryIndex
             };
+            
             state.displayOrder.push(displayOrderItem);
 
             // Enhanced debug logging for category index tracking
@@ -1278,13 +1411,26 @@
 
         // Check if we have any categories with items
         let hasItems = false;
-        Object.values(data.categories || {}).forEach((items) => {
+        let totalItemsToDisplay = 0;
+        Object.entries(data.categories || {}).forEach(([category, items]) => {
             if (items?.length > 0) {
                 hasItems = true;
+                totalItemsToDisplay += items.length;
+                console.log(`✔️ Category "${category}" has ${items.length} items to display`);
+            } else {
+                console.log(`⚠️ Category "${category}" has 0 items`);
             }
         });
 
+        console.log('🎯 Display decision:', {
+            hasItems,
+            totalItemsToDisplay,
+            appendMode,
+            willShowStatic: !hasItems && !appendMode
+        });
+
         if (!hasItems && !appendMode) {
+            console.log('⚠️ NO ITEMS TO DISPLAY - Showing static fallback');
             // Show static content if no items on first load
             if (loadingEl) {
                 loadingEl.style.display = 'none';
@@ -1316,7 +1462,15 @@
             // Update Workshops section
             const workshopsSection = document.getElementById('workshops-section');
             const workshopsGallery = document.getElementById('workshops-gallery');
+            console.log('🏗️ Workshops section update:', {
+                sectionExists: !!workshopsSection,
+                galleryExists: !!workshopsGallery,
+                itemsToInsert: workshopItems.length,
+                willDisplay: workshopsSection && workshopsGallery && workshopItems.length > 0
+            });
+            
             if (workshopsSection && workshopsGallery && workshopItems.length > 0) {
+                console.log(`📝 Inserting ${workshopItems.length} workshop items into DOM...`);
                 workshopsSection.style.display = 'block';
                 await insertItemsProgressively(
                     workshopItems,
@@ -1325,12 +1479,23 @@
                     0,
                     appendMode
                 );
+                console.log(`✅ Workshop items inserted successfully`);
+            } else if (workshopItems.length === 0) {
+                console.log('⚠️ No workshop items to insert');
             }
 
             // Update Socials section
             const socialsSection = document.getElementById('socials-section');
             const socialsGallery = document.getElementById('socials-gallery');
+            console.log('🏗️ Socials section update:', {
+                sectionExists: !!socialsSection,
+                galleryExists: !!socialsGallery,
+                itemsToInsert: socialItems.length,
+                willDisplay: socialsSection && socialsGallery && socialItems.length > 0
+            });
+            
             if (socialsSection && socialsGallery && socialItems.length > 0) {
+                console.log(`📝 Inserting ${socialItems.length} social items into DOM...`);
                 socialsSection.style.display = 'block';
                 await insertItemsProgressively(
                     socialItems,
@@ -1339,6 +1504,9 @@
                     workshopItems.length,
                     appendMode
                 );
+                console.log(`✅ Social items inserted successfully`);
+            } else if (socialItems.length === 0) {
+                console.log('⚠️ No social items to insert');
             }
 
             // Add click handlers for lightbox (only for new items if appending)
@@ -1349,6 +1517,20 @@
             console.log(
                 `🎯 Attaching click handlers to ${items.length} items (appendMode: ${appendMode})`
             );
+            
+            // Final DOM verification
+            const finalWorkshopCount = workshopsGallery ? workshopsGallery.querySelectorAll('.gallery-item').length : 0;
+            const finalSocialCount = socialsGallery ? socialsGallery.querySelectorAll('.gallery-item').length : 0;
+            console.log('✨ FINAL DOM VERIFICATION:', {
+                workshopItemsInDOM: finalWorkshopCount,
+                socialItemsInDOM: finalSocialCount,
+                totalItemsInDOM: finalWorkshopCount + finalSocialCount,
+                stateItemsDisplayed: state.itemsDisplayed
+            });
+            
+            if (finalWorkshopCount + finalSocialCount === 0) {
+                console.error('❌ CRITICAL: No items were added to the DOM!');
+            }
             items.forEach((item) => {
                 setupGalleryItemHandlers(item, data);
                 // Don't set data-loaded="true" immediately - let lazy loading happen first
@@ -1362,6 +1544,9 @@
                 items.forEach((item) => {
                     item.setAttribute('data-handler-loaded', 'true');
                 });
+                
+                // Re-initialize intersection preloading for new items
+                setupIntersectionPreloading();
             }, 100);
         }
 
@@ -1605,11 +1790,100 @@
         });
     }
 
+    // Preload image utility
+    function preloadImage(url) {
+        if (!url || state.preloadedImages.has(url)) {
+            return; // Already preloaded or invalid URL
+        }
+        
+        const img = new Image();
+        img.onload = () => {
+            state.preloadedImages.add(url);
+            // Silent success - no console spam
+        };
+        img.onerror = () => {
+            // Silent failure - browser will try again if needed
+        };
+        img.src = url;
+    }
+
+    // Preload adjacent images for smooth lightbox navigation
+    function preloadAdjacentImages(currentIndex) {
+        const indices = [
+            currentIndex - 1,  // Previous image
+            currentIndex + 1,  // Next image
+            currentIndex + 2,  // Next-next (for fast navigation)
+            currentIndex - 2   // Previous-previous
+        ];
+        
+        indices.forEach(i => {
+            if (i >= 0 && i < state.displayOrder.length) {
+                const item = state.displayOrder[i];
+                if (item && item.viewUrl) {
+                    preloadImage(item.viewUrl);
+                }
+            }
+        });
+    }
+
+    // Preload on hover (desktop optimization)
+    function setupHoverPreloading() {
+        document.addEventListener('mouseover', (e) => {
+            const galleryItem = e.target.closest('.gallery-item');
+            if (galleryItem) {
+                const index = parseInt(galleryItem.dataset.index);
+                if (!isNaN(index) && state.displayOrder[index]) {
+                    const item = state.displayOrder[index];
+                    if (item.viewUrl) {
+                        preloadImage(item.viewUrl);
+                        // Also preload adjacent images since user might navigate
+                        preloadAdjacentImages(index);
+                    }
+                }
+            }
+        }, { passive: true });
+    }
+
+    // Preload images that are about to come into view (mobile optimization)
+    function setupIntersectionPreloading() {
+        const preloadObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const galleryItem = entry.target;
+                    const index = parseInt(galleryItem.dataset.index);
+                    if (!isNaN(index) && state.displayOrder[index]) {
+                        const item = state.displayOrder[index];
+                        if (item.viewUrl) {
+                            // Preload this image's full version
+                            preloadImage(item.viewUrl);
+                            // On mobile, also preload nearby images
+                            if ('ontouchstart' in window) {
+                                preloadAdjacentImages(index);
+                            }
+                        }
+                    }
+                }
+            });
+        }, {
+            rootMargin: '100px' // Start preloading when 100px away from viewport
+        });
+
+        // Observe all gallery items
+        document.querySelectorAll('.gallery-item').forEach(item => {
+            preloadObserver.observe(item);
+        });
+
+        return preloadObserver;
+    }
+
     function openLightbox(items, index) {
         if (!state.lightbox) {
             console.error('Lightbox not initialized!');
             return;
         }
+        
+        // Preload adjacent images when lightbox opens
+        preloadAdjacentImages(index);
 
         const currentItem = items[index];
         // console.log('🏞️ Opening lightbox:', {

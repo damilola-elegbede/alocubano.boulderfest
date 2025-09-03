@@ -281,6 +281,26 @@
             <p class="font-mono">Loading festival memories...</p>
           </div>
 
+          <!-- Gallery Stats - Moved to top -->
+          <div class="stats-grid" style="margin-bottom: 3rem;">
+            <div class="stat-item">
+              <h3 class="font-display">150+</h3>
+              <p class="font-mono">Attendees</p>
+            </div>
+            <div class="stat-item">
+              <h3 class="font-display">3</h3>
+              <p class="font-mono">Days of Dance</p>
+            </div>
+            <div class="stat-item">
+              <h3 class="font-display">10</h3>
+              <p class="font-mono">Workshops</p>
+            </div>
+            <div class="stat-item">
+              <h3 class="font-display">∞</h3>
+              <p class="font-mono">Memories Made</p>
+            </div>
+          </div>
+
           <div id="gallery-detail-content">
             <!-- Workshops Section -->
             <div class="gallery-section" id="workshops-section">
@@ -324,30 +344,6 @@
                   >Get 2026 Tickets</a
                 >
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Gallery Stats -->
-      <section class="section-typographic gallery-stats">
-        <div class="container">
-          <div class="stats-grid">
-            <div class="stat-item">
-              <h3 class="font-display">150+</h3>
-              <p class="font-mono">Attendees</p>
-            </div>
-            <div class="stat-item">
-              <h3 class="font-display">3</h3>
-              <p class="font-mono">Days of Dance</p>
-            </div>
-            <div class="stat-item">
-              <h3 class="font-display">10</h3>
-              <p class="font-mono">Workshops</p>
-            </div>
-            <div class="stat-item">
-              <h3 class="font-display">∞</h3>
-              <p class="font-mono">Memories Made</p>
             </div>
           </div>
         </div>
@@ -418,7 +414,8 @@
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
     <!-- Performance Optimization Modules -->
-    <script src="/js/performance-monitor.js"></script>
+    <script type="module" src="/js/performance-monitor.esm.js"></script>
+    <script nomodule src="/js/performance-monitor.js"></script>
     <script src="/js/prefetch-manager.js"></script>
     <script src="/js/progressive-loader.js"></script>
     <script src="/js/cache-warmer.js"></script>

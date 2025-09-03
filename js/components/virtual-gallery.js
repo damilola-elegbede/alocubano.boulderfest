@@ -769,12 +769,13 @@ export class VirtualGalleryManager {
    */
     updateMetrics(type, value) {
         switch (type) {
-        case 'render':
+        case 'render': {
             const totalTime =
           this.metrics.averageRenderTime * this.metrics.renderCount + value;
             this.metrics.averageRenderTime =
           totalTime / (this.metrics.renderCount + 1);
             break;
+        }
         }
     }
 
