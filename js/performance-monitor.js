@@ -900,7 +900,7 @@ class PerformanceMonitor {
         try {
             const criticalData = {
                 type: 'critical_event',
-                event: event,
+                severity: event,
                 metrics: this.getBasicMetrics(),
                 timestamp: Date.now()
             };

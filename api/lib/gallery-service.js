@@ -6,6 +6,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { shouldUseBuildTimeCache } from './environment.js';
+import { getGoogleDriveService } from './google-drive-service.js';
 
 class GalleryService {
   constructor() {
@@ -190,31 +191,81 @@ class GalleryService {
   }
 
   /**
-   * Generate runtime data (placeholder for now)
+   * Generate runtime data using Google Drive API
    */
   async generateRuntimeData(year, eventId) {
-    // This would integrate with Google Drive API in production
-    // For now, return a structured placeholder
-    
-    const currentYear = new Date().getFullYear();
-    const displayYear = year || currentYear;
-    const displayEventId = eventId || `boulder-fest-${currentYear}`;
-    
-    return {
-      eventId: displayEventId,
-      event: displayEventId,
-      year: displayYear,
-      totalCount: 0,
-      categories: {
-        workshops: [],
-        socials: [],
-        performances: [],
-        other: []
-      },
-      hasMore: false,
-      cacheTimestamp: new Date().toISOString(),
-      message: 'Runtime API placeholder - Google Drive integration needed'
-    };
+    try {
+      // Try to use Google Drive service if configured
+      const googleDriveService = getGoogleDriveService();
+      
+      // Check if Google Drive is configured
+      if (process.env.GOOGLE_DRIVE_API_KEY && process.env.GOOGLE_DRIVE_FOLDER_ID) {
+        console.log('Gallery: Using Google Drive API for runtime data');
+        
+        const driveData = await googleDriveService.fetchImages({
+          year,
+          eventId,
+          maxResults: 1000,
+          includeVideos: false
+        });
+        
+        // Add Google Drive source indicator
+        return {
+          ...driveData,
+          source: 'google-drive-api',
+          message: 'Data fetched from Google Drive API'
+        };
+      } else {
+        console.log('Gallery: Google Drive API not configured, using placeholder data');
+        
+        // Fallback to placeholder data
+        const currentYear = new Date().getFullYear();
+        const displayYear = year || currentYear;
+        const displayEventId = eventId || `boulder-fest-${currentYear}`;
+        
+        return {
+          eventId: displayEventId,
+          event: displayEventId,
+          year: displayYear,
+          totalCount: 0,
+          categories: {
+            workshops: [],
+            socials: [],
+            performances: [],
+            other: []
+          },
+          hasMore: false,
+          cacheTimestamp: new Date().toISOString(),
+          source: 'placeholder',
+          message: 'Google Drive API not configured - set GOOGLE_DRIVE_API_KEY and GOOGLE_DRIVE_FOLDER_ID environment variables'
+        };
+      }
+    } catch (error) {
+      console.error('Gallery: Google Drive API error, falling back to placeholder:', error.message);
+      
+      // Fallback to placeholder data on error
+      const currentYear = new Date().getFullYear();
+      const displayYear = year || currentYear;
+      const displayEventId = eventId || `boulder-fest-${currentYear}`;
+      
+      return {
+        eventId: displayEventId,
+        event: displayEventId,
+        year: displayYear,
+        totalCount: 0,
+        categories: {
+          workshops: [],
+          socials: [],
+          performances: [],
+          other: []
+        },
+        hasMore: false,
+        cacheTimestamp: new Date().toISOString(),
+        source: 'fallback-placeholder',
+        message: `Google Drive API error: ${error.message}`,
+        error: error.message
+      };
+    }
   }
 
   /**

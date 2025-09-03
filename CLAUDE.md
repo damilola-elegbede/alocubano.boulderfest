@@ -277,6 +277,10 @@ ADMIN_SECRET=            # min 32 chars
 APPLE_PASS_KEY=          # base64 encoded
 WALLET_AUTH_SECRET=      # JWT signing
 
+# Google Drive Integration (optional)
+GOOGLE_DRIVE_API_KEY=    # Google Cloud API key with Drive API enabled
+GOOGLE_DRIVE_FOLDER_ID=  # Google Drive folder ID containing gallery images
+
 # Testing (optional)
 TEST_ADMIN_PASSWORD=     # Plain text password for admin panel E2E testing (not bcrypt hashed)
 
@@ -328,6 +332,12 @@ VITEST_REQUEST_TIMEOUT=  # HTTP request timeout in ms (default: 30000)
 - `GET /api/gallery` - Google Drive photos/videos
 - `GET /api/gallery/years` - Available years
 - `GET /api/featured-photos` - Featured photos
+
+### Google Drive Integration
+- `GET /api/google-drive-health` - Google Drive service health and configuration status
+- `GET /api/google-drive-cache` - Google Drive cache status and metrics
+- `POST /api/google-drive-cache` - Warm up Google Drive cache with fresh data
+- `DELETE /api/google-drive-cache` - Clear Google Drive cache
 
 ### Performance & Media (Phase 3)
 - `POST /api/performance-metrics` - Performance data collection
