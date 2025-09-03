@@ -70,16 +70,26 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🎨 Running HTML Validation"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          npm run lint:html 2>&1 | tee htmlhint-output.log || true
+          
+          # Run HTMLHint and capture exit code
+          set +e
+          npm run lint:html 2>&1 | tee htmlhint-output.log
+          htmlhint_exit_code=$?
+          set -e
 
-          # Count HTML issues (use head -1 to ensure single value)
-          html_errors=$(grep -c "error" htmlhint-output.log 2>/dev/null | head -1 || echo "0")
-          html_warnings=$(grep -c "warning" htmlhint-output.log 2>/dev/null | head -1 || echo "0")
+          # Check for actual HTMLHint errors (not the word "error" in success messages)
+          if grep -q "L[0-9]" htmlhint-output.log 2>/dev/null; then
+            html_errors=$(grep -c "L[0-9]" htmlhint-output.log || echo "0")
+            html_warnings="0"
+          else
+            html_errors="0"
+            html_warnings="0"
+          fi
 
           echo "html_errors=$html_errors" >> $GITHUB_OUTPUT
           echo "html_warnings=$html_warnings" >> $GITHUB_OUTPUT
 
-          if [ "$html_errors" -gt 0 ]; then
+          if [ $htmlhint_exit_code -ne 0 ]; then
             echo "❌ HTMLHint found $html_errors error(s)"
             exit 1
           elif [ "$html_warnings" -gt 0 ]; then
