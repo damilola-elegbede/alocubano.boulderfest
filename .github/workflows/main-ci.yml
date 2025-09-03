@@ -592,11 +592,39 @@ jobs:
           echo "  Port: $DYNAMIC_PORT"
           echo "  Using Turso database from secrets"
 
+      - name: 🔍 Validate E2E Environment Prerequisites
+        run: |
+          echo "🔍 Validating E2E environment prerequisites..."
+          
+          # Check if required secrets are available
+          if [ -z "${{ secrets.TURSO_DATABASE_URL_CI }}" ] && [ -z "${{ secrets.TURSO_DATABASE_URL }}" ]; then
+            echo "⚠️  Warning: Turso database URL not configured in secrets"
+            echo "   E2E tests will use SQLite fallback for local development"
+            echo "   For full E2E testing, please configure TURSO_DATABASE_URL_CI in repository secrets"
+          else
+            echo "✅ Turso database URL is configured"
+          fi
+          
+          if [ -z "${{ secrets.TURSO_AUTH_TOKEN_CI }}" ] && [ -z "${{ secrets.TURSO_AUTH_TOKEN }}" ]; then
+            echo "⚠️  Warning: Turso auth token not configured in secrets"
+            echo "   E2E tests will use SQLite fallback for local development"
+            echo "   For full E2E testing, please configure TURSO_AUTH_TOKEN_CI in repository secrets"
+          else
+            echo "✅ Turso auth token is configured"
+          fi
+
       - name: 🔧 Configure E2E Environment
+        env:
+          # Prioritize CI-specific secrets, fallback to general secrets
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL_CI || secrets.TURSO_DATABASE_URL || '' }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_CI || secrets.TURSO_AUTH_TOKEN || '' }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN || '' }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID || '' }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID || '' }}
         run: |
           mkdir -p test-results
           
-          # Create optimized E2E configuration using Turso database
+          # Create optimized E2E configuration
           cat > .env.local << EOF
           NODE_ENV=test
           E2E_TEST_MODE=true
@@ -607,6 +635,9 @@ jobs:
           # Test credentials
           TEST_ADMIN_PASSWORD=test-password-123
           ADMIN_SECRET=${{ secrets.ADMIN_SECRET || 'fallback-test-secret-minimum-32-chars' }}
+          # Database configuration (prioritize CI-specific secrets)
+          TURSO_DATABASE_URL=${TURSO_DATABASE_URL}
+          TURSO_AUTH_TOKEN=${TURSO_AUTH_TOKEN}
           # Advanced test environment variables
           BREVO_API_KEY=${{ secrets.BREVO_API_KEY || '' }}
           STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY || '' }}
@@ -619,31 +650,92 @@ jobs:
           # Google Wallet configuration  
           GOOGLE_WALLET_ISSUER_ID=${{ secrets.GOOGLE_WALLET_ISSUER_ID || '' }}
           GOOGLE_WALLET_SERVICE_ACCOUNT=${{ secrets.GOOGLE_WALLET_SERVICE_ACCOUNT || '' }}
-          TURSO_DATABASE_URL=${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN }}
           # Vercel configuration
-          VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN || '' }}
-          VERCEL_ORG_ID=${{ secrets.VERCEL_ORG_ID || '' }}
-          VERCEL_PROJECT_ID=${{ secrets.VERCEL_PROJECT_ID || '' }}
+          VERCEL_TOKEN=${VERCEL_TOKEN}
+          VERCEL_ORG_ID=${VERCEL_ORG_ID}
+          VERCEL_PROJECT_ID=${VERCEL_PROJECT_ID}
           EOF
           
+          # Debug output (without exposing secrets)
           echo "✅ E2E environment configured for ${{ matrix.suite-name }}"
+          echo "  Environment check:"
+          echo "    TURSO_DATABASE_URL: $([ -n "${TURSO_DATABASE_URL}" ] && echo '✅ Set' || echo '❌ Not set')"
+          echo "    TURSO_AUTH_TOKEN: $([ -n "${TURSO_AUTH_TOKEN}" ] && echo '✅ Set' || echo '❌ Not set')"
+          echo "    VERCEL_TOKEN: $([ -n "${VERCEL_TOKEN}" ] && echo '✅ Set' || echo '❌ Not set')"
+          echo "    VERCEL_ORG_ID: $([ -n "${VERCEL_ORG_ID}" ] && echo '✅ Set' || echo '❌ Not set')"
 
       - name: 🗄️ Setup Test Database
+        env:
+          # Export variables explicitly for database setup
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL_CI || secrets.TURSO_DATABASE_URL || '' }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_CI || secrets.TURSO_AUTH_TOKEN || '' }}
+          PORT: ${{ env.DYNAMIC_PORT }}
+          DYNAMIC_PORT: ${{ env.DYNAMIC_PORT }}
+          NODE_ENV: test
         run: |
           echo "🗄️ Setting up test database for ${{ matrix.suite }}..."
           
-          # Run migrations on Turso database
-          NODE_ENV=test npm run migrate:up
+          # Export variables explicitly
+          export TURSO_DATABASE_URL="${TURSO_DATABASE_URL}"
+          export TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN}"
           
-          echo "✅ Turso database ready for ${{ matrix.suite }}"
-        env:
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-          PORT: ${{ env.DYNAMIC_PORT }}
-          DYNAMIC_PORT: ${{ env.DYNAMIC_PORT }}
+          # Debug output (without exposing secrets)
+          echo "  Database configuration:"
+          echo "    TURSO_DATABASE_URL: $([ -n "$TURSO_DATABASE_URL" ] && echo '✅ Set' || echo '❌ Not set')"
+          echo "    TURSO_AUTH_TOKEN: $([ -n "$TURSO_AUTH_TOKEN" ] && echo '✅ Set' || echo '❌ Not set')"
+          
+          if [ -n "$TURSO_DATABASE_URL" ] && [ -n "$TURSO_AUTH_TOKEN" ]; then
+            echo "  Using Turso database for E2E tests"
+            # Run migrations on Turso database
+            NODE_ENV=test npm run migrate:up
+            echo "✅ Turso database ready for ${{ matrix.suite }}"
+          else
+            echo "  ⚠️ Turso credentials not available - E2E tests may fail"
+            echo "  💡 Configure TURSO_DATABASE_URL_CI and TURSO_AUTH_TOKEN_CI in repository secrets"
+            echo "  🔄 Attempting to continue with SQLite fallback..."
+            
+            # Setup SQLite fallback
+            mkdir -p data
+            DATABASE_URL="file:./data/e2e-test-${{ matrix.suite }}.db" NODE_ENV=test npm run migrate:up || true
+            echo "⚠️ SQLite fallback ready for ${{ matrix.suite }}"
+          fi
 
       - name: 🎭 Run E2E Tests (${{ matrix.suite-name }})
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
+          NODE_OPTIONS: "--max-old-space-size=${{ matrix.memory-limit }}"
+          E2E_TEST_MODE: true
+          # Export Turso credentials for test execution
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL_CI || secrets.TURSO_DATABASE_URL || '' }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_CI || secrets.TURSO_AUTH_TOKEN || '' }}
+          PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
+          PORT: ${{ env.DYNAMIC_PORT }}
+          DYNAMIC_PORT: ${{ env.DYNAMIC_PORT }}
+          # Test suite specific environment
+          PERFORMANCE_TESTING: ${{ matrix.suite == 'performance' }}
+          ACCESSIBILITY_TESTING: ${{ matrix.suite == 'accessibility' }}
+          SECURITY_TESTING: ${{ matrix.suite == 'security' }}
+          # Advanced scenarios configuration
+          ADVANCED_SCENARIOS: ${{ matrix.suite == 'advanced' }}
+          # Test credentials for all suites
+          TEST_ADMIN_PASSWORD: test-password-123
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET || 'fallback-test-secret-minimum-32-chars' }}
+          # API keys for advanced test scenarios
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY || '' }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || '' }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET || '' }}
+          # Apple Wallet configuration
+          APPLE_PASS_TYPE_ID: ${{ secrets.APPLE_PASS_TYPE_ID || '' }}
+          APPLE_PASS_CERT: ${{ secrets.APPLE_PASS_CERT || '' }}
+          APPLE_PASS_KEY: ${{ secrets.APPLE_PASS_KEY || '' }}
+          APPLE_PASS_PASSWORD: ${{ secrets.APPLE_PASS_PASSWORD || '' }}
+          # Google Wallet configuration
+          GOOGLE_WALLET_ISSUER_ID: ${{ secrets.GOOGLE_WALLET_ISSUER_ID || '' }}
+          GOOGLE_WALLET_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_WALLET_SERVICE_ACCOUNT || '' }}
+          # Vercel configuration
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN || '' }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID || '' }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID || '' }}
         run: |
           echo "🎭 Running E2E tests: ${{ matrix.suite-name }}..."
           echo "📊 Test suite: ${{ matrix.suite }}"
@@ -651,6 +743,19 @@ jobs:
           echo "🎯 Pattern: ${{ matrix.test-pattern || 'All tests' }}"
           echo "📡 Port: ${{ env.DYNAMIC_PORT }}"
           echo "🗄️ Database: Turso (from secrets)"
+          
+          # Export variables explicitly for the test process
+          export TURSO_DATABASE_URL="${TURSO_DATABASE_URL}"
+          export TURSO_AUTH_TOKEN="${TURSO_AUTH_TOKEN}"
+          export VERCEL_TOKEN="${VERCEL_TOKEN}"
+          export VERCEL_ORG_ID="${VERCEL_ORG_ID}"
+          export VERCEL_PROJECT_ID="${VERCEL_PROJECT_ID}"
+          
+          # Debug output (without exposing secrets)
+          echo "  Environment validation:"
+          echo "    TURSO_DATABASE_URL: $([ -n "$TURSO_DATABASE_URL" ] && echo '✅ Set' || echo '❌ Not set')"
+          echo "    TURSO_AUTH_TOKEN: $([ -n "$TURSO_AUTH_TOKEN" ] && echo '✅ Set' || echo '❌ Not set')"
+          echo "    VERCEL_TOKEN: $([ -n "$VERCEL_TOKEN" ] && echo '✅ Set' || echo '❌ Not set')"
           
           # Construct test command based on suite
           TEST_CMD="npx playwright test --config=playwright-e2e-vercel-main.config.js --project=${{ matrix.browser }}"
@@ -685,40 +790,6 @@ jobs:
             echo "❌ E2E tests failed: ${{ matrix.suite-name }} (exit code: $EXIT_CODE)"
             exit $EXIT_CODE
           fi
-        env:
-          PLAYWRIGHT_BASE_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
-          NODE_OPTIONS: "--max-old-space-size=${{ matrix.memory-limit }}"
-          E2E_TEST_MODE: true
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-          PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
-          PORT: ${{ env.DYNAMIC_PORT }}
-          DYNAMIC_PORT: ${{ env.DYNAMIC_PORT }}
-          # Test suite specific environment
-          PERFORMANCE_TESTING: ${{ matrix.suite == 'performance' }}
-          ACCESSIBILITY_TESTING: ${{ matrix.suite == 'accessibility' }}
-          SECURITY_TESTING: ${{ matrix.suite == 'security' }}
-          # Advanced scenarios configuration
-          ADVANCED_SCENARIOS: ${{ matrix.suite == 'advanced' }}
-          # Test credentials for all suites
-          TEST_ADMIN_PASSWORD: test-password-123
-          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET || 'fallback-test-secret-minimum-32-chars' }}
-          # API keys for advanced test scenarios
-          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY || '' }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || '' }}
-          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET || '' }}
-          # Apple Wallet configuration
-          APPLE_PASS_TYPE_ID: ${{ secrets.APPLE_PASS_TYPE_ID || '' }}
-          APPLE_PASS_CERT: ${{ secrets.APPLE_PASS_CERT || '' }}
-          APPLE_PASS_KEY: ${{ secrets.APPLE_PASS_KEY || '' }}
-          APPLE_PASS_PASSWORD: ${{ secrets.APPLE_PASS_PASSWORD || '' }}
-          # Google Wallet configuration
-          GOOGLE_WALLET_ISSUER_ID: ${{ secrets.GOOGLE_WALLET_ISSUER_ID || '' }}
-          GOOGLE_WALLET_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_WALLET_SERVICE_ACCOUNT || '' }}
-          # Vercel configuration
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN || '' }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID || '' }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID || '' }}
 
       - name: 📤 Upload E2E Results
         if: always()

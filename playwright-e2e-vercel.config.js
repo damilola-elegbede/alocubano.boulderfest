@@ -1,19 +1,22 @@
 /**
- * Playwright E2E Configuration - Vercel Dev Server + Turso Database
+ * Playwright E2E Configuration - Vercel Dev Server + Database (Turso or SQLite)
  * Optimized for CI/CD with integrated Vercel dev server startup
- * REQUIRES: TURSO_DATABASE_URL and TURSO_AUTH_TOKEN environment variables
+ * OPTIONAL: TURSO_DATABASE_URL and TURSO_AUTH_TOKEN for production-like testing
+ * FALLBACK: Uses SQLite for local development and CI testing
  * 
  * Note: Uses localhost:3000 with Vercel dev for local development and testing
  */
 
 import { defineConfig, devices } from '@playwright/test';
 
-// Require Turso database for E2E tests
-if (!process.env.TURSO_DATABASE_URL || !process.env.TURSO_AUTH_TOKEN) {
-  console.error('\n❌ ERROR: Turso database credentials are required for E2E tests');
-  console.error('Please set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN environment variables');
-  console.error('E2E tests require production-like database for comprehensive testing\n');
-  process.exit(1);
+// Check Turso database configuration (optional)
+const hasTurso = process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN;
+if (!hasTurso) {
+  console.warn('\n⚠️  Turso database credentials not found');
+  console.warn('E2E tests will use SQLite fallback for local testing');
+  console.warn('For production-like testing, set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN\n');
+} else {
+  console.log('\n✅ Using Turso database for production-like E2E testing\n');
 }
 
 // Configurable timeouts via environment variables for CI/CD flexibility

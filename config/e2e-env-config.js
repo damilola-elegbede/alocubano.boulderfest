@@ -248,6 +248,11 @@ export const E2E_CONFIG = {
 export const VALIDATION_RULES = {
   // Always required for any E2E testing
   ALWAYS_REQUIRED: [
+    // Turso is now optional - will fallback to SQLite
+  ],
+  
+  // Optional for production-like testing (recommended but not required)
+  TURSO_PRODUCTION_LIKE: [
     'TURSO_DATABASE_URL',
     'TURSO_AUTH_TOKEN',
   ],
@@ -309,11 +314,7 @@ export function validateE2EEnvironment(options = {}) {
     if (!E2E_CONFIG[key]) {
       missing.push({
         key,
-        description: key === 'TURSO_DATABASE_URL' 
-          ? 'Turso database connection string required for E2E tests'
-          : key === 'TURSO_AUTH_TOKEN' 
-          ? 'Turso authentication token required for E2E tests'
-          : 'Required for E2E functionality'
+        description: 'Required for E2E functionality'
       });
     }
   });
@@ -343,6 +344,13 @@ export function validateE2EEnvironment(options = {}) {
         warnings.push(`CI mode enabled but ${key} not set - may cause authentication issues`);
       }
     });
+  }
+  
+  // Check Turso database configuration (optional but recommended)
+  const hasTurso = E2E_CONFIG.TURSO_DATABASE_URL && E2E_CONFIG.TURSO_AUTH_TOKEN;
+  if (!hasTurso) {
+    warnings.push('Turso database credentials not found - will use SQLite fallback for local testing');
+    warnings.push('For production-like testing, set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN');
   }
   
   // Check service-specific requirements

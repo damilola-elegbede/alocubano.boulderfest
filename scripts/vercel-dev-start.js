@@ -35,6 +35,63 @@ class VercelDevStarter {
   }
 
   /**
+   * Validate Vercel authentication before starting
+   */
+  async validateVercelAuth() {
+    console.log('🔐 Validating Vercel authentication...');
+    
+    // Check if we have authentication configured
+    const hasToken = !!process.env.VERCEL_TOKEN;
+    const hasOrgId = !!process.env.VERCEL_ORG_ID;
+    
+    if (!hasToken) {
+      console.log('   ⚠️  No VERCEL_TOKEN found');
+      
+      // In CI, this might be critical
+      if (process.env.CI === 'true') {
+        console.log('   ❌ VERCEL_TOKEN is required in CI environment');
+        console.log('   💡 Please set VERCEL_TOKEN in GitHub secrets');
+        throw new Error('Missing VERCEL_TOKEN in CI environment');
+      }
+      
+      console.log('   ℹ️  Running in local mode without authentication');
+      console.log('   💡 Set VERCEL_TOKEN for authenticated development');
+    } else {
+      console.log('   ✅ VERCEL_TOKEN configured');
+      
+      // Validate token format (basic check)
+      if (process.env.VERCEL_TOKEN.length < 20) {
+        console.log('   ⚠️  VERCEL_TOKEN appears to be invalid (too short)');
+      }
+    }
+    
+    if (!hasOrgId && hasToken) {
+      console.log('   ⚠️  VERCEL_ORG_ID not set - may cause scope issues');
+    } else if (hasOrgId) {
+      console.log('   ✅ VERCEL_ORG_ID configured');
+    }
+    
+    // Try to validate with Vercel CLI
+    if (hasToken) {
+      try {
+        const { stdout } = await execAsync('npx vercel whoami --token=' + process.env.VERCEL_TOKEN, { 
+          timeout: 10000 
+        });
+        console.log(`   ✅ Authenticated as: ${stdout.trim()}`);
+      } catch (error) {
+        console.log('   ⚠️  Could not validate Vercel token');
+        console.log(`   ❌ Error: ${error.message}`);
+        
+        if (process.env.CI === 'true') {
+          throw new Error('Invalid VERCEL_TOKEN in CI environment');
+        }
+      }
+    }
+    
+    console.log('   ✅ Authentication validation complete');
+  }
+
+  /**
    * Build Vercel command with authentication
    */
   buildVercelCommand() {
@@ -42,7 +99,7 @@ class VercelDevStarter {
       'vercel', 
       'dev',
       '--listen', `0.0.0.0:${this.options.port}`,
-      '--no-clipboard' // Prevent clipboard operations
+      // Removed --no-clipboard as it's not supported in this Vercel CLI version
     ];
 
     // Add --yes flag to skip all interactive prompts
@@ -54,6 +111,8 @@ class VercelDevStarter {
     if (process.env.VERCEL_TOKEN) {
       args.push('--token', process.env.VERCEL_TOKEN);
       console.log('   ✅ Using VERCEL_TOKEN for authentication');
+    } else if (process.env.CI === 'true') {
+      console.log('   ⚠️  No VERCEL_TOKEN in CI - may fail to start');
     }
     
     // Add scope if org ID is available
@@ -71,9 +130,9 @@ class VercelDevStarter {
   async start() {
     console.log('🚀 Enhanced Vercel Dev Starter');
     console.log('=' .repeat(50));
-    console.log(`🔐 Auth: ${process.env.VERCEL_TOKEN ? 'configured' : 'not configured'}`);
     
     try {
+      await this.validateVercelAuth();
       await this.validateEnvironment();
       await this.prepareEnvironmentFiles();
       await this.killConflictingProcesses();

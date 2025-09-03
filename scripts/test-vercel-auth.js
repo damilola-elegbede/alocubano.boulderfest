@@ -83,7 +83,7 @@ class VercelAuthTester {
       'dev',
       '--yes',
       '--listen', '3000',
-      '--no-clipboard'
+      // Removed --no-clipboard as it's not supported in this Vercel CLI version
     ];
     
     if (this.token) {

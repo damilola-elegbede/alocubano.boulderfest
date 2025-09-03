@@ -57,7 +57,7 @@ function buildVercelCommand(port) {
     'dev',
     '--yes', // Skip all prompts
     '--listen', port.toString(),
-    '--no-clipboard' // Prevent clipboard operations in CI
+    // Removed --no-clipboard as it's not supported in this Vercel CLI version
   ];
   
   // Add authentication if token is available
