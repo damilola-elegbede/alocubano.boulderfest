@@ -477,7 +477,8 @@ class GoogleDriveService {
         category: categoryName,
         // Use direct Google Drive URLs for fast loading without proxy overhead
         thumbnailUrl: file.thumbnailLink || `https://drive.google.com/thumbnail?id=${file.id}&sz=w400`,
-        viewUrl: `https://drive.google.com/uc?export=view&id=${file.id}`,
+        // For full resolution in lightbox, use the lh3 URL with original size parameter
+        viewUrl: file.thumbnailLink ? file.thumbnailLink.replace(/=s\d+/, '=s0') : `https://lh3.googleusercontent.com/d/${file.id}=s0`,
         downloadUrl: `https://drive.google.com/uc?export=download&id=${file.id}`,
         size: file.size ? parseInt(file.size, 10) : 0,
         createdAt: file.createdTime,
