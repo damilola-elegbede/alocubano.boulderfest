@@ -147,7 +147,6 @@ export class TransactionService {
       // Stripe amounts are in cents - keep them as cents in DB
       const unitPrice = item.price?.unit_amount || item.amount_total || 0;
       const totalPrice = item.amount_total || 0;
-      const finalPrice = totalPrice; // No discount for now
 
       // Safely stringify metadata
       let metadata;
@@ -160,8 +159,8 @@ export class TransactionService {
       await this.db.execute({
         sql: `INSERT INTO transaction_items (
           transaction_id, item_type, item_name, item_description,
-          quantity, unit_price, total_price, final_price,
-          event_name, metadata
+          quantity, unit_price_cents, total_price_cents,
+          ticket_type, event_id, product_metadata
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           transactionId,
@@ -171,9 +170,9 @@ export class TransactionService {
           quantity,
           unitPrice, // Keep in cents
           totalPrice, // Keep in cents
-          finalPrice, // Keep in cents
-          session.metadata?.event_name || "Boulder Fest 2026",
-          metadata,
+          this.extractTicketType(item), // ticket_type
+          session.metadata?.event_id || "boulder-fest-2026", // event_id
+          metadata, // product_metadata
         ],
       });
     }

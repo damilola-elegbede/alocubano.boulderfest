@@ -28,8 +28,16 @@ export const getDatabaseConfig = (testType) => {
     case TEST_ENVIRONMENTS.INTEGRATION:
       // Ensure data directory exists for integration tests
       const getIntegrationDbUrl = () => {
-        if (process.env.INTEGRATION_DATABASE_URL) {
+        // Force local SQLite file for integration tests - never use remote databases
+        if (process.env.INTEGRATION_DATABASE_URL && 
+            process.env.INTEGRATION_DATABASE_URL.startsWith('file:')) {
           return process.env.INTEGRATION_DATABASE_URL;
+        }
+        
+        // Warn if someone tried to set a remote database URL for integration tests
+        if (process.env.INTEGRATION_DATABASE_URL && 
+            !process.env.INTEGRATION_DATABASE_URL.startsWith('file:')) {
+          console.warn('⚠️ Integration tests cannot use remote database URLs - forcing local SQLite');
         }
         
         // Create data directory if it doesn't exist
@@ -50,10 +58,11 @@ export const getDatabaseConfig = (testType) => {
       
       return {
         url: getIntegrationDbUrl(),
-        authToken: null,
-        description: 'Local SQLite file for integration tests',
+        authToken: null, // Integration tests never need auth tokens
+        description: 'Local SQLite file for integration tests (remote databases forbidden)',
         persistent: true,
-        cleanup: true
+        cleanup: true,
+        remoteAllowed: false // Explicitly flag that remote databases are not allowed
       };
       
     case TEST_ENVIRONMENTS.E2E:
@@ -192,6 +201,18 @@ export const configureEnvironment = (testType) => {
     process.env.TURSO_AUTH_TOKEN = dbConfig.authToken;
   } else {
     delete process.env.TURSO_AUTH_TOKEN;
+  }
+  
+  // Additional safety for integration tests - force delete any Turso variables
+  if (testType === TEST_ENVIRONMENTS.INTEGRATION) {
+    delete process.env.TURSO_DATABASE_URL;
+    delete process.env.TURSO_AUTH_TOKEN;
+    
+    // Ensure DATABASE_URL is always a local file for integration tests
+    if (!process.env.DATABASE_URL.startsWith('file:')) {
+      console.warn('⚠️ Fixing invalid DATABASE_URL for integration test');
+      process.env.DATABASE_URL = 'file:./data/test-integration.db';
+    }
   }
   
   // Port configuration

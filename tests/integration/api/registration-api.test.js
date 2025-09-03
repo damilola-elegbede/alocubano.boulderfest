@@ -43,12 +43,12 @@ describe('Registration API Integration', () => {
       // Create ticket
       await dbClient.execute(`
         INSERT INTO tickets (
-          ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
+          ticket_id, transaction_id, ticket_type, event_id, price_cents, validation_code, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
       `, ['TICKET_' + testSessionId, transactionId, 'weekend-pass', 'boulder-fest-2026', 12500, testQrCode]);
       
       const ticketResult = await dbClient.execute(
-        'SELECT id FROM tickets WHERE qr_token = ?',
+        'SELECT id FROM tickets WHERE validation_code = ?',
         [testQrCode]
       );
       
@@ -132,12 +132,12 @@ describe('Registration API Integration', () => {
         
         await dbClient.execute(`
           INSERT INTO tickets (
-            ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
+            ticket_id, transaction_id, ticket_type, event_id, price_cents, validation_code, created_at
           ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
         `, [`TICKET_BATCH_${testSessionId}_${i}`, transactionId, 'weekend-pass', 'boulder-fest-2026', 12500, qrCode]);
         
         const ticketResult = await dbClient.execute(
-          'SELECT id FROM tickets WHERE qr_token = ?',
+          'SELECT id FROM tickets WHERE validation_code = ?',
           [qrCode]
         );
         
@@ -209,9 +209,9 @@ describe('Registration API Integration', () => {
     try {
       await dbClient.execute(`
         INSERT INTO transactions (
-          stripe_session_id, customer_email, amount, status, created_at
-        ) VALUES (?, ?, ?, ?, datetime('now'))
-      `, [testSessionId, testEmail, 125.00, 'completed']);
+          transaction_id, stripe_session_id, customer_email, amount_cents, order_data, status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+      `, ['TXN-' + testSessionId, testSessionId, testEmail, 12500, '{}', 'completed']);
       
       const transactionResult = await dbClient.execute(
         'SELECT id FROM transactions WHERE stripe_session_id = ?',
@@ -223,12 +223,12 @@ describe('Registration API Integration', () => {
       
       await dbClient.execute(`
         INSERT INTO tickets (
-          transaction_id, ticket_type, price, qr_code, created_at
-        ) VALUES (?, ?, ?, ?, datetime('now'))
-      `, [transactionId, 'weekend-pass', 125.00, testQrCode]);
+          ticket_id, transaction_id, ticket_type, event_id, price_cents, validation_code, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+      `, ['TICKET-' + testQrCode, transactionId, 'weekend-pass', 'boulder-fest-2026', 12500, testQrCode]);
       
       const ticketResult = await dbClient.execute(
-        'SELECT id FROM tickets WHERE qr_token = ?',
+        'SELECT id FROM tickets WHERE validation_code = ?',
         [testQrCode]
       );
       

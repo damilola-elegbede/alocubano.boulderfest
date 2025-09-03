@@ -16,6 +16,14 @@ delete process.env.VERCEL_DEV_STARTUP;
 // Set explicit integration test context
 process.env.INTEGRATION_TEST_MODE = 'true';
 
+// Additional safety measures for integration test isolation
+process.env.TEST_DATABASE_TYPE = 'sqlite_file';
+process.env.FORCE_LOCAL_DATABASE = 'true';
+
+// Store original values for restoration later (for cleanup)
+const originalTursoUrl = process.env.TURSO_DATABASE_URL;
+const originalTursoToken = process.env.TURSO_AUTH_TOKEN;
+
 // Configure integration test environment
 const config = configureEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
 

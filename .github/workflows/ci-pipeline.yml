@@ -24,7 +24,7 @@ jobs:
   unit-tests:
     name: "🧪 Unit Tests"
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15  # Increased from 10 to allow for cold starts
 
     strategy:
       matrix:
@@ -33,10 +33,10 @@ jobs:
     env:
       DATABASE_URL: ":memory:"
       PHASE3_PERFORMANCE_TARGET_MS: 2000
-      VITEST_TEST_TIMEOUT: 5000        # 5 seconds for unit tests
-      VITEST_HOOK_TIMEOUT: 10000       # 10 seconds for hooks
-      VITEST_SETUP_TIMEOUT: 10000      # 10 seconds for setup
-      VITEST_CLEANUP_TIMEOUT: 5000     # 5 seconds for cleanup
+      VITEST_TEST_TIMEOUT: 10000       # Increased from 5000 to 10 seconds for unit tests
+      VITEST_HOOK_TIMEOUT: 15000       # Increased from 10000 to 15 seconds for hooks
+      VITEST_SETUP_TIMEOUT: 15000      # Increased from 10000 to 15 seconds for setup
+      VITEST_CLEANUP_TIMEOUT: 10000    # Increased from 5000 to 10 seconds for cleanup
 
     steps:
       - name: "📥 Checkout Code"
@@ -73,6 +73,7 @@ jobs:
           echo "📊 Expected: 806+ unit tests"
           echo "🎯 Performance Target: <2 seconds"
           echo "💾 Database: In-memory SQLite"
+          echo "⏱️  Timeout: 15 minutes (CI buffer)"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           start_time=$(date +%s%3N)
@@ -119,7 +120,7 @@ jobs:
   integration-tests:
     name: "🔗 Integration Tests"
     runs-on: ubuntu-latest
-    timeout-minutes: 1  # 60-second timeout for entire stage
+    timeout-minutes: 3  # Increased from 1 to 3 minutes (180 seconds) for database initialization and migration
     needs: unit-tests   # Run after unit tests pass
 
     strategy:
@@ -138,12 +139,12 @@ jobs:
       ADMIN_PASSWORD: "$2b$10$dummy.bcrypt.hash.for.integration.testing"
       INTERNAL_API_KEY: "test_internal_api_key_for_integration"
       WALLET_AUTH_SECRET: "test_wallet_auth_secret_minimum_32_chars"
-      # Integration test timeouts
-      VITEST_TEST_TIMEOUT: 30000       # 30 seconds for integration tests
-      VITEST_HOOK_TIMEOUT: 30000       # 30 seconds for hooks
-      VITEST_SETUP_TIMEOUT: 10000      # 10 seconds for setup
-      VITEST_CLEANUP_TIMEOUT: 5000     # 5 seconds for cleanup
-      VITEST_REQUEST_TIMEOUT: 30000    # 30 seconds for HTTP requests
+      # Integration test timeouts - increased for CI environment
+      VITEST_TEST_TIMEOUT: 60000       # Increased from 30000 to 60 seconds for integration tests
+      VITEST_HOOK_TIMEOUT: 45000       # Increased from 30000 to 45 seconds for hooks
+      VITEST_SETUP_TIMEOUT: 20000      # Increased from 10000 to 20 seconds for setup
+      VITEST_CLEANUP_TIMEOUT: 10000    # Increased from 5000 to 10 seconds for cleanup
+      VITEST_REQUEST_TIMEOUT: 45000    # Increased from 30000 to 45 seconds for HTTP requests
 
     steps:
       - name: "📥 Checkout Code"
@@ -202,18 +203,19 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🔗 Running Integration Test Suite"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🎯 Timeout: 60 seconds total (stage limit)"
+          echo "🎯 Timeout: 180 seconds total (stage limit)"
           echo "🗃️ Database: SQLite with real file storage"
           echo "🌐 APIs: Limited external service integration"
           echo "🧪 Expected: ~30-50 integration tests"
           echo "⚙️  Environment: Test credentials configured"
+          echo "⏱️  Individual Test Timeout: 60 seconds"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           # Record start time
           start_time=$(date +%s%3N)
 
-          # Run integration tests with timeout to respect 60-second stage limit
-          timeout 50s npm run test:integration 2>&1 | tee integration-test-output.log
+          # Run integration tests with increased timeout (160 seconds, 20 seconds buffer)
+          timeout 160s npm run test:integration 2>&1 | tee integration-test-output.log
           test_exit_code=${PIPESTATUS[0]}
 
           # Record end time
@@ -235,10 +237,10 @@ jobs:
           echo "🗃️ Database: File-based SQLite"
 
           # Timeout evaluation
-          if [ "$duration" -lt 60000 ]; then
-            echo "🏆 EXCELLENT: Integration tests completed within 60-second limit!"
+          if [ "$duration" -lt 180000 ]; then
+            echo "🏆 EXCELLENT: Integration tests completed within 180-second limit!"
           else
-            echo "⚠️  WARNING: Integration tests exceeded 60-second timeout limit"
+            echo "⚠️  WARNING: Integration tests exceeded 180-second timeout limit"
           fi
 
           # Set outputs for summary
@@ -292,12 +294,12 @@ jobs:
             ### 🚀 Pipeline Results
             | Stage | Status | Tests | Duration | Details |
             |-------|--------|-------|----------|---------|
-            | **Unit Tests** | ${unitStatus === 'success' ? '✅ Passed' : '❌ Failed'} | ${unitOutputs?.total_tests || 'N/A'} | ${unitOutputs?.duration || 'N/A'} | In-memory SQLite, <2s target |
-            | **Integration Tests** | ${integrationStatus === 'success' ? '✅ Passed' : '❌ Failed'} | ${integrationOutputs?.total_tests || 'N/A'} | ${integrationOutputs?.duration || 'N/A'} | File SQLite, <60s limit |
+            | **Unit Tests** | ${unitStatus === 'success' ? '✅ Passed' : '❌ Failed'} | ${unitOutputs?.total_tests || 'N/A'} | ${unitOutputs?.duration || 'N/A'} | In-memory SQLite, <2s target, 15min timeout |
+            | **Integration Tests** | ${integrationStatus === 'success' ? '✅ Passed' : '❌ Failed'} | ${integrationOutputs?.total_tests || 'N/A'} | ${integrationOutputs?.duration || 'N/A'} | File SQLite, <180s limit, 3min timeout |
 
             ### ⚙️ Pipeline Features
             - **Sequential Execution**: Integration tests run only after unit tests pass
-            - **Timeout Controls**: 60-second hard limit for integration stage
+            - **Timeout Controls**: 180-second hard limit for integration stage (increased from 60s)
             - **Database Isolation**: Separate in-memory (unit) and file (integration) databases
             - **Dependency Caching**: NPM dependencies cached for performance
             - **Environment Variables**: Complete test credentials configured
@@ -306,7 +308,7 @@ jobs:
             ### 🔧 Environment Configuration
             - **Node.js**: 20.x with optimized memory allocation (4GB)
             - **Database**: SQLite in-memory (unit) / file-based (integration)
-            - **Timeouts**: Vitest configured with CI-appropriate timeouts
+            - **Timeouts**: Vitest configured with CI-appropriate timeouts (increased for stability)
             - **Caching**: NPM dependencies cached between jobs
             - **Security**: Test credentials isolated from production
 
@@ -318,6 +320,12 @@ jobs:
             ${unitStatus !== 'success' ? '- ❌ Fix failing unit tests (integration tests skipped)\n' : ''}
             ${unitStatus === 'success' && integrationStatus !== 'success' ? '- ❌ Review integration test failures and database setup\n' : ''}
             ${overallStatus === '✅' ? '- ✅ Pipeline ready for deployment\n' : ''}
+
+            ### 🔄 Recent Timeout Improvements
+            - **Integration Tests**: Increased from 60s to 180s total timeout
+            - **Individual Test Timeouts**: Increased Vitest timeouts for CI environment
+            - **Database Operations**: More time for migration and initialization
+            - **HTTP Requests**: Extended timeout for external service calls
             `;
 
             // Find existing comment

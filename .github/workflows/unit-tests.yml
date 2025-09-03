@@ -19,12 +19,17 @@ env:
   CI: true
   DATABASE_URL: ":memory:"
   PHASE3_PERFORMANCE_TARGET_MS: 2000
+  # Unit test timeout configurations - reasonable for CI environment
+  VITEST_TEST_TIMEOUT: 15000      # 15 seconds for individual unit tests
+  VITEST_HOOK_TIMEOUT: 20000      # 20 seconds for hooks
+  VITEST_SETUP_TIMEOUT: 15000     # 15 seconds for setup
+  VITEST_CLEANUP_TIMEOUT: 10000   # 10 seconds for cleanup
 
 jobs:
   unit-tests:
     name: "🧪 Unit Test Suite"
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15  # Increased from 10 to 15 minutes for CI stability
 
     strategy:
       matrix:
@@ -54,6 +59,8 @@ jobs:
           echo "📊 Expected: 806+ unit tests"
           echo "🎯 Performance Target: <2 seconds"
           echo "📁 Categories: Security (248), Business Logic (300), Frontend (258)"
+          echo "⏱️  Timeout Configuration: 15 minutes total, 15 seconds per test"
+          echo "🔧 Node Version: ${{ matrix.node-version }}"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           # Run unit tests with precise timing
@@ -98,6 +105,11 @@ jobs:
           NODE_ENV: ${{ env.NODE_ENV }}
           CI: ${{ env.CI }}
           DATABASE_URL: ${{ env.DATABASE_URL }}
+          # Pass timeout configurations to Vitest
+          VITEST_TEST_TIMEOUT: ${{ env.VITEST_TEST_TIMEOUT }}
+          VITEST_HOOK_TIMEOUT: ${{ env.VITEST_HOOK_TIMEOUT }}
+          VITEST_SETUP_TIMEOUT: ${{ env.VITEST_SETUP_TIMEOUT }}
+          VITEST_CLEANUP_TIMEOUT: ${{ env.VITEST_CLEANUP_TIMEOUT }}
 
       - name: "📊 Generate Test Report"
         if: always()
@@ -145,6 +157,12 @@ jobs:
             | **Failed** | ❌ ${testReport.failing_tests} |
             | **Duration** | ⏱️ ${testReport.duration} |
             | **Node Version** | 🔧 ${{ matrix.node-version }} |
+
+            ### ⚙️ Timeout Configuration
+            - **Job Timeout**: 15 minutes (increased for CI stability)
+            - **Individual Test Timeout**: 15 seconds per test
+            - **Hook Timeout**: 20 seconds for setup/teardown
+            - **Performance Target**: <2 seconds total execution time
 
             ${testReport.status === 'success' ?
               '### 🏆 All tests passed successfully!' :

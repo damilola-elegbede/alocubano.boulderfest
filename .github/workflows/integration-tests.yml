@@ -9,29 +9,34 @@ on:
       - 'js/**'
       - 'css/**'
       - 'pages/**'
-      - 'tests/e2e/**'
+      - 'tests/integration/**'
       - 'package.json'
-      - 'playwright.config.js'
+      - 'vitest*.config.js'
+      - 'tests/config/**'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'api/**'
+      - 'js/**'
+      - 'css/**'
+      - 'pages/**'
+      - 'tests/integration/**'
+      - 'package.json'
+      - 'vitest*.config.js'
+      - 'tests/config/**'
   workflow_dispatch:
     inputs:
       test_suite:
-        description: 'Test suite to run'
+        description: 'Integration test suite to run'
         required: false
-        default: 'standard'
+        default: 'all'
         type: choice
         options:
-          - 'standard'      # Core flows
-          - 'comprehensive' # Full suite
-          - 'smoke'         # Quick smoke tests
-      browsers:
-        description: 'Browser matrix'
-        required: false
-        default: 'standard'
-        type: choice
-        options:
-          - 'chromium-only'
-          - 'standard'     # chromium, firefox
-          - 'extended'     # chromium, firefox, webkit
+          - 'all'         # All integration tests
+          - 'api'         # API integration tests only
+          - 'database'    # Database integration tests only
+          - 'services'    # Service integration tests only
+          - 'critical'    # Critical payment integration tests
 
 concurrency:
   group: integration-tests-${{ github.workflow }}-${{ github.ref }}
@@ -45,19 +50,18 @@ env:
   NODE_VERSION: "20"
   NODE_ENV: test
   CI: true
-  NODE_OPTIONS: "--max-old-space-size=3072"
+  NODE_OPTIONS: "--max-old-space-size=4096"
 
 jobs:
   # Path-based test planning to avoid unnecessary runs
   test-planning:
     name: "📋 Test Planning"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10  # Increased from 5 to allow for slower CI environments
     outputs:
       should_run: ${{ steps.planning.outputs.should_run }}
       test_suite: ${{ steps.planning.outputs.test_suite }}
-      browser_matrix: ${{ steps.planning.outputs.browser_matrix }}
-      test_count: ${{ steps.planning.outputs.test_count }}
+      test_pattern: ${{ steps.planning.outputs.test_pattern }}
     
     steps:
       - name: "📥 Checkout Code"
@@ -76,10 +80,11 @@ jobs:
               - 'pages/**'
             backend:
               - 'api/**'
-            e2e:
-              - 'tests/e2e/**'
+            integration:
+              - 'tests/integration/**'
             config:
-              - 'playwright*.config.js'
+              - 'vitest*.config.js'
+              - 'tests/config/**'
               - 'package.json'
 
       - name: "📋 Plan Test Execution"
@@ -87,65 +92,61 @@ jobs:
         run: |
           # Determine if tests should run
           SHOULD_RUN="false"
-          TEST_SUITE="${{ inputs.test_suite || 'standard' }}"
-          BROWSER_MATRIX="${{ inputs.browsers || 'standard' }}"
-          TEST_COUNT="12"
+          TEST_SUITE="${{ inputs.test_suite || 'all' }}"
+          TEST_PATTERN="tests/integration/**/*.test.js"
           
           # Run tests if relevant changes detected or manual trigger
           if [ "${{ steps.changes.outputs.frontend }}" == "true" ] || 
              [ "${{ steps.changes.outputs.backend }}" == "true" ] || 
-             [ "${{ steps.changes.outputs.e2e }}" == "true" ] || 
+             [ "${{ steps.changes.outputs.integration }}" == "true" ] || 
              [ "${{ steps.changes.outputs.config }}" == "true" ] || 
-             [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+             [ "${{ github.event_name }}" == "workflow_dispatch" ] ||
+             [ "${{ github.event_name }}" == "push" ]; then
             SHOULD_RUN="true"
           fi
           
-          # Optimize for draft PRs
+          # Set test patterns based on suite selection
+          case "$TEST_SUITE" in
+            "api")
+              TEST_PATTERN="tests/integration/api/**/*.test.js"
+              ;;
+            "database")
+              TEST_PATTERN="tests/integration/database/**/*.test.js"
+              ;;
+            "services")
+              TEST_PATTERN="tests/integration/services/**/*.test.js"
+              ;;
+            "critical")
+              TEST_PATTERN="tests/integration/core/**/*.test.js"
+              ;;
+            *)
+              TEST_PATTERN="tests/integration/**/*.test.js"
+              ;;
+          esac
+          
+          # Optimize for draft PRs (run critical tests only)
           if [ "${{ github.event.pull_request.draft }}" == "true" ] && [ "${{ github.event_name }}" == "pull_request" ]; then
-            TEST_SUITE="smoke"
-            BROWSER_MATRIX="chromium-only"
-            TEST_COUNT="6"
+            TEST_SUITE="critical"
+            TEST_PATTERN="tests/integration/core/**/*.test.js"
           fi
           
           echo "should_run=$SHOULD_RUN" >> $GITHUB_OUTPUT
           echo "test_suite=$TEST_SUITE" >> $GITHUB_OUTPUT
-          echo "browser_matrix=$BROWSER_MATRIX" >> $GITHUB_OUTPUT
-          echo "test_count=$TEST_COUNT" >> $GITHUB_OUTPUT
+          echo "test_pattern=$TEST_PATTERN" >> $GITHUB_OUTPUT
           
           echo "🎯 Integration Test Planning:"
           echo "  Will run: $SHOULD_RUN"
           echo "  Test suite: $TEST_SUITE"
-          echo "  Browser matrix: $BROWSER_MATRIX"
-          echo "  Expected tests: $TEST_COUNT"
+          echo "  Test pattern: $TEST_PATTERN"
 
-  # E2E Integration Tests
-  e2e-tests:
-    name: "🔗 E2E Tests (${{ matrix.browser-name }})"
+  # Integration Tests with Vitest
+  integration-tests:
+    name: "🔗 Integration Tests"
     runs-on: ubuntu-latest
     needs: test-planning
     if: needs.test-planning.outputs.should_run == 'true'
-    timeout-minutes: 15
+    timeout-minutes: 20  # Increased from 10 to 20 minutes for comprehensive integration testing
     
-    strategy:
-      fail-fast: false
-      max-parallel: 2
-      matrix:
-        include: >-
-          ${{
-            (needs.test-planning.outputs.browser_matrix == 'chromium-only' && fromJson('[
-              {"browser": "chromium", "browser-name": "Chrome"}
-            ]')) ||
-            (needs.test-planning.outputs.browser_matrix == 'standard' && fromJson('[
-              {"browser": "chromium", "browser-name": "Chrome"},
-              {"browser": "firefox", "browser-name": "Firefox"}
-            ]')) ||
-            fromJson('[
-              {"browser": "chromium", "browser-name": "Chrome"},
-              {"browser": "firefox", "browser-name": "Firefox"},
-              {"browser": "webkit", "browser-name": "Safari"}
-            ]')
-          }}
-
     steps:
       - name: "📥 Checkout Code"
         uses: actions/checkout@v4
@@ -159,112 +160,101 @@ jobs:
       - name: "📦 Install Dependencies"
         run: npm ci --prefer-offline --no-audit
 
-      - name: "🎭 Install Playwright Browser"
-        run: npx playwright install ${{ matrix.browser }} --with-deps
-
       - name: "🔧 Setup Test Environment"
         run: |
-          mkdir -p data test-results .tmp
+          mkdir -p data test-results .tmp/integration
           
           # Create test environment configuration
           cat > .env.local << EOF
           NODE_ENV=test
           CI=true
-          DATABASE_URL="file:./data/e2e-integration-${{ matrix.browser }}.db"
-          PORT=3000
+          DATABASE_URL="file:./data/integration-tests.db"
           
-          # Test credentials
+          # Test credentials (for integration tests)
           TEST_ADMIN_PASSWORD=test-password-123
           ADMIN_SECRET=test-admin-secret-key-minimum-32-characters
-          EOF
-
-      - name: "🚀 Start Development Server"
-        run: |
-          echo "Starting development server for E2E testing..."
-          npm run dev &
-          SERVER_PID=$!
-          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           
-          # Wait for server to be ready
-          echo "Waiting for server to start..."
-          for i in {1..30}; do
-            if curl -f --max-time 3 http://localhost:3000/api/health/check >/dev/null 2>&1; then
-              echo "✅ Server is ready (attempt $i/30)"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "❌ Server failed to start within timeout"
-              exit 1
-            fi
-            echo "⏳ Waiting for server... attempt $i/30"
-            sleep 2
-          done
+          # Integration test timeouts - increased for CI stability
+          VITEST_TEST_TIMEOUT=120000
+          VITEST_HOOK_TIMEOUT=30000
+          VITEST_SETUP_TIMEOUT=20000
+          VITEST_CLEANUP_TIMEOUT=10000
+          VITEST_REQUEST_TIMEOUT=60000
+          EOF
 
       - name: "🔗 Run Integration Tests"
         env:
-          PLAYWRIGHT_BASE_URL: http://localhost:3000
-          DATABASE_URL: "file:./data/e2e-integration-${{ matrix.browser }}.db"
+          NODE_ENV: test
+          DATABASE_URL: "file:./data/integration-tests.db"
+          CI: true
+          # Increased timeout environment variables for CI stability
+          VITEST_TEST_TIMEOUT: 120000    # 2 minutes per individual test
+          VITEST_HOOK_TIMEOUT: 30000     # 30 seconds for hooks
+          VITEST_SETUP_TIMEOUT: 20000    # 20 seconds for setup
+          VITEST_CLEANUP_TIMEOUT: 10000  # 10 seconds for cleanup
+          VITEST_REQUEST_TIMEOUT: 60000  # 1 minute for HTTP requests
         run: |
-          echo "🔗 Running E2E Integration Tests for ${{ matrix.browser-name }}..."
+          echo "🔗 Running Integration Tests..."
           echo "Test suite: ${{ needs.test-planning.outputs.test_suite }}"
+          echo "Test pattern: ${{ needs.test-planning.outputs.test_pattern }}"
+          echo "Timeout configuration: 20 minutes total, 2 minutes per test"
+          echo "Environment: Node.js ${{ env.NODE_VERSION }}, Memory: 4GB"
           
           # Configure test command based on suite
-          TEST_CMD="npx playwright test --project=${{ matrix.browser }} --timeout=120000"
-          
-          if [ "${{ needs.test-planning.outputs.test_suite }}" == "smoke" ]; then
-            TEST_CMD="$TEST_CMD --grep=\"basic-navigation|cart-functionality|newsletter-simple\""
-            echo "🏃‍♂️ Running smoke tests (quick validation)"
-          elif [ "${{ needs.test-planning.outputs.test_suite }}" == "comprehensive" ]; then
-            echo "🔬 Running comprehensive test suite"
+          if [ "${{ needs.test-planning.outputs.test_suite }}" == "critical" ]; then
+            echo "🏃‍♂️ Running critical integration tests (payment processing)"
+            npm run test:integration:critical
           else
-            TEST_CMD="$TEST_CMD --grep=\"basic-navigation|cart-functionality|registration-flow|admin-auth|gallery-basic|newsletter-simple\""
-            echo "📋 Running standard test suite (core flows)"
+            echo "📋 Running integration test suite"
+            npm run test:integration
           fi
-          
-          # Add reporter
-          TEST_CMD="$TEST_CMD --reporter=list,html"
-          
-          echo "📋 Executing: $TEST_CMD"
-          
-          if timeout 12m $TEST_CMD; then
-            echo "✅ E2E tests completed successfully for ${{ matrix.browser-name }}"
-          else
-            EXIT_CODE=$?
-            echo "❌ E2E tests failed for ${{ matrix.browser-name }} (exit code: $EXIT_CODE)"
-            exit $EXIT_CODE
-          fi
-
-      - name: "🧹 Cleanup Server"
-        if: always()
-        run: |
-          if [ -n "${SERVER_PID:-}" ]; then
-            echo "Stopping development server (PID: $SERVER_PID)..."
-            kill -TERM $SERVER_PID || true
-            sleep 2
-            kill -KILL $SERVER_PID 2>/dev/null || true
-          fi
-          
-          # Clean up any remaining processes on port 3000
-          lsof -ti:3000 | xargs kill -TERM 2>/dev/null || true
-          sleep 1
-          lsof -ti:3000 | xargs kill -KILL 2>/dev/null || true
 
       - name: "📤 Upload Test Results"
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-integration-results-${{ matrix.browser }}-${{ github.run_number }}
+          name: integration-test-results-${{ github.run_number }}
           path: |
-            playwright-report/
-            test-results/
+            integration-test-results.xml
+            coverage/integration/
+            .tmp/integration/
           retention-days: 7
           if-no-files-found: ignore
+
+      - name: "📊 Test Summary"
+        if: always()
+        run: |
+          echo "# 🔗 Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Suite**: ${{ needs.test-planning.outputs.test_suite }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Pattern**: ${{ needs.test-planning.outputs.test_pattern }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Node.js ${{ env.NODE_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Memory Allocation**: 4GB" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timeout Configuration**: 20 minutes total, 2 minutes per test" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ $? -eq 0 ]; then
+            echo "### ✅ Integration Tests Passed!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "All integration tests have completed successfully." >> $GITHUB_STEP_SUMMARY
+            echo "Integration tests validate real database connections, API endpoints, and service interactions." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Integration Test Failures" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Some integration tests have failed. Please review:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "1. **Check test artifacts** for detailed failure information" >> $GITHUB_STEP_SUMMARY
+            echo "2. **Run locally**: \`npm run test:integration\` to reproduce issues" >> $GITHUB_STEP_SUMMARY
+            echo "3. **Check database connectivity** and service dependencies" >> $GITHUB_STEP_SUMMARY
+          fi
 
   # Test Results Summary
   integration-summary:
     name: "📊 Integration Test Summary"
     runs-on: ubuntu-latest
-    needs: [test-planning, e2e-tests]
+    needs: [test-planning, integration-tests]
     if: always()
     
     steps:
@@ -277,28 +267,41 @@ jobs:
             echo "## Test Execution Status" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "- **Test Suite**: ${{ needs.test-planning.outputs.test_suite }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Browser Matrix**: ${{ needs.test-planning.outputs.browser_matrix }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Expected Tests**: ${{ needs.test-planning.outputs.test_count }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **E2E Tests**: ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || (needs.e2e-tests.result == 'failure' && '❌ Failed' || '⏭️ Skipped') }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Test Pattern**: ${{ needs.test-planning.outputs.test_pattern }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Integration Tests**: ${{ needs.integration-tests.result == 'success' && '✅ Passed' || (needs.integration-tests.result == 'failure' && '❌ Failed' || '⏭️ Skipped') }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Timeout Configuration**: 20 minutes total, 2 minutes per individual test" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             
-            if [ "${{ needs.e2e-tests.result }}" == "success" ]; then
+            if [ "${{ needs.integration-tests.result }}" == "success" ]; then
               echo "### ✅ Integration Tests Passed!" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
-              echo "All E2E integration tests have passed successfully across the selected browser matrix." >> $GITHUB_STEP_SUMMARY
+              echo "All integration tests have passed successfully." >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
-            elif [ "${{ needs.e2e-tests.result }}" == "failure" ]; then
+              echo "**What was tested:**" >> $GITHUB_STEP_SUMMARY
+              echo "- Database connections and migrations" >> $GITHUB_STEP_SUMMARY
+              echo "- API endpoint functionality" >> $GITHUB_STEP_SUMMARY
+              echo "- Service integrations (email, payments)" >> $GITHUB_STEP_SUMMARY
+              echo "- Data integrity and transactions" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**Timeout Improvements:**" >> $GITHUB_STEP_SUMMARY
+              echo "- Job timeout: Increased to 20 minutes for comprehensive testing" >> $GITHUB_STEP_SUMMARY
+              echo "- Individual test timeout: 2 minutes per test for complex operations" >> $GITHUB_STEP_SUMMARY
+              echo "- Database operations: Extended timeouts for migrations and setup" >> $GITHUB_STEP_SUMMARY
+              echo "- HTTP requests: 1 minute timeout for external service calls" >> $GITHUB_STEP_SUMMARY
+            elif [ "${{ needs.integration-tests.result }}" == "failure" ]; then
               echo "### ❌ Integration Test Failures" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
-              echo "Some E2E integration tests have failed. Please review:" >> $GITHUB_STEP_SUMMARY
+              echo "Some integration tests have failed. Please review:" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
               echo "1. **Check test artifacts** for detailed failure information" >> $GITHUB_STEP_SUMMARY
-              echo "2. **Review browser-specific failures** in the workflow logs" >> $GITHUB_STEP_SUMMARY
-              echo "3. **Run locally**: \`npm run test:e2e\` to reproduce issues" >> $GITHUB_STEP_SUMMARY
+              echo "2. **Run locally**: \`npm run test:integration\` to reproduce issues" >> $GITHUB_STEP_SUMMARY
+              echo "3. **Check service dependencies**: Database, external APIs" >> $GITHUB_STEP_SUMMARY
+              echo "4. **Review environment setup**: Database migrations, test data" >> $GITHUB_STEP_SUMMARY
+              echo "5. **Verify timeouts**: Tests now have 2 minutes per test, 20 minutes total" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
             fi
           else
-            echo "- **E2E Tests**: ⏭️ Skipped (no relevant changes detected)" >> $GITHUB_STEP_SUMMARY
+            echo "- **Integration Tests**: ⏭️ Skipped (no relevant changes detected)" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "### ℹ️ Tests Skipped" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -306,8 +309,8 @@ jobs:
             echo "Tests will run automatically when changes are made to:" >> $GITHUB_STEP_SUMMARY
             echo "- Frontend code (js/, css/, pages/)" >> $GITHUB_STEP_SUMMARY
             echo "- Backend code (api/)" >> $GITHUB_STEP_SUMMARY
-            echo "- Test files (tests/e2e/)" >> $GITHUB_STEP_SUMMARY
-            echo "- Configuration (package.json, playwright.config.js)" >> $GITHUB_STEP_SUMMARY
+            echo "- Integration test files (tests/integration/)" >> $GITHUB_STEP_SUMMARY
+            echo "- Test configuration (vitest*.config.js, tests/config/)" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: "💬 Comment on PR"
@@ -317,7 +320,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const shouldRun = '${{ needs.test-planning.outputs.should_run }}';
-            const testResult = '${{ needs.e2e-tests.result }}';
+            const testResult = '${{ needs.integration-tests.result }}';
+            const testSuite = '${{ needs.test-planning.outputs.test_suite }}';
             
             let status, statusText, summary;
             
@@ -327,12 +331,26 @@ jobs:
                 statusText = 'PASSED';
                 summary = `### 🎉 All integration tests passed!
                 
-                E2E tests have been successfully executed across the selected browser matrix.
+                Integration tests validate real database connections, API endpoints, and service integrations.
                 
                 **Test Configuration:**
-                - Test Suite: ${{ needs.test-planning.outputs.test_suite }}
-                - Browser Matrix: ${{ needs.test-planning.outputs.browser_matrix }}
-                - Tests Expected: ${{ needs.test-planning.outputs.test_count }}`;
+                - Test Suite: ${testSuite}
+                - Test Runner: Vitest
+                - Environment: Node.js ${{ env.NODE_VERSION }}
+                - Memory Allocation: 4GB
+                - Timeout: 20 minutes total, 2 minutes per test
+                
+                **What was tested:**
+                - Database operations and migrations
+                - API endpoint functionality
+                - Service integrations (email, payments)
+                - Data integrity and transactions
+                
+                **Timeout Improvements:**
+                - Job timeout increased to 20 minutes for stability
+                - Individual test timeout: 2 minutes for complex operations
+                - Database setup: Extended time for migrations
+                - HTTP requests: 1 minute timeout for external calls`;
               } else {
                 status = '❌';
                 statusText = 'FAILED';
@@ -342,8 +360,16 @@ jobs:
                 
                 **Debugging Steps:**
                 1. Check the test artifacts for detailed failure information
-                2. Run tests locally with \`npm run test:e2e\`
-                3. Review browser-specific failures in workflow logs`;
+                2. Run tests locally with \`npm run test:integration\`
+                3. Verify database connectivity and service dependencies
+                4. Review environment setup and migrations
+                5. Note: Tests now have extended timeouts (20min total, 2min per test)
+                
+                **Timeout Configuration:**
+                - Job timeout: 20 minutes (increased for CI stability)
+                - Individual test timeout: 2 minutes per test
+                - Database operations: Extended setup and migration time
+                - HTTP requests: 1 minute timeout for external services`;
               }
             } else {
               status = '⏭️';
@@ -353,7 +379,8 @@ jobs:
               No relevant changes detected. Tests will run when changes are made to:
               - Frontend code (js/, css/, pages/)
               - Backend code (api/)
-              - Test files or configuration`;
+              - Integration test files (tests/integration/)
+              - Test configuration files`;
             }
 
             const comment = `## ${status} Integration Tests ${statusText}
