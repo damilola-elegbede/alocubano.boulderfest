@@ -739,7 +739,8 @@
         // Extract year from the page
         const year = getYearFromPage();
 
-        console.log('🚀 DEBUG - Starting loadGalleryDetailData:', {
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('🚀 GALLERY LOAD START - loadGalleryDetailData called', {
             year,
             loadingElExists: !!loadingEl,
             contentElExists: !!contentEl,
@@ -749,9 +750,13 @@
                 loadedPages: state.loadedPages,
                 itemsDisplayed: state.itemsDisplayed,
                 workshopOffset: state.workshopOffset,
-                socialOffset: state.socialOffset
+                socialOffset: state.socialOffset,
+                totalItemsAvailable: state.totalItemsAvailable,
+                hasCompleteDataset: state.hasCompleteDataset,
+                allCategoriesKeys: Object.keys(state.allCategories || {})
             }
         });
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
         // Initialize lazy loading observer
         initLazyLoading();
@@ -1087,51 +1092,102 @@
                 // Save state after initial load
                 saveState();
             } else {
-                // For subsequent pages, use sequential algorithm with stored categories
-                console.log(
-                    `📦 Loading page ${state.loadedPages + 1} using sequential algorithm`
-                );
-
-                // Get next page using sequential algorithm
-                const pageItems = getNextPageItems(
-                    state.allCategories,
-                    CONFIG.PAGINATION_SIZE
-                );
-
-                // Organize items back into categories for display
-                const paginatedCategories = {
-                    workshops: [],
-                    socials: []
-                };
-
-                pageItems.forEach((item) => {
-                    if (item.category === 'workshops') {
-                        paginatedCategories.workshops.push(item);
-                    } else if (item.category === 'socials') {
-                        paginatedCategories.socials.push(item);
-                    }
+                // This is paginated API data from the server
+                // Use the data directly without client-side slicing
+                console.log('🔵 PAGINATED API PATH ENTERED', {
+                    page: state.loadedPages + 1,
+                    isStaticFetch: isStaticFetch,
+                    dataReceived: !!data,
+                    dataKeys: data ? Object.keys(data) : []
                 });
 
-                state.itemsDisplayed += pageItems.length;
-                state.loadedPages++;
+                // Debug: Log the raw API response structure
+                console.log('📊 API Response Structure:', {
+                    totalCount: data.totalCount,
+                    hasMore: data.hasMore,
+                    categoriesExist: !!data.categories,
+                    categoryNames: data.categories ? Object.keys(data.categories) : [],
+                    workshopsCount: data.categories?.workshops?.length || 0,
+                    socialsCount: data.categories?.socials?.length || 0,
+                    returnedCount: data.returnedCount,
+                    offset: data.offset,
+                    limit: data.limit
+                });
 
-                // Check if we've reached the total
-                if (
-                    state.itemsDisplayed >= state.totalItemsAvailable ||
-          !state.hasMorePages
-                ) {
+                // Update total counts from API response
+                state.totalItemsAvailable = data.totalCount || 0;
+                
+                // The API returns paginated categories directly
+                const paginatedCategories = data.categories || {};
+                
+                console.log('🔍 Processing categories:', {
+                    categoriesReceived: Object.keys(paginatedCategories),
+                    workshopsArray: Array.isArray(paginatedCategories.workshops),
+                    workshopsLength: paginatedCategories.workshops?.length || 0,
+                    socialsArray: Array.isArray(paginatedCategories.socials),
+                    socialsLength: paginatedCategories.socials?.length || 0
+                });
+                
+                // Count items in this page
+                let pageItemCount = 0;
+                const itemsByCategory = {};
+                
+                Object.entries(paginatedCategories).forEach(([category, items]) => {
+                    const itemCount = (items || []).length;
+                    pageItemCount += itemCount;
+                    itemsByCategory[category] = itemCount;
+                    
+                    console.log(`📁 Category "${category}":`, {
+                        itemCount: itemCount,
+                        firstItem: items?.[0]?.name || 'none',
+                        lastItem: items?.[items.length - 1]?.name || 'none'
+                    });
+                });
+
+                console.log('📈 State BEFORE update:', {
+                    itemsDisplayed: state.itemsDisplayed,
+                    loadedPages: state.loadedPages,
+                    workshopOffset: state.workshopOffset,
+                    socialOffset: state.socialOffset,
+                    hasMorePages: state.hasMorePages,
+                    hasCompleteDataset: state.hasCompleteDataset
+                });
+
+                state.itemsDisplayed += pageItemCount;
+                state.loadedPages++;
+                
+                // Update category-specific offsets for tracking
+                if (paginatedCategories.workshops) {
+                    state.workshopOffset += paginatedCategories.workshops.length;
+                }
+                if (paginatedCategories.socials) {
+                    state.socialOffset += paginatedCategories.socials.length;
+                }
+
+                // Use the API's hasMore flag or calculate based on total
+                state.hasMorePages = data.hasMore === true || 
+                                   (state.itemsDisplayed < state.totalItemsAvailable);
+                
+                if (!state.hasMorePages || state.itemsDisplayed >= state.totalItemsAvailable) {
                     state.hasCompleteDataset = true;
                     console.log('✅ All items now displayed');
                 }
 
+                console.log('📈 State AFTER update:', {
+                    itemsDisplayed: state.itemsDisplayed,
+                    loadedPages: state.loadedPages,
+                    workshopOffset: state.workshopOffset,
+                    socialOffset: state.socialOffset,
+                    hasMorePages: state.hasMorePages,
+                    hasCompleteDataset: state.hasCompleteDataset,
+                    totalItemsAvailable: state.totalItemsAvailable
+                });
+
                 console.log(
-                    `📦 Loaded page ${state.loadedPages}: ${pageItems.length} items, hasMore: ${state.hasMorePages}`
-                );
-                console.log(
-                    `📍 Offsets: workshops=${state.workshopOffset}/${state.workshopTotal}, socials=${state.socialOffset}/${state.socialTotal}`
+                    `📦 SUMMARY: Loaded ${pageItemCount} items from API. Total displayed: ${state.itemsDisplayed}/${state.totalItemsAvailable}, hasMore: ${state.hasMorePages}`
                 );
 
-                // Display the gallery with just the new items (append mode)
+                // Display the gallery with the paginated data from API (append mode for subsequent pages)
                 displayGalleryData(
                     {
                         categories: paginatedCategories,
@@ -1141,7 +1197,7 @@
                     contentEl,
                     staticEl,
                     loadingEl,
-                    true
+                    state.loadedPages > 1  // Append mode for pages after the first
                 );
 
                 // Update loading state (remove sentinel if complete)
@@ -1343,13 +1399,26 @@
 
         // Check if we have any categories with items
         let hasItems = false;
-        Object.values(data.categories || {}).forEach((items) => {
+        let totalItemsToDisplay = 0;
+        Object.entries(data.categories || {}).forEach(([category, items]) => {
             if (items?.length > 0) {
                 hasItems = true;
+                totalItemsToDisplay += items.length;
+                console.log(`✔️ Category "${category}" has ${items.length} items to display`);
+            } else {
+                console.log(`⚠️ Category "${category}" has 0 items`);
             }
         });
 
+        console.log('🎯 Display decision:', {
+            hasItems,
+            totalItemsToDisplay,
+            appendMode,
+            willShowStatic: !hasItems && !appendMode
+        });
+
         if (!hasItems && !appendMode) {
+            console.log('⚠️ NO ITEMS TO DISPLAY - Showing static fallback');
             // Show static content if no items on first load
             if (loadingEl) {
                 loadingEl.style.display = 'none';
@@ -1381,7 +1450,15 @@
             // Update Workshops section
             const workshopsSection = document.getElementById('workshops-section');
             const workshopsGallery = document.getElementById('workshops-gallery');
+            console.log('🏗️ Workshops section update:', {
+                sectionExists: !!workshopsSection,
+                galleryExists: !!workshopsGallery,
+                itemsToInsert: workshopItems.length,
+                willDisplay: workshopsSection && workshopsGallery && workshopItems.length > 0
+            });
+            
             if (workshopsSection && workshopsGallery && workshopItems.length > 0) {
+                console.log(`📝 Inserting ${workshopItems.length} workshop items into DOM...`);
                 workshopsSection.style.display = 'block';
                 await insertItemsProgressively(
                     workshopItems,
@@ -1390,12 +1467,23 @@
                     0,
                     appendMode
                 );
+                console.log(`✅ Workshop items inserted successfully`);
+            } else if (workshopItems.length === 0) {
+                console.log('⚠️ No workshop items to insert');
             }
 
             // Update Socials section
             const socialsSection = document.getElementById('socials-section');
             const socialsGallery = document.getElementById('socials-gallery');
+            console.log('🏗️ Socials section update:', {
+                sectionExists: !!socialsSection,
+                galleryExists: !!socialsGallery,
+                itemsToInsert: socialItems.length,
+                willDisplay: socialsSection && socialsGallery && socialItems.length > 0
+            });
+            
             if (socialsSection && socialsGallery && socialItems.length > 0) {
+                console.log(`📝 Inserting ${socialItems.length} social items into DOM...`);
                 socialsSection.style.display = 'block';
                 await insertItemsProgressively(
                     socialItems,
@@ -1404,6 +1492,9 @@
                     workshopItems.length,
                     appendMode
                 );
+                console.log(`✅ Social items inserted successfully`);
+            } else if (socialItems.length === 0) {
+                console.log('⚠️ No social items to insert');
             }
 
             // Add click handlers for lightbox (only for new items if appending)
@@ -1414,6 +1505,20 @@
             console.log(
                 `🎯 Attaching click handlers to ${items.length} items (appendMode: ${appendMode})`
             );
+            
+            // Final DOM verification
+            const finalWorkshopCount = workshopsGallery ? workshopsGallery.querySelectorAll('.gallery-item').length : 0;
+            const finalSocialCount = socialsGallery ? socialsGallery.querySelectorAll('.gallery-item').length : 0;
+            console.log('✨ FINAL DOM VERIFICATION:', {
+                workshopItemsInDOM: finalWorkshopCount,
+                socialItemsInDOM: finalSocialCount,
+                totalItemsInDOM: finalWorkshopCount + finalSocialCount,
+                stateItemsDisplayed: state.itemsDisplayed
+            });
+            
+            if (finalWorkshopCount + finalSocialCount === 0) {
+                console.error('❌ CRITICAL: No items were added to the DOM!');
+            }
             items.forEach((item) => {
                 setupGalleryItemHandlers(item, data);
                 // Don't set data-loaded="true" immediately - let lazy loading happen first
