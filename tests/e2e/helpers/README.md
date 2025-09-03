@@ -1,6 +1,6 @@
-# E2E Test Helpers - Test Isolation System
+# E2E Test Helpers - Test Isolation System & Network Simulation
 
-This directory contains a comprehensive test isolation system for E2E tests that ensures each test runs in a clean environment without conflicts during parallel execution.
+This directory contains a comprehensive test isolation system for E2E tests that ensures each test runs in a clean environment without conflicts during parallel execution, plus robust network simulation capabilities for testing network resilience scenarios.
 
 ## 🧪 Test Isolation System
 
@@ -432,3 +432,128 @@ test.beforeEach(async ({ page }) => {
   expect(Object.keys(storage.localStorage)).toHaveLength(0);
 });
 ```
+
+## 🌐 Network Simulation Helper
+
+The `network-simulation.js` helper provides comprehensive network simulation capabilities for testing network resilience scenarios.
+
+### Critical Issues Fixed
+
+This helper addresses critical CodeRabbit issues:
+
+1. **simulateNetworkCondition is now functional** - Properly applies network conditions using Playwright's CDP API
+2. **Memory leak prevention** - Comprehensive cleanup of event listeners and resources
+3. **Network conditions properly applied** - Real network throttling and offline mode via Chrome DevTools Protocol
+
+### Usage
+
+```javascript
+import { createNetworkSimulator, NETWORK_CONDITIONS } from './helpers/network-simulation.js';
+
+// Create simulator instance
+const simulator = createNetworkSimulator(page);
+
+// Simulate offline mode
+await simulator.simulateNetworkCondition(NETWORK_CONDITIONS.OFFLINE);
+
+// Simulate slow 3G
+await simulator.simulateNetworkCondition(NETWORK_CONDITIONS.SLOW_3G);
+
+// Custom network conditions
+await simulator.simulateNetworkCondition({
+  offline: false,
+  downloadThroughput: 100 * 1024, // 100 KB/s
+  uploadThroughput: 50 * 1024,    // 50 KB/s
+  latency: 1000 // 1s
+});
+
+// Add request interception with delays
+const handler = await simulator.addRequestInterception('/api/**', {
+  delayMs: 500,
+  failureRate: 0.3
+});
+
+// Simulate API timeouts
+await simulator.simulateAPITimeout('/api/gallery', {
+  timeoutMs: 2000,
+  maxRetries: 2
+});
+
+// Simulate intermittent connectivity
+await simulator.simulateIntermittentConnectivity({
+  intervalMs: 2000,
+  duration: 10000,
+  startOnline: true
+});
+
+// CRITICAL: Always cleanup to prevent memory leaks
+await simulator.cleanup();
+```
+
+### Network Conditions
+
+Available predefined network conditions:
+
+- `NETWORK_CONDITIONS.OFFLINE` - No network connection
+- `NETWORK_CONDITIONS.SLOW_3G` - 50 KB/s, 2s latency
+- `NETWORK_CONDITIONS.FAST_3G` - 150 KB/s, 562.5ms latency  
+- `NETWORK_CONDITIONS.FOUR_G` - 1.6 MB/s, 150ms latency
+- `NETWORK_CONDITIONS.WIFI` - 10 MB/s, 10ms latency
+
+### Best Practices
+
+1. **Always use cleanup**: Call `await simulator.cleanup()` in test teardown
+2. **Use try/finally blocks**: Ensure cleanup happens even if tests fail
+3. **Test realistic scenarios**: Use predefined conditions that match real networks
+4. **Validate resilience**: Test both success and failure paths
+5. **Monitor resources**: Use `getNetworkStatus()` to verify state
+
+### Example Test
+
+```javascript
+import { test, expect } from '@playwright/test';
+import { createNetworkSimulator, NETWORK_CONDITIONS } from './helpers/network-simulation.js';
+
+test('should handle slow network gracefully', async ({ page }) => {
+  const simulator = createNetworkSimulator(page);
+  
+  try {
+    // Apply slow network conditions
+    await simulator.simulateNetworkCondition(NETWORK_CONDITIONS.SLOW_3G);
+    
+    // Test application behavior under slow conditions
+    await page.goto('/pages/gallery.html');
+    await expect(page.locator('h1')).toBeVisible({ timeout: 15000 });
+    
+    // Verify loading states are shown
+    const loadingIndicator = page.locator('.loading');
+    if (await loadingIndicator.isVisible()) {
+      await expect(loadingIndicator).toBeHidden({ timeout: 20000 });
+    }
+  } finally {
+    await simulator.cleanup();
+  }
+});
+```
+
+### Memory Leak Prevention
+
+The helper includes comprehensive cleanup mechanisms:
+
+- Removes all route handlers
+- Clears event listeners
+- Restores network conditions
+- Closes CDP sessions
+- Prevents operations after cleanup
+
+### Error Handling
+
+The helper gracefully handles:
+
+- CDP session initialization failures
+- Network condition application errors
+- Cleanup errors (logs warnings)
+- Operations after cleanup (throws errors)
+- Unknown network conditions (throws errors)
+
+This ensures robust testing even when network simulation encounters issues.

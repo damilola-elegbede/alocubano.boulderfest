@@ -26,8 +26,30 @@ export const getDatabaseConfig = (testType) => {
       };
       
     case TEST_ENVIRONMENTS.INTEGRATION:
+      // Ensure data directory exists for integration tests
+      const getIntegrationDbUrl = () => {
+        if (process.env.INTEGRATION_DATABASE_URL) {
+          return process.env.INTEGRATION_DATABASE_URL;
+        }
+        
+        // Create data directory if it doesn't exist
+        try {
+          const fs = require('fs');
+          const path = require('path');
+          const dataDir = path.join(process.cwd(), 'data');
+          if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir, { recursive: true });
+            console.log(`📁 Created data directory for integration tests: ${dataDir}`);
+          }
+        } catch (error) {
+          console.warn('⚠️ Could not create data directory:', error.message);
+        }
+        
+        return 'file:./data/test-integration.db';
+      };
+      
       return {
-        url: process.env.INTEGRATION_DATABASE_URL || 'file:./data/test-integration.db',
+        url: getIntegrationDbUrl(),
         authToken: null,
         description: 'Local SQLite file for integration tests',
         persistent: true,
@@ -204,10 +226,18 @@ export const cleanupEnvironment = async (testType) => {
   if (dbConfig.cleanup && dbConfig.persistent) {
     try {
       const fs = await import('fs/promises');
-      const path = dbConfig.url.replace('file:', '');
-      if (path !== ':memory:' && path) {
-        await fs.unlink(path).catch(() => {}); // Ignore if file doesn't exist
-        console.log(`🧹 Cleaned up test database: ${path}`);
+      const pathModule = await import('path');
+      
+      let dbPath = dbConfig.url.replace('file:', '');
+      
+      // Handle relative paths correctly
+      if (dbPath.startsWith('./')) {
+        dbPath = pathModule.join(process.cwd(), dbPath.substring(2));
+      }
+      
+      if (dbPath !== ':memory:' && dbPath && !dbPath.startsWith('libsql://')) {
+        await fs.unlink(dbPath).catch(() => {}); // Ignore if file doesn't exist
+        console.log(`🧹 Cleaned up test database: ${dbPath}`);
       }
     } catch (error) {
       console.warn(`⚠️ Could not cleanup test database: ${error.message}`);

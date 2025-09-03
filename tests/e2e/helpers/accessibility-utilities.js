@@ -356,15 +356,28 @@ export class AccessibilityUtilities {
   
   async _checkFocusIndicator(element) {
     return await element.evaluate((el) => {
+      // Store original styles before focusing
+      const originalStyles = window.getComputedStyle(el);
+      const originalOutline = originalStyles.outline;
+      const originalOutlineWidth = originalStyles.outlineWidth;
+      const originalBoxShadow = originalStyles.boxShadow;
+      const originalBorder = originalStyles.border;
+      
+      // Focus the element
       el.focus();
-      const styles = window.getComputedStyle(el, ':focus');
+      
+      // Get styles after focus (getComputedStyle doesn't support pseudo-class selectors)
+      const focusedStyles = window.getComputedStyle(el);
       
       // Check for visible focus indicators
       return (
-        styles.outline !== 'none' ||
-        styles.outlineWidth !== '0px' ||
-        styles.boxShadow !== 'none' ||
-        styles.border !== styles.getPropertyValue('border') // border changed on focus
+        focusedStyles.outline !== 'none' ||
+        focusedStyles.outlineWidth !== '0px' ||
+        focusedStyles.boxShadow !== 'none' ||
+        focusedStyles.border !== originalBorder || // border changed on focus
+        focusedStyles.outline !== originalOutline || // outline changed on focus
+        focusedStyles.outlineWidth !== originalOutlineWidth || // outline width changed
+        focusedStyles.boxShadow !== originalBoxShadow // box shadow changed
       );
     });
   }
@@ -494,7 +507,8 @@ export class AccessibilityUtilities {
   _testES6Feature(code) {
     try {
       // Fixed: Replace eval() with Function constructor for ES6 feature detection
-      return new Function(code), true;
+      new Function(code);
+      return true;
     } catch (e) {
       return false;
     }

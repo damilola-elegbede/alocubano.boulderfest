@@ -173,6 +173,7 @@ class DatabaseService {
         const dataDir = path.join(process.cwd(), "data");
         if (!fs.existsSync(dataDir)) {
           fs.mkdirSync(dataDir, { recursive: true });
+          logger.log(`📁 Created data directory: ${dataDir}`);
         }
         
         databaseUrl = `file:${path.join(dataDir, "development.db")}`;

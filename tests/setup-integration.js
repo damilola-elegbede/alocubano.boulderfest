@@ -24,14 +24,24 @@ let dbClient = null;
  */
 const initializeDatabase = async () => {
   try {
-    // Import database client
+    // Import database client and migration system
     const { getDatabaseClient } = await import('../api/lib/database.js');
+    const { MigrationSystem } = await import('../scripts/migrate.js');
+    
     dbClient = await getDatabaseClient();
     
-    // Run migrations if needed
-    const { runMigrations } = await import('../scripts/migrate.js');
-    await runMigrations();
+    // Basic connection test
+    const testResult = await dbClient.execute('SELECT 1 as test');
+    if (!testResult || !testResult.rows || testResult.rows.length !== 1) {
+      throw new Error('Database connection test failed');
+    }
     
+    // Run migrations to ensure database schema is up to date
+    console.log('🔄 Running database migrations for integration tests...');
+    const migrationSystem = new MigrationSystem();
+    const migrationResult = await migrationSystem.runMigrations();
+    
+    console.log(`✅ Migration completed: ${migrationResult.executed} executed, ${migrationResult.skipped} skipped`);
     console.log('✅ Integration database initialized');
     return dbClient;
   } catch (error) {
@@ -47,20 +57,59 @@ const cleanDatabase = async () => {
   if (!dbClient) return;
   
   try {
-    // Clean test data while preserving schema
+    // Clean test data while preserving schema (tables must exist in database schema)
     const tables = [
-      'newsletter_subscriptions',
-      'registrations', 
-      'payments',
+      'email_events',           // Clean child tables first (foreign key dependencies)
+      'email_audit_log',
+      'payment_events', 
+      'transaction_items',
+      'qr_validations',
+      'wallet_pass_events',
+      'registrations',         // Then parent tables
+      'transactions',          // Fixed: was 'payments', should be 'transactions'
       'tickets',
+      'email_subscribers',     // Newsletter system table
+      'newsletter_subscriptions', // Legacy newsletter table
       'admin_sessions'
     ];
     
+    // Check if table exists before attempting to clean
+    const checkTableExists = async (tableName) => {
+      try {
+        const result = await dbClient.execute(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+          [tableName]
+        );
+        return result.rows && result.rows.length > 0;
+      } catch (error) {
+        return false;
+      }
+    };
+    
+    let cleanedTables = 0;
+    let skippedTables = 0;
+    
     for (const table of tables) {
-      await dbClient.execute(`DELETE FROM ${table}`);
+      try {
+        const exists = await checkTableExists(table);
+        if (exists) {
+          const result = await dbClient.execute(`DELETE FROM ${table}`);
+          const deletedCount = result.changes || 0;
+          if (deletedCount > 0) {
+            console.log(`🧹 Cleaned ${deletedCount} records from ${table}`);
+          }
+          cleanedTables++;
+        } else {
+          console.log(`⚠️ Table ${table} does not exist, skipping cleanup`);
+          skippedTables++;
+        }
+      } catch (error) {
+        console.warn(`⚠️ Failed to clean table ${table}: ${error.message}`);
+        skippedTables++;
+      }
     }
     
-    console.log('🧹 Database cleaned for next test');
+    console.log(`🧹 Database cleanup completed: ${cleanedTables} tables cleaned, ${skippedTables} skipped`);
   } catch (error) {
     console.warn('⚠️ Database cleanup warning:', error.message);
   }
