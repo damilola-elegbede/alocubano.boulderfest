@@ -175,7 +175,7 @@ function extractValidationCode(token) {
  * @param {object} req - Request object
  * @returns {string} - Validation source
  */
-function detectSource(req) {
+function detectSource(req, clientIP) {
   // Sanitize and validate wallet source header
   const walletSource = req.headers["x-wallet-source"];
   if (walletSource) {
@@ -190,7 +190,7 @@ function detectSource(req) {
     // Log suspicious wallet source attempts
     console.warn('Invalid wallet source header detected:', {
       source: walletSource.substring(0, 50),
-      ip: req.headers["x-forwarded-for"]?.split(",")[0] || 'unknown'
+      ip: clientIP
     });
     
     return "web"; // Default to web for invalid sources
@@ -421,7 +421,7 @@ async function handler(req, res) {
     });
   }
 
-  const source = detectSource(req);
+  const source = detectSource(req, clientIP);
   const db = await getDatabaseClient();
 
   try {
@@ -474,11 +474,11 @@ async function handler(req, res) {
 
     // Log successful validation
     await logValidation(db, {
-      ticketId: ticket.id,
+      ticketId: ticket.ticket_id,
       token: token.substring(0, 10) + "...", // Don't log full token
       result: "success",
       source: source,
-      ip: ip,
+      ip: clientIP,
       deviceInfo: req.headers["user-agent"],
     });
 

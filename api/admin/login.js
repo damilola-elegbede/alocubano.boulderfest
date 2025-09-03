@@ -74,24 +74,20 @@ function validateInput(input, field) {
     return { isValid: false, error: `${field} value not allowed` };
   }
 
-  // Enhanced security checks - detect common injection attempts
+  // Enhanced security checks - consolidated injection detection patterns
   const suspiciousPatterns = [
-    /<script[^>]*>/i,           // Script tags
-    /javascript:/i,             // JavaScript protocol  
-    /on\w+\s*=/i,              // Event handlers
-    /\$\{.*\}/,                // Template literals
-    /__proto__/,               // Prototype pollution
-    /constructor/,             // Constructor access
-    /prototype/,               // Prototype access
-    /eval\s*\(/i,              // Eval calls
-    /function\s*\(/i,          // Function declarations
-    /\.\.\/|\.\.\\|%2e%2e/i,   // Directory traversal
-    /union\s+select/i,         // SQL injection
-    /insert\s+into/i,          // SQL injection
-    /delete\s+from/i,          // SQL injection
-    /drop\s+table/i,           // SQL injection
-    /\bexec\b|\bexecute\b/i,   // Command execution
-    /\x00|\x08|\x0B|\x0C/,     // Null bytes and control chars
+    // XSS patterns
+    /<script[^>]*>/i, /javascript:/i, /on\w+\s*=/i,
+    // Code injection patterns  
+    /\$\{.*\}/, /__proto__/, /constructor/, /prototype/, /eval\s*\(/i, /function\s*\(/i,
+    // Path traversal patterns
+    /\.\.\/|\.\.\\|%2e%2e/i,
+    // SQL injection patterns
+    /union\s+select/i, /insert\s+into/i, /delete\s+from/i, /drop\s+table/i,
+    // Command execution patterns
+    /\bexec\b|\bexecute\b/i,
+    // Control characters
+    /\x00|\x08|\x0B|\x0C/
   ];
 
   for (const pattern of suspiciousPatterns) {
@@ -121,14 +117,47 @@ async function checkEnhancedRateLimit(clientIP) {
   return result;
 }
 
+/**
+ * Safely extract and sanitize client IP for privacy
+ * @param {Object} req - Request object
+ * @returns {string} Sanitized client IP
+ */
+function getClientIP(req) {
+  const rawIP = req.headers["x-forwarded-for"]?.split(',')[0]?.trim() || 
+                req.headers["x-real-ip"] ||
+                req.connection?.remoteAddress ||
+                'unknown';
+  
+  // Sanitize IPv6 mapping
+  if (rawIP.startsWith('::ffff:')) {
+    return rawIP.substring(7);
+  }
+  
+  return rawIP;
+}
+
+/**
+ * Safely extract and truncate user agent for privacy
+ * @param {Object} req - Request object
+ * @param {number} maxLength - Maximum length to preserve
+ * @returns {string} Truncated user agent
+ */
+function getSafeUserAgent(req, maxLength = 255) {
+  const userAgent = req.headers["user-agent"];
+  if (!userAgent) return null;
+  
+  // Remove potentially sensitive information and truncate
+  const sanitized = userAgent
+    .replace(/\b(?:session|token|key|password)=[^\s;]+/gi, '[REDACTED]')
+    .substring(0, maxLength);
+  
+  return sanitized || null;
+}
+
 async function loginHandler(req, res) {
   if (req.method === "POST") {
     const { password, mfaCode, step } = req.body || {};
-    const clientIP =
-      req.headers["x-forwarded-for"]?.split(',')[0]?.trim() || 
-      req.headers["x-real-ip"] ||
-      req.connection?.remoteAddress ||
-      'unknown';
+    const clientIP = getClientIP(req);
 
     // Enhanced IP validation
     if (!clientIP || clientIP === 'unknown') {
@@ -136,9 +165,11 @@ async function loginHandler(req, res) {
     }
 
     // Validate IP format (basic check)
-    const ipPattern = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
-    if (clientIP !== 'unknown' && !ipPattern.test(clientIP) && !clientIP.startsWith('::ffff:')) {
-      console.warn(`Suspicious IP format detected: ${clientIP}`);
+    const ipv4Pattern = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    const ipv6Pattern = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+    
+    if (clientIP !== 'unknown' && !ipv4Pattern.test(clientIP) && !ipv6Pattern.test(clientIP)) {
+      console.warn(`Suspicious IP format detected: ${clientIP.substring(0, 15)}...`); // Truncate for logging
     }
 
     // Enhanced input validation
@@ -183,9 +214,9 @@ async function loginHandler(req, res) {
     } catch (error) {
       console.error("Login process failed:", {
         error: error.message,
-        clientIP,
+        clientIP: clientIP.substring(0, 15) + '...', // Truncate IP for privacy
         timestamp: new Date().toISOString(),
-        userAgent: req.headers["user-agent"]?.substring(0, 100) // Truncate for logging
+        userAgent: getSafeUserAgent(req, 100) // Use safe user agent extraction
       });
 
       // Try to record the failed attempt even if other errors occurred
@@ -293,7 +324,7 @@ async function handlePasswordStep(req, res, password, clientIP) {
       args: [
         tempToken,
         clientIP,
-        req.headers["user-agent"]?.substring(0, 255) || null, // Truncate user agent
+        getSafeUserAgent(req), // Use safe user agent extraction
         new Date(Date.now() + authService.sessionDuration).toISOString(),
       ],
     });
@@ -408,7 +439,7 @@ async function completeLogin(
         args: [
           token,
           clientIP,
-          req.headers["user-agent"]?.substring(0, 255) || null, // Truncate user agent
+          getSafeUserAgent(req), // Use safe user agent extraction
           mfaUsed,
           new Date(Date.now() + authService.sessionDuration).toISOString(),
         ],
@@ -428,7 +459,7 @@ async function completeLogin(
         token,
         mfaUsed ? "login_with_mfa" : "login",
         clientIP,
-        req.headers["user-agent"]?.substring(0, 255) || null,
+        getSafeUserAgent(req), // Use safe user agent extraction
         JSON.stringify({
           timestamp: new Date().toISOString(),
           mfaUsed,

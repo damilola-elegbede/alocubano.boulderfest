@@ -154,18 +154,24 @@ class GalleryService {
   }
 
   /**
-   * Get runtime cache
+   * Get runtime cache and update access time
    */
   getRuntimeCache(key = 'default') {
-    return this.cache.get(key);
+    const data = this.cache.get(key);
+    if (data) {
+      // Update access time for LRU tracking
+      this.cache.set(`${key}_accessTime`, Date.now());
+    }
+    return data;
   }
 
   /**
    * Set runtime cache with LRU eviction
    */
   setRuntimeCache(key = 'default', data) {
-    // Implement LRU eviction
-    if (this.cache.size >= this.maxCacheSize * 2) { // Account for timestamp entries
+    // Implement LRU eviction - account for 3 entries per cache item (data, timestamp, accessTime)
+    const effectiveMaxSize = this.maxCacheSize * 3;
+    if (this.cache.size >= effectiveMaxSize) {
       this.evictLeastRecentlyUsed();
     }
     
@@ -258,22 +264,36 @@ class GalleryService {
   }
 
   /**
-   * Evict least recently used cache entries
+   * Evict least recently used cache entries with improved logic
    */
   evictLeastRecentlyUsed() {
     const entries = [];
+    
+    // Collect all cache entries with access times
     for (const [key, value] of this.cache.entries()) {
       if (key.endsWith('_accessTime')) {
         const dataKey = key.replace('_accessTime', '');
-        entries.push({ key: dataKey, accessTime: value });
+        // Ensure the data entry actually exists
+        if (this.cache.has(dataKey)) {
+          entries.push({ key: dataKey, accessTime: value || 0 });
+        }
       }
     }
     
-    // Sort by access time and remove oldest entries
-    entries.sort((a, b) => a.accessTime - b.accessTime);
-    const toRemove = Math.ceil(entries.length * 0.25); // Remove 25% of entries
+    if (entries.length === 0) {
+      // No entries to evict, clear corrupted cache
+      console.warn('Gallery cache corrupted, clearing all entries');
+      this.cache.clear();
+      return;
+    }
     
-    for (let i = 0; i < toRemove; i++) {
+    // Sort by access time (oldest first) and remove at least 25% of entries
+    entries.sort((a, b) => a.accessTime - b.accessTime);
+    const toRemove = Math.max(1, Math.ceil(entries.length * 0.25));
+    
+    console.log(`Gallery cache evicting ${toRemove} of ${entries.length} entries`);
+    
+    for (let i = 0; i < toRemove && i < entries.length; i++) {
       const key = entries[i].key;
       this.cache.delete(key);
       this.cache.delete(`${key}_timestamp`);

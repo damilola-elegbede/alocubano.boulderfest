@@ -4,6 +4,7 @@
  */
 
 import { getGalleryService } from "./lib/gallery-service.js";
+import crypto from 'crypto';
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -29,15 +30,27 @@ export default async function handler(req, res) {
   try {
     console.log('Gallery API: Processing request');
     
-    const { event, year, offset = 0, limit = 20 } = req.query;
+    // Parse and validate query parameters
+    const { event, year, offset: rawOffset = '0', limit: rawLimit = '20' } = req.query;
+    
+    // Validate and parse numeric parameters
+    const parsedOffset = parseQueryParam(rawOffset, 0, { min: 0, max: 10000 });
+    const parsedLimit = parseQueryParam(rawLimit, 20, { min: 1, max: 100 });
+    
+    if (parsedOffset === null || parsedLimit === null) {
+      return res.status(400).json({
+        error: 'Invalid query parameters',
+        message: 'offset must be 0-10000, limit must be 1-100'
+      });
+    }
     
     const galleryService = getGalleryService();
     const galleryData = await galleryService.getGalleryData(year, event);
     
     // Apply pagination if requested
     let paginatedData = galleryData;
-    if (offset > 0 || limit < 1000) {
-      paginatedData = applyPagination(galleryData, parseInt(offset), parseInt(limit));
+    if (parsedOffset > 0 || parsedLimit < 1000) {
+      paginatedData = applyPagination(galleryData, parsedOffset, parsedLimit);
     }
     
     // Generate ETag for caching
@@ -58,7 +71,7 @@ export default async function handler(req, res) {
         version: '2.1',
         timestamp: new Date().toISOString(),
         environment: process.env.VERCEL ? 'vercel' : 'local',
-        queryParams: { event, year, offset, limit },
+        queryParams: { event, year, offset: parsedOffset, limit: parsedLimit },
         etag: dataHash
       }
     };
@@ -127,16 +140,43 @@ function applyPagination(data, offset, limit) {
 }
 
 /**
- * Generate ETag hash for response caching
+ * Parse and validate query parameters
+ * @param {string} value - Parameter value to parse
+ * @param {number} defaultValue - Default value if parsing fails
+ * @param {Object} options - Validation options with min/max
+ * @returns {number|null} Parsed value or null if invalid
+ */
+function parseQueryParam(value, defaultValue, options = {}) {
+  if (!value) return defaultValue;
+  
+  const parsed = parseInt(value, 10);
+  if (isNaN(parsed)) return null;
+  
+  if (options.min !== undefined && parsed < options.min) return null;
+  if (options.max !== undefined && parsed > options.max) return null;
+  
+  return parsed;
+}
+
+/**
+ * Generate strong ETag hash for response caching
+ * Uses SHA-256 for better collision resistance than simple hash
  */
 function generateETag(data) {
-  // Simple hash generation for ETag
-  const str = JSON.stringify(data);
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
+  try {
+    const str = JSON.stringify(data, null, 0); // Consistent serialization
+    const hash = crypto.createHash('sha256').update(str, 'utf8').digest('hex');
+    return hash.substring(0, 16); // Use first 16 chars for reasonable ETag length
+  } catch (error) {
+    console.error('ETag generation failed:', error);
+    // Fallback to simple hash
+    const str = JSON.stringify(data);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(16);
   }
-  return Math.abs(hash).toString(16);
 }
