@@ -113,8 +113,12 @@ ngrok.yml
 .vercel
 .vercelrc
 
-# Development scripts
+# Development scripts (but allow essential E2E infrastructure)
 scripts/vercel-dev-*.js
+!scripts/vercel-dev-e2e.js
+!scripts/vercel-dev-ci.js
+!scripts/vercel-dev-start.js
+!scripts/vercel-dev-wrapper.js
 
 # Service account and deployment files
 *.serviceaccount.json
