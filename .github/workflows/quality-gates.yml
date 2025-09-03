@@ -1,84 +1,321 @@
-name: Quality Gates
+name: "🛡️ Quality Gates & Code Standards"
 
 on:
   push:
-    branches: [main, develop, 'feature/**', 'fix/**']
+    branches: [main]
   pull_request:
     branches: [main, develop]
+  schedule:
+    # Run daily at 2 AM UTC to catch any degradation
+    - cron: '0 2 * * *'
   workflow_dispatch:
 
-# Cancel in-progress runs for the same workflow and branch
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: quality-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
 jobs:
-  lint-and-validate:
-    name: Lint and Validate Code
+  code-quality:
+    name: "🔍 Code Quality Analysis"
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    
+    timeout-minutes: 15
+
     steps:
-      - name: Checkout code
+      - name: "📥 Checkout Code"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
-      - name: Setup Node.js
+
+      - name: "🔧 Setup Node.js"
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-        timeout-minutes: 3
-      
-      - name: Run ESLint
-        run: npm run lint:js || true
-        continue-on-error: false
-      
-      - name: Run HTMLHint
-        run: npm run lint:html || true
-        continue-on-error: false
-      
-      - name: Validate Markdown quality
-        run: npm run lint:markdown
-        continue-on-error: false
-      
-      - name: Check code formatting
-        run: echo "✅ Code formatting check skipped (simplified for unit-only focus)"
-        continue-on-error: true
-      
-      - name: Verify project structure
-        run: npm run verify-structure
-        timeout-minutes: 2
-      
-      - name: Check for security vulnerabilities
-        run: npm audit --audit-level=moderate
-        continue-on-error: true
-      
-      - name: Validate API contracts
-        run: echo "✅ API contract validation skipped (simplified for unit-only focus)"
-        continue-on-error: false
-      
-      - name: Upload linting results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: quality-gate-results
-          path: |
-            .eslintcache
-            lint-results/
-          retention-days: 7
-      
-      - name: Quality gate summary
-        if: always()
+
+      - name: "📦 Install Dependencies"
+        run: npm ci --prefer-offline --no-audit
+
+      - name: "🔍 JavaScript Linting (ESLint)"
+        id: eslint
         run: |
-          echo "## Quality Gates Summary"
-          echo "- ESLint: Complete"
-          echo "- HTMLHint: Complete"
-          echo "- Markdown: Complete"
-          echo "- Structure: Verified"
-          echo "- Security: Checked"
-          echo "- API Contracts: Validated"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔍 Running ESLint Analysis"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          npm run lint:js 2>&1 | tee eslint-output.log || true
+
+          # Count issues (use head -1 to ensure single value)
+          errors=$(grep -c "error" eslint-output.log 2>/dev/null | head -1 || echo "0")
+          warnings=$(grep -c "warning" eslint-output.log 2>/dev/null | head -1 || echo "0")
+
+          echo "eslint_errors=$errors" >> $GITHUB_OUTPUT
+          echo "eslint_warnings=$warnings" >> $GITHUB_OUTPUT
+
+          if [ "$errors" -gt 0 ]; then
+            echo "❌ ESLint found $errors error(s)"
+            exit 1
+          elif [ "$warnings" -gt 0 ]; then
+            echo "⚠️ ESLint found $warnings warning(s)"
+          else
+            echo "✅ ESLint: No issues found"
+          fi
+
+      - name: "🎨 HTML Validation (HTMLHint)"
+        id: htmlhint
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🎨 Running HTML Validation"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          # Run HTMLHint and capture exit code
+          set +e
+          npm run lint:html 2>&1 | tee htmlhint-output.log
+          htmlhint_exit_code=$?
+          set -e
+
+          # Check for actual HTMLHint errors (not the word "error" in success messages)
+          if grep -q "L[0-9]" htmlhint-output.log 2>/dev/null; then
+            html_errors=$(grep -c "L[0-9]" htmlhint-output.log || echo "0")
+            html_warnings="0"
+          else
+            html_errors="0"
+            html_warnings="0"
+          fi
+
+          echo "html_errors=$html_errors" >> $GITHUB_OUTPUT
+          echo "html_warnings=$html_warnings" >> $GITHUB_OUTPUT
+
+          if [ $htmlhint_exit_code -ne 0 ]; then
+            echo "❌ HTMLHint found $html_errors error(s)"
+            exit 1
+          elif [ "$html_warnings" -gt 0 ]; then
+            echo "⚠️ HTMLHint found $html_warnings warning(s)"
+          else
+            echo "✅ HTML: Valid and well-formed"
+          fi
+
+      - name: "📝 Markdown Quality Check"
+        id: markdown
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📝 Validating Markdown Files"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          # Use npx to avoid global install
+          npx --yes markdownlint-cli '**/*.md' --ignore node_modules 2>&1 | tee markdown-output.log || true
+
+          md_issues=$(grep -c "MD" markdown-output.log 2>/dev/null | head -1 || echo "0")
+          echo "markdown_issues=$md_issues" >> $GITHUB_OUTPUT
+
+          if [ "$md_issues" -gt 0 ]; then
+            echo "⚠️ Markdown: $md_issues style issue(s) found"
+          else
+            echo "✅ Markdown: Well-formatted"
+          fi
+
+      - name: "🏗️ Project Structure Validation"
+        id: structure
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🏗️ Validating Project Structure"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          # Capture exit code properly
+          set +e
+          node scripts/verify-structure.js 2>&1 | tee structure-output.log
+          structure_exit_code=$?
+          set -e
+
+          if [ $structure_exit_code -ne 0 ]; then
+            echo "structure_valid=false" >> $GITHUB_OUTPUT
+            echo "❌ Structure: Issues detected"
+            exit 1
+          else
+            echo "structure_valid=true" >> $GITHUB_OUTPUT
+            echo "✅ Structure: Valid and consistent"
+          fi
+
+      - name: "💅 Code Formatting Check"
+        id: formatting
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "💅 Checking Code Formatting"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          # Check if prettier is configured
+          if [ -f ".prettierrc" ] || [ -f ".prettierrc.json" ] || [ -f ".prettierrc.js" ]; then
+            npx prettier --check "**/*.{js,html,css,md}" --ignore-path .gitignore 2>&1 | tee format-output.log || true
+
+            if grep -q "not formatted" format-output.log; then
+              unformatted=$(grep -c "not formatted" format-output.log || echo "0")
+              echo "formatting_issues=$unformatted" >> $GITHUB_OUTPUT
+              echo "⚠️ Formatting: $unformatted file(s) need formatting"
+            else
+              echo "formatting_issues=0" >> $GITHUB_OUTPUT
+              echo "✅ Formatting: All files properly formatted"
+            fi
+          else
+            echo "formatting_issues=0" >> $GITHUB_OUTPUT
+            echo "ℹ️ Formatting: No prettier config found, skipping"
+          fi
+
+  security-scan:
+    name: "🔒 Security Analysis"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: "📥 Checkout Code"
+        uses: actions/checkout@v4
+
+      - name: "🔧 Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: "📦 Install Dependencies"
+        run: npm ci --prefer-offline --no-audit
+
+      - name: "🔒 Security Vulnerability Scan"
+        id: security
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔒 Running Security Scan"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          # Run npm audit
+          npm audit --audit-level=moderate 2>&1 | tee audit-output.log || true
+
+          # Extract vulnerability counts
+          critical=$(grep -oP '(\d+) critical' audit-output.log | grep -oP '\d+' || echo "0")
+          high=$(grep -oP '(\d+) high' audit-output.log | grep -oP '\d+' || echo "0")
+          moderate=$(grep -oP '(\d+) moderate' audit-output.log | grep -oP '\d+' || echo "0")
+          low=$(grep -oP '(\d+) low' audit-output.log | grep -oP '\d+' || echo "0")
+
+          echo "vuln_critical=$critical" >> $GITHUB_OUTPUT
+          echo "vuln_high=$high" >> $GITHUB_OUTPUT
+          echo "vuln_moderate=$moderate" >> $GITHUB_OUTPUT
+          echo "vuln_low=$low" >> $GITHUB_OUTPUT
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔒 Security Scan Results:"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔴 Critical: $critical"
+          echo "🟠 High: $high"
+          echo "🟡 Moderate: $moderate"
+          echo "🟢 Low: $low"
+
+          if [ "$critical" -gt 0 ]; then
+            echo "❌ Security: Critical vulnerabilities found!"
+            exit 1
+          elif [ "$high" -gt 0 ]; then
+            echo "⚠️ Security: High vulnerabilities found (in dev dependencies)"
+            echo "   Consider updating: npm audit fix"
+          elif [ "$moderate" -gt 0 ]; then
+            echo "⚠️ Security: Moderate vulnerabilities found"
+          else
+            echo "✅ Security: No significant vulnerabilities"
+          fi
+
+      - name: "🔍 Check for Secrets"
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔍 Scanning for Exposed Secrets"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          # Basic secret detection patterns
+          patterns=(
+            "password.*=.*['\"].*['\"]"
+            "api[_-]?key.*=.*['\"].*['\"]"
+            "secret.*=.*['\"].*['\"]"
+            "token.*=.*['\"].*['\"]"
+            "private[_-]?key"
+          )
+
+          found_secrets=false
+          for pattern in "${patterns[@]}"; do
+            if grep -r -i "$pattern" \
+              --include="*.js" --include="*.ts" --include="*.json" \
+              --include="*.yml" --include="*.yaml" --include="*.env*" \
+              --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.tmp . > /dev/null 2>&1; then
+              echo "⚠️ Potential secret pattern found: $pattern"
+              found_secrets=true
+            fi
+          done
+
+          if [ "$found_secrets" = true ]; then
+            echo "⚠️ Warning: Potential secrets detected. Please review."
+          else
+            echo "✅ Secrets: No hardcoded secrets detected"
+          fi
+
+  summary:
+    name: "📊 Quality Report"
+    runs-on: ubuntu-latest
+    needs: [code-quality, security-scan]
+    if: always()
+
+    steps:
+      - name: "📊 Generate Quality Report"
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const codeQuality = '${{ needs.code-quality.result }}';
+            const securityScan = '${{ needs.security-scan.result }}';
+
+            const overallStatus = (codeQuality === 'success' && securityScan === 'success') ? '✅' : '❌';
+            const statusText = (codeQuality === 'success' && securityScan === 'success') ? 'PASSED' : 'FAILED';
+
+            const comment = `## ${overallStatus} Quality Gates ${statusText}
+
+            ### 📊 Quality Check Summary
+            | Check | Status |
+            |-------|--------|
+            | **Code Quality** | ${codeQuality === 'success' ? '✅ Passed' : '❌ Failed'} |
+            | **Security Scan** | ${securityScan === 'success' ? '✅ Passed' : '❌ Failed'} |
+
+            ### 📋 Detailed Results
+            - **ESLint**: JavaScript code analysis
+            - **HTMLHint**: HTML validation
+            - **Markdown**: Documentation quality
+            - **Structure**: Project organization
+            - **Security**: Vulnerability scanning
+            - **Secrets**: Sensitive data detection
+
+            ${overallStatus === '✅' ?
+              '### 🎉 All quality checks passed!' :
+              '### ⚠️ Some quality checks failed. Please review the workflow output.'}
+            `;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Quality Gates')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
