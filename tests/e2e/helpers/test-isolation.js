@@ -134,6 +134,10 @@ export const waitForStability = (ms = 1000) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 };
 
+// Wait for a specified amount of time (alias for backward compatibility)
+export const waitMs = (ms = 1000) => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
 // Generate test ticket ID 
 export const generateTestTicketId = (prefix = 'ticket') => {
   const timestamp = Date.now();
@@ -191,6 +195,7 @@ export default {
   cleanupTestIsolation,
   getTestNamespace,
   waitForStability,
+  waitMs,
   generateTestTicketId,
   initializeTestIsolation,
   generateTestUser,
