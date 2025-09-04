@@ -11,7 +11,7 @@ const testConstants = getTestDataConstants();
 
 test.describe('Admin Dashboard & Security', () => {
   const adminCredentials = {
-    email: testConstants.ADMIN_EMAIL,
+    email: testConstants.admin.email,
     password: process.env.TEST_ADMIN_PASSWORD || 'test-admin-password'
   };
 

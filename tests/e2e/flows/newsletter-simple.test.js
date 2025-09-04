@@ -43,13 +43,14 @@ test.describe('Newsletter Subscription - Real API Test', () => {
 
   test('should load contact page with newsletter form', async ({ page }) => {
     // Navigate to contact page
-    await page.goto('/pages/contact.html');
+    await page.goto('/contact.html');
     
-    // Wait for page to load
+    // Wait for page to load with extended timeout for preview deployments
     await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle', { timeout: 30000 });
     
     // Verify newsletter form exists
-    await expect(page.locator('#newsletter-form')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#newsletter-form')).toBeVisible({ timeout: 30000 });
     await expect(page.locator('#newsletter-email')).toBeVisible();
     // The checkbox input is hidden by design (custom checkbox), but the visible checkmark should be there
     await expect(page.locator('.custom-checkbox .checkmark')).toBeVisible();
@@ -59,11 +60,12 @@ test.describe('Newsletter Subscription - Real API Test', () => {
   });
   
   test('should validate email and consent requirements', async ({ page }) => {
-    await page.goto('/pages/contact.html');
+    await page.goto('/contact.html');
     
-    // Wait for form to load
+    // Wait for form to load with extended timeout for preview deployments
     await page.waitForLoadState('domcontentloaded');
-    await expect(page.locator('#newsletter-form')).toBeVisible({ timeout: 10000 });
+    await page.waitForLoadState('networkidle', { timeout: 30000 });
+    await expect(page.locator('#newsletter-form')).toBeVisible({ timeout: 30000 });
     
     const submitButton = page.locator('.newsletter-submit');
     const emailInput = page.locator('#newsletter-email');
@@ -91,11 +93,12 @@ test.describe('Newsletter Subscription - Real API Test', () => {
   });
 
   test('should handle successful subscription with real API', async ({ page }) => {
-    await page.goto('/pages/contact.html');
+    await page.goto('/contact.html');
     
-    // Wait for form to load
+    // Wait for form to load with extended timeout for preview deployments
     await page.waitForLoadState('domcontentloaded');
-    await expect(page.locator('#newsletter-form')).toBeVisible({ timeout: 10000 });
+    await page.waitForLoadState('networkidle', { timeout: 30000 });
+    await expect(page.locator('#newsletter-form')).toBeVisible({ timeout: 30000 });
     
     // Use unique test email for this test run
     const testEmail = generateTestEmail(test.info().title, 'subscription');
@@ -121,11 +124,19 @@ test.describe('Newsletter Subscription - Real API Test', () => {
     
     // Fill and submit form with isolated test data
     await emailInput.fill(testEmail);
+    await expect(emailInput).toHaveValue(testEmail);
+    
     // Click on the custom checkbox label to check the hidden input
     await customCheckbox.click();
     
-    // Listen for network requests to verify API is called
-    const responsePromise = page.waitForResponse('/api/email/subscribe');
+    // Wait for form validation to complete and button to be enabled
+    await expect(submitButton).toBeEnabled({ timeout: 10000 });
+    
+    // Listen for network requests to verify API is called with extended timeout
+    const responsePromise = page.waitForResponse(
+      response => response.url().includes('/api/email/subscribe'),
+      { timeout: 60000 }
+    );
     await submitButton.click();
     
     // Wait for API response

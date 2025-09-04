@@ -7,13 +7,16 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Cart Functionality', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets.html');
+    // Wait for page to fully load including network idle for preview deployments
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle', { timeout: 30000 });
   });
 
   test('should display floating cart widget', async ({ page }) => {
-    // Cart should be visible on tickets page
+    // Cart should be visible on tickets page with extended timeout
     const cart = page.locator('.floating-cart-container, .floating-cart, .cart-widget, #cart');
-    await expect(cart).toBeVisible();
+    await expect(cart).toBeVisible({ timeout: 30000 });
   });
 
   test('should add weekend ticket to cart', async ({ page }) => {

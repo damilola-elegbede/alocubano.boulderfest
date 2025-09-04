@@ -8,6 +8,9 @@ import { test, expect } from '@playwright/test';
 test.describe('Gallery Basic Browsing', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/pages/boulder-fest-2025-gallery.html');
+    // Wait for page to fully load including network idle for preview deployments
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle', { timeout: 30000 });
   });
 
   test('should load gallery page successfully', async ({ page }) => {
@@ -35,10 +38,10 @@ test.describe('Gallery Basic Browsing', () => {
   });
 
   test('should load gallery images', async ({ page }) => {
-    // Wait for gallery container to load
-    await page.waitForTimeout(2000);
+    // Wait for gallery container to load with extended timeout for preview deployments
+    await page.waitForTimeout(5000);
     
-    // Check for dynamic gallery items first
+    // Check for dynamic gallery items first with extended timeout
     const dynamicImages = page.locator('.gallery-item, .gallery-detail-grid img[src*="drive"], img[src*="googleusercontent"]');
     const staticFallback = page.locator('.gallery-grid-static');
     

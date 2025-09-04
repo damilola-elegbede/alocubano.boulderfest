@@ -16,7 +16,7 @@ const testConstants = getTestDataConstants();
 
 test.describe('Admin Authentication', () => {
   const adminCredentials = {
-    email: testConstants.ADMIN_EMAIL,
+    email: testConstants.admin.email,
     password: process.env.TEST_ADMIN_PASSWORD || 'test-admin-password'
   };
 
@@ -32,8 +32,9 @@ test.describe('Admin Authentication', () => {
         throw new Error(`Route ${route} returned ${response.status()}: ${response.statusText()}`);
       }
       
-      // Wait for page to load and check for expected content
+      // Wait for page to load completely including network idle for preview deployments
       await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
+      await page.waitForLoadState('networkidle', { timeout: 30000 });
       
       // Check if we actually got the right page (not a fallback)
       const content = await page.content();
@@ -52,11 +53,18 @@ test.describe('Admin Authentication', () => {
     // First validate that admin login route is accessible and serves the correct page
     await validateAdminRoute(page, '/admin/login.html', 'Admin Login');
     
-    // Wait for essential elements to be ready
-    await page.waitForSelector('h1', { timeout: 30000 });
-    await page.waitForSelector('input[name="username"]', { timeout: 30000 });
-    await page.waitForSelector('input[name="password"]', { timeout: 30000 });
-    await page.waitForSelector('button[type="submit"]', { timeout: 30000 });
+    // Wait for essential elements to be ready with extended timeouts for preview deployments
+    await page.waitForSelector('h1', { timeout: 60000 });
+    await page.waitForSelector('input[name="username"]', { timeout: 60000 });
+    await page.waitForSelector('input[name="password"]', { timeout: 60000 });
+    await page.waitForSelector('button[type="submit"]', { timeout: 60000 });
+    
+    // Add extra wait for JavaScript to be fully loaded and interactive
+    await page.waitForFunction(
+      () => document.readyState === 'complete',
+      {},
+      { timeout: 30000 }
+    );
     
     console.log('✅ Admin login page is accessible and properly loaded');
   });
@@ -99,9 +107,11 @@ test.describe('Admin Authentication', () => {
     const passwordField = page.locator('input[name="password"]');
     const submitButton = page.locator('button[type="submit"]');
     
-    await expect(usernameField).toBeVisible({ timeout: 30000 });
-    await expect(passwordField).toBeVisible({ timeout: 30000 });
-    await expect(submitButton).toBeVisible({ timeout: 30000 });
+    await expect(usernameField).toBeVisible({ timeout: 60000 });
+    await expect(passwordField).toBeVisible({ timeout: 60000 });
+    await expect(submitButton).toBeVisible({ timeout: 60000 });
+    
+    console.log(`🔐 Attempting login with email: ${adminCredentials.email}`);
     
     await usernameField.fill(adminCredentials.email);
     await passwordField.fill(adminCredentials.password);
