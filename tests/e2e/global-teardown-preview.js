@@ -40,7 +40,7 @@ async function globalTeardownPreview() {
     
     // Step 4: Clean up local environment files
     console.log('\n📁 Cleaning up local environment files...');
-    cleanupLocalFiles();
+    await cleanupLocalFiles();
     
     // Step 5: Generate final report
     console.log('\n📋 Final cleanup summary...');
@@ -67,11 +67,16 @@ async function cleanupTestData(previewUrl) {
   if (!sessionId) {
     try {
       const fs = await import('fs/promises');
-      const { resolve } = await import('path');
-      const sessionData = await fs.readFile(resolve(process.cwd(), '.tmp', 'e2e-session.json'), 'utf-8');
+      const path = await import('path');
+      const sessionData = await fs.readFile(path.resolve(process.cwd(), '.tmp', 'e2e-session.json'), 'utf-8');
       const session = JSON.parse(sessionData);
-      sessionId = session.sessionId;
-      console.log('   📂 Recovered session ID from .tmp/e2e-session.json');
+      if (session && typeof session.sessionId === 'string' && session.sessionId.length > 0) {
+        sessionId = session.sessionId;
+        console.log('   📂 Recovered session ID from .tmp/e2e-session.json');
+      } else {
+        console.log('   ⚠️ Session file present but sessionId missing/invalid - skipping test data cleanup');
+        return;
+      }
     } catch (err) {
       console.log('   ⚠️ No session ID found - skipping test data cleanup');
       return;
@@ -207,7 +212,7 @@ async function generateTestSummary(previewUrl) {
 /**
  * Clean up local environment and temporary files
  */
-function cleanupLocalFiles() {
+async function cleanupLocalFiles() {
   const filesToCleanup = [
     '.env.preview',
     '.tmp/preview-config.json',
@@ -219,7 +224,8 @@ function cleanupLocalFiles() {
     
     if (existsSync(fullPath)) {
       try {
-        unlink(fullPath, () => {});
+        const fs = await import('fs/promises');
+        await fs.unlink(fullPath);
         console.log(`   ✅ Cleaned up: ${file}`);
       } catch (error) {
         console.log(`   ⚠️ Could not clean up: ${file} - ${error.message}`);
