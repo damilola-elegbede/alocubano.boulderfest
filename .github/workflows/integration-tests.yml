@@ -168,10 +168,15 @@ jobs:
           NGROK_SKIP_DOWNLOAD: true
 
       - name: "🗃️ Setup SQLite Database"
+        env:
+          NODE_ENV: test
+          DATABASE_URL: "file:./data/integration-tests.db"
+          CI: true
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🗃️ Setting up Integration Test Database"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🗃️ Database URL: $DATABASE_URL"
           
           # Create data directory if it doesn't exist
           mkdir -p data
@@ -181,7 +186,7 @@ jobs:
           
           # Run database migrations
           echo "🔄 Running database migrations..."
-          NODE_ENV=test node scripts/migrate.js
+          node scripts/migrate.js
           
           # Verify database creation
           if [ -f "data/integration-tests.db" ]; then
