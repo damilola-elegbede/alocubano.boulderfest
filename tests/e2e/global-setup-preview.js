@@ -62,6 +62,7 @@ async function globalSetupPreview() {
     console.log(`   Test Data: ✅ Isolated`);
     console.log(`   Critical Endpoints: ✅ Warmed up`);
     console.log(`   Mode: Production-like preview testing`);
+    console.log(`   Timeout Profile: ${process.env.CI ? 'CI-Extended' : 'Local-Fast'} (Test: ${process.env.CI ? '90s' : '60s'}, Action: ${process.env.CI ? '30s' : '15s'}, Nav: ${process.env.CI ? '60s' : '30s'})`);
     
     console.log('\n✅ Global preview setup completed successfully');
     console.log('='.repeat(60));
@@ -267,10 +268,11 @@ SKIP_LOCAL_SERVER=true
 USE_PREVIEW_DEPLOYMENT=true
 DEPLOYMENT_READY=true
 
-# Timeout configurations for remote testing
-E2E_ACTION_TIMEOUT=30000
-E2E_NAVIGATION_TIMEOUT=60000
-E2E_TEST_TIMEOUT=90000
+# Timeout configurations for remote testing (CI-optimized)
+E2E_ACTION_TIMEOUT=${process.env.CI ? '30000' : '15000'}
+E2E_NAVIGATION_TIMEOUT=${process.env.CI ? '60000' : '30000'}  
+E2E_TEST_TIMEOUT=${process.env.CI ? '90000' : '60000'}
+E2E_EXPECT_TIMEOUT=${process.env.CI ? '20000' : '15000'}
 `;
 
   writeFileSync(previewEnvPath, previewConfig);

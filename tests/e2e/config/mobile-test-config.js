@@ -4,12 +4,12 @@
  */
 
 export const MOBILE_TEST_CONFIG = {
-  // Test execution settings
+  // Test execution settings (environment-adaptive)
   timeouts: {
-    default: 15000,
-    networkIdle: 5000,
-    keyboard: 3000,
-    interaction: 2000
+    default: process.env.CI ? 20000 : 15000,
+    networkIdle: process.env.CI ? 8000 : 5000,
+    keyboard: process.env.CI ? 5000 : 3000,
+    interaction: process.env.CI ? 3000 : 2000
   },
 
   // Mobile device emulation settings
@@ -75,7 +75,9 @@ export function getMobileTestConfig(environment = 'test') {
         timeouts: {
           ...baseConfig.timeouts,
           default: 30000,
-          networkIdle: 10000
+          networkIdle: 10000,
+          keyboard: 8000,
+          interaction: 5000
         },
         devices: {
           primary: ['iphone13', 'pixel5'] // Minimal for CI speed

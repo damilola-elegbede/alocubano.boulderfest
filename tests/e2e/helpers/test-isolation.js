@@ -5,10 +5,11 @@
  */
 
 // Generate unique test email addresses
-export const generateTestEmail = (prefix = 'test') => {
+export const generateTestEmail = (prefix = 'test', suffix = null) => {
   const timestamp = Date.now();
   const randomId = Math.random().toString(36).substring(2, 8);
-  return `${prefix}-${randomId}-${timestamp}@example.com`;
+  const fullPrefix = suffix ? `${prefix}-${suffix}` : prefix;
+  return `${fullPrefix}-${randomId}-${timestamp}@e2etest.example.com`;
 };
 
 // Generate unique test identifiers
@@ -169,19 +170,26 @@ export const generateTestUser = (testTitle = 'user') => {
 };
 
 // Transaction wrapper for test operations
-export const withTestTransaction = async (callback) => {
-  const transactionId = generateTestId('tx');
-  console.log(`🔄 Starting test transaction: ${transactionId}`);
+export const withTestTransaction = async (testTitle, callback) => {
+  // Support both old and new signatures
+  if (typeof testTitle === 'function') {
+    // Old signature: withTestTransaction(callback)
+    callback = testTitle;
+    testTitle = 'default';
+  }
+  
+  const namespace = getTestNamespace(testTitle);
+  console.log(`🔄 Starting test transaction for '${testTitle}' with namespace: ${namespace}`);
   
   try {
-    const result = await callback(transactionId);
-    console.log(`✅ Transaction ${transactionId} completed successfully`);
+    const result = await callback(namespace);
+    console.log(`✅ Transaction for '${testTitle}' completed successfully`);
     return result;
   } catch (error) {
-    console.log(`❌ Transaction ${transactionId} failed: ${error.message}`);
+    console.log(`❌ Transaction for '${testTitle}' failed: ${error.message}`);
     throw error;
   } finally {
-    console.log(`🏁 Transaction ${transactionId} finalized`);
+    console.log(`🏁 Transaction for '${testTitle}' finalized`);
   }
 };
 

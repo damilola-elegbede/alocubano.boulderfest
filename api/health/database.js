@@ -213,16 +213,40 @@ export const checkDatabaseHealth = async () => {
   const startTime = Date.now();
 
   try {
+    // Enhanced environment detection and debugging
+    const isVercel = process.env.VERCEL === "1";
+    const vercelEnv = process.env.VERCEL_ENV;
+    const isVercelPreview = isVercel && vercelEnv === "preview";
+    const isVercelProduction = isVercel && vercelEnv === "production";
+    const isTestEnvironment = process.env.NODE_ENV === "test" || process.env.TEST_TYPE === "integration";
+    const isE2ETest = process.env.E2E_TEST_MODE === "true" || process.env.PLAYWRIGHT_BROWSER;
+    
+    // Debug logging for all non-production environments
+    const shouldDebug = isTestEnvironment || isVercelPreview || process.env.NODE_ENV === "development";
+    
+    if (shouldDebug) {
+      console.log("🏥 Database health check environment debug:", {
+        NODE_ENV: process.env.NODE_ENV,
+        VERCEL: process.env.VERCEL,
+        VERCEL_ENV: process.env.VERCEL_ENV,
+        isVercel,
+        vercelEnv,
+        isVercelPreview,
+        isVercelProduction,
+        isTestEnvironment,
+        isE2ETest,
+        hasTursoUrl: !!process.env.TURSO_DATABASE_URL,
+        hasTursoToken: !!process.env.TURSO_AUTH_TOKEN,
+        hasDbUrl: !!process.env.DATABASE_URL,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
     // Get database client directly - let database service handle environment variable logic
     const dbService = await getDatabaseClient();
 
-    // Debug logging for tests
-    const isTestEnvironment =
-      process.env.NODE_ENV === "test" ||
-      process.env.TEST_TYPE === "integration";
-    if (isTestEnvironment) {
-      console.log("Health check debug:", {
-        TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL,
+    if (shouldDebug) {
+      console.log("🏥 Database client debug:", {
         hasDbService: !!dbService,
         dbServiceType: typeof dbService,
         hasExecuteMethod: typeof dbService.execute,
@@ -234,8 +258,8 @@ export const checkDatabaseHealth = async () => {
     let testResult;
     try {
       testResult = await dbService.execute("SELECT datetime('now') as now");
-      if (isTestEnvironment) {
-        console.log("Execute result debug:", {
+      if (shouldDebug) {
+        console.log("🏥 Database execute result debug:", {
           hasResult: !!testResult,
           resultType: typeof testResult,
           resultKeys: Object.keys(testResult || {}),
@@ -243,8 +267,13 @@ export const checkDatabaseHealth = async () => {
         });
       }
     } catch (executeError) {
-      if (isTestEnvironment) {
-        console.log("Execute error debug:", executeError.message);
+      if (shouldDebug) {
+        console.error("🏥 Database execute error debug:", {
+          error: executeError.message,
+          stack: executeError.stack,
+          code: executeError.code,
+          timestamp: new Date().toISOString()
+        });
       }
       throw new Error(`Database execute failed: ${executeError.message}`);
     }
@@ -308,17 +337,44 @@ export const checkDatabaseHealth = async () => {
       details,
     };
   } catch (error) {
+    // Enhanced error context for debugging preview deployments
+    const errorDetails = {
+      connection: "failed",
+      error_type: error.name || "DatabaseError",
+      error_code: error.code,
+      has_turso_database_url: !!process.env.TURSO_DATABASE_URL,
+      has_turso_auth_token: !!process.env.TURSO_AUTH_TOKEN,
+      has_database_url: !!process.env.DATABASE_URL,
+      environment: process.env.NODE_ENV || "production",
+      vercel_env: process.env.VERCEL_ENV,
+      is_vercel: process.env.VERCEL === "1",
+      is_preview: process.env.VERCEL === "1" && process.env.VERCEL_ENV === "preview",
+      is_production: process.env.VERCEL === "1" && process.env.VERCEL_ENV === "production",
+      e2e_test_mode: process.env.E2E_TEST_MODE,
+      playwright_browser: process.env.PLAYWRIGHT_BROWSER,
+      integration_test_mode: process.env.INTEGRATION_TEST_MODE,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Additional debugging for non-production environments
+    const shouldDebug = process.env.NODE_ENV === "test" || 
+                       process.env.TEST_TYPE === "integration" || 
+                       (process.env.VERCEL === "1" && process.env.VERCEL_ENV === "preview") ||
+                       process.env.NODE_ENV === "development";
+    
+    if (shouldDebug) {
+      console.error("🏥 Database health check failed with enhanced context:", {
+        error: error.message,
+        stack: error.stack,
+        ...errorDetails
+      });
+    }
+
     return {
       status: HealthStatus.UNHEALTHY,
       response_time: `${Date.now() - startTime}ms`,
       error: error.message,
-      details: {
-        connection: "failed",
-        error_type: error.name || "DatabaseError",
-        has_database_url: !!process.env.TURSO_DATABASE_URL,
-        has_auth_token: !!process.env.TURSO_AUTH_TOKEN,
-        environment: process.env.NODE_ENV || "production",
-      },
+      details: errorDetails,
     };
   }
 };

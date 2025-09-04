@@ -103,54 +103,113 @@ jobs:
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       test-pattern: ${{ steps.matrix.outputs.test-pattern }}
+      browsers-json: ${{ steps.matrix.outputs.browsers-json }}
+      test-suite: ${{ steps.matrix.outputs.test-suite }}
     steps:
       - name: 🧮 Build Test Matrix
         id: matrix
         run: |
-          # Determine browser matrix
-          BROWSER_MATRIX='["chromium"]' # Default fallback
-
-          case "${{ inputs.browsers || 'standard' }}" in
+          # Set defaults with proper fallback
+          TEST_SUITE="${{ inputs.test_suite }}"
+          BROWSERS="${{ inputs.browsers }}"
+          
+          # Apply defaults if empty or null
+          if [ -z "$TEST_SUITE" ] || [ "$TEST_SUITE" = "null" ]; then
+            TEST_SUITE="standard"
+          fi
+          
+          if [ -z "$BROWSERS" ] || [ "$BROWSERS" = "null" ]; then
+            BROWSERS="standard"
+          fi
+          
+          echo "🔧 Input Processing:"
+          echo "  Test Suite: $TEST_SUITE (from: '${{ inputs.test_suite }}')"
+          echo "  Browsers: $BROWSERS (from: '${{ inputs.browsers }}')"
+          
+          # Build browser matrix with validation
+          BROWSER_LIST=""
+          case "$BROWSERS" in
             "standard")
-              BROWSER_MATRIX='["chromium", "firefox"]'
+              BROWSER_LIST="chromium firefox"
               ;;
             "extended")
-              BROWSER_MATRIX='["chromium", "firefox", "webkit"]'
+              BROWSER_LIST="chromium firefox webkit"
               ;;
             "mobile")
-              BROWSER_MATRIX='["chromium", "firefox", "mobile-chrome", "mobile-safari"]'
+              # Mobile browsers use device emulation in Playwright projects
+              BROWSER_LIST="chromium firefox mobile-chrome mobile-safari"
               ;;
             "chromium-only")
-              BROWSER_MATRIX='["chromium"]'
+              BROWSER_LIST="chromium"
+              ;;
+            *)
+              echo "⚠️ Unknown browser selection: $BROWSERS, defaulting to standard"
+              BROWSER_LIST="chromium firefox"
               ;;
           esac
-
-          # Determine test pattern
+          
+          # Convert to JSON array
+          BROWSER_JSON_ARRAY=""
+          for browser in $BROWSER_LIST; do
+            if [ -z "$BROWSER_JSON_ARRAY" ]; then
+              BROWSER_JSON_ARRAY="\"$browser\""
+            else
+              BROWSER_JSON_ARRAY="$BROWSER_JSON_ARRAY, \"$browser\""
+            fi
+          done
+          
+          BROWSER_MATRIX="{\"browser\": [$BROWSER_JSON_ARRAY]}"
+          
+          # Determine test pattern for file filtering
           TEST_PATTERN=""
-          case "${{ inputs.test_suite || 'standard' }}" in
+          case "$TEST_SUITE" in
             "standard")
               TEST_PATTERN="basic-navigation|cart-functionality|newsletter-simple|admin-auth|gallery-basic|registration-flow"
               ;;
             "advanced")
-              TEST_PATTERN="" # Run all tests
+              TEST_PATTERN="" # Run all tests - no filter
               ;;
             "performance")
-              TEST_PATTERN="performance|gallery-browsing|user-engagement"
+              TEST_PATTERN="gallery-browsing|user-engagement"
               ;;
             "accessibility")
-              TEST_PATTERN="mobile-registration|accessibility"
+              TEST_PATTERN="mobile-registration-experience"
               ;;
             "security")
               TEST_PATTERN="admin-auth|admin-dashboard|ticket-validation"
               ;;
+            *)
+              echo "⚠️ Unknown test suite: $TEST_SUITE, defaulting to standard"
+              TEST_PATTERN="basic-navigation|cart-functionality|newsletter-simple|admin-auth|gallery-basic|registration-flow"
+              ;;
           esac
-
-          echo "matrix={\"browser\":$BROWSER_MATRIX}" >> $GITHUB_OUTPUT
+          
+          # Validate JSON structure
+          if ! echo "$BROWSER_MATRIX" | jq . > /dev/null 2>&1; then
+            echo "❌ Invalid JSON generated for browser matrix: $BROWSER_MATRIX"
+            exit 1
+          fi
+          
+          # Output results
+          echo "matrix=$BROWSER_MATRIX" >> $GITHUB_OUTPUT
           echo "test-pattern=$TEST_PATTERN" >> $GITHUB_OUTPUT
-
+          echo "browsers-json=[$BROWSER_JSON_ARRAY]" >> $GITHUB_OUTPUT
+          echo "test-suite=$TEST_SUITE" >> $GITHUB_OUTPUT
+          
           echo "📋 Test Matrix Configuration:"
-          echo "  Browsers: $BROWSER_MATRIX"
+          echo "  Browser Matrix JSON: $BROWSER_MATRIX"
+          echo "  Browser List: $BROWSER_LIST"
           echo "  Test Pattern: $TEST_PATTERN"
+          echo "  Test Suite: $TEST_SUITE"
+          
+          # Validate matrix will work
+          BROWSER_COUNT=$(echo "$BROWSER_MATRIX" | jq '.browser | length')
+          echo "  Browser Count: $BROWSER_COUNT"
+          
+          if [ "$BROWSER_COUNT" -eq 0 ]; then
+            echo "❌ No browsers in matrix!"
+            exit 1
+          fi
 
   # Main E2E testing job - simplified since deployment is already complete
   e2e-tests:
@@ -189,7 +248,7 @@ jobs:
           echo "🎯 E2E Test Configuration:"
           echo "  Target URL: ${{ steps.target-url.outputs.target-url }}"
           echo "  Browser: ${{ matrix.browser }}"
-          echo "  Test Suite: ${{ inputs.test_suite || 'standard' }}"
+          echo "  Test Suite: ${{ needs.build-test-matrix.outputs.test-suite }}"
           echo "  Test Pattern: ${{ needs.build-test-matrix.outputs.test-pattern }}"
           echo "  NODE_OPTIONS: $NODE_OPTIONS"
           echo "  Event Type: ${{ github.event_name }}"
@@ -218,12 +277,25 @@ jobs:
 
       - name: 🎭 Install Playwright Browsers
         run: |
-          # Map mobile browsers to actual browser names
+          # Map browsers to actual Playwright browser names
           BROWSER="${{ matrix.browser }}"
           case "$BROWSER" in
-            mobile-chrome) INSTALL_BROWSER="chromium" ;;
-            mobile-safari) INSTALL_BROWSER="webkit" ;;
-            *) INSTALL_BROWSER="$BROWSER" ;;
+            mobile-chrome) 
+              INSTALL_BROWSER="chromium"
+              echo "📱 Mobile Chrome will use Chromium with mobile device emulation"
+              ;;
+            mobile-safari) 
+              INSTALL_BROWSER="webkit"
+              echo "📱 Mobile Safari will use WebKit with mobile device emulation"
+              ;;
+            chromium|firefox|webkit)
+              INSTALL_BROWSER="$BROWSER"
+              echo "🖥️ Desktop browser: $INSTALL_BROWSER"
+              ;;
+            *)
+              echo "❌ Unknown browser type: $BROWSER"
+              exit 1
+              ;;
           esac
 
           # Always verify browser installation for reliability
@@ -245,18 +317,38 @@ jobs:
 
       - name: 🎭 Run E2E Tests
         run: |
-          TEST_COMMAND="npm run test:e2e -- --project ${{ matrix.browser }}"
-
+          # Determine the correct Playwright project name for the browser
+          PROJECT_NAME="${{ matrix.browser }}"
+          
+          # Base test command
+          TEST_COMMAND="npm run test:e2e -- --project $PROJECT_NAME"
+          
           # Add test pattern filter if specified
-          if [ -n "${{ needs.build-test-matrix.outputs.test-pattern }}" ]; then
-            # Use grep pattern matching to filter specific tests
-            TEST_COMMAND="$TEST_COMMAND --grep \"${{ needs.build-test-matrix.outputs.test-pattern }}\""
-            echo "🎯 Test pattern filter: ${{ needs.build-test-matrix.outputs.test-pattern }}"
+          TEST_PATTERN="${{ needs.build-test-matrix.outputs.test-pattern }}"
+          if [ -n "$TEST_PATTERN" ] && [ "$TEST_PATTERN" != "" ]; then
+            # Use file path filtering instead of grep for more reliable filtering
+            echo "🎯 Applying test pattern filter: $TEST_PATTERN"
+            
+            # Create a temporary file list based on pattern
+            TEMP_FILE_LIST=$(mktemp)
+            find tests/e2e/flows -name "*.test.js" | grep -E "($TEST_PATTERN)" > "$TEMP_FILE_LIST" || true
+            
+            if [ -s "$TEMP_FILE_LIST" ]; then
+              TEST_FILES=$(cat "$TEMP_FILE_LIST" | tr '\n' ' ')
+              TEST_COMMAND="npm run test:e2e -- --project $PROJECT_NAME $TEST_FILES"
+              echo "📁 Test files to run: $TEST_FILES"
+            else
+              echo "⚠️ No test files match pattern '$TEST_PATTERN', running all tests"
+            fi
+            
+            rm -f "$TEMP_FILE_LIST"
+          else
+            echo "🎯 Running all E2E tests (no pattern filter)"
           fi
 
-          echo "🚀 Running: $TEST_COMMAND"
+          echo "🚀 Executing: $TEST_COMMAND"
           echo "🌐 Target URL: ${{ env.PREVIEW_URL }}"
-          echo "🦊 Browser: ${{ matrix.browser }}"
+          echo "🦊 Browser Project: $PROJECT_NAME"
           
           # Run tests with better error handling
           if ! eval $TEST_COMMAND; then
@@ -266,6 +358,10 @@ jobs:
             # List available test files for debugging
             echo "Available test files:"
             find tests/e2e/flows -name "*.test.js" | head -10
+            
+            # Show Playwright project configuration
+            echo "Playwright projects:"
+            npx playwright show-report --list 2>/dev/null || echo "No report available"
             
             exit 1
           fi
@@ -289,18 +385,29 @@ jobs:
           echo "  Target URL: ${{ env.PREVIEW_URL }}"
           echo "  Test Status: ${{ job.status }}"
           echo "  Browser: ${{ matrix.browser }}"
+          echo "  Test Suite: ${{ needs.build-test-matrix.outputs.test-suite }}"
           
-          # Firefox-specific debugging information
-          if [ "${{ matrix.browser }}" = "firefox" ]; then
-            echo "🦊 Firefox-specific debug information:"
-            echo "  Firefox timeout: 20s actions, 45s navigation"
-            echo "  User Agent: Playwright-E2E-Tests-Preview-Firefox"
-            
-            # Check if there were any firefox-specific timeouts
-            if [ -f "test-results" ]; then
-              echo "  Timeout errors:"
-              find test-results -name "*.txt" -exec grep -l "timeout\|TimeoutError" {} \; 2>/dev/null || echo "    No timeout errors found"
-            fi
+          # Browser-specific debugging information
+          case "${{ matrix.browser }}" in
+            firefox)
+              echo "🦊 Firefox-specific debug information:"
+              echo "  Firefox timeout: 20s actions, 45s navigation"
+              echo "  User Agent: Playwright-E2E-Tests-Preview-Firefox"
+              ;;
+            webkit)
+              echo "🧭 Safari/WebKit debug information:"
+              echo "  WebKit project with Safari engine"
+              ;;
+            mobile-*)
+              echo "📱 Mobile browser debug information:"
+              echo "  Using device emulation for mobile testing"
+              ;;
+          esac
+          
+          # Check if there were any browser-specific timeouts
+          if [ -f "test-results" ]; then
+            echo "  Timeout errors:"
+            find test-results -name "*.txt" -exec grep -l "timeout\|TimeoutError" {} \; 2>/dev/null || echo "    No timeout errors found"
           fi
           
           if [ -f "playwright-report/index.html" ]; then
@@ -345,8 +452,9 @@ jobs:
       - name: 📋 Final Summary
         run: |
           echo "🎯 E2E Test Suite Complete"
-          echo "  Suite: ${{ inputs.test_suite || 'standard' }}"
-          echo "  Browsers: ${{ inputs.browsers || 'standard' }}"
+          echo "  Suite: ${{ needs.build-test-matrix.outputs.test-suite }}"
+          echo "  Browsers: ${{ needs.build-test-matrix.outputs.browsers-json }}"
+          echo "  Pattern: ${{ needs.build-test-matrix.outputs.test-pattern }}"
           echo "  Status: ${{ needs.e2e-tests.result }}"
 
           if [ "${{ needs.e2e-tests.result }}" = "success" ]; then

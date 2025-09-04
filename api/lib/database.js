@@ -110,26 +110,36 @@ class DatabaseService {
    * Perform the actual database initialization
    */
   async _performInitialization() {
-    // Detect environment context first
+    // Detect environment context - simplified and more reliable
     const isVercelProduction = process.env.VERCEL === "1" && process.env.VERCEL_ENV === "production";
     const isVercelPreview = process.env.VERCEL === "1" && process.env.VERCEL_ENV === "preview";
     const isVercel = process.env.VERCEL === "1";
-    const isDevelopment = process.env.NODE_ENV === "development" || process.env.VERCEL_DEV_STARTUP === "true";
-    const isTest = process.env.NODE_ENV === "test" || process.env.TEST_TYPE === "integration";
+    const isDevelopment = process.env.NODE_ENV === "development" && !isVercel;
+    const isTest = process.env.NODE_ENV === "test";
     const isCI = process.env.CI === "true";
     
-    // Determine if this is specifically an E2E test context (not integration tests)
+    // Simplified E2E test detection - only for actual E2E test runs
     const isIntegrationTest = process.env.INTEGRATION_TEST_MODE === "true" || process.env.TEST_TYPE === "integration";
-    const isE2ETest = !isIntegrationTest && (
-                      process.env.E2E_TEST_MODE === "true" || 
-                      process.env.PLAYWRIGHT_BROWSER || 
-                      process.env.VERCEL_DEV_STARTUP === "true"
-                     );
+    const isE2ETest = process.env.E2E_TEST_MODE === "true" || process.env.PLAYWRIGHT_BROWSER;
+    
+    // Log environment detection for debugging
+    logger.log(`🔍 Environment detection:`, {
+      isVercelProduction,
+      isVercelPreview,
+      isVercel,
+      isDevelopment,
+      isTest,
+      isCI,
+      isIntegrationTest,
+      isE2ETest,
+      VERCEL_ENV: process.env.VERCEL_ENV,
+      NODE_ENV: process.env.NODE_ENV
+    });
 
     let databaseUrl;
     const authToken = process.env.TURSO_AUTH_TOKEN;
 
-    // Database URL selection logic
+    // Database URL selection logic - simplified and clearer
     if (isE2ETest) {
       // E2E tests MUST use Turso
       databaseUrl = process.env.TURSO_DATABASE_URL;
@@ -151,8 +161,8 @@ class DatabaseService {
       
       logger.log(`✅ Using Turso database for E2E tests: ${databaseUrl.substring(0, 30)}...`);
       
-    } else if (isTest) {
-      // Unit and Integration tests can use DATABASE_URL (SQLite files)
+    } else if (isTest && !isVercel) {
+      // Unit and Integration tests (local only) can use DATABASE_URL (SQLite files)
       databaseUrl = process.env.DATABASE_URL || process.env.TURSO_DATABASE_URL;
       
       if (!databaseUrl || databaseUrl.trim() === "") {
@@ -165,7 +175,7 @@ class DatabaseService {
       logger.log(`✅ Using database for unit/integration tests: ${databaseUrl}`);
       
     } else if (isDevelopment) {
-      // Development: Try Turso first, fallback to SQLite
+      // Local development: Try Turso first, fallback to SQLite
       databaseUrl = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL;
       
       if (!databaseUrl || databaseUrl.trim() === "") {
@@ -181,40 +191,61 @@ class DatabaseService {
         
         databaseUrl = `file:${path.join(dataDir, "development.db")}`;
         logger.log(`⚠️  No database URL set, using local SQLite: ${databaseUrl}`);
+      } else {
+        logger.log(`✅ Using configured database for local development: ${databaseUrl.substring(0, 30)}...`);
       }
       
     } else if (isVercelProduction) {
-      // Production: Require Turso
+      // Vercel production: Require Turso
       databaseUrl = process.env.TURSO_DATABASE_URL;
       
       if (!databaseUrl || databaseUrl.trim() === "") {
-        const error = new Error("TURSO_DATABASE_URL environment variable is required for production deployment");
+        const error = new Error("TURSO_DATABASE_URL environment variable is required for Vercel production deployment");
         error.code = "DB_CONFIG_ERROR";
         error.context = "vercel-production";
         throw error;
       }
       
-    } else if (isVercelPreview || isVercel) {
-      // Vercel deployments: Require Turso
+      logger.log(`✅ Using Turso database for Vercel production: ${databaseUrl.substring(0, 30)}...`);
+      
+    } else if (isVercelPreview) {
+      // Vercel preview deployments: Require Turso
       databaseUrl = process.env.TURSO_DATABASE_URL;
       
       if (!databaseUrl || databaseUrl.trim() === "") {
-        const error = new Error("TURSO_DATABASE_URL environment variable is required for Vercel deployments");
+        const error = new Error("TURSO_DATABASE_URL environment variable is required for Vercel preview deployments");
         error.code = "DB_CONFIG_ERROR";
         error.context = "vercel-preview";
         throw error;
       }
       
-    } else {
-      // Generic production: Require Turso
+      logger.log(`✅ Using Turso database for Vercel preview: ${databaseUrl.substring(0, 30)}...`);
+      
+    } else if (isVercel) {
+      // Generic Vercel deployment: Require Turso
       databaseUrl = process.env.TURSO_DATABASE_URL;
       
       if (!databaseUrl || databaseUrl.trim() === "") {
-        const error = new Error("TURSO_DATABASE_URL environment variable is required for production");
+        const error = new Error("TURSO_DATABASE_URL environment variable is required for all Vercel deployments");
+        error.code = "DB_CONFIG_ERROR";
+        error.context = "vercel-generic";
+        throw error;
+      }
+      
+      logger.log(`✅ Using Turso database for Vercel deployment: ${databaseUrl.substring(0, 30)}...`);
+      
+    } else {
+      // Any other production-like environment: Require Turso
+      databaseUrl = process.env.TURSO_DATABASE_URL;
+      
+      if (!databaseUrl || databaseUrl.trim() === "") {
+        const error = new Error("TURSO_DATABASE_URL environment variable is required for production environments");
         error.code = "DB_CONFIG_ERROR";
         error.context = "generic-production";
         throw error;
       }
+      
+      logger.log(`✅ Using Turso database for production environment: ${databaseUrl.substring(0, 30)}...`);
     }
 
     const config = {
@@ -224,6 +255,7 @@ class DatabaseService {
     // Add auth token if provided (not needed for :memory: databases)
     if (authToken && databaseUrl !== ":memory:") {
       config.authToken = authToken;
+      logger.log(`✅ Using auth token for remote database connection`);
     } else if (!authToken && databaseUrl !== ":memory:" && !databaseUrl.startsWith("file:")) {
       // Auth token is required for remote Turso databases
       if (isE2ETest) {
@@ -250,14 +282,20 @@ class DatabaseService {
         databaseUrl = `file:${path.join(dataDir, "test-integration.db")}`;
         config.url = databaseUrl;
         logger.log(`🔄 Integration test database URL changed to: ${databaseUrl}`);
-      } else if (isVercelProduction) {
-        const error = new Error("TURSO_AUTH_TOKEN environment variable is required for remote database connections in production");
+      } else if (isVercelProduction || isVercelPreview || isVercel) {
+        // All Vercel deployments require auth tokens for remote databases
+        const envContext = isVercelProduction ? "production" : isVercelPreview ? "preview" : "vercel-generic";
+        const error = new Error(`TURSO_AUTH_TOKEN environment variable is required for Vercel ${envContext} deployments with remote database`);
         error.code = "DB_AUTH_ERROR";
-        error.context = "vercel-production";
+        error.context = `vercel-${envContext}`;
         throw error;
       } else {
+        // For other production-like environments, warn but don't fail
         logger.warn("⚠️ TURSO_AUTH_TOKEN not provided for remote database connection");
+        logger.warn("⚠️ This may cause connection failures for remote Turso databases");
       }
+    } else if (databaseUrl.startsWith("file:") || databaseUrl === ":memory:") {
+      logger.log(`✅ Using local database (no auth token required): ${databaseUrl}`);
     }
 
     // Add SQLite-specific configuration for busy timeout and WAL mode
@@ -321,19 +359,28 @@ class DatabaseService {
       );
       return this.client;
     } catch (error) {
-      // Enhanced error reporting for debugging
-      logger.error("❌ Database initialization failed:", {
+      // Enhanced error reporting for debugging with more detail
+      const errorContext = {
         error: error.message,
-        databaseUrl: config.url
-          ? config.url.substring(0, 20) + "..."
-          : "undefined",
+        errorCode: error.code,
+        databaseUrl: config.url ? config.url.substring(0, 20) + "..." : "undefined",
+        databaseType: config.url ? (config.url.startsWith("file:") ? "sqlite-file" : 
+                     config.url.startsWith("libsql://") ? "turso-remote" : 
+                     config.url === ":memory:" ? "sqlite-memory" : "unknown") : "no-url",
         hasAuthToken: !!config.authToken,
+        hasTursoUrl: !!process.env.TURSO_DATABASE_URL,
+        hasTursoToken: !!process.env.TURSO_AUTH_TOKEN,
         environment: process.env.NODE_ENV,
         vercelEnv: process.env.VERCEL_ENV,
         isVercel: !!process.env.VERCEL,
         testType: process.env.TEST_TYPE,
+        e2eTestMode: process.env.E2E_TEST_MODE,
+        playwrightBrowser: process.env.PLAYWRIGHT_BROWSER,
+        integrationTestMode: process.env.INTEGRATION_TEST_MODE,
         timestamp: new Date().toISOString(),
-      });
+      };
+      
+      logger.error("❌ Database initialization failed:", errorContext);
 
       // More specific error message based on error type
       if (
