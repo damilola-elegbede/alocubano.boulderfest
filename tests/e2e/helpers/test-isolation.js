@@ -155,6 +155,22 @@ export const initializeTestIsolation = async () => {
   process.env.E2E_SESSION_ID = sessionId;
   
   console.log(`   🆔 Test session ID: ${sessionId}`);
+  
+  // Persist for global teardown (separate Node context)
+  try {
+    const fs = await import('fs/promises');
+    const { resolve } = await import('path');
+    const root = process.cwd();
+    await fs.mkdir(resolve(root, '.tmp'), { recursive: true });
+    await fs.writeFile(
+      resolve(root, '.tmp', 'e2e-session.json'),
+      JSON.stringify({ sessionId, createdAt: new Date().toISOString() })
+    );
+    console.log('   💾 Session persisted to .tmp/e2e-session.json');
+  } catch (err) {
+    console.log(`   ⚠️ Failed to persist session file: ${err.message}`);
+  }
+  
   console.log('   ✅ Test isolation system initialized');
   
   return {

@@ -405,7 +405,7 @@ jobs:
           esac
           
           # Check if there were any browser-specific timeouts
-          if [ -f "test-results" ]; then
+          if [ -d "test-results" ]; then
             echo "  Timeout errors:"
             find test-results -name "*.txt" -exec grep -l "timeout\|TimeoutError" {} \; 2>/dev/null || echo "    No timeout errors found"
           fi

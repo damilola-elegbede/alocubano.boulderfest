@@ -61,11 +61,21 @@ async function globalTeardownPreview() {
  * Cleanup test data from preview environment
  */
 async function cleanupTestData(previewUrl) {
-  const sessionId = process.env.E2E_SESSION_ID;
+  let sessionId = process.env.E2E_SESSION_ID;
   
+  // Try to recover session ID from persisted file if not in env
   if (!sessionId) {
-    console.log('   ⚠️ No session ID found - skipping test data cleanup');
-    return;
+    try {
+      const fs = await import('fs/promises');
+      const { resolve } = await import('path');
+      const sessionData = await fs.readFile(resolve(process.cwd(), '.tmp', 'e2e-session.json'), 'utf-8');
+      const session = JSON.parse(sessionData);
+      sessionId = session.sessionId;
+      console.log('   📂 Recovered session ID from .tmp/e2e-session.json');
+    } catch (err) {
+      console.log('   ⚠️ No session ID found - skipping test data cleanup');
+      return;
+    }
   }
   
   console.log(`   🆔 Session ID: ${sessionId}`);
