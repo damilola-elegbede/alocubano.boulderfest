@@ -2,15 +2,14 @@
 name: 🎭 E2E Tests - Preview Deployments
 
 # Modern E2E testing workflow using Vercel Preview Deployments
-# - Real production environment testing with serverless functions
+# - Triggers ONLY on successful Vercel deployments to prevent duplicate runs
+# - Real production environment testing with serverless functions  
 # - No local server management or port conflicts
 # - Improved reliability and faster execution
-# - Native CI/CD integration with deployment workflows
+# - Single run per deployment with deployment_status trigger
 
 on:
-  pull_request:
-    branches: [main, develop]
-    types: [opened, synchronize, reopened, ready_for_review]
+  # Only trigger when Vercel deployments succeed - prevents duplicate runs
   deployment_status:
     # Trigger when Vercel deployments succeed
   workflow_dispatch:
@@ -41,9 +40,9 @@ on:
         required: false
         type: string
 
-# Prevent multiple E2E runs for the same PR
+# Prevent multiple E2E runs for the same deployment
 concurrency:
-  group: e2e-preview-${{ github.head_ref || github.ref }}-${{ github.workflow }}
+  group: e2e-preview-${{ github.event.deployment.sha || github.sha }}-${{ github.workflow }}
   cancel-in-progress: true
 
 permissions:
@@ -59,19 +58,17 @@ env:
   PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
 
 jobs:
-  # Extract preview URL from various sources
+  # Extract preview URL - simplified since deployment is already complete
   get-preview-url:
     name: 🔍 Extract Preview URL
     runs-on: ubuntu-latest
     if: >-
-      (github.event_name == 'pull_request') ||
       (github.event_name == 'deployment_status' &&
        github.event.deployment_status.state == 'success' &&
        github.event.deployment.environment == 'Preview') ||
       (github.event_name == 'workflow_dispatch')
     outputs:
       preview-url: ${{ steps.extract-url.outputs.preview-url }}
-      needs-wait: ${{ steps.extract-url.outputs.needs-wait }}
     steps:
       - name: 🔍 Extract Preview URL
         id: extract-url
@@ -79,19 +76,15 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.preview_url }}" ]; then
             # Manual trigger with specific URL
             echo "preview-url=${{ inputs.preview_url }}" >> $GITHUB_OUTPUT
-            echo "needs-wait=false" >> $GITHUB_OUTPUT
             echo "ℹ️ Using manually provided URL: ${{ inputs.preview_url }}"
           elif [ "${{ github.event_name }}" = "deployment_status" ]; then
-            # Triggered by deployment_status event
+            # Triggered by deployment_status event - deployment is already complete
             DEPLOYMENT_URL="${{ github.event.deployment_status.target_url }}"
             echo "preview-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
-            echo "needs-wait=false" >> $GITHUB_OUTPUT
             echo "ℹ️ Using deployment status URL: $DEPLOYMENT_URL"
           else
-            # Pull request - will need to wait for deployment
-            echo "preview-url=" >> $GITHUB_OUTPUT
-            echo "needs-wait=true" >> $GITHUB_OUTPUT
-            echo "ℹ️ Pull request event - will need to wait for Vercel deployment"
+            echo "❌ Unexpected event type: ${{ github.event_name }}"
+            exit 1
           fi
 
       - name: 📋 URL Extraction Summary
@@ -99,38 +92,11 @@ jobs:
           echo "🎯 Preview URL Extraction Results:"
           echo "  Event: ${{ github.event_name }}"
           echo "  URL: ${{ steps.extract-url.outputs.preview-url }}"
-          echo "  Needs Wait: ${{ steps.extract-url.outputs.needs-wait }}"
+          echo "  Deployment State: ${{ github.event.deployment_status.state || 'N/A' }}"
+          echo "  Environment: ${{ github.event.deployment.environment || 'N/A' }}"
 
-  # Single unified wait-for-deployment job
-  wait-for-deployment:
-    name: ⏳ Wait for Vercel Deployment
-    runs-on: ubuntu-latest
-    needs: get-preview-url
-    # Only run if we need to wait AND if we don't already have a URL
-    if: needs.get-preview-url.outputs.needs-wait == 'true'
-    outputs:
-      preview-url: ${{ steps.wait.outputs.deployment-url }}
-      deployment-ready: ${{ steps.wait.outputs.ready }}
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v4
 
-      - name: ⏳ Wait for Vercel Deployment
-        id: wait
-        uses: ./.github/actions/wait-for-vercel
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          timeout-minutes: 10
-          check-interval: 5
-
-      - name: 📋 Deployment Wait Results
-        run: |
-          echo "🎯 Vercel Deployment Wait Results:"
-          echo "  URL: ${{ steps.wait.outputs.deployment-url }}"
-          echo "  Environment: ${{ steps.wait.outputs.environment }}"
-          echo "  Ready: ${{ steps.wait.outputs.ready }}"
-
-  # Build test matrix (can run in parallel with wait-for-deployment)
+  # Build test matrix (runs in parallel with URL extraction)
   build-test-matrix:
     name: 📋 Build Test Matrix
     runs-on: ubuntu-latest
@@ -186,15 +152,13 @@ jobs:
           echo "  Browsers: $BROWSER_MATRIX"
           echo "  Test Pattern: $TEST_PATTERN"
 
-  # Main E2E testing job - depends on UNIFIED deployment readiness
+  # Main E2E testing job - simplified since deployment is already complete
   e2e-tests:
     name: 🎭 E2E Tests (${{ matrix.browser }})
     runs-on: ubuntu-latest
-    needs: [get-preview-url, wait-for-deployment, build-test-matrix]
-    # Run if:
-    # 1. We already have a URL (no wait needed) OR wait succeeded
-    # 2. Always check previous job results
-    if: always() && (needs.get-preview-url.outputs.needs-wait == 'false' || needs.wait-for-deployment.result == 'success')
+    needs: [get-preview-url, build-test-matrix]
+    # Only run if URL extraction succeeded
+    if: needs.get-preview-url.result == 'success'
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.build-test-matrix.outputs.matrix) }}
@@ -204,17 +168,10 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 🎯 Determine Target URL
+      - name: 🎯 Set Target URL
         id: target-url
         run: |
-          # Use direct URL if available, otherwise use waited URL
-          if [ "${{ needs.get-preview-url.outputs.needs-wait }}" = "false" ]; then
-            TARGET_URL="${{ needs.get-preview-url.outputs.preview-url }}"
-            echo "ℹ️ Using direct URL (no wait needed): $TARGET_URL"
-          else
-            TARGET_URL="${{ needs.wait-for-deployment.outputs.preview-url }}"
-            echo "ℹ️ Using waited URL: $TARGET_URL"
-          fi
+          TARGET_URL="${{ needs.get-preview-url.outputs.preview-url }}"
           
           # Validate we have a URL
           if [ -z "$TARGET_URL" ] || [ "$TARGET_URL" = "null" ]; then
@@ -225,6 +182,7 @@ jobs:
           echo "target-url=$TARGET_URL" >> $GITHUB_OUTPUT
           echo "PLAYWRIGHT_BASE_URL=$TARGET_URL" >> $GITHUB_ENV
           echo "PREVIEW_URL=$TARGET_URL" >> $GITHUB_ENV
+          echo "ℹ️ Using preview URL: $TARGET_URL"
 
       - name: 📋 Test Configuration
         run: |
@@ -234,7 +192,8 @@ jobs:
           echo "  Test Suite: ${{ inputs.test_suite || 'standard' }}"
           echo "  Test Pattern: ${{ needs.build-test-matrix.outputs.test-pattern }}"
           echo "  NODE_OPTIONS: $NODE_OPTIONS"
-          echo "  Wait Was Needed: ${{ needs.get-preview-url.outputs.needs-wait }}"
+          echo "  Event Type: ${{ github.event_name }}"
+          echo "  Deployment State: ${{ github.event.deployment_status.state || 'N/A' }}"
 
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
@@ -375,7 +334,7 @@ jobs:
           echo "json=$(jq -c . test-results-summary.json 2>/dev/null || echo '{}')" >> "$GITHUB_OUTPUT"
 
       - name: 💬 Post Results to PR
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'deployment_status' && github.event.deployment.environment == 'Preview'
         uses: ./.github/actions/post-test-comment
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
