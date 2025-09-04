@@ -134,6 +134,32 @@ export const waitForStability = (ms = 1000) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 };
 
+// Generate test ticket ID 
+export const generateTestTicketId = (testName = 'test', suffix = '') => {
+  const timestamp = Date.now();
+  const randomId = Math.random().toString(36).substring(2, 8);
+  const safeSuffix = suffix ? `-${suffix}` : '';
+  return `ticket-${testName}-${randomId}-${timestamp}${safeSuffix}`;
+};
+
+// Initialize test isolation system
+export const initializeTestIsolation = async () => {
+  console.log('🚀 Initializing test isolation system...');
+  
+  // Set up test environment isolation
+  const sessionId = generateTestId('session');
+  process.env.E2E_SESSION_ID = sessionId;
+  
+  console.log(`   🆔 Test session ID: ${sessionId}`);
+  console.log('   ✅ Test isolation system initialized');
+  
+  return {
+    initialized: true,
+    sessionId,
+    timestamp: Date.now()
+  };
+};
+
 export default {
   generateTestEmail,
   generateTestId,
@@ -143,5 +169,7 @@ export default {
   generateRegistrationData,
   cleanupTestIsolation,
   getTestNamespace,
-  waitForStability
+  waitForStability,
+  generateTestTicketId,
+  initializeTestIsolation
 };

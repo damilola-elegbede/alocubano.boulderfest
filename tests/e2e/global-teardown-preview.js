@@ -33,7 +33,7 @@ async function globalTeardownPreview() {
       
       // Step 3: Generate test summary
       console.log('\n📊 Generating test summary...');
-      generateTestSummary(previewUrl);
+      await generateTestSummary(previewUrl);
     } else {
       console.log('⚠️ No preview URL found - limited cleanup available');
     }
@@ -155,7 +155,7 @@ async function validateCleanup(previewUrl) {
 /**
  * Generate test summary for preview testing
  */
-function generateTestSummary(previewUrl) {
+async function generateTestSummary(previewUrl) {
   try {
     const summary = {
       previewUrl,

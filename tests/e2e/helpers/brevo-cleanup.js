@@ -96,6 +96,28 @@ export const isTestMode = () => {
   return globalThis._brevoTestMode === true;
 };
 
+// Initialize Brevo cleanup system
+export const initializeBrevoCleanup = async () => {
+  console.log('🚀 Initializing Brevo cleanup system...');
+  
+  // Clear any existing tracked emails from previous runs
+  const existingCount = testEmails.size;
+  if (existingCount > 0) {
+    console.log(`   🧹 Clearing ${existingCount} existing tracked emails`);
+    testEmails.clear();
+  }
+  
+  // Set test mode
+  setTestMode(true);
+  
+  console.log('   ✅ Brevo cleanup system initialized');
+  return {
+    initialized: true,
+    clearedExisting: existingCount,
+    testMode: true
+  };
+};
+
 export default {
   trackTestEmail,
   untrackTestEmail,
@@ -107,5 +129,6 @@ export default {
   cleanupTestEmails,
   performBrevoCleanup,
   setTestMode,
-  isTestMode
+  isTestMode,
+  initializeBrevoCleanup
 };
