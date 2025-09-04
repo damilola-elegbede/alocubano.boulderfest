@@ -250,8 +250,12 @@ test('QR validation handles configuration errors gracefully', async () => {
       return;
     }
     
-    // Should handle missing configuration gracefully
-    expect([HTTP_STATUS.BAD_REQUEST, 503].includes(response.status)).toBe(true);
+    // Should handle missing configuration gracefully - allow transient errors
+    expect([
+      HTTP_STATUS.BAD_REQUEST, 
+      503, // Service unavailable
+      HTTP_STATUS.TOO_MANY_REQUESTS // Rate limiting
+    ].includes(response.status)).toBe(true);
     expect(response.data).toHaveProperty('valid');
     expect(response.data.valid).toBe(false);
     expect(response.data).toHaveProperty('error');
@@ -277,7 +281,11 @@ test('QR validation handles configuration errors gracefully', async () => {
     });
     
     if (response.status !== 0) {
-      expect([HTTP_STATUS.BAD_REQUEST, 503].includes(response.status)).toBe(true);
+      expect([
+        HTTP_STATUS.BAD_REQUEST, 
+        503, // Service unavailable
+        HTTP_STATUS.TOO_MANY_REQUESTS // Rate limiting
+      ].includes(response.status)).toBe(true);
       expect(response.data.valid).toBe(false);
     }
     

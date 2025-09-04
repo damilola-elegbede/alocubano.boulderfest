@@ -64,10 +64,10 @@ jobs:
           else
             changed_files=$(git ls-tree -r --name-only HEAD)
           fi
-          
+
           echo "Changed files:"
           echo "$changed_files"
-          
+
           # Deployable changes - anything that affects the application
           deployable_patterns=(
             "^api/"
@@ -79,7 +79,7 @@ jobs:
             "package\.json$"
             "vercel\.json$"
           )
-          
+
           # Security-critical patterns
           security_patterns=(
             "^api/admin/"
@@ -90,7 +90,7 @@ jobs:
             "token"
             "secret"
           )
-          
+
           # Frontend patterns
           frontend_patterns=(
             "^js/"
@@ -98,63 +98,63 @@ jobs:
             "^pages/"
             "^public/"
           )
-          
-          # Backend patterns  
+
+          # Backend patterns
           backend_patterns=(
             "^api/"
             "^lib/"
             "package\.json$"
             "vercel\.json$"
           )
-          
+
           # Migration patterns
           migration_patterns=(
             "^migrations/"
             "schema"
             "database"
           )
-          
+
           deployable=false
           security_critical=false
           frontend_changed=false
           backend_changed=false
           migration_needed=false
-          
+
           for pattern in "${deployable_patterns[@]}"; do
             if echo "$changed_files" | grep -qE "$pattern"; then
               deployable=true
               break
             fi
           done
-          
+
           for pattern in "${security_patterns[@]}"; do
             if echo "$changed_files" | grep -qiE "$pattern"; then
               security_critical=true
               break
             fi
           done
-          
+
           for pattern in "${frontend_patterns[@]}"; do
             if echo "$changed_files" | grep -qE "$pattern"; then
               frontend_changed=true
               break
             fi
           done
-          
+
           for pattern in "${backend_patterns[@]}"; do
             if echo "$changed_files" | grep -qE "$pattern"; then
               backend_changed=true
               break
             fi
           done
-          
+
           for pattern in "${migration_patterns[@]}"; do
             if echo "$changed_files" | grep -qiE "$pattern"; then
               migration_needed=true
               break
             fi
           done
-          
+
           echo "deployable=$deployable" >> $GITHUB_OUTPUT
           echo "security_critical=$security_critical" >> $GITHUB_OUTPUT
           echo "frontend_changed=$frontend_changed" >> $GITHUB_OUTPUT
@@ -171,24 +171,24 @@ jobs:
       deployment_url: ${{ steps.rollback.outputs.deployment_url }}
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: 📦 Setup
         run: npm install -g vercel@latest
-      
+
       - name: 🔄 Execute Rollback
         id: rollback
         run: |
           echo "🔄 Rolling back to previous deployment..."
           vercel --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
-          
+
           # Get previous deployment
           deployments=$(vercel ls --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --meta ${{ env.TARGET_ENV }}=true --output json)
           previous_id=$(echo "$deployments" | jq -r '.[1].uid // empty')
-          
+
           if [ -n "$previous_id" ]; then
             vercel promote "$previous_id" --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
             previous_url=$(echo "$deployments" | jq -r '.[1].url')
-            
+
             echo "completed=true" >> $GITHUB_OUTPUT
             echo "deployment_url=https://$previous_url" >> $GITHUB_OUTPUT
             echo "✅ Rollback completed: https://$previous_url"
@@ -224,18 +224,18 @@ jobs:
         if: needs.detect-changes.outputs.security_critical == 'true' || env.TARGET_ENV == 'production'
         run: |
           echo "🔒 Running security validation..."
-          
+
           # Enhanced security checks for security-critical changes
           if [ "${{ needs.detect-changes.outputs.security_critical }}" = "true" ]; then
             echo "⚠️ Security-critical changes detected - running enhanced validation"
-            
+
             # Check for hardcoded secrets
             if grep -r -E "(password|secret|key|token).*=.*['\"][^'\"]*['\"]" api/ --include="*.js" --exclude-dir=node_modules; then
               echo "❌ Potential hardcoded secrets detected"
               exit 1
             fi
           fi
-          
+
           # Required secrets validation
           required_secrets=("VERCEL_TOKEN" "TURSO_DATABASE_URL" "TURSO_AUTH_TOKEN")
           for secret in "${required_secrets[@]}"; do
@@ -244,7 +244,7 @@ jobs:
               exit 1
             fi
           done
-          
+
           echo "✅ Security validation passed"
 
       - name: 🧹 Code Quality
@@ -257,7 +257,7 @@ jobs:
         if: github.event.inputs.skip_validation != 'true'
         run: |
           echo "🧪 Running optimized test suite..."
-          
+
           # Smart test selection based on changes
           if [ "${{ needs.detect-changes.outputs.frontend_changed }}" = "true" ] && [ "${{ needs.detect-changes.outputs.backend_changed }}" = "true" ]; then
             echo "Running full test suite (frontend + backend changes)"
@@ -266,13 +266,13 @@ jobs:
             echo "Running backend-focused tests"
             npm test -- --grep "api|backend|database"
           elif [ "${{ needs.detect-changes.outputs.frontend_changed }}" = "true" ]; then
-            echo "Running frontend-focused tests"  
+            echo "Running frontend-focused tests"
             npm test -- --grep "ui|frontend|client"
           else
             echo "Running smoke tests"
             npm run test:smoke
           fi
-          
+
           echo "✅ Tests passed"
 
       - name: 📊 Quality Summary
@@ -349,7 +349,7 @@ jobs:
         run: |
           url="${{ steps.get-url.outputs.url }}"
           echo "🏥 Validating deployment health..."
-          
+
           # Wait for deployment to be ready
           for i in {1..30}; do
             if curl -sf "$url" >/dev/null 2>&1; then
@@ -363,7 +363,7 @@ jobs:
             fi
             sleep 10
           done
-          
+
           # Health endpoint validation
           if curl -sf "$url/api/health/check" | jq -e '.status == "ok"' >/dev/null 2>&1; then
             echo "✅ API health check passed"
@@ -377,21 +377,21 @@ jobs:
         run: |
           url="${{ steps.get-url.outputs.url }}"
           echo "🔗 Validating critical paths..."
-          
+
           critical_paths=("/" "/tickets" "/api/health/check")
           failed_paths=()
-          
+
           for path in "${critical_paths[@]}"; do
             if ! curl -sf "$url$path" >/dev/null 2>&1; then
               failed_paths+=("$path")
             fi
           done
-          
+
           if [ ${#failed_paths[@]} -gt 0 ]; then
             echo "❌ Critical paths failed: ${failed_paths[*]}"
             exit 1
           fi
-          
+
           echo "✅ All critical paths validated"
 
       - name: 🛡️ Security Validation
@@ -399,36 +399,36 @@ jobs:
         run: |
           url="${{ steps.get-url.outputs.url }}"
           echo "🛡️ Running security validation..."
-          
+
           headers=$(curl -sI "$url" 2>/dev/null || echo "")
           security_score=0
-          
+
           # Essential security headers for production
           security_headers=(
             "X-Content-Type-Options"
             "X-Frame-Options"
             "Strict-Transport-Security"
           )
-          
+
           for header in "${security_headers[@]}"; do
             if echo "$headers" | grep -qi "$header"; then
               security_score=$((security_score + 1))
             fi
           done
-          
+
           if [ $security_score -lt 2 ]; then
             echo "❌ Security validation failed - insufficient security headers"
             echo "Required: X-Content-Type-Options, X-Frame-Options, HSTS"
             exit 1
           fi
-          
+
           echo "✅ Security validation passed ($security_score/3 headers)"
 
       - name: 📊 Validation Summary
         id: validation
         run: |
           health_status="${{ steps.health.outputs.status }}"
-          
+
           if [ "$health_status" = "failed" ]; then
             echo "passed=false" >> $GITHUB_OUTPUT
             echo "❌ Validation failed"
@@ -457,13 +457,13 @@ jobs:
         run: |
           if [ -n "${{ secrets.MIGRATION_SECRET_KEY }}" ]; then
             echo "🚀 Running database migrations..."
-            
+
             url="${{ needs.validate-deployment.outputs.deployment_url }}"
             response=$(curl -sf "$url/api/migrate" -X POST \
               -H "Content-Type: application/json" \
               -H "x-migration-key: ${{ secrets.MIGRATION_SECRET_KEY }}" \
               -d '{"action": "run"}' 2>/dev/null)
-            
+
             if echo "$response" | jq -e '.success == true' >/dev/null 2>&1; then
               applied=$(echo "$response" | jq -r '.result.deployed // 0')
               echo "✅ Applied $applied migrations"
@@ -489,17 +489,17 @@ jobs:
         run: |
           echo "🚨 Validation failed - executing emergency rollback..."
           npm install -g vercel@latest
-          
+
           vercel --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
-          
+
           # Get previous deployment and promote it
           deployments=$(vercel ls --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }} --meta production=true --output json)
           previous_id=$(echo "$deployments" | jq -r '.[1].uid // empty')
-          
+
           if [ -n "$previous_id" ]; then
             vercel promote "$previous_id" --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
             echo "✅ Emergency rollback completed"
-            
+
             echo "## 🔄 Emergency Rollback Executed" >> $GITHUB_STEP_SUMMARY
             echo "**Reason:** Deployment validation failed" >> $GITHUB_STEP_SUMMARY
             echo "**Status:** ✅ Rolled back to previous stable deployment" >> $GITHUB_STEP_SUMMARY
@@ -519,7 +519,7 @@ jobs:
           deployment_type="unknown"
           status="unknown"
           url=""
-          
+
           # Determine deployment type and status
           if [ "${{ needs.handle-rollback.outputs.rollback_completed }}" = "true" ]; then
             deployment_type="manual-rollback"
@@ -536,18 +536,18 @@ jobs:
             deployment_type="failed"
             status="failed"
           fi
-          
+
           echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "**Type:** $deployment_type" >> $GITHUB_STEP_SUMMARY
           echo "**Status:** $status" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** ${{ env.TARGET_ENV }}" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ -n "$url" ]; then
             echo "**URL:** $url" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "🌐 **Live at:** $url" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Change detection summary
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Changes Detected:**" >> $GITHUB_STEP_SUMMARY

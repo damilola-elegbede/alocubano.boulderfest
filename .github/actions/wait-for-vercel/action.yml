@@ -111,7 +111,7 @@ runs:
               STATUS_READY="false"
               STATUS_CHECK_INTERVAL=3
               MAX_STATUS_CHECKS=15  # Reduced from 20 to 15 (45s max vs 200s)
-              
+
               for status_check in $(seq 1 $MAX_STATUS_CHECKS); do
                 echo "  ⚡ Checking deployment status (attempt $status_check/$MAX_STATUS_CHECKS)..."
 
@@ -160,7 +160,7 @@ runs:
           # Early detection patterns - check for common Vercel deployment indicators
           if [ "$DEPLOYMENT_FOUND" = "false" ] && [ $attempt -le 3 ]; then
             echo "  🔍 Early detection: Checking for recent Vercel activity..."
-            
+
             # Look for very recent deployments (within last 2 minutes)
             RECENT_TIME=$(date -u -d '2 minutes ago' '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date -u -v-2M '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo "")
             if [ -n "$RECENT_TIME" ]; then
@@ -168,7 +168,7 @@ runs:
                 "repos/${{ github.repository }}/deployments?per_page=5" \
                 --jq "[.[] | select(.creator.login == \"vercel[bot]\" and .created_at > \"$RECENT_TIME\")]" \
                 2>/dev/null || echo "[]")
-              
+
               if [ "$RECENT_DEPLOYMENTS" != "[]" ] && [ -n "$RECENT_DEPLOYMENTS" ]; then
                 echo "  ⚡ Found recent Vercel activity, deployment likely coming soon..."
               fi

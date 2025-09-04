@@ -15,30 +15,30 @@ jobs:
     name: Security Audit
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run security audit
         id: audit
         run: |
           echo "## Security Audit Report" > audit-report.md
           echo "Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> audit-report.md
           echo "" >> audit-report.md
-          
+
           # Run npm audit and capture output
           npm audit --json > audit-results.json 2>&1 || true
-          
+
           # Parse audit results
           if [ -s audit-results.json ]; then
             vulnerabilities=$(cat audit-results.json | grep -o '"total":[0-9]*' | head -1 | cut -d: -f2)
@@ -46,41 +46,41 @@ jobs:
             high=$(cat audit-results.json | grep -o '"high":[0-9]*' | head -1 | cut -d: -f2)
             moderate=$(cat audit-results.json | grep -o '"moderate":[0-9]*' | head -1 | cut -d: -f2)
             low=$(cat audit-results.json | grep -o '"low":[0-9]*' | head -1 | cut -d: -f2)
-            
+
             echo "### Summary" >> audit-report.md
             echo "- Total vulnerabilities: ${vulnerabilities:-0}" >> audit-report.md
             echo "- Critical: ${critical:-0}" >> audit-report.md
             echo "- High: ${high:-0}" >> audit-report.md
             echo "- Moderate: ${moderate:-0}" >> audit-report.md
             echo "- Low: ${low:-0}" >> audit-report.md
-            
+
             if [ "${critical:-0}" -gt 0 ] || [ "${high:-0}" -gt 0 ]; then
               echo "has-vulnerabilities=true" >> $GITHUB_OUTPUT
             else
               echo "has-vulnerabilities=false" >> $GITHUB_OUTPUT
             fi
           fi
-      
+
       - name: Check for outdated packages
         run: |
           echo "" >> audit-report.md
           echo "### Outdated Packages" >> audit-report.md
           npm outdated --json > outdated.json 2>&1 || true
-          
+
           if [ -s outdated.json ] && [ "$(cat outdated.json)" != "{}" ]; then
             echo "The following packages have updates available:" >> audit-report.md
             npm outdated 2>/dev/null >> audit-report.md || echo "No outdated packages found" >> audit-report.md
           else
             echo "All packages are up to date!" >> audit-report.md
           fi
-      
+
       - name: Upload audit report
         uses: actions/upload-artifact@v4
         with:
           name: dependency-audit-report
           path: audit-report.md
           retention-days: 30
-      
+
       - name: Create issue for vulnerabilities
         if: steps.audit.outputs.has-vulnerabilities == 'true' && github.event_name == 'schedule'
         uses: actions/github-script@v7
@@ -89,22 +89,22 @@ jobs:
           script: |
             const title = '🔒 Security vulnerabilities detected in dependencies';
             const body = `## Security Audit Alert
-            
+
             The automated dependency security audit has detected vulnerabilities that require attention.
-            
+
             ### Action Required
             1. Review the [audit report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
             2. Run \`npm audit fix\` to automatically fix compatible issues
             3. Manually update packages with breaking changes if needed
             4. Re-run tests after updates
-            
+
             ### Workflow Details
             - Run: ${{ github.run_id }}
             - Triggered: Scheduled weekly audit
             - Date: ${new Date().toISOString()}
-            
+
             cc: @${{ github.repository_owner }}`;
-            
+
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -112,70 +112,70 @@ jobs:
               body: body,
               labels: ['security', 'dependencies', 'automated']
             });
- 
+
   license-check:
     name: License Compliance
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Check licenses
         run: |
           echo "## License Compliance Report"
           echo "Checking dependency licenses..."
-          
+
           # List all production dependency licenses
           npm ls --prod --depth=0 --json | grep -o '"[^"]*": "[^"]*"' | while read dep; do
             package_name=$(echo $dep | cut -d'"' -f2)
             echo "- $package_name: $(npm view $package_name license 2>/dev/null || echo 'Unknown')"
           done
-          
+
           echo ""
           echo "✅ License check complete"
- 
+
   dependency-update:
     name: Automated Updates
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
-      
+
       - name: Update dependencies
         id: update
         run: |
           # Create a new branch for updates
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
+
           branch_name="deps/automated-update-$(date +%Y%m%d)"
           git checkout -b $branch_name
-          
+
           # Update dependencies (only patch and minor versions)
           npm update --save
-          
+
           # Check if there are changes
           if git diff --exit-code package-lock.json; then
             echo "No updates available"
@@ -184,18 +184,18 @@ jobs:
             echo "Updates found"
             echo "has-updates=true" >> $GITHUB_OUTPUT
             echo "branch=$branch_name" >> $GITHUB_OUTPUT
-            
+
             # Commit changes
             git add package-lock.json package.json
             git commit -m "chore(deps): automated dependency updates
-            
+
             - Updated dependencies to latest patch/minor versions
             - Run by automated dependency management workflow"
-            
+
             # Push branch
             git push origin $branch_name
           fi
-      
+
       - name: Create pull request
         if: steps.update.outputs.has-updates == 'true'
         uses: actions/github-script@v7
@@ -209,22 +209,22 @@ jobs:
               head: '${{ steps.update.outputs.branch }}',
               base: 'develop',
               body: `## Automated Dependency Updates
-              
+
               This PR contains automated dependency updates for patch and minor versions.
-              
+
               ### What changed
               - Updated npm dependencies to their latest compatible versions
               - No major version updates included (to avoid breaking changes)
-              
+
               ### Next steps
               1. Review the changes in package-lock.json
               2. Verify CI checks pass
               3. Test locally if needed
               4. Merge when ready
-              
+
               ---
               *This PR was created automatically by the dependency management workflow.*`,
               labels: ['dependencies', 'automated']
             });
-            
+
             console.log(`Pull request created: ${pr.data.html_url}`);

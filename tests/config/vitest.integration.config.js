@@ -41,7 +41,6 @@ export default defineConfig({
     },
     
     // Limited concurrency for database safety
-    maxConcurrency: 1,
     
     // More retry attempts for integration tests (network/database issues)
     retry: process.env.CI === 'true' ? 2 : 1,

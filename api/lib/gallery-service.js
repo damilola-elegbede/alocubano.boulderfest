@@ -97,7 +97,7 @@ class GalleryService {
                 ...item,
                 featured: true
               })),
-              totalCount: cachedData.totalCount,
+              totalCount: cachedData.totalCount ?? cachedData.items?.length ?? 0,
               cacheTimestamp: cachedData.cacheTimestamp
             };
           }

@@ -127,7 +127,7 @@ jobs:
   integration-tests:
     name: "🔗 Integration Tests"
     runs-on: ubuntu-latest
-    timeout-minutes: 3  # Increased from 1 to 3 minutes (180 seconds) for database initialization and migration
+    timeout-minutes: 5  # Increased from 1 to 5 minutes for database initialization and migration
     needs: unit-tests   # Run after unit tests pass
     outputs:
       total_tests: ${{ steps.integration-test.outputs.total_tests }}
@@ -198,7 +198,7 @@ jobs:
           # Remove any existing integration test database
           rm -f data/test-integration.db
           
-          # Run database migrations
+          # Run database migrations first
           echo "🔄 Running database migrations..."
           NODE_ENV=test node scripts/migrate.js
           
@@ -217,7 +217,7 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🔗 Running Integration Test Suite"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🎯 Timeout: 180 seconds total (stage limit)"
+          echo "🎯 Timeout: 5 minutes total (stage limit)"
           echo "🗃️ Database: SQLite with real file storage"
           echo "🌐 APIs: Limited external service integration"
           echo "🧪 Expected: ~30-50 integration tests"
@@ -228,8 +228,8 @@ jobs:
           # Record start time
           start_time=$(date +%s%3N)
 
-          # Run integration tests with increased timeout (160 seconds, 20 seconds buffer)
-          timeout 160s npm run test:integration 2>&1 | tee integration-test-output.log
+          # Run integration tests with increased timeout (280 seconds, 20 seconds buffer)
+          timeout 280s npm run test:integration 2>&1 | tee integration-test-output.log
           test_exit_code=${PIPESTATUS[0]}
 
           # Record end time
@@ -251,10 +251,10 @@ jobs:
           echo "🗃️ Database: File-based SQLite"
 
           # Timeout evaluation
-          if [ "$duration" -lt 180000 ]; then
-            echo "🏆 EXCELLENT: Integration tests completed within 180-second limit!"
+          if [ "$duration" -lt 300000 ]; then
+            echo "🏆 EXCELLENT: Integration tests completed within 5-minute limit!"
           else
-            echo "⚠️  WARNING: Integration tests exceeded 180-second timeout limit"
+            echo "⚠️  WARNING: Integration tests exceeded 5-minute timeout limit"
           fi
 
           # Set outputs for summary
@@ -309,15 +309,16 @@ jobs:
             | Stage | Status | Tests | Duration | Details |
             |-------|--------|-------|----------|---------|
             | **Unit Tests** | ${unitStatus === 'success' ? '✅ Passed' : '❌ Failed'} | ${unitOutputs?.total_tests || 'N/A'} | ${unitOutputs?.duration || 'N/A'} | In-memory SQLite, <2s target, 15min timeout |
-            | **Integration Tests** | ${integrationStatus === 'success' ? '✅ Passed' : '❌ Failed'} | ${integrationOutputs?.total_tests || 'N/A'} | ${integrationOutputs?.duration || 'N/A'} | File SQLite, <180s limit, 3min timeout |
+            | **Integration Tests** | ${integrationStatus === 'success' ? '✅ Passed' : '❌ Failed'} | ${integrationOutputs?.total_tests || 'N/A'} | ${integrationOutputs?.duration || 'N/A'} | File SQLite, <5min limit, with migrations |
 
             ### ⚙️ Pipeline Features
             - **Sequential Execution**: Integration tests run only after unit tests pass
-            - **Timeout Controls**: 180-second hard limit for integration stage (increased from 60s)
+            - **Timeout Controls**: 5-minute hard limit for integration stage (increased from 1 minute)
             - **Database Isolation**: Separate in-memory (unit) and file (integration) databases
             - **Dependency Caching**: NPM dependencies cached for performance
             - **Environment Variables**: Complete test credentials configured
             - **Automatic Cleanup**: Database cleanup after integration tests
+            - **Migration Support**: Database migrations run before integration tests
 
             ### 🔧 Environment Configuration
             - **Node.js**: 20.x with optimized memory allocation (4GB)
@@ -325,6 +326,7 @@ jobs:
             - **Timeouts**: Vitest configured with CI-appropriate timeouts (increased for stability)
             - **Caching**: NPM dependencies cached between jobs
             - **Security**: Test credentials isolated from production
+            - **Parsing**: Robust Vitest output parsing (handles both 'passed' and 'passing')
 
             ${overallStatus === '✅' ?
               '### 🎉 All pipeline stages passed successfully!' :
@@ -335,9 +337,11 @@ jobs:
             ${unitStatus === 'success' && integrationStatus !== 'success' ? '- ❌ Review integration test failures and database setup\n' : ''}
             ${overallStatus === '✅' ? '- ✅ Pipeline ready for deployment\n' : ''}
 
-            ### 🔄 Recent Timeout Improvements
-            - **Integration Tests**: Increased from 60s to 180s total timeout
-            - **Individual Test Timeouts**: Increased Vitest timeouts for CI environment
+            ### 🔄 Recent Improvements
+            - **Integration Tests**: Increased timeout from 1min to 5min for database operations
+            - **Migration Support**: Database migrations run before integration tests
+            - **Robust Parsing**: Fixed Vitest output parsing to handle both 'passed' and 'passing'
+            - **Individual Test Timeouts**: Increased Vitest timeouts for CI environment stability
             - **Database Operations**: More time for migration and initialization
             - **HTTP Requests**: Extended timeout for external service calls
             `;

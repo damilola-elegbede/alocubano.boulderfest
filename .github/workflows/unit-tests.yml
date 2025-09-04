@@ -30,6 +30,12 @@ jobs:
     name: "🧪 Unit Test Suite"
     runs-on: ubuntu-latest
     timeout-minutes: 15  # Increased from 10 to 15 minutes for CI stability
+    outputs:
+      total_tests: ${{ steps.test.outputs.total_tests }}
+      passing_tests: ${{ steps.test.outputs.passing_tests }}
+      failing_tests: ${{ steps.test.outputs.failing_tests }}
+      duration: ${{ steps.test.outputs.duration }}
+      node_version: ${{ steps.test.outputs.node_version }}
 
     strategy:
       matrix:
@@ -75,10 +81,10 @@ jobs:
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
 
-          # Extract test counts from output
-          total_tests=$(grep -oP '\d+(?= passing)' test-output.log | head -1 || echo "0")
-          passing_tests=$(grep -oP '\d+(?= passing)' test-output.log | head -1 || echo "0")
-          failing_tests=$(grep -oP '\d+(?= failing)' test-output.log | head -1 || echo "0")
+          # Extract test counts from output - handle both 'passed' and 'passing' variants
+          total_tests=$(grep -oP '\d+(?= (tests? )?passed)' test-output.log | head -1 || echo "0")
+          passing_tests=$total_tests
+          failing_tests=$(grep -oP '\d+(?= (tests? )?failed)' test-output.log | head -1 || echo "0")
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📊 Test Results Summary"

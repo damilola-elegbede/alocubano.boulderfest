@@ -66,9 +66,9 @@ runs:
         COVERAGE_PATH="${{ inputs.coverage-path }}"
         BROWSER="${{ inputs.browser-name }}"
         START_TIME="${{ inputs.job-start-time }}"
-        
+
         echo "🔍 Processing $TEST_TYPE test results..."
-        
+
         # Initialize default values
         STATUS="success"
         EXECUTION_TIME="0"
@@ -78,18 +78,18 @@ runs:
         SKIPPED_COUNT="0"
         COVERAGE="0"
         FLAKY_TESTS="[]"
-        
+
         # Calculate execution time if start time provided
         if [ -n "$START_TIME" ] && [ "$START_TIME" -gt 0 ]; then
           END_TIME=$(date +%s)
           EXECUTION_TIME=$((END_TIME - START_TIME))
         fi
-        
+
         # Process results based on test type
         case "$TEST_TYPE" in
           "unit")
             echo "📊 Processing unit test results..."
-            
+
             # Look for Vitest results
             if [ -f "test-results.json" ]; then
               TEST_COUNT=$(jq -r '.numTotalTests // 0' test-results.json 2>/dev/null || echo "0")
@@ -97,35 +97,35 @@ runs:
               FAILED_COUNT=$(jq -r '.numFailedTests // 0' test-results.json 2>/dev/null || echo "0")
               SKIPPED_COUNT=$(jq -r '.numPendingTests // 0' test-results.json 2>/dev/null || echo "0")
             fi
-            
+
             # Look for coverage information
             if [ -f "$COVERAGE_PATH/coverage-summary.json" ]; then
               COVERAGE=$(jq -r '.total.lines.pct // 0' "$COVERAGE_PATH/coverage-summary.json" 2>/dev/null || echo "0")
             fi
-            
+
             # Check for failures
             if [ "$FAILED_COUNT" -gt 0 ]; then
               STATUS="failure"
             fi
             ;;
-            
+
           "e2e")
             echo "📊 Processing E2E test results for $BROWSER..."
-            
+
             # Look for Playwright results
             if [ -f "$RESULTS_PATH/results.json" ]; then
               TOTAL_SUITES=$(jq '[.suites[].specs[]] | length' "$RESULTS_PATH/results.json" 2>/dev/null || echo "0")
               PASSED_TESTS=$(jq '[.suites[].specs[] | select(.ok == true)] | length' "$RESULTS_PATH/results.json" 2>/dev/null || echo "0")
               FAILED_TESTS=$(jq '[.suites[].specs[] | select(.ok == false)] | length' "$RESULTS_PATH/results.json" 2>/dev/null || echo "0")
-              
+
               TEST_COUNT=$TOTAL_SUITES
               PASSED_COUNT=$PASSED_TESTS
               FAILED_COUNT=$FAILED_TESTS
-              
+
               # Detect flaky tests (tests that passed after retry)
               FLAKY_TESTS=$(jq -r '[.suites[].specs[] | select(.tests[].results[] | .retry > 0 and .status == "passed") | .title] | @json' "$RESULTS_PATH/results.json" 2>/dev/null || echo "[]")
             fi
-            
+
             # Alternative: parse from console output
             if [ "$TEST_COUNT" -eq 0 ] && [ -f "playwright-output.log" ]; then
               TEST_COUNT=$(grep -o "[0-9]\+ passed" playwright-output.log | head -1 | grep -o "[0-9]\+" || echo "0")
@@ -133,21 +133,21 @@ runs:
               FAILED_COUNT=$(grep -o "[0-9]\+ failed" playwright-output.log | head -1 | grep -o "[0-9]\+" || echo "0")
               SKIPPED_COUNT=$(grep -o "[0-9]\+ skipped" playwright-output.log | head -1 | grep -o "[0-9]\+" || echo "0")
             fi
-            
+
             if [ "$FAILED_COUNT" -gt 0 ]; then
               STATUS="failure"
             fi
             ;;
-            
+
           "performance")
             echo "📊 Processing performance test results..."
-            
+
             if [ -f "$RESULTS_PATH/performance-results.json" ]; then
               # Extract performance metrics
               AVG_RESPONSE_TIME=$(jq -r '.http_req_duration.avg // 0' "$RESULTS_PATH/performance-results.json" 2>/dev/null || echo "0")
               P95_RESPONSE_TIME=$(jq -r '.http_req_duration."p(95)" // 0' "$RESULTS_PATH/performance-results.json" 2>/dev/null || echo "0")
               ERROR_RATE=$(jq -r '.http_req_failed.rate // 0' "$RESULTS_PATH/performance-results.json" 2>/dev/null || echo "0")
-              
+
               # Performance tests are considered failed if error rate > 1% or P95 > 2000ms
               if (( $(echo "$ERROR_RATE > 0.01" | bc -l 2>/dev/null || echo "0") )) || (( $(echo "$P95_RESPONSE_TIME > 2000" | bc -l 2>/dev/null || echo "0") )); then
                 STATUS="failure"
@@ -158,27 +158,27 @@ runs:
               TEST_COUNT=1
             fi
             ;;
-            
+
           "security")
             echo "📊 Processing security test results..."
-            
+
             if [ -f "audit-output.log" ]; then
               VULNERABILITIES=$(grep -c "vulnerabilities" audit-output.log || echo "0")
               CRITICAL_ISSUES=$(grep -c "critical" audit-output.log || echo "0")
-              
+
               if [ "$CRITICAL_ISSUES" -gt 0 ]; then
                 STATUS="failure"
                 FAILED_COUNT=$CRITICAL_ISSUES
               elif [ "$VULNERABILITIES" -gt 0 ]; then
                 STATUS="warning"
               fi
-              
+
               TEST_COUNT=1
               PASSED_COUNT=$((1 - FAILED_COUNT))
             fi
             ;;
         esac
-        
+
         # Create summary JSON
         SUMMARY=$(cat <<EOF
         {
@@ -196,7 +196,7 @@ runs:
         }
         EOF
         )
-        
+
         # Set outputs
         echo "summary=$(echo "$SUMMARY" | jq -c .)" >> $GITHUB_OUTPUT
         echo "status=$STATUS" >> $GITHUB_OUTPUT
@@ -207,5 +207,5 @@ runs:
         echo "skipped_count=$SKIPPED_COUNT" >> $GITHUB_OUTPUT
         echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
         echo "flaky_tests=$FLAKY_TESTS" >> $GITHUB_OUTPUT
-        
+
         echo "✅ Test results processed: $STATUS (${PASSED_COUNT}/${TEST_COUNT} passed)"
