@@ -49,6 +49,8 @@ jobs:
 
       - name: "📦 Install Dependencies"
         run: npm ci --prefer-offline --no-audit
+        env:
+          NGROK_SKIP_DOWNLOAD: true
 
       - name: "🧪 Run Unit Tests (806+ tests)"
         id: test

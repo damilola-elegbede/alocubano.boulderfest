@@ -68,6 +68,8 @@ jobs:
 
       - name: "📦 Install Dependencies"
         run: npm ci --prefer-offline --no-audit --no-fund
+        env:
+          NGROK_SKIP_DOWNLOAD: true
 
       - name: "🧪 Run Unit Tests"
         id: unit-test
@@ -181,6 +183,8 @@ jobs:
 
       - name: "📦 Install Dependencies"
         run: npm ci --prefer-offline --no-audit --no-fund
+        env:
+          NGROK_SKIP_DOWNLOAD: true
 
       - name: "🗃️ Setup SQLite Database"
         run: |
