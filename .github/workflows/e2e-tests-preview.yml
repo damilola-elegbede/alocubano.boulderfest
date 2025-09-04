@@ -335,7 +335,7 @@ jobs:
             
             if [ -s "$TEMP_FILE_LIST" ]; then
               TEST_FILES=$(cat "$TEMP_FILE_LIST" | tr '\n' ' ')
-              TEST_COMMAND="npm run test:e2e -- --project $PROJECT_NAME $TEST_FILES"
+              TEST_COMMAND="npm run test:e2e -- --project $PROJECT_NAME -- $TEST_FILES"
               echo "📁 Test files to run: $TEST_FILES"
             else
               echo "⚠️ No test files match pattern '$TEST_PATTERN', running all tests"
