@@ -298,22 +298,10 @@ jobs:
               ;;
           esac
 
-          # Always verify browser installation for reliability
-          echo "🔍 Verifying Playwright browser: $INSTALL_BROWSER..."
-          
-          # Check if browser is properly installed and functional
-          if ! npx playwright install --dry-run "$INSTALL_BROWSER" 2>/dev/null; then
-            echo "🔄 Installing Playwright browser: $INSTALL_BROWSER..."
-            npx playwright install --with-deps "$INSTALL_BROWSER"
-            
-            # Verify installation succeeded
-            if ! npx playwright install --dry-run "$INSTALL_BROWSER" 2>/dev/null; then
-              echo "❌ Browser installation failed for: $INSTALL_BROWSER"
-              exit 1
-            fi
-          else
-            echo "✅ Browser already installed: $INSTALL_BROWSER"
-          fi
+          # Always install browsers to ensure tests can run
+          echo "🔄 Installing Playwright browser: $INSTALL_BROWSER..."
+          npx playwright install --with-deps "$INSTALL_BROWSER"
+          echo "✅ Browser installed: $INSTALL_BROWSER"
 
       - name: 🎭 Run E2E Tests
         run: |
