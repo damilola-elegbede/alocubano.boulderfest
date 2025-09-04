@@ -135,11 +135,10 @@ export const waitForStability = (ms = 1000) => {
 };
 
 // Generate test ticket ID 
-export const generateTestTicketId = (testName = 'test', suffix = '') => {
+export const generateTestTicketId = (prefix = 'ticket') => {
   const timestamp = Date.now();
   const randomId = Math.random().toString(36).substring(2, 8);
-  const safeSuffix = suffix ? `-${suffix}` : '';
-  return `ticket-${testName}-${randomId}-${timestamp}${safeSuffix}`;
+  return `${prefix}-${randomId}-${timestamp}`;
 };
 
 // Initialize test isolation system
@@ -160,6 +159,28 @@ export const initializeTestIsolation = async () => {
   };
 };
 
+// Generate test user - alias for createTestData('user')
+export const generateTestUser = (testTitle = 'user') => {
+  return createTestData('user');
+};
+
+// Transaction wrapper for test operations
+export const withTestTransaction = async (callback) => {
+  const transactionId = generateTestId('tx');
+  console.log(`🔄 Starting test transaction: ${transactionId}`);
+  
+  try {
+    const result = await callback(transactionId);
+    console.log(`✅ Transaction ${transactionId} completed successfully`);
+    return result;
+  } catch (error) {
+    console.log(`❌ Transaction ${transactionId} failed: ${error.message}`);
+    throw error;
+  } finally {
+    console.log(`🏁 Transaction ${transactionId} finalized`);
+  }
+};
+
 export default {
   generateTestEmail,
   generateTestId,
@@ -171,5 +192,7 @@ export default {
   getTestNamespace,
   waitForStability,
   generateTestTicketId,
-  initializeTestIsolation
+  initializeTestIsolation,
+  generateTestUser,
+  withTestTransaction
 };

@@ -72,7 +72,16 @@ export default defineConfig({
     },
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      use: { 
+        ...devices['Desktop Firefox'],
+        // Firefox-specific optimizations for CI environment
+        actionTimeout: 20000, // Increased from 15000
+        navigationTimeout: 45000, // Increased from 30000
+        // Firefox handles network requests differently in CI
+        extraHTTPHeaders: {
+          'User-Agent': 'Playwright-E2E-Tests-Preview-Firefox'
+        }
+      },
     },
     {
       name: 'webkit',

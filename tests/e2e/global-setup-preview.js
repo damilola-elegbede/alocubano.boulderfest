@@ -85,7 +85,7 @@ async function globalSetupPreview() {
 /**
  * Validate deployment health with comprehensive checks
  */
-async function validateDeploymentHealth(previewUrl, maxAttempts = 10, intervalMs = 10000) {
+async function validateDeploymentHealth(previewUrl, maxAttempts = 12, intervalMs = 8000) {
   console.log(`⏳ Validating deployment health (max ${maxAttempts} attempts)...`);
   
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -93,13 +93,16 @@ async function validateDeploymentHealth(previewUrl, maxAttempts = 10, intervalMs
       console.log(`   🔍 Health check ${attempt}/${maxAttempts}: ${previewUrl}/api/health/check`);
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      // Increased timeout for firefox compatibility
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
       
       const response = await fetch(`${previewUrl}/api/health/check`, {
         signal: controller.signal,
         headers: {
           'User-Agent': 'E2E-Preview-Health-Check',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          // Add cache-busting to prevent stale responses
+          'Cache-Control': 'no-cache'
         }
       });
       
@@ -110,8 +113,11 @@ async function validateDeploymentHealth(previewUrl, maxAttempts = 10, intervalMs
         console.log(`   ✅ Deployment healthy (${response.status})`);
         console.log(`   📊 Health data: ${JSON.stringify(healthData, null, 2).replace(/\n/g, '\n      ')}`);
         
-        // Additional API endpoint checks
+        // Additional API endpoint checks with retries
         await validateCriticalEndpoints(previewUrl);
+        
+        // Brief pause for deployment stabilization
+        await new Promise(resolve => setTimeout(resolve, 2000));
         return;
       } else {
         console.log(`   ⚠️ Health check failed (${response.status}): ${response.statusText}`);
