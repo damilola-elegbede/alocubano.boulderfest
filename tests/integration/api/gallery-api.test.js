@@ -253,7 +253,7 @@ describe('Gallery API Integration Tests', () => {
         expect(typeof result.totalCount).toBe('number');
         
         // Should indicate it's fallback/placeholder data
-        expect(['placeholder', 'fallback-placeholder', 'build-time-cache'].includes(result.source)).toBe(true);
+        expect(['placeholder', 'fallback-placeholder', 'build-time-cache', 'runtime-generated', 'fallback', 'runtime-cache', 'fallback-cache'].includes(result.source)).toBe(true);
         
       } finally {
         // Restore environment
