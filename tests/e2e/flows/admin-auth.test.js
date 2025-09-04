@@ -20,15 +20,45 @@ test.describe('Admin Authentication', () => {
     password: process.env.TEST_ADMIN_PASSWORD || 'test-admin-password'
   };
 
+  /**
+   * Validate route accessibility before running tests
+   */
+  async function validateAdminRoute(page, route, expectedContent) {
+    try {
+      const response = await page.goto(route, { waitUntil: 'load', timeout: 60000 });
+      
+      // Check if response is successful
+      if (!response.ok()) {
+        throw new Error(`Route ${route} returned ${response.status()}: ${response.statusText()}`);
+      }
+      
+      // Wait for page to load and check for expected content
+      await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
+      
+      // Check if we actually got the right page (not a fallback)
+      const content = await page.content();
+      if (!content.includes(expectedContent)) {
+        throw new Error(`Route ${route} did not serve expected content. Page may be serving fallback content.`);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error(`❌ Admin route validation failed for ${route}:`, error.message);
+      throw error;
+    }
+  }
+
   test.beforeEach(async ({ page }) => {
-    // Navigate to admin login page with increased timeout
-    await page.goto('/pages/admin/login.html', { waitUntil: 'load', timeout: 60000 });
+    // First validate that admin login route is accessible and serves the correct page
+    await validateAdminRoute(page, '/pages/admin/login.html', 'Admin Access');
     
-    // Wait for essential elements to be ready instead of networkidle
+    // Wait for essential elements to be ready
     await page.waitForSelector('h1', { timeout: 30000 });
     await page.waitForSelector('input[name="username"]', { timeout: 30000 });
     await page.waitForSelector('input[name="password"]', { timeout: 30000 });
     await page.waitForSelector('button[type="submit"]', { timeout: 30000 });
+    
+    console.log('✅ Admin login page is accessible and properly loaded');
   });
 
   test('should display login form with required fields', async ({ page }) => {
