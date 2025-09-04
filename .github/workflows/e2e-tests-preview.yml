@@ -290,8 +290,8 @@ jobs:
 
           # Add test pattern filter if specified
           if [ -n "${{ needs.build-test-matrix.outputs.test-pattern }}" ]; then
-            # Use file pattern matching instead of grep for better reliability
-            TEST_COMMAND="$TEST_COMMAND --testNamePattern=\"(${{ needs.build-test-matrix.outputs.test-pattern }})\""
+            # Use grep pattern matching to filter specific tests
+            TEST_COMMAND="$TEST_COMMAND --grep \"${{ needs.build-test-matrix.outputs.test-pattern }}\""
             echo "🎯 Test pattern filter: ${{ needs.build-test-matrix.outputs.test-pattern }}"
           fi
 
