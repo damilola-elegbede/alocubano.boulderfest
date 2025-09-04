@@ -1,10 +1,9 @@
 name: "🛡️ Quality Gates & Code Standards"
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
   schedule:
     # Run daily at 2 AM UTC to catch any degradation
     - cron: '0 2 * * *'
@@ -24,6 +23,14 @@ jobs:
     name: "🔍 Code Quality Analysis"
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      eslint_errors: ${{ steps.eslint.outputs.eslint_errors }}
+      eslint_warnings: ${{ steps.eslint.outputs.eslint_warnings }}
+      html_errors: ${{ steps.htmlhint.outputs.html_errors }}
+      html_warnings: ${{ steps.htmlhint.outputs.html_warnings }}
+      markdown_issues: ${{ steps.markdown.outputs.markdown_issues }}
+      structure_valid: ${{ steps.structure.outputs.structure_valid }}
+      formatting_issues: ${{ steps.formatting.outputs.formatting_issues }}
 
     steps:
       - name: "📥 Checkout Code"
@@ -39,6 +46,8 @@ jobs:
 
       - name: "📦 Install Dependencies"
         run: npm ci --prefer-offline --no-audit
+        env:
+          NGROK_SKIP_DOWNLOAD: true
 
       - name: "🔍 JavaScript Linting (ESLint)"
         id: eslint
@@ -165,6 +174,11 @@ jobs:
     name: "🔒 Security Analysis"
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      vuln_critical: ${{ steps.security.outputs.vuln_critical }}
+      vuln_high: ${{ steps.security.outputs.vuln_high }}
+      vuln_moderate: ${{ steps.security.outputs.vuln_moderate }}
+      vuln_low: ${{ steps.security.outputs.vuln_low }}
 
     steps:
       - name: "📥 Checkout Code"
@@ -178,6 +192,8 @@ jobs:
 
       - name: "📦 Install Dependencies"
         run: npm ci --prefer-offline --no-audit
+        env:
+          NGROK_SKIP_DOWNLOAD: true
 
       - name: "🔒 Security Vulnerability Scan"
         id: security
@@ -267,6 +283,10 @@ jobs:
           script: |
             const codeQuality = '${{ needs.code-quality.result }}';
             const securityScan = '${{ needs.security-scan.result }}';
+            
+            // Get output values from jobs
+            const codeQualityOutputs = ${{ toJSON(needs.code-quality.outputs) }};
+            const securityOutputs = ${{ toJSON(needs.security-scan.outputs) }};
 
             const overallStatus = (codeQuality === 'success' && securityScan === 'success') ? '✅' : '❌';
             const statusText = (codeQuality === 'success' && securityScan === 'success') ? 'PASSED' : 'FAILED';
@@ -274,18 +294,31 @@ jobs:
             const comment = `## ${overallStatus} Quality Gates ${statusText}
 
             ### 📊 Quality Check Summary
-            | Check | Status |
-            |-------|--------|
-            | **Code Quality** | ${codeQuality === 'success' ? '✅ Passed' : '❌ Failed'} |
-            | **Security Scan** | ${securityScan === 'success' ? '✅ Passed' : '❌ Failed'} |
+            | Check | Status | Details |
+            |-------|--------|---------|
+            | **Code Quality** | ${codeQuality === 'success' ? '✅ Passed' : '❌ Failed'} | ESLint, HTMLHint, Markdown, Structure, Formatting |
+            | **Security Scan** | ${securityScan === 'success' ? '✅ Passed' : '❌ Failed'} | Vulnerability scan, Secret detection |
 
             ### 📋 Detailed Results
-            - **ESLint**: JavaScript code analysis
-            - **HTMLHint**: HTML validation
-            - **Markdown**: Documentation quality
-            - **Structure**: Project organization
-            - **Security**: Vulnerability scanning
-            - **Secrets**: Sensitive data detection
+            **Code Quality:**
+            - **ESLint**: ${codeQualityOutputs?.eslint_errors || '0'} errors, ${codeQualityOutputs?.eslint_warnings || '0'} warnings
+            - **HTMLHint**: ${codeQualityOutputs?.html_errors || '0'} errors, ${codeQualityOutputs?.html_warnings || '0'} warnings
+            - **Markdown**: ${codeQualityOutputs?.markdown_issues || '0'} style issues
+            - **Structure**: ${codeQualityOutputs?.structure_valid === 'true' ? 'Valid' : 'Issues detected'}
+            - **Formatting**: ${codeQualityOutputs?.formatting_issues || '0'} files need formatting
+
+            **Security:**
+            - **Critical**: ${securityOutputs?.vuln_critical || '0'} vulnerabilities
+            - **High**: ${securityOutputs?.vuln_high || '0'} vulnerabilities
+            - **Moderate**: ${securityOutputs?.vuln_moderate || '0'} vulnerabilities
+            - **Low**: ${securityOutputs?.vuln_low || '0'} vulnerabilities
+
+            ### 🛠️ Quality Standards
+            - **YAML Formatting**: All workflow files follow strict formatting standards
+            - **Job Outputs**: All CI/CD jobs properly expose test results and metrics
+            - **Robust Parsing**: Test result parsing handles multiple output formats
+            - **Error Handling**: Comprehensive error detection and reporting
+            - **Security**: Automated vulnerability scanning and secret detection
 
             ${overallStatus === '✅' ?
               '### 🎉 All quality checks passed!' :

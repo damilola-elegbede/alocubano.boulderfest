@@ -90,6 +90,17 @@ class GalleryService {
       if (shouldUseBuildTimeCache()) {
         const cachedData = await this.getFeaturedPhotosCache();
         if (cachedData) {
+          // Convert cache format (items) to API format (photos) if needed
+          if (cachedData.items && !cachedData.photos) {
+            return {
+              photos: cachedData.items.map(item => ({
+                ...item,
+                featured: true
+              })),
+              totalCount: cachedData.totalCount ?? cachedData.items?.length ?? 0 ?? cachedData.items?.length ?? 0,
+              cacheTimestamp: cachedData.cacheTimestamp
+            };
+          }
           return cachedData;
         }
       }
@@ -419,7 +430,15 @@ class GalleryService {
   /**
    * Clear runtime cache (useful for debugging)
    */
-  clearCache() {
+
+  /**
+   * Ensure service is initialized (for consistency with other services)
+   */
+  async ensureInitialized() {
+    // Gallery service is stateless and does not require initialization
+    // This method exists for consistency with other async services
+    return this;
+  }  clearCache() {
     this.cache.clear();
     this.metrics = {
       cacheHits: 0,

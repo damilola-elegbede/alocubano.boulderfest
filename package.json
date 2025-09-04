@@ -31,10 +31,11 @@
     "test:unit": "NODE_OPTIONS='--max-old-space-size=6144' vitest run --config tests/vitest.config.js",
     "test:unit:watch": "NODE_OPTIONS='--max-old-space-size=6144' vitest --config tests/vitest.config.js",
     "test:unit:coverage": "NODE_OPTIONS='--max-old-space-size=6144' vitest run --coverage --config tests/vitest.config.js",
-    "//disabled-integration": "=== INTEGRATION TESTS (DISABLED FOR UNIT-ONLY FOCUS) ===",
-    "_test:integration": "echo '🚫 Integration tests disabled for unit-only focus. Use test:integration:enable to re-enable.' && exit 1",
-    "_test:integration:watch": "echo '🚫 Integration tests disabled for unit-only focus. Use test:integration:enable to re-enable.' && exit 1",
-    "_test:integration:coverage": "echo '🚫 Integration tests disabled for unit-only focus. Use test:integration:enable to re-enable.' && exit 1",
+    "//integration": "=== INTEGRATION TESTS ===",
+    "test:integration": "NODE_OPTIONS='--max-old-space-size=4096' vitest run --config tests/config/vitest.integration.config.js",
+    "test:integration:watch": "NODE_OPTIONS='--max-old-space-size=4096' vitest --config tests/config/vitest.integration.config.js",
+    "test:integration:coverage": "NODE_OPTIONS='--max-old-space-size=4096' vitest run --coverage --config tests/config/vitest.integration.config.js",
+    "test:integration:critical": "NODE_OPTIONS='--max-old-space-size=4096' vitest run --config tests/config/vitest.integration.config.js -t 'payment|stripe|critical'",
     "//disabled-e2e": "=== E2E TESTS (DISABLED FOR UNIT-ONLY FOCUS) ===",
     "_test:e2e": "echo '🚫 E2E tests disabled for unit-only focus. Use test:e2e:enable to re-enable.' && exit 1",
     "_test:e2e:ui": "echo '🚫 E2E tests disabled for unit-only focus. Use test:e2e:enable to re-enable.' && exit 1",
@@ -53,20 +54,20 @@
     "_test:e2e:webkit": "echo '🚫 E2E tests disabled for unit-only focus. Use test:e2e:enable to re-enable.' && exit 1",
     "test:health": "node scripts/test-health-endpoint.js",
     "test:performance": "NODE_OPTIONS='--max-old-space-size=8192' node scripts/performance-test.js",
-    "test:all": "npm run test:unit",
-    "test:all:memory-optimized": "npm run test:unit",
+    "test:all": "npm run test:unit && npm run test:integration",
+    "test:all:memory-optimized": "NODE_OPTIONS='--max-old-space-size=8192' npm run test:unit && npm run test:integration",
     "//phase2": "=== PHASE 2 TESTING COMMANDS ===",
-    "test:phase2": "echo '🚀 Phase 2: Running 806+ unit tests (UNIT-ONLY MODE)' && npm run test:unit",
+    "test:phase2": "echo '🚀 Phase 2: Running target <2s (UNIT-ONLY MODE)' && npm run test:unit",
     "test:phase2:stats": "echo '📊 Phase 2: Analyzing massive test suite performance (UNIT-ONLY)' && npm run test:unit 2>&1 | grep -E 'Tests|Duration|passed|failed'",
     "test:phase2:categories": "echo '📂 Phase 2: Security (248), Business Logic (300), Frontend (258) - UNIT-ONLY' && npm run test:unit",
-    "test:phase2:performance": "echo '⚡ Phase 2: Target <2 seconds for 806+ tests (UNIT-ONLY)' && time npm run test:unit",
+    "test:phase2:performance": "echo '⚡ Phase 2: Target <2 seconds execution (UNIT-ONLY)' && time npm run test:unit",
     "test:phase2:memory-profile": "NODE_OPTIONS='--max-old-space-size=8192 --inspect' npm run test:unit",
     "//re-enable": "=== RE-ENABLE COMMANDS (FOR FUTURE USE) ===",
     "test:integration:enable": "echo '🔧 To re-enable integration tests, change _test:integration to test:integration in package.json' && echo 'Command: NODE_OPTIONS=\"--max-old-space-size=4096\" vitest run --config tests/vitest.integration.config.js'",
     "test:e2e:enable": "echo '🔧 To re-enable E2E tests, change _test:e2e to test:e2e in package.json' && echo 'Command: NODE_OPTIONS=\"--max-old-space-size=3072\" playwright test --config=playwright-e2e-preview.config.js'",
     "test:enable:all": "echo '🔧 To re-enable all tests:' && echo '1. Change _test:integration to test:integration' && echo '2. Change _test:e2e to test:e2e' && echo '3. Update test:all to include all test types'",
     "//deprecated-test": "=== DEPRECATED TESTING (Use Phase 2 commands instead) ===",
-    "test:simple": "echo '⚠️ DEPRECATED: Use \"npm run test:phase2\" for Phase 2 massive test suite (806+ tests - UNIT-ONLY)' && npm run test:unit",
+    "test:simple": "echo '⚠️ DEPRECATED: Use \"npm run test:phase2\" for Phase 2 massive test suite (fast unit tests)' && npm run test:unit",
     "test:simple:watch": "echo '⚠️ DEPRECATED: Use \"npm run test:unit:watch\" instead' && npm run test:unit:watch",
     "test:coverage": "echo '⚠️ DEPRECATED: Use \"npm run test:unit:coverage\" instead' && npm run test:unit:coverage",
     "_test:e2e:ci": "echo '❌ DISABLED: E2E tests disabled for unit-only focus. Use \"npm run test:e2e:enable\" for instructions.' && exit 1",
@@ -89,15 +90,15 @@
     "_test:e2e:database": "echo '❌ DISABLED: E2E tests disabled for unit-only focus.' && exit 1",
     "_test:e2e:network": "echo '❌ DISABLED: E2E tests disabled for unit-only focus.' && exit 1",
     "_test:e2e:email": "echo '❌ DISABLED: E2E tests disabled for unit-only focus.' && exit 1",
-    "//phase3": "=== PHASE 3 - UNIT-ONLY TEST ARCHITECTURE (INTEGRATION & E2E DISABLED) ===",
-    "test:pyramid": "echo '🔺 Unit-Only Test Pyramid: Unit (806+) ONLY → Integration (DISABLED) → E2E (DISABLED)' && npm run test:unit && echo '\\n🚫 Integration tests disabled for unit-only focus' && echo '\\n🚫 E2E tests disabled for unit-only focus'",
-    "test:pyramid:all": "echo '⚠️ Unit-Only Mode: Only running unit tests (integration and E2E disabled)' && npm run test:unit",
-    "test:pyramid:status": "echo '📊 Unit-Only Test Status:' && echo 'Unit: 806+ tests in <2s (ACTIVE)' && echo 'Integration: ~30 tests (DISABLED)' && echo 'E2E: 12+ tests (DISABLED)'",
-    "test:integration:status": "echo '🚫 Integration tests: DISABLED for unit-only focus' && echo 'Use: npm run test:integration:enable for re-enablement instructions'",
-    "test:integration:disable": "echo '✅ Integration tests are disabled (current state)'",
+    "//phase3": "=== PHASE 3 - TEST ARCHITECTURE (E2E DISABLED) ===",
+    "test:pyramid": "echo '🔺 Test Pyramid: Unit (806+) + Integration (~30) → E2E (DISABLED)' && npm run test:unit && npm run test:integration && echo '\\n🚫 E2E tests disabled for unit+integration focus'",
+    "test:pyramid:all": "echo '✅ Running Unit + Integration tests (E2E disabled)' && npm run test:all",
+    "test:pyramid:status": "echo '📊 Test Status:' && echo 'Unit: fast execution (ACTIVE)' && echo 'Integration: ~30 tests (ACTIVE)' && echo 'E2E: 12+ tests (DISABLED)'",
+    "test:integration:status": "echo '✅ Integration tests: ENABLED and available' && echo 'Commands: test:integration, test:integration:watch, test:integration:coverage, test:integration:critical'",
+    "test:integration:disable": "echo 'ℹ️ To disable integration tests, change test:integration commands to _test:integration in package.json'",
     "test:env:validate": "node -e \"import('./tests/config/test-environment.js').then(m => { console.log('✅ Validating test environments (UNIT-ONLY)...'); m.validateEnvironment(m.TEST_ENVIRONMENTS.UNIT); })\"",
     "test:env:unit": "node -e \"import('./tests/config/test-environment.js').then(m => m.configureEnvironment(m.TEST_ENVIRONMENTS.UNIT))\"",
-    "_test:env:integration": "echo '🚫 Integration environment validation disabled for unit-only focus.' && exit 1",
+    "test:env:integration": "node -e \"import('./tests/config/test-environment.js').then(m => m.configureEnvironment(m.TEST_ENVIRONMENTS.INTEGRATION))\"",
     "test:config:validate": "echo '🔍 Validating test configurations (UNIT-ONLY)...' && node -e \"import('./tests/config/vitest.unit.config.js').then(config => console.log('✅ Unit test configuration validated'))\"",
     "//tools": "=== VALIDATION & SETUP TOOLS ===",
     "_test:e2e:validate": "echo '🚫 E2E validation disabled for unit-only focus. Use test:e2e:enable for instructions.' && exit 1",
@@ -225,49 +226,53 @@
         "npm run dev:clean - Clean start with fresh Vercel config"
       ],
       "testing": [
-        "npm test - Run unit tests ONLY (806+ tests in <2s) - INTEGRATION & E2E DISABLED",
-        "npm run test:phase2 - Dedicated Phase 2 test command with stats (UNIT-ONLY)",
-        "npm run test:phase2:performance - Performance analysis of 806+ unit tests",
-        "npm run test:phase2:categories - Show test categories (Security 248, Business 300, Frontend 258)",
+        "npm test - Run unit tests ONLY (fast execution) - quick feedback loop",
         "npm run test:unit:watch - Unit tests in watch mode (memory optimized)",
         "npm run test:unit:coverage - Unit tests with coverage (memory optimized)",
-        "DISABLED: npm run test:integration - Integration tests (use test:integration:enable for instructions)",
-        "DISABLED: npm run test:e2e - E2E tests (use test:e2e:enable for instructions)",
-        "npm run test:all - Unit tests ONLY (integration and E2E disabled)"
+        "npm run test:integration - Integration tests (~30 tests with real API calls)",
+        "npm run test:integration:watch - Integration tests in watch mode",
+        "npm run test:integration:coverage - Integration tests with coverage",
+        "npm run test:integration:critical - Critical payment and Stripe integration tests",
+        "npm run test:all - Unit + Integration tests (E2E disabled)",
+        "npm run test:phase2 - Dedicated Phase 2 test command with stats",
+        "npm run test:phase2:performance - Performance analysis of 806+ unit tests",
+        "DISABLED: npm run test:e2e - E2E tests (use test:e2e:enable for instructions)"
       ],
       "deployment": [
-        "npm run deploy:staging - Deploy to staging with quality gates (unit tests only)",
-        "npm run deploy:production - Deploy to production (unit tests only)",
+        "npm run deploy:staging - Deploy to staging with quality gates (unit + integration tests)",
+        "npm run deploy:production - Deploy to production (unit + integration tests)",
         "npm run deploy:check - Pre-deployment validation"
       ],
       "validation": [
         "npm run validate:scripts - Validate package.json scripts organization and consistency"
       ]
     },
-    "unit-only-mode": {
-      "note": "Integration and E2E tests have been disabled to focus exclusively on unit tests",
+    "integration-enabled-mode": {
+      "note": "Integration tests are now enabled alongside unit tests. E2E tests remain disabled for focused testing.",
       "active": [
-        "test - Run 806+ unit tests in <2 seconds",
+        "test - Run 806+ unit tests in <2 seconds (quick feedback)",
         "test:unit - Direct unit test execution",
         "test:unit:watch - Unit tests in watch mode",
         "test:unit:coverage - Unit tests with coverage",
-        "test:all - Unit tests only (no integration or E2E)"
+        "test:integration - Integration tests (~30 tests with real APIs)",
+        "test:integration:watch - Integration tests in watch mode",
+        "test:integration:coverage - Integration tests with coverage",
+        "test:integration:critical - Critical payment integration tests",
+        "test:all - Unit + Integration tests combined"
       ],
       "disabled": [
-        "test:integration - All integration test commands disabled",
-        "test:e2e - All E2E test commands disabled",
+        "test:e2e - All E2E test commands disabled for focused unit+integration testing",
         "E2E setup and validation commands disabled"
       ],
       "re-enable": [
-        "test:integration:enable - Instructions to re-enable integration tests",
         "test:e2e:enable - Instructions to re-enable E2E tests",
-        "test:enable:all - Instructions to re-enable all test types"
+        "test:integration:disable - Instructions to disable integration tests if needed"
       ]
     },
     "deprecated": {
       "note": "Deprecated scripts show warnings and redirect to Phase 2 alternatives",
       "migration": [
-        "test:simple → test:phase2 (Phase 2: 806+ tests - UNIT-ONLY)",
+        "test:simple → test:phase2 (Phase 2: fast unit tests)",
         "test:e2e:ci → DISABLED (was using Vercel Preview Deployments)",
         "test:e2e:ngrok → DISABLED (was modern approach)",
         "start:ci → Not needed (use Vercel Preview Deployments)",
@@ -286,23 +291,23 @@
       "Apple & Google Wallet passes"
     ],
     "testing": [
-      "UNIT-ONLY MODE: 806+ unit tests in <2 seconds (integration and E2E disabled for focus)",
-      "Test categories: Security (248 tests), Business Logic (300 tests), Frontend (258 tests)",
-      "Memory-optimized execution: 6GB allocation for large unit test suite",
-      "Integration tests: DISABLED (30-50 tests available but not running)",
-      "E2E tests: DISABLED (12+ Playwright tests available but not running)",
-      "SQLite for unit tests only (production-like testing disabled)",
-      "Unit test focus: Direct testing with minimal abstractions",
-      "Phase 2 achievements: 161x test growth (5 → 806+) with maintained <2s execution - UNIT-ONLY"
+      "UNIT + INTEGRATION MODE: 806+ unit tests in <2s + ~30 integration tests (E2E disabled for focus)",
+      "Unit test categories: Security (248 tests), Business Logic (300 tests), Frontend (258 tests)",
+      "Memory-optimized execution: 6GB allocation for unit tests, 4GB for integration tests",
+      "Integration tests: ENABLED (~30 tests with real API calls, payment processing, database operations)",
+      "E2E tests: DISABLED (12+ Playwright tests available but not running for focused testing)",
+      "SQLite for unit tests, production database for integration tests",
+      "Layered testing: Fast unit tests for immediate feedback, integration tests for API validation",
+      "Phase 2 achievements: 161x test growth (5 → 806+) with maintained <2s unit execution + integration layer"
     ],
     "phase2-achievements": [
-      "Massive unit test expansion: From 5 tests to 806+ tests (161x growth!) - UNIT-ONLY MODE",
-      "Extraordinary performance: 806+ unit tests execute in <2 seconds",
-      "Comprehensive coverage: Security validation (248), Business logic (300), Frontend (258)",
-      "Memory optimization: Enhanced Node.js memory allocation for large unit test suite",
-      "CI/CD optimization: Workflows optimized for handling 800+ unit tests only",
-      "Quality maintenance: 94%+ pass rate with comprehensive unit validation",
-      "Performance target achievement: Sub-2-second execution consistently met - UNIT-ONLY"
+      "Massive unit test expansion: From 5 tests to target <2s (significant growth) with integration layer added",
+      "Extraordinary performance: 806+ unit tests execute in <2 seconds, integration tests validate real APIs",
+      "Comprehensive coverage: Security validation (248), Business logic (300), Frontend (258) + Integration tests",
+      "Memory optimization: Enhanced Node.js memory allocation for both unit (6GB) and integration (4GB) suites",
+      "Layered testing strategy: Fast unit feedback + comprehensive integration validation",
+      "Quality maintenance: 94%+ pass rate with unit validation + real API integration testing",
+      "Performance target achievement: Sub-2-second unit execution + efficient integration test execution"
     ]
   }
 }

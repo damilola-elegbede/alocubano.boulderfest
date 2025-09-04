@@ -118,10 +118,13 @@ class DatabaseService {
     const isTest = process.env.NODE_ENV === "test" || process.env.TEST_TYPE === "integration";
     const isCI = process.env.CI === "true";
     
-    // Determine if this is specifically an E2E test context
-    const isE2ETest = process.env.E2E_TEST_MODE === "true" || 
+    // Determine if this is specifically an E2E test context (not integration tests)
+    const isIntegrationTest = process.env.INTEGRATION_TEST_MODE === "true" || process.env.TEST_TYPE === "integration";
+    const isE2ETest = !isIntegrationTest && (
+                      process.env.E2E_TEST_MODE === "true" || 
                       process.env.PLAYWRIGHT_BROWSER || 
-                      process.env.VERCEL_DEV_STARTUP === "true";
+                      process.env.VERCEL_DEV_STARTUP === "true"
+                     );
 
     let databaseUrl;
     const authToken = process.env.TURSO_AUTH_TOKEN;
@@ -223,11 +226,30 @@ class DatabaseService {
       config.authToken = authToken;
     } else if (!authToken && databaseUrl !== ":memory:" && !databaseUrl.startsWith("file:")) {
       // Auth token is required for remote Turso databases
-      if (isTest) {
+      if (isE2ETest) {
+        // Only E2E tests require TURSO_AUTH_TOKEN for remote databases
         const error = new Error("TURSO_AUTH_TOKEN environment variable is required for E2E tests with remote database");
         error.code = "DB_AUTH_ERROR";
         error.context = "e2e-tests";
         throw error;
+      } else if (isIntegrationTest) {
+        // Integration tests should not use remote databases - force local SQLite
+        logger.warn("⚠️ Integration test attempted to use remote database - this should use local SQLite file");
+        logger.warn(`⚠️ Database URL: ${databaseUrl}`);
+        logger.warn("⚠️ Switching to local SQLite for integration test safety");
+        
+        // Override with local SQLite file for integration tests
+        const path = await import("path");
+        const fs = await import("fs");
+        
+        const dataDir = path.join(process.cwd(), "data");
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
+        }
+        
+        databaseUrl = `file:${path.join(dataDir, "test-integration.db")}`;
+        config.url = databaseUrl;
+        logger.log(`🔄 Integration test database URL changed to: ${databaseUrl}`);
       } else if (isVercelProduction) {
         const error = new Error("TURSO_AUTH_TOKEN environment variable is required for remote database connections in production");
         error.code = "DB_AUTH_ERROR";

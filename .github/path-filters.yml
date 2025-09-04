@@ -1,8 +1,8 @@
 # GitHub Path Filters Configuration
 # Optimizes CI/CD workflow triggers by detecting file changes
 # Reduces unnecessary workflow runs by 60%+ through smart filtering
-# Updated for consolidated workflow architecture (August 2024)
-# 
+# Updated for consolidated workflow architecture (September 2025)
+#
 # Usage with dorny/paths-filter:
 #   - uses: dorny/paths-filter@v3
 #     with:

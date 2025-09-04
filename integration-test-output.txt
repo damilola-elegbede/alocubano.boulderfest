@@ -1,0 +1,1377 @@
+
+> alocubano-boulderfest@1.0.0 test:integration
+> NODE_OPTIONS='--max-old-space-size=4096' vitest run --config tests/vitest.integration.config.js
+
+
+ RUN  v2.1.9 /Users/damilola/Documents/Projects/alocubano.boulderfest
+
+stdout | tests/integration/core/payment-flow.test.js
+🧪 Test environment configured for: INTEGRATION
+📍 Database: Local SQLite file for integration tests
+🔧 Port: 3001 (Integration tests require real API server)
+⚡ Timeouts: Test=60000ms, Hook=20000ms
+✅ Environment validation passed for: INTEGRATION
+🧪 Integration test environment ready - database & services configured
+
+stdout | tests/integration/core/payment-flow-final.test.js
+🧪 Test environment configured for: INTEGRATION
+📍 Database: Local SQLite file for integration tests
+🔧 Port: 3001 (Integration tests require real API server)
+⚡ Timeouts: Test=60000ms, Hook=20000ms
+✅ Environment validation passed for: INTEGRATION
+🧪 Integration test environment ready - database & services configured
+
+stdout | tests/integration/core/payment-flow-final.test.js
+[dotenv@17.2.2] injecting env (58) from .env.local -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+
+stdout | tests/integration/core/payment-flow-final.test.js
+🚀 Integration test environment initialized
+📊 Target: ~30-50 tests with real database
+🗄️ Database: Local SQLite file for integration tests
+🔧 Port: 3001 (Integration tests require real API server)
+
+stdout | tests/integration/core/payment-flow-final.test.js
+🔄 Running database migrations for integration tests...
+🚀 Starting database migrations...
+
+stdout | tests/integration/core/payment-flow-final.test.js
+✅ Database connection verified
+
+stdout | tests/integration/core/payment-flow-final.test.js
+✅ Migrations table initialized
+
+stdout | tests/integration/core/payment-flow-final.test.js
+📂 Found 22 migration files
+
+stdout | tests/integration/core/payment-flow-final.test.js
+✨ No pending migrations found
+✅ Migration completed: 0 executed, 22 skipped
+✅ Integration database initialized
+
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Complete Payment Transaction Flow > should create a complete VIP ticket purchase with all components
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Complete Payment Transaction Flow > should create a complete VIP ticket purchase with all components
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Complete Payment Transaction Flow > should create a complete VIP ticket purchase with all components
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Complete Payment Transaction Flow > should create a complete VIP ticket purchase with all components 2090ms 21 MB heap used
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Complete Payment Transaction Flow > should handle mixed ticket and donation purchase
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Complete Payment Transaction Flow > should handle mixed ticket and donation purchase
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Complete Payment Transaction Flow > should handle mixed ticket and donation purchase
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Complete Payment Transaction Flow > should handle mixed ticket and donation purchase 1992ms 22 MB heap used
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Complete Payment Transaction Flow > should handle multiple tickets of the same type
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Complete Payment Transaction Flow > should handle multiple tickets of the same type
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Complete Payment Transaction Flow > should handle multiple tickets of the same type
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Complete Payment Transaction Flow > should handle multiple tickets of the same type 1843ms 22 MB heap used
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Complete Payment Transaction Flow > should handle donation-only transaction
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Complete Payment Transaction Flow > should handle donation-only transaction
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Complete Payment Transaction Flow > should handle donation-only transaction
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Complete Payment Transaction Flow > should handle donation-only transaction 1611ms 18 MB heap used
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Payment Status Updates and Webhooks > should handle payment status transitions
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Payment Status Updates and Webhooks > should handle payment status transitions
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Payment Status Updates and Webhooks > should handle payment status transitions
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Payment Status Updates and Webhooks > should handle payment status transitions 2267ms 22 MB heap used
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Payment Status Updates and Webhooks > should log webhook events in sequence
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Payment Status Updates and Webhooks > should log webhook events in sequence
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Payment Status Updates and Webhooks > should log webhook events in sequence
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Payment Status Updates and Webhooks > should log webhook events in sequence 2063ms 27 MB heap used
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Database Constraints and Integrity > should enforce transaction type constraints
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Database Constraints and Integrity > should enforce transaction type constraints
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Database Constraints and Integrity > should enforce transaction type constraints
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Database Constraints and Integrity > should enforce transaction type constraints
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ × tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Database Constraints and Integrity > should enforce transaction type constraints 2407ms 25 MB heap used
+   → promise resolved "undefined" instead of rejecting
+   → promise resolved "undefined" instead of rejecting
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Database Constraints and Integrity > should enforce item type constraints
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Database Constraints and Integrity > should enforce item type constraints
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Database Constraints and Integrity > should enforce item type constraints
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Database Constraints and Integrity > should enforce item type constraints 1442ms 18 MB heap used
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Database Constraints and Integrity > should enforce foreign key relationships
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Database Constraints and Integrity > should enforce foreign key relationships
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Database Constraints and Integrity > should enforce foreign key relationships 1238ms 19 MB heap used
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Database Constraints and Integrity > should handle concurrent transaction creation with unique constraints
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Database Constraints and Integrity > should handle concurrent transaction creation with unique constraints
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Database Constraints and Integrity > should handle concurrent transaction creation with unique constraints
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Database Constraints and Integrity > should handle concurrent transaction creation with unique constraints 2145ms 20 MB heap used
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Price Calculations and Validation > should validate price calculations across items
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Price Calculations and Validation > should validate price calculations across items
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Price Calculations and Validation > should validate price calculations across items
+ ✓ tests/integration/core/payment-flow-final.test.js > Payment Integration Tests - Final Implementation > Price Calculations and Validation > should validate price calculations across items 2106ms 21 MB heap used
+stdout | tests/integration/core/payment-flow-final.test.js
+🧹 Cleaned up test database: /Users/damilola/Documents/Projects/alocubano.boulderfest/data/test-integration.db
+🧹 Environment cleanup completed for: INTEGRATION
+✅ Integration test cleanup completed
+
+stdout | tests/integration/database/data-integrity.test.js
+🧪 Test environment configured for: INTEGRATION
+📍 Database: Local SQLite file for integration tests
+🔧 Port: 3001 (Integration tests require real API server)
+⚡ Timeouts: Test=60000ms, Hook=20000ms
+✅ Environment validation passed for: INTEGRATION
+🧪 Integration test environment ready - database & services configured
+
+stdout | tests/integration/database/data-integrity.test.js
+🚀 Integration test environment initialized
+📊 Target: ~30-50 tests with real database
+🗄️ Database: Local SQLite file for integration tests
+🔧 Port: 3001 (Integration tests require real API server)
+
+stderr | tests/integration/database/data-integrity.test.js
+Database initialization failed, retrying... (attempt 1/3)
+
+stderr | tests/integration/database/data-integrity.test.js
+Database initialization failed, retrying... (attempt 2/3)
+
+stderr | tests/integration/database/data-integrity.test.js
+Database initialization failed, retrying... (attempt 3/3)
+
+stderr | tests/integration/database/data-integrity.test.js
+❌ Failed to initialize integration database: Error: TURSO_AUTH_TOKEN environment variable is required for E2E tests with remote database
+    at DatabaseService._performInitialization (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:227:23)
+    at DatabaseService._initializeWithRetry (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:96:25)
+    at DatabaseService._initializeWithRetry (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:103:21)
+    at DatabaseService.ensureInitialized (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:69:22)
+    at getDatabaseClient (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:839:18)
+    at initializeDatabase (/Users/damilola/Documents/Projects/alocubano.boulderfest/tests/setup-integration.js:31:16)
+    at /Users/damilola/Documents/Projects/alocubano.boulderfest/tests/setup-integration.js:136:3
+    at callSuiteHook (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:964:22)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1175:29)
+    at runFiles (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1262:5) {
+  code: 'DB_AUTH_ERROR',
+  context: 'e2e-tests'
+}
+
+stdout | tests/integration/database/data-integrity.test.js
+🧹 Cleaned up test database: /Users/damilola/Documents/Projects/alocubano.boulderfest/data/test-integration.db
+🧹 Environment cleanup completed for: INTEGRATION
+✅ Integration test cleanup completed
+
+ ↓ tests/integration/database/data-integrity.test.js > Integration: Database Data Integrity > should enforce unique constraints and handle violations gracefully
+ ↓ tests/integration/database/data-integrity.test.js > Integration: Database Data Integrity > should enforce CHECK constraints for valid data ranges
+ ↓ tests/integration/database/data-integrity.test.js > Integration: Database Data Integrity > should handle foreign key relationships and cascade operations correctly
+ ↓ tests/integration/database/data-integrity.test.js > Integration: Database Data Integrity > should maintain transaction integrity with rollback on errors
+ ↓ tests/integration/database/data-integrity.test.js > Integration: Database Data Integrity > should enforce email subscriber constraints and data consistency
+ ↓ tests/integration/database/data-integrity.test.js > Integration: Database Data Integrity > should handle concurrent updates with proper isolation
+stdout | tests/integration/core/payment-flow-working.test.js
+🧪 Test environment configured for: INTEGRATION
+📍 Database: Local SQLite file for integration tests
+🔧 Port: 3001 (Integration tests require real API server)
+⚡ Timeouts: Test=60000ms, Hook=20000ms
+✅ Environment validation passed for: INTEGRATION
+🧪 Integration test environment ready - database & services configured
+
+stdout | tests/integration/core/payment-flow-working.test.js
+[dotenv@17.2.2] injecting env (1) from .env.local -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+stdout | tests/integration/core/payment-flow-working.test.js
+🚀 Integration test environment initialized
+📊 Target: ~30-50 tests with real database
+🗄️ Database: Local SQLite file for integration tests
+🔧 Port: 3001 (Integration tests require real API server)
+
+stdout | tests/integration/core/payment-flow-working.test.js
+🔄 Running database migrations for integration tests...
+🚀 Starting database migrations...
+
+stdout | tests/integration/core/payment-flow-working.test.js
+✅ Database connection verified
+
+stdout | tests/integration/core/payment-flow-working.test.js
+✅ Migrations table initialized
+
+stdout | tests/integration/core/payment-flow-working.test.js
+📂 Found 22 migration files
+
+stdout | tests/integration/core/payment-flow-working.test.js
+✨ No pending migrations found
+✅ Migration completed: 0 executed, 22 skipped
+✅ Integration database initialized
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should create complete payment transaction with all related records
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should create complete payment transaction with all related records
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ × tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should create complete payment transaction with all related records
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should create complete payment transaction with all related records
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should create complete payment transaction with all related records
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ × tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should create complete payment transaction with all related records
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+ × tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should create complete payment transaction with all related records 2892ms 24 MB heap used
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should handle different payment types correctly
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should handle different payment types correctly
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ × tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should handle different payment types correctly
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should handle different payment types correctly
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should handle different payment types correctly
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ × tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should handle different payment types correctly
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+ × tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should handle different payment types correctly 2971ms 32 MB heap used
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should handle multiple tickets per transaction
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should handle multiple tickets per transaction
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ × tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should handle multiple tickets per transaction
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should handle multiple tickets per transaction
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should handle multiple tickets per transaction
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ × tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should handle multiple tickets per transaction
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+ × tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should handle multiple tickets per transaction 3040ms 27 MB heap used
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should update transaction status correctly
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should update transaction status correctly
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ ✓ tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should update transaction status correctly
+ ✓ tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Transaction Database Operations > should update transaction status correctly 1661ms 31 MB heap used
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Event Processing > should create and link payment events correctly
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Event Processing > should create and link payment events correctly
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ ✓ tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Event Processing > should create and link payment events correctly
+ ✓ tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Event Processing > should create and link payment events correctly 2034ms 29 MB heap used
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Event Processing > should handle different webhook event types
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Event Processing > should handle different webhook event types
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ ✓ tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Event Processing > should handle different webhook event types
+ ✓ tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Event Processing > should handle different webhook event types 2204ms 34 MB heap used
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Event Processing > should track event processing status
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Event Processing > should track event processing status
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ ✓ tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Event Processing > should track event processing status
+ ✓ tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Event Processing > should track event processing status 1345ms 31 MB heap used
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Database Integrity and Constraints > should enforce transaction type constraints
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Database Integrity and Constraints > should enforce transaction type constraints
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Database Integrity and Constraints > should enforce transaction type constraints
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Database Integrity and Constraints > should enforce transaction type constraints
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ × tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Database Integrity and Constraints > should enforce transaction type constraints 2368ms 23 MB heap used
+   → promise resolved "undefined" instead of rejecting
+   → promise resolved "undefined" instead of rejecting
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Database Integrity and Constraints > should enforce foreign key relationships
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Database Integrity and Constraints > should enforce foreign key relationships
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ ✓ tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Database Integrity and Constraints > should enforce foreign key relationships 1261ms 26 MB heap used
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Database Integrity and Constraints > should handle concurrent operations safely
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Database Integrity and Constraints > should handle concurrent operations safely
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Database Integrity and Constraints > should handle concurrent operations safely
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Database Integrity and Constraints > should handle concurrent operations safely
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ × tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Database Integrity and Constraints > should handle concurrent operations safely 2530ms 34 MB heap used
+   → SQLITE_CONSTRAINT: SQLite error: UNIQUE constraint failed: transactions.stripe_session_id
+   → SQLITE_CONSTRAINT: SQLite error: UNIQUE constraint failed: transactions.stripe_session_id
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Amount Calculations > should handle price calculations correctly
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Amount Calculations > should handle price calculations correctly
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ × tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Amount Calculations > should handle price calculations correctly
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Amount Calculations > should handle price calculations correctly
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Amount Calculations > should handle price calculations correctly
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ × tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Amount Calculations > should handle price calculations correctly
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+ × tests/integration/core/payment-flow-working.test.js > Payment Integration Tests - Working Implementation > Payment Amount Calculations > should handle price calculations correctly 3104ms 28 MB heap used
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+   → SQLITE_UNKNOWN: SQLite error: table transaction_items has no column named unit_price
+stdout | tests/integration/core/payment-flow-working.test.js
+🧹 Cleaned up test database: /Users/damilola/Documents/Projects/alocubano.boulderfest/data/test-integration.db
+🧹 Environment cleanup completed for: INTEGRATION
+✅ Integration test cleanup completed
+
+stdout | tests/integration/core/payment-flow-database.test.js
+🧪 Test environment configured for: INTEGRATION
+📍 Database: Local SQLite file for integration tests
+🔧 Port: 3001 (Integration tests require real API server)
+⚡ Timeouts: Test=60000ms, Hook=20000ms
+✅ Environment validation passed for: INTEGRATION
+🧪 Integration test environment ready - database & services configured
+
+stdout | tests/integration/core/payment-flow-database.test.js
+[dotenv@17.2.2] injecting env (1) from .env.local -- tip: ⚙️  enable debug logging with { debug: true }
+🚀 Integration test environment initialized
+📊 Target: ~30-50 tests with real database
+🗄️ Database: Local SQLite file for integration tests
+🔧 Port: 3001 (Integration tests require real API server)
+
+stdout | tests/integration/core/payment-flow-database.test.js
+🔄 Running database migrations for integration tests...
+🚀 Starting database migrations...
+
+stdout | tests/integration/core/payment-flow-database.test.js
+✅ Database connection verified
+
+stdout | tests/integration/core/payment-flow-database.test.js
+✅ Migrations table initialized
+📂 Found 22 migration files
+
+stdout | tests/integration/core/payment-flow-database.test.js
+✨ No pending migrations found
+✅ Migration completed: 0 executed, 22 skipped
+✅ Integration database initialized
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should create transaction from Stripe session data
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should create transaction from Stripe session data
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should create transaction from Stripe session data
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:11.116Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should create transaction from Stripe session data
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:11.159Z'
+}
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should create transaction from Stripe session data
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should create transaction from Stripe session data
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should create transaction from Stripe session data
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:12.472Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should create transaction from Stripe session data
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:12.521Z'
+}
+
+ × tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should create transaction from Stripe session data 2625ms 41 MB heap used
+   → SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+   → SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle multiple line items correctly
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle multiple line items correctly
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle multiple line items correctly
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:13.807Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle multiple line items correctly
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:13.854Z'
+}
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle multiple line items correctly
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle multiple line items correctly
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle multiple line items correctly
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:15.085Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle multiple line items correctly
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:15.128Z'
+}
+
+ × tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle multiple line items correctly 2607ms 36 MB heap used
+   → SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+   → SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle transaction rollback on failure
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle transaction rollback on failure
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle transaction rollback on failure
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:16.414Z'
+}
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle transaction rollback on failure
+Transaction creation failed as expected: SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle transaction rollback on failure
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:16.456Z'
+}
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle transaction rollback on failure
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle transaction rollback on failure
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle transaction rollback on failure
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:17.880Z'
+}
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle transaction rollback on failure
+Transaction creation failed as expected: SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle transaction rollback on failure
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:17.929Z'
+}
+
+ × tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should handle transaction rollback on failure 2846ms 27 MB heap used
+   → SQL_INPUT_ERROR: SQLite input error: no such column: stripe_checkout_session_id (at offset 33)
+   → SQL_INPUT_ERROR: SQLite input error: no such column: stripe_checkout_session_id (at offset 33)
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should retrieve transactions by various identifiers
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should retrieve transactions by various identifiers
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should retrieve transactions by various identifiers
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:19.255Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should retrieve transactions by various identifiers
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:19.302Z'
+}
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should retrieve transactions by various identifiers
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should retrieve transactions by various identifiers
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should retrieve transactions by various identifiers
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:20.573Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should retrieve transactions by various identifiers
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:20.619Z'
+}
+
+ × tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should retrieve transactions by various identifiers 2644ms 34 MB heap used
+   → SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+   → SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should update transaction status correctly
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should update transaction status correctly
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should update transaction status correctly
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:21.920Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should update transaction status correctly
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:22.224Z'
+}
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should update transaction status correctly
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should update transaction status correctly
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should update transaction status correctly
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:23.440Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should update transaction status correctly
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:23.489Z'
+}
+
+ × tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Transaction Service Database Operations > should update transaction status correctly 2870ms 40 MB heap used
+   → SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+   → SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should log Stripe webhook events
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should log Stripe webhook events
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should log Stripe webhook events
+Database query execution failed: {
+  sql: 'SELECT id FROM payment_events WHERE source_id = ?',
+  error: 'SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)',
+  timestamp: '2025-09-03T22:18:24.699Z'
+}
+Failed to log payment event: LibsqlError: SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+    at mapHranaError (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/hrana.js:279:16)
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/http.js:84:23
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at DatabaseService.execute (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:468:16)
+    at PaymentEventLogger.logStripeEvent (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/payment-event-logger.js:16:24)
+    at /Users/damilola/Documents/Projects/alocubano.boulderfest/tests/integration/core/payment-flow-database.test.js:322:22
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15) {
+  code: 'SQL_INPUT_ERROR',
+  rawCode: undefined,
+  [cause]: [ResponseError: SQLite input error: no such column: source_id (at offset 36)] {
+    code: 'SQL_INPUT_ERROR',
+    proto: {
+      message: 'SQLite input error: no such column: source_id (at offset 36)',
+      code: 'SQL_INPUT_ERROR'
+    }
+  }
+}
+Error logging failed recursively: LibsqlError: SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+    at mapHranaError (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/hrana.js:279:16)
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/http.js:84:23
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at DatabaseService.execute (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:468:16)
+    at PaymentEventLogger.logStripeEvent (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/payment-event-logger.js:16:24)
+    at /Users/damilola/Documents/Projects/alocubano.boulderfest/tests/integration/core/payment-flow-database.test.js:322:22
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15) {
+  code: 'SQL_INPUT_ERROR',
+  rawCode: undefined,
+  [cause]: [ResponseError: SQLite input error: no such column: source_id (at offset 36)] {
+    code: 'SQL_INPUT_ERROR',
+    proto: {
+      message: 'SQLite input error: no such column: source_id (at offset 36)',
+      code: 'SQL_INPUT_ERROR'
+    }
+  }
+}
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should log Stripe webhook events
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should log Stripe webhook events
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should log Stripe webhook events
+Database query execution failed: {
+  sql: 'SELECT id FROM payment_events WHERE source_id = ?',
+  error: 'SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)',
+  timestamp: '2025-09-03T22:18:25.967Z'
+}
+Failed to log payment event: LibsqlError: SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+    at mapHranaError (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/hrana.js:279:16)
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/http.js:84:23
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at DatabaseService.execute (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:468:16)
+    at PaymentEventLogger.logStripeEvent (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/payment-event-logger.js:16:24)
+    at /Users/damilola/Documents/Projects/alocubano.boulderfest/tests/integration/core/payment-flow-database.test.js:322:22
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15) {
+  code: 'SQL_INPUT_ERROR',
+  rawCode: undefined,
+  [cause]: [ResponseError: SQLite input error: no such column: source_id (at offset 36)] {
+    code: 'SQL_INPUT_ERROR',
+    proto: {
+      message: 'SQLite input error: no such column: source_id (at offset 36)',
+      code: 'SQL_INPUT_ERROR'
+    }
+  }
+}
+Error logging failed recursively: LibsqlError: SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+    at mapHranaError (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/hrana.js:279:16)
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/http.js:84:23
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at DatabaseService.execute (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:468:16)
+    at PaymentEventLogger.logStripeEvent (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/payment-event-logger.js:16:24)
+    at /Users/damilola/Documents/Projects/alocubano.boulderfest/tests/integration/core/payment-flow-database.test.js:322:22
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15) {
+  code: 'SQL_INPUT_ERROR',
+  rawCode: undefined,
+  [cause]: [ResponseError: SQLite input error: no such column: source_id (at offset 36)] {
+    code: 'SQL_INPUT_ERROR',
+    proto: {
+      message: 'SQLite input error: no such column: source_id (at offset 36)',
+      code: 'SQL_INPUT_ERROR'
+    }
+  }
+}
+
+ × tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should log Stripe webhook events 2479ms 27 MB heap used
+   → SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+   → SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should handle idempotent event logging
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should handle idempotent event logging
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should handle idempotent event logging
+Database query execution failed: {
+  sql: 'SELECT id FROM payment_events WHERE source_id = ?',
+  error: 'SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)',
+  timestamp: '2025-09-03T22:18:27.245Z'
+}
+Failed to log payment event: LibsqlError: SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+    at mapHranaError (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/hrana.js:279:16)
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/http.js:84:23
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at DatabaseService.execute (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:468:16)
+    at PaymentEventLogger.logStripeEvent (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/payment-event-logger.js:16:24)
+    at /Users/damilola/Documents/Projects/alocubano.boulderfest/tests/integration/core/payment-flow-database.test.js:358:23
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15) {
+  code: 'SQL_INPUT_ERROR',
+  rawCode: undefined,
+  [cause]: [ResponseError: SQLite input error: no such column: source_id (at offset 36)] {
+    code: 'SQL_INPUT_ERROR',
+    proto: {
+      message: 'SQLite input error: no such column: source_id (at offset 36)',
+      code: 'SQL_INPUT_ERROR'
+    }
+  }
+}
+Error logging failed recursively: LibsqlError: SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+    at mapHranaError (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/hrana.js:279:16)
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/http.js:84:23
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at DatabaseService.execute (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:468:16)
+    at PaymentEventLogger.logStripeEvent (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/payment-event-logger.js:16:24)
+    at /Users/damilola/Documents/Projects/alocubano.boulderfest/tests/integration/core/payment-flow-database.test.js:358:23
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15) {
+  code: 'SQL_INPUT_ERROR',
+  rawCode: undefined,
+  [cause]: [ResponseError: SQLite input error: no such column: source_id (at offset 36)] {
+    code: 'SQL_INPUT_ERROR',
+    proto: {
+      message: 'SQLite input error: no such column: source_id (at offset 36)',
+      code: 'SQL_INPUT_ERROR'
+    }
+  }
+}
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should handle idempotent event logging
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should handle idempotent event logging
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should handle idempotent event logging
+Database query execution failed: {
+  sql: 'SELECT id FROM payment_events WHERE source_id = ?',
+  error: 'SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)',
+  timestamp: '2025-09-03T22:18:28.475Z'
+}
+Failed to log payment event: LibsqlError: SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+    at mapHranaError (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/hrana.js:279:16)
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/http.js:84:23
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at DatabaseService.execute (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:468:16)
+    at PaymentEventLogger.logStripeEvent (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/payment-event-logger.js:16:24)
+    at /Users/damilola/Documents/Projects/alocubano.boulderfest/tests/integration/core/payment-flow-database.test.js:358:23
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15) {
+  code: 'SQL_INPUT_ERROR',
+  rawCode: undefined,
+  [cause]: [ResponseError: SQLite input error: no such column: source_id (at offset 36)] {
+    code: 'SQL_INPUT_ERROR',
+    proto: {
+      message: 'SQLite input error: no such column: source_id (at offset 36)',
+      code: 'SQL_INPUT_ERROR'
+    }
+  }
+}
+Error logging failed recursively: LibsqlError: SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+    at mapHranaError (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/hrana.js:279:16)
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/http.js:84:23
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at DatabaseService.execute (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:468:16)
+    at PaymentEventLogger.logStripeEvent (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/payment-event-logger.js:16:24)
+    at /Users/damilola/Documents/Projects/alocubano.boulderfest/tests/integration/core/payment-flow-database.test.js:358:23
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15) {
+  code: 'SQL_INPUT_ERROR',
+  rawCode: undefined,
+  [cause]: [ResponseError: SQLite input error: no such column: source_id (at offset 36)] {
+    code: 'SQL_INPUT_ERROR',
+    proto: {
+      message: 'SQLite input error: no such column: source_id (at offset 36)',
+      code: 'SQL_INPUT_ERROR'
+    }
+  }
+}
+
+ × tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should handle idempotent event logging 2506ms 27 MB heap used
+   → SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+   → SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should update event with transaction ID
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should update event with transaction ID
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should update event with transaction ID
+Database query execution failed: {
+  sql: 'SELECT id FROM payment_events WHERE source_id = ?',
+  error: 'SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)',
+  timestamp: '2025-09-03T22:18:29.813Z'
+}
+Failed to log payment event: LibsqlError: SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+    at mapHranaError (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/hrana.js:279:16)
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/http.js:84:23
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at DatabaseService.execute (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:468:16)
+    at PaymentEventLogger.logStripeEvent (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/payment-event-logger.js:16:24)
+    at /Users/damilola/Documents/Projects/alocubano.boulderfest/tests/integration/core/payment-flow-database.test.js:388:7
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15) {
+  code: 'SQL_INPUT_ERROR',
+  rawCode: undefined,
+  [cause]: [ResponseError: SQLite input error: no such column: source_id (at offset 36)] {
+    code: 'SQL_INPUT_ERROR',
+    proto: {
+      message: 'SQLite input error: no such column: source_id (at offset 36)',
+      code: 'SQL_INPUT_ERROR'
+    }
+  }
+}
+Error logging failed recursively: LibsqlError: SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+    at mapHranaError (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/hrana.js:279:16)
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/http.js:84:23
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at DatabaseService.execute (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:468:16)
+    at PaymentEventLogger.logStripeEvent (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/payment-event-logger.js:16:24)
+    at /Users/damilola/Documents/Projects/alocubano.boulderfest/tests/integration/core/payment-flow-database.test.js:388:7
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15) {
+  code: 'SQL_INPUT_ERROR',
+  rawCode: undefined,
+  [cause]: [ResponseError: SQLite input error: no such column: source_id (at offset 36)] {
+    code: 'SQL_INPUT_ERROR',
+    proto: {
+      message: 'SQLite input error: no such column: source_id (at offset 36)',
+      code: 'SQL_INPUT_ERROR'
+    }
+  }
+}
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should update event with transaction ID
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should update event with transaction ID
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should update event with transaction ID
+Database query execution failed: {
+  sql: 'SELECT id FROM payment_events WHERE source_id = ?',
+  error: 'SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)',
+  timestamp: '2025-09-03T22:18:31.158Z'
+}
+Failed to log payment event: LibsqlError: SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+    at mapHranaError (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/hrana.js:279:16)
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/http.js:84:23
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at DatabaseService.execute (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:468:16)
+    at PaymentEventLogger.logStripeEvent (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/payment-event-logger.js:16:24)
+    at /Users/damilola/Documents/Projects/alocubano.boulderfest/tests/integration/core/payment-flow-database.test.js:388:7
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15) {
+  code: 'SQL_INPUT_ERROR',
+  rawCode: undefined,
+  [cause]: [ResponseError: SQLite input error: no such column: source_id (at offset 36)] {
+    code: 'SQL_INPUT_ERROR',
+    proto: {
+      message: 'SQLite input error: no such column: source_id (at offset 36)',
+      code: 'SQL_INPUT_ERROR'
+    }
+  }
+}
+Error logging failed recursively: LibsqlError: SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+    at mapHranaError (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/hrana.js:279:16)
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/http.js:84:23
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at DatabaseService.execute (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:468:16)
+    at PaymentEventLogger.logStripeEvent (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/payment-event-logger.js:16:24)
+    at /Users/damilola/Documents/Projects/alocubano.boulderfest/tests/integration/core/payment-flow-database.test.js:388:7
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15) {
+  code: 'SQL_INPUT_ERROR',
+  rawCode: undefined,
+  [cause]: [ResponseError: SQLite input error: no such column: source_id (at offset 36)] {
+    code: 'SQL_INPUT_ERROR',
+    proto: {
+      message: 'SQLite input error: no such column: source_id (at offset 36)',
+      code: 'SQL_INPUT_ERROR'
+    }
+  }
+}
+
+ × tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should update event with transaction ID 2684ms 30 MB heap used
+   → SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+   → SQL_INPUT_ERROR: SQLite input error: no such column: source_id (at offset 36)
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should handle error logging gracefully
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should handle error logging gracefully
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should handle error logging gracefully
+Database query execution failed: {
+  sql: 'INSERT INTO payment_events (\n' +
+    '          event_type, source, source_id,\n' +
+    '          event_data, error_me...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table payment_events has no column named source',
+  timestamp: '2025-09-03T22:18:32.391Z'
+}
+Failed to log error: LibsqlError: SQLITE_UNKNOWN: SQLite error: table payment_events has no column named source
+    at mapHranaError (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/hrana.js:279:16)
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@libsql/client/lib-esm/http.js:84:23
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at DatabaseService.execute (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/database.js:468:16)
+    at PaymentEventLogger.logError (/Users/damilola/Documents/Projects/alocubano.boulderfest/api/lib/payment-event-logger.js:118:7)
+    at /Users/damilola/Documents/Projects/alocubano.boulderfest/tests/integration/core/payment-flow-database.test.js:418:7
+    at file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///Users/damilola/Documents/Projects/alocubano.boulderfest/node_modules/@vitest/runner/dist/index.js:1205:15) {
+  code: 'SQLITE_UNKNOWN',
+  rawCode: undefined,
+  [cause]: [ResponseError: SQLite error: table payment_events has no column named source] {
+    code: 'SQLITE_UNKNOWN',
+    proto: {
+      message: 'SQLite error: table payment_events has no column named source',
+      code: 'SQLITE_UNKNOWN'
+    }
+  }
+}
+
+ ✓ tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Payment Event Logger > should handle error logging gracefully 1289ms 29 MB heap used
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should enforce foreign key constraints
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should enforce foreign key constraints
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+ ✓ tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should enforce foreign key constraints 1362ms 30 MB heap used
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle concurrent transaction operations
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle concurrent transaction operations
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle concurrent transaction operations
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:35.096Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle concurrent transaction operations
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:35.143Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle concurrent transaction operations
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:35.197Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle concurrent transaction operations
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:35.230Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle concurrent transaction operations
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:35.243Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle concurrent transaction operations
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:35.283Z'
+}
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle concurrent transaction operations
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle concurrent transaction operations
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle concurrent transaction operations
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:36.361Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle concurrent transaction operations
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:36.369Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle concurrent transaction operations
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:36.413Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle database transaction rollback properly
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:36.415Z'
+}
+
+ × tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle concurrent transaction operations 2603ms 31 MB heap used
+   → SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+   → SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle database transaction rollback properly
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:36.450Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle database transaction rollback properly
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:36.494Z'
+}
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle database transaction rollback properly
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle database transaction rollback properly
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle database transaction rollback properly
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:37.695Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle database transaction rollback properly
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:37.753Z'
+}
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle database transaction rollback properly
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle database transaction rollback properly
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle database transaction rollback properly
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:39.041Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle database transaction rollback properly
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:39.090Z'
+}
+
+ × tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Database Integrity and Constraints > should handle database transaction rollback properly 2677ms 29 MB heap used
+   → SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+   → SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should handle mixed ticket and donation transactions
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should handle mixed ticket and donation transactions
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should handle mixed ticket and donation transactions
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:40.403Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should handle mixed ticket and donation transactions
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:40.492Z'
+}
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should handle mixed ticket and donation transactions
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should handle mixed ticket and donation transactions
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should handle mixed ticket and donation transactions
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:41.734Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should handle mixed ticket and donation transactions
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:41.782Z'
+}
+
+ × tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should handle mixed ticket and donation transactions 2691ms 32 MB heap used
+   → SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+   → SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should determine transaction type correctly
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should determine transaction type correctly
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should determine transaction type correctly
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:43.037Z'
+}
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should determine transaction type correctly
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:43.081Z'
+}
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should determine transaction type correctly
+⚠️ Table registrations does not exist, skipping cleanup
+
+stdout | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should determine transaction type correctly
+⚠️ Table admin_sessions does not exist, skipping cleanup
+🧹 Database cleanup completed: 10 tables cleaned, 2 skipped
+
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should determine transaction type correctly
+Database query execution failed: {
+  sql: 'INSERT INTO transactions (\n' +
+    '          uuid, order_type, order_details, total_amount, currency,\n' +
+    '      ...',
+  error: 'SQLITE_UNKNOWN: SQLite error: table transactions has no column named order_type',
+  timestamp: '2025-09-03T22:18:44.320Z'
+}
+
+ × tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should determine transaction type correctly 2636ms 34 MB heap used
+   → SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+   → SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active
+stderr | tests/integration/core/payment-flow-database.test.js > Payment Database Integration Tests > Complex Transaction Scenarios > should determine transaction type correctly
+Database query execution failed: {
+  sql: 'ROLLBACK',
+  error: 'SQLITE_UNKNOWN: SQLite error: cannot rollback - no transaction is active',
+  timestamp: '2025-09-03T22:18:44.418Z'
+}
+
+stdout | tests/integration/core/payment-flow-database.test.js
+🧹 Cleaned up test database: /Users/damilola/Documents/Projects/alocubano.boulderfest/data/test-integration.db
+🧹 Environment cleanup completed for: INTEGRATION
+✅ Integration test cleanup completed
+
+stdout | tests/integration/core/payment-flow-simple.test.js
+🧪 Test environment configured for: INTEGRATION
+📍 Database: Local SQLite file for integration tests
+🔧 Port: 3001 (Integration tests require real API server)
+⚡ Timeouts: Test=60000ms, Hook=20000ms
+✅ Environment validation passed for: INTEGRATION
+🧪 Integration test environment ready - database & services configured
+
+stdout | tests/integration/core/payment-flow-simple.test.js
+[dotenv@17.2.2] injecting env (1) from .env.local -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+🚀 Integration test environment initialized
+📊 Target: ~30-50 tests with real database
+🗄️ Database: Local SQLite file for integration tests
+🔧 Port: 3001 (Integration tests require real API server)
+
+stdout | tests/integration/core/payment-flow-simple.test.js
+🔄 Running database migrations for integration tests...
+🚀 Starting database migrations...
+
+stdout | tests/integration/core/payment-flow-simple.test.js
+✅ Database connection verified
+
