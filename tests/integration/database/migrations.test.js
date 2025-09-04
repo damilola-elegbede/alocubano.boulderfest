@@ -109,10 +109,12 @@ describe('Database Migration Integration', () => {
       expect(ticketColumns).toContain('qr_token');
       
       // Test foreign key constraints are enabled
-      const foreignKeysEnabled = await dbClient.execute('PRAGMA foreign_keys');
-      // Note: foreign keys might not be enabled in all test environments
-      
-    } catch (error) {
+      await dbClient.execute('PRAGMA foreign_keys = ON');
+      const fk = await dbClient.execute('PRAGMA foreign_keys');
+      expect(fk.rows[0].foreign_keys).toBe(1);
+      const fkList = await dbClient.execute('PRAGMA foreign_key_list(tickets)');
+      expect(fkList.rows.length).toBeGreaterThan(0);
+          } catch (error) {
       console.warn('⚠️ Foreign key constraints test error:', error.message);
     }
   });

@@ -11,46 +11,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { getDatabaseClient, resetDatabaseInstance } from '../../../api/lib/database.js';
 
-// Simple test helpers (self-contained)
-const HTTP_STATUS = {
-  OK: 200,
-  BAD_REQUEST: 400,
-  UNAUTHORIZED: 401,
-  NOT_FOUND: 404,
-  CONFLICT: 409,
-  TOO_MANY_REQUESTS: 429
-};
-
-function generateTestEmail() {
-  return `test.${Date.now()}.${Math.random().toString(36).slice(2)}@example.com`;
-}
-
-async function testRequest(method, path, data = null) {
-  const url = `http://localhost:3000${path}`; // Using direct URL for testing
-  
-  const options = { 
-    method, 
-    headers: { 
-      'Content-Type': 'application/json'
-    }
-  };
-  
-  if (data && method !== 'GET') { 
-    options.body = JSON.stringify(data); 
-  }
-  
-  try {
-    const response = await fetch(url, options);
-    const responseData = await response.json().catch(() => ({}));
-    return { status: response.status, data: responseData };
-  } catch (error) {
-    // Return status: 0 for connection failures (expected by tests)
-    return { 
-      status: 0, 
-      data: { error: 'Connection failed' } 
-    };
-  }
-}
+import { testRequest, HTTP_STATUS, generateTestEmail } from '../../helpers.js';
 
 describe('Integration: Email API', () => {
   let db;

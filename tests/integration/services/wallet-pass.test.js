@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vites
 import { getDatabase } from '../../../api/lib/database.js';
 import { AppleWalletService } from '../../../api/lib/apple-wallet-service.js';
 import { GoogleWalletService } from '../../../api/lib/google-wallet-service.js';
-import { HTTP_STATUS } from '../../helpers.js';
 
 // Set required environment variables for testing
 process.env.WALLET_AUTH_SECRET = 'test-wallet-auth-secret-key-for-testing-purposes';
@@ -16,6 +15,10 @@ describe('Wallet Pass Integration Tests', () => {
     database = await getDatabase();
   });
 
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
   beforeEach(async () => {
     // Create a test ticket for wallet pass generation
     testTransactionId = Math.floor(Math.random() * 1000000); // Generate random integer ID

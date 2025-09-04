@@ -32,6 +32,8 @@ describe('Integration: Database Data Integrity', () => {
     expect(testResult.rows).toBeDefined();
     expect(testResult.rows.length).toBe(1);
     
+    // Ensure FK constraints are enforced for this connection
+    await db.execute('PRAGMA foreign_keys = ON');
     // Create necessary tables for integration tests
     await db.execute(`
       CREATE TABLE IF NOT EXISTS tickets (
@@ -272,7 +274,7 @@ describe('Integration: Database Data Integrity', () => {
       sql: 'SELECT COUNT(*) as count FROM tickets WHERE ticket_id = ?',
       args: [ticketId]
     });
-    expect(verifyResult.rows[0].count).toBe(1);
+    expect(Number(verifyResult.rows[0].count)).toBe(1);
   });
 
   it('should enforce CHECK constraints for valid data ranges', async () => {

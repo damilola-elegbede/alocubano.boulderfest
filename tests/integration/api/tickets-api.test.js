@@ -10,45 +10,9 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { testRequest, HTTP_STATUS } from '../../helpers.js';
 import { getDatabaseClient, resetDatabaseInstance } from '../../../api/lib/database.js';
 import jwt from 'jsonwebtoken';
-
-// Simple test helpers (self-contained)
-const HTTP_STATUS = {
-  OK: 200,
-  BAD_REQUEST: 400,
-  UNAUTHORIZED: 401,
-  NOT_FOUND: 404,
-  CONFLICT: 409,
-  TOO_MANY_REQUESTS: 429
-};
-
-async function testRequest(method, path, data = null) {
-  const url = `http://localhost:3000${path}`; // Using direct URL for testing
-  
-  const options = { 
-    method, 
-    headers: { 
-      'Content-Type': 'application/json'
-    }
-  };
-  
-  if (data && method !== 'GET') { 
-    options.body = JSON.stringify(data); 
-  }
-  
-  try {
-    const response = await fetch(url, options);
-    const responseData = await response.json().catch(() => ({}));
-    return { status: response.status, data: responseData };
-  } catch (error) {
-    // Return status: 0 for connection failures (expected by tests)
-    return { 
-      status: 0, 
-      data: { error: 'Connection failed' } 
-    };
-  }
-}
 
 describe('Integration: Tickets API', () => {
   let db;
@@ -57,7 +21,15 @@ describe('Integration: Tickets API', () => {
   // Test QR secret key for JWT token generation
   const TEST_QR_SECRET = 'test-secret-key-minimum-32-characters-for-security-compliance';
 
+  let prevEnv;
+
   beforeAll(async () => {
+    // Preserve and set test environment variables
+    prevEnv = {
+      NODE_ENV: process.env.NODE_ENV,
+      DATABASE_URL: process.env.DATABASE_URL,
+      QR_SECRET_KEY: process.env.QR_SECRET_KEY,
+    };
     // Set up test environment variables
     process.env.NODE_ENV = 'test';
     process.env.DATABASE_URL = `file:/tmp/tickets-api-integration-test-${Date.now()}.db`;
@@ -158,16 +130,10 @@ describe('Integration: Tickets API', () => {
     }
     await resetDatabaseInstance();
     
-    // Clean up environment
-    delete process.env.QR_SECRET_KEY;
-  });
-
-  beforeEach(async () => {
-    // Clean up test data before each test
-    await db.execute({
-      sql: 'DELETE FROM qr_validations WHERE ticket_id IN (SELECT id FROM tickets WHERE ticket_id LIKE ?)',
-      args: ['TKT-TEST-%']
-    });
+    // Restore environment
+    if (prevEnv.NODE_ENV === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = prevEnv.NODE_ENV;
+    if (prevEnv.DATABASE_URL === undefined) delete process.env.DATABASE_URL; else process.env.DATABASE_URL = prevEnv.DATABASE_URL;
+    if (prevEnv.QR_SECRET_KEY === undefined) delete process.env.QR_SECRET_KEY; else process.env.QR_SECRET_KEY = prevEnv.QR_SECRET_KEY;
     await db.execute({
       sql: 'DELETE FROM tickets WHERE ticket_id LIKE ?',
       args: ['TKT-TEST-%']
