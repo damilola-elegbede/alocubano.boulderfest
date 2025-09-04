@@ -113,9 +113,17 @@ describe('Admin Authentication Integration', () => {
 
   test('expired session tokens are rejected', async () => {
     // This test simulates an expired token scenario
-    // In a real implementation, we'd need to create an expired token or mock the time
-    
-    const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+    // Generate a fake expired JWT at runtime to avoid embedding real tokens
+    const mkFakeExpiredJwt = () => {
+      const header = Buffer
+        .from(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+        .toString('base64url');
+      const payload = Buffer
+        .from(JSON.stringify({ exp: 0 }))
+        .toString('base64url');
+      return `${header}.${payload}.signature`;
+    };
+    const expiredToken = mkFakeExpiredJwt();
     
     // Test with potentially expired token
     const response = await testRequest('GET', '/api/admin/dashboard', null, {

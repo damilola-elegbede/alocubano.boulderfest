@@ -170,8 +170,8 @@ describe('Integration: Email API', () => {
       return;
     }
 
-    // Verify API response structure
-    expect(response.status).toBe(HTTP_STATUS.OK || 201);
+    // Verify API response structure - accept either 200 or 201
+    expect([HTTP_STATUS.OK, 201]).toContain(response.status);
     expect(response.data).toHaveProperty('success', true);
     expect(response.data).toHaveProperty('message');
     expect(response.data).toHaveProperty('subscriber');

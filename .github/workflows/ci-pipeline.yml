@@ -25,6 +25,11 @@ jobs:
     name: "🧪 Unit Tests"
     runs-on: ubuntu-latest
     timeout-minutes: 15  # Increased from 10 to allow for cold starts
+    outputs:
+      total_tests: ${{ steps.unit-test.outputs.total_tests }}
+      passing_tests: ${{ steps.unit-test.outputs.passing_tests }}
+      failing_tests: ${{ steps.unit-test.outputs.failing_tests }}
+      duration: ${{ steps.unit-test.outputs.duration }}
 
     strategy:
       matrix:
@@ -82,10 +87,10 @@ jobs:
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
 
-          # Extract test counts
-          total_tests=$(grep -oP '\d+(?= passing)' unit-test-output.log | head -1 || echo "0")
-          passing_tests=$(grep -oP '\d+(?= passing)' unit-test-output.log | head -1 || echo "0")
-          failing_tests=$(grep -oP '\d+(?= failing)' unit-test-output.log | head -1 || echo "0")
+          # Extract test counts - handle both 'passing' and 'passed' variants
+          total_tests=$(grep -oP '\d+(?= (tests? )?passed)' unit-test-output.log | head -1 || echo "0")
+          passing_tests=$total_tests
+          failing_tests=$(grep -oP '\d+(?= (tests? )?failed)' unit-test-output.log | head -1 || echo "0")
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📊 Unit Test Results"
@@ -122,6 +127,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3  # Increased from 1 to 3 minutes (180 seconds) for database initialization and migration
     needs: unit-tests   # Run after unit tests pass
+    outputs:
+      total_tests: ${{ steps.integration-test.outputs.total_tests }}
+      passing_tests: ${{ steps.integration-test.outputs.passing_tests }}
+      failing_tests: ${{ steps.integration-test.outputs.failing_tests }}
+      duration: ${{ steps.integration-test.outputs.duration }}
 
     strategy:
       matrix:
@@ -130,15 +140,15 @@ jobs:
     env:
       DATABASE_URL: "data/test-integration.db"
       # Test environment variables for integration tests
-      STRIPE_SECRET_KEY: "sk_test_dummy_integration_key"
-      STRIPE_PUBLISHABLE_KEY: "pk_test_dummy_integration_key"
-      BREVO_API_KEY: "test_brevo_integration_key"
+      STRIPE_SECRET_KEY: ${{ secrets.TEST_STRIPE_SECRET_KEY || 'sk_test_dummy_integration_key' }}
+      STRIPE_PUBLISHABLE_KEY: ${{ secrets.TEST_STRIPE_PUBLISHABLE_KEY || 'pk_test_dummy_integration_key' }}
+      BREVO_API_KEY: ${{ secrets.TEST_BREVO_API_KEY || 'test_brevo_integration_key' }}
       BREVO_NEWSLETTER_LIST_ID: "1"
-      BREVO_WEBHOOK_SECRET: "test_webhook_secret"
-      ADMIN_SECRET: "test_admin_secret_minimum_32_characters_for_jwt_signing"
+      BREVO_WEBHOOK_SECRET: ${{ secrets.TEST_BREVO_WEBHOOK_SECRET || 'test_webhook_secret' }}
+      ADMIN_SECRET: ${{ secrets.TEST_ADMIN_SECRET || 'test_admin_secret_minimum_32_characters_for_jwt_signing' }}
       ADMIN_PASSWORD: "$2b$10$dummy.bcrypt.hash.for.integration.testing"
-      INTERNAL_API_KEY: "test_internal_api_key_for_integration"
-      WALLET_AUTH_SECRET: "test_wallet_auth_secret_minimum_32_chars"
+      INTERNAL_API_KEY: ${{ secrets.TEST_INTERNAL_API_KEY || 'test_internal_api_key_for_integration' }}
+      WALLET_AUTH_SECRET: ${{ secrets.TEST_WALLET_AUTH_SECRET || 'test_wallet_auth_secret_minimum_32_chars' }}
       # Integration test timeouts - increased for CI environment
       VITEST_TEST_TIMEOUT: 60000       # Increased from 30000 to 60 seconds for integration tests
       VITEST_HOOK_TIMEOUT: 45000       # Increased from 30000 to 45 seconds for hooks
@@ -222,10 +232,10 @@ jobs:
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
 
-          # Extract test counts from output
-          total_tests=$(grep -oP '\d+(?= passed)' integration-test-output.log | head -1 || echo "0")
-          passing_tests=$(grep -oP '\d+(?= passed)' integration-test-output.log | head -1 || echo "0")
-          failing_tests=$(grep -oP '\d+(?= failed)' integration-test-output.log | head -1 || echo "0")
+          # Extract test counts from output - handle both 'passed' and 'passing' variants
+          total_tests=$(grep -oP '\d+(?= (tests? )?passed)' integration-test-output.log | head -1 || echo "0")
+          passing_tests=$total_tests
+          failing_tests=$(grep -oP '\d+(?= (tests? )?failed)' integration-test-output.log | head -1 || echo "0")
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📊 Integration Test Results"

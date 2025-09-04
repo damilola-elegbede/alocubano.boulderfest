@@ -113,11 +113,13 @@ describe('Gallery API Integration Tests', () => {
       expect(metrics).toHaveProperty('avgResponseTime');
       expect(metrics.apiCalls).toBeGreaterThan(0);
       
-      // Second call - may use cache
+      // Second call – compare metrics deltas to account for cache usage
+      const before = galleryService.getMetrics();
       await galleryService.getGalleryData();
-      
-      metrics = galleryService.getMetrics();
-      expect(metrics.apiCalls).toBeGreaterThanOrEqual(2);
+      const after = galleryService.getMetrics();
+      expect(after.apiCalls).toBeGreaterThanOrEqual(before.apiCalls);
+      expect(after.cacheHits + after.cacheMisses)
+        .toBeGreaterThan(before.cacheHits + before.cacheMisses);
     });
 
     it('should handle error conditions gracefully', async () => {
