@@ -120,6 +120,18 @@ describe('Integration: Tickets API', () => {
   });
 
   afterAll(async () => {
+    // Clean up test data before closing connection
+    if (db) {
+      try {
+        await db.execute({
+          sql: 'DELETE FROM tickets WHERE ticket_id LIKE ?',
+          args: ['TKT-TEST-%']
+        });
+      } catch (error) {
+        // Ignore cleanup errors in tests
+      }
+    }
+    
     // Clean up database connections
     if (db && typeof db.close === 'function') {
       try {
@@ -134,11 +146,9 @@ describe('Integration: Tickets API', () => {
     if (prevEnv.NODE_ENV === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = prevEnv.NODE_ENV;
     if (prevEnv.DATABASE_URL === undefined) delete process.env.DATABASE_URL; else process.env.DATABASE_URL = prevEnv.DATABASE_URL;
     if (prevEnv.QR_SECRET_KEY === undefined) delete process.env.QR_SECRET_KEY; else process.env.QR_SECRET_KEY = prevEnv.QR_SECRET_KEY;
-    await db.execute({
-      sql: 'DELETE FROM tickets WHERE ticket_id LIKE ?',
-      args: ['TKT-TEST-%']
-    });
-    
+  });
+
+  beforeEach(async () => {
     // Create a test ticket for validation tests
     const ticketId = `TKT-TEST-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const validationCode = `VAL-${Date.now()}-${Math.random().toString(36).slice(2)}`;
