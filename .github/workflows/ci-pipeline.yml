@@ -13,6 +13,7 @@ concurrency:
 permissions:
   contents: read
   pull-requests: write
+  deployments: read
   # Optional: issues: write  # For PR comments and issue creation
 
 env:
@@ -271,10 +272,212 @@ jobs:
           path: integration-test-output.log
           retention-days: 7
 
+  e2e-tests:
+    name: "🎭 E2E Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15  # E2E tests can take longer due to browser automation
+    needs: [unit-tests, integration-tests]  # Run only after previous tests pass
+    if: github.event_name == 'pull_request'  # Only run on PR events
+    outputs:
+      total_tests: ${{ steps.e2e-test.outputs.total_tests }}
+      passing_tests: ${{ steps.e2e-test.outputs.passing_tests }}
+      failing_tests: ${{ steps.e2e-test.outputs.failing_tests }}
+      duration: ${{ steps.e2e-test.outputs.duration }}
+      preview_url: ${{ steps.wait-for-vercel.outputs.url }}
+
+    strategy:
+      matrix:
+        node-version: ['20.x']
+
+    env:
+      # E2E test timeout configuration optimized for CI
+      E2E_STARTUP_TIMEOUT: 90000        # 90 seconds for server startup
+      E2E_TEST_TIMEOUT: 90000           # 90 seconds per individual test
+      E2E_ACTION_TIMEOUT: 20000         # 20 seconds for actions (clicks, inputs)
+      E2E_NAVIGATION_TIMEOUT: 45000     # 45 seconds for page navigation
+      E2E_WEBSERVER_TIMEOUT: 120000     # 120 seconds for webserver startup
+      E2E_EXPECT_TIMEOUT: 15000         # 15 seconds for expect assertions
+      E2E_HEALTH_CHECK_INTERVAL: 3000   # 3 seconds between health checks
+      # Test environment for E2E tests (production-like via preview deployment)
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL_TEST || secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_TEST || secrets.TURSO_AUTH_TOKEN }}
+      STRIPE_SECRET_KEY: ${{ secrets.TEST_STRIPE_SECRET_KEY || secrets.STRIPE_SECRET_KEY }}
+      STRIPE_PUBLISHABLE_KEY: ${{ secrets.TEST_STRIPE_PUBLISHABLE_KEY || secrets.STRIPE_PUBLISHABLE_KEY }}
+      BREVO_API_KEY: ${{ secrets.TEST_BREVO_API_KEY || secrets.BREVO_API_KEY }}
+      BREVO_NEWSLETTER_LIST_ID: ${{ secrets.TEST_BREVO_NEWSLETTER_LIST_ID || '1' }}
+      ADMIN_SECRET: ${{ secrets.TEST_ADMIN_SECRET || secrets.ADMIN_SECRET }}
+      TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD || 'TestAdminPassword123!' }}
+      WALLET_AUTH_SECRET: ${{ secrets.TEST_WALLET_AUTH_SECRET || secrets.WALLET_AUTH_SECRET }}
+      INTERNAL_API_KEY: ${{ secrets.TEST_INTERNAL_API_KEY || secrets.INTERNAL_API_KEY }}
+      # Playwright configuration
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/ms-playwright
+
+    steps:
+      - name: "📥 Checkout Code"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "🔧 Setup Node.js ${{ matrix.node-version }}"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: "💾 Restore Dependencies Cache"
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+            ${{ github.workspace }}/ms-playwright
+          key: ${{ runner.os }}-e2e-${{ hashFiles('package-lock.json') }}-${{ hashFiles('playwright-e2e-preview.config.js') }}
+          restore-keys: |
+            ${{ runner.os }}-e2e-
+            ${{ runner.os }}-node-
+
+      - name: "📦 Install Dependencies"
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: "🎭 Install Playwright Browsers"
+        run: npx playwright install --with-deps chromium firefox
+
+      - name: "⏳ Wait for Vercel Preview Deployment"
+        uses: patrickedqvist/wait-for-vercel-preview@v1.3.1
+        id: wait-for-vercel
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          max_timeout: 300  # 5 minutes timeout for deployment
+          check_interval: 10  # Check every 10 seconds
+
+      - name: "🔍 Validate Preview Deployment"
+        id: validate-preview
+        run: |
+          PREVIEW_URL="${{ steps.wait-for-vercel.outputs.url }}"
+          
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔍 Validating Vercel Preview Deployment"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🌐 Preview URL: $PREVIEW_URL"
+          echo "🕒 Deployment Status: Ready"
+          echo "🎯 Target Environment: Production-like"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          
+          # Validate URL format
+          if [[ ! "$PREVIEW_URL" =~ ^https?://.*\.vercel\.app$ ]]; then
+            echo "❌ Invalid preview URL format: $PREVIEW_URL"
+            exit 1
+          fi
+          
+          # Health check with retries
+          echo "🏥 Performing health check..."
+          for i in {1..10}; do
+            if curl -s -f --max-time 30 "${PREVIEW_URL}/api/health/check" >/dev/null; then
+              echo "✅ Preview deployment is healthy (attempt $i/10)"
+              break
+            else
+              echo "⏳ Health check failed (attempt $i/10), retrying in 10s..."
+              if [ $i -eq 10 ]; then
+                echo "❌ Preview deployment failed health check after 10 attempts"
+                exit 1
+              fi
+              sleep 10
+            fi
+          done
+          
+          echo "🎉 Preview deployment validation successful!"
+
+      - name: "🎭 Run E2E Tests"
+        id: e2e-test
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ steps.wait-for-vercel.outputs.url }}
+          PREVIEW_URL: ${{ steps.wait-for-vercel.outputs.url }}
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🎭 Running E2E Test Suite"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🌐 Target URL: $PLAYWRIGHT_BASE_URL"
+          echo "🗃️ Database: Production/Preview (Turso)"
+          echo "🧪 Expected: 12+ comprehensive E2E tests"
+          echo "⏱️  Individual Test Timeout: 90 seconds"
+          echo "🎯 Timeout: 15 minutes total (stage limit)"
+          echo "🌐 Environment: Vercel Preview Deployment"
+          echo "🎭 Browsers: Chromium, Firefox"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          # Record start time
+          start_time=$(date +%s%3N)
+
+          # Run E2E tests - focus on core flows for PR validation
+          npm run test:e2e:standard 2>&1 | tee e2e-test-output.log
+          test_exit_code=${PIPESTATUS[0]}
+
+          # Record end time
+          end_time=$(date +%s%3N)
+          duration=$((end_time - start_time))
+
+          # Extract test counts from Playwright output
+          total_tests=$(grep -oP '\d+(?= passed)' e2e-test-output.log | tail -1 || echo "0")
+          passing_tests=$total_tests
+          failing_tests=$(grep -oP '\d+(?= failed)' e2e-test-output.log | tail -1 || echo "0")
+          
+          # Handle case where no failures reported
+          if [ "$failing_tests" = "0" ] && grep -q "failed" e2e-test-output.log; then
+            failing_tests=$(grep -oP '\d+(?= failed)' e2e-test-output.log | head -1 || echo "0")
+          fi
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📊 E2E Test Results"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Tests Passed: $passing_tests"
+          echo "❌ Tests Failed: $failing_tests"
+          echo "📈 Total Tests: $total_tests"
+          echo "⏱️  Duration: ${duration}ms"
+          echo "🌐 Environment: Vercel Preview Deployment"
+          echo "🗃️ Database: Production/Preview (Turso)"
+
+          # Performance evaluation
+          duration_minutes=$((duration / 60000))
+          if [ "$duration_minutes" -lt 10 ]; then
+            echo "🏆 EXCELLENT: E2E tests completed within 10-minute target!"
+          elif [ "$duration_minutes" -lt 15 ]; then
+            echo "✅ GOOD: E2E tests completed within 15-minute limit!"
+          else
+            echo "⚠️  WARNING: E2E tests exceeded 15-minute timeout limit"
+          fi
+
+          # Set outputs for summary
+          echo "total_tests=$total_tests" >> $GITHUB_OUTPUT
+          echo "passing_tests=$passing_tests" >> $GITHUB_OUTPUT
+          echo "failing_tests=$failing_tests" >> $GITHUB_OUTPUT
+          echo "duration=${duration}ms" >> $GITHUB_OUTPUT
+
+          exit $test_exit_code
+
+      - name: "📤 Upload E2E Test Results"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results-node-${{ matrix.node-version }}
+          path: |
+            e2e-test-output.log
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+      - name: "📊 Upload E2E Test Report"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-playwright-report
+          path: playwright-report/
+          retention-days: 7
+
   summary:
     name: "📊 CI Pipeline Summary"
     runs-on: ubuntu-latest
-    needs: [unit-tests, integration-tests]
+    needs: [unit-tests, integration-tests, e2e-tests]
     if: always()
 
     steps:
@@ -286,13 +489,15 @@ jobs:
           script: |
             const unitStatus = '${{ needs.unit-tests.result }}';
             const integrationStatus = '${{ needs.integration-tests.result }}';
+            const e2eStatus = '${{ needs.e2e-tests.result }}';
             
             // Get output values from jobs
             const unitOutputs = ${{ toJSON(needs.unit-tests.outputs) }};
             const integrationOutputs = ${{ toJSON(needs.integration-tests.outputs) }};
+            const e2eOutputs = ${{ toJSON(needs.e2e-tests.outputs) }};
 
-            const overallStatus = (unitStatus === 'success' && integrationStatus === 'success') ? '✅' : '❌';
-            const statusText = (unitStatus === 'success' && integrationStatus === 'success') ? 'PASSED' : 'FAILED';
+            const overallStatus = (unitStatus === 'success' && integrationStatus === 'success' && e2eStatus === 'success') ? '✅' : '❌';
+            const statusText = (unitStatus === 'success' && integrationStatus === 'success' && e2eStatus === 'success') ? 'PASSED' : 'FAILED';
 
             const comment = `## ${overallStatus} CI Pipeline ${statusText}
 
@@ -301,40 +506,54 @@ jobs:
             |-------|--------|-------|----------|---------|
             | **Unit Tests** | ${unitStatus === 'success' ? '✅ Passed' : '❌ Failed'} | ${unitOutputs?.total_tests || 'N/A'} | ${unitOutputs?.duration || 'N/A'} | In-memory SQLite, <2s target, 15min timeout |
             | **Integration Tests** | ${integrationStatus === 'success' ? '✅ Passed' : '❌ Failed'} | ${integrationOutputs?.total_tests || 'N/A'} | ${integrationOutputs?.duration || 'N/A'} | File SQLite, <5min limit, with migrations |
+            | **E2E Tests** | ${e2eStatus === 'success' ? '✅ Passed' : e2eStatus === 'skipped' ? '⏭️ Skipped' : '❌ Failed'} | ${e2eOutputs?.total_tests || 'N/A'} | ${e2eOutputs?.duration || 'N/A'} | Vercel Preview, Production-like environment |
+
+            ### 🎯 E2E Testing Integration
+            ${e2eStatus !== 'skipped' ? `
+            - **Preview URL**: ${e2eOutputs?.preview_url || 'N/A'}
+            - **Environment**: Production-like Vercel Preview Deployment
+            - **Database**: Turso (production database)
+            - **Test Suite**: Standard E2E flows (core functionality)
+            - **Browsers**: Chromium, Firefox
+            - **Timeout**: 15 minutes with 90s per individual test
+            ` : '- **Skipped**: E2E tests only run on pull request events'}
 
             ### ⚙️ Pipeline Features
-            - **Sequential Execution**: Integration tests run only after unit tests pass
-            - **Timeout Controls**: 5-minute hard limit for integration stage (increased from 1 minute)
-            - **Database Isolation**: Separate in-memory (unit) and file (integration) databases
-            - **Dependency Caching**: NPM dependencies cached for performance
-            - **Environment Variables**: Complete test credentials configured
-            - **Automatic Cleanup**: Database cleanup after integration tests
-            - **Migration Support**: Database migrations run before integration tests
+            - **Sequential Execution**: Each stage runs only after previous stages pass
+            - **Quality Gates**: E2E tests must pass for PR to be mergeable
+            - **Timeout Controls**: 15min unit, 5min integration, 15min E2E limits
+            - **Database Isolation**: In-memory (unit) → File (integration) → Production (E2E)
+            - **Environment Progression**: Local → Isolated → Production-like
+            - **Dependency Caching**: NPM dependencies and Playwright browsers cached
+            - **Automated Cleanup**: Database and artifact cleanup after tests
+            - **Real Environment Testing**: E2E tests against live Vercel deployments
 
             ### 🔧 Environment Configuration
-            - **Node.js**: 20.x with optimized memory allocation (4GB)
-            - **Database**: SQLite in-memory (unit) / file-based (integration)
-            - **Timeouts**: Vitest configured with CI-appropriate timeouts (increased for stability)
-            - **Caching**: NPM dependencies cached between jobs
-            - **Security**: Test credentials isolated from production
-            - **Parsing**: Robust Vitest output parsing (handles both 'passed' and 'passing')
+            - **Node.js**: 20.x with optimized memory allocation (4GB base, 6GB unit, 3GB E2E)
+            - **Databases**: SQLite in-memory (unit) → file-based (integration) → Turso production (E2E)
+            - **Timeouts**: Progressive timeout increases: unit (10s) → integration (60s) → E2E (90s)
+            - **Caching**: NPM dependencies, Node modules, and Playwright browsers
+            - **Security**: Test credentials isolated from production, preview deployments
+            - **Parsing**: Robust test output parsing for all frameworks (Vitest, Playwright)
 
             ${overallStatus === '✅' ?
               '### 🎉 All pipeline stages passed successfully!' :
               '### ⚠️ Pipeline failures detected - review workflow output'}
 
             ### 📋 Next Steps
-            ${unitStatus !== 'success' ? '- ❌ Fix failing unit tests (integration tests skipped)\n' : ''}
+            ${unitStatus !== 'success' ? '- ❌ Fix failing unit tests (subsequent stages skipped)\n' : ''}
             ${unitStatus === 'success' && integrationStatus !== 'success' ? '- ❌ Review integration test failures and database setup\n' : ''}
-            ${overallStatus === '✅' ? '- ✅ Pipeline ready for deployment\n' : ''}
+            ${unitStatus === 'success' && integrationStatus === 'success' && e2eStatus !== 'success' ? '- ❌ Review E2E test failures and preview deployment\n' : ''}
+            ${overallStatus === '✅' ? '- ✅ Pipeline ready for deployment - all quality gates passed\n' : ''}
 
             ### 🔄 Recent Improvements
-            - **Integration Tests**: Increased timeout from 1min to 5min for database operations
-            - **Migration Support**: Database migrations run before integration tests
-            - **Robust Parsing**: Fixed Vitest output parsing to handle both 'passed' and 'passing'
-            - **Individual Test Timeouts**: Increased Vitest timeouts for CI environment stability
-            - **Database Operations**: More time for migration and initialization
-            - **HTTP Requests**: Extended timeout for external service calls
+            - **E2E Integration**: Added comprehensive E2E testing with Vercel Preview Deployments
+            - **Quality Gates**: E2E tests now required for PR approval
+            - **Production Environment**: E2E tests run against live preview deployments
+            - **Sequential Execution**: E2E tests only run after unit and integration tests pass
+            - **Modern Architecture**: Eliminated local server complexity with preview deployments
+            - **Enhanced Reporting**: Comprehensive test results across all pipeline stages
+            - **Optimized Performance**: Cached dependencies and browsers for faster execution
             `;
 
             // Find existing comment
@@ -364,3 +583,35 @@ jobs:
                 body: comment
               });
             }
+
+      - name: "🔒 Deployment Quality Gate"
+        if: github.event_name == 'pull_request'
+        run: |
+          UNIT_STATUS="${{ needs.unit-tests.result }}"
+          INTEGRATION_STATUS="${{ needs.integration-tests.result }}"
+          E2E_STATUS="${{ needs.e2e-tests.result }}"
+          
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔒 Deployment Quality Gate Validation"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🧪 Unit Tests: $UNIT_STATUS"
+          echo "🔗 Integration Tests: $INTEGRATION_STATUS"
+          echo "🎭 E2E Tests: $E2E_STATUS"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          
+          if [ "$UNIT_STATUS" = "success" ] && [ "$INTEGRATION_STATUS" = "success" ] && [ "$E2E_STATUS" = "success" ]; then
+            echo "✅ ALL QUALITY GATES PASSED - Ready for deployment"
+            echo "🎉 This PR meets all quality requirements:"
+            echo "   - Unit tests: Fast feedback loop validated"
+            echo "   - Integration tests: API contracts verified"
+            echo "   - E2E tests: User flows confirmed in production environment"
+            exit 0
+          else
+            echo "❌ QUALITY GATE FAILURE - Deployment blocked"
+            echo "🚫 This PR does not meet quality requirements:"
+            [ "$UNIT_STATUS" != "success" ] && echo "   - Unit tests failed or skipped"
+            [ "$INTEGRATION_STATUS" != "success" ] && echo "   - Integration tests failed or skipped"
+            [ "$E2E_STATUS" != "success" ] && echo "   - E2E tests failed or skipped"
+            echo "📋 Action required: Fix failing tests before deployment"
+            exit 1
+          fi

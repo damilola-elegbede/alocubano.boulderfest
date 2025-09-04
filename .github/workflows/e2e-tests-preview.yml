@@ -1,0 +1,316 @@
+---
+name: 🎭 E2E Tests - Preview Deployments
+
+# Modern E2E testing workflow using Vercel Preview Deployments
+# - Real production environment testing with serverless functions
+# - No local server management or port conflicts
+# - Improved reliability and faster execution
+# - Native CI/CD integration with deployment workflows
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
+  deployment_status:
+    # Trigger when Vercel deployments succeed
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: false
+        default: 'standard'
+        type: choice
+        options:
+          - 'standard'      # Basic flows (6 tests)
+          - 'advanced'      # All flows (12 tests)
+          - 'performance'   # Performance-focused tests
+          - 'accessibility' # Mobile experience tests
+          - 'security'      # Admin and security tests
+      browsers:
+        description: 'Browser matrix to test'
+        required: false
+        default: 'standard'
+        type: choice
+        options:
+          - 'standard'      # Chromium + Firefox
+          - 'extended'      # + Safari (WebKit)
+          - 'mobile'        # + Mobile browsers
+          - 'chromium-only' # Chromium only (fastest)
+      preview_url:
+        description: 'Specific preview URL to test (optional)'
+        required: false
+        type: string
+
+# Prevent multiple E2E runs for the same PR
+concurrency:
+  group: e2e-preview-${{ github.head_ref || github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  NODE_ENV: test
+  CI: true
+  NODE_OPTIONS: '--max-old-space-size=3072'
+  PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
+
+jobs:
+  # Wait for Vercel deployment and extract preview URL
+  get-preview-url:
+    name: 🚀 Get Preview Deployment URL
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'pull_request') ||
+      (github.event_name == 'deployment_status' && 
+       github.event.deployment_status.state == 'success' && 
+       github.event.deployment.environment == 'Preview') ||
+      (github.event_name == 'workflow_dispatch')
+    outputs:
+      preview-url: ${{ steps.get-url.outputs.preview-url }}
+      deployment-ready: ${{ steps.get-url.outputs.deployment-ready }}
+    steps:
+      - name: 🔍 Get Preview URL
+        id: get-url
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.preview_url }}" ]; then
+            # Manual trigger with specific URL
+            echo "preview-url=${{ inputs.preview_url }}" >> $GITHUB_OUTPUT
+            echo "deployment-ready=true" >> $GITHUB_OUTPUT
+            echo "ℹ️ Using manually provided URL: ${{ inputs.preview_url }}"
+          elif [ "${{ github.event_name }}" = "deployment_status" ]; then
+            # Triggered by deployment_status event
+            DEPLOYMENT_URL="${{ github.event.deployment_status.target_url }}"
+            echo "preview-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+            echo "deployment-ready=true" >> $GITHUB_OUTPUT
+            echo "ℹ️ Using deployment status URL: $DEPLOYMENT_URL"
+          else
+            # Pull request - will use wait-for-vercel action
+            echo "preview-url=" >> $GITHUB_OUTPUT
+            echo "deployment-ready=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Pull request event - will wait for deployment"
+          fi
+
+      - name: 📋 Preview URL Summary
+        run: |
+          echo "🎯 Preview URL Detection Results:"
+          echo "  Event: ${{ github.event_name }}"
+          echo "  URL: ${{ steps.get-url.outputs.preview-url }}"
+          echo "  Ready: ${{ steps.get-url.outputs.deployment-ready }}"
+
+  # Wait for Vercel deployment if needed
+  wait-for-deployment:
+    name: ⏳ Wait for Vercel Deployment
+    runs-on: ubuntu-latest
+    needs: get-preview-url
+    if: needs.get-preview-url.outputs.deployment-ready != 'true'
+    outputs:
+      preview-url: ${{ steps.wait.outputs.deployment-url }}
+      deployment-ready: ${{ steps.wait.outputs.ready }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ⏳ Wait for Vercel Deployment
+        id: wait
+        uses: ./.github/actions/wait-for-vercel
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          timeout-minutes: 10
+          check-interval: 5
+
+      - name: 📋 Deployment Summary
+        run: |
+          echo "🎯 Vercel Deployment Results:"
+          echo "  URL: ${{ steps.wait.outputs.deployment-url }}"
+          echo "  Environment: ${{ steps.wait.outputs.environment }}"
+          echo "  Ready: ${{ steps.wait.outputs.ready }}"
+
+  # Determine test matrix based on inputs
+  test-matrix:
+    name: 📋 Build Test Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      test-pattern: ${{ steps.matrix.outputs.test-pattern }}
+    steps:
+      - name: 🧮 Build Test Matrix
+        id: matrix
+        run: |
+          # Determine browser matrix
+          BROWSER_MATRIX='["chromium"]' # Default fallback
+          
+          case "${{ inputs.browsers || 'standard' }}" in
+            "standard")
+              BROWSER_MATRIX='["chromium", "firefox"]'
+              ;;
+            "extended")
+              BROWSER_MATRIX='["chromium", "firefox", "webkit"]'
+              ;;
+            "mobile")
+              BROWSER_MATRIX='["chromium", "firefox", "mobile-chrome", "mobile-safari"]'
+              ;;
+            "chromium-only")
+              BROWSER_MATRIX='["chromium"]'
+              ;;
+          esac
+          
+          # Determine test pattern
+          TEST_PATTERN=""
+          case "${{ inputs.test_suite || 'standard' }}" in
+            "standard")
+              TEST_PATTERN="basic-navigation|cart-functionality|newsletter-simple|admin-auth|gallery-basic|registration-flow"
+              ;;
+            "advanced")
+              TEST_PATTERN="" # Run all tests
+              ;;
+            "performance")
+              TEST_PATTERN="performance|gallery-browsing|user-engagement"
+              ;;
+            "accessibility")
+              TEST_PATTERN="mobile-registration|accessibility"
+              ;;
+            "security")
+              TEST_PATTERN="admin-auth|admin-dashboard|ticket-validation"
+              ;;
+          esac
+          
+          echo "matrix={\"browser\":$BROWSER_MATRIX}" >> $GITHUB_OUTPUT
+          echo "test-pattern=$TEST_PATTERN" >> $GITHUB_OUTPUT
+          
+          echo "📋 Test Matrix Configuration:"
+          echo "  Browsers: $BROWSER_MATRIX"
+          echo "  Test Pattern: $TEST_PATTERN"
+
+  # Main E2E testing job
+  e2e-tests:
+    name: 🎭 E2E Tests (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    needs: [get-preview-url, wait-for-deployment, test-matrix]
+    if: always() && (needs.get-preview-url.outputs.deployment-ready == 'true' || needs.wait-for-deployment.outputs.deployment-ready == 'true')
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.test-matrix.outputs.matrix) }}
+    timeout-minutes: 20
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📋 Test Configuration
+        run: |
+          PREVIEW_URL="${{ needs.get-preview-url.outputs.preview-url || needs.wait-for-deployment.outputs.preview-url }}"
+          echo "🎯 E2E Test Configuration:"
+          echo "  Target URL: $PREVIEW_URL"
+          echo "  Browser: ${{ matrix.browser }}"
+          echo "  Test Suite: ${{ inputs.test_suite || 'standard' }}"
+          echo "  Test Pattern: ${{ needs.test-matrix.outputs.test-pattern }}"
+          echo "  NODE_OPTIONS: $NODE_OPTIONS"
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+
+      - name: 📦 Install Dependencies
+        run: |
+          npm ci --prefer-offline --no-audit
+          echo "✅ Dependencies installed"
+
+      - name: 🎭 Install Playwright Browsers
+        run: |
+          # Use cache for Playwright browsers
+          if [ ! -d ".playwright-browsers" ]; then
+            echo "🔄 Installing Playwright browsers..."
+            npx playwright install --with-deps ${{ matrix.browser }}
+          else
+            echo "✅ Using cached Playwright browsers"
+          fi
+
+      - name: 🔧 Setup Test Environment
+        run: |
+          PREVIEW_URL="${{ needs.get-preview-url.outputs.preview-url || needs.wait-for-deployment.outputs.preview-url }}"
+          
+          # Validate preview URL
+          if [ -z "$PREVIEW_URL" ] || [ "$PREVIEW_URL" = "null" ]; then
+            echo "❌ No preview URL available"
+            exit 1
+          fi
+          
+          # Set environment variables for Playwright
+          echo "PLAYWRIGHT_BASE_URL=$PREVIEW_URL" >> $GITHUB_ENV
+          echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_ENV
+          
+          echo "✅ Test environment configured with URL: $PREVIEW_URL"
+
+      - name: 🎭 Run E2E Tests
+        run: |
+          TEST_COMMAND="npm run test:e2e -- --project ${{ matrix.browser }}"
+          
+          # Add test pattern filter if specified
+          if [ -n "${{ needs.test-matrix.outputs.test-pattern }}" ]; then
+            TEST_COMMAND="$TEST_COMMAND --grep \"${{ needs.test-matrix.outputs.test-pattern }}\""
+          fi
+          
+          echo "🚀 Running: $TEST_COMMAND"
+          eval $TEST_COMMAND
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ env.PREVIEW_URL }}
+
+      - name: 📊 Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-${{ matrix.browser }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+      - name: 📋 Test Summary
+        if: always()
+        run: |
+          echo "📊 E2E Test Summary (${{ matrix.browser }}):"
+          echo "  Target URL: ${{ env.PREVIEW_URL }}"
+          echo "  Test Status: ${{ job.status }}"
+          if [ -f "playwright-report/index.html" ]; then
+            echo "  Report: Available in artifacts"
+          fi
+
+  # Collect and report results
+  e2e-results:
+    name: 📊 E2E Results Summary
+    runs-on: ubuntu-latest
+    needs: [e2e-tests, test-matrix]
+    if: always()
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📊 Collect Test Results
+        uses: ./.github/actions/collect-test-results
+        with:
+          test-type: "e2e"
+          artifact-pattern: "e2e-results-*"
+
+      - name: 💬 Post Results to PR
+        if: github.event_name == 'pull_request'
+        uses: ./.github/actions/post-test-comment
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          test-type: "E2E Tests (Preview Deployment)"
+          results-path: "test-results-summary.json"
+
+      - name: 📋 Final Summary
+        run: |
+          echo "🎯 E2E Test Suite Complete"
+          echo "  Suite: ${{ inputs.test_suite || 'standard' }}"
+          echo "  Browsers: ${{ inputs.browsers || 'standard' }}"
+          echo "  Status: ${{ needs.e2e-tests.result }}"
+          
+          if [ "${{ needs.e2e-tests.result }}" = "success" ]; then
+            echo "✅ All E2E tests passed!"
+          else
+            echo "❌ Some E2E tests failed - check individual job results"
+            exit 1
+          fi
