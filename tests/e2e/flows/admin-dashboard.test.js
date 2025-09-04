@@ -46,7 +46,7 @@ test.describe('Admin Dashboard & Security', () => {
   // Helper function to login
   const loginAsAdmin = async (page) => {
     // First validate login route is accessible
-    await validateAdminRoute(page, '/pages/admin/login.html', 'Admin Access');
+    await validateAdminRoute(page, '/admin/login.html', 'Admin Login');
     
     await page.fill('input[name="username"]', adminCredentials.email);
     await page.fill('input[type="password"]', adminCredentials.password);
@@ -153,7 +153,7 @@ test.describe('Admin Dashboard & Security', () => {
     });
     
     // Navigate fresh to trigger error
-    await page.goto('/pages/admin/dashboard.html');
+    await page.goto('/admin/dashboard.html');
     
     // Wait for page to stabilize with error handling
     await waitForConditions(page, {
@@ -177,7 +177,7 @@ test.describe('Admin Dashboard & Security', () => {
     await page.context().clearCookies();
     
     // Try to access dashboard directly
-    await page.goto('/pages/admin/dashboard.html');
+    await page.goto('/admin/dashboard.html');
     
     // Wait for redirect or unauthorized message with modern approach
     await waitForConditions(page, {

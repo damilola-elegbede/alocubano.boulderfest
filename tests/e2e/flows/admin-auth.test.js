@@ -50,7 +50,7 @@ test.describe('Admin Authentication', () => {
 
   test.beforeEach(async ({ page }) => {
     // First validate that admin login route is accessible and serves the correct page
-    await validateAdminRoute(page, '/pages/admin/login.html', 'Admin Access');
+    await validateAdminRoute(page, '/admin/login.html', 'Admin Login');
     
     // Wait for essential elements to be ready
     await page.waitForSelector('h1', { timeout: 30000 });
@@ -213,8 +213,8 @@ test.describe('Admin Authentication', () => {
     }
     
     // Navigate away and back - should remain logged in
-    await page.goto('/pages/tickets.html');
-    await page.goto('/pages/admin/dashboard.html');
+    await page.goto('/tickets.html');
+    await page.goto('/admin/dashboard.html');
     
     // Should still be on dashboard, not redirected to login
     await expect(page).toHaveURL(/dashboard/);
@@ -265,7 +265,7 @@ test.describe('Admin Authentication', () => {
 
   test('should handle session timeout gracefully', async ({ page }) => {
     // Navigate directly to dashboard without login with increased timeout
-    await page.goto('/pages/admin/dashboard.html', { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.goto('/admin/dashboard.html', { waitUntil: 'domcontentloaded', timeout: 60000 });
     
     // Wait for possible redirections and then check URL
     await page.waitForLoadState('networkidle', { timeout: 30000 });
