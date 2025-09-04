@@ -137,12 +137,22 @@ class DatabaseService {
     });
 
     let databaseUrl;
-    const authToken = process.env.TURSO_AUTH_TOKEN;
+    // Clean and normalize auth token (remove any quotes)
+    let authToken = process.env.TURSO_AUTH_TOKEN;
+    if (authToken) {
+      authToken = authToken.replace(/^["']|["']$/g, '').trim();
+    }
+
+    // Helper function to clean database URL (remove any surrounding quotes)
+    const cleanDatabaseUrl = (url) => {
+      if (!url) return url;
+      return url.replace(/^["']|["']$/g, '').trim();
+    };
 
     // Database URL selection logic - simplified and clearer
     if (isE2ETest) {
       // E2E tests MUST use Turso
-      databaseUrl = process.env.TURSO_DATABASE_URL;
+      databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
         const error = new Error("TURSO_DATABASE_URL environment variable is required for E2E tests");
@@ -163,7 +173,7 @@ class DatabaseService {
       
     } else if (isTest && !isVercel) {
       // Unit and Integration tests (local only) can use DATABASE_URL (SQLite files)
-      databaseUrl = process.env.DATABASE_URL || process.env.TURSO_DATABASE_URL;
+      databaseUrl = cleanDatabaseUrl(process.env.DATABASE_URL || process.env.TURSO_DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
         const error = new Error("DATABASE_URL environment variable is required for unit/integration tests");
@@ -176,7 +186,7 @@ class DatabaseService {
       
     } else if (isDevelopment) {
       // Local development: Try Turso first, fallback to SQLite
-      databaseUrl = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL;
+      databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
         // Fall back to SQLite for development
@@ -197,7 +207,7 @@ class DatabaseService {
       
     } else if (isVercelProduction) {
       // Vercel production: Require Turso
-      databaseUrl = process.env.TURSO_DATABASE_URL;
+      databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
         const error = new Error("TURSO_DATABASE_URL environment variable is required for Vercel production deployment");
@@ -210,7 +220,7 @@ class DatabaseService {
       
     } else if (isVercelPreview) {
       // Vercel preview deployments: Require Turso
-      databaseUrl = process.env.TURSO_DATABASE_URL;
+      databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
         const error = new Error("TURSO_DATABASE_URL environment variable is required for Vercel preview deployments");
@@ -223,7 +233,7 @@ class DatabaseService {
       
     } else if (isVercel) {
       // Generic Vercel deployment: Require Turso
-      databaseUrl = process.env.TURSO_DATABASE_URL;
+      databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
         const error = new Error("TURSO_DATABASE_URL environment variable is required for all Vercel deployments");
@@ -236,7 +246,7 @@ class DatabaseService {
       
     } else {
       // Any other production-like environment: Require Turso
-      databaseUrl = process.env.TURSO_DATABASE_URL;
+      databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
         const error = new Error("TURSO_DATABASE_URL environment variable is required for production environments");
