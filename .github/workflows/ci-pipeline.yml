@@ -140,7 +140,7 @@ jobs:
         node-version: ['20.x']
 
     env:
-      DATABASE_URL: "data/test-integration.db"
+      DATABASE_URL: "file:./data/test-integration.db"
       # Test environment variables for integration tests
       STRIPE_SECRET_KEY: ${{ secrets.TEST_STRIPE_SECRET_KEY || 'sk_test_dummy_integration_key' }}
       STRIPE_PUBLISHABLE_KEY: ${{ secrets.TEST_STRIPE_PUBLISHABLE_KEY || 'pk_test_dummy_integration_key' }}
@@ -200,7 +200,7 @@ jobs:
           
           # Run database migrations
           echo "🔄 Running database migrations..."
-          npm run migrate:up
+          NODE_ENV=test node scripts/migrate.js
           
           # Verify database creation
           if [ -f "data/test-integration.db" ]; then
