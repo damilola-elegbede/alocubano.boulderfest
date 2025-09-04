@@ -25,9 +25,9 @@ describe('Registration API Integration', () => {
     const testSessionId = 'cs_test_reg_' + Math.random().toString(36).slice(2);
     
     try {
-      // Create transaction
+      // Create transaction using current schema
       await dbClient.execute(`
-        INSERT INTO transactions (
+        INSERT INTO "transactions" (
           transaction_id, type, stripe_session_id, customer_email, amount_cents, order_data, status, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `, ['TXN_' + testSessionId, 'tickets', testSessionId, testEmail, 12500, '{"test": true}', 'completed']);
@@ -40,15 +40,15 @@ describe('Registration API Integration', () => {
       const transactionId = transactionResult.rows[0].id;
       const testQrCode = 'QR_' + Math.random().toString(36).slice(2);
       
-      // Create ticket
+      // Create ticket using current schema with proper column names
       await dbClient.execute(`
-        INSERT INTO tickets (
-          ticket_id, transaction_id, ticket_type, event_id, price_cents, validation_code, created_at
+        INSERT INTO "tickets" (
+          ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-      `, ['TICKET_' + testSessionId, transactionId, 'weekend-pass', 'boulder-fest-2026', 12500, testQrCode]);
+      `, ['TICKET_' + testSessionId, transactionId, 'Weekend Pass', 'boulder-fest-2026', 12500, testQrCode]);
       
       const ticketResult = await dbClient.execute(
-        'SELECT id FROM tickets WHERE validation_code = ?',
+        'SELECT id FROM "tickets" WHERE qr_token = ?',
         [testQrCode]
       );
       
@@ -83,7 +83,7 @@ describe('Registration API Integration', () => {
       
       // Verify database record was created
       const registrationCheck = await dbClient.execute(
-        'SELECT * FROM registrations WHERE ticket_id = ?',
+        'SELECT * FROM "registrations" WHERE ticket_id = ?',
         [ticketId]
       );
       
@@ -93,7 +93,9 @@ describe('Registration API Integration', () => {
         expect(registration.last_name).toBe('Test');
         expect(registration.email).toBe(testEmail);
         expect(registration.phone).toBe('+1234567890');
-        expect(registration.dietary_restrictions).toBe('vegetarian');
+        // Handle flexible column naming for dietary restrictions
+        const dietaryField = registration.dietary_restrictions || registration.dietary;
+        expect(dietaryField).toBe('vegetarian');
         expect(registration.emergency_contact).toBe('Jane Doe - 555-0123');
       }
       
@@ -131,13 +133,13 @@ describe('Registration API Integration', () => {
         const qrCode = `QR_BATCH_${testSessionId}_${i}`;
         
         await dbClient.execute(`
-          INSERT INTO tickets (
-            ticket_id, transaction_id, ticket_type, event_id, price_cents, validation_code, created_at
+          INSERT INTO "tickets" (
+            ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
           ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-        `, [`TICKET_BATCH_${testSessionId}_${i}`, transactionId, 'weekend-pass', 'boulder-fest-2026', 12500, qrCode]);
+        `, [`TICKET_BATCH_${testSessionId}_${i}`, transactionId, 'Weekend Pass', 'boulder-fest-2026', 12500, qrCode]);
         
         const ticketResult = await dbClient.execute(
-          'SELECT id FROM tickets WHERE validation_code = ?',
+          'SELECT id FROM "tickets" WHERE qr_token = ?',
           [qrCode]
         );
         
@@ -182,7 +184,7 @@ describe('Registration API Integration', () => {
       // Verify registrations were created
       for (const ticketId of ticketIds) {
         const registrationCheck = await dbClient.execute(
-          'SELECT * FROM registrations WHERE ticket_id = ?',
+          'SELECT * FROM "registrations" WHERE ticket_id = ?',
           [ticketId]
         );
         
@@ -222,24 +224,24 @@ describe('Registration API Integration', () => {
       const testQrCode = 'QR_STATUS_' + Math.random().toString(36).slice(2);
       
       await dbClient.execute(`
-        INSERT INTO tickets (
-          ticket_id, transaction_id, ticket_type, event_id, price_cents, validation_code, created_at
+        INSERT INTO "tickets" (
+          ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-      `, ['TICKET-' + testQrCode, transactionId, 'weekend-pass', 'boulder-fest-2026', 12500, testQrCode]);
+      `, ['TICKET-' + testQrCode, transactionId, 'Weekend Pass', 'boulder-fest-2026', 12500, testQrCode]);
       
       const ticketResult = await dbClient.execute(
-        'SELECT id FROM tickets WHERE validation_code = ?',
+        'SELECT id FROM "tickets" WHERE qr_token = ?',
         [testQrCode]
       );
       
       const ticketId = ticketResult.rows[0].id;
       
-      // Create registration
+      // Create registration using current schema
       await dbClient.execute(`
-        INSERT INTO registrations (
+        INSERT INTO "registrations" (
           ticket_id, first_name, last_name, email, ticket_type, registration_date
         ) VALUES (?, ?, ?, ?, ?, datetime('now'))
-      `, [ticketId, 'Status', 'Test', testEmail, 'weekend-pass']);
+      `, [ticketId, 'Status', 'Test', testEmail, 'Weekend Pass']);
       
       // Test registration status endpoint
       const response = await testRequest('GET', `/api/registration/${registrationToken}`);

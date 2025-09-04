@@ -105,9 +105,9 @@ const cleanDatabase = async () => {
     for (const table of tables) {
       if (existingTables.has(table)) {
         cleanupPromises.push(
-          dbClient.execute(`DELETE FROM ${table}`)
+          dbClient.execute(`DELETE FROM "${table}"`)
             .then(result => {
-              const deletedCount = result.changes || 0;
+              const deletedCount = result.rowsAffected ?? result.changes ?? 0;
               if (deletedCount > 0) {
                 console.log(`🧹 Cleaned ${deletedCount} records from ${table}`);
               }

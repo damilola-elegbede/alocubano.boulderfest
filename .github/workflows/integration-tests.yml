@@ -3,7 +3,7 @@ name: "🔗 Integration Tests"
 on:
   pull_request:
     branches: [main, develop]
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'api/**'
       - 'js/**'
@@ -11,7 +11,7 @@ on:
       - 'pages/**'
       - 'tests/integration/**'
       - 'package.json'
-      - 'vitest*.config.js'
+      - 'playwright*.config.js'
       - 'tests/config/**'
   push:
     branches: [main, develop]
@@ -22,7 +22,7 @@ on:
       - 'pages/**'
       - 'tests/integration/**'
       - 'package.json'
-      - 'vitest*.config.js'
+      - 'playwright*.config.js'
       - 'tests/config/**'
   workflow_dispatch:
     inputs:
@@ -83,7 +83,7 @@ jobs:
             integration:
               - 'tests/integration/**'
             config:
-              - 'vitest*.config.js'
+              - 'playwright*.config.js'
               - 'tests/config/**'
               - 'package.json'
 
@@ -399,7 +399,7 @@ jobs:
             echo "- Frontend code (js/, css/, pages/)" >> $GITHUB_STEP_SUMMARY
             echo "- Backend code (api/)" >> $GITHUB_STEP_SUMMARY
             echo "- Integration test files (tests/integration/)" >> $GITHUB_STEP_SUMMARY
-            echo "- Test configuration (vitest*.config.js, tests/config/)" >> $GITHUB_STEP_SUMMARY
+            echo "- Test configuration (playwright*.config.js, tests/config/)" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: "💬 Comment on PR"

@@ -38,13 +38,16 @@ describe('Admin Authentication Integration', () => {
       if (dbClient) {
         try {
           const sessionCheck = await dbClient.execute(
-            'SELECT * FROM admin_sessions ORDER BY created_at DESC LIMIT 1'
+            'SELECT * FROM "admin_sessions" ORDER BY created_at DESC LIMIT 1'
           );
           
           if (sessionCheck.rows.length > 0) {
             const session = sessionCheck.rows[0];
             expect(session.expires_at).toBeTruthy();
             expect(new Date(session.expires_at) > new Date()).toBe(true);
+          } else {
+            // Sessions table may not exist or no sessions created yet
+            console.log('⚠️ No admin sessions found - sessions may be stored differently');
           }
         } catch (error) {
           console.warn('⚠️ Session verification skipped:', error.message);
@@ -191,18 +194,18 @@ describe('Admin Authentication Integration', () => {
       const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
       
       await dbClient.execute(`
-        INSERT INTO admin_sessions (
+        INSERT INTO "admin_sessions" (
           session_id, expires_at, created_at
         ) VALUES (?, ?, ?)
       `, [expiredSessionId, pastDate.toISOString(), pastDate.toISOString()]);
       
       // Verify session was created
       const beforeCleanup = await dbClient.execute(
-        'SELECT COUNT(*) as count FROM admin_sessions WHERE session_id = ?',
+        'SELECT COUNT(*) as count FROM "admin_sessions" WHERE session_id = ?',
         [expiredSessionId]
       );
       
-      expect(beforeCleanup.rows[0].count).toBe(1);
+      expect(Number(beforeCleanup.rows[0].count)).toBe(1);
       
       // Trigger session cleanup (this would normally happen automatically)
       // We simulate this by calling the admin endpoint which might trigger cleanup
@@ -215,11 +218,13 @@ describe('Admin Authentication Integration', () => {
       
       // Check if expired session was cleaned up
       const afterCleanup = await dbClient.execute(
-        'SELECT COUNT(*) as count FROM admin_sessions WHERE expires_at < datetime("now")'
+        'SELECT COUNT(*) as count FROM "admin_sessions" WHERE expires_at < datetime("now")'
       );
       
       // We can't guarantee the cleanup ran, but we can check the query works
-      expect(typeof afterCleanup.rows[0].count).toBe('number');
+      const cleanupCount = Number(afterCleanup.rows[0].count);
+      expect(Number.isInteger(cleanupCount)).toBe(true);
+      expect(cleanupCount).toBeGreaterThanOrEqual(0);
       
     } catch (error) {
       console.warn('⚠️ Session cleanup test error:', error.message);

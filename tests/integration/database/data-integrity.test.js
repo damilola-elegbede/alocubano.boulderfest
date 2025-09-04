@@ -630,11 +630,15 @@ describe('Integration: Database Data Integrity', () => {
     testTicketId = ticketId;
 
     // TRUE concurrency testing - use separate database clients for real parallel operations
-    // Note: For SQLite, this may result in database locking, which is correct behavior
+    const { getDatabaseClient } = await import('../../../api/lib/database.js');
+    
     const concurrentUpdates = [1, 2, 3].map(async (attempt) => {
+      let separateClient;
       try {
         // Each attempt uses a separate database connection for true concurrency
-        const updateResult = await db.execute({
+        separateClient = await getDatabaseClient();
+        
+        const updateResult = await separateClient.execute({
           sql: `
             UPDATE "tickets" 
             SET scan_count = scan_count + 1, last_scanned_at = CURRENT_TIMESTAMP
@@ -657,6 +661,15 @@ describe('Integration: Database Data Integrity', () => {
           errorCode: error.code,
           timestamp: Date.now()
         };
+      } finally {
+        // Clean up separate client
+        if (separateClient && separateClient !== db && typeof separateClient.close === 'function') {
+          try {
+            await separateClient.close();
+          } catch (closeError) {
+            // Ignore close errors in tests
+          }
+        }
       }
     });
 
@@ -685,19 +698,21 @@ describe('Integration: Database Data Integrity', () => {
     // Failed operations due to locking/contention are expected and acceptable
     failedUpdates.forEach(failure => {
       expect(failure.error).toBeDefined();
-      // Common database contention errors
+      expect(typeof failure.error).toBe('string');
+      // Common database contention errors are acceptable
       const acceptableErrors = [
         'database is locked',
-        'SQLITE_BUSY',
+        'SQLITE_BUSY', 
         'SQLITE_LOCKED',
-        'database lock'
+        'database lock',
+        'constraint'
       ];
       const hasAcceptableError = acceptableErrors.some(errType => 
-        failure.error.includes(errType) || 
+        failure.error.toLowerCase().includes(errType.toLowerCase()) || 
         (failure.errorCode && failure.errorCode.includes(errType))
       );
       
-      // Either acceptable database locking error OR some other database constraint
+      // Either acceptable database locking/constraint error OR other database error
       expect(hasAcceptableError || failure.error.length > 0).toBe(true);
     });
   });

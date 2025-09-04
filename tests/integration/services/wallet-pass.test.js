@@ -19,6 +19,7 @@ describe('Wallet Pass Integration Tests', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
+
   beforeEach(async () => {
     // Create a test ticket for wallet pass generation
     testTransactionId = Math.floor(Math.random() * 1000000); // Generate random integer ID
@@ -26,7 +27,7 @@ describe('Wallet Pass Integration Tests', () => {
 
     // Insert test transaction
     const transactionResult = await database.execute({
-      sql: `INSERT INTO transactions (
+      sql: `INSERT INTO "transactions" (
         transaction_id, type, stripe_session_id, amount_cents, status, 
         customer_email, order_data, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -39,14 +40,14 @@ describe('Wallet Pass Integration Tests', () => {
     // Get the auto-generated ID from the transaction
     const transactionDbId = transactionResult.lastInsertRowid || transactionResult.meta?.last_row_id;
 
-    // Insert test ticket
+    // Insert test ticket using proper schema
     await database.execute({
-      sql: `INSERT INTO tickets (
+      sql: `INSERT INTO "tickets" (
         ticket_id, transaction_id, ticket_type, event_id, price_cents, status, 
         attendee_first_name, attendee_last_name, attendee_email, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
-        testTicketId, transactionDbId, 'weekend-pass', 'boulder-fest-2026',
+        testTicketId, transactionDbId, 'Weekend Pass', 'boulder-fest-2026',
         5000, 'valid', 'Test', 'User', 'test@example.com',
         new Date().toISOString()
       ]
@@ -107,7 +108,7 @@ describe('Wallet Pass Integration Tests', () => {
 
         // Verify that the ticket was updated with pass serial number
         const result = await database.execute({
-          sql: 'SELECT apple_pass_serial, wallet_pass_generated_at FROM tickets WHERE ticket_id = ?',
+          sql: 'SELECT apple_pass_serial, wallet_pass_generated_at FROM "tickets" WHERE ticket_id = ?',
           args: [testTicketId]
         });
 
@@ -202,7 +203,7 @@ describe('Wallet Pass Integration Tests', () => {
 
         // Verify that the ticket was updated with pass ID
         const dbResult = await database.execute({
-          sql: 'SELECT google_pass_id, wallet_pass_generated_at FROM tickets WHERE ticket_id = ?',
+          sql: 'SELECT google_pass_id, wallet_pass_generated_at FROM "tickets" WHERE ticket_id = ?',
           args: [testTicketId]
         });
 
@@ -226,7 +227,7 @@ describe('Wallet Pass Integration Tests', () => {
     it('should handle cancelled tickets appropriately', async () => {
       // Update test ticket to cancelled status
       await database.execute({
-        sql: 'UPDATE tickets SET status = ? WHERE ticket_id = ?',
+        sql: 'UPDATE "tickets" SET status = ? WHERE ticket_id = ?',
         args: ['cancelled', testTicketId]
       });
 
@@ -292,7 +293,7 @@ describe('Wallet Pass Integration Tests', () => {
           const serialNumbers = new Set();
           for (const result of successful) {
             const ticketData = await database.execute({
-              sql: 'SELECT apple_pass_serial FROM tickets WHERE ticket_id = ?',
+              sql: 'SELECT apple_pass_serial FROM "tickets" WHERE ticket_id = ?',
               args: [testTicketId]
             });
             serialNumbers.add(ticketData.rows[0]?.apple_pass_serial);

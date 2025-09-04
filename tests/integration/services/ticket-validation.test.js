@@ -40,15 +40,15 @@ describe('Ticket Validation Integration', () => {
       
       const transactionId = transactionResult.rows[0].id;
       
-      // Create ticket with actual ticket type
+      // Create ticket with actual ticket type using current schema
       await dbClient.execute(`
         INSERT INTO "tickets" (
-          ticket_id, transaction_id, ticket_type, event_id, price_cents, validation_code, created_at
+          ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
       `, ['TICKET_' + testSessionId, transactionId, 'Weekend Pass', 'boulder-fest-2026', 12500, testQrCode]);
       
       const ticketResult = await dbClient.execute(
-        'SELECT id FROM "tickets" WHERE validation_code = ?',
+        'SELECT id FROM "tickets" WHERE qr_token = ?',
         [testQrCode]
       );
       
@@ -172,12 +172,12 @@ describe('Ticket Validation Integration', () => {
       
       await dbClient.execute(`
         INSERT INTO "tickets" (
-          ticket_id, transaction_id, ticket_type, event_id, price_cents, validation_code, created_at
+          ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
       `, ['TICKET_' + testSessionId, transactionId, 'VIP Package', 'boulder-fest-2026', 15000, testQrCode]);
       
       const ticketResult = await dbClient.execute(
-        'SELECT id FROM "tickets" WHERE validation_code = ?',
+        'SELECT id FROM "tickets" WHERE qr_token = ?',
         [testQrCode]
       );
       
@@ -232,12 +232,12 @@ describe('Ticket Validation Integration', () => {
       
       await dbClient.execute(`
         INSERT INTO "tickets" (
-          ticket_id, transaction_id, ticket_type, event_id, price_cents, validation_code, created_at
+          ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
       `, ['TICKET-' + testQrCode, transactionId, 'Weekend Pass', 'boulder-fest-2026', 12500, testQrCode]);
       
       const ticketResult = await dbClient.execute(
-        'SELECT id FROM "tickets" WHERE validation_code = ?',
+        'SELECT id FROM "tickets" WHERE qr_token = ?',
         [testQrCode]
       );
       
@@ -298,12 +298,11 @@ describe('Ticket Validation Integration', () => {
       
       // Should have logged validation attempts - meaningful assertion
       const logCount = Number(validationLogs.rows[0].count);
+      expect(Number.isInteger(logCount)).toBe(true);
+      expect(logCount).toBeGreaterThanOrEqual(0);
+      
       if (logCount > 0) {
-        expect(logCount).toBeGreaterThan(0);
         expect(logCount).toBeLessThanOrEqual(validResponses.length);
-      } else {
-        // If no logging occurred, verify this is expected behavior
-        expect(logCount).toBe(0);
       }
       
     } catch (error) {
@@ -337,12 +336,12 @@ describe('Ticket Validation Integration', () => {
       
       await dbClient.execute(`
         INSERT INTO "tickets" (
-          ticket_id, transaction_id, ticket_type, event_id, price_cents, validation_code, created_at
+          ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
       `, ['TICKET-' + testQrCode, transactionId, 'Weekend Pass', 'boulder-fest-2026', 12500, testQrCode]);
       
       const ticketResult = await dbClient.execute(
-        'SELECT id FROM "tickets" WHERE validation_code = ?',
+        'SELECT id FROM "tickets" WHERE qr_token = ?',
         [testQrCode]
       );
       

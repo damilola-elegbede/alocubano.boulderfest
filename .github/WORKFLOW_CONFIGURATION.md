@@ -131,7 +131,7 @@ on:
       - 'js/**'
       - 'css/**'
       - 'pages/**'
-      - 'tests/e2e/**'
+      - 'playwright*.config.js'
 ```
 
 **Features:**

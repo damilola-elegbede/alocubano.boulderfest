@@ -188,15 +188,20 @@ describe('Database Transaction Integration', () => {
     const testPrefix = 'concurrent_' + Math.random().toString(36).slice(2);
     
     // TRUE concurrent operations using separate database clients for real concurrency
+    const { getDatabaseClient } = await import('../../../api/lib/database.js');
+    
     const concurrentOperations = Array.from({ length: 3 }, (_, index) => {
       const sessionId = `cs_test_${testPrefix}_${index}`;
       const email = `concurrent.${index}.${testEmail}`;
       
       // Use separate database client for true concurrency
       return (async () => {
+        let separateClient;
         try {
-          // Each operation uses the same shared client but executes in parallel
-          await dbClient.execute(`
+          // Get separate database client for true concurrent testing
+          separateClient = await getDatabaseClient();
+          
+          await separateClient.execute(`
             INSERT INTO "transactions" (
               transaction_id, type, stripe_session_id, customer_email, amount_cents, order_data, status, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
@@ -205,6 +210,15 @@ describe('Database Transaction Integration', () => {
           return { success: true, sessionId, email };
         } catch (error) {
           return { success: false, error: error.message, sessionId, email };
+        } finally {
+          // Clean up separate client if needed
+          if (separateClient && separateClient !== dbClient && typeof separateClient.close === 'function') {
+            try {
+              await separateClient.close();
+            } catch (closeError) {
+              // Ignore close errors in tests
+            }
+          }
         }
       })();
     });
@@ -231,6 +245,8 @@ describe('Database Transaction Integration', () => {
         // Failed operations should have meaningful error messages
         expect(result.error).toBeDefined();
         expect(typeof result.error).toBe('string');
+        // Acceptable concurrency errors
+        expect(result.error).toMatch(/database is locked|SQLITE_BUSY|SQLITE_LOCKED|constraint|unique/i);
       }
     }
   });

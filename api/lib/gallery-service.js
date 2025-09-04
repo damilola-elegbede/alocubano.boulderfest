@@ -97,7 +97,7 @@ class GalleryService {
                 ...item,
                 featured: true
               })),
-              totalCount: cachedData.totalCount ?? cachedData.items?.length ?? 0,
+              totalCount: cachedData.totalCount ?? cachedData.items?.length ?? 0 ?? cachedData.items?.length ?? 0,
               cacheTimestamp: cachedData.cacheTimestamp
             };
           }
@@ -430,7 +430,15 @@ class GalleryService {
   /**
    * Clear runtime cache (useful for debugging)
    */
-  clearCache() {
+
+  /**
+   * Ensure service is initialized (for consistency with other services)
+   */
+  async ensureInitialized() {
+    // Gallery service is stateless and does not require initialization
+    // This method exists for consistency with other async services
+    return this;
+  }  clearCache() {
     this.cache.clear();
     this.metrics = {
       cacheHits: 0,
