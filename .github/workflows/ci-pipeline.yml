@@ -183,17 +183,17 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🗃️ Setting up Integration Test Database"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           # Create data directory if it doesn't exist
           mkdir -p data
-          
+
           # Remove any existing integration test database
           rm -f data/test-integration.db
-          
+
           # Run database migrations first
           echo "🔄 Running database migrations..."
           NODE_ENV=test node scripts/migrate.js
-          
+
           # Verify database creation
           if [ -f "data/test-integration.db" ]; then
             echo "✅ Integration test database created successfully"
@@ -355,7 +355,7 @@ jobs:
         id: validate-preview
         run: |
           PREVIEW_URL="${{ steps.wait-for-vercel.outputs.url }}"
-          
+
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🔍 Validating Vercel Preview Deployment"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -363,13 +363,13 @@ jobs:
           echo "🕒 Deployment Status: Ready"
           echo "🎯 Target Environment: Production-like"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
-          # Validate URL format
-          if [[ ! "$PREVIEW_URL" =~ ^https?://.*\.vercel\.app$ ]]; then
+
+          # Validate URL format - improved pattern to handle custom domains
+          if [[ ! "$PREVIEW_URL" =~ ^https?://[a-zA-Z0-9.-]+(/.*)?$ ]]; then
             echo "❌ Invalid preview URL format: $PREVIEW_URL"
             exit 1
           fi
-          
+
           # Health check with retries
           echo "🏥 Performing health check..."
           for i in {1..10}; do
@@ -385,7 +385,7 @@ jobs:
               sleep 10
             fi
           done
-          
+
           echo "🎉 Preview deployment validation successful!"
 
       - name: "🎭 Run E2E Tests"
@@ -421,7 +421,7 @@ jobs:
           total_tests=$(grep -oP '\d+(?= passed)' e2e-test-output.log | tail -1 || echo "0")
           passing_tests=$total_tests
           failing_tests=$(grep -oP '\d+(?= failed)' e2e-test-output.log | tail -1 || echo "0")
-          
+
           # Handle case where no failures reported
           if [ "$failing_tests" = "0" ] && grep -q "failed" e2e-test-output.log; then
             failing_tests=$(grep -oP '\d+(?= failed)' e2e-test-output.log | head -1 || echo "0")
@@ -466,14 +466,6 @@ jobs:
             test-results/
           retention-days: 7
 
-      - name: "📊 Upload E2E Test Report"
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-playwright-report
-          path: playwright-report/
-          retention-days: 7
-
   summary:
     name: "📊 CI Pipeline Summary"
     runs-on: ubuntu-latest
@@ -490,7 +482,7 @@ jobs:
             const unitStatus = '${{ needs.unit-tests.result }}';
             const integrationStatus = '${{ needs.integration-tests.result }}';
             const e2eStatus = '${{ needs.e2e-tests.result }}';
-            
+
             // Get output values from jobs
             const unitOutputs = ${{ toJSON(needs.unit-tests.outputs) }};
             const integrationOutputs = ${{ toJSON(needs.integration-tests.outputs) }};
@@ -590,7 +582,7 @@ jobs:
           UNIT_STATUS="${{ needs.unit-tests.result }}"
           INTEGRATION_STATUS="${{ needs.integration-tests.result }}"
           E2E_STATUS="${{ needs.e2e-tests.result }}"
-          
+
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🔒 Deployment Quality Gate Validation"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -598,7 +590,7 @@ jobs:
           echo "🔗 Integration Tests: $INTEGRATION_STATUS"
           echo "🎭 E2E Tests: $E2E_STATUS"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           if [ "$UNIT_STATUS" = "success" ] && [ "$INTEGRATION_STATUS" = "success" ] && [ "$E2E_STATUS" = "success" ]; then
             echo "✅ ALL QUALITY GATES PASSED - Ready for deployment"
             echo "🎉 This PR meets all quality requirements:"

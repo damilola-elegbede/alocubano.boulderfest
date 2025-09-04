@@ -46,6 +46,11 @@ concurrency:
   group: e2e-preview-${{ github.head_ref || github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: write
+  deployments: read
+
 env:
   NODE_VERSION: "20"
   NODE_ENV: test
@@ -60,8 +65,8 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       (github.event_name == 'pull_request') ||
-      (github.event_name == 'deployment_status' && 
-       github.event.deployment_status.state == 'success' && 
+      (github.event_name == 'deployment_status' &&
+       github.event.deployment_status.state == 'success' &&
        github.event.deployment.environment == 'Preview') ||
       (github.event_name == 'workflow_dispatch')
     outputs:
@@ -137,7 +142,7 @@ jobs:
         run: |
           # Determine browser matrix
           BROWSER_MATRIX='["chromium"]' # Default fallback
-          
+
           case "${{ inputs.browsers || 'standard' }}" in
             "standard")
               BROWSER_MATRIX='["chromium", "firefox"]'
@@ -152,7 +157,7 @@ jobs:
               BROWSER_MATRIX='["chromium"]'
               ;;
           esac
-          
+
           # Determine test pattern
           TEST_PATTERN=""
           case "${{ inputs.test_suite || 'standard' }}" in
@@ -172,10 +177,10 @@ jobs:
               TEST_PATTERN="admin-auth|admin-dashboard|ticket-validation"
               ;;
           esac
-          
+
           echo "matrix={\"browser\":$BROWSER_MATRIX}" >> $GITHUB_OUTPUT
           echo "test-pattern=$TEST_PATTERN" >> $GITHUB_OUTPUT
-          
+
           echo "📋 Test Matrix Configuration:"
           echo "  Browsers: $BROWSER_MATRIX"
           echo "  Test Pattern: $TEST_PATTERN"
@@ -190,7 +195,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.test-matrix.outputs.matrix) }}
     timeout-minutes: 20
-    
+
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -217,12 +222,28 @@ jobs:
           npm ci --prefer-offline --no-audit
           echo "✅ Dependencies installed"
 
+      - name: 🧩 Cache Playwright Browsers
+        uses: actions/cache@v4
+        with:
+          path: .playwright-browsers
+          key: ${{ runner.os }}-pw-${{ hashFiles('playwright-e2e-preview.config.js') }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-pw-
+
       - name: 🎭 Install Playwright Browsers
         run: |
+          # Map mobile browsers to actual browser names
+          BROWSER="${{ matrix.browser }}"
+          case "$BROWSER" in
+            mobile-chrome) INSTALL_BROWSER="chromium" ;;
+            mobile-safari) INSTALL_BROWSER="webkit" ;;
+            *) INSTALL_BROWSER="$BROWSER" ;;
+          esac
+
           # Use cache for Playwright browsers
           if [ ! -d ".playwright-browsers" ]; then
-            echo "🔄 Installing Playwright browsers..."
-            npx playwright install --with-deps ${{ matrix.browser }}
+            echo "🔄 Installing Playwright browser: $INSTALL_BROWSER..."
+            npx playwright install --with-deps "$INSTALL_BROWSER"
           else
             echo "✅ Using cached Playwright browsers"
           fi
@@ -230,28 +251,28 @@ jobs:
       - name: 🔧 Setup Test Environment
         run: |
           PREVIEW_URL="${{ needs.get-preview-url.outputs.preview-url || needs.wait-for-deployment.outputs.preview-url }}"
-          
+
           # Validate preview URL
           if [ -z "$PREVIEW_URL" ] || [ "$PREVIEW_URL" = "null" ]; then
             echo "❌ No preview URL available"
             exit 1
           fi
-          
+
           # Set environment variables for Playwright
           echo "PLAYWRIGHT_BASE_URL=$PREVIEW_URL" >> $GITHUB_ENV
           echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_ENV
-          
+
           echo "✅ Test environment configured with URL: $PREVIEW_URL"
 
       - name: 🎭 Run E2E Tests
         run: |
           TEST_COMMAND="npm run test:e2e -- --project ${{ matrix.browser }}"
-          
+
           # Add test pattern filter if specified
           if [ -n "${{ needs.test-matrix.outputs.test-pattern }}" ]; then
             TEST_COMMAND="$TEST_COMMAND --grep \"${{ needs.test-matrix.outputs.test-pattern }}\""
           fi
-          
+
           echo "🚀 Running: $TEST_COMMAND"
           eval $TEST_COMMAND
         env:
@@ -288,18 +309,25 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 📊 Collect Test Results
+        id: collect
         uses: ./.github/actions/collect-test-results
         with:
           test-type: "e2e"
-          artifact-pattern: "e2e-results-*"
+          test-results-path: "test-results-summary.json"
+
+      - name: 📄 Read Summary JSON
+        id: read-results
+        run: |
+          echo "json=$(jq -c . test-results-summary.json 2>/dev/null || echo '{}')" >> "$GITHUB_OUTPUT"
 
       - name: 💬 Post Results to PR
         if: github.event_name == 'pull_request'
         uses: ./.github/actions/post-test-comment
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          test-type: "E2E Tests (Preview Deployment)"
-          results-path: "test-results-summary.json"
+          commit-sha: ${{ github.sha }}
+          workflow-run-id: ${{ github.run_id }}
+          e2e-test-results: ${{ steps.read-results.outputs.json }}
 
       - name: 📋 Final Summary
         run: |
@@ -307,7 +335,7 @@ jobs:
           echo "  Suite: ${{ inputs.test_suite || 'standard' }}"
           echo "  Browsers: ${{ inputs.browsers || 'standard' }}"
           echo "  Status: ${{ needs.e2e-tests.result }}"
-          
+
           if [ "${{ needs.e2e-tests.result }}" = "success" ]; then
             echo "✅ All E2E tests passed!"
           else
