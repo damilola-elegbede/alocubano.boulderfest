@@ -17,18 +17,21 @@ async function validateGoogleDriveConfig(page) {
     const envData = await envResponse.json();
     
     // Check for required Google Drive environment variables
-    const hasApiKey = !!envData.GOOGLE_DRIVE_API_KEY;
-    const hasFolderId = !!envData.GOOGLE_DRIVE_FOLDER_ID;
+    const hasServiceAccount = !!envData.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    const hasPrivateKey = !!envData.GOOGLE_PRIVATE_KEY;  
+    const hasFolderId = !!envData.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
     
     console.log('📊 Google Drive API Configuration Status:', {
-      GOOGLE_DRIVE_API_KEY: hasApiKey,
-      GOOGLE_DRIVE_FOLDER_ID: hasFolderId,
+      GOOGLE_SERVICE_ACCOUNT_EMAIL: hasServiceAccount,
+      GOOGLE_PRIVATE_KEY: hasPrivateKey,
+      GOOGLE_DRIVE_GALLERY_FOLDER_ID: hasFolderId,
       envResponseStatus: envResponse.status()
     });
     
     const missingVars = [];
-    if (!hasApiKey) missingVars.push('GOOGLE_DRIVE_API_KEY');
-    if (!hasFolderId) missingVars.push('GOOGLE_DRIVE_FOLDER_ID');
+    if (!hasServiceAccount) missingVars.push('GOOGLE_SERVICE_ACCOUNT_EMAIL');
+    if (!hasPrivateKey) missingVars.push('GOOGLE_PRIVATE_KEY');
+    if (!hasFolderId) missingVars.push('GOOGLE_DRIVE_GALLERY_FOLDER_ID');
     
     if (missingVars.length > 0) {
       throw new Error(`REQUIRED Google Drive environment variables missing: ${missingVars.join(', ')}. Configure these to enable real Google Drive API testing.`);
