@@ -75,13 +75,46 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.preview_url }}" ]; then
             # Manual trigger with specific URL
-            echo "preview-url=${{ inputs.preview_url }}" >> $GITHUB_OUTPUT
-            echo "ℹ️ Using manually provided URL: ${{ inputs.preview_url }}"
+            PREVIEW_URL="${{ inputs.preview_url }}"
+            echo "preview-url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+            echo "📍 Using provided preview URL: $PREVIEW_URL"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Manual trigger without URL - auto-discover from GitHub deployments
+            echo "🔍 Auto-discovering preview URL for current commit..."
+            
+            # Get the most recent successful Vercel deployment for this commit
+            DEPLOYMENT_DATA=$(gh api "/repos/${{ github.repository }}/deployments?sha=${{ github.sha }}&environment=Preview" | jq -r '.[0] | select(.state == "success")')
+            
+            if [ -n "$DEPLOYMENT_DATA" ]; then
+              DEPLOYMENT_ID=$(echo "$DEPLOYMENT_DATA" | jq -r '.id')
+              DEPLOYMENT_STATUS=$(gh api "/repos/${{ github.repository }}/deployments/${DEPLOYMENT_ID}/statuses" | jq -r '.[0] | select(.state == "success") | .target_url')
+              
+              if [ -n "$DEPLOYMENT_STATUS" ]; then
+                PREVIEW_URL="$DEPLOYMENT_STATUS"
+                echo "preview-url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+                echo "✅ Found preview URL from deployment: $PREVIEW_URL"
+              else
+                # Fallback: try to get any recent successful preview deployment
+                echo "⚠️ No deployment status found for current commit, checking recent deployments..."
+                PREVIEW_URL=$(gh api "/repos/${{ github.repository }}/deployments?environment=Preview&per_page=5" | jq -r '.[] | select(.state == "success") | .statuses_url' | head -1 | xargs gh api | jq -r '.[0] | select(.state == "success") | .target_url' | head -1)
+                
+                if [ -n "$PREVIEW_URL" ]; then
+                  echo "preview-url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+                  echo "⚠️ Using recent preview deployment (may not match current commit): $PREVIEW_URL"
+                else
+                  echo "❌ No successful preview deployments found. Please provide a preview URL or wait for deployment."
+                  exit 1
+                fi
+              fi
+            else
+              echo "❌ No deployments found for current commit. Please wait for Vercel deployment to complete."
+              exit 1
+            fi
           elif [ "${{ github.event_name }}" = "deployment_status" ]; then
-            # Triggered by deployment_status event - deployment is already complete
-            DEPLOYMENT_URL="${{ github.event.deployment_status.target_url }}"
-            echo "preview-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
-            echo "ℹ️ Using deployment status URL: $DEPLOYMENT_URL"
+            # Deployment trigger
+            PREVIEW_URL="${{ github.event.deployment_status.target_url }}"
+            echo "preview-url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+            echo "📍 Using deployment status URL: $PREVIEW_URL"
           else
             echo "❌ Unexpected event type: ${{ github.event_name }}"
             exit 1
