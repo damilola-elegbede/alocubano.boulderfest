@@ -41,9 +41,10 @@ export default async function handler(req, res) {
       STRIPE_PUBLISHABLE_KEY: !!process.env.STRIPE_PUBLISHABLE_KEY,
       STRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
       
-      // Google Drive (optional)
-      GOOGLE_DRIVE_API_KEY: !!process.env.GOOGLE_DRIVE_API_KEY,
-      GOOGLE_DRIVE_FOLDER_ID: !!process.env.GOOGLE_DRIVE_FOLDER_ID
+      // Google Drive Service Account (optional - Vercel secrets are exposed as env vars)
+      GOOGLE_SERVICE_ACCOUNT_EMAIL: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      GOOGLE_PRIVATE_KEY: !!process.env.GOOGLE_PRIVATE_KEY,
+      GOOGLE_DRIVE_GALLERY_FOLDER_ID: !!process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID
     };
 
     // Environment detection
@@ -77,7 +78,7 @@ export default async function handler(req, res) {
       database: requiredVars.TURSO_DATABASE_URL && requiredVars.TURSO_AUTH_TOKEN,
       email: requiredVars.BREVO_API_KEY,
       payments: requiredVars.STRIPE_SECRET_KEY,
-      google_drive: requiredVars.GOOGLE_DRIVE_API_KEY
+      google_drive: requiredVars.GOOGLE_SERVICE_ACCOUNT_EMAIL && requiredVars.GOOGLE_PRIVATE_KEY && requiredVars.GOOGLE_DRIVE_GALLERY_FOLDER_ID
     };
 
     const response = {
@@ -109,7 +110,7 @@ export default async function handler(req, res) {
     }
     
     if (!apiAvailability.google_drive) {
-      response.status.recommendations.push('Set Google Drive API key for gallery functionality');
+      response.status.recommendations.push('Set Google Drive Service Account credentials for gallery functionality');
     }
     
     if (!apiAvailability.payments) {
