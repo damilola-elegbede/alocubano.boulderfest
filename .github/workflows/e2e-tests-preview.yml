@@ -355,6 +355,13 @@ jobs:
           fi
         env:
           PLAYWRIGHT_BASE_URL: ${{ env.PREVIEW_URL }}
+          # Admin Authentication Test Variables
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          # Test Environment Configuration
+          E2E_TEST_MODE: 'true'
+          NODE_ENV: 'test'
 
       - name: 📊 Upload Test Results
         if: always()
