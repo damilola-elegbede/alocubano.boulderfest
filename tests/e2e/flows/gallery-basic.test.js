@@ -1,53 +1,141 @@
 /**
- * E2E Test: Gallery Basic Browsing
- * Tests basic gallery functionality and image loading
+ * E2E Test: Gallery Basic Browsing - STRICT Google Drive API Requirements
+ * Tests gallery functionality with MANDATORY Google Drive API integration
+ * FAILS if Google Drive API is not properly configured or returns fallback data
  */
 
 import { test, expect } from '@playwright/test';
 
-test.describe('Gallery Basic Browsing', () => {
+/**
+ * Check Google Drive API configuration via environment endpoint
+ */
+async function validateGoogleDriveConfig(page) {
+  console.log('🔍 STRICT CHECK: Validating Google Drive API configuration...');
+  
+  try {
+    const envResponse = await page.request.get('/api/debug/environment');
+    const envData = await envResponse.json();
+    
+    // Check for required Google Drive environment variables
+    const hasServiceAccount = !!envData.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    const hasPrivateKey = !!envData.GOOGLE_PRIVATE_KEY;  
+    const hasFolderId = !!envData.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
+    
+    console.log('📊 Google Drive API Configuration Status:', {
+      GOOGLE_SERVICE_ACCOUNT_EMAIL: hasServiceAccount,
+      GOOGLE_PRIVATE_KEY: hasPrivateKey,
+      GOOGLE_DRIVE_GALLERY_FOLDER_ID: hasFolderId,
+      envResponseStatus: envResponse.status()
+    });
+    
+    const missingVars = [];
+    if (!hasServiceAccount) missingVars.push('GOOGLE_SERVICE_ACCOUNT_EMAIL');
+    if (!hasPrivateKey) missingVars.push('GOOGLE_PRIVATE_KEY');
+    if (!hasFolderId) missingVars.push('GOOGLE_DRIVE_GALLERY_FOLDER_ID');
+    
+    if (missingVars.length > 0) {
+      throw new Error(`REQUIRED Google Drive environment variables missing: ${missingVars.join(', ')}. Configure these to enable real Google Drive API testing.`);
+    }
+    
+    console.log('✅ All required Google Drive API environment variables are configured');
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Google Drive API Configuration Error:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Verify Google Drive API returns real data (not fallback)
+ */
+async function verifyRealGoogleDriveData(page) {
+  console.log('🔍 STRICT CHECK: Verifying Google Drive API returns real data...');
+  
+  try {
+    const galleryResponse = await page.request.get('/api/gallery?year=2025');
+    const galleryData = await galleryResponse.json();
+    
+    console.log('📊 Gallery API Response Status:', galleryResponse.status());
+    console.log('📊 Gallery Data Source:', galleryData.source);
+    
+    // STRICT: Fail if using fallback data
+    if (galleryData.source && galleryData.source.includes('fallback')) {
+      throw new Error(`Gallery API returned fallback data (source: ${galleryData.source}). Google Drive API must return real data.`);
+    }
+    
+    // STRICT: Fail if using empty gallery
+    if (!galleryData.items || galleryData.items.length === 0) {
+      throw new Error('Gallery API returned empty results. Google Drive API must return actual gallery items.');
+    }
+    
+    // STRICT: Fail if error in response indicates API problems
+    if (galleryData.error) {
+      throw new Error(`Gallery API reported error: ${galleryData.error}`);
+    }
+    
+    console.log('✅ Gallery API returned real data with', galleryData.items?.length || 0, 'items');
+    return galleryData;
+    
+  } catch (error) {
+    console.error('❌ Google Drive API Data Verification Failed:', error.message);
+    throw error;
+  }
+}
+
+test.describe('Gallery Basic Browsing - STRICT Google Drive API Requirements', () => {
   test.beforeEach(async ({ page }) => {
+    // STRICT: Validate Google Drive API configuration first
+    await validateGoogleDriveConfig(page);
+    
+    // STRICT: Verify API returns real data before testing UI
+    await verifyRealGoogleDriveData(page);
+    
     await page.goto('/pages/boulder-fest-2025-gallery.html');
     // Wait for page to fully load including network idle for preview deployments
     await page.waitForLoadState('domcontentloaded');
     await page.waitForLoadState('networkidle', { timeout: 30000 });
   });
 
-  test('should load gallery page successfully', async ({ page }) => {
-    // E2E FIX: Enhanced content validation with multiple fallback checks
-    await page.waitForTimeout(2000); // Allow content to load
+  test('should load gallery page with REAL Google Drive images (NO FALLBACKS)', async ({ page }) => {
+    console.log('🔍 STRICT CHECK: Verifying real Google Drive images are loaded on page...');
     
-    // Check for specific gallery content - either dynamic gallery sections or static fallback
-    const galleryTitleExists = await page.locator('h2.gallery-static-title').count() > 0;
-    const workshopsExists = await page.locator('#workshops-section h2').count() > 0;
-    const socialsExists = await page.locator('#socials-section h2').count() > 0;
+    await page.waitForTimeout(3000); // Allow content to load
     
-    // Additional fallback checks for different content structures
-    const bodyText = await page.locator('body').textContent();
-    const hasGalleryContent = bodyText.includes('WORKSHOPS') || bodyText.includes('SOCIALS') || bodyText.includes('Gallery') || bodyText.includes('Photos');
-    const hasMainContent = await page.locator('main, .main-content, .gallery-container').count() > 0;
-    const pageHasLoaded = await page.locator('html').getAttribute('class') !== null || bodyText.length > 100;
+    // STRICT: Fail if static fallback content is visible
+    const staticFallback = await page.locator('.gallery-static-title, .gallery-grid-static').count();
+    if (staticFallback > 0) {
+      throw new Error('FAILED: Static fallback content detected. Gallery must load real Google Drive images, not static content.');
+    }
     
-    // E2E DEBUG: Log what we found
-    console.log('🖼️ Gallery Content Validation:', {
-      galleryTitleExists,
-      workshopsExists, 
-      socialsExists,
-      hasGalleryContent,
-      hasMainContent,
-      pageHasLoaded,
-      bodyTextLength: bodyText.length,
-      bodySnippet: bodyText.substring(0, 200)
-    });
+    // STRICT: Require dynamic gallery content to be loaded
+    const dynamicGallery = page.locator('.gallery-detail-grid, .gallery-item');
+    const dynamicCount = await dynamicGallery.count();
     
-    // Pass if any valid content structure is found
-    const hasValidContent = galleryTitleExists || 
-                           (workshopsExists && socialsExists) ||
-                           hasGalleryContent ||
-                           hasMainContent ||
-                           pageHasLoaded;
+    if (dynamicCount === 0) {
+      throw new Error('FAILED: No dynamic gallery content found. Google Drive API must populate real gallery items.');
+    }
     
-    expect(hasValidContent).toBeTruthy();
+    // STRICT: Require actual images from Google Drive
+    const googleImages = page.locator('img[src*="googleusercontent.com"], img[src*="drive.google.com"]');
+    const googleImageCount = await googleImages.count();
+    
+    if (googleImageCount === 0) {
+      throw new Error('FAILED: No Google Drive images detected. All images must be served from Google Drive API.');
+    }
+    
+    console.log('✅ Gallery loaded with', dynamicCount, 'dynamic items and', googleImageCount, 'Google Drive images');
+    
+    // Verify images are actually loaded (not broken)
+    const firstGoogleImage = googleImages.first();
+    await expect(firstGoogleImage).toBeVisible();
+    
+    // Check that images have valid src attributes
+    const imageSrc = await firstGoogleImage.getAttribute('src');
+    expect(imageSrc).toBeTruthy();
+    expect(imageSrc).toMatch(/googleusercontent\.com|drive\.google\.com/);
+    
+    console.log('✅ Google Drive images are properly loaded with valid URLs');
   });
 
   test('should display year filters or navigation', async ({ page }) => {
@@ -65,76 +153,62 @@ test.describe('Gallery Basic Browsing', () => {
     }
   });
 
-  test('should load gallery images', async ({ page }) => {
-    // Wait for gallery container to load with extended timeout for preview deployments
+  test('should load ONLY real Google Drive images (STRICT validation)', async ({ page }) => {
+    console.log('🔍 STRICT CHECK: Validating Google Drive image loading...');
+    
     await page.waitForTimeout(5000);
     
-    // Wait for gallery JS to load and process API failure (which should show static fallback)
+    // STRICT: Gallery must show dynamic content only (no static fallback allowed)
     await page.waitForFunction(
       () => {
-        // Gallery JS should either show dynamic content or static fallback
-        const staticEl = document.getElementById('gallery-detail-static');
         const contentEl = document.getElementById('gallery-detail-content');
         const loadingEl = document.getElementById('gallery-detail-loading');
         
-        // Check if processing is complete (loading is hidden and either content or static is shown)
+        // Content must be shown and loading must be hidden
         const loadingHidden = !loadingEl || loadingEl.style.display === 'none';
-        const staticShown = staticEl && staticEl.style.display === 'block';
         const contentShown = contentEl && contentEl.style.display === 'block';
         
-        return loadingHidden && (staticShown || contentShown);
+        return loadingHidden && contentShown;
       },
-      { timeout: 10000 }
-    ).catch(() => {
-      console.log('⚠️ Gallery JS processing not completed, checking current state');
-    });
+      { timeout: 15000 }
+    );
     
-    // Check the current state and verify appropriate content is available
-    const bodyText = await page.locator('body').textContent();
-    const staticFallback = page.locator('.gallery-grid-static');
-    const staticTitle = page.locator('.gallery-static-title');
-    
-    // Check if static fallback is visible (expected when Google Drive API is unavailable)
-    const staticVisible = await staticFallback.isVisible().catch(() => false);
-    const staticTitleVisible = await staticTitle.isVisible().catch(() => false);
-    
-    if (staticVisible || staticTitleVisible) {
-      // Static fallback is showing - this is expected in preview deployments
-      console.log('✅ Gallery showing static fallback as expected (Google Drive API unavailable)');
-      
-      // Verify static content has expected text
-      expect(
-        bodyText.includes('2025 FESTIVAL GALLERY') || 
-        bodyText.includes('Photos from workshops') || 
-        bodyText.includes('Check back later') ||
-        bodyText.includes('Gallery')
-      ).toBeTruthy();
-      
-      return;
+    // STRICT: Verify NO static fallback is visible
+    const staticElements = await page.locator('.gallery-grid-static, .gallery-static-title, #gallery-detail-static').count();
+    if (staticElements > 0) {
+      throw new Error('FAILED: Static fallback content detected. Google Drive API must be working to show real images.');
     }
     
-    // Check for dynamic gallery items if static fallback is not shown
-    const dynamicImages = page.locator('.gallery-item, .gallery-detail-grid img');
+    // STRICT: Verify dynamic gallery content exists
+    const dynamicImages = page.locator('.gallery-item img, .gallery-detail-grid img');
     const dynamicCount = await dynamicImages.count();
     
-    if (dynamicCount > 0) {
-      // Dynamic gallery has loaded
-      console.log('✅ Gallery showing dynamic content');
-      await expect(dynamicImages.first()).toBeVisible();
-      return;
+    if (dynamicCount === 0) {
+      throw new Error('FAILED: No dynamic gallery images found. Google Drive API must populate real gallery items.');
     }
     
-    // Fallback: Check for basic gallery structure and content
-    const hasBasicStructure = await page.locator('#workshops-section, #socials-section').count() > 0;
-    const hasGalleryContent = bodyText.includes('WORKSHOPS') || 
-                              bodyText.includes('SOCIALS') ||
-                              bodyText.includes('Gallery') ||
-                              bodyText.includes('Loading festival') ||
-                              hasBasicStructure ||
-                              bodyText.length > 3000;
+    // STRICT: Verify ALL images are from Google Drive
+    const allImages = page.locator('img');
+    const allImageCount = await allImages.count();
+    const googleImages = page.locator('img[src*="googleusercontent.com"], img[src*="drive.google.com"]');
+    const googleImageCount = await googleImages.count();
     
-    expect(hasGalleryContent).toBeTruthy();
-    console.log('✅ Gallery page has appropriate content structure');
+    // Allow some non-gallery images (like logos), but gallery images must be from Google Drive
+    if (dynamicCount > 0 && googleImageCount === 0) {
+      throw new Error('FAILED: Gallery images found but none from Google Drive. All gallery images must use Google Drive API.');
+    }
+    
+    console.log('✅ Gallery loaded with', dynamicCount, 'dynamic images,', googleImageCount, 'from Google Drive');
+    
+    // Verify first Google Drive image loads properly
+    const firstGoogleImage = googleImages.first();
+    await expect(firstGoogleImage).toBeVisible();
+    
+    // Verify image has valid Google Drive URL
+    const imageSrc = await firstGoogleImage.getAttribute('src');
+    expect(imageSrc).toMatch(/googleusercontent\.com|drive\.google\.com/);
+    
+    console.log('✅ Google Drive images are properly loaded and visible');
   });
 
   test('should handle image lazy loading', async ({ page }) => {
@@ -183,51 +257,59 @@ test.describe('Gallery Basic Browsing', () => {
     }
   });
 
-  test('should handle gallery API responses', async ({ page }) => {
-    // FIXED: Always assume Google Drive API is unavailable in preview deployments
-    console.log('⚠️ Google Drive API not available in preview deployment - testing static fallback');
+  test('should handle gallery API responses with REAL data (NO fallbacks allowed)', async ({ page }) => {
+    console.log('🔍 STRICT CHECK: Verifying gallery API returns real Google Drive data...');
     
-    // Wait for page to load and let gallery JS run 
+    // Monitor API requests to ensure Google Drive calls are made
+    const apiRequests = [];
+    page.on('request', request => {
+      if (request.url().includes('/api/gallery') || request.url().includes('googleapis.com') || request.url().includes('drive')) {
+        apiRequests.push({
+          url: request.url(),
+          method: request.method()
+        });
+      }
+    });
+    
     await page.reload();
-    await page.waitForTimeout(5000); // Longer wait for gallery JS to execute
+    await page.waitForTimeout(5000);
     
-    // Wait for static fallback to be shown (triggered by gallery JS on API failure)
+    // STRICT: Verify API calls were made
+    const galleryApiCalls = apiRequests.filter(req => req.url.includes('/api/gallery'));
+    if (galleryApiCalls.length === 0) {
+      throw new Error('FAILED: No gallery API calls detected. Gallery must call /api/gallery endpoint.');
+    }
+    
+    console.log('✅ Gallery API calls detected:', galleryApiCalls.length);
+    
+    // STRICT: Verify dynamic content is shown (not static fallback)
     await page.waitForFunction(
       () => {
+        const contentEl = document.getElementById('gallery-detail-content');
         const staticEl = document.getElementById('gallery-detail-static');
-        return staticEl && staticEl.style.display === 'block';
+        
+        // Content must be visible and static must NOT be visible
+        const contentShown = contentEl && contentEl.style.display === 'block';
+        const staticHidden = !staticEl || staticEl.style.display === 'none';
+        
+        return contentShown && staticHidden;
       },
-      { timeout: 10000 }
-    ).catch(() => {
-      console.log('⚠️ Static fallback element not shown by gallery JS');
-    });
+      { timeout: 15000 }
+    );
     
-    // Check for basic page structure and content
-    const bodyText = await page.locator('body').textContent();
-    const hasBasicStructure = await page.locator('#workshops-section, #socials-section').count() > 0;
+    // STRICT: Verify NO static fallback elements are visible
+    const staticElements = await page.locator('.gallery-static-title, .gallery-grid-static, #gallery-detail-static[style*="block"]').count();
+    if (staticElements > 0) {
+      throw new Error('FAILED: Static fallback elements are visible. Google Drive API must work to show real content.');
+    }
     
-    // Look for any gallery-related content that would indicate page loaded properly
-    const hasGalleryContent = bodyText.includes('WORKSHOPS') || 
-                              bodyText.includes('SOCIALS') ||
-                              bodyText.includes('2025 FESTIVAL GALLERY') ||
-                              bodyText.includes('Gallery') ||
-                              bodyText.includes('Loading festival') ||
-                              bodyText.includes('Check back later') ||
-                              hasBasicStructure ||
-                              bodyText.length > 3000; // Page has substantial content
+    // STRICT: Verify dynamic gallery content exists  
+    const dynamicContent = await page.locator('.gallery-detail-grid, .gallery-item').count();
+    if (dynamicContent === 0) {
+      throw new Error('FAILED: No dynamic gallery content found. Google Drive API must populate real gallery items.');
+    }
     
-    expect(hasGalleryContent).toBeTruthy();
-    console.log('✅ Gallery page loaded with appropriate content');
-    
-    // Log what was found for debugging
-    console.log('📊 Gallery content check:', {
-      hasBasicStructure,
-      bodyTextLength: bodyText.length,
-      hasWorkshopsText: bodyText.includes('WORKSHOPS'),
-      hasSocialsText: bodyText.includes('SOCIALS'),
-      hasGalleryText: bodyText.includes('Gallery'),
-      hasLoadingText: bodyText.includes('Loading festival')
-    });
+    console.log('✅ Gallery API successfully loaded real content with', dynamicContent, 'dynamic elements');
   });
 
   test('should display loading state appropriately', async ({ page }) => {
@@ -315,35 +397,46 @@ test.describe('Gallery Basic Browsing', () => {
     }
   });
 
-  test('should handle gallery empty state gracefully', async ({ page }) => {
-    // FIXED: In preview deployments, API routing may not work properly
-    // Instead, test the natural empty/fallback state that occurs when Google Drive API is unavailable
+  test('should NEVER show empty state - MUST have Google Drive content', async ({ page }) => {
+    console.log('🔍 STRICT CHECK: Verifying gallery is never empty - must have real content...');
     
     await page.reload();
     await page.waitForTimeout(3000);
     
-    // Check for static fallback content (this IS the expected "empty state" in preview deployments)
+    // STRICT: NO static fallback content should exist
+    const staticElements = await page.locator('.gallery-static-title, .gallery-grid-static, .gallery-static-description').count();
+    if (staticElements > 0) {
+      throw new Error('FAILED: Static fallback/empty state detected. Google Drive API must provide real content.');
+    }
+    
+    // STRICT: NO empty state messages allowed
     const bodyText = await page.locator('body').textContent();
-    const staticElements = page.locator('.gallery-static-title, .gallery-grid-static, .gallery-static-description');
-    const staticCount = await staticElements.count();
+    const hasEmptyStateMessages = bodyText.includes('Photos from workshops') || 
+                                 bodyText.includes('uploaded soon') || 
+                                 bodyText.includes('Check back later') ||
+                                 bodyText.includes('coming soon');
+                                 
+    if (hasEmptyStateMessages) {
+      throw new Error('FAILED: Empty state messages detected. Google Drive API must provide actual content.');
+    }
     
-    // Look for appropriate fallback messaging or structure
-    const hasStaticFallback = staticCount > 0;
-    const hasEmptyStateMessage = bodyText.includes('Photos from workshops') || 
-                                bodyText.includes('uploaded soon') || 
-                                bodyText.includes('Check back later') ||
-                                bodyText.includes('2025 FESTIVAL GALLERY');
-    const hasBasicStructure = bodyText.includes('WORKSHOPS') || bodyText.includes('SOCIALS');
-    const hasGalleryPageContent = bodyText.includes('Gallery') || bodyText.includes('festival') || bodyText.includes('2025');
+    // STRICT: MUST have dynamic gallery content
+    const dynamicContent = await page.locator('.gallery-detail-grid .gallery-item, .gallery-detail-content img').count();
+    if (dynamicContent === 0) {
+      throw new Error('FAILED: No dynamic gallery content found. Google Drive API must populate real gallery items.');
+    }
     
-    // Any of these conditions indicate the page is handling the "empty" state appropriately
-    expect(hasStaticFallback || hasEmptyStateMessage || hasBasicStructure || hasGalleryPageContent).toBeTruthy();
+    // STRICT: MUST have Google Drive images
+    const googleImages = await page.locator('img[src*="googleusercontent.com"], img[src*="drive.google.com"]').count();
+    if (googleImages === 0) {
+      throw new Error('FAILED: No Google Drive images found. Gallery must display real Google Drive content.');
+    }
     
-    console.log('✅ Gallery empty/fallback state handled appropriately:', {
-      hasStaticFallback,
-      hasEmptyStateMessage,
-      hasBasicStructure,
-      hasGalleryPageContent
+    console.log('✅ Gallery has real content:', {
+      dynamicItems: dynamicContent,
+      googleImages: googleImages,
+      noStaticFallback: true,
+      noEmptyStateMessages: true
     });
   });
 });
