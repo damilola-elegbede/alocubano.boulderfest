@@ -22,8 +22,11 @@
 
 import { defineConfig, devices } from '@playwright/test';
 
-// Base URL comes from environment variable set by CI workflow
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || process.env.PREVIEW_URL || 'http://localhost:3000';
+// Base URL comes from environment variable set by CI workflow or preview extraction
+const baseURL = process.env.PREVIEW_URL || 
+                process.env.PLAYWRIGHT_BASE_URL || 
+                process.env.CI_EXTRACTED_PREVIEW_URL ||
+                'http://localhost:3000';
 
 // Validate we have a proper target URL
 if (!baseURL.startsWith('http')) {

@@ -54,7 +54,7 @@ async function globalSetupPreview() {
     
     // Step 5: Create preview environment file
     console.log('\n📁 Creating preview environment configuration...');
-    createPreviewEnvironment(previewUrl);
+    await createPreviewEnvironment(previewUrl);
     
     console.log('\n📊 Preview Setup Summary:');
     console.log(`   Preview URL: ${previewUrl}`);
@@ -162,11 +162,13 @@ async function validateCriticalEndpoints(previewUrl) {
       
       if (response.ok) {
         console.log(`   ✅ ${endpoint}: OK (${response.status})`);
+      } else if (response.status === 401 || response.status === 403) {
+        console.log(`   ⚠️ ${endpoint}: ${response.status} ${response.statusText} (API credentials may be missing - will use graceful degradation)`);
       } else {
         console.log(`   ⚠️ ${endpoint}: ${response.status} ${response.statusText}`);
       }
     } catch (error) {
-      console.log(`   ❌ ${endpoint}: ${error.message}`);
+      console.log(`   ❌ ${endpoint}: ${error.message} (will handle gracefully in tests)`);
     }
   }
 }
@@ -235,9 +237,67 @@ async function warmupEndpoints(previewUrl) {
 }
 
 /**
+ * Check API availability and create environment flags
+ */
+async function checkApiAvailability(previewUrl) {
+  const apiChecks = {
+    BREVO_API_AVAILABLE: false,
+    GOOGLE_DRIVE_API_AVAILABLE: false,
+    ADMIN_AUTH_AVAILABLE: false,
+    STRIPE_API_AVAILABLE: false
+  };
+  
+  console.log('   🔍 Checking API availability for graceful degradation...');
+  
+  // Check Brevo API availability via newsletter endpoint
+  try {
+    const brevoResponse = await fetch(`${previewUrl}/api/email/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'test@example.com', consent: true })
+    });
+    // Even if it fails validation, a 400 means the API is configured
+    apiChecks.BREVO_API_AVAILABLE = brevoResponse.status !== 500;
+  } catch (error) {
+    console.log(`   ⚠️ Brevo API check failed: ${error.message}`);
+  }
+  
+  // Check Google Drive API availability
+  try {
+    const galleryResponse = await fetch(`${previewUrl}/api/gallery/years`);
+    apiChecks.GOOGLE_DRIVE_API_AVAILABLE = galleryResponse.status === 200;
+  } catch (error) {
+    console.log(`   ⚠️ Google Drive API check failed: ${error.message}`);
+  }
+  
+  // Check admin authentication
+  try {
+    const adminResponse = await fetch(`${previewUrl}/api/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'test', password: 'test' })
+    });
+    // Even if credentials fail, a structured response means auth is working
+    apiChecks.ADMIN_AUTH_AVAILABLE = adminResponse.status !== 500;
+  } catch (error) {
+    console.log(`   ⚠️ Admin auth check failed: ${error.message}`);
+  }
+  
+  // Log availability status
+  Object.entries(apiChecks).forEach(([api, available]) => {
+    console.log(`   ${available ? '✅' : '❌'} ${api}: ${available ? 'Available' : 'Unavailable'}`);
+  });
+  
+  // Return environment variables
+  return Object.entries(apiChecks)
+    .map(([key, value]) => `${key}=${value}`)
+    .join('\n');
+}
+
+/**
  * Create environment configuration for preview testing
  */
-function createPreviewEnvironment(previewUrl) {
+async function createPreviewEnvironment(previewUrl) {
   const previewEnvPath = resolve(PROJECT_ROOT, '.env.preview');
   
   const previewConfig = `# E2E Preview Testing Environment
@@ -261,12 +321,15 @@ CI=${process.env.CI || 'false'}
 GITHUB_ACTIONS=${process.env.GITHUB_ACTIONS || 'false'}
 
 # Test credentials (for admin panel testing)
-TEST_ADMIN_PASSWORD=${process.env.TEST_ADMIN_PASSWORD || 'test-password'}
+TEST_ADMIN_PASSWORD=${process.env.TEST_ADMIN_PASSWORD || 'test-admin-password'}
 
 # Preview testing optimizations
 SKIP_LOCAL_SERVER=true
 USE_PREVIEW_DEPLOYMENT=true
 DEPLOYMENT_READY=true
+
+# API availability flags (detected during setup)
+${await checkApiAvailability(previewUrl)}
 
 # Timeout configurations for remote testing (CI-optimized)
 E2E_ACTION_TIMEOUT=${process.env.CI ? '30000' : '15000'}
