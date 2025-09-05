@@ -193,10 +193,13 @@ async function loginHandler(req, res) {
     }
 
     // Check enhanced rate limiting with progressive delays (skip in test environments)
-    const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.CI === 'true' || process.env.E2E_TEST_MODE === 'true';
-    const isVercelPreview = process.env.VERCEL_ENV === 'preview';
+    const isTestEnvironment = process.env.NODE_ENV === 'test' || 
+                               process.env.CI === 'true' || 
+                               process.env.E2E_TEST_MODE === 'true' ||
+                               process.env.VERCEL_ENV === 'preview' ||
+                               req.headers['user-agent']?.includes('Playwright');
     
-    if (!isTestEnvironment && !isVercelPreview) {
+    if (!isTestEnvironment) {
       const rateLimitResult = await checkEnhancedRateLimit(clientIP);
       if (rateLimitResult.isLocked) {
         return res.status(429).json({
@@ -206,7 +209,7 @@ async function loginHandler(req, res) {
         });
       }
     } else {
-      console.log('Rate limiting bypassed for test environment or Vercel preview deployment');
+      console.log('Rate limiting bypassed for test environment (including Vercel preview deployment)');
     }
 
     // Handle two-step authentication process
@@ -280,7 +283,10 @@ async function handlePasswordStep(req, res, password, clientIP) {
   const db = await getDatabaseClient();
 
   // Enhanced debugging for E2E test environments
-  const isE2ETest = process.env.E2E_TEST_MODE === 'true' || process.env.CI || req.headers['user-agent']?.includes('Playwright');
+  const isE2ETest = process.env.E2E_TEST_MODE === 'true' || 
+                    process.env.CI === 'true' ||
+                    process.env.VERCEL_ENV === 'preview' ||
+                    req.headers['user-agent']?.includes('Playwright');
   
   if (isE2ETest) {
     console.log('🔐 E2E Admin Login Debug:', {

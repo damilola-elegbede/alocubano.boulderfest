@@ -35,7 +35,12 @@ export class AuthService {
 
     try {
       // For E2E testing, support plain text TEST_ADMIN_PASSWORD
-      if (testAdminPassword && (process.env.NODE_ENV === "test" || process.env.E2E_TEST_MODE === "true")) {
+      const isE2ETest = process.env.NODE_ENV === "test" || 
+                        process.env.E2E_TEST_MODE === "true" ||
+                        process.env.CI === "true" ||
+                        process.env.VERCEL_ENV === "preview";
+      
+      if (testAdminPassword && isE2ETest) {
         if (password === testAdminPassword) {
           return true;
         }

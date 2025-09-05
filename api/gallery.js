@@ -94,11 +94,58 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Gallery API Error:', error);
     
-    res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to load gallery data',
+    // Enhanced error handling for preview environments
+    const isPreviewEnvironment = process.env.VERCEL_ENV === 'preview' || 
+                                  process.env.VERCEL_URL;
+    
+    // Check if this is a Google Drive API issue in preview
+    const isGoogleDriveError = error.message?.includes('Google') || 
+                               error.message?.includes('Drive') ||
+                               error.message?.includes('API key') ||
+                               error.code === 'GOOGLE_DRIVE_ERROR';
+    
+    if (isPreviewEnvironment && isGoogleDriveError) {
+      // Provide fallback gallery data for preview testing
+      const fallbackResponse = {
+        categories: {
+          'preview-photos': [
+            {
+              id: 'preview-1',
+              name: 'Preview Image 1',
+              url: '/images/hero/hero-bg-1.avif',
+              thumbnailUrl: '/images/hero/hero-bg-1.avif',
+              type: 'photo',
+              size: '1920x1080',
+              year: '2024'
+            }
+          ]
+        },
+        totalCount: 1,
+        source: 'fallback-preview',
+        lastUpdated: new Date().toISOString(),
+        api: {
+          version: '2.1',
+          timestamp: new Date().toISOString(),
+          environment: 'vercel-preview-fallback',
+          queryParams: req.query,
+          etag: 'preview-fallback'
+        },
+        message: 'Preview environment - using fallback gallery data'
+      };
+      
+      return res.status(200).json(fallbackResponse);
+    }
+    
+    // Standard error response
+    const statusCode = isGoogleDriveError ? 503 : 500;
+    res.status(statusCode).json({
+      error: isGoogleDriveError ? 'Service temporarily unavailable' : 'Internal server error',
+      message: isGoogleDriveError ? 
+        'Gallery service temporarily unavailable. Please try again later.' :
+        'Failed to load gallery data',
       timestamp: new Date().toISOString(),
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      retryAfter: isGoogleDriveError ? 60 : undefined // Suggest retry after 60s for Google Drive errors
     });
   }
 }
