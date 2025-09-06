@@ -262,8 +262,8 @@ jobs:
       TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
       ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
       ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
-      # Database Configuration (using repository variable for URL)
-      TURSO_DATABASE_URL: ${{ vars.TURSO_DATABASE_URL }}
+      # Database Configuration (using repository secret for URL)
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
       TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
       # Google Drive Service Account Configuration
       GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
@@ -400,7 +400,7 @@ jobs:
           
           echo ""
           echo "🗄️ Database Configuration Secrets:"
-          check_secret "TURSO_DATABASE_URL" "${{ vars.TURSO_DATABASE_URL }}" || true
+          check_secret "TURSO_DATABASE_URL" "${{ secrets.TURSO_DATABASE_URL }}" || true
           check_secret "TURSO_AUTH_TOKEN" "${{ secrets.TURSO_AUTH_TOKEN }}" || true
           
           echo ""
@@ -545,8 +545,8 @@ jobs:
           TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
-          # Database Configuration (using repository variable for URL)
-          TURSO_DATABASE_URL: ${{ vars.TURSO_DATABASE_URL }}
+          # Database Configuration (using repository secret for URL)
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
           # Google Drive Service Account Configuration
           GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
