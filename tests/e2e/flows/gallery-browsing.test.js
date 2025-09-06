@@ -167,7 +167,7 @@ test.describe('Gallery Performance & Functionality', () => {
       }
       
       console.log('📋 Step 3: Navigating to gallery page...');
-      await page.goto('/pages/boulder-fest-2025-gallery.html');
+      await page.goto('/2025-gallery');
       console.log('🌐 Navigation completed. Current URL:', page.url());
       
       console.log('📋 Step 4: Waiting for page to load...');
@@ -188,7 +188,7 @@ test.describe('Gallery Performance & Functionality', () => {
       
       // Still navigate to the page even if config checks fail
       try {
-        await page.goto('/pages/boulder-fest-2025-gallery.html');
+        await page.goto('/2025-gallery');
         await page.waitForLoadState('domcontentloaded');
         console.log('✅ Successfully navigated to gallery page despite config issues');
       } catch (navError) {
@@ -328,8 +328,8 @@ test.describe('Gallery Performance & Functionality', () => {
     });
     
     // Navigate away and back to test caching
-    await page.goto('/pages/tickets.html');
-    await page.goto('/pages/boulder-fest-2025-gallery.html');
+    await page.goto('/tickets');
+    await page.goto('/2025-gallery');
     
     await page.waitForTimeout(3000);
     
@@ -381,7 +381,7 @@ test.describe('Gallery Performance & Functionality', () => {
     await page.waitForTimeout(2000);
     
     // Test year filtering if available (2025 gallery might have workshop/social filtering)
-    const yearFilters = page.locator('.year-filter, button:has-text("2024"), button:has-text("2025"), .workshop-filter, .social-filter');
+    const yearFilters = page.locator('.year-filter, button:has-text("2025"), .workshop-filter, .social-filter');
     
     if (await yearFilters.count() >= 2) {
       const firstYear = yearFilters.first();

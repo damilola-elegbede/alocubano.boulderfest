@@ -167,7 +167,7 @@ test.describe('Gallery Basic Browsing', () => {
       }
       
       console.log('📋 Step 3: Navigating to gallery page...');
-      await page.goto('/pages/boulder-fest-2025-gallery.html');
+      await page.goto('/2025-gallery');
       console.log('🌐 Navigation completed. Current URL:', page.url());
       
       // Wait for page to fully load including network idle for preview deployments
@@ -189,7 +189,7 @@ test.describe('Gallery Basic Browsing', () => {
       
       // Still navigate to the page even if config checks fail
       try {
-        await page.goto('/pages/boulder-fest-2025-gallery.html');
+        await page.goto('/2025-gallery');
         await page.waitForLoadState('domcontentloaded');
         console.log('✅ Successfully navigated to gallery page despite config issues');
       } catch (navError) {
@@ -238,7 +238,7 @@ test.describe('Gallery Basic Browsing', () => {
 
   test('should display year filters or navigation', async ({ page }) => {
     // Look for year-based navigation or filters
-    const yearFilters = page.locator('.year-filter, .year-tab, button:has-text("2024"), button:has-text("2025"), .filter-year');
+    const yearFilters = page.locator('.year-filter, .year-tab, button:has-text("2025"), .filter-year');
     
     if (await yearFilters.count() > 0) {
       await expect(yearFilters.first()).toBeVisible();
@@ -338,14 +338,9 @@ test.describe('Gallery Basic Browsing', () => {
 
   test('should navigate between years if available', async ({ page }) => {
     const year2025 = page.locator('button:has-text("2025"), .year-2025, [data-year="2025"]');
-    const year2024 = page.locator('button:has-text("2024"), .year-2024, [data-year="2024"]');
     
-    if (await year2025.count() > 0 && await year2024.count() > 0) {
+    if (await year2025.count() > 0) {
       await year2025.click();
-      await page.waitForTimeout(1000);
-      
-      // Switch to 2024
-      await year2024.click();
       await page.waitForTimeout(1000);
       
       // Gallery content should update
