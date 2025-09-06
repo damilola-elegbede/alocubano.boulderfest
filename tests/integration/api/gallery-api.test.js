@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { getGalleryService } from '../../../api/lib/gallery-service.js';
 import { testRequest, HTTP_STATUS } from '../../helpers.js';
+import fs from 'fs/promises';
+import path from 'path';
 
 describe('Gallery API Integration Tests', () => {
   let galleryService;
@@ -19,6 +21,26 @@ describe('Gallery API Integration Tests', () => {
     vi.restoreAllMocks();
   });
 
+  // Helper to check cache file content
+  async function getCacheFileContent(filename) {
+    try {
+      const cachePath = path.join(process.cwd(), 'public', 'gallery-data', filename);
+      const data = await fs.readFile(cachePath, 'utf8');
+      return JSON.parse(data);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // Helper to check if Google Drive credentials are available
+  function hasGoogleDriveCredentials() {
+    return !!(
+      process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
+      process.env.GOOGLE_PRIVATE_KEY &&
+      process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID
+    );
+  }
+
   describe('Gallery Service Integration', () => {
     it('should provide gallery service with expected interface', async () => {
       // Test that the gallery service has the expected methods
@@ -33,212 +55,298 @@ describe('Gallery API Integration Tests', () => {
       expect(typeof galleryService.getMetrics).toBe('function');
     });
 
-    it('should fetch gallery data with proper structure or throw error when secrets missing', async () => {
-      // Check if Google Drive credentials are configured
-      const hasGoogleDriveConfig = !!(
-        process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
-        process.env.GOOGLE_PRIVATE_KEY &&
-        process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID
-      );
-
-      if (!hasGoogleDriveConfig) {
-        // When secrets are missing, expect an error
-        await expect(galleryService.getGalleryData()).rejects.toThrow(/FATAL.*secret not configured/);
-        return; // Test passes - error is expected
+    it('should handle real cached data vs placeholder cached data correctly', async () => {
+      const hasCredentials = hasGoogleDriveCredentials();
+      
+      // Test 2025 data (real cache) - should always work
+      const cache2025 = await getCacheFileContent('2025.json');
+      if (cache2025 && !cache2025.isPlaceholder) {
+        // Real cached data should be served successfully even without credentials
+        const result2025 = await galleryService.getGalleryData('2025');
+        
+        expect(result2025).toHaveProperty('totalCount');
+        expect(result2025).toHaveProperty('categories');
+        expect(result2025.source).toBe('build-time-cache');
+        expect(typeof result2025.totalCount).toBe('number');
+        expect(result2025.totalCount).toBeGreaterThan(0); // Should have real data
+        
+        // Validate actual category structure (based on 2025.json content)
+        const categories = result2025.categories;
+        expect(categories).toHaveProperty('workshops');
+        expect(categories).toHaveProperty('socials');
+        // Note: 2025.json doesn't have 'other' category, only socials and workshops
+        
+        Object.values(categories).forEach(category => {
+          expect(Array.isArray(category)).toBe(true);
+        });
+        
+        // Validate that socials and workshops have actual content
+        expect(categories.socials.length).toBeGreaterThan(0);
+        expect(categories.workshops.length).toBeGreaterThan(0);
       }
-
-      // When secrets are configured, test normal functionality
-      const galleryData = await galleryService.getGalleryData();
       
-      // Validate basic structure
-      expect(galleryData).toHaveProperty('eventId');
-      expect(galleryData).toHaveProperty('totalCount');
-      expect(galleryData).toHaveProperty('categories');
-      expect(galleryData).toHaveProperty('hasMore');
-      expect(galleryData).toHaveProperty('source');
+      // Test 2023/2024 data (placeholder cache) - should fail fast when credentials missing
+      const cache2023 = await getCacheFileContent('2023.json');
+      if (cache2023 && cache2023.isPlaceholder) {
+        if (!hasCredentials) {
+          // Should fail fast with placeholder data when credentials missing
+          await expect(galleryService.getGalleryData('2023')).rejects.toThrow(/FATAL.*secret not configured/);
+        } else {
+          // With credentials, should attempt runtime generation
+          try {
+            const result2023 = await galleryService.getGalleryData('2023');
+            expect(result2023.source).toMatch(/runtime-generated|google-drive/);
+          } catch (error) {
+            // Expected if 2023 year doesn't exist in Google Drive
+            expect(error.message).toMatch(/No gallery found for year 2023|FATAL.*secret not configured/);
+          }
+        }
+      }
       
-      // Validate data types
-      expect(typeof galleryData.eventId).toBe('string');
-      expect(typeof galleryData.totalCount).toBe('number');
-      expect(typeof galleryData.hasMore).toBe('boolean');
-      expect(typeof galleryData.categories).toBe('object');
-      expect(typeof galleryData.source).toBe('string');
-      
-      // Validate actual category structure (based on implementation)
-      const categories = galleryData.categories;
-      expect(categories).toHaveProperty('workshops');
-      expect(categories).toHaveProperty('socials');
-      expect(categories).toHaveProperty('other');
-      
-      // Each category should be an array
-      Object.values(categories).forEach(category => {
-        expect(Array.isArray(category)).toBe(true);
-      });
+      // Test default call behavior
+      if (!hasCredentials) {
+        // Without credentials, check what cache files are available
+        const defaultCacheFiles = ['boulder-fest-2026.json', '2026.json'];
+        let foundRealCache = false;
+        
+        for (const filename of defaultCacheFiles) {
+          const cacheContent = await getCacheFileContent(filename);
+          if (cacheContent && !cacheContent.isPlaceholder) {
+            foundRealCache = true;
+            break;
+          }
+        }
+        
+        if (foundRealCache) {
+          // Should serve real cached data
+          const defaultResult = await galleryService.getGalleryData();
+          expect(defaultResult).toHaveProperty('totalCount');
+          expect(defaultResult.source).toBe('build-time-cache');
+        } else {
+          // Should fail fast if only placeholder data available
+          await expect(galleryService.getGalleryData()).rejects.toThrow(/FATAL.*secret not configured/);
+        }
+      } else {
+        // With credentials, should return valid structure
+        const defaultResult = await galleryService.getGalleryData();
+        expect(defaultResult).toHaveProperty('totalCount');
+        expect(defaultResult).toHaveProperty('categories');
+        expect(typeof defaultResult.totalCount).toBe('number');
+      }
     });
 
-    it('should fetch featured photos with proper structure', async () => {
-      // Note: getFeaturedPhotos may use cached data from public/featured-photos.json
-      // or fetch from Google Drive. When cache exists, it won't throw errors even
-      // if Google Drive secrets are missing. This is intentional for build-time optimization.
-      const featuredPhotos = await galleryService.getFeaturedPhotos();
+    it('should fetch featured photos from cache or generate from gallery data', async () => {
+      // Featured photos should work in multiple scenarios:
+      // 1. Cache file exists (featured-photos.json) - should always work
+      // 2. No cache file - tries to generate from gallery data
       
-      // Validate structure - can have either 'items' (cache) or 'photos' (generated)
-      expect(featuredPhotos).toHaveProperty('totalCount');
-      expect(typeof featuredPhotos.totalCount).toBe('number');
-      
-      // Check for either structure
-      const hasItemsStructure = featuredPhotos.hasOwnProperty('items');
-      const hasPhotosStructure = featuredPhotos.hasOwnProperty('photos');
-      expect(hasItemsStructure || hasPhotosStructure).toBe(true);
-      
-      if (hasItemsStructure) {
-        expect(Array.isArray(featuredPhotos.items)).toBe(true);
-        // Total count should match array length
-        expect(featuredPhotos.totalCount).toBe(featuredPhotos.items.length);
+      try {
+        const featuredPhotos = await galleryService.getFeaturedPhotos();
         
-        // If there are items, validate their structure
-        if (featuredPhotos.items.length > 0) {
-          const firstItem = featuredPhotos.items[0];
-          expect(firstItem).toHaveProperty('id');
+        // Validate structure - can have either 'items' (from cache) or 'photos' (generated)
+        expect(featuredPhotos).toHaveProperty('totalCount');
+        expect(typeof featuredPhotos.totalCount).toBe('number');
+        
+        // Check for either structure
+        const hasItemsStructure = featuredPhotos.hasOwnProperty('items');
+        const hasPhotosStructure = featuredPhotos.hasOwnProperty('photos');
+        expect(hasItemsStructure || hasPhotosStructure).toBe(true);
+        
+        if (hasItemsStructure) {
+          expect(Array.isArray(featuredPhotos.items)).toBe(true);
+          expect(featuredPhotos.totalCount).toBe(featuredPhotos.items.length);
+          
+          // Validate item structure if items exist
+          if (featuredPhotos.items.length > 0) {
+            const firstItem = featuredPhotos.items[0];
+            expect(firstItem).toHaveProperty('id');
+            expect(firstItem).toHaveProperty('thumbnailUrl');
+          }
+        } else if (hasPhotosStructure) {
+          expect(Array.isArray(featuredPhotos.photos)).toBe(true);
+          expect(featuredPhotos.totalCount).toBe(featuredPhotos.photos.length);
+          
+          // Validate photo structure if photos exist
+          if (featuredPhotos.photos.length > 0) {
+            const firstPhoto = featuredPhotos.photos[0];
+            expect(firstPhoto).toHaveProperty('id');
+            expect(firstPhoto.featured).toBe(true);
+          }
         }
-      } else if (hasPhotosStructure) {
-        expect(Array.isArray(featuredPhotos.photos)).toBe(true);
-        // Total count should match array length
-        expect(featuredPhotos.totalCount).toBe(featuredPhotos.photos.length);
         
-        // If there are photos, validate their structure
-        if (featuredPhotos.photos.length > 0) {
-          const firstPhoto = featuredPhotos.photos[0];
-          expect(firstPhoto).toHaveProperty('id');
-          expect(firstPhoto.featured).toBe(true);
+        // Featured photos should be reasonable count (based on cache file: 9 items)
+        expect(featuredPhotos.totalCount).toBeLessThanOrEqual(9);
+        
+      } catch (error) {
+        // If featured photos fails, it should be for specific reasons:
+        // 1. No cache file AND unable to generate from gallery data
+        // 2. Gallery data generation fails due to missing credentials
+        
+        const hasCredentials = hasGoogleDriveCredentials();
+        if (!hasCredentials) {
+          // Without credentials, should only fail if no cache AND no real gallery cache available
+          expect(error.message).toMatch(/FATAL.*secret not configured/);
+        } else {
+          // With credentials, should not fail unless Google Drive has issues
+          throw error; // Re-throw unexpected errors
         }
       }
     });
 
     it('should handle caching and metrics correctly', async () => {
-      // Check if Google Drive credentials are configured
-      const hasGoogleDriveConfig = !!(
-        process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
-        process.env.GOOGLE_PRIVATE_KEY &&
-        process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID
-      );
-
+      const hasCredentials = hasGoogleDriveCredentials();
+      
       // Clear cache and reset metrics
       galleryService.clearCache();
       
-      if (!hasGoogleDriveConfig) {
-        // When secrets are missing, test that metrics work even with errors
-        let initialMetrics = galleryService.getMetrics();
-        expect(initialMetrics).toHaveProperty('cacheHits');
-        expect(initialMetrics).toHaveProperty('cacheMisses');
-        expect(initialMetrics).toHaveProperty('apiCalls');
-        expect(initialMetrics).toHaveProperty('cacheHitRatio');
-        expect(initialMetrics).toHaveProperty('avgResponseTime');
-        expect(initialMetrics.apiCalls).toBe(0);
+      // Test initial metrics state
+      let initialMetrics = galleryService.getMetrics();
+      expect(initialMetrics).toHaveProperty('cacheHits');
+      expect(initialMetrics).toHaveProperty('cacheMisses'); 
+      expect(initialMetrics).toHaveProperty('apiCalls');
+      expect(initialMetrics).toHaveProperty('cacheHitRatio');
+      expect(initialMetrics).toHaveProperty('avgResponseTime');
+      expect(initialMetrics.apiCalls).toBe(0);
+      
+      // Test behavior based on available data
+      const cache2025 = await getCacheFileContent('2025.json');
+      const hasRealCache = cache2025 && !cache2025.isPlaceholder;
+      
+      if (hasRealCache) {
+        // With real cached data, should work regardless of credentials
+        const result1 = await galleryService.getGalleryData('2025');
+        expect(result1.source).toBe('build-time-cache');
         
-        // Try to call service - should fail fast
+        let metrics1 = galleryService.getMetrics();
+        expect(metrics1.apiCalls).toBe(1);
+        expect(metrics1.cacheHits).toBe(1); // Build-time cache counts as cache hit
+        
+        // Second call should also use cache
+        const result2 = await galleryService.getGalleryData('2025');
+        expect(result2.source).toBe('build-time-cache');
+        
+        let metrics2 = galleryService.getMetrics();
+        expect(metrics2.apiCalls).toBe(2);
+        expect(metrics2.cacheHits).toBe(2);
+        
+      } else if (!hasCredentials) {
+        // No real cache and no credentials - should fail fast
         try {
           await galleryService.getGalleryData();
-          // Should not reach here
-          expect(true).toBe(false);
+          expect.fail('Should have thrown error');
         } catch (error) {
           expect(error.message).toMatch(/FATAL.*secret not configured/);
+          
+          // Metrics should still increment despite error
+          let errorMetrics = galleryService.getMetrics();
+          expect(errorMetrics.apiCalls).toBe(1);
+          expect(errorMetrics.cacheMisses).toBe(1);
         }
-        
-        // Metrics should still increment despite error
-        let errorMetrics = galleryService.getMetrics();
-        expect(errorMetrics.apiCalls).toBeGreaterThan(0);
-        return; // Test passes - error handling working correctly
-      }
-
-      // When credentials are available, test normal caching behavior
-      try {
-        // First call
-        await galleryService.getGalleryData();
-        
-        let metrics = galleryService.getMetrics();
-        expect(metrics).toHaveProperty('cacheHits');
-        expect(metrics).toHaveProperty('cacheMisses');
-        expect(metrics).toHaveProperty('apiCalls');
-        expect(metrics).toHaveProperty('cacheHitRatio');
-        expect(metrics).toHaveProperty('avgResponseTime');
-        expect(metrics.apiCalls).toBeGreaterThan(0);
-        
-        // Second call – compare metrics deltas to account for cache usage
-        const before = galleryService.getMetrics();
-        await galleryService.getGalleryData();
-        const after = galleryService.getMetrics();
-        expect(after.apiCalls).toBeGreaterThanOrEqual(before.apiCalls);
-        expect(after.cacheHits + after.cacheMisses)
-          .toBeGreaterThan(before.cacheHits + before.cacheMisses);
-      } catch (error) {
-        // If Google Drive has no data, that's also acceptable for this test
-        // The important thing is that metrics tracking works
-        let metrics = galleryService.getMetrics();
-        expect(metrics.apiCalls).toBeGreaterThan(0);
-      }
-    });
-
-    it('should handle error conditions with fail-fast behavior', async () => {
-      // Check if Google Drive credentials are configured
-      const hasGoogleDriveConfig = !!(
-        process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
-        process.env.GOOGLE_PRIVATE_KEY &&
-        process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID
-      );
-
-      if (!hasGoogleDriveConfig) {
-        // When secrets are missing, expect an error (fail-fast)
-        await expect(galleryService.getGalleryData()).rejects.toThrow(/FATAL.*secret not configured/);
       } else {
-        // When secrets are configured, should return valid structure
-        const result = await galleryService.getGalleryData();
-        expect(result).toHaveProperty('eventId');
-        expect(result).toHaveProperty('totalCount');
-        expect(result).toHaveProperty('categories');
-        expect(typeof result.totalCount).toBe('number');
+        // Has credentials but no real cache - should attempt runtime generation
+        try {
+          const result = await galleryService.getGalleryData();
+          expect(result.source).toMatch(/runtime-generated|google-drive/);
+          
+          let metrics = galleryService.getMetrics();
+          expect(metrics.apiCalls).toBe(1);
+          expect(metrics.cacheMisses).toBe(1);
+          
+        } catch (error) {
+          // May fail if Google Drive has issues or no data for requested year
+          let metrics = galleryService.getMetrics();
+          expect(metrics.apiCalls).toBe(1);
+        }
       }
     });
 
-    it('should support year-based filtering for 2025', async () => {
-      // Check if Google Drive credentials are configured
-      const hasGoogleDriveConfig = !!(
-        process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
-        process.env.GOOGLE_PRIVATE_KEY &&
-        process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID
-      );
-
-      if (!hasGoogleDriveConfig) {
-        // When secrets are missing, expect errors (fail-fast)
-        await expect(galleryService.getGalleryData('2025')).rejects.toThrow(/FATAL.*secret not configured/);
-        return; // Test passes - fail-fast working correctly
-      }
-
-      // Test year-based filtering for 2025 (the only available year)
-      let result2025;
+    it('should implement fail-fast behavior when credentials missing and only placeholder data available', async () => {
+      const hasCredentials = hasGoogleDriveCredentials();
       
-      try {
-        result2025 = await galleryService.getGalleryData('2025');
-      } catch (error) {
-        // Expected: year 2025 may not exist in Google Drive
-        expect(error.message).toMatch(/No gallery found for year 2025|Invalid year format/);
-      }
-      
-      // If data was successfully fetched, validate structure
-      if (result2025) {
-        expect(result2025.hasOwnProperty('eventId') || result2025.hasOwnProperty('year')).toBe(true);
-        expect(result2025).toHaveProperty('totalCount');
-        expect(typeof result2025.totalCount).toBe('number');
+      if (!hasCredentials) {
+        // Test that placeholder cache data triggers fail-fast
+        const cache2023 = await getCacheFileContent('2023.json');
+        if (cache2023 && cache2023.isPlaceholder) {
+          await expect(galleryService.getGalleryData('2023')).rejects.toThrow(/FATAL.*secret not configured/);
+        }
         
-        // Year filtering should be reflected if data exists
-        if (result2025.year) {
-          const year2025 = String(result2025.year);
-          expect(year2025).toBe('2025');
+        const cache2024 = await getCacheFileContent('2024.json');
+        if (cache2024 && cache2024.isPlaceholder) {
+          await expect(galleryService.getGalleryData('2024')).rejects.toThrow(/FATAL.*secret not configured/);
+        }
+        
+        // Test that real cache data works even without credentials
+        const cache2025 = await getCacheFileContent('2025.json');
+        if (cache2025 && !cache2025.isPlaceholder) {
+          const result = await galleryService.getGalleryData('2025');
+          expect(result).toHaveProperty('totalCount');
+          expect(result).toHaveProperty('categories');
+          expect(result.source).toBe('build-time-cache');
+          expect(result.totalCount).toBeGreaterThan(0);
+        }
+        
+      } else {
+        // With credentials, should work or provide meaningful errors
+        try {
+          const result = await galleryService.getGalleryData();
+          expect(result).toHaveProperty('totalCount');
+          expect(result).toHaveProperty('categories');
+          expect(typeof result.totalCount).toBe('number');
+        } catch (error) {
+          // Should only fail for legitimate Google Drive API issues
+          expect(error.message).not.toMatch(/FATAL.*secret not configured/);
+        }
+      }
+    });
+
+    it('should handle year-based filtering correctly for different cache scenarios', async () => {
+      const hasCredentials = hasGoogleDriveCredentials();
+      
+      // Test 2025 - should work if real cache exists
+      const cache2025 = await getCacheFileContent('2025.json');
+      if (cache2025 && !cache2025.isPlaceholder) {
+        // Real cache should work regardless of credentials
+        const result2025 = await galleryService.getGalleryData('2025');
+        expect(result2025).toHaveProperty('totalCount');
+        expect(result2025).toHaveProperty('categories');
+        expect(result2025.source).toBe('build-time-cache');
+        expect(result2025.totalCount).toBe(69); // Based on actual cache content
+        
+        // Validate year is either in main object or inferred from request
+        // The cache file doesn't have a year property, but the request was for 2025
+        expect(result2025.totalCount).toBeGreaterThan(0);
+      }
+      
+      // Test 2023 - placeholder cache should fail fast without credentials
+      const cache2023 = await getCacheFileContent('2023.json');
+      if (cache2023 && cache2023.isPlaceholder) {
+        if (!hasCredentials) {
+          await expect(galleryService.getGalleryData('2023')).rejects.toThrow(/FATAL.*secret not configured/);
+        } else {
+          // With credentials, should attempt runtime generation
+          try {
+            const result2023 = await galleryService.getGalleryData('2023');
+            expect(result2023.source).toMatch(/runtime-generated|google-drive/);
+          } catch (error) {
+            // May fail if year doesn't exist in Google Drive
+            expect(error.message).toMatch(/No gallery found for year 2023/);
+          }
         }
       }
       
-      // Test at least passes if we can validate the error handling behavior
-      expect(true).toBe(true); // Always pass if we reach here - error handling worked
+      // Test non-existent year
+      if (!hasCredentials) {
+        // Should fail fast if no cache and no credentials
+        await expect(galleryService.getGalleryData('1999')).rejects.toThrow(/FATAL.*secret not configured/);
+      } else {
+        // With credentials, should attempt runtime generation and get meaningful error
+        try {
+          await galleryService.getGalleryData('1999');
+        } catch (error) {
+          // Should get specific error about year not existing
+          expect(error.message).toMatch(/No gallery found for year 1999|Invalid year format/);
+        }
+      }
     });
   });
 
@@ -317,129 +425,169 @@ describe('Gallery API Integration Tests', () => {
   });
 
   describe('Error Handling and Recovery', () => {
-    it('should implement fail-fast error handling', async () => {
-      // This test verifies fail-fast behavior when Google Drive secrets are missing
-      // SUCCESS condition: service throws error (fail-fast working)
-      // FAILURE condition: service returns fallback data (fallbacks still exist)
+    it('should implement fail-fast error handling while preserving real cached data', async () => {
+      // This test verifies that fail-fast only occurs when appropriate:
+      // - Real cached data should be served even without credentials
+      // - Placeholder cached data should trigger fail-fast without credentials
+      // - Runtime generation should fail fast without credentials
       
-      // Force an error scenario by temporarily disabling Google Drive
-      const originalEnv = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+      const originalEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+      const originalKey = process.env.GOOGLE_PRIVATE_KEY;
+      const originalFolder = process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
+      
+      // Temporarily remove all Google Drive credentials
       delete process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+      delete process.env.GOOGLE_PRIVATE_KEY;
+      delete process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
       
       try {
-        // Clear runtime cache to force a fresh fetch attempt
+        // Clear runtime cache to force fresh attempt
         galleryService.clearCache();
         
-        // Expect the service to THROW an error when secrets are missing
-        // This tests that fail-fast is working correctly
-        await expect(galleryService.getGalleryData()).rejects.toThrow(/FATAL.*secret not configured/);
+        // Test 1: Real cached data should work even without credentials
+        const cache2025 = await getCacheFileContent('2025.json');
+        if (cache2025 && !cache2025.isPlaceholder) {
+          const result = await galleryService.getGalleryData('2025');
+          expect(result).toHaveProperty('totalCount');
+          expect(result.source).toBe('build-time-cache');
+          expect(result.totalCount).toBeGreaterThan(0);
+        }
+        
+        // Test 2: Placeholder cache should fail fast
+        const cache2023 = await getCacheFileContent('2023.json');
+        if (cache2023 && cache2023.isPlaceholder) {
+          await expect(galleryService.getGalleryData('2023')).rejects.toThrow(/FATAL.*secret not configured/);
+        }
+        
+        // Test 3: Non-existent cache should fail fast (forces runtime generation)
+        await expect(galleryService.getGalleryData('1999')).rejects.toThrow(/FATAL.*secret not configured/);
         
       } finally {
-        // Restore environment
-        if (originalEnv) {
-          process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL = originalEnv;
-        }
+        // Restore environment variables
+        if (originalEmail) process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL = originalEmail;
+        if (originalKey) process.env.GOOGLE_PRIVATE_KEY = originalKey;
+        if (originalFolder) process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID = originalFolder;
       }
     });
 
-    it('should handle cache management effectively', async () => {
-      // Check if Google Drive credentials are configured
-      const hasGoogleDriveConfig = !!(
-        process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
-        process.env.GOOGLE_PRIVATE_KEY &&
-        process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID
-      );
-
-      if (!hasGoogleDriveConfig) {
-        // When secrets are missing, test that cache clearing works and fails fast
-        galleryService.clearCache();
-        
-        // Verify cache is clear
-        let metrics = galleryService.getMetrics();
-        expect(metrics.cacheSize).toBe(0);
-        expect(metrics.cacheHits).toBe(0);
-        expect(metrics.cacheMisses).toBe(0);
-        expect(metrics.apiCalls).toBe(0);
-        
-        // Should fail fast when trying to fetch data
-        await expect(galleryService.getGalleryData()).rejects.toThrow(/FATAL.*secret not configured/);
-        return; // Test passes - error handling working correctly
-      }
-
-      // Force use of runtime cache by temporarily disabling build-time cache
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production'; // This will disable build-time cache
+    it('should handle cache management with proper separation of build-time and runtime cache', async () => {
+      const hasCredentials = hasGoogleDriveCredentials();
       
-      try {
-        // Clear initial state
+      // Test initial state
+      galleryService.clearCache();
+      let initialMetrics = galleryService.getMetrics();
+      expect(initialMetrics.cacheHits).toBe(0);
+      expect(initialMetrics.cacheMisses).toBe(0);
+      expect(initialMetrics.apiCalls).toBe(0);
+      
+      // Test build-time cache behavior
+      const cache2025 = await getCacheFileContent('2025.json');
+      if (cache2025 && !cache2025.isPlaceholder) {
+        // Build-time cache should work and count as cache hit
+        const result1 = await galleryService.getGalleryData('2025');
+        expect(result1.source).toBe('build-time-cache');
+        
+        let metrics1 = galleryService.getMetrics();
+        expect(metrics1.apiCalls).toBe(1);
+        expect(metrics1.cacheHits).toBe(1);
+        
+        // Second call should also hit build-time cache
+        const result2 = await galleryService.getGalleryData('2025');
+        expect(result2.source).toBe('build-time-cache');
+        
+        let metrics2 = galleryService.getMetrics();
+        expect(metrics2.apiCalls).toBe(2);
+        expect(metrics2.cacheHits).toBe(2);
+      }
+      
+      // Test runtime cache behavior
+      if (hasCredentials) {
+        // Clear cache and test runtime generation
         galleryService.clearCache();
         
-        // Fill cache with data that exists - use default data first
-        await galleryService.getGalleryData();
-        
-        // Try to fetch 2025 data - handle cases where it doesn't exist in Google Drive
+        // Test runtime generation for non-cached year
         try {
-          await galleryService.getGalleryData('2025');
+          const result = await galleryService.getGalleryData('2024');
+          expect(result.source).toMatch(/runtime-generated|google-drive/);
+          
+          let metrics = galleryService.getMetrics();
+          expect(metrics.apiCalls).toBeGreaterThan(0);
+          expect(metrics.cacheMisses).toBeGreaterThan(0);
+          
         } catch (error) {
-          // Expected: specific years may not exist in Google Drive
-          expect(error.message).toMatch(/No gallery found for year 2025|FATAL.*secret not configured/);
+          // May fail if year doesn't exist in Google Drive
+          expect(error.message).toMatch(/No gallery found for year 2024/);
         }
-        
-        // Cache should have at least one entry from successful default call
-        let metrics = galleryService.getMetrics();
-        expect(metrics.apiCalls).toBeGreaterThan(0);
-        
-        // Clear cache
-        galleryService.clearCache();
-        
-        // Cache should be empty after clearing
-        metrics = galleryService.getMetrics();
-        expect(metrics.cacheSize).toBe(0);
-        expect(metrics.cacheHits).toBe(0);
-        expect(metrics.cacheMisses).toBe(0);
-        expect(metrics.apiCalls).toBe(0);
-        
-      } finally {
-        // Restore environment
-        process.env.NODE_ENV = originalEnv || 'test';
       }
+      
+      // Test cache clearing functionality
+      galleryService.clearCache();
+      let finalMetrics = galleryService.getMetrics();
+      expect(finalMetrics.cacheHits).toBe(0);
+      expect(finalMetrics.cacheMisses).toBe(0);
+      expect(finalMetrics.apiCalls).toBe(0);
     });
 
-    it('should validate featured photo selection logic', async () => {
-      const featuredPhotos = await galleryService.getFeaturedPhotos();
-      
-      // Should return valid structure regardless of data availability
-      expect(featuredPhotos).toHaveProperty('totalCount');
-      expect(typeof featuredPhotos.totalCount).toBe('number');
-      
-      // Check for either structure
-      const hasItemsStructure = featuredPhotos.hasOwnProperty('items');
-      const hasPhotosStructure = featuredPhotos.hasOwnProperty('photos');
-      expect(hasItemsStructure || hasPhotosStructure).toBe(true);
-      
-      if (hasItemsStructure) {
-        expect(Array.isArray(featuredPhotos.items)).toBe(true);
+    it('should validate featured photo selection with proper fallback handling', async () => {
+      // Featured photos should work reliably with cached data or gracefully fail
+      try {
+        const featuredPhotos = await galleryService.getFeaturedPhotos();
         
-        // Featured items should be limited to reasonable count (9 or fewer based on cache file)
-        expect(featuredPhotos.items.length).toBeLessThanOrEqual(9);
-        expect(featuredPhotos.totalCount).toBe(featuredPhotos.items.length);
+        // Should return valid structure
+        expect(featuredPhotos).toHaveProperty('totalCount');
+        expect(typeof featuredPhotos.totalCount).toBe('number');
         
-        // Each item should have required properties
-        featuredPhotos.items.forEach(item => {
-          expect(item).toHaveProperty('id');
-        });
-      } else if (hasPhotosStructure) {
-        expect(Array.isArray(featuredPhotos.photos)).toBe(true);
+        // Check for either structure - 'items' (cache) or 'photos' (generated)
+        const hasItemsStructure = featuredPhotos.hasOwnProperty('items');
+        const hasPhotosStructure = featuredPhotos.hasOwnProperty('photos');
+        expect(hasItemsStructure || hasPhotosStructure).toBe(true);
         
-        // Featured photos should be reasonable count (up to 9 based on cache)
-        expect(featuredPhotos.photos.length).toBeLessThanOrEqual(9);
-        expect(featuredPhotos.totalCount).toBe(featuredPhotos.photos.length);
+        if (hasItemsStructure) {
+          expect(Array.isArray(featuredPhotos.items)).toBe(true);
+          expect(featuredPhotos.totalCount).toBe(featuredPhotos.items.length);
+          expect(featuredPhotos.items.length).toBeLessThanOrEqual(9); // Based on cache file
+          
+          // Validate item structure
+          featuredPhotos.items.forEach(item => {
+            expect(item).toHaveProperty('id');
+            expect(item).toHaveProperty('thumbnailUrl');
+            expect(typeof item.id).toBe('string');
+          });
+          
+        } else if (hasPhotosStructure) {
+          expect(Array.isArray(featuredPhotos.photos)).toBe(true);
+          expect(featuredPhotos.totalCount).toBe(featuredPhotos.photos.length);
+          expect(featuredPhotos.photos.length).toBeLessThanOrEqual(9);
+          
+          // Validate photo structure
+          featuredPhotos.photos.forEach(photo => {
+            expect(photo).toHaveProperty('id');
+            expect(photo.featured).toBe(true);
+            expect(typeof photo.id).toBe('string');
+          });
+        }
         
-        // All returned photos should be marked as featured
-        featuredPhotos.photos.forEach(photo => {
-          expect(photo).toHaveProperty('id');
-          expect(photo.featured).toBe(true);
-        });
+      } catch (error) {
+        // Featured photos may fail if no cache and credentials missing
+        // This is expected behavior when all fallbacks are exhausted
+        const hasCredentials = hasGoogleDriveCredentials();
+        
+        if (!hasCredentials) {
+          // Check if featured photos cache exists
+          try {
+            const cachePath = path.join(process.cwd(), 'public', 'featured-photos.json');
+            await fs.readFile(cachePath, 'utf8');
+            
+            // If cache exists but still fails, it's unexpected
+            throw new Error(`Featured photos should work with cache file present: ${error.message}`);
+          } catch (cacheError) {
+            // No cache file - failure is expected without credentials
+            expect(error.message).toMatch(/FATAL.*secret not configured/);
+          }
+        } else {
+          // With credentials, should not fail unless Google Drive has issues
+          throw error;
+        }
       }
     });
   });
