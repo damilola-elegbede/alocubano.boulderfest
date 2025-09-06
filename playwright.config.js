@@ -99,14 +99,25 @@ const isPreviewMode = envConfig.mode === 'preview';
 const isCIMode = envConfig.mode === 'ci';
 const useWebServer = envConfig.useWebServer && !isPreviewMode;
 
-// Database configuration validation
+// Database configuration validation (basic check - full validation in global setup)
 const hasTurso = process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN;
 if (!hasTurso && (isCIMode || isPreviewMode)) {
   console.warn('\n⚠️  Turso database credentials not found for CI/Preview testing');
-  console.warn('   Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN for production-like testing\n');
+  console.warn('   Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN for production-like testing');
+  console.warn('   Will use SQLite fallback for local testing\n');
 } else if (hasTurso) {
   console.log('\n✅ Using Turso database for production-like E2E testing\n');
 }
+
+// Secret validation preview
+console.log('🔐 Secret validation will run during global setup');
+const hasBasicAdminSecrets = process.env.TEST_ADMIN_PASSWORD && process.env.ADMIN_SECRET;
+console.log(`   Admin secrets: ${hasBasicAdminSecrets ? '✅' : '❌'} ${hasBasicAdminSecrets ? 'Available' : 'Missing (required for admin tests)'}`);
+const hasEmailSecrets = process.env.BREVO_API_KEY;
+console.log(`   Email secrets: ${hasEmailSecrets ? '✅' : '⚠️'} ${hasEmailSecrets ? 'Available' : 'Missing (optional - will use mocks)'}`);
+const hasPaymentSecrets = process.env.STRIPE_SECRET_KEY;
+console.log(`   Payment secrets: ${hasPaymentSecrets ? '✅' : '⚠️'} ${hasPaymentSecrets ? 'Available' : 'Missing (optional - will use mocks)'}`);
+console.log('');
 
 // Timeout configuration based on environment and scenarios
 const getTimeouts = () => {
@@ -250,13 +261,16 @@ const getWebServerConfig = () => {
   const buildVercelCommand = () => {
     const args = ['vercel', 'dev', '--yes', '--listen', envConfig.port.toString()];
     
-    // Add authentication if available
-    if (process.env.VERCEL_TOKEN) {
-      args.push('--token', process.env.VERCEL_TOKEN);
+    // Require authentication - fail immediately if missing
+    if (!process.env.VERCEL_TOKEN) {
+      throw new Error('❌ FATAL: VERCEL_TOKEN not found in environment');
     }
-    if (process.env.VERCEL_ORG_ID) {
-      args.push('--scope', process.env.VERCEL_ORG_ID);
+    if (!process.env.VERCEL_ORG_ID) {
+      throw new Error('❌ FATAL: VERCEL_ORG_ID not found in environment');
     }
+    
+    args.push('--token', process.env.VERCEL_TOKEN);
+    args.push('--scope', process.env.VERCEL_ORG_ID);
     
     return args.join(' ');
   };

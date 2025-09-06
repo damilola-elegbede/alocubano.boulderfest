@@ -105,6 +105,8 @@
     "test:e2e:validate": "echo '🔍 Validating E2E test environment...' && npm run test:health && echo '✅ E2E validation completed'",
     "test:e2e:setup": "echo '🔧 Setting up E2E test environment...' && npm run test:e2e:install && npm run migrate:e2e:up && echo '✅ E2E setup completed'",
     "test:e2e:setup:interactive": "echo '🎯 Interactive E2E setup...' && npm run test:e2e:install && npm run test:e2e:ui",
+    "test:e2e:secrets": "node scripts/test-secret-validation.js",
+    "test:e2e:secrets:validate": "echo '🔐 Validating E2E secrets configuration...' && npm run test:e2e:secrets && echo '✅ Secret validation completed'",
     "playwright:validate": "echo '🎭 Validating Playwright configuration...' && playwright test --list --config playwright-e2e-preview.config.js && echo '✅ Playwright validation completed'",
     "vercel:validate": "echo '🚀 Validating Vercel configuration...' && vercel whoami && echo '✅ Vercel validation completed'",
     "//deprecated-dev": "=== DEPRECATED DEVELOPMENT (Use dev commands instead) ===",

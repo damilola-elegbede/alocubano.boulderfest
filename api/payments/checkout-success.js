@@ -5,7 +5,11 @@
 
 import Stripe from "stripe";
 
-// Initialize Stripe with API key
+// Initialize Stripe with strict error handling
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error("❌ FATAL: STRIPE_SECRET_KEY not found in environment");
+}
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {

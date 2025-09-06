@@ -2,11 +2,11 @@ import Stripe from "stripe";
 import { HealthStatus } from "../../lib/monitoring/health-checker.js";
 
 /**
- * Initialize Stripe client
+ * Initialize Stripe client with strict error handling
  */
 function getStripeClient() {
   if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error("STRIPE_SECRET_KEY environment variable not configured");
+    throw new Error("❌ FATAL: STRIPE_SECRET_KEY not found in environment");
   }
 
   return new Stripe(process.env.STRIPE_SECRET_KEY, {

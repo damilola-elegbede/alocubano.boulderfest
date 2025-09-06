@@ -209,76 +209,29 @@ class GalleryService {
       // Try to use Google Drive service if configured
       const googleDriveService = getGoogleDriveService();
       
-      // Check if Google Drive is configured with Service Account credentials
-      if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
-        console.log('Gallery: Using Google Drive Service Account API for runtime data');
-        
-        // Ensure Google Drive service is initialized before fetching
-        await googleDriveService.ensureInitialized?.();
-        
-        const driveData = await googleDriveService.fetchImages({
-          year,
-          eventId,
-          maxResults: 1000,
-          includeVideos: false
-        });
-        
-        // Add Google Drive source indicator
-        return {
-          ...driveData,
-          source: 'google-drive-service-account',
-          message: 'Data fetched from Google Drive API using Service Account authentication'
-        };
-      } else {
-        console.log('Gallery: Google Drive Service Account API not configured, using placeholder data');
-        
-        // Fallback to placeholder data
-        const currentYear = new Date().getFullYear();
-        const displayYear = year || currentYear;
-        const displayEventId = eventId || `boulder-fest-${currentYear}`;
-        
-        return {
-          eventId: displayEventId,
-          event: displayEventId,
-          year: displayYear,
-          totalCount: 0,
-          categories: {
-            workshops: [],
-            socials: [],
-            performances: [],
-            other: []
-          },
-          hasMore: false,
-          cacheTimestamp: new Date().toISOString(),
-          source: 'placeholder',
-          message: 'Google Drive Service Account API not configured - set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY environment variables'
-        };
-      }
-    } catch (error) {
-      console.error('Gallery: Google Drive API error, falling back to placeholder:', error.message);
+      console.log('Gallery: Using Google Drive Service Account API for runtime data');
       
-      // Fallback to placeholder data on error
-      const currentYear = new Date().getFullYear();
-      const displayYear = year || currentYear;
-      const displayEventId = eventId || `boulder-fest-${currentYear}`;
+      // Ensure Google Drive service is initialized - this will fail fast if credentials missing
+      await googleDriveService.ensureInitialized();
       
+      const driveData = await googleDriveService.fetchImages({
+        year,
+        eventId,
+        maxResults: 1000,
+        includeVideos: false
+      });
+      
+      // Add Google Drive source indicator
       return {
-        eventId: displayEventId,
-        event: displayEventId,
-        year: displayYear,
-        totalCount: 0,
-        categories: {
-          workshops: [],
-          socials: [],
-          performances: [],
-          other: []
-        },
-        hasMore: false,
-        cacheTimestamp: new Date().toISOString(),
-        source: 'fallback-placeholder',
-        message: `Google Drive API error: ${error.message}`,
-        error: error.message
+        ...driveData,
+        source: 'google-drive-service-account',
+        message: 'Data fetched from Google Drive API using Service Account authentication'
       };
+    } catch (error) {
+      console.error('Gallery: Google Drive API error - no fallback available:', error.message);
+      
+      // Re-throw the error - no fallback, fail fast
+      throw error;
     }
   }
 

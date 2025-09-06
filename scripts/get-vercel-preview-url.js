@@ -35,6 +35,7 @@ class VercelPreviewURLExtractor {
     console.log(`   Commit SHA: ${this.commitSha || 'Not available'}`);
     console.log(`   GitHub Token: ${this.githubToken ? '✅ Available' : '❌ Missing'}`);
     console.log(`   Vercel Token: ${this.vercelToken ? '✅ Available' : '❌ Missing'}`);
+    console.log(`   Vercel Org ID: ${this.vercelOrgId ? '✅ Available' : '❌ Missing'}`);
   }
 
   /**
@@ -66,15 +67,19 @@ class VercelPreviewURLExtractor {
       }
     }
 
-    // Strategy 4: Vercel API (if credentials available)
-    if (this.vercelToken && this.vercelProjectId) {
+    // Strategy 4: Vercel API (requires credentials - fail immediately if missing)
+    if (!this.vercelToken || !this.vercelOrgId) {
+      throw new Error('❌ FATAL: VERCEL_TOKEN and VERCEL_ORG_ID are required for Vercel API access');
+    }
+    
+    if (this.vercelProjectId) {
       const apiUrl = await this.getFromVercelAPI();
       if (apiUrl) {
         return this.validateAndReturn(apiUrl, 'Vercel API');
       }
     }
 
-    // Strategy 5: Vercel CLI (fallback)
+    // Strategy 5: Vercel CLI (requires credentials - fail immediately if missing)
     const cliUrl = await this.getFromVercelCLI();
     if (cliUrl) {
       return this.validateAndReturn(cliUrl, 'Vercel CLI');
@@ -230,8 +235,16 @@ class VercelPreviewURLExtractor {
   async getFromVercelAPI() {
     console.log('🔍 Strategy 4: Checking Vercel API...');
 
-    if (!this.vercelToken || !this.vercelProjectId) {
-      console.log('   ⏭️ Skipping: Missing Vercel token or project ID');
+    if (!this.vercelToken) {
+      throw new Error('❌ FATAL: VERCEL_TOKEN not found in environment');
+    }
+    
+    if (!this.vercelOrgId) {
+      throw new Error('❌ FATAL: VERCEL_ORG_ID not found in environment');
+    }
+    
+    if (!this.vercelProjectId) {
+      console.log('   ⏭️ Skipping: Missing Vercel project ID');
       return null;
     }
 
@@ -283,21 +296,29 @@ class VercelPreviewURLExtractor {
   }
 
   /**
-   * Strategy 5: Get from Vercel CLI (fallback)
+   * Strategy 5: Get from Vercel CLI (requires credentials)
    */
   async getFromVercelCLI() {
     console.log('🔍 Strategy 5: Using Vercel CLI...');
 
+    if (!this.vercelToken) {
+      throw new Error('❌ FATAL: VERCEL_TOKEN not found in environment');
+    }
+    
+    if (!this.vercelOrgId) {
+      throw new Error('❌ FATAL: VERCEL_ORG_ID not found in environment');
+    }
+
     try {
       // Try to get recent deployments using Vercel CLI
       const commands = [
-        'vercel ls --confirm',
-        'vercel list --confirm'
+        `vercel ls --confirm --token ${this.vercelToken} --scope ${this.vercelOrgId}`,
+        `vercel list --confirm --token ${this.vercelToken} --scope ${this.vercelOrgId}`
       ];
 
       for (const command of commands) {
         try {
-          console.log(`   📋 Running: ${command}`);
+          console.log(`   📋 Running: ${command.replace(this.vercelToken, '[REDACTED]')}`);
           
           const output = execSync(command, { 
             encoding: 'utf8', 
@@ -497,6 +518,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.error(`   Commit SHA: ${process.env.GITHUB_SHA || 'Not set'}`);
       console.error(`   GitHub Token: ${process.env.GITHUB_TOKEN ? 'Available' : 'Missing'}`);
       console.error(`   Vercel Token: ${process.env.VERCEL_TOKEN ? 'Available' : 'Missing'}`);
+      console.error(`   Vercel Org ID: ${process.env.VERCEL_ORG_ID ? 'Available' : 'Missing'}`);
       
       process.exit(1);
     });

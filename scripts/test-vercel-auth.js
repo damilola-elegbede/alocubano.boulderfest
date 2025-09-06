@@ -37,8 +37,11 @@ class VercelAuthTester {
     console.log('🧪 Testing Vercel CLI authentication...');
     
     if (!this.token) {
-      console.log('   ❌ VERCEL_TOKEN not provided - cannot test authentication');
-      return false;
+      throw new Error('❌ FATAL: VERCEL_TOKEN not found in environment');
+    }
+    
+    if (!this.orgId) {
+      throw new Error('❌ FATAL: VERCEL_ORG_ID not found in environment');
     }
 
     try {
@@ -86,19 +89,12 @@ class VercelAuthTester {
       // Removed --no-clipboard as it's not supported in this Vercel CLI version
     ];
     
-    if (this.token) {
-      args.push('--token', this.token);
-      console.log('   ✅ Token flag added');
-    } else {
-      console.log('   ⚠️  No token - command will run without authentication');
-    }
+    // Both are required at this point - validated above
+    args.push('--token', this.token);
+    console.log('   ✅ Token flag added');
     
-    if (this.orgId) {
-      args.push('--scope', this.orgId);
-      console.log('   ✅ Scope flag added');
-    } else {
-      console.log('   ⚠️  No org ID - command will use default scope');
-    }
+    args.push('--scope', this.orgId);
+    console.log('   ✅ Scope flag added');
     
     console.log('   📦 Full command:');
     console.log(`   npx ${args.join(' ')}`);

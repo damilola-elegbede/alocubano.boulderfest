@@ -60,17 +60,19 @@ function buildVercelCommand(port) {
     // Removed --no-clipboard as it's not supported in this Vercel CLI version
   ];
   
-  // Add authentication if token is available
-  if (process.env.VERCEL_TOKEN) {
-    args.push('--token', process.env.VERCEL_TOKEN);
-    console.log('   ✅ Using VERCEL_TOKEN for authentication');
+  // Require authentication - fail immediately if missing
+  if (!process.env.VERCEL_TOKEN) {
+    throw new Error('❌ FATAL: VERCEL_TOKEN not found in environment');
+  }
+  if (!process.env.VERCEL_ORG_ID) {
+    throw new Error('❌ FATAL: VERCEL_ORG_ID not found in environment');
   }
   
-  // Add scope if org ID is available
-  if (process.env.VERCEL_ORG_ID) {
-    args.push('--scope', process.env.VERCEL_ORG_ID);
-    console.log('   ✅ Using VERCEL_ORG_ID as scope');
-  }
+  args.push('--token', process.env.VERCEL_TOKEN);
+  console.log('   ✅ Using VERCEL_TOKEN for authentication');
+  
+  args.push('--scope', process.env.VERCEL_ORG_ID);
+  console.log('   ✅ Using VERCEL_ORG_ID as scope');
   
   return args.join(' ');
 }
@@ -86,7 +88,7 @@ console.log(`  Database: Turso (${process.env.TURSO_DATABASE_URL ? 'configured' 
 console.log(`  Advanced Scenarios: ${ADVANCED_SCENARIOS}`);
 console.log(`  Reuse Existing Server: false (ensures test isolation)`);
 console.log(`  Vercel Command: ${VERCEL_COMMAND}`);
-console.log(`  Vercel Auth: ${process.env.VERCEL_TOKEN ? 'configured' : 'not configured'}`);
+console.log(`  Vercel Auth: ✅ configured (VERCEL_TOKEN + VERCEL_ORG_ID)`);
 
 export default defineConfig({
   testDir: './tests/e2e/flows',

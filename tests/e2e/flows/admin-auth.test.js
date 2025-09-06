@@ -11,10 +11,21 @@
 
 import { test, expect } from '@playwright/test';
 import { getTestDataConstants } from '../../../scripts/seed-test-data.js';
+import { skipTestIfSecretsUnavailable, warnIfOptionalSecretsUnavailable } from '../helpers/test-setup.js';
 
 const testConstants = getTestDataConstants();
 
 test.describe('Admin Authentication', () => {
+  // Validate secrets before running tests
+  const shouldSkip = skipTestIfSecretsUnavailable(['admin', 'security'], 'admin-auth.test.js');
+  
+  if (shouldSkip) {
+    test.skip('Skipping admin authentication tests due to missing required secrets');
+    return;
+  }
+  
+  // Check for optional secrets and warn about degraded functionality
+  const secretWarnings = warnIfOptionalSecretsUnavailable(['admin'], 'admin-auth.test.js');
   const adminCredentials = {
     email: testConstants.admin.email,
     password: process.env.TEST_ADMIN_PASSWORD || 'test-admin-password'

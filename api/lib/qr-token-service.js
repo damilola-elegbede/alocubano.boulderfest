@@ -11,6 +11,11 @@ export class QRTokenService {
     this.secretKey = process.env.QR_SECRET_KEY;
     this.expiryDays = parseInt(process.env.QR_CODE_EXPIRY_DAYS || "90");
     this.maxScans = parseInt(process.env.QR_CODE_MAX_SCANS || "10");
+
+    // Critical wallet secret - FAIL IMMEDIATELY if missing
+    if (!process.env.WALLET_AUTH_SECRET) {
+      throw new Error("❌ FATAL: WALLET_AUTH_SECRET not found in environment");
+    }
   }
 
   /**
@@ -119,6 +124,7 @@ export class QRTokenService {
    * @returns {boolean} True if configured
    */
   isConfigured() {
+    // WALLET_AUTH_SECRET is now validated in constructor, so it should always be present
     return !!(
       this.secretKey &&
       this.secretKey.length > 20 &&

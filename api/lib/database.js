@@ -155,7 +155,7 @@ class DatabaseService {
       databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
-        const error = new Error("TURSO_DATABASE_URL environment variable is required for E2E tests");
+        const error = new Error("❌ FATAL: TURSO_DATABASE_URL not found in environment");
         error.code = "DB_CONFIG_ERROR";
         error.context = "e2e-tests";
         throw error;
@@ -185,32 +185,24 @@ class DatabaseService {
       logger.log(`✅ Using database for unit/integration tests: ${databaseUrl}`);
       
     } else if (isDevelopment) {
-      // Local development: Try Turso first, fallback to SQLite
+      // Local development: Require proper database configuration
       databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
-        // Fall back to SQLite for development
-        const path = await import("path");
-        const fs = await import("fs");
-        
-        const dataDir = path.join(process.cwd(), "data");
-        if (!fs.existsSync(dataDir)) {
-          fs.mkdirSync(dataDir, { recursive: true });
-          logger.log(`📁 Created data directory: ${dataDir}`);
-        }
-        
-        databaseUrl = `file:${path.join(dataDir, "development.db")}`;
-        logger.log(`⚠️  No database URL set, using local SQLite: ${databaseUrl}`);
-      } else {
-        logger.log(`✅ Using configured database for local development: ${databaseUrl.substring(0, 30)}...`);
+        const error = new Error("❌ FATAL: TURSO_DATABASE_URL not found in environment - SQLite fallback removed for reliability");
+        error.code = "DB_CONFIG_ERROR";
+        error.context = "development";
+        throw error;
       }
+      
+      logger.log(`✅ Using configured database for local development: ${databaseUrl.substring(0, 30)}...`);
       
     } else if (isVercelProduction) {
       // Vercel production: Require Turso
       databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
-        const error = new Error("TURSO_DATABASE_URL environment variable is required for Vercel production deployment");
+        const error = new Error("❌ FATAL: TURSO_DATABASE_URL not found in environment");
         error.code = "DB_CONFIG_ERROR";
         error.context = "vercel-production";
         throw error;
@@ -223,7 +215,7 @@ class DatabaseService {
       databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
-        const error = new Error("TURSO_DATABASE_URL environment variable is required for Vercel preview deployments");
+        const error = new Error("❌ FATAL: TURSO_DATABASE_URL not found in environment");
         error.code = "DB_CONFIG_ERROR";
         error.context = "vercel-preview";
         throw error;
@@ -236,7 +228,7 @@ class DatabaseService {
       databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
-        const error = new Error("TURSO_DATABASE_URL environment variable is required for all Vercel deployments");
+        const error = new Error("❌ FATAL: TURSO_DATABASE_URL not found in environment");
         error.code = "DB_CONFIG_ERROR";
         error.context = "vercel-generic";
         throw error;
@@ -249,7 +241,7 @@ class DatabaseService {
       databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
-        const error = new Error("TURSO_DATABASE_URL environment variable is required for production environments");
+        const error = new Error("❌ FATAL: TURSO_DATABASE_URL not found in environment");
         error.code = "DB_CONFIG_ERROR";
         error.context = "generic-production";
         throw error;
@@ -267,42 +259,34 @@ class DatabaseService {
       config.authToken = authToken;
       logger.log(`✅ Using auth token for remote database connection`);
     } else if (!authToken && databaseUrl !== ":memory:" && !databaseUrl.startsWith("file:")) {
-      // Auth token is required for remote Turso databases
+      // Auth token is required for remote Turso databases - FAIL IMMEDIATELY
       if (isE2ETest) {
-        // Only E2E tests require TURSO_AUTH_TOKEN for remote databases
-        const error = new Error("TURSO_AUTH_TOKEN environment variable is required for E2E tests with remote database");
+        const error = new Error("❌ FATAL: TURSO_AUTH_TOKEN not found in environment");
         error.code = "DB_AUTH_ERROR";
         error.context = "e2e-tests";
         throw error;
       } else if (isIntegrationTest) {
-        // Integration tests should not use remote databases - force local SQLite
-        logger.warn("⚠️ Integration test attempted to use remote database - this should use local SQLite file");
-        logger.warn(`⚠️ Database URL: ${databaseUrl}`);
-        logger.warn("⚠️ Switching to local SQLite for integration test safety");
-        
-        // Override with local SQLite file for integration tests
-        const path = await import("path");
-        const fs = await import("fs");
-        
-        const dataDir = path.join(process.cwd(), "data");
-        if (!fs.existsSync(dataDir)) {
-          fs.mkdirSync(dataDir, { recursive: true });
-        }
-        
-        databaseUrl = `file:${path.join(dataDir, "test-integration.db")}`;
-        config.url = databaseUrl;
-        logger.log(`🔄 Integration test database URL changed to: ${databaseUrl}`);
+        const error = new Error("❌ FATAL: TURSO_AUTH_TOKEN not found in environment - integration tests should not use remote databases");
+        error.code = "DB_AUTH_ERROR";
+        error.context = "integration-tests";
+        throw error;
       } else if (isVercelProduction || isVercelPreview || isVercel) {
         // All Vercel deployments require auth tokens for remote databases
-        const envContext = isVercelProduction ? "production" : isVercelPreview ? "preview" : "vercel-generic";
-        const error = new Error(`TURSO_AUTH_TOKEN environment variable is required for Vercel ${envContext} deployments with remote database`);
+        const error = new Error("❌ FATAL: TURSO_AUTH_TOKEN not found in environment");
         error.code = "DB_AUTH_ERROR";
-        error.context = `vercel-${envContext}`;
+        error.context = "vercel-deployment";
+        throw error;
+      } else if (isDevelopment) {
+        const error = new Error("❌ FATAL: TURSO_AUTH_TOKEN not found in environment");
+        error.code = "DB_AUTH_ERROR";
+        error.context = "development";
         throw error;
       } else {
-        // For other production-like environments, warn but don't fail
-        logger.warn("⚠️ TURSO_AUTH_TOKEN not provided for remote database connection");
-        logger.warn("⚠️ This may cause connection failures for remote Turso databases");
+        // For any other production-like environment, fail immediately
+        const error = new Error("❌ FATAL: TURSO_AUTH_TOKEN not found in environment");
+        error.code = "DB_AUTH_ERROR";
+        error.context = "production";
+        throw error;
       }
     } else if (databaseUrl.startsWith("file:") || databaseUrl === ":memory:") {
       logger.log(`✅ Using local database (no auth token required): ${databaseUrl}`);

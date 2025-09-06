@@ -5,34 +5,12 @@
 
 import Stripe from "stripe";
 
-// Initialize Stripe with API key
-let stripe;
-try {
-  // Log environment info for debugging (without exposing secrets)
-  console.log("Environment check:", {
-    NODE_ENV: process.env.NODE_ENV,
-    hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
-    stripeKeyLength: process.env.STRIPE_SECRET_KEY?.length || 0,
-    availableEnvVars: Object.keys(process.env)
-      .filter(
-        (key) =>
-          !key.includes("SECRET") &&
-          !key.includes("KEY") &&
-          !key.includes("TOKEN") &&
-          !key.includes("PASSWORD"),
-      )
-      .sort(),
-  });
-
-  if (!process.env.STRIPE_SECRET_KEY) {
-    console.error("STRIPE_SECRET_KEY is not configured");
-  } else {
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-    console.log("Stripe initialized successfully");
-  }
-} catch (error) {
-  console.error("Failed to initialize Stripe:", error);
+// Initialize Stripe with strict error handling
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error("❌ FATAL: STRIPE_SECRET_KEY not found in environment");
 }
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
   console.log("=== Checkout Session Handler Started ===");
@@ -53,28 +31,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Check if Stripe is properly initialized
-  if (!stripe) {
-    console.error(
-      "Stripe is not initialized - check STRIPE_SECRET_KEY environment variable",
-    );
-    return res.status(500).json({
-      error: "Payment service not configured",
-      message:
-        "Stripe payment processing is not available. Please check server configuration.",
-      debug: {
-        hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
-        nodeEnv: process.env.NODE_ENV,
-        availableEnvVars: Object.keys(process.env).filter(
-          (key) =>
-            !key.includes("SECRET") &&
-            !key.includes("KEY") &&
-            !key.includes("TOKEN") &&
-            !key.includes("PASSWORD"),
-        ).length,
-      },
-    });
-  }
+  // Stripe initialization check is no longer needed since we fail immediately at module level
 
   try {
     const { cartItems, customerInfo } = req.body;

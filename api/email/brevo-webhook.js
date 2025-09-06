@@ -121,7 +121,7 @@ function validateWebhookRequest(req) {
     }
   }
 
-  // Check for webhook token (required in production)
+  // Check for webhook token (always required)
   const customToken =
     process.env.BREVO_WEBHOOK_TOKEN || process.env.BREVO_WEBHOOK_SECRET;
   const receivedToken =
@@ -131,10 +131,9 @@ function validateWebhookRequest(req) {
     req.headers["x-brevo-token"] ||
     req.headers["x-webhook-token"];
 
-  // Enforce token in production; allow opt-in bypass only for test/dev
-  const isProd = process.env.NODE_ENV === "production";
-  if (isProd && !customToken) {
-    console.warn("Missing BREVO webhook token/secret in production");
+  // Always require webhook token/secret
+  if (!customToken) {
+    console.error("❌ FATAL: BREVO_WEBHOOK_SECRET not found in environment");
     return false;
   }
   if (customToken && receivedToken !== customToken) {

@@ -223,6 +223,10 @@ export const configureEnvironment = (testType) => {
   Object.entries(timeoutConfig).forEach(([key, value]) => {
     process.env[`VITEST_${key.toUpperCase()}_TIMEOUT`] = value.toString();
   });
+
+  // Wallet service configuration - required for services to initialize
+  process.env.WALLET_AUTH_SECRET = process.env.WALLET_AUTH_SECRET || 'test-wallet-auth-secret-key-for-testing-purposes-32-chars';
+  process.env.APPLE_PASS_KEY = process.env.APPLE_PASS_KEY || 'dGVzdC1hcHBsZS1wYXNzLWtleQ=='; // base64 encoded 'test-apple-pass-key'
   
   console.log(`🧪 Test environment configured for: ${testType.toUpperCase()}`);
   console.log(`📍 Database: ${dbConfig.description}`);

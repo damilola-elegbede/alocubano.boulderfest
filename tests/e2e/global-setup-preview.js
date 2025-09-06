@@ -12,12 +12,40 @@ import { execSync } from 'child_process';
 import { writeFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import VercelPreviewURLExtractor from '../../scripts/get-vercel-preview-url.js';
+import { validateSecrets } from './secret-validator.js';
 
 const PROJECT_ROOT = resolve(process.cwd());
 
 async function globalSetupPreview() {
   console.log('🚀 Global E2E Setup - Preview Deployment Mode');
   console.log('='.repeat(60));
+  
+  // STEP 0: Validate all secrets first - fail fast if critical ones are missing
+  console.log('\n🔐 STEP 0: Secret Validation');
+  console.log('-'.repeat(40));
+  
+  try {
+    const secretValidation = validateSecrets({
+      testTypes: ['basic', 'admin', 'preview', 'ci'],
+      ci: true, // Preview deployments are typically in CI
+      strict: false
+    });
+    
+    if (!secretValidation.passed) {
+      console.error('❌ SECRET VALIDATION FAILED - ABORTING TESTS');
+      process.exit(1);
+    }
+    
+    console.log(`✅ Secret validation passed (${secretValidation.summary.found}/${secretValidation.summary.total} secrets configured)`);
+    
+    if (secretValidation.warnings.length > 0) {
+      console.log(`⚠️ ${secretValidation.warnings.length} optional secrets missing (tests will use graceful degradation)`);
+    }
+    
+  } catch (error) {
+    console.error('❌ SECRET VALIDATION ERROR:', error.message);
+    process.exit(1);
+  }
   
   try {
     // Step 1: Extract preview URL if not already provided
@@ -78,6 +106,7 @@ async function globalSetupPreview() {
     console.error(`   Commit SHA: ${process.env.GITHUB_SHA || 'Not set'}`);
     console.error(`   GitHub Token: ${process.env.GITHUB_TOKEN ? 'Available' : 'Missing'}`);
     console.error(`   Vercel Token: ${process.env.VERCEL_TOKEN ? 'Available' : 'Missing'}`);
+    console.error(`   Vercel Org ID: ${process.env.VERCEL_ORG_ID ? 'Available' : 'Missing'}`);
     
     throw error;
   }

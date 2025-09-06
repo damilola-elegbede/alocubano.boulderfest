@@ -105,58 +105,81 @@ export default async function handler(req, res) {
  * Load statistics for all available years
  */
 async function loadYearStatistics() {
-  const auth = await createGoogleAuth();
-  const drive = google.drive({ version: "v3", auth });
+  // Check if Google Drive is configured - fail fast if not
+  const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY;
+  const folderId = process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
 
-  const years = [];
-  const statistics = {};
-  const metadata = {};
-
-  // Process each configured year
-  for (const [year, config] of Object.entries(FOLDER_CONFIGS)) {
-    try {
-      let stats;
-
-      if (config.folderId) {
-        // Get real statistics from Google Drive
-        stats = await getYearStatistics(drive, year, config);
-      } else {
-        // Skip years without configured folder IDs
-        continue;
-      }
-
-      // Only include years that have images
-      if (stats.imageCount > 0) {
-        years.push(year);
-        statistics[year] = {
-          imageCount: stats.imageCount,
-          totalSize: stats.totalSize,
-          lastModified: stats.lastModified,
-          averageSize: stats.totalSize / stats.imageCount,
-        };
-        metadata[year] = {
-          name: config.name,
-          description: config.description,
-          folderId: config.folderId,
-        };
-      }
-    } catch (error) {
-      console.error(`Failed to load statistics for year ${year}:`, error);
-      // Continue processing other years
-    }
+  if (!serviceAccountEmail || serviceAccountEmail.trim() === '') {
+    throw new Error('❌ FATAL: GOOGLE_SERVICE_ACCOUNT_EMAIL not found in environment');
   }
 
-  // Sort years in descending order (newest first)
-  years.sort((a, b) => b.localeCompare(a));
+  if (!privateKey || privateKey.trim() === '') {
+    throw new Error('❌ FATAL: GOOGLE_PRIVATE_KEY not found in environment');
+  }
 
-  return {
-    years,
-    statistics,
-    metadata,
-    totalYears: years.length,
-    cacheTimestamp: Date.now(),
-    apiVersion: "1.0",
-  };
+  if (!folderId || folderId.trim() === '') {
+    throw new Error('❌ FATAL: GOOGLE_DRIVE_GALLERY_FOLDER_ID not found in environment');
+  }
+
+  try {
+    const auth = await createGoogleAuth();
+    const drive = google.drive({ version: "v3", auth });
+
+    const years = [];
+    const statistics = {};
+    const metadata = {};
+
+    // Process each configured year
+    for (const [year, config] of Object.entries(FOLDER_CONFIGS)) {
+      try {
+        let stats;
+
+        if (config.folderId) {
+          // Get real statistics from Google Drive
+          stats = await getYearStatistics(drive, year, config);
+        } else {
+          // Skip years without configured folder IDs
+          continue;
+        }
+
+        // Only include years that have images
+        if (stats.imageCount > 0) {
+          years.push(year);
+          statistics[year] = {
+            imageCount: stats.imageCount,
+            totalSize: stats.totalSize,
+            lastModified: stats.lastModified,
+            averageSize: stats.totalSize / stats.imageCount,
+          };
+          metadata[year] = {
+            name: config.name,
+            description: config.description,
+            folderId: config.folderId,
+          };
+        }
+      } catch (error) {
+        console.error(`Failed to load statistics for year ${year}:`, error);
+        // Continue processing other years
+      }
+    }
+
+    // Sort years in descending order (newest first)
+    years.sort((a, b) => b.localeCompare(a));
+
+    return {
+      years,
+      statistics,
+      metadata,
+      totalYears: years.length,
+      cacheTimestamp: Date.now(),
+      apiVersion: "1.0",
+    };
+  } catch (error) {
+    console.error("Error loading gallery years - no fallback available:", error.message);
+    // Re-throw the error - fail fast, no fallback
+    throw error;
+  }
 }
 
 /**
@@ -213,14 +236,24 @@ async function getYearStatistics(drive, year, config) {
  */
 async function createGoogleAuth() {
   try {
-    // Use service account authentication
-    const credentials = JSON.parse(
-      process.env.GOOGLE_DRIVE_CREDENTIALS || "{}",
-    );
-
-    if (!credentials.client_email || !credentials.private_key) {
-      throw new Error("Google Drive credentials not properly configured");
+    // Check for service account credentials in environment variables
+    const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    const privateKey = process.env.GOOGLE_PRIVATE_KEY;
+    
+    if (!serviceAccountEmail || serviceAccountEmail.trim() === '') {
+      throw new Error('❌ FATAL: GOOGLE_SERVICE_ACCOUNT_EMAIL not found in environment');
     }
+
+    if (!privateKey || privateKey.trim() === '') {
+      throw new Error('❌ FATAL: GOOGLE_PRIVATE_KEY not found in environment');
+    }
+
+    // Create credentials object for service account
+    const credentials = {
+      type: "service_account",
+      client_email: serviceAccountEmail,
+      private_key: privateKey.replace(/\\n/g, '\n'), // Handle escaped newlines
+    };
 
     const auth = new google.auth.GoogleAuth({
       credentials,

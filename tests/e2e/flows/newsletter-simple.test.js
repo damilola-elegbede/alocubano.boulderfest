@@ -13,7 +13,15 @@ import {
   generateTestEmail
 } from '../helpers/test-isolation.js';
 import { createStorageUtils } from '../helpers/storage-utils.js';
+import { warnIfOptionalSecretsUnavailable } from '../helpers/test-setup.js';
 import { trackTestEmail, isTestEmail } from '../helpers/brevo-cleanup.js';
+
+// Check for email service secrets
+const secretWarnings = warnIfOptionalSecretsUnavailable(['email', 'newsletter'], 'newsletter-simple.test.js');
+
+if (secretWarnings.hasWarnings) {
+  console.log('ℹ️ Newsletter tests may use mock responses due to missing Brevo credentials');
+}
 
 // Initialize test isolation for this test suite
 test.beforeAll(async () => {

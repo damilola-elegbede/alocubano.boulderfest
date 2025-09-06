@@ -140,7 +140,9 @@ describe('Email Service Integration', () => {
 
     // Process email webhook
     const webhookResponse = await testRequest('POST', '/api/email/brevo-webhook', mockWebhookData, {
-      'x-mailin-custom': process.env.BREVO_WEBHOOK_SECRET || 'test-secret'
+      'x-mailin-custom': process.env.BREVO_WEBHOOK_SECRET || (() => {
+        throw new Error("❌ FATAL: BREVO_WEBHOOK_SECRET not found in environment");
+      })()
     });
 
     // Webhook processing should not fail

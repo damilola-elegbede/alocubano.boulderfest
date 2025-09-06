@@ -28,8 +28,8 @@ export default async function handler(req, res) {
 
     if (!internalApiKey) {
       res.status(500).json({
-        error: 'Internal server error',
-        message: 'INTERNAL_API_KEY not configured'
+        error: 'Configuration Error',
+        message: '❌ FATAL: INTERNAL_API_KEY not found in environment'
       });
       return;
     }

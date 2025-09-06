@@ -8,6 +8,11 @@ import { serialize, parse } from "cookie";
  */
 export class MobileAuthService {
   constructor() {
+    // Fail immediately if ADMIN_SECRET is not configured
+    if (!process.env.ADMIN_SECRET) {
+      throw new Error("❌ FATAL: ADMIN_SECRET not found in environment");
+    }
+
     this.sessionSecret = process.env.ADMIN_SECRET;
 
     // Mobile check-in sessions: 72 hours for event weekend
@@ -23,7 +28,7 @@ export class MobileAuthService {
       volunteer: 43200000, // 12 hours for volunteers
     };
 
-    if (!this.sessionSecret || this.sessionSecret.length < 32) {
+    if (this.sessionSecret.length < 32) {
       throw new Error("ADMIN_SECRET must be at least 32 characters long");
     }
   }
@@ -33,16 +38,17 @@ export class MobileAuthService {
    * Could be simplified password for event staff
    */
   async verifyStaffPassword(password) {
+    // Fail immediately if ADMIN_PASSWORD is not configured
+    if (!process.env.ADMIN_PASSWORD) {
+      throw new Error("❌ FATAL: ADMIN_PASSWORD not found in environment");
+    }
+
     // Option 1: Same admin password
     const adminPasswordHash = process.env.ADMIN_PASSWORD;
 
     // Option 2: Separate staff password (recommended)
     const staffPasswordHash =
       process.env.CHECKIN_STAFF_PASSWORD || adminPasswordHash;
-
-    if (!staffPasswordHash) {
-      return false;
-    }
 
     return await bcrypt.compare(password, staffPasswordHash);
   }

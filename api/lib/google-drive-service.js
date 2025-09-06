@@ -98,19 +98,19 @@ class GoogleDriveService {
       // Load configuration from environment variables
       this.serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
       this.privateKey = process.env.GOOGLE_PRIVATE_KEY;
-      this.rootFolderId = process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID || process.env.GOOGLE_DRIVE_FOLDER_ID;
+      this.rootFolderId = process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
 
-      // Validate required configuration
+      // Validate required configuration - fail fast and loud
       if (!this.serviceAccountEmail || this.serviceAccountEmail.trim() === '') {
-        throw new Error('GOOGLE_SERVICE_ACCOUNT_EMAIL environment variable is required');
+        throw new Error('❌ FATAL: GOOGLE_SERVICE_ACCOUNT_EMAIL not found in environment');
       }
 
       if (!this.privateKey || this.privateKey.trim() === '') {
-        throw new Error('GOOGLE_PRIVATE_KEY environment variable is required');
+        throw new Error('❌ FATAL: GOOGLE_PRIVATE_KEY not found in environment');
       }
 
       if (!this.rootFolderId || this.rootFolderId.trim() === '') {
-        throw new Error('GOOGLE_DRIVE_GALLERY_FOLDER_ID environment variable is required');
+        throw new Error('❌ FATAL: GOOGLE_DRIVE_GALLERY_FOLDER_ID not found in environment');
       }
 
       // Initialize Google Auth with Service Account
@@ -227,16 +227,8 @@ class GoogleDriveService {
         timestamp: new Date().toISOString()
       });
       
-      // Try to return stale cache as fallback
-      const cacheKey = this._generateCacheKey(options);
-      const staleData = this._getFromCache(cacheKey);
-      if (staleData) {
-        logger.log('Google Drive: Serving stale cache due to error');
-        return { ...staleData, source: 'stale-cache', error: error.message };
-      }
-      
-      // Return empty gallery if no cache available
-      return this._getEmptyGallery(error.message);
+      // No fallback - fail immediately
+      throw error;
     }
   }
 
@@ -642,28 +634,6 @@ class GoogleDriveService {
       (this.metrics.avgResponseTime * (this.metrics.apiCalls - 1) + responseTime) / this.metrics.apiCalls;
   }
 
-  /**
-   * Get empty gallery structure for fallback
-   * @private
-   */
-  _getEmptyGallery(errorMessage = 'Failed to load gallery data') {
-    return {
-      eventId: 'unknown',
-      event: 'unknown',
-      year: new Date().getFullYear(),
-      totalCount: 0,
-      categories: {
-        workshops: [],
-        socials: [],
-        performances: [],
-        other: []
-      },
-      hasMore: false,
-      cacheTimestamp: new Date().toISOString(),
-      source: 'fallback',
-      error: errorMessage
-    };
-  }
 
   /**
    * Get performance metrics
