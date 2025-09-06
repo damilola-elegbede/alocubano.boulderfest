@@ -32,25 +32,25 @@ async function checkGoogleDriveConfig(page) {
     const envData = await envResponse.json();
     console.log('📋 Environment debug response available');
     
-    // Check for Google Drive environment variables
-    const hasServiceAccount = !!envData.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-    const hasPrivateKey = !!envData.GOOGLE_PRIVATE_KEY;  
-    const hasFolderId = !!envData.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
+    // Check for Google Drive environment variables (correct nested structure)
+    const hasServiceAccount = !!envData.variables?.details?.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    const hasPrivateKey = !!envData.variables?.details?.GOOGLE_PRIVATE_KEY;  
+    const hasFolderId = !!envData.variables?.details?.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
     
     // Enhanced logging with actual values (for debugging)
     console.log('🔍 Google Drive Variable Analysis:', {
       GOOGLE_SERVICE_ACCOUNT_EMAIL: {
         exists: hasServiceAccount,
-        valueLength: envData.GOOGLE_SERVICE_ACCOUNT_EMAIL ? envData.GOOGLE_SERVICE_ACCOUNT_EMAIL.length : 0
+        valueLength: envData.variables?.details?.GOOGLE_SERVICE_ACCOUNT_EMAIL ? String(envData.variables.details.GOOGLE_SERVICE_ACCOUNT_EMAIL).length : 0
       },
       GOOGLE_PRIVATE_KEY: {
         exists: hasPrivateKey,
-        valueLength: envData.GOOGLE_PRIVATE_KEY ? envData.GOOGLE_PRIVATE_KEY.length : 0,
-        hasBeginPrivateKey: envData.GOOGLE_PRIVATE_KEY ? envData.GOOGLE_PRIVATE_KEY.includes('-----BEGIN PRIVATE KEY-----') : false
+        valueLength: envData.variables?.details?.GOOGLE_PRIVATE_KEY ? String(envData.variables.details.GOOGLE_PRIVATE_KEY).length : 0,
+        hasBeginPrivateKey: envData.variables?.details?.GOOGLE_PRIVATE_KEY ? String(envData.variables.details.GOOGLE_PRIVATE_KEY).includes('-----BEGIN PRIVATE KEY-----') : false
       },
       GOOGLE_DRIVE_GALLERY_FOLDER_ID: {
         exists: hasFolderId,
-        valueLength: envData.GOOGLE_DRIVE_GALLERY_FOLDER_ID ? envData.GOOGLE_DRIVE_GALLERY_FOLDER_ID.length : 0
+        valueLength: envData.variables?.details?.GOOGLE_DRIVE_GALLERY_FOLDER_ID ? String(envData.variables.details.GOOGLE_DRIVE_GALLERY_FOLDER_ID).length : 0
       }
     });
     
