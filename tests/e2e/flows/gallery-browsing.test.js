@@ -1,7 +1,7 @@
 /**
  * E2E Test: Gallery Performance & Functionality
- * Tests gallery performance with Google Drive API integration when available
- * Gracefully handles missing Google Drive configuration in preview deployments
+ * Tests gallery performance with Google Drive API integration using eventId parameter
+ * Requires working Google Drive configuration for proper testing
  */
 
 import { test, expect } from '@playwright/test';
@@ -79,15 +79,15 @@ async function checkGoogleDriveConfig(page) {
 
 /**
  * Check gallery API response and determine what type of content is available
- * Returns { hasRealData: boolean, hasFallbackData: boolean, isEmpty: boolean, apiData: object }
+ * Returns { hasRealData: boolean, isEmpty: boolean, apiData: object }
  */
 async function checkGalleryApiData(page) {
   console.log('🔍 INFO: Checking Gallery API data availability...');
   console.log('🌐 Current page URL:', page.url());
   
   try {
-    console.log('📡 Making request to /api/gallery?year=2025...');
-    const galleryResponse = await page.request.get('/api/gallery?year=2025');
+    console.log('📡 Making request to /api/gallery?eventId=boulder-fest-2025...');
+    const galleryResponse = await page.request.get('/api/gallery?eventId=boulder-fest-2025');
     console.log('📊 Gallery API response status:', galleryResponse.status());
     
     if (!galleryResponse.ok()) {
@@ -97,7 +97,7 @@ async function checkGalleryApiData(page) {
         statusText: galleryResponse.statusText(),
         responseText: errorText
       });
-      return { hasRealData: false, hasFallbackData: false, isEmpty: true, apiData: null };
+      return { hasRealData: false, isEmpty: true, apiData: null };
     }
     
     const galleryData = await galleryResponse.json();
@@ -112,35 +112,28 @@ async function checkGalleryApiData(page) {
       error: galleryData.error
     });
     
-    // Determine data type
-    const isFallback = galleryData.source && galleryData.source.includes('fallback');
     const hasItems = galleryData.items && galleryData.items.length > 0;
     const hasError = !!galleryData.error;
     
     if (hasError) {
       console.log('📍 INFO: Gallery API reported error:', galleryData.error);
-      return { hasRealData: false, hasFallbackData: false, isEmpty: true, apiData: galleryData };
-    }
-    
-    if (isFallback) {
-      console.log('📍 INFO: Gallery API returned fallback data (expected in preview deployments)');
-      return { hasRealData: false, hasFallbackData: true, isEmpty: !hasItems, apiData: galleryData };
+      return { hasRealData: false, isEmpty: true, apiData: galleryData };
     }
     
     if (hasItems) {
       console.log('✅ Gallery API returned real data with', galleryData.items.length, 'items');
-      return { hasRealData: true, hasFallbackData: false, isEmpty: false, apiData: galleryData };
+      return { hasRealData: true, isEmpty: false, apiData: galleryData };
     }
     
     console.log('📍 INFO: Gallery API returned empty results');
-    return { hasRealData: false, hasFallbackData: false, isEmpty: true, apiData: galleryData };
+    return { hasRealData: false, isEmpty: true, apiData: galleryData };
     
   } catch (error) {
     console.log('📍 INFO: Gallery API check failed:', {
       message: error.message,
       name: error.name
     });
-    return { hasRealData: false, hasFallbackData: false, isEmpty: true, apiData: null };
+    return { hasRealData: false, isEmpty: true, apiData: null };
   }
 }
 
@@ -169,8 +162,6 @@ test.describe('Gallery Performance & Functionality', () => {
       
       if (galleryData.hasRealData) {
         console.log('✅ Step 2: Real gallery data available');
-      } else if (galleryData.hasFallbackData) {
-        console.log('📍 Step 2: Fallback data available (expected in preview deployments)');
       } else {
         console.log('📍 Step 2: No gallery data available');
       }
@@ -294,10 +285,10 @@ test.describe('Gallery Performance & Functionality', () => {
     
     console.log('📊 Google API-related requests:', googleApiCalls.length);
     
-    // STRICT: NO static fallback content should be visible  
+    // STRICT: NO static content should be visible - only dynamic Google Drive content  
     const staticContent = await page.locator('.gallery-grid-static, .gallery-static-title, #gallery-detail-static[style*="block"]').count();
     if (staticContent > 0) {
-      throw new Error('FAILED: Static fallback content is visible. Google Drive API must work to show real content.');
+      throw new Error('FAILED: Static content is visible. Google Drive API must work to show real content.');
     }
     
     // STRICT: Dynamic content must be loaded from Google Drive
@@ -342,10 +333,10 @@ test.describe('Gallery Performance & Functionality', () => {
     
     await page.waitForTimeout(3000);
     
-    // STRICT: Gallery containers must be visible (no static fallback)
+    // STRICT: Gallery containers must be visible (no static content)
     const staticContainers = await page.locator('.gallery-grid-static, .gallery-static-title').count();
     if (staticContainers > 0) {
-      throw new Error('FAILED: Static fallback containers detected. Google Drive caching test requires real content.');
+      throw new Error('FAILED: Static containers detected. Google Drive caching test requires real content.');
     }
     
     // STRICT: Dynamic gallery containers must exist
@@ -382,7 +373,7 @@ test.describe('Gallery Performance & Functionality', () => {
       dynamicContainers: containerCount,
       googleImages: googleImages,
       googleImageRequests: googleImageRequests.length,
-      noStaticFallback: true
+      noStaticContent: true
     });
   });
 
@@ -437,10 +428,10 @@ test.describe('Gallery Performance & Functionality', () => {
     
     console.log('📊 Intercepted Google Drive requests:', interceptedRequests);
     
-    // STRICT: Even with some image failures, NO static fallback should be shown
+    // STRICT: Even with some image failures, NO static content should be shown
     const staticElements = await page.locator('.gallery-grid-static, .gallery-static-title, #gallery-detail-static[style*="block"]').count();
     if (staticElements > 0) {
-      throw new Error('FAILED: Static fallback shown during image failures. Must handle errors without reverting to fallback.');
+      throw new Error('FAILED: Static content shown during image failures. Must handle errors without reverting to static content.');
     }
     
     // STRICT: Dynamic gallery structure must still be present
@@ -465,7 +456,7 @@ test.describe('Gallery Performance & Functionality', () => {
       interceptedRequests: interceptedRequests,
       dynamicContent: dynamicContent,
       workingGoogleImages: googleImages,
-      noStaticFallback: true,
+      noStaticContent: true,
       noErrorMessages: true
     });
   });

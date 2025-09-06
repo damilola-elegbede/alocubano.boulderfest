@@ -36,9 +36,17 @@ const validateIntegrationSecrets = () => {
       description: 'Stripe payment secret key (optional for integration tests)',
       validator: (value) => !value || value.startsWith('sk_test_') || value.startsWith('sk_live_')
     },
-    GOOGLE_DRIVE_API_KEY: {
-      description: 'Google Drive API key (optional for integration tests)',
-      validator: (value) => !value || value.length > 20
+    GOOGLE_SERVICE_ACCOUNT_EMAIL: {
+      description: 'Google service account email (optional for integration tests)',
+      validator: (value) => !value || (value.includes('@') && value.includes('.iam.gserviceaccount.com'))
+    },
+    GOOGLE_PRIVATE_KEY: {
+      description: 'Google service account private key (optional for integration tests)',
+      validator: (value) => !value || (value.includes('BEGIN PRIVATE KEY') || value.length > 100)
+    },
+    GOOGLE_DRIVE_GALLERY_FOLDER_ID: {
+      description: 'Google Drive gallery folder ID (optional for integration tests)',
+      validator: (value) => !value || value.length > 10
     }
   };
 

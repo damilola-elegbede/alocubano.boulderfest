@@ -1,7 +1,7 @@
 /**
  * E2E Test: Gallery Basic Browsing
- * Tests gallery functionality with Google Drive API integration when available
- * Gracefully handles missing Google Drive configuration in preview deployments
+ * Tests gallery functionality with Google Drive API integration using eventId parameter
+ * Requires working Google Drive configuration for proper testing
  */
 
 import { test, expect } from '@playwright/test';
@@ -79,15 +79,15 @@ async function checkGoogleDriveConfig(page) {
 
 /**
  * Check gallery API response and determine what type of content is available
- * Returns { hasRealData: boolean, hasFallbackData: boolean, isEmpty: boolean, apiData: object }
+ * Returns { hasRealData: boolean, isEmpty: boolean, apiData: object }
  */
 async function checkGalleryApiData(page) {
   console.log('🔍 INFO: Checking Gallery API data availability...');
   console.log('🌐 Current page URL:', page.url());
   
   try {
-    console.log('📡 Making request to /api/gallery?year=2025...');
-    const galleryResponse = await page.request.get('/api/gallery?year=2025');
+    console.log('📡 Making request to /api/gallery?eventId=boulder-fest-2025...');
+    const galleryResponse = await page.request.get('/api/gallery?eventId=boulder-fest-2025');
     console.log('📊 Gallery API response status:', galleryResponse.status());
     
     if (!galleryResponse.ok()) {
@@ -97,7 +97,7 @@ async function checkGalleryApiData(page) {
         statusText: galleryResponse.statusText(),
         responseText: errorText
       });
-      return { hasRealData: false, hasFallbackData: false, isEmpty: true, apiData: null };
+      return { hasRealData: false, isEmpty: true, apiData: null };
     }
     
     const galleryData = await galleryResponse.json();
@@ -112,35 +112,28 @@ async function checkGalleryApiData(page) {
       error: galleryData.error
     });
     
-    // Determine data type
-    const isFallback = galleryData.source && galleryData.source.includes('fallback');
     const hasItems = galleryData.items && galleryData.items.length > 0;
     const hasError = !!galleryData.error;
     
     if (hasError) {
       console.log('📍 INFO: Gallery API reported error:', galleryData.error);
-      return { hasRealData: false, hasFallbackData: false, isEmpty: true, apiData: galleryData };
-    }
-    
-    if (isFallback) {
-      console.log('📍 INFO: Gallery API returned fallback data (expected in preview deployments)');
-      return { hasRealData: false, hasFallbackData: true, isEmpty: !hasItems, apiData: galleryData };
+      return { hasRealData: false, isEmpty: true, apiData: galleryData };
     }
     
     if (hasItems) {
       console.log('✅ Gallery API returned real data with', galleryData.items.length, 'items');
-      return { hasRealData: true, hasFallbackData: false, isEmpty: false, apiData: galleryData };
+      return { hasRealData: true, isEmpty: false, apiData: galleryData };
     }
     
     console.log('📍 INFO: Gallery API returned empty results');
-    return { hasRealData: false, hasFallbackData: false, isEmpty: true, apiData: galleryData };
+    return { hasRealData: false, isEmpty: true, apiData: galleryData };
     
   } catch (error) {
     console.log('📍 INFO: Gallery API check failed:', {
       message: error.message,
       name: error.name
     });
-    return { hasRealData: false, hasFallbackData: false, isEmpty: true, apiData: null };
+    return { hasRealData: false, isEmpty: true, apiData: null };
   }
 }
 
@@ -169,8 +162,6 @@ test.describe('Gallery Basic Browsing', () => {
       
       if (galleryData.hasRealData) {
         console.log('✅ Step 2: Real gallery data available');
-      } else if (galleryData.hasFallbackData) {
-        console.log('📍 Step 2: Fallback data available (expected in preview deployments)');
       } else {
         console.log('📍 Step 2: No gallery data available');
       }
@@ -208,33 +199,26 @@ test.describe('Gallery Basic Browsing', () => {
     }
   });
 
-  test('should load gallery page with appropriate content (Google Drive or fallback)', async ({ page }) => {
-    console.log('🔍 INFO: Verifying gallery page loads with appropriate content...');
+  test('should load gallery page with Google Drive content', async ({ page }) => {
+    console.log('🔍 INFO: Verifying gallery page loads with Google Drive content...');
     
     await page.waitForTimeout(3000); // Allow content to load
     
-    // Check what type of content is available
-    const staticFallback = await page.locator('.gallery-static-title, .gallery-grid-static').count();
+    // Check for dynamic gallery content from Google Drive
     const dynamicGallery = page.locator('.gallery-detail-grid, .gallery-item');
     const dynamicCount = await dynamicGallery.count();
     const googleImages = page.locator('img[src*="googleusercontent.com"], img[src*="drive.google.com"]');
     const googleImageCount = await googleImages.count();
     
     console.log('📊 Gallery content analysis:', {
-      staticFallback,
       dynamicCount,
       googleImageCount
     });
     
-    // Verify gallery page has some content (either real or fallback)
-    const hasStaticContent = staticFallback > 0;
-    const hasDynamicContent = dynamicCount > 0;
-    const hasGoogleImages = googleImageCount > 0;
+    // Verify gallery page has dynamic content
+    expect(dynamicCount).toBeGreaterThan(0);
     
-    // At least one type of content should be present
-    expect(hasStaticContent || hasDynamicContent).toBeTruthy();
-    
-    if (hasGoogleImages) {
+    if (googleImageCount > 0) {
       console.log('✅ Gallery loaded with real Google Drive images:', googleImageCount);
       
       // Verify Google Drive images are properly loaded
@@ -246,23 +230,9 @@ test.describe('Gallery Basic Browsing', () => {
       expect(imageSrc).toMatch(/googleusercontent\.com|drive\.google\.com/);
       
       console.log('✅ Google Drive images are properly loaded with valid URLs');
-    } else if (hasStaticContent) {
-      console.log('📍 Gallery loaded with static fallback content (expected in preview deployments)');
-      
-      // Verify static content is properly displayed
-      const bodyText = await page.locator('body').textContent();
-      const hasGalleryContent = 
-        bodyText.includes('WORKSHOPS') ||
-        bodyText.includes('SOCIALS') ||
-        bodyText.includes('Gallery') ||
-        bodyText.includes('festival') ||
-        bodyText.includes('2025');
-        
-      expect(hasGalleryContent).toBeTruthy();
-      console.log('✅ Static gallery content is properly displayed');
     } else {
-      console.log('📍 Gallery loaded with basic dynamic content (no images)');
-      expect(hasDynamicContent).toBeTruthy();
+      console.log('📍 Gallery loaded with dynamic content (images may still be loading)');
+      expect(dynamicCount).toBeGreaterThan(0);
     }
   });
 
@@ -281,7 +251,7 @@ test.describe('Gallery Basic Browsing', () => {
     }
   });
 
-  test('should load gallery images with appropriate validation', async ({ page }) => {
+  test('should load gallery images from Google Drive', async ({ page }) => {
     console.log('🔍 INFO: Validating gallery image loading...');
     
     await page.waitForTimeout(5000);
@@ -305,22 +275,19 @@ test.describe('Gallery Basic Browsing', () => {
       console.log('📍 INFO: Loading state check timed out (may be expected)');
     }
     
-    // Check what type of content is available
-    const staticElements = await page.locator('.gallery-grid-static, .gallery-static-title, #gallery-detail-static').count();
+    // Check for dynamic images from Google Drive
     const dynamicImages = page.locator('.gallery-item img, .gallery-detail-grid img');
     const dynamicCount = await dynamicImages.count();
     const googleImages = page.locator('img[src*="googleusercontent.com"], img[src*="drive.google.com"]');
     const googleImageCount = await googleImages.count();
     
     console.log('📊 Gallery image analysis:', {
-      staticElements,
       dynamicCount,
       googleImageCount
     });
     
-    // Verify gallery has some form of content
-    const hasContent = staticElements > 0 || dynamicCount > 0;
-    expect(hasContent).toBeTruthy();
+    // Verify gallery has dynamic content
+    expect(dynamicCount).toBeGreaterThan(0);
     
     if (googleImageCount > 0) {
       console.log('✅ Gallery loaded with real Google Drive images:', googleImageCount);
@@ -334,21 +301,8 @@ test.describe('Gallery Basic Browsing', () => {
       expect(imageSrc).toMatch(/googleusercontent\.com|drive\.google\.com/);
       
       console.log('✅ Google Drive images are properly loaded and visible');
-    } else if (staticElements > 0) {
-      console.log('📍 Gallery loaded with static fallback content (expected in preview deployments)');
-      
-      // Verify static content is present
-      const bodyText = await page.locator('body').textContent();
-      const hasGalleryText = 
-        bodyText.includes('Gallery') ||
-        bodyText.includes('festival') ||
-        bodyText.includes('WORKSHOPS') ||
-        bodyText.includes('SOCIALS');
-        
-      expect(hasGalleryText).toBeTruthy();
-      console.log('✅ Static gallery content is properly displayed');
     } else {
-      console.log('📍 Gallery loaded with basic dynamic content (no specific images)');
+      console.log('📍 Gallery loaded with dynamic content (images may still be loading)');
       expect(dynamicCount).toBeGreaterThan(0);
     }
   });
@@ -399,10 +353,10 @@ test.describe('Gallery Basic Browsing', () => {
     }
   });
 
-  test('should handle gallery API responses appropriately', async ({ page }) => {
+  test('should handle gallery API responses with eventId parameter', async ({ page }) => {
     console.log('🔍 INFO: Checking gallery API response handling...');
     
-    // Monitor API requests to track gallery calls
+    // Monitor API requests to track gallery calls with eventId
     const apiRequests = [];
     page.on('request', request => {
       if (request.url().includes('/api/gallery') || request.url().includes('googleapis.com') || request.url().includes('drive')) {
@@ -416,53 +370,40 @@ test.describe('Gallery Basic Browsing', () => {
     await page.reload();
     await page.waitForTimeout(5000);
     
-    // Check if gallery API calls were made
+    // Check if gallery API calls were made with eventId
     const galleryApiCalls = apiRequests.filter(req => req.url.includes('/api/gallery'));
     console.log('📊 Gallery API calls detected:', galleryApiCalls.length);
     
-    // Check what type of content is displayed
-    const staticElements = await page.locator('.gallery-static-title, .gallery-grid-static, #gallery-detail-static[style*="block"]').count();
+    // Verify eventId parameter is used
+    const eventIdCalls = galleryApiCalls.filter(req => req.url.includes('eventId='));
+    expect(eventIdCalls.length).toBeGreaterThan(0);
+    console.log('✅ Gallery API calls using eventId parameter:', eventIdCalls.length);
+    
+    // Check dynamic content is displayed
     const dynamicContent = await page.locator('.gallery-detail-grid, .gallery-item').count();
     
     console.log('📊 Content analysis:', {
       galleryApiCalls: galleryApiCalls.length,
-      staticElements,
+      eventIdCalls: eventIdCalls.length,
       dynamicContent
     });
     
-    // Verify some form of content is present
-    const hasContent = staticElements > 0 || dynamicContent > 0;
-    expect(hasContent).toBeTruthy();
+    // Verify dynamic content is present
+    expect(dynamicContent).toBeGreaterThan(0);
+    console.log('✅ Gallery API successfully loaded dynamic content with', dynamicContent, 'elements');
     
-    if (dynamicContent > 0) {
-      console.log('✅ Gallery API successfully loaded dynamic content with', dynamicContent, 'elements');
-      
-      // Try to wait for content to be fully loaded
-      try {
-        await page.waitForFunction(
-          () => {
-            const contentEl = document.getElementById('gallery-detail-content');
-            return contentEl && contentEl.style.display === 'block';
-          },
-          { timeout: 10000 }
-        );
-        console.log('✅ Dynamic content is fully loaded and visible');
-      } catch (error) {
-        console.log('📍 INFO: Dynamic content loading check timed out (may be expected)');
-      }
-    } else if (staticElements > 0) {
-      console.log('📍 Gallery displaying static fallback content (expected in preview deployments)');
-      
-      // Verify static content is meaningful
-      const bodyText = await page.locator('body').textContent();
-      const hasGalleryText = 
-        bodyText.includes('Gallery') ||
-        bodyText.includes('festival') ||
-        bodyText.includes('WORKSHOPS') ||
-        bodyText.includes('SOCIALS');
-        
-      expect(hasGalleryText).toBeTruthy();
-      console.log('✅ Static content is properly displayed');
+    // Try to wait for content to be fully loaded
+    try {
+      await page.waitForFunction(
+        () => {
+          const contentEl = document.getElementById('gallery-detail-content');
+          return contentEl && contentEl.style.display === 'block';
+        },
+        { timeout: 10000 }
+      );
+      console.log('✅ Dynamic content is fully loaded and visible');
+    } catch (error) {
+      console.log('📍 INFO: Dynamic content loading check timed out (may be expected)');
     }
   });
 
@@ -473,20 +414,17 @@ test.describe('Gallery Basic Browsing', () => {
     // Wait for content to load and check what's displayed
     await page.waitForTimeout(3000);
     
-    // FIXED: Check for both dynamic and static content appropriately
+    // Check for dynamic content loading
     const bodyText = await page.locator('body').textContent();
-    
-    // Look for static gallery content (expected when API is unavailable)
-    const staticElements = page.locator('.gallery-static-title, .gallery-grid-static, .gallery-static-description');
-    const staticCount = await staticElements.count();
+    const dynamicContent = await page.locator('.gallery-detail-grid, .gallery-item').count();
     
     // Look for basic page structure
     const hasWorkshops = bodyText.includes('WORKSHOPS');
     const hasSocials = bodyText.includes('SOCIALS');
     const hasGalleryText = bodyText.includes('Gallery') || bodyText.includes('festival') || bodyText.includes('2025');
     
-    // Either static content should be visible or basic page structure should be present
-    const hasValidContent = staticCount > 0 || 
+    // Dynamic content should be present or page should have basic structure
+    const hasValidContent = dynamicContent > 0 || 
                            hasWorkshops || 
                            hasSocials || 
                            hasGalleryText ||
@@ -495,7 +433,7 @@ test.describe('Gallery Basic Browsing', () => {
     expect(hasValidContent).toBeTruthy();
     
     console.log('📊 Loading state check:', {
-      staticCount,
+      dynamicContent,
       hasWorkshops,
       hasSocials,
       hasGalleryText,
@@ -511,25 +449,18 @@ test.describe('Gallery Basic Browsing', () => {
     // Wait for page to fully load
     await page.waitForTimeout(3000);
     
-    // FIXED: Check for static fallback content first (expected in preview deployments)
-    const staticFallback = page.locator('.gallery-grid-static, .gallery-static-title');
-    const staticCount = await staticFallback.count();
-    
-    if (staticCount > 0) {
-      // Static fallback is present - verify it's properly displayed
-      console.log('✅ Mobile view showing static gallery fallback');
-      const bodyText = await page.locator('body').textContent();
-      expect(
-        bodyText.includes('2025 FESTIVAL GALLERY') ||
-        bodyText.includes('Photos from workshops') ||
-        bodyText.includes('Check back later')
-      ).toBeTruthy();
-      return;
-    }
+    // Check for dynamic gallery content
+    const dynamicContent = await page.locator('.gallery-detail-grid, .gallery-item').count();
     
     // Check for basic gallery structure
     const galleryContainers = page.locator('#workshops-section, #socials-section');
     const containerCount = await galleryContainers.count();
+    
+    if (dynamicContent > 0) {
+      console.log('✅ Mobile view showing dynamic gallery content');
+      expect(dynamicContent).toBeGreaterThan(0);
+      return;
+    }
     
     if (containerCount > 0) {
       // Basic structure exists - verify content is present
@@ -538,7 +469,7 @@ test.describe('Gallery Basic Browsing', () => {
       
       console.log('✅ Mobile view showing gallery sections structure');
     } else {
-      // Fallback: ensure page has some gallery-related content
+      // Ensure page has some gallery-related content
       const bodyText = await page.locator('body').textContent();
       expect(
         bodyText.includes('Gallery') ||
@@ -558,42 +489,24 @@ test.describe('Gallery Basic Browsing', () => {
     await page.waitForTimeout(3000);
     
     // Check what types of content are available
-    const staticElements = await page.locator('.gallery-static-title, .gallery-grid-static, .gallery-static-description').count();
     const dynamicContent = await page.locator('.gallery-detail-grid .gallery-item, .gallery-detail-content img').count();
     const googleImages = await page.locator('img[src*="googleusercontent.com"], img[src*="drive.google.com"]').count();
     
     console.log('📊 Content availability analysis:', {
-      staticElements,
       dynamicContent,
       googleImages
     });
     
-    // Verify gallery is not completely empty
-    const hasContent = staticElements > 0 || dynamicContent > 0;
-    expect(hasContent).toBeTruthy();
+    // Verify gallery has dynamic content
+    expect(dynamicContent).toBeGreaterThan(0);
     
     if (googleImages > 0) {
       console.log('✅ Gallery has real Google Drive content:', {
         dynamicItems: dynamicContent,
         googleImages: googleImages
       });
-    } else if (staticElements > 0) {
-      console.log('📍 Gallery showing static fallback content (expected in preview deployments)');
-      
-      // Verify static content is meaningful
-      const bodyText = await page.locator('body').textContent();
-      const hasGalleryText = 
-        bodyText.includes('Gallery') ||
-        bodyText.includes('festival') ||
-        bodyText.includes('WORKSHOPS') ||
-        bodyText.includes('SOCIALS') ||
-        bodyText.includes('Photos from workshops') ||
-        bodyText.includes('Check back later');
-        
-      expect(hasGalleryText).toBeTruthy();
-      console.log('✅ Static fallback content is properly displayed');
-    } else if (dynamicContent > 0) {
-      console.log('📍 Gallery showing dynamic content (no specific images):', dynamicContent, 'items');
+    } else {
+      console.log('📍 Gallery showing dynamic content (images may still be loading):', dynamicContent, 'items');
     }
     
     // Ensure page is not broken or completely empty

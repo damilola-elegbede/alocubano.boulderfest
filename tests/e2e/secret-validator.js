@@ -180,30 +180,26 @@ const SECRET_DEFINITIONS = {
 
   // GOOGLE SERVICES - Optional integrations
   GOOGLE_SERVICES: {
-    GOOGLE_DRIVE_API_KEY: {
-      value: process.env.GOOGLE_DRIVE_API_KEY,
-      description: 'Google Drive API key for gallery integration',
-      required: false,
-      testTypes: ['gallery', 'google'],
-      helpUrl: 'https://console.cloud.google.com/apis/credentials'
-    },
-    GOOGLE_DRIVE_FOLDER_ID: {
-      value: process.env.GOOGLE_DRIVE_FOLDER_ID,
-      description: 'Google Drive folder ID for gallery images',
-      required: false,
-      testTypes: ['gallery', 'google']
-    },
     GOOGLE_SERVICE_ACCOUNT_EMAIL: {
       value: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      description: 'Google service account email for authentication',
+      description: 'Google service account email for Drive API authentication',
       required: false,
-      testTypes: ['google']
+      testTypes: ['gallery', 'google'],
+      helpUrl: 'https://console.cloud.google.com/iam-admin/serviceaccounts'
     },
     GOOGLE_PRIVATE_KEY: {
       value: process.env.GOOGLE_PRIVATE_KEY,
-      description: 'Google service account private key',
+      description: 'Google service account private key (base64 encoded or with escaped newlines)',
       required: false,
-      testTypes: ['google']
+      testTypes: ['gallery', 'google'],
+      helpUrl: 'https://console.cloud.google.com/iam-admin/serviceaccounts'
+    },
+    GOOGLE_DRIVE_GALLERY_FOLDER_ID: {
+      value: process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID,
+      description: 'Google Drive folder ID containing gallery images',
+      required: false,
+      testTypes: ['gallery', 'google'],
+      helpUrl: 'https://drive.google.com'
     }
   },
 
@@ -378,11 +374,21 @@ function validateSecretValue(secretName, config) {
   }
 
   // Check specific formats
-  if (secretName.includes('URL') && value && !value.startsWith('http')) {
-    return {
-      isValid: false,
-      issue: 'Invalid URL format'
-    };
+  if (secretName.includes('URL') && value) {
+    // Special case for Turso database URLs which use libsql:// protocol
+    if (secretName === 'TURSO_DATABASE_URL') {
+      if (!value.startsWith('libsql://')) {
+        return {
+          isValid: false,
+          issue: 'Turso database URL must start with libsql://'
+        };
+      }
+    } else if (!value.startsWith('http')) {
+      return {
+        isValid: false,
+        issue: 'Invalid URL format'
+      };
+    }
   }
 
   if (secretName.includes('EMAIL') && value && !value.includes('@')) {

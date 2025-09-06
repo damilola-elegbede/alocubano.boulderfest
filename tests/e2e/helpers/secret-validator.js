@@ -93,13 +93,19 @@ const SECRET_CONFIG = {
     },
     
     // Google Drive integration
-    GOOGLE_DRIVE_API_KEY: {
-      description: 'Google Drive API key for gallery',
-      validator: (value) => value && value.length > 30,
-      maskPattern: (value) => `${value.substring(0, 8)}...(${value.length} chars)`,
+    GOOGLE_SERVICE_ACCOUNT_EMAIL: {
+      description: 'Google service account email for Drive API',
+      validator: (value) => value && value.includes('@') && value.includes('.iam.gserviceaccount.com'),
+      maskPattern: (value) => `${value.substring(0, 8)}...${'*'.repeat(Math.max(0, value.length - 16))}${value.substring(value.lastIndexOf('@'))}`,
       gracefulDegradation: 'Gallery tests will use mock data'
     },
-    GOOGLE_DRIVE_FOLDER_ID: {
+    GOOGLE_PRIVATE_KEY: {
+      description: 'Google service account private key (base64 encoded)',
+      validator: (value) => value && (value.includes('BEGIN PRIVATE KEY') || value.length > 100),
+      maskPattern: (value) => `${value.substring(0, 10)}...(${value.length} chars private key)`,
+      gracefulDegradation: 'Gallery tests will use mock data'
+    },
+    GOOGLE_DRIVE_GALLERY_FOLDER_ID: {
       description: 'Google Drive folder ID for gallery photos',
       validator: (value) => value && value.length > 10,
       maskPattern: (value) => `${value.substring(0, 6)}...${value.substring(value.length - 6)}`,
@@ -342,7 +348,7 @@ export function setGracefulDegradationFlags(results) {
   const serviceGroups = {
     BREVO_API_AVAILABLE: results.optional.BREVO_API_KEY?.valid || false,
     STRIPE_API_AVAILABLE: (results.optional.STRIPE_SECRET_KEY?.valid && results.optional.STRIPE_PUBLISHABLE_KEY?.valid) || false,
-    GOOGLE_DRIVE_API_AVAILABLE: (results.optional.GOOGLE_DRIVE_API_KEY?.valid && results.optional.GOOGLE_DRIVE_FOLDER_ID?.valid) || false,
+    GOOGLE_DRIVE_API_AVAILABLE: (results.optional.GOOGLE_SERVICE_ACCOUNT_EMAIL?.valid && results.optional.GOOGLE_PRIVATE_KEY?.valid && results.optional.GOOGLE_DRIVE_GALLERY_FOLDER_ID?.valid) || false,
     WALLET_PASSES_AVAILABLE: (results.optional.APPLE_PASS_KEY?.valid && results.optional.WALLET_AUTH_SECRET?.valid) || false
   };
   

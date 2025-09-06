@@ -12,7 +12,7 @@ import { execSync } from 'child_process';
 import { writeFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import VercelPreviewURLExtractor from '../../scripts/get-vercel-preview-url.js';
-import { validateSecrets } from './secret-validator.js';
+import { initializeSecretValidation } from './helpers/secret-validator.js';
 
 const PROJECT_ROOT = resolve(process.cwd());
 
@@ -25,21 +25,18 @@ async function globalSetupPreview() {
   console.log('-'.repeat(40));
   
   try {
-    const secretValidation = validateSecrets({
-      testTypes: ['basic', 'admin', 'preview', 'ci'],
-      ci: true, // Preview deployments are typically in CI
-      strict: false
-    });
+    const secretValidation = initializeSecretValidation();
     
-    if (!secretValidation.passed) {
+    if (!secretValidation.success) {
       console.error('❌ SECRET VALIDATION FAILED - ABORTING TESTS');
+      console.error(secretValidation.error?.message || 'Unknown secret validation error');
       process.exit(1);
     }
     
-    console.log(`✅ Secret validation passed (${secretValidation.summary.found}/${secretValidation.summary.total} secrets configured)`);
+    console.log(`✅ Secret validation passed - E2E tests can proceed`);
     
-    if (secretValidation.warnings.length > 0) {
-      console.log(`⚠️ ${secretValidation.warnings.length} optional secrets missing (tests will use graceful degradation)`);
+    if (secretValidation.results?.summary?.gracefulDegradations?.length > 0) {
+      console.log(`⚠️ ${secretValidation.results.summary.gracefulDegradations.length} services will use graceful degradation`);
     }
     
   } catch (error) {
@@ -177,7 +174,7 @@ async function validateDeploymentHealth(previewUrl, maxAttempts = 12, intervalMs
 async function validateCriticalEndpoints(previewUrl) {
   const endpoints = [
     '/api/health/database',
-    '/api/gallery/years',
+    '/api/gallery',
     '/api/featured-photos'
   ];
   
@@ -279,7 +276,6 @@ async function warmupEndpoints(previewUrl) {
   const warmupEndpoints = [
     '/api/gallery',
     '/api/featured-photos',
-    '/api/gallery/years',
     '/pages/tickets.html',
     '/pages/about.html'
   ];
@@ -329,7 +325,7 @@ async function checkApiAvailability(previewUrl) {
   
   // Check Google Drive API availability
   try {
-    const galleryResponse = await fetch(`${previewUrl}/api/gallery/years`);
+    const galleryResponse = await fetch(`${previewUrl}/api/gallery`);
     apiChecks.GOOGLE_DRIVE_API_AVAILABLE = galleryResponse.status === 200;
   } catch (error) {
     console.log(`   ⚠️ Google Drive API check failed: ${error.message}`);

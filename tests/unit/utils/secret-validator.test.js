@@ -67,14 +67,18 @@ describe('Secret Validator', () => {
       // Set up optional secrets
       process.env.BREVO_API_KEY = 'xkeysib-test-api-key';
       process.env.STRIPE_SECRET_KEY = 'sk_test_51234567890abcdef';
-      process.env.GOOGLE_DRIVE_API_KEY = 'AIzaSyTest-Google-Drive-API-Key';
+      process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL = 'test@project.iam.gserviceaccount.com';
+      process.env.GOOGLE_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...test...key\n-----END PRIVATE KEY-----\n';
+      process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID = '1AbCdEfGhIjKlMnOpQrStUvWxYz';
 
       const results = validateSecrets();
       
       expect(results.optional.BREVO_API_KEY.valid).toBe(true);
       expect(results.optional.STRIPE_SECRET_KEY.valid).toBe(true);
-      expect(results.optional.GOOGLE_DRIVE_API_KEY.valid).toBe(true);
-      expect(results.summary.optionalFound).toBe(3);
+      expect(results.optional.GOOGLE_SERVICE_ACCOUNT_EMAIL.valid).toBe(true);
+      expect(results.optional.GOOGLE_PRIVATE_KEY.valid).toBe(true);
+      expect(results.optional.GOOGLE_DRIVE_GALLERY_FOLDER_ID.valid).toBe(true);
+      expect(results.summary.optionalFound).toBe(5);
     });
 
     it('should properly mask secret values', () => {
