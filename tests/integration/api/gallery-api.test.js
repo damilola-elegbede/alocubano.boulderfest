@@ -33,7 +33,21 @@ describe('Gallery API Integration Tests', () => {
       expect(typeof galleryService.getMetrics).toBe('function');
     });
 
-    it('should fetch gallery data with proper structure', async () => {
+    it('should fetch gallery data with proper structure or throw error when secrets missing', async () => {
+      // Check if Google Drive credentials are configured
+      const hasGoogleDriveConfig = !!(
+        process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
+        process.env.GOOGLE_PRIVATE_KEY &&
+        process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID
+      );
+
+      if (!hasGoogleDriveConfig) {
+        // When secrets are missing, expect an error
+        await expect(galleryService.getGalleryData()).rejects.toThrow(/FATAL.*secret not configured/);
+        return; // Test passes - error is expected
+      }
+
+      // When secrets are configured, test normal functionality
       const galleryData = await galleryService.getGalleryData();
       
       // Validate basic structure
@@ -63,6 +77,9 @@ describe('Gallery API Integration Tests', () => {
     });
 
     it('should fetch featured photos with proper structure', async () => {
+      // Note: getFeaturedPhotos may use cached data from public/featured-photos.json
+      // or fetch from Google Drive. When cache exists, it won't throw errors even
+      // if Google Drive secrets are missing. This is intentional for build-time optimization.
       const featuredPhotos = await galleryService.getFeaturedPhotos();
       
       // Validate structure - can have either 'items' (cache) or 'photos' (generated)
@@ -122,37 +139,60 @@ describe('Gallery API Integration Tests', () => {
         .toBeGreaterThan(before.cacheHits + before.cacheMisses);
     });
 
-    it('should handle error conditions gracefully', async () => {
-      // This should not throw, but return fallback data
-      const result = await galleryService.getGalleryData();
-      
-      // Even in error conditions, should return valid structure
-      expect(result).toHaveProperty('eventId');
-      expect(result).toHaveProperty('totalCount');
-      expect(result).toHaveProperty('categories');
-      expect(typeof result.totalCount).toBe('number');
+    it('should handle error conditions with fail-fast behavior', async () => {
+      // Check if Google Drive credentials are configured
+      const hasGoogleDriveConfig = !!(
+        process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
+        process.env.GOOGLE_PRIVATE_KEY &&
+        process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID
+      );
+
+      if (!hasGoogleDriveConfig) {
+        // When secrets are missing, expect an error (fail-fast)
+        await expect(galleryService.getGalleryData()).rejects.toThrow(/FATAL.*secret not configured/);
+      } else {
+        // When secrets are configured, should return valid structure
+        const result = await galleryService.getGalleryData();
+        expect(result).toHaveProperty('eventId');
+        expect(result).toHaveProperty('totalCount');
+        expect(result).toHaveProperty('categories');
+        expect(typeof result.totalCount).toBe('number');
+      }
     });
 
     it('should support year-based filtering', async () => {
-      const result2024 = await galleryService.getGalleryData('2024');
-      const result2026 = await galleryService.getGalleryData('2026');
-      
-      // Both should return valid structures with either eventId or year
-      expect(result2024.hasOwnProperty('eventId') || result2024.hasOwnProperty('year')).toBe(true);
-      expect(result2024).toHaveProperty('totalCount');
-      expect(result2026.hasOwnProperty('eventId') || result2026.hasOwnProperty('year')).toBe(true);
-      expect(result2026).toHaveProperty('totalCount');
-      
-      // Year filtering should be reflected if data exists
-      // Note: Service may return current year (2025) when future year (2026) is requested as fallback
-      if (result2024.year) {
-        const year2024 = String(result2024.year);
-        expect(['2024', '2025']).toContain(year2024); // May fallback to current year
-      }
-      if (result2026.year) {
-        const year2026 = String(result2026.year);
-        // Accept 2025 (current year fallback) or 2026 (requested year)
-        expect(['2025', '2026']).toContain(year2026);
+      // Check if Google Drive credentials are configured
+      const hasGoogleDriveConfig = !!(
+        process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
+        process.env.GOOGLE_PRIVATE_KEY &&
+        process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID
+      );
+
+      if (!hasGoogleDriveConfig) {
+        // When secrets are missing, expect errors (fail-fast)
+        await expect(galleryService.getGalleryData('2024')).rejects.toThrow(/FATAL.*secret not configured/);
+        await expect(galleryService.getGalleryData('2026')).rejects.toThrow(/FATAL.*secret not configured/);
+      } else {
+        const result2024 = await galleryService.getGalleryData('2024');
+        const result2026 = await galleryService.getGalleryData('2026');
+        
+        // Both should return valid structures with either eventId or year
+        expect(result2024.hasOwnProperty('eventId') || result2024.hasOwnProperty('year')).toBe(true);
+        expect(result2024).toHaveProperty('totalCount');
+        expect(result2026.hasOwnProperty('eventId') || result2026.hasOwnProperty('year')).toBe(true);
+        expect(result2026).toHaveProperty('totalCount');
+        
+        // Year filtering should be reflected if data exists
+        // Note: Service may return current year (2025) when future year (2026) is requested as fallback
+        if (result2024.year) {
+          const year2024 = String(result2024.year);
+          expect(['2024', '2025']).toContain(year2024); // May fallback to current year
+        }
+        if (result2026.year) {
+          const year2026 = String(result2026.year);
+          // Accept 2025 (current year fallback) or 2026 (requested year)
+          expect(['2025', '2026']).toContain(year2026);
+        }
       }
     });
   });
@@ -237,28 +277,41 @@ describe('Gallery API Integration Tests', () => {
   });
 
   describe('Error Handling and Recovery', () => {
-    it('should implement proper error recovery mechanisms', async () => {
+    it('should implement fail-fast error handling', async () => {
       // Force an error scenario by temporarily disabling Google Drive
       const originalEnv = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+      const originalNodeEnv = process.env.NODE_ENV;
       delete process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
       
       try {
+        // Clear cache to force runtime generation
+        galleryService.clearCache();
+        
+        // If build-time cache exists, it will be used (which is correct behavior)
+        // Only test fail-fast when no cache is available
         const result = await galleryService.getGalleryData();
         
-        // Should still return a valid structure with fallback data
-        expect(result).toHaveProperty('eventId');
-        expect(result).toHaveProperty('totalCount'); 
-        expect(result).toHaveProperty('categories');
-        expect(result).toHaveProperty('source');
-        expect(typeof result.totalCount).toBe('number');
+        if (result.source === 'build-time-cache') {
+          // Build-time cache exists - this is acceptable
+          expect(result).toHaveProperty('eventId');
+          expect(result).toHaveProperty('totalCount');
+          expect(result).toHaveProperty('categories');
+        } else {
+          // No build-time cache - should have thrown error
+          // This assertion will fail if we get here, which is what we want
+          expect(result).toBeUndefined();
+        }
         
-        // Should indicate it's fallback/placeholder data
-        expect(['placeholder', 'fallback-placeholder', 'build-time-cache', 'runtime-generated', 'fallback', 'runtime-cache', 'fallback-cache'].includes(result.source)).toBe(true);
-        
+      } catch (error) {
+        // Expected behavior when no cache exists
+        expect(error.message).toMatch(/FATAL.*secret not configured/);
       } finally {
         // Restore environment
         if (originalEnv) {
           process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL = originalEnv;
+        }
+        if (originalNodeEnv) {
+          process.env.NODE_ENV = originalNodeEnv;
         }
       }
     });

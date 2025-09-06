@@ -111,7 +111,8 @@ class GalleryService {
       
     } catch (error) {
       console.error('Featured Photos Service Error:', error);
-      return { photos: [], totalCount: 0, error: error.message };
+      // Re-throw the error instead of returning empty data
+      throw error;
     }
   }
 
