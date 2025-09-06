@@ -1,9 +1,9 @@
 /**
  * E2E Test Secret Validator
  * 
- * Comprehensive validation of all secrets and environment variables required 
- * for E2E tests. Provides clear reporting of missing/found secrets and 
- * immediately exits if critical secrets are missing.
+ * Comprehensive validation of all secrets required for E2E tests. 
+ * Provides clear reporting of missing/found secrets and immediately 
+ * exits if critical secrets are missing.
  * 
  * Features:
  * - Clear visual reporting with found/missing counts

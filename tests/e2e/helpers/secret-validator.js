@@ -1,7 +1,7 @@
 /**
  * Secret Detection and Validation System
  * 
- * Provides comprehensive environment variable validation for E2E tests.
+ * Provides comprehensive secret validation for E2E tests.
  * Checks all required secrets at startup and fails fast if any are missing.
  * 
  * Features:
@@ -316,8 +316,8 @@ export function validateSecretsOrFail() {
     
     throw new Error(
       `❌ E2E Test Startup Failed: ${missingRequired.length} required secrets missing: ${missingRequired.join(', ')}\n\n` +
-      'Required environment variables must be configured before running E2E tests.\n' +
-      'See CLAUDE.md for complete environment variable configuration guide.'
+      'Required secrets must be configured before running E2E tests.\n' +
+      'See CLAUDE.md for complete secret configuration guide.'
     );
   }
   

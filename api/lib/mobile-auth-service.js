@@ -10,7 +10,7 @@ export class MobileAuthService {
   constructor() {
     // Fail immediately if ADMIN_SECRET is not configured
     if (!process.env.ADMIN_SECRET) {
-      throw new Error("❌ FATAL: ADMIN_SECRET not found in environment");
+      throw new Error("❌ FATAL: ADMIN_SECRET secret not configured");
     }
 
     this.sessionSecret = process.env.ADMIN_SECRET;
@@ -40,7 +40,7 @@ export class MobileAuthService {
   async verifyStaffPassword(password) {
     // Fail immediately if ADMIN_PASSWORD is not configured
     if (!process.env.ADMIN_PASSWORD) {
-      throw new Error("❌ FATAL: ADMIN_PASSWORD not found in environment");
+      throw new Error("❌ FATAL: ADMIN_PASSWORD secret not configured");
     }
 
     // Option 1: Same admin password

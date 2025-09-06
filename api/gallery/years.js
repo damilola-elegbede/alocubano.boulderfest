@@ -111,15 +111,15 @@ async function loadYearStatistics() {
   const folderId = process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
 
   if (!serviceAccountEmail || serviceAccountEmail.trim() === '') {
-    throw new Error('❌ FATAL: GOOGLE_SERVICE_ACCOUNT_EMAIL not found in environment');
+    throw new Error('❌ FATAL: GOOGLE_SERVICE_ACCOUNT_EMAIL secret not configured');
   }
 
   if (!privateKey || privateKey.trim() === '') {
-    throw new Error('❌ FATAL: GOOGLE_PRIVATE_KEY not found in environment');
+    throw new Error('❌ FATAL: GOOGLE_PRIVATE_KEY secret not configured');
   }
 
   if (!folderId || folderId.trim() === '') {
-    throw new Error('❌ FATAL: GOOGLE_DRIVE_GALLERY_FOLDER_ID not found in environment');
+    throw new Error('❌ FATAL: GOOGLE_DRIVE_GALLERY_FOLDER_ID secret not configured');
   }
 
   try {
@@ -241,11 +241,11 @@ async function createGoogleAuth() {
     const privateKey = process.env.GOOGLE_PRIVATE_KEY;
     
     if (!serviceAccountEmail || serviceAccountEmail.trim() === '') {
-      throw new Error('❌ FATAL: GOOGLE_SERVICE_ACCOUNT_EMAIL not found in environment');
+      throw new Error('❌ FATAL: GOOGLE_SERVICE_ACCOUNT_EMAIL secret not configured');
     }
 
     if (!privateKey || privateKey.trim() === '') {
-      throw new Error('❌ FATAL: GOOGLE_PRIVATE_KEY not found in environment');
+      throw new Error('❌ FATAL: GOOGLE_PRIVATE_KEY secret not configured');
     }
 
     // Create credentials object for service account

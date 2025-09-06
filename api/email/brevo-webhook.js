@@ -133,7 +133,7 @@ function validateWebhookRequest(req) {
 
   // Always require webhook token/secret
   if (!customToken) {
-    console.error("❌ FATAL: BREVO_WEBHOOK_SECRET not found in environment");
+    console.error("❌ FATAL: BREVO_WEBHOOK_SECRET secret not configured");
     return false;
   }
   if (customToken && receivedToken !== customToken) {

@@ -92,7 +92,7 @@ class VercelPreviewURLExtractor {
    * Strategy 1: Check environment variables
    */
   async getFromEnvironment() {
-    console.log('🔍 Strategy 1: Checking environment variables...');
+    console.log('🔍 Strategy 1: Checking secrets...');
 
     const envVars = [
       'VERCEL_PREVIEW_URL',
@@ -236,11 +236,11 @@ class VercelPreviewURLExtractor {
     console.log('🔍 Strategy 4: Checking Vercel API...');
 
     if (!this.vercelToken) {
-      throw new Error('❌ FATAL: VERCEL_TOKEN not found in environment');
+      throw new Error('❌ FATAL: VERCEL_TOKEN secret not configured');
     }
     
     if (!this.vercelOrgId) {
-      throw new Error('❌ FATAL: VERCEL_ORG_ID not found in environment');
+      throw new Error('❌ FATAL: VERCEL_ORG_ID secret not configured');
     }
     
     if (!this.vercelProjectId) {
@@ -302,11 +302,11 @@ class VercelPreviewURLExtractor {
     console.log('🔍 Strategy 5: Using Vercel CLI...');
 
     if (!this.vercelToken) {
-      throw new Error('❌ FATAL: VERCEL_TOKEN not found in environment');
+      throw new Error('❌ FATAL: VERCEL_TOKEN secret not configured');
     }
     
     if (!this.vercelOrgId) {
-      throw new Error('❌ FATAL: VERCEL_ORG_ID not found in environment');
+      throw new Error('❌ FATAL: VERCEL_ORG_ID secret not configured');
     }
 
     try {

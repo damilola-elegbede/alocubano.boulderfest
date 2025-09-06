@@ -6,7 +6,7 @@ import { HealthStatus } from "../../lib/monitoring/health-checker.js";
  */
 function getStripeClient() {
   if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error("❌ FATAL: STRIPE_SECRET_KEY not found in environment");
+    throw new Error("❌ FATAL: STRIPE_SECRET_KEY secret not configured");
   }
 
   return new Stripe(process.env.STRIPE_SECRET_KEY, {

@@ -440,9 +440,9 @@ jobs:
           echo ""
           echo "==============================="
 
-      - name: 🔬 Environment Variables Debug
+      - name: 🔬 Secrets Configuration Debug
         run: |
-          echo "🔬 Environment Variables Debug"
+          echo "🔬 Secrets Configuration Debug"
           echo "============================="
           echo ""
           
@@ -454,7 +454,7 @@ jobs:
           echo "  CI: $CI"
           
           echo ""
-          echo "🔐 Authentication Variables (masked):"
+          echo "🔐 Authentication Secrets (masked):"
           if [ -n "$TEST_ADMIN_PASSWORD" ]; then
             echo "  TEST_ADMIN_PASSWORD: ${TEST_ADMIN_PASSWORD:0:3}***${TEST_ADMIN_PASSWORD: -3}"
           else
@@ -468,7 +468,7 @@ jobs:
           fi
           
           echo ""
-          echo "🗄️ Database Variables (masked):"
+          echo "🗄️ Database Secrets (masked):"
           if [ -n "$TURSO_DATABASE_URL" ]; then
             echo "  TURSO_DATABASE_URL: ${TURSO_DATABASE_URL:0:10}***${TURSO_DATABASE_URL: -10}"
           else
@@ -482,7 +482,7 @@ jobs:
           fi
           
           echo ""
-          echo "☁️ Google Drive Variables (masked):"
+          echo "☁️ Google Drive Secrets (masked):"
           if [ -n "$GOOGLE_SERVICE_ACCOUNT_EMAIL" ]; then
             echo "  GOOGLE_SERVICE_ACCOUNT_EMAIL: ${GOOGLE_SERVICE_ACCOUNT_EMAIL:0:5}***${GOOGLE_SERVICE_ACCOUNT_EMAIL: -10}"
           else

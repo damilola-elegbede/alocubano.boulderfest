@@ -16,9 +16,9 @@ export default function handler(req, res) {
     process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
   if (!publishableKey) {
-    console.error("❌ FATAL: STRIPE_PUBLISHABLE_KEY not found in environment");
+    console.error("❌ FATAL: STRIPE_PUBLISHABLE_KEY secret not configured");
     return res.status(500).json({
-      error: "❌ FATAL: STRIPE_PUBLISHABLE_KEY not found in environment",
+      error: "❌ FATAL: STRIPE_PUBLISHABLE_KEY secret not configured",
       message: "Payment system configuration error - missing publishable key",
     });
   }

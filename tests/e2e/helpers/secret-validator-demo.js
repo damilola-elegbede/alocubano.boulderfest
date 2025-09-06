@@ -14,7 +14,7 @@
 import { config } from 'dotenv';
 import { initializeSecretValidation } from './secret-validator.js';
 
-// Load environment variables
+// Load secrets from environment
 config({ path: '.env.local' });
 
 console.log('🔐 Secret Validator Demo');

@@ -20,10 +20,10 @@ class ResilientPreviewURLExtractor {
   constructor() {
     // Fail immediately if required credentials are missing
     if (!process.env.VERCEL_TOKEN) {
-      throw new Error('❌ FATAL: VERCEL_TOKEN not found in environment');
+      throw new Error('❌ FATAL: VERCEL_TOKEN secret not configured');
     }
     if (!process.env.VERCEL_ORG_ID) {
-      throw new Error('❌ FATAL: VERCEL_ORG_ID not found in environment');
+      throw new Error('❌ FATAL: VERCEL_ORG_ID secret not configured');
     }
     
     this.githubToken = process.env.GITHUB_TOKEN;

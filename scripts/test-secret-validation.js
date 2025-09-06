@@ -13,7 +13,7 @@ import { setupTest, skipTestIfSecretsUnavailable } from '../tests/e2e/helpers/te
 console.log('🧪 Testing Secret Validation System');
 console.log('===================================\n');
 
-// Set basic environment variables for testing
+// Set basic secrets for testing
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 process.env.E2E_TEST_MODE = process.env.E2E_TEST_MODE || 'true';
 

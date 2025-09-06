@@ -263,10 +263,10 @@ const getWebServerConfig = () => {
     
     // Require authentication - fail immediately if missing
     if (!process.env.VERCEL_TOKEN) {
-      throw new Error('❌ FATAL: VERCEL_TOKEN not found in environment');
+      throw new Error('❌ FATAL: VERCEL_TOKEN secret not configured');
     }
     if (!process.env.VERCEL_ORG_ID) {
-      throw new Error('❌ FATAL: VERCEL_ORG_ID not found in environment');
+      throw new Error('❌ FATAL: VERCEL_ORG_ID secret not configured');
     }
     
     args.push('--token', process.env.VERCEL_TOKEN);

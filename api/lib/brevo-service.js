@@ -11,7 +11,7 @@ class BrevoService {
     this.baseUrl = "https://api.brevo.com/v3";
 
     if (!this.apiKey) {
-      console.error("❌ FATAL: BREVO_API_KEY not found in environment");
+      console.error("❌ FATAL: BREVO_API_KEY secret not configured");
       throw new Error("BREVO_API_KEY environment variable is required and cannot be empty");
     }
 
@@ -332,7 +332,7 @@ class BrevoService {
     const secret = process.env.BREVO_WEBHOOK_SECRET;
 
     if (!secret) {
-      throw new Error("❌ FATAL: BREVO_WEBHOOK_SECRET not found in environment");
+      throw new Error("❌ FATAL: BREVO_WEBHOOK_SECRET secret not configured");
     }
 
     const expectedSignature = createHmac("sha256", secret)

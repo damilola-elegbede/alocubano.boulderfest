@@ -262,8 +262,8 @@ describe('Wallet Pass Integration Tests', () => {
       
       try {
         // Both services should fail immediately in constructor
-        expect(() => new AppleWalletService()).toThrow('❌ FATAL: WALLET_AUTH_SECRET not found in environment');
-        expect(() => new QRTokenService()).toThrow('❌ FATAL: WALLET_AUTH_SECRET not found in environment');
+        expect(() => new AppleWalletService()).toThrow('❌ FATAL: WALLET_AUTH_SECRET secret not configured');
+        expect(() => new QRTokenService()).toThrow('❌ FATAL: WALLET_AUTH_SECRET secret not configured');
       } finally {
         // Restore the environment variable
         process.env.WALLET_AUTH_SECRET = original;
@@ -277,7 +277,7 @@ describe('Wallet Pass Integration Tests', () => {
       
       try {
         // Apple Wallet service should fail immediately in constructor
-        expect(() => new AppleWalletService()).toThrow('❌ FATAL: APPLE_PASS_KEY not found in environment');
+        expect(() => new AppleWalletService()).toThrow('❌ FATAL: APPLE_PASS_KEY secret not configured');
       } finally {
         // Restore the environment variable
         process.env.APPLE_PASS_KEY = original;

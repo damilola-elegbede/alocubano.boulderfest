@@ -102,15 +102,15 @@ class GoogleDriveService {
 
       // Validate required configuration - fail fast and loud
       if (!this.serviceAccountEmail || this.serviceAccountEmail.trim() === '') {
-        throw new Error('❌ FATAL: GOOGLE_SERVICE_ACCOUNT_EMAIL not found in environment');
+        throw new Error('❌ FATAL: GOOGLE_SERVICE_ACCOUNT_EMAIL secret not configured');
       }
 
       if (!this.privateKey || this.privateKey.trim() === '') {
-        throw new Error('❌ FATAL: GOOGLE_PRIVATE_KEY not found in environment');
+        throw new Error('❌ FATAL: GOOGLE_PRIVATE_KEY secret not configured');
       }
 
       if (!this.rootFolderId || this.rootFolderId.trim() === '') {
-        throw new Error('❌ FATAL: GOOGLE_DRIVE_GALLERY_FOLDER_ID not found in environment');
+        throw new Error('❌ FATAL: GOOGLE_DRIVE_GALLERY_FOLDER_ID secret not configured');
       }
 
       // Initialize Google Auth with Service Account

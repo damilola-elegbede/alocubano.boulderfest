@@ -2,7 +2,7 @@
 
 ## Overview
 
-The E2E test secret validation system provides comprehensive validation of environment variables and secrets required for end-to-end testing. It validates secrets at both the global setup level and individual test file level, providing clear feedback about missing or misconfigured credentials.
+The E2E test secret validation system provides comprehensive validation of secrets required for end-to-end testing. It validates secrets at both the global setup level and individual test file level, providing clear feedback about missing or misconfigured credentials.
 
 ## Key Features
 
@@ -171,7 +171,7 @@ Checking 29 secrets...
 - `playwright.config.js` - Shows secret validation preview in configuration output
 - `package.json` - Includes npm scripts for manual validation
 
-## Environment Variable Setup
+## Secret Configuration Setup
 
 ### Required for All Tests
 
@@ -236,7 +236,7 @@ The system automatically determines required secrets based on test file names:
 
 1. **Tests skip unexpectedly**
    - Check `npm run test:e2e:secrets` output
-   - Verify environment variables are set correctly
+   - Verify secrets are set correctly
    - Ensure `.env.local` is properly configured
 
 2. **Admin tests fail**

@@ -175,7 +175,7 @@ export default async function handler(req, res) {
           ? "pending"
           : "active",
       listIds: req.body.lists || [parseInt(process.env.BREVO_NEWSLETTER_LIST_ID) || (() => {
-        throw new Error("❌ FATAL: BREVO_NEWSLETTER_LIST_ID not found in environment");
+        throw new Error("❌ FATAL: BREVO_NEWSLETTER_LIST_ID secret not configured");
       })()], // Require newsletter list ID
       attributes: {
         SIGNUP_PAGE: req.body.source || "unknown",

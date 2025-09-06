@@ -37,10 +37,10 @@ export class AppleWalletService {
 
     // Critical wallet secrets - FAIL IMMEDIATELY if missing
     if (!process.env.APPLE_PASS_KEY) {
-      throw new Error("❌ FATAL: APPLE_PASS_KEY not found in environment");
+      throw new Error("❌ FATAL: APPLE_PASS_KEY secret not configured");
     }
     if (!process.env.WALLET_AUTH_SECRET) {
-      throw new Error("❌ FATAL: WALLET_AUTH_SECRET not found in environment");
+      throw new Error("❌ FATAL: WALLET_AUTH_SECRET secret not configured");
     }
 
     // Decode certificates from base64
@@ -350,7 +350,7 @@ export class AppleWalletService {
     // WALLET_AUTH_SECRET should already be validated in constructor
     // This is a safety check
     if (!this.walletAuthSecret) {
-      throw new Error("❌ FATAL: WALLET_AUTH_SECRET not found in environment");
+      throw new Error("❌ FATAL: WALLET_AUTH_SECRET secret not configured");
     }
 
     const payload = {
@@ -374,7 +374,7 @@ export class AppleWalletService {
     // WALLET_AUTH_SECRET should already be validated in constructor
     // This is a safety check
     if (!this.walletAuthSecret) {
-      throw new Error("❌ FATAL: WALLET_AUTH_SECRET not found in environment");
+      throw new Error("❌ FATAL: WALLET_AUTH_SECRET secret not configured");
     }
 
     try {

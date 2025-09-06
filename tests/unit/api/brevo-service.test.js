@@ -97,7 +97,7 @@ describe("Brevo Service", () => {
         }).toThrow();
         
         // Verify fatal error was logged
-        expect(logMessages).toContain("❌ FATAL: BREVO_API_KEY not found in environment");
+        expect(logMessages).toContain("❌ FATAL: BREVO_API_KEY secret not configured");
       } finally {
         // Restore original API key and console.error
         console.error = originalConsoleError;

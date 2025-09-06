@@ -37,11 +37,11 @@ class VercelAuthTester {
     console.log('🧪 Testing Vercel CLI authentication...');
     
     if (!this.token) {
-      throw new Error('❌ FATAL: VERCEL_TOKEN not found in environment');
+      throw new Error('❌ FATAL: VERCEL_TOKEN secret not configured');
     }
     
     if (!this.orgId) {
-      throw new Error('❌ FATAL: VERCEL_ORG_ID not found in environment');
+      throw new Error('❌ FATAL: VERCEL_ORG_ID secret not configured');
     }
 
     try {

@@ -1,12 +1,12 @@
 # E2E Secret Validator System
 
-The secret validator provides comprehensive environment variable validation for E2E tests, ensuring all required secrets are properly configured before test execution begins.
+The secret validator provides comprehensive secret validation for E2E tests, ensuring all required secrets are properly configured before test execution begins.
 
 ## Overview
 
 The secret validation system:
 
-1. **Validates ALL environment variables** at E2E test startup
+1. **Validates ALL secrets** at E2E test startup
 2. **Logs clearly** which secrets are found vs missing
 3. **Fails fast** if any required secret is missing
 4. **Enables graceful degradation** for optional services
@@ -110,7 +110,7 @@ When optional secrets are missing, the system enables graceful degradation:
 
 ### Automatic Environment Flags
 
-The validator sets environment variables for each service:
+The validator sets availability flags for each service:
 
 ```bash
 # Individual service flags
@@ -172,7 +172,7 @@ The validator integrates at the **very beginning** of E2E test execution:
 async function globalSetupPreview() {
   console.log('🚀 Global E2E Setup - Preview Deployment Mode');
   
-  // Step 0: Validate environment secrets before proceeding
+  // Step 0: Validate secrets before proceeding
   const secretValidation = initializeSecretValidation();
   
   if (!secretValidation.success) {

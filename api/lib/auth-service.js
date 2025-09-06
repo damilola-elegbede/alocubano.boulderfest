@@ -6,7 +6,7 @@ export class AuthService {
   constructor() {
     // Fail immediately if ADMIN_SECRET is not configured
     if (!process.env.ADMIN_SECRET) {
-      throw new Error("❌ FATAL: ADMIN_SECRET not found in environment");
+      throw new Error("❌ FATAL: ADMIN_SECRET secret not configured");
     }
 
     this.sessionSecret = process.env.ADMIN_SECRET;
@@ -27,7 +27,7 @@ export class AuthService {
   async verifyPassword(password) {
     // Fail immediately if ADMIN_PASSWORD is not configured
     if (!process.env.ADMIN_PASSWORD) {
-      throw new Error("❌ FATAL: ADMIN_PASSWORD not found in environment");
+      throw new Error("❌ FATAL: ADMIN_PASSWORD secret not configured");
     }
 
     const adminPasswordHash = process.env.ADMIN_PASSWORD;
@@ -48,7 +48,7 @@ export class AuthService {
       if (isE2ETest) {
         // Fail immediately if TEST_ADMIN_PASSWORD is not configured in test environments
         if (!testAdminPassword) {
-          throw new Error("❌ FATAL: TEST_ADMIN_PASSWORD not found in environment");
+          throw new Error("❌ FATAL: TEST_ADMIN_PASSWORD secret not configured");
         }
         
         if (password === testAdminPassword) {

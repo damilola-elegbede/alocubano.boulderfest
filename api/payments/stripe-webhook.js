@@ -25,11 +25,11 @@ import { getDatabaseClient } from "../lib/database.js";
 
 // Initialize Stripe with strict error handling
 if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error("❌ FATAL: STRIPE_SECRET_KEY not found in environment");
+  throw new Error("❌ FATAL: STRIPE_SECRET_KEY secret not configured");
 }
 
 if (!process.env.STRIPE_WEBHOOK_SECRET) {
-  throw new Error("❌ FATAL: STRIPE_WEBHOOK_SECRET not found in environment");
+  throw new Error("❌ FATAL: STRIPE_WEBHOOK_SECRET secret not configured");
 }
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);

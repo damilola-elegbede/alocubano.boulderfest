@@ -14,7 +14,7 @@ export class QRTokenService {
 
     // Critical wallet secret - FAIL IMMEDIATELY if missing
     if (!process.env.WALLET_AUTH_SECRET) {
-      throw new Error("❌ FATAL: WALLET_AUTH_SECRET not found in environment");
+      throw new Error("❌ FATAL: WALLET_AUTH_SECRET secret not configured");
     }
   }
 

@@ -155,7 +155,7 @@ class DatabaseService {
       databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
-        const error = new Error("❌ FATAL: TURSO_DATABASE_URL not found in environment");
+        const error = new Error("❌ FATAL: TURSO_DATABASE_URL secret not configured");
         error.code = "DB_CONFIG_ERROR";
         error.context = "e2e-tests";
         throw error;
@@ -189,7 +189,7 @@ class DatabaseService {
       databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
-        const error = new Error("❌ FATAL: TURSO_DATABASE_URL not found in environment - SQLite fallback removed for reliability");
+        const error = new Error("❌ FATAL: TURSO_DATABASE_URL secret not configured - SQLite fallback removed for reliability");
         error.code = "DB_CONFIG_ERROR";
         error.context = "development";
         throw error;
@@ -202,7 +202,7 @@ class DatabaseService {
       databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
-        const error = new Error("❌ FATAL: TURSO_DATABASE_URL not found in environment");
+        const error = new Error("❌ FATAL: TURSO_DATABASE_URL secret not configured");
         error.code = "DB_CONFIG_ERROR";
         error.context = "vercel-production";
         throw error;
@@ -215,7 +215,7 @@ class DatabaseService {
       databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
-        const error = new Error("❌ FATAL: TURSO_DATABASE_URL not found in environment");
+        const error = new Error("❌ FATAL: TURSO_DATABASE_URL secret not configured");
         error.code = "DB_CONFIG_ERROR";
         error.context = "vercel-preview";
         throw error;
@@ -228,7 +228,7 @@ class DatabaseService {
       databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
-        const error = new Error("❌ FATAL: TURSO_DATABASE_URL not found in environment");
+        const error = new Error("❌ FATAL: TURSO_DATABASE_URL secret not configured");
         error.code = "DB_CONFIG_ERROR";
         error.context = "vercel-generic";
         throw error;
@@ -241,7 +241,7 @@ class DatabaseService {
       databaseUrl = cleanDatabaseUrl(process.env.TURSO_DATABASE_URL);
       
       if (!databaseUrl || databaseUrl.trim() === "") {
-        const error = new Error("❌ FATAL: TURSO_DATABASE_URL not found in environment");
+        const error = new Error("❌ FATAL: TURSO_DATABASE_URL secret not configured");
         error.code = "DB_CONFIG_ERROR";
         error.context = "generic-production";
         throw error;
@@ -261,29 +261,29 @@ class DatabaseService {
     } else if (!authToken && databaseUrl !== ":memory:" && !databaseUrl.startsWith("file:")) {
       // Auth token is required for remote Turso databases - FAIL IMMEDIATELY
       if (isE2ETest) {
-        const error = new Error("❌ FATAL: TURSO_AUTH_TOKEN not found in environment");
+        const error = new Error("❌ FATAL: TURSO_AUTH_TOKEN secret not configured");
         error.code = "DB_AUTH_ERROR";
         error.context = "e2e-tests";
         throw error;
       } else if (isIntegrationTest) {
-        const error = new Error("❌ FATAL: TURSO_AUTH_TOKEN not found in environment - integration tests should not use remote databases");
+        const error = new Error("❌ FATAL: TURSO_AUTH_TOKEN secret not configured - integration tests should not use remote databases");
         error.code = "DB_AUTH_ERROR";
         error.context = "integration-tests";
         throw error;
       } else if (isVercelProduction || isVercelPreview || isVercel) {
         // All Vercel deployments require auth tokens for remote databases
-        const error = new Error("❌ FATAL: TURSO_AUTH_TOKEN not found in environment");
+        const error = new Error("❌ FATAL: TURSO_AUTH_TOKEN secret not configured");
         error.code = "DB_AUTH_ERROR";
         error.context = "vercel-deployment";
         throw error;
       } else if (isDevelopment) {
-        const error = new Error("❌ FATAL: TURSO_AUTH_TOKEN not found in environment");
+        const error = new Error("❌ FATAL: TURSO_AUTH_TOKEN secret not configured");
         error.code = "DB_AUTH_ERROR";
         error.context = "development";
         throw error;
       } else {
         // For any other production-like environment, fail immediately
-        const error = new Error("❌ FATAL: TURSO_AUTH_TOKEN not found in environment");
+        const error = new Error("❌ FATAL: TURSO_AUTH_TOKEN secret not configured");
         error.code = "DB_AUTH_ERROR";
         error.context = "production";
         throw error;
