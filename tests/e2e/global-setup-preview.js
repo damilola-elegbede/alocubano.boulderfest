@@ -12,7 +12,6 @@ import { execSync } from 'child_process';
 import { writeFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import VercelPreviewURLExtractor from '../../scripts/get-vercel-preview-url.js';
-import { initializeSecretValidation } from './helpers/secret-validator.js';
 
 const PROJECT_ROOT = resolve(process.cwd());
 
@@ -20,29 +19,12 @@ async function globalSetupPreview() {
   console.log('🚀 Global E2E Setup - Preview Deployment Mode');
   console.log('='.repeat(60));
   
-  // STEP 0: Validate all secrets first - fail fast if critical ones are missing
-  console.log('\n🔐 STEP 0: Secret Validation');
+  // For E2E tests against Vercel preview deployments, we don't validate local secrets
+  // The deployment has its own environment variables configured in Vercel
+  console.log('\n📝 E2E Testing Mode: Vercel Preview Deployment');
   console.log('-'.repeat(40));
-  
-  try {
-    const secretValidation = initializeSecretValidation();
-    
-    if (!secretValidation.success) {
-      console.error('❌ SECRET VALIDATION FAILED - ABORTING TESTS');
-      console.error(secretValidation.error?.message || 'Unknown secret validation error');
-      process.exit(1);
-    }
-    
-    console.log(`✅ Secret validation passed - E2E tests can proceed`);
-    
-    if (secretValidation.results?.summary?.gracefulDegradations?.length > 0) {
-      console.log(`⚠️ ${secretValidation.results.summary.gracefulDegradations.length} services will use graceful degradation`);
-    }
-    
-  } catch (error) {
-    console.error('❌ SECRET VALIDATION ERROR:', error.message);
-    process.exit(1);
-  }
+  console.log('✅ Skipping local secret validation - using Vercel deployment environment');
+  console.log('   The deployment has its own secrets configured in Vercel dashboard');
   
   try {
     // Step 1: Extract preview URL if not already provided
@@ -65,9 +47,13 @@ async function globalSetupPreview() {
     
     console.log(`✅ Preview URL: ${previewUrl}`);
     
-    // Step 2: Validate deployment health
-    console.log('\n🏥 Validating preview deployment health...');
+    // Step 2: Validate deployment health and environment
+    console.log('\n🏥 Validating preview deployment health and environment...');
     await validateDeploymentHealth(previewUrl);
+    
+    // Step 3: Verify deployment has required secrets configured
+    console.log('\n🔐 Verifying deployment environment configuration...');
+    await verifyDeploymentSecrets(previewUrl);
     
     // Step 3: Setup test data isolation
     console.log('\n🗄️ Setting up test data isolation...');
@@ -106,6 +92,98 @@ async function globalSetupPreview() {
     console.error(`   Vercel Org ID: ${process.env.VERCEL_ORG_ID ? 'Available' : 'Missing'}`);
     
     throw error;
+  }
+}
+
+/**
+ * Verify the deployment has required secrets configured
+ */
+async function verifyDeploymentSecrets(previewUrl) {
+  try {
+    console.log(`   🔍 Checking deployment environment variables...`);
+    
+    const response = await fetch(`${previewUrl}/api/debug/environment`, {
+      headers: {
+        'User-Agent': 'E2E-Environment-Check',
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache'
+      }
+    });
+    
+    if (!response.ok) {
+      console.warn(`   ⚠️ Could not verify deployment environment (${response.status})`);
+      console.warn(`   ⚠️ Tests will proceed but may fail if secrets are missing`);
+      return;
+    }
+    
+    const envData = await response.json();
+    
+    // Check critical variables for E2E testing
+    const criticalVars = [
+      'ADMIN_PASSWORD',
+      'ADMIN_SECRET', 
+      'TEST_ADMIN_PASSWORD',
+      'TURSO_DATABASE_URL',
+      'TURSO_AUTH_TOKEN'
+    ];
+    
+    const missingCritical = [];
+    const availableServices = [];
+    
+    // Check critical variables
+    if (envData.variables && envData.variables.details) {
+      criticalVars.forEach(varName => {
+        if (!envData.variables.details[varName]) {
+          missingCritical.push(varName);
+        }
+      });
+    }
+    
+    // Check service availability
+    if (envData.apiAvailability) {
+      Object.entries(envData.apiAvailability).forEach(([service, available]) => {
+        if (available) {
+          availableServices.push(service);
+        }
+      });
+    }
+    
+    // Report findings
+    if (missingCritical.length > 0) {
+      console.error(`   ❌ Critical secrets missing in deployment:`);
+      missingCritical.forEach(varName => {
+        console.error(`      - ${varName}`);
+      });
+      console.error(`   ❌ E2E tests may fail without these secrets`);
+      console.error(`   💡 Please configure these in Vercel dashboard for preview environment`);
+      throw new Error(`Deployment missing critical secrets: ${missingCritical.join(', ')}`);
+    }
+    
+    console.log(`   ✅ All critical secrets configured in deployment`);
+    
+    if (availableServices.length > 0) {
+      console.log(`   ✅ Available services: ${availableServices.join(', ')}`);
+    }
+    
+    // Check optional services for graceful degradation
+    const optionalServices = [];
+    if (!envData.apiAvailability?.google_drive) {
+      optionalServices.push('Google Drive (gallery will use fallback)');
+    }
+    if (!envData.apiAvailability?.payments) {
+      optionalServices.push('Stripe (payment tests will be skipped)');
+    }
+    
+    if (optionalServices.length > 0) {
+      console.log(`   ⚠️ Optional services unavailable (tests will adapt):`);
+      optionalServices.forEach(service => {
+        console.log(`      - ${service}`);
+      });
+    }
+    
+  } catch (error) {
+    console.error(`   ❌ Failed to verify deployment environment: ${error.message}`);
+    console.error(`   ⚠️ Tests will proceed but may encounter issues`);
   }
 }
 

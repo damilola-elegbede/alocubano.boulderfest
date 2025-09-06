@@ -367,9 +367,33 @@ export function setGracefulDegradationFlags(results) {
 }
 
 /**
- * Main entry point for E2E test secret validation
+ * Check if testing against a remote deployment
  */
-export function initializeSecretValidation() {
+export function isRemoteDeployment() {
+  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || process.env.CI_EXTRACTED_PREVIEW_URL || process.env.PREVIEW_URL || '';
+  return baseUrl && !baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1');
+}
+
+/**
+ * Main entry point for E2E test secret validation
+ * 
+ * @param {boolean} skipForRemote - Skip validation if testing against remote deployment (default: true)
+ */
+export function initializeSecretValidation(skipForRemote = true) {
+  // Skip validation if testing against a remote deployment
+  if (skipForRemote && isRemoteDeployment()) {
+    const baseUrl = process.env.PLAYWRIGHT_BASE_URL || process.env.CI_EXTRACTED_PREVIEW_URL || process.env.PREVIEW_URL;
+    console.log('📝 Remote deployment detected:', baseUrl);
+    console.log('✅ Skipping local secret validation - using deployment environment');
+    return {
+      success: true,
+      skipped: true,
+      reason: 'remote-deployment',
+      deploymentUrl: baseUrl,
+      message: 'Secret validation skipped for remote deployment testing'
+    };
+  }
+  
   try {
     const results = validateSecretsOrFail();
     const flags = setGracefulDegradationFlags(results);
