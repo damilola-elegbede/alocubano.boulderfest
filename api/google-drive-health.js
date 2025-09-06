@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     const metrics = getGoogleDriveMetrics();
     
     // Check configuration status
-    const isConfigured = !!(process.env.GOOGLE_DRIVE_API_KEY && process.env.GOOGLE_DRIVE_FOLDER_ID);
+    const isConfigured = !!(process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID);
     
     const response = {
       service: 'google-drive',
@@ -47,8 +47,9 @@ export default async function handler(req, res) {
       health: healthCheck,
       metrics,
       configuration: {
-        hasApiKey: !!process.env.GOOGLE_DRIVE_API_KEY,
-        hasFolderId: !!process.env.GOOGLE_DRIVE_FOLDER_ID
+        hasServiceAccountEmail: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        hasPrivateKey: !!process.env.GOOGLE_PRIVATE_KEY,
+        hasGalleryFolderId: !!process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID
       },
       api: {
         version: '1.0',
@@ -59,10 +60,10 @@ export default async function handler(req, res) {
 
     // Only expose sensitive config details when explicitly enabled for internal debugging
     if (process.env.EXPOSE_INTERNAL_HEALTH_FIELDS === 'true') {
-      response.configuration.apiKeyLength = process.env.GOOGLE_DRIVE_API_KEY ? process.env.GOOGLE_DRIVE_API_KEY.length : 0;
-      response.configuration.folderIdFormat = process.env.GOOGLE_DRIVE_FOLDER_ID ? 
-        process.env.GOOGLE_DRIVE_FOLDER_ID.substring(0, 8) + '...' : 
-        'Not set';
+      response.configuration.serviceAccountEmailFormat = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ? 
+        process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL.split('@')[0] + '@...' : 'Not set';
+      response.configuration.galleryFolderIdFormat = process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID ? 
+        process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID.substring(0, 8) + '...' : 'Not set';
     }
 
     // Set cache headers based on health status
@@ -81,7 +82,7 @@ export default async function handler(req, res) {
     
     const errorResponse = {
       service: 'google-drive',
-      configured: !!(process.env.GOOGLE_DRIVE_API_KEY && process.env.GOOGLE_DRIVE_FOLDER_ID),
+      configured: !!(process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID),
       health: {
         status: 'unhealthy',
         error: error.message,

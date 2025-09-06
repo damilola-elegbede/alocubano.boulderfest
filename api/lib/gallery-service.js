@@ -37,6 +37,12 @@ class GalleryService {
       if (shouldUseBuildTimeCache()) {
         const cachedData = await this.getBuildTimeCache(year, eventId);
         if (cachedData) {
+          // Reject placeholder cache data - fail fast when credentials missing
+          if (cachedData.isPlaceholder) {
+            console.log('Gallery: Rejecting placeholder cache data - failing fast');
+            throw new Error('FATAL: Google Drive secret not configured. Build-time cache contains only placeholder data.');
+          }
+          
           this.metrics.cacheHits++;
           this.updateResponseTime(startTime);
           console.log('Gallery: Serving from build-time cache');
@@ -48,10 +54,18 @@ class GalleryService {
       const cacheKey = eventId || year || 'default';
       const runtimeCache = this.getRuntimeCache(cacheKey);
       if (runtimeCache && !this.isCacheExpired(cacheKey)) {
+        const decompressedCache = this.decompressData(runtimeCache);
+        
+        // Reject placeholder runtime cache data - fail fast when credentials missing
+        if (decompressedCache.isPlaceholder) {
+          console.log('Gallery: Rejecting placeholder runtime cache data - failing fast');
+          throw new Error('FATAL: Google Drive secret not configured. Runtime cache contains only placeholder data.');
+        }
+        
         this.metrics.cacheHits++;
         this.updateResponseTime(startTime);
         console.log('Gallery: Serving from runtime cache');
-        return { ...this.decompressData(runtimeCache), source: 'runtime-cache' };
+        return { ...decompressedCache, source: 'runtime-cache' };
       }
 
       // Generate runtime data (Vercel environment)
@@ -68,16 +82,8 @@ class GalleryService {
     } catch (error) {
       console.error('Gallery Service Error:', error);
       
-      // Fallback to any available cache
-      const cacheKey = eventId || year || 'default';
-      const fallbackData = this.getRuntimeCache(cacheKey) || await this.getBuildTimeCache(year, eventId);
-      if (fallbackData) {
-        console.log('Gallery: Serving stale cache due to error');
-        return { ...this.decompressData(fallbackData), source: 'fallback-cache', error: error.message };
-      }
-      
-      // Final fallback - empty gallery
-      return this.getEmptyGallery();
+      // Re-throw the error - fail fast pattern, no fallback
+      throw error;
     }
   }
 
@@ -111,7 +117,8 @@ class GalleryService {
       
     } catch (error) {
       console.error('Featured Photos Service Error:', error);
-      return { photos: [], totalCount: 0, error: error.message };
+      // Re-throw the error instead of returning empty data
+      throw error;
     }
   }
 
@@ -209,76 +216,29 @@ class GalleryService {
       // Try to use Google Drive service if configured
       const googleDriveService = getGoogleDriveService();
       
-      // Check if Google Drive is configured with Service Account credentials
-      if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
-        console.log('Gallery: Using Google Drive Service Account API for runtime data');
-        
-        // Ensure Google Drive service is initialized before fetching
-        await googleDriveService.ensureInitialized?.();
-        
-        const driveData = await googleDriveService.fetchImages({
-          year,
-          eventId,
-          maxResults: 1000,
-          includeVideos: false
-        });
-        
-        // Add Google Drive source indicator
-        return {
-          ...driveData,
-          source: 'google-drive-service-account',
-          message: 'Data fetched from Google Drive API using Service Account authentication'
-        };
-      } else {
-        console.log('Gallery: Google Drive Service Account API not configured, using placeholder data');
-        
-        // Fallback to placeholder data
-        const currentYear = new Date().getFullYear();
-        const displayYear = year || currentYear;
-        const displayEventId = eventId || `boulder-fest-${currentYear}`;
-        
-        return {
-          eventId: displayEventId,
-          event: displayEventId,
-          year: displayYear,
-          totalCount: 0,
-          categories: {
-            workshops: [],
-            socials: [],
-            performances: [],
-            other: []
-          },
-          hasMore: false,
-          cacheTimestamp: new Date().toISOString(),
-          source: 'placeholder',
-          message: 'Google Drive Service Account API not configured - set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY environment variables'
-        };
-      }
-    } catch (error) {
-      console.error('Gallery: Google Drive API error, falling back to placeholder:', error.message);
+      console.log('Gallery: Using Google Drive Service Account API for runtime data');
       
-      // Fallback to placeholder data on error
-      const currentYear = new Date().getFullYear();
-      const displayYear = year || currentYear;
-      const displayEventId = eventId || `boulder-fest-${currentYear}`;
+      // Ensure Google Drive service is initialized - this will fail fast if credentials missing
+      await googleDriveService.ensureInitialized();
       
+      const driveData = await googleDriveService.fetchImages({
+        year,
+        eventId,
+        maxResults: 1000,
+        includeVideos: false
+      });
+      
+      // Add Google Drive source indicator
       return {
-        eventId: displayEventId,
-        event: displayEventId,
-        year: displayYear,
-        totalCount: 0,
-        categories: {
-          workshops: [],
-          socials: [],
-          performances: [],
-          other: []
-        },
-        hasMore: false,
-        cacheTimestamp: new Date().toISOString(),
-        source: 'fallback-placeholder',
-        message: `Google Drive API error: ${error.message}`,
-        error: error.message
+        ...driveData,
+        source: 'google-drive-service-account',
+        message: 'Data fetched from Google Drive API using Service Account authentication'
       };
+    } catch (error) {
+      console.error('Gallery: Google Drive API error - no fallback available:', error.message);
+      
+      // Re-throw the error - no fallback, fail fast
+      throw error;
     }
   }
 
@@ -312,21 +272,6 @@ class GalleryService {
     };
   }
 
-  /**
-   * Return empty gallery structure
-   */
-  getEmptyGallery() {
-    return {
-      eventId: 'unknown',
-      event: 'unknown',
-      totalCount: 0,
-      categories: {},
-      hasMore: false,
-      cacheTimestamp: new Date().toISOString(),
-      source: 'fallback',
-      error: 'Unable to load gallery data'
-    };
-  }
 
   /**
    * Evict least recently used cache entries with improved logic

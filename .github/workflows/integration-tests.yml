@@ -198,6 +198,29 @@ jobs:
           fi
 
       - name: "🔧 Setup Test Environment"
+        env:
+          # Pass secrets from GitHub to the test environment
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          BREVO_NEWSLETTER_LIST_ID: ${{ secrets.BREVO_NEWSLETTER_LIST_ID }}
+          BREVO_WEBHOOK_SECRET: ${{ secrets.BREVO_WEBHOOK_SECRET }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+          GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
+          GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}
+          GOOGLE_WALLET_ISSUER_ID: ${{ secrets.GOOGLE_WALLET_ISSUER_ID }}
+          GOOGLE_WALLET_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_WALLET_SERVICE_ACCOUNT }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Production database configuration (using repository variable)
+          TURSO_DATABASE_URL: ${{ vars.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
         run: |
           mkdir -p test-results .tmp/integration
           
@@ -207,9 +230,29 @@ jobs:
           CI=true
           DATABASE_URL="file:./data/integration-tests.db"
           
-          # Test credentials (for integration tests)
-          TEST_ADMIN_PASSWORD=test-password-123
-          ADMIN_SECRET=test-admin-secret-key-minimum-32-characters
+          # Pass secrets from GitHub (fail-fast if not configured)
+          TEST_ADMIN_PASSWORD=${TEST_ADMIN_PASSWORD}
+          ADMIN_PASSWORD=${ADMIN_PASSWORD}
+          ADMIN_SECRET=${ADMIN_SECRET}
+          BREVO_API_KEY=${BREVO_API_KEY}
+          BREVO_NEWSLETTER_LIST_ID=${BREVO_NEWSLETTER_LIST_ID}
+          BREVO_WEBHOOK_SECRET=${BREVO_WEBHOOK_SECRET}
+          STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+          STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+          STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+          GOOGLE_SERVICE_ACCOUNT_EMAIL=${GOOGLE_SERVICE_ACCOUNT_EMAIL}
+          GOOGLE_PRIVATE_KEY=${GOOGLE_PRIVATE_KEY}
+          GOOGLE_DRIVE_GALLERY_FOLDER_ID=${GOOGLE_DRIVE_GALLERY_FOLDER_ID}
+          GOOGLE_WALLET_ISSUER_ID=${GOOGLE_WALLET_ISSUER_ID}
+          GOOGLE_WALLET_SERVICE_ACCOUNT=${GOOGLE_WALLET_SERVICE_ACCOUNT}
+          VERCEL_TOKEN=${VERCEL_TOKEN}
+          VERCEL_ORG_ID=${VERCEL_ORG_ID}
+          VERCEL_PROJECT_ID=${VERCEL_PROJECT_ID}
+          GITHUB_TOKEN=${GITHUB_TOKEN}
+          
+          # Production database configuration (for integration tests that need it)
+          TURSO_DATABASE_URL=${TURSO_DATABASE_URL}
+          TURSO_AUTH_TOKEN=${TURSO_AUTH_TOKEN}
           
           # Integration test timeouts - increased for CI stability
           VITEST_TEST_TIMEOUT=120000
@@ -219,12 +262,209 @@ jobs:
           VITEST_REQUEST_TIMEOUT=60000
           EOF
 
+      - name: "🔍 Debug Integration Test Environment"
+        run: |
+          echo "🔐 Integration Test Environment Debug"
+          echo "===================================="
+          echo ""
+          
+          echo "🏗️ Test Configuration:"
+          echo "  NODE_ENV: $NODE_ENV"
+          echo "  DATABASE_URL: $DATABASE_URL"
+          echo "  CI: $CI"
+          
+          echo ""
+          echo "🔑 Admin Authentication Secrets (masked):"
+          if [ -n "$TEST_ADMIN_PASSWORD" ]; then
+            echo "  TEST_ADMIN_PASSWORD: ${TEST_ADMIN_PASSWORD:0:3}***${TEST_ADMIN_PASSWORD: -3}"
+          else
+            echo "  TEST_ADMIN_PASSWORD: ❌ NOT SET"
+          fi
+          
+          if [ -n "$ADMIN_SECRET" ]; then
+            echo "  ADMIN_SECRET: ${ADMIN_SECRET:0:3}***${ADMIN_SECRET: -3}"
+          else
+            echo "  ADMIN_SECRET: ❌ NOT SET"
+          fi
+          
+          if [ -n "$ADMIN_PASSWORD" ]; then
+            echo "  ADMIN_PASSWORD: ${ADMIN_PASSWORD:0:3}***${ADMIN_PASSWORD: -3}"
+          else
+            echo "  ADMIN_PASSWORD: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          echo ""
+          echo "🗄️ Database Configuration (masked):"
+          if [ -n "$TURSO_DATABASE_URL" ]; then
+            echo "  TURSO_DATABASE_URL: ${TURSO_DATABASE_URL:0:10}***${TURSO_DATABASE_URL: -10}"
+          else
+            echo "  TURSO_DATABASE_URL: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          if [ -n "$TURSO_AUTH_TOKEN" ]; then
+            echo "  TURSO_AUTH_TOKEN: ${TURSO_AUTH_TOKEN:0:5}***${TURSO_AUTH_TOKEN: -5}"
+          else
+            echo "  TURSO_AUTH_TOKEN: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          echo ""
+          echo "📧 Email Service Configuration (masked):"
+          if [ -n "$BREVO_API_KEY" ]; then
+            echo "  BREVO_API_KEY: ${BREVO_API_KEY:0:5}***${BREVO_API_KEY: -5}"
+          else
+            echo "  BREVO_API_KEY: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          if [ -n "$BREVO_NEWSLETTER_LIST_ID" ]; then
+            echo "  BREVO_NEWSLETTER_LIST_ID: ${BREVO_NEWSLETTER_LIST_ID}"
+          else
+            echo "  BREVO_NEWSLETTER_LIST_ID: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          if [ -n "$BREVO_WEBHOOK_SECRET" ]; then
+            echo "  BREVO_WEBHOOK_SECRET: ${BREVO_WEBHOOK_SECRET:0:5}***${BREVO_WEBHOOK_SECRET: -5}"
+          else
+            echo "  BREVO_WEBHOOK_SECRET: ❌ NOT SET"
+          fi
+          
+          echo ""
+          echo "☁️ Google Drive Configuration (masked):"
+          if [ -n "$GOOGLE_SERVICE_ACCOUNT_EMAIL" ]; then
+            echo "  GOOGLE_SERVICE_ACCOUNT_EMAIL: ${GOOGLE_SERVICE_ACCOUNT_EMAIL:0:5}***${GOOGLE_SERVICE_ACCOUNT_EMAIL: -10}"
+          else
+            echo "  GOOGLE_SERVICE_ACCOUNT_EMAIL: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          if [ -n "$GOOGLE_PRIVATE_KEY" ]; then
+            echo "  GOOGLE_PRIVATE_KEY: ${GOOGLE_PRIVATE_KEY:0:10}***[PRIVATE_KEY]"
+          else
+            echo "  GOOGLE_PRIVATE_KEY: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          if [ -n "$GOOGLE_DRIVE_GALLERY_FOLDER_ID" ]; then
+            echo "  GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${GOOGLE_DRIVE_GALLERY_FOLDER_ID}"
+          else
+            echo "  GOOGLE_DRIVE_GALLERY_FOLDER_ID: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          echo ""
+          echo "🎫 Google Wallet Configuration (masked):"
+          if [ -n "$GOOGLE_WALLET_ISSUER_ID" ]; then
+            echo "  GOOGLE_WALLET_ISSUER_ID: ${GOOGLE_WALLET_ISSUER_ID}"
+          else
+            echo "  GOOGLE_WALLET_ISSUER_ID: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          if [ -n "$GOOGLE_WALLET_SERVICE_ACCOUNT" ]; then
+            echo "  GOOGLE_WALLET_SERVICE_ACCOUNT: ${GOOGLE_WALLET_SERVICE_ACCOUNT:0:10}***[SERVICE_ACCOUNT_JSON]"
+          else
+            echo "  GOOGLE_WALLET_SERVICE_ACCOUNT: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          echo ""
+          echo "💳 Stripe Payment Configuration (masked):"
+          if [ -n "$STRIPE_PUBLISHABLE_KEY" ]; then
+            echo "  STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:0:7}***${STRIPE_PUBLISHABLE_KEY: -7}"
+          else
+            echo "  STRIPE_PUBLISHABLE_KEY: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          if [ -n "$STRIPE_SECRET_KEY" ]; then
+            echo "  STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:0:7}***${STRIPE_SECRET_KEY: -7}"
+          else
+            echo "  STRIPE_SECRET_KEY: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          if [ -n "$STRIPE_WEBHOOK_SECRET" ]; then
+            echo "  STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:0:7}***${STRIPE_WEBHOOK_SECRET: -7}"
+          else
+            echo "  STRIPE_WEBHOOK_SECRET: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          echo ""
+          echo "🚀 Vercel Configuration (masked):"
+          if [ -n "$VERCEL_TOKEN" ]; then
+            echo "  VERCEL_TOKEN: ${VERCEL_TOKEN:0:5}***${VERCEL_TOKEN: -5}"
+          else
+            echo "  VERCEL_TOKEN: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          if [ -n "$VERCEL_ORG_ID" ]; then
+            echo "  VERCEL_ORG_ID: ${VERCEL_ORG_ID}"
+          else
+            echo "  VERCEL_ORG_ID: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          if [ -n "$VERCEL_PROJECT_ID" ]; then
+            echo "  VERCEL_PROJECT_ID: ${VERCEL_PROJECT_ID}"
+          else
+            echo "  VERCEL_PROJECT_ID: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          if [ -n "$GITHUB_TOKEN" ]; then
+            echo "  GITHUB_TOKEN: ${GITHUB_TOKEN:0:5}***${GITHUB_TOKEN: -5}"
+          else
+            echo "  GITHUB_TOKEN: ❌ NOT SET"
+          fi
+          
+          echo ""
+          echo "===================================="
+        env:
+          # Pass all secrets and variables to this debug step
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          BREVO_NEWSLETTER_LIST_ID: ${{ secrets.BREVO_NEWSLETTER_LIST_ID }}
+          BREVO_WEBHOOK_SECRET: ${{ secrets.BREVO_WEBHOOK_SECRET }}
+          GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}
+          GOOGLE_WALLET_ISSUER_ID: ${{ secrets.GOOGLE_WALLET_ISSUER_ID }}
+          GOOGLE_WALLET_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_WALLET_SERVICE_ACCOUNT }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          TURSO_DATABASE_URL: ${{ vars.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+          GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: "🔗 Run Integration Tests"
         id: integration-test
         env:
           NODE_ENV: test
           DATABASE_URL: "file:./data/integration-tests.db"
           CI: true
+          # Pass secrets from GitHub - Admin Authentication
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          # Payment Processing Secrets
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          # Email Service Secrets
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          BREVO_NEWSLETTER_LIST_ID: ${{ secrets.BREVO_NEWSLETTER_LIST_ID }}
+          BREVO_WEBHOOK_SECRET: ${{ secrets.BREVO_WEBHOOK_SECRET }}
+          # Google Drive Service Account Configuration
+          GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+          GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
+          GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}
+          GOOGLE_WALLET_ISSUER_ID: ${{ secrets.GOOGLE_WALLET_ISSUER_ID }}
+          GOOGLE_WALLET_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_WALLET_SERVICE_ACCOUNT }}
+          # Vercel Configuration
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          # GitHub Token (automatically provided)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Production database configuration (using repository variable)
+          TURSO_DATABASE_URL: ${{ vars.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
           # Increased timeout environment variables for CI stability
           VITEST_TEST_TIMEOUT: 120000    # 2 minutes per individual test
           VITEST_HOOK_TIMEOUT: 30000     # 30 seconds for hooks

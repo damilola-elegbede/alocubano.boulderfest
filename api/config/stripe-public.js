@@ -10,18 +10,16 @@ export default function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Get the publishable key from environment
+  // Get the publishable key from environment with strict validation
   const publishableKey =
     process.env.STRIPE_PUBLISHABLE_KEY ||
     process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
   if (!publishableKey) {
-    console.error(
-      "Stripe publishable key not configured in environment variables",
-    );
+    console.error("❌ FATAL: STRIPE_PUBLISHABLE_KEY secret not configured");
     return res.status(500).json({
-      error: "Payment system not configured",
-      message: "Please contact support",
+      error: "❌ FATAL: STRIPE_PUBLISHABLE_KEY secret not configured",
+      message: "Payment system configuration error - missing publishable key",
     });
   }
 

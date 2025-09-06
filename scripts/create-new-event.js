@@ -240,6 +240,12 @@ function createGalleryDataPlaceholder(eventId) {
     fs.mkdirSync(galleryDataDir, { recursive: true });
   }
 
+  // Check if Google Drive secrets are available to determine if this should be a placeholder
+  const hasGoogleDriveSecrets = 
+    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && 
+    process.env.GOOGLE_PRIVATE_KEY &&
+    process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
+
   const placeholderData = {
     eventId,
     event: eventId,
@@ -248,13 +254,21 @@ function createGalleryDataPlaceholder(eventId) {
     categories: { workshops: [], socials: [], other: [] },
     hasMore: false,
     cacheTimestamp: new Date().toISOString(),
-    isPlaceholder: true,
-    message: "Placeholder data - event gallery not yet configured",
   };
+
+  // Only set isPlaceholder and message when Google Drive secrets are not available
+  if (!hasGoogleDriveSecrets) {
+    placeholderData.isPlaceholder = true;
+    placeholderData.message = "Placeholder data - Google Drive credentials not available";
+  } else {
+    // When secrets are available, this is just an empty cache that will be populated
+    placeholderData.message = "Empty event gallery cache - to be populated when Google Drive folder is configured";
+  }
 
   const outputPath = path.join(galleryDataDir, `${eventId}.json`);
   fs.writeFileSync(outputPath, JSON.stringify(placeholderData, null, 2));
   console.log(`  ✅ Created gallery data placeholder: ${eventId}.json`);
+  console.log(`      Placeholder mode: ${!hasGoogleDriveSecrets ? 'true (no Google Drive secrets)' : 'false (secrets available)'}`);
 }
 
 /**

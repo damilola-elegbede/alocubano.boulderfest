@@ -33,14 +33,14 @@ async function globalTeardownPreview() {
       
       // Step 3: Generate test summary
       console.log('\n📊 Generating test summary...');
-      generateTestSummary(previewUrl);
+      await generateTestSummary(previewUrl);
     } else {
       console.log('⚠️ No preview URL found - limited cleanup available');
     }
     
     // Step 4: Clean up local environment files
     console.log('\n📁 Cleaning up local environment files...');
-    cleanupLocalFiles();
+    await cleanupLocalFiles();
     
     // Step 5: Generate final report
     console.log('\n📋 Final cleanup summary...');
@@ -61,11 +61,26 @@ async function globalTeardownPreview() {
  * Cleanup test data from preview environment
  */
 async function cleanupTestData(previewUrl) {
-  const sessionId = process.env.E2E_SESSION_ID;
+  let sessionId = process.env.E2E_SESSION_ID;
   
+  // Try to recover session ID from persisted file if not in env
   if (!sessionId) {
-    console.log('   ⚠️ No session ID found - skipping test data cleanup');
-    return;
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      const sessionData = await fs.readFile(path.resolve(process.cwd(), '.tmp', 'e2e-session.json'), 'utf-8');
+      const session = JSON.parse(sessionData);
+      if (session && typeof session.sessionId === 'string' && session.sessionId.length > 0) {
+        sessionId = session.sessionId;
+        console.log('   📂 Recovered session ID from .tmp/e2e-session.json');
+      } else {
+        console.log('   ⚠️ Session file present but sessionId missing/invalid - skipping test data cleanup');
+        return;
+      }
+    } catch (err) {
+      console.log('   ⚠️ No session ID found - skipping test data cleanup');
+      return;
+    }
   }
   
   console.log(`   🆔 Session ID: ${sessionId}`);
@@ -155,7 +170,7 @@ async function validateCleanup(previewUrl) {
 /**
  * Generate test summary for preview testing
  */
-function generateTestSummary(previewUrl) {
+async function generateTestSummary(previewUrl) {
   try {
     const summary = {
       previewUrl,
@@ -197,7 +212,7 @@ function generateTestSummary(previewUrl) {
 /**
  * Clean up local environment and temporary files
  */
-function cleanupLocalFiles() {
+async function cleanupLocalFiles() {
   const filesToCleanup = [
     '.env.preview',
     '.tmp/preview-config.json',
@@ -209,7 +224,8 @@ function cleanupLocalFiles() {
     
     if (existsSync(fullPath)) {
       try {
-        unlink(fullPath, () => {});
+        const fs = await import('fs/promises');
+        await fs.unlink(fullPath);
         console.log(`   ✅ Cleaned up: ${file}`);
       } catch (error) {
         console.log(`   ⚠️ Could not clean up: ${file} - ${error.message}`);

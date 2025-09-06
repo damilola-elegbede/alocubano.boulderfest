@@ -150,7 +150,7 @@
             name="username"
             required
             autocomplete="username"
-            placeholder="Enter username"
+            placeholder="Username"
             data-testid="username"
           />
         </div>
@@ -234,8 +234,10 @@
             }
             errorDiv.style.display = "block";
 
-            // Clear password field
+            // Clear password field (keep username for easier retry)
             document.getElementById("password").value = "";
+            // Focus back to username for easy retry
+            document.getElementById("username").focus();
           }
         } catch (error) {
           console.error("Login error:", error);
@@ -250,8 +252,8 @@
       // Check existing auth on load
       checkExistingAuth();
 
-      // Focus password field
-      document.getElementById("password").focus();
+      // Focus username field
+      document.getElementById("username").focus();
     </script>
   </body>
 </html>
