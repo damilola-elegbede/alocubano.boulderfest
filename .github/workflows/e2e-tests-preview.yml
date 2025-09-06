@@ -337,14 +337,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .playwright-browsers
-          key: ${{ runner.os }}-pw-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}
+          # Fixed: More specific cache key per browser for better matrix handling
+          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}-v2
           restore-keys: |
-            ${{ runner.os }}-pw-${{ matrix.browser }}-
-            ${{ runner.os }}-pw-
+            ${{ runner.os }}-playwright-${{ matrix.browser }}-
+            ${{ runner.os }}-playwright-
 
       - name: 🎭 Install Playwright Browsers
         run: |
-          # Map browsers to actual Playwright browser names
+          # Fixed: Map mobile browsers to actual Playwright browser names
           BROWSER="${{ matrix.browser }}"
           case "$BROWSER" in
             mobile-chrome) 
@@ -549,22 +550,10 @@ jobs:
           # Add test pattern filter if specified
           TEST_PATTERN="${{ needs.build-test-matrix.outputs.test-pattern }}"
           if [ -n "$TEST_PATTERN" ] && [ "$TEST_PATTERN" != "" ]; then
-            # Use file path filtering instead of grep for more reliable filtering
+            # Fixed: Use --grep instead of --testNamePattern for Playwright pattern matching
             echo "🎯 Applying test pattern filter: $TEST_PATTERN"
-            
-            # Create a temporary file list based on pattern
-            TEMP_FILE_LIST=$(mktemp)
-            find tests/e2e/flows -name "*.test.js" | grep -E "($TEST_PATTERN)" > "$TEMP_FILE_LIST" || true
-            
-            if [ -s "$TEMP_FILE_LIST" ]; then
-              TEST_FILES=$(cat "$TEMP_FILE_LIST" | tr '\n' ' ')
-              TEST_COMMAND="npm run test:e2e -- --project $PROJECT_NAME -- $TEST_FILES"
-              echo "📁 Test files to run: $TEST_FILES"
-            else
-              echo "⚠️ No test files match pattern '$TEST_PATTERN', running all tests"
-            fi
-            
-            rm -f "$TEMP_FILE_LIST"
+            TEST_COMMAND="npm run test:e2e -- --project $PROJECT_NAME --grep '$TEST_PATTERN'"
+            echo "📁 Test pattern: $TEST_PATTERN"
           else
             echo "🎯 Running all E2E tests (no pattern filter)"
           fi
@@ -625,7 +614,7 @@ jobs:
               ;;
           esac
           
-          # Check if there were any browser-specific timeouts
+          # Fixed: Check if test-results is a directory, not a file
           if [ -d "test-results" ]; then
             echo "  Timeout errors:"
             find test-results -name "*.txt" -exec grep -l "timeout\|TimeoutError" {} \; 2>/dev/null || echo "    No timeout errors found"
@@ -653,6 +642,7 @@ jobs:
         id: collect
         uses: ./.github/actions/collect-test-results
         with:
+          # Fixed: Add missing test-type input
           test-type: "e2e"
           test-results-path: "test-results-summary.json"
 

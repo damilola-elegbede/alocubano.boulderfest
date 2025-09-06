@@ -161,14 +161,22 @@ export const initializeTestIsolation = async () => {
     const fs = await import('fs/promises');
     const { resolve } = await import('path');
     const root = process.cwd();
+    const sessionFilePath = resolve(root, '.tmp', 'e2e-session.json');
+    
     await fs.mkdir(resolve(root, '.tmp'), { recursive: true });
     await fs.writeFile(
-      resolve(root, '.tmp', 'e2e-session.json'),
-      JSON.stringify({ sessionId, createdAt: new Date().toISOString() })
+      sessionFilePath,
+      JSON.stringify({ sessionId, createdAt: new Date().toISOString() }, null, 2)
     );
+    
+    // Also set environment variable with file path for cross-process access
+    process.env.E2E_SESSION_FILE = sessionFilePath;
+    
     console.log('   💾 Session persisted to .tmp/e2e-session.json');
+    console.log(`   📁 Session file path: ${sessionFilePath}`);
   } catch (err) {
-    console.log(`   ⚠️ Failed to persist session file: ${err.message}`);
+    console.error(`   ❌ Failed to persist session file: ${err.message}`);
+    // Don't throw - allow tests to continue even if session persistence fails
   }
   
   console.log('   ✅ Test isolation system initialized');

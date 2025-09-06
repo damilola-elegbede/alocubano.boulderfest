@@ -184,20 +184,56 @@ async function validateCriticalEndpoints(previewUrl) {
   console.log('   🔍 Validating critical endpoints...');
   
   for (const endpoint of endpoints) {
+    await validateEndpointWithRetries(previewUrl, endpoint);
+  }
+}
+
+/**
+ * Validate a single endpoint with retry logic
+ */
+async function validateEndpointWithRetries(previewUrl, endpoint, maxAttempts = 3) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      
       const response = await fetch(`${previewUrl}${endpoint}`, {
-        headers: { 'User-Agent': 'E2E-Endpoint-Validation' }
+        signal: controller.signal,
+        headers: { 
+          'User-Agent': 'E2E-Endpoint-Validation',
+          'Cache-Control': 'no-cache'
+        }
       });
+      
+      clearTimeout(timeoutId);
       
       if (response.ok) {
         console.log(`   ✅ ${endpoint}: OK (${response.status})`);
+        return; // Success, exit retry loop
       } else if (response.status === 401 || response.status === 403) {
         console.log(`   ⚠️ ${endpoint}: ${response.status} ${response.statusText} (API credentials may be missing - will use graceful degradation)`);
+        return; // Expected auth error, exit retry loop
       } else {
-        console.log(`   ⚠️ ${endpoint}: ${response.status} ${response.statusText}`);
+        console.log(`   ⚠️ ${endpoint}: ${response.status} ${response.statusText} (attempt ${attempt}/${maxAttempts})`);
+        if (attempt === maxAttempts) {
+          console.log(`   ❌ ${endpoint}: Failed after ${maxAttempts} attempts (will handle gracefully in tests)`);
+          return; // Continue to next endpoint
+        }
       }
+      
     } catch (error) {
-      console.log(`   ❌ ${endpoint}: ${error.message} (will handle gracefully in tests)`);
+      console.log(`   ❌ ${endpoint}: ${error.message} (attempt ${attempt}/${maxAttempts})`);
+      if (attempt === maxAttempts) {
+        console.log(`   ❌ ${endpoint}: Failed after ${maxAttempts} attempts (will handle gracefully in tests)`);
+        return; // Continue to next endpoint
+      }
+    }
+    
+    if (attempt < maxAttempts) {
+      // Exponential backoff: 1s, 2s, 4s
+      const backoffMs = Math.pow(2, attempt - 1) * 1000;
+      console.log(`   ⏳ ${endpoint}: Waiting ${backoffMs}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, backoffMs));
     }
   }
 }

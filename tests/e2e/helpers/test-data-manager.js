@@ -13,6 +13,7 @@ import { generateTestEmail, generateTestId, generateTestUser } from './test-isol
 export class TestDataManager {
   constructor(options = {}) {
     this.testId = options.testId || generateTestId('manager');
+    this.createdAt = Date.now(); // Initialize createdAt timestamp
     this.createdData = new Map(); // Track all created data
     this.cleanupTasks = new Set(); // Track cleanup functions
     this.options = {
@@ -211,10 +212,10 @@ export class TestDataManager {
       registrations.push(registration);
     }
 
-    // Single payment for all tickets
-    const totalAmount = registrations.reduce((sum, reg) => sum + reg.ticket.price, 0);
+    // Single payment for all tickets - calculate total including quantity
+    const totalAmount = registrations.reduce((sum, reg) => sum + (reg.ticket.price * reg.ticket.quantity), 0);
     const payment = this.generatePayment(registrations[0], {
-      amount: totalAmount * 100,
+      amount: totalAmount * 100, // Convert to cents
       registrationIds: registrations.map(r => r.id),
       ...options.paymentOverrides
     });
@@ -357,7 +358,7 @@ export class TestDataManager {
       cleanupTasks: this.cleanupTasks.size,
       resourceTypes: {},
       managerId: this.testId,
-      uptime: Date.now() - (this.createdAt || Date.now())
+      uptime: Date.now() - this.createdAt
     };
 
     // Count resources by type

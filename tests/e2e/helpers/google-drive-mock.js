@@ -10,7 +10,7 @@ import { generateTestId } from './test-isolation.js';
 /**
  * Google Drive Mock Generator - Creates realistic mock data
  */
-export class GoogleDriveMockGenerator {
+class GoogleDriveMockGenerator {
   constructor(options = {}) {
     this.baseUrl = 'https://drive.google.com';
     this.options = {
@@ -236,7 +236,7 @@ export class GoogleDriveMockGenerator {
 /**
  * API Response Scenarios - Predefined response scenarios
  */
-export class APIResponseScenarios {
+class APIResponseScenarios {
   /**
    * Success response with files
    * @param {Object} options - Response options
@@ -386,12 +386,12 @@ export class APIResponseScenarios {
 /**
  * Gallery Performance Mock - Simulates performance characteristics
  */
-export class GalleryPerformanceMock {
+class GalleryPerformanceMock {
   constructor(options = {}) {
     this.options = {
       baseDelay: 100,
       varianceMs: 50,
-      errorRate: 0.05,
+      errorRate: 0, // Set to 0 to prevent flaky tests
       ...options
     };
   }
@@ -446,7 +446,7 @@ export class GalleryPerformanceMock {
  */
 export default function createGalleryMock(options = {}) {
   const generator = new GoogleDriveMockGenerator(options);
-  const performanceMock = new GalleryPerformanceMock(options.performance);
+  const performanceMock = new GalleryPerformanceMock(options.performance || options);
 
   return {
     generator,

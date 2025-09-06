@@ -10,7 +10,7 @@ import { generateTestId } from './test-isolation.js';
 /**
  * Security Test Helper - Security-focused testing utilities
  */
-export class SecurityTestHelper {
+class SecurityTestHelper {
   constructor(options = {}) {
     this.testId = options.testId || generateTestId('security');
     this.options = {
@@ -172,15 +172,16 @@ export class SecurityTestHelper {
       const parts = validToken.split('.');
       if (parts.length !== 3) return 'invalid.token';
 
-      // Decode payload
-      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      // Decode payload using Node.js Buffer
+      const payload = JSON.parse(Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString());
       
       // Tamper with payload (elevate privileges)
       payload.role = 'super-admin';
       payload.permissions = ['*'];
       
-      // Re-encode payload
-      const tamperedPayload = btoa(JSON.stringify(payload))
+      // Re-encode payload using Node.js Buffer
+      const tamperedPayload = Buffer.from(JSON.stringify(payload))
+        .toString('base64')
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=/g, '');
@@ -231,19 +232,22 @@ export class SecurityTestHelper {
       ...payload
     };
 
-    // Encode header and payload
-    const encodedHeader = btoa(JSON.stringify(header))
+    // Encode header and payload using Node.js Buffer
+    const encodedHeader = Buffer.from(JSON.stringify(header))
+      .toString('base64')
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=/g, '');
     
-    const encodedPayload = btoa(JSON.stringify(tokenPayload))
+    const encodedPayload = Buffer.from(JSON.stringify(tokenPayload))
+      .toString('base64')
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=/g, '');
 
     // Create signature (simplified for testing)
-    const signature = btoa(`${encodedHeader}.${encodedPayload}.${secret}`)
+    const signature = Buffer.from(`${encodedHeader}.${encodedPayload}.${secret}`)
+      .toString('base64')
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=/g, '');
@@ -261,8 +265,8 @@ export class SecurityTestHelper {
       'Content-Security-Policy': 'CSP header missing',
       'X-Frame-Options': 'Frame options header missing',
       'X-Content-Type-Options': 'Content type options header missing',
-      'Strict-Transport-Security': 'HSTS header missing',
-      'X-XSS-Protection': 'XSS protection header missing'
+      'Strict-Transport-Security': 'HSTS header missing'
+      // Note: X-XSS-Protection is deprecated and removed from modern security standards
     };
 
     const results = {
@@ -298,7 +302,7 @@ export class SecurityTestHelper {
 /**
  * JWT Test Helper - JWT-specific testing utilities
  */
-export class JWTTestHelper {
+class JWTTestHelper {
   constructor(secret = null) {
     this.secret = secret || process.env.ADMIN_SECRET || 'test-secret';
   }
@@ -334,10 +338,10 @@ export class JWTTestHelper {
       ...payload
     };
 
-    // Simple token creation for testing
-    const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-    const encodedPayload = btoa(JSON.stringify(tokenPayload));
-    const signature = btoa(`${header}.${encodedPayload}.${this.secret}`);
+    // Simple token creation for testing using Node.js Buffer
+    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64');
+    const encodedPayload = Buffer.from(JSON.stringify(tokenPayload)).toString('base64');
+    const signature = Buffer.from(`${header}.${encodedPayload}.${this.secret}`).toString('base64');
 
     return `${header}.${encodedPayload}.${signature}`;
   }
@@ -361,7 +365,7 @@ export class JWTTestHelper {
       const parts = token.split('.');
       if (parts.length !== 3) return null;
 
-      const payload = JSON.parse(atob(parts[1]));
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
       return payload;
     } catch (error) {
       return null;

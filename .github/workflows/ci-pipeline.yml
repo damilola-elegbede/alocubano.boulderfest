@@ -308,6 +308,63 @@ jobs:
   #     duration: ${{ steps.e2e-test.outputs.duration }}
   #     preview_url: ${{ steps.wait-for-vercel.outputs.url }}
   #
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       browser: ['chromium', 'firefox'] # Fixed: removed webkit due to CI resource constraints
+  #
+  #   env:
+  #     # PLAYWRIGHT_BROWSERS_PATH: Fixed browser caching path for better matrix handling
+  #     PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
+  #     # Admin Authentication Test Variables
+  #     TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+  #     ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+  #     ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+  #     # Database Configuration (using repository variable for URL)
+  #     TURSO_DATABASE_URL: ${{ vars.TURSO_DATABASE_URL }}
+  #     TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+  #     # Google Drive Service Account Configuration
+  #     GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+  #     GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
+  #     GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}
+  #     # GitHub Token (automatically provided by GitHub Actions)
+  #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #
+  #   steps:
+  #     - name: "📥 Checkout Code"
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #
+  #     - name: "🔧 Setup Node.js"
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: ${{ env.NODE_VERSION }}
+  #         cache: 'npm'
+  #         cache-dependency-path: package-lock.json
+  #
+  #     - name: "📦 Install Dependencies"
+  #       run: npm ci --prefer-offline --no-audit --no-fund
+  #       env:
+  #         NGROK_SKIP_DOWNLOAD: true
+  #
+  #     - name: "🧩 Cache Playwright Browsers"
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: .playwright-browsers
+  #         # Fixed: More specific cache key per browser for better matrix handling
+  #         key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}-v2
+  #         restore-keys: |
+  #           ${{ runner.os }}-playwright-${{ matrix.browser }}-
+  #           ${{ runner.os }}-playwright-
+  #
+  #     - name: "🎭 Install Playwright Browsers"
+  #       run: |
+  #         # Fixed: Install only the specific browser for this matrix job
+  #         echo "🔄 Installing Playwright browser: ${{ matrix.browser }}..."
+  #         npx playwright install --with-deps ${{ matrix.browser }}
+  #         echo "✅ Browser installed: ${{ matrix.browser }}"
+  #
   #   [... rest of e2e-tests job commented out ...]
 
   summary:
