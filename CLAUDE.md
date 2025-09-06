@@ -270,6 +270,7 @@ TURSO_DATABASE_URL=      # Production only (required for E2E tests)
 TURSO_AUTH_TOKEN=        # Production only (required for E2E tests)
 
 # Admin
+ADMIN_USERNAME=          # Admin username (default: 'admin')
 ADMIN_PASSWORD=          # bcrypt hash
 ADMIN_SECRET=            # min 32 chars
 

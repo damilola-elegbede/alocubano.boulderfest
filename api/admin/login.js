@@ -11,6 +11,11 @@ import {
  * Input validation schemas
  */
 const INPUT_VALIDATION = {
+  username: {
+    minLength: 1,
+    maxLength: 50,
+    required: true
+  },
   password: {
     minLength: 1,
     maxLength: 200,
@@ -154,9 +159,26 @@ function getSafeUserAgent(req, maxLength = 255) {
   return sanitized || null;
 }
 
+/**
+ * Verify admin username
+ * @param {string} username - Username to verify
+ * @returns {boolean} True if username is valid
+ */
+function verifyUsername(username) {
+  // Get the expected username from environment variable, default to 'admin'
+  const expectedUsername = process.env.ADMIN_USERNAME || 'admin';
+  
+  if (!username || typeof username !== "string") {
+    return false;
+  }
+
+  // Simple string comparison - case sensitive for security
+  return username === expectedUsername;
+}
+
 async function loginHandler(req, res) {
   if (req.method === "POST") {
-    const { password, mfaCode, step } = req.body || {};
+    const { username, password, mfaCode, step } = req.body || {};
     const clientIP = getClientIP(req);
 
     // Enhanced IP validation
@@ -179,6 +201,13 @@ async function loginHandler(req, res) {
         return res.status(400).json({ error: mfaValidation.error });
       }
     } else {
+      // Validate username
+      const usernameValidation = validateInput(username, 'username');
+      if (!usernameValidation.isValid) {
+        return res.status(400).json({ error: usernameValidation.error });
+      }
+
+      // Validate password
       const passwordValidation = validateInput(password, 'password');
       if (!passwordValidation.isValid) {
         return res.status(400).json({ error: passwordValidation.error });
@@ -218,8 +247,8 @@ async function loginHandler(req, res) {
         // Step 2: MFA verification
         return await handleMfaStep(req, res, mfaCode, clientIP);
       } else {
-        // Step 1: Password verification
-        return await handlePasswordStep(req, res, password, clientIP);
+        // Step 1: Username and Password verification
+        return await handlePasswordStep(req, res, username, password, clientIP);
       }
     } catch (error) {
       console.error("Login process failed:", {
@@ -271,9 +300,14 @@ async function loginHandler(req, res) {
 }
 
 /**
- * Handle password verification step (Step 1) with enhanced security
+ * Handle username and password verification step (Step 1) with enhanced security
  */
-async function handlePasswordStep(req, res, password, clientIP) {
+async function handlePasswordStep(req, res, username, password, clientIP) {
+  // Additional username validation
+  if (!username || typeof username !== "string" || username.length > 50) {
+    return res.status(400).json({ error: "Invalid username format" });
+  }
+
   // Additional password validation
   if (!password || typeof password !== "string" || password.length > 200) {
     return res.status(400).json({ error: "Invalid password format" });
@@ -290,9 +324,12 @@ async function handlePasswordStep(req, res, password, clientIP) {
   
   if (isE2ETest) {
     console.log('🔐 E2E Admin Login Debug:', {
+      hasUsername: !!username,
+      usernameLength: username?.length,
       hasPassword: !!password,
       passwordLength: password?.length,
       clientIP: clientIP?.substring(0, 10) + '...',
+      adminUsername: process.env.ADMIN_USERNAME || 'admin',
       testAdminPassword: process.env.TEST_ADMIN_PASSWORD ? 'configured' : 'missing',
       adminPasswordHash: process.env.ADMIN_PASSWORD ? 'configured' : 'missing',
       environment: {
@@ -303,15 +340,21 @@ async function handlePasswordStep(req, res, password, clientIP) {
     });
   }
 
-  // Verify password with timing attack protection
+  // Verify username and password with timing attack protection
   const startTime = Date.now();
-  const isValid = await authService.verifyPassword(password);
+  const isUsernameValid = verifyUsername(username);
+  const isPasswordValid = await authService.verifyPassword(password);
+  const isValid = isUsernameValid && isPasswordValid;
   const verificationTime = Date.now() - startTime;
   
   // Enhanced debugging for failed authentication
   if (isE2ETest && !isValid) {
     console.log('❌ E2E Admin Login Failed:', {
       verificationTime,
+      usernameValid: isUsernameValid,
+      passwordValid: isPasswordValid,
+      expectedUsername: process.env.ADMIN_USERNAME || 'admin',
+      providedUsername: username,
       hasTestPassword: !!process.env.TEST_ADMIN_PASSWORD,
       testPasswordMatch: process.env.TEST_ADMIN_PASSWORD === password,
       authServiceAvailable: typeof authService.verifyPassword === 'function'
