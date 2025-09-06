@@ -8,7 +8,7 @@ import {
   isTicketItem,
   extractTicketType,
 } from "./ticket-config.js";
-import getAppleWalletService from "./apple-wallet-service.js";
+import appleWalletService from "./apple-wallet-service.js";
 import googleWalletService from "./google-wallet-service.js";
 
 export class TicketService {
@@ -116,16 +116,11 @@ export class TicketService {
     // Generate wallet passes if enabled
     if (process.env.WALLET_ENABLE_GENERATION !== "false") {
       // Generate Apple Wallet pass
-      try {
-        const appleWalletService = await getAppleWalletService();
-        if (appleWalletService.isConfigured()) {
+      if (appleWalletService.isConfigured()) {
+        try {
           await appleWalletService.generatePass(ticketId);
           console.log(`Generated Apple Wallet pass for ticket ${ticketId}`);
-        }
-      } catch (error) {
-        if (error.message.includes("APPLE_PASS_KEY")) {
-          console.log("Apple Wallet not configured - skipping pass generation");
-        } else {
+        } catch (error) {
           console.error(
             `Failed to generate Apple Wallet pass for ticket ${ticketId}:`,
             error,
