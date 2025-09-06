@@ -286,9 +286,9 @@ jobs:
       # Test Environment Configuration
       E2E_TEST_MODE: 'true'
       NODE_ENV: 'test'
-      # Dynamic URL variables (set by target-url step)
-      PLAYWRIGHT_BASE_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
-      PREVIEW_URL: ${{ env.PREVIEW_URL }}
+      # Dynamic URL variables (fixed: reference proper outputs from get-preview-url job)
+      PLAYWRIGHT_BASE_URL: ${{ needs.get-preview-url.outputs.preview-url }}
+      PREVIEW_URL: ${{ needs.get-preview-url.outputs.preview-url }}
 
     steps:
       - name: 📥 Checkout
@@ -569,9 +569,7 @@ jobs:
           # Test Environment Configuration
           E2E_TEST_MODE: 'true'
           NODE_ENV: 'test'
-          # Dynamic URL variables (set by target-url step)
-          PLAYWRIGHT_BASE_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
-          PREVIEW_URL: ${{ env.PREVIEW_URL }}
+          # Dynamic URL variables (fixed: these are already set in the job's env section above)
         run: |
           # Determine the correct Playwright project name for the browser
           PROJECT_NAME="${{ matrix.browser }}"
