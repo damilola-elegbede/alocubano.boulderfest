@@ -67,6 +67,8 @@ jobs:
        github.event.deployment_status.state == 'success' &&
        github.event.deployment.environment == 'Preview') ||
       (github.event_name == 'workflow_dispatch')
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       preview-url: ${{ steps.extract-url.outputs.preview-url }}
     steps:
@@ -255,6 +257,38 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.build-test-matrix.outputs.matrix) }}
     timeout-minutes: 20
+    env:
+      # Admin Authentication Test Variables
+      TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+      # Database Configuration (using repository variable for URL)
+      TURSO_DATABASE_URL: ${{ vars.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      # Google Drive Service Account Configuration
+      GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+      GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
+      GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}
+      # Payment Processing (if available)
+      STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      # Email Service (if available)
+      BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+      BREVO_NEWSLETTER_LIST_ID: ${{ secrets.BREVO_NEWSLETTER_LIST_ID }}
+      BREVO_WEBHOOK_SECRET: ${{ secrets.BREVO_WEBHOOK_SECRET }}
+      # Vercel Configuration (for deployment operations)
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      # GitHub Token (automatically provided by GitHub Actions)
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Test Environment Configuration
+      E2E_TEST_MODE: 'true'
+      NODE_ENV: 'test'
+      # Dynamic URL variables (set by target-url step)
+      PLAYWRIGHT_BASE_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
+      PREVIEW_URL: ${{ env.PREVIEW_URL }}
 
     steps:
       - name: 📥 Checkout
@@ -365,7 +399,7 @@ jobs:
           
           echo ""
           echo "🗄️ Database Configuration Secrets:"
-          check_secret "TURSO_DATABASE_URL" "${{ secrets.TURSO_DATABASE_URL }}" || true
+          check_secret "TURSO_DATABASE_URL" "${{ vars.TURSO_DATABASE_URL }}" || true
           check_secret "TURSO_AUTH_TOKEN" "${{ secrets.TURSO_AUTH_TOKEN }}" || true
           
           echo ""
@@ -503,29 +537,6 @@ jobs:
           
           echo ""
           echo "============================="
-        env:
-          # Pass all secrets to this debug step
-          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-          GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
-          GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
-          GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}
-          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
-          BREVO_NEWSLETTER_LIST_ID: ${{ secrets.BREVO_NEWSLETTER_LIST_ID }}
-          BREVO_WEBHOOK_SECRET: ${{ secrets.BREVO_WEBHOOK_SECRET }}
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PREVIEW_URL: ${{ env.PREVIEW_URL }}
-          E2E_TEST_MODE: 'true'
-          NODE_ENV: 'test'
 
       - name: 🎭 Run E2E Tests
         run: |
@@ -577,37 +588,6 @@ jobs:
             
             exit 1
           fi
-        env:
-          PLAYWRIGHT_BASE_URL: ${{ env.PREVIEW_URL }}
-          # Admin Authentication Test Variables
-          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
-          # Database Configuration
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-          # Google Drive Service Account Configuration
-          GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
-          GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
-          GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}
-          # Payment Processing (if available)
-          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-          # Email Service (if available)
-          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
-          BREVO_NEWSLETTER_LIST_ID: ${{ secrets.BREVO_NEWSLETTER_LIST_ID }}
-          BREVO_WEBHOOK_SECRET: ${{ secrets.BREVO_WEBHOOK_SECRET }}
-          # Vercel Configuration (for deployment operations)
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          # GitHub Token (automatically provided by GitHub Actions)
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Test Environment Configuration
-          E2E_TEST_MODE: 'true'
-          NODE_ENV: 'test'
-          PREVIEW_URL: ${{ env.PREVIEW_URL }}
 
       - name: 📊 Upload Test Results
         if: always()

@@ -35,13 +35,14 @@ const SECRET_DEFINITIONS = {
 
   // REQUIRED - Most functionality needs these
   REQUIRED: {
-    // Database (recommended for production-like testing)
+    // Database (repository variable, not secret)
     TURSO_DATABASE_URL: {
       value: process.env.TURSO_DATABASE_URL,
-      description: 'Turso database URL for production-like testing',
+      description: 'Turso database URL for E2E testing (repository variable, not secret)',
       required: false, // SQLite fallback available
       helpUrl: 'https://turso.tech/',
-      fallback: 'SQLite local database'
+      fallback: 'SQLite local database',
+      note: 'This is a repository variable in GitHub Actions, not a secret'
     },
     TURSO_AUTH_TOKEN: {
       value: process.env.TURSO_AUTH_TOKEN,

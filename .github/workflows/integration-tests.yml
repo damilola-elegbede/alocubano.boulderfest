@@ -208,6 +208,9 @@ jobs:
           GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}
           GOOGLE_WALLET_ISSUER_ID: ${{ secrets.GOOGLE_WALLET_ISSUER_ID }}
           GOOGLE_WALLET_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_WALLET_SERVICE_ACCOUNT }}
+          # Production database configuration (using repository variable)
+          TURSO_DATABASE_URL: ${{ vars.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
         run: |
           mkdir -p test-results .tmp/integration
           
@@ -227,6 +230,10 @@ jobs:
           GOOGLE_WALLET_ISSUER_ID=${GOOGLE_WALLET_ISSUER_ID}
           GOOGLE_WALLET_SERVICE_ACCOUNT=${GOOGLE_WALLET_SERVICE_ACCOUNT}
           
+          # Production database configuration (for integration tests that need it)
+          TURSO_DATABASE_URL=${TURSO_DATABASE_URL}
+          TURSO_AUTH_TOKEN=${TURSO_AUTH_TOKEN}
+          
           # Integration test timeouts - increased for CI stability
           VITEST_TEST_TIMEOUT=120000
           VITEST_HOOK_TIMEOUT=30000
@@ -234,6 +241,70 @@ jobs:
           VITEST_CLEANUP_TIMEOUT=10000
           VITEST_REQUEST_TIMEOUT=60000
           EOF
+
+      - name: "🔍 Debug Integration Test Environment"
+        run: |
+          echo "🔐 Integration Test Environment Debug"
+          echo "===================================="
+          echo ""
+          
+          echo "🏗️ Test Configuration:"
+          echo "  NODE_ENV: $NODE_ENV"
+          echo "  DATABASE_URL: $DATABASE_URL"
+          echo "  CI: $CI"
+          
+          echo ""
+          echo "🔑 Admin Authentication Secrets (masked):"
+          if [ -n "$TEST_ADMIN_PASSWORD" ]; then
+            echo "  TEST_ADMIN_PASSWORD: ${TEST_ADMIN_PASSWORD:0:3}***${TEST_ADMIN_PASSWORD: -3}"
+          else
+            echo "  TEST_ADMIN_PASSWORD: ❌ NOT SET"
+          fi
+          
+          if [ -n "$ADMIN_SECRET" ]; then
+            echo "  ADMIN_SECRET: ${ADMIN_SECRET:0:3}***${ADMIN_SECRET: -3}"
+          else
+            echo "  ADMIN_SECRET: ❌ NOT SET"
+          fi
+          
+          echo ""
+          echo "🗄️ Database Configuration (masked):"
+          if [ -n "$TURSO_DATABASE_URL" ]; then
+            echo "  TURSO_DATABASE_URL: ${TURSO_DATABASE_URL:0:10}***${TURSO_DATABASE_URL: -10}"
+          else
+            echo "  TURSO_DATABASE_URL: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          if [ -n "$TURSO_AUTH_TOKEN" ]; then
+            echo "  TURSO_AUTH_TOKEN: ${TURSO_AUTH_TOKEN:0:5}***${TURSO_AUTH_TOKEN: -5}"
+          else
+            echo "  TURSO_AUTH_TOKEN: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          echo ""
+          echo "☁️ Google Drive Configuration (masked):"
+          if [ -n "$GOOGLE_SERVICE_ACCOUNT_EMAIL" ]; then
+            echo "  GOOGLE_SERVICE_ACCOUNT_EMAIL: ${GOOGLE_SERVICE_ACCOUNT_EMAIL:0:5}***${GOOGLE_SERVICE_ACCOUNT_EMAIL: -10}"
+          else
+            echo "  GOOGLE_SERVICE_ACCOUNT_EMAIL: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          if [ -n "$GOOGLE_PRIVATE_KEY" ]; then
+            echo "  GOOGLE_PRIVATE_KEY: ${GOOGLE_PRIVATE_KEY:0:10}***[PRIVATE_KEY]"
+          else
+            echo "  GOOGLE_PRIVATE_KEY: ❌ NOT SET (optional for integration tests)"
+          fi
+          
+          echo ""
+          echo "===================================="
+        env:
+          # Pass all secrets and variables to this debug step
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          TURSO_DATABASE_URL: ${{ vars.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+          GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
 
       - name: "🔗 Run Integration Tests"
         id: integration-test
@@ -250,6 +321,9 @@ jobs:
           GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}
           GOOGLE_WALLET_ISSUER_ID: ${{ secrets.GOOGLE_WALLET_ISSUER_ID }}
           GOOGLE_WALLET_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_WALLET_SERVICE_ACCOUNT }}
+          # Production database configuration (using repository variable)
+          TURSO_DATABASE_URL: ${{ vars.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
           # Increased timeout environment variables for CI stability
           VITEST_TEST_TIMEOUT: 120000    # 2 minutes per individual test
           VITEST_HOOK_TIMEOUT: 30000     # 30 seconds for hooks
