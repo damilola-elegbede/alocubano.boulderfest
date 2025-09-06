@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { getGalleryService } from '../../../api/lib/gallery-service.js';
+import { resetGoogleDriveService } from '../../../api/lib/google-drive-service.js';
 import { testRequest, HTTP_STATUS } from '../../helpers.js';
 import fs from 'fs/promises';
 import path from 'path';
@@ -443,6 +444,8 @@ describe('Gallery API Integration Tests', () => {
       try {
         // Clear runtime cache to force fresh attempt
         galleryService.clearCache();
+        // Reset Google Drive service to force re-initialization with missing credentials
+        resetGoogleDriveService();
         
         // Test 1: Real cached data should work even without credentials
         const cache2025 = await getCacheFileContent('2025.json');
@@ -460,6 +463,7 @@ describe('Gallery API Integration Tests', () => {
         }
         
         // Test 3: Non-existent cache should fail fast (forces runtime generation)
+        // Without credentials, should fail at credentials check before attempting API calls
         await expect(galleryService.getGalleryData('1999')).rejects.toThrow(/FATAL.*secret not configured/);
         
       } finally {
