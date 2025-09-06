@@ -224,9 +224,23 @@ export const configureEnvironment = (testType) => {
     process.env[`VITEST_${key.toUpperCase()}_TIMEOUT`] = value.toString();
   });
 
-  // Wallet service configuration - required for services to initialize
+  // Critical API secrets configuration - required for services to initialize
+  // QR Token Service (required by ticket validation API)
+  process.env.QR_SECRET_KEY = process.env.QR_SECRET_KEY || 'test-qr-secret-key-minimum-32-characters-long-for-security-compliance';
+  
+  // Admin Authentication (required for JWT signing in admin APIs)
+  process.env.ADMIN_SECRET = process.env.ADMIN_SECRET || 'test-admin-jwt-secret-minimum-32-characters-for-security';
+  
+  // Wallet service configuration (required for ticket services)
   process.env.WALLET_AUTH_SECRET = process.env.WALLET_AUTH_SECRET || 'test-wallet-auth-secret-key-for-testing-purposes-32-chars';
   process.env.APPLE_PASS_KEY = process.env.APPLE_PASS_KEY || 'dGVzdC1hcHBsZS1wYXNzLWtleQ=='; // base64 encoded 'test-apple-pass-key'
+  
+  // Internal API Security (required for secure internal operations)
+  process.env.INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || 'test-internal-api-key-32-chars-min';
+  
+  // Test admin credentials (required for admin panel integration tests)
+  process.env.TEST_ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || 'test-admin-password-123';
+  process.env.ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '$2b$10$test.bcrypt.hash.for.testing.purposes.only';
   
   console.log(`🧪 Test environment configured for: ${testType.toUpperCase()}`);
   console.log(`📍 Database: ${dbConfig.description}`);
