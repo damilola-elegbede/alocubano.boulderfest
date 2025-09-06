@@ -37,6 +37,12 @@ class GalleryService {
       if (shouldUseBuildTimeCache()) {
         const cachedData = await this.getBuildTimeCache(year, eventId);
         if (cachedData) {
+          // Reject placeholder cache data - fail fast when credentials missing
+          if (cachedData.isPlaceholder) {
+            console.log('Gallery: Rejecting placeholder cache data - failing fast');
+            throw new Error('FATAL: Google Drive secret not configured. Build-time cache contains only placeholder data.');
+          }
+          
           this.metrics.cacheHits++;
           this.updateResponseTime(startTime);
           console.log('Gallery: Serving from build-time cache');
@@ -48,10 +54,18 @@ class GalleryService {
       const cacheKey = eventId || year || 'default';
       const runtimeCache = this.getRuntimeCache(cacheKey);
       if (runtimeCache && !this.isCacheExpired(cacheKey)) {
+        const decompressedCache = this.decompressData(runtimeCache);
+        
+        // Reject placeholder runtime cache data - fail fast when credentials missing
+        if (decompressedCache.isPlaceholder) {
+          console.log('Gallery: Rejecting placeholder runtime cache data - failing fast');
+          throw new Error('FATAL: Google Drive secret not configured. Runtime cache contains only placeholder data.');
+        }
+        
         this.metrics.cacheHits++;
         this.updateResponseTime(startTime);
         console.log('Gallery: Serving from runtime cache');
-        return { ...this.decompressData(runtimeCache), source: 'runtime-cache' };
+        return { ...decompressedCache, source: 'runtime-cache' };
       }
 
       // Generate runtime data (Vercel environment)
@@ -68,16 +82,8 @@ class GalleryService {
     } catch (error) {
       console.error('Gallery Service Error:', error);
       
-      // Fallback to any available cache
-      const cacheKey = eventId || year || 'default';
-      const fallbackData = this.getRuntimeCache(cacheKey) || await this.getBuildTimeCache(year, eventId);
-      if (fallbackData) {
-        console.log('Gallery: Serving stale cache due to error');
-        return { ...this.decompressData(fallbackData), source: 'fallback-cache', error: error.message };
-      }
-      
-      // Final fallback - empty gallery
-      return this.getEmptyGallery();
+      // Re-throw the error - fail fast pattern, no fallback
+      throw error;
     }
   }
 
@@ -266,21 +272,6 @@ class GalleryService {
     };
   }
 
-  /**
-   * Return empty gallery structure
-   */
-  getEmptyGallery() {
-    return {
-      eventId: 'unknown',
-      event: 'unknown',
-      totalCount: 0,
-      categories: {},
-      hasMore: false,
-      cacheTimestamp: new Date().toISOString(),
-      source: 'fallback',
-      error: 'Unable to load gallery data'
-    };
-  }
 
   /**
    * Evict least recently used cache entries with improved logic

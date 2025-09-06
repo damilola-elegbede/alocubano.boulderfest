@@ -278,9 +278,9 @@ describe('Gallery API Integration Tests', () => {
 
   describe('Error Handling and Recovery', () => {
     it('should implement fail-fast error handling', async () => {
-      // This test verifies behavior when Google Drive secrets are missing
-      // Note: If build-time cache exists, the service will use it (which is correct)
-      // The fail-fast behavior only applies when trying to fetch from Google Drive
+      // This test verifies fail-fast behavior when Google Drive secrets are missing
+      // SUCCESS condition: service throws error (fail-fast working)
+      // FAILURE condition: service returns fallback data (fallbacks still exist)
       
       // Force an error scenario by temporarily disabling Google Drive
       const originalEnv = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
@@ -290,21 +290,10 @@ describe('Gallery API Integration Tests', () => {
         // Clear runtime cache to force a fresh fetch attempt
         galleryService.clearCache();
         
-        // Try to get gallery data
-        const result = await galleryService.getGalleryData();
+        // Expect the service to THROW an error when secrets are missing
+        // This tests that fail-fast is working correctly
+        await expect(galleryService.getGalleryData()).rejects.toThrow(/FATAL.*secret not configured/);
         
-        // If we get here, it means build-time cache was available
-        // This is acceptable behavior - cache should work even without secrets
-        expect(result).toHaveProperty('eventId');
-        expect(result).toHaveProperty('totalCount');
-        expect(result).toHaveProperty('categories');
-        
-        // Verify it came from cache, not Google Drive
-        expect(['build-time-cache', 'fallback-cache', 'runtime-cache']).toContain(result.source);
-        
-      } catch (error) {
-        // If no cache is available, we expect a FATAL error
-        expect(error.message).toMatch(/FATAL.*secret not configured/);
       } finally {
         // Restore environment
         if (originalEnv) {
