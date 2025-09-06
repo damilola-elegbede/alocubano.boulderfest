@@ -8,7 +8,12 @@ import { getDbClient } from '../../setup-integration.js';
 
 describe('Admin Authentication Integration', () => {
   let dbClient;
-  const adminPassword = process.env.TEST_ADMIN_PASSWORD || 'testpassword123';
+  
+  // Fail fast if TEST_ADMIN_PASSWORD is not configured
+  if (!process.env.TEST_ADMIN_PASSWORD) {
+    throw new Error('❌ FATAL: TEST_ADMIN_PASSWORD secret not configured for integration tests');
+  }
+  const adminPassword = process.env.TEST_ADMIN_PASSWORD;
 
   beforeEach(async () => {
     dbClient = getDbClient();

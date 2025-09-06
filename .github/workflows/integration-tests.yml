@@ -198,6 +198,16 @@ jobs:
           fi
 
       - name: "🔧 Setup Test Environment"
+        env:
+          # Pass secrets from GitHub to the test environment
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          BREVO_WEBHOOK_SECRET: ${{ secrets.BREVO_WEBHOOK_SECRET }}
+          GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+          GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
+          GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}
+          GOOGLE_WALLET_ISSUER_ID: ${{ secrets.GOOGLE_WALLET_ISSUER_ID }}
+          GOOGLE_WALLET_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_WALLET_SERVICE_ACCOUNT }}
         run: |
           mkdir -p test-results .tmp/integration
           
@@ -207,9 +217,15 @@ jobs:
           CI=true
           DATABASE_URL="file:./data/integration-tests.db"
           
-          # Test credentials (for integration tests)
-          TEST_ADMIN_PASSWORD=test-password-123
-          ADMIN_SECRET=test-admin-secret-key-minimum-32-characters
+          # Pass secrets from GitHub (fail-fast if not configured)
+          TEST_ADMIN_PASSWORD=${TEST_ADMIN_PASSWORD}
+          ADMIN_SECRET=${ADMIN_SECRET}
+          BREVO_WEBHOOK_SECRET=${BREVO_WEBHOOK_SECRET}
+          GOOGLE_SERVICE_ACCOUNT_EMAIL=${GOOGLE_SERVICE_ACCOUNT_EMAIL}
+          GOOGLE_PRIVATE_KEY=${GOOGLE_PRIVATE_KEY}
+          GOOGLE_DRIVE_GALLERY_FOLDER_ID=${GOOGLE_DRIVE_GALLERY_FOLDER_ID}
+          GOOGLE_WALLET_ISSUER_ID=${GOOGLE_WALLET_ISSUER_ID}
+          GOOGLE_WALLET_SERVICE_ACCOUNT=${GOOGLE_WALLET_SERVICE_ACCOUNT}
           
           # Integration test timeouts - increased for CI stability
           VITEST_TEST_TIMEOUT=120000
@@ -225,6 +241,15 @@ jobs:
           NODE_ENV: test
           DATABASE_URL: "file:./data/integration-tests.db"
           CI: true
+          # Pass secrets from GitHub
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          BREVO_WEBHOOK_SECRET: ${{ secrets.BREVO_WEBHOOK_SECRET }}
+          GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+          GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
+          GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}
+          GOOGLE_WALLET_ISSUER_ID: ${{ secrets.GOOGLE_WALLET_ISSUER_ID }}
+          GOOGLE_WALLET_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_WALLET_SERVICE_ACCOUNT }}
           # Increased timeout environment variables for CI stability
           VITEST_TEST_TIMEOUT: 120000    # 2 minutes per individual test
           VITEST_HOOK_TIMEOUT: 30000     # 30 seconds for hooks
