@@ -45,10 +45,10 @@ async function checkPlaywrightSetup() {
 }
 
 /**
- * Check environment variables
+ * Check secrets
  */
 function checkEnvironmentVariables() {
-  console.log('🔧 Checking environment variables...');
+  console.log('🔧 Checking secrets...');
   
   // Make Turso conditional based on REQUIRE_TURSO environment variable
   const requiredVars = [];

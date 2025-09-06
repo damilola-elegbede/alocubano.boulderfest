@@ -2,9 +2,11 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vites
 import { getDatabase } from '../../../api/lib/database.js';
 import { AppleWalletService } from '../../../api/lib/apple-wallet-service.js';
 import { GoogleWalletService } from '../../../api/lib/google-wallet-service.js';
+import { QRTokenService } from '../../../api/lib/qr-token-service.js';
 
-// Set required environment variables for testing
+// Set required environment variables for testing - MUST be set before importing services
 process.env.WALLET_AUTH_SECRET = 'test-wallet-auth-secret-key-for-testing-purposes';
+process.env.APPLE_PASS_KEY = 'dGVzdC1hcHBsZS1wYXNzLWtleQ=='; // base64 encoded 'test-apple-pass-key'
 
 describe('Wallet Pass Integration Tests', () => {
   let database;
@@ -136,19 +138,15 @@ describe('Wallet Pass Integration Tests', () => {
 
     it('should validate JWT tokens correctly', async () => {
       // Test JWT token generation and verification
-      if (process.env.WALLET_AUTH_SECRET) {
-        const token = appleWalletService.generateAuthToken(testTicketId);
-        expect(typeof token).toBe('string');
-        expect(token.split('.')).toHaveLength(3); // JWT has 3 parts
+      // WALLET_AUTH_SECRET should always be present now due to constructor validation
+      const token = appleWalletService.generateAuthToken(testTicketId);
+      expect(typeof token).toBe('string');
+      expect(token.split('.')).toHaveLength(3); // JWT has 3 parts
 
-        const payload = appleWalletService.verifyAuthToken(token);
-        expect(payload).toBeTruthy();
-        expect(payload.ticketId).toBe(testTicketId);
-        expect(payload.type).toBe('wallet_pass');
-      } else {
-        expect(() => appleWalletService.generateAuthToken(testTicketId))
-          .toThrow('WALLET_AUTH_SECRET not configured');
-      }
+      const payload = appleWalletService.verifyAuthToken(token);
+      expect(payload).toBeTruthy();
+      expect(payload.ticketId).toBe(testTicketId);
+      expect(payload.type).toBe('wallet_pass');
     });
   });
 
@@ -253,6 +251,37 @@ describe('Wallet Pass Integration Tests', () => {
       expect(googleWalletService.formatTicketType('weekend-pass')).toBe('WEEKEND PASS');
       expect(googleWalletService.formatTicketType('workshop-beginner')).toBe('BEGINNER WORKSHOP');
       expect(googleWalletService.formatTicketType('unknown-type')).toBe('UNKNOWN-TYPE');
+    });
+  });
+
+  describe('Service Initialization and Security', () => {
+    it('should fail immediately when WALLET_AUTH_SECRET is missing', () => {
+      // Temporarily remove the environment variable
+      const original = process.env.WALLET_AUTH_SECRET;
+      delete process.env.WALLET_AUTH_SECRET;
+      
+      try {
+        // Both services should fail immediately in constructor
+        expect(() => new AppleWalletService()).toThrow('❌ FATAL: WALLET_AUTH_SECRET secret not configured');
+        expect(() => new QRTokenService()).toThrow('❌ FATAL: WALLET_AUTH_SECRET secret not configured');
+      } finally {
+        // Restore the environment variable
+        process.env.WALLET_AUTH_SECRET = original;
+      }
+    });
+
+    it('should fail immediately when APPLE_PASS_KEY is missing', () => {
+      // Temporarily remove the environment variable
+      const original = process.env.APPLE_PASS_KEY;
+      delete process.env.APPLE_PASS_KEY;
+      
+      try {
+        // Apple Wallet service should fail immediately in constructor
+        expect(() => new AppleWalletService()).toThrow('❌ FATAL: APPLE_PASS_KEY secret not configured');
+      } finally {
+        // Restore the environment variable
+        process.env.APPLE_PASS_KEY = original;
+      }
     });
   });
 

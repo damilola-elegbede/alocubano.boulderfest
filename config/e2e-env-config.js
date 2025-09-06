@@ -138,7 +138,7 @@ export const E2E_CONFIG = {
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || null,
   
   /**
-   * Wallet Pass Configuration
+   * Wallet Pass Configuration - No fallbacks, fail immediately if used without proper setup
    */
   APPLE_PASS_KEY: process.env.APPLE_PASS_KEY || null,
   GOOGLE_WALLET_ISSUER_ID: process.env.GOOGLE_WALLET_ISSUER_ID || null,
@@ -238,7 +238,7 @@ export const E2E_CONFIG = {
    */
   GOOGLE_SERVICE_ACCOUNT_EMAIL: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || null,
   GOOGLE_PRIVATE_KEY: process.env.GOOGLE_PRIVATE_KEY || null,
-  GOOGLE_DRIVE_FOLDER_ID: process.env.GOOGLE_DRIVE_FOLDER_ID || null,
+  GOOGLE_DRIVE_GALLERY_FOLDER_ID: process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID || null,
 };
 
 /**

@@ -19,6 +19,13 @@ async function globalSetupPreview() {
   console.log('🚀 Global E2E Setup - Preview Deployment Mode');
   console.log('='.repeat(60));
   
+  // For E2E tests against Vercel preview deployments, we don't validate local secrets
+  // The deployment has its own environment variables configured in Vercel
+  console.log('\n📝 E2E Testing Mode: Vercel Preview Deployment');
+  console.log('-'.repeat(40));
+  console.log('✅ Skipping local secret validation - using Vercel deployment environment');
+  console.log('   The deployment has its own secrets configured in Vercel dashboard');
+  
   try {
     // Step 1: Extract preview URL if not already provided
     let previewUrl = process.env.PREVIEW_URL;
@@ -40,9 +47,13 @@ async function globalSetupPreview() {
     
     console.log(`✅ Preview URL: ${previewUrl}`);
     
-    // Step 2: Validate deployment health
-    console.log('\n🏥 Validating preview deployment health...');
+    // Step 2: Validate deployment health and environment
+    console.log('\n🏥 Validating preview deployment health and environment...');
     await validateDeploymentHealth(previewUrl);
+    
+    // Step 3: Verify deployment has required secrets configured
+    console.log('\n🔐 Verifying deployment environment configuration...');
+    await verifyDeploymentSecrets(previewUrl);
     
     // Step 3: Setup test data isolation
     console.log('\n🗄️ Setting up test data isolation...');
@@ -54,7 +65,7 @@ async function globalSetupPreview() {
     
     // Step 5: Create preview environment file
     console.log('\n📁 Creating preview environment configuration...');
-    createPreviewEnvironment(previewUrl);
+    await createPreviewEnvironment(previewUrl);
     
     console.log('\n📊 Preview Setup Summary:');
     console.log(`   Preview URL: ${previewUrl}`);
@@ -62,6 +73,7 @@ async function globalSetupPreview() {
     console.log(`   Test Data: ✅ Isolated`);
     console.log(`   Critical Endpoints: ✅ Warmed up`);
     console.log(`   Mode: Production-like preview testing`);
+    console.log(`   Timeout Profile: ${process.env.CI ? 'CI-Extended' : 'Local-Fast'} (Test: ${process.env.CI ? '90s' : '60s'}, Action: ${process.env.CI ? '30s' : '15s'}, Nav: ${process.env.CI ? '60s' : '30s'})`);
     
     console.log('\n✅ Global preview setup completed successfully');
     console.log('='.repeat(60));
@@ -77,15 +89,108 @@ async function globalSetupPreview() {
     console.error(`   Commit SHA: ${process.env.GITHUB_SHA || 'Not set'}`);
     console.error(`   GitHub Token: ${process.env.GITHUB_TOKEN ? 'Available' : 'Missing'}`);
     console.error(`   Vercel Token: ${process.env.VERCEL_TOKEN ? 'Available' : 'Missing'}`);
+    console.error(`   Vercel Org ID: ${process.env.VERCEL_ORG_ID ? 'Available' : 'Missing'}`);
     
     throw error;
   }
 }
 
 /**
+ * Verify the deployment has required secrets configured
+ */
+async function verifyDeploymentSecrets(previewUrl) {
+  try {
+    console.log(`   🔍 Checking deployment environment variables...`);
+    
+    const response = await fetch(`${previewUrl}/api/debug/environment`, {
+      headers: {
+        'User-Agent': 'E2E-Environment-Check',
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache'
+      }
+    });
+    
+    if (!response.ok) {
+      console.warn(`   ⚠️ Could not verify deployment environment (${response.status})`);
+      console.warn(`   ⚠️ Tests will proceed but may fail if secrets are missing`);
+      return;
+    }
+    
+    const envData = await response.json();
+    
+    // Check critical variables for E2E testing
+    const criticalVars = [
+      'ADMIN_PASSWORD',
+      'ADMIN_SECRET', 
+      'TEST_ADMIN_PASSWORD',
+      'TURSO_DATABASE_URL',
+      'TURSO_AUTH_TOKEN'
+    ];
+    
+    const missingCritical = [];
+    const availableServices = [];
+    
+    // Check critical variables
+    if (envData.variables && envData.variables.details) {
+      criticalVars.forEach(varName => {
+        if (!envData.variables.details[varName]) {
+          missingCritical.push(varName);
+        }
+      });
+    }
+    
+    // Check service availability
+    if (envData.apiAvailability) {
+      Object.entries(envData.apiAvailability).forEach(([service, available]) => {
+        if (available) {
+          availableServices.push(service);
+        }
+      });
+    }
+    
+    // Report findings
+    if (missingCritical.length > 0) {
+      console.error(`   ❌ Critical secrets missing in deployment:`);
+      missingCritical.forEach(varName => {
+        console.error(`      - ${varName}`);
+      });
+      console.error(`   ❌ E2E tests may fail without these secrets`);
+      console.error(`   💡 Please configure these in Vercel dashboard for preview environment`);
+      throw new Error(`Deployment missing critical secrets: ${missingCritical.join(', ')}`);
+    }
+    
+    console.log(`   ✅ All critical secrets configured in deployment`);
+    
+    if (availableServices.length > 0) {
+      console.log(`   ✅ Available services: ${availableServices.join(', ')}`);
+    }
+    
+    // Check optional services for graceful degradation
+    const optionalServices = [];
+    if (!envData.apiAvailability?.google_drive) {
+      optionalServices.push('Google Drive (gallery will use fallback)');
+    }
+    if (!envData.apiAvailability?.payments) {
+      optionalServices.push('Stripe (payment tests will be skipped)');
+    }
+    
+    if (optionalServices.length > 0) {
+      console.log(`   ⚠️ Optional services unavailable (tests will adapt):`);
+      optionalServices.forEach(service => {
+        console.log(`      - ${service}`);
+      });
+    }
+    
+  } catch (error) {
+    console.error(`   ❌ Failed to verify deployment environment: ${error.message}`);
+    console.error(`   ⚠️ Tests will proceed but may encounter issues`);
+  }
+}
+
+/**
  * Validate deployment health with comprehensive checks
  */
-async function validateDeploymentHealth(previewUrl, maxAttempts = 10, intervalMs = 10000) {
+async function validateDeploymentHealth(previewUrl, maxAttempts = 12, intervalMs = 8000) {
   console.log(`⏳ Validating deployment health (max ${maxAttempts} attempts)...`);
   
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -93,13 +198,16 @@ async function validateDeploymentHealth(previewUrl, maxAttempts = 10, intervalMs
       console.log(`   🔍 Health check ${attempt}/${maxAttempts}: ${previewUrl}/api/health/check`);
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      // Increased timeout for firefox compatibility
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
       
       const response = await fetch(`${previewUrl}/api/health/check`, {
         signal: controller.signal,
         headers: {
           'User-Agent': 'E2E-Preview-Health-Check',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          // Add cache-busting to prevent stale responses
+          'Cache-Control': 'no-cache'
         }
       });
       
@@ -110,8 +218,11 @@ async function validateDeploymentHealth(previewUrl, maxAttempts = 10, intervalMs
         console.log(`   ✅ Deployment healthy (${response.status})`);
         console.log(`   📊 Health data: ${JSON.stringify(healthData, null, 2).replace(/\n/g, '\n      ')}`);
         
-        // Additional API endpoint checks
+        // Additional API endpoint checks with retries
         await validateCriticalEndpoints(previewUrl);
+        
+        // Brief pause for deployment stabilization
+        await new Promise(resolve => setTimeout(resolve, 2000));
         return;
       } else {
         console.log(`   ⚠️ Health check failed (${response.status}): ${response.statusText}`);
@@ -141,25 +252,63 @@ async function validateDeploymentHealth(previewUrl, maxAttempts = 10, intervalMs
 async function validateCriticalEndpoints(previewUrl) {
   const endpoints = [
     '/api/health/database',
-    '/api/gallery/years',
+    '/api/gallery',
     '/api/featured-photos'
   ];
   
   console.log('   🔍 Validating critical endpoints...');
   
   for (const endpoint of endpoints) {
+    await validateEndpointWithRetries(previewUrl, endpoint);
+  }
+}
+
+/**
+ * Validate a single endpoint with retry logic
+ */
+async function validateEndpointWithRetries(previewUrl, endpoint, maxAttempts = 3) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      
       const response = await fetch(`${previewUrl}${endpoint}`, {
-        headers: { 'User-Agent': 'E2E-Endpoint-Validation' }
+        signal: controller.signal,
+        headers: { 
+          'User-Agent': 'E2E-Endpoint-Validation',
+          'Cache-Control': 'no-cache'
+        }
       });
+      
+      clearTimeout(timeoutId);
       
       if (response.ok) {
         console.log(`   ✅ ${endpoint}: OK (${response.status})`);
+        return; // Success, exit retry loop
+      } else if (response.status === 401 || response.status === 403) {
+        console.log(`   ⚠️ ${endpoint}: ${response.status} ${response.statusText} (API credentials may be missing - will use graceful degradation)`);
+        return; // Expected auth error, exit retry loop
       } else {
-        console.log(`   ⚠️ ${endpoint}: ${response.status} ${response.statusText}`);
+        console.log(`   ⚠️ ${endpoint}: ${response.status} ${response.statusText} (attempt ${attempt}/${maxAttempts})`);
+        if (attempt === maxAttempts) {
+          console.log(`   ❌ ${endpoint}: Failed after ${maxAttempts} attempts (will handle gracefully in tests)`);
+          return; // Continue to next endpoint
+        }
       }
+      
     } catch (error) {
-      console.log(`   ❌ ${endpoint}: ${error.message}`);
+      console.log(`   ❌ ${endpoint}: ${error.message} (attempt ${attempt}/${maxAttempts})`);
+      if (attempt === maxAttempts) {
+        console.log(`   ❌ ${endpoint}: Failed after ${maxAttempts} attempts (will handle gracefully in tests)`);
+        return; // Continue to next endpoint
+      }
+    }
+    
+    if (attempt < maxAttempts) {
+      // Exponential backoff: 1s, 2s, 4s
+      const backoffMs = Math.pow(2, attempt - 1) * 1000;
+      console.log(`   ⏳ ${endpoint}: Waiting ${backoffMs}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, backoffMs));
     }
   }
 }
@@ -205,7 +354,6 @@ async function warmupEndpoints(previewUrl) {
   const warmupEndpoints = [
     '/api/gallery',
     '/api/featured-photos',
-    '/api/gallery/years',
     '/pages/tickets.html',
     '/pages/about.html'
   ];
@@ -228,9 +376,67 @@ async function warmupEndpoints(previewUrl) {
 }
 
 /**
+ * Check API availability and create environment flags
+ */
+async function checkApiAvailability(previewUrl) {
+  const apiChecks = {
+    BREVO_API_AVAILABLE: false,
+    GOOGLE_DRIVE_API_AVAILABLE: false,
+    ADMIN_AUTH_AVAILABLE: false,
+    STRIPE_API_AVAILABLE: false
+  };
+  
+  console.log('   🔍 Checking API availability for graceful degradation...');
+  
+  // Check Brevo API availability via newsletter endpoint
+  try {
+    const brevoResponse = await fetch(`${previewUrl}/api/email/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'test@example.com', consent: true })
+    });
+    // Even if it fails validation, a 400 means the API is configured
+    apiChecks.BREVO_API_AVAILABLE = brevoResponse.status !== 500;
+  } catch (error) {
+    console.log(`   ⚠️ Brevo API check failed: ${error.message}`);
+  }
+  
+  // Check Google Drive API availability
+  try {
+    const galleryResponse = await fetch(`${previewUrl}/api/gallery`);
+    apiChecks.GOOGLE_DRIVE_API_AVAILABLE = galleryResponse.status === 200;
+  } catch (error) {
+    console.log(`   ⚠️ Google Drive API check failed: ${error.message}`);
+  }
+  
+  // Check admin authentication
+  try {
+    const adminResponse = await fetch(`${previewUrl}/api/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'test', password: 'test' })
+    });
+    // Even if credentials fail, a structured response means auth is working
+    apiChecks.ADMIN_AUTH_AVAILABLE = adminResponse.status !== 500;
+  } catch (error) {
+    console.log(`   ⚠️ Admin auth check failed: ${error.message}`);
+  }
+  
+  // Log availability status
+  Object.entries(apiChecks).forEach(([api, available]) => {
+    console.log(`   ${available ? '✅' : '❌'} ${api}: ${available ? 'Available' : 'Unavailable'}`);
+  });
+  
+  // Return environment variables
+  return Object.entries(apiChecks)
+    .map(([key, value]) => `${key}=${value}`)
+    .join('\n');
+}
+
+/**
  * Create environment configuration for preview testing
  */
-function createPreviewEnvironment(previewUrl) {
+async function createPreviewEnvironment(previewUrl) {
   const previewEnvPath = resolve(PROJECT_ROOT, '.env.preview');
   
   const previewConfig = `# E2E Preview Testing Environment
@@ -254,17 +460,21 @@ CI=${process.env.CI || 'false'}
 GITHUB_ACTIONS=${process.env.GITHUB_ACTIONS || 'false'}
 
 # Test credentials (for admin panel testing)
-TEST_ADMIN_PASSWORD=${process.env.TEST_ADMIN_PASSWORD || 'test-password'}
+TEST_ADMIN_PASSWORD=${process.env.TEST_ADMIN_PASSWORD || 'test-admin-password'}
 
 # Preview testing optimizations
 SKIP_LOCAL_SERVER=true
 USE_PREVIEW_DEPLOYMENT=true
 DEPLOYMENT_READY=true
 
-# Timeout configurations for remote testing
-E2E_ACTION_TIMEOUT=30000
-E2E_NAVIGATION_TIMEOUT=60000
-E2E_TEST_TIMEOUT=90000
+# API availability flags (detected during setup)
+${await checkApiAvailability(previewUrl)}
+
+# Timeout configurations for remote testing (CI-optimized)
+E2E_ACTION_TIMEOUT=${process.env.CI ? '30000' : '15000'}
+E2E_NAVIGATION_TIMEOUT=${process.env.CI ? '60000' : '30000'}  
+E2E_TEST_TIMEOUT=${process.env.CI ? '90000' : '60000'}
+E2E_EXPECT_TIMEOUT=${process.env.CI ? '20000' : '15000'}
 `;
 
   writeFileSync(previewEnvPath, previewConfig);

@@ -5,10 +5,11 @@
  */
 
 // Generate unique test email addresses
-export const generateTestEmail = (prefix = 'test') => {
+export const generateTestEmail = (prefix = 'test', suffix = null) => {
   const timestamp = Date.now();
   const randomId = Math.random().toString(36).substring(2, 8);
-  return `${prefix}-${randomId}-${timestamp}@example.com`;
+  const fullPrefix = suffix ? `${prefix}-${suffix}` : prefix;
+  return `${fullPrefix}-${randomId}-${timestamp}@e2etest.example.com`;
 };
 
 // Generate unique test identifiers
@@ -134,6 +135,88 @@ export const waitForStability = (ms = 1000) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 };
 
+// Wait for a specified amount of time (alias for backward compatibility)
+export const waitMs = (ms = 1000) => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
+// Generate test ticket ID 
+export const generateTestTicketId = (prefix = 'ticket') => {
+  const timestamp = Date.now();
+  const randomId = Math.random().toString(36).substring(2, 8);
+  return `${prefix}-${randomId}-${timestamp}`;
+};
+
+// Initialize test isolation system
+export const initializeTestIsolation = async () => {
+  console.log('🚀 Initializing test isolation system...');
+  
+  // Set up test environment isolation
+  const sessionId = generateTestId('session');
+  process.env.E2E_SESSION_ID = sessionId;
+  
+  console.log(`   🆔 Test session ID: ${sessionId}`);
+  
+  // Persist for global teardown (separate Node context)
+  try {
+    const fs = await import('fs/promises');
+    const { resolve } = await import('path');
+    const root = process.cwd();
+    const sessionFilePath = resolve(root, '.tmp', 'e2e-session.json');
+    
+    await fs.mkdir(resolve(root, '.tmp'), { recursive: true });
+    await fs.writeFile(
+      sessionFilePath,
+      JSON.stringify({ sessionId, createdAt: new Date().toISOString() }, null, 2)
+    );
+    
+    // Also set environment variable with file path for cross-process access
+    process.env.E2E_SESSION_FILE = sessionFilePath;
+    
+    console.log('   💾 Session persisted to .tmp/e2e-session.json');
+    console.log(`   📁 Session file path: ${sessionFilePath}`);
+  } catch (err) {
+    console.error(`   ❌ Failed to persist session file: ${err.message}`);
+    // Don't throw - allow tests to continue even if session persistence fails
+  }
+  
+  console.log('   ✅ Test isolation system initialized');
+  
+  return {
+    initialized: true,
+    sessionId,
+    timestamp: Date.now()
+  };
+};
+
+// Generate test user - alias for createTestData('user')
+export const generateTestUser = (testTitle = 'user') => {
+  return createTestData('user');
+};
+
+// Transaction wrapper for test operations
+export const withTestTransaction = async (testTitle, callback) => {
+  // Support both old and new signatures
+  if (typeof testTitle === 'function') {
+    // Old signature: withTestTransaction(callback)
+    callback = testTitle;
+    testTitle = 'default';
+  }
+  
+  const namespace = getTestNamespace(testTitle);
+  console.log(`🔄 Starting test transaction for '${testTitle}' with namespace: ${namespace}`);
+  
+  try {
+    const result = await callback(namespace);
+    console.log(`✅ Transaction for '${testTitle}' completed successfully`);
+    return result;
+  } catch (error) {
+    console.log(`❌ Transaction for '${testTitle}' failed: ${error.message}`);
+    throw error;
+  } finally {
+    console.log(`🏁 Transaction for '${testTitle}' finalized`);
+  }
+};
+
 export default {
   generateTestEmail,
   generateTestId,
@@ -143,5 +226,10 @@ export default {
   generateRegistrationData,
   cleanupTestIsolation,
   getTestNamespace,
-  waitForStability
+  waitForStability,
+  waitMs,
+  generateTestTicketId,
+  initializeTestIsolation,
+  generateTestUser,
+  withTestTransaction
 };

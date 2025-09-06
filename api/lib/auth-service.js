@@ -4,6 +4,11 @@ import { serialize, parse } from "cookie";
 
 export class AuthService {
   constructor() {
+    // Fail immediately if ADMIN_SECRET is not configured
+    if (!process.env.ADMIN_SECRET) {
+      throw new Error("❌ FATAL: ADMIN_SECRET secret not configured");
+    }
+
     this.sessionSecret = process.env.ADMIN_SECRET;
     // Session duration in milliseconds (not seconds!)
     // Default: 3600000ms = 1 hour
@@ -11,7 +16,7 @@ export class AuthService {
       process.env.ADMIN_SESSION_DURATION || "3600000",
     );
 
-    if (!this.sessionSecret || this.sessionSecret.length < 32) {
+    if (this.sessionSecret.length < 32) {
       throw new Error("ADMIN_SECRET must be at least 32 characters long");
     }
   }
@@ -20,13 +25,13 @@ export class AuthService {
    * Verify admin password
    */
   async verifyPassword(password) {
+    // Fail immediately if ADMIN_PASSWORD is not configured
+    if (!process.env.ADMIN_PASSWORD) {
+      throw new Error("❌ FATAL: ADMIN_PASSWORD secret not configured");
+    }
+
     const adminPasswordHash = process.env.ADMIN_PASSWORD;
     const testAdminPassword = process.env.TEST_ADMIN_PASSWORD;
-
-    if (!adminPasswordHash) {
-      // Password not configured - return false without logging sensitive info
-      return false;
-    }
 
     if (!password || typeof password !== "string") {
       // Invalid password input
@@ -35,7 +40,17 @@ export class AuthService {
 
     try {
       // For E2E testing, support plain text TEST_ADMIN_PASSWORD
-      if (testAdminPassword && (process.env.NODE_ENV === "test" || process.env.E2E_TEST_MODE === "true")) {
+      const isE2ETest = process.env.NODE_ENV === "test" || 
+                        process.env.E2E_TEST_MODE === "true" ||
+                        process.env.CI === "true" ||
+                        process.env.VERCEL_ENV === "preview";
+      
+      if (isE2ETest) {
+        // Fail immediately if TEST_ADMIN_PASSWORD is not configured in test environments
+        if (!testAdminPassword) {
+          throw new Error("❌ FATAL: TEST_ADMIN_PASSWORD secret not configured");
+        }
+        
         if (password === testAdminPassword) {
           return true;
         }
@@ -44,6 +59,10 @@ export class AuthService {
       // For production and development, use bcrypt hashed ADMIN_PASSWORD
       return await bcrypt.compare(password, adminPasswordHash);
     } catch (error) {
+      // Re-throw fatal configuration errors immediately
+      if (error.message.includes("❌ FATAL:")) {
+        throw error;
+      }
       // Handle bcrypt comparison errors gracefully
       return false;
     }

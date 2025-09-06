@@ -9,7 +9,7 @@ const testConstants = getTestDataConstants();
 
 test('ADMIN DEBUG: Check credentials and login', async ({ page }) => {
   const adminCredentials = {
-    email: testConstants.ADMIN_EMAIL,
+    email: testConstants.admin.email,
     password: process.env.TEST_ADMIN_PASSWORD || 'test-admin-password'
   };
 

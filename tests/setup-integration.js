@@ -5,6 +5,105 @@
 import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { configureEnvironment, cleanupEnvironment, validateEnvironment, TEST_ENVIRONMENTS } from './config/test-environment.js';
 
+// Import secret validation for integration tests (simplified version of E2E secret validation)
+const validateIntegrationSecrets = () => {
+  const requiredSecrets = {
+    // Basic secrets needed for integration tests
+    WALLET_AUTH_SECRET: {
+      description: 'Wallet pass JWT signing secret',
+      validator: (value) => value && value.length >= 32,
+      fallback: 'test-wallet-auth-secret-key-for-testing-purposes-32-chars'
+    },
+    APPLE_PASS_KEY: {
+      description: 'Apple Wallet pass signing key (base64)',
+      validator: (value) => value && value.length > 20,
+      fallback: 'dGVzdC1hcHBsZS1wYXNzLWtleS1mb3ItaW50ZWdyYXRpb24tdGVzdGluZw==' // base64 test key
+    },
+    ADMIN_SECRET: {
+      description: 'Admin JWT signing secret',
+      validator: (value) => value && value.length >= 32,
+      fallback: 'admin-secret-for-integration-tests-32-chars-plus'
+    }
+  };
+
+  const optionalSecrets = {
+    // Optional secrets that may be used by integration tests
+    BREVO_API_KEY: {
+      description: 'Brevo email service API key (optional for integration tests)',
+      validator: (value) => !value || value.startsWith('xkeysib-')
+    },
+    STRIPE_SECRET_KEY: {
+      description: 'Stripe payment secret key (optional for integration tests)',
+      validator: (value) => !value || value.startsWith('sk_test_') || value.startsWith('sk_live_')
+    },
+    GOOGLE_SERVICE_ACCOUNT_EMAIL: {
+      description: 'Google service account email (optional for integration tests)',
+      validator: (value) => !value || (value.includes('@') && value.includes('.iam.gserviceaccount.com'))
+    },
+    GOOGLE_PRIVATE_KEY: {
+      description: 'Google service account private key (optional for integration tests)',
+      validator: (value) => !value || (value.includes('BEGIN PRIVATE KEY') || value.length > 100)
+    },
+    GOOGLE_DRIVE_GALLERY_FOLDER_ID: {
+      description: 'Google Drive gallery folder ID (optional for integration tests)',
+      validator: (value) => !value || value.length > 10
+    }
+  };
+
+  console.log('🔐 Validating Integration Test Secrets...');
+  
+  let allValid = true;
+  const warnings = [];
+
+  // Validate and set required secrets with fallbacks
+  Object.entries(requiredSecrets).forEach(([key, config]) => {
+    const currentValue = process.env[key];
+    
+    if (!currentValue || !config.validator(currentValue)) {
+      if (config.fallback) {
+        console.log(`⚠️ ${key} missing or invalid - using test fallback`);
+        process.env[key] = config.fallback;
+        warnings.push(`${key}: Using fallback value for integration tests`);
+      } else {
+        console.error(`❌ ${key}: ${config.description} - required for integration tests`);
+        allValid = false;
+      }
+    } else {
+      console.log(`✅ ${key}: Valid`);
+    }
+  });
+
+  // Validate optional secrets (don't fail if missing)
+  Object.entries(optionalSecrets).forEach(([key, config]) => {
+    const currentValue = process.env[key];
+    
+    if (currentValue && !config.validator(currentValue)) {
+      console.warn(`⚠️ ${key}: Present but invalid format - ${config.description}`);
+      warnings.push(`${key}: Present but invalid format`);
+    } else if (currentValue) {
+      console.log(`✅ ${key}: Valid (optional)`);
+    } else {
+      console.log(`⏭️ ${key}: Not configured (optional for integration tests)`);
+    }
+  });
+
+  if (warnings.length > 0) {
+    console.log(`⚠️ ${warnings.length} integration test secret warnings (using fallbacks or graceful degradation)`);
+  }
+
+  if (allValid) {
+    console.log('✅ Integration test secret validation completed successfully');
+  } else {
+    throw new Error('❌ Integration test secret validation failed - missing required secrets');
+  }
+
+  return {
+    valid: allValid,
+    warnings,
+    totalChecked: Object.keys(requiredSecrets).length + Object.keys(optionalSecrets).length
+  };
+};
+
 // Force local SQLite for integration tests (prevent Turso usage)
 process.env.DATABASE_URL = 'file:./data/test-integration.db';
 delete process.env.TURSO_AUTH_TOKEN;
@@ -24,11 +123,19 @@ process.env.FORCE_LOCAL_DATABASE = 'true';
 const originalTursoUrl = process.env.TURSO_DATABASE_URL;
 const originalTursoToken = process.env.TURSO_AUTH_TOKEN;
 
+// Perform secret validation before environment configuration
+console.log('🔧 Step 1: Integration Test Secret Validation');
+const secretValidation = validateIntegrationSecrets();
+
 // Configure integration test environment
+console.log('🔧 Step 2: Environment Configuration');
 const config = configureEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
 
 // Validate environment setup
+console.log('🔧 Step 3: Environment Validation');
 validateEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
+
+console.log('✅ Integration test environment fully configured and validated');
 
 // Export utilities for integration tests
 export const getApiUrl = (path) => `${process.env.TEST_BASE_URL}${path}`;
@@ -146,6 +253,12 @@ beforeAll(async () => {
   console.log(`📊 Target: ~30-50 tests with real database`);
   console.log(`🗄️ Database: ${config.database.description}`);
   console.log(`🔧 Port: ${config.port.port} (${config.port.description})`);
+  console.log(`🔐 Secrets: ${secretValidation.totalChecked} checked, ${secretValidation.warnings.length} warnings`);
+  
+  if (secretValidation.warnings.length > 0) {
+    console.log('⚠️ Integration test warnings:');
+    secretValidation.warnings.forEach(warning => console.log(`   - ${warning}`));
+  }
   
   // Initialize database
   await initializeDatabase();
@@ -177,5 +290,8 @@ afterAll(async () => {
 
 // Export database client for tests
 export const getDbClient = () => dbClient;
+
+// Export secret validation result for tests that need to check availability
+export const getSecretValidation = () => secretValidation;
 
 console.log('🧪 Integration test environment ready - database & services configured');

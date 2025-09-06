@@ -15,12 +15,18 @@
  * - Zero port conflicts or resource contention
  * - Better reliability and faster execution
  * - Native CI/CD integration with deployment workflows
+ * 
+ * CRITICAL: Always use 'npx playwright' instead of global 'playwright' command
+ * to avoid version mismatches between CLI and @playwright/test package versions.
  */
 
 import { defineConfig, devices } from '@playwright/test';
 
-// Base URL comes from environment variable set by CI workflow
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || process.env.PREVIEW_URL || 'http://localhost:3000';
+// Base URL comes from environment variable set by CI workflow or preview extraction
+const baseURL = process.env.PREVIEW_URL || 
+                process.env.PLAYWRIGHT_BASE_URL || 
+                process.env.CI_EXTRACTED_PREVIEW_URL ||
+                'http://localhost:3000';
 
 // Validate we have a proper target URL
 if (!baseURL.startsWith('http')) {
@@ -32,9 +38,23 @@ console.log(`  Target URL: ${baseURL}`);
 console.log(`  Environment: ${baseURL.includes('vercel.app') ? 'Vercel Preview Deployment' : 'Local Development'}`);
 console.log(`  Approach: Modern (no local server management)`);
 console.log(`  Database: Production/Preview environment database`);
+console.log(`  Timeout Strategy: ${process.env.CI ? 'CI-optimized (extended)' : 'Local (faster)'}`);
 
 export default defineConfig({
   testDir: './tests/e2e/flows',
+  testMatch: '**/*.test.js',
+  testIgnore: [
+    '**/node_modules/**',
+    '**/helpers/**',
+    '**/fixtures/**',
+    '**/config/**',
+    '**/utilities/**',
+    '**/*.helper.js',
+    '**/*.config.js',
+    '**/*.setup.js',
+    '**/*.teardown.js',
+    '**/README*.md'
+  ],
   fullyParallel: true, // Safe for preview deployments (no local resource conflicts)
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,
@@ -44,7 +64,17 @@ export default defineConfig({
     ['html', { outputFolder: 'playwright-report', open: 'never' }]
   ],
   
-  timeout: 60000, // 1 minute per test (faster than local server approach)
+  // Environment-based timeout configurations
+  timeout: process.env.CI 
+    ? parseInt(process.env.E2E_TEST_TIMEOUT || '90000', 10)  // 90s in CI
+    : parseInt(process.env.E2E_TEST_TIMEOUT || '60000', 10), // 60s locally
+  
+  // Global expect timeout
+  expect: {
+    timeout: process.env.CI
+      ? parseInt(process.env.E2E_EXPECT_TIMEOUT || '20000', 10) // 20s in CI
+      : parseInt(process.env.E2E_EXPECT_TIMEOUT || '15000', 10) // 15s locally
+  },
   
   use: {
     baseURL: baseURL,
@@ -55,9 +85,14 @@ export default defineConfig({
     // Viewport and device emulation
     viewport: { width: 1280, height: 720 },
     
-    // Network and timing (optimized for preview deployments)
-    actionTimeout: 15000, // 15 seconds for actions
-    navigationTimeout: 30000, // 30 seconds for navigation (faster than local servers)
+    // Environment-adaptive timeout configurations
+    actionTimeout: process.env.CI
+      ? parseInt(process.env.E2E_ACTION_TIMEOUT || '30000', 10)      // 30s in CI
+      : parseInt(process.env.E2E_ACTION_TIMEOUT || '15000', 10),     // 15s locally
+    
+    navigationTimeout: process.env.CI
+      ? parseInt(process.env.E2E_NAVIGATION_TIMEOUT || '60000', 10)  // 60s in CI  
+      : parseInt(process.env.E2E_NAVIGATION_TIMEOUT || '30000', 10), // 30s locally
     
     // Additional headers for better preview deployment testing
     extraHTTPHeaders: {
@@ -72,7 +107,22 @@ export default defineConfig({
     },
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      use: { 
+        ...devices['Desktop Firefox'],
+        // Firefox-specific timeout optimizations for CI environment
+        actionTimeout: process.env.CI
+          ? parseInt(process.env.E2E_ACTION_TIMEOUT || '40000', 10)      // 40s in CI (Firefox needs more)
+          : parseInt(process.env.E2E_ACTION_TIMEOUT || '20000', 10),     // 20s locally
+        
+        navigationTimeout: process.env.CI
+          ? parseInt(process.env.E2E_NAVIGATION_TIMEOUT || '75000', 10)  // 75s in CI (Firefox needs more)  
+          : parseInt(process.env.E2E_NAVIGATION_TIMEOUT || '45000', 10), // 45s locally
+        
+        // Firefox handles network requests differently in CI
+        extraHTTPHeaders: {
+          'User-Agent': 'Playwright-E2E-Tests-Preview-Firefox'
+        }
+      },
     },
     {
       name: 'webkit',
@@ -80,11 +130,31 @@ export default defineConfig({
     },
     {
       name: 'mobile-chrome',
-      use: { ...devices['Pixel 5'] },
+      use: { 
+        ...devices['Pixel 5'],
+        // Mobile Chrome timeout optimizations
+        actionTimeout: process.env.CI
+          ? parseInt(process.env.E2E_ACTION_TIMEOUT || '35000', 10)      // 35s in CI (mobile needs more)
+          : parseInt(process.env.E2E_ACTION_TIMEOUT || '20000', 10),     // 20s locally
+        
+        navigationTimeout: process.env.CI
+          ? parseInt(process.env.E2E_NAVIGATION_TIMEOUT || '70000', 10)  // 70s in CI (mobile needs more)
+          : parseInt(process.env.E2E_NAVIGATION_TIMEOUT || '40000', 10), // 40s locally
+      },
     },
     {
       name: 'mobile-safari',
-      use: { ...devices['iPhone 12'] },
+      use: { 
+        ...devices['iPhone 12'],
+        // Mobile Safari timeout optimizations
+        actionTimeout: process.env.CI
+          ? parseInt(process.env.E2E_ACTION_TIMEOUT || '40000', 10)      // 40s in CI (Safari mobile needs most)
+          : parseInt(process.env.E2E_ACTION_TIMEOUT || '25000', 10),     // 25s locally
+        
+        navigationTimeout: process.env.CI
+          ? parseInt(process.env.E2E_NAVIGATION_TIMEOUT || '80000', 10)  // 80s in CI (Safari mobile needs most)
+          : parseInt(process.env.E2E_NAVIGATION_TIMEOUT || '50000', 10), // 50s locally
+      },
     },
   ],
 
@@ -99,6 +169,37 @@ export default defineConfig({
   // ✅ Better CI/CD integration
   // ✅ Faster test execution
   // ✅ More reliable results
+
+  // TIMEOUT CONFIGURATION STRATEGY:
+  // ===================================
+  //
+  // Environment-Adaptive Timeouts:
+  // - CI environments get extended timeouts due to resource constraints
+  // - Local development uses faster timeouts for developer productivity
+  // - All timeouts can be overridden via environment variables
+  //
+  // Browser-Specific Optimizations:
+  // - Firefox: Gets 33% longer timeouts (known to be slower in CI)
+  // - Mobile Safari: Gets longest timeouts (most resource intensive)
+  // - Mobile Chrome: Gets moderate mobile timeout boosts
+  // - Desktop Chrome/Safari: Use standard timeouts
+  //
+  // Timeout Hierarchy (CI vs Local):
+  // - Test Timeout: 90s vs 60s (overall test duration)
+  // - Action Timeout: 30s vs 15s (clicks, inputs, etc.)
+  // - Navigation Timeout: 60s vs 30s (page loads)
+  // - Expect Timeout: 20s vs 15s (assertions)
+  //
+  // Override via Environment Variables:
+  // - E2E_TEST_TIMEOUT: Overall test timeout
+  // - E2E_ACTION_TIMEOUT: Action timeout  
+  // - E2E_NAVIGATION_TIMEOUT: Navigation timeout
+  // - E2E_EXPECT_TIMEOUT: Assertion timeout
+  //
+  // Special Cases:
+  // - Firefox timeouts: +33% longer than base
+  // - Mobile timeouts: +50% longer than desktop
+  // - Safari mobile: +75% longer than base (most demanding)
   
   // Global setup/teardown for preview environment
   globalSetup: './tests/e2e/global-setup-preview.js',

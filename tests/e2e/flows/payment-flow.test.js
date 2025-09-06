@@ -4,8 +4,15 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { warnIfOptionalSecretsUnavailable } from '../helpers/test-setup.js';
 
 test.describe('Payment Processing Flow', () => {
+  // Check for payment service secrets - tests can run with mocks if missing
+  const secretWarnings = warnIfOptionalSecretsUnavailable(['payment', 'checkout'], 'payment-flow.test.js');
+  
+  if (secretWarnings.hasWarnings) {
+    console.log('ℹ️ Payment tests will use mock responses due to missing Stripe credentials');
+  }
   test.beforeEach(async ({ page }) => {
     await page.goto('/pages/tickets.html');
     

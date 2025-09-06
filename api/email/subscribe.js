@@ -174,7 +174,9 @@ export default async function handler(req, res) {
         process.env.REQUIRE_EMAIL_VERIFICATION === "true"
           ? "pending"
           : "active",
-      listIds: req.body.lists || [1], // Default to newsletter list
+      listIds: req.body.lists || [parseInt(process.env.BREVO_NEWSLETTER_LIST_ID) || (() => {
+        throw new Error("❌ FATAL: BREVO_NEWSLETTER_LIST_ID secret not configured");
+      })()], // Require newsletter list ID
       attributes: {
         SIGNUP_PAGE: req.body.source || "unknown",
         SIGNUP_DATE: new Date().toISOString(),

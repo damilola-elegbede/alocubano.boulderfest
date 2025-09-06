@@ -25,8 +25,8 @@ export function getTestConstants() {
 export function getTestAdmin() {
   const constants = getTestDataConstants();
   return {
-    email: constants.ADMIN_EMAIL,
-    password: constants.TEST_ADMIN_PASSWORD,
+    email: constants.admin.email,
+    password: constants.admin.password,
     sessionToken: global.seededTestData?.adminUser?.session_token
   };
 }
@@ -143,7 +143,7 @@ export function getTestQRCode(ticketType = 'weekend') {
 export function getTestEmails() {
   const constants = getTestDataConstants();
   return {
-    admin: constants.ADMIN_EMAIL,
+    admin: constants.admin.email,
     ticketBuyer: 'ticket-buyer@e2etest.com',
     saturdayBuyer: 'saturday-buyer@e2etest.com',
     sundayBuyer: 'sunday-buyer@e2etest.com',

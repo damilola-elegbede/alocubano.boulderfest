@@ -202,7 +202,7 @@ test.describe('User Engagement Metrics', () => {
     await page.goto('/pages/gallery.html');
     
     // Look for filtering options
-    const filters = page.locator('.filter, .year-filter, button:has-text("2024"), button:has-text("2025")');
+    const filters = page.locator('.filter, .year-filter, button:has-text("2025")');
     
     if (await filters.count() >= 2) {
       // Test filter interactions

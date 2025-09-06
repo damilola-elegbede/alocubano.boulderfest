@@ -46,11 +46,16 @@ test.describe('Gallery Browsing Flow Tests', () => {
       });
     });
 
-    await page.route('**/api/gallery/years', async route => {
+    await page.route('**/api/gallery?eventId=boulder-fest-2025', async route => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(mockYearsData)
+        body: JSON.stringify({
+          ...mockGalleryData,
+          availableYears: mockYearsData.years,
+          statistics: mockYearsData.statistics,
+          metadata: mockYearsData.metadata
+        })
       });
     });
 

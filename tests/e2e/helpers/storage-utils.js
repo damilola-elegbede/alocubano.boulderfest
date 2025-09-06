@@ -22,10 +22,25 @@ class TestLocalStorage {
    */
   async setItem(page, key, value) {
     const namespacedKey = `${this.prefix}${key}`;
-    await page.evaluate(
-      ({ key, value }) => localStorage.setItem(key, value),
-      { key: namespacedKey, value: JSON.stringify(value) }
-    );
+    try {
+      await page.evaluate(
+        ({ key, value }) => {
+          try {
+            if (typeof window !== 'undefined' && window.localStorage) {
+              localStorage.setItem(key, value);
+              return true;
+            }
+            return false;
+          } catch (e) {
+            console.warn('localStorage.setItem failed:', e.message);
+            return false;
+          }
+        },
+        { key: namespacedKey, value: JSON.stringify(value) }
+      );
+    } catch (error) {
+      console.warn(`Failed to set localStorage item "${key}":`, error.message);
+    }
   }
 
   /**
@@ -33,11 +48,26 @@ class TestLocalStorage {
    */
   async getItem(page, key) {
     const namespacedKey = `${this.prefix}${key}`;
-    const value = await page.evaluate(
-      ({ key }) => localStorage.getItem(key),
-      { key: namespacedKey }
-    );
-    return value ? JSON.parse(value) : null;
+    try {
+      const value = await page.evaluate(
+        ({ key }) => {
+          try {
+            if (typeof window !== 'undefined' && window.localStorage) {
+              return localStorage.getItem(key);
+            }
+            return null;
+          } catch (e) {
+            console.warn('localStorage.getItem failed:', e.message);
+            return null;
+          }
+        },
+        { key: namespacedKey }
+      );
+      return value ? JSON.parse(value) : null;
+    } catch (error) {
+      console.warn(`Failed to get localStorage item "${key}":`, error.message);
+      return null;
+    }
   }
 
   /**
@@ -45,49 +75,101 @@ class TestLocalStorage {
    */
   async removeItem(page, key) {
     const namespacedKey = `${this.prefix}${key}`;
-    await page.evaluate(
-      ({ key }) => localStorage.removeItem(key),
-      { key: namespacedKey }
-    );
+    try {
+      await page.evaluate(
+        ({ key }) => {
+          try {
+            if (typeof window !== 'undefined' && window.localStorage) {
+              localStorage.removeItem(key);
+              return true;
+            }
+            return false;
+          } catch (e) {
+            console.warn('localStorage.removeItem failed:', e.message);
+            return false;
+          }
+        },
+        { key: namespacedKey }
+      );
+    } catch (error) {
+      console.warn(`Failed to remove localStorage item "${key}":`, error.message);
+    }
   }
 
   /**
    * Clear all test items from localStorage
    */
   async clear(page) {
-    await page.evaluate(
-      ({ prefix }) => {
-        const keysToRemove = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith(prefix)) {
-            keysToRemove.push(key);
+    try {
+      await page.evaluate(
+        ({ prefix }) => {
+          try {
+            if (typeof window !== 'undefined' && window.localStorage) {
+              const keysToRemove = [];
+              for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(prefix)) {
+                  keysToRemove.push(key);
+                }
+              }
+              keysToRemove.forEach(key => {
+                try {
+                  localStorage.removeItem(key);
+                } catch (e) {
+                  console.warn('Failed to remove localStorage key:', key, e.message);
+                }
+              });
+              return keysToRemove.length;
+            }
+            return 0;
+          } catch (e) {
+            console.warn('localStorage.clear operation failed:', e.message);
+            return 0;
           }
-        }
-        keysToRemove.forEach(key => localStorage.removeItem(key));
-      },
-      { prefix: this.prefix }
-    );
+        },
+        { prefix: this.prefix }
+      );
+    } catch (error) {
+      console.warn('Failed to clear localStorage:', error.message);
+    }
   }
 
   /**
    * Get all test items from localStorage
    */
   async getAllItems(page) {
-    return await page.evaluate(
-      ({ prefix }) => {
-        const items = {};
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith(prefix)) {
-            const originalKey = key.replace(prefix, '');
-            items[originalKey] = JSON.parse(localStorage.getItem(key));
+    try {
+      return await page.evaluate(
+        ({ prefix }) => {
+          try {
+            if (typeof window === 'undefined' || !window.localStorage) {
+              return {};
+            }
+            const items = {};
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key && key.startsWith(prefix)) {
+                try {
+                  const originalKey = key.replace(prefix, '');
+                  const value = localStorage.getItem(key);
+                  items[originalKey] = value ? JSON.parse(value) : null;
+                } catch (e) {
+                  console.warn('Failed to parse localStorage item:', key, e.message);
+                }
+              }
+            }
+            return items;
+          } catch (e) {
+            console.warn('localStorage.getAllItems failed:', e.message);
+            return {};
           }
-        }
-        return items;
-      },
-      { prefix: this.prefix }
-    );
+        },
+        { prefix: this.prefix }
+      );
+    } catch (error) {
+      console.warn('Failed to get all localStorage items:', error.message);
+      return {};
+    }
   }
 }
 
@@ -106,10 +188,25 @@ class TestSessionStorage {
    */
   async setItem(page, key, value) {
     const namespacedKey = `${this.prefix}${key}`;
-    await page.evaluate(
-      ({ key, value }) => sessionStorage.setItem(key, value),
-      { key: namespacedKey, value: JSON.stringify(value) }
-    );
+    try {
+      await page.evaluate(
+        ({ key, value }) => {
+          try {
+            if (typeof window !== 'undefined' && window.sessionStorage) {
+              sessionStorage.setItem(key, value);
+              return true;
+            }
+            return false;
+          } catch (e) {
+            console.warn('sessionStorage.setItem failed:', e.message);
+            return false;
+          }
+        },
+        { key: namespacedKey, value: JSON.stringify(value) }
+      );
+    } catch (error) {
+      console.warn(`Failed to set sessionStorage item "${key}":`, error.message);
+    }
   }
 
   /**
@@ -117,30 +214,64 @@ class TestSessionStorage {
    */
   async getItem(page, key) {
     const namespacedKey = `${this.prefix}${key}`;
-    const value = await page.evaluate(
-      ({ key }) => sessionStorage.getItem(key),
-      { key: namespacedKey }
-    );
-    return value ? JSON.parse(value) : null;
+    try {
+      const value = await page.evaluate(
+        ({ key }) => {
+          try {
+            if (typeof window !== 'undefined' && window.sessionStorage) {
+              return sessionStorage.getItem(key);
+            }
+            return null;
+          } catch (e) {
+            console.warn('sessionStorage.getItem failed:', e.message);
+            return null;
+          }
+        },
+        { key: namespacedKey }
+      );
+      return value ? JSON.parse(value) : null;
+    } catch (error) {
+      console.warn(`Failed to get sessionStorage item "${key}":`, error.message);
+      return null;
+    }
   }
 
   /**
    * Clear all test items from sessionStorage
    */
   async clear(page) {
-    await page.evaluate(
-      ({ prefix }) => {
-        const keysToRemove = [];
-        for (let i = 0; i < sessionStorage.length; i++) {
-          const key = sessionStorage.key(i);
-          if (key && key.startsWith(prefix)) {
-            keysToRemove.push(key);
+    try {
+      await page.evaluate(
+        ({ prefix }) => {
+          try {
+            if (typeof window !== 'undefined' && window.sessionStorage) {
+              const keysToRemove = [];
+              for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                if (key && key.startsWith(prefix)) {
+                  keysToRemove.push(key);
+                }
+              }
+              keysToRemove.forEach(key => {
+                try {
+                  sessionStorage.removeItem(key);
+                } catch (e) {
+                  console.warn('Failed to remove sessionStorage key:', key, e.message);
+                }
+              });
+              return keysToRemove.length;
+            }
+            return 0;
+          } catch (e) {
+            console.warn('sessionStorage.clear operation failed:', e.message);
+            return 0;
           }
-        }
-        keysToRemove.forEach(key => sessionStorage.removeItem(key));
-      },
-      { prefix: this.prefix }
-    );
+        },
+        { prefix: this.prefix }
+      );
+    } catch (error) {
+      console.warn('Failed to clear sessionStorage:', error.message);
+    }
   }
 }
 
@@ -345,53 +476,101 @@ export const StorageHelpers = {
    * Wait for localStorage to be available
    */
   async waitForLocalStorage(page, timeout = 5000) {
-    await page.waitForFunction(
-      () => typeof window.localStorage !== 'undefined',
-      { timeout }
-    );
+    try {
+      await page.waitForFunction(
+        () => {
+          try {
+            return typeof window !== 'undefined' && 
+                   typeof window.localStorage !== 'undefined' && 
+                   window.localStorage !== null;
+          } catch (e) {
+            return false;
+          }
+        },
+        { timeout }
+      );
+      return true;
+    } catch (error) {
+      console.warn('localStorage is not available within timeout:', error.message);
+      return false;
+    }
   },
 
   /**
    * Wait for sessionStorage to be available
    */
   async waitForSessionStorage(page, timeout = 5000) {
-    await page.waitForFunction(
-      () => typeof window.sessionStorage !== 'undefined',
-      { timeout }
-    );
+    try {
+      await page.waitForFunction(
+        () => {
+          try {
+            return typeof window !== 'undefined' && 
+                   typeof window.sessionStorage !== 'undefined' && 
+                   window.sessionStorage !== null;
+          } catch (e) {
+            return false;
+          }
+        },
+        { timeout }
+      );
+      return true;
+    } catch (error) {
+      console.warn('sessionStorage is not available within timeout:', error.message);
+      return false;
+    }
   },
 
   /**
    * Monitor storage changes
    */
   async monitorStorageChanges(page, callback) {
-    await page.evaluate(() => {
-      window.addEventListener('storage', (e) => {
-        console.log('Storage change detected:', {
-          key: e.key,
-          oldValue: e.oldValue,
-          newValue: e.newValue,
-          storageArea: e.storageArea === localStorage ? 'localStorage' : 'sessionStorage'
-        });
+    try {
+      await page.evaluate(() => {
+        try {
+          if (typeof window !== 'undefined') {
+            window.addEventListener('storage', (e) => {
+              console.log('Storage change detected:', {
+                key: e.key,
+                oldValue: e.oldValue,
+                newValue: e.newValue,
+                storageArea: e.storageArea === (window.localStorage || null) ? 'localStorage' : 'sessionStorage'
+              });
+            });
+          }
+        } catch (e) {
+          console.warn('Failed to setup storage monitoring:', e.message);
+        }
       });
-    });
+    } catch (error) {
+      console.warn('Failed to monitor storage changes:', error.message);
+    }
   },
 
   /**
    * Simulate storage quota exceeded
    */
   async simulateStorageQuotaExceeded(page) {
-    await page.evaluate(() => {
-      const originalSetItem = localStorage.setItem;
-      localStorage.setItem = function(key, value) {
-        throw new Error('QuotaExceededError: Failed to execute setItem on Storage');
-      };
-      
-      // Restore after 1 second
-      setTimeout(() => {
-        localStorage.setItem = originalSetItem;
-      }, 1000);
-    });
+    try {
+      await page.evaluate(() => {
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            const originalSetItem = localStorage.setItem;
+            localStorage.setItem = function(key, value) {
+              throw new Error('QuotaExceededError: Failed to execute setItem on Storage');
+            };
+            
+            // Restore after 1 second
+            setTimeout(() => {
+              localStorage.setItem = originalSetItem;
+            }, 1000);
+          }
+        } catch (e) {
+          console.warn('Failed to simulate storage quota exceeded:', e.message);
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to setup storage quota simulation:', error.message);
+    }
   }
 };
 

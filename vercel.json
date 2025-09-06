@@ -255,8 +255,76 @@
       "destination": "/checkout-cancel.html"
     },
     {
+      "source": "/admin/login",
+      "destination": "/admin/login.html"
+    },
+    {
+      "source": "/admin/dashboard",
+      "destination": "/admin/dashboard.html"
+    },
+    {
       "source": "/admin/checkin",
       "destination": "/admin/checkin.html"
+    },
+    {
+      "source": "/admin/analytics",
+      "destination": "/admin/analytics.html"
+    },
+    {
+      "source": "/admin/mfa-settings",
+      "destination": "/admin/mfa-settings.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/pages/admin/login",
+      "destination": "/admin/login.html"
+    },
+    {
+      "source": "/pages/admin/dashboard",
+      "destination": "/admin/dashboard.html"
+    },
+    {
+      "source": "/pages/admin/checkin",
+      "destination": "/admin/checkin.html"
+    },
+    {
+      "source": "/pages/admin/analytics",
+      "destination": "/admin/analytics.html"
+    },
+    {
+      "source": "/pages/admin/mfa-settings",
+      "destination": "/admin/mfa-settings.html"
+    },
+    {
+      "source": "/pages/admin",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/admin/login.html",
+      "destination": "/admin/login.html"
+    },
+    {
+      "source": "/admin/dashboard.html",
+      "destination": "/admin/dashboard.html"
+    },
+    {
+      "source": "/admin/checkin.html",
+      "destination": "/admin/checkin.html"
+    },
+    {
+      "source": "/admin/analytics.html",
+      "destination": "/admin/analytics.html"
+    },
+    {
+      "source": "/admin/mfa-settings.html",
+      "destination": "/admin/mfa-settings.html"
+    },
+    {
+      "source": "/admin/index.html",
+      "destination": "/admin/index.html"
     },
     {
       "source": "/manifest.json",

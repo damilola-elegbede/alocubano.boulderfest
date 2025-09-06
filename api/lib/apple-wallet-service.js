@@ -35,13 +35,19 @@ export class AppleWalletService {
       process.env.VENUE_LONGITUDE || "-105.219544",
     );
 
+    // Critical wallet secrets - FAIL IMMEDIATELY if missing
+    if (!process.env.APPLE_PASS_KEY) {
+      throw new Error("❌ FATAL: APPLE_PASS_KEY secret not configured");
+    }
+    if (!process.env.WALLET_AUTH_SECRET) {
+      throw new Error("❌ FATAL: WALLET_AUTH_SECRET secret not configured");
+    }
+
     // Decode certificates from base64
     this.signerCert = process.env.APPLE_PASS_CERT
       ? Buffer.from(process.env.APPLE_PASS_CERT, "base64")
       : null;
-    this.signerKey = process.env.APPLE_PASS_KEY
-      ? Buffer.from(process.env.APPLE_PASS_KEY, "base64")
-      : null;
+    this.signerKey = Buffer.from(process.env.APPLE_PASS_KEY, "base64");
     this.signerKeyPassphrase = process.env.APPLE_PASS_PASSWORD;
     this.wwdrCert = process.env.APPLE_WWDR_CERT
       ? Buffer.from(process.env.APPLE_WWDR_CERT, "base64")
@@ -341,8 +347,10 @@ export class AppleWalletService {
    * Generate JWT authentication token for pass updates
    */
   generateAuthToken(ticketId) {
+    // WALLET_AUTH_SECRET should already be validated in constructor
+    // This is a safety check
     if (!this.walletAuthSecret) {
-      throw new Error("WALLET_AUTH_SECRET not configured");
+      throw new Error("❌ FATAL: WALLET_AUTH_SECRET secret not configured");
     }
 
     const payload = {
@@ -363,8 +371,10 @@ export class AppleWalletService {
    * Verify JWT authentication token
    */
   verifyAuthToken(token) {
+    // WALLET_AUTH_SECRET should already be validated in constructor
+    // This is a safety check
     if (!this.walletAuthSecret) {
-      throw new Error("WALLET_AUTH_SECRET not configured");
+      throw new Error("❌ FATAL: WALLET_AUTH_SECRET secret not configured");
     }
 
     try {

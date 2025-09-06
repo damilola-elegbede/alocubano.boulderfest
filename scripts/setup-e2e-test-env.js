@@ -73,9 +73,9 @@ class E2EEnvironmentSetup {
       BREVO_NEWSLETTER_LIST_ID: process.env.BREVO_NEWSLETTER_LIST_ID || '1',
       BREVO_WEBHOOK_SECRET: process.env.BREVO_WEBHOOK_SECRET || 'dummy_secret',
       
-      // Wallet pass configuration
-      APPLE_PASS_KEY: process.env.APPLE_PASS_KEY || 'dummy_key',
-      WALLET_AUTH_SECRET: process.env.WALLET_AUTH_SECRET || 'dummy_wallet_secret'
+      // Wallet pass configuration - Pass through without fallbacks
+      APPLE_PASS_KEY: process.env.APPLE_PASS_KEY,
+      WALLET_AUTH_SECRET: process.env.WALLET_AUTH_SECRET
     };
   }
 

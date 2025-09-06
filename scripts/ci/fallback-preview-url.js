@@ -18,15 +18,23 @@ import { writeFileSync, existsSync } from 'fs';
 
 class ResilientPreviewURLExtractor {
   constructor() {
+    // Fail immediately if required credentials are missing
+    if (!process.env.VERCEL_TOKEN) {
+      throw new Error('❌ FATAL: VERCEL_TOKEN secret not configured');
+    }
+    if (!process.env.VERCEL_ORG_ID) {
+      throw new Error('❌ FATAL: VERCEL_ORG_ID secret not configured');
+    }
+    
     this.githubToken = process.env.GITHUB_TOKEN;
     this.vercelToken = process.env.VERCEL_TOKEN;
+    this.vercelOrgId = process.env.VERCEL_ORG_ID;
     this.repoOwner = process.env.GITHUB_REPOSITORY?.split('/')[0] || 'default-owner';
     this.repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] || 'default-repo';
     this.prNumber = process.env.GITHUB_PR_NUMBER || process.env.PR_NUMBER || 
                    (process.env.GITHUB_REF?.match(/refs\/pull\/(\d+)\/merge/) || [])[1];
     this.commitSha = process.env.GITHUB_SHA || process.env.COMMIT_SHA;
     
-    this.productionUrl = 'https://alocubano-boulderfest.vercel.app';
     this.maxRetries = 3;
     this.retryDelayMs = 5000;
     this.healthCheckTimeout = 15000;
@@ -36,7 +44,8 @@ class ResilientPreviewURLExtractor {
     this.logInfo(`   PR Number: ${this.prNumber || 'Not available'}`);
     this.logInfo(`   Commit SHA: ${this.commitSha || 'Not available'}`);
     this.logInfo(`   GitHub Token: ${this.githubToken ? '✅ Available' : '❌ Missing'}`);
-    this.logInfo(`   Vercel Token: ${this.vercelToken ? '✅ Available' : '⚠️ Optional'}`);
+    this.logInfo(`   Vercel Token: ✅ Available`);
+    this.logInfo(`   Vercel Org ID: ✅ Available`);
   }
 
   logInfo(message) {
@@ -67,8 +76,7 @@ class ResilientPreviewURLExtractor {
       { name: 'Vercel Bot Comments', method: 'tryVercelBotComments' },
       { name: 'GitHub Deployments API', method: 'tryGitHubDeployments' },
       { name: 'Vercel CLI Integration', method: 'tryVercelCLI' },
-      { name: 'Vercel API Direct', method: 'tryVercelAPI' },
-      { name: 'Production URL Fallback', method: 'tryProductionFallback' }
+      { name: 'Vercel API Direct', method: 'tryVercelAPI' }
     ];
 
     let url = null;
@@ -94,8 +102,8 @@ class ResilientPreviewURLExtractor {
     }
 
     if (!url) {
-      // Final fallback: Skip E2E with detailed explanation
-      return this.handleCompleteFailure();
+      // No fallbacks - fail immediately
+      throw new Error('❌ FATAL: All URL extraction strategies failed - VERCEL_TOKEN and VERCEL_ORG_ID are required');
     }
 
     // Validate the URL with health checks
@@ -103,8 +111,7 @@ class ResilientPreviewURLExtractor {
     
     if (!validatedUrl) {
       this.logError(`URL validation failed for: ${url}`);
-      // Try production fallback if validation fails
-      return this.tryProductionFallback();
+      throw new Error('❌ FATAL: URL validation failed - deployment may not be ready');
     }
 
     // Log success metrics
@@ -271,8 +278,8 @@ class ResilientPreviewURLExtractor {
     }
 
     const commands = [
-      'vercel ls --confirm',
-      'vercel list --confirm'
+      `vercel ls --confirm --token ${this.vercelToken} --scope ${this.vercelOrgId}`,
+      `vercel list --confirm --token ${this.vercelToken} --scope ${this.vercelOrgId}`
     ];
 
     for (const command of commands) {
@@ -309,9 +316,7 @@ class ResilientPreviewURLExtractor {
    * Strategy 5: Vercel API Direct
    */
   async tryVercelAPI() {
-    if (!this.vercelToken) {
-      throw new Error('Vercel token missing');
-    }
+    // Credentials already validated in constructor - no need to check again
 
     // Get project info first
     let projectId = process.env.VERCEL_PROJECT_ID;
@@ -374,41 +379,7 @@ class ResilientPreviewURLExtractor {
     return null;
   }
 
-  /**
-   * Strategy 6: Production URL Fallback
-   */
-  async tryProductionFallback() {
-    this.logWarning('Using production URL as fallback for E2E testing');
-    this.logWarning('This provides basic functionality testing but may not reflect PR changes');
-    
-    return this.productionUrl;
-  }
 
-  /**
-   * Handle complete failure scenario
-   */
-  handleCompleteFailure() {
-    this.logError('All fallback strategies failed to extract preview URL');
-    this.logError('E2E tests will be skipped with detailed reporting');
-    
-    // Log debugging information
-    this.logError('\n🔧 Debugging Information:');
-    this.logError(`   GitHub Repository: ${process.env.GITHUB_REPOSITORY || 'Not set'}`);
-    this.logError(`   PR Number: ${this.prNumber || 'Not available'}`);
-    this.logError(`   Commit SHA: ${this.commitSha || 'Not available'}`);
-    this.logError(`   GitHub Token: ${this.githubToken ? 'Available' : 'Missing'}`);
-    this.logError(`   Vercel Token: ${this.vercelToken ? 'Available' : 'Missing'}`);
-    this.logError(`   Event Name: ${process.env.GITHUB_EVENT_NAME || 'Not set'}`);
-    
-    return {
-      success: false,
-      url: null,
-      fallbackUsed: 'NONE',
-      shouldRunE2E: false,
-      reason: 'All URL extraction strategies failed',
-      skipWithWarning: true
-    };
-  }
 
   /**
    * Validate URL with health check

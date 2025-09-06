@@ -9,15 +9,10 @@ class BrevoService {
   constructor() {
     this.apiKey = process.env.BREVO_API_KEY;
     this.baseUrl = "https://api.brevo.com/v3";
-    this.isTestMode = process.env.E2E_TEST_MODE === 'true' || process.env.NODE_ENV === 'test' || !this.apiKey;
 
-    if (!this.apiKey && !this.isTestMode) {
-      throw new Error("BREVO_API_KEY environment variable is required");
-    }
-
-    // In test mode, log a warning but continue
-    if (this.isTestMode) {
-      console.log("BrevoService: Running in test/mock mode - API calls will be simulated");
+    if (!this.apiKey) {
+      console.error("❌ FATAL: BREVO_API_KEY secret not configured");
+      throw new Error("BREVO_API_KEY environment variable is required and cannot be empty");
     }
 
     // List configuration
@@ -47,14 +42,9 @@ class BrevoService {
   }
 
   /**
-   * Make API request to Brevo (or mock in test mode)
+   * Make API request to Brevo
    */
   async makeRequest(endpoint, options = {}) {
-    // Return mock data in test mode
-    if (this.isTestMode) {
-      return this._getMockResponse(endpoint, options);
-    }
-
     const url = `${this.baseUrl}${endpoint}`;
     const config = {
       method: "GET",
@@ -83,52 +73,6 @@ class BrevoService {
     }
   }
 
-  /**
-   * Generate mock responses for testing
-   */
-  _getMockResponse(endpoint, options = {}) {
-    const method = options.method || "GET";
-    
-    // Mock contact creation/update
-    if (endpoint === "/contacts" && method === "POST") {
-      return {
-        id: Math.floor(Math.random() * 100000), // Random mock ID
-        email: JSON.parse(options.body || "{}").email,
-        attributes: JSON.parse(options.body || "{}").attributes || {},
-        listIds: JSON.parse(options.body || "{}").listIds || []
-      };
-    }
-
-    // Mock contact retrieval
-    if (endpoint.startsWith("/contacts/") && method === "GET") {
-      const email = decodeURIComponent(endpoint.split("/contacts/")[1]);
-      return {
-        id: Math.floor(Math.random() * 100000),
-        email,
-        attributes: {},
-        listIds: [this.lists.newsletter]
-      };
-    }
-
-    // Mock account check for health check
-    if (endpoint === "/account") {
-      return {
-        id: "mock-account-id",
-        companyName: "Test Mode",
-        address: { country: "US" }
-      };
-    }
-
-    // Mock email send
-    if (endpoint === "/smtp/email" && method === "POST") {
-      return {
-        messageId: `mock-message-${Date.now()}`
-      };
-    }
-
-    // Default mock response
-    return { success: true, mockMode: true };
-  }
 
   /**
    * Create or update a contact
@@ -388,7 +332,7 @@ class BrevoService {
     const secret = process.env.BREVO_WEBHOOK_SECRET;
 
     if (!secret) {
-      throw new Error("BREVO_WEBHOOK_SECRET not configured");
+      throw new Error("❌ FATAL: BREVO_WEBHOOK_SECRET secret not configured");
     }
 
     const expectedSignature = createHmac("sha256", secret)

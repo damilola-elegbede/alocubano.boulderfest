@@ -137,13 +137,14 @@ class MultiYearGalleryManager {
    */
     async loadAvailableYears() {
         try {
-            const response = await fetch('/api/gallery/years');
+            const response = await fetch('/api/gallery?eventId=boulder-fest-2025');
             if (!response.ok) {
                 throw new Error(`Failed to load available years: ${response.status}`);
             }
 
             const data = await response.json();
-            this.availableYears = data.years || [];
+            // Extract available years from gallery data - fallback to current year if no years found
+            this.availableYears = data.availableYears || ['2025'];
             this.yearStatistics = new Map(
                 Object.entries(data.statistics || {}).map(([year, stats]) => [
                     year,

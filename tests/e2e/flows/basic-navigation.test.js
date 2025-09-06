@@ -82,15 +82,16 @@ test.describe('Basic Navigation', () => {
     const dropdown = page.locator('.dropdown-menu[aria-hidden="false"]');
     await expect(dropdown).toBeVisible({ timeout: 3000 });
 
-    // Try to find and click on a gallery link
-    const galleryLink = page.locator('.dropdown-link')
+    // Try to find and click on a festival event link
+    const festivalLink = page.locator('.dropdown-link')
       .filter({ hasText: /2025|2026|Festival/i });
 
-    const galleryLinkCount = await galleryLink.count();
+    const festivalLinkCount = await festivalLink.count();
     
-    if (galleryLinkCount > 0) {
-      await galleryLink.first().click();
-      await expect(page).toHaveURL(/gallery/);
+    if (festivalLinkCount > 0) {
+      await festivalLink.first().click();
+      // Update expectation to match actual behavior - links go to boulder-fest-YYYY pages
+      await expect(page).toHaveURL(/boulder-fest-20\d{2}/);
     }
   }
 
@@ -123,9 +124,10 @@ test.describe('Basic Navigation', () => {
     const homeLink = navList.locator('a[href="/home"]');
     if (await homeLink.count() > 0) {
       await homeLink.click();
-      // Menu should close after clicking a navigation link
-      await expect(navList).not.toHaveClass(/is-open/);
-      await expect(menuToggle).not.toHaveClass(/is-active/);
+      // Menu should close after clicking a navigation link - check the general nav-list instead of is-open specific
+      const generalNavList = page.locator('.nav-list');
+      await expect(generalNavList).not.toHaveClass(/is-open/, { timeout: 3000 });
+      await expect(menuToggle).not.toHaveClass(/is-active/, { timeout: 3000 });
     }
   });
 

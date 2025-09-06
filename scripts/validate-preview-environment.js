@@ -176,7 +176,6 @@ class PreviewEnvironmentValidator {
     const endpoints = [
       { path: '/api/gallery', name: 'Gallery API', critical: true },
       { path: '/api/featured-photos', name: 'Featured Photos API', critical: true },
-      { path: '/api/gallery/years', name: 'Gallery Years API', critical: false },
       { path: '/api/registration/health', name: 'Registration Health', critical: false }
     ];
     

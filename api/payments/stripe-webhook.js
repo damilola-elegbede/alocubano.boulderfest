@@ -23,7 +23,15 @@ import { generateTicketId } from "../lib/ticket-id-generator.js";
 import { scheduleRegistrationReminders } from "../lib/reminder-scheduler.js";
 import { getDatabaseClient } from "../lib/database.js";
 
-// Initialize Stripe
+// Initialize Stripe with strict error handling
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error("❌ FATAL: STRIPE_SECRET_KEY secret not configured");
+}
+
+if (!process.env.STRIPE_WEBHOOK_SECRET) {
+  throw new Error("❌ FATAL: STRIPE_WEBHOOK_SECRET secret not configured");
+}
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -212,12 +220,7 @@ export default async function handler(req, res) {
     const signature = req.headers["stripe-signature"];
 
     // Construct and verify the webhook event
-    if (webhookSecret) {
-      event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
-    } else {
-      // For testing without webhook secret
-      event = JSON.parse(rawBody.toString());
-    }
+    event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
 
     console.log(`Webhook received: ${event.type}`, {
       id: event.id,
