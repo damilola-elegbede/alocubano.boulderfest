@@ -165,8 +165,8 @@ function getSafeUserAgent(req, maxLength = 255) {
  * @returns {boolean} True if username is valid
  */
 function verifyUsername(username) {
-  // Get the expected username from environment variable, default to 'admin'
-  const expectedUsername = process.env.ADMIN_USERNAME || 'admin';
+  // Hardcoded username for admin - always 'admin'
+  const expectedUsername = 'admin';
   
   if (!username || typeof username !== "string") {
     return false;
@@ -329,7 +329,7 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
       hasPassword: !!password,
       passwordLength: password?.length,
       clientIP: clientIP?.substring(0, 10) + '...',
-      adminUsername: process.env.ADMIN_USERNAME || 'admin',
+      adminUsername: 'admin',
       testAdminPassword: process.env.TEST_ADMIN_PASSWORD ? 'configured' : 'missing',
       adminPasswordHash: process.env.ADMIN_PASSWORD ? 'configured' : 'missing',
       environment: {
@@ -353,7 +353,7 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
       verificationTime,
       usernameValid: isUsernameValid,
       passwordValid: isPasswordValid,
-      expectedUsername: process.env.ADMIN_USERNAME || 'admin',
+      expectedUsername: 'admin',
       providedUsername: username,
       hasTestPassword: !!process.env.TEST_ADMIN_PASSWORD,
       testPasswordMatch: process.env.TEST_ADMIN_PASSWORD === password,
