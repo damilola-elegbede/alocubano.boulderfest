@@ -336,6 +336,174 @@ jobs:
           npx playwright install --with-deps "$INSTALL_BROWSER"
           echo "✅ Browser installed: $INSTALL_BROWSER"
 
+      - name: 🔍 Debug GitHub Secrets Availability
+        run: |
+          echo "🔐 GitHub Secrets Availability Check (DEBUG)"
+          echo "======================================="
+          echo ""
+          
+          # Function to check secret availability without exposing values
+          check_secret() {
+            local secret_name="$1"
+            local secret_value="$2"
+            
+            if [ -z "$secret_value" ] || [ "$secret_value" = "" ]; then
+              echo "❌ $secret_name: NOT AVAILABLE"
+              return 1
+            else
+              # Show only first 3 and last 3 characters for verification
+              local masked_value="${secret_value:0:3}***${secret_value: -3}"
+              echo "✅ $secret_name: AVAILABLE (${masked_value})"
+              return 0
+            fi
+          }
+          
+          echo "🔑 Admin Authentication Secrets:"
+          check_secret "TEST_ADMIN_PASSWORD" "${{ secrets.TEST_ADMIN_PASSWORD }}"
+          check_secret "ADMIN_PASSWORD" "${{ secrets.ADMIN_PASSWORD }}"
+          check_secret "ADMIN_SECRET" "${{ secrets.ADMIN_SECRET }}"
+          
+          echo ""
+          echo "🗄️ Database Configuration Secrets:"
+          check_secret "TURSO_DATABASE_URL" "${{ secrets.TURSO_DATABASE_URL }}"
+          check_secret "TURSO_AUTH_TOKEN" "${{ secrets.TURSO_AUTH_TOKEN }}"
+          
+          echo ""
+          echo "☁️ Google Drive Service Account Secrets:"
+          check_secret "GOOGLE_SERVICE_ACCOUNT_EMAIL" "${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}"
+          check_secret "GOOGLE_PRIVATE_KEY" "${{ secrets.GOOGLE_PRIVATE_KEY }}"
+          check_secret "GOOGLE_DRIVE_GALLERY_FOLDER_ID" "${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}"
+          
+          echo ""
+          echo "💳 Payment Processing Secrets (if available):"
+          check_secret "STRIPE_PUBLISHABLE_KEY" "${{ secrets.STRIPE_PUBLISHABLE_KEY }}" || true
+          check_secret "STRIPE_SECRET_KEY" "${{ secrets.STRIPE_SECRET_KEY }}" || true
+          check_secret "STRIPE_WEBHOOK_SECRET" "${{ secrets.STRIPE_WEBHOOK_SECRET }}" || true
+          
+          echo ""
+          echo "📧 Email Service Secrets (if available):"
+          check_secret "BREVO_API_KEY" "${{ secrets.BREVO_API_KEY }}" || true
+          check_secret "BREVO_NEWSLETTER_LIST_ID" "${{ secrets.BREVO_NEWSLETTER_LIST_ID }}" || true
+          check_secret "BREVO_WEBHOOK_SECRET" "${{ secrets.BREVO_WEBHOOK_SECRET }}" || true
+          
+          echo ""
+          echo "======================================="
+
+      - name: 🌐 Test Preview URL Connectivity
+        run: |
+          echo "🌐 Preview URL Connectivity Test"
+          echo "==============================="
+          echo "Target URL: ${{ env.PREVIEW_URL }}"
+          echo ""
+          
+          # Basic connectivity test
+          echo "🔍 Testing basic connectivity..."
+          if curl -s --connect-timeout 10 --max-time 30 "${{ env.PREVIEW_URL }}" > /dev/null; then
+            echo "✅ Preview URL is accessible"
+          else
+            echo "❌ Preview URL is NOT accessible"
+            echo "This may cause E2E test failures"
+          fi
+          
+          # Test specific endpoints critical for E2E tests
+          echo ""
+          echo "🔍 Testing critical API endpoints..."
+          
+          # Health check endpoint
+          HEALTH_URL="${{ env.PREVIEW_URL }}/api/health/check"
+          echo "Testing: $HEALTH_URL"
+          if curl -s --connect-timeout 5 --max-time 15 "$HEALTH_URL" | grep -q "ok\|healthy\|success"; then
+            echo "✅ Health endpoint responding"
+          else
+            echo "⚠️ Health endpoint not responding properly"
+          fi
+          
+          # Gallery API (for gallery tests)
+          GALLERY_URL="${{ env.PREVIEW_URL }}/api/gallery"
+          echo "Testing: $GALLERY_URL" 
+          GALLERY_RESPONSE=$(curl -s --connect-timeout 5 --max-time 15 "$GALLERY_URL" || echo "FAILED")
+          if echo "$GALLERY_RESPONSE" | grep -q -E '(\[|\{|"photos"|"error")'; then
+            echo "✅ Gallery API responding"
+          else
+            echo "⚠️ Gallery API not responding properly"
+          fi
+          
+          # Admin login page (for admin tests)  
+          ADMIN_URL="${{ env.PREVIEW_URL }}/pages/admin-login.html"
+          echo "Testing: $ADMIN_URL"
+          if curl -s --connect-timeout 5 --max-time 15 "$ADMIN_URL" | grep -q -i "admin\|login\|password"; then
+            echo "✅ Admin login page accessible"
+          else
+            echo "⚠️ Admin login page not accessible"
+          fi
+          
+          echo ""
+          echo "==============================="
+
+      - name: 🔬 Environment Variables Debug
+        run: |
+          echo "🔬 Environment Variables Debug"
+          echo "============================="
+          echo ""
+          
+          echo "🎭 Playwright Configuration:"
+          echo "  PLAYWRIGHT_BASE_URL: $PLAYWRIGHT_BASE_URL"
+          echo "  PREVIEW_URL: $PREVIEW_URL"
+          echo "  E2E_TEST_MODE: $E2E_TEST_MODE"
+          echo "  NODE_ENV: $NODE_ENV"
+          echo "  CI: $CI"
+          
+          echo ""
+          echo "🔐 Authentication Variables (masked):"
+          if [ -n "$TEST_ADMIN_PASSWORD" ]; then
+            echo "  TEST_ADMIN_PASSWORD: ${TEST_ADMIN_PASSWORD:0:3}***${TEST_ADMIN_PASSWORD: -3}"
+          else
+            echo "  TEST_ADMIN_PASSWORD: ❌ NOT SET"
+          fi
+          
+          if [ -n "$ADMIN_SECRET" ]; then
+            echo "  ADMIN_SECRET: ${ADMIN_SECRET:0:3}***${ADMIN_SECRET: -3}"
+          else
+            echo "  ADMIN_SECRET: ❌ NOT SET"
+          fi
+          
+          echo ""
+          echo "🗄️ Database Variables (masked):"
+          if [ -n "$TURSO_DATABASE_URL" ]; then
+            echo "  TURSO_DATABASE_URL: ${TURSO_DATABASE_URL:0:10}***${TURSO_DATABASE_URL: -10}"
+          else
+            echo "  TURSO_DATABASE_URL: ❌ NOT SET"
+          fi
+          
+          if [ -n "$TURSO_AUTH_TOKEN" ]; then
+            echo "  TURSO_AUTH_TOKEN: ${TURSO_AUTH_TOKEN:0:5}***${TURSO_AUTH_TOKEN: -5}"
+          else
+            echo "  TURSO_AUTH_TOKEN: ❌ NOT SET"
+          fi
+          
+          echo ""
+          echo "☁️ Google Drive Variables (masked):"
+          if [ -n "$GOOGLE_SERVICE_ACCOUNT_EMAIL" ]; then
+            echo "  GOOGLE_SERVICE_ACCOUNT_EMAIL: ${GOOGLE_SERVICE_ACCOUNT_EMAIL:0:5}***${GOOGLE_SERVICE_ACCOUNT_EMAIL: -10}"
+          else
+            echo "  GOOGLE_SERVICE_ACCOUNT_EMAIL: ❌ NOT SET"
+          fi
+          
+          if [ -n "$GOOGLE_PRIVATE_KEY" ]; then
+            echo "  GOOGLE_PRIVATE_KEY: ${GOOGLE_PRIVATE_KEY:0:10}***[PRIVATE_KEY]"
+          else
+            echo "  GOOGLE_PRIVATE_KEY: ❌ NOT SET"
+          fi
+          
+          if [ -n "$GOOGLE_DRIVE_GALLERY_FOLDER_ID" ]; then
+            echo "  GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${GOOGLE_DRIVE_GALLERY_FOLDER_ID:0:3}***${GOOGLE_DRIVE_GALLERY_FOLDER_ID: -3}"
+          else
+            echo "  GOOGLE_DRIVE_GALLERY_FOLDER_ID: ❌ NOT SET"
+          fi
+          
+          echo ""
+          echo "============================="
+
       - name: 🎭 Run E2E Tests
         run: |
           # Determine the correct Playwright project name for the browser
@@ -399,6 +567,14 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
           GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
           GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}
+          # Payment Processing (if available)
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          # Email Service (if available)
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          BREVO_NEWSLETTER_LIST_ID: ${{ secrets.BREVO_NEWSLETTER_LIST_ID }}
+          BREVO_WEBHOOK_SECRET: ${{ secrets.BREVO_WEBHOOK_SECRET }}
           # Test Environment Configuration
           E2E_TEST_MODE: 'true'
           NODE_ENV: 'test'
