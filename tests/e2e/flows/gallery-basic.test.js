@@ -11,22 +11,57 @@ import { test, expect } from '@playwright/test';
  */
 async function validateGoogleDriveConfig(page) {
   console.log('🔍 STRICT CHECK: Validating Google Drive API configuration...');
+  console.log('🌐 Current page URL:', page.url());
   
   try {
+    console.log('📡 Making request to /api/debug/environment...');
     const envResponse = await page.request.get('/api/debug/environment');
+    console.log('📊 Environment debug response status:', envResponse.status());
+    
+    if (!envResponse.ok()) {
+      const errorText = await envResponse.text();
+      console.error('❌ Environment debug endpoint failed:', {
+        status: envResponse.status(),
+        statusText: envResponse.statusText(),
+        responseText: errorText
+      });
+      throw new Error(`Environment debug endpoint failed with status ${envResponse.status()}: ${errorText}`);
+    }
+    
     const envData = await envResponse.json();
+    console.log('📋 FULL Environment debug response:', JSON.stringify(envData, null, 2));
     
     // Check for required Google Drive environment variables
     const hasServiceAccount = !!envData.GOOGLE_SERVICE_ACCOUNT_EMAIL;
     const hasPrivateKey = !!envData.GOOGLE_PRIVATE_KEY;  
     const hasFolderId = !!envData.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
     
-    console.log('📊 Google Drive API Configuration Status:', {
-      GOOGLE_SERVICE_ACCOUNT_EMAIL: hasServiceAccount,
-      GOOGLE_PRIVATE_KEY: hasPrivateKey,
-      GOOGLE_DRIVE_GALLERY_FOLDER_ID: hasFolderId,
-      envResponseStatus: envResponse.status()
+    // Enhanced logging with actual values (for debugging)
+    console.log('🔍 DETAILED Google Drive Variable Analysis:', {
+      GOOGLE_SERVICE_ACCOUNT_EMAIL: {
+        exists: hasServiceAccount,
+        valueType: typeof envData.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        valueLength: envData.GOOGLE_SERVICE_ACCOUNT_EMAIL ? envData.GOOGLE_SERVICE_ACCOUNT_EMAIL.length : 0,
+        valuePreview: envData.GOOGLE_SERVICE_ACCOUNT_EMAIL ? `${envData.GOOGLE_SERVICE_ACCOUNT_EMAIL.substring(0, 10)}...` : null
+      },
+      GOOGLE_PRIVATE_KEY: {
+        exists: hasPrivateKey,
+        valueType: typeof envData.GOOGLE_PRIVATE_KEY,
+        valueLength: envData.GOOGLE_PRIVATE_KEY ? envData.GOOGLE_PRIVATE_KEY.length : 0,
+        hasBeginPrivateKey: envData.GOOGLE_PRIVATE_KEY ? envData.GOOGLE_PRIVATE_KEY.includes('-----BEGIN PRIVATE KEY-----') : false
+      },
+      GOOGLE_DRIVE_GALLERY_FOLDER_ID: {
+        exists: hasFolderId,
+        valueType: typeof envData.GOOGLE_DRIVE_GALLERY_FOLDER_ID,
+        valueLength: envData.GOOGLE_DRIVE_GALLERY_FOLDER_ID ? envData.GOOGLE_DRIVE_GALLERY_FOLDER_ID.length : 0,
+        value: envData.GOOGLE_DRIVE_GALLERY_FOLDER_ID
+      },
+      envResponseStatus: envResponse.status(),
+      allKeys: Object.keys(envData)
     });
+    
+    // Log all environment variables for complete debugging
+    console.log('🔍 ALL Available Environment Variables:', Object.keys(envData).sort());
     
     const missingVars = [];
     if (!hasServiceAccount) missingVars.push('GOOGLE_SERVICE_ACCOUNT_EMAIL');
@@ -34,6 +69,8 @@ async function validateGoogleDriveConfig(page) {
     if (!hasFolderId) missingVars.push('GOOGLE_DRIVE_GALLERY_FOLDER_ID');
     
     if (missingVars.length > 0) {
+      console.error('❌ MISSING Required Variables:', missingVars);
+      console.log('🔍 Available variables:', Object.keys(envData).filter(key => key.includes('GOOGLE')));
       throw new Error(`REQUIRED Google Drive environment variables missing: ${missingVars.join(', ')}. Configure these to enable real Google Drive API testing.`);
     }
     
@@ -41,7 +78,11 @@ async function validateGoogleDriveConfig(page) {
     return true;
     
   } catch (error) {
-    console.error('❌ Google Drive API Configuration Error:', error.message);
+    console.error('❌ Google Drive API Configuration Error:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack ? error.stack.split('\n').slice(0, 3) : null
+    });
     throw error;
   }
 }
@@ -51,50 +92,127 @@ async function validateGoogleDriveConfig(page) {
  */
 async function verifyRealGoogleDriveData(page) {
   console.log('🔍 STRICT CHECK: Verifying Google Drive API returns real data...');
+  console.log('🌐 Current page URL:', page.url());
   
   try {
+    console.log('📡 Making request to /api/gallery?year=2025...');
     const galleryResponse = await page.request.get('/api/gallery?year=2025');
-    const galleryData = await galleryResponse.json();
+    console.log('📊 Gallery API response status:', galleryResponse.status());
+    console.log('📊 Gallery API response headers:', galleryResponse.headers());
     
-    console.log('📊 Gallery API Response Status:', galleryResponse.status());
-    console.log('📊 Gallery Data Source:', galleryData.source);
+    if (!galleryResponse.ok()) {
+      const errorText = await galleryResponse.text();
+      console.error('❌ Gallery API endpoint failed:', {
+        status: galleryResponse.status(),
+        statusText: galleryResponse.statusText(),
+        responseText: errorText
+      });
+      throw new Error(`Gallery API endpoint failed with status ${galleryResponse.status()}: ${errorText}`);
+    }
+    
+    const galleryData = await galleryResponse.json();
+    console.log('📋 FULL Gallery API response:', JSON.stringify(galleryData, null, 2));
+    
+    // Enhanced logging for debugging
+    console.log('🔍 DETAILED Gallery Data Analysis:', {
+      source: galleryData.source,
+      sourceType: typeof galleryData.source,
+      hasItems: !!galleryData.items,
+      itemsLength: galleryData.items ? galleryData.items.length : 0,
+      hasError: !!galleryData.error,
+      error: galleryData.error,
+      errorType: typeof galleryData.error,
+      allKeys: Object.keys(galleryData),
+      responseStatus: galleryResponse.status(),
+      itemsPreview: galleryData.items ? galleryData.items.slice(0, 2).map(item => ({
+        id: item.id,
+        name: item.name,
+        thumbnailLink: item.thumbnailLink ? `${item.thumbnailLink.substring(0, 50)}...` : null,
+        webContentLink: item.webContentLink ? `${item.webContentLink.substring(0, 50)}...` : null
+      })) : null
+    });
+    
+    // Log specific error details if present
+    if (galleryData.error) {
+      console.error('❌ Gallery API Error Details:', {
+        errorMessage: galleryData.error,
+        errorDetails: galleryData.errorDetails || 'No additional details',
+        debugInfo: galleryData.debugInfo || 'No debug info'
+      });
+    }
     
     // STRICT: Fail if using fallback data
     if (galleryData.source && galleryData.source.includes('fallback')) {
+      console.error('❌ FAILED: Fallback data detected:', galleryData.source);
       throw new Error(`Gallery API returned fallback data (source: ${galleryData.source}). Google Drive API must return real data.`);
     }
     
     // STRICT: Fail if using empty gallery
     if (!galleryData.items || galleryData.items.length === 0) {
+      console.error('❌ FAILED: Empty gallery data:', {
+        hasItems: !!galleryData.items,
+        itemsLength: galleryData.items ? galleryData.items.length : 0
+      });
       throw new Error('Gallery API returned empty results. Google Drive API must return actual gallery items.');
     }
     
     // STRICT: Fail if error in response indicates API problems
     if (galleryData.error) {
+      console.error('❌ FAILED: API error in response:', galleryData.error);
       throw new Error(`Gallery API reported error: ${galleryData.error}`);
     }
     
     console.log('✅ Gallery API returned real data with', galleryData.items?.length || 0, 'items');
+    console.log('✅ Sample items:', galleryData.items.slice(0, 3).map(item => item.name || item.id));
     return galleryData;
     
   } catch (error) {
-    console.error('❌ Google Drive API Data Verification Failed:', error.message);
+    console.error('❌ Google Drive API Data Verification Failed:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack ? error.stack.split('\n').slice(0, 5) : null
+    });
     throw error;
   }
 }
 
 test.describe('Gallery Basic Browsing - STRICT Google Drive API Requirements', () => {
   test.beforeEach(async ({ page }) => {
-    // STRICT: Validate Google Drive API configuration first
-    await validateGoogleDriveConfig(page);
+    console.log('🚀 Starting beforeEach setup for Gallery Basic test...');
     
-    // STRICT: Verify API returns real data before testing UI
-    await verifyRealGoogleDriveData(page);
-    
-    await page.goto('/pages/boulder-fest-2025-gallery.html');
-    // Wait for page to fully load including network idle for preview deployments
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle', { timeout: 30000 });
+    try {
+      // STRICT: Validate Google Drive API configuration first
+      console.log('📋 Step 1: Validating Google Drive API configuration...');
+      await validateGoogleDriveConfig(page);
+      console.log('✅ Step 1 completed: Google Drive config validated');
+      
+      // STRICT: Verify API returns real data before testing UI
+      console.log('📋 Step 2: Verifying Google Drive API data...');
+      await verifyRealGoogleDriveData(page);
+      console.log('✅ Step 2 completed: Google Drive data verified');
+      
+      console.log('📋 Step 3: Navigating to gallery page...');
+      await page.goto('/pages/boulder-fest-2025-gallery.html');
+      console.log('🌐 Navigation completed. Current URL:', page.url());
+      
+      // Wait for page to fully load including network idle for preview deployments
+      console.log('📋 Step 4: Waiting for page to load...');
+      await page.waitForLoadState('domcontentloaded');
+      console.log('✅ DOM content loaded');
+      
+      await page.waitForLoadState('networkidle', { timeout: 30000 });
+      console.log('✅ Network idle reached');
+      
+      console.log('🎉 beforeEach setup completed successfully');
+    } catch (error) {
+      console.error('❌ beforeEach setup failed:', {
+        message: error.message,
+        name: error.name,
+        currentUrl: page.url(),
+        timestamp: new Date().toISOString()
+      });
+      throw error;
+    }
   });
 
   test('should load gallery page with REAL Google Drive images (NO FALLBACKS)', async ({ page }) => {
