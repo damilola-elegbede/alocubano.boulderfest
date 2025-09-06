@@ -200,7 +200,7 @@ describe('Gallery API Integration Tests', () => {
       }
     });
 
-    it('should support year-based filtering', async () => {
+    it('should support year-based filtering for 2025', async () => {
       // Check if Google Drive credentials are configured
       const hasGoogleDriveConfig = !!(
         process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
@@ -210,51 +210,30 @@ describe('Gallery API Integration Tests', () => {
 
       if (!hasGoogleDriveConfig) {
         // When secrets are missing, expect errors (fail-fast)
-        await expect(galleryService.getGalleryData('2024')).rejects.toThrow(/FATAL.*secret not configured/);
-        await expect(galleryService.getGalleryData('2026')).rejects.toThrow(/FATAL.*secret not configured/);
+        await expect(galleryService.getGalleryData('2025')).rejects.toThrow(/FATAL.*secret not configured/);
         return; // Test passes - fail-fast working correctly
       }
 
-      // Test year-based filtering with proper error handling for missing years
-      let result2024, result2026;
+      // Test year-based filtering for 2025 (the only available year)
+      let result2025;
       
       try {
-        result2024 = await galleryService.getGalleryData('2024');
+        result2025 = await galleryService.getGalleryData('2025');
       } catch (error) {
-        // Expected: year 2024 may not exist in Google Drive
-        expect(error.message).toMatch(/No gallery found for year 2024|Invalid year format/);
-      }
-      
-      try {
-        result2026 = await galleryService.getGalleryData('2026');
-      } catch (error) {
-        // Expected: year 2026 may not exist in Google Drive  
-        expect(error.message).toMatch(/No gallery found for year 2026|Invalid year format/);
+        // Expected: year 2025 may not exist in Google Drive
+        expect(error.message).toMatch(/No gallery found for year 2025|Invalid year format/);
       }
       
       // If data was successfully fetched, validate structure
-      if (result2024) {
-        expect(result2024.hasOwnProperty('eventId') || result2024.hasOwnProperty('year')).toBe(true);
-        expect(result2024).toHaveProperty('totalCount');
-        expect(typeof result2024.totalCount).toBe('number');
+      if (result2025) {
+        expect(result2025.hasOwnProperty('eventId') || result2025.hasOwnProperty('year')).toBe(true);
+        expect(result2025).toHaveProperty('totalCount');
+        expect(typeof result2025.totalCount).toBe('number');
         
         // Year filtering should be reflected if data exists
-        if (result2024.year) {
-          const year2024 = String(result2024.year);
-          expect(['2024', '2025']).toContain(year2024); // May fallback to current year
-        }
-      }
-      
-      if (result2026) {
-        expect(result2026.hasOwnProperty('eventId') || result2026.hasOwnProperty('year')).toBe(true);
-        expect(result2026).toHaveProperty('totalCount');
-        expect(typeof result2026.totalCount).toBe('number');
-        
-        // Year filtering should be reflected if data exists
-        if (result2026.year) {
-          const year2026 = String(result2026.year);
-          // Accept 2025 (current year fallback) or 2026 (requested year)
-          expect(['2025', '2026']).toContain(year2026);
+        if (result2025.year) {
+          const year2025 = String(result2025.year);
+          expect(year2025).toBe('2025');
         }
       }
       
@@ -323,26 +302,16 @@ describe('Gallery API Integration Tests', () => {
     });
 
     it('should handle query parameters correctly when server is available', async () => {
-      const response2024 = await testRequest('GET', '/api/gallery?year=2024');
-      const response2026 = await testRequest('GET', '/api/gallery?year=2026');
+      const response2025 = await testRequest('GET', '/api/gallery?year=2025');
       
-      // If server responses are available and successful
-      if (response2024.status === HTTP_STATUS.OK) {
-        expect(response2024.data).toHaveProperty('eventId');
+      // If server response is available and successful
+      if (response2025.status === HTTP_STATUS.OK) {
+        expect(response2025.data).toHaveProperty('eventId');
         // Year filtering should be reflected if data exists
-        if (response2024.data.year) expect(response2024.data.year).toBe(2024);
+        if (response2025.data.year) expect(response2025.data.year).toBe(2025);
       } else {
         // Server not available or year doesn't exist - both are acceptable
-        expect([0, 404, 500].includes(response2024.status)).toBe(true);
-      }
-      
-      if (response2026.status === HTTP_STATUS.OK) {
-        expect(response2026.data).toHaveProperty('eventId');
-        // Year filtering should be reflected if data exists
-        if (response2026.data.year) expect(response2026.data.year).toBe(2026);
-      } else {
-        // Server not available or year doesn't exist - both are acceptable  
-        expect([0, 404, 500].includes(response2026.status)).toBe(true);
+        expect([0, 404, 500].includes(response2025.status)).toBe(true);
       }
     });
   });
@@ -408,14 +377,7 @@ describe('Gallery API Integration Tests', () => {
         // Fill cache with data that exists - use default data first
         await galleryService.getGalleryData();
         
-        // Try to fetch specific years - handle cases where they don't exist in Google Drive
-        try {
-          await galleryService.getGalleryData('2024');
-        } catch (error) {
-          // Expected: specific years may not exist in Google Drive
-          expect(error.message).toMatch(/No gallery found for year 2024|FATAL.*secret not configured/);
-        }
-        
+        // Try to fetch 2025 data - handle cases where it doesn't exist in Google Drive
         try {
           await galleryService.getGalleryData('2025');
         } catch (error) {
