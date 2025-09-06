@@ -519,6 +519,11 @@ jobs:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
           BREVO_NEWSLETTER_LIST_ID: ${{ secrets.BREVO_NEWSLETTER_LIST_ID }}
           BREVO_WEBHOOK_SECRET: ${{ secrets.BREVO_WEBHOOK_SECRET }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PREVIEW_URL: ${{ env.PREVIEW_URL }}
           E2E_TEST_MODE: 'true'
           NODE_ENV: 'test'
 
@@ -593,9 +598,16 @@ jobs:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
           BREVO_NEWSLETTER_LIST_ID: ${{ secrets.BREVO_NEWSLETTER_LIST_ID }}
           BREVO_WEBHOOK_SECRET: ${{ secrets.BREVO_WEBHOOK_SECRET }}
+          # Vercel Configuration (for deployment operations)
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          # GitHub Token (automatically provided by GitHub Actions)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Test Environment Configuration
           E2E_TEST_MODE: 'true'
           NODE_ENV: 'test'
+          PREVIEW_URL: ${{ env.PREVIEW_URL }}
 
       - name: 📊 Upload Test Results
         if: always()

@@ -151,29 +151,29 @@ const SECRET_DEFINITIONS = {
     },
     GITHUB_TOKEN: {
       value: process.env.GITHUB_TOKEN,
-      description: 'GitHub API token for CI operations',
+      description: 'GitHub API token (automatically provided by GitHub Actions)',
       required: false,
-      testTypes: ['ci'],
-      helpUrl: 'https://github.com/settings/tokens'
+      testTypes: ['deployment'],  // Only needed for deployment operations, not tests
+      note: 'GitHub Actions provides this automatically as secrets.GITHUB_TOKEN'
     },
     VERCEL_TOKEN: {
       value: process.env.VERCEL_TOKEN,
-      description: 'Vercel authentication token',
+      description: 'Vercel authentication token for deployments',
       required: false,
-      testTypes: ['ci', 'deployment'],
+      testTypes: ['deployment'],  // Only needed for creating deployments, not testing
       helpUrl: 'https://vercel.com/account/tokens'
     },
     VERCEL_ORG_ID: {
       value: process.env.VERCEL_ORG_ID,
       description: 'Vercel organization ID',
       required: false,
-      testTypes: ['ci', 'deployment']
+      testTypes: ['deployment']  // Only needed for deployment operations
     },
     VERCEL_PROJECT_ID: {
       value: process.env.VERCEL_PROJECT_ID,
       description: 'Vercel project ID',
       required: false,
-      testTypes: ['ci', 'deployment']
+      testTypes: ['deployment']  // Only needed for deployment operations
     }
   },
 
@@ -209,27 +209,22 @@ const SECRET_DEFINITIONS = {
   // RUNTIME CONFIGURATION
   RUNTIME: {
     PORT: {
-      value: process.env.PORT || process.env.DYNAMIC_PORT,
-      description: 'Server port for testing',
+      value: process.env.PORT,
+      description: 'Server port for local testing',
       required: false,
-      defaultValue: '3000'
-    },
-    DYNAMIC_PORT: {
-      value: process.env.DYNAMIC_PORT,
-      description: 'Dynamic port allocation for CI',
-      required: false,
-      testTypes: ['ci']
+      defaultValue: '3000',
+      testTypes: ['local']  // Only needed for local testing
     },
     PLAYWRIGHT_BASE_URL: {
       value: process.env.PLAYWRIGHT_BASE_URL,
       description: 'Base URL for Playwright tests',
       required: false,
-      note: 'Auto-generated from port if not set'
+      note: 'Uses PREVIEW_URL for CI/preview deployments'
     },
     PREVIEW_URL: {
       value: process.env.PREVIEW_URL,
       description: 'Vercel preview deployment URL',
-      required: false,
+      required: true,  // Required for preview deployments
       testTypes: ['preview', 'ci']
     }
   }
