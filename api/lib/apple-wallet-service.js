@@ -35,19 +35,9 @@ export class AppleWalletService {
       process.env.VENUE_LONGITUDE || "-105.219544",
     );
 
-    // Critical wallet secrets - FAIL IMMEDIATELY if missing
-    if (!process.env.APPLE_PASS_KEY) {
-      throw new Error("❌ FATAL: APPLE_PASS_KEY secret not configured");
-    }
-    if (!process.env.WALLET_AUTH_SECRET) {
-      throw new Error("❌ FATAL: WALLET_AUTH_SECRET secret not configured");
-    }
-
-    // Decode certificates from base64
-    this.signerCert = process.env.APPLE_PASS_CERT
-      ? Buffer.from(process.env.APPLE_PASS_CERT, "base64")
-      : null;
-    this.signerKey = Buffer.from(process.env.APPLE_PASS_KEY, "base64");
+    // Defer critical checks to ensureInitialized()
+    this.initialized = false;
+    this.initializationPromise = null;
     this.signerKeyPassphrase = process.env.APPLE_PASS_PASSWORD;
     this.wwdrCert = process.env.APPLE_WWDR_CERT
       ? Buffer.from(process.env.APPLE_WWDR_CERT, "base64")
@@ -55,6 +45,52 @@ export class AppleWalletService {
 
     // JWT authentication secret for wallet updates
     this.walletAuthSecret = process.env.WALLET_AUTH_SECRET;
+  }
+
+  /**
+   * Ensure service is initialized with required secrets
+   */
+  async ensureInitialized() {
+    if (this.initialized) {
+      return true;
+    }
+
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    this.initializationPromise = this._performInitialization();
+    
+    try {
+      await this.initializationPromise;
+      this.initialized = true;
+      return true;
+    } catch (error) {
+      this.initializationPromise = null; // Enable retry
+      throw error;
+    }
+  }
+
+  async _performInitialization() {
+    // Critical wallet secrets - FAIL on first use if missing
+    if (!process.env.APPLE_PASS_KEY) {
+      throw new Error("❌ FATAL: APPLE_PASS_KEY secret not configured");
+    }
+    if (!process.env.WALLET_AUTH_SECRET) {
+      throw new Error("❌ FATAL: WALLET_AUTH_SECRET secret not configured");
+    }
+    
+    try {
+      // Decode certificates from base64
+      this.signerCert = process.env.APPLE_PASS_CERT
+        ? Buffer.from(process.env.APPLE_PASS_CERT, "base64")
+        : null;
+      this.signerKey = Buffer.from(process.env.APPLE_PASS_KEY, "base64");
+    } catch (e) {
+      throw new Error("❌ FATAL: APPLE_PASS_KEY is not valid base64");
+    }
+    
+    return true;
   }
 
   /**
@@ -445,4 +481,15 @@ export class AppleWalletService {
   }
 }
 
-export default new AppleWalletService();
+// Lazy singleton pattern with async initialization
+let _instance;
+let _initPromise;
+
+export async function getAppleWalletService() {
+  if (!_instance) _instance = new AppleWalletService();
+  if (!_initPromise) _initPromise = _instance.ensureInitialized();
+  await _initPromise;
+  return _instance;
+}
+
+export default getAppleWalletService;

@@ -122,6 +122,9 @@ async function loadYearStatistics() {
     throw new Error('❌ FATAL: GOOGLE_DRIVE_GALLERY_FOLDER_ID secret not configured');
   }
 
+  // Bind env-provided root folder to 2025 config
+  FOLDER_CONFIGS[2025].folderId = folderId.trim();
+
   try {
     const auth = await createGoogleAuth();
     const drive = google.drive({ version: "v3", auth });

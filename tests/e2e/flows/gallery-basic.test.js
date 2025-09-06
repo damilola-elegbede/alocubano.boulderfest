@@ -37,11 +37,11 @@ async function checkGoogleDriveConfig(page) {
     const hasPrivateKey = !!envData.variables?.details?.GOOGLE_PRIVATE_KEY;  
     const hasFolderId = !!envData.variables?.details?.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
     
-    // Log Google Drive configuration status (Vercel returns booleans only)
-    console.log('🔍 Google Drive Configuration Status:', {
-      GOOGLE_SERVICE_ACCOUNT_EMAIL: hasServiceAccount,
-      GOOGLE_PRIVATE_KEY: hasPrivateKey,
-      GOOGLE_DRIVE_GALLERY_FOLDER_ID: hasFolderId,
+    // Log Google Drive configuration status (sanitized - booleans only)
+    console.log('🔍 Google Drive Configuration Status (sanitized):', {
+      GOOGLE_SERVICE_ACCOUNT_EMAIL: { exists: hasServiceAccount },
+      GOOGLE_PRIVATE_KEY: { exists: hasPrivateKey },
+      GOOGLE_DRIVE_GALLERY_FOLDER_ID: { exists: hasFolderId },
       allConfigured: hasServiceAccount && hasPrivateKey && hasFolderId
     });
     

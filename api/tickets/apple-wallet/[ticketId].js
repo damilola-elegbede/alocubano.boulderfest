@@ -1,4 +1,4 @@
-import appleWalletService from "../../lib/apple-wallet-service.js";
+import getAppleWalletService from "../../lib/apple-wallet-service.js";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -13,6 +13,9 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Get Apple Wallet service instance
+    const appleWalletService = await getAppleWalletService();
+    
     // Check if Apple Wallet is configured
     if (!appleWalletService.isConfigured()) {
       return res.status(503).json({
