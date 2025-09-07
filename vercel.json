@@ -87,8 +87,23 @@
     "api/admin/analytics.js": {
       "maxDuration": 15
     },
-    "api/admin/export.js": {
-      "maxDuration": 30
+    "api/admin/generate-report.js": {
+      "maxDuration": 20
+    },
+    "api/admin/transactions.js": {
+      "maxDuration": 15
+    },
+    "api/admin/mfa-setup.js": {
+      "maxDuration": 10
+    },
+    "api/admin/mfa-recovery.js": {
+      "maxDuration": 10
+    },
+    "api/admin/mobile-login.js": {
+      "maxDuration": 10
+    },
+    "api/admin/csrf-token.js": {
+      "maxDuration": 5
     }
   },
   "images": {
