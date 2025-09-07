@@ -507,7 +507,7 @@
           const response = await fetch("/api/admin/dashboard");
           if (response.ok) {
             // Already authenticated, redirect to dashboard
-            window.location.href = "/admin/dashboard";
+            window.location.href = "dashboard.html";
           }
         } catch (error) {
           // Not authenticated, stay on login page
@@ -557,7 +557,7 @@
             
             // Add success animation before redirect
             setTimeout(() => {
-              window.location.href = "/admin/dashboard";
+              window.location.href = "dashboard.html";
             }, 800);
           } else {
             // Show error with Cuban shake animation

@@ -5,10 +5,28 @@ import { getValidationService } from "../lib/validation-service.js";
 import { addSecurityHeaders } from "../lib/security-headers.js";
 
 async function handler(req, res) {
-  const db = await getDatabaseClient();
+  let db;
+  try {
+    db = await getDatabaseClient();
+  } catch (dbError) {
+    console.error("Database initialization error:", dbError);
+    return res.status(500).json({ 
+      error: "Database connection failed",
+      message: dbError.message 
+    });
+  }
 
   if (req.method === "GET") {
-    const validationService = getValidationService();
+    let validationService;
+    try {
+      validationService = getValidationService();
+    } catch (validationError) {
+      console.error("Validation service initialization error:", validationError);
+      return res.status(500).json({ 
+        error: "Validation service failed",
+        message: validationError.message 
+      });
+    }
 
     // Validate all search parameters
     const validation = validationService.validateRegistrationSearchParams(
@@ -29,7 +47,8 @@ async function handler(req, res) {
         t.*,
         tr.transaction_id as order_number,
         tr.amount_cents / 100.0 as order_amount,
-        tr.customer_email as purchaser_email
+        tr.customer_email as purchaser_email,
+        COALESCE(t.event_id, tr.event_id) as event_id
       FROM tickets t
       JOIN transactions tr ON t.transaction_id = tr.id
       WHERE 1=1
@@ -70,6 +89,11 @@ async function handler(req, res) {
       sql += ` AND t.checked_in_at IS NULL`;
     }
 
+    if (sanitized.eventId) {
+      sql += ` AND t.event_id = ?`;
+      args.push(sanitized.eventId);
+    }
+
     sql += ` ORDER BY t.${sanitized.sortBy} ${sanitized.sortOrder}`;
     sql += ` LIMIT ? OFFSET ?`;
     args.push(sanitized.limit, sanitized.offset);
@@ -103,6 +127,7 @@ async function handler(req, res) {
         countSql += ` AND t.checked_in_at IS NOT NULL`;
       else if (sanitized.checkedIn === "false")
         countSql += ` AND t.checked_in_at IS NULL`;
+      if (sanitized.eventId) countSql += ` AND t.event_id = ?`;
 
       const countResult = await db.execute({ sql: countSql, args: countArgs });
 
@@ -112,6 +137,8 @@ async function handler(req, res) {
         limit: sanitized.limit,
         offset: sanitized.offset,
         hasMore: sanitized.offset + sanitized.limit < countResult.rows[0].total,
+        eventId: sanitized.eventId || null,
+        filteredByEvent: !!sanitized.eventId,
       });
     } catch (error) {
       console.error("Registration search error:", error);
@@ -121,7 +148,17 @@ async function handler(req, res) {
     // Update registration (check-in, edit details)
     const { ticketId } = req.query;
     const { action, ...data } = req.body;
-    const validationService = getValidationService();
+    
+    let validationService;
+    try {
+      validationService = getValidationService();
+    } catch (validationError) {
+      console.error("Validation service initialization error:", validationError);
+      return res.status(500).json({ 
+        error: "Validation service failed",
+        message: validationError.message 
+      });
+    }
 
     // Validate ticket ID
     const ticketIdValidation = validationService.validateTicketId(ticketId);
@@ -197,13 +234,20 @@ async function handler(req, res) {
     }
   } else {
     res.setHeader("Allow", ["GET", "PUT"]);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+    return res.status(405).json({ 
+      error: "Method not allowed",
+      message: `Method ${req.method} Not Allowed`,
+      allowedMethods: ["GET", "PUT"]
+    });
   }
 }
 
 // Wrap with try-catch to ensure JSON errors
 async function wrappedHandler(req, res) {
   try {
+    // Set Content-Type header early to ensure JSON responses
+    res.setHeader('Content-Type', 'application/json');
+    
     // Apply security headers first
     await addSecurityHeaders(req, res, { isAPI: true });
     
@@ -227,9 +271,11 @@ async function wrappedHandler(req, res) {
     console.error("Handler wrapper error:", error);
     // Always return JSON for errors
     if (!res.headersSent) {
+      res.setHeader('Content-Type', 'application/json');
       return res.status(500).json({ 
         error: "A server error occurred",
-        message: error.message 
+        message: error?.message || "Unknown error",
+        timestamp: new Date().toISOString()
       });
     }
   }

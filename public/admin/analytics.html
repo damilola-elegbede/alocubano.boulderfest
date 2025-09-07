@@ -11,6 +11,9 @@
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Admin Event Selector -->
+    <script type="module" src="/js/admin-event-selector.js"></script>
 
     <style>
       /* Cuban Salsa Analytics Theme Overrides */
@@ -122,22 +125,30 @@
         <div class="admin-card-header">
           <div>
             <a
-              href="/admin"
+              href="index.html"
               class="admin-btn admin-btn-secondary admin-btn-sm"
               style="margin-right: var(--admin-space-sm)"
             >
               🎯 Portal
             </a>
-            <a href="/admin/dashboard" class="admin-btn admin-btn-secondary admin-btn-sm">
+            <a href="dashboard.html" class="admin-btn admin-btn-secondary admin-btn-sm">
               📋 Dashboard
             </a>
             <h1 style="font-family: var(--admin-font-display); color: var(--color-white); font-size: var(--font-size-2xl); margin-top: var(--admin-space-md); margin-bottom: 0;">📊 Analytics Dashboard</h1>
           </div>
-          <div id="last-updated" class="admin-text-muted" style="color: rgba(255, 255, 255, 0.8); font-size: var(--font-size-sm)">
-            Last updated: <span id="update-time">--</span>
+          <div style="color: rgba(255, 255, 255, 0.8); font-size: var(--font-size-sm)">
+            <div id="last-updated" class="admin-text-muted" style="margin-bottom: var(--admin-space-xs)">
+              Last updated: <span id="update-time">--</span>
+            </div>
+            <div id="current-filters" class="admin-text-muted" style="font-size: var(--font-size-xs);">
+              Event: <span id="current-event">All Events</span> • Time Range: <span id="current-time-range">30 Days</span>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- Event Selector -->
+      <div id="event-selector-container"></div>
 
       <!-- Controls Bar -->
       <div class="admin-card admin-conga-item">
@@ -318,20 +329,82 @@
       </div>
     </div>
 
-    <script>
+    <script type="module">
+      // Import event selector functionality
+      import { initializeEventSelector } from '/js/admin-event-selector.js';
+      
       // Global variables
       let analyticsData = null;
       let currentTimeRange = 30;
+      let currentEventId = 'all';
+      let eventSelector = null;
       let charts = {};
       let refreshInterval = null;
 
       // Initialize on page load
       document.addEventListener("DOMContentLoaded", () => {
+        initializeEventSelectorComponent();
         initializeTimeRangeButtons();
         loadAnalytics();
         // Auto-refresh every 5 minutes
         refreshInterval = setInterval(loadAnalytics, 5 * 60 * 1000);
       });
+      
+      // Initialize event selector
+      function initializeEventSelectorComponent() {
+        const container = document.getElementById('event-selector-container');
+        if (!container) {
+          console.warn('Event selector container not found');
+          return;
+        }
+        
+        // Initialize the event selector
+        eventSelector = initializeEventSelector(container);
+        
+        if (eventSelector) {
+          // Get initial selection
+          const selection = eventSelector.getSelectedEvent();
+          currentEventId = selection.id;
+          
+          // Update initial displays
+          updateCurrentEventDisplay(selection.event?.name || 'All Events');
+          updateCurrentTimeRangeDisplay(currentTimeRange);
+          
+          // Listen for event changes
+          document.addEventListener('eventSelectorChange', handleEventChange);
+        }
+      }
+      
+      // Handle event selector change
+      function handleEventChange(event) {
+        const { eventId, event: eventData } = event.detail;
+        currentEventId = eventId;
+        
+        console.log('Analytics event changed to:', eventId);
+        
+        // Update filter display
+        updateCurrentEventDisplay(eventData?.name || 'All Events');
+        
+        // Reload analytics data with new event filter
+        loadAnalytics();
+      }
+      
+      // Update current event display in header
+      function updateCurrentEventDisplay(eventName) {
+        const eventDisplay = document.getElementById('current-event');
+        if (eventDisplay) {
+          eventDisplay.textContent = eventName;
+        }
+      }
+      
+      // Update current time range display in header
+      function updateCurrentTimeRangeDisplay(timeRange) {
+        const timeDisplay = document.getElementById('current-time-range');
+        if (timeDisplay) {
+          const displayText = timeRange === 'all' ? 'All Time' : `${timeRange} Days`;
+          timeDisplay.textContent = displayText;
+        }
+      }
 
       // Clean up on page unload
       window.addEventListener("beforeunload", () => {
@@ -348,6 +421,11 @@
           }
         });
         charts = {};
+        
+        // Cleanup event selector
+        if (eventSelector) {
+          eventSelector.destroy();
+        }
       });
 
       // Initialize time range buttons
@@ -372,6 +450,10 @@
             // Update time range and reload
             const days = btn.dataset.days;
             currentTimeRange = days === "all" ? "all" : parseInt(days);
+            
+            // Update time range display
+            updateCurrentTimeRangeDisplay(currentTimeRange);
+            
             loadAnalytics();
           });
         });
@@ -380,10 +462,25 @@
       // Load analytics data
       async function loadAnalytics() {
         try {
-          const params =
-            currentTimeRange === "all" ? "" : `?days=${currentTimeRange}`;
+          // Build query parameters
+          const queryParams = new URLSearchParams();
+          
+          // Add days parameter if not "all"
+          if (currentTimeRange !== "all") {
+            queryParams.set('days', currentTimeRange);
+          }
+          
+          // Add eventId parameter
+          if (currentEventId && currentEventId !== 'all') {
+            queryParams.set('eventId', currentEventId);
+          }
+          
+          const queryString = queryParams.toString();
+          const url = `/api/admin/analytics${queryString ? '?' + queryString : ''}`;
 
-          const response = await fetch(`/api/admin/analytics${params}`);
+          console.log('Loading analytics:', { url, eventId: currentEventId, days: currentTimeRange });
+
+          const response = await fetch(url);
           if (!response.ok) throw new Error("Failed to load analytics");
 
           analyticsData = await response.json();
@@ -880,7 +977,9 @@
         const dataUri =
           "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
 
-        const exportFileDefaultName = `analytics_${getDateString()}.json`;
+        const eventSuffix = currentEventId !== 'all' ? `_${currentEventId}` : '';
+        const timeSuffix = currentTimeRange !== 'all' ? `_${currentTimeRange}d` : '_all';
+        const exportFileDefaultName = `analytics${eventSuffix}${timeSuffix}_${getDateString()}.json`;
 
         const linkElement = document.createElement("a");
         linkElement.setAttribute("href", dataUri);
@@ -924,7 +1023,9 @@
         const dataUri =
           "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent);
 
-        const exportFileDefaultName = `analytics_${getDateString()}.csv`;
+        const eventSuffix = currentEventId !== 'all' ? `_${currentEventId}` : '';
+        const timeSuffix = currentTimeRange !== 'all' ? `_${currentTimeRange}d` : '_all';
+        const exportFileDefaultName = `analytics${eventSuffix}${timeSuffix}_${getDateString()}.csv`;
 
         const linkElement = document.createElement("a");
         linkElement.setAttribute("href", dataUri);

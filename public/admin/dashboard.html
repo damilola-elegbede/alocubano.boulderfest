@@ -49,6 +49,13 @@
     <link rel="stylesheet" href="/css/admin-unified.css" />
     <link rel="stylesheet" href="/css/admin-mobile.css" />
 
+    <!-- Admin Event Selector Module -->
+    <script type="module">
+      import { initializeEventSelector, filterStatistics } from '/js/admin-event-selector.js';
+      window.initializeEventSelector = initializeEventSelector;
+      window.filterStatistics = filterStatistics;
+    </script>
+
     <style>
       /* Admin-specific styling using main site design system */
       .admin-header {
@@ -734,14 +741,14 @@
           </div>
           <nav class="admin-header-actions" aria-label="Admin navigation">
             <a
-              href="/admin"
+              href="index.html"
               class="admin-btn admin-btn-secondary admin-dance"
               aria-label="Go to admin portal"
             >
               🎯 Portal
             </a>
             <a
-              href="/admin/analytics"
+              href="analytics.html"
               class="admin-btn admin-btn-outline admin-partner-swap"
               aria-label="View analytics"
             >
@@ -875,6 +882,8 @@
       const pageSize = 50;
       let authToken = null;
       let csrfToken = null;
+      let eventSelector = null;
+      let selectedEventId = 'all';
 
       // HTML escaping function to prevent XSS attacks
       // CRITICAL: Use this for ALL user-provided data displayed in innerHTML
@@ -904,6 +913,34 @@
         }
       }
 
+      // Initialize event selector
+      function initEventSelector() {
+        if (typeof window.initializeEventSelector === 'function') {
+          const container = document.querySelector('.dashboard-container .container');
+          if (container) {
+            eventSelector = window.initializeEventSelector(container);
+            if (eventSelector) {
+              selectedEventId = eventSelector.getSelectedEvent().id;
+              console.log('Event selector initialized with event:', selectedEventId);
+            }
+          }
+        } else {
+          console.warn('Event selector not available yet, will retry...');
+          setTimeout(initEventSelector, 100);
+        }
+      }
+
+      // Handle event selector changes
+      function handleEventSelectorChange(event) {
+        const { eventId, event: selectedEvent } = event.detail;
+        console.log('Event selector changed:', eventId, selectedEvent?.name);
+        
+        selectedEventId = eventId;
+        
+        // Refresh dashboard data with new event filter
+        refreshDashboardData();
+      }
+
       // Check authentication on load
       async function checkAuth() {
         // Add auth check status indicator immediately
@@ -927,7 +964,7 @@
             // Not authenticated, redirect to login immediately
             document.body.setAttribute('data-auth-status', 'unauthenticated');
             // Use replace to prevent back button issues
-            window.location.replace("/admin/login");
+            window.location.replace("login.html");
             return false;
           }
 
@@ -940,7 +977,7 @@
           console.error("Auth check failed:", error);
           document.body.setAttribute('data-auth-status', 'failed');
           // Use replace to prevent back button issues
-          window.location.replace("/admin/login");
+          window.location.replace("login.html");
           return false;
         }
       }
@@ -954,20 +991,47 @@
         
         if (!(await checkAuth())) return;
 
+        // Initialize event selector
+        initEventSelector();
+
+        // Load dashboard data
+        await loadStatistics();
+        await loadRegistrations();
+      }
+
+      // Load statistics with event filtering
+      async function loadStatistics() {
         try {
-          const response = await fetch("/api/admin/dashboard");
+          const params = new URLSearchParams();
+          if (selectedEventId && selectedEventId !== 'all') {
+            params.append('eventId', selectedEventId);
+          }
+
+          const url = `/api/admin/dashboard${params.toString() ? '?' + params : ''}`;
+          const response = await fetch(url);
           const data = await response.json();
 
           if (!response.ok) throw new Error(data.error);
 
-          displayStats(data.stats);
-          await loadRegistrations();
+          // Apply event filtering to statistics if available
+          let filteredStats = data.stats;
+          if (typeof window.filterStatistics === 'function') {
+            filteredStats = window.filterStatistics(data.stats, selectedEventId);
+          }
+
+          displayStats(filteredStats);
         } catch (error) {
-          console.error("Failed to load dashboard:", error);
+          console.error("Failed to load statistics:", error);
           document.getElementById("statsGrid").innerHTML = `
-                    <div class="error-state">Failed to load dashboard: ${escapeHtml(error.message)}</div>
+                    <div class="error-state">Failed to load statistics: ${escapeHtml(error.message)}</div>
                 `;
         }
+      }
+
+      // Refresh dashboard data (used when event selector changes)
+      async function refreshDashboardData() {
+        await loadStatistics();
+        await loadRegistrations(0); // Reset to first page when changing events
       }
 
       // Display statistics
@@ -1034,6 +1098,7 @@
           ...(search && { search }),
           ...(status && { status }),
           ...(checkedIn && { checkedIn }),
+          ...(selectedEventId && selectedEventId !== 'all' && { eventId: selectedEventId }),
         });
 
         try {
@@ -1215,6 +1280,7 @@
           ...(search && { search }),
           ...(status && { status }),
           ...(checkedIn && { checkedIn }),
+          ...(selectedEventId && selectedEventId !== 'all' && { eventId: selectedEventId }),
         });
 
         try {
@@ -1226,12 +1292,16 @@
           // Convert to CSV
           const csv = convertToCSV(data.registrations);
 
+          // Create filename with event context
+          const eventSuffix = selectedEventId !== 'all' ? `-${selectedEventId}` : '';
+          const filename = `registrations${eventSuffix}-${new Date().toISOString().split("T")[0]}.csv`;
+
           // Download
           const blob = new Blob([csv], { type: "text/csv" });
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = `registrations-${new Date().toISOString().split("T")[0]}.csv`;
+          a.download = filename;
           a.click();
         } catch (error) {
           alert(`Export failed: ${escapeHtml(error.message)}`);
@@ -1303,10 +1373,10 @@
             method: "DELETE",
             headers: headers,
           });
-          window.location.href = "/admin/login";
+          window.location.href = "login.html";
         } catch (error) {
           console.error("Logout failed:", error);
-          window.location.href = "/admin/login";
+          window.location.href = "login.html";
         }
       }
 
@@ -1363,13 +1433,18 @@
           }
         });
 
+      // Add event listener for event selector changes
+      document.addEventListener('eventSelectorChange', handleEventSelectorChange);
+
       // Initialize dashboard immediately
       document.body.setAttribute('data-auth-status', 'checking');
       loadDashboard();
 
-      // Refresh data every 30 seconds
+      // Refresh data every 30 seconds (respecting selected event)
       setInterval(() => {
-        loadDashboard();
+        if (document.body.getAttribute('data-auth-status') === 'authenticated') {
+          refreshDashboardData();
+        }
       }, 30000);
     </script>
   </body>

@@ -10,67 +10,94 @@ async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
+  // Get optional eventId query parameter for filtering
+  const { eventId } = req.query;
+  
+  // Build WHERE clause for event filtering
+  let eventFilter = '';
+  let eventFilterArgs = [];
+  if (eventId) {
+    eventFilter = ' WHERE event_id = ?';
+    eventFilterArgs = [eventId];
+  }
+
   // Get dashboard statistics including wallet metrics
-  const stats = await db.execute(`
-    SELECT 
-      (SELECT COUNT(*) FROM tickets WHERE status = 'valid') as total_tickets,
-      (SELECT COUNT(*) FROM tickets WHERE checked_in_at IS NOT NULL) as checked_in,
-      (SELECT COUNT(DISTINCT transaction_id) FROM tickets) as total_orders,
-      (SELECT SUM(amount_cents) / 100.0 FROM transactions WHERE status = 'completed') as total_revenue,
-      (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%workshop%') as workshop_tickets,
-      (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%vip%') as vip_tickets,
-      (SELECT COUNT(*) FROM tickets WHERE date(created_at) = date('now')) as today_sales,
-      -- Wallet statistics
-      (SELECT COUNT(*) FROM tickets WHERE qr_token IS NOT NULL) as qr_generated,
-      (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'apple_wallet') as apple_wallet_users,
-      (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'google_wallet') as google_wallet_users,
-      (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'web') as web_only_users
-  `);
+  const stats = await db.execute({
+    sql: `
+      SELECT 
+        (SELECT COUNT(*) FROM tickets WHERE status = 'valid'${eventId ? ' AND event_id = ?' : ''}) as total_tickets,
+        (SELECT COUNT(*) FROM tickets WHERE checked_in_at IS NOT NULL${eventId ? ' AND event_id = ?' : ''}) as checked_in,
+        (SELECT COUNT(DISTINCT transaction_id) FROM tickets${eventFilter}) as total_orders,
+        (SELECT SUM(amount_cents) / 100.0 FROM transactions WHERE status = 'completed'${eventId ? ' AND event_id = ?' : ''}) as total_revenue,
+        (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%workshop%'${eventId ? ' AND event_id = ?' : ''}) as workshop_tickets,
+        (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%vip%'${eventId ? ' AND event_id = ?' : ''}) as vip_tickets,
+        (SELECT COUNT(*) FROM tickets WHERE date(created_at) = date('now')${eventId ? ' AND event_id = ?' : ''}) as today_sales,
+        -- Wallet statistics
+        (SELECT COUNT(*) FROM tickets WHERE qr_token IS NOT NULL${eventId ? ' AND event_id = ?' : ''}) as qr_generated,
+        (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'apple_wallet'${eventId ? ' AND event_id = ?' : ''}) as apple_wallet_users,
+        (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'google_wallet'${eventId ? ' AND event_id = ?' : ''}) as google_wallet_users,
+        (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'web'${eventId ? ' AND event_id = ?' : ''}) as web_only_users
+    `,
+    args: eventId ? Array(11).fill(eventId) : []
+  });
 
   // Get recent registrations
-  const recentRegistrations = await db.execute(`
-    SELECT 
-      t.ticket_id,
-      t.attendee_first_name || ' ' || t.attendee_last_name as attendee_name,
-      t.attendee_email,
-      t.ticket_type,
-      t.created_at,
-      tr.transaction_id
-    FROM tickets t
-    JOIN transactions tr ON t.transaction_id = tr.id
-    ORDER BY t.created_at DESC
-    LIMIT 10
-  `);
+  const recentRegistrations = await db.execute({
+    sql: `
+      SELECT 
+        t.ticket_id,
+        t.attendee_first_name || ' ' || t.attendee_last_name as attendee_name,
+        t.attendee_email,
+        t.ticket_type,
+        t.event_id,
+        t.created_at,
+        tr.transaction_id
+      FROM tickets t
+      JOIN transactions tr ON t.transaction_id = tr.id
+      ${eventFilter}
+      ORDER BY t.created_at DESC
+      LIMIT 10
+    `,
+    args: eventFilterArgs
+  });
 
   // Get ticket type breakdown
-  const ticketBreakdown = await db.execute(`
-    SELECT 
-      ticket_type,
-      COUNT(*) as count,
-      SUM(price_cents) / 100.0 as revenue
-    FROM tickets
-    WHERE status = 'valid'
-    GROUP BY ticket_type
-    ORDER BY count DESC
-  `);
+  const ticketBreakdown = await db.execute({
+    sql: `
+      SELECT 
+        ticket_type,
+        COUNT(*) as count,
+        SUM(price_cents) / 100.0 as revenue
+      FROM tickets
+      WHERE status = 'valid'${eventId ? ' AND event_id = ?' : ''}
+      GROUP BY ticket_type
+      ORDER BY count DESC
+    `,
+    args: eventId ? [eventId] : []
+  });
 
   // Get daily sales for the last 7 days
-  const dailySales = await db.execute(`
-    SELECT 
-      date(created_at) as date,
-      COUNT(*) as tickets_sold,
-      SUM(price_cents) / 100.0 as revenue
-    FROM tickets
-    WHERE created_at >= date('now', '-7 days')
-    GROUP BY date(created_at)
-    ORDER BY date DESC
-  `);
+  const dailySales = await db.execute({
+    sql: `
+      SELECT 
+        date(created_at) as date,
+        COUNT(*) as tickets_sold,
+        SUM(price_cents) / 100.0 as revenue
+      FROM tickets
+      WHERE created_at >= date('now', '-7 days')${eventId ? ' AND event_id = ?' : ''}
+      GROUP BY date(created_at)
+      ORDER BY date DESC
+    `,
+    args: eventId ? [eventId] : []
+  });
 
   res.status(200).json({
     stats: stats.rows[0],
     recentRegistrations: recentRegistrations.rows,
     ticketBreakdown: ticketBreakdown.rows,
     dailySales: dailySales.rows,
+    eventId: eventId || null,
+    filteredByEvent: !!eventId,
     timestamp: new Date().toISOString(),
   });
 }

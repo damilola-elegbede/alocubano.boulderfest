@@ -4,483 +4,196 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Portal - A Lo Cubano Boulder Fest</title>
-    <link rel="stylesheet" href="/css/admin-unified.css" />
-    <link rel="stylesheet" href="/css/admin-mobile.css" />
     <style>
-      /* Cuban Salsa Theme Overrides */
       body {
-        background: linear-gradient(135deg, var(--admin-primary), var(--admin-secondary));
+        background: linear-gradient(135deg, #d2691e, #ff6347);
         min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
         padding: 20px;
+        margin: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       }
 
-      .portal-container {
-        max-width: 1200px;
-        width: 100%;
-        padding: 40px;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .portal-header {
+      .loading-container {
         text-align: center;
-        margin-bottom: 40px;
-        padding: 30px;
-        border-radius: var(--radius-lg);
         color: white;
+        padding: 40px;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
       }
 
-      .portal-header h1 {
-        font-family: var(--admin-font-display);
-        font-size: 36px;
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-top: 4px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .loading-text {
+        font-size: 18px;
+        font-weight: 500;
         margin-bottom: 10px;
-        text-transform: uppercase;
-        letter-spacing: var(--letter-spacing-wide);
       }
 
-      .portal-header p {
-        font-family: var(--admin-font-accent);
-        font-size: 16px;
+      .loading-subtext {
+        font-size: 14px;
+        opacity: 0.8;
         font-style: italic;
       }
 
-      .sections-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-        gap: 30px;
-        margin-bottom: 40px;
-      }
-
-      .quick-actions {
-        background: linear-gradient(135deg, var(--admin-primary), var(--admin-secondary));
-        border-radius: 12px;
-        padding: 25px;
+      .error-message {
+        background: rgba(220, 53, 69, 0.1);
+        border: 1px solid rgba(220, 53, 69, 0.3);
         color: white;
-        margin-bottom: 30px;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 20px;
+        display: none;
       }
 
-      .quick-actions h3 {
-        margin-bottom: 15px;
-        font-size: 18px;
-        font-family: var(--admin-font-display);
-        text-transform: uppercase;
-      }
-
-      .action-buttons {
-        display: flex;
-        gap: 15px;
-        flex-wrap: wrap;
-      }
-
-      .api-endpoints {
-        background: var(--admin-surface);
-        border-radius: 12px;
-        padding: 25px;
-        margin-top: 30px;
-        border: 1px solid var(--admin-border-light);
-      }
-
-      .endpoints-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 15px;
-      }
-
-      .endpoint-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px;
-        background: white;
-        border-radius: 6px;
-        border: 1px solid var(--admin-border-light);
-        font-size: 13px;
-      }
-
-      .status-indicator {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        background: var(--admin-success);
-        border-radius: 50%;
-        margin-right: 5px;
-        animation: cubanHeartbeat 2s infinite;
-      }
-
-      @media (max-width: 768px) {
-        .sections-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .portal-header h1 {
-          font-size: 28px;
-        }
-
-        .action-buttons {
-          flex-direction: column;
-        }
+      .error-message.show {
+        display: block;
       }
     </style>
   </head>
-  <body class="admin-portal admin-fade-in">
-    <div class="portal-container admin-card">
-      <div class="portal-header admin-cuban-gradient">
-        <h1 class="admin-mambo-bounce">🎺 Bienvenidos - Admin Portal</h1>
-        <p>A Lo Cubano Boulder Fest - ¡Ritmo, Sabor y Administración!</p>
-        <p style="margin-top: 10px; color: rgba(255,255,255,0.9);">
-          <span class="status-indicator"></span>
-          <span id="status">Todos los sistemas operacionales - ¡Vamos a bailar!</span>
-        </p>
-      </div>
-
-      <div class="quick-actions">
-        <h3>⚡ Quick Actions</h3>
-        <div class="action-buttons">
-          <a href="/admin/dashboard" class="admin-btn admin-btn-primary admin-cha-cha-slide"
-            >📊 Main Dashboard</a
-          >
-          <a href="/admin/analytics" class="admin-btn admin-btn-secondary admin-cha-cha-slide"
-            >📈 View Analytics</a
-          >
-          <a href="/admin/checkin" class="admin-btn admin-btn-info admin-cha-cha-slide"
-            >📱 Mobile Scanner</a
-          >
-          <button onclick="syncToSheets()" class="admin-btn admin-btn-success admin-cha-cha-slide">
-            🔄 Sync to Sheets
-          </button>
-          <button onclick="generateReport()" class="admin-btn admin-btn-warning admin-cha-cha-slide">
-            📥 Export Report
-          </button>
-          <button onclick="logout()" class="admin-btn admin-btn-danger admin-cha-cha-slide">🚪 Logout</button>
-        </div>
-      </div>
-
-      <div class="sections-grid">
-        <div class="admin-card admin-cha-cha-slide">
-          <h2><span class="icon">🎵</span> Dashboards & Analytics</h2>
-          <ul class="links-list">
-            <li class="admin-conga-item">
-              <a href="/admin/dashboard" class="admin-btn admin-btn-outline">
-                🎹 Main Dashboard
-                <span class="badge admin-badge-primary">Core</span>
-              </a>
-              <p class="description">
-                ¡Control central! Registration management, transactions, and Google Sheets sync
-              </p>
-            </li>
-            <li class="admin-conga-item">
-              <a href="/admin/analytics" class="admin-btn admin-btn-outline">
-                📈 Analytics Dashboard
-                <span class="badge admin-badge-success">Nuevo</span>
-              </a>
-              <p class="description">
-                Comprehensive analytics with charts, metrics, and Cuban rhythm insights
-              </p>
-            </li>
-            <li class="admin-conga-item">
-              <a href="/admin/checkin" class="admin-btn admin-btn-outline">
-                📱 Mobile Check-in Scanner
-                <span class="badge admin-badge-info">Móvil</span>
-              </a>
-              <p class="description">QR code scanning for event check-ins - ¡Rápido como salsa!</p>
-            </li>
-          </ul>
-        </div>
-
-        <div class="admin-card admin-cha-cha-slide">
-          <h2><span class="icon">🔐</span> Authentication & Security</h2>
-          <ul class="links-list">
-            <li class="admin-conga-item">
-              <a href="/admin/login" class="admin-btn admin-btn-outline">🔑 Admin Login</a>
-              <p class="description">Secure admin authentication portal - ¡Seguro como Clave!</p>
-            </li>
-            <li class="admin-conga-item">
-              <a href="#" onclick="testMobileAuth()" class="admin-btn admin-btn-outline">
-                📲 Mobile Auth Test
-                <span class="badge admin-badge-warning">Beta</span>
-              </a>
-              <p class="description">Test mobile authentication system</p>
-            </li>
-            <li class="admin-conga-item">
-              <a href="#" onclick="viewCSRFToken()" class="admin-btn admin-btn-outline">🛡️ CSRF Token Status</a>
-              <p class="description">View current CSRF token information</p>
-            </li>
-          </ul>
-        </div>
-
-        <div class="admin-card admin-cha-cha-slide">
-          <h2><span class="icon">📋</span> Data Management</h2>
-          <ul class="links-list">
-            <li class="admin-conga-item">
-              <a href="/admin/dashboard#registrations" class="admin-btn admin-btn-outline">
-                📝 Registration Management
-              </a>
-              <p class="description">
-                View and manage all ticket registrations - ¡Organizados como orquesta!
-              </p>
-            </li>
-            <li class="admin-conga-item">
-              <a href="/admin/dashboard#transactions" class="admin-btn admin-btn-outline">
-                💰 Transaction History
-              </a>
-              <p class="description">Payment transactions and order details</p>
-            </li>
-            <li class="admin-conga-item">
-              <a href="#" onclick="openGoogleSheets()" class="admin-btn admin-btn-outline">
-                📊 Google Sheets View
-                <span class="badge admin-badge-secondary">External</span>
-              </a>
-              <p class="description">
-                Access synchronized data in Google Sheets
-              </p>
-            </li>
-          </ul>
-        </div>
-
-        <div class="admin-card admin-cha-cha-slide">
-          <h2><span class="icon">🛠️</span> Tools & Utilities</h2>
-          <ul class="links-list">
-            <li class="admin-conga-item">
-              <a href="#" onclick="testDatabase()" class="admin-btn admin-btn-outline">🔍 Database Health Check</a>
-              <p class="description">
-                Test database connectivity and performance - ¡Chequea el compás!
-              </p>
-            </li>
-            <li class="admin-conga-item">
-              <a href="#" onclick="clearCache()" class="admin-btn admin-btn-outline">🧹 Clear System Cache</a>
-              <p class="description">Clear cached data and refresh system - ¡Limpio como merengue!</p>
-            </li>
-            <li class="admin-conga-item">
-              <a href="/docs/ADMIN_GUIDE.md" target="_blank" class="admin-btn admin-btn-outline">
-                📚 Admin Documentation
-              </a>
-              <p class="description">
-                Complete administration guide and API docs
-              </p>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="api-endpoints">
-        <h3>🔌 Available API Endpoints</h3>
-        <div class="endpoints-grid">
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/admin/dashboard</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method post">POST</span>
-            <code>/api/admin/login</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method post">POST</span>
-            <code>/api/admin/mobile-login</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/admin/registrations</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/admin/transactions</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/admin/analytics</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/admin/generate-report</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/admin/csrf-token</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method post">POST</span>
-            <code>/api/sheets/sync</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/sheets/scheduled-sync</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method post">POST</span>
-            <code>/api/tickets/validate</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/test-db</code>
-          </div>
-        </div>
-      </div>
-
-      <div class="footer">
-        <p>
-          <strong>🇨🇺 A Lo Cubano Boulder Fest</strong> Admin Portal v1.0 - ¡Con Sabor!<br />
-          Festival Dates: May 15-17, 2026 | Avalon Ballroom, Boulder, CO<br />
-          <em>¡Donde la salsa cobra vida y la administración tiene ritmo!</em><br />
-          <a href="mailto:alocubanoboulderfest@gmail.com">📧 Soporte</a> |
-          <a
-            href="https://github.com/damilola-elegbede/alocubano.boulderfest"
-            target="_blank"
-            >💻 GitHub</a
-          >
-          |
-          <a href="/docs" target="_blank">📖 Documentación</a>
-        </p>
+  <body>
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">🎺 Authenticating...</div>
+      <div class="loading-subtext">Checking admin credentials - ¡Un momento!</div>
+      <div id="errorMessage" class="error-message">
+        Authentication failed. Redirecting to login...
       </div>
     </div>
 
     <script>
-      // Check authentication on load
-      async function checkAuth() {
+      // Enhanced authentication check with proper token validation
+      async function checkAuthentication() {
         try {
-          const response = await fetch("/api/admin/dashboard");
-          if (!response.ok) {
-            window.location.href = "/admin/login";
-            return false;
+          // Check for various auth tokens in different storage locations
+          const adminToken = localStorage.getItem('adminToken') || 
+                           sessionStorage.getItem('adminToken') ||
+                           getCookieValue('admin_session');
+
+          // If no token found, redirect to login immediately
+          if (!adminToken) {
+            console.log('No authentication token found, redirecting to login');
+            window.location.replace('login.html');
+            return;
           }
-          return true;
-        } catch (error) {
-          console.error("Auth check failed:", error);
-          window.location.href = "/admin/login";
-          return false;
-        }
-      }
 
-      // Sync to Google Sheets
-      async function syncToSheets() {
-        if (!confirm("Sync all data to Google Sheets?")) return;
-
-        try {
-          const response = await fetch("/api/sheets/sync", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+          // Validate token with the server
+          const response = await fetch('/api/admin/dashboard', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${adminToken}`,
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include' // Include cookies for session-based auth
           });
 
           if (response.ok) {
-            alert("✅ Successfully synced to Google Sheets!");
+            // Token is valid, redirect to dashboard
+            console.log('Authentication successful, redirecting to dashboard');
+            window.location.replace('dashboard.html');
+          } else if (response.status === 401 || response.status === 403) {
+            // Token is invalid or expired, clear it and redirect to login
+            console.log('Authentication token invalid/expired, redirecting to login');
+            clearAuthTokens();
+            showErrorAndRedirect('Authentication expired. Please login again.');
           } else {
-            alert("❌ Sync failed. Please try again.");
+            // Other server error, try login page
+            console.log('Server error during auth check, redirecting to login');
+            showErrorAndRedirect('Server error. Please try logging in again.');
           }
         } catch (error) {
-          console.error("Sync error:", error);
-          alert("❌ Sync failed. Please check the connection.");
+          console.error('Auth check failed:', error);
+          // Network error or other issue, redirect to login
+          showErrorAndRedirect('Connection error. Please try logging in again.');
         }
       }
 
-      // Generate report
-      async function generateReport() {
-        const format = confirm("Download as CSV? (Cancel for JSON)")
-          ? "csv"
-          : "json";
-        window.open(`/api/admin/generate-report?format=${format}`, "_blank");
-      }
-
-      // Test database
-      async function testDatabase() {
-        try {
-          const response = await fetch("/api/test-db");
-          const data = await response.json();
-
-          if (data.success) {
-            alert(
-              `✅ Database Healthy!\n\nStatus: ${data.status}\nLatency: ${data.latency}ms\nTables: ${data.tests.tables.count}`,
-            );
-          } else {
-            alert("❌ Database issues detected. Check console for details.");
-            console.error("Database test:", data);
-          }
-        } catch (error) {
-          alert("❌ Database test failed");
-          console.error(error);
+      // Get cookie value by name
+      function getCookieValue(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) {
+          return parts.pop().split(';').shift();
         }
+        return null;
       }
 
-      // Test mobile auth
-      async function testMobileAuth() {
-        const password = prompt("Enter staff password to test mobile auth:");
-        if (!password) return;
+      // Clear all authentication tokens
+      function clearAuthTokens() {
+        localStorage.removeItem('adminToken');
+        sessionStorage.removeItem('adminToken');
+        // Clear session cookie
+        document.cookie = 'admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname;
+      }
 
+      // Show error message and redirect after delay
+      function showErrorAndRedirect(message) {
+        const errorElement = document.getElementById('errorMessage');
+        if (errorElement) {
+          errorElement.textContent = message;
+          errorElement.classList.add('show');
+        }
+        
+        // Redirect after 2 seconds to show the error message
+        setTimeout(() => {
+          window.location.replace('login.html');
+        }, 2000);
+      }
+
+      // Alternative authentication check using cookie-based session
+      async function checkSessionAuth() {
         try {
-          const response = await fetch("/api/admin/mobile-login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ password }),
+          const response = await fetch('/api/admin/dashboard', {
+            method: 'GET',
+            credentials: 'include' // This will include httpOnly cookies
           });
 
-          const data = await response.json();
           if (response.ok) {
-            alert(
-              `✅ Mobile auth successful!\n\nToken: ${data.token.substring(0, 20)}...`,
-            );
+            console.log('Session authentication successful, redirecting to dashboard');
+            window.location.replace('dashboard.html');
           } else {
-            alert(`❌ Mobile auth failed: ${data.error}`);
+            console.log('No valid session, redirecting to login');
+            window.location.replace('login.html');
           }
         } catch (error) {
-          alert("❌ Mobile auth test failed");
-          console.error(error);
+          console.error('Session auth check failed:', error);
+          window.location.replace('login.html');
         }
       }
 
-      // View CSRF token
-      async function viewCSRFToken() {
-        try {
-          const response = await fetch("/api/admin/csrf-token");
-          const data = await response.json();
-          alert(
-            `🔐 CSRF Token Info:\n\nToken: ${data.csrfToken.substring(0, 20)}...\nExpires: ${new Date(Date.now() + 3600000).toLocaleString()}`,
-          );
-        } catch (error) {
-          alert("❌ Failed to fetch CSRF token");
-          console.error(error);
+      // Initialize authentication check immediately
+      // Try both token-based and session-based auth
+      Promise.race([
+        checkAuthentication(),
+        checkSessionAuth()
+      ]).catch(() => {
+        // If both fail, redirect to login
+        window.location.replace('login.html');
+      });
+
+      // Fallback redirect in case JavaScript takes too long
+      setTimeout(() => {
+        console.log('Fallback redirect triggered');
+        if (window.location.pathname.includes('index.html')) {
+          window.location.replace('login.html');
         }
-      }
-
-      // Clear cache
-      function clearCache() {
-        if (!confirm("Clear all cached data?")) return;
-
-        localStorage.clear();
-        sessionStorage.clear();
-
-        if ("caches" in window) {
-          caches.keys().then((names) => {
-            names.forEach((name) => caches.delete(name));
-          });
-        }
-
-        alert("✅ Cache cleared successfully!");
-        window.location.reload();
-      }
-
-      // Open Google Sheets
-      function openGoogleSheets() {
-        alert(
-          "📊 Google Sheets integration requires proper setup.\nPlease refer to the documentation for sheet ID configuration.",
-        );
-        // In production, this would open the actual Google Sheets URL
-        // window.open('https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID', '_blank');
-      }
-
-      // Logout
-      function logout() {
-        if (!confirm("Are you sure you want to logout?")) return;
-
-        document.cookie =
-          "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        localStorage.removeItem("adminToken");
-        sessionStorage.clear();
-        window.location.href = "/admin/login";
-      }
-
-      // Initialize
-      checkAuth();
+      }, 5000); // 5 second timeout
     </script>
   </body>
 </html>

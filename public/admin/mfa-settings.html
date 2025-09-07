@@ -11,7 +11,7 @@
     <div class="admin-header admin-cuban-gradient">
       <h1>🛡️ Configuración de Seguridad MFA</h1>
       <div class="header-actions">
-        <a href="/admin/dashboard" class="admin-btn admin-btn-secondary"
+        <a href="dashboard.html" class="admin-btn admin-btn-secondary"
           >🏠 Panel Principal</a
         >
       </div>
@@ -65,13 +65,13 @@
         try {
           const response = await fetch("/api/admin/dashboard");
           if (!response.ok) {
-            window.location.href = "/admin/login";
+            window.location.href = "login.html";
             return false;
           }
           return true;
         } catch (error) {
           console.error("Auth check failed:", error);
-          window.location.href = "/admin/login";
+          window.location.href = "login.html";
           return false;
         }
       }
@@ -477,7 +477,7 @@ Instrucciones:
             "Open recovery options? This should only be used if you have lost access to your authenticator device.",
           )
         ) {
-          window.open("/admin/mfa-recovery", "_blank");
+          window.open("mfa-recovery.html", "_blank");
         }
       }
 

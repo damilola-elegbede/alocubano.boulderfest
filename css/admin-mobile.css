@@ -1,7 +1,25 @@
 /* Mobile Admin Interface - A Lo Cubano Boulder Fest
  * Mobile-responsive admin interface matching main site's mobile patterns
  * Follows HIG and Material Design principles for admin workflows
+ * PROFESSIONAL STATIC EXPERIENCE: All animations and transitions removed
  */
+
+/* ==========================================================================
+   STATIC PROFESSIONAL EXPERIENCE - NO ANIMATIONS
+   ========================================================================== */
+
+/* Remove all animations and transitions for professional admin experience */
+* {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Specific overrides for transform properties */
+*:hover,
+*:active,
+*:focus {
+  transform: none !important;
+}
 
 /* ==========================================================================
    MOBILE BREAKPOINTS & DESIGN TOKENS
@@ -105,7 +123,7 @@
     white-space: nowrap;
     flex-shrink: 0;
     touch-action: manipulation;
-    transition: all 0.2s ease;
+    /* transition: all 0.2s ease; */
   }
   
   /* Mobile button variants */
@@ -118,7 +136,7 @@
   .portal-btn:hover,
   .portal-btn:active {
     background: #138496;
-    transform: scale(0.98);
+    /* transform: scale(0.98); */
   }
   
   .analytics-btn {
@@ -130,7 +148,7 @@
   .analytics-btn:hover,
   .analytics-btn:active {
     background: #7b1fa2;
-    transform: scale(0.98);
+    /* transform: scale(0.98); */
   }
   
   .sync-btn {
@@ -142,13 +160,13 @@
   .sync-btn:hover,
   .sync-btn:active {
     background: #219a52;
-    transform: scale(0.98);
+    /* transform: scale(0.98); */
   }
   
   .sync-btn:disabled {
     background: var(--admin-text-muted);
     cursor: not-allowed;
-    transform: none;
+    /* transform: none; */
   }
   
   .logout-btn {
@@ -160,7 +178,7 @@
   .logout-btn:hover,
   .logout-btn:active {
     background: #c0392b;
-    transform: scale(0.98);
+    /* transform: scale(0.98); */
   }
 }
 
@@ -186,12 +204,12 @@
     justify-content: center;
     box-shadow: var(--mobile-shadow-md);
     touch-action: manipulation;
-    transition: all 0.3s ease;
+    /* transition: all 0.3s ease; */
   }
   
   .mobile-drawer-toggle.is-active {
     background: var(--admin-accent);
-    transform: rotate(90deg);
+    /* transform: rotate(90deg); */
   }
   
   /* Hamburger icon */
@@ -207,20 +225,20 @@
     height: 2px;
     background: currentColor;
     border-radius: 1px;
-    transition: all 0.3s ease;
+    /* transition: all 0.3s ease; */
   }
   
   .mobile-drawer-toggle.is-active .drawer-icon span:nth-child(1) {
-    transform: translateY(5px) rotate(45deg);
+    /* transform: translateY(5px) rotate(45deg); */
   }
   
   .mobile-drawer-toggle.is-active .drawer-icon span:nth-child(2) {
     opacity: 0;
-    transform: scaleX(0);
+    /* transform: scaleX(0); */
   }
   
   .mobile-drawer-toggle.is-active .drawer-icon span:nth-child(3) {
-    transform: translateY(-5px) rotate(-45deg);
+    /* transform: translateY(-5px) rotate(-45deg); */
   }
   
   /* Mobile drawer menu */
@@ -233,7 +251,7 @@
     background: var(--admin-bg-secondary);
     box-shadow: var(--mobile-shadow-xl);
     transform: translateX(-100%);
-    transition: transform 0.3s ease;
+    /* transition: transform 0.3s ease; */
     z-index: 1000;
     display: flex;
     flex-direction: column;
@@ -242,7 +260,7 @@
   }
   
   .mobile-drawer.is-open {
-    transform: translateX(0);
+    /* transform: translateX(0); */
   }
   
   /* Drawer backdrop */
@@ -255,7 +273,7 @@
     background: rgba(0, 0, 0, 0.5);
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    /* transition: all 0.3s ease; */
     z-index: 999;
     backdrop-filter: blur(2px);
   }
@@ -315,7 +333,7 @@
     font-weight: 500;
     min-height: var(--touch-target-min);
     touch-action: manipulation;
-    transition: all 0.2s ease;
+    /* transition: all 0.2s ease; */
     position: relative;
   }
   
@@ -421,7 +439,7 @@
     border: 1px solid var(--admin-border);
     flex-shrink: 0;
     touch-action: manipulation;
-    transition: all 0.3s ease;
+    /* transition: all 0.3s ease; */
     position: relative;
     overflow: hidden;
   }
@@ -437,7 +455,7 @@
   }
   
   .stat-card:active {
-    transform: scale(0.98);
+    /* transform: scale(0.98); */
     box-shadow: var(--mobile-shadow-md);
   }
   
@@ -516,7 +534,7 @@
     font-size: var(--mobile-text-base);
     background: white;
     touch-action: manipulation;
-    transition: all 0.2s ease;
+    /* transition: all 0.2s ease; */
   }
   
   .search-bar input:focus {
@@ -572,12 +590,12 @@
     font-size: var(--mobile-text-sm);
     font-weight: 600;
     touch-action: manipulation;
-    transition: all 0.2s ease;
+    /* transition: all 0.2s ease; */
     flex: 1;
   }
   
   .search-bar button:active {
-    transform: scale(0.98);
+    /* transform: scale(0.98); */
   }
   
   .search-bar button:first-of-type {
@@ -625,11 +643,11 @@
     border: 1px solid var(--admin-border);
     position: relative;
     touch-action: manipulation;
-    transition: all 0.2s ease;
+    /* transition: all 0.2s ease; */
   }
   
   .mobile-data-card:active {
-    transform: scale(0.98);
+    /* transform: scale(0.98); */
     box-shadow: var(--mobile-shadow-md);
   }
   
@@ -721,12 +739,12 @@
     font-size: var(--mobile-text-sm);
     font-weight: 600;
     touch-action: manipulation;
-    transition: all 0.2s ease;
+    /* transition: all 0.2s ease; */
     cursor: pointer;
   }
   
   .card-action-btn:active {
-    transform: scale(0.98);
+    /* transform: scale(0.98); */
   }
   
   .checkin-btn {
@@ -742,7 +760,7 @@
   .checkin-btn:disabled {
     background: var(--admin-text-muted);
     cursor: not-allowed;
-    transform: none;
+    /* transform: none; */
   }
   
   .undo-btn {
@@ -780,7 +798,7 @@
     font-size: var(--mobile-text-sm);
     font-weight: 600;
     touch-action: manipulation;
-    transition: all 0.2s ease;
+    /* transition: all 0.2s ease; */
   }
   
   .pagination button:hover:not(:disabled),
@@ -788,13 +806,13 @@
     background: var(--admin-secondary);
     color: white;
     border-color: var(--admin-secondary);
-    transform: scale(0.98);
+    /* transform: scale(0.98); */
   }
   
   .pagination button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    transform: none;
+    /* transform: none; */
   }
   
   .page-info {
@@ -850,7 +868,7 @@
     min-width: var(--touch-target-min);
     justify-content: center;
     border-radius: 8px;
-    transition: all 0.2s ease;
+    /* transition: all 0.2s ease; */
     touch-action: manipulation;
     position: relative;
   }
@@ -859,7 +877,7 @@
   .bottom-nav-item:active {
     color: var(--admin-secondary);
     background: rgba(52, 152, 219, 0.1);
-    transform: scale(0.95);
+    /* transform: scale(0.95); */
   }
   
   .bottom-nav-item.is-active {
@@ -927,7 +945,7 @@
     z-index: 1100;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    /* transition: all 0.3s ease; */
     backdrop-filter: blur(4px);
   }
   
@@ -942,14 +960,14 @@
     max-height: 90vh;
     border-radius: 16px 16px 0 0;
     padding: var(--mobile-space-xl) var(--mobile-space-lg);
-    transform: translateY(100%);
-    transition: transform 0.3s ease;
+    /* transform: translateY(100%); */
+    /* transition: transform 0.3s ease; */
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
   
   .mobile-modal.is-active .mobile-modal-content {
-    transform: translateY(0);
+    /* transform: translateY(0); */
   }
   
   .modal-header {
@@ -981,14 +999,14 @@
     align-items: center;
     justify-content: center;
     touch-action: manipulation;
-    transition: all 0.2s ease;
+    /* transition: all 0.2s ease; */
   }
   
   .modal-close:hover,
   .modal-close:active {
     background: #f1f3f5;
     color: var(--admin-text-primary);
-    transform: scale(0.95);
+    /* transform: scale(0.95); */
   }
 }
 
@@ -1010,14 +1028,14 @@
     border: 3px solid #f1f3f5;
     border-top: 3px solid var(--admin-secondary);
     border-radius: 50%;
-    animation: spin 1s linear infinite;
+    /* animation: spin 1s linear infinite; */
     margin-bottom: var(--mobile-space-md);
   }
   
-  @keyframes spin {
+  /* @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-  }
+  } */
   
   .loading-text {
     font-size: var(--mobile-text-sm);
@@ -1094,13 +1112,13 @@
     align-items: center;
     justify-content: center;
     touch-action: manipulation;
-    transition: all 0.2s ease;
+    /* transition: all 0.2s ease; */
   }
   
   .scanner-close:hover,
   .scanner-close:active {
     background: rgba(255, 255, 255, 0.2);
-    transform: scale(0.95);
+    /* transform: scale(0.95); */
   }
   
   .scanner-viewport {
@@ -1133,13 +1151,13 @@
     border: 2px solid transparent;
     border-image: linear-gradient(45deg, #00ff00, #0080ff) 1;
     border-radius: 8px;
-    animation: scannerPulse 2s ease-in-out infinite;
+    /* animation: scannerPulse 2s ease-in-out infinite; */
   }
   
-  @keyframes scannerPulse {
+  /* @keyframes scannerPulse {
     0%, 100% { opacity: 0.5; }
     50% { opacity: 1; }
-  }
+  } */
   
   .scanner-instructions {
     position: absolute;
@@ -1177,27 +1195,17 @@
     }
   }
   
-  /* Reduced motion support */
+  /* Professional Static Experience - Enhanced for all users */
+  /* Note: All animations and transitions already globally disabled */
   @media (prefers-reduced-motion: reduce) {
-    .mobile-drawer,
-    .drawer-backdrop,
-    .mobile-modal,
-    .mobile-modal-content,
-    .stat-card,
-    .mobile-data-card,
-    .card-action-btn,
-    .bottom-nav-item {
-      transition: none;
-      animation: none;
-    }
-    
+    /* Additional accessibility enhancements for reduced motion preference */
     .loading-spinner {
-      animation: none;
       border-top-color: var(--admin-secondary);
+      /* Static loading indicator */
     }
     
     .scanner-overlay::before {
-      animation: none;
+      opacity: 0.8; /* Static scanner overlay */
     }
   }
   

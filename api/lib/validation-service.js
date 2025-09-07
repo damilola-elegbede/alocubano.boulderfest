@@ -264,6 +264,33 @@ class ValidationService {
   }
 
   /**
+   * Validate event ID format
+   * @param {string} eventId - Event ID to validate
+   * @returns {Object} Validation result
+   */
+  validateEventId(eventId) {
+    if (!eventId) {
+      return { isValid: true }; // Event ID is optional for filtering
+    }
+
+    if (typeof eventId !== "string") {
+      return { isValid: false, error: "Event ID must be a string" };
+    }
+
+    // Event IDs should be reasonable length (adjust based on your format)
+    if (eventId.length < 1 || eventId.length > 100) {
+      return { isValid: false, error: "Invalid event ID format" };
+    }
+
+    // Basic sanitization - allow alphanumeric, hyphens, underscores, dots
+    if (!/^[a-zA-Z0-9._-]+$/.test(eventId)) {
+      return { isValid: false, error: "Event ID contains invalid characters" };
+    }
+
+    return { isValid: true };
+  }
+
+  /**
    * Validate ticket ID format
    * @param {string} ticketId - Ticket ID to validate
    * @returns {Object} Validation result
@@ -352,6 +379,14 @@ class ValidationService {
     } else if (params.checkedIn) {
       // Convert string to boolean
       sanitized.checkedIn = params.checkedIn === "true";
+    }
+
+    // Validate eventId
+    const eventIdValidation = this.validateEventId(params.eventId);
+    if (!eventIdValidation.isValid) {
+      errors.push(eventIdValidation.error);
+    } else if (params.eventId) {
+      sanitized.eventId = params.eventId;
     }
 
     // Validate sort parameters
