@@ -2,7 +2,7 @@ import authService from "../lib/auth-service.js";
 import { getDatabaseClient } from "../lib/database.js";
 import ticketService from "../lib/ticket-service.js";
 import { getValidationService } from "../lib/validation-service.js";
-import { withSecurityHeaders } from "../lib/security-headers.js";
+import { addSecurityHeaders } from "../lib/security-headers.js";
 
 async function handler(req, res) {
   const db = await getDatabaseClient();
@@ -201,4 +201,38 @@ async function handler(req, res) {
   }
 }
 
-export default withSecurityHeaders(authService.requireAuth(handler));
+// Wrap with try-catch to ensure JSON errors
+async function wrappedHandler(req, res) {
+  try {
+    // Apply security headers first
+    await addSecurityHeaders(req, res, { isAPI: true });
+    
+    // Check authentication
+    const token = authService.getSessionFromRequest(req);
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    const session = authService.verifySessionToken(token);
+    if (!session.valid) {
+      return res.status(401).json({ error: "Invalid or expired session" });
+    }
+    
+    // Add admin info to request
+    req.admin = session.admin;
+    
+    // Call the actual handler
+    return await handler(req, res);
+  } catch (error) {
+    console.error("Handler wrapper error:", error);
+    // Always return JSON for errors
+    if (!res.headersSent) {
+      return res.status(500).json({ 
+        error: "A server error occurred",
+        message: error.message 
+      });
+    }
+  }
+}
+
+export default wrappedHandler;

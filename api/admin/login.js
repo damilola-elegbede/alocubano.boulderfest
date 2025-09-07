@@ -1,7 +1,7 @@
 import authService from "../lib/auth-service.js";
 import { getDatabaseClient } from "../lib/database.js";
 import { getRateLimitService } from "../lib/rate-limit-service.js";
-import { withSecurityHeaders } from "../lib/security-headers.js";
+import { addSecurityHeaders } from "../lib/security-headers.js";
 import {
   verifyMfaCode,
   markSessionMfaVerified,
@@ -295,7 +295,7 @@ async function loginHandler(req, res) {
     }
   } else {
     res.setHeader("Allow", ["POST", "DELETE"]);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+    return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
   }
 }
 
@@ -588,4 +588,26 @@ async function getMfaStatus(adminId) {
   }
 }
 
-export default withSecurityHeaders(loginHandler);
+// Wrap with try-catch to ensure JSON errors
+async function wrappedHandler(req, res) {
+  try {
+    // Apply security headers first
+    await addSecurityHeaders(req, res, { isAPI: true });
+    
+    // No authentication check needed for login endpoint
+    
+    // Call the actual handler
+    return await loginHandler(req, res);
+  } catch (error) {
+    console.error("Login handler wrapper error:", error);
+    // Always return JSON for errors
+    if (!res.headersSent) {
+      return res.status(500).json({ 
+        error: "Internal server error",
+        message: error.message 
+      });
+    }
+  }
+}
+
+export default wrappedHandler;
