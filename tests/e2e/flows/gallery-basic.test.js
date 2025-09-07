@@ -161,12 +161,13 @@ test.describe('Gallery Basic Browsing', () => {
       await page.goto('/2025-gallery');
       console.log('🌐 Navigation completed. Current URL:', page.url());
       
-      // Wait for page to fully load including network idle for preview deployments
+      // Wait for page to fully load with extended timeouts for preview deployments
       console.log('📋 Step 4: Waiting for page to load...');
-      await page.waitForLoadState('domcontentloaded');
+      await page.waitForLoadState('domcontentloaded', { timeout: 60000 });
       console.log('✅ DOM content loaded');
       
-      await page.waitForLoadState('networkidle', { timeout: 30000 });
+      // Use longer timeout for preview deployments with cold start delays
+      await page.waitForLoadState('networkidle', { timeout: 120000 });
       console.log('✅ Network idle reached');
       
       console.log('🎉 beforeEach setup completed successfully');
@@ -193,7 +194,12 @@ test.describe('Gallery Basic Browsing', () => {
   test('should load gallery page with Google Drive content', async ({ page }) => {
     console.log('🔍 INFO: Verifying gallery page loads with Google Drive content...');
     
-    await page.waitForTimeout(3000); // Allow content to load
+    // Wait for gallery content to load using state-based wait instead of hard timeout
+    try {
+      await page.waitForSelector('.gallery-detail-grid, .gallery-item', { timeout: 60000 });
+    } catch (error) {
+      console.log('📍 Gallery grid not found, checking for any gallery content...');
+    }
     
     // Check for dynamic gallery content from Google Drive
     const dynamicGallery = page.locator('.gallery-detail-grid, .gallery-item');
@@ -245,9 +251,7 @@ test.describe('Gallery Basic Browsing', () => {
   test('should load gallery images from Google Drive', async ({ page }) => {
     console.log('🔍 INFO: Validating gallery image loading...');
     
-    await page.waitForTimeout(5000);
-    
-    // Wait for loading to complete
+    // Wait for Google Drive API calls to complete with extended timeout for cold starts
     try {
       await page.waitForFunction(
         () => {
@@ -260,10 +264,10 @@ test.describe('Gallery Basic Browsing', () => {
           
           return loadingHidden || contentShown;
         },
-        { timeout: 15000 }
+        { timeout: 90000 } // Extended timeout for Google Drive API cold starts
       );
     } catch (error) {
-      console.log('📍 INFO: Loading state check timed out (may be expected)');
+      console.log('📍 INFO: Loading state check timed out (may be expected for preview deployments)');
     }
     
     // Check for dynamic images from Google Drive
@@ -301,7 +305,17 @@ test.describe('Gallery Basic Browsing', () => {
   test('should handle image lazy loading', async ({ page }) => {
     // Scroll down to trigger lazy loading
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight / 2));
-    await page.waitForTimeout(1000);
+    
+    // Wait for lazy loading to trigger and images to start loading
+    await page.waitForFunction(
+      () => {
+        const images = document.querySelectorAll('.gallery-item img, img[data-src]');
+        return images.length > 0;
+      },
+      { timeout: 30000 }
+    ).catch(() => {
+      console.log('📍 Lazy loading check timed out, continuing with available images');
+    });
     
     // More images should be visible now
     const images = page.locator('img[src], .gallery-item img');
@@ -314,9 +328,13 @@ test.describe('Gallery Basic Browsing', () => {
   test('should open image in modal or lightbox', async ({ page }) => {
     console.log('🔍 Starting lightbox test...');
     
-    // Wait for gallery to fully load
-    await page.waitForSelector('.gallery-detail-grid', { timeout: 10000 });
-    console.log('✅ Gallery grid loaded');
+    // Wait for gallery to fully load with extended timeout for preview deployments
+    try {
+      await page.waitForSelector('.gallery-detail-grid', { timeout: 60000 });
+      console.log('✅ Gallery grid loaded');
+    } catch (error) {
+      console.log('📍 Gallery grid not loaded yet, checking for content...');
+    }
     
     // Debug: Check what gallery-related elements exist in DOM
     console.log('🔍 Checking for gallery elements in DOM...');
@@ -381,12 +399,25 @@ test.describe('Gallery Basic Browsing', () => {
       const className = await firstItem.evaluate(el => el.className);
       console.log(`  Clicking element: <${tagName} class="${className}">`);
       
-      // Click and wait a bit
+      // Click and wait for lightbox activation
       await firstItem.click();
       console.log('✅ Click executed');
       
-      // Wait a moment for any animations
-      await page.waitForTimeout(1000);
+      // Wait for lightbox to activate with proper state-based wait
+      await page.waitForFunction(
+        () => {
+          const lightboxElement = document.querySelector('#unified-lightbox, .lightbox, .modal, [class*="lightbox"]');
+          return lightboxElement && (
+            lightboxElement.classList.contains('is-open') ||
+            lightboxElement.classList.contains('active') ||
+            lightboxElement.style.display === 'block' ||
+            lightboxElement.style.display === 'flex'
+          );
+        },
+        { timeout: 10000 }
+      ).catch(() => {
+        console.log('📍 Lightbox activation wait timed out');
+      });
       
       // Check multiple possible lightbox states
       console.log('🔍 Checking for lightbox activation...');
@@ -449,7 +480,17 @@ test.describe('Gallery Basic Browsing', () => {
     
     if (await year2025.count() > 0) {
       await year2025.click();
-      await page.waitForTimeout(1000);
+      
+      // Wait for gallery content to update with state-based wait
+      await page.waitForFunction(
+        () => {
+          const grid = document.querySelector('.gallery-detail-grid, .gallery-grid-static');
+          return grid && grid.style.display !== 'none';
+        },
+        { timeout: 30000 }
+      ).catch(() => {
+        console.log('📍 Gallery update after year navigation timed out');
+      });
       
       // Gallery content should update
       await expect(page.locator('.gallery-detail-grid, .gallery-grid-static')).toBeVisible();
@@ -471,7 +512,17 @@ test.describe('Gallery Basic Browsing', () => {
     });
     
     await page.reload();
-    await page.waitForTimeout(5000);
+    
+    // Wait for Google Drive API calls to complete with extended timeout
+    await page.waitForFunction(
+      () => {
+        return document.readyState === 'complete' && 
+               !document.querySelector('#gallery-detail-loading[style*="display: block"]');
+      },
+      { timeout: 90000 }
+    ).catch(() => {
+      console.log('📍 Gallery API loading wait timed out, continuing...');
+    });
     
     // Check if gallery API calls were made with eventId
     const galleryApiCalls = apiRequests.filter(req => req.url.includes('/api/gallery'));
@@ -504,18 +555,18 @@ test.describe('Gallery Basic Browsing', () => {
     // Test passes as long as gallery page loads without errors
     expect(page).toBeTruthy();
     
-    // Try to wait for content to be fully loaded
+    // Try to wait for content to be fully loaded with extended timeout
     try {
       await page.waitForFunction(
         () => {
           const contentEl = document.getElementById('gallery-detail-content');
           return contentEl && contentEl.style.display === 'block';
         },
-        { timeout: 10000 }
+        { timeout: 60000 } // Extended timeout for Google Drive API delays
       );
       console.log('✅ Dynamic content is fully loaded and visible');
     } catch (error) {
-      console.log('📍 INFO: Dynamic content loading check timed out (may be expected)');
+      console.log('📍 INFO: Dynamic content loading check timed out (expected for preview deployments without Google Drive config)');
     }
   });
 
@@ -523,8 +574,16 @@ test.describe('Gallery Basic Browsing', () => {
     // Reload to see loading state
     await page.reload();
     
-    // Wait for content to load and check what's displayed
-    await page.waitForTimeout(3000);
+    // Wait for initial content load with proper state check
+    await page.waitForLoadState('domcontentloaded', { timeout: 60000 });
+    
+    // Give additional time for any dynamic loading
+    await page.waitForFunction(
+      () => document.readyState === 'complete',
+      { timeout: 30000 }
+    ).catch(() => {
+      console.log('📍 Page complete state wait timed out, continuing...');
+    });
     
     // Check for dynamic content loading
     const bodyText = await page.locator('body').textContent();
@@ -558,8 +617,10 @@ test.describe('Gallery Basic Browsing', () => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
     
-    // Wait for page to fully load
-    await page.waitForTimeout(3000);
+    // Wait for page to fully load with proper state-based wait
+    await page.waitForLoadState('networkidle', { timeout: 90000 }).catch(() => {
+      console.log('📍 Mobile gallery network idle wait timed out');
+    });
     
     // Check for dynamic gallery content
     const dynamicContent = await page.locator('.gallery-detail-grid, .gallery-item').count();
@@ -598,7 +659,17 @@ test.describe('Gallery Basic Browsing', () => {
     console.log('🔍 INFO: Verifying gallery displays appropriate content...');
     
     await page.reload();
-    await page.waitForTimeout(3000);
+    
+    // Wait for content with state-based approach
+    await page.waitForFunction(
+      () => {
+        const bodyText = document.body.textContent || '';
+        return bodyText.length > 100 && document.readyState === 'complete';
+      },
+      { timeout: 60000 }
+    ).catch(() => {
+      console.log('📍 Content availability wait timed out');
+    });
     
     // Check what types of content are available
     const dynamicContent = await page.locator('.gallery-detail-grid .gallery-item, .gallery-detail-content img').count();

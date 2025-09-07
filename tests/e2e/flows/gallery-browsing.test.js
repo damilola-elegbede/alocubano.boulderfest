@@ -160,10 +160,11 @@ test.describe('Gallery Performance & Functionality', () => {
       console.log('🌐 Navigation completed. Current URL:', page.url());
       
       console.log('📋 Step 4: Waiting for page to load...');
-      await page.waitForLoadState('domcontentloaded');
+      await page.waitForLoadState('domcontentloaded', { timeout: 60000 });
       console.log('✅ DOM content loaded');
       
-      await page.waitForLoadState('networkidle', { timeout: 30000 });
+      // Use longer timeout for preview deployments with cold start delays
+      await page.waitForLoadState('networkidle', { timeout: 120000 });
       console.log('✅ Network idle reached');
       
       console.log('🎉 beforeEach setup completed successfully');
@@ -192,7 +193,13 @@ test.describe('Gallery Performance & Functionality', () => {
   });
 
   test('should handle virtual scrolling for large image sets', async ({ page }) => {
-    await page.waitForTimeout(2000);
+    // Wait for content to be ready before testing scrolling
+    await page.waitForFunction(
+      () => document.readyState === 'complete' && document.body.scrollHeight > 100,
+      { timeout: 30000 }
+    ).catch(() => {
+      console.log('📍 Content readiness wait timed out');
+    });
     
     // Test scrolling performance
     const startTime = Date.now();
@@ -201,10 +208,24 @@ test.describe('Gallery Performance & Functionality', () => {
       window.scrollTo(0, 500);
     });
     
-    await page.waitForTimeout(500);
+    // Wait for scroll to complete and any lazy loading
+    await page.waitForFunction(
+      () => window.pageYOffset >= 400,
+      { timeout: 5000 }
+    ).catch(() => {
+      console.log('📍 Scroll position wait timed out');
+    });
     
     await page.evaluate(() => {
       window.scrollTo(0, 1000);
+    });
+    
+    // Wait for second scroll to complete
+    await page.waitForFunction(
+      () => window.pageYOffset >= 800,
+      { timeout: 5000 }
+    ).catch(() => {
+      console.log('📍 Second scroll position wait timed out');
     });
     
     const endTime = Date.now();
@@ -215,7 +236,16 @@ test.describe('Gallery Performance & Functionality', () => {
   });
 
   test('should optimize image loading with proper formats', async ({ page }) => {
-    await page.waitForTimeout(2000);
+    // Wait for images to start loading
+    await page.waitForFunction(
+      () => {
+        const images = document.querySelectorAll('img');
+        return images.length > 0;
+      },
+      { timeout: 30000 }
+    ).catch(() => {
+      console.log('📍 Image loading wait timed out');
+    });
     
     const images = page.locator('img');
     
@@ -255,7 +285,17 @@ test.describe('Gallery Performance & Functionality', () => {
     });
     
     await page.reload();
-    await page.waitForTimeout(5000);
+    
+    // Wait for Google Drive API calls to complete with extended timeout for cold starts
+    await page.waitForFunction(
+      () => {
+        return document.readyState === 'complete' && 
+               !document.querySelector('#gallery-detail-loading[style*="display: block"]');
+      },
+      { timeout: 120000 } // Extended timeout for Google Drive API cold starts
+    ).catch(() => {
+      console.log('📍 Google Drive API loading wait timed out, continuing...');
+    });
     
     // STRICT: Gallery API calls must be made
     const galleryApiCalls = apiRequests.filter(req => req.url.includes('/api/gallery'));
@@ -303,7 +343,13 @@ test.describe('Gallery Performance & Functionality', () => {
   test('should cache Google Drive images for performance (STRICT)', async ({ page }) => {
     console.log('🔍 STRICT CHECK: Validating Google Drive image caching performance...');
     
-    await page.waitForTimeout(2000);
+    // Wait for initial content to load before testing caching
+    await page.waitForFunction(
+      () => document.readyState === 'complete',
+      { timeout: 30000 }
+    ).catch(() => {
+      console.log('📍 Initial content load wait timed out');
+    });
     
     // Monitor Google Drive image requests
     const googleImageRequests = [];
@@ -320,7 +366,10 @@ test.describe('Gallery Performance & Functionality', () => {
     await page.goto('/tickets');
     await page.goto('/2025-gallery');
     
-    await page.waitForTimeout(3000);
+    // Wait for page to reload and content to be available
+    await page.waitForLoadState('networkidle', { timeout: 90000 }).catch(() => {
+      console.log('📍 Gallery reload network idle wait timed out');
+    });
     
     // STRICT: Gallery containers must be visible (no static content)
     const staticContainers = await page.locator('.gallery-grid-static, .gallery-static-title').count();
@@ -335,12 +384,12 @@ test.describe('Gallery Performance & Functionality', () => {
       throw new Error('FAILED: No dynamic gallery containers found. Google Drive API must populate gallery.');
     }
     
-    // STRICT: At least one dynamic container must be visible
+    // STRICT: At least one dynamic container must be visible with extended timeout for cold starts
     let hasVisibleContainer = false;
     for (let i = 0; i < containerCount; i++) {
       const container = dynamicContainers.nth(i);
       try {
-        await expect(container).toBeVisible({ timeout: 5000 });
+        await expect(container).toBeVisible({ timeout: 30000 }); // Extended timeout for Google Drive API delays
         hasVisibleContainer = true;
         break;
       } catch (e) {
@@ -367,7 +416,13 @@ test.describe('Gallery Performance & Functionality', () => {
   });
 
   test('should handle year-based filtering efficiently', async ({ page }) => {
-    await page.waitForTimeout(2000);
+    // Wait for filters to be available
+    await page.waitForFunction(
+      () => document.readyState === 'complete',
+      { timeout: 30000 }
+    ).catch(() => {
+      console.log('📍 Filter availability wait timed out');
+    });
     
     // Test year filtering if available (2025 gallery might have workshop/social filtering)
     const yearFilters = page.locator('.year-filter, button:has-text("2025"), .workshop-filter, .social-filter');
@@ -379,7 +434,14 @@ test.describe('Gallery Performance & Functionality', () => {
       // Test filter switching
       const startTime = Date.now();
       await firstYear.click();
-      await page.waitForTimeout(500);
+      
+      // Wait for filter to be applied
+      await page.waitForFunction(
+        () => !document.querySelector('.loading, [data-loading="true"]'),
+        { timeout: 10000 }
+      ).catch(() => {
+        console.log('📍 First filter application wait timed out');
+      });
       
       await secondYear.click();
       const endTime = Date.now();
@@ -413,7 +475,17 @@ test.describe('Gallery Performance & Functionality', () => {
     });
     
     await page.reload();
-    await page.waitForTimeout(5000);
+    
+    // Wait for Google Drive error handling to be tested with extended timeout
+    await page.waitForFunction(
+      () => {
+        return document.readyState === 'complete' && 
+               !document.querySelector('#gallery-detail-loading[style*="display: block"]');
+      },
+      { timeout: 90000 }
+    ).catch(() => {
+      console.log('📍 Google Drive error handling test load wait timed out');
+    });
     
     console.log('📊 Intercepted Google Drive requests:', interceptedRequests);
     
@@ -454,14 +526,28 @@ test.describe('Gallery Performance & Functionality', () => {
     // Test desktop layout
     await page.setViewportSize({ width: 1200, height: 800 });
     await page.reload();
-    await page.waitForTimeout(2000);
+    
+    // Wait for desktop layout to load
+    await page.waitForFunction(
+      () => document.readyState === 'complete',
+      { timeout: 30000 }
+    ).catch(() => {
+      console.log('📍 Desktop layout load wait timed out');
+    });
     
     const desktopImages = page.locator('img');
     const desktopCount = await desktopImages.count();
     
     // Test mobile layout
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.waitForTimeout(1000);
+    
+    // Wait for mobile layout to adapt
+    await page.waitForFunction(
+      () => window.innerWidth <= 375,
+      { timeout: 5000 }
+    ).catch(() => {
+      console.log('📍 Mobile viewport adaptation wait timed out');
+    });
     
     const mobileImages = page.locator('img');
     const mobileCount = await mobileImages.count();
@@ -487,7 +573,11 @@ test.describe('Gallery Performance & Functionality', () => {
     });
     
     await page.reload();
-    await page.waitForTimeout(3000);
+    
+    // Wait for resources to load
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      console.log('📍 Resource preloading network idle wait timed out');
+    });
     
     // Should load CSS and JS resources
     const cssRequests = resourceRequests.filter(r => r.resourceType === 'stylesheet');
@@ -498,7 +588,13 @@ test.describe('Gallery Performance & Functionality', () => {
   });
 
   test('should handle gallery search and filtering', async ({ page }) => {
-    await page.waitForTimeout(2000);
+    // Wait for search/filter elements to be available
+    await page.waitForFunction(
+      () => document.readyState === 'complete',
+      { timeout: 30000 }
+    ).catch(() => {
+      console.log('📍 Search/filter availability wait timed out');
+    });
     
     // Look for search/filter functionality
     const searchInput = page.locator('input[type="search"], .search-input, [placeholder*="search"], [placeholder*="filter"]');
@@ -506,14 +602,28 @@ test.describe('Gallery Performance & Functionality', () => {
     
     if (await searchInput.count() > 0) {
       await searchInput.first().fill('workshop');
-      await page.waitForTimeout(500);
+      
+      // Wait for search results to update
+      await page.waitForFunction(
+        () => !document.querySelector('.loading, [data-loading="true"]'),
+        { timeout: 10000 }
+      ).catch(() => {
+        console.log('📍 Search results update wait timed out');
+      });
       
       // Gallery should update or remain stable
       const galleryContent = page.locator('.gallery-detail-grid, #workshops-section');
       await expect(galleryContent).toBeVisible();
     } else if (await filterButtons.count() > 0) {
       await filterButtons.first().click();
-      await page.waitForTimeout(500);
+      
+      // Wait for filter to be applied
+      await page.waitForFunction(
+        () => !document.querySelector('.loading, [data-loading="true"]'),
+        { timeout: 10000 }
+      ).catch(() => {
+        console.log('📍 Filter application wait timed out');
+      });
       
       // Gallery should update
       const galleryContent = page.locator('.gallery-detail-grid, #socials-section');

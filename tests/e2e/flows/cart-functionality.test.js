@@ -5,12 +5,46 @@
 
 import { test, expect } from '@playwright/test';
 
+// Environment-aware timeout configuration
+const getTimeouts = () => {
+  const isPreviewMode = !!process.env.PREVIEW_URL || !!process.env.CI_EXTRACTED_PREVIEW_URL;
+  const isCI = !!process.env.CI;
+  
+  if (isPreviewMode) {
+    return {
+      navigation: Number(process.env.E2E_NAVIGATION_TIMEOUT) || 60000,
+      networkIdle: Number(process.env.E2E_NETWORK_TIMEOUT) || 45000,
+      action: Number(process.env.E2E_ACTION_TIMEOUT) || 30000,
+      assertion: Number(process.env.E2E_EXPECT_TIMEOUT) || 35000,
+      stateCheck: Number(process.env.E2E_STATE_TIMEOUT) || 15000
+    };
+  } else if (isCI) {
+    return {
+      navigation: 50000,
+      networkIdle: 30000,
+      action: 25000,
+      assertion: 20000,
+      stateCheck: 10000
+    };
+  } else {
+    return {
+      navigation: 30000,
+      networkIdle: 20000,
+      action: 15000,
+      assertion: 10000,
+      stateCheck: 5000
+    };
+  }
+};
+
+const timeouts = getTimeouts();
+
 test.describe('Cart Functionality', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/tickets.html');
     // Wait for page to fully load including network idle for preview deployments
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle', { timeout: 30000 });
+    await page.waitForLoadState('networkidle', { timeout: timeouts.networkIdle });
   });
 
   test('should display floating cart widget', async ({ page }) => {
@@ -28,11 +62,11 @@ test.describe('Cart Functionality', () => {
       }
     });
 
-    // Wait for page and all resources to load with generous timeout for preview deployments
-    await page.waitForFunction(() => document.readyState === 'complete', {}, { timeout: 45000 });
+    // Wait for page and all resources to load with environment-aware timeout
+    await page.waitForFunction(() => document.readyState === 'complete', {}, { timeout: timeouts.navigation });
     
     // Wait for network to settle before checking assets
-    await page.waitForLoadState('networkidle', { timeout: 30000 });
+    await page.waitForLoadState('networkidle', { timeout: timeouts.networkIdle });
     
     // Check if all critical scripts loaded successfully
     const scriptLoadStatus = await page.evaluate(() => {
@@ -53,7 +87,7 @@ test.describe('Cart Functionality', () => {
     // If cart scripts failed to load, try to wait longer or reload
     if (scriptLoadStatus.failedScripts.length > 0) {
       console.log('⚠️ Some scripts failed to load, waiting additional time...');
-      await page.waitForTimeout(5000);
+      await page.waitForTimeout(timeouts.stateCheck);
     }
     
     // Get detailed debug information about the page state
@@ -77,11 +111,11 @@ test.describe('Cart Functionality', () => {
     try {
       await Promise.race([
         // Wait for custom cart initialization event
-        page.waitForFunction(() => window.floatingCartInitialized === true, {}, { timeout: 15000 }),
+        page.waitForFunction(() => window.floatingCartInitialized === true, {}, { timeout: timeouts.stateCheck }),
         // Or wait for cart container with initialization attribute
-        page.waitForSelector('[data-floating-cart-initialized="true"]', { timeout: 15000 }),
+        page.waitForSelector('[data-floating-cart-initialized="true"]', { timeout: timeouts.stateCheck }),
         // Fallback: wait for any cart container
-        page.waitForSelector('.floating-cart-container', { timeout: 15000 })
+        page.waitForSelector('.floating-cart-container', { timeout: timeouts.stateCheck })
       ]);
       
       console.log('✅ Cart initialization detected via event or attribute');
@@ -171,11 +205,11 @@ test.describe('Cart Functionality', () => {
     });
     
     // Wait a moment for the manual visibility to take effect
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(timeouts.stateCheck / 3);
     
-    // Assert cart is visible with increased timeout, or verify graceful fallback
+    // Assert cart is visible with environment-aware timeout, or verify graceful fallback
     try {
-      await expect(cart).toBeVisible({ timeout: 35000 });
+      await expect(cart).toBeVisible({ timeout: timeouts.assertion });
       console.log('✅ Floating cart widget is visible');
     } catch (visibilityError) {
       // Fallback: Check if cart functionality exists even if widget is hidden
@@ -257,7 +291,7 @@ test.describe('Cart Functionality', () => {
     if (await weekendBtn.count() > 0) {
       console.log('✅ Found weekend button, clicking...');
       await weekendBtn.click();
-      await page.waitForTimeout(500); // Allow cart state to update
+      await page.waitForTimeout(timeouts.stateCheck / 10); // Allow cart state to update
       
       // Check localStorage persistence
       const cartState1 = await page.evaluate(() => {
@@ -272,7 +306,7 @@ test.describe('Cart Functionality', () => {
     if (await saturdayBtn.count() > 0) {
       console.log('✅ Found saturday button, clicking...');
       await saturdayBtn.click();
-      await page.waitForTimeout(500); // Allow cart state to update
+      await page.waitForTimeout(timeouts.stateCheck / 10); // Allow cart state to update
       
       // Check localStorage persistence
       const cartState2 = await page.evaluate(() => {
@@ -341,7 +375,7 @@ test.describe('Cart Functionality', () => {
     if (await addButton.count() > 0) {
       console.log('✅ Found add button, clicking to add item...');
       await addButton.click();
-      await page.waitForTimeout(1000); // Allow cart state to update
+      await page.waitForTimeout(timeouts.stateCheck / 5); // Allow cart state to update
     } else {
       console.log('ℹ️ No add buttons found - testing cart interaction without items');
     }
@@ -372,7 +406,7 @@ test.describe('Cart Functionality', () => {
             container.style.opacity = '1';
           }
         });
-        await page.waitForTimeout(500); // Allow styles to apply
+        await page.waitForTimeout(timeouts.stateCheck / 10); // Allow styles to apply
       }
     }
     
@@ -382,7 +416,7 @@ test.describe('Cart Functionality', () => {
       
       // E2E FIX: Wait for element to be clickable and use force if needed
       try {
-        await cartButton.first().click({ timeout: 10000 });
+        await cartButton.first().click({ timeout: timeouts.action });
         console.log('✅ Cart button clicked successfully');
       } catch (clickError) {
         console.log('⚠️ Normal click failed, trying force click:', clickError.message);
@@ -390,7 +424,7 @@ test.describe('Cart Functionality', () => {
         console.log('✅ Force click successful');
       }
       
-      await page.waitForTimeout(1000); // Allow panel to open
+      await page.waitForTimeout(timeouts.stateCheck / 5); // Allow panel to open
       
       // Check for cart panel or details
       const cartPanel = page.locator('.floating-cart-panel, .cart-details, .cart-popup, .cart-overlay, .cart-sidebar');

@@ -6,6 +6,42 @@
 import { test, expect } from '@playwright/test';
 import { getTestDataConstants } from '../../../scripts/seed-test-data.js';
 
+// Environment-aware timeout configuration for ticket validation
+const getTimeouts = () => {
+  const isPreviewMode = !!process.env.PREVIEW_URL || !!process.env.CI_EXTRACTED_PREVIEW_URL;
+  const isCI = !!process.env.CI;
+  
+  if (isPreviewMode) {
+    return {
+      navigation: Number(process.env.E2E_NAVIGATION_TIMEOUT) || 60000,
+      action: Number(process.env.E2E_ACTION_TIMEOUT) || 30000,
+      assertion: Number(process.env.E2E_EXPECT_TIMEOUT) || 35000,
+      apiValidation: Number(process.env.E2E_API_TIMEOUT) || 45000,
+      bulkOperation: Number(process.env.E2E_BULK_TIMEOUT) || 20000,
+      modalOperation: Number(process.env.E2E_MODAL_TIMEOUT) || 8000
+    };
+  } else if (isCI) {
+    return {
+      navigation: 50000,
+      action: 25000,
+      assertion: 20000,
+      apiValidation: 30000,
+      bulkOperation: 15000,
+      modalOperation: 6000
+    };
+  } else {
+    return {
+      navigation: 30000,
+      action: 15000,
+      assertion: 10000,
+      apiValidation: 20000,
+      bulkOperation: 10000,
+      modalOperation: 4000
+    };
+  }
+};
+
+const timeouts = getTimeouts();
 const testConstants = getTestDataConstants();
 
 test.describe('Ticket Validation', () => {
@@ -46,7 +82,7 @@ test.describe('Ticket Validation', () => {
       const validateBtn = page.locator('button:has-text("Validate"), button:has-text("Check"), .validate-btn');
       if (await validateBtn.count() > 0) {
         await validateBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(timeouts.apiValidation / 20);
         
         // Should show validation result
         const result = page.locator('.validation-result, .result, .ticket-info');
@@ -66,7 +102,7 @@ test.describe('Ticket Validation', () => {
       const validateBtn = page.locator('button:has-text("Validate"), button:has-text("Lookup"), .validate-btn');
       if (await validateBtn.count() > 0) {
         await validateBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(timeouts.apiValidation / 20);
         
         // Should display ticket information
         const ticketInfo = page.locator('.ticket-details, .attendee-info, .validation-result');
@@ -86,7 +122,7 @@ test.describe('Ticket Validation', () => {
       const validateBtn = page.locator('button:has-text("Validate"), .validate-btn').first();
       if (await validateBtn.count() > 0) {
         await validateBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(timeouts.apiValidation / 20);
         
         // Should show error message
         const errorElements = page.locator('.error, .invalid, .not-found, .alert-danger');
@@ -107,13 +143,13 @@ test.describe('Ticket Validation', () => {
       const validateBtn = page.locator('button:has-text("Validate")').first();
       if (await validateBtn.count() > 0) {
         await validateBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(timeouts.apiValidation / 20);
         
         // Look for check-in button
         const checkinBtn = page.locator('button:has-text("Check In"), button:has-text("Check-In"), .checkin-btn');
         if (await checkinBtn.count() > 0) {
           await checkinBtn.click();
-          await page.waitForTimeout(1000);
+          await page.waitForTimeout(timeouts.apiValidation / 40);
           
           // Should show confirmation
           const confirmation = page.locator('.success, .checked-in, .confirmation');
@@ -141,12 +177,12 @@ test.describe('Ticket Validation', () => {
         const checkinBtn = page.locator('button:has-text("Check In")').first();
         if (await checkinBtn.count() > 0) {
           await checkinBtn.click();
-          await page.waitForTimeout(1000);
+          await page.waitForTimeout(timeouts.apiValidation / 40);
           
           // Try to check in again
           await qrInput.fill(testQRCode);
           await validateBtn.click();
-          await page.waitForTimeout(1000);
+          await page.waitForTimeout(timeouts.apiValidation / 40);
           
           // Should show already checked in message
           const alreadyCheckedIn = page.locator('.already-checked, .duplicate, text=already');
@@ -167,7 +203,7 @@ test.describe('Ticket Validation', () => {
       const validateBtn = page.locator('button:has-text("Validate")').first();
       if (await validateBtn.count() > 0) {
         await validateBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(timeouts.apiValidation / 20);
         
         // Should display attendee details
         const attendeeInfo = page.locator('.attendee-name, .attendee-info, .ticket-holder');
@@ -201,7 +237,7 @@ test.describe('Ticket Validation', () => {
       const validateBtn = page.locator('button:has-text("Validate")').first();
       if (await validateBtn.count() > 0) {
         await validateBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(timeouts.apiValidation / 20);
         
         // Should have made API call
         // In test mode, this might be mocked
@@ -222,7 +258,7 @@ test.describe('Ticket Validation', () => {
       const bulkValidateBtn = page.locator('button:has-text("Validate All"), button:has-text("Bulk"), .bulk-validate-btn');
       if (await bulkValidateBtn.count() > 0) {
         await bulkValidateBtn.click();
-        await page.waitForTimeout(3000);
+        await page.waitForTimeout(timeouts.bulkOperation / 5);
         
         // Should show bulk results
         const bulkResults = page.locator('.bulk-results, .validation-summary');

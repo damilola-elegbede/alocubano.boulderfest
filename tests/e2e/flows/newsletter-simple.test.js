@@ -16,6 +16,43 @@ import { createStorageUtils } from '../helpers/storage-utils.js';
 import { warnIfOptionalSecretsUnavailable } from '../helpers/test-setup.js';
 import { trackTestEmail, isTestEmail } from '../helpers/brevo-cleanup.js';
 
+// Environment-aware timeout configuration for newsletter functionality
+const getTimeouts = () => {
+  const isPreviewMode = !!process.env.PREVIEW_URL || !!process.env.CI_EXTRACTED_PREVIEW_URL;
+  const isCI = !!process.env.CI;
+  
+  if (isPreviewMode) {
+    return {
+      navigation: Number(process.env.E2E_NAVIGATION_TIMEOUT) || 60000,
+      networkIdle: Number(process.env.E2E_NETWORK_TIMEOUT) || 45000,
+      action: Number(process.env.E2E_ACTION_TIMEOUT) || 30000,
+      assertion: Number(process.env.E2E_EXPECT_TIMEOUT) || 35000,
+      apiResponse: Number(process.env.E2E_API_TIMEOUT) || 60000,
+      formValidation: Number(process.env.E2E_FORM_TIMEOUT) || 10000
+    };
+  } else if (isCI) {
+    return {
+      navigation: 50000,
+      networkIdle: 30000,
+      action: 25000,
+      assertion: 20000,
+      apiResponse: 45000,
+      formValidation: 8000
+    };
+  } else {
+    return {
+      navigation: 30000,
+      networkIdle: 20000,
+      action: 15000,
+      assertion: 10000,
+      apiResponse: 30000,
+      formValidation: 5000
+    };
+  }
+};
+
+const timeouts = getTimeouts();
+
 // Check for email service secrets
 const secretWarnings = warnIfOptionalSecretsUnavailable(['email', 'newsletter'], 'newsletter-simple.test.js');
 
@@ -53,12 +90,12 @@ test.describe('Newsletter Subscription - Real API Test', () => {
     // Navigate to contact page
     await page.goto('/contact.html');
     
-    // Wait for page to load with extended timeout for preview deployments
+    // Wait for page to load with environment-aware timeout for preview deployments
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle', { timeout: 30000 });
+    await page.waitForLoadState('networkidle', { timeout: timeouts.networkIdle });
     
     // Verify newsletter form exists
-    await expect(page.locator('#newsletter-form')).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('#newsletter-form')).toBeVisible({ timeout: timeouts.assertion });
     await expect(page.locator('#newsletter-email')).toBeVisible();
     // The checkbox input is hidden by design (custom checkbox), but the visible checkmark should be there
     await expect(page.locator('.custom-checkbox .checkmark')).toBeVisible();
@@ -70,10 +107,10 @@ test.describe('Newsletter Subscription - Real API Test', () => {
   test('should validate email and consent requirements', async ({ page }) => {
     await page.goto('/contact.html');
     
-    // Wait for form to load with extended timeout for preview deployments
+    // Wait for form to load with environment-aware timeout for preview deployments
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle', { timeout: 30000 });
-    await expect(page.locator('#newsletter-form')).toBeVisible({ timeout: 30000 });
+    await page.waitForLoadState('networkidle', { timeout: timeouts.networkIdle });
+    await expect(page.locator('#newsletter-form')).toBeVisible({ timeout: timeouts.assertion });
     
     const submitButton = page.locator('.newsletter-submit');
     const emailInput = page.locator('#newsletter-email');
@@ -103,10 +140,10 @@ test.describe('Newsletter Subscription - Real API Test', () => {
   test('should handle successful subscription with real API', async ({ page }) => {
     await page.goto('/contact.html');
     
-    // Wait for form to load with extended timeout for preview deployments
+    // Wait for form to load with environment-aware timeout for preview deployments
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle', { timeout: 30000 });
-    await expect(page.locator('#newsletter-form')).toBeVisible({ timeout: 30000 });
+    await page.waitForLoadState('networkidle', { timeout: timeouts.networkIdle });
+    await expect(page.locator('#newsletter-form')).toBeVisible({ timeout: timeouts.assertion });
     
     // Check if Brevo API is available from environment
     const brevoAvailable = process.env.BREVO_API_AVAILABLE === 'true';
@@ -166,11 +203,11 @@ test.describe('Newsletter Subscription - Real API Test', () => {
     });
     
     // Verify the checkbox is actually checked
-    await expect(hiddenCheckbox).toBeChecked({ timeout: 5000 });
+    await expect(hiddenCheckbox).toBeChecked({ timeout: timeouts.formValidation });
     
     // Wait for form validation to complete - the button should now be enabled
     try {
-      await expect(submitButton).toBeEnabled({ timeout: 5000 });
+      await expect(submitButton).toBeEnabled({ timeout: timeouts.formValidation });
       console.log('✅ Submit button is now enabled');
     } catch (error) {
       console.log('⚠️ Submit button still disabled, will attempt forced click');
@@ -181,7 +218,7 @@ test.describe('Newsletter Subscription - Real API Test', () => {
       // Full API testing when Brevo is available
       const responsePromise = page.waitForResponse(
         response => response.url().includes('/api/email/subscribe'),
-        { timeout: 60000 }
+        { timeout: timeouts.apiResponse }
       );
       try {
         await submitButton.click();
@@ -207,7 +244,7 @@ test.describe('Newsletter Subscription - Real API Test', () => {
       }
       
       // Wait for any UI feedback or loading state
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(timeouts.formValidation / 2);
       
       // Check that form handled submission gracefully
       const formStillVisible = await page.locator('#newsletter-form').isVisible();

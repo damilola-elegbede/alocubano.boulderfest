@@ -79,7 +79,21 @@ class DatabaseService {
    * Create a timeout promise to prevent hanging during initialization
    */
   _createTimeoutPromise() {
-    const timeoutMs = process.env.DATABASE_INIT_TIMEOUT || 10000; // 10 seconds default
+    // Optimize timeout for E2E tests and different environments
+    const isE2ETest = process.env.E2E_TEST_MODE === 'true' || 
+                     process.env.PLAYWRIGHT_BROWSER;
+    const isPreview = process.env.VERCEL_ENV === 'preview';
+    
+    // Shorter timeouts for E2E tests, longer for cold starts in preview
+    let timeoutMs = 10000; // Default 10 seconds
+    
+    if (isE2ETest) {
+      timeoutMs = 5000; // 5 seconds for E2E tests
+    } else if (isPreview) {
+      timeoutMs = 15000; // 15 seconds for preview deployments (cold starts)
+    } else if (process.env.DATABASE_INIT_TIMEOUT) {
+      timeoutMs = parseInt(process.env.DATABASE_INIT_TIMEOUT);
+    }
     
     return new Promise((_, reject) => {
       setTimeout(() => {
@@ -110,6 +124,7 @@ class DatabaseService {
    * Perform the actual database initialization
    */
   async _performInitialization() {
+    this.initStartTime = Date.now();
     // Detect environment context - simplified and more reliable
     const isVercelProduction = process.env.VERCEL === "1" && process.env.VERCEL_ENV === "production";
     const isVercelPreview = process.env.VERCEL === "1" && process.env.VERCEL_ENV === "preview";
@@ -348,9 +363,17 @@ class DatabaseService {
       // Track this connection
       this.activeConnections.add(client);
 
+      const initTime = Date.now() - (this.initStartTime || Date.now());
+      
       logger.log(
-        `✅ Database client initialized successfully (${process.env.NODE_ENV || "production"} mode)`,
+        `✅ Database client initialized successfully (${process.env.NODE_ENV || "production"} mode, ${initTime}ms)`,
       );
+      
+      // Add performance warning for E2E tests
+      if (isE2ETest && initTime > 2000) {
+        logger.warn(`⚠️ E2E Database init took ${initTime}ms - consider connection caching optimization`);
+      }
+      
       return this.client;
     } catch (error) {
       // Enhanced error reporting for debugging with more detail

@@ -6,6 +6,42 @@
 import { test, expect } from '@playwright/test';
 import { getTestDataConstants } from '../../../scripts/seed-test-data.js';
 
+// Environment-aware timeout configuration for registration flow
+const getTimeouts = () => {
+  const isPreviewMode = !!process.env.PREVIEW_URL || !!process.env.CI_EXTRACTED_PREVIEW_URL;
+  const isCI = !!process.env.CI;
+  
+  if (isPreviewMode) {
+    return {
+      navigation: Number(process.env.E2E_NAVIGATION_TIMEOUT) || 60000,
+      action: Number(process.env.E2E_ACTION_TIMEOUT) || 30000,
+      assertion: Number(process.env.E2E_EXPECT_TIMEOUT) || 35000,
+      stateCheck: Number(process.env.E2E_STATE_TIMEOUT) || 15000,
+      apiCall: Number(process.env.E2E_API_TIMEOUT) || 30000,
+      formOperation: Number(process.env.E2E_FORM_TIMEOUT) || 8000
+    };
+  } else if (isCI) {
+    return {
+      navigation: 50000,
+      action: 25000,
+      assertion: 20000,
+      stateCheck: 10000,
+      apiCall: 25000,
+      formOperation: 6000
+    };
+  } else {
+    return {
+      navigation: 30000,
+      action: 15000,
+      assertion: 10000,
+      stateCheck: 5000,
+      apiCall: 15000,
+      formOperation: 3000
+    };
+  }
+};
+
+const timeouts = getTimeouts();
 const testConstants = getTestDataConstants();
 
 test.describe('Registration Process', () => {
@@ -160,7 +196,7 @@ test.describe('Registration Process', () => {
     const weekendBtn = page.locator('button:has-text("Weekend")').first();
     if (await weekendBtn.count() > 0) {
       await weekendBtn.click();
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(timeouts.formOperation / 6);
       
       // Add quantity or second ticket
       const plusBtn = page.locator('.quantity-plus, button:has-text("+")');
@@ -317,7 +353,7 @@ test.describe('Registration Process', () => {
         const submitBtn = page.locator('button[type="submit"]').first();
         if (await submitBtn.count() > 0) {
           await submitBtn.click();
-          await page.waitForTimeout(2000);
+          await page.waitForTimeout(timeouts.apiCall / 10);
           
           // Verify API integration exists (even if mocked in tests)
           expect(page.url()).toBeDefined();

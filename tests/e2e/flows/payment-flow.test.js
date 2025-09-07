@@ -6,6 +6,43 @@
 import { test, expect } from '@playwright/test';
 import { warnIfOptionalSecretsUnavailable } from '../helpers/test-setup.js';
 
+// Environment-aware timeout configuration for payment processing
+const getTimeouts = () => {
+  const isPreviewMode = !!process.env.PREVIEW_URL || !!process.env.CI_EXTRACTED_PREVIEW_URL;
+  const isCI = !!process.env.CI;
+  
+  if (isPreviewMode) {
+    return {
+      navigation: Number(process.env.E2E_NAVIGATION_TIMEOUT) || 60000,
+      action: Number(process.env.E2E_ACTION_TIMEOUT) || 30000,
+      assertion: Number(process.env.E2E_EXPECT_TIMEOUT) || 35000,
+      stateCheck: Number(process.env.E2E_STATE_TIMEOUT) || 15000,
+      apiRequest: Number(process.env.E2E_API_TIMEOUT) || 45000,
+      cartOperation: Number(process.env.E2E_CART_TIMEOUT) || 10000
+    };
+  } else if (isCI) {
+    return {
+      navigation: 50000,
+      action: 25000,
+      assertion: 20000,
+      stateCheck: 10000,
+      apiRequest: 30000,
+      cartOperation: 8000
+    };
+  } else {
+    return {
+      navigation: 30000,
+      action: 15000,
+      assertion: 10000,
+      stateCheck: 5000,
+      apiRequest: 20000,
+      cartOperation: 5000
+    };
+  }
+};
+
+const timeouts = getTimeouts();
+
 test.describe('Payment Processing Flow', () => {
   // Check for payment service secrets - tests can run with mocks if missing
   const secretWarnings = warnIfOptionalSecretsUnavailable(['payment', 'checkout'], 'payment-flow.test.js');
@@ -20,31 +57,31 @@ test.describe('Payment Processing Flow', () => {
     await page.waitForFunction(() => {
       const container = document.querySelector('[data-floating-cart-initialized="true"]');
       return container !== null;
-    }, { timeout: 10000 });
+    }, { timeout: timeouts.cartOperation });
     
     // Wait for cart system to be ready
     await page.waitForFunction(() => {
       return window.globalCartManager && typeof window.globalCartManager.getState === 'function';
-    }, { timeout: 5000 });
+    }, { timeout: timeouts.cartOperation });
     
     // Wait for page scripts to load
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(timeouts.stateCheck / 5);
   });
 
   test('should initiate Stripe checkout session', async ({ page }) => {
     // Use the proper add to cart button with data-testid
     const addButton = page.locator('[data-testid="weekend-pass-add"]');
-    await expect(addButton).toBeVisible({ timeout: 10000 });
+    await expect(addButton).toBeVisible({ timeout: timeouts.assertion });
     await addButton.click();
     
     // Wait for cart state to update
     await page.waitForFunction(() => {
       const cartManager = window.globalCartManager;
       return cartManager && !cartManager.getState().isEmpty;
-    }, { timeout: 5000 });
+    }, { timeout: timeouts.cartOperation });
     
     // Wait for cart badge to appear
-    await expect(page.locator('[data-testid="cart-counter"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('[data-testid="cart-counter"]')).toBeVisible({ timeout: timeouts.cartOperation });
     
     // Click the floating cart button to open cart panel
     const viewCartButton = page.locator('[data-testid="view-cart"]');
@@ -52,7 +89,7 @@ test.describe('Payment Processing Flow', () => {
     await viewCartButton.click();
     
     // Wait for cart panel to open
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: timeouts.cartOperation });
     
     // Click checkout button in the cart panel
     const checkoutButton = page.locator('[data-testid="checkout-button"]');
@@ -60,12 +97,12 @@ test.describe('Payment Processing Flow', () => {
     await expect(checkoutButton).toBeEnabled();
     
     // Set up request monitoring before clicking checkout
-    const stripeRequestPromise = page.waitForRequest('**/create-checkout-session', { timeout: 10000 });
+    const stripeRequestPromise = page.waitForRequest('**/create-checkout-session', { timeout: timeouts.apiRequest });
     
     await checkoutButton.click();
     
     // Wait for payment method selector to appear
-    await expect(page.locator('.payment-selector-modal')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.payment-selector-modal')).toBeVisible({ timeout: timeouts.cartOperation });
     
     // Click on Stripe payment method
     const stripePaymentMethod = page.locator('[data-method="stripe"]');
@@ -77,7 +114,7 @@ test.describe('Payment Processing Flow', () => {
       expect(request.method()).toBe('POST');
       
       // Should redirect to Stripe or show processing state
-      await page.waitForLoadState('domcontentloaded', { timeout: 3000 });
+      await page.waitForLoadState('domcontentloaded', { timeout: timeouts.navigation });
       const currentUrl = page.url();
       
       expect(
@@ -104,7 +141,7 @@ test.describe('Payment Processing Flow', () => {
     await page.waitForFunction(() => {
       const cartManager = window.globalCartManager;
       return cartManager && !cartManager.getState().isEmpty;
-    }, { timeout: 5000 });
+    }, { timeout: timeouts.cartOperation });
     
     // Open cart panel
     const viewCartButton = page.locator('[data-testid="view-cart"]');
@@ -112,13 +149,13 @@ test.describe('Payment Processing Flow', () => {
     await viewCartButton.click();
     
     // Wait for cart panel and click checkout
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: timeouts.cartOperation });
     const checkoutButton = page.locator('[data-testid="checkout-button"]');
     await expect(checkoutButton).toBeEnabled();
     await checkoutButton.click();
     
     // Wait for payment method selector
-    await expect(page.locator('.payment-selector-modal')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.payment-selector-modal')).toBeVisible({ timeout: timeouts.cartOperation });
     
     // Click Stripe payment method
     const stripePaymentMethod = page.locator('[data-method="stripe"]');
@@ -127,7 +164,7 @@ test.describe('Payment Processing Flow', () => {
     
     // Wait for Stripe redirect or form - in real scenarios this would redirect to Stripe
     // For testing, we mainly verify the flow works up to the redirect
-    await page.waitForLoadState('domcontentloaded', { timeout: 2000 });
+    await page.waitForLoadState('domcontentloaded', { timeout: timeouts.navigation / 2 });
     
     // Verify we either redirected to Stripe or got some form of checkout page
     const currentUrl = page.url();
@@ -152,7 +189,7 @@ test.describe('Payment Processing Flow', () => {
     await page.waitForFunction(() => {
       const cartManager = window.globalCartManager;
       return cartManager && !cartManager.getState().isEmpty;
-    }, { timeout: 5000 });
+    }, { timeout: timeouts.cartOperation });
     
     // Open cart panel
     const viewCartButton = page.locator('[data-testid="view-cart"]');
@@ -160,13 +197,13 @@ test.describe('Payment Processing Flow', () => {
     await viewCartButton.click();
     
     // Wait for cart panel and click checkout
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: timeouts.cartOperation });
     const checkoutButton = page.locator('[data-testid="checkout-button"]');
     await expect(checkoutButton).toBeEnabled();
     await checkoutButton.click();
     
     // Wait for payment method selector
-    await expect(page.locator('.payment-selector-modal')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.payment-selector-modal')).toBeVisible({ timeout: timeouts.cartOperation });
     
     // Click Stripe payment method
     const stripePaymentMethod = page.locator('[data-method="stripe"]');
@@ -174,7 +211,7 @@ test.describe('Payment Processing Flow', () => {
     await stripePaymentMethod.click();
     
     // In test mode, we should get redirected to Stripe or see processing state
-    await page.waitForLoadState('domcontentloaded', { timeout: 3000 });
+    await page.waitForLoadState('domcontentloaded', { timeout: timeouts.navigation / 2 });
     
     const currentUrl = page.url();
     const hasStripeRedirect = currentUrl.includes('stripe.com');
@@ -206,7 +243,7 @@ test.describe('Payment Processing Flow', () => {
     await page.waitForFunction(() => {
       const cartManager = window.globalCartManager;
       return cartManager && !cartManager.getState().isEmpty;
-    }, { timeout: 5000 });
+    }, { timeout: timeouts.cartOperation });
     
     // Open cart panel
     const viewCartButton = page.locator('[data-testid="view-cart"]');
@@ -214,13 +251,13 @@ test.describe('Payment Processing Flow', () => {
     await viewCartButton.click();
     
     // Wait for cart panel and click checkout
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: timeouts.cartOperation });
     const checkoutButton = page.locator('[data-testid="checkout-button"]');
     await expect(checkoutButton).toBeEnabled();
     await checkoutButton.click();
     
     // Wait for payment method selector
-    await expect(page.locator('.payment-selector-modal')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.payment-selector-modal')).toBeVisible({ timeout: timeouts.cartOperation });
     
     // Look for close button in payment selector modal
     const closeButton = page.locator('.payment-selector-close');
@@ -251,7 +288,7 @@ test.describe('Payment Processing Flow', () => {
     await page.waitForFunction(() => {
       const cartManager = window.globalCartManager;
       return cartManager && !cartManager.getState().isEmpty;
-    }, { timeout: 5000 });
+    }, { timeout: timeouts.cartOperation });
     
     // Add day pass
     const dayPassBtn = page.locator('[data-testid="day-pass-add"]');
@@ -263,7 +300,7 @@ test.describe('Payment Processing Flow', () => {
       const cartManager = window.globalCartManager;
       const state = cartManager.getState();
       return state && Object.keys(state.tickets).length >= 2;
-    }, { timeout: 5000 });
+    }, { timeout: timeouts.cartOperation });
     
     // Open cart to check total
     const viewCartButton = page.locator('[data-testid="view-cart"]');
@@ -271,7 +308,7 @@ test.describe('Payment Processing Flow', () => {
     await viewCartButton.click();
     
     // Wait for cart panel to open
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: timeouts.cartOperation });
     
     // Check cart total in the floating cart
     const cartTotal = page.locator('.cart-total-amount');
@@ -306,7 +343,7 @@ test.describe('Payment Processing Flow', () => {
     await page.waitForFunction(() => {
       const cartManager = window.globalCartManager;
       return cartManager && !cartManager.getState().isEmpty;
-    }, { timeout: 5000 });
+    }, { timeout: timeouts.cartOperation });
     
     // Open cart panel
     const viewCartButton = page.locator('[data-testid="view-cart"]');
@@ -314,13 +351,13 @@ test.describe('Payment Processing Flow', () => {
     await viewCartButton.click();
     
     // Wait for cart panel and click checkout
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: timeouts.cartOperation });
     const checkoutButton = page.locator('[data-testid="checkout-button"]');
     await expect(checkoutButton).toBeEnabled();
     await checkoutButton.click();
     
     // Wait for payment method selector
-    await expect(page.locator('.payment-selector-modal')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.payment-selector-modal')).toBeVisible({ timeout: timeouts.cartOperation });
     
     // Click Stripe payment method (this should trigger the mocked error)
     const stripePaymentMethod = page.locator('[data-method="stripe"]');
@@ -328,7 +365,7 @@ test.describe('Payment Processing Flow', () => {
     await stripePaymentMethod.click();
     
     // Wait for error to appear - could be in payment selector or as separate error message
-    await page.waitForLoadState('domcontentloaded', { timeout: 2000 });
+    await page.waitForLoadState('domcontentloaded', { timeout: timeouts.navigation / 3 });
     
     // Look for error messages in various possible locations
     const errorElements = page.locator('.payment-selector-error, .error, .alert-danger, .payment-error, .checkout-error-message');
@@ -350,7 +387,7 @@ test.describe('Payment Processing Flow', () => {
     await page.waitForFunction(() => {
       const cartManager = window.globalCartManager;
       return cartManager && !cartManager.getState().isEmpty;
-    }, { timeout: 5000 });
+    }, { timeout: timeouts.cartOperation });
     
     // Open cart panel
     const viewCartButton = page.locator('[data-testid="view-cart"]');
@@ -358,13 +395,13 @@ test.describe('Payment Processing Flow', () => {
     await viewCartButton.click();
     
     // Wait for cart panel and click checkout
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: timeouts.cartOperation });
     const checkoutButton = page.locator('[data-testid="checkout-button"]');
     await expect(checkoutButton).toBeEnabled();
     await checkoutButton.click();
     
     // Wait for payment method selector
-    await expect(page.locator('.payment-selector-modal')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.payment-selector-modal')).toBeVisible({ timeout: timeouts.cartOperation });
     
     // Check security before proceeding with payment
     const currentUrl = page.url();
@@ -404,7 +441,7 @@ test.describe('Payment Processing Flow', () => {
     await page.waitForFunction(() => {
       const cartManager = window.globalCartManager;
       return cartManager && !cartManager.getState().isEmpty;
-    }, { timeout: 5000 });
+    }, { timeout: timeouts.cartOperation });
     
     // Open cart panel
     const viewCartButton = page.locator('[data-testid="view-cart"]');
@@ -412,13 +449,13 @@ test.describe('Payment Processing Flow', () => {
     await viewCartButton.click();
     
     // Wait for cart panel and click checkout
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: timeouts.cartOperation });
     const checkoutButton = page.locator('[data-testid="checkout-button"]');
     await expect(checkoutButton).toBeEnabled();
     await checkoutButton.click();
     
     // Wait for payment method selector
-    await expect(page.locator('.payment-selector-modal')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.payment-selector-modal')).toBeVisible({ timeout: timeouts.cartOperation });
     
     // In a real test environment, webhooks would be processed asynchronously
     // This test mainly verifies the setup doesn't break and the flow is intact
@@ -462,11 +499,11 @@ test.describe('Payment Processing Flow', () => {
     await page.waitForFunction(() => {
       const container = document.querySelector('.success-container');
       return container && container.style.display !== 'none';
-    }, { timeout: 10000 });
+    }, { timeout: timeouts.assertion });
     
     // Now wait for the success container to be visible
     const successContainer = page.locator('.success-container');
-    await expect(successContainer).toBeVisible({ timeout: 5000 });
+    await expect(successContainer).toBeVisible({ timeout: timeouts.cartOperation });
     
     // Check for the success title
     const successTitle = page.locator('.success-title');
@@ -539,10 +576,10 @@ test.describe('Payment Processing Flow', () => {
     await page.waitForFunction(() => {
       const cartManager = window.globalCartManager;
       return cartManager && !cartManager.getState().isEmpty;
-    }, { timeout: 5000 });
+    }, { timeout: timeouts.cartOperation });
     
     // Verify cart badge appears
-    await expect(page.locator('[data-testid="cart-counter"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('[data-testid="cart-counter"]')).toBeVisible({ timeout: timeouts.cartOperation });
     
     // Navigate away and back to test persistence
     await page.goto('/pages/about.html');
@@ -550,7 +587,7 @@ test.describe('Payment Processing Flow', () => {
     // Wait for cart to initialize on new page
     await page.waitForFunction(() => {
       return document.querySelector('[data-floating-cart-initialized="true"]') !== null;
-    }, { timeout: 10000 });
+    }, { timeout: timeouts.assertion });
     
     // Navigate back to tickets
     await page.goto('/pages/tickets.html');
@@ -558,12 +595,12 @@ test.describe('Payment Processing Flow', () => {
     // Wait for cart to initialize again
     await page.waitForFunction(() => {
       return document.querySelector('[data-floating-cart-initialized="true"]') !== null;
-    }, { timeout: 10000 });
+    }, { timeout: timeouts.assertion });
     
     // Wait for cart system to be ready
     await page.waitForFunction(() => {
       return window.globalCartManager && typeof window.globalCartManager.getState === 'function';
-    }, { timeout: 5000 });
+    }, { timeout: timeouts.cartOperation });
     
     // Cart should still show items
     const cartBadge = page.locator('[data-testid="cart-counter"]');
@@ -578,7 +615,7 @@ test.describe('Payment Processing Flow', () => {
     await viewCartButton.click();
     
     // Wait for cart panel to open and verify contents
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: timeouts.cartOperation });
     
     // Verify cart contains the ticket (it's "2026 Early Bird Full Pass", not just "weekend")
     const cartContent = await page.locator('.cart-items').textContent();

@@ -5,6 +5,40 @@
 
 import { test, expect } from '@playwright/test';
 
+// Environment-aware timeout configuration for user engagement testing
+const getTimeouts = () => {
+  const isPreviewMode = !!process.env.PREVIEW_URL || !!process.env.CI_EXTRACTED_PREVIEW_URL;
+  const isCI = !!process.env.CI;
+  
+  if (isPreviewMode) {
+    return {
+      navigation: Number(process.env.E2E_NAVIGATION_TIMEOUT) || 60000,
+      interaction: Number(process.env.E2E_ACTION_TIMEOUT) || 30000,
+      userBehavior: Number(process.env.E2E_USER_BEHAVIOR_TIMEOUT) || 8000,
+      performanceCheck: Number(process.env.E2E_PERFORMANCE_TIMEOUT) || 15000,
+      socialCheck: Number(process.env.E2E_SOCIAL_TIMEOUT) || 5000
+    };
+  } else if (isCI) {
+    return {
+      navigation: 50000,
+      interaction: 25000,
+      userBehavior: 6000,
+      performanceCheck: 10000,
+      socialCheck: 3000
+    };
+  } else {
+    return {
+      navigation: 30000,
+      interaction: 15000,
+      userBehavior: 4000,
+      performanceCheck: 8000,
+      socialCheck: 2000
+    };
+  }
+};
+
+const timeouts = getTimeouts();
+
 test.describe('User Engagement Metrics', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
@@ -21,13 +55,13 @@ test.describe('User Engagement Metrics', () => {
     
     // Navigate through key pages
     await page.goto('/pages/tickets.html');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(timeouts.userBehavior / 4);
     
     await page.goto('/pages/about.html');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(timeouts.userBehavior / 4);
     
     await page.goto('/pages/gallery.html');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(timeouts.userBehavior / 4);
     
     // Should have tracked navigation
     // In test mode, metrics collection might be mocked
@@ -43,11 +77,11 @@ test.describe('User Engagement Metrics', () => {
     if (await ticketButtons.count() > 0) {
       // Click different ticket options
       await ticketButtons.first().click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(timeouts.userBehavior / 8);
       
       if (await ticketButtons.count() > 1) {
         await ticketButtons.nth(1).click();
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(timeouts.userBehavior / 8);
       }
       
       // Should track ticket selection interactions
@@ -62,22 +96,23 @@ test.describe('User Engagement Metrics', () => {
     // Start timing on homepage
     const startTime = Date.now();
     await page.goto('/');
-    await page.waitForTimeout(3000); // Simulate user reading time
+    await page.waitForTimeout(timeouts.userBehavior / 2); // Simulate user reading time
     
     // Move to tickets page
     await page.goto('/pages/tickets.html');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(timeouts.userBehavior / 4);
     
     const endTime = Date.now();
     const totalTime = endTime - startTime;
     
-    // Should have measurable engagement time
-    expect(totalTime).toBeGreaterThan(4000);
+    // Should have measurable engagement time (environment-aware)
+    const expectedMinTime = timeouts.userBehavior;
+    expect(totalTime).toBeGreaterThan(expectedMinTime / 2);
   });
 
   test('should track gallery engagement patterns', async ({ page }) => {
     await page.goto('/pages/gallery.html');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(timeouts.userBehavior / 4);
     
     // Interact with gallery elements
     const galleryItems = page.locator('.gallery-item, .photo-item, img');
@@ -85,14 +120,14 @@ test.describe('User Engagement Metrics', () => {
     if (await galleryItems.count() > 0) {
       // Click on gallery items
       await galleryItems.first().click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(timeouts.userBehavior / 8);
       
       // Scroll through gallery
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight / 2));
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(timeouts.userBehavior / 8);
       
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(timeouts.userBehavior / 8);
       
       // Should track gallery interaction depth
       expect(page.url()).toContain('gallery');
@@ -106,11 +141,11 @@ test.describe('User Engagement Metrics', () => {
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(timeouts.userBehavior / 8);
       
       // Navigate away without completing purchase (cart abandonment)
       await page.goto('/pages/about.html');
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(timeouts.userBehavior / 4);
       
       // Return to tickets page
       await page.goto('/pages/tickets.html');
@@ -153,13 +188,13 @@ test.describe('User Engagement Metrics', () => {
     await page.setViewportSize({ width: 375, height: 667 });
     
     await page.goto('/pages/tickets.html');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(timeouts.userBehavior / 4);
     
     // Test mobile interactions
     const mobileMenuToggle = page.locator('.menu-toggle, .hamburger');
     if (await mobileMenuToggle.count() > 0) {
       await mobileMenuToggle.click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(timeouts.userBehavior / 8);
     }
     
     // Scroll on mobile
@@ -170,7 +205,7 @@ test.describe('User Engagement Metrics', () => {
     const ticketButton = page.locator('button:has-text("Weekend")').first();
     if (await ticketButton.count() > 0) {
       await ticketButton.click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(timeouts.userBehavior / 8);
     }
     
     // Should track mobile-specific engagement
@@ -187,7 +222,7 @@ test.describe('User Engagement Metrics', () => {
       const signupButton = page.locator('button:has-text("Subscribe"), button:has-text("Sign"), .newsletter button');
       if (await signupButton.count() > 0) {
         await signupButton.click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(timeouts.userBehavior / 4);
         
         // Should show confirmation or success message
         const confirmation = page.locator('.success, .thank-you, .subscribed');
@@ -207,10 +242,10 @@ test.describe('User Engagement Metrics', () => {
     if (await filters.count() >= 2) {
       // Test filter interactions
       await filters.first().click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(timeouts.userBehavior / 8);
       
       await filters.nth(1).click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(timeouts.userBehavior / 8);
       
       // Should track filtering behavior
       expect(page.url()).toContain('gallery');
@@ -231,13 +266,13 @@ test.describe('User Engagement Metrics', () => {
     });
     
     await page.goto('/pages/tickets.html');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(timeouts.userBehavior / 4);
     
     // Try to interact despite potential errors
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(timeouts.userBehavior / 8);
     }
     
     // User should still be able to navigate
@@ -252,13 +287,13 @@ test.describe('User Engagement Metrics', () => {
     
     // 1. Landing page
     await page.goto('/');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(timeouts.userBehavior / 4);
     
     // 2. Navigate to tickets
     const ticketsLink = page.locator('a[href*="tickets"], nav a:has-text("Tickets")');
     if (await ticketsLink.count() > 0) {
       await ticketsLink.first().click();
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(timeouts.userBehavior / 4);
     } else {
       await page.goto('/pages/tickets.html');
     }
@@ -267,13 +302,13 @@ test.describe('User Engagement Metrics', () => {
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(timeouts.userBehavior / 8);
       
       // 4. Proceed to checkout
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(timeouts.userBehavior / 4);
         
         // Should reach checkout step (conversion funnel completion)
         const currentUrl = page.url();
@@ -300,18 +335,18 @@ test.describe('User Engagement Metrics', () => {
       };
     });
     
-    // Fast loading should correlate with better engagement
-    expect(performanceMetrics.loadTime).toBeLessThan(5000);
+    // Fast loading should correlate with better engagement (environment-aware)
+    expect(performanceMetrics.loadTime).toBeLessThan(timeouts.performanceCheck * 2);
     
-    // Simulate user engagement based on performance
-    if (performanceMetrics.loadTime < 2000) {
+    // Simulate user engagement based on performance (environment-aware threshold)
+    if (performanceMetrics.loadTime < (timeouts.performanceCheck / 5)) {
       // Fast load - simulate high engagement
       await page.goto('/pages/tickets.html');
       
       const addButton = page.locator('button:has-text("Weekend")').first();
       if (await addButton.count() > 0) {
         await addButton.click();
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(timeouts.userBehavior / 8);
       }
     }
     

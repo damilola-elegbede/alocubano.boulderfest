@@ -73,7 +73,12 @@ async function globalSetupPreview() {
     console.log(`   Test Data: ✅ Isolated`);
     console.log(`   Critical Endpoints: ✅ Warmed up`);
     console.log(`   Mode: Production-like preview testing`);
-    console.log(`   Timeout Profile: ${process.env.CI ? 'CI-Extended' : 'Local-Fast'} (Test: ${process.env.CI ? '90s' : '60s'}, Action: ${process.env.CI ? '30s' : '15s'}, Nav: ${process.env.CI ? '60s' : '30s'})`);
+    console.log(`   Timeout Profile: ${process.env.CI ? 'CI-Extended (Vercel-Optimized)' : 'Local-Enhanced (Cold-Start Aware)'}`);
+    console.log(`   - Test Timeout: ${process.env.CI ? '120s' : '90s'} (increased for serverless cold starts)`);
+    console.log(`   - Action Timeout: ${process.env.CI ? '45s' : '30s'} (increased for API latency)`);
+    console.log(`   - Navigation Timeout: ${process.env.CI ? '90s' : '60s'} (increased for cold starts + network)`);
+    console.log(`   - Expect Timeout: ${process.env.CI ? '30s' : '25s'} (increased for serverless responses)`);
+    console.log(`   - Retry Strategy: ${process.env.CI ? '3 retries' : '2 retries'} (network-optimized)`);
     
     console.log('\n✅ Global preview setup completed successfully');
     console.log('='.repeat(60));
@@ -188,9 +193,9 @@ async function verifyDeploymentSecrets(previewUrl) {
 }
 
 /**
- * Validate deployment health with comprehensive checks
+ * Validate deployment health with comprehensive checks - Enhanced for Vercel cold starts
  */
-async function validateDeploymentHealth(previewUrl, maxAttempts = 12, intervalMs = 8000) {
+async function validateDeploymentHealth(previewUrl, maxAttempts = 15, intervalMs = 10000) {
   console.log(`⏳ Validating deployment health (max ${maxAttempts} attempts)...`);
   
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -198,8 +203,8 @@ async function validateDeploymentHealth(previewUrl, maxAttempts = 12, intervalMs
       console.log(`   🔍 Health check ${attempt}/${maxAttempts}: ${previewUrl}/api/health/check`);
       
       const controller = new AbortController();
-      // Increased timeout for firefox compatibility
-      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      // Enhanced timeout for Vercel cold starts + Firefox compatibility
+      const timeoutId = setTimeout(() => controller.abort(), 45000);
       
       const response = await fetch(`${previewUrl}/api/health/check`, {
         signal: controller.signal,
@@ -221,8 +226,8 @@ async function validateDeploymentHealth(previewUrl, maxAttempts = 12, intervalMs
         // Additional API endpoint checks with retries
         await validateCriticalEndpoints(previewUrl);
         
-        // Brief pause for deployment stabilization
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Extended pause for deployment stabilization and function warming
+        await new Promise(resolve => setTimeout(resolve, 5000));
         return;
       } else {
         console.log(`   ⚠️ Health check failed (${response.status}): ${response.statusText}`);
@@ -264,13 +269,13 @@ async function validateCriticalEndpoints(previewUrl) {
 }
 
 /**
- * Validate a single endpoint with retry logic
+ * Validate a single endpoint with retry logic - Enhanced for Vercel cold starts
  */
-async function validateEndpointWithRetries(previewUrl, endpoint, maxAttempts = 3) {
+async function validateEndpointWithRetries(previewUrl, endpoint, maxAttempts = 5) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // Enhanced for cold starts
       
       const response = await fetch(`${previewUrl}${endpoint}`, {
         signal: controller.signal,
@@ -470,11 +475,11 @@ DEPLOYMENT_READY=true
 # API availability flags (detected during setup)
 ${await checkApiAvailability(previewUrl)}
 
-# Timeout configurations for remote testing (CI-optimized)
-E2E_ACTION_TIMEOUT=${process.env.CI ? '30000' : '15000'}
-E2E_NAVIGATION_TIMEOUT=${process.env.CI ? '60000' : '30000'}  
-E2E_TEST_TIMEOUT=${process.env.CI ? '90000' : '60000'}
-E2E_EXPECT_TIMEOUT=${process.env.CI ? '20000' : '15000'}
+# Enhanced timeout configurations for Vercel deployments (cold start optimized)
+E2E_ACTION_TIMEOUT=${process.env.CI ? '45000' : '30000'}
+E2E_NAVIGATION_TIMEOUT=${process.env.CI ? '90000' : '60000'}  
+E2E_TEST_TIMEOUT=${process.env.CI ? '120000' : '90000'}
+E2E_EXPECT_TIMEOUT=${process.env.CI ? '30000' : '25000'}
 `;
 
   writeFileSync(previewEnvPath, previewConfig);

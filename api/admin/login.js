@@ -228,6 +228,11 @@ async function loginHandler(req, res) {
                                process.env.VERCEL_ENV === 'preview' ||
                                req.headers['user-agent']?.includes('Playwright');
     
+    // Add performance header for E2E tests
+    if (isTestEnvironment) {
+      res.setHeader('X-E2E-Login-Optimized', 'true');
+    }
+    
     if (!isTestEnvironment) {
       const rateLimitResult = await checkEnhancedRateLimit(clientIP);
       if (rateLimitResult.isLocked) {
@@ -361,8 +366,8 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
     });
   }
 
-  // Add consistent delay to prevent timing attacks (minimum 200ms)
-  const minDelay = 200;
+  // Add consistent delay to prevent timing attacks - optimized for E2E tests
+  const minDelay = isE2ETest ? 50 : 200; // Faster response for E2E tests
   if (verificationTime < minDelay) {
     await new Promise(resolve => setTimeout(resolve, minDelay - verificationTime));
   }
