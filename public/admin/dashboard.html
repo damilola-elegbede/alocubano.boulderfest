@@ -4,203 +4,406 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Dashboard - A Lo Cubano Boulder Fest</title>
+    <meta
+      name="description"
+      content="Admin dashboard for A Lo Cubano Boulder Fest - Manage registrations, track attendance, and monitor festival operations"
+    />
+
+    <!-- Favicons -->
+    <link
+      rel="icon"
+      type="image/png"
+      href="/images/favicons/favicon-32x32.png"
+    />
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/images/favicons/favicon-16x16.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/images/favicons/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+
+    <!-- Main Site Stylesheets -->
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
-          sans-serif;
-        background: #f5f7fa;
-        color: #333;
-      }
-
+      /* Admin-specific styling using main site design system */
       .admin-header {
-        background: #2c3e50;
-        color: white;
-        padding: 15px 30px;
+        background: var(--color-black);
+        color: var(--color-white);
+        padding: var(--space-lg) 0;
+        border-bottom: 2px solid var(--color-red);
+        margin-bottom: var(--space-xl);
+      }
+
+      .admin-header-content {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        flex-wrap: wrap;
+        gap: var(--space-md);
       }
 
-      .admin-header h1 {
-        font-size: 24px;
-        font-weight: 500;
-      }
-
-      .logout-btn {
-        background: #e74c3c;
-        color: white;
-        border: none;
-        padding: 8px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-      }
-
-      .logout-btn:hover {
-        background: #c0392b;
-      }
-
-      .portal-btn {
-        background: #17a2b8;
-        color: white;
-        border: none;
-        padding: 8px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        margin-right: 10px;
-      }
-
-      .portal-btn:hover {
-        background: #138496;
-      }
-
-      .analytics-btn {
-        background: #9c27b0;
-        color: white;
-        border: none;
-        padding: 8px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        margin-right: 10px;
-      }
-
-      .analytics-btn:hover {
-        background: #7b1fa2;
-      }
-
-      .sync-btn {
-        background: #0f9d58;
-        color: white;
-        border: none;
-        padding: 8px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        margin-right: 10px;
-      }
-
-      .sync-btn:hover {
-        background: #0b7938;
-      }
-
-      .sync-btn:disabled {
-        background: #95a5a6;
-        cursor: not-allowed;
-      }
-
-      .header-actions {
+      .admin-branding {
         display: flex;
-        gap: 10px;
         align-items: center;
+        gap: var(--space-lg);
       }
 
+      .admin-logo {
+        height: 50px;
+        width: auto;
+      }
+
+      .admin-title-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+      }
+
+      .admin-title {
+        font-family: var(--font-display);
+        font-size: var(--font-size-2xl);
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        margin: 0;
+        color: var(--color-white);
+      }
+
+      .admin-subtitle {
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wider);
+        color: var(--color-red);
+        margin: 0;
+      }
+
+      .admin-header-actions {
+        display: flex;
+        gap: var(--space-sm);
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .admin-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-sm) var(--space-lg);
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        border: 2px solid transparent;
+        transition: all var(--transition-base);
+        cursor: pointer;
+        text-decoration: none;
+        min-height: 44px;
+        border-radius: var(--radius-md);
+      }
+
+      .admin-btn-portal {
+        background: var(--color-blue);
+        color: var(--color-white);
+        border-color: var(--color-blue);
+      }
+
+      .admin-btn-portal:hover {
+        background: transparent;
+        color: var(--color-blue);
+        transform: translateY(-2px);
+      }
+
+      .admin-btn-analytics {
+        background: transparent;
+        color: var(--color-white);
+        border-color: var(--color-white);
+      }
+
+      .admin-btn-analytics:hover {
+        background: var(--color-white);
+        color: var(--color-black);
+        transform: translateY(-2px);
+      }
+
+      .admin-btn-sync {
+        background: var(--color-red);
+        color: var(--color-white);
+        border-color: var(--color-red);
+      }
+
+      .admin-btn-sync:hover:not(:disabled) {
+        background: transparent;
+        color: var(--color-red);
+        transform: translateY(-2px);
+      }
+
+      .admin-btn-sync:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .admin-btn-logout {
+        background: transparent;
+        color: var(--color-white);
+        border-color: var(--color-red);
+      }
+
+      .admin-btn-logout:hover {
+        background: var(--color-red);
+        color: var(--color-white);
+        transform: translateY(-2px);
+      }
+
+      /* Dashboard Content */
       .dashboard-container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 30px;
+        background: var(--color-white);
+        min-height: calc(100vh - 200px);
+      }
+
+      .dashboard-stats {
+        margin-bottom: var(--space-3xl);
+      }
+
+      .stats-header {
+        text-align: center;
+        margin-bottom: var(--space-2xl);
+      }
+
+      .stats-title {
+        font-family: var(--font-display);
+        font-size: var(--font-size-4xl);
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        color: var(--color-black);
+        margin: 0 0 var(--space-sm) 0;
+      }
+
+      .stats-subtitle {
+        font-family: var(--font-code);
+        font-size: var(--font-size-sm);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wider);
+        color: var(--color-gray-600);
+        margin: 0;
       }
 
       .stats-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 20px;
-        margin-bottom: 30px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: var(--space-xl);
+        margin-bottom: var(--space-3xl);
       }
 
       .stat-card {
-        background: white;
-        padding: 25px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        background: var(--color-white);
+        border: 2px solid var(--color-gray-200);
+        border-radius: var(--radius-lg);
+        padding: var(--space-xl);
+        transition: all var(--transition-base);
+        position: relative;
+        overflow: hidden;
       }
 
-      .stat-card h3 {
-        color: #7f8c8d;
-        font-size: 14px;
-        font-weight: 500;
+      .stat-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+      }
+
+      .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--color-blue);
+      }
+
+      .stat-card-header {
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
         text-transform: uppercase;
-        margin-bottom: 10px;
+        letter-spacing: var(--letter-spacing-wider);
+        color: var(--color-gray-600);
+        margin-bottom: var(--space-md);
+        font-weight: 600;
       }
 
       .stat-number {
-        font-size: 32px;
-        font-weight: bold;
-        color: #2c3e50;
+        font-family: var(--font-display);
+        font-size: var(--font-size-4xl);
+        font-weight: 900;
+        color: var(--color-black);
+        margin-bottom: var(--space-xs);
+        line-height: var(--line-height-none);
       }
 
       .stat-label {
-        color: #95a5a6;
-        font-size: 12px;
-        margin-top: 5px;
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        color: var(--color-gray-500);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
       }
 
-      .section {
-        background: white;
-        border-radius: 8px;
-        padding: 25px;
-        margin-bottom: 30px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      /* Special styling for wallet stats */
+      .stat-card.wallet-apple::before {
+        background: var(--color-black);
+      }
+
+      .stat-card.wallet-google::before {
+        background: var(--color-blue);
+      }
+
+      /* Admin Section */
+      .admin-section {
+        background: var(--color-white);
+        border: 2px solid var(--color-gray-200);
+        border-radius: var(--radius-lg);
+        padding: var(--space-2xl);
+        margin-bottom: var(--space-3xl);
+        transition: all var(--transition-base);
+      }
+
+      .admin-section:hover {
+        border-color: var(--color-blue);
+        box-shadow: var(--shadow-md);
       }
 
       .section-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 20px;
-        padding-bottom: 15px;
-        border-bottom: 1px solid #ecf0f1;
+        margin-bottom: var(--space-xl);
+        padding-bottom: var(--space-lg);
+        border-bottom: 2px solid var(--color-gray-200);
       }
 
       .section-title {
-        font-size: 20px;
-        font-weight: 600;
-        color: #2c3e50;
+        font-family: var(--font-display);
+        font-size: var(--font-size-3xl);
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        color: var(--color-black);
+        margin: 0;
       }
 
-      .search-bar {
+      /* Search Interface */
+      .search-interface {
+        background: var(--color-gray-100);
+        padding: var(--space-lg);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--space-xl);
+        border: 1px solid var(--color-gray-200);
+      }
+
+      .search-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr auto auto;
+        gap: var(--space-md);
+        align-items: end;
+      }
+
+      .search-group {
         display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
+        flex-direction: column;
+        gap: var(--space-xs);
       }
 
-      .search-bar input {
-        flex: 1;
-        padding: 10px 15px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
+      .search-label {
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wider);
+        color: var(--color-gray-700);
+        font-weight: 600;
       }
 
-      .search-bar select {
-        padding: 10px 15px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
-        background: white;
+      .search-input,
+      .search-select {
+        padding: var(--space-sm) var(--space-md);
+        border: 2px solid var(--color-gray-300);
+        border-radius: var(--radius-md);
+        font-family: var(--font-sans);
+        font-size: var(--font-size-sm);
+        background: var(--color-white);
+        transition: border-color var(--transition-base);
+        min-height: 44px;
       }
 
-      .search-bar button {
-        padding: 10px 25px;
-        background: #3498db;
-        color: white;
-        border: none;
-        border-radius: 4px;
+      .search-input:focus,
+      .search-select:focus {
+        outline: none;
+        border-color: var(--color-blue);
+        box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.1);
+      }
+
+      .search-btn {
+        padding: var(--space-sm) var(--space-lg);
+        background: var(--color-blue);
+        color: var(--color-white);
+        border: 2px solid var(--color-blue);
+        border-radius: var(--radius-md);
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
         cursor: pointer;
-        font-size: 14px;
+        transition: all var(--transition-base);
+        min-height: 44px;
       }
 
-      .search-bar button:hover {
-        background: #2980b9;
+      .search-btn:hover {
+        background: transparent;
+        color: var(--color-blue);
+        transform: translateY(-2px);
+      }
+
+      .export-btn {
+        background: var(--color-red);
+        border-color: var(--color-red);
+      }
+
+      .export-btn:hover {
+        background: transparent;
+        color: var(--color-red);
+      }
+
+      /* Data Table */
+      .table-container {
+        background: var(--color-white);
+        border: 1px solid var(--color-gray-200);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
       }
 
       .data-table {
@@ -209,112 +412,175 @@
       }
 
       .data-table th {
-        background: #f8f9fa;
-        padding: 12px;
+        background: var(--color-gray-100);
+        padding: var(--space-md) var(--space-lg);
         text-align: left;
-        font-weight: 600;
-        color: #7f8c8d;
-        font-size: 12px;
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        font-weight: 700;
         text-transform: uppercase;
-        border-bottom: 2px solid #e9ecef;
+        letter-spacing: var(--letter-spacing-wider);
+        color: var(--color-gray-700);
+        border-bottom: 2px solid var(--color-gray-200);
       }
 
       .data-table td {
-        padding: 12px;
-        border-bottom: 1px solid #e9ecef;
-        font-size: 14px;
+        padding: var(--space-md) var(--space-lg);
+        border-bottom: 1px solid var(--color-gray-200);
+        font-family: var(--font-sans);
+        font-size: var(--font-size-sm);
+        color: var(--color-black);
       }
 
       .data-table tr:hover {
-        background: #f8f9fa;
+        background: var(--color-gray-50);
       }
 
       .ticket-id {
-        font-family: monospace;
-        font-size: 12px;
-        background: #ecf0f1;
-        padding: 2px 6px;
-        border-radius: 3px;
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        background: var(--color-gray-100);
+        color: var(--color-black);
+        padding: var(--space-xs) var(--space-sm);
+        border-radius: var(--radius-sm);
+        font-weight: 600;
       }
 
       .status-badge {
         display: inline-block;
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: 600;
+        padding: var(--space-xs) var(--space-sm);
+        border-radius: var(--radius-full);
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        font-weight: 700;
         text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        line-height: 1;
       }
 
       .status-valid {
-        background: #d4edda;
-        color: #155724;
+        background: rgba(0, 128, 0, 0.1);
+        color: #006400;
+        border: 1px solid rgba(0, 128, 0, 0.3);
       }
+
       .status-checked-in {
-        background: #cce5ff;
-        color: #004085;
+        background: rgba(91, 107, 181, 0.1);
+        color: var(--color-blue);
+        border: 1px solid rgba(91, 107, 181, 0.3);
       }
+
       .status-cancelled {
-        background: #f8d7da;
-        color: #721c24;
+        background: rgba(204, 41, 54, 0.1);
+        color: var(--color-red);
+        border: 1px solid rgba(204, 41, 54, 0.3);
+      }
+
+      .action-btn {
+        padding: var(--space-xs) var(--space-md);
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        border: 2px solid transparent;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all var(--transition-base);
+        min-height: 36px;
       }
 
       .checkin-btn {
-        padding: 6px 12px;
-        background: #27ae60;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 12px;
+        background: rgba(0, 128, 0, 0.1);
+        color: #006400;
+        border-color: rgba(0, 128, 0, 0.3);
       }
 
-      .checkin-btn:hover {
-        background: #229954;
+      .checkin-btn:hover:not(:disabled) {
+        background: #006400;
+        color: var(--color-white);
+        transform: translateY(-1px);
       }
 
       .checkin-btn:disabled {
-        background: #95a5a6;
+        opacity: 0.5;
         cursor: not-allowed;
+        transform: none;
       }
 
+      /* Pagination */
       .pagination {
         display: flex;
         justify-content: center;
-        gap: 10px;
-        margin-top: 20px;
+        align-items: center;
+        gap: var(--space-md);
+        margin-top: var(--space-xl);
+        padding: var(--space-lg);
+        background: var(--color-gray-50);
+        border-radius: var(--radius-md);
       }
 
-      .pagination button {
-        padding: 8px 12px;
-        border: 1px solid #ddd;
-        background: white;
-        border-radius: 4px;
+      .pagination-btn {
+        padding: var(--space-sm) var(--space-lg);
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        border: 2px solid var(--color-gray-300);
+        background: var(--color-white);
+        color: var(--color-gray-700);
+        border-radius: var(--radius-sm);
         cursor: pointer;
-        font-size: 14px;
+        transition: all var(--transition-base);
+        min-height: 44px;
       }
 
-      .pagination button:hover:not(:disabled) {
-        background: #f8f9fa;
+      .pagination-btn:hover:not(:disabled) {
+        background: var(--color-blue);
+        color: var(--color-white);
+        border-color: var(--color-blue);
+        transform: translateY(-2px);
       }
 
-      .pagination button:disabled {
+      .pagination-btn:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+        transform: none;
       }
 
-      .pagination .page-info {
-        padding: 8px 12px;
-        color: #7f8c8d;
+      .page-info {
+        font-family: var(--font-code);
+        font-size: var(--font-size-sm);
+        color: var(--color-gray-600);
+        padding: var(--space-sm) var(--space-lg);
       }
 
-      .loading {
+      /* Loading and Error States */
+      .loading-state,
+      .error-state {
         text-align: center;
-        padding: 40px;
-        color: #7f8c8d;
+        padding: var(--space-3xl);
+        font-family: var(--font-code);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wider);
       }
 
-      /* Hide dashboard content until auth is verified */
+      .loading-state {
+        color: var(--color-gray-600);
+        font-size: var(--font-size-sm);
+      }
+
+      .error-state {
+        background: rgba(204, 41, 54, 0.1);
+        color: var(--color-red);
+        border: 2px solid rgba(204, 41, 54, 0.3);
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-base);
+        font-weight: 600;
+      }
+
+      /* Authentication States */
       body:not([data-auth-status="authenticated"]) .dashboard-container {
         display: none;
       }
@@ -323,134 +589,277 @@
         display: none;
       }
 
-      /* Show auth loading state */
       body[data-auth-status="checking"] {
         display: flex;
         justify-content: center;
         align-items: center;
         min-height: 100vh;
+        background: var(--color-white);
       }
 
       body[data-auth-status="checking"]::after {
-        content: "Checking authentication...";
-        font-size: 18px;
-        color: #7f8c8d;
+        content: "CHECKING AUTHENTICATION...";
+        font-family: var(--font-code);
+        font-size: var(--font-size-lg);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wider);
+        color: var(--color-gray-600);
+        animation: pulse 2s ease-in-out infinite;
       }
 
-      /* Show error state for unauthenticated/failed */
       body[data-auth-status="unauthenticated"]::after,
       body[data-auth-status="failed"]::after {
-        content: "Redirecting to login...";
+        content: "REDIRECTING TO LOGIN...";
         position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        font-size: 18px;
-        color: #e74c3c;
+        font-family: var(--font-code);
+        font-size: var(--font-size-lg);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wider);
+        color: var(--color-red);
         z-index: 9999;
+        animation: pulse 2s ease-in-out infinite;
       }
 
-      .error {
-        background: #f8d7da;
-        color: #721c24;
-        padding: 15px;
-        border-radius: 4px;
-        margin-bottom: 20px;
-      }
-
+      /* Mobile Responsive */
       @media (max-width: 768px) {
-        .dashboard-container {
-          padding: 15px;
+        .admin-header-content {
+          flex-direction: column;
+          align-items: stretch;
+          text-align: center;
+        }
+
+        .admin-branding {
+          justify-content: center;
+          margin-bottom: var(--space-md);
+        }
+
+        .admin-header-actions {
+          justify-content: center;
+          flex-wrap: wrap;
         }
 
         .stats-grid {
           grid-template-columns: 1fr;
+          gap: var(--space-lg);
+        }
+
+        .search-grid {
+          grid-template-columns: 1fr;
+          gap: var(--space-md);
+        }
+
+        .table-container {
+          overflow-x: auto;
         }
 
         .data-table {
-          font-size: 12px;
+          min-width: 600px;
         }
 
         .data-table th,
         .data-table td {
-          padding: 8px;
+          padding: var(--space-sm);
+          font-size: var(--font-size-xs);
+        }
+
+        .pagination {
+          flex-wrap: wrap;
+          gap: var(--space-sm);
+        }
+
+        .pagination-btn {
+          padding: var(--space-sm);
+          font-size: 10px;
+        }
+      }
+
+      /* Dark mode support for admin interface */
+      @media (prefers-color-scheme: dark) {
+        .admin-section,
+        .stat-card,
+        .table-container {
+          background: var(--color-gray-900);
+          border-color: var(--color-gray-700);
+          color: var(--color-white);
+        }
+
+        .data-table th {
+          background: var(--color-gray-800);
+          color: var(--color-gray-300);
+        }
+
+        .data-table td {
+          color: var(--color-white);
+        }
+
+        .search-interface {
+          background: var(--color-gray-800);
+          border-color: var(--color-gray-700);
+        }
+      }
+
+      /* Animation keyframes */
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
         }
       }
     </style>
   </head>
-  <body>
-    <div class="admin-header">
-      <h1>Admin Dashboard</h1>
-      <div class="header-actions">
-        <button
-          class="portal-btn"
-          onclick="location.href='/admin'"
-        >
-          🎯 Portal
-        </button>
-        <button
-          class="analytics-btn"
-          onclick="location.href='/admin/analytics'"
-        >
-          📈 Analytics
-        </button>
-        <button class="sync-btn" onclick="syncToSheets()">
-          📊 Sync to Sheets
-        </button>
-        <button class="logout-btn" onclick="logout()">Logout</button>
-      </div>
-    </div>
-
-    <div class="dashboard-container">
-      <!-- Statistics -->
-      <div class="stats-grid" id="statsGrid" data-testid="dashboard-stats">
-        <div class="loading">Loading statistics...</div>
-      </div>
-
-      <!-- Registrations Section (also handles transactions) -->
-      <div class="section" id="registrations">
-        <!-- Additional anchor for transactions (points to same section) -->
-        <span id="transactions"></span>
-        <div class="section-header">
-          <h2 class="section-title">Registrations</h2>
+  <body class="typographic">
+    <!-- Admin Header with Branding -->
+    <header class="admin-header">
+      <div class="container">
+        <div class="admin-header-content">
+          <div class="admin-branding">
+            <img
+              src="/images/logo.png"
+              alt="A Lo Cubano Boulder Fest Logo"
+              class="admin-logo"
+            />
+            <div class="admin-title-group">
+              <h1 class="admin-title">Admin Dashboard</h1>
+              <p class="admin-subtitle">Festival Management System</p>
+            </div>
+          </div>
+          <nav class="admin-header-actions" aria-label="Admin navigation">
+            <a
+              href="/admin"
+              class="admin-btn admin-btn-portal"
+              aria-label="Go to admin portal"
+            >
+              🎯 Portal
+            </a>
+            <a
+              href="/admin/analytics"
+              class="admin-btn admin-btn-analytics"
+              aria-label="View analytics"
+            >
+              📈 Analytics
+            </a>
+            <button
+              class="admin-btn admin-btn-sync"
+              onclick="syncToSheets()"
+              aria-label="Sync data to Google Sheets"
+            >
+              📊 Sync to Sheets
+            </button>
+            <button
+              class="admin-btn admin-btn-logout"
+              onclick="logout()"
+              aria-label="Logout from admin dashboard"
+            >
+              Logout
+            </button>
+          </nav>
         </div>
-
-        <div class="search-bar">
-          <input
-            type="text"
-            id="searchInput"
-            placeholder="Search by name, email, or ticket ID..."
-            onkeypress="if(event.key==='Enter') searchRegistrations()"
-            data-testid="search-registrations"
-          />
-          <select
-            id="statusFilter"
-            onchange="searchRegistrations()"
-            data-testid="ticket-type-filter"
-          >
-            <option value="">All Status</option>
-            <option value="valid">Valid</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="transferred">Transferred</option>
-          </select>
-          <select id="checkinFilter" onchange="searchRegistrations()">
-            <option value="">All Tickets</option>
-            <option value="false">Not Checked In</option>
-            <option value="true">Checked In</option>
-          </select>
-          <button onclick="searchRegistrations()" data-testid="search-button">
-            Search
-          </button>
-          <button onclick="exportToCSV()">Export CSV</button>
-        </div>
-
-        <div id="registrationsTable" data-testid="registrations-table">
-          <div class="loading">Loading registrations...</div>
-        </div>
-
-        <div class="pagination" id="pagination"></div>
       </div>
-    </div>
+    </header>
+
+    <!-- Main Dashboard Content -->
+    <main class="dashboard-container">
+      <div class="container">
+        <!-- Dashboard Statistics -->
+        <section class="dashboard-stats">
+          <div class="stats-header">
+            <h2 class="stats-title">Festival Overview</h2>
+            <p class="stats-subtitle">Real-time registration and attendance data</p>
+          </div>
+          
+          <div class="stats-grid" id="statsGrid" data-testid="dashboard-stats">
+            <div class="loading-state">Loading statistics...</div>
+          </div>
+        </section>
+
+        <!-- Registrations Management -->
+        <section class="admin-section" id="registrations">
+          <!-- Additional anchor for transactions (points to same section) -->
+          <span id="transactions"></span>
+          
+          <div class="section-header">
+            <h2 class="section-title">Registrations</h2>
+          </div>
+
+          <!-- Search and Filter Interface -->
+          <div class="search-interface">
+            <div class="search-grid">
+              <div class="search-group">
+                <label for="searchInput" class="search-label">Search Query</label>
+                <input
+                  type="text"
+                  id="searchInput"
+                  class="search-input"
+                  placeholder="Search by name, email, or ticket ID..."
+                  onkeypress="if(event.key==='Enter') searchRegistrations()"
+                  data-testid="search-registrations"
+                />
+              </div>
+              
+              <div class="search-group">
+                <label for="statusFilter" class="search-label">Status Filter</label>
+                <select
+                  id="statusFilter"
+                  class="search-select"
+                  onchange="searchRegistrations()"
+                  data-testid="ticket-type-filter"
+                >
+                  <option value="">All Status</option>
+                  <option value="valid">Valid</option>
+                  <option value="cancelled">Cancelled</option>
+                  <option value="transferred">Transferred</option>
+                </select>
+              </div>
+              
+              <div class="search-group">
+                <label for="checkinFilter" class="search-label">Check-in Filter</label>
+                <select 
+                  id="checkinFilter" 
+                  class="search-select"
+                  onchange="searchRegistrations()"
+                >
+                  <option value="">All Tickets</option>
+                  <option value="false">Not Checked In</option>
+                  <option value="true">Checked In</option>
+                </select>
+              </div>
+
+              <button 
+                class="search-btn" 
+                onclick="searchRegistrations()" 
+                data-testid="search-button"
+                aria-label="Execute search"
+              >
+                Search
+              </button>
+
+              <button 
+                class="search-btn export-btn" 
+                onclick="exportToCSV()"
+                aria-label="Export results to CSV"
+              >
+                Export CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Data Table Container -->
+          <div class="table-container">
+            <div id="registrationsTable" data-testid="registrations-table">
+              <div class="loading-state">Loading registrations...</div>
+            </div>
+          </div>
+
+          <!-- Pagination Controls -->
+          <div class="pagination" id="pagination"></div>
+        </section>
+      </div>
+    </main>
 
     <script>
       // Security improvements:
@@ -552,7 +961,7 @@
         } catch (error) {
           console.error("Failed to load dashboard:", error);
           document.getElementById("statsGrid").innerHTML = `
-                    <div class="error">Failed to load dashboard: ${escapeHtml(error.message)}</div>
+                    <div class="error-state">Failed to load dashboard: ${escapeHtml(error.message)}</div>
                 `;
         }
       }
@@ -563,43 +972,43 @@
 
         statsGrid.innerHTML = `
                 <div class="stat-card">
-                    <h3>Total Tickets</h3>
+                    <div class="stat-card-header">Total Tickets</div>
                     <div class="stat-number">${stats.total_tickets || 0}</div>
                 </div>
                 <div class="stat-card">
-                    <h3>Checked In</h3>
+                    <div class="stat-card-header">Checked In</div>
                     <div class="stat-number">${stats.checked_in || 0}</div>
-                    <div class="stat-label">${Math.round((stats.checked_in / stats.total_tickets) * 100) || 0}%</div>
+                    <div class="stat-label">${Math.round((stats.checked_in / stats.total_tickets) * 100) || 0}% completion</div>
                 </div>
                 <div class="stat-card">
-                    <h3>Total Revenue</h3>
+                    <div class="stat-card-header">Total Revenue</div>
                     <div class="stat-number">$${(stats.total_revenue || 0).toFixed(2)}</div>
                 </div>
                 <div class="stat-card">
-                    <h3>Total Orders</h3>
+                    <div class="stat-card-header">Total Orders</div>
                     <div class="stat-number">${stats.total_orders || 0}</div>
                 </div>
                 <div class="stat-card">
-                    <h3>Workshop Tickets</h3>
+                    <div class="stat-card-header">Workshop Tickets</div>
                     <div class="stat-number">${stats.workshop_tickets || 0}</div>
                 </div>
                 <div class="stat-card">
-                    <h3>VIP Tickets</h3>
+                    <div class="stat-card-header">VIP Tickets</div>
                     <div class="stat-number">${stats.vip_tickets || 0}</div>
                 </div>
                 <!-- Wallet Statistics -->
-                <div class="stat-card" style="border-left: 3px solid #000;">
-                    <h3>Apple Wallet</h3>
+                <div class="stat-card wallet-apple">
+                    <div class="stat-card-header">Apple Wallet</div>
                     <div class="stat-number">${stats.apple_wallet_users || 0}</div>
                     <div class="stat-label">${stats.total_tickets ? Math.round((stats.apple_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
                 </div>
-                <div class="stat-card" style="border-left: 3px solid #4285f4;">
-                    <h3>Google Wallet</h3>
+                <div class="stat-card wallet-google">
+                    <div class="stat-card-header">Google Wallet</div>
                     <div class="stat-number">${stats.google_wallet_users || 0}</div>
                     <div class="stat-label">${stats.total_tickets ? Math.round((stats.google_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
                 </div>
                 <div class="stat-card">
-                    <h3>QR Generated</h3>
+                    <div class="stat-card-header">QR Generated</div>
                     <div class="stat-number">${stats.qr_generated || 0}</div>
                     <div class="stat-label">${stats.total_tickets ? Math.round((stats.qr_generated / stats.total_tickets) * 100) : 0}% ready</div>
                 </div>
@@ -634,7 +1043,7 @@
         } catch (error) {
           console.error("Failed to load registrations:", error);
           document.getElementById("registrationsTable").innerHTML = `
-                    <div class="error">Failed to load registrations: ${escapeHtml(error.message)}</div>
+                    <div class="error-state">Failed to load registrations: ${escapeHtml(error.message)}</div>
                 `;
         }
       }
@@ -643,9 +1052,9 @@
       function displayRegistrations(registrations) {
         if (registrations.length === 0) {
           document.getElementById("registrationsTable").innerHTML = `
-                    <p style="text-align: center; padding: 20px; color: #7f8c8d;">
+                    <div class="loading-state">
                         No registrations found
-                    </p>
+                    </div>
                 `;
           return;
         }
@@ -681,8 +1090,8 @@
                                 <td>
                                     ${
                                       reg.checked_in_at
-                                        ? `<button class="checkin-btn" data-action="undo" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}">Undo</button>`
-                                        : `<button class="checkin-btn" data-action="checkin" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}">Check In</button>`
+                                        ? `<button class="action-btn checkin-btn" data-action="undo" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}">Undo</button>`
+                                        : `<button class="action-btn checkin-btn" data-action="checkin" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}">Check In</button>`
                                     }
                                 </td>
                             </tr>
@@ -707,19 +1116,19 @@
         }
 
         pagination.innerHTML = `
-                <button onclick="loadRegistrations(0)" ${currentPage === 0 ? "disabled" : ""}>
+                <button class="pagination-btn" onclick="loadRegistrations(0)" ${currentPage === 0 ? "disabled" : ""}>
                     First
                 </button>
-                <button onclick="loadRegistrations(${currentPage - 1})" ${currentPage === 0 ? "disabled" : ""}>
+                <button class="pagination-btn" onclick="loadRegistrations(${currentPage - 1})" ${currentPage === 0 ? "disabled" : ""}>
                     Previous
                 </button>
                 <span class="page-info">
                     Page ${currentPage + 1} of ${totalPages}
                 </span>
-                <button onclick="loadRegistrations(${currentPage + 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""}>
+                <button class="pagination-btn" onclick="loadRegistrations(${currentPage + 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""}>
                     Next
                 </button>
-                <button onclick="loadRegistrations(${totalPages - 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""}>
+                <button class="pagination-btn" onclick="loadRegistrations(${totalPages - 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""}>
                     Last
                 </button>
             `;

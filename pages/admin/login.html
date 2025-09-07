@@ -5,113 +5,240 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Login - A Lo Cubano Boulder Fest</title>
     <style>
+      /* CSS Custom Properties for WCAG AA compliance */
+      :root {
+        --color-primary: #5b6bb5; /* Cuban blue - WCAG AA compliant */
+        --color-primary-dark: #4a5698;
+        --color-primary-light: #6c7bc7;
+        --color-red: #cc2936; /* Cuban red - WCAG AA compliant */
+        --color-text: #2c3e50;
+        --color-text-light: #5a6c7d;
+        --color-border: #d1d9e0;
+        --color-border-focus: var(--color-primary);
+        --color-background: #ffffff;
+        --color-background-alt: #f8f9fa;
+        --color-success: #28a745;
+        --color-error: #dc3545;
+        --color-warning: #ffc107;
+        --color-info: #17a2b8;
+        
+        /* High contrast colors for accessibility */
+        --color-focus-ring: #0066cc;
+        --focus-ring-width: 3px;
+        --focus-ring-offset: 2px;
+        
+        /* Typography scale */
+        --font-size-sm: 14px;
+        --font-size-base: 16px;
+        --font-size-lg: 18px;
+        --font-size-xl: 24px;
+        --font-size-2xl: 28px;
+        
+        /* Spacing scale */
+        --spacing-xs: 4px;
+        --spacing-sm: 8px;
+        --spacing-md: 16px;
+        --spacing-lg: 24px;
+        --spacing-xl: 32px;
+        --spacing-2xl: 48px;
+        
+        /* Animation settings */
+        --transition-fast: 150ms ease;
+        --transition-base: 200ms ease;
+      }
+
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
 
+      /* Skip link for keyboard navigation */
+      .skip-link {
+        position: absolute;
+        top: -40px;
+        left: 6px;
+        background: var(--color-focus-ring);
+        color: white;
+        padding: 8px 16px;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+        z-index: 10000;
+        transition: top var(--transition-base);
+      }
+
+      .skip-link:focus {
+        top: 6px;
+      }
+
       body {
         font-family:
           -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
           sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        /* Ensure sufficient contrast while maintaining Cuban theme */
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
         min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 20px;
+        padding: var(--spacing-lg);
+        color: var(--color-text);
+        font-size: var(--font-size-base);
+        line-height: 1.5;
+      }
+
+      /* High contrast mode support */
+      @media (prefers-contrast: high) {
+        body {
+          background: #000000;
+          color: #ffffff;
+        }
+        
+        .login-container {
+          background: #ffffff;
+          color: #000000;
+          border: 2px solid #000000;
+        }
+      }
+
+      /* Reduced motion support */
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
       }
 
       .login-container {
-        background: white;
+        background: var(--color-background);
         border-radius: 10px;
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
         width: 100%;
-        max-width: 400px;
-        padding: 40px;
+        max-width: 420px;
+        padding: var(--spacing-2xl) var(--spacing-xl);
+        position: relative;
       }
 
       .login-header {
         text-align: center;
-        margin-bottom: 30px;
+        margin-bottom: var(--spacing-xl);
       }
 
       .login-header h1 {
-        color: #2c3e50;
-        font-size: 28px;
-        margin-bottom: 10px;
+        color: var(--color-text);
+        font-size: var(--font-size-2xl);
+        margin-bottom: var(--spacing-md);
+        font-weight: 600;
       }
 
       .login-header p {
-        color: #7f8c8d;
-        font-size: 14px;
+        color: var(--color-text-light);
+        font-size: var(--font-size-sm);
       }
 
       .form-group {
-        margin-bottom: 20px;
+        margin-bottom: var(--spacing-lg);
       }
 
       .form-group label {
         display: block;
-        color: #2c3e50;
-        font-size: 14px;
-        font-weight: 500;
-        margin-bottom: 8px;
+        color: var(--color-text);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        margin-bottom: var(--spacing-sm);
+        cursor: pointer;
       }
 
       .form-group input {
         width: 100%;
         padding: 12px 15px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        font-size: 16px;
-        transition: border-color 0.3s;
+        border: 2px solid var(--color-border);
+        border-radius: 6px;
+        font-size: var(--font-size-base);
+        transition: border-color var(--transition-base), box-shadow var(--transition-base);
+        background: var(--color-background);
+        color: var(--color-text);
       }
 
       .form-group input:focus {
         outline: none;
-        border-color: #667eea;
+        border-color: var(--color-border-focus);
+        box-shadow: 0 0 0 var(--focus-ring-width) rgba(91, 107, 181, 0.2);
+      }
+
+      /* Enhanced focus indicators for better visibility */
+      .form-group input:focus-visible {
+        outline: var(--focus-ring-width) solid var(--color-focus-ring);
+        outline-offset: var(--focus-ring-offset);
+      }
+
+      .form-group input[aria-invalid="true"] {
+        border-color: var(--color-error);
+        box-shadow: 0 0 0 var(--focus-ring-width) rgba(220, 53, 69, 0.2);
       }
 
       .login-btn {
         width: 100%;
-        padding: 14px;
-        background: #667eea;
+        padding: 14px var(--spacing-md);
+        background: var(--color-primary);
         color: white;
         border: none;
-        border-radius: 5px;
-        font-size: 16px;
-        font-weight: 500;
+        border-radius: 6px;
+        font-size: var(--font-size-base);
+        font-weight: 600;
         cursor: pointer;
-        transition: background 0.3s;
+        transition: background-color var(--transition-base), transform var(--transition-fast);
+        position: relative;
+        min-height: 48px; /* Ensure minimum touch target size */
       }
 
-      .login-btn:hover {
-        background: #5a67d8;
+      .login-btn:hover:not(:disabled) {
+        background: var(--color-primary-dark);
+        transform: translateY(-1px);
+      }
+
+      .login-btn:focus {
+        outline: var(--focus-ring-width) solid var(--color-focus-ring);
+        outline-offset: var(--focus-ring-offset);
+      }
+
+      .login-btn:active:not(:disabled) {
+        transform: translateY(0);
       }
 
       .login-btn:disabled {
         background: #95a5a6;
         cursor: not-allowed;
+        opacity: 0.7;
+        transform: none;
       }
 
       .error-message {
         background: #f8d7da;
         color: #721c24;
-        padding: 12px;
-        border-radius: 5px;
-        margin-bottom: 20px;
-        font-size: 14px;
+        border: 1px solid #f5c6cb;
+        padding: var(--spacing-md);
+        border-radius: 6px;
+        margin-bottom: var(--spacing-lg);
+        font-size: var(--font-size-sm);
         display: none;
+        role: alert;
+      }
+
+      .error-message[aria-live] {
+        /* Ensure screen readers announce errors */
+        position: relative;
       }
 
       .info-message {
         background: #d1ecf1;
         color: #0c5460;
-        padding: 12px;
-        border-radius: 5px;
-        margin-top: 20px;
+        border: 1px solid #bee5eb;
+        padding: var(--spacing-md);
+        border-radius: 6px;
+        margin-top: var(--spacing-lg);
         font-size: 13px;
         text-align: center;
       }
@@ -119,100 +246,329 @@
       .loading {
         display: none;
         text-align: center;
-        color: #7f8c8d;
-        margin-top: 10px;
+        color: var(--color-text-light);
+        margin-top: var(--spacing-md);
+        font-size: var(--font-size-sm);
+      }
+
+      .loading[aria-live] {
+        /* Ensure screen readers announce loading states */
+        position: relative;
+      }
+
+      /* Keyboard navigation indicators */
+      .form-group:focus-within label {
+        color: var(--color-primary);
+      }
+
+      /* Accessibility improvements for screen readers */
+      .visually-hidden {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
+      }
+
+      /* Print styles for accessibility */
+      @media print {
+        body {
+          background: white !important;
+          color: black !important;
+        }
+        
+        .login-container {
+          box-shadow: none !important;
+          border: 1px solid black !important;
+        }
+      }
+
+      /* Mobile accessibility improvements */
+      @media (max-width: 480px) {
+        .login-container {
+          padding: var(--spacing-xl) var(--spacing-lg);
+          margin: var(--spacing-md);
+        }
+        
+        .login-btn, .form-group input {
+          font-size: 16px; /* Prevent zoom on iOS */
+          min-height: 44px; /* iOS minimum touch target */
+        }
       }
     </style>
   </head>
   <body>
-    <div class="login-container">
-      <div class="login-header">
-        <h1>Admin Access</h1>
-        <p>A Lo Cubano Boulder Fest</p>
-      </div>
+    <!-- Skip link for keyboard navigation -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <main id="main-content" role="main" aria-labelledby="login-heading">
+      <div class="login-container">
+        <header class="login-header">
+          <h1 id="login-heading">Admin Access</h1>
+          <p>A Lo Cubano Boulder Fest</p>
+        </header>
 
-      <div
-        class="error-message"
-        id="errorMessage"
-        data-testid="login-error"
-      ></div>
+        <!-- Error message region with live announcements -->
+        <div
+          class="error-message"
+          id="errorMessage"
+          data-testid="login-error"
+          role="alert"
+          aria-live="polite"
+          aria-atomic="true"
+          aria-relevant="text"
+        ></div>
 
-      <form
-        id="loginForm"
-        onsubmit="handleLogin(event)"
-        data-testid="login-form"
-      >
-        <div class="form-group">
-          <label for="username">Username</label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            required
-            autocomplete="username"
-            placeholder="Username"
-            data-testid="username"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="password">Admin Password</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            required
-            autocomplete="current-password"
-            placeholder="Enter admin password"
-            data-testid="password"
-          />
-        </div>
-
-        <button
-          type="submit"
-          class="login-btn"
-          id="loginBtn"
-          data-testid="login-button"
+        <form
+          id="loginForm"
+          onsubmit="handleLogin(event)"
+          data-testid="login-form"
+          novalidate
+          aria-describedby="form-description"
         >
-          Login
-        </button>
+          <div id="form-description" class="visually-hidden">
+            Please enter your administrative credentials to access the admin panel.
+          </div>
 
-        <div class="loading" id="loading">Authenticating...</div>
-      </form>
+          <div class="form-group">
+            <label for="username">
+              Username
+              <span class="visually-hidden">(required)</span>
+            </label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              required
+              autocomplete="username"
+              placeholder="Enter your username"
+              data-testid="username"
+              aria-describedby="username-error"
+              aria-invalid="false"
+            />
+            <div id="username-error" class="visually-hidden" aria-live="polite"></div>
+          </div>
 
-      <div class="info-message">
-        Secure admin access only. All login attempts are logged.
+          <div class="form-group">
+            <label for="password">
+              Admin Password
+              <span class="visually-hidden">(required)</span>
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              required
+              autocomplete="current-password"
+              placeholder="Enter your password"
+              data-testid="password"
+              aria-describedby="password-error"
+              aria-invalid="false"
+            />
+            <div id="password-error" class="visually-hidden" aria-live="polite"></div>
+          </div>
+
+          <button
+            type="submit"
+            class="login-btn"
+            id="loginBtn"
+            data-testid="login-button"
+            aria-describedby="login-status"
+          >
+            <span id="login-btn-text">Login</span>
+            <span class="visually-hidden" id="login-btn-status">Press Enter or Space to submit login form</span>
+          </button>
+
+          <!-- Loading status for screen readers -->
+          <div 
+            class="loading" 
+            id="loading"
+            aria-live="polite"
+            aria-atomic="true"
+            role="status"
+          >
+            <span class="visually-hidden">Please wait, </span>Authenticating...
+          </div>
+        </form>
+
+        <aside class="info-message" role="complementary" aria-label="Security notice">
+          <strong>Security Notice:</strong> Secure admin access only. All login attempts are logged.
+        </aside>
       </div>
+    </main>
+
+    <!-- Keyboard shortcuts help (hidden by default) -->
+    <div id="keyboard-shortcuts" class="visually-hidden" tabindex="-1">
+      <h2>Keyboard Shortcuts</h2>
+      <ul>
+        <li>Tab: Navigate between form fields</li>
+        <li>Enter: Submit login form</li>
+        <li>Space: Activate buttons</li>
+        <li>Escape: Clear form (when implemented)</li>
+      </ul>
     </div>
 
     <script>
+      // Accessibility-enhanced login functionality
+      
+      // Enhanced error handling with accessibility support
+      function showError(message, fieldId = null) {
+        const errorDiv = document.getElementById("errorMessage");
+        const field = fieldId ? document.getElementById(fieldId) : null;
+        
+        // Set error message and make visible
+        errorDiv.textContent = message;
+        errorDiv.style.display = "block";
+        errorDiv.setAttribute("role", "alert");
+        
+        // Mark field as invalid if specified
+        if (field) {
+          field.setAttribute("aria-invalid", "true");
+          field.setAttribute("aria-describedby", `${fieldId}-error`);
+          
+          // Show field-specific error
+          const fieldError = document.getElementById(`${fieldId}-error`);
+          if (fieldError) {
+            fieldError.textContent = message;
+            fieldError.classList.remove("visually-hidden");
+          }
+        }
+        
+        // Announce error to screen readers
+        announceToScreenReader(`Error: ${message}`);
+      }
+      
+      function hideError(fieldId = null) {
+        const errorDiv = document.getElementById("errorMessage");
+        const field = fieldId ? document.getElementById(fieldId) : null;
+        
+        errorDiv.style.display = "none";
+        errorDiv.textContent = "";
+        
+        if (field) {
+          field.setAttribute("aria-invalid", "false");
+          field.removeAttribute("aria-describedby");
+          
+          const fieldError = document.getElementById(`${fieldId}-error`);
+          if (fieldError) {
+            fieldError.textContent = "";
+            fieldError.classList.add("visually-hidden");
+          }
+        }
+      }
+      
+      // Screen reader announcements
+      function announceToScreenReader(message) {
+        const announcement = document.createElement("div");
+        announcement.setAttribute("aria-live", "polite");
+        announcement.setAttribute("aria-atomic", "true");
+        announcement.className = "visually-hidden";
+        announcement.textContent = message;
+        
+        document.body.appendChild(announcement);
+        
+        // Remove after announcement
+        setTimeout(() => {
+          if (announcement.parentNode) {
+            announcement.parentNode.removeChild(announcement);
+          }
+        }, 1000);
+      }
+      
+      // Enhanced loading state management
+      function showLoading() {
+        const loginBtn = document.getElementById("loginBtn");
+        const loading = document.getElementById("loading");
+        const btnText = document.getElementById("login-btn-text");
+        const btnStatus = document.getElementById("login-btn-status");
+        
+        loginBtn.disabled = true;
+        loginBtn.setAttribute("aria-busy", "true");
+        btnText.textContent = "Authenticating...";
+        btnStatus.textContent = "Please wait while we verify your credentials";
+        loading.style.display = "block";
+        
+        announceToScreenReader("Authenticating, please wait");
+      }
+      
+      function hideLoading() {
+        const loginBtn = document.getElementById("loginBtn");
+        const loading = document.getElementById("loading");
+        const btnText = document.getElementById("login-btn-text");
+        const btnStatus = document.getElementById("login-btn-status");
+        
+        loginBtn.disabled = false;
+        loginBtn.setAttribute("aria-busy", "false");
+        btnText.textContent = "Login";
+        btnStatus.textContent = "Press Enter or Space to submit login form";
+        loading.style.display = "none";
+      }
+
       // Check if already authenticated
       async function checkExistingAuth() {
         try {
           const response = await fetch("/api/admin/dashboard");
           if (response.ok) {
+            announceToScreenReader("Already authenticated, redirecting to dashboard");
             // Already authenticated, redirect to dashboard
             window.location.href = "/pages/admin/dashboard.html";
           }
         } catch (error) {
           // Not authenticated, stay on login page
+          console.log("Not authenticated, staying on login page");
         }
       }
 
-      // Handle login form submission
+      // Enhanced form validation
+      function validateForm() {
+        const username = document.getElementById("username");
+        const password = document.getElementById("password");
+        let isValid = true;
+        
+        // Clear previous errors
+        hideError("username");
+        hideError("password");
+        hideError();
+        
+        // Validate username
+        if (!username.value.trim()) {
+          showError("Username is required", "username");
+          isValid = false;
+        }
+        
+        // Validate password
+        if (!password.value.trim()) {
+          showError("Password is required", "password");
+          isValid = false;
+        }
+        
+        return isValid;
+      }
+
+      // Handle login form submission with enhanced accessibility
       async function handleLogin(event) {
         event.preventDefault();
 
+        // Validate form first
+        if (!validateForm()) {
+          // Focus first invalid field
+          const firstInvalid = document.querySelector("[aria-invalid='true']");
+          if (firstInvalid) {
+            firstInvalid.focus();
+          }
+          return;
+        }
+
         const username = document.getElementById("username").value;
         const password = document.getElementById("password").value;
-        const errorDiv = document.getElementById("errorMessage");
-        const loginBtn = document.getElementById("loginBtn");
-        const loading = document.getElementById("loading");
 
-        // Hide error, show loading
-        errorDiv.style.display = "none";
-        loginBtn.disabled = true;
-        loading.style.display = "block";
+        // Show loading state
+        showLoading();
+        hideError();
 
         try {
           const response = await fetch("/api/admin/login", {
@@ -224,36 +580,129 @@
           const data = await response.json();
 
           if (response.ok) {
+            announceToScreenReader("Login successful, redirecting to dashboard");
             // Success - redirect to dashboard
             window.location.href = "/pages/admin/dashboard.html";
           } else {
-            // Show error - use textContent for safe display
-            errorDiv.textContent = data.error;
+            // Show error with enhanced accessibility
+            let errorMessage = data.error || "Login failed";
             if (data.attemptsRemaining !== undefined) {
-              errorDiv.textContent += ` (${data.attemptsRemaining} attempts remaining)`;
+              errorMessage += ` (${data.attemptsRemaining} attempts remaining)`;
             }
-            errorDiv.style.display = "block";
+            
+            showError(errorMessage);
 
-            // Clear password field (keep username for easier retry)
+            // Clear password field for security
             document.getElementById("password").value = "";
-            // Focus back to username for easy retry
-            document.getElementById("username").focus();
+            
+            // Focus appropriate field based on error
+            if (data.error && data.error.includes("username")) {
+              document.getElementById("username").focus();
+            } else {
+              document.getElementById("password").focus();
+            }
           }
         } catch (error) {
           console.error("Login error:", error);
-          errorDiv.textContent = "Login failed. Please try again.";
-          errorDiv.style.display = "block";
+          showError("Login failed. Please check your connection and try again.");
         } finally {
-          loginBtn.disabled = false;
-          loading.style.display = "none";
+          hideLoading();
         }
+      }
+      
+      // Keyboard shortcuts and navigation enhancements
+      function setupKeyboardShortcuts() {
+        document.addEventListener("keydown", function(event) {
+          // Help dialog toggle (Ctrl+/)
+          if (event.ctrlKey && event.key === "/") {
+            event.preventDefault();
+            toggleKeyboardShortcuts();
+          }
+          
+          // Clear form (Escape)
+          if (event.key === "Escape") {
+            const activeElement = document.activeElement;
+            if (activeElement && activeElement.tagName === "INPUT") {
+              clearForm();
+            }
+          }
+          
+          // Quick submit (Ctrl+Enter)
+          if (event.ctrlKey && event.key === "Enter") {
+            event.preventDefault();
+            handleLogin(event);
+          }
+        });
+      }
+      
+      function toggleKeyboardShortcuts() {
+        const shortcuts = document.getElementById("keyboard-shortcuts");
+        if (shortcuts.classList.contains("visually-hidden")) {
+          shortcuts.classList.remove("visually-hidden");
+          shortcuts.focus();
+          announceToScreenReader("Keyboard shortcuts dialog opened");
+        } else {
+          shortcuts.classList.add("visually-hidden");
+          document.getElementById("username").focus();
+          announceToScreenReader("Keyboard shortcuts dialog closed");
+        }
+      }
+      
+      function clearForm() {
+        document.getElementById("username").value = "";
+        document.getElementById("password").value = "";
+        hideError();
+        hideError("username");
+        hideError("password");
+        document.getElementById("username").focus();
+        announceToScreenReader("Form cleared");
+      }
+      
+      // Enhanced focus management
+      function setupFocusManagement() {
+        const inputs = document.querySelectorAll("input");
+        inputs.forEach(input => {
+          input.addEventListener("focus", function() {
+            this.setAttribute("aria-describedby", this.id + "-error form-description");
+          });
+          
+          input.addEventListener("blur", function() {
+            // Validate field on blur for real-time feedback
+            if (this.hasAttribute("required") && !this.value.trim()) {
+              this.setAttribute("aria-invalid", "true");
+            } else {
+              this.setAttribute("aria-invalid", "false");
+            }
+          });
+        });
+      }
+      
+      // Initialize accessibility features
+      function initializeAccessibility() {
+        setupKeyboardShortcuts();
+        setupFocusManagement();
+        
+        // Announce page load to screen readers
+        announceToScreenReader("Admin login page loaded. Use tab to navigate between form fields.");
+        
+        // Set initial focus
+        setTimeout(() => {
+          document.getElementById("username").focus();
+        }, 100);
       }
 
       // Check existing auth on load
       checkExistingAuth();
-
-      // Focus username field
-      document.getElementById("username").focus();
+      
+      // Initialize all accessibility features
+      document.addEventListener("DOMContentLoaded", initializeAccessibility);
+      
+      // Fallback initialization if DOMContentLoaded has already fired
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initializeAccessibility);
+      } else {
+        initializeAccessibility();
+      }
     </script>
   </body>
 </html>

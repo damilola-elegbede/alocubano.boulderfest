@@ -1,0 +1,1113 @@
+/* A Lo Cubano Boulder Fest - Unified Admin Portal CSS */
+/* Cuban Salsa-Inspired Admin Interface Design */
+
+/* Import main site design system as foundation */
+@import url("/css/base.css");
+
+/* Import Google Fonts for consistency */
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap");
+
+/* ==========================================================================
+   ADMIN-SPECIFIC DESIGN VARIABLES
+   ========================================================================== */
+
+:root {
+  /* Admin Color Palette - Cuban Salsa Heritage */
+  --admin-primary: var(--color-red); /* #CC2936 - Cuban passion */
+  --admin-secondary: var(--color-blue); /* #5B6BB5 - Cool professionalism */
+  --admin-accent: var(--color-black); /* Pure contrast */
+  --admin-success: #28a745; /* Success actions */
+  --admin-warning: #ffc107; /* Warning states */
+  --admin-danger: #dc3545; /* Critical actions */
+  --admin-info: #17a2b8; /* Information states */
+
+  /* Admin Surface Colors */
+  --admin-bg-light: #fafbfc;
+  --admin-bg-medium: #f4f6f8;
+  --admin-bg-dark: var(--color-gray-900);
+  --admin-surface: var(--color-white);
+  --admin-surface-elevated: rgba(255, 255, 255, 0.95);
+  --admin-border-light: var(--color-gray-200);
+  --admin-border-medium: var(--color-gray-300);
+
+  /* Admin Typography Hierarchy */
+  --admin-font-display: var(--font-display); /* Bebas Neue */
+  --admin-font-body: var(--font-sans);
+  --admin-font-accent: var(--font-accent); /* Playfair Display */
+  --admin-font-mono: var(--font-code); /* Space Mono */
+
+  /* Admin Spacing Scale - Extended */
+  --admin-space-xs: var(--space-xs); /* 0.25rem */
+  --admin-space-sm: var(--space-sm); /* 0.5rem */
+  --admin-space-md: var(--space-md); /* 1rem */
+  --admin-space-lg: var(--space-lg); /* 1.5rem */
+  --admin-space-xl: var(--space-xl); /* 2rem */
+  --admin-space-2xl: var(--space-2xl); /* 3rem */
+  --admin-space-3xl: var(--space-3xl); /* 4rem */
+
+  /* Admin Component Dimensions */
+  --admin-header-height: 80px;
+  --admin-sidebar-width: 280px;
+  --admin-sidebar-collapsed-width: 80px;
+  --admin-card-padding: var(--admin-space-xl);
+  --admin-button-height: 44px;
+  --admin-input-height: 48px;
+
+  /* Admin Shadows - Cuban-Inspired */
+  --admin-shadow-sm: 0 2px 4px rgba(204, 41, 54, 0.08);
+  --admin-shadow-md: 0 4px 12px rgba(204, 41, 54, 0.12);
+  --admin-shadow-lg: 0 8px 24px rgba(204, 41, 54, 0.16);
+  --admin-shadow-xl: 0 16px 32px rgba(204, 41, 54, 0.20);
+
+  /* Admin Transitions - Salsa-Inspired Movement */
+  --admin-transition-fast: 150ms cubic-bezier(0.23, 1, 0.32, 1);
+  --admin-transition-base: 250ms cubic-bezier(0.23, 1, 0.32, 1);
+  --admin-transition-slow: 350ms cubic-bezier(0.23, 1, 0.32, 1);
+  --admin-transition-bounce: 400ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* Status Colors - Enhanced */
+  --status-online: #28a745;
+  --status-offline: #6c757d;
+  --status-pending: #ffc107;
+  --status-processing: #17a2b8;
+  --status-complete: #28a745;
+  --status-error: #dc3545;
+}
+
+/* ==========================================================================
+   BASE RESET & ADMIN BODY STYLES
+   ========================================================================== */
+
+/* Admin-specific body styling */
+.admin-portal {
+  font-family: var(--admin-font-body);
+  background: var(--admin-bg-light);
+  color: var(--color-gray-800);
+  line-height: var(--line-height-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==========================================================================
+   ADMIN LAYOUT SYSTEM
+   ========================================================================== */
+
+/* Main Admin Container */
+.admin-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Admin Main Content Area */
+.admin-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin-left: var(--admin-sidebar-width);
+  transition: margin-left var(--admin-transition-base);
+}
+
+/* Responsive: Collapsed sidebar */
+.admin-container.sidebar-collapsed .admin-main {
+  margin-left: var(--admin-sidebar-collapsed-width);
+}
+
+/* Mobile: Stack layout */
+@media (max-width: 768px) {
+  .admin-main {
+    margin-left: 0;
+  }
+}
+
+/* Admin Content Wrapper */
+.admin-content {
+  flex: 1;
+  padding: var(--admin-space-2xl);
+  background: var(--admin-bg-light);
+}
+
+@media (max-width: 768px) {
+  .admin-content {
+    padding: var(--admin-space-lg);
+  }
+}
+
+/* ==========================================================================
+   ADMIN HEADER COMPONENT
+   ========================================================================== */
+
+.admin-header {
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-secondary));
+  color: var(--color-white);
+  padding: var(--admin-space-lg) var(--admin-space-2xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--admin-shadow-md);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  backdrop-filter: blur(20px);
+  min-height: var(--admin-header-height);
+}
+
+.admin-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-lg);
+}
+
+.admin-header-title {
+  font-family: var(--admin-font-display);
+  font-size: var(--font-size-2xl);
+  font-weight: 900;
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.admin-header-subtitle {
+  font-family: var(--admin-font-accent);
+  font-size: var(--font-size-base);
+  font-style: italic;
+  opacity: 0.9;
+  margin-left: var(--admin-space-md);
+}
+
+.admin-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+}
+
+/* Mobile Header Responsive */
+@media (max-width: 768px) {
+  .admin-header {
+    padding: var(--admin-space-md) var(--admin-space-lg);
+    flex-wrap: wrap;
+    gap: var(--admin-space-md);
+  }
+
+  .admin-header-title {
+    font-size: var(--font-size-xl);
+  }
+
+  .admin-header-subtitle {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   ADMIN SIDEBAR NAVIGATION
+   ========================================================================== */
+
+.admin-sidebar {
+  width: var(--admin-sidebar-width);
+  background: var(--admin-surface);
+  border-right: 1px solid var(--admin-border-light);
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  z-index: var(--z-fixed);
+  display: flex;
+  flex-direction: column;
+  transition: width var(--admin-transition-base);
+  box-shadow: var(--admin-shadow-sm);
+}
+
+/* Sidebar Brand Section */
+.admin-sidebar-brand {
+  padding: var(--admin-space-xl);
+  border-bottom: 1px solid var(--admin-border-light);
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-secondary));
+  color: var(--color-white);
+  text-align: center;
+}
+
+.admin-logo {
+  font-family: var(--admin-font-display);
+  font-size: var(--font-size-xl);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  margin: 0;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.admin-logo-subtitle {
+  font-family: var(--admin-font-mono);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wider);
+  opacity: 0.8;
+  margin-top: var(--admin-space-xs);
+}
+
+/* Sidebar Navigation */
+.admin-nav {
+  flex: 1;
+  padding: var(--admin-space-lg) 0;
+  overflow-y: auto;
+}
+
+.admin-nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-nav-item {
+  margin-bottom: var(--admin-space-xs);
+}
+
+.admin-nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  color: var(--color-gray-700);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  transition: all var(--admin-transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Cuban-inspired hover animation */
+.admin-nav-link::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--admin-primary), var(--admin-secondary));
+  transition: left var(--admin-transition-bounce);
+  z-index: -1;
+}
+
+.admin-nav-link:hover {
+  color: var(--color-white);
+  transform: translateX(4px);
+}
+
+.admin-nav-link:hover::before {
+  left: 0;
+}
+
+/* Active navigation state */
+.admin-nav-link.is-active {
+  background: rgba(204, 41, 54, 0.1);
+  color: var(--admin-primary);
+  border-right: 4px solid var(--admin-primary);
+  font-weight: 700;
+}
+
+/* Navigation Icons */
+.admin-nav-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-lg);
+}
+
+/* Collapsed Sidebar State */
+.admin-container.sidebar-collapsed .admin-sidebar {
+  width: var(--admin-sidebar-collapsed-width);
+}
+
+.admin-container.sidebar-collapsed .admin-nav-link {
+  padding: var(--admin-space-md);
+  justify-content: center;
+}
+
+.admin-container.sidebar-collapsed .admin-nav-text {
+  display: none;
+}
+
+/* Mobile Sidebar - Overlay */
+@media (max-width: 768px) {
+  .admin-sidebar {
+    transform: translateX(-100%);
+    transition: transform var(--admin-transition-base);
+  }
+
+  .admin-sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  /* Mobile backdrop */
+  .admin-sidebar.is-open::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    right: calc(-100vw + var(--admin-sidebar-width));
+    width: calc(100vw - var(--admin-sidebar-width));
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+  }
+}
+
+/* ==========================================================================
+   ADMIN BUTTON SYSTEM - Cuban Salsa Inspired
+   ========================================================================== */
+
+/* Base Button Styles */
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-space-xs);
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-family: var(--admin-font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all var(--admin-transition-base);
+  position: relative;
+  overflow: hidden;
+  min-height: var(--admin-button-height);
+  white-space: nowrap;
+}
+
+/* Cuban dance-inspired hover animation */
+.admin-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  transition: left var(--admin-transition-bounce);
+  z-index: -1;
+}
+
+.admin-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--admin-shadow-md);
+}
+
+.admin-btn:hover::before {
+  left: 0;
+}
+
+.admin-btn:active {
+  transform: translateY(0);
+}
+
+/* Primary Button - Cuban Red */
+.admin-btn-primary {
+  background: var(--admin-primary);
+  color: var(--color-white);
+  border-color: var(--admin-primary);
+}
+
+.admin-btn-primary::before {
+  background: var(--admin-secondary);
+}
+
+/* Secondary Button - Cuban Blue */
+.admin-btn-secondary {
+  background: var(--admin-secondary);
+  color: var(--color-white);
+  border-color: var(--admin-secondary);
+}
+
+.admin-btn-secondary::before {
+  background: var(--admin-primary);
+}
+
+/* Outline Button */
+.admin-btn-outline {
+  background: transparent;
+  color: var(--admin-primary);
+  border-color: var(--admin-primary);
+}
+
+.admin-btn-outline::before {
+  background: var(--admin-primary);
+}
+
+.admin-btn-outline:hover {
+  color: var(--color-white);
+}
+
+/* Status Buttons */
+.admin-btn-success {
+  background: var(--admin-success);
+  color: var(--color-white);
+  border-color: var(--admin-success);
+}
+
+.admin-btn-warning {
+  background: var(--admin-warning);
+  color: var(--color-black);
+  border-color: var(--admin-warning);
+}
+
+.admin-btn-danger {
+  background: var(--admin-danger);
+  color: var(--color-white);
+  border-color: var(--admin-danger);
+}
+
+.admin-btn-info {
+  background: var(--admin-info);
+  color: var(--color-white);
+  border-color: var(--admin-info);
+}
+
+/* Button Sizes */
+.admin-btn-sm {
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--font-size-xs);
+  min-height: 32px;
+}
+
+.admin-btn-lg {
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  font-size: var(--font-size-base);
+  min-height: 56px;
+}
+
+/* Disabled State */
+.admin-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.admin-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* ==========================================================================
+   ADMIN CARD SYSTEM
+   ========================================================================== */
+
+/* Base Card Component */
+.admin-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--admin-shadow-sm);
+  transition: all var(--admin-transition-base);
+  overflow: hidden;
+}
+
+.admin-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--admin-shadow-md);
+  border-color: var(--admin-primary);
+}
+
+/* Card Header */
+.admin-card-header {
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  border-bottom: 1px solid var(--admin-border-light);
+  background: var(--admin-bg-medium);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-card-title {
+  font-family: var(--admin-font-display);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-gray-800);
+  margin: 0;
+}
+
+.admin-card-subtitle {
+  font-family: var(--admin-font-accent);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  font-style: italic;
+  margin-top: var(--admin-space-xs);
+}
+
+/* Card Body */
+.admin-card-body {
+  padding: var(--admin-card-padding);
+}
+
+/* Card Footer */
+.admin-card-footer {
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  border-top: 1px solid var(--admin-border-light);
+  background: var(--admin-bg-medium);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md);
+}
+
+/* Elevated Card (Modal-like) */
+.admin-card-elevated {
+  background: var(--admin-surface-elevated);
+  box-shadow: var(--admin-shadow-lg);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ==========================================================================
+   ADMIN FORM SYSTEM
+   ========================================================================== */
+
+/* Form Container */
+.admin-form {
+  background: var(--admin-surface);
+  padding: var(--admin-space-2xl);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--admin-shadow-sm);
+  border: 1px solid var(--admin-border-light);
+}
+
+/* Form Grid Layout */
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--admin-space-lg);
+  margin-bottom: var(--admin-space-xl);
+}
+
+.admin-form-grid.two-columns {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 768px) {
+  .admin-form-grid.two-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Form Groups */
+.admin-form-group {
+  margin-bottom: var(--admin-space-lg);
+}
+
+.admin-form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Form Labels */
+.admin-form-label {
+  display: block;
+  font-family: var(--admin-font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-gray-700);
+  margin-bottom: var(--admin-space-sm);
+}
+
+.admin-form-label.required::after {
+  content: " *";
+  color: var(--admin-danger);
+}
+
+/* Form Inputs */
+.admin-form-input,
+.admin-form-textarea,
+.admin-form-select {
+  width: 100%;
+  padding: var(--admin-space-md);
+  font-family: var(--admin-font-body);
+  font-size: var(--font-size-base);
+  border: 2px solid var(--admin-border-light);
+  border-radius: var(--radius-md);
+  background: var(--admin-surface);
+  color: var(--color-gray-800);
+  transition: all var(--admin-transition-base);
+  min-height: var(--admin-input-height);
+}
+
+.admin-form-input:focus,
+.admin-form-textarea:focus,
+.admin-form-select:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px rgba(204, 41, 54, 0.1);
+  transform: translateY(-1px);
+}
+
+/* Textarea */
+.admin-form-textarea {
+  min-height: 120px;
+  resize: vertical;
+  font-family: var(--admin-font-mono);
+  line-height: var(--line-height-relaxed);
+}
+
+/* Form Validation States */
+.admin-form-input.is-valid,
+.admin-form-textarea.is-valid,
+.admin-form-select.is-valid {
+  border-color: var(--admin-success);
+}
+
+.admin-form-input.is-invalid,
+.admin-form-textarea.is-invalid,
+.admin-form-select.is-invalid {
+  border-color: var(--admin-danger);
+}
+
+/* Form Help Text */
+.admin-form-help {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  margin-top: var(--admin-space-xs);
+  font-style: italic;
+}
+
+.admin-form-error {
+  font-size: var(--font-size-sm);
+  color: var(--admin-danger);
+  margin-top: var(--admin-space-xs);
+  font-weight: 500;
+}
+
+.admin-form-success {
+  font-size: var(--font-size-sm);
+  color: var(--admin-success);
+  margin-top: var(--admin-space-xs);
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   ADMIN TABLE SYSTEM
+   ========================================================================== */
+
+/* Table Container */
+.admin-table-container {
+  background: var(--admin-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--admin-shadow-sm);
+  border: 1px solid var(--admin-border-light);
+  overflow: hidden;
+}
+
+/* Table */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+/* Table Header */
+.admin-table thead {
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-secondary));
+  color: var(--color-white);
+}
+
+.admin-table th {
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  font-family: var(--admin-font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  text-align: left;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Table Body */
+.admin-table tbody tr {
+  border-bottom: 1px solid var(--admin-border-light);
+  transition: all var(--admin-transition-fast);
+}
+
+.admin-table tbody tr:hover {
+  background: rgba(204, 41, 54, 0.05);
+  transform: scale(1.01);
+}
+
+.admin-table td {
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  color: var(--color-gray-800);
+  vertical-align: middle;
+}
+
+/* Responsive Table */
+@media (max-width: 768px) {
+  .admin-table-container {
+    overflow-x: auto;
+  }
+  
+  .admin-table {
+    min-width: 600px;
+  }
+}
+
+/* ==========================================================================
+   ADMIN STATUS INDICATORS & BADGES
+   ========================================================================== */
+
+/* Status Badge Base */
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  font-family: var(--admin-font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+/* Status Colors */
+.admin-badge-success {
+  background: rgba(40, 167, 69, 0.1);
+  color: var(--status-complete);
+  border: 1px solid var(--status-complete);
+}
+
+.admin-badge-warning {
+  background: rgba(255, 193, 7, 0.1);
+  color: var(--status-pending);
+  border: 1px solid var(--status-pending);
+}
+
+.admin-badge-danger {
+  background: rgba(220, 53, 69, 0.1);
+  color: var(--status-error);
+  border: 1px solid var(--status-error);
+}
+
+.admin-badge-info {
+  background: rgba(23, 162, 184, 0.1);
+  color: var(--status-processing);
+  border: 1px solid var(--status-processing);
+}
+
+.admin-badge-primary {
+  background: rgba(204, 41, 54, 0.1);
+  color: var(--admin-primary);
+  border: 1px solid var(--admin-primary);
+}
+
+.admin-badge-secondary {
+  background: rgba(91, 107, 181, 0.1);
+  color: var(--admin-secondary);
+  border: 1px solid var(--admin-secondary);
+}
+
+/* Status Dot Indicator */
+.admin-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: var(--admin-space-xs);
+}
+
+.admin-status-dot.online {
+  background: var(--status-online);
+  box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
+}
+
+.admin-status-dot.offline {
+  background: var(--status-offline);
+  box-shadow: 0 0 0 2px rgba(108, 117, 125, 0.2);
+}
+
+/* ==========================================================================
+   ADMIN DASHBOARD WIDGETS
+   ========================================================================== */
+
+/* Widget Grid */
+.admin-widgets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--admin-space-xl);
+  margin-bottom: var(--admin-space-3xl);
+}
+
+/* Stat Widget */
+.admin-widget-stat {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--admin-space-xl);
+  text-align: center;
+  transition: all var(--admin-transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-widget-stat::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--admin-primary), var(--admin-secondary));
+}
+
+.admin-widget-stat:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--admin-shadow-lg);
+  border-color: var(--admin-primary);
+}
+
+.admin-widget-stat-value {
+  font-family: var(--admin-font-display);
+  font-size: var(--font-size-4xl);
+  font-weight: 900;
+  color: var(--admin-primary);
+  line-height: 1;
+  margin-bottom: var(--admin-space-sm);
+}
+
+.admin-widget-stat-label {
+  font-family: var(--admin-font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-gray-600);
+  margin-bottom: var(--admin-space-xs);
+}
+
+.admin-widget-stat-change {
+  font-family: var(--admin-font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.admin-widget-stat-change.positive {
+  color: var(--admin-success);
+}
+
+.admin-widget-stat-change.negative {
+  color: var(--admin-danger);
+}
+
+/* ==========================================================================
+   ADMIN RESPONSIVE DESIGN
+   ========================================================================== */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .admin-content {
+    padding: var(--admin-space-xl);
+  }
+  
+  .admin-widgets {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .admin-container {
+    flex-direction: column;
+  }
+  
+  .admin-header {
+    position: relative;
+  }
+  
+  .admin-content {
+    padding: var(--admin-space-lg);
+  }
+  
+  .admin-widgets {
+    grid-template-columns: 1fr;
+    gap: var(--admin-space-lg);
+  }
+  
+  .admin-card-header,
+  .admin-card-footer {
+    padding: var(--admin-space-md) var(--admin-space-lg);
+  }
+  
+  .admin-card-body {
+    padding: var(--admin-space-lg);
+  }
+  
+  .admin-form {
+    padding: var(--admin-space-lg);
+  }
+}
+
+/* ==========================================================================
+   ADMIN UTILITIES & HELPERS
+   ========================================================================== */
+
+/* Text Utilities */
+.admin-text-primary { color: var(--admin-primary); }
+.admin-text-secondary { color: var(--admin-secondary); }
+.admin-text-success { color: var(--admin-success); }
+.admin-text-warning { color: var(--admin-warning); }
+.admin-text-danger { color: var(--admin-danger); }
+.admin-text-info { color: var(--admin-info); }
+.admin-text-muted { color: var(--color-gray-600); }
+
+/* Background Utilities */
+.admin-bg-primary { background: var(--admin-primary); color: var(--color-white); }
+.admin-bg-secondary { background: var(--admin-secondary); color: var(--color-white); }
+.admin-bg-light { background: var(--admin-bg-light); }
+.admin-bg-surface { background: var(--admin-surface); }
+
+/* Spacing Utilities */
+.admin-m-0 { margin: 0; }
+.admin-p-0 { padding: 0; }
+.admin-mb-sm { margin-bottom: var(--admin-space-sm); }
+.admin-mb-md { margin-bottom: var(--admin-space-md); }
+.admin-mb-lg { margin-bottom: var(--admin-space-lg); }
+.admin-mb-xl { margin-bottom: var(--admin-space-xl); }
+
+/* Display Utilities */
+.admin-d-flex { display: flex; }
+.admin-d-block { display: block; }
+.admin-d-inline { display: inline; }
+.admin-d-none { display: none; }
+
+/* Flex Utilities */
+.admin-justify-between { justify-content: space-between; }
+.admin-justify-center { justify-content: center; }
+.admin-align-center { align-items: center; }
+.admin-flex-wrap { flex-wrap: wrap; }
+
+/* ==========================================================================
+   ADMIN ANIMATIONS & EFFECTS
+   ========================================================================== */
+
+/* Cuban Salsa Loading Animation */
+@keyframes cubanSpin {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(90deg) scale(1.1); }
+  50% { transform: rotate(180deg); }
+  75% { transform: rotate(270deg) scale(1.1); }
+  100% { transform: rotate(360deg); }
+}
+
+.admin-loading {
+  animation: cubanSpin 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite;
+}
+
+/* Fade In Animation */
+@keyframes adminFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-fade-in {
+  animation: adminFadeIn 0.5s var(--admin-transition-base) forwards;
+}
+
+/* Cuban Dance Hover Effects */
+.admin-dance:hover {
+  animation: cubanDance 0.6s ease-in-out;
+}
+
+@keyframes cubanDance {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(2px) rotate(1deg); }
+  50% { transform: translateX(-2px) rotate(-1deg); }
+  75% { transform: translateX(1px) rotate(0.5deg); }
+}
+
+/* ==========================================================================
+   ACCESSIBILITY ENHANCEMENTS
+   ========================================================================== */
+
+/* Focus States */
+.admin-btn:focus,
+.admin-form-input:focus,
+.admin-form-textarea:focus,
+.admin-form-select:focus,
+.admin-nav-link:focus {
+  outline: 2px solid var(--admin-primary);
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .admin-card,
+  .admin-form,
+  .admin-table-container {
+    border-width: 2px;
+    border-color: var(--color-black);
+  }
+  
+  .admin-btn {
+    border-width: 3px;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .admin-card:hover,
+  .admin-btn:hover,
+  .admin-widget-stat:hover {
+    transform: none;
+  }
+}
+
+/* ==========================================================================
+   PRINT STYLES
+   ========================================================================== */
+
+@media print {
+  .admin-sidebar,
+  .admin-header-right,
+  .admin-btn {
+    display: none;
+  }
+  
+  .admin-main {
+    margin-left: 0;
+  }
+  
+  .admin-content {
+    padding: 0;
+  }
+  
+  .admin-card,
+  .admin-table-container {
+    box-shadow: none;
+    border: 1px solid var(--color-black);
+  }
+}

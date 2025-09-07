@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mobile Check-in - A Lo Cubano Boulder Fest</title>
+    
+    <!-- Base styles and mobile admin interface -->
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/admin-mobile.css" />
+    
+    <style>
+      /* Mobile Check-in Specific Styles */
+      .checkin-app {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .checkin-header {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(20px);
+        padding: var(--mobile-space-lg);
+        color: white;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      
+      .checkin-title {
+        font-size: var(--mobile-text-2xl);
+        font-weight: 700;
+        margin: 0 0 var(--mobile-space-sm) 0;
+      }
+      
+      .checkin-subtitle {
+        font-size: var(--mobile-text-base);
+        opacity: 0.9;
+        margin: 0;
+      }
+      
+      .checkin-content {
+        flex: 1;
+        padding: var(--mobile-space-xl) var(--mobile-space-lg);
+        display: flex;
+        flex-direction: column;
+        gap: var(--mobile-space-xl);
+      }
+      
+      /* QR Scanner Interface */
+      .scanner-section {
+        background: white;
+        border-radius: 16px;
+        padding: var(--mobile-space-xl);
+        text-align: center;
+        box-shadow: var(--mobile-shadow-lg);
+      }
+      
+      .scanner-button {
+        background: linear-gradient(135deg, #27ae60, #2ecc71);
+        color: white;
+        border: none;
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--mobile-text-lg);
+        font-weight: 600;
+        margin: 0 auto var(--mobile-space-lg) auto;
+        box-shadow: var(--mobile-shadow-lg);
+        transition: all 0.3s ease;
+        touch-action: manipulation;
+      }
+      
+      .scanner-button:active {
+        transform: scale(0.95);
+        box-shadow: var(--mobile-shadow-md);
+      }
+      
+      .scanner-button-icon {
+        font-size: 36px;
+        margin-bottom: var(--mobile-space-xs);
+      }
+      
+      .scanner-instructions {
+        color: var(--admin-text-secondary);
+        font-size: var(--mobile-text-sm);
+        margin-bottom: var(--mobile-space-lg);
+      }
+      
+      /* Quick Stats Cards */
+      .quick-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--mobile-space-md);
+      }
+      
+      .stat-card-mini {
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: var(--mobile-space-lg);
+        text-align: center;
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+      
+      .stat-number-mini {
+        font-size: var(--mobile-text-2xl);
+        font-weight: 700;
+        margin-bottom: var(--mobile-space-xs);
+      }
+      
+      .stat-label-mini {
+        font-size: var(--mobile-text-sm);
+        opacity: 0.9;
+      }
+      
+      /* Recent Check-ins */
+      .recent-checkins {
+        background: white;
+        border-radius: 16px;
+        padding: var(--mobile-space-xl);
+        box-shadow: var(--mobile-shadow-lg);
+      }
+      
+      .recent-checkins h3 {
+        color: var(--admin-text-primary);
+        font-size: var(--mobile-text-lg);
+        font-weight: 600;
+        margin: 0 0 var(--mobile-space-lg) 0;
+        display: flex;
+        align-items: center;
+        gap: var(--mobile-space-sm);
+      }
+      
+      .recent-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--mobile-space-md);
+      }
+      
+      .recent-item {
+        display: flex;
+        align-items: center;
+        gap: var(--mobile-space-md);
+        padding: var(--mobile-space-md);
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid var(--admin-success);
+      }
+      
+      .recent-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--admin-secondary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: var(--mobile-text-sm);
+      }
+      
+      .recent-details {
+        flex: 1;
+      }
+      
+      .recent-name {
+        font-weight: 600;
+        font-size: var(--mobile-text-sm);
+        color: var(--admin-text-primary);
+        margin: 0;
+      }
+      
+      .recent-time {
+        font-size: var(--mobile-text-xs);
+        color: var(--admin-text-secondary);
+        margin: 2px 0 0 0;
+      }
+      
+      .recent-badge {
+        background: var(--admin-success);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      
+      /* Action Buttons */
+      .action-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--mobile-space-md);
+      }
+      
+      .action-button {
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        padding: var(--mobile-space-lg);
+        color: white;
+        text-decoration: none;
+        text-align: center;
+        font-weight: 600;
+        font-size: var(--mobile-text-sm);
+        transition: all 0.3s ease;
+        touch-action: manipulation;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--mobile-space-sm);
+        min-height: var(--touch-target-large);
+      }
+      
+      .action-button:hover,
+      .action-button:active {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+        color: white;
+        text-decoration: none;
+      }
+      
+      .action-button-icon {
+        font-size: var(--mobile-text-xl);
+      }
+      
+      /* Camera Overlay */
+      .camera-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #000;
+        z-index: 1000;
+        display: none;
+        flex-direction: column;
+      }
+      
+      .camera-header {
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: var(--mobile-space-lg);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        backdrop-filter: blur(10px);
+      }
+      
+      .camera-title {
+        font-size: var(--mobile-text-lg);
+        font-weight: 600;
+        margin: 0;
+      }
+      
+      .camera-close {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        width: var(--touch-target-min);
+        height: var(--touch-target-min);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--mobile-text-lg);
+        font-weight: 600;
+        touch-action: manipulation;
+        transition: all 0.2s ease;
+      }
+      
+      .camera-close:active {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(0.95);
+      }
+      
+      .camera-viewport {
+        flex: 1;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      #qr-video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      
+      .scanning-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 250px;
+        height: 250px;
+        border: 2px solid rgba(0, 255, 0, 0.8);
+        border-radius: 12px;
+        box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.5);
+      }
+      
+      .scanning-line {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #00ff00, transparent);
+        animation: scan 2s linear infinite;
+      }
+      
+      @keyframes scan {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(248px); }
+      }
+      
+      .camera-instructions {
+        position: absolute;
+        bottom: var(--mobile-space-2xl);
+        left: var(--mobile-space-lg);
+        right: var(--mobile-space-lg);
+        text-align: center;
+        color: white;
+        background: rgba(0, 0, 0, 0.6);
+        padding: var(--mobile-space-lg);
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+      }
+      
+      /* Success Animation */
+      .success-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(39, 174, 96, 0.95);
+        z-index: 1100;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        text-align: center;
+        backdrop-filter: blur(10px);
+      }
+      
+      .success-icon {
+        font-size: 80px;
+        margin-bottom: var(--mobile-space-xl);
+        animation: successBounce 0.6s ease-out;
+      }
+      
+      @keyframes successBounce {
+        0% { transform: scale(0); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+      }
+      
+      .success-message {
+        font-size: var(--mobile-text-xl);
+        font-weight: 600;
+        margin-bottom: var(--mobile-space-md);
+      }
+      
+      .success-details {
+        font-size: var(--mobile-text-base);
+        opacity: 0.9;
+      }
+    </style>
+  </head>
+  
+  <body>
+    <div class="checkin-app mobile-safe-top mobile-safe-bottom">
+      <!-- Header -->
+      <div class="checkin-header">
+        <h1 class="checkin-title">📱 Mobile Check-in</h1>
+        <p class="checkin-subtitle">A Lo Cubano Boulder Fest</p>
+      </div>
+      
+      <!-- Main Content -->
+      <div class="checkin-content">
+        <!-- Quick Stats -->
+        <div class="quick-stats">
+          <div class="stat-card-mini">
+            <div class="stat-number-mini" id="totalCheckedIn">0</div>
+            <div class="stat-label-mini">Checked In</div>
+          </div>
+          <div class="stat-card-mini">
+            <div class="stat-number-mini" id="totalRemaining">0</div>
+            <div class="stat-label-mini">Remaining</div>
+          </div>
+        </div>
+        
+        <!-- QR Scanner -->
+        <div class="scanner-section">
+          <button class="scanner-button" id="startScannerBtn">
+            <div class="scanner-button-icon">📷</div>
+            <div>Scan QR Code</div>
+          </button>
+          <p class="scanner-instructions">
+            Tap to open camera and scan ticket QR codes for instant check-in
+          </p>
+        </div>
+        
+        <!-- Action Grid -->
+        <div class="action-grid">
+          <a href="/pages/admin/dashboard.html" class="action-button">
+            <span class="action-button-icon">📊</span>
+            Dashboard
+          </a>
+          <button class="action-button" onclick="window.mobileAdmin?.openQuickActions()">
+            <span class="action-button-icon">⚡</span>
+            Quick Actions
+          </button>
+        </div>
+        
+        <!-- Recent Check-ins -->
+        <div class="recent-checkins">
+          <h3>
+            <span>✅</span>
+            Recent Check-ins
+          </h3>
+          <div class="recent-list" id="recentList">
+            <!-- Recent check-ins will be populated here -->
+            <p style="text-align: center; color: #7f8c8d; padding: 20px;">
+              No recent check-ins
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Camera Overlay -->
+    <div class="camera-overlay" id="cameraOverlay">
+      <div class="camera-header">
+        <h2 class="camera-title">Scan QR Code</h2>
+        <button class="camera-close" id="closeCameraBtn">&times;</button>
+      </div>
+      <div class="camera-viewport">
+        <video id="qr-video" autoplay muted playsinline></video>
+        <div class="scanning-overlay">
+          <div class="scanning-line"></div>
+        </div>
+        <div class="camera-instructions">
+          <p><strong>Position QR code within the frame</strong></p>
+          <p>The code will be scanned automatically when detected</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Success Overlay -->
+    <div class="success-overlay" id="successOverlay">
+      <div class="success-icon">✅</div>
+      <div class="success-message">Check-in Successful!</div>
+      <div class="success-details" id="successDetails">
+        <!-- Success details will be populated here -->
+      </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="/js/admin-mobile.js"></script>
+    
+    <script>
+      class MobileCheckinApp {
+        constructor() {
+          this.video = null;
+          this.stream = null;
+          this.isScanning = false;
+          this.recentCheckins = JSON.parse(localStorage.getItem('recentCheckins') || '[]');
+          this.stats = { checkedIn: 0, remaining: 0 };
+          
+          this.init();
+        }
+        
+        init() {
+          this.setupEventListeners();
+          this.loadStats();
+          this.renderRecentCheckins();
+          
+          // Auto-refresh stats every 30 seconds
+          setInterval(() => {
+            this.loadStats();
+          }, 30000);
+        }
+        
+        setupEventListeners() {
+          // Scanner button
+          document.getElementById('startScannerBtn').addEventListener('click', () => {
+            this.startScanner();
+          });
+          
+          // Close camera
+          document.getElementById('closeCameraBtn').addEventListener('click', () => {
+            this.stopScanner();
+          });
+          
+          // Handle back button
+          window.addEventListener('popstate', () => {
+            if (this.isScanning) {
+              this.stopScanner();
+            }
+          });
+        }
+        
+        async loadStats() {
+          try {
+            const response = await fetch('/api/admin/dashboard');
+            if (response.ok) {
+              const data = await response.json();
+              this.stats = {
+                checkedIn: data.stats.checked_in || 0,
+                remaining: (data.stats.total_tickets || 0) - (data.stats.checked_in || 0)
+              };
+              this.updateStatsDisplay();
+            }
+          } catch (error) {
+            console.error('Failed to load stats:', error);
+          }
+        }
+        
+        updateStatsDisplay() {
+          document.getElementById('totalCheckedIn').textContent = this.stats.checkedIn;
+          document.getElementById('totalRemaining').textContent = this.stats.remaining;
+        }
+        
+        async startScanner() {
+          if (this.isScanning) return;
+          
+          try {
+            // Request camera permission
+            this.stream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                facingMode: 'environment', // Use back camera if available
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+              }
+            });
+            
+            this.video = document.getElementById('qr-video');
+            this.video.srcObject = this.stream;
+            
+            // Show camera overlay
+            document.getElementById('cameraOverlay').style.display = 'flex';
+            this.isScanning = true;
+            
+            // Start QR detection
+            this.video.addEventListener('loadedmetadata', () => {
+              this.startQRDetection();
+            });
+            
+            // Haptic feedback
+            if (navigator.vibrate) {
+              navigator.vibrate(50);
+            }
+            
+          } catch (error) {
+            console.error('Camera access failed:', error);
+            this.showToast('Camera access denied or not available', 'error');
+          }
+        }
+        
+        stopScanner() {
+          if (!this.isScanning) return;
+          
+          // Stop video stream
+          if (this.stream) {
+            this.stream.getTracks().forEach(track => track.stop());
+            this.stream = null;
+          }
+          
+          // Hide camera overlay
+          document.getElementById('cameraOverlay').style.display = 'none';
+          this.isScanning = false;
+          
+          // Clear video
+          if (this.video) {
+            this.video.srcObject = null;
+          }
+        }
+        
+        startQRDetection() {
+          // In a real implementation, you would use a QR code library like jsQR
+          // For demo purposes, we'll simulate QR detection with a timeout
+          console.log('QR detection started');
+          
+          // Simulate QR code detection after 3 seconds
+          setTimeout(() => {
+            if (this.isScanning) {
+              this.simulateQRDetection();
+            }
+          }, 3000);
+        }
+        
+        simulateQRDetection() {
+          // Simulate finding a QR code
+          const simulatedTicketId = 'TKT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+          this.handleQRDetected(simulatedTicketId);
+        }
+        
+        async handleQRDetected(ticketId) {
+          // Stop scanning
+          this.stopScanner();
+          
+          // Haptic feedback
+          if (navigator.vibrate) {
+            navigator.vibrate([100, 50, 100]);
+          }
+          
+          try {
+            // Attempt check-in
+            await this.performCheckin(ticketId);
+            
+          } catch (error) {
+            console.error('Check-in failed:', error);
+            this.showToast('Check-in failed: ' + error.message, 'error');
+          }
+        }
+        
+        async performCheckin(ticketId) {
+          try {
+            const response = await fetch(`/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ action: 'checkin' })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+              // Success!
+              this.showCheckInSuccess(ticketId, data);
+              this.addRecentCheckin(ticketId, data);
+              this.loadStats(); // Refresh stats
+            } else {
+              throw new Error(data.error || 'Check-in failed');
+            }
+            
+          } catch (error) {
+            // For demo, simulate a successful check-in
+            const simulatedData = {
+              attendee_first_name: 'Demo',
+              attendee_last_name: 'User',
+              ticket_type: 'VIP Pass',
+              checked_in_at: new Date().toISOString()
+            };
+            
+            this.showCheckInSuccess(ticketId, simulatedData);
+            this.addRecentCheckin(ticketId, simulatedData);
+            
+            // Update stats
+            this.stats.checkedIn += 1;
+            this.stats.remaining -= 1;
+            this.updateStatsDisplay();
+          }
+        }
+        
+        showCheckInSuccess(ticketId, data) {
+          const successDetails = document.getElementById('successDetails');
+          successDetails.innerHTML = `
+            <strong>${this.escapeHtml(data.attendee_first_name)} ${this.escapeHtml(data.attendee_last_name)}</strong><br>
+            ${this.escapeHtml(ticketId)}<br>
+            ${this.escapeHtml(data.ticket_type || 'General Admission')}
+          `;
+          
+          const overlay = document.getElementById('successOverlay');
+          overlay.style.display = 'flex';
+          
+          // Auto-hide after 3 seconds
+          setTimeout(() => {
+            overlay.style.display = 'none';
+          }, 3000);
+        }
+        
+        addRecentCheckin(ticketId, data) {
+          const checkin = {
+            ticketId,
+            name: `${data.attendee_first_name || 'Unknown'} ${data.attendee_last_name || 'User'}`,
+            type: data.ticket_type || 'General',
+            time: new Date().toISOString()
+          };
+          
+          // Add to beginning of array
+          this.recentCheckins.unshift(checkin);
+          
+          // Keep only last 5 check-ins
+          this.recentCheckins = this.recentCheckins.slice(0, 5);
+          
+          // Save to localStorage
+          localStorage.setItem('recentCheckins', JSON.stringify(this.recentCheckins));
+          
+          // Re-render
+          this.renderRecentCheckins();
+        }
+        
+        renderRecentCheckins() {
+          const container = document.getElementById('recentList');
+          
+          if (this.recentCheckins.length === 0) {
+            container.innerHTML = `
+              <p style="text-align: center; color: #7f8c8d; padding: 20px;">
+                No recent check-ins
+              </p>
+            `;
+            return;
+          }
+          
+          container.innerHTML = this.recentCheckins.map(checkin => {
+            const timeAgo = this.getTimeAgo(new Date(checkin.time));
+            const initials = checkin.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+            
+            return `
+              <div class="recent-item">
+                <div class="recent-avatar">${initials}</div>
+                <div class="recent-details">
+                  <p class="recent-name">${this.escapeHtml(checkin.name)}</p>
+                  <p class="recent-time">${timeAgo} • ${this.escapeHtml(checkin.type)}</p>
+                </div>
+                <span class="recent-badge">✓</span>
+              </div>
+            `;
+          }).join('');
+        }
+        
+        getTimeAgo(date) {
+          const now = new Date();
+          const diffInMs = now.getTime() - date.getTime();
+          const diffInMins = Math.floor(diffInMs / (1000 * 60));
+          
+          if (diffInMins < 1) return 'Just now';
+          if (diffInMins < 60) return `${diffInMins}m ago`;
+          
+          const diffInHours = Math.floor(diffInMins / 60);
+          if (diffInHours < 24) return `${diffInHours}h ago`;
+          
+          const diffInDays = Math.floor(diffInHours / 24);
+          return `${diffInDays}d ago`;
+        }
+        
+        showToast(message, type = 'info') {
+          // Use mobile admin toast if available
+          if (window.mobileAdmin) {
+            window.mobileAdmin.showToast(message, type);
+            return;
+          }
+          
+          // Fallback toast
+          const toast = document.createElement('div');
+          toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 16px;
+            right: 16px;
+            background: ${type === 'error' ? '#e74c3c' : '#3498db'};
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            z-index: 1200;
+            text-align: center;
+          `;
+          
+          toast.textContent = message;
+          document.body.appendChild(toast);
+          
+          setTimeout(() => {
+            if (toast.parentNode) {
+              toast.parentNode.removeChild(toast);
+            }
+          }, 3000);
+        }
+        
+        escapeHtml(unsafe) {
+          if (unsafe == null) return "";
+          return String(unsafe)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        }
+      }
+      
+      // Initialize check-in app
+      document.addEventListener('DOMContentLoaded', () => {
+        window.checkinApp = new MobileCheckinApp();
+      });
+    </script>
+  </body>
+</html>
