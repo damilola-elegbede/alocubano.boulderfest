@@ -114,12 +114,7 @@ export default defineConfig({
     ignoreHTTPSErrors: true, // Ignore SSL issues with preview deployments
     
     // Improved wait strategies for serverless cold starts
-    waitForLoadState: 'domcontentloaded', // Don't wait for all resources, just DOM
-    
-    // Connection settings optimized for preview deployments
-    connectOptions: {
-      timeout: 60000 // 60s connection timeout for slow Vercel regions
-    }
+    waitForLoadState: 'domcontentloaded' // Don't wait for all resources, just DOM
   },
 
   projects: [
