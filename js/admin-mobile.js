@@ -40,8 +40,7 @@ class MobileAdminInterface {
         this.createMobileElements();
         this.setupEventListeners();
         this.transformDataTables();
-        this.setupBottomNavigation();
-        this.initializeTouchInteractions();
+        // Bottom nav is created in createMobileElements(); touch interactions are wired in setupEventListeners()
         
         this.isInitialized = true;
         console.log('Mobile admin interface initialized');
@@ -127,7 +126,7 @@ class MobileAdminInterface {
                 
                 <div class="drawer-nav-section">
                     <h3 class="drawer-nav-title">Tools</h3>
-                    <a href="/pages/admin/analytics.html" class="drawer-nav-item">
+                    <a href="/admin/analytics" class="drawer-nav-item">
                         <span class="drawer-nav-icon">📊</span>
                         Analytics
                     </a>
@@ -693,7 +692,7 @@ class MobileAdminInterface {
     
     openScanner() {
         // Navigate to check-in scanner
-        window.location.href = '/pages/admin/checkin.html';
+        window.location.href = '/admin/checkin';
     }
     
     viewTicketDetails(ticketId) {

@@ -844,7 +844,6 @@
     bottom: 0;
     left: 0;
     right: 0;
-    background: white;
     border-top: 1px solid var(--admin-border);
     display: flex;
     justify-content: space-around;
@@ -972,7 +971,7 @@
   
   .modal-header {
     display: flex;
-    justify-content: between;
+    justify-content: space-between;
     align-items: center;
     margin-bottom: var(--mobile-space-xl);
     padding-bottom: var(--mobile-space-md);
@@ -1087,7 +1086,7 @@
     color: white;
     padding: var(--mobile-space-lg);
     display: flex;
-    justify-content: between;
+    justify-content: space-between;
     align-items: center;
     position: relative;
     z-index: 1201;
