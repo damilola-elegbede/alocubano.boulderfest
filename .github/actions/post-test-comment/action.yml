@@ -336,11 +336,38 @@ runs:
           const comment = fs.readFileSync('comment.md', 'utf8');
 
           const { owner, repo } = context.repo;
-          const pull_number = context.issue?.number;
+          let pull_number = context.issue?.number;
 
+          // If no PR number (e.g., Production deployments), try to find associated PR
           if (!pull_number) {
-            console.log('Not a pull request, skipping comment');
-            return;
+            console.log('No direct PR context, checking for associated PRs...');
+            
+            try {
+              const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner,
+                repo,
+                commit_sha: '${{ inputs.commit-sha }}'
+              });
+              
+              if (prs && prs.length > 0) {
+                pull_number = prs[0].number;
+                console.log(`Found associated PR #${pull_number}`);
+              } else {
+                console.log('No associated PRs found, creating commit comment instead');
+                const { data: commitComment } = await github.rest.repos.createCommitComment({
+                  owner,
+                  repo,
+                  commit_sha: '${{ inputs.commit-sha }}',
+                  body: comment
+                });
+                console.log(`Created commit comment: ${commitComment.html_url}`);
+                core.setOutput('comment-id', commitComment.id);
+                return;
+              }
+            } catch (error) {
+              console.log('Failed to find associated PRs, skipping comment:', error.message);
+              return;
+            }
           }
 
           // Look for existing comment to update

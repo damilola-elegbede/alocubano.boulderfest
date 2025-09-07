@@ -65,7 +65,7 @@ jobs:
     if: >-
       (github.event_name == 'deployment_status' &&
        github.event.deployment_status.state == 'success' &&
-       github.event.deployment.environment == 'Preview') ||
+       contains(fromJson('["Preview","Production"]'), github.event.deployment.environment)) ||
       (github.event_name == 'workflow_dispatch')
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -132,7 +132,7 @@ jobs:
 
       - name: 📋 URL Extraction Summary
         run: |
-          echo "🎯 Preview URL Extraction Results:"
+          echo "🎯 URL Extraction Results:"
           echo "  Event: ${{ github.event_name }}"
           echo "  URL: ${{ steps.extract-url.outputs.preview-url }}"
           echo "  Deployment State: ${{ github.event.deployment_status.state || 'N/A' }}"
@@ -690,7 +690,7 @@ jobs:
           echo "json=$(jq -c . test-results-summary.json 2>/dev/null || echo '{}')" >> "$GITHUB_OUTPUT"
 
       - name: 💬 Post Results to PR
-        if: github.event_name == 'deployment_status' && github.event.deployment.environment == 'Preview'
+        if: github.event_name == 'deployment_status' && (github.event.deployment.environment == 'Preview' || github.event.deployment.environment == 'Production')
         uses: ./.github/actions/post-test-comment
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -706,7 +706,12 @@ jobs:
           echo "  Pattern: ${{ needs.build-test-matrix.outputs.test-pattern }}"
           echo "  Status: ${{ needs.e2e-tests.result }}"
 
-          if [ "${{ needs.e2e-tests.result }}" = "success" ]; then
+          # Handle case where e2e-tests job was skipped
+          if [ "${{ needs.e2e-tests.result }}" = "skipped" ]; then
+            echo "⚠️ E2E tests were skipped - no deployment URL available"
+            echo "This can happen when the deployment trigger fails or the URL extraction job is skipped."
+            exit 0  # Don't fail the workflow for skipped tests
+          elif [ "${{ needs.e2e-tests.result }}" = "success" ]; then
             echo "✅ All E2E tests passed!"
           else
             echo "❌ Some E2E tests failed - check individual job results"
