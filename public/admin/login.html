@@ -192,7 +192,7 @@
           const response = await fetch("/api/admin/dashboard");
           if (response.ok) {
             // Already authenticated, redirect to dashboard
-            window.location.href = "/pages/admin/dashboard.html";
+            window.location.href = "/admin/dashboard";
           }
         } catch (error) {
           // Not authenticated, stay on login page
@@ -225,7 +225,7 @@
 
           if (response.ok) {
             // Success - redirect to dashboard
-            window.location.href = "/pages/admin/dashboard.html";
+            window.location.href = "/admin/dashboard";
           } else {
             // Show error - use textContent for safe display
             errorDiv.textContent = data.error;

@@ -3,7 +3,7 @@ import speakeasy from "speakeasy";
 import QRCode from "qrcode";
 import bcrypt from "bcryptjs";
 import authService from "../lib/auth-service.js";
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 import { withSecurityHeaders } from "../lib/security-headers.js";
 import { getMfaRateLimitService } from "../lib/mfa-rate-limit-service.js";
 import { verifyMfaCode } from "../lib/mfa-middleware.js";
@@ -53,7 +53,7 @@ async function mfaSetupHandler(req, res) {
  * Get current MFA status for admin
  */
 async function handleGetMfaStatus(req, res) {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
   const adminId = req.admin?.id || "admin";
 
   try {
@@ -106,7 +106,7 @@ async function handleGetMfaStatus(req, res) {
  * Generate new TOTP secret and QR code
  */
 async function handleGenerateSecret(req, res) {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
   const adminId = req.admin?.id || "admin";
   const { deviceName = "Authenticator App" } = req.body || {};
 
@@ -168,7 +168,7 @@ async function handleGenerateSecret(req, res) {
  * Verify TOTP code and enable MFA
  */
 async function handleVerifySetup(req, res) {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
   const adminId = req.admin?.id || "admin";
   const { token, deviceName } = req.body || {};
   const clientIP =
@@ -270,7 +270,7 @@ async function handleVerifySetup(req, res) {
  * Generate new backup codes
  */
 async function handleGenerateBackupCodes(req, res) {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
   const adminId = req.admin?.id || "admin";
 
   try {
@@ -323,7 +323,7 @@ async function handleGenerateBackupCodes(req, res) {
  * Disable MFA
  */
 async function handleDisableMfa(req, res) {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
   const adminId = req.admin?.id || "admin";
   const { confirmationCode } = req.body || {};
 
@@ -378,7 +378,7 @@ async function handleDisableMfa(req, res) {
  * Reset MFA (admin recovery)
  */
 async function handleResetMfa(req, res) {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
   const adminId = req.admin?.id || "admin";
 
   try {
@@ -461,7 +461,7 @@ async function logMfaAttempt(
   errorReason = null,
 ) {
   try {
-    const db = getDatabase();
+    const db = await getDatabaseClient();
     const clientIP =
       req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
     const userAgent = req.headers["user-agent"];
@@ -491,7 +491,7 @@ async function logMfaAttempt(
  */
 async function logMfaEvent(adminId, eventType, req, details = null) {
   try {
-    const db = getDatabase();
+    const db = await getDatabaseClient();
     const clientIP =
       req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
     const userAgent = req.headers["user-agent"];
