@@ -74,6 +74,21 @@
     },
     "api/wallet/google/[ticketId].js": {
       "maxDuration": 10
+    },
+    "api/admin/login.js": {
+      "maxDuration": 10
+    },
+    "api/admin/dashboard.js": {
+      "maxDuration": 15
+    },
+    "api/admin/registrations.js": {
+      "maxDuration": 20
+    },
+    "api/admin/analytics.js": {
+      "maxDuration": 15
+    },
+    "api/admin/export.js": {
+      "maxDuration": 30
     }
   },
   "images": {
@@ -223,14 +238,6 @@
       "destination": "/weekender-2026-09-gallery.html"
     },
     {
-      "source": "/weekender-2026-09/:page",
-      "destination": "/:page.html"
-    },
-    {
-      "source": "/workshop-series-2026/:page",
-      "destination": "/:page.html"
-    },
-    {
       "source": "/tickets",
       "destination": "/tickets.html"
     },
@@ -256,51 +263,27 @@
     },
     {
       "source": "/admin/login",
-      "destination": "/pages/admin/login.html"
+      "destination": "/public/admin/login.html"
     },
     {
       "source": "/admin/dashboard",
-      "destination": "/pages/admin/dashboard.html"
+      "destination": "/public/admin/dashboard.html"
     },
     {
       "source": "/admin/checkin",
-      "destination": "/pages/admin/checkin.html"
+      "destination": "/public/admin/checkin.html"
     },
     {
       "source": "/admin/analytics",
-      "destination": "/pages/admin/analytics.html"
+      "destination": "/public/admin/analytics.html"
     },
     {
       "source": "/admin/mfa-settings",
-      "destination": "/pages/admin/mfa-settings.html"
+      "destination": "/public/admin/mfa-settings.html"
     },
     {
       "source": "/admin",
-      "destination": "/pages/admin/index.html"
-    },
-    {
-      "source": "/pages/admin/login",
-      "destination": "/pages/admin/login.html"
-    },
-    {
-      "source": "/pages/admin/dashboard",
-      "destination": "/pages/admin/dashboard.html"
-    },
-    {
-      "source": "/pages/admin/checkin",
-      "destination": "/pages/admin/checkin.html"
-    },
-    {
-      "source": "/pages/admin/analytics",
-      "destination": "/pages/admin/analytics.html"
-    },
-    {
-      "source": "/pages/admin/mfa-settings",
-      "destination": "/pages/admin/mfa-settings.html"
-    },
-    {
-      "source": "/pages/admin",
-      "destination": "/pages/admin/index.html"
+      "destination": "/public/admin/index.html"
     },
     {
       "source": "/manifest.json",
@@ -326,6 +309,31 @@
     {
       "source": "/weekender-2026-09/tickets",
       "destination": "/tickets.html",
+      "permanent": false
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/admin/dashboard",
+      "permanent": false
+    },
+    {
+      "source": "/login",
+      "destination": "/admin/login",
+      "permanent": false
+    },
+    {
+      "source": "/admin/",
+      "destination": "/admin",
+      "permanent": false
+    },
+    {
+      "source": "/checkin",
+      "destination": "/admin/checkin",
+      "permanent": false
+    },
+    {
+      "source": "/analytics",
+      "destination": "/admin/analytics",
       "permanent": false
     }
   ],
@@ -405,6 +413,14 @@
           "value": "public, max-age=0, must-revalidate"
         },
         { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    },
+    {
+      "source": "/admin/(.*)",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, private" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
       ]
     }
   ]
