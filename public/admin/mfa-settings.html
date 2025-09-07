@@ -3,401 +3,47 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MFA Security Settings - A Lo Cubano Boulder Fest</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
-          sans-serif;
-        background: #f5f7fa;
-        color: #333;
-        line-height: 1.6;
-      }
-
-      .admin-header {
-        background: #2c3e50;
-        color: white;
-        padding: 15px 30px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      .admin-header h1 {
-        font-size: 24px;
-        font-weight: 500;
-      }
-
-      .header-actions {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-      }
-
-      .btn {
-        border: none;
-        padding: 8px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        text-decoration: none;
-        display: inline-block;
-        text-align: center;
-      }
-
-      .btn-primary {
-        background: #3498db;
-        color: white;
-      }
-
-      .btn-primary:hover {
-        background: #2980b9;
-      }
-
-      .btn-success {
-        background: #27ae60;
-        color: white;
-      }
-
-      .btn-success:hover {
-        background: #229954;
-      }
-
-      .btn-danger {
-        background: #e74c3c;
-        color: white;
-      }
-
-      .btn-danger:hover {
-        background: #c0392b;
-      }
-
-      .btn-warning {
-        background: #f39c12;
-        color: white;
-      }
-
-      .btn-warning:hover {
-        background: #e67e22;
-      }
-
-      .btn:disabled {
-        background: #95a5a6;
-        cursor: not-allowed;
-      }
-
-      .container {
-        max-width: 1000px;
-        margin: 0 auto;
-        padding: 30px;
-      }
-
-      .mfa-section {
-        background: white;
-        border-radius: 8px;
-        padding: 30px;
-        margin-bottom: 30px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      }
-
-      .mfa-section h2 {
-        color: #2c3e50;
-        margin-bottom: 20px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #ecf0f1;
-      }
-
-      .mfa-status {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-bottom: 25px;
-        padding: 20px;
-        border-radius: 6px;
-        border-left: 4px solid #3498db;
-      }
-
-      .mfa-status.enabled {
-        background: #d5f4e6;
-        border-color: #27ae60;
-      }
-
-      .mfa-status.disabled {
-        background: #fdeaea;
-        border-color: #e74c3c;
-      }
-
-      .status-icon {
-        font-size: 24px;
-      }
-
-      .status-text {
-        flex: 1;
-      }
-
-      .status-title {
-        font-weight: 600;
-        font-size: 16px;
-        margin-bottom: 5px;
-      }
-
-      .status-description {
-        color: #7f8c8d;
-        font-size: 14px;
-      }
-
-      .setup-flow {
-        display: none;
-      }
-
-      .setup-flow.active {
-        display: block;
-      }
-
-      .setup-step {
-        margin-bottom: 30px;
-        padding: 25px;
-        border: 1px solid #ecf0f1;
-        border-radius: 6px;
-      }
-
-      .step-header {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 15px;
-      }
-
-      .step-number {
-        background: #3498db;
-        color: white;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        font-size: 14px;
-      }
-
-      .qr-container {
-        text-align: center;
-        margin: 20px 0;
-      }
-
-      .qr-code {
-        max-width: 200px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-      }
-
-      .manual-entry {
-        background: #f8f9fa;
-        padding: 15px;
-        border-radius: 6px;
-        margin: 15px 0;
-        font-family: monospace;
-        font-size: 14px;
-        word-break: break-all;
-      }
-
-      .verification-input {
-        display: flex;
-        gap: 10px;
-        margin: 20px 0;
-        align-items: center;
-      }
-
-      .verification-input input {
-        padding: 12px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 18px;
-        font-family: monospace;
-        width: 120px;
-        text-align: center;
-        letter-spacing: 2px;
-      }
-
-      .backup-codes {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 10px;
-        margin: 20px 0;
-      }
-
-      .backup-code {
-        background: #f8f9fa;
-        padding: 12px;
-        text-align: center;
-        border-radius: 4px;
-        font-family: monospace;
-        font-size: 14px;
-        border: 1px solid #dee2e6;
-      }
-
-      .warning-box {
-        background: #fff3cd;
-        border: 1px solid #ffeaa7;
-        border-left: 4px solid #f39c12;
-        padding: 15px;
-        border-radius: 4px;
-        margin: 20px 0;
-      }
-
-      .error-box {
-        background: #f8d7da;
-        border: 1px solid #f5c6cb;
-        border-left: 4px solid #dc3545;
-        padding: 15px;
-        border-radius: 4px;
-        margin: 20px 0;
-      }
-
-      .success-box {
-        background: #d4edda;
-        border: 1px solid #c3e6cb;
-        border-left: 4px solid #28a745;
-        padding: 15px;
-        border-radius: 4px;
-        margin: 20px 0;
-      }
-
-      .mfa-actions {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
-      .recovery-section {
-        margin-top: 30px;
-        padding-top: 30px;
-        border-top: 1px solid #ecf0f1;
-      }
-
-      .loading {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        padding: 20px;
-        color: #7f8c8d;
-      }
-
-      .spinner {
-        width: 20px;
-        height: 20px;
-        border: 2px solid #ecf0f1;
-        border-top: 2px solid #3498db;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
-        margin-bottom: 25px;
-      }
-
-      .stat-item {
-        background: #f8f9fa;
-        padding: 15px;
-        border-radius: 6px;
-        text-align: center;
-      }
-
-      .stat-value {
-        font-size: 24px;
-        font-weight: bold;
-        color: #2c3e50;
-      }
-
-      .stat-label {
-        color: #7f8c8d;
-        font-size: 12px;
-        margin-top: 5px;
-      }
-
-      @media (max-width: 768px) {
-        .container {
-          padding: 15px;
-        }
-
-        .mfa-section {
-          padding: 20px;
-        }
-
-        .verification-input {
-          flex-direction: column;
-          align-items: stretch;
-        }
-
-        .verification-input input {
-          width: 100%;
-        }
-
-        .mfa-actions {
-          flex-direction: column;
-        }
-      }
-    </style>
+    <title>🔐 Configuración de Seguridad MFA - A Lo Cubano Boulder Fest</title>
+    <link rel="stylesheet" href="/css/admin-unified.css">
+    <link rel="stylesheet" href="/css/admin-mobile.css">
   </head>
   <body>
-    <div class="admin-header">
-      <h1>🔐 MFA Security Settings</h1>
+    <div class="admin-header admin-cuban-gradient">
+      <h1>🛡️ Configuración de Seguridad MFA</h1>
       <div class="header-actions">
-        <a href="/admin/dashboard" class="btn btn-primary"
-          >← Dashboard</a
+        <a href="/admin/dashboard" class="admin-btn admin-btn-secondary"
+          >🏠 Panel Principal</a
         >
       </div>
     </div>
 
-    <div class="container">
+    <div class="container admin-fade-in">
       <!-- MFA Status Section -->
-      <div class="mfa-section">
-        <h2>Multi-Factor Authentication Status</h2>
+      <div class="admin-card admin-fade-in">
+        <h2 class="admin-section-title">🔐 Estado de Autenticación Multi-Factor</h2>
         <div id="mfaStatusContainer">
-          <div class="loading">
+          <div class="loading admin-pulse">
             <div class="spinner"></div>
-            <span>Loading MFA status...</span>
+            <span>🔄 Cargando estado MFA...</span>
           </div>
         </div>
       </div>
 
       <!-- MFA Setup Section -->
-      <div class="mfa-section">
-        <h2>Setup Multi-Factor Authentication</h2>
-        <div id="setupContainer">
+      <div class="admin-card admin-fade-in">
+        <h2 class="admin-section-title">⚙️ Configurar Autenticación Multi-Factor</h2>
+        <div id="setupContainer" class="admin-form">
           <!-- Content will be dynamically loaded -->
         </div>
       </div>
 
       <!-- Recovery Options Section -->
-      <div class="mfa-section">
-        <h2>Recovery Options</h2>
-        <div id="recoveryContainer">
-          <div class="warning-box">
-            <strong>Important:</strong> Store your backup codes in a safe place.
-            They are your only way to recover access if you lose your
-            authenticator device.
+      <div class="admin-card admin-fade-in">
+        <h2 class="admin-section-title">🔑 Opciones de Recuperación</h2>
+        <div id="recoveryContainer" class="admin-form">
+          <div class="admin-alert admin-alert-warning">
+            <strong>🚨 Importante:</strong> Guarda tus códigos de respaldo en un lugar seguro.
+            Son la única forma de recuperar el acceso si pierdes tu dispositivo autenticador.
           </div>
           <!-- Content will be dynamically loaded -->
         </div>
@@ -455,15 +101,15 @@
       function displayMfaStatus() {
         const container = document.getElementById("mfaStatusContainer");
         const isEnabled = mfaStatus.isEnabled;
-        const statusClass = isEnabled ? "enabled" : "disabled";
-        const statusIcon = isEnabled ? "✅" : "❌";
-        const statusTitle = isEnabled ? "MFA is Enabled" : "MFA is Disabled";
+        const statusClass = isEnabled ? "success" : "danger";
+        const statusIcon = isEnabled ? "🛡️" : "⚠️";
+        const statusTitle = isEnabled ? "🔐 MFA Activado" : "🚨 MFA Desactivado";
         const statusDesc = isEnabled
-          ? `Enabled on ${new Date(mfaStatus.enabledAt).toLocaleDateString()}`
-          : "Your account is not protected by multi-factor authentication";
+          ? `✨ Activado el ${new Date(mfaStatus.enabledAt).toLocaleDateString()}`
+          : "🔓 Tu cuenta no está protegida con autenticación multi-factor";
 
         container.innerHTML = `
-          <div class="mfa-status ${statusClass}">
+          <div class="admin-alert admin-alert-${statusClass} admin-pulse">
             <div class="status-icon">${statusIcon}</div>
             <div class="status-text">
               <div class="status-title">${statusTitle}</div>
@@ -473,22 +119,22 @@
           ${
             isEnabled
               ? `
-            <div class="stats-grid">
-              <div class="stat-item">
-                <div class="stat-value">${mfaStatus.backupCodesCount}</div>
-                <div class="stat-label">Backup Codes Available</div>
+            <div class="admin-stats-grid admin-fade-in">
+              <div class="admin-stat-item">
+                <div class="admin-stat-value">${mfaStatus.backupCodesCount}</div>
+                <div class="admin-stat-label">🔑 Códigos de Respaldo</div>
               </div>
-              <div class="stat-item">
-                <div class="stat-value">${mfaStatus.recentAttempts.successful}</div>
-                <div class="stat-label">Successful Attempts (24h)</div>
+              <div class="admin-stat-item">
+                <div class="admin-stat-value">${mfaStatus.recentAttempts.successful}</div>
+                <div class="admin-stat-label">✅ Intentos Exitosos (24h)</div>
               </div>
-              <div class="stat-item">
-                <div class="stat-value">${mfaStatus.recentAttempts.total}</div>
-                <div class="stat-label">Total Attempts (24h)</div>
+              <div class="admin-stat-item">
+                <div class="admin-stat-value">${mfaStatus.recentAttempts.total}</div>
+                <div class="admin-stat-label">📊 Total Intentos (24h)</div>
               </div>
-              <div class="stat-item">
-                <div class="stat-value">${mfaStatus.deviceName || "Unknown"}</div>
-                <div class="stat-label">Authenticator Device</div>
+              <div class="admin-stat-item">
+                <div class="admin-stat-value">${mfaStatus.deviceName || "Desconocido"}</div>
+                <div class="admin-stat-label">📱 Dispositivo Autenticador</div>
               </div>
             </div>
           `
@@ -503,23 +149,23 @@
 
         if (mfaStatus.isEnabled) {
           container.innerHTML = `
-            <div class="success-box">
-              <strong>✅ MFA is already enabled</strong><br>
-              Your account is protected with multi-factor authentication.
+            <div class="admin-alert admin-alert-success admin-fade-in">
+              <strong>🛡️ MFA ya está activado</strong><br>
+              ✨ Tu cuenta está protegida con autenticación multi-factor.
             </div>
-            <div class="mfa-actions">
-              <button class="btn btn-warning" onclick="generateBackupCodes()">Generate New Backup Codes</button>
-              <button class="btn btn-danger" onclick="confirmDisableMfa()">Disable MFA</button>
+            <div class="admin-form-actions">
+              <button class="admin-btn admin-btn-warning" onclick="generateBackupCodes()">🔄 Generar Nuevos Códigos</button>
+              <button class="admin-btn admin-btn-danger" onclick="confirmDisableMfa()">🚫 Desactivar MFA</button>
             </div>
           `;
         } else {
           container.innerHTML = `
-            <div class="warning-box">
-              <strong>⚠️ Your account is not protected</strong><br>
-              Enable multi-factor authentication to secure your admin account.
+            <div class="admin-alert admin-alert-warning admin-shake">
+              <strong>⚠️ Tu cuenta no está protegida</strong><br>
+              🔐 Activa la autenticación multi-factor para asegurar tu cuenta de admin.
             </div>
-            <div class="mfa-actions">
-              <button class="btn btn-success" onclick="startMfaSetup()">Enable MFA</button>
+            <div class="admin-form-actions">
+              <button class="admin-btn admin-btn-success admin-pulse" onclick="startMfaSetup()">🛡️ Activar MFA</button>
             </div>
           `;
         }
@@ -531,23 +177,23 @@
 
         if (!mfaStatus.isEnabled) {
           container.innerHTML = `
-            <div class="warning-box">
-              MFA must be enabled before recovery options are available.
+            <div class="admin-alert admin-alert-warning">
+              🔐 MFA debe estar activado antes que las opciones de recuperación estén disponibles.
             </div>
           `;
           return;
         }
 
         container.innerHTML = `
-          <div class="stats-grid">
-            <div class="stat-item">
-              <div class="stat-value">${mfaStatus.backupCodesCount}</div>
-              <div class="stat-label">Backup Codes Available</div>
+          <div class="admin-stats-grid admin-fade-in">
+            <div class="admin-stat-item">
+              <div class="admin-stat-value">${mfaStatus.backupCodesCount}</div>
+              <div class="admin-stat-label">🔑 Códigos de Respaldo Disponibles</div>
             </div>
           </div>
-          <div class="mfa-actions">
-            <button class="btn btn-warning" onclick="generateBackupCodes()">Generate New Backup Codes</button>
-            <button class="btn btn-danger" onclick="showRecoveryOptions()">Recovery Options</button>
+          <div class="admin-form-actions">
+            <button class="admin-btn admin-btn-warning" onclick="generateBackupCodes()">🔄 Generar Nuevos Códigos</button>
+            <button class="admin-btn admin-btn-danger" onclick="showRecoveryOptions()">🆘 Opciones de Recuperación</button>
           </div>
         `;
       }
@@ -556,9 +202,9 @@
       async function startMfaSetup() {
         const container = document.getElementById("setupContainer");
         container.innerHTML = `
-          <div class="loading">
+          <div class="loading admin-pulse">
             <div class="spinner"></div>
-            <span>Generating TOTP secret...</span>
+            <span>🔐 Generando secreto TOTP...</span>
           </div>
         `;
 
@@ -591,48 +237,49 @@
       function displaySetupFlow() {
         const container = document.getElementById("setupContainer");
         container.innerHTML = `
-          <div class="setup-flow active">
-            <div class="setup-step">
-              <div class="step-header">
-                <div class="step-number">1</div>
-                <h3>Install Authenticator App</h3>
+          <div class="setup-flow active admin-fade-in">
+            <div class="admin-setup-step admin-card">
+              <div class="admin-step-header">
+                <div class="admin-step-number admin-cuban-gradient">1</div>
+                <h3>📱 Instalar App Autenticadora</h3>
               </div>
-              <p>Install an authenticator app on your phone:</p>
+              <p>💾 Instala una app autenticadora en tu teléfono:</p>
               <ul style="margin: 10px 0 0 20px;">
-                <li><strong>Google Authenticator</strong> (iOS/Android)</li>
-                <li><strong>Authy</strong> (iOS/Android/Desktop)</li>
-                <li><strong>Microsoft Authenticator</strong> (iOS/Android)</li>
-                <li><strong>1Password</strong> (Premium feature)</li>
+                <li><strong>🔵 Google Authenticator</strong> (iOS/Android)</li>
+                <li><strong>🟠 Authy</strong> (iOS/Android/Desktop)</li>
+                <li><strong>🔷 Microsoft Authenticator</strong> (iOS/Android)</li>
+                <li><strong>🟡 1Password</strong> (Característica Premium)</li>
               </ul>
             </div>
 
-            <div class="setup-step">
-              <div class="step-header">
-                <div class="step-number">2</div>
-                <h3>Scan QR Code</h3>
+            <div class="admin-setup-step admin-card admin-fade-in">
+              <div class="admin-step-header">
+                <div class="admin-step-number admin-cuban-gradient">2</div>
+                <h3>📷 Escanear Código QR</h3>
               </div>
-              <p>Open your authenticator app and scan this QR code:</p>
-              <div class="qr-container">
-                <img src="${setupData.qrCodeUrl}" alt="MFA QR Code" class="qr-code">
+              <p>🔍 Abre tu app autenticadora y escanea este código QR:</p>
+              <div class="admin-qr-container">
+                <img src="${setupData.qrCodeUrl}" alt="MFA QR Code" class="admin-qr-code admin-pulse">
               </div>
-              <p><strong>Can't scan?</strong> Enter this key manually:</p>
-              <div class="manual-entry">${setupData.manualEntryKey}</div>
+              <p><strong>❓ ¿No puedes escanear?</strong> Ingresa esta clave manualmente:</p>
+              <div class="admin-manual-entry">${setupData.manualEntryKey}</div>
             </div>
 
-            <div class="setup-step">
-              <div class="step-header">
-                <div class="step-number">3</div>
-                <h3>Verify Setup</h3>
+            <div class="admin-setup-step admin-card admin-fade-in">
+              <div class="admin-step-header">
+                <div class="admin-step-number admin-cuban-gradient">3</div>
+                <h3>✅ Verificar Configuración</h3>
               </div>
-              <p>Enter the 6-digit code from your authenticator app:</p>
-              <div class="verification-input">
+              <p>🔢 Ingresa el código de 6 dígitos de tu app autenticadora:</p>
+              <div class="admin-form-group">
                 <input type="text" 
                        id="verificationCode" 
+                       class="admin-input"
                        placeholder="000000" 
                        maxlength="6" 
                        pattern="[0-9]{6}"
                        autocomplete="off">
-                <button class="btn btn-success" onclick="verifyMfaSetup()">Verify & Enable</button>
+                <button class="admin-btn admin-btn-success admin-pulse" onclick="verifyMfaSetup()">🛡️ Verificar y Activar</button>
               </div>
               <div id="verificationResult"></div>
             </div>
@@ -653,17 +300,17 @@
 
         if (!/^\d{6}$/.test(code)) {
           resultDiv.innerHTML = `
-            <div class="error-box">
-              Please enter a valid 6-digit code from your authenticator app.
+            <div class="admin-alert admin-alert-danger admin-shake">
+              🚨 Por favor ingresa un código válido de 6 dígitos de tu app autenticadora.
             </div>
           `;
           return;
         }
 
         resultDiv.innerHTML = `
-          <div class="loading">
+          <div class="loading admin-pulse">
             <div class="spinner"></div>
-            <span>Verifying code...</span>
+            <span>🔍 Verificando código...</span>
           </div>
         `;
 
@@ -696,8 +343,8 @@
         } catch (error) {
           console.error("MFA verification failed:", error);
           resultDiv.innerHTML = `
-            <div class="error-box">
-              <strong>Verification failed:</strong> ${error.message}
+            <div class="admin-alert admin-alert-danger admin-shake">
+              <strong>❌ Verificación falló:</strong> ${error.message}
             </div>
           `;
         }
@@ -707,27 +354,27 @@
       function displayBackupCodes(codes) {
         const container = document.getElementById("setupContainer");
         container.innerHTML = `
-          <div class="success-box">
-            <strong>✅ MFA Successfully Enabled!</strong><br>
-            Your account is now protected with multi-factor authentication.
+          <div class="admin-alert admin-alert-success admin-fade-in">
+            <strong>🎉 ¡MFA Activado Exitosamente!</strong><br>
+            🛡️ Tu cuenta ahora está protegida con autenticación multi-factor.
           </div>
           
-          <div class="setup-step">
-            <div class="step-header">
-              <div class="step-number">4</div>
-              <h3>Save Your Backup Codes</h3>
+          <div class="admin-setup-step admin-card admin-fade-in">
+            <div class="admin-step-header">
+              <div class="admin-step-number admin-cuban-gradient">4</div>
+              <h3>💾 Guardar Códigos de Respaldo</h3>
             </div>
-            <div class="warning-box">
-              <strong>Important:</strong> Save these backup codes in a safe place. 
-              They are the only way to recover access if you lose your authenticator device.
-              Each code can only be used once.
+            <div class="admin-alert admin-alert-warning">
+              <strong>🚨 Importante:</strong> Guarda estos códigos de respaldo en un lugar seguro. 
+              Son la única forma de recuperar el acceso si pierdes tu dispositivo autenticador.
+              Cada código solo se puede usar una vez.
             </div>
-            <div class="backup-codes">
-              ${codes.map((code) => `<div class="backup-code">${code}</div>`).join("")}
+            <div class="admin-backup-codes admin-fade-in">
+              ${codes.map((code) => `<div class="admin-backup-code">${code}</div>`).join("")}
             </div>
-            <div class="mfa-actions">
-              <button class="btn btn-primary" onclick="downloadBackupCodes(${JSON.stringify(codes).replace(/"/g, "&quot;")})">Download Codes</button>
-              <button class="btn btn-success" onclick="loadMfaStatus()">Continue</button>
+            <div class="admin-form-actions">
+              <button class="admin-btn admin-btn-primary admin-pulse" onclick="downloadBackupCodes(${JSON.stringify(codes).replace(/"/g, "&quot;")})">📥 Descargar Códigos</button>
+              <button class="admin-btn admin-btn-success" onclick="loadMfaStatus()">✅ Continuar</button>
             </div>
           </div>
         `;
@@ -798,17 +445,18 @@
 
       // Download backup codes
       function downloadBackupCodes(codes) {
-        const content = `A Lo Cubano Boulder Fest - Admin MFA Backup Codes
-Generated: ${new Date().toLocaleString()}
+        const content = `A Lo Cubano Boulder Fest - Códigos de Respaldo MFA Admin
+Generado: ${new Date().toLocaleString()}
 
-IMPORTANT: Store these codes safely. Each can only be used once.
+🚨 IMPORTANTE: Guarda estos códigos de forma segura. Cada uno solo se puede usar una vez.
 
 ${codes.map((code, i) => `${i + 1}. ${code}`).join("\n")}
 
-Instructions:
-- Use these codes if you lose access to your authenticator app
-- Enter any unused code when prompted for MFA
-- Generate new codes after using several of them
+Instrucciones:
+🔑 Usa estos códigos si pierdes acceso a tu app autenticadora
+✅ Ingresa cualquier código no usado cuando se solicite MFA
+🔄 Genera nuevos códigos después de usar varios de ellos
+🛡️ Mantén estos códigos en un lugar seguro y privado
 `;
 
         const blob = new Blob([content], { type: "text/plain" });
@@ -837,8 +485,8 @@ Instructions:
       function displayError(containerId, message) {
         const container = document.getElementById(containerId);
         container.innerHTML = `
-          <div class="error-box">
-            <strong>Error:</strong> ${escapeHtml(message)}
+          <div class="admin-alert admin-alert-danger admin-shake">
+            <strong>🚨 Error:</strong> ${escapeHtml(message)}
           </div>
         `;
       }

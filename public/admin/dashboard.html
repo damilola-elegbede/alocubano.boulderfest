@@ -44,6 +44,10 @@
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/typography.css" />
+    
+    <!-- Cuban Salsa Theme Admin Stylesheets -->
+    <link rel="stylesheet" href="/css/admin-unified.css" />
+    <link rel="stylesheet" href="/css/admin-mobile.css" />
 
     <style>
       /* Admin-specific styling using main site design system */
@@ -712,9 +716,9 @@
       }
     </style>
   </head>
-  <body class="typographic">
+  <body class="typographic admin-portal admin-fade-in">
     <!-- Admin Header with Branding -->
-    <header class="admin-header">
+    <header class="admin-header admin-cuban-gradient">
       <div class="container">
         <div class="admin-header-content">
           <div class="admin-branding">
@@ -731,27 +735,27 @@
           <nav class="admin-header-actions" aria-label="Admin navigation">
             <a
               href="/admin"
-              class="admin-btn admin-btn-portal"
+              class="admin-btn admin-btn-secondary admin-dance"
               aria-label="Go to admin portal"
             >
               🎯 Portal
             </a>
             <a
               href="/admin/analytics"
-              class="admin-btn admin-btn-analytics"
+              class="admin-btn admin-btn-outline admin-partner-swap"
               aria-label="View analytics"
             >
               📈 Analytics
             </a>
             <button
-              class="admin-btn admin-btn-sync"
+              class="admin-btn admin-btn-primary admin-shake-hover"
               onclick="syncToSheets()"
               aria-label="Sync data to Google Sheets"
             >
               📊 Sync to Sheets
             </button>
             <button
-              class="admin-btn admin-btn-logout"
+              class="admin-btn admin-btn-danger admin-heartbeat"
               onclick="logout()"
               aria-label="Logout from admin dashboard"
             >
@@ -763,22 +767,22 @@
     </header>
 
     <!-- Main Dashboard Content -->
-    <main class="dashboard-container">
+    <main class="dashboard-container admin-cha-cha-slide">
       <div class="container">
         <!-- Dashboard Statistics -->
         <section class="dashboard-stats">
           <div class="stats-header">
-            <h2 class="stats-title">Festival Overview</h2>
+            <h2 class="stats-title admin-text-primary">Festival Overview</h2>
             <p class="stats-subtitle">Real-time registration and attendance data</p>
           </div>
           
-          <div class="stats-grid" id="statsGrid" data-testid="dashboard-stats">
+          <div class="stats-grid admin-rumba-wave" id="statsGrid" data-testid="dashboard-stats">
             <div class="loading-state">Loading statistics...</div>
           </div>
         </section>
 
         <!-- Registrations Management -->
-        <section class="admin-section" id="registrations">
+        <section class="admin-card admin-glow-hover" id="registrations">
           <!-- Additional anchor for transactions (points to same section) -->
           <span id="transactions"></span>
           
@@ -830,7 +834,7 @@
               </div>
 
               <button 
-                class="search-btn" 
+                class="admin-btn admin-btn-secondary admin-dance" 
                 onclick="searchRegistrations()" 
                 data-testid="search-button"
                 aria-label="Execute search"
@@ -839,7 +843,7 @@
               </button>
 
               <button 
-                class="search-btn export-btn" 
+                class="admin-btn admin-btn-primary admin-partner-swap" 
                 onclick="exportToCSV()"
                 aria-label="Export results to CSV"
               >
@@ -849,7 +853,7 @@
           </div>
 
           <!-- Data Table Container -->
-          <div class="table-container">
+          <div class="admin-table-container">
             <div id="registrationsTable" data-testid="registrations-table">
               <div class="loading-state">Loading registrations...</div>
             </div>
@@ -971,45 +975,45 @@
         const statsGrid = document.getElementById("statsGrid");
 
         statsGrid.innerHTML = `
-                <div class="stat-card">
+                <div class="admin-card admin-widget-stat admin-conga-item">
                     <div class="stat-card-header">Total Tickets</div>
-                    <div class="stat-number">${stats.total_tickets || 0}</div>
+                    <div class="stat-number admin-text-primary">${stats.total_tickets || 0}</div>
                 </div>
-                <div class="stat-card">
+                <div class="admin-card admin-widget-stat admin-conga-item">
                     <div class="stat-card-header">Checked In</div>
-                    <div class="stat-number">${stats.checked_in || 0}</div>
+                    <div class="stat-number admin-text-primary">${stats.checked_in || 0}</div>
                     <div class="stat-label">${Math.round((stats.checked_in / stats.total_tickets) * 100) || 0}% completion</div>
                 </div>
-                <div class="stat-card">
+                <div class="admin-card admin-widget-stat admin-conga-item">
                     <div class="stat-card-header">Total Revenue</div>
-                    <div class="stat-number">$${(stats.total_revenue || 0).toFixed(2)}</div>
+                    <div class="stat-number admin-text-primary">$${(stats.total_revenue || 0).toFixed(2)}</div>
                 </div>
-                <div class="stat-card">
+                <div class="admin-card admin-widget-stat admin-conga-item">
                     <div class="stat-card-header">Total Orders</div>
-                    <div class="stat-number">${stats.total_orders || 0}</div>
+                    <div class="stat-number admin-text-primary">${stats.total_orders || 0}</div>
                 </div>
-                <div class="stat-card">
+                <div class="admin-card admin-widget-stat admin-conga-item">
                     <div class="stat-card-header">Workshop Tickets</div>
-                    <div class="stat-number">${stats.workshop_tickets || 0}</div>
+                    <div class="stat-number admin-text-primary">${stats.workshop_tickets || 0}</div>
                 </div>
-                <div class="stat-card">
+                <div class="admin-card admin-widget-stat admin-conga-item">
                     <div class="stat-card-header">VIP Tickets</div>
-                    <div class="stat-number">${stats.vip_tickets || 0}</div>
+                    <div class="stat-number admin-text-primary">${stats.vip_tickets || 0}</div>
                 </div>
                 <!-- Wallet Statistics -->
-                <div class="stat-card wallet-apple">
+                <div class="admin-card admin-widget-stat admin-conga-item wallet-apple">
                     <div class="stat-card-header">Apple Wallet</div>
-                    <div class="stat-number">${stats.apple_wallet_users || 0}</div>
+                    <div class="stat-number admin-text-primary">${stats.apple_wallet_users || 0}</div>
                     <div class="stat-label">${stats.total_tickets ? Math.round((stats.apple_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
                 </div>
-                <div class="stat-card wallet-google">
+                <div class="admin-card admin-widget-stat admin-conga-item wallet-google">
                     <div class="stat-card-header">Google Wallet</div>
-                    <div class="stat-number">${stats.google_wallet_users || 0}</div>
+                    <div class="stat-number admin-text-primary">${stats.google_wallet_users || 0}</div>
                     <div class="stat-label">${stats.total_tickets ? Math.round((stats.google_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
                 </div>
-                <div class="stat-card">
+                <div class="admin-card admin-widget-stat admin-conga-item">
                     <div class="stat-card-header">QR Generated</div>
-                    <div class="stat-number">${stats.qr_generated || 0}</div>
+                    <div class="stat-number admin-text-primary">${stats.qr_generated || 0}</div>
                     <div class="stat-label">${stats.total_tickets ? Math.round((stats.qr_generated / stats.total_tickets) * 100) : 0}% ready</div>
                 </div>
             `;
@@ -1060,7 +1064,7 @@
         }
 
         const tableHTML = `
-                <table class="data-table">
+                <table class="admin-table">
                     <thead>
                         <tr>
                             <th>Ticket ID</th>
@@ -1077,12 +1081,12 @@
                           .map(
                             (reg) => `
                             <tr>
-                                <td><span class="ticket-id">${escapeHtml(reg.ticket_id)}</span></td>
+                                <td><span class="ticket-id admin-badge admin-badge-secondary">${escapeHtml(reg.ticket_id)}</span></td>
                                 <td>${escapeHtml(reg.attendee_first_name)} ${escapeHtml(reg.attendee_last_name)}</td>
                                 <td>${escapeHtml(reg.attendee_email)}</td>
                                 <td>${escapeHtml(formatTicketType(reg.ticket_type))}</td>
                                 <td>
-                                    <span class="status-badge status-${reg.checked_in_at ? "checked-in" : escapeHtml(reg.status)}">
+                                    <span class="admin-badge admin-badge-${reg.checked_in_at ? "success" : escapeHtml(reg.status === 'valid' ? 'primary' : 'danger')}">
                                         ${reg.checked_in_at ? "Checked In" : escapeHtml(reg.status)}
                                     </span>
                                 </td>
@@ -1090,8 +1094,8 @@
                                 <td>
                                     ${
                                       reg.checked_in_at
-                                        ? `<button class="action-btn checkin-btn" data-action="undo" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}">Undo</button>`
-                                        : `<button class="action-btn checkin-btn" data-action="checkin" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}">Check In</button>`
+                                        ? `<button class="admin-btn admin-btn-sm admin-btn-warning admin-shake-hover" data-action="undo" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}">Undo</button>`
+                                        : `<button class="admin-btn admin-btn-sm admin-btn-success admin-dance" data-action="checkin" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}">Check In</button>`
                                     }
                                 </td>
                             </tr>
@@ -1116,19 +1120,19 @@
         }
 
         pagination.innerHTML = `
-                <button class="pagination-btn" onclick="loadRegistrations(0)" ${currentPage === 0 ? "disabled" : ""}>
+                <button class="admin-btn admin-btn-outline" onclick="loadRegistrations(0)" ${currentPage === 0 ? "disabled" : ""}>
                     First
                 </button>
-                <button class="pagination-btn" onclick="loadRegistrations(${currentPage - 1})" ${currentPage === 0 ? "disabled" : ""}>
+                <button class="admin-btn admin-btn-outline" onclick="loadRegistrations(${currentPage - 1})" ${currentPage === 0 ? "disabled" : ""}>
                     Previous
                 </button>
-                <span class="page-info">
+                <span class="page-info admin-badge admin-badge-info">
                     Page ${currentPage + 1} of ${totalPages}
                 </span>
-                <button class="pagination-btn" onclick="loadRegistrations(${currentPage + 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""}>
+                <button class="admin-btn admin-btn-outline" onclick="loadRegistrations(${currentPage + 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""}>
                     Next
                 </button>
-                <button class="pagination-btn" onclick="loadRegistrations(${totalPages - 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""}>
+                <button class="admin-btn admin-btn-outline" onclick="loadRegistrations(${totalPages - 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""}>
                     Last
                 </button>
             `;

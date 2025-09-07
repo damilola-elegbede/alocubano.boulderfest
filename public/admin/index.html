@@ -4,18 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Portal - A Lo Cubano Boulder Fest</title>
+    <link rel="stylesheet" href="/css/admin-unified.css" />
+    <link rel="stylesheet" href="/css/admin-mobile.css" />
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
+      /* Cuban Salsa Theme Overrides */
       body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
-          sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, var(--admin-primary), var(--admin-secondary));
         min-height: 100vh;
         display: flex;
         align-items: center;
@@ -24,42 +18,33 @@
       }
 
       .portal-container {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         max-width: 1200px;
         width: 100%;
         padding: 40px;
-        animation: slideIn 0.5s ease-out;
-      }
-
-      @keyframes slideIn {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+        position: relative;
+        overflow: hidden;
       }
 
       .portal-header {
         text-align: center;
         margin-bottom: 40px;
-        padding-bottom: 30px;
-        border-bottom: 2px solid #f0f0f0;
+        padding: 30px;
+        border-radius: var(--radius-lg);
+        color: white;
       }
 
       .portal-header h1 {
-        color: #333;
+        font-family: var(--admin-font-display);
         font-size: 36px;
         margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
       }
 
       .portal-header p {
-        color: #666;
+        font-family: var(--admin-font-accent);
         font-size: 16px;
+        font-style: italic;
       }
 
       .sections-grid {
@@ -69,90 +54,8 @@
         margin-bottom: 40px;
       }
 
-      .section-card {
-        background: #f8f9fa;
-        border-radius: 12px;
-        padding: 25px;
-        border: 1px solid #e9ecef;
-        transition:
-          transform 0.3s ease,
-          box-shadow 0.3s ease;
-      }
-
-      .section-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-      }
-
-      .section-card h2 {
-        color: #495057;
-        font-size: 20px;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .section-card .icon {
-        font-size: 24px;
-      }
-
-      .links-list {
-        list-style: none;
-      }
-
-      .links-list li {
-        margin-bottom: 12px;
-      }
-
-      .links-list a {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 15px;
-        background: white;
-        color: #495057;
-        text-decoration: none;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        border: 1px solid #dee2e6;
-        font-size: 14px;
-      }
-
-      .links-list a:hover {
-        background: #667eea;
-        color: white;
-        transform: translateX(5px);
-        border-color: #667eea;
-      }
-
-      .links-list a .badge {
-        margin-left: auto;
-        background: #28a745;
-        color: white;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 11px;
-      }
-
-      .links-list a .badge.new {
-        background: #ff6b6b;
-      }
-
-      .links-list a .badge.beta {
-        background: #ffa500;
-      }
-
-      .description {
-        color: #6c757d;
-        font-size: 12px;
-        margin-left: 30px;
-        margin-top: -8px;
-        margin-bottom: 12px;
-      }
-
       .quick-actions {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, var(--admin-primary), var(--admin-secondary));
         border-radius: 12px;
         padding: 25px;
         color: white;
@@ -162,6 +65,8 @@
       .quick-actions h3 {
         margin-bottom: 15px;
         font-size: 18px;
+        font-family: var(--admin-font-display);
+        text-transform: uppercase;
       }
 
       .action-buttons {
@@ -170,35 +75,12 @@
         flex-wrap: wrap;
       }
 
-      .action-btn {
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        padding: 10px 20px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-size: 14px;
-        text-decoration: none;
-        display: inline-block;
-      }
-
-      .action-btn:hover {
-        background: rgba(255, 255, 255, 0.3);
-        transform: translateY(-2px);
-      }
-
       .api-endpoints {
-        background: #f8f9fa;
+        background: var(--admin-surface);
         border-radius: 12px;
         padding: 25px;
         margin-top: 30px;
-      }
-
-      .api-endpoints h3 {
-        color: #495057;
-        margin-bottom: 20px;
-        font-size: 18px;
+        border: 1px solid var(--admin-border-light);
       }
 
       .endpoints-grid {
@@ -214,68 +96,18 @@
         padding: 10px;
         background: white;
         border-radius: 6px;
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--admin-border-light);
         font-size: 13px;
-      }
-
-      .endpoint-item .method {
-        background: #28a745;
-        color: white;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: bold;
-        min-width: 40px;
-        text-align: center;
-      }
-
-      .endpoint-item .method.post {
-        background: #007bff;
-      }
-
-      .endpoint-item code {
-        color: #e83e8c;
-        font-family: "Courier New", monospace;
-      }
-
-      .footer {
-        text-align: center;
-        margin-top: 40px;
-        padding-top: 30px;
-        border-top: 2px solid #f0f0f0;
-        color: #6c757d;
-        font-size: 14px;
-      }
-
-      .footer a {
-        color: #667eea;
-        text-decoration: none;
-      }
-
-      .footer a:hover {
-        text-decoration: underline;
       }
 
       .status-indicator {
         display: inline-block;
         width: 8px;
         height: 8px;
-        background: #28a745;
+        background: var(--admin-success);
         border-radius: 50%;
         margin-right: 5px;
-        animation: pulse 2s infinite;
-      }
-
-      @keyframes pulse {
-        0% {
-          box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
-        }
-        70% {
-          box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
-        }
-        100% {
-          box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
-        }
+        animation: cubanHeartbeat 2s infinite;
       }
 
       @media (max-width: 768px) {
@@ -290,121 +122,116 @@
         .action-buttons {
           flex-direction: column;
         }
-
-        .action-btn {
-          width: 100%;
-          text-align: center;
-        }
       }
     </style>
   </head>
-  <body>
-    <div class="portal-container">
-      <div class="portal-header">
-        <h1>🎯 Admin Portal</h1>
-        <p>A Lo Cubano Boulder Fest - Central Administration Hub</p>
-        <p style="margin-top: 10px">
+  <body class="admin-portal admin-fade-in">
+    <div class="portal-container admin-card">
+      <div class="portal-header admin-cuban-gradient">
+        <h1 class="admin-mambo-bounce">🎺 Bienvenidos - Admin Portal</h1>
+        <p>A Lo Cubano Boulder Fest - ¡Ritmo, Sabor y Administración!</p>
+        <p style="margin-top: 10px; color: rgba(255,255,255,0.9);">
           <span class="status-indicator"></span>
-          <span id="status">All Systems Operational</span>
+          <span id="status">Todos los sistemas operacionales - ¡Vamos a bailar!</span>
         </p>
       </div>
 
       <div class="quick-actions">
         <h3>⚡ Quick Actions</h3>
         <div class="action-buttons">
-          <a href="/admin/dashboard" class="action-btn"
+          <a href="/admin/dashboard" class="admin-btn admin-btn-primary admin-cha-cha-slide"
             >📊 Main Dashboard</a
           >
-          <a href="/admin/analytics" class="action-btn"
+          <a href="/admin/analytics" class="admin-btn admin-btn-secondary admin-cha-cha-slide"
             >📈 View Analytics</a
           >
-          <a href="/admin/checkin" class="action-btn"
+          <a href="/admin/checkin" class="admin-btn admin-btn-info admin-cha-cha-slide"
             >📱 Mobile Scanner</a
           >
-          <button onclick="syncToSheets()" class="action-btn">
+          <button onclick="syncToSheets()" class="admin-btn admin-btn-success admin-cha-cha-slide">
             🔄 Sync to Sheets
           </button>
-          <button onclick="generateReport()" class="action-btn">
+          <button onclick="generateReport()" class="admin-btn admin-btn-warning admin-cha-cha-slide">
             📥 Export Report
           </button>
-          <button onclick="logout()" class="action-btn">🚪 Logout</button>
+          <button onclick="logout()" class="admin-btn admin-btn-danger admin-cha-cha-slide">🚪 Logout</button>
         </div>
       </div>
 
       <div class="sections-grid">
-        <div class="section-card">
-          <h2><span class="icon">📊</span> Dashboards & Analytics</h2>
+        <div class="admin-card admin-cha-cha-slide">
+          <h2><span class="icon">🎵</span> Dashboards & Analytics</h2>
           <ul class="links-list">
-            <li>
-              <a href="/admin/dashboard">
-                Main Dashboard
-                <span class="badge">Core</span>
+            <li class="admin-conga-item">
+              <a href="/admin/dashboard" class="admin-btn admin-btn-outline">
+                🎹 Main Dashboard
+                <span class="badge admin-badge-primary">Core</span>
               </a>
               <p class="description">
-                Registration management, transactions, and Google Sheets sync
+                ¡Control central! Registration management, transactions, and Google Sheets sync
               </p>
             </li>
-            <li>
-              <a href="/admin/analytics">
-                Analytics Dashboard
-                <span class="badge new">New</span>
+            <li class="admin-conga-item">
+              <a href="/admin/analytics" class="admin-btn admin-btn-outline">
+                📈 Analytics Dashboard
+                <span class="badge admin-badge-success">Nuevo</span>
               </a>
               <p class="description">
-                Comprehensive analytics with charts, metrics, and insights
+                Comprehensive analytics with charts, metrics, and Cuban rhythm insights
               </p>
             </li>
-            <li>
-              <a href="/admin/checkin">
-                Mobile Check-in Scanner
-                <span class="badge">Mobile</span>
+            <li class="admin-conga-item">
+              <a href="/admin/checkin" class="admin-btn admin-btn-outline">
+                📱 Mobile Check-in Scanner
+                <span class="badge admin-badge-info">Móvil</span>
               </a>
-              <p class="description">QR code scanning for event check-ins</p>
+              <p class="description">QR code scanning for event check-ins - ¡Rápido como salsa!</p>
             </li>
           </ul>
         </div>
 
-        <div class="section-card">
+        <div class="admin-card admin-cha-cha-slide">
           <h2><span class="icon">🔐</span> Authentication & Security</h2>
           <ul class="links-list">
-            <li>
-              <a href="/admin/login"> Admin Login </a>
-              <p class="description">Secure admin authentication portal</p>
+            <li class="admin-conga-item">
+              <a href="/admin/login" class="admin-btn admin-btn-outline">🔑 Admin Login</a>
+              <p class="description">Secure admin authentication portal - ¡Seguro como Clave!</p>
             </li>
-            <li>
-              <a href="#" onclick="testMobileAuth()">
-                Mobile Auth Test
-                <span class="badge beta">Beta</span>
+            <li class="admin-conga-item">
+              <a href="#" onclick="testMobileAuth()" class="admin-btn admin-btn-outline">
+                📲 Mobile Auth Test
+                <span class="badge admin-badge-warning">Beta</span>
               </a>
               <p class="description">Test mobile authentication system</p>
             </li>
-            <li>
-              <a href="#" onclick="viewCSRFToken()"> CSRF Token Status </a>
+            <li class="admin-conga-item">
+              <a href="#" onclick="viewCSRFToken()" class="admin-btn admin-btn-outline">🛡️ CSRF Token Status</a>
               <p class="description">View current CSRF token information</p>
             </li>
           </ul>
         </div>
 
-        <div class="section-card">
+        <div class="admin-card admin-cha-cha-slide">
           <h2><span class="icon">📋</span> Data Management</h2>
           <ul class="links-list">
-            <li>
-              <a href="/admin/dashboard#registrations">
-                Registration Management
+            <li class="admin-conga-item">
+              <a href="/admin/dashboard#registrations" class="admin-btn admin-btn-outline">
+                📝 Registration Management
               </a>
               <p class="description">
-                View and manage all ticket registrations
+                View and manage all ticket registrations - ¡Organizados como orquesta!
               </p>
             </li>
-            <li>
-              <a href="/admin/dashboard#transactions">
-                Transaction History
+            <li class="admin-conga-item">
+              <a href="/admin/dashboard#transactions" class="admin-btn admin-btn-outline">
+                💰 Transaction History
               </a>
               <p class="description">Payment transactions and order details</p>
             </li>
-            <li>
-              <a href="#" onclick="openGoogleSheets()">
-                Google Sheets View
-                <span class="badge">External</span>
+            <li class="admin-conga-item">
+              <a href="#" onclick="openGoogleSheets()" class="admin-btn admin-btn-outline">
+                📊 Google Sheets View
+                <span class="badge admin-badge-secondary">External</span>
               </a>
               <p class="description">
                 Access synchronized data in Google Sheets
@@ -413,22 +240,22 @@
           </ul>
         </div>
 
-        <div class="section-card">
+        <div class="admin-card admin-cha-cha-slide">
           <h2><span class="icon">🛠️</span> Tools & Utilities</h2>
           <ul class="links-list">
-            <li>
-              <a href="#" onclick="testDatabase()"> Database Health Check </a>
+            <li class="admin-conga-item">
+              <a href="#" onclick="testDatabase()" class="admin-btn admin-btn-outline">🔍 Database Health Check</a>
               <p class="description">
-                Test database connectivity and performance
+                Test database connectivity and performance - ¡Chequea el compás!
               </p>
             </li>
-            <li>
-              <a href="#" onclick="clearCache()"> Clear System Cache </a>
-              <p class="description">Clear cached data and refresh system</p>
+            <li class="admin-conga-item">
+              <a href="#" onclick="clearCache()" class="admin-btn admin-btn-outline">🧹 Clear System Cache</a>
+              <p class="description">Clear cached data and refresh system - ¡Limpio como merengue!</p>
             </li>
-            <li>
-              <a href="/docs/ADMIN_GUIDE.md" target="_blank">
-                Admin Documentation
+            <li class="admin-conga-item">
+              <a href="/docs/ADMIN_GUIDE.md" target="_blank" class="admin-btn admin-btn-outline">
+                📚 Admin Documentation
               </a>
               <p class="description">
                 Complete administration guide and API docs
@@ -494,16 +321,17 @@
 
       <div class="footer">
         <p>
-          <strong>A Lo Cubano Boulder Fest</strong> Admin Portal v1.0<br />
+          <strong>🇨🇺 A Lo Cubano Boulder Fest</strong> Admin Portal v1.0 - ¡Con Sabor!<br />
           Festival Dates: May 15-17, 2026 | Avalon Ballroom, Boulder, CO<br />
-          <a href="mailto:alocubanoboulderfest@gmail.com">Support</a> |
+          <em>¡Donde la salsa cobra vida y la administración tiene ritmo!</em><br />
+          <a href="mailto:alocubanoboulderfest@gmail.com">📧 Soporte</a> |
           <a
             href="https://github.com/damilola-elegbede/alocubano.boulderfest"
             target="_blank"
-            >GitHub</a
+            >💻 GitHub</a
           >
           |
-          <a href="/docs" target="_blank">Documentation</a>
+          <a href="/docs" target="_blank">📖 Documentación</a>
         </p>
       </div>
     </div>

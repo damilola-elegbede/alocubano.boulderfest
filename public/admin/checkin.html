@@ -11,64 +11,22 @@
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
-    <meta name="theme-color" content="#667eea" />
+    <meta name="theme-color" content="#cc2936" />
     <title>Check-in Scanner - A Lo Cubano</title>
     <link rel="manifest" href="/public/manifest.json" />
     <link rel="apple-touch-icon" href="/public/images/icons/icon-192x192.png" />
+    <link rel="stylesheet" href="/css/admin-unified.css" />
+    <link rel="stylesheet" href="/css/admin-mobile.css" />
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        -webkit-tap-highlight-color: transparent;
-      }
-
+      /* Minimal override styles for scanner-specific functionality */
       body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        background: #1a1a2e;
-        color: white;
         height: 100vh;
         overflow: hidden;
         position: relative;
       }
 
-      .app-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 15px 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        position: relative;
-        z-index: 100;
-      }
-
-      .app-title {
-        font-size: 20px;
-        font-weight: 600;
-      }
-
-      .menu-btn {
-        background: rgba(255, 255, 255, 0.2);
-        border: none;
-        width: 40px;
-        height: 40px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        color: white;
-        font-size: 20px;
-      }
-
-      .menu-btn:active {
-        background: rgba(255, 255, 255, 0.3);
-      }
-
       .scanner-container {
-        height: calc(100vh - 70px);
+        height: calc(100vh - 80px);
         display: flex;
         flex-direction: column;
       }
@@ -100,21 +58,24 @@
       .scan-region {
         width: 250px;
         height: 250px;
-        border: 3px solid #667eea;
+        border: 3px solid var(--admin-primary);
         border-radius: 20px;
         position: relative;
-        animation: pulse 2s infinite;
+        animation: cubanPulse 2s infinite;
       }
 
-      @keyframes pulse {
+      @keyframes cubanPulse {
         0% {
-          border-color: #667eea;
+          border-color: var(--admin-primary);
+          box-shadow: 0 0 0 0 rgba(204, 41, 54, 0.4);
         }
         50% {
-          border-color: #764ba2;
+          border-color: var(--admin-secondary);
+          box-shadow: 0 0 0 15px rgba(91, 107, 181, 0.2);
         }
         100% {
-          border-color: #667eea;
+          border-color: var(--admin-primary);
+          box-shadow: 0 0 0 0 rgba(204, 41, 54, 0.4);
         }
       }
 
@@ -158,7 +119,7 @@
       }
 
       .controls {
-        background: #2c3e50;
+        background: var(--admin-bg-dark);
         padding: 20px;
         display: flex;
         justify-content: space-around;
@@ -167,7 +128,7 @@
       }
 
       .control-btn {
-        background: #667eea;
+        background: var(--admin-primary);
         color: white;
         border: none;
         width: 60px;
@@ -178,7 +139,12 @@
         justify-content: center;
         font-size: 24px;
         cursor: pointer;
-        transition: transform 0.2s;
+        transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+
+      .control-btn:hover {
+        transform: scale(1.1) rotate(5deg);
+        box-shadow: 0 5px 15px rgba(204, 41, 54, 0.4);
       }
 
       .control-btn:active {
@@ -186,11 +152,11 @@
       }
 
       .control-btn.torch {
-        background: #f39c12;
+        background: var(--admin-warning);
       }
 
       .control-btn.manual {
-        background: #3498db;
+        background: var(--admin-secondary);
       }
 
       .stats-bar {
@@ -208,7 +174,7 @@
       .stat-value {
         font-size: 20px;
         font-weight: bold;
-        color: #667eea;
+        color: var(--admin-primary);
       }
 
       .stat-label {
@@ -218,173 +184,47 @@
         margin-top: 2px;
       }
 
-      .result-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.9);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-        animation: fadeIn 0.3s;
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-
-      .result-modal.show {
-        display: flex;
-      }
-
-      .result-content {
-        background: white;
-        border-radius: 20px;
-        padding: 30px;
-        max-width: 90%;
-        width: 350px;
-        text-align: center;
-        animation: slideUp 0.3s;
-      }
-
-      @keyframes slideUp {
-        from {
-          transform: translateY(50px);
-          opacity: 0;
-        }
-        to {
-          transform: translateY(0);
-          opacity: 1;
-        }
-      }
-
+      /* Override result modal with Cuban celebration animations */
       .result-content.success {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        background: var(--admin-cuban-gradient);
+        animation: cubanCelebration 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+
+      @keyframes cubanCelebration {
+        0% { transform: translateY(50px) scale(0.8) rotate(-5deg); opacity: 0; }
+        50% { transform: translateY(-10px) scale(1.05) rotate(2deg); opacity: 0.9; }
+        100% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
       }
 
       .result-content.error {
-        background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        background: linear-gradient(135deg, var(--admin-danger), #f45c43);
       }
 
-      .result-icon {
-        font-size: 60px;
-        margin-bottom: 20px;
-      }
-
-      .result-title {
-        font-size: 24px;
-        font-weight: bold;
-        margin-bottom: 10px;
-      }
-
-      .result-details {
-        font-size: 16px;
-        opacity: 0.9;
-        margin-bottom: 20px;
-        white-space: pre-line;
-      }
-
-      .result-btn {
-        background: rgba(255, 255, 255, 0.3);
-        color: white;
-        border: none;
-        padding: 12px 30px;
-        border-radius: 25px;
-        font-size: 16px;
-        cursor: pointer;
-      }
-
-      .offline-indicator {
-        position: absolute;
-        top: 80px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #e74c3c;
-        color: white;
-        padding: 8px 20px;
-        border-radius: 20px;
-        font-size: 12px;
-        display: none;
-        z-index: 200;
-        animation: slideDown 0.3s;
-      }
-
-      @keyframes slideDown {
-        from {
-          transform: translateX(-50%) translateY(-20px);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(-50%) translateY(0);
-          opacity: 1;
-        }
-      }
-
-      .offline-indicator.show {
-        display: block;
-      }
-
+      /* Manual input styling overrides */
       .manual-input {
         position: fixed;
         bottom: -100%;
         left: 0;
         right: 0;
-        background: white;
-        color: #333;
-        padding: 20px;
-        border-radius: 20px 20px 0 0;
-        transition: bottom 0.3s;
+        transition: bottom 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         z-index: 500;
+        border-radius: 20px 20px 0 0;
+        margin: 0 10px;
+        max-width: calc(100% - 20px);
       }
 
       .manual-input.show {
         bottom: 0;
       }
 
-      .manual-input h3 {
-        margin-bottom: 15px;
-        color: #2c3e50;
-      }
-
-      .manual-input input {
-        width: 100%;
-        padding: 15px;
-        border: 1px solid #ddd;
-        border-radius: 10px;
-        font-size: 16px;
-        margin-bottom: 15px;
-      }
-
       .manual-input-buttons {
         display: flex;
-        gap: 10px;
+        gap: var(--admin-space-md);
+        margin-top: var(--admin-space-lg);
       }
 
-      .manual-input button {
+      .manual-input-buttons .admin-btn {
         flex: 1;
-        padding: 15px;
-        border: none;
-        border-radius: 10px;
-        font-size: 16px;
-        cursor: pointer;
-      }
-
-      .manual-input .submit {
-        background: #667eea;
-        color: white;
-      }
-
-      .manual-input .cancel {
-        background: #ecf0f1;
-        color: #7f8c8d;
       }
 
       /* Hide HTML5 QR Code default UI elements */
@@ -402,20 +242,27 @@
       }
     </style>
   </head>
-  <body>
-    <div class="app-header">
-      <div class="app-title" data-testid="scanner-title">
-        🎫 Check-in Scanner
+  <body class="admin-portal">
+    <div class="admin-header admin-cuban-gradient">
+      <div class="admin-header-left">
+        <h1 class="admin-header-title" data-testid="scanner-title">
+          🎫 Check-in Scanner
+        </h1>
+        <span class="admin-header-subtitle">A Lo Cubano Boulder Fest</span>
       </div>
-      <button class="menu-btn" onclick="showMenu()">☰</button>
+      <div class="admin-header-right">
+        <button class="admin-btn admin-btn-outline" onclick="showMenu()">
+          ☰ Dashboard
+        </button>
+      </div>
     </div>
 
     <div class="offline-indicator" id="offlineIndicator">
       📵 Offline - Check-ins will sync when connected
     </div>
 
-    <div class="scanner-container" data-testid="scanner-container">
-      <div class="stats-bar">
+    <div class="scanner-container admin-fade-in" data-testid="scanner-container">
+      <div class="stats-bar admin-table">
         <div class="stat-item">
           <div class="stat-value" id="todayCount">0</div>
           <div class="stat-label">Today</div>
@@ -444,7 +291,7 @@
         </div>
       </div>
 
-      <div class="scanner-viewport">
+      <div class="scanner-viewport admin-rumba-wave">
         <div id="reader" data-testid="camera-scanner"></div>
         <div class="scanner-overlay">
           <div class="scan-region">
@@ -457,22 +304,22 @@
       </div>
 
       <div class="controls">
-        <button class="control-btn torch" onclick="toggleTorch()" id="torchBtn">
+        <button class="control-btn torch admin-dance" onclick="toggleTorch()" id="torchBtn">
           🔦
         </button>
         <button
-          class="control-btn manual"
+          class="control-btn manual admin-dance"
           onclick="showManualInput()"
           data-testid="manual-input-toggle"
         >
           ⌨️
         </button>
-        <button class="control-btn" onclick="location.reload()">🔄</button>
+        <button class="control-btn admin-dance" onclick="location.reload()">🔄</button>
       </div>
     </div>
 
     <div class="result-modal" id="resultModal">
-      <div class="result-content" id="resultContent">
+      <div class="result-content admin-card admin-cha-cha-slide" id="resultContent">
         <div class="result-icon" id="resultIcon"></div>
         <div
           class="result-title"
@@ -484,30 +331,35 @@
           id="resultDetails"
           data-testid="ticket-info"
         ></div>
-        <button class="result-btn" onclick="closeResult()">
+        <button class="result-btn admin-btn admin-btn-outline" onclick="closeResult()">
           Continue Scanning
         </button>
       </div>
     </div>
 
-    <div class="manual-input" id="manualInput">
-      <h3>Manual Ticket Entry</h3>
-      <input
-        type="text"
-        id="manualTicketId"
-        placeholder="Enter ticket ID..."
-        autocomplete="off"
-        data-testid="qr-manual-input"
-      />
-      <div class="manual-input-buttons">
-        <button
-          class="submit"
-          onclick="submitManualTicket()"
-          data-testid="validate-ticket"
-        >
-          Check In
-        </button>
-        <button class="cancel" onclick="hideManualInput()">Cancel</button>
+    <div class="manual-input admin-card" id="manualInput">
+      <div class="admin-card-header">
+        <h3 class="admin-card-title">Manual Ticket Entry</h3>
+      </div>
+      <div class="admin-card-body">
+        <input
+          type="text"
+          id="manualTicketId"
+          class="admin-form-input"
+          placeholder="Enter ticket ID..."
+          autocomplete="off"
+          data-testid="qr-manual-input"
+        />
+        <div class="manual-input-buttons">
+          <button
+            class="admin-btn admin-btn-primary"
+            onclick="submitManualTicket()"
+            data-testid="validate-ticket"
+          >
+            Check In
+          </button>
+          <button class="admin-btn admin-btn-secondary" onclick="hideManualInput()">Cancel</button>
+        </div>
       </div>
     </div>
 
@@ -656,7 +508,7 @@
         }
       }
 
-      // Show result modal
+      // Show result modal with Cuban celebration effects
       function showResult(type, title, details) {
         const modal = document.getElementById("resultModal");
         const content = document.getElementById("resultContent");
@@ -666,15 +518,20 @@
 
         // Set content
         if (type === "success") {
-          content.className = "result-content success";
-          icon.textContent = "✅";
+          content.className = "result-content success admin-card admin-cha-cha-slide admin-fireworks";
+          icon.textContent = "🎉";
           content.setAttribute("data-testid", "checkin-success");
+          
+          // Trigger Cuban celebration animation
+          setTimeout(() => {
+            content.classList.add("admin-heartbeat");
+          }, 300);
         } else if (type === "error") {
-          content.className = "result-content error";
+          content.className = "result-content error admin-card admin-cha-cha-slide";
           icon.textContent = "❌";
           content.setAttribute("data-testid", "validation-error");
         } else if (type === "queued") {
-          content.className = "result-content";
+          content.className = "result-content admin-card admin-cha-cha-slide";
           icon.textContent = "📥";
           content.setAttribute("data-testid", "network-error");
         }
@@ -682,8 +539,13 @@
         titleEl.textContent = title;
         detailsEl.textContent = details;
 
-        // Show modal
+        // Show modal with Cuban flair
         modal.classList.add("show");
+
+        // Add music note animations for success
+        if (type === "success") {
+          createMusicNotes();
+        }
 
         // Auto-close after 3 seconds
         setTimeout(() => {
@@ -691,9 +553,47 @@
         }, 3000);
       }
 
-      // Close result modal
+      // Create Cuban music note animation for celebrations
+      function createMusicNotes() {
+        const notes = ['🎵', '🎶', '♪', '♫'];
+        const modal = document.getElementById("resultModal");
+        
+        for (let i = 0; i < 3; i++) {
+          setTimeout(() => {
+            const note = document.createElement('div');
+            note.className = 'admin-music-note';
+            note.textContent = notes[Math.floor(Math.random() * notes.length)];
+            note.style.left = Math.random() * 80 + 10 + '%';
+            note.style.animationDelay = Math.random() * 0.5 + 's';
+            modal.appendChild(note);
+            
+            // Remove note after animation
+            setTimeout(() => {
+              if (note.parentNode) {
+                note.parentNode.removeChild(note);
+              }
+            }, 3000);
+          }, i * 200);
+        }
+      }
+
+      // Close result modal and clean up Cuban animation classes
       function closeResult() {
-        document.getElementById("resultModal").classList.remove("show");
+        const modal = document.getElementById("resultModal");
+        const content = document.getElementById("resultContent");
+        
+        modal.classList.remove("show");
+        
+        // Clean up animation classes
+        content.classList.remove("admin-heartbeat", "admin-fireworks", "admin-cha-cha-slide");
+        
+        // Remove any floating music notes
+        const notes = modal.querySelectorAll('.admin-music-note');
+        notes.forEach(note => {
+          if (note.parentNode) {
+            note.parentNode.removeChild(note);
+          }
+        });
       }
 
       // Toggle torch/flashlight

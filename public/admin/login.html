@@ -4,131 +4,427 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Login - A Lo Cubano Boulder Fest</title>
+    
+    <!-- Cuban Salsa Theme Styles -->
+    <link rel="stylesheet" href="/css/admin-unified.css" />
+    <link rel="stylesheet" href="/css/admin-mobile.css" />
+    
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
+      /* Cuban Salsa Login Theme Overrides */
       body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
-          sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #cc2936 0%, #5b6bb5 100%);
+        background-size: 400% 400%;
+        animation: salsaGradientMove 8s ease infinite;
         min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
         padding: 20px;
+        position: relative;
+        overflow: hidden;
       }
 
-      .login-container {
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      /* Salsa gradient movement animation */
+      @keyframes salsaGradientMove {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+      }
+
+      /* Cuban rhythmic dots background */
+      body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
-        max-width: 400px;
-        padding: 40px;
+        height: 100%;
+        background-image: 
+          radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
+          radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.1) 2px, transparent 2px);
+        background-size: 50px 50px;
+        background-position: 0 0, 25px 25px;
+        animation: rumbaDotsMove 20s linear infinite;
+        z-index: -1;
       }
 
+      @keyframes rumbaDotsMove {
+        0% { transform: translateX(0) translateY(0); }
+        100% { transform: translateX(50px) translateY(50px); }
+      }
+
+      /* Cuban card styling with salsa flair */
+      .login-container {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 16px;
+        box-shadow: 
+          0 8px 32px rgba(204, 41, 54, 0.3),
+          0 16px 64px rgba(91, 107, 181, 0.2);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        width: 100%;
+        max-width: 420px;
+        padding: 48px;
+        animation: salsaFadeIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Salsa fade-in animation */
+      @keyframes salsaFadeIn {
+        0% {
+          opacity: 0;
+          transform: translateY(30px) scale(0.95);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      /* Header with mambo bounce */
       .login-header {
         text-align: center;
-        margin-bottom: 30px;
+        margin-bottom: 32px;
+        animation: mamboBounce 1.5s ease-in-out infinite;
+      }
+
+      @keyframes mamboBounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-6px); }
+        60% { transform: translateY(-3px); }
       }
 
       .login-header h1 {
-        color: #2c3e50;
-        font-size: 28px;
-        margin-bottom: 10px;
+        color: #cc2936;
+        font-size: 32px;
+        font-weight: 900;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        text-shadow: 0 2px 4px rgba(204, 41, 54, 0.1);
       }
 
       .login-header p {
-        color: #7f8c8d;
-        font-size: 14px;
+        color: #5b6bb5;
+        font-size: 16px;
+        font-style: italic;
+        font-weight: 500;
       }
 
+      /* Cuban form styling */
       .form-group {
-        margin-bottom: 20px;
+        margin-bottom: 24px;
+        position: relative;
       }
 
       .form-group label {
         display: block;
         color: #2c3e50;
         font-size: 14px;
-        font-weight: 500;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
         margin-bottom: 8px;
       }
 
       .form-group input {
         width: 100%;
-        padding: 12px 15px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
+        padding: 16px 20px;
+        border: 2px solid rgba(204, 41, 54, 0.2);
+        border-radius: 12px;
         font-size: 16px;
-        transition: border-color 0.3s;
+        background: rgba(255, 255, 255, 0.9);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        color: #2c3e50;
+        font-weight: 500;
       }
 
       .form-group input:focus {
         outline: none;
-        border-color: #667eea;
+        border-color: #cc2936;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(204, 41, 54, 0.1);
+        transform: translateY(-2px);
       }
 
+      /* Cuban button with salsa animation */
       .login-btn {
         width: 100%;
-        padding: 14px;
-        background: #667eea;
+        padding: 16px;
+        background: linear-gradient(135deg, #cc2936, #5b6bb5);
         color: white;
         border: none;
-        border-radius: 5px;
+        border-radius: 12px;
         font-size: 16px;
-        font-weight: 500;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
         cursor: pointer;
-        transition: background 0.3s;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 4px 15px rgba(204, 41, 54, 0.3);
+      }
+
+      .login-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #5b6bb5, #cc2936);
+        transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        z-index: -1;
       }
 
       .login-btn:hover {
-        background: #5a67d8;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(204, 41, 54, 0.4);
+      }
+
+      .login-btn:hover::before {
+        left: 0;
+      }
+
+      .login-btn:active {
+        transform: translateY(-1px);
       }
 
       .login-btn:disabled {
         background: #95a5a6;
         cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
       }
 
+      .login-btn:disabled::before {
+        display: none;
+      }
+
+      /* Cuban-styled error and info messages */
       .error-message {
-        background: #f8d7da;
-        color: #721c24;
-        padding: 12px;
-        border-radius: 5px;
+        background: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+        border: 1px solid rgba(220, 53, 69, 0.3);
+        padding: 16px;
+        border-radius: 12px;
         margin-bottom: 20px;
         font-size: 14px;
+        font-weight: 500;
         display: none;
+        animation: rumbaShake 0.5s ease-in-out;
+      }
+
+      @keyframes rumbaShake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-4px); }
+        50% { transform: translateX(4px); }
+        75% { transform: translateX(-2px); }
       }
 
       .info-message {
-        background: #d1ecf1;
-        color: #0c5460;
-        padding: 12px;
-        border-radius: 5px;
-        margin-top: 20px;
-        font-size: 13px;
+        background: rgba(91, 107, 181, 0.1);
+        color: #5b6bb5;
+        border: 1px solid rgba(91, 107, 181, 0.3);
+        padding: 16px;
+        border-radius: 12px;
+        margin-top: 24px;
+        font-size: 14px;
+        font-weight: 500;
         text-align: center;
       }
 
+      /* Cuban loading animation with salsa rhythm */
       .loading {
         display: none;
         text-align: center;
-        color: #7f8c8d;
-        margin-top: 10px;
+        color: #5b6bb5;
+        margin-top: 16px;
+        font-weight: 500;
+      }
+
+      .loading::after {
+        content: '';
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(91, 107, 181, 0.3);
+        border-top: 2px solid #5b6bb5;
+        border-radius: 50%;
+        animation: cubanSpinLoading 1s linear infinite;
+        margin-left: 8px;
+        vertical-align: middle;
+      }
+
+      @keyframes cubanSpinLoading {
+        0% { transform: rotate(0deg); }
+        25% { transform: rotate(90deg) scale(1.1); }
+        50% { transform: rotate(180deg); }
+        75% { transform: rotate(270deg) scale(1.1); }
+        100% { transform: rotate(360deg); }
+      }
+
+      /* Additional Cuban-specific class overrides */
+      .cuban-card {
+        /* Already styled above as .login-container */
+      }
+
+      .cuban-btn {
+        /* Already styled above as .login-btn */
+      }
+
+      .cuban-btn-primary {
+        /* Inherits from .login-btn gradient */
+      }
+
+      .cuban-form {
+        /* Container styling matches parent */
+      }
+
+      .salsa-gradient {
+        background: linear-gradient(135deg, rgba(204, 41, 54, 0.1), rgba(91, 107, 181, 0.1));
+        border-radius: 12px 12px 0 0;
+        margin: -16px -16px 16px -16px;
+        padding: 16px;
+      }
+
+      /* Enhanced Cuban animation classes */
+      .admin-loading-spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(91, 107, 181, 0.3);
+        border-top: 2px solid #5b6bb5;
+        border-radius: 50%;
+        animation: cubanSpinLoading 1s linear infinite;
+        margin-right: 8px;
+      }
+
+      .admin-shake-hover {
+        animation: rumbaShake 0.5s ease-in-out !important;
+      }
+
+      .admin-dance {
+        animation: cubanDanceButton 0.6s ease-in-out;
+      }
+
+      @keyframes cubanDanceButton {
+        0%, 100% { transform: translateY(-3px); }
+        25% { transform: translateY(-5px) rotate(1deg); }
+        50% { transform: translateY(-1px) rotate(-1deg); }
+        75% { transform: translateY(-4px) rotate(0.5deg); }
+      }
+
+      .admin-fireworks {
+        animation: cubanCelebration 0.6s ease-out;
+        background: linear-gradient(135deg, #28a745, #20c997) !important;
+      }
+
+      @keyframes cubanCelebration {
+        0% { transform: scale(1) translateY(-3px); }
+        50% { 
+          transform: scale(1.05) translateY(-6px); 
+          box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+        }
+        100% { transform: scale(1) translateY(-3px); }
+      }
+
+      /* Cuban music notes positioning */
+      .admin-music-note {
+        position: fixed;
+        color: rgba(204, 41, 54, 0.3);
+        font-size: 24px;
+        pointer-events: none;
+        z-index: -1;
+        animation: musicNoteFloat 4s ease-in-out infinite;
+      }
+
+      .admin-music-note:nth-child(1) {
+        top: 20%;
+        left: 10%;
+        animation-delay: 0s;
+      }
+
+      .admin-music-note:nth-child(2) {
+        top: 60%;
+        right: 15%;
+        animation-delay: 2s;
+      }
+
+      .admin-music-note:nth-child(3) {
+        bottom: 25%;
+        left: 85%;
+        animation-delay: 4s;
+      }
+
+      @keyframes musicNoteFloat {
+        0%, 100% { 
+          transform: translateY(0) rotate(0deg); 
+          opacity: 0.3; 
+        }
+        25% { 
+          transform: translateY(-10px) rotate(5deg); 
+          opacity: 0.6; 
+        }
+        50% { 
+          transform: translateY(-5px) rotate(-3deg); 
+          opacity: 0.4; 
+        }
+        75% { 
+          transform: translateY(-15px) rotate(2deg); 
+          opacity: 0.5; 
+        }
+      }
+
+      /* Mobile responsiveness for Cuban theme */
+      @media (max-width: 768px) {
+        body {
+          padding: 16px;
+        }
+        
+        .login-container {
+          padding: 32px 24px;
+          max-width: 100%;
+        }
+        
+        .login-header h1 {
+          font-size: 24px;
+        }
+        
+        .form-group input,
+        .login-btn {
+          padding: 14px 16px;
+          font-size: 16px; /* Prevent zoom on iOS */
+        }
+
+        .admin-music-note {
+          font-size: 18px;
+        }
+      }
+
+      /* Reduced motion support for Cuban animations */
+      @media (prefers-reduced-motion: reduce) {
+        .login-container,
+        .login-header,
+        .login-btn,
+        .admin-music-note,
+        body::before {
+          animation: none !important;
+        }
+        
+        .login-btn:hover {
+          transform: none !important;
+        }
       }
     </style>
   </head>
-  <body>
-    <div class="login-container">
-      <div class="login-header">
-        <h1>Admin Access</h1>
-        <p>A Lo Cubano Boulder Fest</p>
+  <body class="admin-portal">
+    <!-- Cuban-inspired card with salsa fade-in animation -->
+    <div class="login-container cuban-card admin-fade-in">
+      <div class="login-header salsa-gradient">
+        <h1 class="admin-mambo-bounce">Admin Access</h1>
+        <p class="admin-rumba-wave">A Lo Cubano Boulder Fest</p>
       </div>
 
       <div
@@ -137,17 +433,20 @@
         data-testid="login-error"
       ></div>
 
+      <!-- Cuban form with salsa styling -->
       <form
         id="loginForm"
+        class="cuban-form admin-form"
         onsubmit="handleLogin(event)"
         data-testid="login-form"
       >
-        <div class="form-group">
-          <label for="username">Username</label>
+        <div class="form-group admin-form-group">
+          <label for="username" class="admin-form-label">Username</label>
           <input
             type="text"
             id="username"
             name="username"
+            class="admin-form-input"
             required
             autocomplete="username"
             placeholder="Enter username"
@@ -155,12 +454,13 @@
           />
         </div>
 
-        <div class="form-group">
-          <label for="password">Admin Password</label>
+        <div class="form-group admin-form-group">
+          <label for="password" class="admin-form-label">Admin Password</label>
           <input
             type="password"
             id="password"
             name="password"
+            class="admin-form-input"
             required
             autocomplete="current-password"
             placeholder="Enter admin password"
@@ -168,22 +468,37 @@
           />
         </div>
 
+        <!-- Cuban button with salsa animation -->
         <button
           type="submit"
-          class="login-btn"
+          class="login-btn cuban-btn cuban-btn-primary admin-btn admin-btn-primary"
           id="loginBtn"
           data-testid="login-button"
         >
-          Login
+          <span class="admin-loading-dots" id="loading-dots" style="display: none;">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </span>
+          <span id="login-text">Login</span>
         </button>
 
-        <div class="loading" id="loading">Authenticating...</div>
+        <div class="loading" id="loading">
+          <span class="admin-loading-spinner"></span>
+          Authenticating with Cuban flair...
+        </div>
       </form>
 
       <div class="info-message">
-        Secure admin access only. All login attempts are logged.
+        🎺 Secure admin access only. All login attempts are logged with Cuban rhythm.
       </div>
     </div>
+
+    <!-- Background Cuban music notes animation -->
+    <div class="admin-music-note">♫</div>
+    <div class="admin-music-note">♪</div>
+    <div class="admin-music-note">♫</div>
+  </body>
 
     <script>
       // Check if already authenticated
@@ -199,7 +514,7 @@
         }
       }
 
-      // Handle login form submission
+      // Handle login form submission with Cuban flair
       async function handleLogin(event) {
         event.preventDefault();
 
@@ -208,11 +523,21 @@
         const errorDiv = document.getElementById("errorMessage");
         const loginBtn = document.getElementById("loginBtn");
         const loading = document.getElementById("loading");
+        const loadingDots = document.getElementById("loading-dots");
+        const loginText = document.getElementById("login-text");
 
-        // Hide error, show loading
+        // Hide error, show Cuban loading animation
         errorDiv.style.display = "none";
         loginBtn.disabled = true;
+        loginBtn.classList.add("admin-loading");
+        
+        // Show Cuban salsa loading dots
+        loginText.style.display = "none";
+        loadingDots.style.display = "inline-flex";
         loading.style.display = "block";
+
+        // Add Cuban dance animation to the button
+        loginBtn.classList.add("admin-dance");
 
         try {
           const response = await fetch("/api/admin/login", {
@@ -224,26 +549,56 @@
           const data = await response.json();
 
           if (response.ok) {
-            // Success - redirect to dashboard
-            window.location.href = "/admin/dashboard";
+            // Success with Cuban celebration
+            loginBtn.classList.add("admin-fireworks");
+            loginText.textContent = "¡Bienvenido!";
+            loginText.style.display = "inline";
+            loadingDots.style.display = "none";
+            
+            // Add success animation before redirect
+            setTimeout(() => {
+              window.location.href = "/admin/dashboard";
+            }, 800);
           } else {
-            // Show error - use textContent for safe display
+            // Show error with Cuban shake animation
             errorDiv.textContent = data.error;
             if (data.attemptsRemaining !== undefined) {
-              errorDiv.textContent += ` (${data.attemptsRemaining} attempts remaining)`;
+              errorDiv.textContent += ` (${data.attemptsRemaining} intentos restantes)`;
             }
             errorDiv.style.display = "block";
+            errorDiv.classList.add("admin-shake-hover");
 
-            // Clear password field
-            document.getElementById("password").value = "";
+            // Clear password field with Cuban flair
+            const passwordField = document.getElementById("password");
+            passwordField.value = "";
+            passwordField.classList.add("admin-rumba-wave");
+            
+            // Remove animation after shake
+            setTimeout(() => {
+              errorDiv.classList.remove("admin-shake-hover");
+              passwordField.classList.remove("admin-rumba-wave");
+            }, 500);
           }
         } catch (error) {
           console.error("Login error:", error);
-          errorDiv.textContent = "Login failed. Please try again.";
+          errorDiv.textContent = "Error de conexión. Intenta de nuevo con ritmo cubano.";
           errorDiv.style.display = "block";
+          errorDiv.classList.add("admin-shake-hover");
+          
+          setTimeout(() => {
+            errorDiv.classList.remove("admin-shake-hover");
+          }, 500);
         } finally {
           loginBtn.disabled = false;
+          loginBtn.classList.remove("admin-loading", "admin-dance");
           loading.style.display = "none";
+          
+          // Reset button state if not successful
+          if (!loginBtn.classList.contains("admin-fireworks")) {
+            loginText.textContent = "Login";
+            loginText.style.display = "inline";
+            loadingDots.style.display = "none";
+          }
         }
       }
 
