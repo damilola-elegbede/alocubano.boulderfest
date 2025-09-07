@@ -65,8 +65,7 @@ jobs:
     if: >-
       (github.event_name == 'deployment_status' &&
        github.event.deployment_status.state == 'success' &&
-       (github.event.deployment.environment == 'Preview' || 
-        github.event.deployment.environment == 'Production')) ||
+       contains(fromJson('["Preview","Production"]'), github.event.deployment.environment)) ||
       (github.event_name == 'workflow_dispatch')
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
