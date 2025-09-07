@@ -107,7 +107,7 @@ test.describe('Admin Authentication', () => {
     await expect(page.locator('button[type="submit"], .login-btn')).toBeVisible({ timeout });
     
     // Verify the page has the Cuban theme elements
-    await expect(page.locator('.login-container, form')).toBeVisible({ timeout });
+    await expect(page.locator('.login-container')).toBeVisible({ timeout });
   });
 
   test('should reject invalid credentials', async ({ page }) => {
