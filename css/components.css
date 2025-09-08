@@ -92,7 +92,7 @@
 
 .gallery-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px var(--shadow-color);
 }
 
 .loading-more {
@@ -107,8 +107,8 @@
 .gallery-year-banner {
   padding: var(--space-2xl) 0;
   text-align: center;
-  background: var(--color-white);
-  border-bottom: 1px solid var(--color-gray-200);
+  background: var(--color-background);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .year-display-text {
@@ -132,7 +132,7 @@
   color: var(--color-blue);
 }
 .year-char-3 {
-  color: var(--color-black);
+  color: var(--color-text-primary);
 }
 .year-char-4 {
   color: var(--color-red);
@@ -211,7 +211,7 @@
 
 /* Gallery Stats Section */
 .gallery-stats {
-  background: var(--color-gray-50);
+  background: var(--color-background-secondary);
   padding: var(--space-3xl) 0;
 }
 
@@ -294,8 +294,8 @@
   pointer-events: auto;
   display: inline-block;
   padding: var(--space-md) var(--space-xl);
-  background: var(--color-gray-100);
-  border-radius: var(--rounded-md);
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-md);
 }
 
 /* Responsive lazy loading adjustments */
@@ -414,30 +414,30 @@
 }
 
 .btn-primary {
-  background-color: var(--color-black);
-  color: var(--color-white);
-  border-color: var(--color-black);
+  background-color: var(--color-text-primary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-text-primary);
 }
 
 .btn-primary:hover {
   background-color: transparent;
-  color: var(--color-black);
+  color: var(--color-text-primary);
 }
 
 .btn-secondary {
   background-color: transparent;
-  color: var(--color-black);
-  border-color: var(--color-black);
+  color: var(--color-text-primary);
+  border-color: var(--color-text-primary);
 }
 
 .btn-secondary:hover {
-  background-color: var(--color-black);
-  color: var(--color-white);
+  background-color: var(--color-text-primary);
+  color: var(--color-text-inverse);
 }
 
 .btn-accent {
   background-color: var(--color-red);
-  color: var(--color-white);
+  color: var(--color-text-inverse);
   border-color: var(--color-red);
 }
 
@@ -448,8 +448,8 @@
 
 /* Card Components */
 .card {
-  background-color: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   padding: var(--space-xl);
   transition: all var(--transition-base);
 }
@@ -466,7 +466,7 @@
 }
 
 .card-description {
-  color: var(--color-gray-600);
+  color: var(--color-text-secondary);
   line-height: 1.6;
 }
 
@@ -494,7 +494,7 @@
 .gallery-loading {
   text-align: center;
   padding: var(--space-3xl) 0;
-  color: var(--color-gray-600);
+  color: var(--color-text-secondary);
 }
 
 .gallery-back-nav {
@@ -505,7 +505,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-sm);
-  color: var(--color-black);
+  color: var(--color-text-primary);
   text-decoration: none;
   transition: all var(--transition-base);
 }
@@ -573,7 +573,7 @@
 .lightbox-prev,
 .lightbox-next {
   position: absolute;
-  color: var(--color-white);
+  color: var(--color-text-inverse);
   font-size: var(--font-size-3xl);
   width: 50px;
   height: 50px;
@@ -640,7 +640,7 @@
   left: 0;
   right: 0;
   text-align: center;
-  color: var(--color-white);
+  color: var(--color-text-inverse);
   background: rgba(0, 0, 0, 0.8);
   padding: var(--space-md) var(--space-lg);
 }
@@ -660,9 +660,9 @@
 .skeleton {
   background: linear-gradient(
     90deg,
-    var(--color-gray-100) 25%,
-    var(--color-gray-200) 50%,
-    var(--color-gray-100) 75%
+    var(--color-background-secondary) 25%,
+    var(--color-background-tertiary) 50%,
+    var(--color-background-secondary) 75%
   );
   background-size: 200% 100%;
   animation: loading 1.5s infinite;
@@ -744,8 +744,8 @@
 
 .festival-year-card {
   position: relative;
-  background: var(--color-white);
-  border: 2px solid var(--color-gray-200);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-3xl) var(--space-2xl);
   text-decoration: none;
@@ -797,7 +797,7 @@
   font-size: var(--font-size-6xl);
   font-weight: 900;
   line-height: var(--line-height-none);
-  color: var(--color-black);
+  color: var(--color-text-primary);
   margin-bottom: var(--space-sm);
 }
 
@@ -805,7 +805,7 @@
   font-family: var(--font-accent);
   font-size: var(--font-size-xl);
   font-style: italic;
-  color: var(--color-gray-700);
+  color: var(--color-text-secondary);
   margin-bottom: var(--space-xs);
 }
 
@@ -852,7 +852,7 @@
 .festival-year-card.coming-soon:hover {
   transform: none;
   box-shadow: none;
-  border-color: var(--color-gray-200);
+  border-color: var(--color-border);
 }
 
 .festival-year-card.coming-soon::before {
@@ -860,11 +860,11 @@
 }
 
 .festival-year-card.coming-soon .year-number {
-  color: var(--color-gray-500);
+  color: var(--color-text-tertiary);
 }
 
 .festival-year-card.coming-soon .year-highlight {
-  color: var(--color-gray-500);
+  color: var(--color-text-tertiary);
 }
 
 /* Mobile Responsive */
@@ -911,7 +911,7 @@
   gap: var(--space-lg);
   margin-bottom: var(--space-3xl);
   padding: var(--space-lg) 0;
-  border-bottom: 2px solid var(--color-gray-200);
+  border-bottom: 2px solid var(--color-border);
 }
 
 /* Year Selector Buttons */
@@ -931,14 +931,14 @@
   gap: var(--space-xs);
   padding: var(--space-md) var(--space-lg);
   background: transparent;
-  border: 2px solid var(--color-gray-300);
+  border: 2px solid var(--color-border-medium);
   border-radius: var(--radius-md);
   font-family: var(--font-code);
   font-size: var(--font-size-sm);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-wide);
-  color: var(--color-gray-700);
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: all var(--transition-base);
   min-width: 80px;
@@ -949,20 +949,20 @@
   border-color: var(--color-blue);
   color: var(--color-blue);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(91, 107, 181, 0.15);
+  box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 .year-button.active {
   background: var(--color-blue);
   border-color: var(--color-blue);
-  color: var(--color-white);
+  color: var(--color-text-inverse);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(91, 107, 181, 0.25);
+  box-shadow: 0 6px 20px var(--shadow-color-strong);
 }
 
 .year-button.active:hover {
   background: var(--color-blue);
-  color: var(--color-white);
+  color: var(--color-text-inverse);
 }
 
 /* Keyboard accessibility focus styles */
@@ -970,7 +970,7 @@
   outline: 3px solid var(--color-blue);
   outline-offset: 2px;
   box-shadow:
-    0 0 0 2px var(--color-white),
+    0 0 0 2px var(--color-background),
     0 0 0 5px var(--color-blue);
 }
 
@@ -1003,7 +1003,7 @@
   gap: var(--space-md);
   font-family: var(--font-code);
   font-size: var(--font-size-sm);
-  color: var(--color-gray-600);
+  color: var(--color-text-secondary);
 }
 
 .stat-item {
@@ -1019,7 +1019,7 @@
 
 .stat-value {
   font-weight: 600;
-  color: var(--color-black);
+  color: var(--color-text-primary);
 }
 
 /* Gallery Container */
@@ -1070,10 +1070,10 @@
   justify-content: center;
   gap: var(--space-md);
   z-index: 10;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--color-surface-overlay);
   padding: var(--space-3xl);
   border-radius: var(--radius-lg);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 40px var(--shadow-color);
 }
 
 .multi-year-gallery .loading-indicator[aria-hidden="false"] {
@@ -1081,7 +1081,7 @@
 }
 
 .multi-year-gallery .loading-text {
-  color: var(--color-gray-700);
+  color: var(--color-text-secondary);
   font-family: var(--font-code);
   font-size: var(--font-size-sm);
   text-transform: uppercase;
@@ -1102,11 +1102,11 @@
   gap: var(--space-lg);
   text-align: center;
   z-index: 10;
-  background: var(--color-white);
+  background: var(--color-surface);
   padding: var(--space-3xl);
   border-radius: var(--radius-lg);
   border: 2px solid var(--color-red);
-  box-shadow: 0 10px 40px rgba(204, 41, 54, 0.1);
+  box-shadow: 0 10px 40px var(--shadow-color);
   max-width: 400px;
   width: 90%;
 }
@@ -1140,9 +1140,9 @@
 }
 
 .error-retry:hover {
-  background: var(--color-black);
+  background: var(--color-text-primary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 /* Keyboard Navigation Hints */
@@ -1153,7 +1153,7 @@
   left: 0;
   font-family: var(--font-code);
   font-size: var(--font-size-xs);
-  color: var(--color-gray-500);
+  color: var(--color-text-tertiary);
   opacity: 0;
   transition: opacity var(--transition-base);
   pointer-events: none;
@@ -1220,42 +1220,9 @@
   }
 }
 
-/* Dark mode support */
+/* Dark mode support - Using theme-aware variables instead */
 @media (prefers-color-scheme: dark) {
-  .year-button {
-    border-color: var(--color-gray-600);
-    color: var(--color-gray-300);
-  }
-
-  .year-button:hover {
-    border-color: var(--color-blue);
-    color: var(--color-blue);
-  }
-
-  .year-stats {
-    color: var(--color-gray-400);
-  }
-
-  .stat-value {
-    color: var(--color-gray-200);
-  }
-
-  .multi-year-gallery .loading-indicator {
-    background: rgba(0, 0, 0, 0.95);
-  }
-
-  .multi-year-gallery .loading-text {
-    color: var(--color-gray-300);
-  }
-
-  .error-display {
-    background: var(--color-black);
-    border-color: var(--color-red);
-  }
-
-  .error-message {
-    color: var(--color-red);
-  }
+  /* These styles are now handled by CSS custom properties in base.css */
 }
 
 /* Reduced motion support */
@@ -1292,7 +1259,7 @@
   font-weight: 900;
   line-height: 1.1;
   margin: 0;
-  color: var(--color-black);
+  color: var(--color-text-primary);
 }
 
 .hero__subtitle {
@@ -1301,7 +1268,7 @@
   font-weight: 400;
   line-height: 1.4;
   margin-top: var(--space-sm);
-  color: var(--color-black);
+  color: var(--color-text-primary);
 }
 
 /* Expectations Block */
@@ -1314,8 +1281,8 @@
 
 .expectations__item {
   padding: var(--space-lg);
-  border: 2px solid var(--color-black);
-  background: var(--color-white);
+  border: 2px solid var(--color-text-primary);
+  background: var(--color-surface);
 }
 
 .expectations__item-title {
@@ -1323,7 +1290,7 @@
   font-size: var(--font-size-3xl);
   font-weight: 900;
   margin: 0 0 var(--space-md) 0;
-  color: var(--color-black);
+  color: var(--color-text-primary);
 }
 
 .expectations__item-description {
@@ -1331,7 +1298,7 @@
   font-size: var(--font-size-base);
   line-height: 1.6;
   margin: 0;
-  color: var(--color-black);
+  color: var(--color-text-primary);
 }
 
 /* Volunteer Benefits Block */
@@ -1346,7 +1313,7 @@
 .volunteer-benefits__tag {
   padding: var(--space-xs) var(--space-sm);
   background-color: var(--color-blue);
-  color: var(--color-white);
+  color: var(--color-text-inverse);
   border-radius: 4px;
   font-size: var(--font-size-sm);
   font-family: var(--font-code);
@@ -1365,7 +1332,7 @@
 .volunteer-benefits__card {
   text-align: center;
   padding: var(--space-2xl) var(--space-lg);
-  background: var(--color-white);
+  background: var(--color-surface);
   transition: all var(--transition-base);
 }
 
@@ -1384,7 +1351,7 @@
   font-family: var(--font-display);
   font-size: var(--font-size-lg);
   font-weight: 700;
-  color: var(--color-black);
+  color: var(--color-text-primary);
   margin: var(--space-md) 0;
   letter-spacing: var(--letter-spacing-wide);
 }
@@ -1392,7 +1359,7 @@
 .volunteer-benefits__card-description {
   font-family: var(--font-sans);
   font-size: var(--font-size-base);
-  color: var(--color-gray-600);
+  color: var(--color-text-secondary);
   line-height: var(--line-height-relaxed);
   margin: 0;
 }
@@ -1411,8 +1378,8 @@
 }
 
 .donation-card {
-  background: var(--color-white);
-  border: 2px solid var(--color-gray-200);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
   border-radius: 12px;
   padding: var(--space-xl);
   text-align: center;
@@ -1429,16 +1396,16 @@
 
 .donation-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 25px var(--shadow-color-strong);
   border-color: var(--color-blue);
 }
 
 .donation-card.selected {
   border-color: var(--color-blue);
   background: var(--color-blue);
-  color: var(--color-white);
+  color: var(--color-text-inverse);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(91, 107, 181, 0.2);
+  box-shadow: 0 8px 25px var(--shadow-color-strong);
 }
 
 .donation-card:focus-visible {
@@ -1498,11 +1465,11 @@
 }
 
 .donation-card.selected .custom-amount-input {
-  color: var(--color-white);
+  color: var(--color-text-inverse);
 }
 
 .donation-card.selected .custom-amount-input::placeholder {
-  color: var(--color-white);
+  color: var(--color-text-inverse);
   opacity: 0.8;
 }
 
@@ -1523,15 +1490,15 @@
 
 @keyframes celebrationGlow {
   0% {
-    box-shadow: 0 8px 25px rgba(91, 107, 181, 0.2);
+    box-shadow: 0 8px 25px var(--shadow-color);
   }
   50% {
     box-shadow:
-      0 8px 25px rgba(91, 107, 181, 0.6),
-      0 0 30px rgba(91, 107, 181, 0.3);
+      0 8px 25px var(--shadow-color-strong),
+      0 0 30px var(--shadow-color);
   }
   100% {
-    box-shadow: 0 8px 25px rgba(91, 107, 181, 0.2);
+    box-shadow: 0 8px 25px var(--shadow-color);
   }
 }
 
@@ -1546,12 +1513,12 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: var(--color-white);
+  background: var(--color-surface);
   color: var(--color-blue);
   padding: var(--space-2xl) var(--space-4xl);
   border-radius: 20px;
   border: 3px solid var(--color-blue);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 40px var(--shadow-color-strong);
   font-family: var(--font-display);
   font-size: var(--font-size-3xl);
   font-weight: 900;
@@ -1704,9 +1671,9 @@
 /* Ticket Cards */
 .ticket-card {
   padding: var(--space-lg);
-  border: 2px solid var(--color-gray-200);
+  border: 2px solid var(--color-border);
   border-radius: 8px;
-  background: var(--color-white);
+  background: var(--color-surface);
   transition: all 0.3s ease;
   cursor: pointer;
   position: relative;
@@ -1715,26 +1682,26 @@
 .ticket-card:hover {
   border-color: var(--color-blue);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(91, 107, 181, 0.15);
+  box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 .ticket-card.selected {
   border-color: var(--color-blue);
-  background: rgba(91, 107, 181, 0.05);
+  background: var(--color-info-light);
 }
 
 .ticket-card.disabled,
 .ticket-card.unavailable {
   opacity: 0.5;
   cursor: not-allowed;
-  background: var(--color-gray-50);
+  background: var(--color-background-secondary);
 }
 
 .ticket-card.disabled:hover,
 .ticket-card.unavailable:hover {
   transform: none;
   box-shadow: none;
-  border-color: var(--color-gray-200);
+  border-color: var(--color-border);
 }
 
 /* Ticket Card Content */
@@ -1743,7 +1710,7 @@
   font-size: var(--font-size-lg);
   font-weight: 700;
   margin: 0 0 var(--space-sm) 0;
-  color: var(--color-black);
+  color: var(--color-text-primary);
 }
 
 .ticket-price {
@@ -1755,9 +1722,9 @@
 }
 
 .ticket-description {
-  font-family: var(--font-body);
+  font-family: var(--font-sans);
   font-size: var(--font-size-sm);
-  color: var(--color-gray-600);
+  color: var(--color-text-secondary);
   margin-bottom: var(--space-md);
 }
 
@@ -1784,9 +1751,9 @@
 .qty-btn {
   width: 32px;
   height: 32px;
-  border: 1px solid var(--color-gray-300);
-  background: var(--color-white);
-  color: var(--color-gray-700);
+  border: 1px solid var(--color-border-medium);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -1800,7 +1767,7 @@
 .qty-btn:hover {
   border-color: var(--color-blue);
   color: var(--color-blue);
-  background: rgba(91, 107, 181, 0.05);
+  background: var(--color-info-light);
 }
 
 .qty-btn:disabled {
@@ -1813,7 +1780,7 @@
   text-align: center;
   font-family: var(--font-display);
   font-weight: 700;
-  color: var(--color-black);
+  color: var(--color-text-primary);
 }
 
 /* Add to Cart Buttons */
@@ -1822,7 +1789,7 @@
   margin-top: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
   background: var(--color-blue);
-  color: white;
+  color: var(--color-text-inverse);
   border: none;
   border-radius: 6px;
   font-family: var(--font-display);
@@ -1839,9 +1806,9 @@
 }
 
 .add-to-cart-btn:hover {
-  background: rgba(91, 107, 181, 0.9);
+  background: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(91, 107, 181, 0.3);
+  box-shadow: 0 2px 8px var(--shadow-color);
 }
 
 .add-to-cart-btn:active {
@@ -1851,7 +1818,7 @@
 .add-to-cart-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  background: var(--color-gray-400);
+  background: var(--color-text-muted);
 }
 
 .add-to-cart-btn:disabled:hover {
@@ -1868,14 +1835,14 @@
   font-family: var(--font-display);
   font-size: var(--font-size-2xl);
   font-weight: 900;
-  color: var(--color-black);
+  color: var(--color-text-primary);
   margin-bottom: var(--space-sm);
 }
 
 .category-description {
-  font-family: var(--font-body);
+  font-family: var(--font-sans);
   font-size: var(--font-size-base);
-  color: var(--color-gray-600);
+  color: var(--color-text-secondary);
   margin-bottom: var(--space-xl);
 }
 
@@ -1931,7 +1898,7 @@
   font-size: var(--font-size-3xl);
   font-weight: 900;
   margin: var(--space-xl) 0 var(--space-lg) 0;
-  color: var(--color-black);
+  color: var(--color-text-primary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -2045,8 +2012,8 @@
 
 /* Ticket Card Styling - Smaller Box Style */
 .ticket-card {
-  background: var(--color-white);
-  border: 2px solid var(--color-gray-200);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
   border-radius: 12px;
   padding: var(--space-lg);
   text-align: center;
@@ -2061,28 +2028,28 @@
 
 .ticket-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 25px var(--shadow-color-strong);
   border-color: var(--color-blue);
 }
 
 .ticket-card.selected {
   border-color: var(--color-blue);
-  box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.2);
-  background: rgba(91, 107, 181, 0.05);
+  box-shadow: 0 0 0 3px var(--color-info-light);
+  background: var(--color-info-light);
 }
 
 .ticket-card h4 {
   font-family: var(--font-display);
   font-size: var(--font-size-lg);
   margin-bottom: var(--space-md);
-  color: var(--color-black);
+  color: var(--color-text-primary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .ticket-description {
   font-size: var(--font-size-sm);
-  color: var(--color-gray-600);
+  color: var(--color-text-secondary);
   margin-bottom: var(--space-md);
   flex-grow: 1;
 }
@@ -2098,7 +2065,7 @@
 .ticket-savings {
   display: inline-block;
   background: var(--color-red);
-  color: var(--color-white);
+  color: var(--color-text-inverse);
   padding: var(--space-xs) var(--space-sm);
   border-radius: 20px;
   font-size: var(--font-size-xs);
@@ -2111,7 +2078,7 @@
 .ticket-card.disabled {
   position: relative;
   opacity: 0.6;
-  background: var(--color-gray-200);
+  background: var(--color-background-tertiary);
   cursor: not-allowed;
   overflow: hidden;
   pointer-events: none;
@@ -2120,8 +2087,8 @@
 .ticket-card.unavailable:hover,
 .ticket-card.disabled:hover {
   transform: none;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border-color: var(--color-gray-300);
+  box-shadow: 0 4px 15px var(--shadow-color-light);
+  border-color: var(--color-border-medium);
 }
 
 .ticket-card.unavailable .qty-btn,
@@ -2139,7 +2106,7 @@
   left: 50%;
   transform: translate(-50%, -50%) rotate(-45deg);
   background: var(--color-red);
-  color: var(--color-white);
+  color: var(--color-text-inverse);
   padding: 12px 0;
   width: 150%;
   text-align: center;
@@ -2147,7 +2114,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 10px var(--shadow-color-strong);
   z-index: 10;
   will-change: transform;
 }
@@ -2158,7 +2125,7 @@
   left: 50%;
   transform: translate(-50%, -50%) rotate(-15deg);
   background: var(--color-red);
-  color: var(--color-white);
+  color: var(--color-text-inverse);
   padding: var(--space-sm) var(--space-lg);
   font-family: var(--font-display);
   font-size: var(--font-size-lg);
@@ -2166,7 +2133,7 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   border-radius: 4px;
-  box-shadow: 0 4px 10px rgba(204, 41, 54, 0.3);
+  box-shadow: 0 4px 10px var(--shadow-color);
   z-index: 10;
 }
 
@@ -2183,7 +2150,7 @@
   width: 40px;
   height: 40px;
   border: 2px solid var(--color-blue);
-  background: var(--color-white);
+  background: var(--color-surface);
   color: var(--color-blue);
   border-radius: 50%;
   font-size: var(--font-size-lg);
@@ -2194,7 +2161,7 @@
 
 .qty-btn:hover {
   background: var(--color-blue);
-  color: var(--color-white);
+  color: var(--color-text-inverse);
 }
 
 .qty-btn:disabled {
@@ -2211,7 +2178,7 @@
 
 /* Pricing Summary */
 .pricing-summary {
-  background: var(--color-gray-100);
+  background: var(--color-background-secondary);
   padding: var(--space-lg);
   border-radius: 8px;
   margin-top: var(--space-xl);
@@ -2227,7 +2194,7 @@
   justify-content: space-between;
   margin-bottom: var(--space-sm);
   padding: var(--space-xs) 0;
-  border-bottom: 1px solid var(--color-gray-200);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .order-item:last-child {
@@ -2239,7 +2206,7 @@
   display: flex;
   justify-content: space-between;
   font-size: var(--font-size-lg);
-  border-top: 2px solid var(--color-gray-200);
+  border-top: 2px solid var(--color-border);
   padding-top: var(--space-sm);
   margin-top: var(--space-sm);
 }
@@ -2247,7 +2214,7 @@
 .checkout-btn {
   width: 100%;
   background: var(--color-red);
-  color: var(--color-white);
+  color: var(--color-text-inverse);
   border: none;
   padding: var(--space-md) var(--space-lg);
   border-radius: 8px;
@@ -2264,7 +2231,7 @@
 }
 
 .checkout-btn:disabled {
-  background: var(--color-gray-400);
+  background: var(--color-text-muted);
   cursor: not-allowed;
   transform: none;
 }
@@ -2296,7 +2263,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: var(--color-white);
+  color: var(--color-text-inverse);
 }
 
 .contact-info {
@@ -2311,7 +2278,7 @@
 }
 
 .contact-item {
-  background: var(--color-gray-100);
+  background: var(--color-background-secondary);
   padding: var(--space-xl);
   border-radius: 12px;
   border-left: 4px solid var(--color-blue);
@@ -2322,18 +2289,18 @@
 
 .contact-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 25px var(--shadow-color-light);
 }
 
 .contact-item h2 {
   font-family: var(--font-display);
   font-size: var(--font-size-xl);
-  color: var(--color-black);
+  color: var(--color-text-primary);
   margin-bottom: var(--space-md);
 }
 
 .contact-item p {
-  color: var(--color-gray-700);
+  color: var(--color-text-secondary);
   margin-bottom: var(--space-md);
   line-height: 1.6;
 }
@@ -2343,7 +2310,7 @@
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
-  background: var(--color-white);
+  background: var(--color-surface);
   border: 2px solid var(--color-blue);
   border-radius: 8px;
   text-decoration: none;
@@ -2355,14 +2322,14 @@
 
 .contact-link:hover {
   background: var(--color-blue);
-  color: var(--color-white);
+  color: var(--color-text-inverse);
   transform: translateY(-1px);
 }
 
 .contact-link:focus-visible {
   outline: 2px solid var(--color-blue);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(91, 107, 181, 0.2);
+  box-shadow: 0 0 0 4px var(--color-info-light);
 }
 
 .email-link {
@@ -2390,7 +2357,7 @@
 .whatsapp-note,
 .feedback-note {
   font-size: var(--font-size-sm);
-  color: var(--color-gray-500);
+  color: var(--color-text-tertiary);
   font-style: italic;
   margin-top: var(--space-sm);
   margin-bottom: 0;
@@ -2399,10 +2366,10 @@
 /* Location and Response Info */
 .location-info,
 .response-info {
-  background: var(--color-white);
+  background: var(--color-surface);
   padding: var(--space-xl);
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 10px var(--shadow-color-light);
   margin: var(--space-xl) 0;
 }
 
@@ -2410,7 +2377,7 @@
 .response-info h2 {
   font-family: var(--font-display);
   font-size: var(--font-size-xl);
-  color: var(--color-black);
+  color: var(--color-text-primary);
   margin-bottom: var(--space-md);
   border-bottom: 2px solid var(--color-blue);
   padding-bottom: var(--space-sm);
@@ -2426,13 +2393,13 @@
 .address {
   font-family: var(--font-code);
   font-size: var(--font-size-base);
-  color: var(--color-gray-800);
+  color: var(--color-text-primary);
   margin-bottom: var(--space-md);
   line-height: 1.5;
 }
 
 .location-note {
-  color: var(--color-gray-600);
+  color: var(--color-text-secondary);
   font-style: italic;
 }
 
@@ -2480,7 +2447,7 @@
 @media print {
   .contact-hero {
     background: none;
-    color: var(--color-black);
+    color: var(--color-text-primary);
     min-height: auto;
     padding: var(--space-md);
   }
@@ -2488,11 +2455,11 @@
   .contact-item {
     break-inside: avoid;
     background: none;
-    border: 1px solid var(--color-gray-400);
+    border: 1px solid var(--color-text-muted);
   }
 
   .contact-link {
-    border: 1px solid var(--color-gray-800);
+    border: 1px solid var(--color-text-primary);
     background: none;
   }
 }

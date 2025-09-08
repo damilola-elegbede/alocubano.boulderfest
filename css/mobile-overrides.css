@@ -18,9 +18,9 @@
   /* Enhanced Mobile Header */
   .header {
     padding: var(--space-md) 0;
-    background: rgba(255, 255, 255, 0.98);
+    background: var(--color-surface-overlay);
     backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--color-gray-200);
+    border-bottom: 1px solid var(--color-border);
   }
 
   /* Logo responsiveness */
@@ -231,7 +231,7 @@
   .nav-link:focus,
   .form-button-type:focus,
   input:focus {
-    outline: 2px solid var(--color-blue);
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
   }
 

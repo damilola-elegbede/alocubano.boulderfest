@@ -1,36 +1,37 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Portal - A Lo Cubano Boulder Fest</title>
+    
+    <!-- Main Site CSS System -->
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/typography.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/navigation.css">
+    <link rel="stylesheet" href="/css/admin-overrides.css">
+    
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
+      /* Admin Portal Specific Styles - Theme-Aware */
       body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
-          sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-red) 100%);
         min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 20px;
+        padding: var(--space-lg);
       }
 
       .portal-container {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        background: var(--color-surface);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-xl);
         max-width: 1200px;
         width: 100%;
-        padding: 40px;
+        padding: var(--space-4xl);
         animation: slideIn 0.5s ease-out;
+        border: 2px solid var(--color-border-light);
       }
 
       @keyframes slideIn {
@@ -46,245 +47,418 @@
 
       .portal-header {
         text-align: center;
-        margin-bottom: 40px;
-        padding-bottom: 30px;
-        border-bottom: 2px solid #f0f0f0;
+        margin-bottom: var(--space-4xl);
+        padding-bottom: var(--space-3xl);
+        border-bottom: 2px solid var(--color-border);
       }
 
-      .portal-header h1 {
-        color: #333;
-        font-size: 36px;
-        margin-bottom: 10px;
+      .portal-title {
+        font-family: var(--font-display);
+        font-size: var(--font-size-5xl);
+        font-weight: 900;
+        color: var(--color-text-primary);
+        margin-bottom: var(--space-md);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
       }
 
-      .portal-header p {
-        color: #666;
-        font-size: 16px;
+      .portal-subtitle {
+        font-family: var(--font-accent);
+        font-size: var(--font-size-lg);
+        color: var(--color-text-secondary);
+        font-style: italic;
+        margin-bottom: var(--space-md);
       }
 
-      .sections-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-        gap: 30px;
-        margin-bottom: 40px;
-      }
-
-      .section-card {
-        background: #f8f9fa;
-        border-radius: 12px;
-        padding: 25px;
-        border: 1px solid #e9ecef;
-        transition:
-          transform 0.3s ease,
-          box-shadow 0.3s ease;
-      }
-
-      .section-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-      }
-
-      .section-card h2 {
-        color: #495057;
-        font-size: 20px;
-        margin-bottom: 20px;
+      .status-line {
         display: flex;
         align-items: center;
-        gap: 10px;
-      }
-
-      .section-card .icon {
-        font-size: 24px;
-      }
-
-      .links-list {
-        list-style: none;
-      }
-
-      .links-list li {
-        margin-bottom: 12px;
-      }
-
-      .links-list a {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 15px;
-        background: white;
-        color: #495057;
-        text-decoration: none;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        border: 1px solid #dee2e6;
-        font-size: 14px;
-      }
-
-      .links-list a:hover {
-        background: #667eea;
-        color: white;
-        transform: translateX(5px);
-        border-color: #667eea;
-      }
-
-      .links-list a .badge {
-        margin-left: auto;
-        background: #28a745;
-        color: white;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 11px;
-      }
-
-      .links-list a .badge.new {
-        background: #ff6b6b;
-      }
-
-      .links-list a .badge.beta {
-        background: #ffa500;
-      }
-
-      .description {
-        color: #6c757d;
-        font-size: 12px;
-        margin-left: 30px;
-        margin-top: -8px;
-        margin-bottom: 12px;
-      }
-
-      .quick-actions {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 12px;
-        padding: 25px;
-        color: white;
-        margin-bottom: 30px;
-      }
-
-      .quick-actions h3 {
-        margin-bottom: 15px;
-        font-size: 18px;
-      }
-
-      .action-buttons {
-        display: flex;
-        gap: 15px;
-        flex-wrap: wrap;
-      }
-
-      .action-btn {
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        padding: 10px 20px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-size: 14px;
-        text-decoration: none;
-        display: inline-block;
-      }
-
-      .action-btn:hover {
-        background: rgba(255, 255, 255, 0.3);
-        transform: translateY(-2px);
-      }
-
-      .api-endpoints {
-        background: #f8f9fa;
-        border-radius: 12px;
-        padding: 25px;
-        margin-top: 30px;
-      }
-
-      .api-endpoints h3 {
-        color: #495057;
-        margin-bottom: 20px;
-        font-size: 18px;
-      }
-
-      .endpoints-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 15px;
-      }
-
-      .endpoint-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px;
-        background: white;
-        border-radius: 6px;
-        border: 1px solid #dee2e6;
-        font-size: 13px;
-      }
-
-      .endpoint-item .method {
-        background: #28a745;
-        color: white;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: bold;
-        min-width: 40px;
-        text-align: center;
-      }
-
-      .endpoint-item .method.post {
-        background: #007bff;
-      }
-
-      .endpoint-item code {
-        color: #e83e8c;
-        font-family: "Courier New", monospace;
-      }
-
-      .footer {
-        text-align: center;
-        margin-top: 40px;
-        padding-top: 30px;
-        border-top: 2px solid #f0f0f0;
-        color: #6c757d;
-        font-size: 14px;
-      }
-
-      .footer a {
-        color: #667eea;
-        text-decoration: none;
-      }
-
-      .footer a:hover {
-        text-decoration: underline;
+        justify-content: center;
+        gap: var(--space-sm);
+        font-family: var(--font-code);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
       }
 
       .status-indicator {
         display: inline-block;
         width: 8px;
         height: 8px;
-        background: #28a745;
+        background: var(--color-success);
         border-radius: 50%;
-        margin-right: 5px;
         animation: pulse 2s infinite;
       }
 
       @keyframes pulse {
         0% {
-          box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
         }
         70% {
-          box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+          box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
         }
         100% {
-          box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
         }
       }
 
+      /* Quick Actions Section */
+      .quick-actions {
+        background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-red) 100%);
+        border-radius: var(--radius-lg);
+        padding: var(--space-3xl);
+        color: var(--color-text-inverse);
+        margin-bottom: var(--space-3xl);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .quick-actions::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+        animation: shimmer 3s infinite;
+        pointer-events: none;
+      }
+
+      @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+
+      .quick-actions-title {
+        font-family: var(--font-display);
+        font-size: var(--font-size-2xl);
+        font-weight: 900;
+        margin-bottom: var(--space-lg);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: var(--space-lg);
+        flex-wrap: wrap;
+      }
+
+      /* Updated action buttons to use main site button styling */
+      .action-btn {
+        padding: var(--space-md) var(--space-xl);
+        background: rgba(255, 255, 255, 0.2);
+        color: var(--color-text-inverse);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all var(--transition-base);
+        font-family: var(--font-display);
+        font-size: var(--font-size-sm);
+        font-weight: 700;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-sm);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .action-btn::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.1);
+        transition: left var(--transition-slow);
+      }
+
+      .action-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .action-btn:hover::before {
+        left: 0;
+      }
+
+      /* Sections Grid using ticket-card style */
+      .sections-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: var(--space-3xl);
+        margin-bottom: var(--space-4xl);
+      }
+
+      .section-card {
+        /* Using ticket-card base styles */
+        padding: var(--space-3xl);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        background: var(--color-surface);
+        transition: all var(--transition-base);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .section-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(45deg, var(--color-blue), var(--color-red));
+        opacity: 0;
+        transition: all var(--transition-slow);
+        z-index: 0;
+      }
+
+      .section-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-xl);
+        border-color: var(--color-blue);
+      }
+
+      .section-card:hover::before {
+        left: 0;
+        opacity: 0.05;
+      }
+
+      .section-card > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .section-card h2 {
+        font-family: var(--font-display);
+        font-size: var(--font-size-xl);
+        font-weight: 900;
+        color: var(--color-text-primary);
+        margin-bottom: var(--space-lg);
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+      }
+
+      .section-card .icon {
+        font-size: var(--font-size-3xl);
+      }
+
+      .links-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .links-list li {
+        margin-bottom: var(--space-md);
+      }
+
+      /* Navigation links using main site patterns */
+      .links-list a {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        padding: var(--space-md) var(--space-lg);
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+        text-decoration: none;
+        border-radius: var(--radius-md);
+        transition: all var(--transition-base);
+        border: 2px solid var(--color-border);
+        font-size: var(--font-size-sm);
+        font-weight: 500;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .links-list a::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: var(--color-blue);
+        transition: left var(--transition-base);
+        z-index: 0;
+      }
+
+      .links-list a:hover {
+        color: var(--color-text-inverse);
+        transform: translateX(5px);
+        border-color: var(--color-blue);
+        box-shadow: 0 4px 15px var(--shadow-color);
+      }
+
+      .links-list a:hover::before {
+        left: 0;
+      }
+
+      .links-list a > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .links-list a .badge {
+        margin-left: auto;
+        background: var(--color-success);
+        color: var(--color-text-inverse);
+        padding: var(--space-xs) var(--space-sm);
+        border-radius: var(--radius-full);
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+      }
+
+      .links-list a .badge.new {
+        background: var(--color-red);
+      }
+
+      .links-list a .badge.beta {
+        background: var(--color-warning);
+      }
+
+      .description {
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-xs);
+        font-family: var(--font-sans);
+        font-style: italic;
+        margin-left: var(--space-3xl);
+        margin-top: calc(-1 * var(--space-sm));
+        margin-bottom: var(--space-md);
+        line-height: var(--line-height-relaxed);
+      }
+
+      /* API Endpoints Section */
+      .api-endpoints {
+        background: var(--color-background-secondary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-3xl);
+        margin-top: var(--space-3xl);
+        border: 2px solid var(--color-border-light);
+      }
+
+      .api-endpoints h3 {
+        font-family: var(--font-display);
+        font-size: var(--font-size-2xl);
+        font-weight: 900;
+        color: var(--color-text-primary);
+        margin-bottom: var(--space-xl);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+      }
+
+      .endpoints-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: var(--space-lg);
+      }
+
+      .endpoint-item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        padding: var(--space-md);
+        background: var(--color-surface);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--color-border);
+        font-size: var(--font-size-sm);
+        transition: all var(--transition-base);
+      }
+
+      .endpoint-item:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--color-blue);
+      }
+
+      .endpoint-item .method {
+        background: var(--color-success);
+        color: var(--color-text-inverse);
+        padding: var(--space-xs) var(--space-sm);
+        border-radius: var(--radius-sm);
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        font-weight: 700;
+        min-width: 50px;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .endpoint-item .method.post {
+        background: var(--color-blue);
+      }
+
+      .endpoint-item code {
+        color: var(--color-red);
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+      }
+
+      /* Footer using typography patterns */
+      .footer {
+        text-align: center;
+        margin-top: var(--space-4xl);
+        padding-top: var(--space-3xl);
+        border-top: 2px solid var(--color-border);
+        font-family: var(--font-sans);
+      }
+
+      .footer p {
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-sm);
+        line-height: var(--line-height-relaxed);
+        margin-bottom: var(--space-sm);
+      }
+
+      .footer strong {
+        font-family: var(--font-display);
+        color: var(--color-text-primary);
+      }
+
+      .footer a {
+        color: var(--color-blue);
+        text-decoration: none;
+        transition: color var(--transition-base);
+      }
+
+      .footer a:hover {
+        color: var(--color-red);
+        text-decoration: underline;
+      }
+
+      /* Mobile Responsiveness */
       @media (max-width: 768px) {
-        .sections-grid {
-          grid-template-columns: 1fr;
+        body {
+          padding: var(--space-md);
         }
 
-        .portal-header h1 {
-          font-size: 28px;
+        .portal-container {
+          padding: var(--space-xl);
+        }
+
+        .sections-grid {
+          grid-template-columns: 1fr;
+          gap: var(--space-xl);
+        }
+
+        .portal-title {
+          font-size: var(--font-size-4xl);
         }
 
         .action-buttons {
@@ -294,50 +468,60 @@
         .action-btn {
           width: 100%;
           text-align: center;
+          justify-content: center;
+        }
+
+        .endpoints-grid {
+          grid-template-columns: 1fr;
         }
       }
     </style>
+    
+    <!-- Theme Manager -->
+    <script type="module" src="/js/theme-manager.js"></script>
   </head>
   <body>
     <div class="portal-container">
       <div class="portal-header">
-        <h1>🎯 Admin Portal</h1>
-        <p>A Lo Cubano Boulder Fest - Central Administration Hub</p>
-        <p style="margin-top: 10px">
+        <h1 class="portal-title">🎯 Admin Portal</h1>
+        <p class="portal-subtitle">A Lo Cubano Boulder Fest - Central Administration Hub</p>
+        <div class="status-line">
           <span class="status-indicator"></span>
           <span id="status">All Systems Operational</span>
-        </p>
+        </div>
       </div>
 
       <div class="quick-actions">
-        <h3>⚡ Quick Actions</h3>
+        <h3 class="quick-actions-title">⚡ Quick Actions</h3>
         <div class="action-buttons">
-          <a href="/admin/dashboard" class="action-btn"
-            >📊 Main Dashboard</a
-          >
-          <a href="/admin/analytics" class="action-btn"
-            >📈 View Analytics</a
-          >
-          <a href="/admin/checkin" class="action-btn"
-            >📱 Mobile Scanner</a
-          >
-          <button onclick="syncToSheets()" class="action-btn">
-            🔄 Sync to Sheets
+          <a href="/admin/dashboard" class="action-btn form-button-type">
+            📊 Dashboard
+          </a>
+          <a href="/admin/analytics" class="action-btn form-button-type">
+            📈 Analytics
+          </a>
+          <a href="/admin/checkin" class="action-btn form-button-type">
+            📱 Scanner
+          </a>
+          <button onclick="syncToSheets()" class="action-btn form-button-type">
+            🔄 Sync Sheets
           </button>
-          <button onclick="generateReport()" class="action-btn">
-            📥 Export Report
+          <button onclick="generateReport()" class="action-btn form-button-type">
+            📥 Export
           </button>
-          <button onclick="logout()" class="action-btn">🚪 Logout</button>
+          <button onclick="logout()" class="action-btn form-button-type">
+            🚪 Logout
+          </button>
         </div>
       </div>
 
       <div class="sections-grid">
-        <div class="section-card">
+        <div class="section-card ticket-card">
           <h2><span class="icon">📊</span> Dashboards & Analytics</h2>
           <ul class="links-list">
             <li>
               <a href="/admin/dashboard">
-                Main Dashboard
+                <span>Main Dashboard</span>
                 <span class="badge">Core</span>
               </a>
               <p class="description">
@@ -346,7 +530,7 @@
             </li>
             <li>
               <a href="/admin/analytics">
-                Analytics Dashboard
+                <span>Analytics Dashboard</span>
                 <span class="badge new">New</span>
               </a>
               <p class="description">
@@ -355,7 +539,7 @@
             </li>
             <li>
               <a href="/admin/checkin">
-                Mobile Check-in Scanner
+                <span>Mobile Check-in Scanner</span>
                 <span class="badge">Mobile</span>
               </a>
               <p class="description">QR code scanning for event check-ins</p>
@@ -363,33 +547,37 @@
           </ul>
         </div>
 
-        <div class="section-card">
+        <div class="section-card ticket-card">
           <h2><span class="icon">🔐</span> Authentication & Security</h2>
           <ul class="links-list">
             <li>
-              <a href="/admin/login"> Admin Login </a>
+              <a href="/admin/login">
+                <span>Admin Login</span>
+              </a>
               <p class="description">Secure admin authentication portal</p>
             </li>
             <li>
               <a href="#" onclick="testMobileAuth()">
-                Mobile Auth Test
+                <span>Mobile Auth Test</span>
                 <span class="badge beta">Beta</span>
               </a>
               <p class="description">Test mobile authentication system</p>
             </li>
             <li>
-              <a href="#" onclick="viewCSRFToken()"> CSRF Token Status </a>
+              <a href="#" onclick="viewCSRFToken()">
+                <span>CSRF Token Status</span>
+              </a>
               <p class="description">View current CSRF token information</p>
             </li>
           </ul>
         </div>
 
-        <div class="section-card">
+        <div class="section-card ticket-card">
           <h2><span class="icon">📋</span> Data Management</h2>
           <ul class="links-list">
             <li>
               <a href="/admin/dashboard#registrations">
-                Registration Management
+                <span>Registration Management</span>
               </a>
               <p class="description">
                 View and manage all ticket registrations
@@ -397,13 +585,13 @@
             </li>
             <li>
               <a href="/admin/dashboard#transactions">
-                Transaction History
+                <span>Transaction History</span>
               </a>
               <p class="description">Payment transactions and order details</p>
             </li>
             <li>
               <a href="#" onclick="openGoogleSheets()">
-                Google Sheets View
+                <span>Google Sheets View</span>
                 <span class="badge">External</span>
               </a>
               <p class="description">
@@ -413,22 +601,26 @@
           </ul>
         </div>
 
-        <div class="section-card">
+        <div class="section-card ticket-card">
           <h2><span class="icon">🛠️</span> Tools & Utilities</h2>
           <ul class="links-list">
             <li>
-              <a href="#" onclick="testDatabase()"> Database Health Check </a>
+              <a href="#" onclick="testDatabase()">
+                <span>Database Health Check</span>
+              </a>
               <p class="description">
                 Test database connectivity and performance
               </p>
             </li>
             <li>
-              <a href="#" onclick="clearCache()"> Clear System Cache </a>
+              <a href="#" onclick="clearCache()">
+                <span>Clear System Cache</span>
+              </a>
               <p class="description">Clear cached data and refresh system</p>
             </li>
             <li>
               <a href="/docs/ADMIN_GUIDE.md" target="_blank">
-                Admin Documentation
+                <span>Admin Documentation</span>
               </a>
               <p class="description">
                 Complete administration guide and API docs

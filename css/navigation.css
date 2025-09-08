@@ -10,12 +10,12 @@
   padding: var(--space-lg) 0;
   background: linear-gradient(
     to bottom,
-    var(--color-white) 0%,
-    var(--color-white) 90%,
+    var(--color-surface) 0%,
+    var(--color-surface) 90%,
     transparent 100%
   );
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--color-gray-200);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .typographic .container {
@@ -61,7 +61,7 @@
   font-size: var(--font-size-3xl);
   font-weight: 700;
   text-decoration: none;
-  color: var(--color-black);
+  color: var(--color-text-primary);
   white-space: nowrap;
   display: flex;
   align-items: center;
@@ -71,12 +71,12 @@
 /* Logo Components */
 .typographic .logo-main {
   font-weight: 700;
-  color: var(--color-black);
+  color: var(--color-text-primary);
   transition: all var(--transition-base);
 }
 
 .typographic .logo-separator {
-  color: var(--color-red);
+  color: var(--color-secondary);
   font-weight: 400;
   margin: 0 var(--space-xs);
   transition: all var(--transition-base);
@@ -84,28 +84,28 @@
 
 .typographic .logo-sub {
   font-weight: 400;
-  color: var(--color-black);
+  color: var(--color-text-primary);
   transition: all var(--transition-base);
 }
 
 .typographic .logo-link:hover .logo-main {
-  color: var(--color-blue);
+  color: var(--color-primary);
 }
 
 .typographic .logo-link:hover .logo-separator {
-  color: var(--color-blue);
+  color: var(--color-primary);
   transform: scale(1.1);
 }
 
 .typographic .logo-link:hover .logo-sub {
-  color: var(--color-red);
+  color: var(--color-secondary);
 }
 
 .typographic .header-text {
   font-family: var(--font-display);
   font-size: var(--font-size-xl);
   font-weight: 700;
-  color: var(--color-black);
+  color: var(--color-text-primary);
   white-space: nowrap;
 }
 
@@ -115,7 +115,7 @@
   letter-spacing: var(--letter-spacing-wide);
   line-height: var(--line-height-none);
   text-transform: uppercase;
-  color: var(--color-black);
+  color: var(--color-text-primary);
   text-decoration: none;
   position: relative;
   transition: all var(--transition-base);
@@ -123,7 +123,7 @@
 
 .typographic .logo:hover {
   transform: scale(1.05);
-  color: var(--color-red);
+  color: var(--color-secondary);
 }
 
 /* Navigation Menu */
@@ -153,7 +153,7 @@
   font-size: var(--font-size-sm);
   letter-spacing: var(--letter-spacing-wider);
   text-transform: uppercase;
-  color: var(--color-gray-700);
+  color: var(--color-text-secondary);
   text-decoration: none;
   position: relative;
   transition: all var(--transition-base);
@@ -165,7 +165,7 @@
   position: absolute;
   top: 0;
   left: 0;
-  color: var(--color-black);
+  color: var(--color-text-primary);
   font-weight: 700;
   transform: translateY(-100%);
   opacity: 0;
@@ -182,7 +182,7 @@
 }
 
 .typographic .nav-link.is-active {
-  color: var(--color-red);
+  color: var(--color-secondary);
   font-weight: 700;
 }
 
@@ -193,12 +193,12 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--color-red);
+  background: var(--color-secondary);
 }
 
 /* Active state for nav-trigger (Events) when on events pages */
 .typographic .nav-trigger.is-active {
-  color: var(--color-red);
+  color: var(--color-secondary);
   font-weight: 700;
 }
 
@@ -209,12 +209,12 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--color-red);
+  background: var(--color-secondary);
 }
 
 /* Active state for nav-trigger when parent nav-item is active (for event pages) - Desktop */
 .typographic .nav-item.is-active .nav-trigger {
-  color: var(--color-red);
+  color: var(--color-secondary);
   font-weight: 700;
 }
 
@@ -225,7 +225,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--color-red);
+  background: var(--color-secondary);
 }
 
 /* Navigation Links - Component Style (Alternative) */
@@ -246,7 +246,7 @@
   left: 0;
   width: 0;
   height: 2px;
-  background-color: var(--color-red);
+  background-color: var(--color-secondary);
   transition: width var(--transition-base);
 }
 
@@ -257,17 +257,17 @@
 
 /* Active state for nav-link - Component style */
 .nav-link.is-active {
-  color: var(--color-red);
+  color: var(--color-secondary);
   font-weight: 700;
 }
 
 .nav-link:hover {
-  color: var(--color-red);
+  color: var(--color-secondary);
 }
 
 /* Active state for nav-trigger (Events) - component style */
 .nav-trigger.is-active {
-  color: var(--color-red);
+  color: var(--color-secondary);
   font-weight: 700;
 }
 
@@ -278,12 +278,12 @@
   left: 0;
   width: 100%;
   height: 2px;
-  background-color: var(--color-red);
+  background-color: var(--color-secondary);
 }
 
 /* Active state for nav-trigger when parent nav-item is active (for event pages) - Component style */
 .nav-item.is-active .nav-trigger {
-  color: var(--color-red);
+  color: var(--color-secondary);
   font-weight: 700;
 }
 
@@ -294,7 +294,7 @@
   left: 0;
   width: 100%;
   height: 2px;
-  background-color: var(--color-red);
+  background-color: var(--color-secondary);
 }
 
 /* Mobile Menu - Typographic Style (Updated to use hamburger icon) */
@@ -329,18 +329,18 @@
   display: block;
   width: 28px;
   height: 3px;
-  background-color: #000000;
+  background-color: var(--color-text-primary);
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   border-radius: 2px;
 }
 
 .typographic .menu-toggle:hover .menu-icon span {
-  background-color: #000000;
+  background-color: var(--color-text-primary);
 }
 
 .typographic .menu-toggle.is-active .menu-icon span:nth-child(1) {
   transform: translateY(7px) rotate(45deg);
-  background-color: #000000;
+  background-color: var(--color-text-primary);
 }
 
 .typographic .menu-toggle.is-active .menu-icon span:nth-child(2) {
@@ -350,7 +350,7 @@
 
 .typographic .menu-toggle.is-active .menu-icon span:nth-child(3) {
   transform: translateY(-7px) rotate(-45deg);
-  background-color: #000000;
+  background-color: var(--color-text-primary);
 }
 
 /* Mobile Menu - Component Style */
@@ -380,18 +380,18 @@
   display: block;
   width: 28px;
   height: 3px;
-  background-color: #000000;
+  background-color: var(--color-text-primary);
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   border-radius: 2px;
 }
 
 .menu-toggle:hover .menu-icon span {
-  background-color: #000000;
+  background-color: var(--color-text-primary);
 }
 
 .menu-toggle.is-active .menu-icon span:nth-child(1) {
   transform: translateY(7px) rotate(45deg);
-  background-color: #000000;
+  background-color: var(--color-text-primary);
 }
 
 .menu-toggle.is-active .menu-icon span:nth-child(2) {
@@ -401,7 +401,7 @@
 
 .menu-toggle.is-active .menu-icon span:nth-child(3) {
   transform: translateY(-7px) rotate(-45deg);
-  background-color: #000000;
+  background-color: var(--color-text-primary);
 }
 
 /* Mobile Navigation Responsive */
@@ -423,7 +423,7 @@
     right: 0;
     width: 200px;
     height: 100vh;
-    background: var(--color-white);
+    background: var(--color-surface);
     opacity: 0.85;
     padding: var(--space-4xl) var(--space-lg) var(--space-xl);
     flex-direction: column;
@@ -458,7 +458,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0);
+    background: transparent;
     z-index: -1;
     pointer-events: none;
   }
@@ -472,7 +472,7 @@
     font-weight: 400;
     letter-spacing: var(--letter-spacing-wide);
     text-transform: uppercase;
-    color: var(--color-black);
+    color: var(--color-text-primary);
     padding: var(--space-md) var(--space-sm);
     text-decoration: none;
     position: relative;
@@ -500,7 +500,7 @@
     left: -100%;
     width: 100%;
     height: 100%;
-    background: var(--color-red);
+    background: var(--color-secondary);
     transition: left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
     z-index: -1;
   }
@@ -513,7 +513,7 @@
 
   .typographic .nav-list.is-open .nav-link:hover,
   .nav-list.is-open .nav-link:hover {
-    color: var(--color-white) !important;
+    color: var(--color-text-inverse) !important;
     transform: translateX(8px) !important;
   }
 
@@ -541,7 +541,7 @@
   .nav-list.is-open .nav-trigger.is-active,
   .typographic .nav-list.is-open .nav-item.is-active .nav-trigger,
   .nav-list.is-open .nav-item.is-active .nav-trigger {
-    color: var(--color-red);
+    color: var(--color-secondary);
     font-weight: 500;
   }
 
@@ -641,8 +641,8 @@ main,
   transform: translateX(-50%) translateY(var(--dance-bounce-height)) scale(0.95);
   min-width: var(--dropdown-min-width);
   max-width: var(--dropdown-max-width);
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid var(--color-gray-200);
+  background: var(--color-surface-overlay);
+  border: 1px solid var(--color-border);
   border-radius: var(--dropdown-border-radius);
   padding: var(--dropdown-padding);
   opacity: 0;
@@ -700,7 +700,7 @@ main,
   display: flex;
   align-items: center;
   padding: var(--space-sm) var(--space-md);
-  color: var(--color-gray-700);
+  color: var(--color-text-secondary);
   text-decoration: none;
   font-size: var(--font-size-sm);
   font-weight: 500;
@@ -726,7 +726,7 @@ main,
 }
 
 .nav-dropdown-link:hover {
-  color: var(--color-white);
+  color: var(--color-text-inverse);
   transform: translateX(4px);
   animation: cubanHipMovement 0.6s ease-in-out;
 }
@@ -777,7 +777,7 @@ main,
 /* Separator for Dropdown Sections */
 .nav-dropdown-separator {
   height: var(--dropdown-separator-height);
-  background: var(--color-gray-300);
+  background: var(--color-border-medium);
   margin: var(--space-xs) 0;
   border-radius: var(--dropdown-separator-height);
 }
@@ -792,7 +792,7 @@ main,
   font-size: var(--font-size-sm);
   letter-spacing: var(--letter-spacing-wider);
   text-transform: uppercase;
-  color: var(--color-gray-700);
+  color: var(--color-text-secondary);
   text-decoration: none;
   position: relative;
   transition: all var(--transition-base);
@@ -805,7 +805,7 @@ main,
   position: absolute;
   top: 0;
   left: 0;
-  color: var(--color-black);
+  color: var(--color-text-primary);
   font-weight: 700;
   transform: translateY(-100%);
   opacity: 0;
@@ -898,14 +898,14 @@ main,
     font-size: var(--font-size-base);
     border-left: 3px solid transparent;
     margin-bottom: var(--space-xs);
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--color-surface-overlay);
     backdrop-filter: blur(10px);
     border-radius: var(--dropdown-border-radius);
   }
 
   .nav-dropdown-link:hover {
     border-left-color: var(--boulder-fest-primary);
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--color-surface-elevated);
     transform: translateX(var(--space-xs));
   }
 
@@ -943,7 +943,7 @@ main,
   }
 
   .nav-dropdown-link {
-    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    -webkit-tap-highlight-color: var(--shadow-color-light);
   }
 }
 
@@ -984,12 +984,12 @@ main,
 /* High Contrast Mode Support */
 @media (prefers-contrast: high) {
   .nav-dropdown-menu {
-    background: var(--color-white);
-    border: 2px solid var(--color-black);
+    background: var(--color-surface);
+    border: 2px solid var(--color-text-primary);
   }
 
   .nav-dropdown-link {
-    border-bottom: 1px solid var(--color-gray-300);
+    border-bottom: 1px solid var(--color-border-medium);
   }
 }
 
@@ -1054,7 +1054,7 @@ main,
   font-size: var(--font-size-sm);
   letter-spacing: var(--letter-spacing-wider);
   text-transform: uppercase;
-  color: var(--color-gray-700);
+  color: var(--color-text-secondary);
   text-decoration: none;
   position: relative;
   transition: all var(--transition-base);
@@ -1083,8 +1083,8 @@ main,
   transform: translateX(-50%) translateY(var(--dance-bounce-height)) scale(0.95);
   min-width: var(--dropdown-min-width);
   max-width: var(--dropdown-max-width);
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid var(--color-gray-200);
+  background: var(--color-surface-overlay);
+  border: 1px solid var(--color-border);
   border-radius: var(--dropdown-border-radius);
   padding: var(--dropdown-padding);
   opacity: 0;
@@ -1120,7 +1120,7 @@ main,
   display: block;
   font-size: var(--font-size-xs);
   font-weight: 700;
-  color: var(--color-gray-600);
+  color: var(--color-text-tertiary);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-wide);
   margin-bottom: var(--space-xs);
@@ -1137,7 +1137,7 @@ main,
 .dropdown-link {
   display: block;
   padding: var(--space-xs) var(--space-sm);
-  color: var(--color-gray-700);
+  color: var(--color-text-secondary);
   text-decoration: none;
   font-size: var(--font-size-sm);
   font-weight: 400;
@@ -1150,7 +1150,7 @@ main,
 
 /* Dropdown links - simple text color change to match navigation style */
 .dropdown-link:hover {
-  color: var(--color-red);
+  color: var(--color-secondary);
   transform: translateX(2px);
 }
 
@@ -1160,7 +1160,7 @@ main,
   font-size: var(--font-size-sm);
   letter-spacing: var(--letter-spacing-wider);
   text-transform: uppercase;
-  color: var(--color-gray-700);
+  color: var(--color-text-secondary);
   position: relative;
   transition: all var(--transition-base);
   padding: var(--space-xs) 0;
@@ -1172,7 +1172,7 @@ main,
   position: absolute;
   top: 0;
   left: 0;
-  color: var(--color-black);
+  color: var(--color-text-primary);
   font-weight: 700;
   transform: translateY(-100%);
   opacity: 0;
@@ -1183,7 +1183,7 @@ main,
 /* Remove typographic hover effects for nav-trigger to prevent text highlighting */
 .typographic .nav-trigger:hover {
   /* Keep original color, no transparency effect */
-  color: var(--color-gray-700);
+  color: var(--color-text-secondary);
 }
 
 .typographic .nav-trigger:hover::before {
@@ -1198,15 +1198,15 @@ main,
 
 /* Event Sub Navigation Container */
 .event-subnav {
-  background: var(--color-white);
-  border-bottom: 1px solid var(--color-gray-200);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
   padding: var(--space-md) 0;
   margin-bottom: var(--space-xl);
   position: sticky;
   top: 0;
   z-index: 999;
   backdrop-filter: blur(10px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Event Navigation List */
@@ -1227,7 +1227,7 @@ main,
   font-size: var(--font-size-sm);
   letter-spacing: var(--letter-spacing-wider);
   text-transform: uppercase;
-  color: var(--color-gray-700);
+  color: var(--color-text-secondary);
   text-decoration: none;
   transition: all var(--transition-base);
   padding: var(--space-xs) 0;
@@ -1240,7 +1240,7 @@ main,
   position: absolute;
   top: 0;
   left: 0;
-  color: var(--color-black);
+  color: var(--color-text-primary);
   font-weight: 700;
   transform: translateY(-100%);
   opacity: 0;
@@ -1259,7 +1259,7 @@ main,
 
 /* Active state styling */
 .event-nav-link.is-active {
-  color: var(--color-red);
+  color: var(--color-secondary);
   font-weight: 700;
 }
 
@@ -1270,7 +1270,7 @@ main,
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--color-red);
+  background: var(--color-secondary);
 }
 
 /* Alternative styling for non-typographic theme */
@@ -1281,7 +1281,7 @@ main,
   left: 0;
   width: 0;
   height: 2px;
-  background-color: var(--color-red);
+  background-color: var(--color-secondary);
   transition: width var(--transition-base);
 }
 
@@ -1291,7 +1291,7 @@ main,
 }
 
 .event-nav-link:hover {
-  color: var(--color-red);
+  color: var(--color-secondary);
 }
 
 /* Mobile Responsive Event Navigation */
@@ -1346,8 +1346,8 @@ main,
   position: absolute;
   top: -40px;
   left: 6px;
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--color-text-primary);
+  color: var(--color-text-inverse);
   padding: 8px;
   text-decoration: none;
   border-radius: 4px;

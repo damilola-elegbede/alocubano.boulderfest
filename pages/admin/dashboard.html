@@ -1,454 +1,124 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Dashboard - A Lo Cubano Boulder Fest</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
-          sans-serif;
-        background: #f5f7fa;
-        color: #333;
-      }
-
-      .admin-header {
-        background: #2c3e50;
-        color: white;
-        padding: 15px 30px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      .admin-header h1 {
-        font-size: 24px;
-        font-weight: 500;
-      }
-
-      .logout-btn {
-        background: #e74c3c;
-        color: white;
-        border: none;
-        padding: 8px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-      }
-
-      .logout-btn:hover {
-        background: #c0392b;
-      }
-
-      .portal-btn {
-        background: #17a2b8;
-        color: white;
-        border: none;
-        padding: 8px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        margin-right: 10px;
-      }
-
-      .portal-btn:hover {
-        background: #138496;
-      }
-
-      .analytics-btn {
-        background: #9c27b0;
-        color: white;
-        border: none;
-        padding: 8px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        margin-right: 10px;
-      }
-
-      .analytics-btn:hover {
-        background: #7b1fa2;
-      }
-
-      .sync-btn {
-        background: #0f9d58;
-        color: white;
-        border: none;
-        padding: 8px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        margin-right: 10px;
-      }
-
-      .sync-btn:hover {
-        background: #0b7938;
-      }
-
-      .sync-btn:disabled {
-        background: #95a5a6;
-        cursor: not-allowed;
-      }
-
-      .header-actions {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-      }
-
-      .dashboard-container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 30px;
-      }
-
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 20px;
-        margin-bottom: 30px;
-      }
-
-      .stat-card {
-        background: white;
-        padding: 25px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      }
-
-      .stat-card h3 {
-        color: #7f8c8d;
-        font-size: 14px;
-        font-weight: 500;
-        text-transform: uppercase;
-        margin-bottom: 10px;
-      }
-
-      .stat-number {
-        font-size: 32px;
-        font-weight: bold;
-        color: #2c3e50;
-      }
-
-      .stat-label {
-        color: #95a5a6;
-        font-size: 12px;
-        margin-top: 5px;
-      }
-
-      .section {
-        background: white;
-        border-radius: 8px;
-        padding: 25px;
-        margin-bottom: 30px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      }
-
-      .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        padding-bottom: 15px;
-        border-bottom: 1px solid #ecf0f1;
-      }
-
-      .section-title {
-        font-size: 20px;
-        font-weight: 600;
-        color: #2c3e50;
-      }
-
-      .search-bar {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
-      }
-
-      .search-bar input {
-        flex: 1;
-        padding: 10px 15px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
-      }
-
-      .search-bar select {
-        padding: 10px 15px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
-        background: white;
-      }
-
-      .search-bar button {
-        padding: 10px 25px;
-        background: #3498db;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-      }
-
-      .search-bar button:hover {
-        background: #2980b9;
-      }
-
-      .data-table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-
-      .data-table th {
-        background: #f8f9fa;
-        padding: 12px;
-        text-align: left;
-        font-weight: 600;
-        color: #7f8c8d;
-        font-size: 12px;
-        text-transform: uppercase;
-        border-bottom: 2px solid #e9ecef;
-      }
-
-      .data-table td {
-        padding: 12px;
-        border-bottom: 1px solid #e9ecef;
-        font-size: 14px;
-      }
-
-      .data-table tr:hover {
-        background: #f8f9fa;
-      }
-
-      .ticket-id {
-        font-family: monospace;
-        font-size: 12px;
-        background: #ecf0f1;
-        padding: 2px 6px;
-        border-radius: 3px;
-      }
-
-      .status-badge {
-        display: inline-block;
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-      }
-
-      .status-valid {
-        background: #d4edda;
-        color: #155724;
-      }
-      .status-checked-in {
-        background: #cce5ff;
-        color: #004085;
-      }
-      .status-cancelled {
-        background: #f8d7da;
-        color: #721c24;
-      }
-
-      .checkin-btn {
-        padding: 6px 12px;
-        background: #27ae60;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 12px;
-      }
-
-      .checkin-btn:hover {
-        background: #229954;
-      }
-
-      .checkin-btn:disabled {
-        background: #95a5a6;
-        cursor: not-allowed;
-      }
-
-      .pagination {
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-        margin-top: 20px;
-      }
-
-      .pagination button {
-        padding: 8px 12px;
-        border: 1px solid #ddd;
-        background: white;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-      }
-
-      .pagination button:hover:not(:disabled) {
-        background: #f8f9fa;
-      }
-
-      .pagination button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .pagination .page-info {
-        padding: 8px 12px;
-        color: #7f8c8d;
-      }
-
-      .loading {
-        text-align: center;
-        padding: 40px;
-        color: #7f8c8d;
-      }
-
-      /* Hide dashboard content until auth is verified */
-      body:not([data-auth-status="authenticated"]) .dashboard-container {
-        display: none;
-      }
-
-      body:not([data-auth-status="authenticated"]) .admin-header {
-        display: none;
-      }
-
-      /* Show auth loading state */
-      body[data-auth-status="checking"] {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-      }
-
-      body[data-auth-status="checking"]::after {
-        content: "Checking authentication...";
-        font-size: 18px;
-        color: #7f8c8d;
-      }
-
-      /* Show error state for unauthenticated/failed */
-      body[data-auth-status="unauthenticated"]::after,
-      body[data-auth-status="failed"]::after {
-        content: "Redirecting to login...";
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 18px;
-        color: #e74c3c;
-        z-index: 9999;
-      }
-
-      .error {
-        background: #f8d7da;
-        color: #721c24;
-        padding: 15px;
-        border-radius: 4px;
-        margin-bottom: 20px;
-      }
-
-      @media (max-width: 768px) {
-        .dashboard-container {
-          padding: 15px;
-        }
-
-        .stats-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .data-table {
-          font-size: 12px;
-        }
-
-        .data-table th,
-        .data-table td {
-          padding: 8px;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/forms.css" />
+    <link rel="stylesheet" href="/css/admin-overrides.css" />
+    <script type="module" src="/js/theme-manager.js"></script>
   </head>
   <body>
-    <div class="admin-header">
-      <h1>Admin Dashboard</h1>
-      <div class="header-actions">
-        <button
-          class="portal-btn"
-          onclick="location.href='/admin'"
-        >
-          🎯 Portal
-        </button>
-        <button
-          class="analytics-btn"
-          onclick="location.href='/admin/analytics'"
-        >
-          📈 Analytics
-        </button>
-        <button class="sync-btn" onclick="syncToSheets()">
-          📊 Sync to Sheets
-        </button>
-        <button class="logout-btn" onclick="logout()">Logout</button>
+    <nav class="admin-nav">
+      <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-lg) 0;">
+          <h1 class="text-display" style="font-size: var(--font-size-2xl); margin: 0;">Admin Dashboard</h1>
+          <div class="header-actions" style="display: flex; gap: var(--space-sm); align-items: center;">
+            <button
+              class="btn btn-secondary"
+              onclick="location.href='/admin'"
+              style="padding: var(--space-sm) var(--space-md); font-size: var(--font-size-sm);"
+            >
+              🎯 Portal
+            </button>
+            <button
+              class="btn btn-secondary"
+              onclick="location.href='/admin/analytics'"
+              style="padding: var(--space-sm) var(--space-md); font-size: var(--font-size-sm);"
+            >
+              📈 Analytics
+            </button>
+            <button 
+              class="btn btn-accent" 
+              onclick="syncToSheets()"
+              style="padding: var(--space-sm) var(--space-md); font-size: var(--font-size-sm);"
+            >
+              📊 Sync to Sheets
+            </button>
+            <button 
+              class="btn btn-primary" 
+              onclick="logout()"
+              style="padding: var(--space-sm) var(--space-md); font-size: var(--font-size-sm);"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+    </nav>
 
-    <div class="dashboard-container">
+    <div class="container">
       <!-- Statistics -->
-      <div class="stats-grid" id="statsGrid" data-testid="dashboard-stats">
+      <div class="admin-grid auto-fit" id="statsGrid" data-testid="dashboard-stats">
         <div class="loading">Loading statistics...</div>
       </div>
 
       <!-- Registrations Section (also handles transactions) -->
-      <div class="section" id="registrations">
+      <div class="card" id="registrations" style="margin-bottom: var(--space-3xl);">
         <!-- Additional anchor for transactions (points to same section) -->
         <span id="transactions"></span>
-        <div class="section-header">
-          <h2 class="section-title">Registrations</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xl); padding-bottom: var(--space-md); border-bottom: 1px solid var(--color-border);">
+          <h2 class="text-display" style="font-size: var(--font-size-xl); margin: 0;">Registrations</h2>
         </div>
 
-        <div class="search-bar">
+        <div style="display: flex; gap: var(--space-md); margin-bottom: var(--space-xl); flex-wrap: wrap;">
           <input
             type="text"
             id="searchInput"
+            class="form-input-type"
             placeholder="Search by name, email, or ticket ID..."
             onkeypress="if(event.key==='Enter') searchRegistrations()"
             data-testid="search-registrations"
+            style="flex: 1; min-width: 250px;"
           />
           <select
             id="statusFilter"
+            class="form-input-type"
             onchange="searchRegistrations()"
             data-testid="ticket-type-filter"
+            style="min-width: 120px;"
           >
             <option value="">All Status</option>
             <option value="valid">Valid</option>
             <option value="cancelled">Cancelled</option>
             <option value="transferred">Transferred</option>
           </select>
-          <select id="checkinFilter" onchange="searchRegistrations()">
+          <select 
+            id="checkinFilter" 
+            class="form-input-type" 
+            onchange="searchRegistrations()"
+            style="min-width: 150px;"
+          >
             <option value="">All Tickets</option>
             <option value="false">Not Checked In</option>
             <option value="true">Checked In</option>
           </select>
-          <button onclick="searchRegistrations()" data-testid="search-button">
+          <button 
+            class="btn btn-primary" 
+            onclick="searchRegistrations()" 
+            data-testid="search-button"
+            style="white-space: nowrap;"
+          >
             Search
           </button>
-          <button onclick="exportToCSV()">Export CSV</button>
+          <button 
+            class="btn btn-secondary" 
+            onclick="exportToCSV()"
+            style="white-space: nowrap;"
+          >
+            Export CSV
+          </button>
         </div>
 
         <div id="registrationsTable" data-testid="registrations-table">
           <div class="loading">Loading registrations...</div>
         </div>
 
-        <div class="pagination" id="pagination"></div>
+        <div class="pagination" id="pagination" style="display: flex; justify-content: center; gap: var(--space-sm); margin-top: var(--space-xl);"></div>
       </div>
     </div>
 
@@ -562,46 +232,46 @@
         const statsGrid = document.getElementById("statsGrid");
 
         statsGrid.innerHTML = `
-                <div class="stat-card">
-                    <h3>Total Tickets</h3>
+                <div class="admin-stat-card">
+                    <h3 style="font-family: var(--font-display); font-size: var(--font-size-sm); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); margin-bottom: var(--space-sm);">Total Tickets</h3>
                     <div class="stat-number">${stats.total_tickets || 0}</div>
                 </div>
-                <div class="stat-card">
-                    <h3>Checked In</h3>
+                <div class="admin-stat-card">
+                    <h3 style="font-family: var(--font-display); font-size: var(--font-size-sm); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); margin-bottom: var(--space-sm);">Checked In</h3>
                     <div class="stat-number">${stats.checked_in || 0}</div>
-                    <div class="stat-label">${Math.round((stats.checked_in / stats.total_tickets) * 100) || 0}%</div>
+                    <div class="stat-label" style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: var(--space-xs);">${Math.round((stats.checked_in / stats.total_tickets) * 100) || 0}%</div>
                 </div>
-                <div class="stat-card">
-                    <h3>Total Revenue</h3>
+                <div class="admin-stat-card">
+                    <h3 style="font-family: var(--font-display); font-size: var(--font-size-sm); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); margin-bottom: var(--space-sm);">Total Revenue</h3>
                     <div class="stat-number">$${(stats.total_revenue || 0).toFixed(2)}</div>
                 </div>
-                <div class="stat-card">
-                    <h3>Total Orders</h3>
+                <div class="admin-stat-card">
+                    <h3 style="font-family: var(--font-display); font-size: var(--font-size-sm); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); margin-bottom: var(--space-sm);">Total Orders</h3>
                     <div class="stat-number">${stats.total_orders || 0}</div>
                 </div>
-                <div class="stat-card">
-                    <h3>Workshop Tickets</h3>
+                <div class="admin-stat-card">
+                    <h3 style="font-family: var(--font-display); font-size: var(--font-size-sm); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); margin-bottom: var(--space-sm);">Workshop Tickets</h3>
                     <div class="stat-number">${stats.workshop_tickets || 0}</div>
                 </div>
-                <div class="stat-card">
-                    <h3>VIP Tickets</h3>
+                <div class="admin-stat-card">
+                    <h3 style="font-family: var(--font-display); font-size: var(--font-size-sm); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); margin-bottom: var(--space-sm);">VIP Tickets</h3>
                     <div class="stat-number">${stats.vip_tickets || 0}</div>
                 </div>
                 <!-- Wallet Statistics -->
-                <div class="stat-card" style="border-left: 3px solid #000;">
-                    <h3>Apple Wallet</h3>
+                <div class="admin-stat-card" style="border-left: 3px solid var(--color-black);">
+                    <h3 style="font-family: var(--font-display); font-size: var(--font-size-sm); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); margin-bottom: var(--space-sm);">Apple Wallet</h3>
                     <div class="stat-number">${stats.apple_wallet_users || 0}</div>
-                    <div class="stat-label">${stats.total_tickets ? Math.round((stats.apple_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
+                    <div class="stat-label" style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: var(--space-xs);">${stats.total_tickets ? Math.round((stats.apple_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
                 </div>
-                <div class="stat-card" style="border-left: 3px solid #4285f4;">
-                    <h3>Google Wallet</h3>
+                <div class="admin-stat-card" style="border-left: 3px solid var(--color-blue);">
+                    <h3 style="font-family: var(--font-display); font-size: var(--font-size-sm); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); margin-bottom: var(--space-sm);">Google Wallet</h3>
                     <div class="stat-number">${stats.google_wallet_users || 0}</div>
-                    <div class="stat-label">${stats.total_tickets ? Math.round((stats.google_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
+                    <div class="stat-label" style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: var(--space-xs);">${stats.total_tickets ? Math.round((stats.google_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
                 </div>
-                <div class="stat-card">
-                    <h3>QR Generated</h3>
+                <div class="admin-stat-card">
+                    <h3 style="font-family: var(--font-display); font-size: var(--font-size-sm); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); margin-bottom: var(--space-sm);">QR Generated</h3>
                     <div class="stat-number">${stats.qr_generated || 0}</div>
-                    <div class="stat-label">${stats.total_tickets ? Math.round((stats.qr_generated / stats.total_tickets) * 100) : 0}% ready</div>
+                    <div class="stat-label" style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: var(--space-xs);">${stats.total_tickets ? Math.round((stats.qr_generated / stats.total_tickets) * 100) : 0}% ready</div>
                 </div>
             `;
       }
@@ -643,7 +313,7 @@
       function displayRegistrations(registrations) {
         if (registrations.length === 0) {
           document.getElementById("registrationsTable").innerHTML = `
-                    <p style="text-align: center; padding: 20px; color: #7f8c8d;">
+                    <p style="text-align: center; padding: var(--space-2xl); color: var(--color-text-muted);">
                         No registrations found
                     </p>
                 `;
@@ -651,7 +321,7 @@
         }
 
         const tableHTML = `
-                <table class="data-table">
+                <table class="admin-table">
                     <thead>
                         <tr>
                             <th>Ticket ID</th>
@@ -668,12 +338,12 @@
                           .map(
                             (reg) => `
                             <tr>
-                                <td><span class="ticket-id">${escapeHtml(reg.ticket_id)}</span></td>
+                                <td><span style="font-family: var(--font-mono); font-size: var(--font-size-xs); background: var(--color-background-secondary); padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm);">${escapeHtml(reg.ticket_id)}</span></td>
                                 <td>${escapeHtml(reg.attendee_first_name)} ${escapeHtml(reg.attendee_last_name)}</td>
                                 <td>${escapeHtml(reg.attendee_email)}</td>
                                 <td>${escapeHtml(formatTicketType(reg.ticket_type))}</td>
                                 <td>
-                                    <span class="status-badge status-${reg.checked_in_at ? "checked-in" : escapeHtml(reg.status)}">
+                                    <span class="status-badge ${reg.checked_in_at ? "success" : reg.status === "valid" ? "info" : "warning"}">
                                         ${reg.checked_in_at ? "Checked In" : escapeHtml(reg.status)}
                                     </span>
                                 </td>
@@ -681,8 +351,8 @@
                                 <td>
                                     ${
                                       reg.checked_in_at
-                                        ? `<button class="checkin-btn" data-action="undo" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}">Undo</button>`
-                                        : `<button class="checkin-btn" data-action="checkin" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}">Check In</button>`
+                                        ? `<button class="btn btn-secondary" style="padding: var(--space-xs) var(--space-sm); font-size: var(--font-size-xs);" data-action="undo" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}">Undo</button>`
+                                        : `<button class="btn btn-accent" style="padding: var(--space-xs) var(--space-sm); font-size: var(--font-size-xs);" data-action="checkin" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}">Check In</button>`
                                     }
                                 </td>
                             </tr>
@@ -707,19 +377,19 @@
         }
 
         pagination.innerHTML = `
-                <button onclick="loadRegistrations(0)" ${currentPage === 0 ? "disabled" : ""}>
+                <button class="btn btn-secondary" onclick="loadRegistrations(0)" ${currentPage === 0 ? "disabled" : ""} style="padding: var(--space-sm) var(--space-md); font-size: var(--font-size-sm);">
                     First
                 </button>
-                <button onclick="loadRegistrations(${currentPage - 1})" ${currentPage === 0 ? "disabled" : ""}>
+                <button class="btn btn-secondary" onclick="loadRegistrations(${currentPage - 1})" ${currentPage === 0 ? "disabled" : ""} style="padding: var(--space-sm) var(--space-md); font-size: var(--font-size-sm);">
                     Previous
                 </button>
-                <span class="page-info">
+                <span style="padding: var(--space-sm) var(--space-md); color: var(--color-text-secondary); font-family: var(--font-code); font-size: var(--font-size-sm);">
                     Page ${currentPage + 1} of ${totalPages}
                 </span>
-                <button onclick="loadRegistrations(${currentPage + 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""}>
+                <button class="btn btn-secondary" onclick="loadRegistrations(${currentPage + 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""} style="padding: var(--space-sm) var(--space-md); font-size: var(--font-size-sm);">
                     Next
                 </button>
-                <button onclick="loadRegistrations(${totalPages - 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""}>
+                <button class="btn btn-secondary" onclick="loadRegistrations(${totalPages - 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""} style="padding: var(--space-sm) var(--space-md); font-size: var(--font-size-sm);">
                     Last
                 </button>
             `;
