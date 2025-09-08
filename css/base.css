@@ -190,9 +190,9 @@
   --shadow-color-strong: rgba(0, 0, 0, 0.4);
 }
 
-/* System Preference Dark Mode */
+/* System Preference Dark Mode - Only applies when explicitly opted-in */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  [data-theme="auto"] {
     /* Background Colors */
     --color-background: var(--color-gray-900);
     --color-background-secondary: var(--color-gray-800);
