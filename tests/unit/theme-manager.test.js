@@ -3,13 +3,11 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-// Import the theme manager functions
+// Import the theme manager functions (simplified fixed theme implementation)
 import {
   THEMES,
-  setTheme,
   getTheme,
   getCurrentTheme,
-  toggleTheme,
   initializeTheme,
   isAdminPage
 } from '../../js/theme-manager.js';
@@ -102,6 +100,17 @@ describe('ThemeManager', () => {
     // Restore original location
     window.location = originalLocation;
     
+    // Ensure documentElement is restored if it was changed in tests
+    if (!document.documentElement) {
+      // Create a new documentElement if it was removed
+      document.documentElement = document.createElement('html');
+    }
+    
+    // Clean up data-theme attribute
+    if (document.documentElement) {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    
     // Clear all mocks
     vi.clearAllMocks();
   });
@@ -110,11 +119,11 @@ describe('ThemeManager', () => {
     it('should define all theme constants', () => {
       expect(THEMES.LIGHT).toBe('light');
       expect(THEMES.DARK).toBe('dark');
-      expect(THEMES.AUTO).toBe('auto');
+      // AUTO theme not supported in fixed theme implementation
     });
 
     it('should have all expected theme values', () => {
-      const expectedThemes = ['light', 'dark', 'auto'];
+      const expectedThemes = ['light', 'dark']; // Only fixed themes
       const actualThemes = Object.values(THEMES);
       expect(actualThemes).toEqual(expect.arrayContaining(expectedThemes));
       expect(actualThemes).toHaveLength(expectedThemes.length);
@@ -191,83 +200,54 @@ describe('ThemeManager', () => {
     });
   });
 
-  describe('localStorage persistence', () => {
-    it('should store theme preference', () => {
-      setTheme(THEMES.DARK);
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('theme-preference', THEMES.DARK);
-      expect(mockLocalStorage.data['theme-preference']).toBe(THEMES.DARK);
+  describe('fixed theme behavior', () => {
+    it('should return dark theme for admin pages', () => {
+      window.location.pathname = '/admin';
+      const theme = getTheme();
+      expect(theme).toBe(THEMES.DARK);
     });
 
-    it('should retrieve stored theme preference', () => {
-      mockLocalStorage.data['theme-preference'] = THEMES.LIGHT;
+    it('should return light theme for main site pages', () => {
+      window.location.pathname = '/tickets';
       const theme = getTheme();
-      expect(mockLocalStorage.getItem).toHaveBeenCalledWith('theme-preference');
       expect(theme).toBe(THEMES.LIGHT);
     });
 
-    it('should handle missing localStorage gracefully', () => {
-      // Mock localStorage as undefined
-      Object.defineProperty(window, 'localStorage', {
-        value: undefined,
-        writable: true,
-        configurable: true
-      });
-
-      expect(() => setTheme(THEMES.DARK)).not.toThrow();
-      expect(() => getTheme()).not.toThrow();
-    });
-
-    it('should handle localStorage errors gracefully', () => {
-      // The current implementation doesn't wrap localStorage in try-catch
-      // This is a known limitation - localStorage errors will throw
-      const originalGetItem = mockLocalStorage.getItem;
-      mockLocalStorage.getItem = vi.fn(() => {
-        throw new Error('LocalStorage error');
-      });
-
-      // The actual implementation will throw, which is expected behavior
-      expect(() => getTheme()).toThrow('LocalStorage error');
-      
-      // Restore original method
-      mockLocalStorage.getItem = originalGetItem;
-    });
-
-    it('should clear stored theme when invalid', () => {
-      mockLocalStorage.data['theme-preference'] = 'invalid-theme';
-      
-      // Should fallback to default behavior for invalid stored theme
+    it('should not use localStorage (fixed themes only)', () => {
+      // Fixed theme implementation doesn't use localStorage
+      window.location.pathname = '/admin';
       const theme = getTheme();
-      expect(theme).toBe(THEMES.AUTO); // Default fallback
+      expect(theme).toBe(THEMES.DARK);
+      expect(mockLocalStorage.getItem).not.toHaveBeenCalled();
+      expect(mockLocalStorage.setItem).not.toHaveBeenCalled();
     });
   });
 
-  describe('system preference detection', () => {
-    it('should detect dark system preference', () => {
-      mockMatchMedia.mockReturnValue({
-        matches: true, // Dark mode preferred
-        addEventListener: vi.fn(),
-        addListener: vi.fn()
-      });
-
-      // Mock no stored preference to test system detection
-      mockLocalStorage.data = {};
+  describe('theme determination', () => {
+    it('should determine theme based on page type only', () => {
+      // Admin page always gets dark theme
+      window.location.pathname = '/admin';
+      expect(getTheme()).toBe(THEMES.DARK);
+      expect(getCurrentTheme()).toBe(THEMES.DARK);
       
-      const theme = getTheme();
-      expect(theme).toBe(THEMES.AUTO); // Returns auto, but resolves to system preference
+      // Main site page always gets light theme
+      window.location.pathname = '/tickets';
+      expect(getTheme()).toBe(THEMES.LIGHT);
+      expect(getCurrentTheme()).toBe(THEMES.LIGHT);
     });
 
-    it('should detect light system preference', () => {
+    it('should not be affected by system preferences', () => {
+      // Mock system preferences (should not affect fixed theme implementation)
       mockMatchMedia.mockReturnValue({
-        matches: false, // Light mode preferred
+        matches: true, // Dark system preference
         addEventListener: vi.fn(),
         addListener: vi.fn()
       });
 
-      // Mock no stored preference to test system detection
-      mockLocalStorage.data = {};
-      
-      const theme = getTheme();
-      expect(theme).toBe(THEMES.AUTO); // Returns auto, but resolves to system preference
+      // Main site should still get light theme regardless of system preference
+      window.location.pathname = '/tickets';
+      expect(getTheme()).toBe(THEMES.LIGHT);
+      expect(getCurrentTheme()).toBe(THEMES.LIGHT);
     });
 
     it('should handle missing matchMedia gracefully', () => {
@@ -279,65 +259,25 @@ describe('ThemeManager', () => {
 
       expect(() => initializeTheme()).not.toThrow();
       expect(() => getCurrentTheme()).not.toThrow();
-    });
-
-    it('should fallback to light when matchMedia unavailable', () => {
-      // Remove matchMedia
-      Object.defineProperty(window, 'matchMedia', {
-        value: undefined,
-        writable: true,
-        configurable: true
-      });
-
-      setTheme(THEMES.AUTO);
-      const currentTheme = getCurrentTheme();
-      expect(currentTheme).toBe(THEMES.LIGHT); // Should fallback to light
+      
+      // Should still work based on page type
+      window.location.pathname = '/admin';
+      expect(getCurrentTheme()).toBe(THEMES.DARK);
     });
   });
 
   describe('theme application to DOM', () => {
-    it('should apply theme to document element', () => {
-      setTheme(THEMES.DARK);
+    it('should apply dark theme for admin pages', () => {
+      window.location.pathname = '/admin';
+      initializeTheme();
       expect(document.documentElement.getAttribute('data-theme')).toBe(THEMES.DARK);
     });
 
-    it('should resolve auto theme to actual theme', () => {
-      // Mock system preference for dark
-      mockMatchMedia.mockReturnValue({
-        matches: true,
-        addEventListener: vi.fn(),
-        addListener: vi.fn()
-      });
-
-      setTheme(THEMES.AUTO);
-      expect(document.documentElement.getAttribute('data-theme')).toBe(THEMES.DARK);
-    });
-
-    it('should resolve auto theme to light for light preference', () => {
-      // Mock system preference for light
-      mockMatchMedia.mockReturnValue({
-        matches: false,
-        addEventListener: vi.fn(),
-        addListener: vi.fn()
-      });
-
-      setTheme(THEMES.AUTO);
-      expect(document.documentElement.getAttribute('data-theme')).toBe(THEMES.LIGHT);
-    });
-
-    it('should force dark theme on admin pages for auto theme', () => {
-      window.location.pathname = '/admin';
-      
-      setTheme(THEMES.AUTO); // Auto theme should be forced to dark on admin
-      expect(document.documentElement.getAttribute('data-theme')).toBe(THEMES.DARK); // Should be dark
-    });
-
-    it('should allow light theme on admin pages when explicitly set', () => {
-      window.location.pathname = '/admin';
-      
-      setTheme(THEMES.LIGHT);
-      // Based on implementation: if theme === THEMES.LIGHT, it's not forced to dark
-      expect(document.documentElement.getAttribute('data-theme')).toBe(THEMES.LIGHT);
+    it('should remove theme attribute for main site pages', () => {
+      window.location.pathname = '/tickets';
+      initializeTheme();
+      // Fixed theme implementation removes attribute for light theme
+      expect(document.documentElement.getAttribute('data-theme')).toBeNull();
     });
 
     it('should handle missing document gracefully', () => {
@@ -345,14 +285,14 @@ describe('ThemeManager', () => {
       // @ts-ignore
       global.document = undefined;
 
-      expect(() => setTheme(THEMES.DARK)).not.toThrow();
+      expect(() => initializeTheme()).not.toThrow();
       expect(() => getCurrentTheme()).not.toThrow();
 
       // Restore document
       global.document = originalDocument;
     });
 
-    it('should dispatch themechange event', () => {
+    it('should dispatch themechange event on initialization', () => {
       let eventFired = false;
       let eventDetail = null;
 
@@ -361,41 +301,22 @@ describe('ThemeManager', () => {
         eventDetail = event.detail;
       });
 
-      setTheme(THEMES.DARK);
+      window.location.pathname = '/admin';
+      initializeTheme();
 
       expect(eventFired).toBe(true);
       expect(eventDetail.theme).toBe(THEMES.DARK);
-      expect(eventDetail.original).toBe(THEMES.DARK);
-    });
-
-    it('should dispatch themechange event with resolved theme for auto', () => {
-      let eventDetail = null;
-
-      document.addEventListener('themechange', (event) => {
-        eventDetail = event.detail;
-      });
-
-      // Mock light system preference
-      mockMatchMedia.mockReturnValue({
-        matches: false,
-        addEventListener: vi.fn(),
-        addListener: vi.fn()
-      });
-
-      setTheme(THEMES.AUTO);
-
-      expect(eventDetail.theme).toBe(THEMES.LIGHT); // Resolved theme
-      expect(eventDetail.original).toBe(THEMES.AUTO); // Original preference
     });
   });
 
   describe('getCurrentTheme', () => {
-    it('should return current applied theme', () => {
-      document.documentElement.setAttribute('data-theme', THEMES.DARK);
+    it('should return theme based on page type for admin pages', () => {
+      window.location.pathname = '/admin';
       expect(getCurrentTheme()).toBe(THEMES.DARK);
     });
 
-    it('should return light as default when no theme set', () => {
+    it('should return light theme for main site pages', () => {
+      window.location.pathname = '/tickets';
       expect(getCurrentTheme()).toBe(THEMES.LIGHT);
     });
 
@@ -411,88 +332,23 @@ describe('ThemeManager', () => {
     });
   });
 
-  describe('toggleTheme', () => {
-    it('should toggle from light to dark', () => {
-      setTheme(THEMES.LIGHT);
-      toggleTheme();
-      expect(getCurrentTheme()).toBe(THEMES.DARK);
-    });
-
-    it('should toggle from dark to light', () => {
-      setTheme(THEMES.DARK);
-      toggleTheme();
-      expect(getCurrentTheme()).toBe(THEMES.LIGHT);
-    });
-
-    it('should handle auto theme by toggling to opposite of system preference', () => {
-      // Mock system preference for light
-      mockMatchMedia.mockReturnValue({
-        matches: false, // Light system preference
-        addEventListener: vi.fn(),
-        addListener: vi.fn()
-      });
-
-      setTheme(THEMES.AUTO); // Should resolve to light
-      expect(getCurrentTheme()).toBe(THEMES.LIGHT);
-
-      toggleTheme(); // Should toggle to dark
-      expect(getCurrentTheme()).toBe(THEMES.DARK);
-    });
-
-    it('should store the toggled theme preference', () => {
-      setTheme(THEMES.LIGHT);
-      toggleTheme();
-
-      expect(mockLocalStorage.data['theme-preference']).toBe(THEMES.DARK);
-    });
-  });
-
-  describe('setTheme validation', () => {
-    it('should accept valid theme values', () => {
-      expect(() => setTheme(THEMES.LIGHT)).not.toThrow();
-      expect(() => setTheme(THEMES.DARK)).not.toThrow();
-      expect(() => setTheme(THEMES.AUTO)).not.toThrow();
-    });
-
-    it('should handle invalid theme values gracefully', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      
-      setTheme('invalid-theme');
-      
-      expect(consoleSpy).toHaveBeenCalledWith('Invalid theme: invalid-theme. Using \'auto\' instead.');
-      expect(getCurrentTheme()).toBe(THEMES.LIGHT); // Auto resolves to light by default
-      
-      consoleSpy.mockRestore();
-    });
-
-    it('should fallback to auto for invalid themes', () => {
-      setTheme('completely-invalid');
-      expect(mockLocalStorage.data['theme-preference']).toBe(THEMES.AUTO);
-    });
-  });
+  // toggleTheme and setTheme not supported in fixed theme implementation
 
   describe('initializeTheme', () => {
-    it('should apply stored theme on initialization', () => {
-      mockLocalStorage.data['theme-preference'] = THEMES.DARK;
+    it('should apply theme based on page type for admin pages', () => {
+      window.location.pathname = '/admin';
       initializeTheme();
       expect(document.documentElement.getAttribute('data-theme')).toBe(THEMES.DARK);
     });
 
-    it('should apply auto theme when no preference stored', () => {
-      mockLocalStorage.data = {}; // No stored preference
-      
-      // Mock light system preference
-      mockMatchMedia.mockReturnValue({
-        matches: false,
-        addEventListener: vi.fn(),
-        addListener: vi.fn()
-      });
-
+    it('should apply theme based on page type for main site pages', () => {
+      window.location.pathname = '/tickets';
       initializeTheme();
-      expect(document.documentElement.getAttribute('data-theme')).toBe(THEMES.LIGHT);
+      // Fixed theme implementation removes attribute for light theme
+      expect(document.documentElement.getAttribute('data-theme')).toBeNull();
     });
 
-    it('should set up system theme change listeners', () => {
+    it('should not set up system theme listeners (fixed themes only)', () => {
       const mockMediaQuery = {
         matches: false,
         addEventListener: vi.fn(),
@@ -502,134 +358,53 @@ describe('ThemeManager', () => {
 
       initializeTheme();
 
-      // Should set up both modern and legacy listeners
-      expect(mockMediaQuery.addEventListener).toHaveBeenCalledWith('change', expect.any(Function));
-    });
-
-    it('should handle legacy browsers without addEventListener', () => {
-      const mockMediaQuery = {
-        matches: false,
-        addEventListener: undefined, // Legacy browser
-        addListener: vi.fn()
-      };
-      mockMatchMedia.mockReturnValue(mockMediaQuery);
-
-      initializeTheme();
-
-      expect(mockMediaQuery.addListener).toHaveBeenCalledWith(expect.any(Function));
-    });
-
-    it('should respond to system theme changes when using auto', () => {
-      let systemChangeCallback = null;
-      const mockMediaQuery = {
-        matches: false,
-        addEventListener: vi.fn((event, callback) => {
-          if (event === 'change') {
-            systemChangeCallback = callback;
-          }
-        }),
-        addListener: vi.fn()
-      };
-      mockMatchMedia.mockReturnValue(mockMediaQuery);
-
-      // Set to auto theme
-      mockLocalStorage.data['theme-preference'] = THEMES.AUTO;
-      initializeTheme();
-
-      // Simulate system theme change
-      if (systemChangeCallback) {
-        mockMediaQuery.matches = true; // Change to dark
-        systemChangeCallback({ matches: true });
-      }
-
-      expect(document.documentElement.getAttribute('data-theme')).toBe(THEMES.DARK);
-    });
-
-    it('should not respond to system changes when explicit theme is set', () => {
-      let systemChangeCallback = null;
-      const mockMediaQuery = {
-        matches: false,
-        addEventListener: vi.fn((event, callback) => {
-          if (event === 'change') {
-            systemChangeCallback = callback;
-          }
-        }),
-        addListener: vi.fn()
-      };
-      mockMatchMedia.mockReturnValue(mockMediaQuery);
-
-      // Set explicit theme
-      mockLocalStorage.data['theme-preference'] = THEMES.LIGHT;
-      initializeTheme();
-
-      // Simulate system theme change
-      if (systemChangeCallback) {
-        mockMediaQuery.matches = true; // Change to dark
-        systemChangeCallback({ matches: true });
-      }
-
-      // Should remain light (explicit preference)
-      expect(document.documentElement.getAttribute('data-theme')).toBe(THEMES.LIGHT);
+      // Fixed theme implementation doesn't listen to system preferences
+      expect(mockMediaQuery.addEventListener).not.toHaveBeenCalled();
+      expect(mockMediaQuery.addListener).not.toHaveBeenCalled();
     });
   });
 
   describe('admin page theme handling', () => {
-    it('should default to dark theme on admin pages', () => {
+    it('should always use dark theme on admin pages', () => {
       window.location.pathname = '/admin';
-      mockLocalStorage.data = {}; // No stored preference
-
       const theme = getTheme();
       expect(theme).toBe(THEMES.DARK);
     });
 
-    it('should allow explicit light theme on admin pages', () => {
+    it('should always use dark theme on admin dashboard', () => {
       window.location.pathname = '/admin/dashboard';
-      setTheme(THEMES.LIGHT); // Explicitly set light theme
-      expect(getCurrentTheme()).toBe(THEMES.LIGHT); // Should allow light theme when explicitly set
-    });
-
-    it('should respect auto theme resolution on admin pages', () => {
-      window.location.pathname = '/admin';
-      
-      // Mock dark system preference
-      mockMatchMedia.mockReturnValue({
-        matches: true,
-        addEventListener: vi.fn(),
-        addListener: vi.fn()
-      });
-
-      setTheme(THEMES.AUTO);
+      expect(getTheme()).toBe(THEMES.DARK);
       expect(getCurrentTheme()).toBe(THEMES.DARK);
     });
 
-    it('should handle non-admin pages normally', () => {
+    it('should always use light theme on non-admin pages', () => {
       window.location.pathname = '/tickets';
-      setTheme(THEMES.LIGHT);
+      expect(getTheme()).toBe(THEMES.LIGHT);
       expect(getCurrentTheme()).toBe(THEMES.LIGHT);
     });
   });
 
   describe('CSS custom property integration', () => {
-    it('should apply theme attribute for CSS targeting', () => {
-      setTheme(THEMES.DARK);
+    it('should apply theme attribute for admin pages', () => {
+      window.location.pathname = '/admin';
+      initializeTheme();
       expect(document.documentElement.hasAttribute('data-theme')).toBe(true);
       expect(document.documentElement.getAttribute('data-theme')).toBe(THEMES.DARK);
     });
 
-    it('should update attribute when theme changes', () => {
-      setTheme(THEMES.LIGHT);
-      expect(document.documentElement.getAttribute('data-theme')).toBe(THEMES.LIGHT);
-
-      setTheme(THEMES.DARK);
-      expect(document.documentElement.getAttribute('data-theme')).toBe(THEMES.DARK);
+    it('should remove theme attribute for main site pages', () => {
+      window.location.pathname = '/tickets';
+      initializeTheme();
+      // Fixed theme removes attribute for light theme
+      expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
     });
 
-    it('should allow CSS selectors to target themes', () => {
+    it('should allow CSS selectors to target admin dark theme', () => {
       // Create test styles
       const style = document.createElement('style');
       style.textContent = `
-        [data-theme="light"] .test-element { color: rgb(0, 0, 0); }
-        [data-theme="dark"] .test-element { color: rgb(255, 255, 255); }
+        .test-element { color: rgb(0, 0, 0); } /* Default light theme */
+        [data-theme="dark"] .test-element { color: rgb(255, 255, 255); } /* Dark theme override */
       `;
       document.head.appendChild(style);
 
@@ -637,15 +412,17 @@ describe('ThemeManager', () => {
       testElement.className = 'test-element';
       document.body.appendChild(testElement);
 
-      // Test light theme
-      setTheme(THEMES.LIGHT);
-      const lightStyles = getComputedStyle(testElement);
-      expect(lightStyles.color).toBe('rgb(0, 0, 0)'); // black in RGB
-
-      // Test dark theme
-      setTheme(THEMES.DARK);
+      // Test admin page (dark theme)
+      window.location.pathname = '/admin';
+      initializeTheme();
       const darkStyles = getComputedStyle(testElement);
-      expect(darkStyles.color).toBe('rgb(255, 255, 255)'); // white in RGB
+      expect(darkStyles.color).toBe('rgb(255, 255, 255)'); // white in RGB for dark theme
+
+      // Test main site page (light theme, no attribute)
+      window.location.pathname = '/tickets';
+      initializeTheme();
+      const lightStyles = getComputedStyle(testElement);
+      expect(lightStyles.color).toBe('rgb(0, 0, 0)'); // black in RGB for default light theme
 
       // Cleanup
       document.head.removeChild(style);
@@ -654,175 +431,130 @@ describe('ThemeManager', () => {
   });
 
   describe('edge cases and error handling', () => {
-    it('should handle null and undefined inputs gracefully', () => {
-      expect(() => setTheme(null)).not.toThrow();
-      expect(() => setTheme(undefined)).not.toThrow();
+    it('should work correctly with different admin paths', () => {
+      const adminPaths = ['/admin', '/admin/', '/admin/dashboard', '/pages/admin', '/ADMIN/users'];
       
-      // Should fallback to auto
-      expect(mockLocalStorage.data['theme-preference']).toBe(THEMES.AUTO);
+      adminPaths.forEach(path => {
+        window.location.pathname = path;
+        expect(getTheme()).toBe(THEMES.DARK);
+        expect(getCurrentTheme()).toBe(THEMES.DARK);
+      });
     });
 
-    it('should handle missing localStorage completely', () => {
-      // Remove localStorage entirely by setting to undefined
+    it('should work correctly with main site paths', () => {
+      const mainPaths = ['/', '/tickets', '/gallery', '/about', '/home'];
+      
+      mainPaths.forEach(path => {
+        window.location.pathname = path;
+        expect(getTheme()).toBe(THEMES.LIGHT);
+        expect(getCurrentTheme()).toBe(THEMES.LIGHT);
+      });
+    });
+
+    it('should handle missing localStorage gracefully', () => {
+      // Remove localStorage entirely (shouldn't affect fixed theme implementation)
       Object.defineProperty(window, 'localStorage', {
         value: undefined,
         writable: true,
         configurable: true
       });
       
-      expect(() => setTheme(THEMES.DARK)).not.toThrow();
       expect(() => getTheme()).not.toThrow();
       expect(() => initializeTheme()).not.toThrow();
+      
+      // Should still work based on page type
+      window.location.pathname = '/admin';
+      expect(getTheme()).toBe(THEMES.DARK);
     });
 
-    it('should handle document without documentElement', () => {
-      // The theme manager checks for document existence but doesn't handle null documentElement
-      // This is an expected limitation since all browsers have documentElement
+    it('should handle document without documentElement correctly', () => {
+      // Mock document.documentElement as null (edge case that doesn't occur in real browsers)
       const originalDocumentElement = document.documentElement;
       
-      // Mock the function calls that would fail
-      const originalSetAttribute = document.documentElement.setAttribute;
-      const originalGetAttribute = document.documentElement.getAttribute;
-      
-      document.documentElement.setAttribute = vi.fn(() => {
-        throw new Error('Cannot set attribute on null element');
+      Object.defineProperty(document, 'documentElement', {
+        value: null,
+        writable: true,
+        configurable: true
       });
-      document.documentElement.getAttribute = vi.fn(() => null);
 
-      // The implementation doesn't handle this gracefully, which is acceptable
-      expect(() => setTheme(THEMES.DARK)).toThrow();
-      expect(() => getCurrentTheme()).not.toThrow(); // getAttribute should work with fallback
-
-      // Restore
-      document.documentElement.setAttribute = originalSetAttribute;
-      document.documentElement.getAttribute = originalGetAttribute;
-    });
-
-    it('should handle concurrent theme changes gracefully', () => {
-      // Simulate rapid theme changes
-      setTheme(THEMES.LIGHT);
-      setTheme(THEMES.DARK);
-      setTheme(THEMES.AUTO);
-      setTheme(THEMES.LIGHT);
-
-      expect(getCurrentTheme()).toBe(THEMES.LIGHT);
-      expect(mockLocalStorage.data['theme-preference']).toBe(THEMES.LIGHT);
-    });
-
-    it('should handle theme preference conflicts', () => {
-      // Set conflicting preferences
-      mockLocalStorage.data['theme-preference'] = THEMES.LIGHT;
-      document.documentElement.setAttribute('data-theme', THEMES.DARK);
-
-      // getCurrentTheme should return what's actually applied
-      expect(getCurrentTheme()).toBe(THEMES.DARK);
+      // The implementation doesn't handle null documentElement gracefully, which is expected
+      // This is an edge case that doesn't occur in real browsers
+      expect(() => initializeTheme()).toThrow();
       
-      // getTheme should return stored preference
-      expect(getTheme()).toBe(THEMES.LIGHT);
+      // getCurrentTheme doesn't try to access documentElement, so it should work
+      expect(() => getCurrentTheme()).not.toThrow();
+
+      // Restore immediately to prevent issues in afterEach
+      Object.defineProperty(document, 'documentElement', {
+        value: originalDocumentElement,
+        writable: true,
+        configurable: true
+      });
     });
   });
 
   describe('integration scenarios', () => {
-    it('should work correctly in complete theme switching flow', () => {
-      // Start with no preference (should use auto)
-      mockLocalStorage.data = {};
-      
-      // Mock light system preference
-      mockMatchMedia.mockReturnValue({
-        matches: false,
-        addEventListener: vi.fn(),
-        addListener: vi.fn()
-      });
-
-      // Initialize
-      initializeTheme();
-      expect(getCurrentTheme()).toBe(THEMES.LIGHT);
-
-      // User manually sets dark theme
-      setTheme(THEMES.DARK);
-      expect(getCurrentTheme()).toBe(THEMES.DARK);
-      expect(mockLocalStorage.data['theme-preference']).toBe(THEMES.DARK);
-
-      // User toggles theme
-      toggleTheme();
-      expect(getCurrentTheme()).toBe(THEMES.LIGHT);
-      expect(mockLocalStorage.data['theme-preference']).toBe(THEMES.LIGHT);
-
-      // User sets to auto
-      setTheme(THEMES.AUTO);
-      expect(getCurrentTheme()).toBe(THEMES.LIGHT); // Should match system preference
-    });
-
-    it('should handle admin page theme enforcement throughout session', () => {
-      // Start on regular page
+    it('should work correctly for page navigation scenarios', () => {
+      // Start on main site
       window.location.pathname = '/home';
-      setTheme(THEMES.LIGHT);
+      initializeTheme();
       expect(getCurrentTheme()).toBe(THEMES.LIGHT);
+      expect(document.documentElement.getAttribute('data-theme')).toBeNull();
 
-      // Navigate to admin page and set theme again (simulates theme re-evaluation)
+      // Navigate to admin page
       window.location.pathname = '/admin';
-      setTheme(THEMES.AUTO); // Auto theme should be forced to dark on admin pages
-      expect(getCurrentTheme()).toBe(THEMES.DARK); // Should be forced to dark
-    });
-
-    it('should preserve user preferences across page loads', () => {
-      // User sets preference
-      setTheme(THEMES.DARK);
-      expect(mockLocalStorage.data['theme-preference']).toBe(THEMES.DARK);
-
-      // Simulate page reload by clearing DOM and re-initializing
-      if (document.documentElement) {
-        document.documentElement.removeAttribute('data-theme');
-      }
       initializeTheme();
+      expect(getCurrentTheme()).toBe(THEMES.DARK);
+      expect(document.documentElement.getAttribute('data-theme')).toBe(THEMES.DARK);
 
-      expect(getCurrentTheme()).toBe(THEMES.DARK); // Should restore preference
-    });
-
-    it('should handle system preference changes during session', () => {
-      let changeCallback = null;
-      const mockMediaQuery = {
-        matches: false,
-        addEventListener: vi.fn((event, callback) => {
-          if (event === 'change') changeCallback = callback;
-        }),
-        addListener: vi.fn()
-      };
-      mockMatchMedia.mockReturnValue(mockMediaQuery);
-
-      // User chooses auto theme
-      setTheme(THEMES.AUTO);
+      // Navigate back to main site
+      window.location.pathname = '/tickets';
       initializeTheme();
-      expect(getCurrentTheme()).toBe(THEMES.LIGHT); // Light system preference
-
-      // System switches to dark mode
-      mockMediaQuery.matches = true;
-      if (changeCallback) {
-        changeCallback({ matches: true });
-      }
-
-      expect(getCurrentTheme()).toBe(THEMES.DARK); // Should update to match system
+      expect(getCurrentTheme()).toBe(THEMES.LIGHT);
+      expect(document.documentElement.getAttribute('data-theme')).toBeNull();
     });
 
-    it('should work correctly with theme events and external listeners', () => {
+    it('should handle theme events correctly', () => {
       const themeEvents = [];
       
       document.addEventListener('themechange', (event) => {
         themeEvents.push({
-          theme: event.detail.theme,
-          original: event.detail.original
+          theme: event.detail.theme
         });
       });
 
-      setTheme(THEMES.DARK);
-      setTheme(THEMES.AUTO);
-      toggleTheme();
+      // Simulate admin page initialization
+      window.location.pathname = '/admin';
+      initializeTheme();
 
-      expect(themeEvents).toHaveLength(3);
+      expect(themeEvents).toHaveLength(1);
       expect(themeEvents[0].theme).toBe(THEMES.DARK);
-      expect(themeEvents[1].theme).toBe(THEMES.LIGHT); // Auto resolved to light
-      expect(themeEvents[1].original).toBe(THEMES.AUTO);
-      expect(themeEvents[2].theme).toBe(THEMES.DARK); // Toggle from light to dark
+    });
+
+    it('should be consistent across multiple initializations', () => {
+      // Multiple initializations on same page type should be consistent
+      window.location.pathname = '/admin';
+      
+      initializeTheme();
+      expect(getCurrentTheme()).toBe(THEMES.DARK);
+      
+      initializeTheme();
+      expect(getCurrentTheme()).toBe(THEMES.DARK);
+      
+      initializeTheme();
+      expect(getCurrentTheme()).toBe(THEMES.DARK);
+    });
+
+    it('should not be affected by external DOM changes', () => {
+      window.location.pathname = '/admin';
+      initializeTheme();
+      expect(document.documentElement.getAttribute('data-theme')).toBe(THEMES.DARK);
+      
+      // Simulate external script changing theme attribute
+      document.documentElement.setAttribute('data-theme', THEMES.LIGHT);
+      
+      // getCurrentTheme should still return theme based on page type, not DOM attribute
+      expect(getCurrentTheme()).toBe(THEMES.DARK); // Based on page type, not DOM
     });
   });
 });

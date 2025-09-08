@@ -1,10 +1,15 @@
 /**
  * Unit Tests for Network Simulation Helper
  * Validates the critical fixes implemented for CodeRabbit issues
+ * 
+ * NOTE: This test is located in the E2E directory because it tests 
+ * browser automation functionality that requires CDP (Chrome DevTools Protocol).
+ * While the tests are heavily mocked for performance, they belong with E2E tests
+ * conceptually since they validate browser automation helpers.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createNetworkSimulator, NETWORK_CONDITIONS } from '../e2e/helpers/network-simulation.js';
+import { createNetworkSimulator, NETWORK_CONDITIONS } from '../../helpers/network-simulation.js';
 
 // Mock Playwright page and context
 const mockCDPSession = {
