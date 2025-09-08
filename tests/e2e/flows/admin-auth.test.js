@@ -161,7 +161,7 @@ test.describe('Admin Authentication', () => {
     
     try {
       const result = await Promise.race([
-        page.waitForURL('**/admin/dashboard.html', { timeout: 45000 }).then(() => 'dashboard'),
+        page.waitForURL('**/admin/dashboard', { timeout: 45000 }).then(() => 'dashboard'),
         page.waitForSelector('#errorMessage', { state: 'visible', timeout: 45000 }).then(() => 'error'),
         page.waitForFunction(() => {
           const loading = document.querySelector('#loading');
@@ -175,7 +175,7 @@ test.describe('Admin Authentication', () => {
       
       // Check if we're on the dashboard (success case)
       const currentUrl = page.url();
-      if (currentUrl.includes('/admin/dashboard.html')) {
+      if (currentUrl.includes('/admin/dashboard')) {
         // Success - verify we're on the dashboard page
         await expect(page).toHaveURL(/admin\/dashboard/);
         console.log('Admin login successful - redirected to dashboard');
@@ -245,13 +245,13 @@ test.describe('Admin Authentication', () => {
     // Wait for dashboard or handle MFA/errors with longer timeout
     try {
       await Promise.race([
-        page.waitForURL('**/admin/dashboard.html', { timeout: 60000 }),
+        page.waitForURL('**/admin/dashboard', { timeout: 60000 }),
         page.waitForSelector('#errorMessage', { state: 'visible', timeout: 30000 })
       ]);
       
       // Skip this test if MFA is required or login failed
       const currentUrl = page.url();
-      if (!currentUrl.includes('/admin/dashboard.html')) {
+      if (!currentUrl.includes('/admin/dashboard')) {
         console.log('Skipping session test - login did not complete successfully');
         return;
       }
@@ -262,7 +262,7 @@ test.describe('Admin Authentication', () => {
     
     // Navigate away and back - should remain logged in
     await page.goto('/tickets.html');
-    await page.goto('/admin/dashboard.html');
+    await page.goto('/admin/dashboard');
     
     // Should still be on dashboard, not redirected to login
     await expect(page).toHaveURL(/dashboard/);
@@ -282,13 +282,13 @@ test.describe('Admin Authentication', () => {
     // Wait for dashboard or handle login failure with longer timeout
     try {
       await Promise.race([
-        page.waitForURL('**/admin/dashboard.html', { timeout: 60000 }),
+        page.waitForURL('**/admin/dashboard', { timeout: 60000 }),
         page.waitForSelector('#errorMessage', { state: 'visible', timeout: 30000 })
       ]);
       
       // Skip this test if login didn't complete successfully
       const currentUrl = page.url();
-      if (!currentUrl.includes('/admin/dashboard.html')) {
+      if (!currentUrl.includes('/admin/dashboard')) {
         console.log('Skipping logout test - login did not complete successfully');
         return;
       }
@@ -315,7 +315,7 @@ test.describe('Admin Authentication', () => {
     console.log('🕒 Testing session timeout handling...');
     
     // Navigate directly to dashboard without login - this should immediately redirect
-    const navigationPromise = page.goto('/admin/dashboard.html', { 
+    const navigationPromise = page.goto('/admin/dashboard', { 
       waitUntil: 'domcontentloaded', 
       timeout: 45000 
     });

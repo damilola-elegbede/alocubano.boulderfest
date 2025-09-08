@@ -17,7 +17,7 @@ test.describe('Admin Login - Security & Access', () => {
   });
 
   test('should load admin login page and attempt login', async ({ page }) => {
-    await page.goto('/pages/admin/login.html');
+    await page.goto('/admin/login');
     
     // Wait for page to load
     await page.waitForLoadState('domcontentloaded');
@@ -48,7 +48,7 @@ test.describe('Admin Login - Security & Access', () => {
 
   test('should handle admin page access without authentication', async ({ page }) => {
     // First try to access admin dashboard directly (should fail)
-    await page.goto('/pages/admin/dashboard.html');
+    await page.goto('/admin/dashboard');
     
     // Wait for auth check to complete and redirect to occur
     try {
@@ -56,7 +56,7 @@ test.describe('Admin Login - Security & Access', () => {
       // 1. Navigation to login page (redirect)
       // 2. Auth check to set unauthenticated status
       await Promise.race([
-        page.waitForURL('**/login.html', { timeout: 5000 }),
+        page.waitForURL('**/admin/login', { timeout: 5000 }),
         page.waitForSelector('body[data-auth-status="unauthenticated"]', { timeout: 5000 }),
         page.waitForSelector('body[data-auth-status="failed"]', { timeout: 5000 })
       ]);
@@ -67,7 +67,7 @@ test.describe('Admin Login - Security & Access', () => {
     
     // Check final state - should be on login page or have auth error indicators
     const currentUrl = page.url();
-    const isOnLoginPage = currentUrl.includes('/login.html');
+    const isOnLoginPage = currentUrl.includes('/admin/login');
     const hasPasswordField = await page.locator('#password').isVisible().catch(() => false);
     const hasErrorMessage = await page.locator('.error-message').isVisible().catch(() => false);
     const hasAuthError = await page.locator('body[data-auth-status="unauthenticated"], body[data-auth-status="failed"]').count() > 0;

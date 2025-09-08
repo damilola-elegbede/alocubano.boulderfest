@@ -22,7 +22,7 @@ test('ADMIN DEBUG: Check credentials and login', async ({ page }) => {
   console.log('=========================');
 
   // Login
-  await page.goto('/pages/admin/login.html');
+  await page.goto('/admin/login');
   await page.fill('input[name="username"]', adminCredentials.email);
   await page.fill('input[type="password"]', adminCredentials.password);
   

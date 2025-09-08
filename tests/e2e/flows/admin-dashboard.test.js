@@ -63,13 +63,13 @@ test.describe('Admin Dashboard & Security', () => {
       
       // Wait for either dashboard or error, with timeout handling
       await Promise.race([
-        page.waitForURL('**/admin/dashboard.html', { timeout: 60000 }),
+        page.waitForURL('**/admin/dashboard', { timeout: 60000 }),
         page.waitForSelector('#errorMessage', { state: 'visible', timeout: 30000 })
       ]);
       
       // Check if we successfully reached dashboard
       const currentUrl = page.url();
-      if (!currentUrl.includes('/admin/dashboard.html')) {
+      if (!currentUrl.includes('/admin/dashboard')) {
         // Check for errors or skip test
         const errorMessage = page.locator('#errorMessage');
         if (await errorMessage.isVisible()) {
@@ -180,7 +180,7 @@ test.describe('Admin Dashboard & Security', () => {
     });
     
     // Navigate fresh to trigger error
-    await page.goto('/admin/dashboard.html');
+    await page.goto('/admin/dashboard');
     
     // Wait for page to stabilize with error handling
     await waitForConditions(page, {
@@ -204,7 +204,7 @@ test.describe('Admin Dashboard & Security', () => {
     await page.context().clearCookies();
     
     // Try to access dashboard directly
-    await page.goto('/admin/dashboard.html');
+    await page.goto('/admin/dashboard');
     
     // Wait for redirect or unauthorized message with modern approach
     await waitForConditions(page, {
