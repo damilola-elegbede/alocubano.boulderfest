@@ -1,5 +1,5 @@
 import authService from "../lib/auth-service.js";
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 import { withSecurityHeaders } from "../lib/security-headers.js";
 import { verifyMfaCode } from "../lib/mfa-middleware.js";
 import { getMfaRateLimitService } from "../lib/mfa-rate-limit-service.js";
@@ -45,7 +45,7 @@ async function mfaRecoveryHandler(req, res) {
  * Get recovery information and options
  */
 async function handleGetRecoveryInfo(req, res) {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
   const adminId = req.admin?.id || "admin";
 
   try {
@@ -147,7 +147,7 @@ async function handleVerifyBackupCode(req, res) {
       });
     }
 
-    const db = getDatabase();
+    const db = await getDatabaseClient();
 
     // Get unused backup codes
     const backupCodes = await db.execute({
@@ -268,7 +268,7 @@ async function handleEmergencyDisable(req, res) {
       return res.status(401).json({ error: "Invalid master password" });
     }
 
-    const db = getDatabase();
+    const db = await getDatabaseClient();
 
     // Disable MFA and remove all related data
     await db.execute({
@@ -440,7 +440,7 @@ function verifyRecoveryToken(token) {
  * Disable MFA using recovery token
  */
 async function disableMfaWithRecoveryToken(req, res, adminId) {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
 
   try {
     // Remove all MFA data
@@ -471,7 +471,7 @@ async function disableMfaWithRecoveryToken(req, res, adminId) {
  * Generate new backup codes with recovery token
  */
 async function generateNewBackupCodesWithRecovery(req, res, adminId) {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
 
   try {
     // Check if MFA is still enabled
@@ -532,7 +532,7 @@ async function generateNewBackupCodesWithRecovery(req, res, adminId) {
  * Reset MFA setup with recovery token
  */
 async function resetMfaSetupWithRecovery(req, res, adminId) {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
 
   try {
     // Reset MFA configuration to allow new setup
@@ -574,7 +574,7 @@ async function logRecoveryAttempt(
   errorReason = null,
 ) {
   try {
-    const db = getDatabase();
+    const db = await getDatabaseClient();
     const clientIP =
       req.headers["x-forwarded-for"] || req.connection?.remoteAddress;
     const userAgent = req.headers["user-agent"];

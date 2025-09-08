@@ -1,10 +1,10 @@
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 import ticketService from "../lib/ticket-service.js";
 import tokenService from "../lib/token-service.js";
 import { formatTicketType, TOKEN_ACTIONS } from "../lib/ticket-config.js";
 
 export default async function handler(req, res) {
-  const db = await getDatabase().ensureInitialized();
+  const db = await getDatabaseClient();
 
   try {
     if (req.method === "GET") {
