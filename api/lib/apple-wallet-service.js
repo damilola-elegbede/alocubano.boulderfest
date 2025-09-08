@@ -86,7 +86,8 @@ export class AppleWalletService {
 
     try {
       // Get ticket details
-      const result = const db = await getDatabaseClient(); await db.execute({
+      const db = await getDatabaseClient();
+      const result = await db.execute({
         sql: `SELECT t.*, tr.transaction_id as order_number, tr.amount_cents
               FROM tickets t
               JOIN transactions tr ON t.transaction_id = tr.id
@@ -114,7 +115,7 @@ export class AppleWalletService {
       const passBuffer = await this.createPassFile(ticket, serialNumber);
 
       // Save serial number to database
-      const db = await getDatabaseClient(); await db.execute({
+      await db.execute({
         sql: `UPDATE tickets 
               SET apple_pass_serial = ?, 
                   wallet_pass_generated_at = CURRENT_TIMESTAMP,
@@ -397,7 +398,8 @@ export class AppleWalletService {
     // For now, log the update request
     console.log(`Pass update requested for ${serialNumber}:`, changes);
 
-    const db = await getDatabaseClient(); await db.execute({
+    const db = await getDatabaseClient();
+    await db.execute({
       sql: `UPDATE tickets 
             SET wallet_pass_updated_at = CURRENT_TIMESTAMP 
             WHERE apple_pass_serial = ?`,
@@ -410,7 +412,8 @@ export class AppleWalletService {
    */
   async revokePass(ticketId, reason) {
     // First get the ticket id for logging
-    const ticket = const db = await getDatabaseClient(); await db.execute({
+    const db = await getDatabaseClient();
+    const ticket = await db.execute({
       sql: "SELECT id FROM tickets WHERE ticket_id = ?",
       args: [ticketId],
     });
@@ -420,7 +423,7 @@ export class AppleWalletService {
     }
 
     // Update the ticket with revocation info
-    const db = await getDatabaseClient(); await db.execute({
+    await db.execute({
       sql: `UPDATE tickets 
             SET wallet_pass_revoked_at = CURRENT_TIMESTAMP,
                 wallet_pass_revoked_reason = ?
@@ -436,7 +439,8 @@ export class AppleWalletService {
    * Log wallet pass event
    */
   async logPassEvent(ticketId, eventType, eventData = {}) {
-    const db = await getDatabaseClient(); await db.execute({
+    const db = await getDatabaseClient();
+    await db.execute({
       sql: `INSERT INTO wallet_pass_events (
         ticket_id, pass_type, event_type, event_data
       ) VALUES (?, ?, ?, ?)`,
