@@ -62,7 +62,7 @@ test.describe('Admin Authentication', () => {
 
   test.beforeEach(async ({ page }) => {
     // First validate that admin login route is accessible and serves the correct page
-    await validateAdminRoute(page, '/admin/login.html', 'Admin Login');
+    await validateAdminRoute(page, '/admin/login', 'Admin Login');
     
     // Wait for essential elements to be ready with extended timeouts for preview deployments
     await page.waitForSelector('h1', { timeout: 60000 });
@@ -188,7 +188,7 @@ test.describe('Admin Authentication', () => {
         } else {
           // Check if MFA is required or if we're still on login page
           const mfaInput = page.locator('input[name="mfaCode"], input[type="text"][placeholder*="code"]');
-          const isOnLoginPage = currentUrl.includes('/admin/login.html');
+          const isOnLoginPage = currentUrl.includes('/admin/login');
           
           if (await mfaInput.count() > 0) {
             console.log('MFA required for admin login - this is expected behavior');
@@ -304,7 +304,7 @@ test.describe('Admin Authentication', () => {
       await logoutButton.first().click();
       
       // Should redirect to login page with longer timeout
-      await page.waitForURL('**/admin/login.html', { timeout: 30000 });
+      await page.waitForURL('**/admin/login', { timeout: 30000 });
       await expect(page).toHaveURL(/login/);
     } else {
       console.log('No logout button found - skipping logout test');

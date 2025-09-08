@@ -55,7 +55,7 @@ test.describe('Admin Dashboard & Security', () => {
 
     try {
       // First validate login route is accessible
-      await validateAdminRoute(page, '/admin/login.html', 'Admin Login');
+      await validateAdminRoute(page, '/admin/login', 'Admin Login');
       
       await page.fill('input[name="username"]', adminCredentials.email);
       await page.fill('input[type="password"]', adminCredentials.password);
