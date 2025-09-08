@@ -422,9 +422,10 @@ async function handler(req, res) {
   }
 
   const source = detectSource(req, clientIP);
-  const db = await getDatabaseClient();
+  let db;
 
   try {
+    db = await getDatabaseClient();
     const extractionResult = extractValidationCode(token);
     const validationCode = extractionResult.validationCode;
 

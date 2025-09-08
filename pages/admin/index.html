@@ -551,7 +551,7 @@
         const format = confirm("Download as CSV? (Cancel for JSON)")
           ? "csv"
           : "json";
-        window.open(`/api/admin/generate-report?format=${format}`, "_blank");
+        window.open(`/api/admin/generate-report?format=${format}`, "_blank", "noopener,noreferrer");
       }
 
       // Test database
@@ -637,7 +637,7 @@
           "📊 Google Sheets integration requires proper setup.\nPlease refer to the documentation for sheet ID configuration.",
         );
         // In production, this would open the actual Google Sheets URL
-        // window.open('https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID', '_blank');
+        // window.open('https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID', '_blank', 'noopener,noreferrer');
       }
 
       // Logout

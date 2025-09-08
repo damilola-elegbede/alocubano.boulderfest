@@ -5,9 +5,10 @@ import { getValidationService } from "../lib/validation-service.js";
 import { withSecurityHeaders } from "../lib/security-headers.js";
 
 async function handler(req, res) {
-  const db = await getDatabaseClient();
-
+  let db;
+  
   try {
+    db = await getDatabaseClient();
     if (req.method === "GET") {
       const validationService = getValidationService();
 
