@@ -92,7 +92,7 @@ test.describe('Newsletter Subscription - Real API Test', () => {
     
     // Wait for page to load with environment-aware timeout for preview deployments
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle', { timeout: timeouts.networkIdle });
+    await page.waitForLoadState('domcontentloaded', { timeout: timeouts.networkIdle }); // Fixed: Removed networkidle wait
     
     // Verify newsletter form exists
     await expect(page.locator('#newsletter-form')).toBeVisible({ timeout: timeouts.assertion });
@@ -109,7 +109,7 @@ test.describe('Newsletter Subscription - Real API Test', () => {
     
     // Wait for form to load with environment-aware timeout for preview deployments
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle', { timeout: timeouts.networkIdle });
+    await page.waitForLoadState('domcontentloaded', { timeout: timeouts.networkIdle }); // Fixed: Removed networkidle wait
     await expect(page.locator('#newsletter-form')).toBeVisible({ timeout: timeouts.assertion });
     
     const submitButton = page.locator('.newsletter-submit');
@@ -142,7 +142,7 @@ test.describe('Newsletter Subscription - Real API Test', () => {
     
     // Wait for form to load with environment-aware timeout for preview deployments
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle', { timeout: timeouts.networkIdle });
+    await page.waitForLoadState('domcontentloaded', { timeout: timeouts.networkIdle }); // Fixed: Removed networkidle wait
     await expect(page.locator('#newsletter-form')).toBeVisible({ timeout: timeouts.assertion });
     
     // Check if Brevo API is available from environment

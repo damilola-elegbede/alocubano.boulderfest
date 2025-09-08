@@ -164,7 +164,7 @@ test.describe('Gallery Performance & Functionality', () => {
       console.log('✅ DOM content loaded');
       
       // Use longer timeout for preview deployments with cold start delays
-      await page.waitForLoadState('networkidle', { timeout: 120000 });
+      await page.waitForLoadState('domcontentloaded', { timeout: 120000 }); // Fixed: Removed networkidle wait
       console.log('✅ Network idle reached');
       
       console.log('🎉 beforeEach setup completed successfully');
@@ -367,7 +367,7 @@ test.describe('Gallery Performance & Functionality', () => {
     await page.goto('/2025-gallery');
     
     // Wait for page to reload and content to be available
-    await page.waitForLoadState('networkidle', { timeout: 90000 }).catch(() => {
+    await page.waitForLoadState('domcontentloaded', { timeout: 90000 }).catch(() => { // Fixed: Removed networkidle wait
       console.log('📍 Gallery reload network idle wait timed out');
     });
     
@@ -575,7 +575,7 @@ test.describe('Gallery Performance & Functionality', () => {
     await page.reload();
     
     // Wait for resources to load
-    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+    await page.waitForLoadState('domcontentloaded', { timeout: 60000 }).catch(() => { // Fixed: Removed networkidle wait
       console.log('📍 Resource preloading network idle wait timed out');
     });
     

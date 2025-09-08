@@ -294,7 +294,8 @@ jobs:
       # Test Environment Configuration
       E2E_TEST_MODE: 'true'
       NODE_ENV: 'test'
-      # Dynamic URL variables (fixed: reference proper outputs from get-preview-url job)
+      # Simplified URL configuration - single source of truth
+      BASE_URL: ${{ needs.get-preview-url.outputs.preview-url }}
       PLAYWRIGHT_BASE_URL: ${{ needs.get-preview-url.outputs.preview-url }}
       PREVIEW_URL: ${{ needs.get-preview-url.outputs.preview-url }}
 
@@ -314,9 +315,41 @@ jobs:
           fi
           
           echo "target-url=$TARGET_URL" >> $GITHUB_OUTPUT
+          # Simplified environment variables - all point to same URL
+          echo "BASE_URL=$TARGET_URL" >> $GITHUB_ENV
           echo "PLAYWRIGHT_BASE_URL=$TARGET_URL" >> $GITHUB_ENV
           echo "PREVIEW_URL=$TARGET_URL" >> $GITHUB_ENV
           echo "ℹ️ Using preview URL: $TARGET_URL"
+
+      - name: 🔥 Warm up deployment
+        run: |
+          echo "🔥 Warming up Vercel deployment to prevent cold start failures..."
+          TARGET_URL="${{ steps.target-url.outputs.target-url }}"
+          
+          # Warm up main page and critical API endpoints
+          for i in {1..3}; do
+            echo "  Warm-up iteration $i/3..."
+            
+            # Main page
+            curl -s -o /dev/null -w "  Main page: %{http_code} (%{time_total}s)\n" "$TARGET_URL" || true
+            
+            # Health endpoint (critical for tests)
+            curl -s -o /dev/null -w "  Health API: %{http_code} (%{time_total}s)\n" "$TARGET_URL/api/health/check" || true
+            
+            # Gallery API (used in many tests)
+            curl -s -o /dev/null -w "  Gallery API: %{http_code} (%{time_total}s)\n" "$TARGET_URL/api/gallery" || true
+            
+            # Admin page (for admin tests)
+            curl -s -o /dev/null -w "  Admin page: %{http_code} (%{time_total}s)\n" "$TARGET_URL/pages/admin/login.html" || true
+            
+            # Wait between iterations to let functions stay warm
+            if [ $i -lt 3 ]; then
+              echo "  Waiting 5 seconds before next iteration..."
+              sleep 5
+            fi
+          done
+          
+          echo "✅ Deployment warmed up - serverless functions should be ready"
 
       - name: 📋 Test Configuration
         run: |
@@ -680,8 +713,7 @@ jobs:
         id: collect
         uses: ./.github/actions/collect-test-results
         with:
-          # Fixed: Add missing test-type input
-          test-type: "e2e"
+          test-type: "e2e"  # Fixed: Added missing required input
           test-results-path: "test-results-summary.json"
 
       - name: 📄 Read Summary JSON

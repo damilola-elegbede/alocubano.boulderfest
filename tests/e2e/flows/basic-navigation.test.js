@@ -6,13 +6,13 @@ test.describe('Basic Navigation', () => {
       // Try to navigate to home page - handle both /home and / paths
       await page.goto('/');
       // Wait for page to be ready
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded'); // Fixed: Removed networkidle wait
       
       // Check if we need to redirect to /home
       const currentURL = page.url();
       if (!currentURL.includes('/home')) {
         await page.goto('/home');
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded'); // Fixed: Removed networkidle wait
       }
     } catch (error) {
       console.error('Failed to navigate to home page:', error);
@@ -57,7 +57,7 @@ test.describe('Basic Navigation', () => {
 
     // Wait for navigation with extended timeout
     await expect(page).toHaveURL(url, { timeout });
-    await page.waitForLoadState('networkidle', { timeout: 10000 });
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 }); // Fixed: Removed networkidle wait
   }
 
   async function returnToHomePage(page, timeout) {
@@ -77,11 +77,11 @@ test.describe('Basic Navigation', () => {
     if (homeLinkCount > 0) {
       await homeLink.click();
       await expect(page).toHaveURL(/\/home/, { timeout });
-      await page.waitForLoadState('networkidle', { timeout: 5000 });
+      await page.waitForLoadState('domcontentloaded', { timeout: 5000 }); // Fixed: Removed networkidle wait
     } else {
       // Fallback: navigate directly
       await page.goto('/home');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded'); // Fixed: Removed networkidle wait
     }
   }
 
@@ -147,7 +147,7 @@ test.describe('Basic Navigation', () => {
         await festivalLink.first().click();
         // Update expectation to match actual behavior - links go to boulder-fest-YYYY pages
         await expect(page).toHaveURL(/boulder-fest-20\d{2}/, { timeout: 10000 });
-        await page.waitForLoadState('networkidle', { timeout: 5000 });
+        await page.waitForLoadState('domcontentloaded', { timeout: 5000 }); // Fixed: Removed networkidle wait
       } else {
         console.log('No festival links found in dropdown');
       }
@@ -200,7 +200,7 @@ test.describe('Basic Navigation', () => {
       await homeLink.first().click();
       
       // Wait for navigation to complete
-      await page.waitForLoadState('networkidle', { timeout: 5000 });
+      await page.waitForLoadState('domcontentloaded', { timeout: 5000 }); // Fixed: Removed networkidle wait
       
       // Menu should close after clicking a navigation link - check the general nav-list instead of is-open specific
       const generalNavList = page.locator('.nav-list');

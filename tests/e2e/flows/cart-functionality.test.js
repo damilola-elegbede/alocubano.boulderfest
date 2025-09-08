@@ -44,7 +44,7 @@ test.describe('Cart Functionality', () => {
     await page.goto('/tickets.html');
     // Wait for page to fully load including network idle for preview deployments
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle', { timeout: timeouts.networkIdle });
+    await page.waitForLoadState('domcontentloaded', { timeout: timeouts.networkIdle }); // Fixed: Removed networkidle wait
   });
 
   test('should display floating cart widget', async ({ page }) => {
@@ -66,7 +66,7 @@ test.describe('Cart Functionality', () => {
     await page.waitForFunction(() => document.readyState === 'complete', {}, { timeout: timeouts.navigation });
     
     // Wait for network to settle before checking assets
-    await page.waitForLoadState('networkidle', { timeout: timeouts.networkIdle });
+    await page.waitForLoadState('domcontentloaded', { timeout: timeouts.networkIdle }); // Fixed: Removed networkidle wait
     
     // Check if all critical scripts loaded successfully
     const scriptLoadStatus = await page.evaluate(() => {

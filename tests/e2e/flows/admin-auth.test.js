@@ -37,39 +37,51 @@ test.describe('Admin Authentication', () => {
   }
 
   /**
-   * Validate route accessibility before running tests
+   * Validate route accessibility before running tests with retry logic
    */
   async function validateAdminRoute(page, route, expectedContent) {
-    try {
-      const response = await page.goto(route, { waitUntil: 'load', timeout: 60000 });
-      
-      // Check if response is successful
-      if (!response.ok()) {
-        throw new Error(`Route ${route} returned ${response.status()}: ${response.statusText()}`);
-      }
-      
-      // Wait for page to load completely
-      await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
-      // Skip networkidle for preview deployments as it causes timeouts
-      if (!isPreviewMode) {
-        try {
-          await page.waitForLoadState('networkidle', { timeout: 10000 });
-        } catch (e) {
-          // Ignore networkidle timeout, page is likely ready anyway
+    const maxRetries = 3;
+    let lastError;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`  Attempt ${attempt}/${maxRetries} to load ${route}...`);
+        
+        const response = await page.goto(route, { 
+          waitUntil: 'domcontentloaded', // Don't wait for networkidle - causes timeouts
+          timeout: 60000 
+        });
+        
+        // Check if response is successful
+        if (!response.ok()) {
+          throw new Error(`Route ${route} returned ${response.status()}: ${response.statusText()}`);
+        }
+        
+        // Wait for critical elements to be present
+        await page.waitForSelector('h1', { timeout: 30000 });
+        
+        // Check if we actually got the right page (not a fallback)
+        const content = await page.content();
+        if (!content.includes(expectedContent)) {
+          throw new Error(`Route ${route} did not serve expected content. Page may be serving fallback content.`);
+        }
+        
+        console.log(`  ✅ Successfully loaded ${route} on attempt ${attempt}`);
+        return true;
+        
+      } catch (error) {
+        lastError = error;
+        console.log(`  ⚠️ Attempt ${attempt} failed: ${error.message}`);
+        
+        if (attempt < maxRetries) {
+          console.log(`  Waiting 5 seconds before retry...`);
+          await page.waitForTimeout(5000); // Wait before retry
         }
       }
-      
-      // Check if we actually got the right page (not a fallback)
-      const content = await page.content();
-      if (!content.includes(expectedContent)) {
-        throw new Error(`Route ${route} did not serve expected content. Page may be serving fallback content.`);
-      }
-      
-      return true;
-    } catch (error) {
-      console.error(`❌ Admin route validation failed for ${route}:`, error.message);
-      throw error;
     }
+    
+    console.error(`❌ Admin route validation failed for ${route} after ${maxRetries} attempts:`, lastError.message);
+    throw lastError;
   }
 
   test.beforeEach(async ({ page }) => {

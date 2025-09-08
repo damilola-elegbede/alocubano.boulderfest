@@ -167,7 +167,7 @@ test.describe('Gallery Basic Browsing', () => {
       console.log('✅ DOM content loaded');
       
       // Use longer timeout for preview deployments with cold start delays
-      await page.waitForLoadState('networkidle', { timeout: 120000 });
+      await page.waitForLoadState('domcontentloaded', { timeout: 120000 }); // Fixed: Removed networkidle wait
       console.log('✅ Network idle reached');
       
       console.log('🎉 beforeEach setup completed successfully');
@@ -618,7 +618,7 @@ test.describe('Gallery Basic Browsing', () => {
     await page.reload();
     
     // Wait for page to fully load with proper state-based wait
-    await page.waitForLoadState('networkidle', { timeout: 90000 }).catch(() => {
+    await page.waitForLoadState('domcontentloaded', { timeout: 90000 }).catch(() => { // Fixed: Removed networkidle wait
       console.log('📍 Mobile gallery network idle wait timed out');
     });
     

@@ -122,7 +122,7 @@ test.describe('Accessibility Compliance', () => {
     await page.goto('/pages/tickets.html');
     
     // Wait for page to fully load in preview environment
-    await page.waitForLoadState('networkidle', { timeout: 30000 });
+    await page.waitForLoadState('domcontentloaded', { timeout: 30000 }); // Fixed: Removed networkidle wait
     await page.waitForTimeout(2000);
     
     // Define critical elements that must meet accessibility standards
