@@ -472,7 +472,7 @@ jobs:
           fi
           
           # Admin login page (for admin tests)  
-          ADMIN_URL="${{ env.PREVIEW_URL }}/pages/admin-login.html"
+          ADMIN_URL="${{ env.PREVIEW_URL }}/pages/admin/login.html"
           echo "Testing: $ADMIN_URL"
           if curl -s --connect-timeout 5 --max-time 15 "$ADMIN_URL" | grep -q -i "admin\|login\|password"; then
             echo "✅ Admin login page accessible"

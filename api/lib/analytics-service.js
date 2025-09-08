@@ -1,8 +1,46 @@
-import { getDatabase } from "./database.js";
+import { getDatabaseClient } from "./database.js";
 
 export class AnalyticsService {
   constructor() {
-    this.db = getDatabase();
+    this.client = null;
+    this.initialized = false;
+    this.initializationPromise = null;
+  }
+
+  /**
+   * Ensure database client is initialized
+   * @returns {Promise<Object>} The database client instance
+   */
+  async ensureInitialized() {
+    if (this.initialized && this.client) {
+      return this.client;
+    }
+    
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+    
+    this.initializationPromise = this._performInitialization();
+    
+    try {
+      return await this.initializationPromise;
+    } catch (error) {
+      this.initializationPromise = null;
+      throw error;
+    }
+  }
+
+  /**
+   * Perform the actual initialization
+   */
+  async _performInitialization() {
+    try {
+      this.client = await getDatabaseClient();
+      this.initialized = true;
+      return this.client;
+    } catch (error) {
+      throw new Error(`Failed to initialize analytics service: ${error.message}`);
+    }
   }
 
   /**
@@ -10,7 +48,8 @@ export class AnalyticsService {
    */
   async getEventStatistics(eventId = "boulder-fest-2026") {
     try {
-      const stats = await this.db.execute({
+      const client = await this.ensureInitialized();
+      const stats = await client.execute({
         sql: `
         SELECT 
           -- Ticket Stats
@@ -62,7 +101,8 @@ export class AnalyticsService {
    */
   async getSalesTrend(days = 30, eventId = "boulder-fest-2026") {
     try {
-      const trend = await this.db.execute({
+      const client = await this.ensureInitialized();
+      const trend = await client.execute({
         sql: `
         SELECT 
           date(created_at) as sale_date,
@@ -104,7 +144,8 @@ export class AnalyticsService {
    * Get hourly sales pattern
    */
   async getHourlySalesPattern(eventId = "boulder-fest-2026") {
-    const pattern = await this.db.execute({
+    const client = await this.ensureInitialized();
+    const pattern = await client.execute({
       sql: `
         SELECT 
           strftime('%H', created_at) as hour,
@@ -141,7 +182,8 @@ export class AnalyticsService {
    * Get customer analytics
    */
   async getCustomerAnalytics(eventId = "boulder-fest-2026") {
-    const analytics = await this.db.execute({
+    const client = await this.ensureInitialized();
+    const analytics = await client.execute({
       sql: `
         WITH customer_stats AS (
           SELECT 
@@ -171,7 +213,7 @@ export class AnalyticsService {
     });
 
     // Get top customers
-    const topCustomers = await this.db.execute({
+    const topCustomers = await client.execute({
       sql: `
         SELECT 
           tr.customer_email,
@@ -200,7 +242,8 @@ export class AnalyticsService {
    * Get check-in analytics
    */
   async getCheckinAnalytics(eventId = "boulder-fest-2026") {
-    const checkins = await this.db.execute({
+    const client = await this.ensureInitialized();
+    const checkins = await client.execute({
       sql: `
         SELECT 
           date(checked_in_at) as checkin_date,
@@ -218,7 +261,7 @@ export class AnalyticsService {
     });
 
     // Get check-in rate by ticket type
-    const checkinRates = await this.db.execute({
+    const checkinRates = await client.execute({
       sql: `
         SELECT 
           ticket_type,
@@ -244,7 +287,8 @@ export class AnalyticsService {
    * Get revenue breakdown
    */
   async getRevenueBreakdown(eventId = "boulder-fest-2026") {
-    const breakdown = await this.db.execute({
+    const client = await this.ensureInitialized();
+    const breakdown = await client.execute({
       sql: `
         SELECT 
           ticket_type,
@@ -272,9 +316,10 @@ export class AnalyticsService {
    * Get wallet adoption analytics
    */
   async getWalletAnalytics(eventId = "boulder-fest-2026") {
+    const client = await this.ensureInitialized();
     // Run all three wallet queries in parallel for better performance
     const [analytics, summary, roi] = await Promise.all([
-      this.db.execute({
+      client.execute({
         sql: `
           SELECT 
             date(checked_in_at) as checkin_date,
@@ -296,7 +341,7 @@ export class AnalyticsService {
       }),
 
       // Overall wallet statistics
-      this.db.execute({
+      client.execute({
         sql: `
           SELECT 
             COUNT(CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN 1 END) as total_wallet_users,
@@ -317,7 +362,7 @@ export class AnalyticsService {
       }),
 
       // Wallet ROI calculation
-      this.db.execute({
+      client.execute({
         sql: `
           SELECT 
             COUNT(CASE WHEN (apple_pass_serial IS NOT NULL OR google_pass_id IS NOT NULL) THEN 1 END) as wallet_sales,
@@ -349,7 +394,8 @@ export class AnalyticsService {
   async getConversionFunnel(days = 30, eventId = "boulder-fest-2026") {
     // This would require tracking page views and cart abandonment
     // For now, we'll show transaction funnel
-    const funnel = await this.db.execute({
+    const client = await this.ensureInitialized();
+    const funnel = await client.execute({
       sql: `
         SELECT 
           COUNT(DISTINCT CASE WHEN status IN ('pending', 'completed', 'failed') THEN id END) as initiated,

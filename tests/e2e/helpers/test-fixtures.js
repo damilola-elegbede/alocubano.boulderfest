@@ -199,7 +199,7 @@ export const AdminFixtures = {
   validAdmin() {
     return {
       password: process.env.TEST_ADMIN_PASSWORD || 'test-password',
-      expectedRedirect: '/pages/admin/dashboard.html'
+      expectedRedirect: '/admin/dashboard'
     };
   },
 

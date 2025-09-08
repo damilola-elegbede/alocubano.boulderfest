@@ -1,8 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
-import { getDatabase } from '../../../api/lib/database.js';
-import { AppleWalletService } from '../../../api/lib/apple-wallet-service.js';
-import { GoogleWalletService } from '../../../api/lib/google-wallet-service.js';
-import { QRTokenService } from '../../../api/lib/qr-token-service.js';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 
 // Set required environment variables for testing - MUST be set before importing services
 process.env.WALLET_AUTH_SECRET = 'test-wallet-auth-secret-key-for-testing-purposes';
@@ -12,8 +8,27 @@ describe('Wallet Pass Integration Tests', () => {
   let database;
   let testTicketId;
   let testTransactionId;
+  let AppleWalletService;
+  let GoogleWalletService;
+  let QRTokenService;
+  let getDatabase;
+  let getDatabaseClient;
 
   beforeAll(async () => {
+    // Dynamic imports after environment variables are set
+    const databaseModule = await import('../../../api/lib/database.js');
+    getDatabase = databaseModule.getDatabase;
+    getDatabaseClient = databaseModule.getDatabaseClient;
+    
+    const appleModule = await import('../../../api/lib/apple-wallet-service.js');
+    AppleWalletService = appleModule.AppleWalletService;
+    
+    const googleModule = await import('../../../api/lib/google-wallet-service.js');
+    GoogleWalletService = googleModule.GoogleWalletService;
+    
+    const qrModule = await import('../../../api/lib/qr-token-service.js');
+    QRTokenService = qrModule.QRTokenService;
+    
     database = await getDatabase();
   });
 
@@ -290,14 +305,17 @@ describe('Wallet Pass Integration Tests', () => {
       const appleWalletService = new AppleWalletService();
       vi.spyOn(appleWalletService, 'isConfigured').mockReturnValue(true);
       
-      // Mock database error
-      vi.spyOn(appleWalletService, 'db', 'get').mockReturnValue({
-        execute: vi.fn().mockRejectedValue(new Error('Database connection failed'))
-      });
+      // Mock getDatabaseClient to simulate database error using vi.spyOn
+      const databaseModule = await import('../../../api/lib/database.js');
+      const getDatabaseClientSpy = vi.spyOn(databaseModule, 'getDatabaseClient')
+        .mockRejectedValue(new Error('Database connection failed'));
 
       await expect(
         appleWalletService.generatePass(testTicketId)
       ).rejects.toThrow('Database connection failed');
+      
+      // Restore the original function
+      getDatabaseClientSpy.mockRestore();
     });
 
     it('should handle concurrent pass generation requests', async () => {

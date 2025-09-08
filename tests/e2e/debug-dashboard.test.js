@@ -14,11 +14,11 @@ test('DEBUG: Check dashboard page content', async ({ page }) => {
   };
 
   // Login
-  await page.goto('/pages/admin/login.html');
+  await page.goto('/admin/login');
   await page.fill('input[name="username"]', adminCredentials.email);
   await page.fill('input[type="password"]', adminCredentials.password);
   await page.click('button[type="submit"]');
-  await page.waitForURL('**/admin/dashboard.html');
+  await page.waitForURL('**/admin/dashboard');
 
   // Wait for page to load
   await page.waitForLoadState('domcontentloaded');

@@ -5,7 +5,7 @@
  */
 
 import { getEmailSubscriberService } from "./lib/email-subscriber-service.js";
-import { getDatabase } from "./lib/database.js";
+import { getDatabaseClient } from "./lib/database.js";
 import { getCorsConfig, isOriginAllowed } from "./lib/cors-config.js";
 import {
   createSecurePragmaQuery,
@@ -109,7 +109,7 @@ export default async function handler(req, res) {
     console.log("Testing table information...");
     try {
       // Query actual database schema information
-      const db = await getDatabase().ensureInitialized();
+      const db = await getDatabaseClient();
       const tableInfo = {};
 
       // Get list of tables
@@ -179,7 +179,7 @@ export default async function handler(req, res) {
     console.log("Testing migration status...");
     try {
       // Get real migration status from database
-      const db = await getDatabase().ensureInitialized();
+      const db = await getDatabaseClient();
       const migrationStatus = await getMigrationStatus(db);
 
       testResults.tests.migrations.status = "passed";

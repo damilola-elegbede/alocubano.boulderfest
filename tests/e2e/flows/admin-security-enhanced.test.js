@@ -17,7 +17,7 @@ test.describe('Admin Security Enhanced', () => {
 
   test.beforeEach(async ({ page }) => {
     // Navigate to admin login page
-    await page.goto('/pages/admin/login.html');
+    await page.goto('/admin/login');
   });
 
   test('should enforce rate limiting on multiple failed login attempts', async ({ page }) => {
@@ -47,7 +47,7 @@ test.describe('Admin Security Enhanced', () => {
     await page.fill('input[name="email"]', adminCredentials.email);
     await page.fill('input[type="password"]', adminCredentials.password);
     await page.click('button[type="submit"]');
-    await page.waitForURL('**/admin/dashboard.html');
+    await page.waitForURL('**/admin/dashboard');
 
     // Check that CSRF token is requested and present
     const csrfRequest = page.waitForResponse(
@@ -88,13 +88,13 @@ test.describe('Admin Security Enhanced', () => {
     await page.fill('input[name="email"]', adminCredentials.email);
     await page.fill('input[type="password"]', adminCredentials.password);
     await page.click('button[type="submit"]');
-    await page.waitForURL('**/admin/dashboard.html');
+    await page.waitForURL('**/admin/dashboard');
 
     // Simulate session expiry by clearing cookies
     await page.context().clearCookies();
 
     // Try to access admin endpoint
-    await page.goto('/pages/admin/dashboard.html');
+    await page.goto('/admin/dashboard');
 
     // Should redirect to login due to expired session
     await expect(page).toHaveURL(/login/);
@@ -115,7 +115,7 @@ test.describe('Admin Security Enhanced', () => {
     
     // Verify successful login was logged
     expect(loginResponse.status()).toBe(200);
-    await page.waitForURL('**/admin/dashboard.html');
+    await page.waitForURL('**/admin/dashboard');
 
     // Access dashboard (another logged action)
     const dashboardRequest = page.waitForResponse(
@@ -130,7 +130,7 @@ test.describe('Admin Security Enhanced', () => {
     const logoutButton = page.locator('button:has-text("Logout"), a:has-text("Logout"), .logout-btn');
     if (await logoutButton.count() > 0) {
       await logoutButton.first().click();
-      await page.waitForURL('**/admin/login.html');
+      await page.waitForURL('**/admin/login');
     }
   });
 
@@ -139,7 +139,7 @@ test.describe('Admin Security Enhanced', () => {
     await page.fill('input[name="email"]', adminCredentials.email);
     await page.fill('input[type="password"]', adminCredentials.password);
     await page.click('button[type="submit"]');
-    await page.waitForURL('**/admin/dashboard.html');
+    await page.waitForURL('**/admin/dashboard');
 
     // Test access to different admin endpoints
     const endpoints = [
@@ -161,10 +161,10 @@ test.describe('Admin Security Enhanced', () => {
     await page.fill('input[name="email"]', adminCredentials.email);
     await page.fill('input[type="password"]', adminCredentials.password);
     await page.click('button[type="submit"]');
-    await page.waitForURL('**/admin/dashboard.html');
+    await page.waitForURL('**/admin/dashboard');
 
     // Try to inject XSS in email field during login (test input sanitization)
-    await page.goto('/pages/admin/login.html');
+    await page.goto('/admin/login');
     
     const maliciousScript = '<script>alert("XSS")</script>';
     await page.fill('input[name="email"]', maliciousScript);
@@ -194,7 +194,7 @@ test.describe('Admin Security Enhanced', () => {
     await page.fill('input[name="email"]', adminCredentials.email);
     await page.fill('input[type="password"]', adminCredentials.password);
     await page.click('button[type="submit"]');
-    await page.waitForURL('**/admin/dashboard.html');
+    await page.waitForURL('**/admin/dashboard');
 
     // Get initial session cookie
     const cookies = await page.context().cookies();
@@ -209,7 +209,7 @@ test.describe('Admin Security Enhanced', () => {
     await page.waitForResponse(response => response.url().includes('/api/admin/dashboard'));
 
     // Session should still be valid
-    await page.goto('/pages/admin/dashboard.html');
+    await page.goto('/admin/dashboard');
     await expect(page).toHaveURL(/dashboard/);
   });
 

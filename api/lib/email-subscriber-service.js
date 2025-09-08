@@ -4,14 +4,14 @@
  */
 
 import { getBrevoService } from "./brevo-service.js";
-import { getDatabase } from "./database.js";
+import { getDatabaseClient } from "./database.js";
 import { createHmac, randomBytes } from "crypto";
 
 class EmailSubscriberService {
   constructor() {
     this.brevoService = getBrevoService();
-    this.database = getDatabase();
     this.initialized = false;
+    this.initializationPromise = null;
   }
 
   /**
@@ -48,7 +48,8 @@ class EmailSubscriberService {
   async _performInitialization() {
     try {
       // Test database connection first
-      await this.database.testConnection();
+      const db = await getDatabaseClient();
+      await db.execute("SELECT 1"); // Simple connectivity test
 
       // Initialize Brevo service if it has an ensureInitialized method
       if (this.brevoService.ensureInitialized) {
@@ -74,8 +75,6 @@ class EmailSubscriberService {
    */
   async getDb() {
     await this.ensureInitialized();
-    // Use getDatabaseClient for consistency - it always returns the raw client
-    const { getDatabaseClient } = await import("./database.js");
     return await getDatabaseClient();
   }
 

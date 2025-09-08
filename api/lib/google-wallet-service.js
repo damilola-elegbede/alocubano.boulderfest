@@ -1,12 +1,12 @@
 import { GoogleAuth } from "google-auth-library";
 import { v4 as uuidv4 } from "uuid";
-import { getDatabase } from "./database.js";
+import { getDatabaseClient } from "./database.js";
 import jwt from "jsonwebtoken";
 import { getQRTokenService } from "./qr-token-service.js";
 
 export class GoogleWalletService {
   constructor() {
-    this.db = getDatabase();
+    // Database client will be obtained when needed
     this.issuerId = process.env.GOOGLE_WALLET_ISSUER_ID;
     this.classId =
       process.env.GOOGLE_WALLET_CLASS_ID || "alocubano_tickets_2026";
@@ -183,7 +183,8 @@ export class GoogleWalletService {
       await this.createOrUpdateClass();
 
       // Get ticket details with validation
-      const result = await this.db.execute({
+      const db = await getDatabaseClient();
+      const result = await db.execute({
         sql: `SELECT t.*, tr.transaction_id as order_number, tr.amount_cents, tr.status as transaction_status
               FROM tickets t
               JOIN transactions tr ON t.transaction_id = tr.id
@@ -217,7 +218,7 @@ export class GoogleWalletService {
         objectId = `${this.issuerId}.${uuidv4()}`;
 
         // Save pass ID to database with transaction support
-        await this.db.batch(
+        await db.batch(
           [
             {
               sql: `UPDATE tickets 
@@ -450,7 +451,8 @@ export class GoogleWalletService {
         data: updates,
       });
 
-      await this.db.batch(
+      const db = await getDatabaseClient();
+      await db.batch(
         [
           {
             sql: `UPDATE tickets 
@@ -473,7 +475,8 @@ export class GoogleWalletService {
    * Revoke a pass
    */
   async revokePass(ticketId, reason) {
-    const result = await this.db.execute({
+    const db = await getDatabaseClient();
+    const result = await db.execute({
       sql: `SELECT * FROM tickets WHERE ticket_id = ?`,
       args: [ticketId],
     });
@@ -491,7 +494,7 @@ export class GoogleWalletService {
       });
     }
 
-    await this.db.batch(
+    await db.batch(
       [
         {
           sql: `UPDATE tickets 
@@ -511,7 +514,8 @@ export class GoogleWalletService {
    * Log wallet pass event
    */
   async logPassEvent(ticketId, eventType, eventData = {}) {
-    await this.db.batch(
+    const db = await getDatabaseClient();
+    await db.batch(
       [
         {
           sql: `INSERT INTO wallet_pass_events (
