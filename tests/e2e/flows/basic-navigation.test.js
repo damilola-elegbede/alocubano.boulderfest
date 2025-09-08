@@ -161,7 +161,7 @@ test.describe('Basic Navigation', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded'); // Fixed: Removed networkidle wait
     
     // Look for the actual mobile menu toggle button
     const menuToggle = page.locator('.menu-toggle');

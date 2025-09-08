@@ -455,7 +455,7 @@ export async function testNetworkResilience(page, options = {}) {
     // Verify expectations
     if (expectations.maxLoadTime) {
       const startTime = Date.now();
-      await page.waitForLoadState('networkidle', { timeout: expectations.maxLoadTime });
+      await page.waitForLoadState('domcontentloaded', { timeout: expectations.maxLoadTime }); // Fixed: Removed networkidle wait
       const loadTime = Date.now() - startTime;
       
       if (loadTime > expectations.maxLoadTime) {

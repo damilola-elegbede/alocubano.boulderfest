@@ -45,7 +45,8 @@ export class AccessibilityUtilities {
     await this.initialize();
     
     // Allow time for dynamic content to load
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded'); // Fixed: Removed networkidle wait
+    await this.page.waitForTimeout(1000); // Small wait for dynamic content
     
     // Configure specific rules if needed
     if (options.excludeRules) {

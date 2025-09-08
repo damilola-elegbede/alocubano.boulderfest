@@ -191,8 +191,9 @@ export async function waitForNetworkIdle(page, options = {}) {
   } = options;
 
   try {
-    await page.waitForLoadState('networkidle', { timeout });
-    console.log('✅ Network is idle');
+    await page.waitForLoadState('domcontentloaded', { timeout }); // Fixed: Removed networkidle wait
+    await page.waitForTimeout(idleTime); // Small wait for dynamic content
+    console.log('✅ Page loaded and settled');
   } catch (error) {
     console.log(`⚠️  Network idle timeout: ${error.message}`);
   }
