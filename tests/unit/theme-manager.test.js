@@ -18,8 +18,15 @@ describe('ThemeManager', () => {
   let mockMatchMedia;
   let mockLocalStorage;
   let originalLocation;
+  let originalLocalStorage;
+  let originalMatchMedia;
 
   beforeEach(() => {
+    // Store original values for restoration
+    originalLocalStorage = window.localStorage;
+    originalMatchMedia = window.matchMedia;
+    originalLocation = window.location;
+
     // Reset DOM
     if (document.documentElement) {
       document.documentElement.removeAttribute('data-theme');
@@ -42,7 +49,8 @@ describe('ThemeManager', () => {
     };
     Object.defineProperty(window, 'localStorage', {
       value: mockLocalStorage,
-      writable: true
+      writable: true,
+      configurable: true
     });
 
     // Mock matchMedia
@@ -58,11 +66,11 @@ describe('ThemeManager', () => {
     }));
     Object.defineProperty(window, 'matchMedia', {
       value: mockMatchMedia,
-      writable: true
+      writable: true,
+      configurable: true
     });
 
     // Mock window.location
-    originalLocation = window.location;
     delete window.location;
     window.location = {
       pathname: '/home',
@@ -74,8 +82,27 @@ describe('ThemeManager', () => {
   });
 
   afterEach(() => {
+    // Restore original properties properly
+    if (originalLocalStorage !== undefined) {
+      Object.defineProperty(window, 'localStorage', {
+        value: originalLocalStorage,
+        writable: true,
+        configurable: true
+      });
+    }
+    
+    if (originalMatchMedia !== undefined) {
+      Object.defineProperty(window, 'matchMedia', {
+        value: originalMatchMedia,
+        writable: true,
+        configurable: true
+      });
+    }
+    
     // Restore original location
     window.location = originalLocation;
+    
+    // Clear all mocks
     vi.clearAllMocks();
   });
 
@@ -182,7 +209,8 @@ describe('ThemeManager', () => {
       // Mock localStorage as undefined
       Object.defineProperty(window, 'localStorage', {
         value: undefined,
-        writable: true
+        writable: true,
+        configurable: true
       });
 
       expect(() => setTheme(THEMES.DARK)).not.toThrow();
@@ -245,7 +273,8 @@ describe('ThemeManager', () => {
     it('should handle missing matchMedia gracefully', () => {
       Object.defineProperty(window, 'matchMedia', {
         value: undefined,
-        writable: true
+        writable: true,
+        configurable: true
       });
 
       expect(() => initializeTheme()).not.toThrow();
@@ -256,7 +285,8 @@ describe('ThemeManager', () => {
       // Remove matchMedia
       Object.defineProperty(window, 'matchMedia', {
         value: undefined,
-        writable: true
+        writable: true,
+        configurable: true
       });
 
       setTheme(THEMES.AUTO);
@@ -633,8 +663,12 @@ describe('ThemeManager', () => {
     });
 
     it('should handle missing localStorage completely', () => {
-      // Remove localStorage entirely
-      delete window.localStorage;
+      // Remove localStorage entirely by setting to undefined
+      Object.defineProperty(window, 'localStorage', {
+        value: undefined,
+        writable: true,
+        configurable: true
+      });
       
       expect(() => setTheme(THEMES.DARK)).not.toThrow();
       expect(() => getTheme()).not.toThrow();
