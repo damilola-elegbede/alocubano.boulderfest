@@ -312,13 +312,13 @@
       <div class="quick-actions">
         <h3>⚡ Quick Actions</h3>
         <div class="action-buttons">
-          <a href="/pages/admin/dashboard.html" class="action-btn"
+          <a href="/admin/dashboard" class="action-btn"
             >📊 Main Dashboard</a
           >
-          <a href="/pages/admin/analytics.html" class="action-btn"
+          <a href="/admin/analytics" class="action-btn"
             >📈 View Analytics</a
           >
-          <a href="/pages/admin/checkin.html" class="action-btn"
+          <a href="/admin/checkin" class="action-btn"
             >📱 Mobile Scanner</a
           >
           <button onclick="syncToSheets()" class="action-btn">
@@ -336,7 +336,7 @@
           <h2><span class="icon">📊</span> Dashboards & Analytics</h2>
           <ul class="links-list">
             <li>
-              <a href="/pages/admin/dashboard.html">
+              <a href="/admin/dashboard">
                 Main Dashboard
                 <span class="badge">Core</span>
               </a>
@@ -345,7 +345,7 @@
               </p>
             </li>
             <li>
-              <a href="/pages/admin/analytics.html">
+              <a href="/admin/analytics">
                 Analytics Dashboard
                 <span class="badge new">New</span>
               </a>
@@ -354,7 +354,7 @@
               </p>
             </li>
             <li>
-              <a href="/pages/admin/checkin.html">
+              <a href="/admin/checkin">
                 Mobile Check-in Scanner
                 <span class="badge">Mobile</span>
               </a>
@@ -367,7 +367,7 @@
           <h2><span class="icon">🔐</span> Authentication & Security</h2>
           <ul class="links-list">
             <li>
-              <a href="/pages/admin/login.html"> Admin Login </a>
+              <a href="/admin/login"> Admin Login </a>
               <p class="description">Secure admin authentication portal</p>
             </li>
             <li>
@@ -388,7 +388,7 @@
           <h2><span class="icon">📋</span> Data Management</h2>
           <ul class="links-list">
             <li>
-              <a href="/pages/admin/dashboard.html#registrations">
+              <a href="/admin/dashboard#registrations">
                 Registration Management
               </a>
               <p class="description">
@@ -396,7 +396,7 @@
               </p>
             </li>
             <li>
-              <a href="/pages/admin/dashboard.html#transactions">
+              <a href="/admin/dashboard#transactions">
                 Transaction History
               </a>
               <p class="description">Payment transactions and order details</p>
@@ -514,13 +514,13 @@
         try {
           const response = await fetch("/api/admin/dashboard");
           if (!response.ok) {
-            window.location.href = "/pages/admin/login.html";
+            window.location.href = "/admin/login";
             return false;
           }
           return true;
         } catch (error) {
           console.error("Auth check failed:", error);
-          window.location.href = "/pages/admin/login.html";
+          window.location.href = "/admin/login";
           return false;
         }
       }
@@ -648,7 +648,7 @@
           "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         localStorage.removeItem("adminToken");
         sessionStorage.clear();
-        window.location.href = "/pages/admin/login.html";
+        window.location.href = "/admin/login";
       }
 
       // Initialize
