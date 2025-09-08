@@ -17,7 +17,8 @@ import { defineConfig } from 'vitest/config';
  */
 export default defineConfig({
   test: {
-    environment: 'node',
+    // Use jsdom as default since most failing tests need DOM
+    environment: 'jsdom',
     
     // Unit-only mode environment variables
     env: {

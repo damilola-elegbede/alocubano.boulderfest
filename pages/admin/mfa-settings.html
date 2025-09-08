@@ -1,348 +1,162 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MFA Security Settings - A Lo Cubano Boulder Fest</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/forms.css" />
+    <link rel="stylesheet" href="/css/admin-overrides.css" />
+    <script type="module" src="/js/theme-manager.js"></script>
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
-          sans-serif;
-        background: #f5f7fa;
-        color: #333;
-        line-height: 1.6;
-      }
-
+      /* MFA-specific custom styles that work with the main CSS system */
       .admin-header {
-        background: #2c3e50;
-        color: white;
-        padding: 15px 30px;
+        background: linear-gradient(135deg, var(--color-blue), var(--color-red));
+        color: var(--color-white);
+        padding: var(--space-lg) var(--space-xl);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-lg);
       }
 
       .admin-header h1 {
-        font-size: 24px;
-        font-weight: 500;
+        font-family: var(--font-display);
+        font-size: var(--font-size-2xl);
+        font-weight: 700;
+        margin: 0;
       }
 
       .header-actions {
         display: flex;
-        gap: 10px;
+        gap: var(--space-md);
         align-items: center;
-      }
-
-      .btn {
-        border: none;
-        padding: 8px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        text-decoration: none;
-        display: inline-block;
-        text-align: center;
-      }
-
-      .btn-primary {
-        background: #3498db;
-        color: white;
-      }
-
-      .btn-primary:hover {
-        background: #2980b9;
-      }
-
-      .btn-success {
-        background: #27ae60;
-        color: white;
-      }
-
-      .btn-success:hover {
-        background: #229954;
-      }
-
-      .btn-danger {
-        background: #e74c3c;
-        color: white;
-      }
-
-      .btn-danger:hover {
-        background: #c0392b;
-      }
-
-      .btn-warning {
-        background: #f39c12;
-        color: white;
-      }
-
-      .btn-warning:hover {
-        background: #e67e22;
-      }
-
-      .btn:disabled {
-        background: #95a5a6;
-        cursor: not-allowed;
       }
 
       .container {
         max-width: 1000px;
         margin: 0 auto;
-        padding: 30px;
-      }
-
-      .mfa-section {
-        background: white;
-        border-radius: 8px;
-        padding: 30px;
-        margin-bottom: 30px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      }
-
-      .mfa-section h2 {
-        color: #2c3e50;
-        margin-bottom: 20px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #ecf0f1;
-      }
-
-      .mfa-status {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-bottom: 25px;
-        padding: 20px;
-        border-radius: 6px;
-        border-left: 4px solid #3498db;
-      }
-
-      .mfa-status.enabled {
-        background: #d5f4e6;
-        border-color: #27ae60;
-      }
-
-      .mfa-status.disabled {
-        background: #fdeaea;
-        border-color: #e74c3c;
-      }
-
-      .status-icon {
-        font-size: 24px;
-      }
-
-      .status-text {
-        flex: 1;
-      }
-
-      .status-title {
-        font-weight: 600;
-        font-size: 16px;
-        margin-bottom: 5px;
-      }
-
-      .status-description {
-        color: #7f8c8d;
-        font-size: 14px;
-      }
-
-      .setup-flow {
-        display: none;
-      }
-
-      .setup-flow.active {
-        display: block;
-      }
-
-      .setup-step {
-        margin-bottom: 30px;
-        padding: 25px;
-        border: 1px solid #ecf0f1;
-        border-radius: 6px;
+        padding: var(--space-2xl);
+        display: grid;
+        gap: var(--space-xl);
       }
 
       .step-header {
         display: flex;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 15px;
+        gap: var(--space-md);
+        margin-bottom: var(--space-lg);
       }
 
       .step-number {
-        background: #3498db;
-        color: white;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
+        background: var(--color-primary);
+        color: var(--color-white);
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-full);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: bold;
-        font-size: 14px;
+        font-weight: 700;
+        font-size: var(--font-size-lg);
+        font-family: var(--font-display);
       }
 
       .qr-container {
         text-align: center;
-        margin: 20px 0;
+        margin: var(--space-xl) 0;
       }
 
       .qr-code {
         max-width: 200px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
       }
 
       .manual-entry {
-        background: #f8f9fa;
-        padding: 15px;
-        border-radius: 6px;
-        margin: 15px 0;
-        font-family: monospace;
-        font-size: 14px;
+        background: var(--color-background-secondary);
+        padding: var(--space-lg);
+        border-radius: var(--radius-md);
+        margin: var(--space-lg) 0;
+        font-family: var(--font-code);
+        font-size: var(--font-size-sm);
         word-break: break-all;
+        border: 1px solid var(--color-border);
       }
 
       .verification-input {
         display: flex;
-        gap: 10px;
-        margin: 20px 0;
+        gap: var(--space-md);
+        margin: var(--space-xl) 0;
         align-items: center;
       }
 
       .verification-input input {
-        padding: 12px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 18px;
-        font-family: monospace;
-        width: 120px;
+        padding: var(--space-lg);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-xl);
+        font-family: var(--font-code);
+        width: 140px;
         text-align: center;
-        letter-spacing: 2px;
+        letter-spacing: 0.2em;
+        transition: border-color var(--transition-base);
+      }
+
+      .verification-input input:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px var(--color-info-light);
       }
 
       .backup-codes {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 10px;
-        margin: 20px 0;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: var(--space-md);
+        margin: var(--space-xl) 0;
       }
 
       .backup-code {
-        background: #f8f9fa;
-        padding: 12px;
+        background: var(--color-background-secondary);
+        padding: var(--space-lg);
         text-align: center;
-        border-radius: 4px;
-        font-family: monospace;
-        font-size: 14px;
-        border: 1px solid #dee2e6;
-      }
-
-      .warning-box {
-        background: #fff3cd;
-        border: 1px solid #ffeaa7;
-        border-left: 4px solid #f39c12;
-        padding: 15px;
-        border-radius: 4px;
-        margin: 20px 0;
-      }
-
-      .error-box {
-        background: #f8d7da;
-        border: 1px solid #f5c6cb;
-        border-left: 4px solid #dc3545;
-        padding: 15px;
-        border-radius: 4px;
-        margin: 20px 0;
-      }
-
-      .success-box {
-        background: #d4edda;
-        border: 1px solid #c3e6cb;
-        border-left: 4px solid #28a745;
-        padding: 15px;
-        border-radius: 4px;
-        margin: 20px 0;
+        border-radius: var(--radius-md);
+        font-family: var(--font-code);
+        font-size: var(--font-size-sm);
+        border: 1px solid var(--color-border);
+        font-weight: 600;
       }
 
       .mfa-actions {
         display: flex;
-        gap: 10px;
+        gap: var(--space-md);
         flex-wrap: wrap;
-      }
-
-      .recovery-section {
-        margin-top: 30px;
-        padding-top: 30px;
-        border-top: 1px solid #ecf0f1;
+        margin-top: var(--space-xl);
       }
 
       .loading {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 10px;
-        padding: 20px;
-        color: #7f8c8d;
+        gap: var(--space-md);
+        padding: var(--space-xl);
+        color: var(--color-text-secondary);
       }
 
-      .spinner {
-        width: 20px;
-        height: 20px;
-        border: 2px solid #ecf0f1;
-        border-top: 2px solid #3498db;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
-        margin-bottom: 25px;
-      }
-
-      .stat-item {
-        background: #f8f9fa;
-        padding: 15px;
-        border-radius: 6px;
-        text-align: center;
-      }
-
-      .stat-value {
-        font-size: 24px;
-        font-weight: bold;
-        color: #2c3e50;
-      }
-
-      .stat-label {
-        color: #7f8c8d;
-        font-size: 12px;
-        margin-top: 5px;
-      }
-
+      /* Mobile responsiveness */
       @media (max-width: 768px) {
         .container {
-          padding: 15px;
+          padding: var(--space-lg);
         }
 
-        .mfa-section {
-          padding: 20px;
+        .admin-header {
+          padding: var(--space-lg);
+          flex-direction: column;
+          gap: var(--space-md);
+          text-align: center;
         }
 
         .verification-input {
@@ -357,6 +171,11 @@
         .mfa-actions {
           flex-direction: column;
         }
+
+        .step-header {
+          flex-direction: column;
+          text-align: center;
+        }
       }
     </style>
   </head>
@@ -364,7 +183,7 @@
     <div class="admin-header">
       <h1>🔐 MFA Security Settings</h1>
       <div class="header-actions">
-        <a href="/admin/dashboard" class="btn btn-primary"
+        <a href="/admin/dashboard" class="form-button-type"
           >← Dashboard</a
         >
       </div>
@@ -372,18 +191,18 @@
 
     <div class="container">
       <!-- MFA Status Section -->
-      <div class="mfa-section">
+      <div class="ticket-card">
         <h2>Multi-Factor Authentication Status</h2>
         <div id="mfaStatusContainer">
           <div class="loading">
-            <div class="spinner"></div>
+            <div class="loading-spinner"></div>
             <span>Loading MFA status...</span>
           </div>
         </div>
       </div>
 
       <!-- MFA Setup Section -->
-      <div class="mfa-section">
+      <div class="ticket-card">
         <h2>Setup Multi-Factor Authentication</h2>
         <div id="setupContainer">
           <!-- Content will be dynamically loaded -->
@@ -391,10 +210,10 @@
       </div>
 
       <!-- Recovery Options Section -->
-      <div class="mfa-section">
+      <div class="ticket-card">
         <h2>Recovery Options</h2>
         <div id="recoveryContainer">
-          <div class="warning-box">
+          <div class="admin-alert warning">
             <strong>Important:</strong> Store your backup codes in a safe place.
             They are your only way to recover access if you lose your
             authenticator device.
@@ -455,7 +274,7 @@
       function displayMfaStatus() {
         const container = document.getElementById("mfaStatusContainer");
         const isEnabled = mfaStatus.isEnabled;
-        const statusClass = isEnabled ? "enabled" : "disabled";
+        const statusClass = isEnabled ? "success" : "error";
         const statusIcon = isEnabled ? "✅" : "❌";
         const statusTitle = isEnabled ? "MFA is Enabled" : "MFA is Disabled";
         const statusDesc = isEnabled
@@ -463,7 +282,7 @@
           : "Your account is not protected by multi-factor authentication";
 
         container.innerHTML = `
-          <div class="mfa-status ${statusClass}">
+          <div class="status-badge ${statusClass}">
             <div class="status-icon">${statusIcon}</div>
             <div class="status-text">
               <div class="status-title">${statusTitle}</div>
@@ -503,23 +322,23 @@
 
         if (mfaStatus.isEnabled) {
           container.innerHTML = `
-            <div class="success-box">
+            <div class="admin-alert success">
               <strong>✅ MFA is already enabled</strong><br>
               Your account is protected with multi-factor authentication.
             </div>
             <div class="mfa-actions">
-              <button class="btn btn-warning" onclick="generateBackupCodes()">Generate New Backup Codes</button>
-              <button class="btn btn-danger" onclick="confirmDisableMfa()">Disable MFA</button>
+              <button class="form-button-type" onclick="generateBackupCodes()">Generate New Backup Codes</button>
+              <button class="form-button-type" onclick="confirmDisableMfa()" style="background: var(--color-error);">Disable MFA</button>
             </div>
           `;
         } else {
           container.innerHTML = `
-            <div class="warning-box">
+            <div class="admin-alert warning">
               <strong>⚠️ Your account is not protected</strong><br>
               Enable multi-factor authentication to secure your admin account.
             </div>
             <div class="mfa-actions">
-              <button class="btn btn-success" onclick="startMfaSetup()">Enable MFA</button>
+              <button class="form-button-type" onclick="startMfaSetup()" style="background: var(--color-success);">Enable MFA</button>
             </div>
           `;
         }
@@ -531,7 +350,7 @@
 
         if (!mfaStatus.isEnabled) {
           container.innerHTML = `
-            <div class="warning-box">
+            <div class="admin-alert warning">
               MFA must be enabled before recovery options are available.
             </div>
           `;
@@ -546,8 +365,8 @@
             </div>
           </div>
           <div class="mfa-actions">
-            <button class="btn btn-warning" onclick="generateBackupCodes()">Generate New Backup Codes</button>
-            <button class="btn btn-danger" onclick="showRecoveryOptions()">Recovery Options</button>
+            <button class="form-button-type" onclick="generateBackupCodes()">Generate New Backup Codes</button>
+            <button class="form-button-type" onclick="showRecoveryOptions()" style="background: var(--color-error);">Recovery Options</button>
           </div>
         `;
       }
@@ -557,7 +376,7 @@
         const container = document.getElementById("setupContainer");
         container.innerHTML = `
           <div class="loading">
-            <div class="spinner"></div>
+            <div class="loading-spinner"></div>
             <span>Generating TOTP secret...</span>
           </div>
         `;
@@ -592,7 +411,7 @@
         const container = document.getElementById("setupContainer");
         container.innerHTML = `
           <div class="setup-flow active">
-            <div class="setup-step">
+            <div class="ticket-card">
               <div class="step-header">
                 <div class="step-number">1</div>
                 <h3>Install Authenticator App</h3>
@@ -606,7 +425,7 @@
               </ul>
             </div>
 
-            <div class="setup-step">
+            <div class="ticket-card">
               <div class="step-header">
                 <div class="step-number">2</div>
                 <h3>Scan QR Code</h3>
@@ -619,7 +438,7 @@
               <div class="manual-entry">${setupData.manualEntryKey}</div>
             </div>
 
-            <div class="setup-step">
+            <div class="ticket-card">
               <div class="step-header">
                 <div class="step-number">3</div>
                 <h3>Verify Setup</h3>
@@ -631,8 +450,9 @@
                        placeholder="000000" 
                        maxlength="6" 
                        pattern="[0-9]{6}"
+                       class="form-input-type"
                        autocomplete="off">
-                <button class="btn btn-success" onclick="verifyMfaSetup()">Verify & Enable</button>
+                <button class="form-button-type" onclick="verifyMfaSetup()" style="background: var(--color-success);">Verify & Enable</button>
               </div>
               <div id="verificationResult"></div>
             </div>
@@ -653,7 +473,7 @@
 
         if (!/^\d{6}$/.test(code)) {
           resultDiv.innerHTML = `
-            <div class="error-box">
+            <div class="admin-alert error">
               Please enter a valid 6-digit code from your authenticator app.
             </div>
           `;
@@ -662,7 +482,7 @@
 
         resultDiv.innerHTML = `
           <div class="loading">
-            <div class="spinner"></div>
+            <div class="loading-spinner"></div>
             <span>Verifying code...</span>
           </div>
         `;
@@ -696,7 +516,7 @@
         } catch (error) {
           console.error("MFA verification failed:", error);
           resultDiv.innerHTML = `
-            <div class="error-box">
+            <div class="admin-alert error">
               <strong>Verification failed:</strong> ${error.message}
             </div>
           `;
@@ -707,17 +527,17 @@
       function displayBackupCodes(codes) {
         const container = document.getElementById("setupContainer");
         container.innerHTML = `
-          <div class="success-box">
+          <div class="admin-alert success">
             <strong>✅ MFA Successfully Enabled!</strong><br>
             Your account is now protected with multi-factor authentication.
           </div>
           
-          <div class="setup-step">
+          <div class="ticket-card">
             <div class="step-header">
               <div class="step-number">4</div>
               <h3>Save Your Backup Codes</h3>
             </div>
-            <div class="warning-box">
+            <div class="admin-alert warning">
               <strong>Important:</strong> Save these backup codes in a safe place. 
               They are the only way to recover access if you lose your authenticator device.
               Each code can only be used once.
@@ -726,8 +546,8 @@
               ${codes.map((code) => `<div class="backup-code">${code}</div>`).join("")}
             </div>
             <div class="mfa-actions">
-              <button class="btn btn-primary" onclick="downloadBackupCodes(${JSON.stringify(codes).replace(/"/g, "&quot;")})">Download Codes</button>
-              <button class="btn btn-success" onclick="loadMfaStatus()">Continue</button>
+              <button class="form-button-type" onclick="downloadBackupCodes(${JSON.stringify(codes).replace(/"/g, "&quot;")})">Download Codes</button>
+              <button class="form-button-type" onclick="loadMfaStatus()" style="background: var(--color-success);">Continue</button>
             </div>
           </div>
         `;
@@ -837,7 +657,7 @@ Instructions:
       function displayError(containerId, message) {
         const container = document.getElementById(containerId);
         container.innerHTML = `
-          <div class="error-box">
+          <div class="admin-alert error">
             <strong>Error:</strong> ${escapeHtml(message)}
           </div>
         `;

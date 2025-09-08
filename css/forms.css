@@ -12,6 +12,7 @@
   font-size: var(--font-size-sm);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  color: var(--color-text-primary);
 }
 
 .form-input,
@@ -19,8 +20,9 @@
 .form-select {
   width: 100%;
   padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--color-gray-300);
-  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
   font-size: var(--font-size-base);
   transition: all var(--transition-base);
 }
@@ -29,30 +31,30 @@
 .form-textarea:focus,
 .form-select:focus {
   outline: none;
-  border-color: var(--color-blue);
-  box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-info-light);
 }
 
 .form-input.error,
 .form-textarea.error,
 .form-select.error {
-  border-color: var(--color-red);
+  border-color: var(--color-error);
 }
 
 .error-message {
   display: block;
-  color: var(--color-red);
+  color: var(--color-error);
   font-size: var(--font-size-sm);
   margin-top: var(--space-xs);
 }
 
 .form-success {
-  background-color: var(--color-gray-100);
-  border: 1px solid var(--color-gray-300);
+  background-color: var(--color-success-light);
+  border: 1px solid var(--color-border);
   padding: var(--space-md);
   margin-top: var(--space-lg);
   text-align: center;
-  color: var(--color-gray-700);
+  color: var(--color-success);
 }
 
 /* Typographic Form Styles */
@@ -78,6 +80,7 @@
   letter-spacing: var(--letter-spacing-wide);
   margin-bottom: var(--space-sm);
   text-transform: uppercase;
+  color: var(--color-text-primary);
 }
 
 .form-input-type,
@@ -86,24 +89,25 @@
   padding: var(--space-md);
   font-family: var(--font-sans);
   font-size: var(--font-size-base);
-  border: 1px solid var(--color-gray-300);
-  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
   transition: border-color 0.2s ease;
 }
 
 .form-input-type:focus,
 .form-textarea-type:focus {
   outline: none;
-  border-color: var(--color-black);
+  border-color: var(--color-text-primary);
 }
 
 /* Volunteer Form Specific */
 .volunteer-form-typographic {
   max-width: 600px;
   margin: 0 auto;
-  background: var(--color-white);
+  background: var(--color-surface);
   padding: var(--space-3xl);
-  border: 2px solid var(--color-black);
+  border: 2px solid var(--color-text-primary);
 }
 
 .checkbox-group-type {
@@ -117,6 +121,7 @@
   align-items: center;
   cursor: pointer;
   font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
 }
 
 .checkbox-type input {
@@ -153,34 +158,34 @@
 
 .btn-secondary {
   background-color: transparent;
-  color: var(--color-black);
-  border-color: var(--color-black);
+  color: var(--color-text-primary);
+  border-color: var(--color-text-primary);
 }
 
 .btn-secondary:hover {
-  background-color: var(--color-black);
-  color: var(--color-white);
+  background-color: var(--color-text-primary);
+  color: var(--color-text-inverse);
 }
 
 .btn-accent {
-  background-color: var(--color-red);
+  background-color: var(--color-secondary);
   color: var(--color-white);
-  border-color: var(--color-red);
+  border-color: var(--color-secondary);
 }
 
 .btn-accent:hover {
-  background-color: var(--color-white);
-  color: var(--color-red);
-  border-color: var(--color-red);
+  background-color: var(--color-surface);
+  color: var(--color-secondary);
+  border-color: var(--color-secondary);
 }
 
 /* Typographic Button Styles */
 .form-button-type {
   position: relative;
   overflow: hidden;
-  background: var(--color-black);
-  color: var(--color-white);
-  border: 2px solid var(--color-black);
+  background: var(--color-text-primary);
+  color: var(--color-text-inverse);
+  border: 2px solid var(--color-text-primary);
   padding: var(--space-md) var(--space-xl);
   font-family: var(--font-code);
   font-size: var(--font-size-sm);
@@ -199,7 +204,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: var(--color-red);
+  background: var(--color-secondary);
   transition: left 0.3s ease;
   z-index: -1;
 }
@@ -215,12 +220,12 @@
 
 .volunteer-submit {
   width: 100%;
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--color-text-primary);
+  color: var(--color-text-inverse);
 }
 
 .volunteer-submit:hover {
-  background: var(--color-red);
+  background: var(--color-secondary);
 }
 
 /* Form Responsive Design */
@@ -238,14 +243,14 @@
 .form-input:invalid,
 .form-textarea:invalid,
 .form-select:invalid {
-  border-color: var(--color-red);
+  border-color: var(--color-error);
 }
 
 .form-input[aria-invalid="true"],
 .form-textarea[aria-invalid="true"],
 .form-select[aria-invalid="true"] {
-  border-color: var(--color-red);
-  box-shadow: 0 0 0 3px rgba(204, 41, 54, 0.1);
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px var(--color-error-light);
 }
 
 /* Custom Form Elements */
@@ -256,6 +261,7 @@
   padding-left: 25px;
   margin-bottom: 12px;
   font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
   user-select: none;
 }
 
@@ -273,18 +279,18 @@
   left: 0;
   height: 20px;
   width: 20px;
-  background-color: var(--color-white);
-  border: 2px solid var(--color-gray-300);
+  background-color: var(--color-surface);
+  border: 2px solid var(--color-border);
   transition: all var(--transition-base);
 }
 
 .custom-checkbox:hover input ~ .checkmark {
-  border-color: var(--color-blue);
+  border-color: var(--color-primary);
 }
 
 .custom-checkbox input:checked ~ .checkmark {
-  background-color: var(--color-blue);
-  border-color: var(--color-blue);
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .custom-checkbox .checkmark:after {
@@ -324,4 +330,33 @@
     grid-template-columns: 1fr;
     gap: var(--space-md);
   }
+}
+
+/* Placeholder Styles - Theme Aware */
+.form-input::placeholder,
+.form-textarea::placeholder,
+.form-select::placeholder,
+.form-input-type::placeholder,
+.form-textarea-type::placeholder {
+  color: var(--color-text-tertiary);
+  opacity: 1;
+}
+
+/* Firefox placeholder styles */
+.form-input::-moz-placeholder,
+.form-textarea::-moz-placeholder,
+.form-select::-moz-placeholder,
+.form-input-type::-moz-placeholder,
+.form-textarea-type::-moz-placeholder {
+  color: var(--color-text-tertiary);
+  opacity: 1;
+}
+
+/* Webkit placeholder styles */
+.form-input::-webkit-input-placeholder,
+.form-textarea::-webkit-input-placeholder,
+.form-select::-webkit-input-placeholder,
+.form-input-type::-webkit-input-placeholder,
+.form-textarea-type::-webkit-input-placeholder {
+  color: var(--color-text-tertiary);
 }

@@ -1,128 +1,180 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Login - A Lo Cubano Boulder Fest</title>
+    
+    <!-- Main Site CSS System -->
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/forms.css" />
+    <link rel="stylesheet" href="/css/admin-overrides.css" />
+    
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
+      /* Admin Login Specific Styles */
       body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
-          sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 20px;
+        padding: var(--space-lg);
+        background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-red) 100%);
       }
 
       .login-container {
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        background: var(--color-surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-xl);
         width: 100%;
         max-width: 400px;
-        padding: 40px;
+        padding: var(--space-4xl);
+        border: 2px solid var(--color-border-medium);
       }
 
       .login-header {
         text-align: center;
-        margin-bottom: 30px;
+        margin-bottom: var(--space-3xl);
       }
 
       .login-header h1 {
-        color: #2c3e50;
-        font-size: 28px;
-        margin-bottom: 10px;
+        font-family: var(--font-display);
+        color: var(--color-text-primary);
+        font-size: var(--font-size-3xl);
+        font-weight: 900;
+        margin-bottom: var(--space-sm);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
       }
 
       .login-header p {
-        color: #7f8c8d;
-        font-size: 14px;
+        font-family: var(--font-code);
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wider);
       }
 
       .form-group {
-        margin-bottom: 20px;
+        margin-bottom: var(--space-xl);
       }
 
       .form-group label {
         display: block;
-        color: #2c3e50;
-        font-size: 14px;
-        font-weight: 500;
-        margin-bottom: 8px;
+        font-family: var(--font-code);
+        color: var(--color-text-primary);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        margin-bottom: var(--space-sm);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
       }
 
       .form-group input {
         width: 100%;
-        padding: 12px 15px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        font-size: 16px;
-        transition: border-color 0.3s;
+        padding: var(--space-md);
+        background: var(--color-background-secondary);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-md);
+        font-family: var(--font-sans);
+        font-size: var(--font-size-base);
+        color: var(--color-text-primary);
+        transition: all var(--transition-base);
       }
 
       .form-group input:focus {
         outline: none;
-        border-color: #667eea;
+        border-color: var(--color-blue);
+        box-shadow: 0 0 0 3px var(--color-info-light);
+        background: var(--color-surface);
       }
 
       .login-btn {
         width: 100%;
-        padding: 14px;
-        background: #667eea;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        font-size: 16px;
-        font-weight: 500;
+        padding: var(--space-md) var(--space-lg);
+        background: var(--color-blue);
+        color: var(--color-text-inverse);
+        border: 2px solid var(--color-blue);
+        border-radius: var(--radius-md);
+        font-family: var(--font-display);
+        font-size: var(--font-size-base);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
         cursor: pointer;
-        transition: background 0.3s;
+        transition: all var(--transition-base);
+        min-height: 48px;
       }
 
       .login-btn:hover {
-        background: #5a67d8;
+        background: var(--color-primary-hover);
+        border-color: var(--color-primary-hover);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
       }
 
       .login-btn:disabled {
-        background: #95a5a6;
+        background: var(--color-text-muted);
+        border-color: var(--color-text-muted);
         cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
       }
 
       .error-message {
-        background: #f8d7da;
-        color: #721c24;
-        padding: 12px;
-        border-radius: 5px;
-        margin-bottom: 20px;
-        font-size: 14px;
+        background: var(--color-error-light);
+        color: var(--color-error);
+        padding: var(--space-md);
+        border-radius: var(--radius-md);
+        border: 2px solid var(--color-error);
+        margin-bottom: var(--space-lg);
+        font-family: var(--font-sans);
+        font-size: var(--font-size-sm);
         display: none;
       }
 
       .info-message {
-        background: #d1ecf1;
-        color: #0c5460;
-        padding: 12px;
-        border-radius: 5px;
-        margin-top: 20px;
-        font-size: 13px;
+        background: var(--color-background-secondary);
+        color: var(--color-text-secondary);
+        padding: var(--space-md);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--color-border);
+        margin-top: var(--space-lg);
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
         text-align: center;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
       }
 
       .loading {
         display: none;
         text-align: center;
-        color: #7f8c8d;
-        margin-top: 10px;
+        font-family: var(--font-code);
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+        margin-top: var(--space-sm);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      /* Dark theme is enforced for admin pages via theme-manager.js */
+      @media (max-width: 768px) {
+        .login-container {
+          padding: var(--space-2xl);
+          margin: var(--space-lg);
+        }
+        
+        .login-header h1 {
+          font-size: var(--font-size-2xl);
+        }
       }
     </style>
+    
+    <!-- Theme Manager for Dark Mode -->
+    <script type="module" src="/js/theme-manager.js"></script>
   </head>
   <body>
     <div class="login-container">

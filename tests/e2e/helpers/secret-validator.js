@@ -306,8 +306,21 @@ export function generateSecretReport(results) {
 
 /**
  * Validate secrets and throw if required ones are missing
+ * Handles unit test mode gracefully by not throwing errors
  */
 export function validateSecretsOrFail() {
+  // Check if we're in unit test mode
+  const isUnitMode = process.env.UNIT_ONLY_MODE === 'true' || process.env.NODE_ENV === 'test';
+  
+  if (isUnitMode) {
+    console.log('🧪 Unit test mode detected - returning mock validation results');
+    return {
+      summary: { allRequiredPresent: true, requiredMissing: 0, optionalFound: 0 },
+      required: {},
+      optional: {}
+    };
+  }
+  
   console.log('🔍 Validating E2E test environment secrets...\n');
   
   const results = validateSecrets();
@@ -380,6 +393,25 @@ export function isRemoteDeployment() {
  * @param {boolean} skipForRemote - Skip validation if testing against remote deployment (default: true)
  */
 export function initializeSecretValidation(skipForRemote = true) {
+  // Check if we're in unit test mode
+  const isUnitMode = process.env.UNIT_ONLY_MODE === 'true' || process.env.NODE_ENV === 'test';
+  
+  if (isUnitMode) {
+    console.log('🧪 Unit test mode detected - skipping secret validation');
+    return {
+      success: true,
+      skipped: true,
+      reason: 'unit-test-mode',
+      message: 'Secret validation skipped for unit test mode',
+      results: {
+        summary: { allRequiredPresent: true, requiredMissing: 0, optionalFound: 0 },
+        required: {},
+        optional: {}
+      },
+      flags: {}
+    };
+  }
+  
   // Skip validation if testing against a remote deployment
   if (skipForRemote && isRemoteDeployment()) {
     const baseUrl = process.env.PLAYWRIGHT_BASE_URL || process.env.CI_EXTRACTED_PREVIEW_URL || process.env.PREVIEW_URL;

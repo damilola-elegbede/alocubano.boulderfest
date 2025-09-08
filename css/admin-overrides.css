@@ -1,0 +1,705 @@
+/* Admin-Specific Components Override - A Lo Cubano Boulder Fest */
+
+/* Import festival typography and color system */
+@import url("/css/base.css");
+
+/* ==========================================================================
+   ADMIN DATA TABLES
+   ========================================================================== */
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  font-family: var(--font-sans);
+  margin: var(--space-xl) 0;
+}
+
+.admin-table thead {
+  background: linear-gradient(135deg, var(--color-blue), var(--color-red));
+}
+
+.admin-table thead th {
+  padding: var(--space-lg) var(--space-md);
+  text-align: left;
+  font-family: var(--font-display);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-surface);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  border: none;
+}
+
+.admin-table tbody tr {
+  border-bottom: 1px solid var(--color-border);
+  transition: background-color var(--transition-fast);
+}
+
+.admin-table tbody tr:hover {
+  background: var(--color-background-secondary);
+  transform: scale(1.01);
+  transition: all var(--transition-base);
+}
+
+.admin-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.admin-table tbody td {
+  padding: var(--space-md);
+  vertical-align: middle;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.admin-table tbody td:first-child {
+  font-family: var(--font-code);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* Responsive admin table */
+@media (max-width: 768px) {
+  .admin-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    margin: var(--space-lg) 0;
+  }
+
+  .admin-table thead th,
+  .admin-table tbody td {
+    padding: var(--space-sm);
+    font-size: var(--font-size-xs);
+  }
+}
+
+/* ==========================================================================
+   STATUS BADGES
+   ========================================================================== */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  font-family: var(--font-code);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.status-badge::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left var(--transition-slow);
+}
+
+.status-badge:hover::before {
+  left: 100%;
+}
+
+/* Status badge variants with Cuban-inspired colors */
+.status-badge.success {
+  background: var(--color-blue);
+  color: var(--color-surface);
+  border: 2px solid var(--color-blue);
+}
+
+.status-badge.warning {
+  background: var(--color-red);
+  color: var(--color-surface);
+  border: 2px solid var(--color-red);
+}
+
+.status-badge.info {
+  background: var(--color-border);
+  color: var(--color-text-primary);
+  border: 2px solid var(--color-border-medium);
+}
+
+.status-badge.error {
+  background: var(--color-text-primary);
+  color: var(--color-surface);
+  border: 2px solid var(--color-text-primary);
+}
+
+.status-badge.pending {
+  background: transparent;
+  color: var(--color-blue);
+  border: 2px solid var(--color-blue);
+  animation: pulsePending 2s infinite;
+}
+
+@keyframes pulsePending {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+/* Status indicator dots */
+.status-badge::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-left: var(--space-xs);
+}
+
+/* ==========================================================================
+   CHART CONTAINERS
+   ========================================================================== */
+
+.chart-container {
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  margin: var(--space-xl) 0;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+}
+
+.chart-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+}
+
+.chart-container:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--color-blue);
+}
+
+.chart-container h3 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-lg);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.chart-container .chart-subtitle {
+  font-family: var(--font-accent);
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xl);
+  font-style: italic;
+}
+
+/* Chart loading state */
+.chart-container.loading {
+  position: relative;
+  min-height: 200px;
+}
+
+.chart-container.loading::after {
+  content: "Loading...";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  animation: pulse 2s infinite;
+}
+
+/* ==========================================================================
+   ADMIN STAT CARDS
+   ========================================================================== */
+
+.admin-stat-card {
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-base);
+  text-align: center;
+  cursor: pointer;
+}
+
+.admin-stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, var(--color-blue), var(--color-red));
+  opacity: 0;
+  transition: all var(--transition-slow);
+  z-index: 0;
+}
+
+.admin-stat-card:hover {
+  transform: translateY(-4px) rotate(1deg);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--color-blue);
+}
+
+.admin-stat-card:hover::before {
+  left: 0;
+  opacity: 0.05;
+}
+
+.admin-stat-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-stat-card .stat-number {
+  font-family: var(--font-display);
+  font-size: var(--font-size-5xl);
+  font-weight: 900;
+  color: var(--color-blue);
+  line-height: var(--line-height-none);
+  margin-bottom: var(--space-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.admin-stat-card .stat-label {
+  font-family: var(--font-accent);
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-xs);
+  font-style: italic;
+}
+
+.admin-stat-card .stat-change {
+  font-family: var(--font-code);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wider);
+}
+
+.admin-stat-card .stat-change.positive {
+  color: var(--color-blue);
+}
+
+.admin-stat-card .stat-change.negative {
+  color: var(--color-red);
+}
+
+/* ==========================================================================
+   ADMIN NAVIGATION
+   ========================================================================== */
+
+.admin-nav {
+  background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-background-secondary) 100%);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin: var(--space-xl) 0;
+  box-shadow: var(--shadow-lg);
+}
+
+.admin-nav ul {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  justify-content: center;
+  align-items: center;
+}
+
+.admin-nav li {
+  position: relative;
+}
+
+.admin-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  background: transparent;
+  color: var(--color-surface);
+  text-decoration: none;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-nav a::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+  transition: left var(--transition-slow);
+  z-index: 0;
+}
+
+.admin-nav a:hover {
+  color: var(--color-surface);
+  border-color: var(--color-blue);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(91, 107, 181, 0.3);
+}
+
+.admin-nav a:hover::before {
+  left: 0;
+}
+
+.admin-nav a span {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-nav a.active {
+  background: var(--color-blue);
+  border-color: var(--color-blue);
+  color: var(--color-surface);
+}
+
+/* Mobile admin navigation */
+@media (max-width: 768px) {
+  .admin-nav ul {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .admin-nav a {
+    width: 100%;
+    justify-content: center;
+    padding: var(--space-md);
+  }
+}
+
+/* ==========================================================================
+   DASHBOARD GRIDS
+   ========================================================================== */
+
+.admin-grid {
+  display: grid;
+  gap: var(--space-xl);
+  margin: var(--space-xl) 0;
+}
+
+.admin-grid.two-column {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.admin-grid.three-column {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.admin-grid.four-column {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.admin-grid.auto-fit {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.admin-grid.auto-fill {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
+
+/* Responsive admin grids */
+@media (max-width: 1024px) {
+  .admin-grid.four-column {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admin-grid.three-column {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-grid.four-column,
+  .admin-grid.three-column,
+  .admin-grid.two-column {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-grid {
+    gap: var(--space-lg);
+    margin: var(--space-lg) 0;
+  }
+}
+
+/* ==========================================================================
+   ALERT MESSAGES
+   ========================================================================== */
+
+.admin-alert {
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  margin: var(--space-lg) 0;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  position: relative;
+  overflow: hidden;
+  animation: slideInAlert 0.3s ease-out;
+}
+
+@keyframes slideInAlert {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-alert::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: currentColor;
+}
+
+.admin-alert.success {
+  background: rgba(91, 107, 181, 0.1);
+  color: var(--color-blue);
+  border: 1px solid rgba(91, 107, 181, 0.2);
+}
+
+.admin-alert.error {
+  background: rgba(204, 41, 54, 0.1);
+  color: var(--color-red);
+  border: 1px solid rgba(204, 41, 54, 0.2);
+}
+
+.admin-alert.warning {
+  background: rgba(255, 193, 7, 0.1);
+  color: #856404;
+  border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+.admin-alert.info {
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.admin-alert .alert-title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.admin-alert .alert-content {
+  margin-bottom: var(--space-md);
+}
+
+.admin-alert .alert-actions {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.admin-alert .alert-button {
+  padding: var(--space-sm) var(--space-lg);
+  background: transparent;
+  color: currentColor;
+  border: 2px solid currentColor;
+  border-radius: var(--radius-md);
+  font-family: var(--font-code);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.admin-alert .alert-button:hover {
+  background: currentColor;
+  color: var(--color-surface);
+  transform: translateY(-1px);
+}
+
+.admin-alert .alert-dismiss {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  background: none;
+  border: none;
+  color: currentColor;
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity var(--transition-fast);
+}
+
+.admin-alert .alert-dismiss:hover {
+  opacity: 1;
+}
+
+/* Cuban-inspired pulse animation for critical alerts */
+.admin-alert.critical {
+  animation: criticalPulse 2s infinite, slideInAlert 0.3s ease-out;
+}
+
+@keyframes criticalPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(204, 41, 54, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px 10px rgba(204, 41, 54, 0.1);
+  }
+}
+
+/* ==========================================================================
+   THEME VARIANTS & ACCESSIBILITY
+   ========================================================================== */
+
+/* Dark theme support - handled automatically by semantic tokens */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .admin-table,
+  .admin-stat-card,
+  .chart-container,
+  .admin-alert {
+    border-width: 3px;
+  }
+
+  .status-badge {
+    border-width: 3px;
+    font-weight: 900;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .admin-table tbody tr:hover,
+  .admin-stat-card:hover,
+  .chart-container:hover,
+  .admin-nav a:hover,
+  .status-badge,
+  .admin-alert {
+    transform: none;
+    animation: none;
+  }
+
+  .status-badge::before,
+  .admin-nav a::before,
+  .admin-stat-card::before {
+    transition: none;
+  }
+
+  @keyframes criticalPulse {
+    from, to {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+
+  @keyframes pulsePending {
+    from, to {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+}
+
+/* ==========================================================================
+   UTILITY CLASSES
+   ========================================================================== */
+
+.admin-loading {
+  opacity: 0.7;
+  pointer-events: none;
+  position: relative;
+}
+
+.admin-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid var(--color-blue);
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: adminSpin 1s linear infinite;
+}
+
+@keyframes adminSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.admin-hidden {
+  display: none !important;
+}
+
+.admin-text-center {
+  text-align: center;
+}
+
+.admin-text-left {
+  text-align: left;
+}
+
+.admin-text-right {
+  text-align: right;
+}
+
+.admin-mb-lg {
+  margin-bottom: var(--space-lg);
+}
+
+.admin-mt-lg {
+  margin-top: var(--space-lg);
+}
+
+.admin-p-lg {
+  padding: var(--space-lg);
+}
