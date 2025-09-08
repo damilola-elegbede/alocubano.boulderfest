@@ -305,20 +305,17 @@ describe('Wallet Pass Integration Tests', () => {
       const appleWalletService = new AppleWalletService();
       vi.spyOn(appleWalletService, 'isConfigured').mockReturnValue(true);
       
-      // Mock getDatabaseClient to simulate database error
-      // Since AppleWalletService imports getDatabaseClient, we need to mock it at the module level
+      // Mock getDatabaseClient to simulate database error using vi.spyOn
       const databaseModule = await import('../../../api/lib/database.js');
-      const originalGetDatabaseClient = databaseModule.getDatabaseClient;
-      
-      // Override the getDatabaseClient function temporarily
-      databaseModule.getDatabaseClient = vi.fn().mockRejectedValue(new Error('Database connection failed'));
+      const getDatabaseClientSpy = vi.spyOn(databaseModule, 'getDatabaseClient')
+        .mockRejectedValue(new Error('Database connection failed'));
 
       await expect(
         appleWalletService.generatePass(testTicketId)
       ).rejects.toThrow('Database connection failed');
       
       // Restore the original function
-      databaseModule.getDatabaseClient = originalGetDatabaseClient;
+      getDatabaseClientSpy.mockRestore();
     });
 
     it('should handle concurrent pass generation requests', async () => {
