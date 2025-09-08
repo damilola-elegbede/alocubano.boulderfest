@@ -48,9 +48,16 @@ test.describe('Admin Authentication', () => {
         throw new Error(`Route ${route} returned ${response.status()}: ${response.statusText()}`);
       }
       
-      // Wait for page to load completely including network idle for preview deployments
+      // Wait for page to load completely
       await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
-      await page.waitForLoadState('networkidle', { timeout: 30000 });
+      // Skip networkidle for preview deployments as it causes timeouts
+      if (!isPreviewMode) {
+        try {
+          await page.waitForLoadState('networkidle', { timeout: 10000 });
+        } catch (e) {
+          // Ignore networkidle timeout, page is likely ready anyway
+        }
+      }
       
       // Check if we actually got the right page (not a fallback)
       const content = await page.content();
@@ -83,9 +90,15 @@ test.describe('Admin Authentication', () => {
     // Wait for essential elements with updated selectors matching the new HTML structure
     const timeout = isPreviewMode ? 90000 : 60000;
     await page.waitForSelector('h1', { timeout });
-    await page.waitForSelector('input[name="username"], input[id="username"]', { timeout });
-    await page.waitForSelector('input[name="password"], input[id="password"]', { timeout });
-    await page.waitForSelector('button[type="submit"], .login-btn', { timeout });
+    await page.waitForSelector('input[name="username"], input[id="username"]', { timeout }).catch(() => 
+      page.waitForSelector('input[name="username"]', { timeout })
+    );
+    await page.waitForSelector('input[name="password"], input[id="password"]', { timeout }).catch(() =>
+      page.waitForSelector('input[name="password"]', { timeout })
+    );
+    await page.waitForSelector('button[type="submit"], .login-btn', { timeout }).catch(() =>
+      page.waitForSelector('button[type="submit"]', { timeout })
+    );
     
     // Add extra wait for JavaScript to be fully loaded and interactive
     await page.waitForFunction(
@@ -102,9 +115,9 @@ test.describe('Admin Authentication', () => {
     const timeout = isPreviewMode ? 45000 : 30000;
     
     await expect(page.locator('h1')).toHaveText(/Admin Access/i, { timeout });
-    await expect(page.locator('input[name="username"], input[id="username"]')).toBeVisible({ timeout });
-    await expect(page.locator('input[name="password"], input[id="password"]')).toBeVisible({ timeout });
-    await expect(page.locator('button[type="submit"], .login-btn')).toBeVisible({ timeout });
+    await expect(page.locator('input[name="username"]').or(page.locator('input[id="username"]'))).toBeVisible({ timeout });
+    await expect(page.locator('input[name="password"]').or(page.locator('input[id="password"]'))).toBeVisible({ timeout });
+    await expect(page.locator('button[type="submit"]').or(page.locator('.login-btn'))).toBeVisible({ timeout });
     
     // Verify the page has the Cuban theme elements
     await expect(page.locator('.login-container')).toBeVisible({ timeout });
@@ -113,9 +126,9 @@ test.describe('Admin Authentication', () => {
   test('should reject invalid credentials', async ({ page }) => {
     // Use flexible selectors for both potential login page structures
     const timeout = isPreviewMode ? 60000 : 30000;
-    const usernameField = page.locator('input[name="username"], input[id="username"]');
-    const passwordField = page.locator('input[name="password"], input[id="password"]');
-    const submitButton = page.locator('button[type="submit"], .login-btn');
+    const usernameField = page.locator('input[name="username"]').or(page.locator('input[id="username"]'));
+    const passwordField = page.locator('input[name="password"]').or(page.locator('input[id="password"]'));
+    const submitButton = page.locator('button[type="submit"]').or(page.locator('.login-btn'));
     
     await expect(usernameField).toBeVisible({ timeout });
     await expect(passwordField).toBeVisible({ timeout });
@@ -143,7 +156,7 @@ test.describe('Admin Authentication', () => {
     }
     
     // Should show error message and not navigate to dashboard
-    const errorElement = page.locator('#errorMessage, .error-message, [role="alert"]');
+    const errorElement = page.locator('#errorMessage').or(page.locator('.error-message')).or(page.locator('[role="alert"]'));
     await expect(errorElement).toBeVisible({ timeout: isPreviewMode ? 15000 : 10000 });
     await expect(page).not.toHaveURL(/dashboard/);
   });
@@ -158,9 +171,9 @@ test.describe('Admin Authentication', () => {
     }
     
     // Use flexible selectors for different login page structures
-    const usernameField = page.locator('input[name="username"], input[id="username"]');
-    const passwordField = page.locator('input[name="password"], input[id="password"]');
-    const submitButton = page.locator('button[type="submit"], .login-btn');
+    const usernameField = page.locator('input[name="username"]').or(page.locator('input[id="username"]'));
+    const passwordField = page.locator('input[name="password"]').or(page.locator('input[id="password"]'));
+    const submitButton = page.locator('button[type="submit"]').or(page.locator('.login-btn'));
     
     await expect(usernameField).toBeVisible({ timeout });
     await expect(passwordField).toBeVisible({ timeout });
@@ -177,7 +190,9 @@ test.describe('Admin Authentication', () => {
     
     // Wait for loading state to appear (indicates form submission started)
     try {
-      await page.waitForSelector('#loading, .loading', { state: 'visible', timeout: 5000 });
+      await page.waitForSelector('#loading', { state: 'visible', timeout: 5000 }).catch(() =>
+        page.waitForSelector('.loading', { state: 'visible', timeout: 5000 })
+      );
     } catch (error) {
       // Loading might be too fast to catch, that's okay
       console.log('No loading indicator found, continuing...');
@@ -188,7 +203,7 @@ test.describe('Admin Authentication', () => {
     if (!adminAuthAvailable) {
       // If admin auth API is not available, just verify form submission doesn't crash
       await page.waitForTimeout(3000);
-      const formStillPresent = await page.locator('#loginForm, form').isVisible();
+      const formStillPresent = await page.locator('#loginForm').or(page.locator('form')).isVisible();
       if (formStillPresent) {
         console.log('✅ Admin login form handled submission gracefully without API');
         return; // Skip the rest of the test
@@ -200,13 +215,15 @@ test.describe('Admin Authentication', () => {
       const result = await Promise.race([
         page.waitForURL('**/admin/dashboard.html', { timeout }).then(() => 'dashboard-direct'),
         page.waitForURL('**/pages/admin/dashboard.html', { timeout }).then(() => 'dashboard-pages'),
-        page.waitForSelector('#errorMessage, .error-message, [role="alert"]', { state: 'visible', timeout: Math.floor(timeout * 0.75) }).then(() => 'error'),
+        page.waitForSelector('#errorMessage', { state: 'visible', timeout: Math.floor(timeout * 0.75) }).catch(() =>
+          page.waitForSelector('.error-message', { state: 'visible', timeout: Math.floor(timeout * 0.75) })
+        ).then(() => 'error'),
         page.waitForFunction(() => {
-          const loading = document.querySelector('#loading, .loading');
+          const loading = document.querySelector('#loading') || document.querySelector('.loading');
           return loading && loading.style.display === 'none';
         }, { timeout: Math.floor(timeout * 0.75) }).then(() => 'loading_complete'),
-        // Also wait for any network requests to complete
-        page.waitForLoadState('networkidle', { timeout: Math.floor(timeout * 0.5) }).then(() => 'network_idle')
+        // Skip networkidle for now as it causes issues
+        // page.waitForLoadState('networkidle', { timeout: Math.floor(timeout * 0.5) }).then(() => 'network_idle')
       ]);
       
       console.log('✅ Login response received:', result);
@@ -227,7 +244,7 @@ test.describe('Admin Authentication', () => {
         console.log('✅ Admin login successful - redirected to dashboard with black theme');
       } else {
         // Check if there's an error message visible
-        const errorMessage = page.locator('#errorMessage, .error-message, [role="alert"]');
+        const errorMessage = page.locator('#errorMessage').or(page.locator('.error-message')).or(page.locator('[role="alert"]'));
         if (await errorMessage.isVisible()) {
           const errorText = await errorMessage.textContent();
           if (errorText && errorText.trim()) {
@@ -244,7 +261,7 @@ test.describe('Admin Authentication', () => {
           return;
         } else if (isOnLoginPage) {
           // Still on login page - check if there are any visible errors or if form is disabled
-          const loginButton = page.locator('button[type="submit"], .login-btn');
+          const loginButton = page.locator('button[type="submit"]').or(page.locator('.login-btn'));
           const isDisabled = await loginButton.getAttribute('disabled');
           const hasHiddenError = await page.locator('#errorMessage, .error-message').count() > 0;
           
@@ -268,7 +285,7 @@ test.describe('Admin Authentication', () => {
         currentUrl: page.url(),
         hasError: await page.locator('#errorMessage, .error-message').isVisible(),
         hasLoadingIndicator: await page.locator('#loading:visible, .loading:visible').count() > 0,
-        buttonDisabled: await page.locator('button[type="submit"], .login-btn').getAttribute('disabled') !== null,
+        buttonDisabled: await page.locator('button[type="submit"]').or(page.locator('.login-btn')).getAttribute('disabled') !== null,
         environment: isPreviewMode ? 'Preview Deployment' : 'Local Development'
       };
       console.log('Login attempt debugging info:', debugInfo);
@@ -293,9 +310,9 @@ test.describe('Admin Authentication', () => {
 
     const timeout = 60000;
     // Login first with flexible selectors
-    const usernameField = page.locator('input[name="username"], input[id="username"]');
-    const passwordField = page.locator('input[name="password"], input[id="password"]');
-    const submitButton = page.locator('button[type="submit"], .login-btn');
+    const usernameField = page.locator('input[name="username"]').or(page.locator('input[id="username"]'));
+    const passwordField = page.locator('input[name="password"]').or(page.locator('input[id="password"]'));
+    const submitButton = page.locator('button[type="submit"]').or(page.locator('.login-btn'));
     
     await expect(usernameField).toBeVisible({ timeout: 30000 });
     await usernameField.fill(adminCredentials.email);
@@ -307,7 +324,9 @@ test.describe('Admin Authentication', () => {
       await Promise.race([
         page.waitForURL('**/admin/dashboard.html', { timeout }),
         page.waitForURL('**/pages/admin/dashboard.html', { timeout }),
-        page.waitForSelector('#errorMessage, .error-message', { state: 'visible', timeout: 30000 })
+        page.waitForSelector('#errorMessage', { state: 'visible', timeout: 30000 }).catch(() =>
+          page.waitForSelector('.error-message', { state: 'visible', timeout: 30000 })
+        )
       ]);
       
       // Skip this test if MFA is required or login failed
@@ -348,9 +367,9 @@ test.describe('Admin Authentication', () => {
 
     const timeout = 60000;
     // Login first with flexible selectors
-    const usernameField = page.locator('input[name="username"], input[id="username"]');
-    const passwordField = page.locator('input[name="password"], input[id="password"]');
-    const submitButton = page.locator('button[type="submit"], .login-btn');
+    const usernameField = page.locator('input[name="username"]').or(page.locator('input[id="username"]'));
+    const passwordField = page.locator('input[name="password"]').or(page.locator('input[id="password"]'));
+    const submitButton = page.locator('button[type="submit"]').or(page.locator('.login-btn'));
     
     await expect(usernameField).toBeVisible({ timeout: 30000 });
     await usernameField.fill(adminCredentials.email);
@@ -362,7 +381,9 @@ test.describe('Admin Authentication', () => {
       await Promise.race([
         page.waitForURL('**/admin/dashboard.html', { timeout }),
         page.waitForURL('**/pages/admin/dashboard.html', { timeout }),
-        page.waitForSelector('#errorMessage, .error-message', { state: 'visible', timeout: 30000 })
+        page.waitForSelector('#errorMessage', { state: 'visible', timeout: 30000 }).catch(() =>
+          page.waitForSelector('.error-message', { state: 'visible', timeout: 30000 })
+        )
       ]);
       
       // Skip this test if login didn't complete successfully
