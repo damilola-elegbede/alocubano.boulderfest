@@ -10,7 +10,7 @@
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--color-white);
+  background: var(--color-surface);
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-lg);
@@ -28,19 +28,19 @@
   font-family: var(--font-display);
   font-size: var(--font-size-sm);
   font-weight: 700;
-  color: var(--color-white);
+  color: var(--color-surface);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-wide);
   border: none;
 }
 
 .admin-table tbody tr {
-  border-bottom: 1px solid var(--color-gray-200);
+  border-bottom: 1px solid var(--color-border);
   transition: background-color var(--transition-fast);
 }
 
 .admin-table tbody tr:hover {
-  background: var(--color-gray-100);
+  background: var(--color-background-secondary);
   transform: scale(1.01);
   transition: all var(--transition-base);
 }
@@ -53,13 +53,13 @@
   padding: var(--space-md);
   vertical-align: middle;
   font-size: var(--font-size-sm);
-  color: var(--color-gray-800);
+  color: var(--color-text-secondary);
 }
 
 .admin-table tbody td:first-child {
   font-family: var(--font-code);
   font-weight: 600;
-  color: var(--color-black);
+  color: var(--color-text-primary);
 }
 
 /* Responsive admin table */
@@ -116,26 +116,26 @@
 /* Status badge variants with Cuban-inspired colors */
 .status-badge.success {
   background: var(--color-blue);
-  color: var(--color-white);
+  color: var(--color-surface);
   border: 2px solid var(--color-blue);
 }
 
 .status-badge.warning {
   background: var(--color-red);
-  color: var(--color-white);
+  color: var(--color-surface);
   border: 2px solid var(--color-red);
 }
 
 .status-badge.info {
-  background: var(--color-gray-200);
-  color: var(--color-black);
-  border: 2px solid var(--color-gray-300);
+  background: var(--color-border);
+  color: var(--color-text-primary);
+  border: 2px solid var(--color-border-medium);
 }
 
 .status-badge.error {
-  background: var(--color-black);
-  color: var(--color-white);
-  border: 2px solid var(--color-black);
+  background: var(--color-text-primary);
+  color: var(--color-surface);
+  border: 2px solid var(--color-text-primary);
 }
 
 .status-badge.pending {
@@ -171,8 +171,8 @@
    ========================================================================== */
 
 .chart-container {
-  background: var(--color-white);
-  border: 2px solid var(--color-gray-200);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-xl);
   margin: var(--space-xl) 0;
@@ -202,7 +202,7 @@
   font-family: var(--font-display);
   font-size: var(--font-size-xl);
   font-weight: 700;
-  color: var(--color-black);
+  color: var(--color-text-primary);
   margin-bottom: var(--space-lg);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-wide);
@@ -211,7 +211,7 @@
 .chart-container .chart-subtitle {
   font-family: var(--font-accent);
   font-size: var(--font-size-base);
-  color: var(--color-gray-600);
+  color: var(--color-text-muted);
   margin-bottom: var(--space-xl);
   font-style: italic;
 }
@@ -230,7 +230,7 @@
   transform: translate(-50%, -50%);
   font-family: var(--font-code);
   font-size: var(--font-size-sm);
-  color: var(--color-gray-500);
+  color: var(--color-text-muted);
   animation: pulse 2s infinite;
 }
 
@@ -239,8 +239,8 @@
    ========================================================================== */
 
 .admin-stat-card {
-  background: var(--color-white);
-  border: 2px solid var(--color-gray-200);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-xl);
   position: relative;
@@ -293,7 +293,7 @@
 .admin-stat-card .stat-label {
   font-family: var(--font-accent);
   font-size: var(--font-size-base);
-  color: var(--color-gray-700);
+  color: var(--color-text-secondary);
   margin-bottom: var(--space-xs);
   font-style: italic;
 }
@@ -319,7 +319,7 @@
    ========================================================================== */
 
 .admin-nav {
-  background: linear-gradient(135deg, var(--color-black) 0%, var(--color-gray-800) 100%);
+  background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-background-secondary) 100%);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
   margin: var(--space-xl) 0;
@@ -345,7 +345,7 @@
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-lg);
   background: transparent;
-  color: var(--color-white);
+  color: var(--color-surface);
   text-decoration: none;
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-md);
@@ -372,7 +372,7 @@
 }
 
 .admin-nav a:hover {
-  color: var(--color-white);
+  color: var(--color-surface);
   border-color: var(--color-blue);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(91, 107, 181, 0.3);
@@ -390,7 +390,7 @@
 .admin-nav a.active {
   background: var(--color-blue);
   border-color: var(--color-blue);
-  color: var(--color-white);
+  color: var(--color-surface);
 }
 
 /* Mobile admin navigation */
@@ -517,9 +517,9 @@
 }
 
 .admin-alert.info {
-  background: var(--color-gray-100);
-  color: var(--color-gray-800);
-  border: 1px solid var(--color-gray-200);
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
 }
 
 .admin-alert .alert-title {
@@ -558,7 +558,7 @@
 
 .admin-alert .alert-button:hover {
   background: currentColor;
-  color: var(--color-white);
+  color: var(--color-surface);
   transform: translateY(-1px);
 }
 
@@ -597,35 +597,7 @@
    THEME VARIANTS & ACCESSIBILITY
    ========================================================================== */
 
-/* Dark theme support */
-@media (prefers-color-scheme: dark) {
-  .admin-table {
-    background: var(--color-gray-900);
-  }
-
-  .admin-table tbody tr {
-    border-color: var(--color-gray-700);
-  }
-
-  .admin-table tbody tr:hover {
-    background: var(--color-gray-800);
-  }
-
-  .admin-table tbody td {
-    color: var(--color-gray-200);
-  }
-
-  .admin-stat-card,
-  .chart-container {
-    background: var(--color-gray-900);
-    border-color: var(--color-gray-700);
-  }
-
-  .admin-stat-card .stat-label,
-  .chart-container .chart-subtitle {
-    color: var(--color-gray-400);
-  }
-}
+/* Dark theme support - handled automatically by semantic tokens */
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
@@ -660,7 +632,13 @@
     transition: none;
   }
 
-  @keyframes criticalPulse,
+  @keyframes criticalPulse {
+    from, to {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+
   @keyframes pulsePending {
     from, to {
       transform: none;
