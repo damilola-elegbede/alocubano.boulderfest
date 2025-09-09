@@ -286,6 +286,28 @@ class ValidationService {
   }
 
   /**
+   * Validate positive integer
+   * @param {any} value - Value to validate
+   * @param {string} fieldName - Field name for error messages
+   * @returns {Object} Validation result
+   */
+  validatePositiveInteger(value, fieldName = "Value") {
+    if (!value) {
+      return { isValid: true }; // Most integer fields are optional
+    }
+
+    const numValue = parseInt(value);
+    if (isNaN(numValue) || numValue <= 0) {
+      return {
+        isValid: false,
+        error: `${fieldName} must be a positive integer`,
+      };
+    }
+
+    return { isValid: true, value: numValue };
+  }
+
+  /**
    * Validate admin action
    * @param {string} action - Action to validate
    * @returns {Object} Validation result
@@ -349,9 +371,9 @@ class ValidationService {
     );
     if (!checkedInValidation.isValid) {
       errors.push(checkedInValidation.error);
-    } else if (params.checkedIn) {
-      // Convert string to boolean
-      sanitized.checkedIn = params.checkedIn === "true";
+    } else if (params.checkedIn !== undefined && params.checkedIn !== null) {
+      // Convert string to boolean - handle both "true" and "false" explicitly
+      sanitized.checkedIn = params.checkedIn === "true" ? "true" : "false";
     }
 
     // Validate eventId (optional)

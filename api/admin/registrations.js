@@ -221,7 +221,35 @@ async function handler(req, res) {
     }
   } catch (error) {
     console.error('Registration API error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    
+    // Provide more specific error messages for debugging
+    let errorMessage = 'Internal server error';
+    let statusCode = 500;
+    
+    if (error.message.includes('validation')) {
+      errorMessage = 'Invalid request parameters';
+      statusCode = 400;
+    } else if (error.message.includes('not found')) {
+      errorMessage = 'Resource not found';
+      statusCode = 404;
+    } else if (error.message.includes('database') || error.message.includes('SQL')) {
+      errorMessage = 'Database operation failed';
+      statusCode = 503;
+    } else if (error.message.includes('auth') || error.message.includes('permission')) {
+      errorMessage = 'Authentication or permission error';
+      statusCode = 403;
+    }
+    
+    // In development, provide more detailed error information
+    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview';
+    
+    res.status(statusCode).json({
+      error: errorMessage,
+      ...(isDevelopment && {
+        details: error.message,
+        stack: error.stack?.substring(0, 500) // Limit stack trace size
+      })
+    });
   }
 }
 
