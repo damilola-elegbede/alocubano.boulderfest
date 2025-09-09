@@ -47,7 +47,7 @@ class VirtualGalleryManager {
         // Enhanced throttling and debouncing
         this.boundScrollHandler = this.debounce(this.handleScroll.bind(this), 8);
         this.boundResizeHandler = this.debounce(this.handleResize.bind(this), 150);
-        
+
         // API response cache
         this.apiCache = new Map();
         this.apiCacheTTL = 5 * 60 * 1000; // 5 minutes
@@ -170,7 +170,7 @@ class VirtualGalleryManager {
    */
     async fetchData(offset, limit) {
         const cacheKey = `${this.apiEndpoint}?year=${this.year}&offset=${offset}&limit=${limit}`;
-        
+
         // Check cache first
         const cached = this.apiCache.get(cacheKey);
         if (cached && (Date.now() - cached.timestamp < this.apiCacheTTL)) {
@@ -179,7 +179,7 @@ class VirtualGalleryManager {
         }
 
         this.performanceMetrics.cacheMisses++;
-        
+
         const response = await fetch(cacheKey, {
             method: 'GET',
             headers: {
@@ -196,13 +196,13 @@ class VirtualGalleryManager {
         // Cache the response
         const data = await response.json();
         const etag = response.headers.get('etag');
-        
+
         this.apiCache.set(cacheKey, {
             data,
             etag,
             timestamp: Date.now()
         });
-        
+
         // Limit cache size (LRU eviction)
         if (this.apiCache.size > 20) {
             const firstKey = this.apiCache.keys().next().value;
@@ -372,7 +372,7 @@ class VirtualGalleryManager {
         if (startIndex === this.lastVisibleRange.start && endIndex === this.lastVisibleRange.end) {
             return;
         }
-        
+
         this.lastVisibleRange = { start: startIndex, end: endIndex };
 
         // Use fragment for batch DOM updates
@@ -418,7 +418,7 @@ class VirtualGalleryManager {
         this.visibleItems = newVisibleItems;
 
         this.performanceMetrics.itemsRendered = endIndex - startIndex;
-        
+
         // Cleanup unused elements to prevent memory leaks
         this.cleanupRenderedElements();
     }
@@ -681,14 +681,14 @@ class VirtualGalleryManager {
             // Keep only currently visible and recently visible elements
             const keysToDelete = [];
             const visibleIndices = new Set(this.visibleItems.keys());
-            
+
             for (const [index, element] of this.renderedElements) {
-                if (!visibleIndices.has(index) && 
+                if (!visibleIndices.has(index) &&
                     Math.abs(index - this.lastVisibleRange.start) > 50) {
                     keysToDelete.push(index);
                 }
             }
-            
+
             // Remove oldest 25% of unused elements
             keysToDelete.slice(0, Math.ceil(keysToDelete.length * 0.25)).forEach(key => {
                 this.renderedElements.delete(key);
@@ -707,7 +707,7 @@ class VirtualGalleryManager {
             timeout = setTimeout(() => func.apply(context, args), wait);
         };
     }
-    
+
     /**
    * Throttle function for performance (fallback)
    */
@@ -734,7 +734,7 @@ class VirtualGalleryManager {
           this.performanceMetrics.renderTimes.length
           : 0;
 
-        const cacheHitRatio = 
+        const cacheHitRatio =
             this.performanceMetrics.cacheHits + this.performanceMetrics.cacheMisses > 0
                 ? (this.performanceMetrics.cacheHits / (this.performanceMetrics.cacheHits + this.performanceMetrics.cacheMisses)) * 100
                 : 0;

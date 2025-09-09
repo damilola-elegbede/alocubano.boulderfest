@@ -219,10 +219,10 @@ function initializeApplication() {
 
     // Initialize page-specific components
     initializePageComponents();
-    
+
     // Initialize shared components
     initializeSharedComponents();
-    
+
     // Initialize forms
     initializeForms();
 }
@@ -295,7 +295,7 @@ function handleInitializationFailure(error) {
         `;
         errorDiv.textContent = `Init Error: ${error.message}`;
         document.body.appendChild(errorDiv);
-        
+
         setTimeout(() => errorDiv.remove(), 10000);
     }
 }

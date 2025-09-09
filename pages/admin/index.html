@@ -4,18 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Portal - A Lo Cubano Boulder Fest</title>
-    
+
     <!-- Main Site CSS System -->
-    <link rel="stylesheet" href="/css/base.css">
-    <link rel="stylesheet" href="/css/typography.css">
-    <link rel="stylesheet" href="/css/components.css">
-    <link rel="stylesheet" href="/css/navigation.css">
-    <link rel="stylesheet" href="/css/admin-overrides.css">
-    
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/admin-overrides.css" />
+
     <style>
       /* Admin Portal Specific Styles */
       body {
-        background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-red) 100%);
+        background: linear-gradient(
+          135deg,
+          var(--color-blue) 0%,
+          var(--color-red) 100%
+        );
         min-height: 100vh;
         padding: var(--space-lg);
       }
@@ -79,7 +83,7 @@
         }
       }
     </style>
-    
+
     <!-- Theme Manager -->
     <script type="module" src="/js/theme-manager.js"></script>
   </head>
@@ -352,7 +356,11 @@
         const format = confirm("Download as CSV? (Cancel for JSON)")
           ? "csv"
           : "json";
-        window.open(`/api/admin/generate-report?format=${format}`, "_blank", "noopener,noreferrer");
+        window.open(
+          `/api/admin/generate-report?format=${format}`,
+          "_blank",
+          "noopener,noreferrer",
+        );
       }
 
       // Test database

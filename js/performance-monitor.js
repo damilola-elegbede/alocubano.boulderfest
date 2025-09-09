@@ -1380,7 +1380,7 @@ class PerformanceMonitor {
 if (typeof window !== 'undefined' && !window.performanceMonitor) {
     // Export the class constructor for direct instantiation
     window.PerformanceMonitor = PerformanceMonitor;
-    
+
     // Create singleton instance
     window.performanceMonitor = new PerformanceMonitor();
 

@@ -4,14 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Login - A Lo Cubano Boulder Fest</title>
-    
+
     <!-- Main Site CSS System -->
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/typography.css" />
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/forms.css" />
     <link rel="stylesheet" href="/css/admin-overrides.css" />
-    
+
     <style>
       /* Admin Login Specific Styles */
       body {
@@ -20,7 +20,11 @@
         align-items: center;
         justify-content: center;
         padding: var(--space-lg);
-        background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-red) 100%);
+        background: linear-gradient(
+          135deg,
+          var(--color-blue) 0%,
+          var(--color-red) 100%
+        );
       }
 
       .login-container {
@@ -28,8 +32,9 @@
         border-radius: var(--radius-lg);
         box-shadow: var(--shadow-xl);
         width: 100%;
-        max-width: 400px;
-        padding: var(--space-4xl);
+        max-width: 520px;
+        padding: var(--space-2xl);
+        margin: 0 var(--space-lg);
         border: 2px solid var(--color-border-medium);
         position: relative;
         overflow: hidden;
@@ -299,16 +304,24 @@
       /* Dark theme is enforced for admin pages via theme-manager.js */
       @media (max-width: 768px) {
         .login-container {
-          padding: var(--space-2xl);
-          margin: var(--space-lg);
+          max-width: 400px;
+          padding: var(--space-xl);
+          margin: var(--space-md);
         }
-        
+
         .login-header h1 {
           font-size: var(--font-size-2xl);
         }
       }
+
+      /* Large screen optimization */
+      @media (min-width: 1200px) {
+        .login-container {
+          max-width: 560px;
+        }
+      }
     </style>
-    
+
     <!-- Theme Manager for Dark Mode -->
     <script type="module" src="/js/theme-manager.js"></script>
   </head>

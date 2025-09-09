@@ -703,10 +703,10 @@
             content: document.getElementById('gallery-detail-content'),
             static: document.getElementById('gallery-detail-static')
         });
-        
+
         // Initialize preloading optimizations
         setupHoverPreloading(); // Desktop hover preloading
-        
+
         // Setup intersection preloading after a short delay to ensure gallery items are rendered
         setTimeout(() => {
             setupIntersectionPreloading(); // Mobile/scroll preloading
@@ -840,7 +840,7 @@
 
         // Declare apiUrl at function scope to avoid reference error in catch block
         let apiUrl = '';
-        
+
         try {
             // Set loading mutex
             state.loadingMutex = true;
@@ -928,12 +928,12 @@
             // Handle static JSON fallback for first page loads
             if (isStaticFetch && (!response.ok || !response.headers.get('content-type')?.includes('application/json'))) {
                 console.warn(`⚠️ Static JSON failed (status: ${response.status}), falling back to API endpoint`);
-                
+
                 const event = getEventFromPage();
                 const fallbackUrl = `${CONFIG.API_ENDPOINT}?year=${year}&event=${event}&limit=${CONFIG.PAGINATION_SIZE}&offset=0&timestamp=${Date.now()}`;
-                
+
                 console.log('🔄 Falling back to API endpoint:', fallbackUrl);
-                
+
                 try {
                     response = await RequestManager.cachedFetch(fallbackUrl, {
                         method: 'GET',
@@ -941,11 +941,11 @@
                             Accept: 'application/json'
                         }
                     });
-                    
+
                     if (!response.ok) {
                         throw new Error(`Fallback API error: ${response.status} ${response.statusText}`);
                     }
-                    
+
                     // Mark as no longer static fetch since we're using API
                     isStaticFetch = false;
                     console.log('✅ Successfully fell back to API endpoint');
@@ -963,12 +963,12 @@
             } catch (parseError) {
                 if (isStaticFetch) {
                     console.warn('⚠️ Static JSON parse failed, falling back to API endpoint');
-                    
+
                     const event = getEventFromPage();
                     const fallbackUrl = `${CONFIG.API_ENDPOINT}?year=${year}&event=${event}&limit=${CONFIG.PAGINATION_SIZE}&offset=0&timestamp=${Date.now()}`;
-                    
+
                     console.log('🔄 Falling back to API endpoint due to parse error:', fallbackUrl);
-                    
+
                     try {
                         response = await RequestManager.cachedFetch(fallbackUrl, {
                             method: 'GET',
@@ -976,11 +976,11 @@
                                 Accept: 'application/json'
                             }
                         });
-                        
+
                         if (!response.ok) {
                             throw new Error(`Fallback API error: ${response.status} ${response.statusText}`);
                         }
-                        
+
                         data = await response.json();
                         isStaticFetch = false;
                         console.log('✅ Successfully fell back to API endpoint after parse error');
@@ -1127,10 +1127,10 @@
 
                 // Update total counts from API response
                 state.totalItemsAvailable = data.totalCount || 0;
-                
+
                 // The API returns paginated categories directly
                 const paginatedCategories = data.categories || {};
-                
+
                 console.log('🔍 Processing categories:', {
                     categoriesReceived: Object.keys(paginatedCategories),
                     workshopsArray: Array.isArray(paginatedCategories.workshops),
@@ -1138,16 +1138,16 @@
                     socialsArray: Array.isArray(paginatedCategories.socials),
                     socialsLength: paginatedCategories.socials?.length || 0
                 });
-                
+
                 // Count items in this page
                 let pageItemCount = 0;
                 const itemsByCategory = {};
-                
+
                 Object.entries(paginatedCategories).forEach(([category, items]) => {
                     const itemCount = (items || []).length;
                     pageItemCount += itemCount;
                     itemsByCategory[category] = itemCount;
-                    
+
                     console.log(`📁 Category "${category}":`, {
                         itemCount: itemCount,
                         firstItem: items?.[0]?.name || 'none',
@@ -1166,7 +1166,7 @@
 
                 state.itemsDisplayed += pageItemCount;
                 state.loadedPages++;
-                
+
                 // Update category-specific offsets for tracking
                 if (paginatedCategories.workshops) {
                     state.workshopOffset += paginatedCategories.workshops.length;
@@ -1176,9 +1176,9 @@
                 }
 
                 // Use the API's hasMore flag or calculate based on total
-                state.hasMorePages = data.hasMore === true || 
+                state.hasMorePages = data.hasMore === true ||
                                    (state.itemsDisplayed < state.totalItemsAvailable);
-                
+
                 if (!state.hasMorePages || state.itemsDisplayed >= state.totalItemsAvailable) {
                     state.hasCompleteDataset = true;
                     console.log('✅ All items now displayed');
@@ -1314,7 +1314,7 @@
                 displayIndex: state.displayOrder.length,
                 categoryIndex: categoryIndex
             };
-            
+
             state.displayOrder.push(displayOrderItem);
 
             // Enhanced debug logging for category index tracking
@@ -1468,7 +1468,7 @@
                 itemsToInsert: workshopItems.length,
                 willDisplay: workshopsSection && workshopsGallery && workshopItems.length > 0
             });
-            
+
             if (workshopsSection && workshopsGallery && workshopItems.length > 0) {
                 console.log(`📝 Inserting ${workshopItems.length} workshop items into DOM...`);
                 workshopsSection.style.display = 'block';
@@ -1479,7 +1479,7 @@
                     0,
                     appendMode
                 );
-                console.log(`✅ Workshop items inserted successfully`);
+                console.log('✅ Workshop items inserted successfully');
             } else if (workshopItems.length === 0) {
                 console.log('⚠️ No workshop items to insert');
             }
@@ -1493,7 +1493,7 @@
                 itemsToInsert: socialItems.length,
                 willDisplay: socialsSection && socialsGallery && socialItems.length > 0
             });
-            
+
             if (socialsSection && socialsGallery && socialItems.length > 0) {
                 console.log(`📝 Inserting ${socialItems.length} social items into DOM...`);
                 socialsSection.style.display = 'block';
@@ -1504,7 +1504,7 @@
                     workshopItems.length,
                     appendMode
                 );
-                console.log(`✅ Social items inserted successfully`);
+                console.log('✅ Social items inserted successfully');
             } else if (socialItems.length === 0) {
                 console.log('⚠️ No social items to insert');
             }
@@ -1517,7 +1517,7 @@
             console.log(
                 `🎯 Attaching click handlers to ${items.length} items (appendMode: ${appendMode})`
             );
-            
+
             // Final DOM verification
             const finalWorkshopCount = workshopsGallery ? workshopsGallery.querySelectorAll('.gallery-item').length : 0;
             const finalSocialCount = socialsGallery ? socialsGallery.querySelectorAll('.gallery-item').length : 0;
@@ -1527,7 +1527,7 @@
                 totalItemsInDOM: finalWorkshopCount + finalSocialCount,
                 stateItemsDisplayed: state.itemsDisplayed
             });
-            
+
             if (finalWorkshopCount + finalSocialCount === 0) {
                 console.error('❌ CRITICAL: No items were added to the DOM!');
             }
@@ -1544,7 +1544,7 @@
                 items.forEach((item) => {
                     item.setAttribute('data-handler-loaded', 'true');
                 });
-                
+
                 // Re-initialize intersection preloading for new items
                 setupIntersectionPreloading();
             }, 100);
@@ -1795,7 +1795,7 @@
         if (!url || state.preloadedImages.has(url)) {
             return; // Already preloaded or invalid URL
         }
-        
+
         const img = new Image();
         img.onload = () => {
             state.preloadedImages.add(url);
@@ -1815,7 +1815,7 @@
             currentIndex + 2,  // Next-next (for fast navigation)
             currentIndex - 2   // Previous-previous
         ];
-        
+
         indices.forEach(i => {
             if (i >= 0 && i < state.displayOrder.length) {
                 const item = state.displayOrder[i];
@@ -1881,7 +1881,7 @@
             console.error('Lightbox not initialized!');
             return;
         }
-        
+
         // Preload adjacent images when lightbox opens
         preloadAdjacentImages(index);
 

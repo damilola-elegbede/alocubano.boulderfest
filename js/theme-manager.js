@@ -1,7 +1,7 @@
 /**
  * Theme Manager
  * Implements fixed theme approach - dark theme only for admin pages
- * 
+ *
  * Features:
  * - Auto-detects admin pages and applies dark theme
  * - Main site pages use light theme (no theme attribute or explicit light)
@@ -11,8 +11,8 @@
 
 // Theme constants
 const THEMES = {
-  LIGHT: 'light',
-  DARK: 'dark'
+    LIGHT: 'light',
+    DARK: 'dark'
 };
 
 const THEME_ATTRIBUTE = 'data-theme';
@@ -23,8 +23,8 @@ const THEME_ATTRIBUTE = 'data-theme';
  * @returns {boolean} True if on admin page
  */
 function isAdminPage() {
-  const path = window.location.pathname.toLowerCase();
-  return path.includes('/admin') || path.includes('pages/admin');
+    const path = window.location.pathname.toLowerCase();
+    return path.includes('/admin') || path.includes('pages/admin');
 }
 
 /**
@@ -33,7 +33,7 @@ function isAdminPage() {
  * @returns {string} 'dark' for admin pages, 'light' for main site
  */
 function determineTheme() {
-  return isAdminPage() ? THEMES.DARK : THEMES.LIGHT;
+    return isAdminPage() ? THEMES.DARK : THEMES.LIGHT;
 }
 
 /**
@@ -42,26 +42,28 @@ function determineTheme() {
  * Main site pages get no attribute (or explicit light) for default styling
  */
 function applyTheme() {
-  if (typeof document === 'undefined') return;
-  
-  const theme = determineTheme();
-  
-  if (theme === THEMES.DARK) {
+    if (typeof document === 'undefined') {
+        return;
+    }
+
+    const theme = determineTheme();
+
+    if (theme === THEMES.DARK) {
     // Admin pages: set data-theme="dark"
-    document.documentElement.setAttribute(THEME_ATTRIBUTE, THEMES.DARK);
-  } else {
+        document.documentElement.setAttribute(THEME_ATTRIBUTE, THEMES.DARK);
+    } else {
     // Main site pages: remove theme attribute or set to light
     // This ensures default light mode styling is used
-    document.documentElement.removeAttribute(THEME_ATTRIBUTE);
+        document.documentElement.removeAttribute(THEME_ATTRIBUTE);
     // Alternative: explicitly set to light
     // document.documentElement.setAttribute(THEME_ATTRIBUTE, THEMES.LIGHT);
-  }
-  
-  // Dispatch custom event for other components to listen to
-  const event = new CustomEvent('themechange', {
-    detail: { theme: theme }
-  });
-  document.dispatchEvent(event);
+    }
+
+    // Dispatch custom event for other components to listen to
+    const event = new CustomEvent('themechange', {
+        detail: { theme: theme }
+    });
+    document.dispatchEvent(event);
 }
 
 /**
@@ -69,9 +71,11 @@ function applyTheme() {
  * @returns {string} Current theme ('light' or 'dark')
  */
 function getCurrentTheme() {
-  if (typeof document === 'undefined') return THEMES.LIGHT;
-  
-  return determineTheme();
+    if (typeof document === 'undefined') {
+        return THEMES.LIGHT;
+    }
+
+    return determineTheme();
 }
 
 /**
@@ -79,7 +83,7 @@ function getCurrentTheme() {
  * @returns {string} Theme ('light' or 'dark')
  */
 function getTheme() {
-  return determineTheme();
+    return determineTheme();
 }
 
 /**
@@ -88,29 +92,29 @@ function getTheme() {
  * Applies appropriate fixed theme based on page type
  */
 function initializeTheme() {
-  applyTheme();
+    applyTheme();
 }
 
 // Auto-initialize on module load to prevent FOUT
 // This runs synchronously when the script loads
 if (typeof document !== 'undefined') {
-  initializeTheme();
+    initializeTheme();
 }
 
 // Export API
 export {
-  THEMES,
-  getTheme,
-  getCurrentTheme,
-  initializeTheme,
-  isAdminPage
+    THEMES,
+    getTheme,
+    getCurrentTheme,
+    initializeTheme,
+    isAdminPage
 };
 
 // Default export for convenience
 export default {
-  THEMES,
-  getTheme,
-  getCurrentTheme,
-  initializeTheme,
-  isAdminPage
+    THEMES,
+    getTheme,
+    getCurrentTheme,
+    initializeTheme,
+    isAdminPage
 };

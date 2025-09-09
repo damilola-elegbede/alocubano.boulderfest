@@ -1358,3 +1358,32 @@ main,
 .skip-link:focus {
   top: 6px;
 }
+
+/* Dark mode navigation fixes */
+[data-theme="dark"] .menu-icon span {
+  background-color: var(--color-gray-200);
+}
+
+[data-theme="dark"] .menu-toggle:hover .menu-icon span {
+  background-color: var(--color-gray-100);
+}
+
+[data-theme="dark"] .menu-toggle.is-active .menu-icon span:nth-child(1),
+[data-theme="dark"] .menu-toggle.is-active .menu-icon span:nth-child(3) {
+  background-color: var(--color-gray-200);
+}
+
+/* Also fix mobile menu backdrop opacity */
+[data-theme="dark"] .nav-list {
+  opacity: 0.95; /* Increase from 0.85 for better readability */
+}
+
+/* Fix dropdown menu contrast */
+[data-theme="dark"] .nav-dropdown-link {
+  color: var(--color-gray-200);
+}
+
+[data-theme="dark"] .nav-dropdown-link:hover {
+  color: var(--color-white);
+  background: var(--color-surface-elevated);
+}
