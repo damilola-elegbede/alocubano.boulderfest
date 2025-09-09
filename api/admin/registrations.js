@@ -4,6 +4,17 @@ import ticketService from "../lib/ticket-service.js";
 import { getValidationService } from "../lib/validation-service.js";
 import { withSecurityHeaders } from "../lib/security-headers.js";
 
+// Utility function to check if a column exists in a table
+async function columnExists(db, tableName, columnName) {
+  try {
+    const result = await db.execute(`PRAGMA table_info(${tableName})`);
+    return result.rows.some(row => row[1] === columnName); // column name is second field
+  } catch (error) {
+    console.warn(`Could not check column existence for ${tableName}.${columnName}:`, error);
+    return false;
+  }
+}
+
 async function handler(req, res) {
   let db;
 
@@ -27,6 +38,9 @@ async function handler(req, res) {
 
     const { sanitized } = validation;
 
+    // Check if event_id column exists in tickets table
+    const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
+
     let sql = `
       SELECT 
         t.*,
@@ -39,6 +53,12 @@ async function handler(req, res) {
     `;
 
     const args = [];
+
+    // Add event filtering if eventId is provided and column exists
+    if (sanitized.eventId && ticketsHasEventId) {
+      sql += ` AND t.event_id = ?`;
+      args.push(sanitized.eventId);
+    }
 
     if (sanitized.searchTerm) {
       sql += ` AND (
@@ -73,6 +93,12 @@ async function handler(req, res) {
       sql += ` AND t.checked_in_at IS NULL`;
     }
 
+    // Add event filtering if eventId is provided
+    if (sanitized.eventId) {
+      sql += ` AND t.event_id = ?`;
+      args.push(sanitized.eventId);
+    }
+
     sql += ` ORDER BY t.${sanitized.sortBy} ${sanitized.sortOrder}`;
     sql += ` LIMIT ? OFFSET ?`;
     args.push(sanitized.limit, sanitized.offset);
@@ -88,6 +114,11 @@ async function handler(req, res) {
       `;
 
       const countArgs = args.slice(0, -2); // Remove limit and offset
+
+      // Add event filtering to count query
+      if (sanitized.eventId && ticketsHasEventId) {
+        countSql += ` AND t.event_id = ?`;
+      }
 
       if (sanitized.searchTerm) {
         countSql += ` AND (
@@ -105,6 +136,7 @@ async function handler(req, res) {
         countSql += ` AND t.checked_in_at IS NOT NULL`;
       else if (sanitized.checkedIn === "false")
         countSql += ` AND t.checked_in_at IS NULL`;
+      if (sanitized.eventId) countSql += ` AND t.event_id = ?`;
 
       const countResult = await db.execute({ sql: countSql, args: countArgs });
 
@@ -114,6 +146,17 @@ async function handler(req, res) {
         limit: sanitized.limit,
         offset: sanitized.offset,
         hasMore: sanitized.offset + sanitized.limit < countResult.rows[0].total,
+        eventId: sanitized.eventId || null,
+        hasEventFiltering: {
+          tickets: ticketsHasEventId,
+        },
+        filters: {
+          eventId: sanitized.eventId || null,
+          searchTerm: sanitized.searchTerm || null,
+          status: sanitized.status || null,
+          ticketType: sanitized.ticketType || null,
+          checkedIn: sanitized.checkedIn !== undefined ? sanitized.checkedIn : null,
+        },
       });
     } else if (req.method === "PUT") {
       // Update registration (check-in, edit details)

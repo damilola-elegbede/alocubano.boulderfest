@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Dashboard - A Lo Cubano Boulder Fest</title>
+    <title>Admin Tickets - A Lo Cubano Boulder Fest</title>
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/typography.css" />
     <link rel="stylesheet" href="/css/components.css" />
@@ -17,13 +17,10 @@
     <header class="admin-header">
       <div class="admin-header-content">
         <div>
-          <h1 class="admin-header-title">Admin Dashboard</h1>
-          <p class="admin-header-subtitle">A Lo Cubano Boulder Fest - Festival Management & Analytics</p>
+          <h1 class="admin-header-title">Tickets Management</h1>
+          <p class="admin-header-subtitle">A Lo Cubano Boulder Fest - Ticket Administration</p>
         </div>
         <div class="admin-header-actions">
-          <button class="admin-btn admin-btn-success" onclick="syncToSheets()">
-            <span>Sync to Sheets</span>
-          </button>
           <button class="admin-btn admin-btn-primary" onclick="logout()">
             <span>Logout</span>
           </button>
@@ -40,12 +37,12 @@
           </a>
         </li>
         <li class="admin-nav-item">
-          <a href="/admin/dashboard" class="admin-nav-link active">
+          <a href="/admin/dashboard" class="admin-nav-link">
             <span>Dashboard</span>
           </a>
         </li>
         <li class="admin-nav-item">
-          <a href="/admin/tickets" class="admin-nav-link">
+          <a href="/admin/tickets" class="admin-nav-link active">
             <span>Tickets</span>
           </a>
         </li>
@@ -60,22 +57,14 @@
           </a>
         </li>
       </ul>
-      
-      <!-- Event Selector -->
+      <!-- Event Selector Container -->
       <div id="event-selector-container"></div>
     </nav>
 
-    <!-- Statistics Grid -->
-    <div class="admin-grid auto-fit" id="statsGrid" data-testid="dashboard-stats">
-      <div class="admin-loading">Loading statistics...</div>
-    </div>
-
-    <!-- Registrations Section -->
-    <div class="admin-card admin-mb-xl" id="registrations">
-      <!-- Additional anchor for transactions (points to same section) -->
-      <span id="transactions"></span>
+    <!-- Tickets Section -->
+    <div class="admin-card admin-mb-xl" id="tickets">
       <div class="admin-card-header">
-        <h2 class="admin-card-title">Registrations</h2>
+        <h2 class="admin-card-title">Tickets</h2>
         <div class="admin-card-actions">
           <button class="admin-btn admin-btn-sm" onclick="exportToCSV()">
             <span>Export CSV</span>
@@ -90,15 +79,15 @@
             id="searchInput"
             class="admin-form-input"
             placeholder="Search by name, email, or ticket ID..."
-            onkeypress="if(event.key==='Enter') searchRegistrations()"
-            data-testid="search-registrations"
+            onkeypress="if(event.key==='Enter') searchTickets()"
+            data-testid="search-tickets"
             style="flex: 1; min-width: 250px;"
           />
           <select
             id="statusFilter"
             class="admin-form-select"
-            onchange="searchRegistrations()"
-            data-testid="ticket-type-filter"
+            onchange="searchTickets()"
+            data-testid="ticket-status-filter"
             style="min-width: 120px;"
           >
             <option value="">All Status</option>
@@ -109,24 +98,39 @@
           <select 
             id="checkinFilter" 
             class="admin-form-select" 
-            onchange="searchRegistrations()"
+            onchange="searchTickets()"
             style="min-width: 150px;"
           >
             <option value="">All Tickets</option>
             <option value="false">Not Checked In</option>
             <option value="true">Checked In</option>
           </select>
+          <select 
+            id="typeFilter" 
+            class="admin-form-select" 
+            onchange="searchTickets()"
+            style="min-width: 150px;"
+          >
+            <option value="">All Types</option>
+            <option value="vip-pass">VIP Pass</option>
+            <option value="weekend-pass">Weekend Pass</option>
+            <option value="friday-pass">Friday</option>
+            <option value="saturday-pass">Saturday</option>
+            <option value="sunday-pass">Sunday</option>
+            <option value="workshop">Workshop</option>
+            <option value="general-admission">General</option>
+          </select>
           <button 
             class="admin-btn admin-btn-primary" 
-            onclick="searchRegistrations()" 
+            onclick="searchTickets()" 
             data-testid="search-button"
           >
             <span>Search</span>
           </button>
         </div>
 
-        <div id="registrationsTable" data-testid="registrations-table">
-          <div class="admin-loading">Loading registrations...</div>
+        <div id="ticketsTable" data-testid="tickets-table">
+          <div class="admin-loading">Loading tickets...</div>
         </div>
 
         <div class="pagination admin-flex admin-justify-center admin-gap-sm admin-mt-xl" id="pagination"></div>
@@ -213,96 +217,15 @@
         }
       }
 
-      // Load dashboard data
-      async function loadDashboardData(eventId) {
-        // Ensure auth status is set immediately
-        if (!document.body.getAttribute('data-auth-status')) {
-          document.body.setAttribute('data-auth-status', 'checking');
-        }
-        
-        if (!(await checkAuth())) return;
-
-        try {
-          const url = new URL("/api/admin/dashboard", window.location.origin);
-          if (eventId && eventId !== 'all') {
-            url.searchParams.set('eventId', eventId);
-          }
-          
-          const response = await fetch(url.toString());
-          const data = await response.json();
-
-          if (!response.ok) throw new Error(data.error);
-
-          displayStats(data.stats);
-          await loadRegistrations();
-        } catch (error) {
-          console.error("Failed to load dashboard:", error);
-          document.getElementById("statsGrid").innerHTML = `
-                    <div class="error">Failed to load dashboard: ${escapeHtml(error.message)}</div>
-                `;
-        }
-      }
-
-      // Make loadDashboardData available globally for event selector
-      window.loadDashboardData = loadDashboardData;
-
-      // Display statistics
-      function displayStats(stats) {
-        const statsGrid = document.getElementById("statsGrid");
-
-        statsGrid.innerHTML = `
-                <div class="admin-stat-card">
-                    <h3 class="stat-label">Total Tickets</h3>
-                    <div class="stat-number">${stats.total_tickets || 0}</div>
-                </div>
-                <div class="admin-stat-card">
-                    <h3 class="stat-label">Checked In</h3>
-                    <div class="stat-number">${stats.checked_in || 0}</div>
-                    <div class="stat-label admin-mt-sm">${Math.round((stats.checked_in / stats.total_tickets) * 100) || 0}%</div>
-                </div>
-                <div class="admin-stat-card">
-                    <h3 class="stat-label">Total Revenue</h3>
-                    <div class="stat-number">$${(stats.total_revenue || 0).toFixed(2)}</div>
-                </div>
-                <div class="admin-stat-card">
-                    <h3 class="stat-label">Total Orders</h3>
-                    <div class="stat-number">${stats.total_orders || 0}</div>
-                </div>
-                <div class="admin-stat-card">
-                    <h3 class="stat-label">Workshop Tickets</h3>
-                    <div class="stat-number">${stats.workshop_tickets || 0}</div>
-                </div>
-                <div class="admin-stat-card">
-                    <h3 class="stat-label">VIP Tickets</h3>
-                    <div class="stat-number">${stats.vip_tickets || 0}</div>
-                </div>
-                <!-- Wallet Statistics -->
-                <div class="admin-stat-card" style="border-left: 3px solid var(--color-text-primary);">
-                    <h3 class="stat-label">Apple Wallet</h3>
-                    <div class="stat-number">${stats.apple_wallet_users || 0}</div>
-                    <div class="stat-label admin-mt-sm">${stats.total_tickets ? Math.round((stats.apple_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
-                </div>
-                <div class="admin-stat-card" style="border-left: 3px solid var(--color-blue);">
-                    <h3 class="stat-label">Google Wallet</h3>
-                    <div class="stat-number">${stats.google_wallet_users || 0}</div>
-                    <div class="stat-label admin-mt-sm">${stats.total_tickets ? Math.round((stats.google_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
-                </div>
-                <div class="admin-stat-card">
-                    <h3 class="stat-label">QR Generated</h3>
-                    <div class="stat-number">${stats.qr_generated || 0}</div>
-                    <div class="stat-label admin-mt-sm">${stats.total_tickets ? Math.round((stats.qr_generated / stats.total_tickets) * 100) : 0}% ready</div>
-                </div>
-            `;
-      }
-
-      // Load registrations
-      async function loadRegistrations(page = 0) {
+      // Load tickets data - accepts eventId parameter for event filtering
+      async function loadTickets(eventId = null, page = 0) {
         currentPage = page;
         const offset = page * pageSize;
 
         const search = document.getElementById("searchInput").value;
         const status = document.getElementById("statusFilter").value;
         const checkedIn = document.getElementById("checkinFilter").value;
+        const ticketType = document.getElementById("typeFilter").value;
 
         const params = new URLSearchParams({
           limit: pageSize,
@@ -310,6 +233,8 @@
           ...(search && { search }),
           ...(status && { status }),
           ...(checkedIn && { checkedIn }),
+          ...(ticketType && { ticketType }),
+          ...(eventId && eventId !== 'all' && { eventId }),
         });
 
         try {
@@ -318,22 +243,25 @@
 
           if (!response.ok) throw new Error(data.error);
 
-          displayRegistrations(data.registrations);
+          displayTickets(data.registrations);
           displayPagination(data.total, page);
         } catch (error) {
-          console.error("Failed to load registrations:", error);
-          document.getElementById("registrationsTable").innerHTML = `
-                    <div class="error">Failed to load registrations: ${escapeHtml(error.message)}</div>
+          console.error("Failed to load tickets:", error);
+          document.getElementById("ticketsTable").innerHTML = `
+                    <div class="error">Failed to load tickets: ${escapeHtml(error.message)}</div>
                 `;
         }
       }
 
-      // Display registrations table
-      function displayRegistrations(registrations) {
-        if (registrations.length === 0) {
-          document.getElementById("registrationsTable").innerHTML = `
+      // Make loadTickets globally accessible
+      window.loadTickets = loadTickets;
+
+      // Display tickets table
+      function displayTickets(tickets) {
+        if (tickets.length === 0) {
+          document.getElementById("ticketsTable").innerHTML = `
                     <p class="admin-text-center admin-p-xl admin-text-muted">
-                        No registrations found
+                        No tickets found
                     </p>
                 `;
           return;
@@ -353,25 +281,25 @@
                         </tr>
                     </thead>
                     <tbody>
-                        ${registrations
+                        ${tickets
                           .map(
-                            (reg) => `
+                            (ticket) => `
                             <tr>
-                                <td><code class="admin-p-xs" style="background: var(--color-background-secondary); border-radius: var(--radius-sm);">${escapeHtml(reg.ticket_id)}</code></td>
-                                <td>${escapeHtml(reg.attendee_first_name)} ${escapeHtml(reg.attendee_last_name)}</td>
-                                <td>${escapeHtml(reg.attendee_email)}</td>
-                                <td>${escapeHtml(formatTicketType(reg.ticket_type))}</td>
+                                <td><code class="admin-p-xs" style="background: var(--color-background-secondary); border-radius: var(--radius-sm);">${escapeHtml(ticket.ticket_id)}</code></td>
+                                <td>${escapeHtml(ticket.attendee_first_name)} ${escapeHtml(ticket.attendee_last_name)}</td>
+                                <td>${escapeHtml(ticket.attendee_email)}</td>
+                                <td>${escapeHtml(formatTicketType(ticket.ticket_type))}</td>
                                 <td>
-                                    <span class="status-badge ${reg.checked_in_at ? "success" : reg.status === "valid" ? "info" : "warning"}">
-                                        ${reg.checked_in_at ? "Checked In" : escapeHtml(reg.status)}
+                                    <span class="status-badge ${ticket.checked_in_at ? "success" : ticket.status === "valid" ? "info" : "warning"}">
+                                        ${ticket.checked_in_at ? "Checked In" : escapeHtml(ticket.status)}
                                     </span>
                                 </td>
-                                <td>${escapeHtml(reg.order_number)}</td>
+                                <td>${escapeHtml(ticket.order_number)}</td>
                                 <td>
                                     ${
-                                      reg.checked_in_at
-                                        ? `<button class="admin-btn admin-btn-sm admin-btn-secondary" data-action="undo" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}"><span>Undo</span></button>`
-                                        : `<button class="admin-btn admin-btn-sm admin-btn-success" data-action="checkin" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}"><span>Check In</span></button>`
+                                      ticket.checked_in_at
+                                        ? `<button class="admin-btn admin-btn-sm admin-btn-secondary" data-action="undo" data-ticket-id="${escapeHtml(ticket.ticket_id)}" data-testid="checkin-ticket_${escapeHtml(ticket.ticket_id)}"><span>Undo</span></button>`
+                                        : `<button class="admin-btn admin-btn-sm admin-btn-success" data-action="checkin" data-ticket-id="${escapeHtml(ticket.ticket_id)}" data-testid="checkin-ticket_${escapeHtml(ticket.ticket_id)}"><span>Check In</span></button>`
                                     }
                                 </td>
                             </tr>
@@ -382,7 +310,7 @@
                 </table>
             `;
 
-        document.getElementById("registrationsTable").innerHTML = tableHTML;
+        document.getElementById("ticketsTable").innerHTML = tableHTML;
       }
 
       // Display pagination
@@ -396,27 +324,28 @@
         }
 
         pagination.innerHTML = `
-                <button class="admin-btn admin-btn-ghost" onclick="loadRegistrations(0)" ${currentPage === 0 ? "disabled" : ""}>
+                <button class="admin-btn admin-btn-ghost" onclick="loadTickets(window.eventSelector ? window.eventSelector.getSelectedEventId() : null, 0)" ${currentPage === 0 ? "disabled" : ""}>
                     <span>First</span>
                 </button>
-                <button class="admin-btn admin-btn-ghost" onclick="loadRegistrations(${currentPage - 1})" ${currentPage === 0 ? "disabled" : ""}>
+                <button class="admin-btn admin-btn-ghost" onclick="loadTickets(window.eventSelector ? window.eventSelector.getSelectedEventId() : null, ${currentPage - 1})" ${currentPage === 0 ? "disabled" : ""}>
                     <span>Previous</span>
                 </button>
                 <span class="admin-p-md admin-text-secondary" style="font-family: var(--font-code); font-size: var(--font-size-sm);">
                     Page ${currentPage + 1} of ${totalPages}
                 </span>
-                <button class="admin-btn admin-btn-ghost" onclick="loadRegistrations(${currentPage + 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""}>
+                <button class="admin-btn admin-btn-ghost" onclick="loadTickets(window.eventSelector ? window.eventSelector.getSelectedEventId() : null, ${currentPage + 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""}>
                     <span>Next</span>
                 </button>
-                <button class="admin-btn admin-btn-ghost" onclick="loadRegistrations(${totalPages - 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""}>
+                <button class="admin-btn admin-btn-ghost" onclick="loadTickets(window.eventSelector ? window.eventSelector.getSelectedEventId() : null, ${totalPages - 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""}>
                     <span>Last</span>
                 </button>
             `;
       }
 
-      // Search registrations
-      function searchRegistrations() {
-        loadRegistrations(0);
+      // Search tickets
+      function searchTickets() {
+        const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
+        loadTickets(selectedEventId, 0);
       }
 
       // Check in ticket
@@ -443,7 +372,8 @@
 
           if (!response.ok) throw new Error(data.error);
 
-          await loadRegistrations(currentPage);
+          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
+          await loadTickets(selectedEventId, currentPage);
         } catch (error) {
           alert(`Failed to check in: ${escapeHtml(error.message)}`);
         }
@@ -473,7 +403,8 @@
 
           if (!response.ok) throw new Error(data.error);
 
-          await loadRegistrations(currentPage);
+          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
+          await loadTickets(selectedEventId, currentPage);
         } catch (error) {
           alert(`Failed to undo check-in: ${escapeHtml(error.message)}`);
         }
@@ -484,6 +415,8 @@
         const search = document.getElementById("searchInput").value;
         const status = document.getElementById("statusFilter").value;
         const checkedIn = document.getElementById("checkinFilter").value;
+        const ticketType = document.getElementById("typeFilter").value;
+        const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
 
         const params = new URLSearchParams({
           limit: 10000, // Export all
@@ -491,6 +424,8 @@
           ...(search && { search }),
           ...(status && { status }),
           ...(checkedIn && { checkedIn }),
+          ...(ticketType && { ticketType }),
+          ...(selectedEventId && selectedEventId !== 'all' && { eventId: selectedEventId }),
         });
 
         try {
@@ -507,7 +442,7 @@
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = `registrations-${new Date().toISOString().split("T")[0]}.csv`;
+          a.download = `tickets-${new Date().toISOString().split("T")[0]}.csv`;
           a.click();
         } catch (error) {
           alert(`Export failed: ${escapeHtml(error.message)}`);
@@ -586,46 +521,9 @@
         }
       }
 
-      // Sync to Google Sheets
-      async function syncToSheets() {
-        const btn = event.target;
-        const originalText = btn.textContent;
-
-        btn.disabled = true;
-        btn.textContent = "Syncing...";
-
-        try {
-          const response = await fetch("/api/sheets/sync", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-
-          const data = await response.json();
-
-          if (response.ok) {
-            if (data.sheetUrl) {
-              alert(
-                `✅ Sync completed!\n\nView your data at:\n${data.sheetUrl}`,
-              );
-            } else {
-              alert(`✅ Sync completed at ${data.timestamp}`);
-            }
-          } else {
-            alert(`❌ Sync failed: ${data.message || data.error}`);
-          }
-        } catch (error) {
-          alert(`❌ Sync failed: ${error.message}`);
-        } finally {
-          btn.disabled = false;
-          btn.textContent = originalText;
-        }
-      }
-
       // Add event delegation for check-in buttons
       document
-        .getElementById("registrationsTable")
+        .getElementById("ticketsTable")
         .addEventListener("click", function (event) {
           if (event.target.matches(".admin-btn[data-action]") || 
               (event.target.parentElement && event.target.parentElement.matches(".admin-btn[data-action]"))) {
@@ -643,31 +541,34 @@
           }
         });
 
-      // Initialize dashboard immediately
-      document.body.setAttribute('data-auth-status', 'checking');
-      
-      // Initialize event selector and load dashboard data
-      document.addEventListener('DOMContentLoaded', async () => {
+      // Initialize page
+      async function initializePage() {
+        document.body.setAttribute('data-auth-status', 'checking');
+        
+        // Check authentication first
+        if (!(await checkAuth())) return;
+
+        // Initialize and render event selector
         if (window.eventSelector) {
           await window.eventSelector.init();
           window.eventSelector.render('event-selector-container');
           
-          // Load dashboard with selected event
-          const selectedEventId = window.eventSelector.getSelectedEventId();
-          loadDashboardData(selectedEventId);
-        } else {
-          // Fallback if event selector not available
-          loadDashboardData(null);
+          // Set up event selector change listener
+          window.eventSelector.onChange((eventId) => {
+            loadTickets(eventId, 0);
+          });
         }
-      });
 
-      // Refresh data every 30 seconds
-      setInterval(() => {
+        // Load initial tickets data
         const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-        loadDashboardData(selectedEventId);
-      }, 30000);
+        await loadTickets(selectedEventId);
+      }
+
+      // Initialize page immediately
+      initializePage();
     </script>
-    
+
+    <!-- Event Selector Script -->
     <script src="/js/admin-event-selector.js"></script>
   </body>
 </html>

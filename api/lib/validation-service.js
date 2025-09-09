@@ -354,6 +354,16 @@ class ValidationService {
       sanitized.checkedIn = params.checkedIn === "true";
     }
 
+    // Validate eventId (optional)
+    if (params.eventId) {
+      const eventIdValidation = this.validatePositiveInteger(params.eventId, "eventId");
+      if (!eventIdValidation.isValid) {
+        errors.push(eventIdValidation.error);
+      } else {
+        sanitized.eventId = eventIdValidation.value;
+      }
+    }
+
     // Validate sort parameters
     const sortValidation = this.validateSort(
       params.sortBy,

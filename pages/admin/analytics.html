@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Analytics Dashboard - A Lo Cubano Boulder Fest Admin</title>
 
-    <!-- CSS Imports -->
-    <link rel="stylesheet" href="/css/base.css" />
-    <link rel="stylesheet" href="/css/typography.css" />
-    <link rel="stylesheet" href="/css/components.css" />
-    <link rel="stylesheet" href="/css/navigation.css" />
-    <link rel="stylesheet" href="/css/forms.css" />
-    <link rel="stylesheet" href="/css/admin-overrides.css" />
+    <!-- Main Site CSS System -->
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/typography.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/navigation.css">
+    <link rel="stylesheet" href="/css/admin-overrides.css">
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -19,60 +18,12 @@
     <!-- Theme Manager -->
     <script type="module" src="/js/theme-manager.js"></script>
 
-    <!-- Minimal Layout Styles -->
     <style>
+      /* Analytics Page Specific Styles */
       body {
-        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+        background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-red) 100%);
         min-height: 100vh;
         padding: var(--space-lg);
-      }
-
-      .container {
-        max-width: 1400px;
-        margin: 0 auto;
-      }
-
-      .header {
-        background: var(--color-surface);
-        border-radius: var(--radius-lg);
-        padding: var(--space-xl);
-        margin-bottom: var(--space-xl);
-        box-shadow: var(--shadow-lg);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: var(--space-lg);
-      }
-
-      .header h1 {
-        font-family: var(--font-display);
-        font-size: var(--font-size-2xl);
-        color: var(--color-text-primary);
-        display: flex;
-        align-items: center;
-        gap: var(--space-sm);
-        text-transform: uppercase;
-        letter-spacing: var(--letter-spacing-wide);
-      }
-
-      .controls-bar {
-        background: var(--color-surface);
-        border-radius: var(--radius-lg);
-        padding: var(--space-xl);
-        margin-bottom: var(--space-xl);
-        box-shadow: var(--shadow-lg);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: var(--space-lg);
-      }
-
-      .time-range-controls,
-      .export-controls {
-        display: flex;
-        gap: var(--space-sm);
       }
 
       .charts-section {
@@ -88,122 +39,16 @@
         gap: var(--space-xl);
       }
 
-      .table-container {
-        background: var(--color-surface);
-        border-radius: var(--radius-lg);
-        padding: var(--space-xl);
-        box-shadow: var(--shadow-lg);
-        margin-bottom: var(--space-xl);
-      }
-
-      .table-header {
-        font-family: var(--font-display);
-        font-size: var(--font-size-xl);
-        font-weight: 700;
-        color: var(--color-text-primary);
-        margin-bottom: var(--space-lg);
-        text-transform: uppercase;
-        letter-spacing: var(--letter-spacing-wide);
-      }
-
-      .recommendations-container {
-        background: var(--color-surface);
-        border-radius: var(--radius-lg);
-        padding: var(--space-xl);
-        box-shadow: var(--shadow-lg);
-      }
-
-      .recommendations-header {
-        font-family: var(--font-display);
-        font-size: var(--font-size-xl);
-        font-weight: 700;
-        color: var(--color-text-primary);
-        margin-bottom: var(--space-lg);
-        text-transform: uppercase;
-        letter-spacing: var(--letter-spacing-wide);
-      }
-
-      .loading {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: var(--space-4xl);
-        color: var(--color-text-tertiary);
-      }
-
-      .spinner {
-        border: 3px solid var(--color-border);
-        border-top: 3px solid var(--color-primary);
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite;
-        margin-right: var(--space-sm);
-      }
-
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-
-      .chart-header {
-        font-family: var(--font-display);
-        font-size: var(--font-size-lg);
-        font-weight: 700;
-        color: var(--color-text-primary);
-        margin-bottom: var(--space-lg);
-        text-transform: uppercase;
-        letter-spacing: var(--letter-spacing-wide);
-      }
-
       .chart-wrapper {
         position: relative;
         height: 300px;
       }
 
-      /* Responsive */
-      @media (max-width: 768px) {
-        body {
-          padding: var(--space-md);
-        }
-
-        .header {
-          flex-direction: column;
-          align-items: flex-start;
-        }
-
-        .controls-bar {
-          flex-direction: column;
-          align-items: stretch;
-        }
-
-        .time-range-controls,
-        .export-controls {
-          width: 100%;
-          justify-content: center;
-        }
-
-        .two-column-charts {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      /* Button States */
+      /* Button States for Time Range */
       .time-range-btn.active {
-        background: var(--color-primary) !important;
+        background: var(--color-blue) !important;
         color: var(--color-text-inverse) !important;
-        border-color: var(--color-primary) !important;
-      }
-
-      .export-btn {
-        background: var(--color-success) !important;
-        color: var(--color-text-inverse) !important;
-        border-color: var(--color-success) !important;
-      }
-
-      .export-btn:hover {
-        background: var(--color-success) !important;
-        opacity: 0.9;
+        border-color: var(--color-blue) !important;
       }
 
       /* Recommendation Items */
@@ -231,10 +76,6 @@
         border-left: 4px solid var(--color-info);
       }
 
-      .recommendation-icon {
-        font-size: var(--font-size-xl);
-      }
-
       .recommendation-content {
         flex: 1;
       }
@@ -254,55 +95,136 @@
         line-height: var(--line-height-relaxed);
       }
 
-      /* Utility Classes */
-      .text-right {
-        text-align: right;
+      .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: var(--space-4xl);
+        color: var(--color-text-tertiary);
       }
 
-      .font-mono {
-        font-family: var(--font-code);
+      .spinner {
+        border: 3px solid var(--color-border);
+        border-top: 3px solid var(--color-blue);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin-right: var(--space-sm);
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        body {
+          padding: var(--space-md);
+        }
+
+        .two-column-charts {
+          grid-template-columns: 1fr;
+        }
+
+        .admin-flex.admin-justify-between {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .admin-flex.admin-gap-sm {
+          width: 100%;
+          justify-content: center;
+        }
       }
     </style>
   </head>
-  <body>
-    <div class="container">
-      <!-- Header -->
-      <div class="header">
+  <body class="admin-container">
+    <!-- Unified Admin Header -->
+    <header class="admin-header">
+      <div class="admin-header-content">
         <div>
-          <a
-            href="/admin"
-            class="form-button-type"
-            style="margin-right: var(--space-sm)"
-          >
-            🎯 Portal
-          </a>
-          <a href="/admin/dashboard" class="form-button-type">
-            📋 Dashboard
-          </a>
-          <h1>📊 Analytics Dashboard</h1>
+          <h1 class="admin-header-title">Analytics Dashboard</h1>
+          <p class="admin-header-subtitle">A Lo Cubano Boulder Fest - Comprehensive Data Analytics</p>
         </div>
-        <div id="last-updated" style="color: var(--color-text-tertiary); font-size: var(--font-size-sm)">
-          Last updated: <span id="update-time">--</span>
+        <div class="admin-header-actions">
+          <div class="admin-status-indicator">
+            <span>Last updated: <span id="update-time">--</span></span>
+          </div>
+          <button class="admin-btn admin-btn-ghost" onclick="location.href='/admin'">
+            <span>Portal</span>
+          </button>
+          <button class="admin-btn admin-btn-ghost" onclick="location.href='/admin/dashboard'">
+            <span>Dashboard</span>
+          </button>
+          <button class="admin-btn admin-btn-primary" onclick="logout()">
+            <span>Logout</span>
+          </button>
         </div>
       </div>
+    </header>
 
-      <!-- Controls Bar -->
-      <div class="controls-bar">
-        <div class="time-range-controls">
-          <button class="form-button-type time-range-btn" data-days="7">7 Days</button>
-          <button class="form-button-type time-range-btn active" data-days="30">30 Days</button>
-          <button class="form-button-type time-range-btn" data-days="90">90 Days</button>
-          <button class="form-button-type time-range-btn" data-days="all">All Time</button>
-        </div>
-        <div class="export-controls">
-          <button class="form-button-type export-btn" onclick="exportJSON()">
-            📥 Export JSON
-          </button>
-          <button class="form-button-type export-btn" onclick="exportCSV()">
-            📥 Export CSV
-          </button>
+    <!-- Unified Admin Navigation -->
+    <nav class="admin-navigation">
+      <ul class="admin-nav-list">
+        <li class="admin-nav-item">
+          <a href="/admin" class="admin-nav-link">
+            <span>Portal</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/dashboard" class="admin-nav-link">
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/tickets" class="admin-nav-link">
+            <span>Tickets</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/analytics" class="admin-nav-link active">
+            <span>Analytics</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/checkin" class="admin-nav-link">
+            <span>Check-in Scanner</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Controls Bar -->
+    <div class="admin-card">
+      <div class="admin-card-body">
+        <div class="admin-flex admin-justify-between admin-items-center admin-flex-wrap admin-gap-lg">
+          <div class="admin-flex admin-gap-sm">
+            <button class="admin-btn admin-btn-sm time-range-btn" data-days="7">
+              <span>7 Days</span>
+            </button>
+            <button class="admin-btn admin-btn-sm time-range-btn active" data-days="30">
+              <span>30 Days</span>
+            </button>
+            <button class="admin-btn admin-btn-sm time-range-btn" data-days="90">
+              <span>90 Days</span>
+            </button>
+            <button class="admin-btn admin-btn-sm time-range-btn" data-days="all">
+              <span>All Time</span>
+            </button>
+          </div>
+          <div class="admin-flex admin-gap-sm">
+            <button class="admin-btn admin-btn-sm admin-btn-success" onclick="exportJSON()">
+              <span>Export JSON</span>
+            </button>
+            <button class="admin-btn admin-btn-sm admin-btn-success" onclick="exportCSV()">
+              <span>Export CSV</span>
+            </button>
+          </div>
         </div>
       </div>
+    </div>
 
       <!-- Metrics Grid -->
       <div class="admin-grid auto-fit" id="metrics-grid">
@@ -354,7 +276,7 @@
       <div class="charts-section">
         <!-- Sales Trend Chart -->
         <div class="chart-container">
-          <div class="chart-header">Sales Trend</div>
+          <h3>Sales Trend</h3>
           <div class="chart-wrapper">
             <canvas id="sales-trend-chart"></canvas>
           </div>
@@ -364,7 +286,7 @@
         <div class="two-column-charts">
           <!-- Revenue Breakdown -->
           <div class="chart-container">
-            <div class="chart-header">Revenue by Ticket Type</div>
+            <h3>Revenue by Ticket Type</h3>
             <div class="chart-wrapper">
               <canvas id="revenue-breakdown-chart"></canvas>
             </div>
@@ -372,7 +294,7 @@
 
           <!-- Hourly Sales Pattern -->
           <div class="chart-container">
-            <div class="chart-header">Sales by Hour of Day</div>
+            <h3>Sales by Hour of Day</h3>
             <div class="chart-wrapper">
               <canvas id="hourly-sales-chart"></canvas>
             </div>
@@ -383,7 +305,7 @@
         <div class="two-column-charts">
           <!-- Check-in Rate by Type -->
           <div class="chart-container">
-            <div class="chart-header">Check-in Rate by Ticket Type</div>
+            <h3>Check-in Rate by Ticket Type</h3>
             <div class="chart-wrapper">
               <canvas id="checkin-by-type-chart"></canvas>
             </div>
@@ -391,7 +313,7 @@
 
           <!-- Wallet Adoption Trend -->
           <div class="chart-container">
-            <div class="chart-header">Apple Wallet Adoption Trend</div>
+            <h3>Wallet Adoption Trend</h3>
             <div class="chart-wrapper">
               <canvas id="wallet-trend-chart"></canvas>
             </div>
@@ -400,40 +322,47 @@
       </div>
 
       <!-- Top Customers Table -->
-      <div class="table-container">
-        <div class="table-header">Top Customers</div>
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Customer</th>
-              <th>Email</th>
-              <th>Tickets</th>
-              <th>Total Spent</th>
-              <th>Last Purchase</th>
-            </tr>
-          </thead>
-          <tbody id="top-customers-tbody">
-            <tr>
-              <td colspan="5" class="loading">
-                <div class="spinner"></div>
-                Loading customer data...
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">Top Customers</h2>
+        </div>
+        <div class="admin-card-body">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Email</th>
+                <th>Tickets</th>
+                <th>Total Spent</th>
+                <th>Last Purchase</th>
+              </tr>
+            </thead>
+            <tbody id="top-customers-tbody">
+              <tr>
+                <td colspan="5" class="loading">
+                  <div class="spinner"></div>
+                  Loading customer data...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Recommendations -->
-      <div class="recommendations-container">
-        <div class="recommendations-header">Insights & Recommendations</div>
-        <div id="recommendations-list">
-          <div class="loading">
-            <div class="spinner"></div>
-            Analyzing data...
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">Insights & Recommendations</h2>
+        </div>
+        <div class="admin-card-body">
+          <div id="recommendations-list">
+            <div class="loading">
+              <div class="spinner"></div>
+              Analyzing data...
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
     <script>
       // Global variables
@@ -902,9 +831,8 @@
         if (recommendations.length === 0) {
           container.innerHTML = `
                     <div class="recommendation-item info">
-                        <div class="recommendation-icon">ℹ️</div>
                         <div class="recommendation-content">
-                            <div class="recommendation-title">No recommendations</div>
+                            <div class="recommendation-title">No Recommendations</div>
                             <div class="recommendation-text">
                                 All metrics are performing well. Keep up the great work!
                             </div>
@@ -922,16 +850,9 @@
                 : rec.type === "warning"
                   ? "warning"
                   : "info";
-            const icon =
-              rec.type === "success"
-                ? "✅"
-                : rec.type === "warning"
-                  ? "⚠️"
-                  : "ℹ️";
 
             return `
                     <div class="recommendation-item ${typeClass}">
-                        <div class="recommendation-icon">${icon}</div>
                         <div class="recommendation-content">
                             <div class="recommendation-title">${escapeHtml(rec.title)}</div>
                             <div class="recommendation-text">${escapeHtml(rec.message)}</div>
@@ -1041,6 +962,17 @@
       function showError(message) {
         console.error(message);
         // You could show a toast notification here
+      }
+
+      // Logout function
+      function logout() {
+        if (!confirm("Are you sure you want to logout?")) return;
+
+        document.cookie =
+          "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        localStorage.removeItem("adminToken");
+        sessionStorage.clear();
+        window.location.href = "/admin/login";
       }
     </script>
   </body>
