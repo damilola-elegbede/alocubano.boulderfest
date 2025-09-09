@@ -21,6 +21,8 @@
           <p class="admin-header-subtitle">A Lo Cubano Boulder Fest - Festival Management & Analytics</p>
         </div>
         <div class="admin-header-actions">
+          <!-- Event Selector in Header -->
+          <div id="header-event-selector-container"></div>
           <button class="admin-btn admin-btn-success" onclick="syncToSheets()">
             <span>Sync to Sheets</span>
           </button>
@@ -662,7 +664,10 @@
       document.addEventListener('DOMContentLoaded', async () => {
         if (window.eventSelector) {
           await window.eventSelector.init();
+          
+          // Render event selector in both navigation and header
           window.eventSelector.render('event-selector-container');
+          window.eventSelector.render('header-event-selector-container');
           
           // Load dashboard with selected event
           const selectedEventId = window.eventSelector.getSelectedEventId();

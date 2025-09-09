@@ -59,10 +59,14 @@ class EventSelector {
       return;
     }
 
+    // Generate unique ID for this selector instance
+    const selectorId = `event-selector-${containerId}`;
+    const labelId = `event-selector-label-${containerId}`;
+
     const selectorHtml = `
       <div class="event-selector-wrapper">
-        <label for="event-selector" class="event-selector-label">Event:</label>
-        <select id="event-selector" class="admin-select event-selector">
+        <label for="${selectorId}" id="${labelId}" class="event-selector-label">Event:</label>
+        <select id="${selectorId}" class="admin-select event-selector">
           <option value="all">All Events</option>
           ${this.events.map(event => `
             <option value="${event.id}" ${this.selectedEventId === event.id.toString() ? 'selected' : ''}>
@@ -76,15 +80,29 @@ class EventSelector {
     container.innerHTML = selectorHtml;
 
     // Add event listener
-    const selector = document.getElementById('event-selector');
+    const selector = document.getElementById(selectorId);
     selector.addEventListener('change', (e) => {
       this.handleEventChange(e.target.value);
     });
+
+    // Store reference to this selector for syncing
+    if (!this.selectors) this.selectors = new Set();
+    this.selectors.add(selectorId);
   }
 
   handleEventChange(eventId) {
     this.selectedEventId = eventId;
     localStorage.setItem('selectedEventId', eventId);
+    
+    // Sync all selector instances
+    if (this.selectors) {
+      this.selectors.forEach(selectorId => {
+        const selector = document.getElementById(selectorId);
+        if (selector && selector.value !== eventId) {
+          selector.value = eventId;
+        }
+      });
+    }
     
     // Notify listeners
     this.listeners.forEach(listener => {

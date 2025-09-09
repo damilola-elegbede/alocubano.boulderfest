@@ -1811,12 +1811,50 @@
    EVENT SELECTOR COMPONENT
    ========================================================================== */
 
-.event-selector-wrapper {
+/* Event Selector in Navigation Bar */
+.admin-navigation .event-selector-wrapper {
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  margin-top: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-base);
+}
+
+.admin-navigation .event-selector-wrapper::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+}
+
+.admin-navigation .event-selector-wrapper:hover {
+  background: var(--color-surface);
+  border-color: var(--color-blue);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Event Selector in Header Actions */
+.admin-header-actions .event-selector-wrapper {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  flex-wrap: wrap;
-  margin-left: auto;
+  flex-wrap: nowrap;
+  margin-left: var(--space-lg);
+  position: relative;
+}
+
+.event-selector-wrapper {
   position: relative;
 }
 
@@ -1824,26 +1862,42 @@
   font-family: var(--font-display);
   font-size: var(--font-size-sm);
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-wide);
   white-space: nowrap;
+  margin-bottom: 0;
+}
+
+/* Admin navigation labels have lighter text */
+.admin-navigation .event-selector-label {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
 }
 
 .event-selector {
   padding: var(--space-sm) var(--space-md);
   font-family: var(--font-sans);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   color: var(--color-text-primary);
   background: var(--color-surface);
   border: 2px solid var(--color-border);
   border-radius: var(--radius-md);
   transition: all var(--transition-base);
-  min-height: 44px;
-  min-width: 160px;
+  min-height: 40px;
+  min-width: 200px;
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Header event selector is more compact */
+.admin-header-actions .event-selector {
+  min-width: 180px;
+  font-size: var(--font-size-xs);
+  min-height: 36px;
+  padding: var(--space-xs) var(--space-sm);
 }
 
 .event-selector::before {
@@ -1853,29 +1907,28 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: var(--color-blue);
+  background: linear-gradient(135deg, var(--color-blue), var(--color-red));
   transition: left var(--transition-base);
   z-index: 0;
+  opacity: 0.1;
 }
 
 .event-selector:hover {
   border-color: var(--color-blue);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
+  color: var(--color-text-primary);
 }
 
 .event-selector:hover::before {
   left: 0;
 }
 
-.event-selector:hover {
-  color: var(--color-text-inverse);
-}
-
 .event-selector:focus {
   outline: none;
   border-color: var(--color-blue);
-  box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.1);
+  box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.2);
+  transform: translateY(-1px);
 }
 
 .event-selector:disabled {
@@ -1897,49 +1950,66 @@
   font-family: var(--font-sans);
 }
 
-/* Positioning in admin header */
-.admin-header-actions .event-selector-wrapper {
-  margin-left: 0;
-}
-
 /* Mobile responsive design */
 @media (max-width: 768px) {
-  .event-selector-wrapper {
+  .admin-navigation .event-selector-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    margin-top: var(--space-md);
+  }
+
+  .admin-header-actions .event-selector-wrapper {
     width: 100%;
     justify-content: center;
     margin: var(--space-sm) 0;
     order: -1; /* Move above other header actions on mobile */
+    flex-wrap: wrap;
   }
 
   .event-selector-label {
     font-size: var(--font-size-xs);
+    text-align: center;
   }
 
   .event-selector {
     flex: 1;
     min-width: auto;
     font-size: 16px; /* Prevents zoom on iOS */
+    width: 100%;
   }
 
-  /* Stack label and selector vertically on very small screens */
-  @media (max-width: 480px) {
-    .event-selector-wrapper {
-      flex-direction: column;
-      align-items: stretch;
-      gap: var(--space-xs);
-    }
+  /* Navigation event selector takes full width on mobile */
+  .admin-navigation .event-selector {
+    width: 100%;
+    min-width: auto;
+  }
+}
 
-    .event-selector-label {
-      text-align: center;
-    }
+/* Small mobile screens */
+@media (max-width: 480px) {
+  .admin-header-actions .event-selector-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-xs);
+    margin: var(--space-md) 0;
+  }
+
+  .event-selector-label {
+    text-align: center;
   }
 }
 
 /* Tablet adjustments */
 @media (min-width: 769px) and (max-width: 1024px) {
   .event-selector {
-    min-width: 140px;
+    min-width: 160px;
     font-size: var(--font-size-sm);
+  }
+
+  .admin-header-actions .event-selector {
+    min-width: 140px;
   }
 
   .event-selector-label {
@@ -1954,14 +2024,15 @@
   }
 
   .event-selector:focus {
-    outline: 3px solid var(--color-info-light);
+    outline: 3px solid var(--color-blue);
     outline-offset: 2px;
   }
 }
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-  .event-selector {
+  .event-selector,
+  .admin-navigation .event-selector-wrapper {
     transform: none;
     animation: none;
   }
@@ -1970,7 +2041,127 @@
     transition: none;
   }
 
-  .event-selector:hover {
+  .event-selector:hover,
+  .admin-navigation .event-selector-wrapper:hover {
     transform: none;
   }
+}
+
+/* Dark mode support */
+[data-theme="dark"] .admin-navigation .event-selector-wrapper {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border-medium);
+}
+
+[data-theme="dark"] .admin-navigation .event-selector-wrapper:hover {
+  background: var(--color-surface);
+}
+
+/* ==========================================================================
+   WALLET PASS CARD STYLING FIXES
+   ========================================================================== */
+
+/* Fix wallet pass card borders */
+.wallet-pass-card,
+.apple-wallet-card,
+.google-wallet-card {
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin: var(--space-md) 0;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Remove weird left borders */
+.wallet-pass-card::before,
+.apple-wallet-card::before,
+.google-wallet-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+}
+
+.wallet-pass-card:hover,
+.apple-wallet-card:hover,
+.google-wallet-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-blue);
+}
+
+/* Apple Wallet specific styling */
+.apple-wallet-card {
+  border-left: 4px solid #000000;
+}
+
+.apple-wallet-card::before {
+  background: linear-gradient(90deg, #000000, #333333);
+}
+
+/* Google Wallet specific styling */
+.google-wallet-card {
+  border-left: 4px solid #4285f4;
+}
+
+.google-wallet-card::before {
+  background: linear-gradient(90deg, #4285f4, #34a853);
+}
+
+/* Ensure wallet cards don't have conflicting borders */
+.wallet-pass-card,
+.apple-wallet-card,
+.google-wallet-card {
+  border-left-width: 2px !important;
+}
+
+/* Wallet card content */
+.wallet-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.wallet-card-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--color-text-inverse);
+}
+
+.wallet-card-icon.apple {
+  background: #000000;
+}
+
+.wallet-card-icon.google {
+  background: #4285f4;
+}
+
+.wallet-card-title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  margin: 0;
+}
+
+.wallet-card-subtitle {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: var(--space-xs) 0 0 0;
 }

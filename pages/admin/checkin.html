@@ -71,6 +71,25 @@
         color: var(--color-white) !important;
       }
 
+      .back-btn {
+        position: absolute;
+        top: var(--space-lg);
+        left: var(--space-lg);
+        background: rgba(255, 255, 255, 0.2) !important;
+        border: 2px solid rgba(255, 255, 255, 0.3) !important;
+        color: var(--color-white) !important;
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        min-height: 36px;
+        padding: var(--space-xs) var(--space-sm);
+      }
+
+      .back-btn:hover {
+        background: rgba(255, 255, 255, 0.3) !important;
+        color: var(--color-white) !important;
+        transform: translateX(-2px);
+      }
+
       .app-title {
         font-family: var(--font-display);
         font-size: var(--font-size-xl);
@@ -450,6 +469,24 @@
 
       /* Mobile responsiveness */
       @media (max-width: 480px) {
+        .app-header {
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          padding: var(--space-md);
+        }
+
+        .logout-btn,
+        .back-btn {
+          position: static;
+          margin: var(--space-xs);
+          min-width: 80px;
+        }
+
+        .app-title {
+          margin: var(--space-sm) 0;
+        }
+
         .stats-bar {
           padding: var(--space-xs);
           gap: var(--space-xs);
@@ -547,6 +584,9 @@
     <div class="scanner-app">
       <div class="app-header">
         <button class="logout-btn admin-btn admin-btn-ghost admin-btn-sm" onclick="logout()">Logout</button>
+        <button class="back-btn admin-btn admin-btn-ghost admin-btn-sm" onclick="backToPortal()">
+          ← Portal
+        </button>
         <div class="app-title" data-testid="scanner-title">
           Check-in Scanner
         </div>
@@ -1161,6 +1201,11 @@
 
         // Refresh stats periodically
         setInterval(loadStats, 30000);
+      }
+
+      // Back to Portal function
+      function backToPortal() {
+        window.location.href = "/admin";
       }
 
       // Logout function
