@@ -1,13 +1,13 @@
-import authService from "../lib/auth-service.js";
-import { getDatabaseClient } from "../lib/database.js";
-import { withSecurityHeaders } from "../lib/security-headers.js";
+import authService from '../lib/auth-service.js';
+import { getDatabaseClient } from '../lib/database.js';
+import { withSecurityHeaders } from '../lib/security-headers.js';
 
 async function handler(req, res) {
   const db = await getDatabaseClient();
 
-  if (req.method !== "GET") {
-    res.setHeader("Allow", "GET");
-    return res.status(405).end("Method Not Allowed");
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
+    return res.status(405).end('Method Not Allowed');
   }
 
   try {
@@ -72,11 +72,11 @@ async function handler(req, res) {
       recentRegistrations: recentRegistrations.rows,
       ticketBreakdown: ticketBreakdown.rows,
       dailySales: dailySales.rows,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error("Dashboard API error:", error);
-    res.status(500).json({ error: "Failed to fetch dashboard data" });
+    console.error('Dashboard API error:', error);
+    res.status(500).json({ error: 'Failed to fetch dashboard data' });
   }
 }
 

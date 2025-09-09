@@ -4,18 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Portal - A Lo Cubano Boulder Fest</title>
-    
+
     <!-- Main Site CSS System -->
-    <link rel="stylesheet" href="/css/base.css">
-    <link rel="stylesheet" href="/css/typography.css">
-    <link rel="stylesheet" href="/css/components.css">
-    <link rel="stylesheet" href="/css/navigation.css">
-    <link rel="stylesheet" href="/css/admin-overrides.css">
-    
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/admin-overrides.css" />
+
     <style>
       /* Admin Portal Specific Styles - Theme-Aware */
       body {
-        background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-red) 100%);
+        background: linear-gradient(
+          135deg,
+          var(--color-blue) 0%,
+          var(--color-red) 100%
+        );
         min-height: 100vh;
         display: flex;
         align-items: center;
@@ -105,7 +109,11 @@
 
       /* Quick Actions Section */
       .quick-actions {
-        background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-red) 100%);
+        background: linear-gradient(
+          135deg,
+          var(--color-blue) 0%,
+          var(--color-red) 100%
+        );
         border-radius: var(--radius-lg);
         padding: var(--space-3xl);
         color: var(--color-text-inverse);
@@ -121,14 +129,23 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+        background: linear-gradient(
+          45deg,
+          transparent 30%,
+          rgba(255, 255, 255, 0.1) 50%,
+          transparent 70%
+        );
         animation: shimmer 3s infinite;
         pointer-events: none;
       }
 
       @keyframes shimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(100%);
+        }
       }
 
       .quick-actions-title {
@@ -476,7 +493,7 @@
         }
       }
     </style>
-    
+
     <!-- Theme Manager -->
     <script type="module" src="/js/theme-manager.js"></script>
   </head>
@@ -484,7 +501,9 @@
     <div class="portal-container">
       <div class="portal-header">
         <h1 class="portal-title">🎯 Admin Portal</h1>
-        <p class="portal-subtitle">A Lo Cubano Boulder Fest - Central Administration Hub</p>
+        <p class="portal-subtitle">
+          A Lo Cubano Boulder Fest - Central Administration Hub
+        </p>
         <div class="status-line">
           <span class="status-indicator"></span>
           <span id="status">All Systems Operational</span>
@@ -506,7 +525,10 @@
           <button onclick="syncToSheets()" class="action-btn form-button-type">
             🔄 Sync Sheets
           </button>
-          <button onclick="generateReport()" class="action-btn form-button-type">
+          <button
+            onclick="generateReport()"
+            class="action-btn form-button-type"
+          >
             📥 Export
           </button>
           <button onclick="logout()" class="action-btn form-button-type">
@@ -743,7 +765,11 @@
         const format = confirm("Download as CSV? (Cancel for JSON)")
           ? "csv"
           : "json";
-        window.open(`/api/admin/generate-report?format=${format}`, "_blank", "noopener,noreferrer");
+        window.open(
+          `/api/admin/generate-report?format=${format}`,
+          "_blank",
+          "noopener,noreferrer",
+        );
       }
 
       // Test database

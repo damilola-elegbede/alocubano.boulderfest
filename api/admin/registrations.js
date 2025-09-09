@@ -1,8 +1,8 @@
-import authService from "../lib/auth-service.js";
-import { getDatabaseClient } from "../lib/database.js";
-import ticketService from "../lib/ticket-service.js";
-import { getValidationService } from "../lib/validation-service.js";
-import { withSecurityHeaders } from "../lib/security-headers.js";
+import authService from '../lib/auth-service.js';
+import { getDatabaseClient } from '../lib/database.js';
+import ticketService from '../lib/ticket-service.js';
+import { getValidationService } from '../lib/validation-service.js';
+import { withSecurityHeaders } from '../lib/security-headers.js';
 
 async function handler(req, res) {
   let db;
@@ -10,24 +10,24 @@ async function handler(req, res) {
   try {
     db = await getDatabaseClient();
 
-    if (req.method === "GET") {
-    const validationService = getValidationService();
+    if (req.method === 'GET') {
+      const validationService = getValidationService();
 
-    // Validate all search parameters
-    const validation = validationService.validateRegistrationSearchParams(
-      req.query,
-    );
+      // Validate all search parameters
+      const validation = validationService.validateRegistrationSearchParams(
+        req.query
+      );
 
-    if (!validation.isValid) {
-      return res.status(400).json({
-        error: "Validation failed",
-        details: validation.errors,
-      });
-    }
+      if (!validation.isValid) {
+        return res.status(400).json({
+          error: 'Validation failed',
+          details: validation.errors
+        });
+      }
 
-    const { sanitized } = validation;
+      const { sanitized } = validation;
 
-    let sql = `
+      let sql = `
       SELECT 
         t.*,
         tr.transaction_id as order_number,
@@ -38,44 +38,44 @@ async function handler(req, res) {
       WHERE 1=1
     `;
 
-    const args = [];
+      const args = [];
 
-    if (sanitized.searchTerm) {
-      sql += ` AND (
+      if (sanitized.searchTerm) {
+        sql += ` AND (
         t.attendee_email LIKE ? ESCAPE '\\' OR 
         t.attendee_first_name LIKE ? ESCAPE '\\' OR 
         t.attendee_last_name LIKE ? ESCAPE '\\' OR
         t.ticket_id LIKE ? ESCAPE '\\' OR
         tr.customer_email LIKE ? ESCAPE '\\'
       )`;
-      args.push(
-        sanitized.searchTerm,
-        sanitized.searchTerm,
-        sanitized.searchTerm,
-        sanitized.searchTerm,
-        sanitized.searchTerm,
-      );
-    }
+        args.push(
+          sanitized.searchTerm,
+          sanitized.searchTerm,
+          sanitized.searchTerm,
+          sanitized.searchTerm,
+          sanitized.searchTerm
+        );
+      }
 
-    if (sanitized.status) {
-      sql += ` AND t.status = ?`;
-      args.push(sanitized.status);
-    }
+      if (sanitized.status) {
+        sql += ' AND t.status = ?';
+        args.push(sanitized.status);
+      }
 
-    if (sanitized.ticketType) {
-      sql += ` AND t.ticket_type = ?`;
-      args.push(sanitized.ticketType);
-    }
+      if (sanitized.ticketType) {
+        sql += ' AND t.ticket_type = ?';
+        args.push(sanitized.ticketType);
+      }
 
-    if (sanitized.checkedIn === "true") {
-      sql += ` AND t.checked_in_at IS NOT NULL`;
-    } else if (sanitized.checkedIn === "false") {
-      sql += ` AND t.checked_in_at IS NULL`;
-    }
+      if (sanitized.checkedIn === 'true') {
+        sql += ' AND t.checked_in_at IS NOT NULL';
+      } else if (sanitized.checkedIn === 'false') {
+        sql += ' AND t.checked_in_at IS NULL';
+      }
 
-    sql += ` ORDER BY t.${sanitized.sortBy} ${sanitized.sortOrder}`;
-    sql += ` LIMIT ? OFFSET ?`;
-    args.push(sanitized.limit, sanitized.offset);
+      sql += ` ORDER BY t.${sanitized.sortBy} ${sanitized.sortOrder}`;
+      sql += ' LIMIT ? OFFSET ?';
+      args.push(sanitized.limit, sanitized.offset);
 
       const result = await db.execute({ sql, args });
 
@@ -99,12 +99,17 @@ async function handler(req, res) {
         )`;
       }
 
-      if (sanitized.status) countSql += ` AND t.status = ?`;
-      if (sanitized.ticketType) countSql += ` AND t.ticket_type = ?`;
-      if (sanitized.checkedIn === "true")
-        countSql += ` AND t.checked_in_at IS NOT NULL`;
-      else if (sanitized.checkedIn === "false")
-        countSql += ` AND t.checked_in_at IS NULL`;
+      if (sanitized.status) {
+        countSql += ' AND t.status = ?';
+      }
+      if (sanitized.ticketType) {
+        countSql += ' AND t.ticket_type = ?';
+      }
+      if (sanitized.checkedIn === 'true') {
+        countSql += ' AND t.checked_in_at IS NOT NULL';
+      } else if (sanitized.checkedIn === 'false') {
+        countSql += ' AND t.checked_in_at IS NULL';
+      }
 
       const countResult = await db.execute({ sql: countSql, args: countArgs });
 
@@ -113,9 +118,9 @@ async function handler(req, res) {
         total: countResult.rows[0].total,
         limit: sanitized.limit,
         offset: sanitized.offset,
-        hasMore: sanitized.offset + sanitized.limit < countResult.rows[0].total,
+        hasMore: sanitized.offset + sanitized.limit < countResult.rows[0].total
       });
-    } else if (req.method === "PUT") {
+    } else if (req.method === 'PUT') {
       // Update registration (check-in, edit details)
       const { ticketId } = req.query;
       const { action, ...data } = req.body;
@@ -132,69 +137,69 @@ async function handler(req, res) {
       if (!actionValidation.isValid) {
         return res.status(400).json({
           error: actionValidation.error,
-          allowedValues: actionValidation.allowedValues,
+          allowedValues: actionValidation.allowedValues
         });
       }
 
       switch (action) {
-        case "checkin": {
-          await db.execute({
-            sql: `UPDATE tickets 
+      case 'checkin': {
+        await db.execute({
+          sql: `UPDATE tickets 
                   SET checked_in_at = CURRENT_TIMESTAMP,
                       checked_in_by = ?,
                       updated_at = CURRENT_TIMESTAMP
                   WHERE ticket_id = ?`,
-            args: [req.admin.id, ticketId],
-          });
+          args: [req.admin.id, ticketId]
+        });
 
-          res
-            .status(200)
-            .json({ success: true, message: "Checked in successfully" });
-          break;
-        }
+        res
+          .status(200)
+          .json({ success: true, message: 'Checked in successfully' });
+        break;
+      }
 
-        case "undo_checkin": {
-          await db.execute({
-            sql: `UPDATE tickets 
+      case 'undo_checkin': {
+        await db.execute({
+          sql: `UPDATE tickets 
                   SET checked_in_at = NULL,
                       checked_in_by = NULL,
                       updated_at = CURRENT_TIMESTAMP
                   WHERE ticket_id = ?`,
-            args: [ticketId],
-          });
+          args: [ticketId]
+        });
 
-          res.status(200).json({ success: true, message: "Check-in undone" });
-          break;
-        }
+        res.status(200).json({ success: true, message: 'Check-in undone' });
+        break;
+      }
 
-        case "update": {
-          const updated = await ticketService.updateAttendeeInfo(
-            ticketId,
-            data,
-          );
-          res.status(200).json({ success: true, ticket: updated });
-          break;
-        }
+      case 'update': {
+        const updated = await ticketService.updateAttendeeInfo(
+          ticketId,
+          data
+        );
+        res.status(200).json({ success: true, ticket: updated });
+        break;
+      }
 
-        case "cancel": {
-          const cancelled = await ticketService.cancelTicket(
-            ticketId,
-            data.reason,
-          );
-          res.status(200).json({ success: true, ticket: cancelled });
-          break;
-        }
+      case 'cancel': {
+        const cancelled = await ticketService.cancelTicket(
+          ticketId,
+          data.reason
+        );
+        res.status(200).json({ success: true, ticket: cancelled });
+        break;
+      }
 
-        default:
-          res.status(400).json({ error: "Invalid action" });
+      default:
+        res.status(400).json({ error: 'Invalid action' });
       }
     } else {
-      res.setHeader("Allow", ["GET", "PUT"]);
+      res.setHeader('Allow', ['GET', 'PUT']);
       res.status(405).end(`Method ${req.method} Not Allowed`);
     }
   } catch (error) {
-    console.error("Registration API error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error('Registration API error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 }
 

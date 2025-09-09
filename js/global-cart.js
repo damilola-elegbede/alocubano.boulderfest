@@ -14,9 +14,9 @@ if (document.readyState === 'loading') {
 
 async function initializeGlobalCart() {
     // Enhanced E2E debugging
-    const isE2ETest = typeof window !== 'undefined' && 
+    const isE2ETest = typeof window !== 'undefined' &&
         (window.navigator.userAgent.includes('Playwright') || window.location.search.includes('e2e'));
-    
+
     if (isE2ETest) {
         console.log('🚀 Global Cart Initialization Starting...', {
             readyState: document.readyState,
@@ -28,21 +28,21 @@ async function initializeGlobalCart() {
     try {
         // Get cart manager instance
         const cartManager = getCartManager();
-        
+
         if (isE2ETest) {
             console.log('✅ Cart Manager obtained:', typeof cartManager);
         }
 
         // Initialize cart
         await cartManager.initialize();
-        
+
         if (isE2ETest) {
             console.log('✅ Cart Manager initialized');
         }
 
         // Initialize floating cart UI
         initializeFloatingCart(cartManager);
-        
+
         if (isE2ETest) {
             console.log('✅ Floating Cart UI initialized');
         }
@@ -62,7 +62,7 @@ async function initializeGlobalCart() {
         if (typeof window !== 'undefined') {
             window.globalCartManager = cartManager;
             window.cartManager = cartManager; // Also set as cartManager for E2E tests
-            
+
             if (isE2ETest) {
                 console.log('✅ Global Cart Initialization Complete!', {
                     hasCartManager: !!window.cartManager,
@@ -73,7 +73,7 @@ async function initializeGlobalCart() {
         }
     } catch (error) {
         console.error('❌ Failed to initialize global cart:', error);
-        
+
         if (isE2ETest) {
             console.error('E2E Debug - Global Cart Error Details:', {
                 error: error.message,
@@ -81,7 +81,7 @@ async function initializeGlobalCart() {
                 timestamp: Date.now()
             });
         }
-        
+
         // Set error flag for E2E tests
         if (typeof window !== 'undefined') {
             window.globalCartError = error;

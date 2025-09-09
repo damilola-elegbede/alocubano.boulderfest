@@ -138,11 +138,11 @@ class NewsletterSignup {
             }
         } catch (error) {
             console.error('Newsletter signup error:', error);
-            
+
             // Enhanced error handling for preview environments
-            const isPreviewEnvironment = window.location.hostname.includes('vercel.app') || 
+            const isPreviewEnvironment = window.location.hostname.includes('vercel.app') ||
                                         window.location.hostname.includes('preview');
-            
+
             if (isPreviewEnvironment && (error.name === 'TypeError' || error.message.includes('fetch'))) {
                 this.handleError(
                     'Preview deployment - newsletter signup simulated. Thank you for testing!'

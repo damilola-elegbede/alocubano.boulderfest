@@ -1,7 +1,7 @@
-import { getMobileAuthService } from "../lib/mobile-auth-service.js";
-import { getCsrfService } from "../lib/csrf-service.js";
-import { applySecurityHeaders } from "../lib/security-headers.js";
-import { getRateLimitService } from "../lib/rate-limit-service.js";
+import { getMobileAuthService } from '../lib/mobile-auth-service.js';
+import { getCsrfService } from '../lib/csrf-service.js';
+import { applySecurityHeaders } from '../lib/security-headers.js';
+import { getRateLimitService } from '../lib/rate-limit-service.js';
 
 /**
  * Mobile check-in login endpoint with extended 72-hour sessions
@@ -11,12 +11,12 @@ export default async function handler(req, res) {
   // Apply security headers
   applySecurityHeaders(res);
 
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
@@ -33,8 +33,8 @@ export default async function handler(req, res) {
         rateLimitService.getRemainingLockoutTime(clientId);
       const remainingMinutes = Math.ceil(remainingSeconds / 60);
       return res.status(429).json({
-        error: "Too many login attempts",
-        details: `Account locked. Try again in ${remainingMinutes} minutes.`,
+        error: 'Too many login attempts',
+        details: `Account locked. Try again in ${remainingMinutes} minutes.`
       });
     }
 
@@ -44,29 +44,29 @@ export default async function handler(req, res) {
     // Validate CSRF token
     const csrfValidation = csrfService.validateToken(
       csrfToken,
-      req.headers["x-csrf-token"],
+      req.headers['x-csrf-token']
     );
 
     if (!csrfValidation.valid) {
       return res.status(403).json({
-        error: "Invalid CSRF token",
-        details: csrfValidation.error,
+        error: 'Invalid CSRF token',
+        details: csrfValidation.error
       });
     }
 
     // Validate input - ensure password is provided and is a string
-    if (!password || typeof password !== "string" || password.length === 0) {
+    if (!password || typeof password !== 'string' || password.length === 0) {
       return res.status(400).json({
-        error: "Invalid input",
-        details: "Password is required",
+        error: 'Invalid input',
+        details: 'Password is required'
       });
     }
 
     // Additional password validation
     if (password.length > 100) {
       return res.status(400).json({
-        error: "Invalid input",
-        details: "Password is too long",
+        error: 'Invalid input',
+        details: 'Password is too long'
       });
     }
 
@@ -78,10 +78,10 @@ export default async function handler(req, res) {
       rateLimitService.recordFailedAttempt(clientId);
 
       // Log failed attempt
-      console.log("Failed mobile login attempt from:", clientId);
+      console.log('Failed mobile login attempt from:', clientId);
 
       return res.status(401).json({
-        error: "Invalid password",
+        error: 'Invalid password'
       });
     }
 
@@ -90,21 +90,21 @@ export default async function handler(req, res) {
 
     // Create extended 72-hour session token for mobile check-in
     const sessionToken = mobileAuth.createMobileSessionToken(
-      "checkin_staff",
-      "checkin_staff",
+      'checkin_staff',
+      'checkin_staff'
     );
 
     // Create session cookie
     const sessionCookie = mobileAuth.createMobileSessionCookie(
       sessionToken,
-      "checkin_staff",
+      'checkin_staff'
     );
 
     // Set cookie
-    res.setHeader("Set-Cookie", sessionCookie);
+    res.setHeader('Set-Cookie', sessionCookie);
 
     // Log successful login
-    console.log("Mobile check-in staff logged in successfully");
+    console.log('Mobile check-in staff logged in successfully');
 
     // Get the configured session duration
     const sessionDuration =
@@ -112,17 +112,17 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
-      message: "Login successful",
-      role: "checkin_staff",
-      sessionDuration: "72 hours",
-      expiresAt: new Date(Date.now() + sessionDuration).toISOString(),
+      message: 'Login successful',
+      role: 'checkin_staff',
+      sessionDuration: '72 hours',
+      expiresAt: new Date(Date.now() + sessionDuration).toISOString()
     });
   } catch (error) {
-    console.error("Mobile login error:", error);
+    console.error('Mobile login error:', error);
     return res.status(500).json({
-      error: "Login failed",
+      error: 'Login failed',
       details:
-        process.env.NODE_ENV === "development" ? error.message : undefined,
+        process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 }
