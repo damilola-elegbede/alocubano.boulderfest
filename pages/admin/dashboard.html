@@ -354,12 +354,16 @@
         const status = document.getElementById("statusFilter").value;
         const checkedIn = document.getElementById("checkinFilter").value;
 
+        // Get selected event ID from event selector
+        const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
+        
         const params = new URLSearchParams({
           limit: pageSize,
           offset: offset,
           ...(search && { search }),
           ...(status && { status }),
           ...(checkedIn && { checkedIn }),
+          ...(selectedEventId && { eventId: selectedEventId }),
         });
 
         try {
@@ -535,12 +539,16 @@
         const status = document.getElementById("statusFilter").value;
         const checkedIn = document.getElementById("checkinFilter").value;
 
+        // Get selected event ID from event selector
+        const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
+        
         const params = new URLSearchParams({
           limit: 10000, // Export all
           offset: 0,
           ...(search && { search }),
           ...(status && { status }),
           ...(checkedIn && { checkedIn }),
+          ...(selectedEventId && { eventId: selectedEventId }),
         });
 
         try {
@@ -649,6 +657,7 @@
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              "X-CSRF-Token": window.csrfToken,
             },
           });
 

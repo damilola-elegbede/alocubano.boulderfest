@@ -3,17 +3,8 @@ import { getDatabaseClient } from '../lib/database.js';
 import ticketService from '../lib/ticket-service.js';
 import { getValidationService } from '../lib/validation-service.js';
 import { withSecurityHeaders } from '../lib/security-headers.js';
-
-// Utility function to check if a column exists in a table
-async function columnExists(db, tableName, columnName) {
-  try {
-    const result = await db.execute(`PRAGMA table_info(${tableName})`);
-    return result.rows.some(row => row[1] === columnName); // column name is second field
-  } catch (error) {
-    console.warn(`Could not check column existence for ${tableName}.${columnName}:`, error);
-    return false;
-  }
-}
+import { columnExists } from '../lib/db-utils.js';
+import csrfService from '../lib/csrf-service.js';
 
 async function handler(req, res) {
   let db;
@@ -234,4 +225,8 @@ async function handler(req, res) {
   }
 }
 
-export default withSecurityHeaders(authService.requireAuth(handler));
+export default withSecurityHeaders(
+  csrfService.validateCSRF(
+    authService.requireAuth(handler)
+  )
+);

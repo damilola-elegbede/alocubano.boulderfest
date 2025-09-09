@@ -742,9 +742,22 @@
           // Get selected event ID from event selector
           const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
 
+          // Get CSRF token for admin operations (only if admin authenticated)
+          let headers = { "Content-Type": "application/json" };
+          try {
+            const csrfResponse = await fetch("/api/admin/csrf-token");
+            if (csrfResponse.ok) {
+              const csrfData = await csrfResponse.json();
+              headers["X-CSRF-Token"] = csrfData.token;
+            }
+          } catch (error) {
+            // Not admin authenticated, continue without CSRF token
+            console.log("Not admin authenticated, continuing without CSRF token");
+          }
+
           const response = await fetch("/api/tickets/validate", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: headers,
             body: JSON.stringify({
               token: token,
               validatedBy: "mobile-scanner",

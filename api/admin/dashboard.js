@@ -1,29 +1,21 @@
 import authService from '../lib/auth-service.js';
 import { getDatabaseClient } from '../lib/database.js';
 import { withSecurityHeaders } from '../lib/security-headers.js';
-
-// Utility function to check if a column exists in a table
-async function columnExists(db, tableName, columnName) {
-  try {
-    const result = await db.execute(`PRAGMA table_info(${tableName})`);
-    return result.rows.some(row => row[1] === columnName); // column name is second field
-  } catch (error) {
-    console.warn(`Could not check column existence for ${tableName}.${columnName}:`, error);
-    return false;
-  }
-}
+import { columnExists, safeParseInt } from '../lib/db-utils.js';
 
 async function handler(req, res) {
-  const db = await getDatabaseClient();
-
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', 'GET');
-    return res.status(405).end('Method Not Allowed');
-  }
-
+  let db;
+  
   try {
-    // Get query parameters
-    const eventId = req.query.eventId ? parseInt(req.query.eventId) : null;
+    db = await getDatabaseClient();
+
+    if (req.method !== 'GET') {
+      res.setHeader('Allow', 'GET');
+      return res.status(405).end('Method Not Allowed');
+    }
+
+    // Get query parameters with proper NaN handling
+    const eventId = safeParseInt(req.query.eventId);
     
     // Check if event_id columns exist
     const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
@@ -177,6 +169,16 @@ async function handler(req, res) {
     });
   } catch (error) {
     console.error('Dashboard API error:', error);
+    
+    // More specific error handling
+    if (error.code === 'SQLITE_BUSY') {
+      return res.status(503).json({ error: 'Database temporarily unavailable' });
+    }
+    
+    if (error.name === 'TimeoutError') {
+      return res.status(408).json({ error: 'Request timeout' });
+    }
+    
     res.status(500).json({ error: 'Failed to fetch dashboard data' });
   }
 }

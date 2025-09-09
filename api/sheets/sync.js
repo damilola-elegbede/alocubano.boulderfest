@@ -1,5 +1,7 @@
 import authService from "../lib/auth-service.js";
 import googleSheetsService from "../lib/google-sheets-service.js";
+import csrfService from '../lib/csrf-service.js';
+import { withSecurityHeaders } from '../lib/security-headers.js';
 
 async function handler(req, res) {
   if (req.method !== "POST") {
@@ -42,5 +44,9 @@ async function handler(req, res) {
   }
 }
 
-// Require authentication
-export default authService.requireAuth(handler);
+// Require authentication and CSRF protection
+export default withSecurityHeaders(
+  csrfService.validateCSRF(
+    authService.requireAuth(handler)
+  )
+);
