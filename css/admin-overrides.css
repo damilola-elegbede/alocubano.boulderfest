@@ -172,7 +172,7 @@
 
 .chart-container {
   background: var(--color-surface);
-  border: 2px solid var(--color-border);
+  border: 2px solid var(--color-border-medium);
   border-radius: var(--radius-lg);
   padding: var(--space-xl);
   margin: var(--space-xl) 0;
@@ -240,7 +240,7 @@
 
 .admin-stat-card {
   background: var(--color-surface);
-  border: 2px solid var(--color-border);
+  border: 2px solid var(--color-border-medium);
   border-radius: var(--radius-lg);
   padding: var(--space-xl);
   position: relative;
@@ -319,7 +319,7 @@
    ========================================================================== */
 
 .admin-nav {
-  background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-background-secondary) 100%);
+  background: linear-gradient(135deg, var(--color-gray-900) 0%, var(--color-gray-800) 100%);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
   margin: var(--space-xl) 0;
@@ -519,7 +519,7 @@
 .admin-alert.info {
   background: var(--color-background-secondary);
   color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-medium);
 }
 
 .admin-alert .alert-title {
@@ -648,6 +648,34 @@
 }
 
 /* ==========================================================================
+   ADMIN HEADER BUTTONS - Enhanced Visibility
+   ========================================================================== */
+
+/* Override secondary button styles for better contrast in admin header */
+.admin-nav .header-actions .btn-secondary {
+  border-color: var(--color-gray-400);
+  color: var(--color-surface);
+  background-color: transparent;
+  border-width: 2px;
+  border-style: solid;
+}
+
+.admin-nav .header-actions .btn-secondary:hover {
+  border-color: var(--color-gray-300);
+  background-color: var(--color-gray-400);
+  color: var(--color-surface);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Ensure buttons are clearly visible on the dark gradient background */
+.admin-nav .header-actions .btn-secondary:focus {
+  border-color: var(--color-blue);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(91, 107, 181, 0.3);
+}
+
+/* ==========================================================================
    UTILITY CLASSES
    ========================================================================== */
 
@@ -702,4 +730,13 @@
 
 .admin-p-lg {
   padding: var(--space-lg);
+}
+
+/* ==========================================================================
+   ADMIN CARD OVERRIDES
+   ========================================================================== */
+
+/* Override default card borders for better visibility in admin dashboard */
+.card {
+  border: 2px solid var(--color-border-medium) !important;
 }
