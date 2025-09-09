@@ -178,40 +178,22 @@
 
       // Check authentication on load
       async function checkAuth() {
-        // Add auth check status indicator immediately
-        document.body.setAttribute('data-auth-status', 'checking');
-        
         try {
-          // Try to use existing session - use a faster endpoint for auth check
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
-          
           const response = await fetch("/api/admin/dashboard", {
-            signal: controller.signal,
-            headers: {
-              'Cache-Control': 'no-cache'
-            }
+            headers: { "Cache-Control": "no-cache" },
+            signal: AbortSignal.timeout(3000)
           });
           
-          clearTimeout(timeoutId);
-
           if (!response.ok) {
-            // Not authenticated, redirect to login immediately
-            document.body.setAttribute('data-auth-status', 'unauthenticated');
-            // Use replace to prevent back button issues
             window.location.replace("/admin/login");
             return false;
           }
-
+          
           // Fetch CSRF token after successful auth check
           await fetchCSRFToken();
-          document.body.setAttribute('data-auth-status', 'authenticated');
-
+          document.body.setAttribute("data-auth-status", "authenticated");
           return true;
         } catch (error) {
-          console.error("Auth check failed:", error);
-          document.body.setAttribute('data-auth-status', 'failed');
-          // Use replace to prevent back button issues
           window.location.replace("/admin/login");
           return false;
         }
@@ -543,8 +525,6 @@
 
       // Initialize page
       async function initializePage() {
-        document.body.setAttribute('data-auth-status', 'checking');
-        
         // Check authentication first
         if (!(await checkAuth())) return;
 

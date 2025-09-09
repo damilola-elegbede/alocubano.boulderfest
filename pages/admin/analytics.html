@@ -194,6 +194,9 @@
           </a>
         </li>
       </ul>
+      
+      <!-- Event Selector -->
+      <div id="event-selector-container"></div>
     </nav>
 
     <!-- Controls Bar -->
@@ -453,9 +456,46 @@
         }
       }
 
+      // Authentication check
+      async function checkAuth() {
+        try {
+          const response = await fetch("/api/admin/dashboard", {
+            headers: { "Cache-Control": "no-cache" },
+            signal: AbortSignal.timeout(3000)
+          });
+          
+          if (!response.ok) {
+            window.location.replace("/admin/login");
+            return false;
+          }
+          
+          document.body.setAttribute("data-auth-status", "authenticated");
+          return true;
+        } catch (error) {
+          window.location.replace("/admin/login");
+          return false;
+        }
+      }
+
       // Initialize on page load
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Check authentication first
+        const isAuthenticated = await checkAuth();
+        if (!isAuthenticated) return;
+        
         initializeTimeRangeButtons();
+        
+        // Initialize event selector first
+        if (window.eventSelector) {
+          await window.eventSelector.init();
+          window.eventSelector.render('event-selector-container');
+          
+          // Set up event selector change listener
+          window.eventSelector.onChange(() => {
+            loadAnalytics();
+          });
+        }
+        
         loadAnalytics();
         // Auto-refresh every 5 minutes
         refreshInterval = setInterval(loadAnalytics, 5 * 60 * 1000);
@@ -516,10 +556,22 @@
       // Load analytics data
       async function loadAnalytics() {
         try {
-          const params =
-            currentTimeRange === "all" ? "" : `?days=${currentTimeRange}`;
-
-          const response = await fetch(`/api/admin/analytics${params}`);
+          const params = new URLSearchParams();
+          
+          if (currentTimeRange !== "all") {
+            params.set('days', currentTimeRange);
+          }
+          
+          // Add event filter
+          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
+          if (selectedEventId && selectedEventId !== 'all') {
+            params.set('eventId', selectedEventId);
+          }
+          
+          const queryString = params.toString();
+          const url = queryString ? `/api/admin/analytics?${queryString}` : '/api/admin/analytics';
+          
+          const response = await fetch(url);
           if (!response.ok) throw new Error("Failed to load analytics");
 
           analyticsData = await response.json();
@@ -1087,5 +1139,8 @@
         window.location.href = "/admin/login";
       }
     </script>
+    
+    <!-- Event Selector Script -->
+    <script src="/js/admin-event-selector.js"></script>
   </body>
 </html>

@@ -172,85 +172,32 @@
         }
       }
 
-      // Check authentication on load
+      // ✅ SIMPLIFIED AUTH CHECK - Replace existing checkAuth function
       async function checkAuth() {
-        const controller = new AbortController();
-        const maxRetries = 3;
-        let retryCount = 0;
-
-        // Check if we have a session cookie first
-        const hasCookie = document.cookie.includes("session=");
-
-        // If coming from login page, add small delay for cookie processing
-        if (document.referrer.includes("/admin/login") || !hasCookie) {
-          await new Promise((resolve) => setTimeout(resolve, 200));
-        }
-
-        while (retryCount < maxRetries) {
-          try {
-            // Increase timeout for initial check
-            const timeoutId = setTimeout(
-              () => controller.abort(),
-              retryCount === 0 ? 5000 : 3000,
-            );
-
-            const response = await fetch("/api/admin/dashboard", {
-              signal: controller.signal,
-              headers: {
-                "Cache-Control": "no-cache",
-              },
-            });
-
-            clearTimeout(timeoutId);
-
-            if (response.ok) {
-              // Authentication successful
-              document.body.setAttribute("data-auth-status", "authenticated");
-              const data = await response.json();
-              console.log("Dashboard data loaded successfully");
-              return data;
-            }
-
-            // If not authenticated and we've exhausted retries
-            if (retryCount === maxRetries - 1) {
-              console.warn("Authentication check failed after retries");
-              document.body.setAttribute("data-auth-status", "unauthenticated");
-              window.location.replace("/admin/login");
-              return false;
-            }
-
-            // Retry with exponential backoff
-            retryCount++;
-            const backoffDelay = Math.min(
-              1000 * Math.pow(2, retryCount - 1),
-              3000,
-            );
-            console.log(
-              `Auth check failed, retrying in ${backoffDelay}ms (attempt ${retryCount}/${maxRetries})`,
-            );
-            await new Promise((resolve) => setTimeout(resolve, backoffDelay));
-          } catch (error) {
-            if (error.name === "AbortError") {
-              console.error("Request timeout during authentication check");
-            } else {
-              console.error("Authentication check error:", error);
-            }
-
-            // Only redirect if we've exhausted retries
-            if (retryCount === maxRetries - 1) {
-              document.body.setAttribute("data-auth-status", "error");
-              window.location.replace("/admin/login");
-              return false;
-            }
-
-            // Retry on error
-            retryCount++;
-            const backoffDelay = Math.min(
-              1000 * Math.pow(2, retryCount - 1),
-              3000,
-            );
-            await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+        try {
+          const response = await fetch("/api/admin/dashboard", {
+            headers: { "Cache-Control": "no-cache" },
+            signal: AbortSignal.timeout(3000) // 3-second timeout, no retries
+          });
+          
+          if (!response.ok) {
+            // Immediate redirect on auth failure
+            document.body.setAttribute("data-auth-status", "unauthenticated");
+            window.location.replace("/admin/login");
+            return false;
           }
+          
+          // Success - set authenticated status and return data
+          document.body.setAttribute("data-auth-status", "authenticated");
+          const data = await response.json();
+          console.log("Dashboard data loaded successfully");
+          return data;
+        } catch (error) {
+          // Immediate redirect on any error (timeout, network, etc.)
+          console.error("Auth check failed:", error);
+          document.body.setAttribute("data-auth-status", "error");
+          window.location.replace("/admin/login");
+          return false;
         }
       }
 
@@ -262,22 +209,28 @@
         }
 
         try {
-          const url = new URL("/api/admin/dashboard", window.location.origin);
-          if (eventId && eventId !== 'all') {
-            url.searchParams.set('eventId', eventId);
-          }
+          // Perform authentication check
+          const authResult = await checkAuth();
           
-          const response = await fetch(url.toString());
-          const data = await response.json();
+          // If auth failed, checkAuth will redirect, so this won't execute
+          if (authResult === false) {
+            return;
+          }
 
-          // checkAuth now returns dashboard data on success
+          // checkAuth now returns dashboard data on success, but we need to check for eventId
           let data = authResult;
-
-          // If checkAuth returned true (backward compatibility), fetch data separately
-          if (authResult === true) {
-            const response = await fetch("/api/admin/dashboard");
+          
+          // If we have a specific event ID, fetch data with that parameter
+          if (eventId && eventId !== 'all') {
+            const url = new URL("/api/admin/dashboard", window.location.origin);
+            url.searchParams.set('eventId', eventId);
+            
+            const response = await fetch(url.toString());
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error);
+            }
             data = await response.json();
-            if (!response.ok) throw new Error(data.error);
           }
 
           // Fetch CSRF token after successful auth check
