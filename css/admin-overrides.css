@@ -325,11 +325,7 @@
    ========================================================================== */
 
 .admin-nav {
-  background: linear-gradient(
-    135deg,
-    var(--color-gray-900) 0%,
-    var(--color-gray-800) 100%
-  );
+  background: var(--color-gray-900);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
   margin: var(--space-xl) 0;
@@ -758,4 +754,34 @@
 /* Override default card borders for better visibility in admin dashboard */
 .card {
   border: 2px solid var(--color-border-medium) !important;
+  border-left: 2px solid var(--color-border-medium) !important;
+}
+
+/* Ensure all card borders are consistent */
+.admin-stat-card,
+.dashboard-card {
+  border: 2px solid var(--color-border-medium) !important;
+  border-left: 2px solid var(--color-border-medium) !important;
+}
+
+/* Fix Portal and Analytics button visibility in dark mode */
+[data-theme="dark"] .admin-nav a {
+  color: var(--color-gray-100);
+  border-color: var(--color-gray-600);
+}
+
+[data-theme="dark"] .admin-nav a:hover {
+  color: var(--color-white);
+  border-color: var(--color-blue);
+}
+
+[data-theme="dark"] .admin-nav a span {
+  color: inherit;
+}
+
+/* Ensure button text is always visible */
+.admin-nav a span {
+  position: relative;
+  z-index: 1;
+  color: inherit;
 }
