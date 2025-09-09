@@ -147,6 +147,23 @@ async function measureCompleteIsolation() {
   }
 }
 
+/**
+ * Measures unit test suite performance by running `npm run test:unit` and collecting timing and memory metrics.
+ *
+ * Runs the test command (1 minute timeout), records wall-clock duration and process memory before/after, and parses test output to extract passed/skipped counts and any reported test duration. The function returns aggregated metrics including total wall time for the run, the parsed reported test duration, counts, average time per passed test, and RSS/heap memory deltas in megabytes. On error it returns an object containing an `error` message and zeroed/null metric fields.
+ *
+ * @returns {Object} Performance summary with the following properties:
+ *   - {number|null} totalTime - Wall-clock duration of the test run in milliseconds (rounded), or null on error.
+ *   - {number} reportedTime - Duration parsed from test output in milliseconds (rounded), or 0 if not found.
+ *   - {number} testsPassed - Number of tests reported as passed (parsed from output) or 0 on error.
+ *   - {number} testsSkipped - Number of tests reported as skipped (parsed from output) or 0 if not present.
+ *   - {number} totalTests - Sum of passed and skipped tests.
+ *   - {number} avgPerTest - Average reported duration per passed test in milliseconds (rounded to two decimals), or 0 if none.
+ *   - {Object} memoryChange - Memory deltas between end and start measurements (in MB, rounded to two decimals):
+ *       - {number} rss - Delta of `rss` in MB.
+ *       - {number} heap - Delta of `heapUsed` in MB.
+ *   - {string} [error] - Short (max 200 chars) error message when the measurement failed; omitted on success.
+ */
 async function measureTestSuitePerformance() {
   console.log('🏃 Measuring test suite performance...');
   
