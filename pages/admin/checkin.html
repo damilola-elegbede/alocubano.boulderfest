@@ -47,11 +47,12 @@
         );
         padding: var(--space-lg) var(--space-xl);
         display: flex;
-        justify-content: space-between;
+        justify-content: center;
         align-items: center;
         box-shadow: var(--shadow-lg);
         position: relative;
         z-index: 100;
+        min-height: 80px;
       }
 
       .logout-btn {
@@ -64,6 +65,7 @@
         font-size: var(--font-size-sm);
         font-weight: 600;
         min-height: 36px;
+        z-index: 110;
       }
 
       .logout-btn:hover {
@@ -82,6 +84,7 @@
         font-weight: 600;
         min-height: 36px;
         padding: var(--space-xs) var(--space-sm);
+        z-index: 110;
       }
 
       .back-btn:hover {
@@ -97,6 +100,13 @@
         color: var(--color-white);
         text-transform: uppercase;
         letter-spacing: var(--letter-spacing-wider);
+        margin: 0 120px;
+        text-align: center;
+        flex: 1;
+        max-width: calc(100% - 240px);
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
       }
 
       .menu-btn {
@@ -467,6 +477,22 @@
         border-top: 1px solid var(--color-border);
       }
 
+      /* Tablet responsiveness */
+      @media (max-width: 768px) and (min-width: 481px) {
+        .app-title {
+          font-size: var(--font-size-lg);
+          margin: 0 100px;
+          max-width: calc(100% - 200px);
+        }
+
+        .back-btn,
+        .logout-btn {
+          font-size: var(--font-size-xs);
+          padding: var(--space-xs);
+          min-width: 70px;
+        }
+      }
+
       /* Mobile responsiveness */
       @media (max-width: 480px) {
         .app-header {
@@ -474,6 +500,7 @@
           align-items: center;
           text-align: center;
           padding: var(--space-md);
+          min-height: auto;
         }
 
         .logout-btn,
@@ -481,11 +508,23 @@
           position: static;
           margin: var(--space-xs);
           min-width: 80px;
+          z-index: auto;
         }
 
         .app-title {
           margin: var(--space-sm) 0;
+          max-width: 100%;
+          order: 1;
         }
+
+        .back-btn {
+          order: 0;
+        }
+
+        .logout-btn {
+          order: 2;
+        }
+      }
 
         .stats-bar {
           padding: var(--space-xs);
@@ -562,6 +601,30 @@
         box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
       }
 
+      /* Wide screen optimizations */
+      @media (min-width: 1200px) {
+        .app-title {
+          font-size: var(--font-size-2xl);
+          margin: 0 160px;
+          max-width: min(calc(100% - 320px), 600px);
+        }
+
+        .back-btn,
+        .logout-btn {
+          min-height: 40px;
+          padding: var(--space-sm) var(--space-lg);
+          font-size: var(--font-size-base);
+        }
+      }
+
+      /* Ultra-wide screen constraints */
+      @media (min-width: 1600px) {
+        .app-header {
+          max-width: 1400px;
+          margin: 0 auto;
+        }
+      }
+
       /* Reduced motion support */
       @media (prefers-reduced-motion: reduce) {
         .scan-region {
@@ -583,13 +646,25 @@
   <body>
     <div class="scanner-app">
       <div class="app-header">
-        <button class="logout-btn admin-btn admin-btn-ghost admin-btn-sm" onclick="logout()">Logout</button>
-        <button class="back-btn admin-btn admin-btn-ghost admin-btn-sm" onclick="backToPortal()">
+        <button 
+          class="back-btn admin-btn admin-btn-ghost admin-btn-sm" 
+          onclick="backToPortal()"
+          aria-label="Go back to admin portal"
+          title="Return to admin portal"
+        >
           ← Portal
         </button>
-        <div class="app-title" data-testid="scanner-title">
+        <h1 class="app-title" data-testid="scanner-title">
           Check-in Scanner
-        </div>
+        </h1>
+        <button 
+          class="logout-btn admin-btn admin-btn-ghost admin-btn-sm" 
+          onclick="logout()"
+          aria-label="Logout from admin session"
+          title="Logout from admin session"
+        >
+          Logout
+        </button>
       </div>
 
       <!-- Event Selector -->
