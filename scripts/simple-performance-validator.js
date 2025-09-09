@@ -166,7 +166,7 @@ async function measureTestSuitePerformance() {
     const totalTime = endTime - startTime;
     
     // Parse output
-    const testMatches = output.match(/Tests\s+(\d+)\s+passed[^,]*(?:,\s*(\d+)\s+skipped)?/);
+    const testMatches = output.match(/Tests\s+(\d+)\s+passed(?:\s*[,|]\s*(\d+)\s+skipped)?/);
     const durationMatch = output.match(/Duration\s+([\d.]+)(ms|s)/);
     
     const testsPassed = testMatches ? parseInt(testMatches[1]) : 0;

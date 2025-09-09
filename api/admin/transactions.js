@@ -1,26 +1,26 @@
-import authService from "../lib/auth-service.js";
-import csrfService from "../lib/csrf-service.js";
-import { getDatabaseClient } from "../lib/database.js";
-import { getValidationService } from "../lib/validation-service.js";
-import { withSecurityHeaders } from "../lib/security-headers.js";
+import authService from '../lib/auth-service.js';
+import csrfService from '../lib/csrf-service.js';
+import { getDatabaseClient } from '../lib/database.js';
+import { getValidationService } from '../lib/validation-service.js';
+import { withSecurityHeaders } from '../lib/security-headers.js';
 
 async function handler(req, res) {
   let db;
-  
+
   try {
     db = await getDatabaseClient();
-    if (req.method === "GET") {
+    if (req.method === 'GET') {
       const validationService = getValidationService();
 
       // Validate all search parameters
       const validation = validationService.validateTransactionSearchParams(
-        req.query,
+        req.query
       );
 
       if (!validation.isValid) {
         return res.status(400).json({
-          error: "Validation failed",
-          details: validation.errors,
+          error: 'Validation failed',
+          details: validation.errors
         });
       }
 
@@ -40,31 +40,31 @@ async function handler(req, res) {
       const args = [];
 
       if (sanitized.email) {
-        sql += " AND t.customer_email = ?";
+        sql += ' AND t.customer_email = ?';
         args.push(sanitized.email);
       }
 
       if (sanitized.status) {
-        sql += " AND t.status = ?";
+        sql += ' AND t.status = ?';
         args.push(sanitized.status);
       }
 
-      sql += " GROUP BY t.id ORDER BY t.created_at DESC LIMIT ? OFFSET ?";
+      sql += ' GROUP BY t.id ORDER BY t.created_at DESC LIMIT ? OFFSET ?';
       args.push(sanitized.limit, sanitized.offset);
 
       const result = await db.execute({ sql, args });
 
       // Get total count
-      let countSql = "SELECT COUNT(*) as total FROM transactions WHERE 1=1";
+      let countSql = 'SELECT COUNT(*) as total FROM transactions WHERE 1=1';
       const countArgs = [];
 
       if (sanitized.email) {
-        countSql += " AND customer_email = ?";
+        countSql += ' AND customer_email = ?';
         countArgs.push(sanitized.email);
       }
 
       if (sanitized.status) {
-        countSql += " AND status = ?";
+        countSql += ' AND status = ?';
         countArgs.push(sanitized.status);
       }
 
@@ -75,36 +75,36 @@ async function handler(req, res) {
         total: countResult.rows[0].total,
         limit: sanitized.limit,
         offset: sanitized.offset,
-        hasMore: sanitized.offset + sanitized.limit < countResult.rows[0].total,
+        hasMore: sanitized.offset + sanitized.limit < countResult.rows[0].total
       });
-    } else if (req.method === "POST") {
+    } else if (req.method === 'POST') {
       // Manual transaction creation (for testing)
       // Verify CSRF token for POST requests
-      const csrfToken = req.headers["x-csrf-token"] || req.body?.csrfToken;
+      const csrfToken = req.headers['x-csrf-token'] || req.body?.csrfToken;
       if (!csrfToken) {
-        return res.status(403).json({ error: "CSRF token required" });
+        return res.status(403).json({ error: 'CSRF token required' });
       }
 
       // Get session ID from authenticated user
       const sessionToken = authService.getSessionFromRequest(req);
       if (!sessionToken) {
-        return res.status(401).json({ error: "Authentication required" });
+        return res.status(401).json({ error: 'Authentication required' });
       }
 
       const session = authService.verifySessionToken(sessionToken);
       if (!session.valid) {
-        return res.status(401).json({ error: "Invalid session" });
+        return res.status(401).json({ error: 'Invalid session' });
       }
 
       const csrfVerification = csrfService.verifyToken(
         csrfToken,
-        session.admin.id,
+        session.admin.id
       );
       if (!csrfVerification.valid) {
-        return res.status(403).json({ error: "Invalid CSRF token" });
+        return res.status(403).json({ error: 'Invalid CSRF token' });
       }
 
-      const { amount, email, name, type = "tickets" } = req.body;
+      const { amount, email, name, type = 'tickets' } = req.body;
       const validationService = getValidationService();
 
       // Validate all required fields
@@ -125,7 +125,7 @@ async function handler(req, res) {
       // Validate name if provided
       const nameValidation = validationService.validateName(
         name,
-        "Customer name",
+        'Customer name'
       );
       if (!nameValidation.isValid) {
         errors.push(nameValidation.error);
@@ -134,21 +134,21 @@ async function handler(req, res) {
       // Validate type
       const typeValidation = validationService.validateEnum(
         type,
-        "transaction type",
-        "transactionTypes",
+        'transaction type',
+        'transactionTypes'
       );
       if (!typeValidation.isValid) {
         return res.status(400).json({
           error: typeValidation.error,
-          allowedValues: typeValidation.allowedValues,
+          allowedValues: typeValidation.allowedValues
         });
       }
 
       // Return validation errors if any
       if (errors.length > 0) {
         return res.status(400).json({
-          error: "Validation failed",
-          details: errors,
+          error: 'Validation failed',
+          details: errors
         });
       }
 
@@ -164,27 +164,27 @@ async function handler(req, res) {
         args: [
           uuid,
           type,
-          "paid", // Use valid status
+          'paid', // Use valid status
           Math.round(numAmount * 100),
-          "USD",
+          'USD',
           email,
           name || null,
-          JSON.stringify({ manual: true, created_by: "admin" }),
-          "stripe_checkout", // Use valid payment method
-          new Date().toISOString(),
-        ],
+          JSON.stringify({ manual: true, created_by: 'admin' }),
+          'stripe_checkout', // Use valid payment method
+          new Date().toISOString()
+        ]
       });
 
       res
         .status(201)
-        .json({ transactionId: uuid, message: "Transaction created" });
+        .json({ transactionId: uuid, message: 'Transaction created' });
     } else {
-      res.setHeader("Allow", ["GET", "POST"]);
+      res.setHeader('Allow', ['GET', 'POST']);
       res.status(405).end(`Method ${req.method} Not Allowed`);
     }
   } catch (error) {
-    console.error("Transaction API error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error('Transaction API error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 }
 

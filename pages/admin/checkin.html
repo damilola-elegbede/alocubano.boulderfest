@@ -11,11 +11,11 @@
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
-    <meta name="theme-color" content="#667eea" />
+    <meta name="theme-color" content="#5b6bb5" />
     <title>Check-in Scanner - A Lo Cubano</title>
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png" />
-    
+
     <!-- CSS System -->
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/typography.css" />
@@ -40,7 +40,11 @@
       }
 
       .app-header {
-        background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-red) 100%);
+        background: linear-gradient(
+          135deg,
+          var(--color-blue) 0%,
+          var(--color-red) 100%
+        );
         padding: var(--space-lg) var(--space-xl);
         display: flex;
         justify-content: space-between;
@@ -94,7 +98,7 @@
         gap: var(--space-xs);
         font-size: var(--font-size-sm);
       }
-      
+
       .stats-bar .admin-stat-card {
         padding: var(--space-md) !important;
         margin: 0 !important;
@@ -102,7 +106,7 @@
         flex: 1;
         cursor: default;
       }
-      
+
       .stats-bar .admin-stat-card:hover {
         transform: none;
         box-shadow: var(--shadow-md);
@@ -143,9 +147,15 @@
       }
 
       @keyframes scannerPulse {
-        0% { border-color: var(--color-blue); }
-        50% { border-color: var(--color-red); }
-        100% { border-color: var(--color-blue); }
+        0% {
+          border-color: var(--color-blue);
+        }
+        50% {
+          border-color: var(--color-red);
+        }
+        100% {
+          border-color: var(--color-blue);
+        }
       }
 
       .scan-corners {
@@ -218,7 +228,7 @@
       }
 
       .control-btn.torch {
-        background: #f39c12;
+        background: var(--color-warning);
       }
 
       .control-btn.manual {
@@ -240,8 +250,12 @@
       }
 
       @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
       }
 
       .result-modal.show {
@@ -271,12 +285,12 @@
       }
 
       .result-content.success {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        background: var(--color-success);
         color: var(--color-white);
       }
 
       .result-content.error {
-        background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        background: var(--color-error);
         color: var(--color-white);
       }
 
@@ -401,32 +415,32 @@
           gap: var(--space-xs);
           flex-wrap: wrap;
         }
-        
+
         .stats-bar .admin-stat-card {
-          min-width: calc(50% - var(--space-xs)/2);
-          flex: 0 0 calc(50% - var(--space-xs)/2);
+          min-width: calc(50% - var(--space-xs) / 2);
+          flex: 0 0 calc(50% - var(--space-xs) / 2);
         }
-        
+
         .scan-region {
           width: 200px;
           height: 200px;
         }
-        
+
         .controls {
           padding: var(--space-lg);
         }
-        
+
         .control-btn {
           width: 50px;
           height: 50px;
           font-size: 20px;
         }
-        
+
         .result-content {
           width: 90%;
           padding: var(--space-xl);
         }
-        
+
         .offline-indicator {
           top: 70px;
           font-size: var(--font-size-sm);
@@ -438,12 +452,12 @@
         .scan-region {
           animation: none;
         }
-        
+
         .result-modal,
         .result-content {
           animation: none;
         }
-        
+
         .control-btn:active,
         .menu-btn:active {
           transform: none;
@@ -457,7 +471,9 @@
         <div class="app-title" data-testid="scanner-title">
           🎫 Check-in Scanner
         </div>
-        <button class="menu-btn form-button-type" onclick="showMenu()">☰</button>
+        <button class="menu-btn form-button-type" onclick="showMenu()">
+          ☰
+        </button>
       </div>
 
       <div class="admin-alert error offline-indicator" id="offlineIndicator">
@@ -472,7 +488,13 @@
             <div class="stat-label">Today</div>
           </div>
           <div class="admin-stat-card">
-            <div class="stat-number" id="sessionCount" data-testid="checkin-counter">0</div>
+            <div
+              class="stat-number"
+              id="sessionCount"
+              data-testid="checkin-counter"
+            >
+              0
+            </div>
             <div class="stat-label">Session</div>
           </div>
           <div class="admin-stat-card">
@@ -489,20 +511,24 @@
           </div>
         </div>
 
-      <div class="scanner-viewport">
-        <div id="reader" data-testid="camera-scanner"></div>
-        <div class="scanner-overlay">
-          <div class="scan-region">
-            <div class="scan-corners tl"></div>
-            <div class="scan-corners tr"></div>
-            <div class="scan-corners bl"></div>
-            <div class="scan-corners br"></div>
+        <div class="scanner-viewport">
+          <div id="reader" data-testid="camera-scanner"></div>
+          <div class="scanner-overlay">
+            <div class="scan-region">
+              <div class="scan-corners tl"></div>
+              <div class="scan-corners tr"></div>
+              <div class="scan-corners bl"></div>
+              <div class="scan-corners br"></div>
+            </div>
           </div>
         </div>
-      </div>
 
         <div class="controls">
-          <button class="control-btn torch form-button-type" onclick="toggleTorch()" id="torchBtn">
+          <button
+            class="control-btn torch form-button-type"
+            onclick="toggleTorch()"
+            id="torchBtn"
+          >
             🔦
           </button>
           <button
@@ -512,7 +538,12 @@
           >
             ⌨️
           </button>
-          <button class="control-btn form-button-type" onclick="location.reload()">🔄</button>
+          <button
+            class="control-btn form-button-type"
+            onclick="location.reload()"
+          >
+            🔄
+          </button>
         </div>
       </div>
     </div>
@@ -554,13 +585,15 @@
         >
           Check In
         </button>
-        <button class="form-button-type cancel" onclick="hideManualInput()">Cancel</button>
+        <button class="form-button-type cancel" onclick="hideManualInput()">
+          Cancel
+        </button>
       </div>
     </div>
 
     <!-- Theme Manager -->
     <script type="module" src="/js/theme-manager.js"></script>
-    
+
     <!-- QR Code Scanner -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
@@ -758,9 +791,14 @@
             torchOn = !torchOn;
             await track.applyTorch(torchOn);
 
+            const rootStyles = getComputedStyle(document.documentElement);
+            const warningColor = rootStyles
+              .getPropertyValue("--color-warning")
+              .trim();
+            const warningActiveColor = "#fbbf24"; // Brighter warning color for active state
             document.getElementById("torchBtn").style.background = torchOn
-              ? "#f1c40f"
-              : "#f39c12";
+              ? warningActiveColor
+              : warningColor;
           } else {
             alert("Torch not available on this device");
           }
@@ -886,20 +924,20 @@
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-red) 100%);
                 ">
                     <div style="
-                        background: white;
+                        background: var(--color-surface);
                         padding: 40px;
                         border-radius: 20px;
-                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                        box-shadow: var(--shadow-xl);
                         max-width: 90%;
                         width: 350px;
                     ">
-                        <h2 style="color: #2c3e50; margin-bottom: 10px; text-align: center;">
+                        <h2 style="color: var(--color-text-primary); margin-bottom: 10px; text-align: center;">
                             🎫 Check-in Staff Login
                         </h2>
-                        <p style="color: #7f8c8d; text-align: center; margin-bottom: 30px; font-size: 14px;">
+                        <p style="color: var(--color-text-secondary); text-align: center; margin-bottom: 30px; font-size: 14px;">
                             Session lasts 72 hours
                         </p>
                         <form id="mobileLoginForm" onsubmit="handleMobileLogin(event)">
@@ -911,17 +949,19 @@
                                 style="
                                     width: 100%;
                                     padding: 15px;
-                                    border: 1px solid #ddd;
+                                    border: 1px solid var(--color-border);
                                     border-radius: 10px;
                                     font-size: 16px;
                                     margin-bottom: 20px;
+                                    background: var(--color-background-secondary);
+                                    color: var(--color-text-primary);
                                 "
                             >
                             <button type="submit" style="
                                 width: 100%;
                                 padding: 15px;
-                                background: #667eea;
-                                color: white;
+                                background: var(--color-primary);
+                                color: var(--color-text-inverse);
                                 border: none;
                                 border-radius: 10px;
                                 font-size: 18px;
@@ -931,7 +971,7 @@
                                 Login to Scanner
                             </button>
                             <div id="loginError" style="
-                                color: #e74c3c;
+                                color: var(--color-error);
                                 text-align: center;
                                 margin-top: 15px;
                                 display: none;

@@ -15,28 +15,28 @@ export function initializeFloatingCart(cartManager) {
     // Create cart HTML structure
     const cartHTML = createCartHTML();
     document.body.insertAdjacentHTML('beforeend', cartHTML);
-    
+
     // Immediately add initialization indicators for E2E tests
     const container = document.querySelector('.floating-cart-container');
     if (container) {
         container.setAttribute('data-floating-cart-initialized', 'true');
         container.setAttribute('data-initialization-timestamp', Date.now().toString());
-        
+
         // Add global window flag for E2E detection
         window.floatingCartInitialized = true;
         window.floatingCartInitializedAt = Date.now();
-        
+
         // Dispatch custom event for E2E tests
         window.dispatchEvent(new CustomEvent('floating-cart-initialized', {
             detail: { timestamp: Date.now(), cartManager: !!cartManager }
         }));
-        
+
         console.log('✅ Floating cart initialized for E2E testing:', {
             timestamp: Date.now(),
             hasCartManager: !!cartManager,
             containerVisible: container.style.display !== 'none'
         });
-        
+
         // E2E FALLBACK: If no cart manager, create a minimal one for testing
         if (!cartManager && (window.navigator.userAgent.includes('Playwright') || window.location.search.includes('e2e'))) {
             console.log('🔧 E2E Fallback: Creating minimal cart manager for testing');
@@ -63,15 +63,15 @@ export function initializeFloatingCart(cartManager) {
     // E2E CRITICAL FIX: Ensure cart has dimensions for Playwright visibility
     if (window.navigator.userAgent.includes('Playwright') || window.location.search.includes('e2e')) {
         console.log('🔧 E2E Fix: Forcing cart dimensions and visibility');
-        
+
         // Force minimum dimensions on container and button with proper positioning
         if (elements.container) {
             elements.container.style.cssText = 'display: block !important; position: fixed !important; bottom: 20px !important; right: 20px !important; min-width: 60px !important; min-height: 60px !important; height: auto !important; visibility: visible !important; opacity: 1 !important; z-index: 999999 !important;';
         }
-        
+
         if (elements.button) {
             elements.button.style.cssText = 'display: flex !important; align-items: center !important; justify-content: center !important; width: 56px !important; height: 56px !important; visibility: visible !important; opacity: 1 !important; position: relative !important; background: var(--color-blue, #007bff) !important; border: none !important; border-radius: 50% !important; box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important; cursor: pointer !important;';
-            
+
             // Ensure button has visible content
             const icon = elements.button.querySelector('.cart-icon');
             if (icon) {
@@ -82,17 +82,17 @@ export function initializeFloatingCart(cartManager) {
                 elements.button.style.color = 'white !important';
             }
         }
-        
+
         // Force cart badge visibility if it exists
         if (elements.badge) {
             elements.badge.style.cssText = 'display: flex !important; position: absolute !important; top: -8px !important; right: -8px !important; background: #ff4444 !important; color: white !important; border-radius: 50% !important; min-width: 20px !important; height: 20px !important; font-size: 12px !important; font-weight: bold !important; align-items: center !important; justify-content: center !important;';
         }
-        
+
         // Trigger immediate visibility update for tickets page
         const currentPath = window.location.pathname;
         if (currentPath.includes('tickets')) {
             console.log('✅ E2E Fix: Cart forced visible on tickets page with proper dimensions');
-            
+
             // Add extra debugging info
             setTimeout(() => {
                 const rect = elements.container.getBoundingClientRect();
@@ -231,7 +231,7 @@ function setupBasicEventListeners(elements, cartManager) {
 function setupCartInteractionHandlers(elements, cartManager) {
     const debouncedQuantityAdjustment = createDebouncedQuantityHandler(cartManager);
 
-    elements.itemsContainer.addEventListener('click', async (event) => {
+    elements.itemsContainer.addEventListener('click', async(event) => {
         try {
             await handleCartItemClick(event, debouncedQuantityAdjustment, cartManager);
         } catch (error) {
@@ -242,7 +242,7 @@ function setupCartInteractionHandlers(elements, cartManager) {
 }
 
 function setupActionHandlers(elements, cartManager) {
-    elements.checkoutButton.addEventListener('click', async () => {
+    elements.checkoutButton.addEventListener('click', async() => {
         try {
             await handleCheckoutAction(cartManager);
         } catch (error) {
@@ -251,7 +251,7 @@ function setupActionHandlers(elements, cartManager) {
         }
     });
 
-    elements.clearButton.addEventListener('click', async () => {
+    elements.clearButton.addEventListener('click', async() => {
         try {
             await handleClearCartAction(elements, cartManager);
         } catch (error) {
@@ -276,7 +276,7 @@ function handleKeyboardShortcuts(event, elements, cartManager) {
 }
 
 function createDebouncedQuantityHandler(cartManager) {
-    return debounce(async (ticketType, action) => {
+    return debounce(async(ticketType, action) => {
         try {
             await handleQuantityAdjustment(cartManager, ticketType, action);
         } catch (error) {
@@ -298,11 +298,15 @@ async function handleCartItemClick(event, debouncedQuantityAdjustment, cartManag
 }
 
 async function handleQuantityButtonClick(button, debouncedQuantityAdjustment) {
-    if (button.disabled) return;
-    
+    if (button.disabled) {
+        return;
+    }
+
     // Prevent double-clicks
     button.disabled = true;
-    setTimeout(() => { button.disabled = false; }, 200);
+    setTimeout(() => {
+        button.disabled = false;
+    }, 200);
 
     const cartItem = button.closest('.cart-item');
     const ticketType = cartItem?.dataset.ticketType;
@@ -341,7 +345,7 @@ function trackCheckoutAnalytics(cartManager) {
 
 async function handleClearCartAction(elements, cartManager) {
     const userConfirmed = await showClearCartConfirmation(cartManager.getState());
-    
+
     if (!userConfirmed) {
         return; // User cancelled
     }
@@ -502,9 +506,9 @@ function determineCartVisibility(hasItems) {
     };
 
     // Debug logging for E2E tests
-    const isE2ETest = typeof window !== 'undefined' && 
+    const isE2ETest = typeof window !== 'undefined' &&
         (window.navigator.userAgent.includes('Playwright') || window.location.search.includes('e2e'));
-    
+
     if (isE2ETest) {
         console.log('🛒 Cart Visibility Debug:', {
             currentPath,
@@ -562,7 +566,7 @@ function updateCartUI(elements, cartState) {
     if (pendingUIUpdate) {
         cancelAnimationFrame(pendingUIUpdate);
     }
-    
+
     pendingUIUpdate = requestAnimationFrame(() => {
         performCartUIUpdate(elements, cartState);
         pendingUIUpdate = null;
@@ -571,14 +575,14 @@ function updateCartUI(elements, cartState) {
 
 function performCartUIUpdate(elements, cartState) {
     const { totals = {}, isEmpty, tickets, donations } = cartState;
-    
+
     // Performance optimization: Skip update if state hasn't changed
     const stateHash = JSON.stringify(cartState);
     if (lastCartState === stateHash) {
         return;
     }
     lastCartState = stateHash;
-    
+
     // Calculate total items for use throughout function
     const totalItems = (totals.itemCount || 0) + (totals.donationCount || 0);
 
@@ -640,13 +644,13 @@ function performCartUIUpdate(elements, cartState) {
 
     updates.push(() => {
         const isE2ETest = window.navigator.userAgent.includes('Playwright');
-        
+
         if (shouldShowCart) {
             elements.container.style.display = 'block';
             elements.button.style.opacity = '1';
             elements.button.style.pointerEvents = 'auto';
             elements.button.style.visibility = 'visible'; // Explicit visibility for E2E
-            
+
             // E2E FIX: Force dimensions and positioning for visibility detection
             if (isE2ETest) {
                 elements.container.style.position = 'fixed';
@@ -657,11 +661,11 @@ function performCartUIUpdate(elements, cartState) {
                 elements.container.style.minHeight = '60px';
                 elements.container.style.zIndex = '999999';
             }
-            
+
             // Add test-ready state attribute for E2E tests
             elements.container.setAttribute('data-cart-state', 'visible');
             elements.button.setAttribute('data-cart-items', totalItems.toString());
-            
+
             // E2E DEBUGGING: Log visibility decisions
             if (isE2ETest) {
                 console.log('✅ Cart should be visible:', {
@@ -695,7 +699,7 @@ function performCartUIUpdate(elements, cartState) {
                 elements.container.setAttribute('data-cart-state', 'hidden');
             }
             elements.button.setAttribute('data-cart-items', totalItems.toString());
-            
+
             // E2E DEBUGGING: Log why cart is hidden
             if (isE2ETest) {
                 console.log('❌ Cart should be hidden (but may be overridden for tickets page):', {
@@ -722,32 +726,32 @@ function renderCartItems(container, tickets, donations) {
 function renderCartItemsOptimized(container, tickets, donations) {
     // Clear container first
     container.innerHTML = '';
-    
+
     // Use document fragment for batch DOM operations
     const fragment = document.createDocumentFragment();
-    
+
     // Render tickets category
     const ticketValues = Object.values(tickets);
     if (ticketValues.length > 0) {
         const ticketsSection = createCartSection('A Lo Cubano 2026 Tickets', 'tickets');
-        
+
         ticketValues.forEach((ticket) => {
             const itemElement = createTicketItemElement(ticket);
             ticketsSection.appendChild(itemElement);
         });
-        
+
         fragment.appendChild(ticketsSection);
     }
 
     // Render donations category
     if (donations && donations.length > 0) {
         const donationsSection = createCartSection('Donations', 'donations');
-        
+
         donations.forEach((donation) => {
             const itemElement = createDonationItemElement(donation);
             donationsSection.appendChild(itemElement);
         });
-        
+
         fragment.appendChild(donationsSection);
     }
 
@@ -759,11 +763,11 @@ function renderCartItemsOptimized(container, tickets, donations) {
 function createCartSection(title, className) {
     const section = document.createElement('div');
     section.className = 'cart-category';
-    
+
     const header = document.createElement('h4');
     header.className = `cart-category-header ${className}`;
     header.textContent = title;
-    
+
     section.appendChild(header);
     return section;
 }
@@ -771,28 +775,28 @@ function createCartSection(title, className) {
 // Create a ticket item element
 function createTicketItemElement(ticket) {
     const itemTotal = ticket.price * ticket.quantity;
-    
+
     const item = document.createElement('div');
     item.className = 'cart-item';
     item.dataset.ticketType = ticket.ticketType;
-    
+
     // Create info section
     const info = document.createElement('div');
     info.className = 'cart-item-info';
-    
+
     const name = document.createElement('h4');
     name.textContent = ticket.name;
     info.appendChild(name);
-    
+
     const price = document.createElement('p');
     price.className = 'cart-item-price';
     price.textContent = `$${ticket.price.toFixed(2)} × ${ticket.quantity} = $${itemTotal.toFixed(2)}`;
     info.appendChild(price);
-    
+
     // Create actions section
     const actions = document.createElement('div');
     actions.className = 'cart-item-actions';
-    
+
     const decreaseBtn = document.createElement('button');
     decreaseBtn.className = 'qty-adjust minus';
     decreaseBtn.dataset.action = 'decrease';
@@ -800,13 +804,13 @@ function createTicketItemElement(ticket) {
     decreaseBtn.setAttribute('data-testid', 'quantity-decrease');
     decreaseBtn.textContent = '−';
     actions.appendChild(decreaseBtn);
-    
+
     const qtyDisplay = document.createElement('span');
     qtyDisplay.className = 'qty-display';
     qtyDisplay.setAttribute('data-testid', 'quantity-display');
     qtyDisplay.textContent = ticket.quantity;
     actions.appendChild(qtyDisplay);
-    
+
     const increaseBtn = document.createElement('button');
     increaseBtn.className = 'qty-adjust plus';
     increaseBtn.dataset.action = 'increase';
@@ -814,10 +818,10 @@ function createTicketItemElement(ticket) {
     increaseBtn.setAttribute('data-testid', 'quantity-increase');
     increaseBtn.textContent = '+';
     actions.appendChild(increaseBtn);
-    
+
     item.appendChild(info);
     item.appendChild(actions);
-    
+
     return item;
 }
 
@@ -826,29 +830,29 @@ function createDonationItemElement(donation) {
     const item = document.createElement('div');
     item.className = 'cart-item';
     item.dataset.donationId = donation.id;
-    
+
     const info = document.createElement('div');
     info.className = 'cart-item-info';
-    
+
     const name = document.createElement('h4');
     name.textContent = donation.name;
     info.appendChild(name);
-    
+
     const price = document.createElement('p');
     price.className = 'cart-item-price';
     price.textContent = `$${donation.amount.toFixed(2)}`;
     info.appendChild(price);
-    
+
     const removeBtn = document.createElement('button');
     removeBtn.className = 'remove-donation';
     removeBtn.dataset.donationId = donation.id;
     removeBtn.setAttribute('aria-label', 'Remove donation');
     removeBtn.setAttribute('data-testid', 'remove-item');
     removeBtn.textContent = '×';
-    
+
     item.appendChild(info);
     item.appendChild(removeBtn);
-    
+
     return item;
 }
 
@@ -1051,36 +1055,40 @@ function createMinimalCartManager() {
         },
         isEmpty: true
     };
-    
+
     const manager = {
         getState: () => state,
-        initialize: async () => {
+        initialize: async() => {
             console.log('📦 Minimal cart manager initialized');
             return Promise.resolve();
         },
         addEventListener: (event, handler) => {
             // Simple event system for testing
-            if (!window.cartEvents) window.cartEvents = {};
-            if (!window.cartEvents[event]) window.cartEvents[event] = [];
+            if (!window.cartEvents) {
+                window.cartEvents = {};
+            }
+            if (!window.cartEvents[event]) {
+                window.cartEvents[event] = [];
+            }
             window.cartEvents[event].push(handler);
         },
-        updateTicketQuantity: async (ticketType, quantity) => {
+        updateTicketQuantity: async(ticketType, quantity) => {
             console.log('🎫 Minimal cart: update ticket', ticketType, quantity);
             return Promise.resolve();
         },
-        clear: async () => {
+        clear: async() => {
             console.log('🗑️ Minimal cart: clear');
             return Promise.resolve();
         }
     };
-    
+
     return manager;
 }
 
 // E2E Direct Initialization: Try to initialize cart even without proper module loading
-if (typeof window !== 'undefined' && 
+if (typeof window !== 'undefined' &&
     (window.navigator.userAgent.includes('Playwright') || window.location.search.includes('e2e'))) {
-    
+
     // Direct initialization for E2E tests
     setTimeout(() => {
         if (!window.floatingCartInitialized && typeof window.initializeFloatingCart === 'function') {

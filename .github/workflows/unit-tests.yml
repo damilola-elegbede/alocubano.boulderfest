@@ -81,10 +81,10 @@ jobs:
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
 
-          # Extract test counts from output - handle both 'passed' and 'passing' variants
-          total_tests=$(grep -oP '\d+(?= (tests? )?passed)' test-output.log | head -1 || echo "0")
+          # Extract test counts from output - updated regex to match "Tests 902 passed" format
+          total_tests=$(grep -oP '(?<=^\s*Tests\s+)\d+(?=\s+passed)' test-output.log | head -1 || echo "0")
           passing_tests=$total_tests
-          failing_tests=$(grep -oP '\d+(?= (tests? )?failed)' test-output.log | head -1 || echo "0")
+          failing_tests=$(grep -oP '(?<=^\s*Tests\s+)\d+(?=\s+failed)' test-output.log | head -1 || echo "0")
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📊 Test Results Summary"
