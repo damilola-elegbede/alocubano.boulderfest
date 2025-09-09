@@ -332,14 +332,24 @@
   }
 }
 
-/* Placeholder Styles - Theme Aware */
+/* Placeholder Styles - Improved Contrast for Accessibility */
 .form-input::placeholder,
 .form-textarea::placeholder,
 .form-select::placeholder,
 .form-input-type::placeholder,
-.form-textarea-type::placeholder {
-  color: var(--color-text-tertiary);
-  opacity: 1;
+.form-textarea-type::placeholder,
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
+input[type="number"]::placeholder,
+input[type="tel"]::placeholder,
+input[type="search"]::placeholder,
+input[type="date"]::placeholder,
+input[type="time"]::placeholder,
+input[type="url"]::placeholder,
+textarea::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.9;
 }
 
 /* Firefox placeholder styles */
@@ -347,9 +357,19 @@
 .form-textarea::-moz-placeholder,
 .form-select::-moz-placeholder,
 .form-input-type::-moz-placeholder,
-.form-textarea-type::-moz-placeholder {
-  color: var(--color-text-tertiary);
-  opacity: 1;
+.form-textarea-type::-moz-placeholder,
+input[type="text"]::-moz-placeholder,
+input[type="email"]::-moz-placeholder,
+input[type="password"]::-moz-placeholder,
+input[type="number"]::-moz-placeholder,
+input[type="tel"]::-moz-placeholder,
+input[type="search"]::-moz-placeholder,
+input[type="date"]::-moz-placeholder,
+input[type="time"]::-moz-placeholder,
+input[type="url"]::-moz-placeholder,
+textarea::-moz-placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.9;
 }
 
 /* Webkit placeholder styles */
@@ -357,6 +377,124 @@
 .form-textarea::-webkit-input-placeholder,
 .form-select::-webkit-input-placeholder,
 .form-input-type::-webkit-input-placeholder,
-.form-textarea-type::-webkit-input-placeholder {
-  color: var(--color-text-tertiary);
+.form-textarea-type::-webkit-input-placeholder,
+input[type="text"]::-webkit-input-placeholder,
+input[type="email"]::-webkit-input-placeholder,
+input[type="password"]::-webkit-input-placeholder,
+input[type="number"]::-webkit-input-placeholder,
+input[type="tel"]::-webkit-input-placeholder,
+input[type="search"]::-webkit-input-placeholder,
+input[type="date"]::-webkit-input-placeholder,
+input[type="time"]::-webkit-input-placeholder,
+input[type="url"]::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.9;
+}
+
+/* Dark mode placeholder styles for better visibility */
+[data-theme="dark"] .form-input::placeholder,
+[data-theme="dark"] .form-textarea::placeholder,
+[data-theme="dark"] .form-select::placeholder,
+[data-theme="dark"] .form-input-type::placeholder,
+[data-theme="dark"] .form-textarea-type::placeholder,
+[data-theme="dark"] input[type="text"]::placeholder,
+[data-theme="dark"] input[type="email"]::placeholder,
+[data-theme="dark"] input[type="password"]::placeholder,
+[data-theme="dark"] input[type="number"]::placeholder,
+[data-theme="dark"] input[type="tel"]::placeholder,
+[data-theme="dark"] input[type="search"]::placeholder,
+[data-theme="dark"] input[type="date"]::placeholder,
+[data-theme="dark"] input[type="time"]::placeholder,
+[data-theme="dark"] input[type="url"]::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 1;
+}
+
+/* Disabled State Styles */
+.form-input:disabled,
+.form-select:disabled,
+.form-textarea:disabled,
+.form-input-type:disabled,
+.form-textarea-type:disabled,
+input[type="text"]:disabled,
+input[type="email"]:disabled,
+input[type="password"]:disabled,
+input[type="number"]:disabled,
+input[type="tel"]:disabled,
+input[type="date"]:disabled,
+input[type="time"]:disabled,
+input[type="url"]:disabled,
+select:disabled,
+textarea:disabled {
+  background-color: var(--color-background-secondary);
+  color: var(--color-text-muted);
+  border-color: var(--color-border-light);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Disabled labels */
+.form-group:has(:disabled) .form-label,
+.form-group:has(:disabled) .form-label-type {
+  color: var(--color-text-muted);
+  opacity: 0.8;
+}
+
+/* Disabled buttons */
+.btn:disabled,
+.form-button-type:disabled,
+.volunteer-submit:disabled,
+button:disabled {
+  background-color: var(--color-background-secondary);
+  color: var(--color-text-muted);
+  border-color: var(--color-border-light);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn:disabled:hover,
+.form-button-type:disabled:hover,
+.volunteer-submit:disabled:hover,
+button:disabled:hover {
+  background-color: var(--color-background-secondary);
+  transform: none;
+  box-shadow: none;
+}
+
+.form-button-type:disabled::before {
+  display: none;
+}
+
+/* Disabled checkboxes and radios */
+input[type="checkbox"]:disabled,
+input[type="radio"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+input[type="checkbox"]:disabled + label,
+input[type="radio"]:disabled + label,
+.checkbox-type:has(input:disabled),
+.custom-checkbox:has(input:disabled) {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.custom-checkbox:has(input:disabled) .checkmark {
+  background-color: var(--color-background-secondary);
+  border-color: var(--color-border-light);
+  opacity: 0.6;
+}
+
+.custom-checkbox:has(input:disabled):hover .checkmark {
+  border-color: var(--color-border-light);
+}
+
+/* Disabled form groups */
+.form-group:has(:disabled),
+.form-group-type:has(:disabled) {
+  opacity: 0.8;
 }

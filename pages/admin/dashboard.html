@@ -163,42 +163,73 @@
 
       // Check authentication on load
       async function checkAuth() {
-        // Add auth check status indicator immediately
-        document.body.setAttribute('data-auth-status', 'checking');
+        const controller = new AbortController();
+        const maxRetries = 3;
+        let retryCount = 0;
         
-        try {
-          // Try to use existing session - use a faster endpoint for auth check
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
-          
-          const response = await fetch("/api/admin/dashboard", {
-            signal: controller.signal,
-            headers: {
-              'Cache-Control': 'no-cache'
+        // Check if we have a session cookie first
+        const hasCookie = document.cookie.includes('session=');
+        
+        // If coming from login page, add small delay for cookie processing
+        if (document.referrer.includes('/admin/login') || !hasCookie) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
+        while (retryCount < maxRetries) {
+          try {
+            // Increase timeout for initial check
+            const timeoutId = setTimeout(() => controller.abort(), retryCount === 0 ? 5000 : 3000);
+            
+            const response = await fetch("/api/admin/dashboard", {
+              signal: controller.signal,
+              headers: {
+                'Cache-Control': 'no-cache'
+              }
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+              // Authentication successful
+              document.body.setAttribute('data-auth-status', 'authenticated');
+              const data = await response.json();
+              console.log('Dashboard data loaded successfully');
+              return data;
             }
-          });
-          
-          clearTimeout(timeoutId);
-
-          if (!response.ok) {
-            // Not authenticated, redirect to login immediately
-            document.body.setAttribute('data-auth-status', 'unauthenticated');
-            // Use replace to prevent back button issues
-            window.location.replace("/admin/login");
-            return false;
+            
+            // If not authenticated and we've exhausted retries
+            if (retryCount === maxRetries - 1) {
+              console.warn('Authentication check failed after retries');
+              document.body.setAttribute('data-auth-status', 'unauthenticated');
+              window.location.replace("/admin/login");
+              return false;
+            }
+            
+            // Retry with exponential backoff
+            retryCount++;
+            const backoffDelay = Math.min(1000 * Math.pow(2, retryCount - 1), 3000);
+            console.log(`Auth check failed, retrying in ${backoffDelay}ms (attempt ${retryCount}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, backoffDelay));
+            
+          } catch (error) {
+            if (error.name === 'AbortError') {
+              console.error('Request timeout during authentication check');
+            } else {
+              console.error('Authentication check error:', error);
+            }
+            
+            // Only redirect if we've exhausted retries
+            if (retryCount === maxRetries - 1) {
+              document.body.setAttribute('data-auth-status', 'error');
+              window.location.replace("/admin/login");
+              return false;
+            }
+            
+            // Retry on error
+            retryCount++;
+            const backoffDelay = Math.min(1000 * Math.pow(2, retryCount - 1), 3000);
+            await new Promise(resolve => setTimeout(resolve, backoffDelay));
           }
-
-          // Fetch CSRF token after successful auth check
-          await fetchCSRFToken();
-          document.body.setAttribute('data-auth-status', 'authenticated');
-
-          return true;
-        } catch (error) {
-          console.error("Auth check failed:", error);
-          document.body.setAttribute('data-auth-status', 'failed');
-          // Use replace to prevent back button issues
-          window.location.replace("/admin/login");
-          return false;
         }
       }
 
@@ -209,14 +240,23 @@
           document.body.setAttribute('data-auth-status', 'checking');
         }
         
-        if (!(await checkAuth())) return;
-
         try {
-          const response = await fetch("/api/admin/dashboard");
-          const data = await response.json();
+          const authResult = await checkAuth();
+          if (!authResult) return;
 
-          if (!response.ok) throw new Error(data.error);
+          // checkAuth now returns dashboard data on success
+          let data = authResult;
+          
+          // If checkAuth returned true (backward compatibility), fetch data separately
+          if (authResult === true) {
+            const response = await fetch("/api/admin/dashboard");
+            data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+          }
 
+          // Fetch CSRF token after successful auth check
+          await fetchCSRFToken();
+          
           displayStats(data.stats);
           await loadRegistrations();
         } catch (error) {

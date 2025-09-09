@@ -11,7 +11,7 @@
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
-    <meta name="theme-color" content="#667eea" />
+    <meta name="theme-color" content="#5b6bb5" />
     <title>Check-in Scanner - A Lo Cubano</title>
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png" />
@@ -218,7 +218,7 @@
       }
 
       .control-btn.torch {
-        background: #f39c12;
+        background: var(--color-warning);
       }
 
       .control-btn.manual {
@@ -271,12 +271,12 @@
       }
 
       .result-content.success {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        background: var(--color-success);
         color: var(--color-white);
       }
 
       .result-content.error {
-        background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        background: var(--color-error);
         color: var(--color-white);
       }
 
@@ -758,9 +758,12 @@
             torchOn = !torchOn;
             await track.applyTorch(torchOn);
 
+            const rootStyles = getComputedStyle(document.documentElement);
+            const warningColor = rootStyles.getPropertyValue('--color-warning').trim();
+            const warningActiveColor = '#fbbf24'; // Brighter warning color for active state
             document.getElementById("torchBtn").style.background = torchOn
-              ? "#f1c40f"
-              : "#f39c12";
+              ? warningActiveColor
+              : warningColor;
           } else {
             alert("Torch not available on this device");
           }
@@ -886,20 +889,20 @@
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-red) 100%);
                 ">
                     <div style="
-                        background: white;
+                        background: var(--color-surface);
                         padding: 40px;
                         border-radius: 20px;
-                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                        box-shadow: var(--shadow-xl);
                         max-width: 90%;
                         width: 350px;
                     ">
-                        <h2 style="color: #2c3e50; margin-bottom: 10px; text-align: center;">
+                        <h2 style="color: var(--color-text-primary); margin-bottom: 10px; text-align: center;">
                             🎫 Check-in Staff Login
                         </h2>
-                        <p style="color: #7f8c8d; text-align: center; margin-bottom: 30px; font-size: 14px;">
+                        <p style="color: var(--color-text-secondary); text-align: center; margin-bottom: 30px; font-size: 14px;">
                             Session lasts 72 hours
                         </p>
                         <form id="mobileLoginForm" onsubmit="handleMobileLogin(event)">
@@ -911,17 +914,19 @@
                                 style="
                                     width: 100%;
                                     padding: 15px;
-                                    border: 1px solid #ddd;
+                                    border: 1px solid var(--color-border);
                                     border-radius: 10px;
                                     font-size: 16px;
                                     margin-bottom: 20px;
+                                    background: var(--color-background-secondary);
+                                    color: var(--color-text-primary);
                                 "
                             >
                             <button type="submit" style="
                                 width: 100%;
                                 padding: 15px;
-                                background: #667eea;
-                                color: white;
+                                background: var(--color-primary);
+                                color: var(--color-text-inverse);
                                 border: none;
                                 border-radius: 10px;
                                 font-size: 18px;
@@ -931,7 +936,7 @@
                                 Login to Scanner
                             </button>
                             <div id="loginError" style="
-                                color: #e74c3c;
+                                color: var(--color-error);
                                 text-align: center;
                                 margin-top: 15px;
                                 display: none;
