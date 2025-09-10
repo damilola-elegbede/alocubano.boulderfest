@@ -212,8 +212,8 @@ describe("CSP Report Security Validation", () => {
       const largeChunk = Buffer.alloc(11 * 1024); // 11KB
       req._triggerEvent("data", largeChunk);
 
-      // Wait a bit for the async handling
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // Wait for async processing with proper timeout
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       expect(res.status).toHaveBeenCalledWith(413);
       expect(res.json).toHaveBeenCalledWith({
@@ -226,9 +226,12 @@ describe("CSP Report Security Validation", () => {
       });
       expect(req.destroy).toHaveBeenCalled();
 
+      // Trigger close event to complete the promise
+      req._triggerEvent("close");
+
       // Complete the handler
       await handlerPromise.catch(() => {}); // Ignore errors for this test
-    });
+    }, 5000); // 5 second timeout for this specific test
 
     it("should destroy request immediately when size limit exceeded", async () => {
       const req = createMockRequest({
@@ -243,21 +246,24 @@ describe("CSP Report Security Validation", () => {
 
       // Send first chunk under limit
       req._triggerEvent("data", Buffer.alloc(5 * 1024)); // 5KB
-      await new Promise(resolve => setTimeout(resolve, 5));
+      await new Promise(resolve => setTimeout(resolve, 10));
       expect(req.destroy).not.toHaveBeenCalled();
 
       // Send second chunk that exceeds limit
       req._triggerEvent("data", Buffer.alloc(6 * 1024)); // 6KB (total 11KB)
       
       // Wait for async processing
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       expect(req.destroy).toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(413);
 
+      // Trigger close event to complete the promise
+      req._triggerEvent("close");
+
       // Complete the handler
       await handlerPromise.catch(() => {});
-    });
+    }, 5000); // 5 second timeout for this specific test
 
     it("should handle incremental data chunks correctly", async () => {
       const req = createMockRequest({
@@ -418,22 +424,33 @@ describe("CSP Report Security Validation", () => {
 
       // Send chunks that accumulate to exceed the limit
       let totalSent = 0;
-      while (totalSent < 12000) { // 12KB total
+      const maxAttempts = 15; // Limit attempts to prevent infinite loops
+      let attempts = 0;
+      
+      while (totalSent < 12000 && attempts < maxAttempts) { // 12KB total
         req._triggerEvent("data", Buffer.alloc(1000)); // 1KB chunks
         totalSent += 1000;
+        attempts++;
+        
+        // Add small delay for async processing
+        await new Promise(resolve => setTimeout(resolve, 5));
+        
         if (req.destroy.mock.calls.length > 0) {
           break; // Request was destroyed due to size limit
         }
       }
 
-      // Wait briefly for processing
-      await new Promise(resolve => setTimeout(resolve, 50));
+      // Wait for processing to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       expect(req.destroy).toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(413);
 
+      // Trigger close event to complete the promise
+      req._triggerEvent("close");
+
       // Complete the handler
       await handlerPromise.catch(() => {});
-    }, 15000); // Increase timeout for this test
+    }, 8000); // Reduced timeout but still sufficient
   });
 });
