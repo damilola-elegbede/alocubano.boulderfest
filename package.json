@@ -9,8 +9,8 @@
   },
   "scripts": {
     "build": "NODE_OPTIONS='--max-old-space-size=4096' node scripts/build-admin-files.js && node -e \"if(process.env.VERCEL === '1') { console.log('🚀 Vercel build complete - admin files prepared'); } else { console.log('🔧 Local build - running verification'); require('child_process').execSync('npm run verify-structure', {stdio:'inherit'}); }\" && echo 'Build process completed'",
-    "start": "node scripts/start-with-ngrok.js",
-    "dev": "npm run start",
+    "start": "npx http-server . -p 3000",
+    "dev": "echo 'Starting local server' && npx http-server . -p 3000",
     "test": "NODE_OPTIONS='--max-old-space-size=6144' vitest run --config tests/vitest.config.js",
     "test:integration": "NODE_OPTIONS='--max-old-space-size=4096' vitest run --config tests/config/vitest.integration.config.js",
     "test:e2e": "NODE_OPTIONS='--max-old-space-size=3072' playwright test --config tests/config/playwright/playwright-e2e-preview.config.js",

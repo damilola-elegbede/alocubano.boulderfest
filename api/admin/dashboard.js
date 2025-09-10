@@ -5,7 +5,9 @@ import { columnExists, safeParseInt } from '../../lib/db-utils.js';
 
 async function handler(req, res) {
   try {
+    console.log('Dashboard API: Starting request');
     const db = await getDatabaseClient();
+    console.log('Dashboard API: Database client obtained');
 
     if (req.method !== 'GET') {
       res.setHeader('Allow', 'GET');
@@ -31,7 +33,7 @@ async function handler(req, res) {
       SELECT 
         (SELECT COUNT(*) FROM tickets WHERE status = 'valid' ${ticketWhereClause}) as total_tickets,
         (SELECT COUNT(*) FROM tickets WHERE checked_in_at IS NOT NULL ${ticketWhereClause}) as checked_in,
-        (SELECT COUNT(DISTINCT transaction_id) FROM tickets WHERE 1=1 ${ticketWhereClause}) as total_orders,
+        (SELECT COUNT(DISTINCT transaction_id) FROM tickets WHERE status = 'valid' ${ticketWhereClause}) as total_orders,
         (SELECT SUM(amount_cents) / 100.0 FROM transactions WHERE status = 'completed' ${transactionWhereClause}) as total_revenue,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%workshop%' ${ticketWhereClause}) as workshop_tickets,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%vip%' ${ticketWhereClause}) as vip_tickets,
@@ -168,6 +170,7 @@ async function handler(req, res) {
     });
   } catch (error) {
     console.error('Dashboard API error:', error);
+    console.error('Error stack:', error.stack);
     
     // More specific error handling
     if (error.code === 'SQLITE_BUSY') {
@@ -178,7 +181,12 @@ async function handler(req, res) {
       return res.status(408).json({ error: 'Request timeout' });
     }
     
-    res.status(500).json({ error: 'Failed to fetch dashboard data' });
+    // Return more details in development
+    const errorDetails = process.env.NODE_ENV === 'development' 
+      ? { error: 'Failed to fetch dashboard data', details: error.message }
+      : { error: 'Failed to fetch dashboard data' };
+    
+    res.status(500).json(errorDetails);
   }
 }
 

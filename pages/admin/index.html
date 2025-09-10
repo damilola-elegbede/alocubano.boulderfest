@@ -321,15 +321,23 @@
       // Check authentication on load
       async function checkAuth() {
         try {
-          const response = await fetch("/api/admin/dashboard");
+          const response = await fetch("/api/admin/verify-session");
           if (!response.ok) {
-            window.location.href = "/admin/login";
-            return false;
+            if (response.status === 401 || response.status === 403) {
+              // Only redirect to login for authentication failures
+              window.location.href = "/admin/login";
+              return false;
+            } else {
+              // For other errors (500, 503), show error but stay on page
+              console.error("Session check failed with status:", response.status);
+              alert("Error verifying session. Please refresh the page.");
+              return false;
+            }
           }
           return true;
         } catch (error) {
           console.error("Auth check failed:", error);
-          window.location.href = "/admin/login";
+          alert("Network error. Please check your connection and refresh.");
           return false;
         }
       }
