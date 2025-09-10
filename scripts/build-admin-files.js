@@ -1,84 +1,84 @@
 #!/usr/bin/env node
 
 /**
- * Build Script: Copy Admin Files to Root Level
- * 
- * This script ensures that admin files from pages/admin/ are copied to admin/
- * at the root level, which is required for Vercel routing to work correctly.
- * 
- * The vercel.json config expects:
- * - /admin/login -> /admin/login.html
- * - /admin/dashboard -> /admin/dashboard.html
- * - etc.
+ * Build Admin Files Script
+ * Copies admin HTML files from pages/admin/ to admin/ for Vercel routing compatibility
  */
 
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import { promises as fs } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const projectRoot = path.join(__dirname, "..");
+const projectRoot = path.resolve(__dirname, '..');
 
-console.log("🔧 Building Admin Files for Vercel Deployment");
-console.log("==============================================");
+const SOURCE_DIR = path.join(projectRoot, 'pages', 'admin');
+const TARGET_DIR = path.join(projectRoot, 'admin');
 
-// Create admin directory in root if it doesn't exist
-const rootAdminDir = path.join(projectRoot, "admin");
-if (!fs.existsSync(rootAdminDir)) {
-  fs.mkdirSync(rootAdminDir, { recursive: true });
-  console.log("📁 Created admin/ directory in root");
-} else {
-  console.log("📁 admin/ directory already exists");
-}
-
-// Admin files that need to be copied from pages/admin/ to admin/
-const adminFiles = [
-  "login.html",
-  "dashboard.html", 
-  "checkin.html",
-  "analytics.html",
-  "mfa-settings.html",
-  "index.html",
-  "registrations.html",
-  "tickets.html"
+const ADMIN_FILES = [
+  'login.html',
+  'dashboard.html',
+  'analytics.html',
+  'reset-password.html',
+  'checkin.html',
+  'reports.html',
+  'backup.html',
+  'security.html'
 ];
 
-let copiedFiles = 0;
-let errors = 0;
-
-adminFiles.forEach(filename => {
-  const sourcePath = path.join(projectRoot, "pages", "admin", filename);
-  const destPath = path.join(rootAdminDir, filename);
-  
+async function ensureDirectoryExists(dir) {
   try {
-    if (fs.existsSync(sourcePath)) {
-      fs.copyFileSync(sourcePath, destPath);
-      const stats = fs.statSync(destPath);
-      const size = Math.round((stats.size / 1024) * 100) / 100;
-      console.log(`✅ Copied ${filename} (${size} KB)`);
-      copiedFiles++;
-    } else {
-      console.log(`⚠️  Source file missing: pages/admin/${filename}`);
-    }
+    await fs.mkdir(dir, { recursive: true });
   } catch (error) {
-    console.log(`❌ Failed to copy ${filename}: ${error.message}`);
-    errors++;
+    if (error.code !== 'EEXIST') {
+      throw error;
+    }
   }
-});
-
-console.log("");
-console.log("📋 Summary:");
-console.log(`✅ Successfully copied: ${copiedFiles} files`);
-if (errors > 0) {
-  console.log(`❌ Errors: ${errors} files`);
 }
 
-console.log("");
-console.log("🚀 Admin files are now ready for Vercel deployment!");
-console.log("   - /admin/login -> admin/login.html");
-console.log("   - /admin/dashboard -> admin/dashboard.html"); 
-console.log("   - /admin/* -> admin/*.html");
+async function copyAdminFiles() {
+  console.log('📁 Building admin files for Vercel deployment...');
+  
+  // Ensure target directory exists
+  await ensureDirectoryExists(TARGET_DIR);
+  
+  let copiedCount = 0;
+  let skippedCount = 0;
+  
+  for (const file of ADMIN_FILES) {
+    const sourcePath = path.join(SOURCE_DIR, file);
+    const targetPath = path.join(TARGET_DIR, file);
+    
+    try {
+      // Check if source file exists
+      await fs.access(sourcePath);
+      
+      // Copy the file
+      await fs.copyFile(sourcePath, targetPath);
+      console.log(`  ✅ Copied: ${file}`);
+      copiedCount++;
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        console.log(`  ⚠️  Skipped: ${file} (source not found)`);
+        skippedCount++;
+      } else {
+        console.error(`  ❌ Error copying ${file}:`, error.message);
+        throw error;
+      }
+    }
+  }
+  
+  console.log(`\n✨ Admin files build complete!`);
+  console.log(`   📋 Files copied: ${copiedCount}`);
+  if (skippedCount > 0) {
+    console.log(`   ⚠️  Files skipped: ${skippedCount}`);
+  }
+  console.log(`   📂 Location: ${TARGET_DIR}`);
+}
 
-// Exit with error if any files failed to copy
-process.exit(errors > 0 ? 1 : 0);
+// Run the build
+copyAdminFiles().catch(error => {
+  console.error('❌ Build failed:', error);
+  process.exit(1);
+});
