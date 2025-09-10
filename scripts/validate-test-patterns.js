@@ -42,11 +42,11 @@ for (const dir of testDirs) {
 // 2. Configuration file validation
 console.log('\n⚙️  Checking Playwright configuration files...');
 const configFiles = [
-  'playwright.config.js',
-  'playwright-e2e-preview.config.js',
-  'playwright-e2e-vercel-main.config.js',
-  'playwright-e2e-ci.config.js',
-  'playwright-unified-browser.config.js'
+  'tests/config/playwright/playwright.config.js',
+  'tests/config/playwright/playwright-e2e-preview.config.js',
+  'tests/config/playwright/playwright-e2e-vercel-main.config.js',
+  'tests/config/playwright/playwright-e2e-ci.config.js',
+  'tests/config/playwright/playwright-unified-browser.config.js'
 ];
 
 const existingConfigs = [];
@@ -107,7 +107,7 @@ try {
       }
     } else {
       // Script uses default config, check if it exists
-      if (existsSync(join(ROOT_DIR, 'playwright.config.js'))) {
+      if (existsSync(join(ROOT_DIR, 'tests/config/playwright/playwright.config.js'))) {
         console.log(`  ✅ ${script}: Uses default config`);
         validScripts++;
       } else {
@@ -166,7 +166,7 @@ console.log(`✅ Configuration files available: ${existingConfigs.length}`);
 console.log('\n🧪 Testing key execution paths...');
 const testCommands = [
   'npm run test:simple -- --reporter=list --run 2>/dev/null || echo "Unit tests discoverable"',
-  'npx playwright test --list --config=playwright-e2e-preview.config.js 2>/dev/null | head -1 || echo "E2E tests discoverable"'
+  'npx playwright test --list --config=tests/config/playwright/playwright-e2e-preview.config.js 2>/dev/null | head -1 || echo "E2E tests discoverable"'
 ];
 
 for (const cmd of testCommands) {
@@ -186,8 +186,8 @@ console.log('✅ Workflow patterns can find expected test files');
 console.log('✅ Test file structure is properly organized in tests/e2e/flows/');
 
 console.log('\n🔧 Files restored:');
-console.log('  - playwright-e2e-preview.config.js');
-console.log('  - playwright-e2e-vercel-main.config.js');  
-console.log('  - playwright-e2e-ci.config.js');
+console.log('  - tests/config/playwright/playwright-e2e-preview.config.js');
+console.log('  - tests/config/playwright/playwright-e2e-vercel-main.config.js');  
+console.log('  - tests/config/playwright/playwright-e2e-ci.config.js');
 
 console.log('\n✅ All test patterns are now properly aligned!');

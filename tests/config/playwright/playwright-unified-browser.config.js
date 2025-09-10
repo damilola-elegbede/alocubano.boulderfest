@@ -189,7 +189,7 @@ const logConfiguration = (config) => {
 };
 
 const config = defineConfig({
-  testDir: './tests/e2e/flows',
+  testDir: '../../e2e/flows',
   
   // Environment-specific configuration
   ...getEnvironmentConfig(),
@@ -198,8 +198,8 @@ const config = defineConfig({
   projects: generateProjects(getBrowserStrategy()),
   
   // Global setup and teardown
-  globalSetup: './tests/e2e/global-setup-ci.js',
-  globalTeardown: './tests/e2e/global-teardown.js'
+  globalSetup: '../../e2e/global-setup-ci.js',
+  globalTeardown: '../../e2e/global-teardown.js'
 });
 
 // Log configuration

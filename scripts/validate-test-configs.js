@@ -16,10 +16,10 @@ console.log('🧪 Validating Test Configuration Separation\n');
 
 // Test configuration files
 const configs = {
-  unit: 'vitest.config.js',
-  integration: 'vitest.integration.config.js', 
-  performance: 'vitest.performance.config.js',
-  security: 'vitest.security.config.js'
+  unit: 'tests/config/vitest.unit.config.js',
+  integration: 'tests/config/vitest.integration.config.js', 
+  performance: 'tests/config/vitest.performance.config.js',
+  security: 'tests/config/vitest.security.config.js'
 };
 
 // Validation results

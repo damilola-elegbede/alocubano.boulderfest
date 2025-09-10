@@ -104,8 +104,8 @@ function validateConfigurationFiles() {
     'tests/setup.js',
     'tests/e2e/global-setup-ci.js', 
     'tests/e2e/global-teardown-ci.js',
-    'playwright-e2e-vercel-main.config.js',
-    'playwright-e2e-ci.config.js',
+    'tests/config/playwright/playwright-e2e-vercel-main.config.js',
+    'tests/config/playwright/playwright-e2e-ci.config.js',
     'scripts/vercel-dev-ci.js'
   ];
   

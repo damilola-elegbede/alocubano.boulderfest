@@ -45,7 +45,7 @@ console.log(`  Reuse Server: ${!process.env.CI} (CI isolation: ${!!process.env.C
 console.log(`  Database: Port-isolated for test safety`);
 
 export default defineConfig({
-  testDir: './tests/e2e/flows',
+  testDir: '../../e2e/flows',
   fullyParallel: false, // Run sequentially to avoid database conflicts
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1, // Allow one retry locally for flaky tests
@@ -115,6 +115,6 @@ export default defineConfig({
   // },
   
   // Global setup/teardown standardized across all configs
-  globalSetup: './tests/e2e/global-setup-ci.js',
-  globalTeardown: './tests/e2e/global-teardown.js',
+  globalSetup: '../../e2e/global-setup-ci.js',
+  globalTeardown: '../../e2e/global-teardown.js',
 });

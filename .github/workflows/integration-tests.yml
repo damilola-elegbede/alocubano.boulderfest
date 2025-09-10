@@ -13,6 +13,7 @@ on:
       - 'package.json'
       - 'playwright*.config.js'
       - 'tests/config/**'
+      - 'tests/config/playwright/*.config.js'
   push:
     branches: [main, develop]
     paths:
@@ -24,6 +25,7 @@ on:
       - 'package.json'
       - 'playwright*.config.js'
       - 'tests/config/**'
+      - 'tests/config/playwright/*.config.js'
   workflow_dispatch:
     inputs:
       test_suite:
@@ -85,6 +87,7 @@ jobs:
             config:
               - 'playwright*.config.js'
               - 'tests/config/**'
+              - 'tests/config/playwright/*.config.js'
               - 'package.json'
 
       - name: "📋 Plan Test Execution"
@@ -639,7 +642,7 @@ jobs:
             echo "- Frontend code (js/, css/, pages/)" >> $GITHUB_STEP_SUMMARY
             echo "- Backend code (api/)" >> $GITHUB_STEP_SUMMARY
             echo "- Integration test files (tests/integration/)" >> $GITHUB_STEP_SUMMARY
-            echo "- Test configuration (playwright*.config.js, tests/config/)" >> $GITHUB_STEP_SUMMARY
+            echo "- Test configuration (playwright*.config.js, tests/config/, tests/config/playwright/*.config.js)" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: "💬 Comment on PR"
@@ -709,7 +712,7 @@ jobs:
               - Frontend code (js/, css/, pages/)
               - Backend code (api/)
               - Integration test files (tests/integration/)
-              - Test configuration files`;
+              - Test configuration files (playwright*.config.js, tests/config/, tests/config/playwright/*.config.js)`;
             }
 
             const comment = `## ${status} Integration Tests ${statusText}

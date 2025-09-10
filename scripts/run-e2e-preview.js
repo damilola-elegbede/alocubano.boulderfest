@@ -315,7 +315,7 @@ TEST_ADMIN_PASSWORD=${process.env.TEST_ADMIN_PASSWORD || 'test-password'}
     return new Promise((resolve, reject) => {
       // Build Playwright command
       const cmd = 'npx';
-      const args = ['playwright', 'test', '--config=playwright-e2e-preview.config.js'];
+      const args = ['playwright', 'test', '--config=tests/config/playwright/playwright-e2e-preview.config.js'];
 
       // Add browser project if specified
       if (this.options.browser) {

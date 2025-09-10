@@ -20,7 +20,7 @@
  */
 
 import { defineConfig, devices } from '@playwright/test';
-import { E2E_CONFIG, validateE2EEnvironment, logE2EEnvironment, getWebServerEnv } from './config/e2e-env-config.js';
+import { E2E_CONFIG, validateE2EEnvironment, logE2EEnvironment, getWebServerEnv } from '../../../config/e2e-env-config.js';
 
 // Validate environment variables for CI with all possible test scenarios
 validateE2EEnvironment({
@@ -44,9 +44,9 @@ const WEBSERVER_TIMEOUT = Number(process.env.E2E_WEBSERVER_TIMEOUT || (E2E_CONFI
 const EXPECT_TIMEOUT = Number(process.env.E2E_EXPECT_TIMEOUT || (E2E_CONFIG.ADVANCED_SCENARIOS ? 30000 : (E2E_CONFIG.CI ? 20000 : 15000)));
 
 // Test suite configurations - use centralized config
-const PERFORMANCE_TESTING = E2E_CONFIG.PERFORMANCE_TESTING;
-const ACCESSIBILITY_TESTING = E2E_CONFIG.ACCESSIBILITY_TESTING;
-const SECURITY_TESTING = E2E_CONFIG.SECURITY_TESTING;
+const E2E_CONFIG.PERFORMANCE_TESTING = E2E_CONFIG.E2E_CONFIG.PERFORMANCE_TESTING;
+const E2E_CONFIG.ACCESSIBILITY_TESTING = E2E_CONFIG.E2E_CONFIG.ACCESSIBILITY_TESTING;
+const E2E_CONFIG.SECURITY_TESTING = E2E_CONFIG.E2E_CONFIG.SECURITY_TESTING;
 
 /**
  * Build Vercel dev command with authentication using centralized config
@@ -77,30 +77,30 @@ function buildVercelCommand(port) {
   return args.join(' ');
 }
 
-const VERCEL_COMMAND = buildVercelCommand(PORT);
+const VERCEL_COMMAND = buildVercelCommand(E2E_CONFIG.DYNAMIC_PORT);
 
 console.log(`🎭 Playwright E2E CI Config with Dynamic Port Allocation:`);
-console.log(`  Dynamic Port: ${PORT} (DYNAMIC_PORT=${process.env.DYNAMIC_PORT}, PORT=${process.env.PORT})`);
-console.log(`  Base URL: ${BASE_URL}`);
-console.log(`  Health Check URL: ${BASE_URL}/api/health/check`);
+console.log(`  Dynamic Port: ${E2E_CONFIG.DYNAMIC_PORT} (DYNAMIC_PORT=${process.env.DYNAMIC_PORT}, PORT=${process.env.PORT})`);
+console.log(`  Base URL: ${E2E_CONFIG.PLAYWRIGHT_BASE_URL}`);
+console.log(`  Health Check URL: ${E2E_CONFIG.PLAYWRIGHT_BASE_URL}/api/health/check`);
 console.log(`  CI Mode: ${E2E_CONFIG.CI}`);
 console.log(`  Database: Turso (${process.env.TURSO_DATABASE_URL ? 'configured' : 'not configured'})`);
-console.log(`  Advanced Scenarios: ${ADVANCED_SCENARIOS}`);
+console.log(`  Advanced Scenarios: ${E2E_CONFIG.ADVANCED_SCENARIOS}`);
 console.log(`  Reuse Existing Server: false (ensures test isolation)`);
 console.log(`  Vercel Command: ${VERCEL_COMMAND}`);
 console.log(`  Vercel Auth: ✅ configured (VERCEL_TOKEN + VERCEL_ORG_ID)`);
 
 export default defineConfig({
-  testDir: './tests/e2e/flows',
+  testDir: '../../e2e/flows',
   
   // Parallel execution disabled for CI stability with isolated resources
   fullyParallel: false,
-  forbidOnly: CI_MODE,
-  retries: CI_MODE ? 2 : 1,
+  forbidOnly: E2E_CONFIG.CI,
+  retries: E2E_CONFIG.CI ? 2 : 1,
   workers: 1, // Single worker per suite to avoid race conditions with isolated databases
   
   // CI-optimized reporting
-  reporter: CI_MODE 
+  reporter: E2E_CONFIG.CI 
     ? [
         ['list'], 
         ['html', { outputFolder: 'playwright-report', open: 'never' }], 
@@ -110,8 +110,8 @@ export default defineConfig({
     : [['list'], ['html']],
   
   // Global setup for database migrations and configuration
-  globalSetup: './tests/e2e/global-setup-ci.js',
-  globalTeardown: './tests/e2e/global-teardown.js',
+  globalSetup: '../../e2e/global-setup-ci.js',
+  globalTeardown: '../../e2e/global-teardown.js',
   
   // Extended timeout for advanced scenarios and CI environment
   timeout: E2E_CONFIG.ADVANCED_SCENARIOS ? 120000 : (E2E_CONFIG.CI ? 90000 : 60000),
@@ -139,7 +139,7 @@ export default defineConfig({
       use: { 
         ...devices['Desktop Chrome'],
         // Enhanced for CI stability and advanced scenarios
-        ...(CI_MODE && {
+        ...(E2E_CONFIG.CI && {
           launchOptions: {
             args: [
               '--no-sandbox',
@@ -151,12 +151,12 @@ export default defineConfig({
               '--disable-renderer-backgrounding',
               '--disable-ipc-flooding-protection',
               // Additional flags for advanced scenarios
-              ...(PERFORMANCE_TESTING ? [
+              ...(E2E_CONFIG.PERFORMANCE_TESTING ? [
                 '--enable-precise-memory-info',
                 '--enable-memory-pressure-api',
                 '--force-gpu-mem-available-mb=1024'
               ] : []),
-              ...(ACCESSIBILITY_TESTING ? [
+              ...(E2E_CONFIG.ACCESSIBILITY_TESTING ? [
                 '--force-renderer-accessibility'
               ] : [])
             ]
@@ -170,16 +170,16 @@ export default defineConfig({
       use: { 
         ...devices['Desktop Firefox'],
         // Enhanced for CI stability and advanced scenarios
-        ...(CI_MODE && {
+        ...(E2E_CONFIG.CI && {
           launchOptions: {
             firefoxUserPrefs: {
               'network.http.max-connections': 200,
               'network.http.max-connections-per-server': 10,
               // Advanced scenario preferences
-              ...(ACCESSIBILITY_TESTING && {
+              ...(E2E_CONFIG.ACCESSIBILITY_TESTING && {
                 'accessibility.force_disabled': 0
               }),
-              ...(PERFORMANCE_TESTING && {
+              ...(E2E_CONFIG.PERFORMANCE_TESTING && {
                 'dom.enable_performance': true,
                 'dom.enable_performance_observer': true
               })
@@ -190,13 +190,13 @@ export default defineConfig({
     },
 
     // Only include webkit/mobile if specifically enabled or for advanced/nightly testing
-    ...(process.env.ALL_BROWSERS !== 'false' || ADVANCED_SCENARIOS ? [
+    ...(process.env.ALL_BROWSERS !== 'false' || E2E_CONFIG.ADVANCED_SCENARIOS ? [
       {
         name: 'webkit',
         use: { 
           ...devices['Desktop Safari'],
           // Safari-specific configuration for advanced scenarios
-          ...(ADVANCED_SCENARIOS && {
+          ...(E2E_CONFIG.ADVANCED_SCENARIOS && {
             contextOptions: {
               permissions: ['clipboard-read', 'clipboard-write']
             }
@@ -208,7 +208,7 @@ export default defineConfig({
         use: { 
           ...devices['Pixel 5'],
           // Mobile-specific configuration for advanced scenarios
-          ...(ADVANCED_SCENARIOS && {
+          ...(E2E_CONFIG.ADVANCED_SCENARIOS && {
             contextOptions: {
               permissions: ['geolocation', 'notifications']
             }
@@ -220,7 +220,7 @@ export default defineConfig({
         use: { 
           ...devices['iPhone 12'],
           // iOS Safari specific configuration
-          ...(ADVANCED_SCENARIOS && {
+          ...(E2E_CONFIG.ADVANCED_SCENARIOS && {
             contextOptions: {
               permissions: ['camera', 'microphone']
             }

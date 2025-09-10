@@ -58,7 +58,7 @@ async function validateSetup() {
   checkFile('scripts/run-e2e-preview.js', 'E2E Test Runner');
   
   // Configuration files
-  checkFile('playwright-e2e-preview.config.js', 'Playwright Preview Config');
+  checkFile('tests/config/playwright/playwright-e2e-preview.config.js', 'Playwright Preview Config');
   checkFile('tests/e2e/global-setup-preview.js', 'Global Setup (Preview)');
   checkFile('tests/e2e/global-teardown-preview.js', 'Global Teardown (Preview)');
   

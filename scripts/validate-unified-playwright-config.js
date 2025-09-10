@@ -65,7 +65,7 @@ for (const testCase of ENVIRONMENTS) {
       .join(' ');
     
     // Run configuration test
-    const command = `${envString} node -e "import('./playwright.config.js').then(() => console.log('✅ Config loaded'));"`;
+    const command = `${envString} node -e "import('./tests/config/playwright/playwright.config.js').then(() => console.log('✅ Config loaded'));"`;
     const output = execSync(command, { 
       cwd: process.cwd(),
       encoding: 'utf8',

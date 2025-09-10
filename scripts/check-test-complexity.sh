@@ -8,7 +8,7 @@ echo "🔍 Checking test infrastructure complexity..."
 COMPLEXITY_ISSUES=0
 
 # Check 1: Vitest config should be minimal (< 15 lines)
-VITEST_LINES=$(wc -l < tests/vitest.config.js 2>/dev/null || echo "0")
+VITEST_LINES=$(wc -l < tests/config/vitest.unit.config.js 2>/dev/null || echo "0")
 if [ "$VITEST_LINES" -gt 15 ]; then
   echo "❌ vitest.config.js is too complex ($VITEST_LINES lines, max 15)"
   COMPLEXITY_ISSUES=$((COMPLEXITY_ISSUES + 1))
@@ -55,7 +55,7 @@ else
 fi
 
 # Check 6: No complex mocking frameworks (exclude e2e/helpers directory)
-MOCK_COUNT=$(find tests -name "*.test.js" -o -name "setup.js" -o -name "helpers.js" -o -name "vitest.config.js" | xargs grep -h "jest\.mock\|sinon\|proxyquire\|mockery" 2>/dev/null | wc -l || echo "0")
+MOCK_COUNT=$(find tests -name "*.test.js" -o -name "setup.js" -o -name "helpers.js" -o -name "vitest.*.config.js" | xargs grep -h "jest\.mock\|sinon\|proxyquire\|mockery" 2>/dev/null | wc -l || echo "0")
 if [ "$MOCK_COUNT" -gt 0 ]; then
   echo "❌ Found complex mocking frameworks ($MOCK_COUNT occurrences)"
   COMPLEXITY_ISSUES=$((COMPLEXITY_ISSUES + 1))

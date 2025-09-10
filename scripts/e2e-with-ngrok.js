@@ -35,7 +35,7 @@ const NGROK_SUBDOMAIN = 'alocubanoboulderfest';
 const NGROK_URL = `https://${NGROK_SUBDOMAIN}.ngrok.io`;
 const SERVER_PORT = 3000;
 const HEALTH_CHECK_URL = `${NGROK_URL}/api/health/check`;
-const PLAYWRIGHT_CONFIG = 'playwright-e2e-vercel-main.config.js';
+const PLAYWRIGHT_CONFIG = 'tests/config/playwright/playwright-e2e-vercel-main.config.js';
 
 // Process tracking
 let ngrokProcess = null;
