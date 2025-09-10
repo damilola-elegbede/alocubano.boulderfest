@@ -21,42 +21,38 @@ async function handler(req, res) {
     const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
     const transactionsHasEventId = await columnExists(db, 'transactions', 'event_id');
     
-    // Build WHERE clauses based on eventId parameter and column existence
-    const ticketWhereClause = eventId && ticketsHasEventId ? 'AND event_id = ?' : '';
-    const transactionWhereClause = eventId && transactionsHasEventId ? 'AND event_id = ?' : '';
-    
-    // Parameters for the stats query
+    // Build the stats query and parameters dynamically
     const statsParams = [];
-    
-    // Build the stats query dynamically
-    let statsQuery = `
-      SELECT 
-        (SELECT COUNT(*) FROM tickets WHERE status = 'valid' ${ticketWhereClause}) as total_tickets,
-        (SELECT COUNT(*) FROM tickets WHERE checked_in_at IS NOT NULL ${ticketWhereClause}) as checked_in,
-        (SELECT COUNT(DISTINCT transaction_id) FROM tickets WHERE status = 'valid' ${ticketWhereClause}) as total_orders,
-        (SELECT SUM(amount_cents) / 100.0 FROM transactions WHERE status = 'completed' ${transactionWhereClause}) as total_revenue,
-        (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%workshop%' ${ticketWhereClause}) as workshop_tickets,
-        (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%vip%' ${ticketWhereClause}) as vip_tickets,
-        (SELECT COUNT(*) FROM tickets WHERE date(created_at) = date('now') ${ticketWhereClause}) as today_sales,
-        -- Wallet statistics
-        (SELECT COUNT(*) FROM tickets WHERE qr_token IS NOT NULL ${ticketWhereClause}) as qr_generated,
-        (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'apple_wallet' ${ticketWhereClause}) as apple_wallet_users,
-        (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'google_wallet' ${ticketWhereClause}) as google_wallet_users,
-        (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'web' ${ticketWhereClause}) as web_only_users
-    `;
-    
-    // Add parameters for each subquery that uses event_id filtering
-    const ticketSubqueryCount = (statsQuery.match(/FROM tickets/g) || []).length;
-    if (eventId && ticketsHasEventId) {
-      for (let i = 0; i < ticketSubqueryCount; i++) {
-        statsParams.push(eventId);
+    const queries = {
+      total_tickets: `SELECT COUNT(*) FROM tickets WHERE status = 'valid'`,
+      checked_in: `SELECT COUNT(*) FROM tickets WHERE checked_in_at IS NOT NULL`,
+      total_orders: `SELECT COUNT(DISTINCT transaction_id) FROM tickets WHERE status = 'valid'`,
+      total_revenue: `SELECT SUM(amount_cents) / 100.0 FROM transactions WHERE status = 'completed'`,
+      workshop_tickets: `SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%workshop%'`,
+      vip_tickets: `SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%vip%'`,
+      today_sales: `SELECT COUNT(*) FROM tickets WHERE date(created_at) = date('now')`,
+      qr_generated: `SELECT COUNT(*) FROM tickets WHERE qr_token IS NOT NULL`,
+      apple_wallet_users: `SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'apple_wallet'`,
+      google_wallet_users: `SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'google_wallet'`,
+      web_only_users: `SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'web'`
+    };
+
+    const selectClauses = [];
+    for (const [key, query] of Object.entries(queries)) {
+      let finalQuery = query;
+      if (eventId) {
+        if (query.includes('FROM tickets') && ticketsHasEventId) {
+          finalQuery += ` AND event_id = ?`;
+          statsParams.push(eventId);
+        } else if (query.includes('FROM transactions') && transactionsHasEventId) {
+          finalQuery += ` AND event_id = ?`;
+          statsParams.push(eventId);
+        }
       }
+      selectClauses.push(`(${finalQuery}) as ${key}`);
     }
-    
-    if (eventId && transactionsHasEventId) {
-      // Count the subqueries using transactions table: total_revenue
-      statsParams.push(eventId);
-    }
+
+    const statsQuery = `SELECT ${selectClauses.join(',\n')}`;
     
     // Execute stats query
     const statsResult = await db.execute({
