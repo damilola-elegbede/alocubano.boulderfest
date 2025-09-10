@@ -8,7 +8,7 @@ import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { existsSync } from "fs";
-import analyticsService from "../api/lib/analytics-service.js";
+import analyticsService from "../lib/analytics-service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

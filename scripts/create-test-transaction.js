@@ -1,6 +1,6 @@
-import { getDatabase } from "../api/lib/database.js";
-import ticketService from "../api/lib/ticket-service.js";
-import ticketEmailService from "../api/lib/ticket-email-service.js";
+import { getDatabase } from "../lib/database.js";
+import ticketService from "../lib/ticket-service.js";
+import ticketEmailService from "../lib/ticket-email-service.js";
 
 async function createTestTransaction() {
   const db = getDatabase();

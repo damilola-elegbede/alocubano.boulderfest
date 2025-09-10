@@ -1,6 +1,6 @@
-import { getDatabase } from "../api/lib/database.js";
-import appleWalletService from "../api/lib/apple-wallet-service.js";
-import googleWalletService from "../api/lib/google-wallet-service.js";
+import { getDatabase } from "../lib/database.js";
+import appleWalletService from "../lib/apple-wallet-service.js";
+import googleWalletService from "../lib/google-wallet-service.js";
 import { fileURLToPath } from "url";
 import path from "path";
 

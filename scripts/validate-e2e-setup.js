@@ -124,7 +124,7 @@ async function checkDatabaseConnectivity() {
   
   try {
     // Import and test database connection with Turso
-    const { getDatabaseClient } = await import('../api/lib/database.js');
+    const { getDatabaseClient } = await import('../lib/database.js');
     const client = await getDatabaseClient();
     
     // Simple connectivity test
