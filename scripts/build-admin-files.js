@@ -20,11 +20,11 @@ const ADMIN_FILES = [
   'login.html',
   'dashboard.html',
   'analytics.html',
-  'reset-password.html',
   'checkin.html',
-  'reports.html',
-  'backup.html',
-  'security.html'
+  'index.html',
+  'mfa-settings.html',
+  'registrations.html',
+  'tickets.html'
 ];
 
 async function ensureDirectoryExists(dir) {
