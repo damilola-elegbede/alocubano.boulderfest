@@ -385,10 +385,16 @@
           const response = await fetch("/api/test-db");
           const data = await response.json();
 
-          if (data.success) {
+          if (data.status === "healthy") {
+            const tableCount = data.tests.tables.data ? Object.keys(data.tests.tables.data).length : 0;
             alert(
-              `Database Healthy!\n\nStatus: ${data.status}\nLatency: ${data.latency}ms\nTables: ${data.tests.tables.count}`,
+              `Database Healthy!\n\nStatus: ${data.status}\nDuration: ${data.duration}\nTables: ${tableCount}\nTests Passed: ${data.summary.passed}/${data.summary.totalTests}`,
             );
+          } else if (data.status === "degraded") {
+            alert(
+              `Database Partially Healthy\n\nStatus: ${data.status}\nTests Passed: ${data.summary.passed}/${data.summary.totalTests}\n\nCheck console for details.`,
+            );
+            console.error("Database test results:", data);
           } else {
             alert("Database issues detected. Check console for details.");
             console.error("Database test:", data);
