@@ -44,11 +44,9 @@ async function handler(req, res) {
     `;
     
     // Add parameters for each subquery that uses event_id filtering
+    const ticketSubqueryCount = (statsQuery.match(/FROM tickets/g) || []).length;
     if (eventId && ticketsHasEventId) {
-      // Count the subqueries using tickets table:
-      // total_tickets, checked_in, total_orders, workshop_tickets, vip_tickets, today_sales, 
-      // qr_generated, apple_wallet_users, google_wallet_users, web_only_users
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < ticketSubqueryCount; i++) {
         statsParams.push(eventId);
       }
     }
