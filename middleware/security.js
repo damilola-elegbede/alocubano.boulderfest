@@ -8,7 +8,7 @@ import {
   withSecurityHeaders,
   addAPISecurityHeaders,
   addCSRFHeaders,
-} from "../api/lib/security-headers.js";
+} from "../lib/security-headers.js";
 import { withErrorHandling } from "./error-handler.js";
 import { createRateLimitMiddleware } from "./rate-limit.js";
 

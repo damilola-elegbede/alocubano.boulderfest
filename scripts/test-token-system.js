@@ -1,6 +1,6 @@
-import { getDatabase } from "../api/lib/database.js";
-import tokenService from "../api/lib/token-service.js";
-import ticketService from "../api/lib/ticket-service.js";
+import { getDatabase } from "../lib/database.js";
+import tokenService from "../lib/token-service.js";
+import ticketService from "../lib/ticket-service.js";
 
 async function testTokenSystem() {
   const db = getDatabase();

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
-import { getGalleryService } from '../../../api/lib/gallery-service.js';
-import { resetGoogleDriveService } from '../../../api/lib/google-drive-service.js';
+import { getGalleryService } from '../../../lib/gallery-service.js';
+import { resetGoogleDriveService } from '../../../lib/google-drive-service.js';
 import { testRequest, HTTP_STATUS } from '../../helpers.js';
 import fs from 'fs/promises';
 import path from 'path';

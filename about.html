@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About - A Lo Cubano Boulder Fest</title>
+    <meta
+      name="description"
+      content="Learn about A Lo Cubano Boulder Fest's mission to celebrate authentic Cuban culture through salsa dancing, music, and community. Founded by Marcela Lay in 2023, growing from 80 to 150+ attendees."
+    />
+    <!-- Favicons -->
+    <link
+      rel="icon"
+      type="image/png"
+      href="/images/favicons/favicon-32x32.png"
+    />
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/images/favicons/favicon-16x16.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/images/favicons/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+
+    <!-- Critical resource preloading -->
+    <script>
+      // Inline critical path optimization - Event hero images with responsive variants
+      (function () {
+        // Check if optimized variants exist for event heroes
+        const heroPath = "/images/hero/about.jpg";
+        const isEventHero = false;
+
+        if (isEventHero) {
+          // Preload optimized variants for event heroes (WebP first, then JPEG fallback)
+          const isMobile = window.innerWidth <= 768;
+          const variant = isMobile ? "mobile" : "desktop";
+          const baseName = "about";
+
+          // Preload WebP variant
+          const webpPreload = document.createElement("link");
+          webpPreload.rel = "preload";
+          webpPreload.as = "image";
+          webpPreload.href = `/images/hero-optimized/${variant}/${baseName}.webp`;
+          webpPreload.type = "image/webp";
+          document.head.appendChild(webpPreload);
+
+          // Preload AVIF variant for supported browsers
+          if (typeof window !== "undefined" && "OffscreenCanvas" in window) {
+            const avifPreload = document.createElement("link");
+            avifPreload.rel = "preload";
+            avifPreload.as = "image";
+            avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
+            avifPreload.type = "image/avif";
+            document.head.appendChild(avifPreload);
+          }
+
+          // Fallback JPEG preload
+          const jpegPreload = document.createElement("link");
+          jpegPreload.rel = "preload";
+          jpegPreload.as = "image";
+          jpegPreload.href = `/images/hero-optimized/${variant}/${baseName}.jpg`;
+          jpegPreload.type = "image/jpeg";
+          document.head.appendChild(jpegPreload);
+        } else {
+          // Standard hero image preload for top-level pages
+          const heroPreload = document.createElement("link");
+          heroPreload.rel = "preload";
+          heroPreload.as = "image";
+          heroPreload.href = heroPath;
+          document.head.appendChild(heroPreload);
+        }
+
+        // Preload gallery data for gallery pages
+        const pageId = window.location.pathname.split("/").pop() || "home";
+        if (pageId.includes("gallery")) {
+          const year = pageId.includes("2025")
+            ? "2025"
+            : new Date().getFullYear();
+          const galleryDataPreload = document.createElement("link");
+          galleryDataPreload.rel = "preload";
+          galleryDataPreload.as = "fetch";
+          galleryDataPreload.href = `/api/gallery?year=${year}&category=workshops`;
+          galleryDataPreload.crossOrigin = "anonymous";
+          document.head.appendChild(galleryDataPreload);
+        }
+      })();
+    </script>
+
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/floating-cart.css" />
+    <link rel="stylesheet" href="/css/mobile-overrides.css" />
+  </head>
+  <body class="typographic">
+    <header class="header">
+      <div class="container">
+        <div class="grid">
+          <div class="header-left">
+            <a href="/home" class="logo-link" aria-label="Go to home page">
+              <img
+                src="/images/logo.png"
+                alt="A Lo Cubano Boulder Fest Logo"
+                class="site-logo"
+              />
+              <div class="logo-text">
+                <span class="logo-main">A LO CUBANO</span>
+                <span class="logo-separator">|</span>
+                <span class="logo-sub">Boulder Fest</span>
+              </div>
+            </a>
+          </div>
+          <nav class="main-nav">
+            <button
+              class="menu-toggle"
+              aria-label="Toggle menu"
+              aria-expanded="false"
+              aria-controls="main-navigation"
+            >
+              <div class="menu-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </button>
+            <ul class="nav-list" id="main-navigation">
+              <li>
+                <a href="/home" class="nav-link" data-text="Home">Home</a>
+              </li>
+              <li>
+                <a href="/about" class="nav-link" data-text="About">About</a>
+              </li>
+              <li class="nav-item has-dropdown">
+                <button
+                  class="nav-trigger"
+                  aria-expanded="false"
+                  aria-haspopup="true"
+                  data-dropdown="events"
+                  data-text="Events"
+                >
+                  Events
+                  <span class="dropdown-arrow" aria-hidden="true">▼</span>
+                </button>
+                <ul
+                  class="dropdown-menu"
+                  aria-hidden="true"
+                  role="menu"
+                  data-dropdown-content="events"
+                >
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Boulder Fest</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/boulder-fest-2026"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="boulder-fest-2026"
+                          data-event-status="upcoming"
+                          >2026 Festival</a
+                        >
+                      </li>
+                      <li>
+                        <a
+                          href="/boulder-fest-2025"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="boulder-fest-2025"
+                          data-event-status="current"
+                          >2025 Festival</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <a href="/tickets" class="nav-link" data-text="Tickets"
+                  >Tickets</a
+                >
+              </li>
+              <li>
+                <a href="/donations" class="nav-link" data-text="Donate"
+                  >Donate</a
+                >
+              </li>
+              <li>
+                <a href="/contact" class="nav-link" data-text="Contact"
+                  >Contact</a
+                >
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Hero Splash Image -->
+      <section class="gallery-hero-splash">
+        <div class="hero-image-container">
+          <img
+            id="hero-splash-image"
+            src=""
+            alt="Behind-the-scenes moments from A Lo Cubano Boulder Fest, showcasing our community, organizers, and festival atmosphere"
+            class="hero-splash-img"
+            style="object-position: top center !important"
+          />
+        </div>
+      </section>
+
+      <!-- Story Opening Typography -->
+      <section class="section-typographic" style="padding: var(--space-1xl) 0">
+        <div class="container">
+          <h2 class="text-mask">THE BEGINNING</h2>
+          <div class="text-composition">
+            <div class="text-block-large">
+              <p>
+                <span class="highlight">Marcela Lay</span> had a vision of
+                bringing a Cuban salsa festival to Boulder in 2023 to a
+                community that was ready to dance and embrace authentic Cuban
+                culture.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Story Timeline Typography -->
+      <section class="section-typographic" style="padding: var(--space-1xl) 0">
+        <div class="container">
+          <div class="gallery-typographic" style="margin-top: var(--space-1xl)">
+            <div class="gallery-item-type" data-number="2023">
+              <h2 class="hero__subtitle">2023</h2>
+              <h3 class="gallery-type-title">THE BIRTH</h3>
+              <p class="gallery-type-meta">
+                Marcela Lay launches A Lo Cubano Boulder Fest
+              </p>
+              <p class="gallery-type-description">
+                An event in the Foothills<br />
+                80 attendees • 3 artists • 2 days<br />
+                Boulder's first Cuban festival was born
+              </p>
+            </div>
+            <div class="gallery-item-type" data-number="2025">
+              <h2 class="hero__subtitle">2025</h2>
+              <h3 class="gallery-type-title">THE GROWTH</h3>
+              <p class="gallery-type-meta">Building momentum and community</p>
+              <p class="gallery-type-description">
+                Word spreads through the mountains<br />
+                150 attendees • 4 artists • 3 days<br />
+                The festival finds its rhythm
+              </p>
+            </div>
+            <div class="gallery-item-type" data-number="2026">
+              <h2 class="hero__subtitle">2026</h2>
+              <h3 class="gallery-type-title">THE FUTURE</h3>
+              <p class="gallery-type-meta">
+                May 15-17, 2026 - Our biggest year yet
+              </p>
+              <p class="gallery-type-description">
+                We are committed to continue to bring the best talent<br />
+                and artists to next year's festival<br />
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Mission Typography -->
+      <section class="section-typographic" style="padding: var(--space-1xl) 0">
+        <div class="container">
+          <h2 class="text-glitch" data-text="MISSION">MISSION</h2>
+          <div class="text-composition">
+            <div class="text-block-large">
+              <p>
+                We bring Cuban culture to Boulder, Colorado through
+                <span class="accent-text">dance</span>,
+                <span class="accent-text">music</span>, and
+                <span class="accent-text">community</span>.
+              </p>
+            </div>
+            <div class="text-block-small">
+              <p>
+                Our mission centers on bringing authentic Cuban instructors and
+                teachers to share traditional Cuban dance styles and movement
+                with the Front Range community. We recognize that not everyone
+                has the opportunity to travel to international congresses or
+                experience Cuban culture firsthand, so we're dedicated to
+                bringing that authentic experience directly to Boulder, creating
+                an accessible gateway to the rich traditions of Cuban salsa and
+                dance.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Values Typography -->
+      <section class="section-typographic" style="padding: var(--space-1xl) 0">
+        <div class="container">
+          <div class="text-composition"></div>
+          <div class="gallery-typographic" style="margin-top: var(--space-1xl)">
+            <div class="gallery-item-type" data-number="01">
+              <h3 class="gallery-type-title font-display">AUTHENTICITY</h3>
+              <p class="gallery-type-description">
+                We honor the true spirit of Cuban culture<br />
+                Working directly with Cuban artists<br />
+                Preserving traditional forms while embracing innovation
+              </p>
+            </div>
+            <div class="gallery-item-type" data-number="02">
+              <h3 class="gallery-type-title font-display">INCLUSIVITY</h3>
+              <p class="gallery-type-description">
+                Everyone belongs on our dance floor<br />
+                All skill levels • All ages • All backgrounds<br />
+                Music is the universal language
+              </p>
+            </div>
+            <div class="gallery-item-type" data-number="03">
+              <h3 class="gallery-type-title font-display">EXCELLENCE</h3>
+              <p class="gallery-type-description">
+                World-class artists deserve world-class presentation<br />
+                Professional production • Exceptional venues<br />
+                An experience that honors the artistry
+              </p>
+            </div>
+            <div class="gallery-item-type" data-number="04">
+              <h3 class="gallery-type-title font-display">COMMUNITY</h3>
+              <p class="gallery-type-description">
+                We're building something bigger than a festival<br />
+                Year-round programming • Educational initiatives<br />
+                A lasting cultural legacy for Boulder
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Team Typography -->
+      <section class="section-typographic" style="padding: var(--space-1xl) 0">
+        <div class="container">
+          <h2 class="text-mask">THE TEAM</h2>
+
+          <div class="text-composition" style="margin-bottom: var(--space-1xl)">
+            <div class="text-block-large font-serif">
+              Officers & Board of Directors
+            </div>
+          </div>
+          <div class="gallery-typographic">
+            <div class="gallery-item-type" data-number="01">
+              <h3 class="gallery-type-title font-display">MARCELA<br />LAY</h3>
+              <p class="gallery-type-meta">PRESIDENT & FOUNDER</p>
+              <p class="gallery-type-description">
+                Visionary who brought Cuba to Boulder<br />
+                Started the festival in 2023<br />
+                The heart and soul of our mission
+              </p>
+            </div>
+            <div class="gallery-item-type" data-number="02">
+              <h3 class="gallery-type-title font-display">
+                DAMILOLA<br />ELEGBEDE
+              </h3>
+              <p class="gallery-type-meta">VICE PRESIDENT & TREASURER</p>
+              <p class="gallery-type-description">
+                Strategic leadership and financial stewardship<br />
+                Ensuring sustainable growth<br />
+                Building our future with precision
+              </p>
+            </div>
+            <div class="gallery-item-type" data-number="03">
+              <h3 class="gallery-type-title font-display">
+                ANALIS<br />LEDESMA
+              </h3>
+              <p class="gallery-type-meta">SECRETARY</p>
+              <p class="gallery-type-description">
+                Keeper of our stories and records<br />
+                Community connector<br />
+                The voice of our collective journey<br />
+                Analis also manages much of our social media presence, helping
+                to build and engage our community online.
+              </p>
+            </div>
+            <div class="gallery-item-type" data-number="04">
+              <h3 class="gallery-type-title font-display">DONAL<br />SOLICK</h3>
+              <p class="gallery-type-meta">BOARD MEMBER</p>
+              <p class="gallery-type-description">
+                Cultural advocate and advisor<br />
+                Bridging communities<br />
+                Expanding our reach and impact<br />
+                Donal is an experienced dancer who brings valuable insight into
+                how our events are run, ensuring they meet the needs of dancers
+                at all levels.
+              </p>
+            </div>
+            <div class="gallery-item-type" data-number="05">
+              <h3 class="gallery-type-title font-display">
+                YOLANDA<br />MEILER
+              </h3>
+              <p class="gallery-type-meta">BOARD MEMBER</p>
+              <p class="gallery-type-description">
+                Arts champion and supporter<br />
+                Festival experience architect<br />
+                Creating unforgettable moments<br />
+                Yolanda is an accomplished DJ who has been active in the Boulder
+                dance community and has contributed her musical expertise to our
+                past events.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Impact Typography -->
+      <section class="section-typographic" style="padding: var(--space-1xl) 0">
+        <div class="container">
+          <h2 class="text-glitch" data-text="OUR IMPACT">OUR IMPACT</h2>
+          <div class="gallery-typographic">
+            <div class="gallery-item-type" data-number="50+">
+              <h3 class="gallery-type-title font-mono">
+                CUBAN ARTISTS SUPPORTED
+              </h3>
+              <p class="gallery-type-description">
+                Creating opportunities for authentic cultural exchange
+              </p>
+            </div>
+            <div class="gallery-item-type" data-number="10K+">
+              <h3 class="gallery-type-title font-mono">PEOPLE REACHED</h3>
+              <p class="gallery-type-description">
+                Building a vibrant community in Colorado
+              </p>
+            </div>
+            <div class="gallery-item-type" data-number="$250K+">
+              <h3 class="gallery-type-title font-mono">
+                INVESTED IN COMMUNITY
+              </h3>
+              <p class="gallery-type-description">
+                Supporting artists, venues, and local businesses
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Volunteer Section -->
+      <section
+        class="section-typographic volunteer-section"
+        style="padding: var(--space-1xl) 0; padding-bottom: 50px"
+      >
+        <div class="container">
+          <div style="margin-bottom: var(--space-1xl)">
+            <h2 class="text-mask">Join our Team!</h2>
+            <h3>Be a part of the story</h3>
+          </div>
+
+          <div class="volunteer-benefits__cards">
+            <div class="volunteer-benefits__card">
+              <div class="volunteer-benefits__card-emoji">🎭</div>
+              <h4 class="volunteer-benefits__card-title">
+                FREE FESTIVAL ACCESS
+              </h4>
+              <p class="volunteer-benefits__card-description">
+                Enjoy performances when not on duty
+              </p>
+            </div>
+            <div class="volunteer-benefits__card">
+              <div class="volunteer-benefits__card-emoji">👕</div>
+              <h4 class="volunteer-benefits__card-title">EXCLUSIVE T-SHIRT</h4>
+              <p class="volunteer-benefits__card-description">
+                Limited edition volunteer gear
+              </p>
+            </div>
+            <div class="volunteer-benefits__card">
+              <div class="volunteer-benefits__card-emoji">🤝</div>
+              <h4 class="volunteer-benefits__card-title">MEET THE ARTISTS</h4>
+              <p class="volunteer-benefits__card-description">
+                Behind-the-scenes access
+              </p>
+            </div>
+            <div class="volunteer-benefits__card">
+              <div class="volunteer-benefits__card-emoji">💃</div>
+              <h4 class="volunteer-benefits__card-title">FREE WORKSHOPS</h4>
+              <p class="volunteer-benefits__card-description">
+                Learn from the masters
+              </p>
+            </div>
+          </div>
+
+          <form
+            class="volunteer-form-typographic"
+            id="volunteer-form"
+            onsubmit="handleVolunteerForm(event)"
+            method="post"
+          >
+            <h3
+              class="form-title"
+              style="
+                color: var(--color-black);
+                font-family: var(--font-display);
+                font-size: var(--font-size-2xl);
+                text-transform: uppercase;
+              "
+            >
+              VOLUNTEER APPLICATION
+            </h3>
+
+            <div class="form-grid-type">
+              <div class="form-group-type">
+                <label class="form-label-type font-mono">FIRST NAME</label>
+                <input
+                  type="text"
+                  class="form-input-type"
+                  placeholder="Your first name"
+                  required
+                />
+              </div>
+              <div class="form-group-type">
+                <label class="form-label-type font-mono">LAST NAME</label>
+                <input
+                  type="text"
+                  class="form-input-type"
+                  placeholder="Your last name"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-group-type">
+              <label class="form-label-type font-mono">EMAIL</label>
+              <input
+                type="email"
+                class="form-input-type"
+                placeholder="your@email.com"
+                required
+              />
+            </div>
+
+            <div class="form-group-type">
+              <label class="form-label-type font-mono">PHONE</label>
+              <input
+                type="tel"
+                class="form-input-type"
+                placeholder="(303) 555-0123"
+              />
+            </div>
+
+            <div class="form-group-type">
+              <label class="form-label-type font-mono">AREAS OF INTEREST</label>
+              <div class="checkbox-group-type">
+                <label class="checkbox-type">
+                  <input type="checkbox" name="area" value="setup" />
+                  <span>Event Setup/Breakdown</span>
+                </label>
+                <label class="checkbox-type">
+                  <input type="checkbox" name="area" value="registration" />
+                  <span>Registration Desk</span>
+                </label>
+                <label class="checkbox-type">
+                  <input type="checkbox" name="area" value="artist" />
+                  <span>Artist Support</span>
+                </label>
+                <label class="checkbox-type">
+                  <input type="checkbox" name="area" value="merchandise" />
+                  <span>Merchandise Sales</span>
+                </label>
+                <label class="checkbox-type">
+                  <input type="checkbox" name="area" value="info" />
+                  <span>Information Booth</span>
+                </label>
+                <label class="checkbox-type">
+                  <input type="checkbox" name="area" value="social" />
+                  <span>Social Media Team</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group-type">
+              <label class="form-label-type font-mono">AVAILABILITY</label>
+              <div class="checkbox-group-type">
+                <label class="checkbox-type">
+                  <input type="checkbox" name="day" value="friday" />
+                  <span>Friday, May 15</span>
+                </label>
+                <label class="checkbox-type">
+                  <input type="checkbox" name="day" value="saturday" />
+                  <span>Saturday, May 16</span>
+                </label>
+                <label class="checkbox-type">
+                  <input type="checkbox" name="day" value="sunday" />
+                  <span>Sunday, May 17</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group-type">
+              <label class="form-label-type font-mono"
+                >WHY DO YOU WANT TO VOLUNTEER?</label
+              >
+              <textarea
+                class="form-textarea-type"
+                rows="4"
+                placeholder="Tell us about your motivation..."
+              ></textarea>
+            </div>
+
+            <div class="form-actions-type">
+              <button type="submit" class="form-button-type volunteer-submit">
+                SUBMIT APPLICATION
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer-typographic">
+      <div class="container">
+        <p class="footer-credits">
+          MAY 15-17, 2026 • BOULDER, COLORADO •
+          <a
+            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
+            style="color: inherit; text-decoration: underline"
+            >alocubanoboulderfest@gmail.com</a
+          >
+        </p>
+        <div class="footer-social">
+          <a
+            href="https://www.instagram.com/alocubano.boulderfest/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-link-type"
+            aria-label="Follow us on Instagram"
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+          </a>
+          <a
+            href="https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-link-type"
+            aria-label="Join us on WhatsApp"
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
+              ></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </footer>
+    <script src="/js/navigation.js"></script>
+    <script src="/js/components/lightbox.js"></script>
+    <script src="/js/components/lazy-loading.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/typography.js"></script>
+    <script src="/js/gallery-hero.js"></script>
+    <script type="module" src="/js/global-cart.js"></script>
+    <script>
+      function handleVolunteerForm(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+
+        // Collect form data
+        const name = formData.get("name") || "";
+        const email = formData.get("email") || "";
+        const phone = formData.get("phone") || "";
+        const experience = formData.get("experience") || "";
+        const role = formData.get("role") || "";
+        const availability = formData.get("availability") || "";
+        const message = formData.get("message") || "";
+
+        // Create email body
+        const emailBody = `Volunteer Application - A Lo Cubano Boulder Fest
+
+Name: ${name}
+Email: ${email}
+Phone: ${phone}
+Experience Level: ${experience}
+Preferred Role: ${role}
+Availability: ${availability}
+
+Additional Message:
+${message}
+
+---
+Sent from A Lo Cubano Boulder Fest website`;
+
+        // Create mailto URL
+        const subject = encodeURIComponent(
+          "Volunteer Application - A Lo Cubano Boulder Fest",
+        );
+        const body = encodeURIComponent(emailBody);
+        const mailtoUrl = `mailto:alocubanoboulderfest@gmail.com?subject=${subject}&body=${body}`;
+
+        // Open email client
+        window.location.href = mailtoUrl;
+      }
+    </script>
+  </body>
+</html>

@@ -8,7 +8,7 @@
 import { MigrationRunner } from "../api/db/rollback-procedures.js";
 import { BackupManager } from "../api/db/backup-manager.js";
 import { SchemaValidator } from "./validate-schema.js";
-import { getDatabase } from "../api/lib/database.js";
+import { getDatabase } from "../lib/database.js";
 import chalk from "chalk";
 
 // Helper function for colored output

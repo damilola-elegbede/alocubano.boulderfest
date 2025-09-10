@@ -1,6 +1,5 @@
 {
-  "buildCommand": "npm run build:vercel",
-  "outputDirectory": "dist",
+  "outputDirectory": ".",
   "framework": null,
   "crons": [
     {
@@ -8,74 +7,6 @@
       "schedule": "*/15 * * * *"
     }
   ],
-  "functions": {
-    "api/gallery.js": {
-      "maxDuration": 10
-    },
-    "api/featured-photos.js": {
-      "maxDuration": 10
-    },
-    "api/debug.js": {
-      "maxDuration": 5
-    },
-    "api/cache-warm.js": {
-      "maxDuration": 15
-    },
-    "api/image-proxy/[fileId].js": {
-      "maxDuration": 10
-    },
-    "api/payments/create-payment-intent.js": {
-      "maxDuration": 10
-    },
-    "api/payments/stripe-webhook.js": {
-      "maxDuration": 30
-    },
-    "api/config/stripe-public.js": {
-      "maxDuration": 5
-    },
-    "api/payments/checkout-success.js": {
-      "maxDuration": 10
-    },
-    "api/payments/checkout-cancel.js": {
-      "maxDuration": 10
-    },
-    "api/payments/create-checkout-session.js": {
-      "maxDuration": 15
-    },
-    "api/tickets/index.js": {
-      "maxDuration": 10
-    },
-    "api/tickets/action-token.js": {
-      "maxDuration": 10
-    },
-    "api/tickets/cancel.js": {
-      "maxDuration": 10
-    },
-    "api/tickets/qr-code.js": {
-      "maxDuration": 5
-    },
-    "api/tickets/transfer.js": {
-      "maxDuration": 10
-    },
-    "api/tickets/validate.js": {
-      "maxDuration": 10
-    },
-    "api/tickets/apple-wallet/[ticketId].js": {
-      "maxDuration": 10
-    },
-    "api/tickets/google-wallet/[ticketId].js": {
-      "maxDuration": 10
-    },
-    "api/wallet/[ticketId].js": {
-      "maxDuration": 10
-    },
-    "api/wallet/apple/[ticketId].js": {
-      "maxDuration": 10
-    },
-    "api/wallet/google/[ticketId].js": {
-      "maxDuration": 10
-    }
-  },
   "images": {
     "sizes": [16, 32, 48, 64, 96, 128, 256, 384],
     "remotePatterns": [
@@ -269,10 +200,6 @@
     {
       "source": "/admin/analytics",
       "destination": "/admin/analytics.html"
-    },
-    {
-      "source": "/admin/tickets",
-      "destination": "/admin/tickets.html"
     },
     {
       "source": "/admin/mfa-settings",

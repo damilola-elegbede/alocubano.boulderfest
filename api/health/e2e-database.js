@@ -3,7 +3,7 @@
  * Provides database status and schema validation for CI integration
  */
 
-import { getDatabaseClient } from '../lib/database.js';
+import { getDatabaseClient } from '../../lib/database.js';
 
 // Helper to check if we're in E2E mode
 function isE2EMode() {

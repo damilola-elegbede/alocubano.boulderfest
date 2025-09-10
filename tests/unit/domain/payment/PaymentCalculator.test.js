@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PaymentCalculator } from '../../../../api/lib/domain/payment/PaymentCalculator.js';
+import { PaymentCalculator } from '../../../../lib/domain/payment/PaymentCalculator.js';
 
 describe('PaymentCalculator Domain Service', () => {
   describe('calculateCartTotal()', () => {

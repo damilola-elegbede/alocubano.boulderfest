@@ -3,7 +3,7 @@
  * Handles newsletter signup requests
  */
 
-import { getEmailSubscriberService } from "../lib/email-subscriber-service.js";
+import { getEmailSubscriberService } from "../../lib/email-subscriber-service.js";
 
 // Rate limiting storage (in production, use Redis or similar)
 const rateLimitMap = new Map();

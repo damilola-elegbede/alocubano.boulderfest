@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect } from 'vitest';
-import { getDatabaseClient } from '../../../api/lib/database.js';
+import { getDatabaseClient } from '../../../lib/database.js';
 
 describe('Database Cleanup Fixes Verification', () => {
   test('should have correct table names in database schema', async () => {

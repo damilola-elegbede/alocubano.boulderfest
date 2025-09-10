@@ -3,7 +3,7 @@
  * Serves featured photos from cache or dynamically selects from gallery
  */
 
-import { getGalleryService } from "./lib/gallery-service.js";
+import { getGalleryService } from "../lib/gallery-service.js";
 
 export default async function handler(req, res) {
   // Set CORS headers

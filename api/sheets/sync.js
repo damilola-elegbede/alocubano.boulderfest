@@ -1,7 +1,7 @@
-import authService from "../lib/auth-service.js";
-import googleSheetsService from "../lib/google-sheets-service.js";
-import csrfService from '../lib/csrf-service.js';
-import { withSecurityHeaders } from '../lib/security-headers.js';
+import authService from "../../lib/auth-service.js";
+import googleSheetsService from "../../lib/google-sheets-service.js";
+import csrfService from '../../lib/csrf-service.js';
+import { withSecurityHeaders } from '../../lib/security-headers.js';
 
 async function handler(req, res) {
   if (req.method !== "POST") {

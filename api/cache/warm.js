@@ -12,10 +12,10 @@
  * - Intelligent warming strategies
  */
 
-import authService from "../lib/auth-service.js";
-import { getCacheService } from "../lib/cache-service.js";
+import authService from "../../lib/auth-service.js";
+import { getCacheService } from "../../lib/cache-service.js";
 import { getCache, CACHE_TYPES } from "../../lib/cache/index.js";
-import { withSecurityHeaders } from "../lib/security-headers.js";
+import { withSecurityHeaders } from "../../lib/security-headers.js";
 
 // Rate limiting: max 5 warm operations per 10 minutes per admin
 const rateLimitMap = new Map();

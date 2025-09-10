@@ -70,7 +70,7 @@ async function testAuthService() {
   }
 
   try {
-    const { AuthService } = await import("../api/lib/auth-service.js");
+    const { AuthService } = await import("../lib/auth-service.js");
     const authService = new AuthService();
 
     console.log("✅ Auth service loaded successfully");

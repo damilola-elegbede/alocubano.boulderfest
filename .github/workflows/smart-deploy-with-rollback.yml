@@ -270,7 +270,7 @@ jobs:
             npm test -- --grep "ui|frontend|client"
           else
             echo "Running smoke tests"
-            npm run test:smoke
+            npm test
           fi
 
           echo "✅ Tests passed"

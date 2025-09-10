@@ -8,7 +8,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { glob } from "glob";
-import { getDatabase } from "../api/lib/database.js";
+import { getDatabase } from "../lib/database.js";
 
 class SchemaValidator {
   constructor() {

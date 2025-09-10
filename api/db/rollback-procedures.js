@@ -6,7 +6,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { BackupManager } from "./backup-manager.js";
-import { getDatabase } from "../lib/database.js";
+import { getDatabase } from "../../lib/database.js";
 
 class MigrationRunner {
   constructor(database = null, backupManager = null) {

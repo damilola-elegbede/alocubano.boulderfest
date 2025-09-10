@@ -1,4 +1,4 @@
-import { QRTokenService } from "../lib/qr-token-service.js";
+import { QRTokenService } from "../../lib/qr-token-service.js";
 
 /**
  * Generate QR code image for a ticket

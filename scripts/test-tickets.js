@@ -1,5 +1,5 @@
-import { getDatabase } from "../api/lib/database.js";
-import ticketService from "../api/lib/ticket-service.js";
+import { getDatabase } from "../lib/database.js";
+import ticketService from "../lib/ticket-service.js";
 
 async function testTickets() {
   const db = getDatabase();

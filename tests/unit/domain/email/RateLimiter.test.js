@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { RateLimiter } from '../../../../api/lib/domain/email/RateLimiter.js';
+import { RateLimiter } from '../../../../lib/domain/email/RateLimiter.js';
 
 describe('RateLimiter Domain Service', () => {
   let rateLimiter;

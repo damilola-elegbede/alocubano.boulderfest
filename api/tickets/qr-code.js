@@ -1,5 +1,6 @@
-import ticketService from "../lib/ticket-service.js";
-import tokenService from "../lib/token-service.js";
+import { getDatabaseClient } from "../../lib/database.js";
+import ticketService from "../../lib/ticket-service.js";
+import tokenService from "../../lib/token-service.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -8,6 +9,9 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Initialize database client
+    const db = await getDatabaseClient();
+    
     const { ticketId, accessToken } = req.body;
 
     if (!ticketId || !accessToken) {

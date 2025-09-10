@@ -582,7 +582,7 @@ jobs:
           # Determine the correct Playwright project name for the browser
           PROJECT_NAME="${{ matrix.browser }}"
           
-          # Base test command
+          # Base test command - UPDATED to use streamlined script
           TEST_COMMAND="npm run test:e2e -- --project $PROJECT_NAME"
           
           # Add test pattern filter if specified

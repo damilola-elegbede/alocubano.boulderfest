@@ -3,8 +3,8 @@
  * Demonstrates integration of the multi-layer cache system with Vercel serverless functions
  */
 
-import { getCacheService } from "./lib/cache-service.js";
-import { CACHE_TYPES } from "../lib/cache/index.js";
+import { getCacheService } from "../lib/cache-service.js";
+import { CACHE_TYPES } from "../../lib/cache/index.js";
 
 const cacheService = getCacheService();
 

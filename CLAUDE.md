@@ -26,55 +26,27 @@ npm test && git push
 ### Development
 
 ```bash
-# Start development with ngrok tunnel (recommended)
-npm run dev                     # https://alocubanoboulderfest.ngrok.io
-# OR
-npm start                       # Same as npm run dev
+# Development server
+npm run dev                     # Development server with ngrok tunnel
+npm start                       # Alias for npm run dev
 
-# Local development only
-npm run dev:local               # http://localhost:8080 (no API)
-
-# Simple HTTP server (no API)
-npm run serve:simple            # http://localhost:8000
-
-# Clean development server
-npm run dev:clean               # Fresh Vercel config start
-
-# E2E development server
-npm run dev:e2e                 # Vercel dev for E2E testing
+# Build and deployment
+npm run build                   # Production build (Vercel)
+npm run preview                 # Vercel preview deployment
+npm run deploy                  # Production deployment
 ```
 
 ### Testing
 
 ```bash
-# Unit tests (26 essential tests)
-npm test                        # Run all unit tests
-npm run test:unit               # Same as npm test
-npm run test:unit:watch         # Watch mode for development
-npm run test:unit:coverage      # With coverage report
+# Streamlined Test Suite (15 Essential Scripts)
+npm test                        # Unit tests (fast execution)
+npm run test:integration        # Integration tests
+npm run test:e2e                # E2E tests with Vercel Preview Deployments
+npm run test:watch              # Watch mode for development
+npm run test:coverage           # Generate coverage reports
 
-# E2E testing with Vercel Preview Deployments (CURRENT)
-npm run test:e2e                # 12 comprehensive E2E tests
-npm run test:e2e:ui             # Interactive UI mode
-npm run test:e2e:headed         # Headed browser mode
-npm run test:e2e:debug          # Debug mode
-npm run test:e2e:fast           # Fast mode (Chromium only)
-npm run test:e2e:report         # View test report
-npm run test:e2e:install        # Install Playwright browsers
-
-# E2E test suites by category
-npm run test:e2e:standard       # Basic navigation, cart, newsletter
-npm run test:e2e:advanced       # Registration, payment, ticket validation
-npm run test:e2e:performance    # Gallery browsing, user engagement
-npm run test:e2e:accessibility  # Mobile registration experience
-npm run test:e2e:security       # Admin authentication and dashboard
-
-# E2E tests by browser
-npm run test:e2e:chromium       # Chrome-based testing
-npm run test:e2e:firefox        # Firefox testing
-npm run test:e2e:webkit         # Safari testing
-
-# E2E test flows (12 total) - Can run individual tests:
+# Individual E2E test flows - Run specific tests:
 npm run test:e2e -- tests/e2e/flows/admin-auth.test.js                      # Admin authentication
 npm run test:e2e -- tests/e2e/flows/admin-dashboard.test.js                 # Admin panel & security
 npm run test:e2e -- tests/e2e/flows/basic-navigation.test.js                # Basic navigation
@@ -87,66 +59,36 @@ npm run test:e2e -- tests/e2e/flows/payment-flow.test.js                    # Pa
 npm run test:e2e -- tests/e2e/flows/registration-flow.test.js               # Registration process
 npm run test:e2e -- tests/e2e/flows/ticket-validation.test.js               # Ticket validation
 npm run test:e2e -- tests/e2e/flows/user-engagement.test.js                 # User engagement metrics
-
-# Health checks and utilities
-npm run test:health             # API health verification
-npm run test:performance        # Performance testing
-
-# Combined test suites
-npm run test:all                # Complete test suite (unit + E2E)
-npm run test:all:memory-optimized  # Higher memory allocation for large tests
-
-# DEPRECATED COMMANDS (Show warnings and redirect):
-# npm run test:simple           # ⚠️ DEPRECATED: Use npm run test:unit
-# npm run test:coverage         # ⚠️ DEPRECATED: Use npm run test:unit:coverage
-# npm run test:e2e:ci           # ❌ DEPRECATED: Use npm run test:e2e (Preview Deployments)
-# npm run test:e2e:ngrok        # ⚠️ DEPRECATED: Use npm run test:e2e (modern approach)
 ```
 
 ### Database
 
 ```bash
-# Development Database (SQLite)
+# Database migrations
 npm run migrate:up              # Run pending migrations
 npm run migrate:status          # Check migration status
-npm run migrate:verify          # Verify integrity
 
-# E2E Database (Turso)
-npm run migrate:e2e:up          # Run E2E migrations
-npm run migrate:e2e:status      # Check E2E migration status
-
-# Database access and utilities
-npm run db:shell                # SQLite shell
-npm run db:e2e:setup            # Setup E2E database
-npm run db:e2e:clean            # Clean E2E database
-npm run db:e2e:reset            # Reset E2E database
-npm run db:e2e:validate         # Validate E2E database
-
-# Health checks
-npm run health:check            # General health check
-npm run health:database         # Database health check
+# Database access
+npm run db:shell                # SQLite shell access
 ```
 
-### Deployment
+### Quality & Deployment
 
 ```bash
-# Quality gates and validation
-npm run lint                    # ESLint + HTMLHint
-npm run deploy:check            # Pre-deployment validation
+# Code quality
+npm run lint                    # ESLint + HTMLHint + Markdown linting
 
-# Deployment commands
-npm run deploy:staging          # Deploy to staging with quality gates
-npm run deploy:production       # Deploy to production
-git push origin main            # Auto-deploy to production (via CI/CD)
+# Health monitoring
+npm run health                  # Run health checks
 
-# DEPRECATED DEPLOYMENT:
-# npm run start:ci              # ❌ DEPRECATED: Use Vercel Preview Deployments
-# npm run vercel:dev:ci         # ❌ DEPRECATED: Use Vercel Preview Deployments
+# Build verification
+npm run verify-structure        # Verify project structure (via build)
 ```
 
 ## Architecture Overview
 
 ### Frontend
+
 - **Vanilla JavaScript** ES6 modules - no framework dependencies
 - **Typography-forward design** with Bebas Neue, Playfair Display, Space Mono
 - **Virtual gallery** with Google Drive integration and lazy loading
@@ -154,6 +96,7 @@ git push origin main            # Auto-deploy to production (via CI/CD)
 - **Mobile-first** with slide-in navigation and 44px touch targets
 
 ### Backend (Vercel Serverless)
+
 - **SQLite database** with Turso for production
 - **Async services** using Promise-Based Lazy Singleton pattern
 - **Email** via Brevo (SendinBlue) with webhook processing
@@ -161,46 +104,26 @@ git push origin main            # Auto-deploy to production (via CI/CD)
 - **Wallet passes** for Apple/Google with JWT authentication
 - **Admin panel** with bcrypt auth and JWT sessions
 
-### E2E Testing Strategy with Vercel Preview Deployments
-
-**Migration to Vercel Preview Deployments** (Breaking Change):
-
-- **Before**: Local Vercel dev servers with complex port allocation and server management
-- **After**: **Vercel Preview Deployments** for real production environment testing
-- **Benefits**: 
-  - Eliminates local server complexity and hanging issues
-  - No port conflicts or allocation management
-  - Real production environment testing
-  - Better CI/CD integration
-  - Simplified E2E testing infrastructure
-
-#### DEPRECATED E2E Testing Setup (Local Servers)
-
-```bash
-# ❌ DEPRECATED: These commands are no longer used
-# npm run test:e2e:ci           # DEPRECATED: Local Vercel dev approach
-# npm run test:e2e:ngrok        # DEPRECATED: ngrok tunneling approach  
-# npm run dev:e2e               # DEPRECATED: E2E dev server startup
-# npm run start:ci              # DEPRECATED: CI server management
-```
-
-#### CURRENT E2E Testing Approach
-
-E2E tests now run against **Vercel Preview Deployments** which provide:
-- Real production environment testing
-- No local server management complexity  
-- Eliminated port conflicts and server hanging
-- Better reliability and faster execution
-
 ### Streamlined Testing Strategy
-- **Simple test suite** with Vitest - 26 essential unit tests covering critical functionality
-- **Fast execution** - complete unit test suite finishes in seconds
-- **E2E tests with Vercel Preview Deployments** - real production environment testing
-- **SQLite for unit tests** - fast, reliable local testing
-- **Production database for E2E tests** - realistic testing environment via preview deployments
-- **Zero test abstractions** - every test readable by any JavaScript developer
-- **Direct API testing** - no complex mocking or test infrastructure
-- **Eliminated server complexity** - no local server management or port conflicts
+
+**Revolutionary Script Simplification**:
+
+- **From 199 to 15 scripts**: Eliminated complexity and redundancy
+- **Essential commands only**: Focus on core development workflows
+- **Modern E2E approach**: E2E tests use **Vercel Preview Deployments**
+- **Benefits**: 
+  - Simplified developer experience
+  - Faster onboarding
+  - Reduced maintenance burden
+  - Clear command purposes
+
+**Testing Architecture**:
+
+- **Unit tests**: Fast, essential coverage with SQLite (`npm test`)
+- **Integration tests**: Service and API validation (`npm run test:integration`)
+- **E2E tests**: 12 comprehensive flows with Vercel Preview Deployments (`npm run test:e2e`)
+- **Simple execution**: Direct API testing with minimal mocking
+- **Zero abstractions**: Every test readable by any JavaScript developer
 
 ## Key API Patterns
 
@@ -241,7 +164,7 @@ class AsyncService {
 ### API Handler Pattern
 
 ```javascript
-import { getDatabaseClient } from "./lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 
 export default async function handler(req, res) {
   const client = await getDatabaseClient(); // Always await initialization
@@ -305,16 +228,19 @@ VITEST_REQUEST_TIMEOUT=  # HTTP request timeout in ms (default: 30000)
 ## API Endpoints
 
 ### Email
+
 - `POST /api/email/subscribe` - Newsletter signup
 - `GET/POST /api/email/unsubscribe` - Unsubscribe with token
 - `POST /api/email/brevo-webhook` - Process Brevo webhooks
 
 ### Payments
+
 - `POST /api/payments/create-checkout-session` - Create Stripe session
 - `POST /api/payments/stripe-webhook` - Handle payment webhooks
 - `GET /api/payments/checkout-success` - Post-payment handler
 
 ### Tickets
+
 - `GET /api/tickets/[ticketId]` - Ticket details
 - `POST /api/tickets/validate` - Validate QR code
 - `POST /api/tickets/register` - Register ticket attendee information
@@ -322,32 +248,38 @@ VITEST_REQUEST_TIMEOUT=  # HTTP request timeout in ms (default: 30000)
 - `GET /api/tickets/google-wallet/[ticketId]` - Google Wallet pass
 
 ### Registration
+
 - `GET /api/registration/[token]` - Registration status for all tickets
 - `POST /api/registration/batch` - Register multiple tickets
 - `GET /api/registration/health` - Registration system health
 
 ### Admin
+
 - `POST /api/admin/login` - Admin authentication
 - `GET /api/admin/dashboard` - Dashboard data
 - `GET /api/admin/registrations` - Registration list
 
 ### Gallery
+
 - `GET /api/gallery` - Google Drive photos/videos
 - `GET /api/gallery/years` - Available years
 - `GET /api/featured-photos` - Featured photos
 
 ### Google Drive Integration
+
 - `GET /api/google-drive-health` - Google Drive service health and configuration status
 - `GET /api/google-drive-cache` - Google Drive cache status and metrics
 - `POST /api/google-drive-cache` - Warm up Google Drive cache with fresh data
 - `DELETE /api/google-drive-cache` - Clear Google Drive cache
 
 ### Performance & Media (Phase 3)
+
 - `POST /api/performance-metrics` - Performance data collection
 - `GET /api/image-proxy/[fileId]` - Image optimization and format conversion
 - `GET /api/hero-image/[pageId]` - Page-specific hero images
 
 ### Health & Monitoring
+
 - `GET /api/health/check` - General application health
 - `GET /api/health/database` - Development database health
 
@@ -356,6 +288,7 @@ VITEST_REQUEST_TIMEOUT=  # HTTP request timeout in ms (default: 30000)
 Located in `/migrations/*.sql`, run automatically on deployment.
 
 Features:
+
 - Transactional execution with rollback
 - Checksum verification
 - Handles comments and multi-line statements
@@ -364,19 +297,22 @@ Features:
 ## CI/CD Configuration
 
 ### GitHub Actions
-- **Streamlined testing**: Single test command `npm test` runs 26 essential unit tests
+
+- **Streamlined testing**: Single `npm test` command for essential unit test coverage
 - **Fast execution**: Complete unit test suite finishes in seconds
 - **Memory efficient**: No complex test infrastructure or high memory usage
 - **Comprehensive E2E validation**: 12 focused Playwright tests with **Vercel Preview Deployments**
 - **Reliable**: Direct API testing with minimal mocking
 
 ### Test Architecture
-- **Unit Test Suite (26 tests)**:
-  - api-contracts.test.js (7 tests) - API contract validation
-  - basic-validation.test.js (8 tests) - Input validation and security
-  - smoke-tests.test.js (3 tests) - Basic functionality verification  
-  - registration-api.test.js (5 tests) - Registration API unit tests
-  - registration-flow.test.js (3 tests) - Registration flow tests
+
+- **Unit Test Suite**: Essential tests covering critical functionality
+  - api-contracts.test.js - API contract validation
+  - basic-validation.test.js - Input validation and security
+  - smoke-tests.test.js - Basic functionality verification  
+  - registration-api.test.js - Registration API unit tests
+  - registration-flow.test.js - Registration flow tests
+- **Integration Test Suite**: Service and API integration validation
 - **E2E Test Suite (12 comprehensive tests)** with **Vercel Preview Deployments**:
   - admin-auth.test.js - Admin authentication flow
   - admin-dashboard.test.js - Admin panel & security testing
@@ -391,7 +327,7 @@ Features:
   - ticket-validation.test.js - QR code validation
   - user-engagement.test.js - User engagement metrics and tracking
 - **Database Strategy**:
-  - **Unit tests**: SQLite for fast, isolated testing
+  - **Unit/Integration tests**: SQLite for fast, isolated testing
   - **E2E tests**: Production database via **Vercel Preview Deployments**
 - **Simple execution**: No complex test builders, managers, or abstractions
 - **Real API testing**: Tests interact with actual endpoints via Vercel preview deployments
@@ -410,7 +346,7 @@ Managed by `determineCartVisibility()` in `floating-cart.js`:
 - **Images**: Progressive loading (AVIF → WebP → JPEG)
 - **API response**: <100ms target
 - **Browser cache**: 24-hour for static assets
-- **Unit test execution**: Fast completion for 26 unit tests
+- **Unit test execution**: Fast completion with essential coverage
 - **E2E test execution**: 2-5 minutes for 12 comprehensive tests via **Vercel Preview Deployments**
 - **Test simplicity**: Zero abstractions, readable by any JavaScript developer
 
@@ -429,10 +365,9 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 
 ## Project Structure
 
-```
+```text
 /
 ├── api/                 # Serverless functions
-│   ├── lib/            # Shared services (async singletons)
 │   ├── admin/          # Admin endpoints
 │   ├── email/          # Email endpoints
 │   ├── payments/       # Payment processing
@@ -440,17 +375,15 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 │   ├── registration/   # Registration endpoints
 │   ├── gallery/        # Gallery endpoints
 │   └── health/         # Health check endpoints
+├── lib/                # Shared services (async singletons)
 ├── pages/              # HTML pages
 ├── js/                 # Frontend JavaScript
 ├── css/                # Stylesheets
 ├── tests/
-│   ├── api-contracts.test.js        # API contract validation (7 tests)
-│   ├── basic-validation.test.js     # Input validation (8 tests)
-│   ├── smoke-tests.test.js          # Smoke tests (3 tests)
-│   ├── registration-api.test.js     # Registration API contracts (5 tests)
-│   ├── registration-flow.test.js    # Registration flow tests (3 tests)
-│   ├── e2e/                         # Comprehensive E2E test structure
-│   │   └── flows/                   # 12 focused E2E tests (use Vercel Preview Deployments)
+│   ├── unit/           # Unit test files
+│   ├── integration/    # Integration test structure
+│   ├── e2e/            # Comprehensive E2E test structure
+│   │   └── flows/      # 12 focused E2E tests (use Vercel Preview Deployments)
 │   │       ├── admin-auth.test.js                      # Admin authentication
 │   │       ├── admin-dashboard.test.js                 # Admin panel & security
 │   │       ├── basic-navigation.test.js                # Basic navigation
@@ -463,50 +396,65 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 │   │       ├── registration-flow.test.js               # Registration process
 │   │       ├── ticket-validation.test.js               # Ticket validation
 │   │       └── user-engagement.test.js                 # User engagement metrics
-│   ├── helpers.js               # Simple test utilities
-│   ├── setup.js                 # Minimal test setup
-│   └── vitest.config.js         # Vitest configuration
+│   ├── config/         # Test configuration files
+│   └── vitest.config.js # Vitest configuration
 ├── migrations/         # Database migrations
 ├── scripts/            # Build and utility scripts
 └── config/             # ESLint, HTMLHint configs
 ```
 
-## Migration Notes
+## Streamlined Script Revolution
 
-### Breaking Changes - Package Scripts Standardization (Issue #12)
+### Complete Script Optimization (Breaking Change)
 
 **What Changed:**
-- **Script naming standardization**: Clear, consistent naming conventions
-- **Deprecated script warnings**: Old commands show deprecation warnings and redirect to new ones
-- **Removed duplicate functionality**: Eliminated scripts that did the same thing with different names
-- **Modern E2E approach**: All E2E commands now use Vercel Preview Deployments approach
-- **Developer-friendly organization**: Scripts grouped by purpose with clear descriptions
 
-**Migration Required:**
-1. **Update development workflows**: Use `npm run dev` instead of legacy server commands
-2. **Update testing commands**: Use `npm run test:unit` instead of `test:simple`
-3. **Update E2E testing**: Use `npm run test:e2e` (Vercel Preview Deployments) instead of legacy CI server approaches
-4. **Update CI/CD pipelines**: Ensure workflows use current script names
+- **Radical simplification**: From 199 complex scripts to 15 essential commands
+- **Clear purpose**: Each script has a single, well-defined responsibility
+- **Modern workflow**: Focus on Vercel Preview Deployments for E2E testing
+- **Developer experience**: Predictable, standard command naming conventions
 
-**New Script Organization:**
-- **Development**: `dev`, `dev:local`, `dev:clean`
-- **Unit Testing**: `test:unit`, `test:unit:watch`, `test:unit:coverage`
-- **E2E Testing**: `test:e2e`, `test:e2e:ui`, `test:e2e:headed`, `test:e2e:debug`
-- **E2E Suites**: `test:e2e:standard`, `test:e2e:advanced`, `test:e2e:performance`, etc.
-- **Database**: `migrate:up`, `db:e2e:setup`, `health:database`
-- **Deployment**: `deploy:staging`, `deploy:production`
+**Current Essential Scripts (Complete List):**
+
+```bash
+# Core Development (4 scripts)
+npm run dev                     # Development server with ngrok tunnel
+npm start                       # Alias for npm run dev
+npm run build                   # Production build (Vercel)
+npm run preview                 # Vercel preview deployment
+
+# Testing Suite (5 scripts)
+npm test                        # Unit tests (fast execution)
+npm run test:integration        # Integration tests
+npm run test:e2e                # E2E tests with Vercel Preview Deployments
+npm run test:watch              # Watch mode for development
+npm run test:coverage           # Coverage reports
+
+# Quality & Deployment (3 scripts)
+npm run lint                    # Complete code quality (ESLint + HTMLHint + Markdown)
+npm run deploy                  # Production deployment
+npm run health                  # Health checks
+
+# Database Management (3 scripts)
+npm run migrate:up              # Run database migrations
+npm run migrate:status          # Check migration status
+npm run db:shell                # SQLite shell access
+```
 
 **Benefits:**
-- **Clear command purpose**: No confusion about which script does what
-- **Consistent naming**: Predictable script names following standard conventions
-- **Migration guidance**: Deprecated scripts show exact replacement command
-- **Better organization**: Scripts grouped logically with clear descriptions
-- **Reduced confusion**: No duplicate commands or conflicting approaches
 
-**Troubleshooting:**
-- If you see deprecation warnings, use the suggested replacement command
-- Legacy CI server commands now exit with error and clear guidance
-- Run deprecated commands once to see migration path to new commands
+- **Zero confusion**: No duplicate commands or conflicting approaches
+- **Faster onboarding**: New developers understand the workflow immediately
+- **Better maintenance**: Fewer scripts to maintain, document, and troubleshoot
+- **Standard conventions**: Predictable naming following npm best practices
+- **Focus on essentials**: Only the commands you actually need for development
+
+**Migration Impact:**
+
+- **No legacy scripts**: All deprecated commands removed
+- **Clean slate**: Fresh, purposeful command structure
+- **Modern approach**: Embraces Vercel Preview Deployments for testing
+- **Simplified CI/CD**: Easier to configure and maintain automated workflows
 
 ## Contact & Resources
 
@@ -514,9 +462,9 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 **Instagram**: [@alocubano.boulderfest](https://www.instagram.com/alocubano.boulderfest/)
 
 **Documentation**:
+
 - [Installation Guide](INSTALLATION.md)
 - [Security Policy](SECURITY.md)
 - [Changelog](CHANGELOG.md)
 - [Async Initialization Guide](/docs/ASYNC_INITIALIZATION_GUIDE.md)
-- [Testing Strategy](/docs/testing/TESTING_STRATEGY.md)
 - [API Documentation](/docs/api/README.md)

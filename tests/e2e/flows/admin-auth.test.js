@@ -62,7 +62,7 @@ test.describe('Admin Authentication', () => {
 
   test.beforeEach(async ({ page }) => {
     // First validate that admin login route is accessible and serves the correct page
-    await validateAdminRoute(page, '/admin/login', 'Admin Login');
+    await validateAdminRoute(page, '/admin/login', 'Admin Access');
     
     // Wait for essential elements to be ready with extended timeouts for preview deployments
     await page.waitForSelector('h1', { timeout: 60000 });

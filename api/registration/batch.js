@@ -1,6 +1,6 @@
-import { getDatabaseClient } from '../lib/database.js';
-import { getBrevoClient } from '../lib/brevo-client.js';
-import rateLimit from '../lib/rate-limiter.js';
+import { getDatabaseClient } from '../../lib/database.js';
+import { getBrevoClient } from '../../lib/brevo-client.js';
+import rateLimit from '../../lib/rate-limiter.js';
 
 // Input validation regex patterns
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;
@@ -179,8 +179,9 @@ export default async function handler(req, res) {
           ]
         });
         
-        // Check if update affected any rows
-        if (updateRes?.rowsAffected !== undefined && updateRes.rowsAffected === 0) {
+        // Use portable rows changed check for different database implementations
+        const rowsChanged = updateRes?.rowsAffected ?? updateRes?.changes ?? 0;
+        if (rowsChanged === 0) {
           throw new Error(`Concurrent update detected for ticket ${registration.ticketId}`);
         }
 

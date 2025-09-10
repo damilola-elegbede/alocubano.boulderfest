@@ -151,7 +151,7 @@ let dbClient = null;
 const initializeDatabase = async () => {
   try {
     // Import database client and migration system
-    const { getDatabaseClient } = await import('../api/lib/database.js');
+    const { getDatabaseClient } = await import('../lib/database.js');
     const { MigrationSystem } = await import('../scripts/migrate.js');
     
     dbClient = await getDatabaseClient();

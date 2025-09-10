@@ -1,8 +1,11 @@
-import ticketService from "../lib/ticket-service.js";
-import tokenService from "../lib/token-service.js";
-import { TOKEN_ACTIONS } from "../lib/ticket-config.js";
+import ticketService from "../../lib/ticket-service.js";
+import tokenService from "../../lib/token-service.js";
+import { TOKEN_ACTIONS } from "../../lib/ticket-config.js";
+import { getDatabaseClient } from "../../lib/database.js";
 
 export default async function handler(req, res) {
+  // Initialize database client
+  await getDatabaseClient();
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     return res.status(405).end(`Method ${req.method} Not Allowed`);

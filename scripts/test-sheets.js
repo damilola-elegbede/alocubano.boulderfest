@@ -1,6 +1,6 @@
 import "dotenv/config";
-import googleSheetsService from "../api/lib/google-sheets-service.js";
-import { getDatabase } from "../api/lib/database.js";
+import googleSheetsService from "../lib/google-sheets-service.js";
+import { getDatabase } from "../lib/database.js";
 
 async function testSheets() {
   console.log("Testing Google Sheets Integration...\n");

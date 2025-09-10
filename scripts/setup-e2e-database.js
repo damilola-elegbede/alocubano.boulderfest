@@ -10,7 +10,7 @@ import { config } from 'dotenv';
 import { existsSync, readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { columnExists } from '../api/lib/db-utils.js';
+import { columnExists } from "../lib/db-utils.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

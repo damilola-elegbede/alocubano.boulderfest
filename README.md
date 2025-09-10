@@ -16,17 +16,20 @@ The official website for **A Lo Cubano Boulder Fest**, Boulder's premier Cuban s
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/damilola/alocubano.boulderfest.git
    cd alocubano.boulderfest
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Environment setup**
+
    ```bash
    # Copy environment template
    cp .env.example .env.local
@@ -36,15 +39,10 @@ The official website for **A Lo Cubano Boulder Fest**, Boulder's premier Cuban s
    ```
 
 4. **Start the development server**
+
    ```bash
-   # Full development server with API support (recommended)
-   npm start
-   
-   # Alternative: local development without ngrok
-   npm run start:local
-   
-   # Simple HTTP server (no API functions)
-   npm run serve:simple
+   # Development server with full API support
+   npm run dev
    ```
 
 5. **Open in browser**: http://localhost:3000
@@ -67,18 +65,14 @@ The website features a **typographic-forward design** that treats text as art:
 
 ## 📁 Project Structure
 
-```
+```text
 alocubano.boulderfest/
 ├── index.html (Main home page)
 ├── vercel.json (Deployment configuration)
 ├── scripts/
-│   ├── vercel-dev-wrapper.js (Vercel development server wrapper)
-│   ├── express-dev-server.js (Express development server)
+│   ├── start-with-ngrok.js (Development server with ngrok)
 │   ├── migrate.js (Database migration system)
-│   ├── migrate-e2e.js (E2E database migrations)
-│   ├── setup-e2e-database.js (E2E database setup)
-│   ├── vercel-dev-doctor.js (Development diagnostics)
-│   └── verify-database-setup.js (Database verification)
+│   └── verify-structure.js (Project structure validation)
 ├── css/
 │   ├── base.css (Design system)
 │   ├── components.css (Reusable components)
@@ -97,12 +91,9 @@ alocubano.boulderfest/
 │   └── donations.html
 ├── api/
 │   └── gallery.js (Serverless function for Google Drive API)
-├── tests/ (Unit & E2E Testing)
-│   ├── api-contracts.test.js (API contract validation)
-│   ├── basic-validation.test.js (Input validation and security)
-│   ├── smoke-tests.test.js (Basic functionality verification)
-│   ├── registration-api.test.js (Registration API unit tests)
-│   ├── registration-flow.test.js (Registration flow tests)
+├── tests/ (Streamlined Testing)
+│   ├── unit/ (Unit tests)
+│   ├── integration/ (Integration tests)
 │   └── e2e/ (Playwright E2E tests)
 └── images/
     ├── logo.png (Main logo)
@@ -157,282 +148,113 @@ alocubano.boulderfest/
 
 ## 🛠️ Development
 
-### Available Scripts
+### Streamlined npm Scripts
 
-- `npm start` - Start Vercel development server with full API support (port 3000)
-- `npm run start:local` - Local development without ngrok tunnel
-- `npm run serve:simple` - Simple HTTP server without API functions (port 8000)
-- `npm test` - Run streamlined test suite (26 unit tests)
-- `npm run test:all` - Run all tests including E2E validation
-- `npm run test:e2e` - Run Playwright E2E tests with **Vercel Dev** server
-- `npm run test:e2e:ui` - Interactive E2E test development mode
-- `npm run lint` - Run ESLint and HTMLHint
-- `npm run build` - Build for production
-- `npm run prebuild` - Generate cache files for gallery
+The project has been optimized from 199 complex scripts to **15 essential commands**:
+
+```bash
+# Core Development
+npm run dev                    # Development server with ngrok tunnel
+npm run build                  # Production build
+npm run preview                # Vercel preview deployment
+
+# Testing (Streamlined)
+npm test                       # Unit tests (fast execution)
+npm run test:integration       # Integration tests
+npm run test:e2e               # E2E tests with Vercel Preview Deployments
+npm run test:watch             # Watch mode for development
+npm run test:coverage          # Coverage reports
+
+# Quality & Deployment
+npm run lint                   # Code quality (ESLint + HTMLHint + Markdown)
+npm run deploy                 # Production deployment
+npm run health                 # Health checks
+
+# Database Management
+npm run migrate:up             # Run database migrations
+npm run migrate:status         # Check migration status
+npm run db:shell               # SQLite shell access
+
+# Utilities
+npm start                      # Alias for npm run dev
+```
 
 ## 🧪 Testing Strategy
 
-### Streamlined Test Architecture
+### Radical Simplification Achievement
 
-We've achieved a **96% complexity reduction** by eliminating complex test infrastructure in favor of radical simplicity:
+We've achieved a **dramatic simplification** by eliminating complex test infrastructure:
 
-- **419 total lines** vs 11,411 lines previously (96% reduction)
-- **26 essential unit tests** covering critical API contracts
-- **Comprehensive E2E tests** for essential user workflows
-- **Fast execution** for complete test suite
-- **Zero abstractions** - every test readable by any JavaScript developer
+- **Streamlined execution**: Single commands for all test types
+- **Fast feedback**: Complete test suite runs quickly
+- **Zero abstractions**: Every test readable by any JavaScript developer
+- **Real API testing**: Direct integration with Vercel Preview Deployments
 
-### E2E Testing with Vercel Dev
+### Testing Commands
 
-**Migration from CI Server to Vercel Dev** (Breaking Change):
+```bash
+# Unit Testing
+npm test                       # Run all unit tests
+npm run test:watch             # Watch mode for development
+npm run test:coverage          # Generate coverage reports
 
-- **Before**: Custom CI server (`scripts/ci-server.js`) for E2E testing
-- **After**: **Vercel Dev** server via `vercel dev` command for production-like testing
-- **Benefit**: More accurate testing environment matching production Vercel deployment
-- **Requirement**: Vercel CLI must be installed globally (`npm i -g vercel`)
+# Integration Testing
+npm run test:integration       # Integration test suite
+
+# E2E Testing (Vercel Preview Deployments)
+npm run test:e2e               # Full E2E test suite
+npm run health                 # API health verification
+```
 
 ### Database Strategy
 
-- **Unit Tests**: Use SQLite development database (`development.db`)
-- **E2E Tests**: Use Turso production database for real-world validation via **Vercel Dev**
-
-### Test Commands
-
-```bash
-# Unit Tests (SQLite database)
-npm test                    # Run 26 essential unit tests
-npm run test:simple         # Same as npm test
-npm run test:simple:watch   # Watch mode for development
-npm run test:coverage       # Coverage report
-
-# E2E Tests (with Vercel Dev server - NEW)
-npm run test:e2e            # Run E2E tests with Vercel dev server
-npm run test:e2e:ui         # Interactive UI mode with Vercel dev
-npm run test:e2e:headed     # Run with browser visible
-npm run test:e2e:debug      # Debug mode
-
-# E2E Tests (with ngrok for external access)
-npm run test:e2e:ngrok      # Run E2E tests with Vercel dev + ngrok tunnel
-npm run test:e2e:ngrok:ui   # Interactive UI mode with ngrok
-npm run test:e2e:ngrok:fast # Fast mode (Chromium only) with ngrok
-
-# Complete Testing
-npm run test:all            # Unit tests + E2E tests
-npm run test:smoke          # Quick smoke tests
-npm run test:health         # API health verification
-
-# Test Data Management
-npm run setup:e2e-data      # Seed E2E test data (standard profile)
-npm run setup:e2e-data:minimal  # Minimal test data (admin only)
-npm run setup:e2e-data:full     # Full test data (all scenarios)
-npm run setup:e2e-data:info     # Show test data configuration
-npm run db:reset            # Reset database to clean state
-```
-
-### Unit Test Suite (26 Tests)
-
-- **api-contracts.test.js** (7 tests) - API contract validation
-- **basic-validation.test.js** (8 tests) - Input validation and security
-- **smoke-tests.test.js** (3 tests) - Basic functionality verification
-- **registration-api.test.js** (5 tests) - Registration API unit tests
-- **registration-flow.test.js** (3 tests) - Registration flow tests
-
-### E2E Test Suite (6 Core Test Files)
-
-- **admin-login-simple.test.js**: Admin authentication and security
-- **newsletter-simple.test.js**: Newsletter subscription flow
-- **ticket-purchase-simple.test.js**: Ticket purchase and Stripe integration
-- **mobile-navigation-simple.test.js**: Mobile responsiveness and navigation
-- **newsletter-isolated.test.js**: Isolated newsletter functionality
-- **brevo-cleanup-integration.test.js**: Brevo email integration testing
-
-### Environment Configuration
-
-#### Unit Tests
-```bash
-# No special configuration required
-# Uses SQLite development database automatically
-npm test
-```
-
-#### E2E Tests (Vercel Dev)
-```bash
-# NEW: Vercel CLI installation required
-npm i -g vercel
-
-# E2E tests with Vercel dev server (default)
-npm run test:e2e
-
-# For Turso database (production-like testing)
-TURSO_DATABASE_URL=your_turso_database_url
-TURSO_AUTH_TOKEN=your_turso_auth_token
-npm run test:e2e
-```
-
-### Quality Gates
-
-- **Simple execution**: Single command `npm test` for unit tests
-- **Fast feedback**: Complete unit test suite runs quickly
-- **Real API testing**: Direct interaction with actual endpoints via **Vercel Dev**
-- **No mocking complexity**: Tests use real services and databases
-- **Production validation**: E2E tests use Turso for real-world scenarios
+- **Unit Tests**: Use SQLite development database
+- **E2E Tests**: Use Vercel Preview Deployments with production database environment
 
 ### Test Philosophy
 
 Focus on **user-visible behavior** with **minimal complexity**:
-- Test real API endpoints via **Vercel Dev**, not implementation details
-- Keep each test under 20 lines
+
+- Test real API endpoints via Vercel Preview Deployments
+- Keep each test focused and readable
 - Use direct HTTP requests, not elaborate abstractions
 - Clean up test data explicitly in each test
-- Separate unit tests (SQLite) from E2E tests (Turso via Vercel Dev)
+- Separate unit tests (SQLite) from E2E tests (production environment)
 
 ## 🔄 CI/CD Pipeline
 
 ### GitHub Actions Integration
 
-Our CI/CD pipeline provides comprehensive automation for testing, quality assurance, and deployment:
+Our CI/CD pipeline provides comprehensive automation with streamlined execution:
 
 #### Workflow Features
 
-- **Unit Testing**: Fast execution of 26 essential tests with SQLite
-- **E2E Testing**: Production validation with **Vercel Dev** and Turso database
-- **Quality Gates**: Automated linting, unit testing, and E2E testing before deployment
-- **PR Status Reporting**: Real-time status updates and quality gate validation
-- **Multi-browser Support**: Chrome-based E2E testing with Playwright
+- **Unit Testing**: Fast execution with SQLite
+- **E2E Testing**: Production validation with Vercel Preview Deployments
+- **Quality Gates**: Automated linting and validation
+- **Multi-browser Support**: Chrome, Firefox, Safari E2E testing
 
-#### Available CI Commands
+#### CI/CD Commands
 
 ```bash
-# CI Environment Setup (uses Vercel Dev for E2E)
-npm run ci:setup              # Initialize CI environment with Vercel dev server
-npm run ci:cleanup            # Clean up resources and generate reports
-npm run ci:test               # Complete CI test pipeline with Vercel dev
-npm run ci:pipeline           # Full CI/CD pipeline with quality gates
-
-# Performance Optimization
-npm run ci:performance:optimize    # Optimize CI performance settings
-npm run ci:performance:analyze     # Analyze CI performance metrics
-npm run ci:performance:monitor     # Monitor CI resource usage
-npm run ci:performance:report      # Generate performance reports
-
 # Quality Assurance
-npm run quality:gates         # Run quality gate validation
-npm run quality:check         # Complete quality assessment
-npm run pr:status-report      # Generate PR status report
-npm run pr:status-summary     # PR quality gate summary
+npm run lint                   # Complete code quality check
+npm test                       # Unit test validation
+npm run test:integration       # Integration test validation
+npm run test:e2e               # E2E test validation
 
-# Branch Protection
-npm run branch:validate       # Validate branch protection rules
-npm run branch:apply-protection    # Apply branch protection settings
-
-# Flaky Test Management
-npm run flaky:detect          # Detect flaky tests
-npm run flaky:report          # Generate flaky test reports
-npm run flaky:quarantine      # Quarantine unreliable tests
-```
-
-#### CI/CD Environment Variables
-
-Required for full CI/CD functionality:
-
-```bash
-# Core CI Settings
-CI=true
-NODE_ENV=test
-
-# Database Configuration
-TURSO_DATABASE_URL=           # Production database URL for E2E tests
-TURSO_AUTH_TOKEN=            # Database authentication token
-
-# Service Credentials (for integration testing)
-STRIPE_SECRET_KEY=           # Payment processing tests
-BREVO_API_KEY=              # Email service tests
-ADMIN_PASSWORD=             # Admin panel tests
+# Deployment Pipeline
+npm run build                  # Production build
+npm run deploy                 # Production deployment
+npm run preview                # Preview deployment
 ```
 
 #### Performance Benchmarks
 
-- **Setup Time**: < 60 seconds for complete environment initialization
-- **Unit Tests**: < 10 seconds for 26 essential tests (SQLite)
-- **E2E Tests**: 2-3 minutes for comprehensive tests (**Vercel Dev** + Turso)
+- **Unit Tests**: < 30 seconds for complete suite
+- **Integration Tests**: < 60 seconds
+- **E2E Tests**: 2-3 minutes via Vercel Preview Deployments
 - **Quality Gates**: < 30 seconds for linting and validation
-- **Resource Cleanup**: < 30 seconds with detailed reporting
-
-#### Quality Gates
-
-- **Code Quality**: ESLint + HTMLHint validation
-- **Security**: Input validation and XSS protection testing
-- **Performance**: Core API response testing
-- **Database**: SQLite (unit tests) and Turso (E2E tests) validation
-- **Browser Compatibility**: Chrome-based E2E testing with **Vercel Dev**
-
-See [CI/CD Documentation](docs/ci-cd/README.md) for detailed setup and configuration.
-
-## Quality Gates & Monitoring
-
-### Overview
-
-Phase 3 introduces comprehensive quality gates and monitoring systems to ensure code quality, detect flaky tests, track coverage, and optimize CI/CD performance. The system provides automated quality assurance with detailed reporting and intelligent failure detection.
-
-### Quality Gate Commands
-
-```bash
-# Local Development
-npm run quality:gates         # Run complete quality gate validation
-npm run quality:check         # Quick quality assessment
-npm run quality:enforce       # Strict quality enforcement with zero tolerance
-
-# CI/CD Integration  
-npm run quality:gates:ci      # CI-optimized quality gate enforcement
-npm run quality:gates:report  # Generate comprehensive quality report
-npm run quality:gates:dashboard # Interactive quality dashboard
-```
-
-### Monitoring Systems
-
-#### Test Flakiness Detection
-- **Threshold**: <5% flaky test rate maintained
-- **Detection**: Automated identification of unstable tests
-- **Quarantine**: Automatic isolation of problematic tests
-- **Reporting**: Detailed flakiness trends and patterns
-
-#### Coverage Tracking
-- **Critical Paths**: 100% coverage for essential user flows
-- **API Contracts**: Complete endpoint validation coverage
-- **Performance**: Core Web Vitals and performance metrics monitoring
-- **Security**: Input validation and authentication flow coverage
-
-#### Performance Optimization
-- **Execution Time**: <5 minutes target for complete test suite
-- **Resource Usage**: Memory and CPU optimization monitoring
-- **Parallel Execution**: Optimal test distribution and batching
-- **CI Performance**: Build time reduction and resource efficiency
-
-#### Incident Correlation
-- **Failure Analysis**: 80% reduction in debugging time through intelligent correlation
-- **Root Cause Detection**: Automated identification of failure patterns
-- **Historical Trends**: Performance regression detection and alerting
-- **Predictive Analysis**: Early warning system for potential issues
-
-### Report Generation
-
-Quality gate reports are automatically generated in `.tmp/quality-gates/` directory:
-
-- **quality-report.json**: Comprehensive metrics and analysis
-- **flaky-tests.json**: Test stability tracking and trends
-- **coverage-analysis.json**: Detailed coverage breakdown
-- **performance-metrics.json**: Execution time and resource usage
-- **incident-correlation.json**: Failure pattern analysis
-
-### Integration
-
-The quality gates system integrates seamlessly with:
-- **GitHub Actions**: Automatic PR quality validation
-- **Local Development**: Pre-commit quality checks
-- **CI/CD Pipeline**: Deployment quality assurance
-- **Monitoring Dashboard**: Real-time quality metrics visualization
-
-See [Quality Gates Documentation](docs/quality-gates/README.md) for detailed configuration and usage.
 
 ## Database Management
 
@@ -440,41 +262,13 @@ See [Quality Gates Documentation](docs/quality-gates/README.md) for detailed con
 
 ```bash
 # Migrations
-npm run migrate:up           # Run pending migrations
-npm run migrate:status       # Check migration status
-npm run migrate:verify       # Verify integrity
+npm run migrate:up             # Run pending migrations
+npm run migrate:status         # Check migration status
 
 # Database access
-npm run db:shell            # SQLite shell
-npm run health:database     # Health check
+npm run db:shell               # SQLite shell
+npm run health                 # Health check
 ```
-
-### E2E Test Database
-
-For comprehensive end-to-end testing with **Vercel Dev** server, separate database commands are available:
-
-```bash
-# E2E Database Setup (works with Vercel Dev)
-npm run db:e2e:setup        # Create tables and insert test data
-npm run db:e2e:validate     # Validate existing database schema
-npm run db:e2e:clean        # Remove test data only
-npm run db:e2e:reset        # Full reset - drop and recreate everything
-
-# E2E Database Migration Management  
-npm run migrate:e2e:up      # Run E2E database migrations
-npm run migrate:e2e:status  # Check E2E migration status
-npm run migrate:e2e:validate # Validate E2E schema integrity
-npm run migrate:e2e:reset   # Reset E2E migrations completely
-
-# E2E Database Health Monitoring
-curl -f http://localhost:3000/api/health/e2e-database | jq '.'
-```
-
-**Safety Features:**
-- All E2E database operations require `E2E_TEST_MODE=true` or `ENVIRONMENT=e2e-test`
-- Database URLs are validated to contain "test" or "staging" keywords
-- Automatic test data cleanup prevents contamination
-- Separate migration tracking for E2E vs development environments
 
 ## 📱 Browser Support
 
@@ -504,65 +298,51 @@ curl -f http://localhost:3000/api/health/e2e-database | jq '.'
 ## 📚 Documentation
 
 ### API Documentation
-- [Main API Documentation](/docs/api/API_DOCUMENTATION.md) - Gallery, performance, and core APIs
+
+- [Main API Documentation](/docs/api/README.md) - Gallery, performance, and core APIs
 - [Registration API](/docs/api/REGISTRATION_API.md) - Ticket registration system endpoints
 - [Async Initialization Guide](/docs/ASYNC_INITIALIZATION_GUIDE.md) - Database service patterns
-- [Testing Strategy](/docs/testing/TESTING_STRATEGY.md) - Streamlined testing approach
-
-### CI/CD Documentation
-- [CI/CD Overview](docs/ci-cd/README.md) - Complete CI/CD pipeline documentation
-- [GitHub Actions Setup](docs/ci-cd/README.md#github-actions-setup) - Workflow configuration and secrets
-- [Performance Optimization](docs/ci-cd/README.md#performance-optimization) - CI performance tuning
-- [Quality Gates](docs/ci-cd/README.md#quality-gates) - Automated quality assurance
-
-### Testing Documentation
-- [E2E Test Data Guide](/docs/testing/E2E_TEST_DATA_GUIDE.md) - Deterministic test data seeding system
-- [E2E Test Flows](/tests/e2e/flows/README.md) - Phase 2 gallery and admin panel test flows
-- [Advanced E2E Testing](/tests/e2e/advanced/README.md) - Phase 4 network, security, accessibility testing
-- [Performance Testing Guide](/tests/e2e/helpers/performance-gallery.js) - Gallery performance utilities
-- [Admin Authentication Testing](/tests/e2e/helpers/admin-auth.js) - Security and authentication helpers
-- [Security Testing](/tests/e2e/helpers/security-testing.js) - OWASP Top 10 vulnerability testing
-- [Accessibility Testing](/tests/e2e/helpers/accessibility-utilities.js) - WCAG 2.1 compliance utilities
 
 ### Setup Documentation
+
 - [Installation Guide](INSTALLATION.md) - Complete setup instructions
 - [Security Policy](SECURITY.md) - Security practices and vulnerability reporting
 - [Changelog](CHANGELOG.md) - Version history and release notes
 
 ### Key Features Documentation
+
 - **Registration System**: JWT-based ticket registration with 72-hour window
 - **Email Integration**: Brevo/SendinBlue for transactional emails
 - **Payment Processing**: Stripe Checkout with webhook handling
 - **Wallet Passes**: Apple Wallet and Google Wallet integration
 - **Gallery System**: Google Drive integration with AVIF/WebP optimization
-- **E2E Testing**: Comprehensive browser automation with **Vercel Dev** and Turso database validation
+- **E2E Testing**: Comprehensive browser automation with Vercel Preview Deployments
 - **Admin Panel**: Complete administration dashboard with security features
 
 ## Migration Notes
 
-### Breaking Changes - CI Server to Vercel Dev
+### Breaking Changes - Script Simplification
 
 **What Changed:**
-- E2E tests now use **Vercel Dev** server instead of custom CI server (`scripts/ci-server.js`)
-- Improved testing accuracy by using the same serverless environment as production
-- Better API endpoint testing with real Vercel function execution
+
+- **Reduced complexity**: From 199 scripts to 15 essential commands
+- **Standardized naming**: Clear, consistent command naming conventions
+- **Simplified testing**: Single commands for each test type
+- **Modern E2E approach**: All E2E testing uses Vercel Preview Deployments
 
 **Migration Required:**
-1. **Install Vercel CLI globally**: `npm i -g vercel`
-2. **Update E2E test commands**: Use `npm run test:e2e` (now uses Vercel Dev)
-3. **Environment variables**: Ensure Turso credentials are set for E2E testing
-4. **CI/CD adjustments**: Update workflows to use Vercel Dev for E2E testing
+
+1. **Update development workflows**: Use `npm run dev` for development
+2. **Update testing commands**: Use `npm test` for unit tests
+3. **Update E2E testing**: Use `npm run test:e2e` (Vercel Preview Deployments)
+4. **Update CI/CD pipelines**: Ensure workflows use current script names
 
 **Benefits:**
-- **Production Parity**: Tests run in the same serverless environment as production
-- **Real API Testing**: Actual Vercel function execution instead of mocked responses
-- **Better Reliability**: More accurate testing of serverless architecture
-- **Simplified Setup**: No need for custom CI server maintenance
 
-**Troubleshooting:**
-- If E2E tests fail, ensure `vercel` CLI is installed globally
-- Verify `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` are set
-- Run `npm run test:e2e:validate` to check E2E prerequisites
+- **Simplified development**: Clear purpose for each command
+- **Faster onboarding**: Predictable script names following standard conventions
+- **Reduced confusion**: No duplicate commands or conflicting approaches
+- **Better maintenance**: Fewer scripts to maintain and update
 
 ## 🎪 About the Festival
 

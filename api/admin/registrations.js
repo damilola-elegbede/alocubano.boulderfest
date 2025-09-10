@@ -1,10 +1,10 @@
-import authService from '../lib/auth-service.js';
-import { getDatabaseClient } from '../lib/database.js';
-import ticketService from '../lib/ticket-service.js';
-import { getValidationService } from '../lib/validation-service.js';
-import { withSecurityHeaders } from '../lib/security-headers.js';
-import { columnExists } from '../lib/db-utils.js';
-import csrfService from '../lib/csrf-service.js';
+import authService from '../../lib/auth-service.js';
+import { getDatabaseClient } from '../../lib/database.js';
+import ticketService from '../../lib/ticket-service.js';
+import { getValidationService } from '../../lib/validation-service.js';
+import { withSecurityHeaders } from '../../lib/security-headers.js';
+import { columnExists } from '../../lib/db-utils.js';
+import csrfService from '../../lib/csrf-service.js';
 
 async function handler(req, res) {
   let db;

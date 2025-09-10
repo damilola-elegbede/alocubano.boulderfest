@@ -10,7 +10,7 @@ import zlib from "zlib";
 import crypto from "crypto";
 import { promisify } from "util";
 import { Transform, pipeline } from "stream";
-import { getDatabase } from "../lib/database.js";
+import { getDatabase } from "../../lib/database.js";
 
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
@@ -122,6 +122,14 @@ class BackupManager {
         }
       }
 
+      // Add size guard for JSON serialization to prevent OOM errors
+      const estimatedSize = JSON.stringify(backupData).length;
+      const maxSizeBytes = 100 * 1024 * 1024; // 100MB limit
+      
+      if (estimatedSize > maxSizeBytes) {
+        throw new Error(`Backup data too large (${Math.round(estimatedSize / 1024 / 1024)}MB exceeds ${Math.round(maxSizeBytes / 1024 / 1024)}MB limit). Consider chunked backup approach.`);
+      }
+      
       // Use streaming JSON serialization for large datasets
       const backupJson = JSON.stringify(backupData, null, 2);
       const backupBuffer = Buffer.from(backupJson);
@@ -254,55 +262,68 @@ class BackupManager {
       const decompressedData = await gunzip(compressedData);
       const backupData = JSON.parse(decompressedData.toString());
 
-      // Begin transaction for atomic restore
-      const statements = [];
+      // Begin explicit transaction for atomic restore
+      await this.database.execute("BEGIN TRANSACTION");
+      
+      try {
+        // Disable foreign key checks during restore to prevent constraint violations
+        await this.database.execute("PRAGMA foreign_keys = OFF");
 
-      // Disable foreign key checks during restore to prevent constraint violations
-      statements.push({
-        sql: "PRAGMA foreign_keys = OFF",
-        args: [],
-      });
-
-      // Drop existing tables (careful!)
-      for (const tableName of Object.keys(backupData.tables)) {
-        statements.push({
-          sql: `DROP TABLE IF EXISTS ${tableName}`,
-          args: [],
-        });
-      }
-
-      // Recreate schemas
-      for (const schema of backupData.schemas) {
-        if (schema) {
-          statements.push({
-            sql: schema,
+        // Drop existing tables (careful!)
+        for (const tableName of Object.keys(backupData.tables)) {
+          await this.database.execute({
+            sql: `DROP TABLE IF EXISTS ${tableName}`,
             args: [],
           });
         }
-      }
 
-      // Restore data
-      for (const [tableName, rows] of Object.entries(backupData.tables)) {
-        for (const row of rows) {
-          const columns = Object.keys(row);
-          const values = Object.values(row);
-          const placeholders = columns.map(() => "?").join(", ");
-
-          statements.push({
-            sql: `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES (${placeholders})`,
-            args: values,
-          });
+        // Recreate schemas
+        for (const schema of backupData.schemas) {
+          if (schema) {
+            await this.database.execute({
+              sql: schema,
+              args: [],
+            });
+          }
         }
+
+        // Restore data in batches to manage memory
+        const batchSize = 100;
+        for (const [tableName, rows] of Object.entries(backupData.tables)) {
+          if (rows.length === 0) continue;
+          
+          // Process in batches
+          for (let i = 0; i < rows.length; i += batchSize) {
+            const batch = rows.slice(i, i + batchSize);
+            const batchStatements = [];
+            
+            for (const row of batch) {
+              const columns = Object.keys(row);
+              const values = Object.values(row);
+              const placeholders = columns.map(() => "?").join(", ");
+
+              batchStatements.push({
+                sql: `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES (${placeholders})`,
+                args: values,
+              });
+            }
+            
+            // Execute batch
+            await this.database.batch(batchStatements);
+          }
+        }
+
+        // Re-enable foreign key checks after restore
+        await this.database.execute("PRAGMA foreign_keys = ON");
+        
+        // Commit transaction
+        await this.database.execute("COMMIT");
+        
+      } catch (error) {
+        // Rollback on error
+        await this.database.execute("ROLLBACK");
+        throw error;
       }
-
-      // Re-enable foreign key checks after restore
-      statements.push({
-        sql: "PRAGMA foreign_keys = ON",
-        args: [],
-      });
-
-      // Execute restore in batch
-      await this.database.batch(statements);
 
       console.log(
         `Database restored successfully from: ${path.basename(backupPath)}`,

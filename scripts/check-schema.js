@@ -1,4 +1,4 @@
-import { getDatabase } from "../api/lib/database.js";
+import { getDatabase } from "../lib/database.js";
 
 async function checkSchema() {
   const db = getDatabase();

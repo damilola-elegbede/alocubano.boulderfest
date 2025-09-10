@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PaymentValidator } from '../../../../api/lib/domain/payment/PaymentValidator.js';
+import { PaymentValidator } from '../../../../lib/domain/payment/PaymentValidator.js';
 
 describe('PaymentValidator Domain Service', () => {
   describe('validateCartItems()', () => {

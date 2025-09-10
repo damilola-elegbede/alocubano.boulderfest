@@ -1,4 +1,4 @@
-import { getDatabase } from "../api/lib/database.js";
+import { getDatabase } from "../lib/database.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";

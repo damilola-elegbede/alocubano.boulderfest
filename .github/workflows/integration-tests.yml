@@ -489,7 +489,7 @@ jobs:
           # Configure test command based on suite
           if [ "${{ needs.test-planning.outputs.test_suite }}" == "critical" ]; then
             echo "🏃‍♂️ Running critical integration tests (payment processing)"
-            npm run test:integration:critical 2>&1 | tee integration-test-output.log || true
+            npm run test:integration 2>&1 | tee integration-test-output.log || true
           else
             echo "📋 Running integration test suite"
             npm run test:integration 2>&1 | tee integration-test-output.log || true

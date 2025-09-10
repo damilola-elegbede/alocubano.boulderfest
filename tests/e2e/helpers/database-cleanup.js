@@ -4,7 +4,7 @@
  * Compatible with both SQLite (development) and Turso (production/CI) databases
  */
 
-import { getDatabaseClient } from '../../../api/lib/database.js';
+import { getDatabaseClient } from '../../../lib/database.js';
 
 /**
  * Check if table exists in database

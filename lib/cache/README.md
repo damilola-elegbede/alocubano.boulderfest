@@ -70,7 +70,7 @@ const eventInfo = await cache.get("event:info", {
 ### Using Cache Service
 
 ```javascript
-import { getCacheService } from "./api/lib/cache-service.js";
+import { getCacheService } from "../cache-service.js";
 
 const cacheService = getCacheService();
 

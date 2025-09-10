@@ -1,5 +1,5 @@
 import { HealthStatus } from "../../lib/monitoring/health-checker.js";
-import { getDatabase, getDatabaseClient } from "../lib/database.js";
+import { getDatabase, getDatabaseClient } from "../../lib/database.js";
 
 /**
  * Validate database schema integrity

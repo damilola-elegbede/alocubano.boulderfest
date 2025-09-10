@@ -9,7 +9,7 @@
  * 3. No hard Redis dependencies exist in critical paths
  */
 
-import { AdvancedRateLimiter } from '../api/lib/security/rate-limiter.js';
+import { AdvancedRateLimiter } from "../lib/security/rate-limiter.js";
 import { TestEnvironments } from '../tests/config/test-environments.js';
 
 console.log('🧪 Validating Redis CI fixes...\n');

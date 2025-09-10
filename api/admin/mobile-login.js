@@ -1,7 +1,7 @@
-import { getMobileAuthService } from '../lib/mobile-auth-service.js';
-import { getCsrfService } from '../lib/csrf-service.js';
-import { applySecurityHeaders } from '../lib/security-headers.js';
-import { getRateLimitService } from '../lib/rate-limit-service.js';
+import { getMobileAuthService } from '../../lib/mobile-auth-service.js';
+import { getCsrfService } from '../../lib/csrf-service.js';
+import { applySecurityHeaders } from '../../lib/security-headers.js';
+import { getRateLimitService } from '../../lib/rate-limit-service.js';
 
 /**
  * Mobile check-in login endpoint with extended 72-hour sessions

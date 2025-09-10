@@ -3,7 +3,7 @@
  * Provides safe database reset for test environments only
  */
 
-import { getDatabaseClient } from '../api/lib/database.js';
+import { getDatabaseClient } from "../lib/database.js";
 
 /**
  * Reset the test database to a clean state

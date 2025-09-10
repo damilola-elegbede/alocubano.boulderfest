@@ -188,7 +188,7 @@ describe('Database Transaction Integration', () => {
     const testPrefix = 'concurrent_' + Math.random().toString(36).slice(2);
     
     // TRUE concurrent operations using separate database clients for real concurrency
-    const { getDatabaseClient } = await import('../../../api/lib/database.js');
+    const { getDatabaseClient } = await import('../../../lib/database.js');
     
     const concurrentOperations = Array.from({ length: 3 }, (_, index) => {
       const sessionId = `cs_test_${testPrefix}_${index}`;
