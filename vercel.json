@@ -1,6 +1,11 @@
 {
   "outputDirectory": ".",
   "framework": null,
+  "functions": {
+    "api/**/*.js": {
+      "includeFiles": ["lib/**", "migrations/**", "config/**"]
+    }
+  },
   "crons": [
     {
       "path": "/api/sheets/scheduled-sync",

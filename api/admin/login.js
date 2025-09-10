@@ -5,7 +5,7 @@ import {
   verifyMfaCode,
   markSessionMfaVerified,
 } from "../../lib/mfa-middleware.js";
-import rateLimitService from "../../lib/rate-limit-service.js";
+import { getRateLimitService } from "../../lib/rate-limit-service.js";
 
 /**
  * Input validation schemas
@@ -388,6 +388,9 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
   }
 
   if (!isValid) {
+    // Get rate limit service instance - fixed to use function call
+    const rateLimitService = getRateLimitService();
+    
     // Record failed attempt
     const attemptResult = rateLimitService.recordFailedAttempt(clientIP);
 
@@ -404,6 +407,9 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
     return res.status(401).json(response);
   }
 
+  // Get rate limit service instance - fixed to use function call
+  const rateLimitService = getRateLimitService();
+  
   // Clear login attempts on password success
   rateLimitService.clearAttempts(clientIP);
 
