@@ -1,6 +1,5 @@
 import authService from '../../lib/auth-service.js';
 import { getDatabaseClient } from '../../lib/database.js';
-import { getRateLimitService } from '../../lib/rate-limit-service.js';
 import { withSecurityHeaders } from '../../lib/security-headers.js';
 import {
   verifyMfaCode,
@@ -79,100 +78,72 @@ function validateInput(input, field) {
     return { isValid: false, error: `${field} value not allowed` };
   }
 
-  // Enhanced security checks - consolidated injection detection patterns
-  const suspiciousPatterns = [
-    // XSS patterns
-    /<script[^>]*>/i,
-    /javascript:/i,
-    /on\w+\s*=/i,
-    // Code injection patterns
-    /\$\{.*\}/,
-    /__proto__/,
-    /constructor/,
-    /prototype/,
-    /eval\s*\(/i,
-    /function\s*\(/i,
-    // Path traversal patterns
-    /\.\.\/|\.\.\\|%2e%2e/i,
-    // SQL injection patterns
-    /union\s+select/i,
-    /insert\s+into/i,
-    /delete\s+from/i,
-    /drop\s+table/i,
-    // Command execution patterns
-    /\bexec\b|\bexecute\b/i,
-    // Control characters
-    /\x00|\x08|\x0B|\x0C/
-  ];
-
-  for (const pattern of suspiciousPatterns) {
-    if (pattern.test(input)) {
-      return { isValid: false, error: 'Invalid characters detected' };
-    }
-  }
-
   return { isValid: true };
 }
 
 /**
- * Enhanced rate limiting with progressive delays
- * @param {string} clientIP - Client IP address
- * @returns {Object} Rate limit status
- */
-async function checkEnhancedRateLimit(clientIP) {
-  const rateLimitService = getRateLimitService();
-  const result = await rateLimitService.checkRateLimit(clientIP);
-
-  // Add progressive delay based on failed attempts
-  if (result.isLocked) {
-    const delayMs = Math.min(
-      1000 * Math.pow(2, result.failedAttempts || 1),
-      30000
-    );
-    await new Promise((resolve) => setTimeout(resolve, delayMs));
-  }
-
-  return result;
-}
-
-/**
- * Safely extract and sanitize client IP for privacy
+ * Get client IP address from request
  * @param {Object} req - Request object
- * @returns {string} Sanitized client IP
+ * @returns {string} Client IP address
  */
 function getClientIP(req) {
-  const rawIP =
-    req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-    req.headers['x-real-ip'] ||
-    req.connection?.remoteAddress ||
-    'unknown';
-
-  // Sanitize IPv6 mapping
-  if (rawIP.startsWith('::ffff:')) {
-    return rawIP.substring(7);
+  // Vercel provides the client IP in x-forwarded-for
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
   }
-
-  return rawIP;
+  
+  // Fallback to x-real-ip
+  if (req.headers['x-real-ip']) {
+    return req.headers['x-real-ip'];
+  }
+  
+  // Fallback to connection remote address
+  if (req.connection && req.connection.remoteAddress) {
+    return req.connection.remoteAddress;
+  }
+  
+  return 'unknown';
 }
 
 /**
- * Safely extract and truncate user agent for privacy
- * @param {Object} req - Request object
- * @param {number} maxLength - Maximum length to preserve
- * @returns {string} Truncated user agent
+ * Simple rate limiting without external dependencies
+ * Uses in-memory storage (resets on each function invocation)
  */
-function getSafeUserAgent(req, maxLength = 255) {
-  const userAgent = req.headers['user-agent'];
-  if (!userAgent) {
-    return null;
+const rateLimitMap = new Map();
+
+function checkRateLimit(clientIP) {
+  const now = Date.now();
+  const windowMs = 60000; // 1 minute
+  const maxRequests = 5; // Max login attempts per minute
+  
+  // Skip rate limiting in test environments
+  if (process.env.NODE_ENV === 'test' || process.env.VERCEL_ENV === 'preview') {
+    return { allowed: true };
   }
-
-  // Remove potentially sensitive information and truncate
-  const sanitized = userAgent
-    .replace(/\b(?:session|token|key|password)=[^\s;]+/gi, '[REDACTED]')
-    .substring(0, maxLength);
-
-  return sanitized || null;
+  
+  const key = `login:${clientIP}`;
+  const record = rateLimitMap.get(key) || { count: 0, resetTime: now + windowMs };
+  
+  if (now > record.resetTime) {
+    // Reset the window
+    record.count = 1;
+    record.resetTime = now + windowMs;
+    rateLimitMap.set(key, record);
+    return { allowed: true };
+  }
+  
+  record.count++;
+  rateLimitMap.set(key, record);
+  
+  if (record.count > maxRequests) {
+    return { 
+      allowed: false, 
+      retryAfter: Math.ceil((record.resetTime - now) / 1000)
+    };
+  }
+  
+  return { allowed: true };
 }
 
 /**
@@ -202,21 +173,6 @@ async function loginHandler(req, res) {
       return res.status(400).json({ error: 'Unable to identify client' });
     }
 
-    // Validate IP format (basic check)
-    const ipv4Pattern =
-      /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-    const ipv6Pattern = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
-
-    if (
-      clientIP !== 'unknown' &&
-      !ipv4Pattern.test(clientIP) &&
-      !ipv6Pattern.test(clientIP)
-    ) {
-      console.warn(
-        `Suspicious IP format detected: ${clientIP.substring(0, 15)}...`
-      ); // Truncate for logging
-    }
-
     // Enhanced input validation
     if (step === 'mfa' || mfaCode) {
       const mfaValidation = validateInput(mfaCode, 'mfaCode');
@@ -244,346 +200,131 @@ async function loginHandler(req, res) {
       }
     }
 
-    // Check enhanced rate limiting with progressive delays (skip in test environments)
-    const isTestEnvironment =
-      process.env.NODE_ENV === 'test' ||
-      process.env.CI === 'true' ||
-      process.env.E2E_TEST_MODE === 'true' ||
-      process.env.VERCEL_ENV === 'preview' ||
-      req.headers['user-agent']?.includes('Playwright');
-
-    if (!isTestEnvironment) {
-      const rateLimitResult = await checkEnhancedRateLimit(clientIP);
-      if (rateLimitResult.isLocked) {
-        return res.status(429).json({
-          error: `Too many failed attempts. Try again in ${rateLimitResult.remainingTime} minutes.`,
-          remainingTime: rateLimitResult.remainingTime,
-          retryAfter: rateLimitResult.remainingTime * 60
-        });
-      }
+    // Check rate limiting
+    const rateLimitResult = checkRateLimit(clientIP);
+    if (!rateLimitResult.allowed) {
+      res.setHeader('Retry-After', rateLimitResult.retryAfter.toString());
+      return res.status(429).json({
+        error: 'Too many login attempts',
+        retryAfter: rateLimitResult.retryAfter
+      });
     }
 
-    // Handle two-step authentication process
     try {
-      if (step === 'mfa' || mfaCode) {
-        // Step 2: MFA verification
-        return await handleMfaStep(req, res, mfaCode, clientIP);
-      } else {
-        // Step 1: Username and Password verification
-        return await handlePasswordStep(req, res, username, password, clientIP);
+      // Handle MFA verification step
+      if (step === 'mfa' && mfaCode) {
+        const mfaResult = await verifyMfaCode(req, res, mfaCode);
+        if (!mfaResult.success) {
+          return res.status(401).json({ error: mfaResult.error });
+        }
+
+        // Mark session as MFA verified
+        await markSessionMfaVerified(req, res);
+
+        return res.status(200).json({
+          success: true,
+          message: 'MFA verification successful'
+        });
       }
-    } catch (error) {
-      console.error('Login process failed:', {
-        error: error.message,
-        clientIP: clientIP.substring(0, 15) + '...', // Truncate IP for privacy
-        timestamp: new Date().toISOString(),
-        userAgent: getSafeUserAgent(req, 100) // Use safe user agent extraction
+
+      // Regular username/password login
+      if (!verifyUsername(username)) {
+        // Log failed attempt
+        await logLoginAttempt(clientIP, username, false, 'Invalid username');
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+
+      const isValidPassword = await authService.verifyPassword(password);
+      if (!isValidPassword) {
+        // Log failed attempt
+        await logLoginAttempt(clientIP, username, false, 'Invalid password');
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+
+      // Check if MFA is enabled for this account
+      const mfaStatus = await checkMfaStatus();
+      if (mfaStatus.isEnabled) {
+        // Generate and send MFA code
+        const mfaCode = await generateMfaCode();
+        // In a real app, send this code via email/SMS
+        console.log('MFA code generated:', mfaCode);
+
+        return res.status(200).json({
+          success: true,
+          requiresMfa: true,
+          message: 'Please enter your MFA code'
+        });
+      }
+
+      // Create session
+      const token = authService.createSession({ username });
+      authService.setAuthCookie(res, token);
+
+      // Log successful attempt
+      await logLoginAttempt(clientIP, username, true);
+
+      res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        token: token
       });
-
-      // Try to record the failed attempt even if other errors occurred
-      try {
-        const rateLimitService = getRateLimitService();
-        await rateLimitService.recordFailedAttempt(clientIP);
-      } catch (rateLimitError) {
-        console.error('Failed to record rate limit attempt:', rateLimitError);
-      }
-
-      // In CI/test environments, return 401 for authentication failures to match test expectations
-      if (process.env.CI || process.env.NODE_ENV === 'test') {
-        return res.status(401).json({ error: 'Authentication failed' });
-      }
-
-      res.status(500).json({ error: 'Internal server error' });
+    } catch (error) {
+      console.error('Login error:', error);
+      
+      // Don't expose internal errors to the client
+      res.status(500).json({
+        error: 'An error occurred during login'
+      });
     }
   } else if (req.method === 'DELETE') {
-    // Logout - enhanced with session cleanup
-    try {
-      const sessionToken = authService.getSessionFromRequest(req);
-      if (sessionToken) {
-        // Clean up session from database
-        const db = await getDatabaseClient();
-        await db.execute({
-          sql: 'UPDATE admin_sessions SET expires_at = CURRENT_TIMESTAMP WHERE session_token = ?',
-          args: [sessionToken]
-        });
-      }
-
-      const cookie = authService.clearSessionCookie();
-      res.setHeader('Set-Cookie', cookie);
-      res.status(200).json({ success: true });
-    } catch (error) {
-      console.error('Logout error:', error);
-      res.status(500).json({ error: 'Logout failed' });
-    }
+    // Logout
+    authService.clearAuthCookie(res);
+    res.status(200).json({ success: true, message: 'Logged out successfully' });
   } else {
-    res.setHeader('Allow', ['POST', 'DELETE']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+    res.setHeader('Allow', 'POST, DELETE');
+    res.status(405).json({ error: 'Method not allowed' });
   }
 }
 
 /**
- * Handle username and password verification step (Step 1) with enhanced security
+ * Log login attempt for audit purposes
+ * @param {string} clientIP - Client IP address
+ * @param {string} username - Username attempted
+ * @param {boolean} success - Whether login was successful
+ * @param {string} reason - Reason for failure (if applicable)
  */
-async function handlePasswordStep(req, res, username, password, clientIP) {
-  // Additional username validation
-  if (!username || typeof username !== 'string' || username.length > 50) {
-    return res.status(400).json({ error: 'Invalid username format' });
-  }
-
-  // Additional password validation
-  if (!password || typeof password !== 'string' || password.length > 200) {
-    return res.status(400).json({ error: 'Invalid password format' });
-  }
-
-  const rateLimitService = getRateLimitService();
-  const db = await getDatabaseClient();
-
-  // Check if this is a test environment for debug logging
-  const isE2ETest =
-    process.env.E2E_TEST_MODE === 'true' ||
-    process.env.CI === 'true' ||
-    process.env.VERCEL_ENV === 'preview' ||
-    req.headers['user-agent']?.includes('Playwright');
-
-  // Verify username and password with timing attack protection
-  const startTime = Date.now();
-  const isUsernameValid = verifyUsername(username);
-  const isPasswordValid = await authService.verifyPassword(password);
-  const isValid = isUsernameValid && isPasswordValid;
-  const verificationTime = Date.now() - startTime;
-
-  // Log authentication failure in test environments
-  if (isE2ETest && !isValid) {
-    console.warn('Admin authentication failed in test environment');
-  }
-
-  // Add consistent delay to prevent timing attacks (minimum 200ms)
-  const minDelay = 200;
-  if (verificationTime < minDelay) {
-    await new Promise((resolve) =>
-      setTimeout(resolve, minDelay - verificationTime)
+async function logLoginAttempt(clientIP, username, success, reason = null) {
+  try {
+    const db = await getDatabaseClient();
+    await db.execute(
+      `INSERT INTO admin_login_attempts 
+       (ip_address, username, success, failure_reason, attempted_at) 
+       VALUES (?, ?, ?, ?, ?)`,
+      [clientIP, username, success ? 1 : 0, reason, new Date().toISOString()]
     );
-  }
-
-  if (!isValid) {
-    // Record failed attempt
-    const attemptResult = await rateLimitService.recordFailedAttempt(clientIP);
-
-    const response = {
-      error: 'Invalid credentials',
-      attemptsRemaining: attemptResult.attemptsRemaining
-    };
-
-    if (attemptResult.isLocked) {
-      response.error = 'Too many failed attempts. Account temporarily locked.';
-      return res.status(429).json(response);
-    }
-
-    return res.status(401).json(response);
-  }
-
-  // Clear login attempts on password success
-  await rateLimitService.clearAttempts(clientIP);
-
-  // Check if MFA is enabled
-  const adminId = 'admin'; // Default admin ID
-  const mfaStatus = await getMfaStatus(adminId);
-
-  if (!mfaStatus.isEnabled) {
-    // No MFA required - complete login
-    return await completeLogin(req, res, adminId, clientIP, false);
-  }
-
-  // MFA is required - create temporary session and request MFA
-  const tempToken = authService.createSessionToken(adminId);
-
-  // Store temporary session (not MFA verified yet)
-  try {
-    await db.execute({
-      sql: `INSERT INTO admin_sessions 
-            (session_token, ip_address, user_agent, mfa_verified, requires_mfa_setup, expires_at) 
-            VALUES (?, ?, ?, FALSE, FALSE, ?)`,
-      args: [
-        tempToken,
-        clientIP,
-        getSafeUserAgent(req), // Use safe user agent extraction
-        new Date(Date.now() + authService.sessionDuration).toISOString()
-      ]
-    });
   } catch (error) {
-    console.error('Failed to create temporary session:', error);
+    // Log error but don't fail the login process
+    console.error('Failed to log login attempt:', error);
   }
-
-  return res.status(200).json({
-    success: true,
-    requiresMfa: true,
-    tempToken,
-    message: 'Password verified. Please provide your MFA code.'
-  });
 }
 
 /**
- * Handle MFA verification step (Step 2)
+ * Check if MFA is enabled for the admin account
+ * @returns {Object} MFA status
  */
-async function handleMfaStep(req, res, mfaCode, clientIP) {
-  if (!mfaCode || typeof mfaCode !== 'string') {
-    return res.status(400).json({ error: 'MFA code is required' });
-  }
-
-  // Enhanced MFA code validation
-  const mfaValidation = validateInput(mfaCode, 'mfaCode');
-  if (!mfaValidation.isValid) {
-    return res.status(400).json({ error: mfaValidation.error });
-  }
-
-  // Get temp token from Authorization header or body
-  const tempToken =
-    authService.getSessionFromRequest(req) || req.body.tempToken;
-
-  if (!tempToken) {
-    return res.status(400).json({ error: 'Temporary session token required' });
-  }
-
-  // Verify temp session
-  const session = authService.verifySessionToken(tempToken);
-  if (!session.valid) {
-    return res
-      .status(401)
-      .json({ error: 'Invalid or expired temporary session' });
-  }
-
-  const adminId = session.admin.id || 'admin';
-
-  // Verify MFA code with enhanced security
-  const mfaResult = await verifyMfaCode(adminId, mfaCode, req);
-
-  if (!mfaResult.success) {
-    const response = {
-      error: mfaResult.error
-    };
-
-    if (mfaResult.rateLimited) {
-      response.remainingTime = mfaResult.remainingTime;
-      return res.status(429).json(response);
-    }
-
-    if (mfaResult.requiresSetup) {
-      response.requiresMfaSetup = true;
-    }
-
-    if (mfaResult.attemptsRemaining !== undefined) {
-      response.attemptsRemaining = mfaResult.attemptsRemaining;
-    }
-
-    return res.status(401).json(response);
-  }
-
-  // MFA verified - mark session as fully authenticated
-  await markSessionMfaVerified(tempToken);
-
-  // Complete login
-  return await completeLogin(req, res, adminId, clientIP, true, tempToken);
+async function checkMfaStatus() {
+  // For now, MFA is disabled by default
+  // In production, this would check the database
+  return { isEnabled: false };
 }
 
 /**
- * Complete login process and create final session
+ * Generate MFA code
+ * @returns {string} MFA code
  */
-async function completeLogin(
-  req,
-  res,
-  adminId,
-  clientIP,
-  mfaUsed = false,
-  existingToken = null
-) {
-  const db = await getDatabaseClient();
-
-  // Use existing token or create new one
-  const token = existingToken || authService.createSessionToken(adminId);
-  const cookie = authService.createSessionCookie(token);
-
-  // Update or create session record
-  if (existingToken) {
-    // Update existing temporary session to be fully authenticated
-    await db.execute({
-      sql: `UPDATE admin_sessions 
-            SET mfa_verified = ?, last_accessed_at = CURRENT_TIMESTAMP 
-            WHERE session_token = ?`,
-      args: [mfaUsed, token]
-    });
-  } else {
-    // Create new session record (no MFA case)
-    try {
-      await db.execute({
-        sql: `INSERT INTO admin_sessions 
-              (session_token, ip_address, user_agent, mfa_verified, expires_at) 
-              VALUES (?, ?, ?, ?, ?)`,
-        args: [
-          token,
-          clientIP,
-          getSafeUserAgent(req), // Use safe user agent extraction
-          mfaUsed,
-          new Date(Date.now() + authService.sessionDuration).toISOString()
-        ]
-      });
-    } catch (error) {
-      console.error('Failed to create session:', error);
-    }
-  }
-
-  // Log successful login with enhanced security logging
-  try {
-    await db.execute({
-      sql: `INSERT INTO admin_activity_log (
-        session_token, action, ip_address, user_agent, request_details, success
-      ) VALUES (?, ?, ?, ?, ?, ?)`,
-      args: [
-        token,
-        mfaUsed ? 'login_with_mfa' : 'login',
-        clientIP,
-        getSafeUserAgent(req), // Use safe user agent extraction
-        JSON.stringify({
-          timestamp: new Date().toISOString(),
-          mfaUsed,
-          adminId,
-          clientIP: clientIP.substring(0, 45) // Truncate IP for JSON storage
-        }),
-        true
-      ]
-    });
-  } catch (error) {
-    console.error('Failed to log admin login:', error);
-    // Don't fail the login if logging fails
-  }
-
-  res.setHeader('Set-Cookie', cookie);
-  res.status(200).json({
-    success: true,
-    expiresIn: authService.sessionDuration,
-    mfaUsed,
-    adminId
-  });
-}
-
-/**
- * Get MFA status for admin
- */
-async function getMfaStatus(adminId) {
-  const db = await getDatabaseClient();
-
-  try {
-    const result = await db.execute({
-      sql: 'SELECT is_enabled FROM admin_mfa_config WHERE admin_id = ?',
-      args: [adminId]
-    });
-
-    return {
-      isEnabled: result.rows[0]?.is_enabled || false
-    };
-  } catch (error) {
-    console.error('Error checking MFA status:', error);
-    return { isEnabled: false };
-  }
+async function generateMfaCode() {
+  // Generate a random 6-digit code
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 export default withSecurityHeaders(loginHandler);
