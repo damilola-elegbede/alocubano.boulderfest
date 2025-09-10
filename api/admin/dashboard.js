@@ -1,4 +1,4 @@
-import authService from '../../lib/auth-service.js';
+import { getAuthService } from '../../lib/auth-service.js';
 import { getDatabaseClient } from '../../lib/database.js';
 import { withSecurityHeaders } from '../../lib/security-headers.js';
 import { columnExists, safeParseInt } from '../../lib/db-utils.js';
@@ -48,124 +48,127 @@ async function handler(req, res) {
     // Add parameters for each subquery that uses event_id filtering
     if (eventId && ticketsHasEventId) {
       // Count the subqueries using tickets table:
-      // total_tickets, checked_in, total_orders, workshop_tickets, vip_tickets, today_sales,
-      // qr_generated, apple_wallet_users, google_wallet_users, web_only_users = 10 subqueries
+      // total_tickets, checked_in, total_orders, workshop_tickets, vip_tickets, today_sales, 
+      // qr_generated, apple_wallet_users, google_wallet_users, web_only_users
       for (let i = 0; i < 10; i++) {
         statsParams.push(eventId);
       }
     }
+    
     if (eventId && transactionsHasEventId) {
-      // 1 subquery uses transactions table with event_id filtering
+      // Count the subqueries using transactions table: total_revenue
       statsParams.push(eventId);
     }
     
-    const stats = await db.execute(statsQuery, statsParams);
+    // Execute stats query
+    const statsResult = await db.execute({
+      sql: statsQuery,
+      args: statsParams
+    });
+    const stats = statsResult.rows[0] || {};
 
-    // Get recent registrations with event filtering
-    let recentRegistrationsQuery = `
-      SELECT 
-        t.ticket_id,
-        t.attendee_first_name || ' ' || t.attendee_last_name as attendee_name,
-        t.attendee_email,
-        t.ticket_type,
-        t.created_at,
-        tr.transaction_id
-      FROM tickets t
-      JOIN transactions tr ON t.transaction_id = tr.id
-    `;
+    // Get recent tickets
+    const recentTicketsQuery = ticketsHasEventId && eventId
+      ? `SELECT 
+          id, 
+          customer_email, 
+          ticket_type, 
+          status,
+          created_at
+        FROM tickets 
+        WHERE event_id = ?
+        ORDER BY created_at DESC 
+        LIMIT 5`
+      : `SELECT 
+          id, 
+          customer_email, 
+          ticket_type, 
+          status,
+          created_at
+        FROM tickets 
+        ORDER BY created_at DESC 
+        LIMIT 5`;
     
-    const recentRegistrationsParams = [];
+    const recentTicketsParams = ticketsHasEventId && eventId ? [eventId] : [];
     
-    // Add WHERE clause for event filtering if applicable
-    if (eventId && ticketsHasEventId) {
-      recentRegistrationsQuery += ` WHERE t.event_id = ?`;
-      recentRegistrationsParams.push(eventId);
-    }
-    
-    recentRegistrationsQuery += `
-      ORDER BY t.created_at DESC
-      LIMIT 10
-    `;
-    
-    const recentRegistrations = await db.execute(recentRegistrationsQuery, recentRegistrationsParams);
+    const recentTicketsResult = await db.execute({
+      sql: recentTicketsQuery,
+      args: recentTicketsParams
+    });
 
-    // Get ticket type breakdown with event filtering
-    let ticketBreakdownQuery = `
-      SELECT 
-        ticket_type,
-        COUNT(*) as count,
-        SUM(price_cents) / 100.0 as revenue
-      FROM tickets
-      WHERE status = 'valid'
-    `;
+    // Get sales by day for the chart
+    const salesByDayQuery = ticketsHasEventId && eventId
+      ? `SELECT 
+          date(created_at) as date,
+          COUNT(*) as tickets_sold,
+          SUM(CASE 
+            WHEN ticket_type LIKE '%workshop%' THEN 1 
+            ELSE 0 
+          END) as workshop_tickets
+        FROM tickets 
+        WHERE created_at >= date('now', '-30 days')
+        AND event_id = ?
+        GROUP BY date(created_at)
+        ORDER BY date DESC`
+      : `SELECT 
+          date(created_at) as date,
+          COUNT(*) as tickets_sold,
+          SUM(CASE 
+            WHEN ticket_type LIKE '%workshop%' THEN 1 
+            ELSE 0 
+          END) as workshop_tickets
+        FROM tickets 
+        WHERE created_at >= date('now', '-30 days')
+        GROUP BY date(created_at)
+        ORDER BY date DESC`;
     
-    const ticketBreakdownParams = [];
+    const salesByDayParams = ticketsHasEventId && eventId ? [eventId] : [];
     
-    // Add event filtering if applicable
-    if (eventId && ticketsHasEventId) {
-      ticketBreakdownQuery += ` AND event_id = ?`;
-      ticketBreakdownParams.push(eventId);
-    }
-    
-    ticketBreakdownQuery += `
-      GROUP BY ticket_type
-      ORDER BY count DESC
-    `;
-    
-    const ticketBreakdown = await db.execute(ticketBreakdownQuery, ticketBreakdownParams);
+    const salesByDayResult = await db.execute({
+      sql: salesByDayQuery,
+      args: salesByDayParams
+    });
 
-    // Get daily sales for the last 7 days with event filtering
-    let dailySalesQuery = `
-      SELECT 
-        date(created_at) as date,
-        COUNT(*) as tickets_sold,
-        SUM(price_cents) / 100.0 as revenue
-      FROM tickets
-      WHERE created_at >= date('now', '-7 days')
-    `;
+    // Get ticket type distribution
+    const ticketDistributionQuery = ticketsHasEventId && eventId
+      ? `SELECT 
+          ticket_type,
+          COUNT(*) as count
+        FROM tickets 
+        WHERE status = 'valid'
+        AND event_id = ?
+        GROUP BY ticket_type`
+      : `SELECT 
+          ticket_type,
+          COUNT(*) as count
+        FROM tickets 
+        WHERE status = 'valid'
+        GROUP BY ticket_type`;
     
-    const dailySalesParams = [];
+    const ticketDistributionParams = ticketsHasEventId && eventId ? [eventId] : [];
     
-    // Add event filtering if applicable
-    if (eventId && ticketsHasEventId) {
-      dailySalesQuery += ` AND event_id = ?`;
-      dailySalesParams.push(eventId);
-    }
-    
-    dailySalesQuery += `
-      GROUP BY date(created_at)
-      ORDER BY date DESC
-    `;
-    
-    const dailySales = await db.execute(dailySalesQuery, dailySalesParams);
-
-    // Get event information if filtering by specific event
-    let eventInfo = null;
-    if (eventId) {
-      try {
-        const eventResult = await db.execute(
-          `SELECT id, name, slug, type, status, start_date, end_date 
-           FROM events WHERE id = ?`,
-          [eventId]
-        );
-        eventInfo = eventResult.rows[0] || null;
-      } catch (error) {
-        console.warn("Could not fetch event info:", error);
-      }
-    }
+    const ticketDistributionResult = await db.execute({
+      sql: ticketDistributionQuery,
+      args: ticketDistributionParams
+    });
 
     res.status(200).json({
-      stats: stats.rows[0],
-      recentRegistrations: recentRegistrations.rows,
-      ticketBreakdown: ticketBreakdown.rows,
-      dailySales: dailySales.rows,
-      eventInfo,
-      eventId,
-      hasEventFiltering: {
-        tickets: ticketsHasEventId,
-        transactions: transactionsHasEventId
+      stats: {
+        totalTickets: stats.total_tickets || 0,
+        checkedIn: stats.checked_in || 0,
+        totalOrders: stats.total_orders || 0,
+        totalRevenue: stats.total_revenue || 0,
+        workshopTickets: stats.workshop_tickets || 0,
+        vipTickets: stats.vip_tickets || 0,
+        todaySales: stats.today_sales || 0,
+        qrGenerated: stats.qr_generated || 0,
+        appleWalletUsers: stats.apple_wallet_users || 0,
+        googleWalletUsers: stats.google_wallet_users || 0,
+        webOnlyUsers: stats.web_only_users || 0
       },
-      timestamp: new Date().toISOString()
+      recentTickets: recentTicketsResult.rows || [],
+      salesByDay: salesByDayResult.rows || [],
+      ticketDistribution: ticketDistributionResult.rows || []
     });
   } catch (error) {
     console.error('Dashboard API error:', error);
@@ -183,5 +186,8 @@ async function handler(req, res) {
   }
 }
 
-// Wrap with auth middleware
-export default withSecurityHeaders(authService.requireAuth(handler));
+// Wrap with auth middleware using lazy initialization
+export default withSecurityHeaders((req, res) => {
+  const authService = getAuthService();
+  return authService.requireAuth(handler)(req, res);
+});

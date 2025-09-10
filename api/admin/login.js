@@ -1,4 +1,4 @@
-import authService from "../../lib/auth-service.js";
+import { getAuthService } from "../../lib/auth-service.js";
 import { getDatabaseClient } from "../../lib/database.js";
 import { withSecurityHeaders } from "../../lib/security-headers.js";
 import {
@@ -204,6 +204,28 @@ function verifyUsername(username) {
 }
 
 async function loginHandler(req, res) {
+  // Initialize services with error handling
+  let authService;
+  let rateLimitService;
+  
+  try {
+    authService = getAuthService();
+    authService.ensureInitialized();
+    rateLimitService = getRateLimitService();
+  } catch (error) {
+    console.error("Service initialization failed:", error);
+    
+    // Return proper JSON error response
+    if (error.message.includes("not configured") || error.message.includes("FATAL")) {
+      return res.status(503).json({ 
+        error: "Service temporarily unavailable",
+        details: process.env.NODE_ENV === "development" ? error.message : undefined
+      });
+    }
+    
+    return res.status(500).json({ error: "Internal server error" });
+  }
+
   if (req.method === "POST") {
     const { username, password, mfaCode, step } = req.body || {};
     const clientIP = getClientIP(req);
@@ -271,10 +293,10 @@ async function loginHandler(req, res) {
     try {
       if (step === "mfa" || mfaCode) {
         // Step 2: MFA verification
-        return await handleMfaStep(req, res, mfaCode, clientIP);
+        return await handleMfaStep(req, res, mfaCode, clientIP, authService, rateLimitService);
       } else {
         // Step 1: Username and Password verification
-        return await handlePasswordStep(req, res, username, password, clientIP);
+        return await handlePasswordStep(req, res, username, password, clientIP, authService, rateLimitService);
       }
     } catch (error) {
       console.error("Login process failed:", {
@@ -323,7 +345,7 @@ async function loginHandler(req, res) {
 /**
  * Handle username and password verification step (Step 1) with enhanced security
  */
-async function handlePasswordStep(req, res, username, password, clientIP) {
+async function handlePasswordStep(req, res, username, password, clientIP, authService, rateLimitService) {
   // Additional username validation
   if (!username || typeof username !== "string" || username.length > 50) {
     return res.status(400).json({ error: "Invalid username format" });
@@ -388,9 +410,6 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
   }
 
   if (!isValid) {
-    // Get rate limit service instance - fixed to use function call
-    const rateLimitService = getRateLimitService();
-    
     // Record failed attempt
     const attemptResult = rateLimitService.recordFailedAttempt(clientIP);
 
@@ -407,9 +426,6 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
     return res.status(401).json(response);
   }
 
-  // Get rate limit service instance - fixed to use function call
-  const rateLimitService = getRateLimitService();
-  
   // Clear login attempts on password success
   rateLimitService.clearAttempts(clientIP);
 
@@ -419,7 +435,7 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
 
   if (!mfaStatus.isEnabled) {
     // No MFA required - complete login
-    return await completeLogin(req, res, adminId, clientIP, false);
+    return await completeLogin(req, res, adminId, clientIP, false, authService);
   }
 
   // MFA is required - create temporary session and request MFA
@@ -453,7 +469,7 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
 /**
  * Handle MFA verification step (Step 2)
  */
-async function handleMfaStep(req, res, mfaCode, clientIP) {
+async function handleMfaStep(req, res, mfaCode, clientIP, authService, rateLimitService) {
   if (!mfaCode || typeof mfaCode !== "string") {
     return res.status(400).json({ error: "MFA code is required" });
   }
@@ -510,7 +526,7 @@ async function handleMfaStep(req, res, mfaCode, clientIP) {
   await markSessionMfaVerified(tempToken);
 
   // Complete login
-  return await completeLogin(req, res, adminId, clientIP, true, tempToken);
+  return await completeLogin(req, res, adminId, clientIP, true, authService, tempToken);
 }
 
 /**
@@ -522,6 +538,7 @@ async function completeLogin(
   adminId,
   clientIP,
   mfaUsed = false,
+  authService,
   existingToken = null,
 ) {
   const db = await getDatabaseClient();
