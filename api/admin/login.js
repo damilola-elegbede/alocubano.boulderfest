@@ -5,6 +5,7 @@ import {
   verifyMfaCode,
   markSessionMfaVerified,
 } from "../../lib/mfa-middleware.js";
+import rateLimitService from "../../lib/rate-limit-service.js";
 
 /**
  * Input validation schemas
@@ -388,7 +389,7 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
 
   if (!isValid) {
     // Record failed attempt
-    const attemptResult = await rateLimitService.recordFailedAttempt(clientIP);
+    const attemptResult = rateLimitService.recordFailedAttempt(clientIP);
 
     const response = {
       error: "Invalid credentials",
@@ -404,7 +405,7 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
   }
 
   // Clear login attempts on password success
-  await rateLimitService.clearAttempts(clientIP);
+  rateLimitService.clearAttempts(clientIP);
 
   // Check if MFA is enabled
   const adminId = "admin"; // Default admin ID
