@@ -1,4 +1,4 @@
-import authService from "../../lib/auth-service.js";
+import { getAuthService } from "../../lib/auth-service.js";
 import { getDatabaseClient } from "../../lib/database.js";
 import { withSecurityHeaders } from "../../lib/security-headers.js";
 
@@ -97,5 +97,19 @@ async function handler(req, res) {
   }
 }
 
-// Wrap with auth middleware and security headers
-export default withSecurityHeaders(authService.requireAuth(handler));
+// Wrap with auth middleware using lazy initialization
+export default withSecurityHeaders(async (req, res) => {
+  try {
+    const authService = getAuthService();
+    return await authService.requireAuth(handler)(req, res);
+  } catch (error) {
+    console.error('Events auth middleware error:', error);
+    if (error.message && error.message.includes('❌ FATAL:')) {
+      return res.status(503).json({ 
+        error: 'Service temporarily unavailable',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
