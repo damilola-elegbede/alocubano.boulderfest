@@ -3,7 +3,7 @@
  * Handles newsletter unsubscribe requests
  */
 
-import { getEmailSubscriberService } from "../lib/email-subscriber-service.js";
+import { getEmailSubscriberService } from "../../lib/email-subscriber-service.js";
 
 // HTML escape function to prevent XSS attacks
 function escapeHtml(unsafe) {

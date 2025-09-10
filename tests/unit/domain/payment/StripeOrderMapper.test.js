@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { StripeOrderMapper } from '../../../../api/lib/domain/payment/StripeOrderMapper.js';
+import { StripeOrderMapper } from '../../../../lib/domain/payment/StripeOrderMapper.js';
 
 describe('StripeOrderMapper Domain Service', () => {
   describe('mapCartItemToStripeLineItem()', () => {

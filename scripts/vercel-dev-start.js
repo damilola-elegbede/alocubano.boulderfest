@@ -302,34 +302,30 @@ TEST_ADMIN_PASSWORD=test-password
   async optimizeVercelConfig() {
     console.log('⚙️  Optimizing Vercel configuration...');
     
-    // Create development-specific vercel config
-    const devVercelConfig = {
-      "dev": {
-        "port": this.options.port,
-        "listen": `0.0.0.0:${this.options.port}`
-      },
-      "build": {
-        "env": {
-          "NODE_ENV": "development",
-          "SKIP_DATABASE_INIT": "true"
-        }
-      },
-      // Minimal functions configuration for dev
-      "functions": {
-        "api/**/*.js": {
-          "maxDuration": 30
-        }
-      }
-    };
+    // DO NOT create or modify .vercel/project.json
+    // That file is for Vercel project linking only and should be managed by Vercel CLI
+    // The previous implementation incorrectly put config data there, causing "invalid project settings" error
     
-    const devConfigPath = resolve(projectRoot, '.vercel/project.json');
-    try {
-      await execAsync(`mkdir -p ${resolve(projectRoot, '.vercel')}`);
-      writeFileSync(devConfigPath, JSON.stringify(devVercelConfig, null, 2));
-      console.log('   ✅ Development Vercel config optimized');
-    } catch (error) {
-      console.log(`   ⚠️  Could not optimize config: ${error.message}`);
+    // If .vercel directory exists but project.json has wrong format, remove it
+    const projectJsonPath = resolve(projectRoot, '.vercel/project.json');
+    if (existsSync(projectJsonPath)) {
+      try {
+        const content = JSON.parse(readFileSync(projectJsonPath, 'utf8'));
+        // Check if it has our incorrect format (dev, build, functions keys)
+        if (content.dev || content.build || content.functions) {
+          console.log('   ⚠️  Found incorrectly formatted .vercel/project.json');
+          console.log('   🗑️  Removing invalid project.json to allow proper linking');
+          await execAsync(`rm -f ${projectJsonPath}`);
+          console.log('   ✅ Invalid project.json removed');
+        } else if (content.projectId && content.orgId) {
+          console.log('   ✅ Valid project.json found (project linked)');
+        }
+      } catch (error) {
+        console.log(`   ⚠️  Could not check project.json: ${error.message}`);
+      }
     }
+    
+    console.log('   ✅ Configuration check complete');
   }
 
   /**

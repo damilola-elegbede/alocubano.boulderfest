@@ -5,9 +5,9 @@
  */
 
 import { getDatabasePerformanceService } from "../../lib/performance/database-performance-service.js";
-import authService from "../lib/auth-service.js";
-import { withSecurityHeaders } from "../lib/security-headers.js";
-import rateLimitService from "../lib/rate-limit-service.js";
+import authService from "../../lib/auth-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers.js";
+import rateLimitService from "../../lib/rate-limit-service.js";
 
 async function handler(req, res) {
   // Only GET requests allowed

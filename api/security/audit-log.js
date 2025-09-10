@@ -1,4 +1,4 @@
-import { verifyAdminToken } from "../lib/auth/admin-auth.js";
+import { verifyAdminToken } from "../../lib/auth/admin-auth.js";
 import AuditLogger from "../../lib/security/audit-logger.js";
 
 export default async function handler(req, res) {

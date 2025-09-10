@@ -1,6 +1,6 @@
-import analyticsService from '../lib/analytics-service.js';
-import authService from '../lib/auth-service.js';
-import { withSecurityHeaders } from '../lib/security-headers.js';
+import analyticsService from '../../lib/analytics-service.js';
+import authService from '../../lib/auth-service.js';
+import { withSecurityHeaders } from '../../lib/security-headers.js';
 
 /**
  * Convert analytics data to CSV format

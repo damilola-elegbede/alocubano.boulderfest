@@ -82,7 +82,7 @@ const PERFORMANCE_THRESHOLDS = {
 The system automatically wraps existing database calls:
 
 ```javascript
-import { getDatabase } from "../api/lib/database.js";
+import { getDatabase } from "../database.js";
 import { withQueryOptimization } from "../lib/performance/query-optimizer.js";
 
 const db = getDatabase();

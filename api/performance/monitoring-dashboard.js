@@ -4,8 +4,8 @@
  */
 
 import { getDatabasePerformanceService } from "../../lib/performance/database-performance-service.js";
-import authService from "../lib/auth-service.js";
-import { withSecurityHeaders } from "../lib/security-headers.js";
+import authService from "../../lib/auth-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers.js";
 
 async function handler(req, res) {
   if (req.method !== "GET") {

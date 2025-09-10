@@ -3,7 +3,7 @@
  * Processes incoming webhook events from Brevo
  */
 
-import { getEmailSubscriberService } from "../lib/email-subscriber-service.js";
+import { getEmailSubscriberService } from "../../lib/email-subscriber-service.js";
 
 /**
  * Get raw body from request

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getGalleryService } from '../../api/lib/gallery-service.js';
+import { getGalleryService } from '../../lib/gallery-service.js';
 
 describe('Cache Placeholder Logic', () => {
   let originalEnv;

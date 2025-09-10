@@ -1,6 +1,6 @@
-import { getDatabaseClient } from '../lib/database.js';
-import { getBrevoClient } from '../lib/brevo-client.js';
-import rateLimit from '../lib/rate-limiter.js';
+import { getDatabaseClient } from '../../lib/database.js';
+import { getBrevoClient } from '../../lib/brevo-client.js';
+import rateLimit from '../../lib/rate-limiter.js';
 
 // Input validation regex patterns
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;

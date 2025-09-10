@@ -1,5 +1,5 @@
-import ticketService from "../lib/ticket-service.js";
-import tokenService from "../lib/token-service.js";
+import ticketService from "../../lib/ticket-service.js";
+import tokenService from "../../lib/token-service.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {

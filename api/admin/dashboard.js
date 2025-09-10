@@ -1,7 +1,7 @@
-import authService from '../lib/auth-service.js';
-import { getDatabaseClient } from '../lib/database.js';
-import { withSecurityHeaders } from '../lib/security-headers.js';
-import { columnExists, safeParseInt } from '../lib/db-utils.js';
+import authService from '../../lib/auth-service.js';
+import { getDatabaseClient } from '../../lib/database.js';
+import { withSecurityHeaders } from '../../lib/security-headers.js';
+import { columnExists, safeParseInt } from '../../lib/db-utils.js';
 
 async function handler(req, res) {
   let db;

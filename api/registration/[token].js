@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { getDatabaseClient } from '../lib/database.js';
+import { getDatabaseClient } from '../../lib/database.js';
 
 export default async function handler(req, res) {
   // Only allow GET requests

@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { getDatabaseClient, resetDatabaseInstance } from '../../../api/lib/database.js';
+import { getDatabaseClient, resetDatabaseInstance } from '../../../lib/database.js';
 
 describe('Integration: Database Data Integrity', () => {
   let db;
@@ -630,7 +630,7 @@ describe('Integration: Database Data Integrity', () => {
     testTicketId = ticketId;
 
     // TRUE concurrency testing - use separate database clients for real parallel operations
-    const { getDatabaseClient } = await import('../../../api/lib/database.js');
+    const { getDatabaseClient } = await import('../../../lib/database.js');
     
     const concurrentUpdates = [1, 2, 3].map(async (attempt) => {
       let separateClient;

@@ -5,7 +5,7 @@
  * Supports various endpoint types with appropriate configurations.
  */
 
-import { getRateLimiter } from "../api/lib/security/rate-limiter.js";
+import { getRateLimiter } from "../lib/security/rate-limiter.js";
 import { ApplicationError } from "./error-handler.js";
 
 /**

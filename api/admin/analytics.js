@@ -1,7 +1,7 @@
-import analyticsService from '../lib/analytics-service.js';
-import authService from '../lib/auth-service.js';
-import { withSecurityHeaders } from '../lib/security-headers.js';
-import rateLimitService from '../lib/rate-limit-service.js';
+import analyticsService from '../../lib/analytics-service.js';
+import authService from '../../lib/auth-service.js';
+import { withSecurityHeaders } from '../../lib/security-headers.js';
+import rateLimitService from '../../lib/rate-limit-service.js';
 
 async function handler(req, res) {
   if (req.method !== 'GET') {

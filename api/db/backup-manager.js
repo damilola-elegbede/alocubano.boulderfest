@@ -10,7 +10,7 @@ import zlib from "zlib";
 import crypto from "crypto";
 import { promisify } from "util";
 import { Transform, pipeline } from "stream";
-import { getDatabase } from "../lib/database.js";
+import { getDatabase } from "../../lib/database.js";
 
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);

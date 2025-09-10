@@ -14,14 +14,14 @@
  */
 
 import Stripe from "stripe";
-import transactionService from "../lib/transaction-service.js";
-import paymentEventLogger from "../lib/payment-event-logger.js";
-import ticketService from "../lib/ticket-service.js";
-import { getTicketEmailService } from "../lib/ticket-email-service-brevo.js";
-import { RegistrationTokenService } from "../lib/registration-token-service.js";
-import { generateTicketId } from "../lib/ticket-id-generator.js";
-import { scheduleRegistrationReminders } from "../lib/reminder-scheduler.js";
-import { getDatabaseClient } from "../lib/database.js";
+import transactionService from "../../lib/transaction-service.js";
+import paymentEventLogger from "../../lib/payment-event-logger.js";
+import ticketService from "../../lib/ticket-service.js";
+import { getTicketEmailService } from "../../lib/ticket-email-service-brevo.js";
+import { RegistrationTokenService } from "../../lib/registration-token-service.js";
+import { generateTicketId } from "../../lib/ticket-id-generator.js";
+import { scheduleRegistrationReminders } from "../../lib/reminder-scheduler.js";
+import { getDatabaseClient } from "../../lib/database.js";
 
 // Initialize Stripe with strict error handling
 if (!process.env.STRIPE_SECRET_KEY) {

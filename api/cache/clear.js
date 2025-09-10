@@ -11,10 +11,10 @@
  * - Rate limiting protection
  */
 
-import authService from "../lib/auth-service.js";
-import { getCacheService } from "../lib/cache-service.js";
+import authService from "../../lib/auth-service.js";
+import { getCacheService } from "../../lib/cache-service.js";
 import { getCache } from "../../lib/cache/index.js";
-import { withSecurityHeaders } from "../lib/security-headers.js";
+import { withSecurityHeaders } from "../../lib/security-headers.js";
 
 // Rate limiting: max 10 clear operations per minute per admin
 const rateLimitMap = new Map();

@@ -4,7 +4,7 @@
  */
 
 import { cleanTestData, getCleanupStats } from './helpers/database-cleanup.js';
-import { getDatabaseClient } from '../../api/lib/database.js';
+import { getDatabaseClient } from '../../lib/database.js';
 
 /**
  * Reset database sequences/auto-increment counters

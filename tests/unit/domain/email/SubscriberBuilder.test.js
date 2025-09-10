@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SubscriberBuilder } from '../../../../api/lib/domain/email/SubscriberBuilder.js';
+import { SubscriberBuilder } from '../../../../lib/domain/email/SubscriberBuilder.js';
 
 describe('SubscriberBuilder Domain Service', () => {
   describe('buildSubscriberData()', () => {

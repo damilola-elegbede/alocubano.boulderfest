@@ -1,4 +1,4 @@
-import googleSheetsService from "../lib/google-sheets-service.js";
+import googleSheetsService from "../../lib/google-sheets-service.js";
 
 export default async function handler(req, res) {
   // Verify cron secret (set by Vercel)

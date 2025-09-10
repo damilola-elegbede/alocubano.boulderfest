@@ -4,15 +4,15 @@
  * Provides debugging information for database configuration
  */
 
-import { getEmailSubscriberService } from "./lib/email-subscriber-service.js";
-import { getDatabaseClient } from "./lib/database.js";
-import { getCorsConfig, isOriginAllowed } from "./lib/cors-config.js";
+import { getEmailSubscriberService } from "../lib/email-subscriber-service.js";
+import { getDatabaseClient } from "../lib/database.js";
+import { getCorsConfig, isOriginAllowed } from "../lib/cors-config.js";
 import {
   createSecurePragmaQuery,
   createSecureCountQuery,
   filterApplicationTables,
-} from "./lib/sql-security.js";
-import { getMigrationStatus } from "./lib/migration-status.js";
+} from "../lib/sql-security.js";
+import { getMigrationStatus } from "../lib/migration-status.js";
 
 export default async function handler(req, res) {
   // Allow access in development, test environments, and when debug is enabled

@@ -16,17 +16,17 @@ describe('Wallet Pass Integration Tests', () => {
 
   beforeAll(async () => {
     // Dynamic imports after environment variables are set
-    const databaseModule = await import('../../../api/lib/database.js');
+    const databaseModule = await import('../../../lib/database.js');
     getDatabase = databaseModule.getDatabase;
     getDatabaseClient = databaseModule.getDatabaseClient;
     
-    const appleModule = await import('../../../api/lib/apple-wallet-service.js');
+    const appleModule = await import('../../../lib/apple-wallet-service.js');
     AppleWalletService = appleModule.AppleWalletService;
     
-    const googleModule = await import('../../../api/lib/google-wallet-service.js');
+    const googleModule = await import('../../../lib/google-wallet-service.js');
     GoogleWalletService = googleModule.GoogleWalletService;
     
-    const qrModule = await import('../../../api/lib/qr-token-service.js');
+    const qrModule = await import('../../../lib/qr-token-service.js');
     QRTokenService = qrModule.QRTokenService;
     
     database = await getDatabase();
@@ -306,7 +306,7 @@ describe('Wallet Pass Integration Tests', () => {
       vi.spyOn(appleWalletService, 'isConfigured').mockReturnValue(true);
       
       // Mock getDatabaseClient to simulate database error using vi.spyOn
-      const databaseModule = await import('../../../api/lib/database.js');
+      const databaseModule = await import('../../../lib/database.js');
       const getDatabaseClientSpy = vi.spyOn(databaseModule, 'getDatabaseClient')
         .mockRejectedValue(new Error('Database connection failed'));
 

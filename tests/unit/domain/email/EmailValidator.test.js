@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { EmailValidator } from '../../../../api/lib/domain/email/EmailValidator.js';
+import { EmailValidator } from '../../../../lib/domain/email/EmailValidator.js';
 
 describe('EmailValidator Domain Service', () => {
   describe('validateEmail()', () => {

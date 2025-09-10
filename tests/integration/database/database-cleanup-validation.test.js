@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect } from 'vitest';
-import { getDatabaseClient } from '../../../api/lib/database.js';
+import { getDatabaseClient } from '../../../lib/database.js';
 
 describe('Database Cleanup Fixes Validation', () => {
   test('should validate table name fixes are syntactically correct', async () => {

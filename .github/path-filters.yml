@@ -68,7 +68,7 @@ backend-database:
   - 'migrations/**/*.js'
   - 'data/**'
   - 'api/db/**'
-  - 'api/lib/database.js'
+  - 'lib/database.js'
   - 'scripts/migrate.js'
   - 'scripts/migrate-e2e.js'
   - 'scripts/setup-e2e-database.js'
@@ -247,8 +247,8 @@ security-admin:
   - 'js/admin/**'
 
 security-auth:
-  - 'api/lib/auth.js'
-  - 'api/lib/jwt.js'
+  - 'lib/auth.js'
+  - 'lib/jwt.js'
   - 'lib/security/**'
   - 'middleware/auth.js'
 
@@ -337,7 +337,7 @@ critical:
   - 'package.json'
   - 'vercel.json'
   - '.github/workflows/**'
-  - 'api/lib/database.js'
+  - 'lib/database.js'
   - 'migrations/**'
   - '.env*'
   - 'SECURITY.md'
@@ -346,7 +346,7 @@ critical-infrastructure:
   - 'vercel.json'
   - '.github/workflows/main-ci.yml'
   - '.github/workflows/deploy-optimized.yml'
-  - 'api/lib/database.js'
+  - 'lib/database.js'
 
 critical-security:
   - 'api/admin/**'

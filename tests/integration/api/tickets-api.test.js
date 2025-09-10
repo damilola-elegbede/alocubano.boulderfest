@@ -11,7 +11,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { testRequest, HTTP_STATUS } from '../../helpers.js';
-import { getDatabaseClient, resetDatabaseInstance } from '../../../api/lib/database.js';
+import { getDatabaseClient, resetDatabaseInstance } from '../../../lib/database.js';
 import jwt from 'jsonwebtoken';
 
 describe('Integration: Tickets API', () => {

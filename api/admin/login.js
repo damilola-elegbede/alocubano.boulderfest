@@ -1,11 +1,11 @@
-import authService from '../lib/auth-service.js';
-import { getDatabaseClient } from '../lib/database.js';
-import { getRateLimitService } from '../lib/rate-limit-service.js';
-import { withSecurityHeaders } from '../lib/security-headers.js';
+import authService from '../../lib/auth-service.js';
+import { getDatabaseClient } from '../../lib/database.js';
+import { getRateLimitService } from '../../lib/rate-limit-service.js';
+import { withSecurityHeaders } from '../../lib/security-headers.js';
 import {
   verifyMfaCode,
   markSessionMfaVerified
-} from '../lib/mfa-middleware.js';
+} from '../../lib/mfa-middleware.js';
 
 /**
  * Input validation schemas

@@ -1,5 +1,5 @@
-import { getDatabaseClient } from '../lib/database.js';
-import { getBrevoClient } from '../lib/brevo-client.js';
+import { getDatabaseClient } from '../../lib/database.js';
+import { getBrevoClient } from '../../lib/brevo-client.js';
 
 const VERSION = '1.0.0';
 const SERVICE_NAME = 'registration-api';

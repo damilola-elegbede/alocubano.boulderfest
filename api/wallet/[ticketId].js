@@ -1,6 +1,6 @@
-import appleWalletService from "../lib/apple-wallet-service.js";
-import googleWalletService from "../lib/google-wallet-service.js";
-import cors from "../lib/cors-config.js";
+import appleWalletService from "../../lib/apple-wallet-service.js";
+import googleWalletService from "../../lib/google-wallet-service.js";
+import cors from "../../lib/cors-config.js";
 
 export default async function handler(req, res) {
   // Handle CORS

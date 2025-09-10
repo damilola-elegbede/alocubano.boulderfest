@@ -3,7 +3,7 @@
  * Allows clearing and managing the Google Drive service cache
  */
 
-import { getGoogleDriveService, clearGoogleDriveCache, getGoogleDriveMetrics } from './lib/google-drive-service.js';
+import { getGoogleDriveService, clearGoogleDriveCache, getGoogleDriveMetrics } from '../lib/google-drive-service.js';
 
 export default async function handler(req, res) {
   // Configure CORS with restricted origins for security

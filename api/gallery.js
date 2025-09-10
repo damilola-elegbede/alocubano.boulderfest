@@ -3,7 +3,7 @@
  * Serves gallery data from cache (local) or runtime API (Vercel)
  */
 
-import { getGalleryService } from "./lib/gallery-service.js";
+import { getGalleryService } from "../lib/gallery-service.js";
 import crypto from 'crypto';
 
 export default async function handler(req, res) {

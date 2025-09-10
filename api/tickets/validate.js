@@ -1,6 +1,6 @@
-import { getDatabaseClient } from "../lib/database.js";
-import { getRateLimitService } from "../lib/rate-limit-service.js";
-import { withSecurityHeaders } from "../lib/security-headers.js";
+import { getDatabaseClient } from "../../lib/database.js";
+import { getRateLimitService } from "../../lib/rate-limit-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers.js";
 import jwt from "jsonwebtoken";
 
 // Enhanced rate limiting configuration

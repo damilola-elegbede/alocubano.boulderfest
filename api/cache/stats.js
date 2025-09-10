@@ -12,10 +12,10 @@
  * - Admin authentication required
  */
 
-import authService from "../lib/auth-service.js";
-import { getCacheService } from "../lib/cache-service.js";
+import authService from "../../lib/auth-service.js";
+import { getCacheService } from "../../lib/cache-service.js";
 import { getCache } from "../../lib/cache/index.js";
-import { withSecurityHeaders } from "../lib/security-headers.js";
+import { withSecurityHeaders } from "../../lib/security-headers.js";
 
 // Rate limiting: max 20 stats requests per minute per admin
 const rateLimitMap = new Map();

@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { BrevoService, resetBrevoService } from "../../../api/lib/brevo-service.js";
+import { BrevoService, resetBrevoService } from "../../../lib/brevo-service.js";
 
 describe("Brevo Service", () => {
   beforeEach(() => {

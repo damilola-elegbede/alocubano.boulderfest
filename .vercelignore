@@ -1,25 +1,3 @@
-# Python files and virtual environment
-venv/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-server.py
-debug_*.py
-requirements.txt
-
-# Development files
-.env
-.env.local
-.env.example
-.env.local.example
-.env.production.template
-.env.local.template
-
-# Test files
-tests/
-coverage/
-
 # Node modules
 node_modules/
 
@@ -27,18 +5,28 @@ node_modules/
 .git/
 .gitignore
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
+# Environment files
+.env
+.env.local
+.env.example
+.env.*.local
 
-# OS files
-.DS_Store
-Thumbs.db
+# Test files and directories
+tests/
+coverage/
+*.test.js
+*.spec.js
+playwright-report/
+test-results/
+vitest.config.js
+playwright.config.js
+playwright-*.config.js
 
-# Temporary files and build artifacts
+# Development and build artifacts
+dist/
+build/
 .tmp/
+.cache/
 *.log
 *.tmp
 tmp/
@@ -47,31 +35,65 @@ tmp/
 docs/
 *.md
 LICENSE
+CHANGELOG
+SECURITY
 
-# Scripts and migrations
+# IDE and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Scripts and config
 scripts/
-migrations/
+config/
+.eslintrc.json
+.prettierrc
+.htmlhintrc
 
-# Build directory is allowed for Vercel build scripts
-# build/ directory contains only Vercel-specific build scripts
-# Only ignore root config directory, not api/config
-/config/
+# Python files
+*.py
+*.pyc
+*.pyo
+venv/
+__pycache__/
+requirements.txt
 
-# Apple Wallet certificates and assets (sensitive)
-api/lib/apple-wallet-assets/
-*.p12
-*.pem
-*.key
-*.cert
+# Development backups
+*.backup
+*.bak
+package.dev.json
 
-# Test data
-test-data/
-fixtures/
+# Reports and metrics
+reports/
+lighthouse-reports/
+performance-reports/
 
-# GitHub
-.github/
+# Database files (except migrations)
+*.db
+*.sqlite
+database.sqlite
 
-# Package files
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
+# Unnecessary images
+images/dev/
+images/test/
+images/screenshots/
+
+# Public duplicates (keep root dirs)
+public/css/
+public/js/
+public/images/
+
+# API test files
+api/**/*.test.js
+api/**/*.spec.js
+
+# Lib test files  
+lib/**/*.test.js
+lib/**/*.spec.js
+
+# Migration test files
+migrations/**/*.test.js
+migrations/**/*.spec.js

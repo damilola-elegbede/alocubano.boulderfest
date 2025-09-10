@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { getDatabaseClient, resetDatabaseInstance } from '../../../api/lib/database.js';
+import { getDatabaseClient, resetDatabaseInstance } from '../../../lib/database.js';
 
 import { testRequest, HTTP_STATUS, generateTestEmail } from '../../helpers.js';
 

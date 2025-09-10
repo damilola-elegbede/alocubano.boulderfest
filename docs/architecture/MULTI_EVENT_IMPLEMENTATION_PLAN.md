@@ -45,7 +45,7 @@ SELECT COUNT(*) FROM tickets WHERE event_id IS NOT NULL;
 - [ ] Create event cache system
 
 #### Day 5: API Integration
-- [ ] Update `/api/lib/event-middleware.js`
+- [ ] Update `/lib/event-middleware.js`
 - [ ] Add event context to all admin endpoints
 - [ ] Implement backward compatibility layer
 - [ ] Add event validation to APIs
@@ -149,7 +149,7 @@ SELECT COUNT(*) FROM tickets WHERE event_id IS NOT NULL;
 #### Event Middleware Implementation
 
 ```javascript
-// /api/lib/event-middleware.js
+// /lib/event-middleware.js
 export async function withEventContext(handler) {
   return async (req, res) => {
     try {

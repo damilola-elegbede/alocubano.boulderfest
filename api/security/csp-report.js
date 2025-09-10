@@ -5,7 +5,7 @@
  */
 
 import { withErrorHandling } from "../../middleware/error-handler.js";
-import { addAPISecurityHeaders } from "../lib/security-headers.js";
+import { addAPISecurityHeaders } from "../../lib/security-headers.js";
 
 /**
  * CSP violation severity classification

@@ -3,7 +3,7 @@
  * Provides health status and metrics for the Google Drive integration
  */
 
-import { getGoogleDriveService, getGoogleDriveMetrics } from './lib/google-drive-service.js';
+import { getGoogleDriveService, getGoogleDriveMetrics } from '../lib/google-drive-service.js';
 
 export default async function handler(req, res) {
   // Set CORS headers
