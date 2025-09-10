@@ -4,10 +4,8 @@ import { withSecurityHeaders } from '../../lib/security-headers.js';
 import { columnExists, safeParseInt } from '../../lib/db-utils.js';
 
 async function handler(req, res) {
-  let db;
-  
   try {
-    db = await getDatabaseClient();
+    const db = await getDatabaseClient();
 
     if (req.method !== 'GET') {
       res.setHeader('Allow', 'GET');
@@ -187,7 +185,18 @@ async function handler(req, res) {
 }
 
 // Wrap with auth middleware using lazy initialization
-export default withSecurityHeaders((req, res) => {
-  const authService = getAuthService();
-  return authService.requireAuth(handler)(req, res);
+export default withSecurityHeaders(async (req, res) => {
+  try {
+    const authService = getAuthService();
+    return await authService.requireAuth(handler)(req, res);
+  } catch (error) {
+    console.error('Dashboard auth middleware error:', error);
+    if (error.message && error.message.includes('❌ FATAL:')) {
+      return res.status(503).json({ 
+        error: 'Service temporarily unavailable',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
