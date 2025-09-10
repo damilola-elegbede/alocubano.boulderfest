@@ -345,21 +345,115 @@ function extractClientIP(req) {
 }
 
 /**
- * Basic IP address validation
- * @param {string} ip - IP address to validate
+ * Enhanced IP address validation with complete IPv4 and IPv6 support
+ * @param {any} ip - IP address to validate (handles any input type)
  * @returns {boolean} - Whether IP is valid format
  */
 function isValidIP(ip) {
+  // Type checking - ensure input is a non-empty string
   if (!ip || typeof ip !== 'string') return false;
   
-  // Basic IPv4 validation
-  const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-  // Basic IPv6 validation (simplified)
-  const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
-  // IPv4-mapped IPv6
-  const ipv4MappedRegex = /^::ffff:/;
+  // Length validation - prevent potential DoS with extremely long strings
+  if (ip.length > 45) return false; // Max IPv6 length is 39, IPv4 is 15, add buffer
+  
+  // Trim whitespace and validate basic character set
+  const trimmedIP = ip.trim();
+  if (!trimmedIP || !/^[0-9a-fA-F:.]+$/.test(trimmedIP)) return false;
+  
+  return isValidIPv4(trimmedIP) || isValidIPv6(trimmedIP);
+}
 
-  return ipv4Regex.test(ip) || ipv6Regex.test(ip) || ipv4MappedRegex.test(ip);
+/**
+ * Comprehensive IPv4 address validation
+ * @param {string} ip - IPv4 address to validate
+ * @returns {boolean} - Whether IPv4 is valid
+ */
+function isValidIPv4(ip) {
+  // IPv4 pattern with strict octet validation
+  const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+  
+  if (!ipv4Regex.test(ip)) return false;
+  
+  // Additional validation: ensure no leading zeros (except for single zero)
+  const octets = ip.split('.');
+  for (const octet of octets) {
+    if (octet.length > 1 && octet.startsWith('0')) {
+      return false; // Invalid: leading zeros like 01, 001, etc.
+    }
+  }
+  
+  return true;
+}
+
+/**
+ * Comprehensive IPv6 address validation
+ * @param {string} ip - IPv6 address to validate
+ * @returns {boolean} - Whether IPv6 is valid
+ */
+function isValidIPv6(ip) {
+  // Handle IPv4-mapped IPv6 addresses (::ffff:192.168.1.1)
+  if (ip.startsWith('::ffff:')) {
+    const ipv4Part = ip.substring(7);
+    return isValidIPv4(ipv4Part);
+  }
+  
+  // Handle IPv4-compatible IPv6 addresses (::192.168.1.1)
+  if (ip.startsWith('::') && ip.includes('.')) {
+    const ipv4Part = ip.substring(2);
+    return isValidIPv4(ipv4Part);
+  }
+  
+  // Standard IPv6 validation
+  // Check for multiple :: (only one allowed)
+  const doubleColonCount = (ip.match(/::/g) || []).length;
+  if (doubleColonCount > 1) return false;
+  
+  // Split by :: to handle compressed notation
+  if (doubleColonCount === 1) {
+    const parts = ip.split('::');
+    if (parts.length !== 2) return false;
+    
+    const leftPart = parts[0];
+    const rightPart = parts[1];
+    
+    // Validate left part
+    if (leftPart && !isValidIPv6Groups(leftPart.split(':'))) return false;
+    
+    // Validate right part
+    if (rightPart && !isValidIPv6Groups(rightPart.split(':'))) return false;
+    
+    // Check total group count doesn't exceed 8
+    const leftGroups = leftPart ? leftPart.split(':').length : 0;
+    const rightGroups = rightPart ? rightPart.split(':').length : 0;
+    
+    // :: represents at least one group of zeros
+    if (leftGroups + rightGroups >= 8) return false;
+    
+    return true;
+  }
+  
+  // No compression - must have exactly 8 groups
+  const groups = ip.split(':');
+  if (groups.length !== 8) return false;
+  
+  return isValidIPv6Groups(groups);
+}
+
+/**
+ * Validate IPv6 groups
+ * @param {string[]} groups - Array of IPv6 groups
+ * @returns {boolean} - Whether all groups are valid
+ */
+function isValidIPv6Groups(groups) {
+  for (const group of groups) {
+    // Empty groups are allowed in compressed notation context
+    if (group === '') continue;
+    
+    // Each group must be 1-4 hex digits
+    if (!/^[0-9a-fA-F]{1,4}$/.test(group)) return false;
+  }
+  
+  return true;
 }
 
 /**

@@ -1,6 +1,7 @@
 import analyticsService from '../../lib/analytics-service.js';
 import authService from '../../lib/auth-service.js';
 import { withSecurityHeaders } from '../../lib/security-headers.js';
+import { getDatabaseClient } from '../../lib/database.js';
 
 /**
  * Safely quote and sanitize CSV values to prevent formula injection
@@ -92,6 +93,9 @@ function convertToCSV(data, type) {
 }
 
 async function handler(req, res) {
+  // Initialize database client
+  await getDatabaseClient();
+  
   if (req.method !== 'GET') {
     res.setHeader('Allow', ['GET']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
