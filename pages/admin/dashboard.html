@@ -592,10 +592,12 @@
             method: "DELETE",
             headers: headers,
           });
-          window.location.href = "/admin/login";
-        } catch (error) {
-          console.error("Logout failed:", error);
-          window.location.href = "/admin/login";
+        } finally {
+          // Clear client storage
+          localStorage.removeItem('adminToken');
+          sessionStorage.clear();
+          // Redirect
+          window.location.href = '/admin/login';
         }
       }
 

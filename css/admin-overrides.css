@@ -1277,8 +1277,20 @@
     transition: none;
   }
 
-  @keyframes pulse,
-  @keyframes shimmer,
+  @keyframes pulse {
+    from, to {
+      transform: none;
+      background-position: 0 0;
+    }
+  }
+
+  @keyframes shimmer {
+    from, to {
+      transform: none;
+      background-position: 0 0;
+    }
+  }
+
   @keyframes adminSpin {
     from, to {
       transform: none;

@@ -339,9 +339,21 @@
         if (!confirm("Sync all data to Google Sheets?")) return;
 
         try {
+          // Get CSRF token for state-changing operation
+          const headers = { "Content-Type": "application/json" };
+          try {
+            const csrfResponse = await fetch("/api/admin/csrf-token");
+            if (csrfResponse.ok) {
+              const csrfData = await csrfResponse.json();
+              headers["X-CSRF-Token"] = csrfData.token;
+            }
+          } catch (error) {
+            console.warn("Could not fetch CSRF token:", error);
+          }
+
           const response = await fetch("/api/sheets/sync", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: headers,
           });
 
           if (response.ok) {
@@ -393,10 +405,27 @@
         if (!password) return;
 
         try {
+          // Get CSRF token for state-changing operation
+          const headers = { "Content-Type": "application/json" };
+          let csrfToken = null;
+          try {
+            const csrfResponse = await fetch("/api/admin/csrf-token");
+            if (csrfResponse.ok) {
+              const csrfData = await csrfResponse.json();
+              headers["X-CSRF-Token"] = csrfData.token;
+              csrfToken = csrfData.token;
+            }
+          } catch (error) {
+            console.warn("Could not fetch CSRF token:", error);
+          }
+
           const response = await fetch("/api/admin/mobile-login", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ password }),
+            headers: headers,
+            body: JSON.stringify({
+              password,
+              csrfToken: csrfToken,
+            }),
           });
 
           const data = await response.json();
@@ -454,14 +483,20 @@
       }
 
       // Logout
-      function logout() {
+      async function logout() {
         if (!confirm("Are you sure you want to logout?")) return;
 
-        document.cookie =
-          "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        localStorage.removeItem("adminToken");
-        sessionStorage.clear();
-        window.location.href = "/admin/login";
+        try {
+          await fetch("/api/admin/login", {
+            method: "DELETE",
+          });
+        } finally {
+          // Clear client storage
+          localStorage.removeItem('adminToken');
+          sessionStorage.clear();
+          // Redirect
+          window.location.href = '/admin/login';
+        }
       }
 
       // Initialize

@@ -80,6 +80,7 @@
             class="admin-form-input"
             placeholder="Search by name, email, or ticket ID..."
             onkeypress="if(event.key==='Enter') searchTickets()"
+            oninput="handleSearchInput()"
             data-testid="search-tickets"
             style="flex: 1; min-width: 250px;"
           />
@@ -147,6 +148,12 @@
       const pageSize = 50;
       let authToken = null;
       let csrfToken = null;
+      
+      // AbortController for canceling stale fetches during rapid searches
+      let searchAbortController = null;
+      
+      // Debounced search timer
+      let searchTimeout = null;
 
       // HTML escaping function to prevent XSS attacks
       // CRITICAL: Use this for ALL user-provided data displayed in innerHTML
@@ -200,7 +207,7 @@
       }
 
       // Load tickets data - accepts eventId parameter for event filtering
-      async function loadTickets(eventId = null, page = 0) {
+      async function loadTickets(eventId = null, page = 0, abortSignal = null) {
         currentPage = page;
         const offset = page * pageSize;
 
@@ -220,7 +227,12 @@
         });
 
         try {
-          const response = await fetch(`/api/admin/registrations?${params}`);
+          const fetchOptions = {};
+          if (abortSignal) {
+            fetchOptions.signal = abortSignal;
+          }
+          
+          const response = await fetch(`/api/admin/registrations?${params}`, fetchOptions);
           const data = await response.json();
 
           if (!response.ok) throw new Error(data.error);
@@ -228,6 +240,12 @@
           displayTickets(data.registrations);
           displayPagination(data.total, page);
         } catch (error) {
+          // Handle AbortError gracefully - don't show error for cancelled requests
+          if (error.name === 'AbortError') {
+            console.log('Search request cancelled');
+            return;
+          }
+          
           console.error("Failed to load tickets:", error);
           document.getElementById("ticketsTable").innerHTML = `
                     <div class="error">Failed to load tickets: ${escapeHtml(error.message)}</div>
@@ -326,8 +344,34 @@
 
       // Search tickets
       function searchTickets() {
+        // Cancel any pending search request
+        if (searchAbortController) {
+          searchAbortController.abort();
+        }
+        
+        // Create new AbortController for this search
+        searchAbortController = new AbortController();
+        
         const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-        loadTickets(selectedEventId, 0);
+        loadTickets(selectedEventId, 0, searchAbortController.signal);
+      }
+      
+      // Handle search input with debouncing and abort controller
+      function handleSearchInput() {
+        // Clear existing timeout
+        if (searchTimeout) {
+          clearTimeout(searchTimeout);
+        }
+        
+        // Cancel any pending search request
+        if (searchAbortController) {
+          searchAbortController.abort();
+        }
+        
+        // Set new timeout for debounced search (300ms delay)
+        searchTimeout = setTimeout(() => {
+          searchTickets();
+        }, 300);
       }
 
       // Check in ticket
@@ -496,10 +540,12 @@
             method: "DELETE",
             headers: headers,
           });
-          window.location.href = "/admin/login";
-        } catch (error) {
-          console.error("Logout failed:", error);
-          window.location.href = "/admin/login";
+        } finally {
+          // Clear client storage
+          localStorage.removeItem('adminToken');
+          sessionStorage.clear();
+          // Redirect
+          window.location.href = '/admin/login';
         }
       }
 

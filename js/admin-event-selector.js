@@ -23,7 +23,11 @@ class EventSelector {
   async loadEvents() {
     try {
       const response = await fetch('/api/admin/events', {
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
       });
       
       if (!response.ok) {
