@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   
   try {
     // Test 1: Can we import auth-service?
-    const authService = await import('../lib/auth-service.js').then(m => m.default);
+    const authService = await import('../../lib/auth-service.js').then(m => m.default);
     
     // Test 2: Basic response
     return res.status(200).json({ 
