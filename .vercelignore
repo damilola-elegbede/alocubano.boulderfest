@@ -46,11 +46,21 @@ SECURITY
 .DS_Store
 Thumbs.db
 
-# Scripts and config (excluding essential build scripts)
-scripts/
-!scripts/build-admin-files.js
-!scripts/verify-structure.js
-!scripts/migrate.js
+# Scripts and config (excluding non-essential scripts)
+# Keep build-essential scripts
+scripts/test-*.js
+scripts/validate-*.js
+scripts/check-*.js
+scripts/fix-*.js
+scripts/reset-*.js
+scripts/setup-*.js
+scripts/run-*.js
+scripts/mark-*.js
+scripts/recreate-*.js
+scripts/create-*.js
+scripts/start-*.js
+scripts/ci/
+# Build scripts are kept for Vercel
 config/
 .eslintrc.json
 .prettierrc
