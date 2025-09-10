@@ -1035,7 +1035,7 @@
         try {
           // Get selected event ID from event selector
           const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-          const eventParam = selectedEventId ? `&event_id=${selectedEventId}` : '';
+          const eventParam = selectedEventId ? `&eventId=${selectedEventId}` : '';
           
           const response = await fetch(
             `/api/tickets?ticket_id=${encodeURIComponent(ticketId)}${eventParam}`,
@@ -1066,7 +1066,7 @@
         try {
           // Get selected event ID from event selector
           const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-          const eventParam = selectedEventId ? `?event_id=${selectedEventId}` : '';
+          const eventParam = selectedEventId ? `?eventId=${selectedEventId}` : '';
           
           const response = await fetch(`/api/admin/dashboard${eventParam}`);
           const data = await response.json();

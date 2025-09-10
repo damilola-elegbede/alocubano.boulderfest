@@ -326,20 +326,62 @@
         await loadMfaStatus();
       }
 
-      // Check authentication
+      // SECURITY: Enhanced authentication check with proper timeout and session validation
       async function checkAuth() {
         try {
-          const response = await fetch("/api/admin/dashboard");
+          // SECURITY: Use AbortController for timeout control
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3000);
+          
+          const response = await fetch("/api/admin/dashboard", {
+            headers: { 
+              "Cache-Control": "no-cache",
+              "X-Requested-With": "XMLHttpRequest" // CSRF protection
+            },
+            signal: controller.signal,
+            credentials: 'include' // Ensure session cookies are sent
+          });
+          
+          clearTimeout(timeoutId);
+          
+          // SECURITY: Redirect to login on any auth failure
           if (!response.ok) {
-            window.location.href = "/admin/login";
+            console.warn('MFA settings auth failed:', response.status);
+            this.cleanupSession(); // Clean up any stale session data
+            window.location.replace("/admin/login");
             return false;
           }
+          
+          // SECURITY: Verify response contains expected admin data
+          const data = await response.json();
+          if (!data || typeof data !== 'object') {
+            console.warn('Invalid MFA auth response');
+            this.cleanupSession();
+            window.location.replace("/admin/login");
+            return false;
+          }
+          
           return true;
         } catch (error) {
-          console.error("Auth check failed:", error);
-          window.location.href = "/admin/login";
+          // SECURITY: Log for monitoring but clean up and redirect
+          console.warn('MFA auth check failed:', error.name);
+          this.cleanupSession();
+          window.location.replace("/admin/login");
           return false;
         }
+      }
+      
+      // SECURITY: Proper session cleanup helper
+      cleanupSession() {
+        // Clear all session-related storage
+        localStorage.removeItem("adminToken");
+        sessionStorage.clear();
+        
+        // Clear admin session cookie with proper path and domain
+        document.cookie = "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict";
+        
+        // Clear any other potential admin cookies
+        document.cookie = "admin_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict";
       }
 
       // Load MFA status
@@ -758,7 +800,11 @@ Instructions:
             "Open recovery options? This should only be used if you have lost access to your authenticator device.",
           )
         ) {
-          window.open("/admin/mfa-recovery", "_blank", "noopener,noreferrer");
+          // SECURITY: Use proper noopener noreferrer for external window
+          const recoveryWindow = window.open("/admin/mfa-recovery", "_blank", "noopener,noreferrer");
+          if (!recoveryWindow) {
+            alert("Please allow pop-ups for this site to access MFA recovery options.");
+          }
         }
       }
 
@@ -783,15 +829,15 @@ Instructions:
           .replace(/'/g, "&#039;");
       }
 
-      // Logout function
+      // SECURITY: Enhanced logout function with proper session cleanup
       function logout() {
         if (!confirm("Are you sure you want to logout?")) return;
 
-        document.cookie =
-          "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        localStorage.removeItem("adminToken");
-        sessionStorage.clear();
-        window.location.href = "/admin/login";
+        // SECURITY: Use the centralized session cleanup
+        cleanupSession();
+        
+        // SECURITY: Use replace to prevent back button access to admin pages
+        window.location.replace("/admin/login");
       }
 
       // Initialize on page load

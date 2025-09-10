@@ -81,10 +81,18 @@ async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error("Events API error:", error);
+    // SECURITY: Log detailed error for debugging but return generic message to client
+    console.error("Events API error:", {
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+    
+    // SECURITY: Return generic error message to prevent information disclosure
     res.status(500).json({ 
       error: "Failed to fetch events",
-      message: error.message
+      // SECURITY: Remove error.message to prevent DB schema/structure leakage
+      timestamp: new Date().toISOString()
     });
   }
 }

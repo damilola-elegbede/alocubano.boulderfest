@@ -63,21 +63,49 @@ class EventSelector {
     const selectorId = `event-selector-${containerId}`;
     const labelId = `event-selector-label-${containerId}`;
 
-    const selectorHtml = `
-      <div class="event-selector-wrapper">
-        <label for="${selectorId}" id="${labelId}" class="event-selector-label">Event:</label>
-        <select id="${selectorId}" class="admin-select event-selector">
-          <option value="all">All Events</option>
-          ${this.events.map(event => `
-            <option value="${event.id}" ${this.selectedEventId === event.id.toString() ? 'selected' : ''}>
-              ${event.name} (${event.type}) - ${event.status}
-            </option>
-          `).join('')}
-        </select>
-      </div>
-    `;
+    // SECURITY: Use safe DOM construction instead of innerHTML to prevent XSS
+    // Clear container safely
+    container.innerHTML = '';
 
-    container.innerHTML = selectorHtml;
+    // Create wrapper element
+    const wrapper = document.createElement('div');
+    wrapper.className = 'event-selector-wrapper';
+
+    // Create label element
+    const label = document.createElement('label');
+    label.setAttribute('for', selectorId);
+    label.id = labelId;
+    label.className = 'event-selector-label';
+    label.textContent = 'Event:'; // Safe text assignment
+
+    // Create select element
+    const select = document.createElement('select');
+    select.id = selectorId;
+    select.className = 'admin-select event-selector';
+
+    // Add "All Events" option
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = 'All Events'; // Safe text assignment
+    select.appendChild(allOption);
+
+    // Add event options safely
+    this.events.forEach(event => {
+      const option = document.createElement('option');
+      option.value = this.escapeAttribute(event.id.toString()); // Sanitize attribute
+      option.selected = this.selectedEventId === event.id.toString();
+      
+      // SECURITY: Use textContent for user data to prevent XSS injection
+      const displayText = `${this.escapeText(event.name)} (${this.escapeText(event.type)}) - ${this.escapeText(event.status)}`;
+      option.textContent = displayText;
+      
+      select.appendChild(option);
+    });
+
+    // Assemble DOM structure
+    wrapper.appendChild(label);
+    wrapper.appendChild(select);
+    container.appendChild(wrapper);
 
     // Add event listener
     const selector = document.getElementById(selectorId);
@@ -134,6 +162,25 @@ class EventSelector {
   getSelectedEvent() {
     if (this.selectedEventId === 'all') return null;
     return this.events.find(e => e.id.toString() === this.selectedEventId);
+  }
+
+  // SECURITY: Helper methods for safe text and attribute sanitization
+  escapeText(text) {
+    if (!text) return '';
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  escapeAttribute(value) {
+    if (!value) return '';
+    // For HTML attributes, we need to be more restrictive
+    return String(value)
+      .replace(/[^\w\-.:]/g, '') // Only allow alphanumeric, dash, dot, colon
+      .substring(0, 100); // Limit length
   }
 }
 

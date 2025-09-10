@@ -456,15 +456,35 @@
         }
       }
 
-      // Authentication check
+      // SECURITY: Enhanced authentication check with timeout and proper error handling
       async function checkAuth() {
         try {
+          // SECURITY: Use AbortController for timeout control
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3000);
+          
           const response = await fetch("/api/admin/dashboard", {
-            headers: { "Cache-Control": "no-cache" },
-            signal: AbortSignal.timeout(3000)
+            headers: { 
+              "Cache-Control": "no-cache",
+              "X-Requested-With": "XMLHttpRequest" // CSRF protection
+            },
+            signal: controller.signal,
+            credentials: 'include' // Ensure cookies are sent
           });
           
+          clearTimeout(timeoutId);
+          
+          // SECURITY: Redirect to login on any auth failure
           if (!response.ok) {
+            console.warn('Authentication failed:', response.status, response.statusText);
+            window.location.replace("/admin/login");
+            return false;
+          }
+          
+          // SECURITY: Verify response contains expected data
+          const data = await response.json();
+          if (!data || typeof data !== 'object') {
+            console.warn('Invalid authentication response');
             window.location.replace("/admin/login");
             return false;
           }
@@ -472,6 +492,8 @@
           document.body.setAttribute("data-auth-status", "authenticated");
           return true;
         } catch (error) {
+          // SECURITY: Log error for monitoring but redirect to login
+          console.warn('Authentication check failed:', error.name, error.message);
           window.location.replace("/admin/login");
           return false;
         }
