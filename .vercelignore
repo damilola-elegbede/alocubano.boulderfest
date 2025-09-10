@@ -46,8 +46,11 @@ SECURITY
 .DS_Store
 Thumbs.db
 
-# Scripts and config
+# Scripts and config (excluding essential build scripts)
 scripts/
+!scripts/build-admin-files.js
+!scripts/verify-structure.js
+!scripts/migrate.js
 config/
 .eslintrc.json
 .prettierrc
