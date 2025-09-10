@@ -57,7 +57,6 @@ async function handler(req, res) {
           start_date,
           end_date
         FROM events
-        WHERE is_visible = TRUE
         ORDER BY start_date DESC
       `);
       
