@@ -10,6 +10,7 @@ import { config } from 'dotenv';
 import { existsSync, readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { columnExists } from '../api/lib/db-utils.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -188,8 +189,7 @@ async function createCoreTables(client) {
       if (table.name === 'email_subscribers') {
         // Check if source column exists
         try {
-          const columnsResult = await client.execute(`PRAGMA table_info(email_subscribers)`);
-          const hasSourceColumn = columnsResult.rows.some(row => row.name === 'source');
+          const hasSourceColumn = await columnExists(client, 'email_subscribers', 'source');
           
           if (!hasSourceColumn) {
             // Add source column to existing table
@@ -209,9 +209,8 @@ async function createCoreTables(client) {
           
           // Verify the column exists after error
           try {
-            const verifyResult = await client.execute(`PRAGMA table_info(email_subscribers)`);
-            const columnExists = verifyResult.rows.some(row => row.name === 'source');
-            if (!columnExists) {
+            const columnExistsAfterError = await columnExists(client, 'email_subscribers', 'source');
+            if (!columnExistsAfterError) {
               console.error(`   ❌ Failed to verify "source" column existence`);
               return false;
             }

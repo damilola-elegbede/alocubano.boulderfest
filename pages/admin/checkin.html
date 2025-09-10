@@ -47,11 +47,50 @@
         );
         padding: var(--space-lg) var(--space-xl);
         display: flex;
-        justify-content: space-between;
+        justify-content: center;
         align-items: center;
         box-shadow: var(--shadow-lg);
         position: relative;
         z-index: 100;
+        min-height: 80px;
+      }
+
+      .logout-btn {
+        position: absolute;
+        top: var(--space-lg);
+        right: var(--space-lg);
+        background: rgba(255, 255, 255, 0.2) !important;
+        border: 2px solid rgba(255, 255, 255, 0.3) !important;
+        color: var(--color-white) !important;
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        min-height: 36px;
+        z-index: 110;
+      }
+
+      .logout-btn:hover {
+        background: rgba(255, 255, 255, 0.3) !important;
+        color: var(--color-white) !important;
+      }
+
+      .back-btn {
+        position: absolute;
+        top: var(--space-lg);
+        left: var(--space-lg);
+        background: rgba(255, 255, 255, 0.2) !important;
+        border: 2px solid rgba(255, 255, 255, 0.3) !important;
+        color: var(--color-white) !important;
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        min-height: 36px;
+        padding: var(--space-xs) var(--space-sm);
+        z-index: 110;
+      }
+
+      .back-btn:hover {
+        background: rgba(255, 255, 255, 0.3) !important;
+        color: var(--color-white) !important;
+        transform: translateX(-2px);
       }
 
       .app-title {
@@ -61,25 +100,36 @@
         color: var(--color-white);
         text-transform: uppercase;
         letter-spacing: var(--letter-spacing-wider);
+        margin: 0 120px;
+        text-align: center;
+        flex: 1;
+        max-width: calc(100% - 240px);
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
       }
 
       .menu-btn {
-        background: rgba(255, 255, 255, 0.2);
-        border: 2px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.2) !important;
+        border: 2px solid rgba(255, 255, 255, 0.3) !important;
         width: 44px;
         height: 44px;
+        min-height: 44px !important;
         border-radius: var(--radius-md);
         display: flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
-        color: var(--color-white);
+        color: var(--color-white) !important;
         font-size: var(--font-size-xl);
-        transition: all var(--transition-base);
+        padding: 0 !important;
+      }
+
+      .menu-btn:hover {
+        background: rgba(255, 255, 255, 0.3) !important;
+        color: var(--color-white) !important;
       }
 
       .menu-btn:active {
-        background: rgba(255, 255, 255, 0.3);
         transform: scale(0.95);
       }
 
@@ -208,18 +258,15 @@
       }
 
       .control-btn {
-        background: var(--color-blue);
-        color: var(--color-white);
-        border: none;
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
+        width: 60px !important;
+        height: 60px !important;
+        min-height: 60px !important;
+        border-radius: 50% !important;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 24px;
-        cursor: pointer;
-        transition: all var(--transition-base);
+        padding: 0 !important;
         box-shadow: var(--shadow-md);
       }
 
@@ -228,11 +275,17 @@
       }
 
       .control-btn.torch {
-        background: var(--color-warning);
       }
 
       .control-btn.manual {
-        background: var(--color-red);
+        background: var(--color-red) !important;
+        border-color: var(--color-red) !important;
+        color: var(--color-white) !important;
+      }
+
+      .control-btn.manual:hover {
+        background: var(--color-secondary-hover) !important;
+        border-color: var(--color-secondary-hover) !important;
       }
 
       .result-modal {
@@ -318,9 +371,9 @@
       }
 
       .result-btn {
-        background: rgba(255, 255, 255, 0.2);
-        color: currentColor;
-        border: 2px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.2) !important;
+        color: currentColor !important;
+        border: 2px solid rgba(255, 255, 255, 0.3) !important;
         padding: var(--space-md) var(--space-xl);
         border-radius: var(--radius-lg);
         font-family: var(--font-display);
@@ -328,13 +381,29 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: var(--letter-spacing-wide);
-        cursor: pointer;
-        transition: all var(--transition-base);
+        min-height: 44px;
       }
 
-      .result-btn:hover {
-        background: rgba(255, 255, 255, 0.3);
-        transform: translateY(-1px);
+      .result-content.success .result-btn {
+        background: rgba(255, 255, 255, 0.2) !important;
+        color: var(--color-white) !important;
+        border-color: rgba(255, 255, 255, 0.3) !important;
+      }
+
+      .result-content.success .result-btn:hover {
+        background: rgba(255, 255, 255, 0.3) !important;
+        color: var(--color-white) !important;
+      }
+
+      .result-content.error .result-btn {
+        background: rgba(255, 255, 255, 0.2) !important;
+        color: var(--color-white) !important;
+        border-color: rgba(255, 255, 255, 0.3) !important;
+      }
+
+      .result-content.error .result-btn:hover {
+        background: rgba(255, 255, 255, 0.3) !important;
+        color: var(--color-white) !important;
       }
 
       .manual-input {
@@ -408,8 +477,55 @@
         border-top: 1px solid var(--color-border);
       }
 
+      /* Tablet responsiveness */
+      @media (max-width: 768px) and (min-width: 481px) {
+        .app-title {
+          font-size: var(--font-size-lg);
+          margin: 0 100px;
+          max-width: calc(100% - 200px);
+        }
+
+        .back-btn,
+        .logout-btn {
+          font-size: var(--font-size-xs);
+          padding: var(--space-xs);
+          min-width: 70px;
+        }
+      }
+
       /* Mobile responsiveness */
       @media (max-width: 480px) {
+        .app-header {
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          padding: var(--space-md);
+          min-height: auto;
+        }
+
+        .logout-btn,
+        .back-btn {
+          position: static;
+          margin: var(--space-xs);
+          min-width: 80px;
+          z-index: auto;
+        }
+
+        .app-title {
+          margin: var(--space-sm) 0;
+          max-width: 100%;
+          order: 1;
+        }
+
+        .back-btn {
+          order: 0;
+        }
+
+        .logout-btn {
+          order: 2;
+        }
+      }
+
         .stats-bar {
           padding: var(--space-xs);
           gap: var(--space-xs);
@@ -420,7 +536,6 @@
           min-width: calc(50% - var(--space-xs) / 2);
           flex: 0 0 calc(50% - var(--space-xs) / 2);
         }
-
         .scan-region {
           width: 200px;
           height: 200px;
@@ -431,8 +546,9 @@
         }
 
         .control-btn {
-          width: 50px;
-          height: 50px;
+          width: 50px !important;
+          height: 50px !important;
+          min-height: 50px !important;
           font-size: 20px;
         }
 
@@ -442,8 +558,70 @@
         }
 
         .offline-indicator {
-          top: 70px;
+          top: 110px; /* Adjusted to account for event selector */
           font-size: var(--font-size-sm);
+        }
+      }
+
+      /* Event Selector Styles */
+      .event-selector-wrapper {
+        background: var(--color-surface-elevated);
+        border-bottom: 1px solid var(--color-border);
+        padding: var(--space-md) var(--space-xl);
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        font-size: var(--font-size-sm);
+      }
+
+      .event-selector-label {
+        color: var(--color-text-secondary);
+        font-weight: 600;
+        white-space: nowrap;
+        font-family: var(--font-display);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+      }
+
+      .event-selector {
+        flex: 1;
+        max-width: 400px;
+        background: var(--color-surface) !important;
+        border: 1px solid var(--color-border) !important;
+        color: var(--color-text-primary) !important;
+        padding: var(--space-sm) var(--space-md);
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-sm);
+        font-family: var(--font-sans);
+      }
+
+      .event-selector:focus {
+        outline: none;
+        border-color: var(--color-blue) !important;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+      }
+
+      /* Wide screen optimizations */
+      @media (min-width: 1200px) {
+        .app-title {
+          font-size: var(--font-size-2xl);
+          margin: 0 160px;
+          max-width: min(calc(100% - 320px), 600px);
+        }
+
+        .back-btn,
+        .logout-btn {
+          min-height: 40px;
+          padding: var(--space-sm) var(--space-lg);
+          font-size: var(--font-size-base);
+        }
+      }
+
+      /* Ultra-wide screen constraints */
+      @media (min-width: 1600px) {
+        .app-header {
+          max-width: 1400px;
+          margin: 0 auto;
         }
       }
 
@@ -468,13 +646,29 @@
   <body>
     <div class="scanner-app">
       <div class="app-header">
-        <div class="app-title" data-testid="scanner-title">
-          🎫 Check-in Scanner
-        </div>
-        <button class="menu-btn form-button-type" onclick="showMenu()">
-          ☰
+        <button 
+          class="back-btn admin-btn admin-btn-ghost admin-btn-sm" 
+          onclick="backToPortal()"
+          aria-label="Go back to admin portal"
+          title="Return to admin portal"
+        >
+          ← Portal
+        </button>
+        <h1 class="app-title" data-testid="scanner-title">
+          Check-in Scanner
+        </h1>
+        <button 
+          class="logout-btn admin-btn admin-btn-ghost admin-btn-sm" 
+          onclick="logout()"
+          aria-label="Logout from admin session"
+          title="Logout from admin session"
+        >
+          Logout
         </button>
       </div>
+
+      <!-- Event Selector -->
+      <div id="event-selector-container"></div>
 
       <div class="admin-alert error offline-indicator" id="offlineIndicator">
         <div class="alert-title">📵 Offline Mode</div>
@@ -524,24 +718,17 @@
         </div>
 
         <div class="controls">
-          <button
-            class="control-btn torch form-button-type"
-            onclick="toggleTorch()"
-            id="torchBtn"
-          >
+          <button class="control-btn torch admin-btn" onclick="toggleTorch()" id="torchBtn">
             🔦
           </button>
           <button
-            class="control-btn manual form-button-type"
+            class="control-btn manual admin-btn"
             onclick="showManualInput()"
             data-testid="manual-input-toggle"
           >
             ⌨️
           </button>
-          <button
-            class="control-btn form-button-type"
-            onclick="location.reload()"
-          >
+          <button class="control-btn admin-btn" onclick="location.reload()">
             🔄
           </button>
         </div>
@@ -561,7 +748,7 @@
           id="resultDetails"
           data-testid="ticket-info"
         ></div>
-        <button class="result-btn form-button-type" onclick="closeResult()">
+        <button class="result-btn admin-btn admin-btn-primary" onclick="closeResult()">
           Continue Scanning
         </button>
       </div>
@@ -572,28 +759,24 @@
       <input
         type="text"
         id="manualTicketId"
-        class="form-input-type"
+        class="admin-form-input"
         placeholder="Enter ticket ID..."
         autocomplete="off"
         data-testid="qr-manual-input"
       />
       <div class="manual-input-buttons">
         <button
-          class="form-button-type submit"
+          class="admin-btn admin-btn-primary"
           onclick="submitManualTicket()"
           data-testid="validate-ticket"
         >
           Check In
-        </button>
-        <button class="form-button-type cancel" onclick="hideManualInput()">
-          Cancel
         </button>
       </div>
     </div>
 
     <!-- Theme Manager -->
     <script type="module" src="/js/theme-manager.js"></script>
-
     <!-- QR Code Scanner -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
@@ -671,15 +854,32 @@
           // Detect wallet tokens (JWT format)
           const isWalletToken = token.includes(".") && token.length > 100;
 
+          // Get selected event ID from event selector
+          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
+
+          // Get CSRF token for admin operations (only if admin authenticated)
+          let headers = { "Content-Type": "application/json" };
+          try {
+            const csrfResponse = await fetch("/api/admin/csrf-token");
+            if (csrfResponse.ok) {
+              const csrfData = await csrfResponse.json();
+              headers["X-CSRF-Token"] = csrfData.token;
+            }
+          } catch (error) {
+            // Not admin authenticated, continue without CSRF token
+            console.log("Not admin authenticated, continuing without CSRF token");
+          }
+
           const response = await fetch("/api/tickets/validate", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: headers,
             body: JSON.stringify({
               token: token,
               validatedBy: "mobile-scanner",
               location: "entrance",
               wallet_source: isWalletToken ? "jwt" : null,
               qr_access_method: isWalletToken ? "wallet" : "qr_code",
+              event_id: selectedEventId,
             }),
           });
 
@@ -833,8 +1033,12 @@
 
         // For manual entry, we need to look up the ticket first
         try {
+          // Get selected event ID from event selector
+          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
+          const eventParam = selectedEventId ? `&eventId=${selectedEventId}` : '';
+          
           const response = await fetch(
-            `/api/tickets?ticket_id=${encodeURIComponent(ticketId)}`,
+            `/api/tickets?ticket_id=${encodeURIComponent(ticketId)}${eventParam}`,
           );
           const data = await response.json();
 
@@ -860,7 +1064,11 @@
       // Load statistics
       async function loadStats() {
         try {
-          const response = await fetch("/api/admin/dashboard");
+          // Get selected event ID from event selector
+          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
+          const eventParam = selectedEventId ? `?eventId=${selectedEventId}` : '';
+          
+          const response = await fetch(`/api/admin/dashboard${eventParam}`);
           const data = await response.json();
 
           if (data.stats) {
@@ -1034,6 +1242,17 @@
         // Check authentication
         if (!(await checkAuth())) return;
 
+        // Initialize event selector
+        if (window.eventSelector) {
+          await window.eventSelector.init();
+          window.eventSelector.render('event-selector-container');
+          
+          // Set up event change listener to reload stats
+          window.eventSelector.onChange(() => {
+            loadStats();
+          });
+        }
+
         // Register service worker
         if ("serviceWorker" in navigator) {
           try {
@@ -1057,6 +1276,28 @@
 
         // Refresh stats periodically
         setInterval(loadStats, 30000);
+      }
+
+      // Back to Portal function
+      function backToPortal() {
+        window.location.href = "/admin";
+      }
+
+      // Logout function
+      async function logout() {
+        if (!confirm("Are you sure you want to logout?")) return;
+
+        try {
+          await fetch("/api/admin/login", {
+            method: "DELETE",
+          });
+        } finally {
+          // Clear client storage
+          localStorage.removeItem('adminToken');
+          sessionStorage.clear();
+          // Redirect
+          window.location.href = '/admin/login';
+        }
       }
 
       // Start app

@@ -15,11 +15,12 @@ import {
 import { getMigrationStatus } from "./lib/migration-status.js";
 
 export default async function handler(req, res) {
-  // Only allow access in development or test environments
-  if (
-    process.env.NODE_ENV === "production" &&
-    !process.env.ENABLE_DEBUG_ENDPOINTS
-  ) {
+  // Allow access in development, test environments, and when debug is enabled
+  const isProduction = process.env.NODE_ENV === "production";
+  const isDebugEnabled = process.env.ENABLE_DEBUG_ENDPOINTS === "true";
+  const isVercelPreview = process.env.VERCEL_ENV === "preview";
+  
+  if (isProduction && !isDebugEnabled && !isVercelPreview) {
     return res.status(404).json({ error: "Not found" });
   }
 

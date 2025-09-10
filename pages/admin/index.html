@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="/css/admin-overrides.css" />
 
     <style>
-      /* Admin Portal Specific Styles - Theme-Aware */
+      /* Admin Portal Specific Styles */
       body {
         background: linear-gradient(
           135deg,
@@ -21,365 +21,10 @@
           var(--color-red) 100%
         );
         min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
         padding: var(--space-lg);
       }
 
-      .portal-container {
-        background: var(--color-surface);
-        border-radius: var(--radius-xl);
-        box-shadow: var(--shadow-xl);
-        max-width: 1200px;
-        width: 100%;
-        padding: var(--space-4xl);
-        animation: slideIn 0.5s ease-out;
-        border: 2px solid var(--color-border-light);
-      }
-
-      @keyframes slideIn {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .portal-header {
-        text-align: center;
-        margin-bottom: var(--space-4xl);
-        padding-bottom: var(--space-3xl);
-        border-bottom: 2px solid var(--color-border);
-      }
-
-      .portal-title {
-        font-family: var(--font-display);
-        font-size: var(--font-size-5xl);
-        font-weight: 900;
-        color: var(--color-text-primary);
-        margin-bottom: var(--space-md);
-        text-transform: uppercase;
-        letter-spacing: var(--letter-spacing-wide);
-      }
-
-      .portal-subtitle {
-        font-family: var(--font-accent);
-        font-size: var(--font-size-lg);
-        color: var(--color-text-secondary);
-        font-style: italic;
-        margin-bottom: var(--space-md);
-      }
-
-      .status-line {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: var(--space-sm);
-        font-family: var(--font-code);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-        text-transform: uppercase;
-        letter-spacing: var(--letter-spacing-wide);
-      }
-
-      .status-indicator {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        background: var(--color-success);
-        border-radius: 50%;
-        animation: pulse 2s infinite;
-      }
-
-      @keyframes pulse {
-        0% {
-          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
-        }
-        70% {
-          box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
-        }
-        100% {
-          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
-        }
-      }
-
-      /* Quick Actions Section */
-      .quick-actions {
-        background: linear-gradient(
-          135deg,
-          var(--color-blue) 0%,
-          var(--color-red) 100%
-        );
-        border-radius: var(--radius-lg);
-        padding: var(--space-3xl);
-        color: var(--color-text-inverse);
-        margin-bottom: var(--space-3xl);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .quick-actions::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(
-          45deg,
-          transparent 30%,
-          rgba(255, 255, 255, 0.1) 50%,
-          transparent 70%
-        );
-        animation: shimmer 3s infinite;
-        pointer-events: none;
-      }
-
-      @keyframes shimmer {
-        0% {
-          transform: translateX(-100%);
-        }
-        100% {
-          transform: translateX(100%);
-        }
-      }
-
-      .quick-actions-title {
-        font-family: var(--font-display);
-        font-size: var(--font-size-2xl);
-        font-weight: 900;
-        margin-bottom: var(--space-lg);
-        text-transform: uppercase;
-        letter-spacing: var(--letter-spacing-wide);
-      }
-
-      .action-buttons {
-        display: flex;
-        gap: var(--space-lg);
-        flex-wrap: wrap;
-      }
-
-      /* Updated action buttons to use main site button styling */
-      .action-btn {
-        padding: var(--space-md) var(--space-xl);
-        background: rgba(255, 255, 255, 0.2);
-        color: var(--color-text-inverse);
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-radius: var(--radius-md);
-        cursor: pointer;
-        transition: all var(--transition-base);
-        font-family: var(--font-display);
-        font-size: var(--font-size-sm);
-        font-weight: 700;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-sm);
-        text-transform: uppercase;
-        letter-spacing: var(--letter-spacing-wide);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .action-btn::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.1);
-        transition: left var(--transition-slow);
-      }
-
-      .action-btn:hover {
-        background: rgba(255, 255, 255, 0.3);
-        transform: translateY(-2px);
-        border-color: rgba(255, 255, 255, 0.8);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-      }
-
-      .action-btn:hover::before {
-        left: 0;
-      }
-
-      /* Sections Grid using ticket-card style */
-      .sections-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-        gap: var(--space-3xl);
-        margin-bottom: var(--space-4xl);
-      }
-
-      .section-card {
-        /* Using ticket-card base styles */
-        padding: var(--space-3xl);
-        border: 2px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        background: var(--color-surface);
-        transition: all var(--transition-base);
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .section-card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(45deg, var(--color-blue), var(--color-red));
-        opacity: 0;
-        transition: all var(--transition-slow);
-        z-index: 0;
-      }
-
-      .section-card:hover {
-        transform: translateY(-8px);
-        box-shadow: var(--shadow-xl);
-        border-color: var(--color-blue);
-      }
-
-      .section-card:hover::before {
-        left: 0;
-        opacity: 0.05;
-      }
-
-      .section-card > * {
-        position: relative;
-        z-index: 1;
-      }
-
-      .section-card h2 {
-        font-family: var(--font-display);
-        font-size: var(--font-size-xl);
-        font-weight: 900;
-        color: var(--color-text-primary);
-        margin-bottom: var(--space-lg);
-        display: flex;
-        align-items: center;
-        gap: var(--space-md);
-        text-transform: uppercase;
-        letter-spacing: var(--letter-spacing-wide);
-      }
-
-      .section-card .icon {
-        font-size: var(--font-size-3xl);
-      }
-
-      .links-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-      }
-
-      .links-list li {
-        margin-bottom: var(--space-md);
-      }
-
-      /* Navigation links using main site patterns */
-      .links-list a {
-        display: flex;
-        align-items: center;
-        gap: var(--space-md);
-        padding: var(--space-md) var(--space-lg);
-        background: var(--color-surface);
-        color: var(--color-text-primary);
-        text-decoration: none;
-        border-radius: var(--radius-md);
-        transition: all var(--transition-base);
-        border: 2px solid var(--color-border);
-        font-size: var(--font-size-sm);
-        font-weight: 500;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .links-list a::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: var(--color-blue);
-        transition: left var(--transition-base);
-        z-index: 0;
-      }
-
-      .links-list a:hover {
-        color: var(--color-text-inverse);
-        transform: translateX(5px);
-        border-color: var(--color-blue);
-        box-shadow: 0 4px 15px var(--shadow-color);
-      }
-
-      .links-list a:hover::before {
-        left: 0;
-      }
-
-      .links-list a > * {
-        position: relative;
-        z-index: 1;
-      }
-
-      .links-list a .badge {
-        margin-left: auto;
-        background: var(--color-success);
-        color: var(--color-text-inverse);
-        padding: var(--space-xs) var(--space-sm);
-        border-radius: var(--radius-full);
-        font-family: var(--font-code);
-        font-size: var(--font-size-xs);
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: var(--letter-spacing-wide);
-      }
-
-      .links-list a .badge.new {
-        background: var(--color-red);
-      }
-
-      .links-list a .badge.beta {
-        background: var(--color-warning);
-      }
-
-      .description {
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-xs);
-        font-family: var(--font-sans);
-        font-style: italic;
-        margin-left: var(--space-3xl);
-        margin-top: calc(-1 * var(--space-sm));
-        margin-bottom: var(--space-md);
-        line-height: var(--line-height-relaxed);
-      }
-
-      /* API Endpoints Section */
-      .api-endpoints {
-        background: var(--color-background-secondary);
-        border-radius: var(--radius-lg);
-        padding: var(--space-3xl);
-        margin-top: var(--space-3xl);
-        border: 2px solid var(--color-border-light);
-      }
-
-      .api-endpoints h3 {
-        font-family: var(--font-display);
-        font-size: var(--font-size-2xl);
-        font-weight: 900;
-        color: var(--color-text-primary);
-        margin-bottom: var(--space-xl);
-        text-transform: uppercase;
-        letter-spacing: var(--letter-spacing-wide);
-      }
-
+      /* Endpoints Grid Styling */
       .endpoints-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -391,7 +36,7 @@
         align-items: center;
         gap: var(--space-md);
         padding: var(--space-md);
-        background: var(--color-surface);
+        background: var(--color-background-secondary);
         border-radius: var(--radius-md);
         border: 1px solid var(--color-border);
         font-size: var(--font-size-sm);
@@ -427,65 +72,10 @@
         font-size: var(--font-size-xs);
       }
 
-      /* Footer using typography patterns */
-      .footer {
-        text-align: center;
-        margin-top: var(--space-4xl);
-        padding-top: var(--space-3xl);
-        border-top: 2px solid var(--color-border);
-        font-family: var(--font-sans);
-      }
-
-      .footer p {
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
-        line-height: var(--line-height-relaxed);
-        margin-bottom: var(--space-sm);
-      }
-
-      .footer strong {
-        font-family: var(--font-display);
-        color: var(--color-text-primary);
-      }
-
-      .footer a {
-        color: var(--color-blue);
-        text-decoration: none;
-        transition: color var(--transition-base);
-      }
-
-      .footer a:hover {
-        color: var(--color-red);
-        text-decoration: underline;
-      }
-
       /* Mobile Responsiveness */
       @media (max-width: 768px) {
         body {
           padding: var(--space-md);
-        }
-
-        .portal-container {
-          padding: var(--space-xl);
-        }
-
-        .sections-grid {
-          grid-template-columns: 1fr;
-          gap: var(--space-xl);
-        }
-
-        .portal-title {
-          font-size: var(--font-size-4xl);
-        }
-
-        .action-buttons {
-          flex-direction: column;
-        }
-
-        .action-btn {
-          width: 100%;
-          text-align: center;
-          justify-content: center;
         }
 
         .endpoints-grid {
@@ -497,163 +87,162 @@
     <!-- Theme Manager -->
     <script type="module" src="/js/theme-manager.js"></script>
   </head>
-  <body>
-    <div class="portal-container">
-      <div class="portal-header">
-        <h1 class="portal-title">🎯 Admin Portal</h1>
-        <p class="portal-subtitle">
-          A Lo Cubano Boulder Fest - Central Administration Hub
-        </p>
-        <div class="status-line">
-          <span class="status-indicator"></span>
-          <span id="status">All Systems Operational</span>
+  <body class="admin-container">
+    <!-- Unified Admin Header -->
+    <header class="admin-header">
+      <div class="admin-header-content">
+        <div>
+          <h1 class="admin-header-title">Admin Portal</h1>
+          <p class="admin-header-subtitle">A Lo Cubano Boulder Fest - Central Administration Hub</p>
         </div>
-      </div>
-
-      <div class="quick-actions">
-        <h3 class="quick-actions-title">⚡ Quick Actions</h3>
-        <div class="action-buttons">
-          <a href="/admin/dashboard" class="action-btn form-button-type">
-            📊 Dashboard
-          </a>
-          <a href="/admin/analytics" class="action-btn form-button-type">
-            📈 Analytics
-          </a>
-          <a href="/admin/checkin" class="action-btn form-button-type">
-            📱 Scanner
-          </a>
-          <button onclick="syncToSheets()" class="action-btn form-button-type">
-            🔄 Sync Sheets
-          </button>
-          <button
-            onclick="generateReport()"
-            class="action-btn form-button-type"
-          >
-            📥 Export
-          </button>
-          <button onclick="logout()" class="action-btn form-button-type">
-            🚪 Logout
+        <div class="admin-header-actions">
+          <div class="admin-status-indicator">
+            <span class="admin-status-dot"></span>
+            <span id="status">All Systems Operational</span>
+          </div>
+          <button class="admin-btn admin-btn-primary" onclick="logout()">
+            <span>Logout</span>
           </button>
         </div>
       </div>
+    </header>
 
-      <div class="sections-grid">
-        <div class="section-card ticket-card">
-          <h2><span class="icon">📊</span> Dashboards & Analytics</h2>
-          <ul class="links-list">
-            <li>
-              <a href="/admin/dashboard">
-                <span>Main Dashboard</span>
-                <span class="badge">Core</span>
-              </a>
-              <p class="description">
-                Registration management, transactions, and Google Sheets sync
-              </p>
-            </li>
-            <li>
-              <a href="/admin/analytics">
-                <span>Analytics Dashboard</span>
-                <span class="badge new">New</span>
-              </a>
-              <p class="description">
-                Comprehensive analytics with charts, metrics, and insights
-              </p>
-            </li>
-            <li>
-              <a href="/admin/checkin">
-                <span>Mobile Check-in Scanner</span>
-                <span class="badge">Mobile</span>
-              </a>
-              <p class="description">QR code scanning for event check-ins</p>
-            </li>
-          </ul>
+    <!-- Unified Admin Navigation -->
+    <nav class="admin-navigation">
+      <ul class="admin-nav-list">
+        <li class="admin-nav-item">
+          <a href="/admin" class="admin-nav-link active">
+            <span>Portal</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/dashboard" class="admin-nav-link">
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/tickets" class="admin-nav-link">
+            <span>Tickets</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/analytics" class="admin-nav-link">
+            <span>Analytics</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/checkin" class="admin-nav-link">
+            <span>Check-in Scanner</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Quick Actions Section -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">Quick Actions</h2>
+      </div>
+      <div class="admin-card-body">
+        <div class="admin-grid auto-fit">
+          <button onclick="syncToSheets()" class="admin-btn admin-btn-primary">
+            <span>Sync Sheets</span>
+          </button>
+          <button onclick="generateReport()" class="admin-btn admin-btn-secondary">
+            <span>Export</span>
+          </button>
+          <button onclick="testDatabase()" class="admin-btn admin-btn-ghost">
+            <span>DB Health</span>
+          </button>
+          <button onclick="clearCache()" class="admin-btn admin-btn-ghost">
+            <span>Clear Cache</span>
+          </button>
         </div>
+      </div>
+    </div>
 
-        <div class="section-card ticket-card">
-          <h2><span class="icon">🔐</span> Authentication & Security</h2>
-          <ul class="links-list">
-            <li>
-              <a href="/admin/login">
-                <span>Admin Login</span>
-              </a>
-              <p class="description">Secure admin authentication portal</p>
-            </li>
-            <li>
-              <a href="#" onclick="testMobileAuth()">
-                <span>Mobile Auth Test</span>
-                <span class="badge beta">Beta</span>
-              </a>
-              <p class="description">Test mobile authentication system</p>
-            </li>
-            <li>
-              <a href="#" onclick="viewCSRFToken()">
-                <span>CSRF Token Status</span>
-              </a>
-              <p class="description">View current CSRF token information</p>
-            </li>
-          </ul>
+    <!-- Admin Sections -->
+    <div class="admin-grid auto-fit">
+      <!-- Dashboards & Analytics -->
+      <div class="admin-card admin-action-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">
+            <span class="card-icon">D</span>
+            <span>Dashboards & Analytics</span>
+          </h2>
         </div>
-
-        <div class="section-card ticket-card">
-          <h2><span class="icon">📋</span> Data Management</h2>
-          <ul class="links-list">
-            <li>
-              <a href="/admin/dashboard#registrations">
-                <span>Registration Management</span>
-              </a>
-              <p class="description">
-                View and manage all ticket registrations
-              </p>
-            </li>
-            <li>
-              <a href="/admin/dashboard#transactions">
-                <span>Transaction History</span>
-              </a>
-              <p class="description">Payment transactions and order details</p>
-            </li>
-            <li>
-              <a href="#" onclick="openGoogleSheets()">
-                <span>Google Sheets View</span>
-                <span class="badge">External</span>
-              </a>
-              <p class="description">
-                Access synchronized data in Google Sheets
-              </p>
-            </li>
-          </ul>
-        </div>
-
-        <div class="section-card ticket-card">
-          <h2><span class="icon">🛠️</span> Tools & Utilities</h2>
-          <ul class="links-list">
-            <li>
-              <a href="#" onclick="testDatabase()">
-                <span>Database Health Check</span>
-              </a>
-              <p class="description">
-                Test database connectivity and performance
-              </p>
-            </li>
-            <li>
-              <a href="#" onclick="clearCache()">
-                <span>Clear System Cache</span>
-              </a>
-              <p class="description">Clear cached data and refresh system</p>
-            </li>
-            <li>
-              <a href="/docs/ADMIN_GUIDE.md" target="_blank">
-                <span>Admin Documentation</span>
-              </a>
-              <p class="description">
-                Complete administration guide and API docs
-              </p>
-            </li>
-          </ul>
+        <div class="admin-card-body">
+          <p>Registration management, transactions, and comprehensive analytics with charts and insights. Use the navigation above to access the specific dashboard or analytics views.</p>
         </div>
       </div>
 
-      <div class="api-endpoints">
-        <h3>🔌 Available API Endpoints</h3>
+      <!-- Authentication & Security -->
+      <div class="admin-card admin-action-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">
+            <span class="card-icon">S</span>
+            <span>Authentication & Security</span>
+          </h2>
+        </div>
+        <div class="admin-card-body">
+          <p>Secure admin authentication, mobile auth testing, and CSRF token management</p>
+          <div style="margin-top: var(--space-lg); display: flex; gap: var(--space-sm); flex-wrap: wrap;">
+            <a href="/admin/login" class="admin-btn admin-btn-sm">
+              <span>Login</span>
+            </a>
+            <button class="admin-btn admin-btn-sm admin-btn-ghost" onclick="testMobileAuth()">
+              <span>Test Auth</span>
+            </button>
+            <button class="admin-btn admin-btn-sm admin-btn-ghost" onclick="viewCSRFToken()">
+              <span>CSRF Status</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Management -->
+      <div class="admin-card admin-action-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">
+            <span class="card-icon">M</span>
+            <span>Data Management</span>
+          </h2>
+        </div>
+        <div class="admin-card-body">
+          <p>Registration data, transaction history, and Google Sheets integration for comprehensive data access. Access detailed data views through the Dashboard above.</p>
+          <div style="margin-top: var(--space-lg); display: flex; gap: var(--space-sm); flex-wrap: wrap;">
+            <button class="admin-btn admin-btn-sm admin-btn-ghost" onclick="openGoogleSheets()">
+              <span>Open Sheets</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tools & Utilities -->
+      <div class="admin-card admin-action-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">
+            <span class="card-icon">T</span>
+            <span>Tools & Utilities</span>
+          </h2>
+        </div>
+        <div class="admin-card-body">
+          <p>Database health checks, cache management, system utilities, and comprehensive documentation. Common utilities are available in Quick Actions above.</p>
+          <div style="margin-top: var(--space-lg); display: flex; gap: var(--space-sm); flex-wrap: wrap;">
+            <a href="/docs/ADMIN_GUIDE.md" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn-sm">
+              <span>Documentation</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API Endpoints Section -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">Available API Endpoints</h2>
+      </div>
+      <div class="admin-card-body">
         <div class="endpoints-grid">
           <div class="endpoint-item">
             <span class="method">GET</span>
@@ -681,6 +270,10 @@
           </div>
           <div class="endpoint-item">
             <span class="method">GET</span>
+            <code>/api/admin/events</code>
+          </div>
+          <div class="endpoint-item">
+            <span class="method">GET</span>
             <code>/api/admin/generate-report</code>
           </div>
           <div class="endpoint-item">
@@ -705,20 +298,22 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="footer">
-        <p>
-          <strong>A Lo Cubano Boulder Fest</strong> Admin Portal v1.0<br />
-          Festival Dates: May 15-17, 2026 | Avalon Ballroom, Boulder, CO<br />
-          <a href="mailto:alocubanoboulderfest@gmail.com">Support</a> |
-          <a
-            href="https://github.com/damilola-elegbede/alocubano.boulderfest"
-            target="_blank"
-            >GitHub</a
-          >
-          |
-          <a href="/docs" target="_blank">Documentation</a>
+    <!-- Footer -->
+    <div class="admin-card" style="text-align: center; margin-top: var(--space-4xl);">
+      <div class="admin-card-body">
+        <p style="color: var(--color-text-secondary); font-family: var(--font-sans); font-size: var(--font-size-sm); margin-bottom: var(--space-sm);">
+          <strong style="color: var(--color-text-primary); font-family: var(--font-display);">A Lo Cubano Boulder Fest</strong> Admin Portal v1.0
         </p>
+        <p style="color: var(--color-text-tertiary); font-size: var(--font-size-xs); margin-bottom: var(--space-sm);">
+          Festival Dates: May 15-17, 2026 | Avalon Ballroom, Boulder, CO
+        </p>
+        <div style="display: flex; gap: var(--space-lg); justify-content: center; flex-wrap: wrap;">
+          <a href="mailto:alocubanoboulderfest@gmail.com" style="color: var(--color-blue); text-decoration: none; font-size: var(--font-size-sm);">Support</a>
+          <a href="https://github.com/damilola-elegbede/alocubano.boulderfest" target="_blank" rel="noopener noreferrer" style="color: var(--color-blue); text-decoration: none; font-size: var(--font-size-sm);">GitHub</a>
+          <a href="/docs" target="_blank" rel="noopener noreferrer" style="color: var(--color-blue); text-decoration: none; font-size: var(--font-size-sm);">Documentation</a>
+        </div>
       </div>
     </div>
 
@@ -744,19 +339,31 @@
         if (!confirm("Sync all data to Google Sheets?")) return;
 
         try {
+          // Get CSRF token for state-changing operation
+          const headers = { "Content-Type": "application/json" };
+          try {
+            const csrfResponse = await fetch("/api/admin/csrf-token");
+            if (csrfResponse.ok) {
+              const csrfData = await csrfResponse.json();
+              headers["X-CSRF-Token"] = csrfData.token;
+            }
+          } catch (error) {
+            console.warn("Could not fetch CSRF token:", error);
+          }
+
           const response = await fetch("/api/sheets/sync", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: headers,
           });
 
           if (response.ok) {
-            alert("✅ Successfully synced to Google Sheets!");
+            alert("Successfully synced to Google Sheets!");
           } else {
-            alert("❌ Sync failed. Please try again.");
+            alert("Sync failed. Please try again.");
           }
         } catch (error) {
           console.error("Sync error:", error);
-          alert("❌ Sync failed. Please check the connection.");
+          alert("Sync failed. Please check the connection.");
         }
       }
 
@@ -780,14 +387,14 @@
 
           if (data.success) {
             alert(
-              `✅ Database Healthy!\n\nStatus: ${data.status}\nLatency: ${data.latency}ms\nTables: ${data.tests.tables.count}`,
+              `Database Healthy!\n\nStatus: ${data.status}\nLatency: ${data.latency}ms\nTables: ${data.tests.tables.count}`,
             );
           } else {
-            alert("❌ Database issues detected. Check console for details.");
+            alert("Database issues detected. Check console for details.");
             console.error("Database test:", data);
           }
         } catch (error) {
-          alert("❌ Database test failed");
+          alert("Database test failed");
           console.error(error);
         }
       }
@@ -798,22 +405,39 @@
         if (!password) return;
 
         try {
+          // Get CSRF token for state-changing operation
+          const headers = { "Content-Type": "application/json" };
+          let csrfToken = null;
+          try {
+            const csrfResponse = await fetch("/api/admin/csrf-token");
+            if (csrfResponse.ok) {
+              const csrfData = await csrfResponse.json();
+              headers["X-CSRF-Token"] = csrfData.token;
+              csrfToken = csrfData.token;
+            }
+          } catch (error) {
+            console.warn("Could not fetch CSRF token:", error);
+          }
+
           const response = await fetch("/api/admin/mobile-login", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ password }),
+            headers: headers,
+            body: JSON.stringify({
+              password,
+              csrfToken: csrfToken,
+            }),
           });
 
           const data = await response.json();
           if (response.ok) {
             alert(
-              `✅ Mobile auth successful!\n\nToken: ${data.token.substring(0, 20)}...`,
+              `Mobile auth successful!\n\nToken: ${data.token.substring(0, 20)}...`,
             );
           } else {
-            alert(`❌ Mobile auth failed: ${data.error}`);
+            alert(`Mobile auth failed: ${data.error}`);
           }
         } catch (error) {
-          alert("❌ Mobile auth test failed");
+          alert("Mobile auth test failed");
           console.error(error);
         }
       }
@@ -824,10 +448,10 @@
           const response = await fetch("/api/admin/csrf-token");
           const data = await response.json();
           alert(
-            `🔐 CSRF Token Info:\n\nToken: ${data.csrfToken.substring(0, 20)}...\nExpires: ${new Date(Date.now() + 3600000).toLocaleString()}`,
+            `CSRF Token Info:\n\nToken: ${data.csrfToken.substring(0, 20)}...\nExpires: ${new Date(Date.now() + 3600000).toLocaleString()}`,
           );
         } catch (error) {
-          alert("❌ Failed to fetch CSRF token");
+          alert("Failed to fetch CSRF token");
           console.error(error);
         }
       }
@@ -845,28 +469,34 @@
           });
         }
 
-        alert("✅ Cache cleared successfully!");
+        alert("Cache cleared successfully!");
         window.location.reload();
       }
 
       // Open Google Sheets
       function openGoogleSheets() {
         alert(
-          "📊 Google Sheets integration requires proper setup.\nPlease refer to the documentation for sheet ID configuration.",
+          "Google Sheets integration requires proper setup.\nPlease refer to the documentation for sheet ID configuration.",
         );
         // In production, this would open the actual Google Sheets URL
         // window.open('https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID', '_blank', 'noopener,noreferrer');
       }
 
       // Logout
-      function logout() {
+      async function logout() {
         if (!confirm("Are you sure you want to logout?")) return;
 
-        document.cookie =
-          "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        localStorage.removeItem("adminToken");
-        sessionStorage.clear();
-        window.location.href = "/admin/login";
+        try {
+          await fetch("/api/admin/login", {
+            method: "DELETE",
+          });
+        } finally {
+          // Clear client storage
+          localStorage.removeItem('adminToken');
+          sessionStorage.clear();
+          // Redirect
+          window.location.href = '/admin/login';
+        }
       }
 
       // Initialize

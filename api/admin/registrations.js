@@ -3,6 +3,8 @@ import { getDatabaseClient } from '../lib/database.js';
 import ticketService from '../lib/ticket-service.js';
 import { getValidationService } from '../lib/validation-service.js';
 import { withSecurityHeaders } from '../lib/security-headers.js';
+import { columnExists } from '../lib/db-utils.js';
+import csrfService from '../lib/csrf-service.js';
 
 async function handler(req, res) {
   let db;
@@ -27,7 +29,10 @@ async function handler(req, res) {
 
       const { sanitized } = validation;
 
-      let sql = `
+    // Check if event_id column exists in tickets table
+    const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
+
+    let sql = `
       SELECT 
         t.*,
         tr.transaction_id as order_number,
@@ -40,8 +45,14 @@ async function handler(req, res) {
 
       const args = [];
 
-      if (sanitized.searchTerm) {
-        sql += ` AND (
+    // Add event filtering if eventId is provided and column exists
+    if (sanitized.eventId && ticketsHasEventId) {
+      sql += ` AND t.event_id = ?`;
+      args.push(sanitized.eventId);
+    }
+
+    if (sanitized.searchTerm) {
+      sql += ` AND (
         t.attendee_email LIKE ? ESCAPE '\\' OR 
         t.attendee_first_name LIKE ? ESCAPE '\\' OR 
         t.attendee_last_name LIKE ? ESCAPE '\\' OR
@@ -73,9 +84,9 @@ async function handler(req, res) {
         sql += ' AND t.checked_in_at IS NULL';
       }
 
-      sql += ` ORDER BY t.${sanitized.sortBy} ${sanitized.sortOrder}`;
-      sql += ' LIMIT ? OFFSET ?';
-      args.push(sanitized.limit, sanitized.offset);
+    sql += ` ORDER BY t.${sanitized.sortBy} ${sanitized.sortOrder}`;
+    sql += ` LIMIT ? OFFSET ?`;
+    args.push(sanitized.limit, sanitized.offset);
 
       const result = await db.execute({ sql, args });
 
@@ -89,6 +100,11 @@ async function handler(req, res) {
 
       const countArgs = args.slice(0, -2); // Remove limit and offset
 
+      // Add event filtering to count query
+      if (sanitized.eventId && ticketsHasEventId) {
+        countSql += ` AND t.event_id = ?`;
+      }
+
       if (sanitized.searchTerm) {
         countSql += ` AND (
           t.attendee_email LIKE ? ESCAPE '\\' OR 
@@ -99,17 +115,12 @@ async function handler(req, res) {
         )`;
       }
 
-      if (sanitized.status) {
-        countSql += ' AND t.status = ?';
-      }
-      if (sanitized.ticketType) {
-        countSql += ' AND t.ticket_type = ?';
-      }
-      if (sanitized.checkedIn === 'true') {
-        countSql += ' AND t.checked_in_at IS NOT NULL';
-      } else if (sanitized.checkedIn === 'false') {
-        countSql += ' AND t.checked_in_at IS NULL';
-      }
+      if (sanitized.status) countSql += ` AND t.status = ?`;
+      if (sanitized.ticketType) countSql += ` AND t.ticket_type = ?`;
+      if (sanitized.checkedIn === "true")
+        countSql += ` AND t.checked_in_at IS NOT NULL`;
+      else if (sanitized.checkedIn === "false")
+        countSql += ` AND t.checked_in_at IS NULL`;
 
       const countResult = await db.execute({ sql: countSql, args: countArgs });
 
@@ -118,7 +129,18 @@ async function handler(req, res) {
         total: countResult.rows[0].total,
         limit: sanitized.limit,
         offset: sanitized.offset,
-        hasMore: sanitized.offset + sanitized.limit < countResult.rows[0].total
+        hasMore: sanitized.offset + sanitized.limit < countResult.rows[0].total,
+        eventId: sanitized.eventId || null,
+        hasEventFiltering: {
+          tickets: ticketsHasEventId,
+        },
+        filters: {
+          eventId: sanitized.eventId || null,
+          searchTerm: sanitized.searchTerm || null,
+          status: sanitized.status || null,
+          ticketType: sanitized.ticketType || null,
+          checkedIn: sanitized.checkedIn !== undefined ? sanitized.checkedIn : null,
+        }
       });
     } else if (req.method === 'PUT') {
       // Update registration (check-in, edit details)
@@ -199,8 +221,40 @@ async function handler(req, res) {
     }
   } catch (error) {
     console.error('Registration API error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    
+    // Provide more specific error messages for debugging
+    let errorMessage = 'Internal server error';
+    let statusCode = 500;
+    
+    if (error.message.includes('validation')) {
+      errorMessage = 'Invalid request parameters';
+      statusCode = 400;
+    } else if (error.message.includes('not found')) {
+      errorMessage = 'Resource not found';
+      statusCode = 404;
+    } else if (error.message.includes('database') || error.message.includes('SQL')) {
+      errorMessage = 'Database operation failed';
+      statusCode = 503;
+    } else if (error.message.includes('auth') || error.message.includes('permission')) {
+      errorMessage = 'Authentication or permission error';
+      statusCode = 403;
+    }
+    
+    // In development, provide more detailed error information
+    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview';
+    
+    res.status(statusCode).json({
+      error: errorMessage,
+      ...(isDevelopment && {
+        details: error.message,
+        stack: error.stack?.substring(0, 500) // Limit stack trace size
+      })
+    });
   }
 }
 
-export default withSecurityHeaders(authService.requireAuth(handler));
+export default withSecurityHeaders(
+  csrfService.validateCSRF(
+    authService.requireAuth(handler)
+  )
+);

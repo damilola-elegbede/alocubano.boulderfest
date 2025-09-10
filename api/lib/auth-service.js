@@ -114,7 +114,7 @@ export class AuthService {
     return serialize("admin_session", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       maxAge: Math.floor(this.sessionDuration / 1000),
       path: "/",
     });
@@ -171,7 +171,7 @@ export class AuthService {
     return serialize("admin_session", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       maxAge: 0,
       path: "/",
     });
