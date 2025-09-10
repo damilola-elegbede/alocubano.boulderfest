@@ -3,6 +3,30 @@ import authService from '../../lib/auth-service.js';
 import { withSecurityHeaders } from '../../lib/security-headers.js';
 
 /**
+ * Safely quote and sanitize CSV values to prevent formula injection
+ */
+function q(value) {
+  if (value === null || value === undefined) {
+    return '""';
+  }
+  
+  // Convert to string
+  const str = String(value);
+  
+  // Escape double quotes by doubling them
+  let escaped = str.replace(/"/g, '""');
+  
+  // Check for potentially dangerous leading characters that could be interpreted as formulas
+  if (escaped.match(/^[=+\-@]/)) {
+    // Prefix with single quote to prevent formula execution
+    escaped = "'" + escaped;
+  }
+  
+  // Always wrap in double quotes for safety
+  return '"' + escaped + '"';
+}
+
+/**
  * Convert analytics data to CSV format
  */
 function convertToCSV(data, type) {
@@ -12,22 +36,22 @@ function convertToCSV(data, type) {
   switch (type) {
   case 'summary': {
     csvContent += 'Section,Metric,Value\n';
-    csvContent += `Overview,Tickets Sold,${data.overview.tickets_sold}\n`;
-    csvContent += `Overview,Gross Revenue,$${data.overview.gross_revenue}\n`;
-    csvContent += `Overview,Unique Customers,${data.overview.unique_customers}\n`;
-    csvContent += `Overview,Check-in Rate,${data.overview.check_in_rate}%\n`;
-    csvContent += `Overview,Days Until Event,${data.overview.days_until_event}\n`;
-    csvContent += `Performance,Daily Average,${data.performance.daily_average}\n`;
-    csvContent += `Performance,Projected Total,${data.performance.projected_total}\n`;
-    csvContent += `Performance,Top Ticket Type,${data.performance.top_ticket_type}\n`;
-    csvContent += `Performance,Conversion Rate,${data.performance.conversion_rate}%\n`;
+    csvContent += `${q('Overview')},${q('Tickets Sold')},${q(data.overview.tickets_sold)}\n`;
+    csvContent += `${q('Overview')},${q('Gross Revenue')},${q('$' + data.overview.gross_revenue)}\n`;
+    csvContent += `${q('Overview')},${q('Unique Customers')},${q(data.overview.unique_customers)}\n`;
+    csvContent += `${q('Overview')},${q('Check-in Rate')},${q(data.overview.check_in_rate + '%')}\n`;
+    csvContent += `${q('Overview')},${q('Days Until Event')},${q(data.overview.days_until_event)}\n`;
+    csvContent += `${q('Performance')},${q('Daily Average')},${q(data.performance.daily_average)}\n`;
+    csvContent += `${q('Performance')},${q('Projected Total')},${q(data.performance.projected_total)}\n`;
+    csvContent += `${q('Performance')},${q('Top Ticket Type')},${q(data.performance.top_ticket_type)}\n`;
+    csvContent += `${q('Performance')},${q('Conversion Rate')},${q(data.performance.conversion_rate + '%')}\n`;
     break;
   }
 
   case 'trend': {
     csvContent += 'Date,Tickets Sold,Revenue,Orders,Average Price,Cumulative Tickets,Cumulative Revenue\n';
     data.forEach((row) => {
-      csvContent += `${row.sale_date},${row.tickets_sold},${row.revenue},${row.orders},${row.avg_price},${row.cumulative_tickets},${row.cumulative_revenue}\n`;
+      csvContent += `${q(row.sale_date)},${q(row.tickets_sold)},${q(row.revenue)},${q(row.orders)},${q(row.avg_price)},${q(row.cumulative_tickets)},${q(row.cumulative_revenue)}\n`;
     });
     break;
   }
@@ -35,32 +59,32 @@ function convertToCSV(data, type) {
   case 'revenue': {
     csvContent += 'Ticket Type,Quantity Sold,Average Price,Total Revenue,Revenue Percentage\n';
     data.forEach((row) => {
-      csvContent += `${row.ticket_type},${row.quantity_sold},$${row.avg_price},$${row.total_revenue},${row.revenue_percentage}%\n`;
+      csvContent += `${q(row.ticket_type)},${q(row.quantity_sold)},${q('$' + row.avg_price)},${q('$' + row.total_revenue)},${q(row.revenue_percentage + '%')}\n`;
     });
     break;
   }
 
   case 'customers': {
     csvContent += 'Metric,Value\n';
-    csvContent += `Unique Customers,${data.summary.unique_customers}\n`;
-    csvContent += `Average Tickets per Customer,${data.summary.avg_tickets_per_customer}\n`;
-    csvContent += `Average Spend per Customer,$${data.summary.avg_spend_per_customer}\n`;
-    csvContent += `Max Tickets (Single Customer),${data.summary.max_tickets_single_customer}\n`;
-    csvContent += `Repeat Customers,${data.summary.repeat_customers}\n`;
-    csvContent += `Single Ticket Customers,${data.summary.single_ticket_customers}\n`;
-    csvContent += `High Value Customers,${data.summary.high_value_customers}\n\n`;
+    csvContent += `${q('Unique Customers')},${q(data.summary.unique_customers)}\n`;
+    csvContent += `${q('Average Tickets per Customer')},${q(data.summary.avg_tickets_per_customer)}\n`;
+    csvContent += `${q('Average Spend per Customer')},${q('$' + data.summary.avg_spend_per_customer)}\n`;
+    csvContent += `${q('Max Tickets (Single Customer)')},${q(data.summary.max_tickets_single_customer)}\n`;
+    csvContent += `${q('Repeat Customers')},${q(data.summary.repeat_customers)}\n`;
+    csvContent += `${q('Single Ticket Customers')},${q(data.summary.single_ticket_customers)}\n`;
+    csvContent += `${q('High Value Customers')},${q(data.summary.high_value_customers)}\n\n`;
 
     csvContent += 'Top Customers\n';
     csvContent += 'Email,Name,Tickets Purchased,Total Spent,Ticket Types\n';
     data.topCustomers.forEach((customer) => {
-      csvContent += `${customer.customer_email},"${customer.customer_name}",${customer.tickets_purchased},$${customer.total_spent},"${customer.ticket_types}"\n`;
+      csvContent += `${q(customer.customer_email)},${q(customer.customer_name)},${q(customer.tickets_purchased)},${q('$' + customer.total_spent)},${q(customer.ticket_types)}\n`;
     });
     break;
   }
 
   default: {
     csvContent += 'Data\n';
-    csvContent += JSON.stringify(data, null, 2);
+    csvContent += q(JSON.stringify(data, null, 2));
   }
   }
 

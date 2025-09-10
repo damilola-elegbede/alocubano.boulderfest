@@ -6,8 +6,8 @@ Complete setup instructions for A Lo Cubano Boulder Fest website development env
 
 ### Minimum Requirements
 
-- **Node.js**: 18.0.0 or higher
-- **npm**: 8.0.0 or higher (included with Node.js)
+- **Node.js**: 22.x (required)
+- **npm**: 10.0.0 or higher (included with Node.js)
 - **Vercel CLI**: Global installation required for E2E testing (`npm i -g vercel`)
 - **SQLite**: 3.9.0 or higher with JSON support
 - **Git**: 2.20 or higher
@@ -15,7 +15,7 @@ Complete setup instructions for A Lo Cubano Boulder Fest website development env
 
 ### Recommended Requirements
 
-- **Node.js**: 20+ LTS
+- **Node.js**: 22.x LTS
 - **RAM**: 8GB or more
 - **Storage**: 2GB free space
 - **Internet**: Stable connection for dependencies and API integrations
@@ -58,8 +58,8 @@ git clone https://github.com/damilola-elegbede/alocubano.boulderfest.git
 cd alocubano.boulderfest
 
 # Verify Node.js version
-node --version  # Should be 18.0.0+
-npm --version   # Should be 8.0.0+
+node --version  # Should be 22.x
+npm --version   # Should be 10.0.0+
 ```
 
 ### 2. Dependencies Installation
@@ -350,7 +350,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install Vercel CLI
@@ -377,7 +377,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           
       - name: Restore dependencies
@@ -402,7 +402,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           
       - name: Restore dependencies
@@ -433,7 +433,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install Vercel CLI
@@ -465,7 +465,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           
       - name: Restore dependencies

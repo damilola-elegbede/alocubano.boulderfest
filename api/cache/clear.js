@@ -163,6 +163,30 @@ async function handler(req, res) {
             .json({ error: "Pattern is required for pattern clearing" });
         }
 
+        // Validate pattern is a string
+        if (typeof pattern !== "string") {
+          return res.status(400).json({ 
+            error: "Pattern must be a string" 
+          });
+        }
+
+        // Validate pattern length (max 2048 characters)
+        if (pattern.length > 2048) {
+          return res.status(400).json({ 
+            error: "Pattern exceeds maximum length of 2048 characters" 
+          });
+        }
+
+        // Validate pattern contains only safe characters
+        // Allow: alphanumeric, hyphens, underscores, colons, asterisks, 
+        // question marks, forward slashes, dots, square brackets
+        const safePatternRegex = /^[\w\-:*?/.[\]]+$/;
+        if (!safePatternRegex.test(pattern)) {
+          return res.status(400).json({ 
+            error: "Pattern contains invalid characters. Only alphanumeric characters, hyphens, underscores, colons, asterisks, question marks, forward slashes, dots, and square brackets are allowed." 
+          });
+        }
+
         if (dryRun) {
           result.operations.push({
             type: "pattern_clear",

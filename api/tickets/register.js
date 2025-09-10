@@ -127,8 +127,9 @@ export default async function handler(req, res) {
       args: [cleanFirstName, cleanLastName, cleanEmail, 'completed', ticketId]
     });
     
-    // Check if update affected any rows (prevents double registration)
-    if (updateRes?.rowsAffected !== undefined && updateRes.rowsAffected === 0) {
+    // Use portable rows changed check for different database implementations (prevents double registration)
+    const rowsChanged = updateRes?.rowsAffected ?? updateRes?.changes ?? 0;
+    if (rowsChanged === 0) {
       return res.status(409).json({ error: 'Ticket was registered concurrently; please refresh.' });
     }
 

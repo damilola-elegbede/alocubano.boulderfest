@@ -164,7 +164,7 @@ class AsyncService {
 ### API Handler Pattern
 
 ```javascript
-import { getDatabaseClient } from "./lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 
 export default async function handler(req, res) {
   const client = await getDatabaseClient(); // Always await initialization
@@ -368,7 +368,6 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 ```text
 /
 ├── api/                 # Serverless functions
-│   ├── lib/            # Shared services (async singletons)
 │   ├── admin/          # Admin endpoints
 │   ├── email/          # Email endpoints
 │   ├── payments/       # Payment processing
@@ -376,6 +375,7 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 │   ├── registration/   # Registration endpoints
 │   ├── gallery/        # Gallery endpoints
 │   └── health/         # Health check endpoints
+├── lib/                # Shared services (async singletons)
 ├── pages/              # HTML pages
 ├── js/                 # Frontend JavaScript
 ├── css/                # Stylesheets

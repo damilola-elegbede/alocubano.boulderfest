@@ -124,10 +124,8 @@ async function handler(req, res) {
               "Content-Disposition",
               `attachment; filename="db-metrics-${Date.now()}.csv"`,
             );
-            return res
-              .status(200)
-              .setHeader("Content-Type", contentType)
-              .send(csv);
+            res.setHeader("Content-Type", contentType);
+            return res.status(200).send(csv);
           }
         } else {
           data = { error: "Query optimizer not available" };

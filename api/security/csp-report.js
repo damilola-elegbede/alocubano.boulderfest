@@ -182,6 +182,28 @@ async function handleCSPReport(req, res) {
     return;
   }
 
+  // Validate content-type header (case-insensitive)
+  // Node.js headers are already lowercase, but handle both cases
+  const contentType = (
+    req.headers["content-type"] || 
+    req.headers["Content-Type"] || 
+    ""
+  ).toLowerCase();
+  const isValidContentType = 
+    contentType.includes("application/csp-report") || 
+    contentType.includes("application/json");
+
+  if (!isValidContentType) {
+    res.status(415).json({
+      error: {
+        type: "UnsupportedMediaType",
+        message: "Content-Type must be application/csp-report or application/json",
+        supportedTypes: ["application/csp-report", "application/json"]
+      },
+    });
+    return;
+  }
+
   // Add security headers
   addAPISecurityHeaders(req, res, {
     maxAge: 0, // No caching for security endpoints
@@ -189,16 +211,57 @@ async function handleCSPReport(req, res) {
   });
 
   try {
-    // Parse JSON body
+    // Implement 10KB size limit for request body
+    const MAX_BODY_SIZE = 10 * 1024; // 10KB
+    let bodySize = 0;
     let body = "";
+    let requestDestroyed = false;
+
     req.on("data", (chunk) => {
+      if (requestDestroyed) return;
+      
+      bodySize += chunk.length;
+      
+      // Check if body exceeds size limit
+      if (bodySize > MAX_BODY_SIZE) {
+        requestDestroyed = true;
+        req.destroy(); // Destroy the request immediately
+        res.status(413).json({
+          error: {
+            type: "PayloadTooLarge",
+            message: `Request body exceeds maximum size of ${MAX_BODY_SIZE} bytes`,
+            maxSize: MAX_BODY_SIZE,
+            receivedSize: bodySize
+          },
+        });
+        return;
+      }
+      
       body += chunk.toString();
     });
 
     await new Promise((resolve, reject) => {
-      req.on("end", () => resolve());
-      req.on("error", reject);
+      req.on("end", () => {
+        if (!requestDestroyed) {
+          resolve();
+        }
+      });
+      req.on("error", (error) => {
+        if (!requestDestroyed) {
+          reject(error);
+        }
+      });
+      req.on("close", () => {
+        if (requestDestroyed) {
+          resolve(); // Resolve to prevent hanging
+        }
+      });
     });
+
+    // If request was destroyed due to size limit, return early
+    if (requestDestroyed) {
+      return;
+    }
 
     const reportData = JSON.parse(body || "{}");
     const cspReport = reportData["csp-report"] || reportData;

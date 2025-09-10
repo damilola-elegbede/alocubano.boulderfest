@@ -84,9 +84,10 @@ describe('Wallet Pass Integration Tests', () => {
         args: [testTicketId]
       }).catch(() => {});
 
+      // Use the correct transaction_id format for cleanup
       await database.execute({
-        sql: 'DELETE FROM transactions WHERE id = ?',
-        args: [testTransactionId]
+        sql: 'DELETE FROM transactions WHERE transaction_id = ?',
+        args: [`stripe-tx-${testTransactionId}`]
       }).catch(() => {});
     }
   });

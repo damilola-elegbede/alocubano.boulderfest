@@ -264,7 +264,9 @@ async function validateTicket(db, validationCode, source) {
       args: [source, validationCode],
     });
 
-    if (updateResult.rowsAffected === 0) {
+    // Use portable rows changed check for different database implementations
+    const rowsChanged = updateResult.rowsAffected ?? updateResult.changes ?? 0;
+    if (rowsChanged === 0) {
       throw new Error("Validation failed - ticket may have reached scan limit");
     }
 
