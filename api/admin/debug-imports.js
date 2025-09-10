@@ -1,52 +1,48 @@
+// Simple import test to diagnose the exact failure point
 export default async function handler(req, res) {
   try {
-    console.log("=== IMPORT TEST START ===");
+    console.log("Step 1: Starting import test");
     
-    // Test 1: Import rate-limit-service
-    console.log("1. Testing rate-limit-service import...");
-    const rateLimitModule = await import("../../lib/rate-limit-service.js");
-    console.log("rate-limit-service import OK:", typeof rateLimitModule.default);
+    // Test individual imports
+    console.log("Step 2: Testing authService import");
+    const authService = await import("../../lib/auth-service.js");
+    console.log("Step 3: authService imported successfully", typeof authService.default);
     
-    // Test 2: Import auth-service
-    console.log("2. Testing auth-service import...");
-    const authModule = await import("../../lib/auth-service.js");
-    console.log("auth-service import OK:", typeof authModule.default);
+    console.log("Step 4: Testing database import");
+    const { getDatabaseClient } = await import("../../lib/database.js");
+    console.log("Step 5: getDatabaseClient imported successfully", typeof getDatabaseClient);
     
-    // Test 3: Import database
-    console.log("3. Testing database import...");
-    const dbModule = await import("../../lib/database.js");
-    console.log("database import OK:", typeof dbModule.getDatabaseClient);
+    console.log("Step 6: Testing security headers import");
+    const { withSecurityHeaders } = await import("../../lib/security-headers.js");
+    console.log("Step 7: withSecurityHeaders imported successfully", typeof withSecurityHeaders);
     
-    // Test 4: Check environment variables
-    console.log("4. Environment check:");
-    console.log("ADMIN_SECRET:", process.env.ADMIN_SECRET ? "configured" : "MISSING");
-    console.log("ADMIN_PASSWORD:", process.env.ADMIN_PASSWORD ? "configured" : "MISSING");
-    console.log("TEST_ADMIN_PASSWORD:", process.env.TEST_ADMIN_PASSWORD ? "configured" : "MISSING");
+    console.log("Step 8: Testing mfa middleware import");
+    const mfaMiddleware = await import("../../lib/mfa-middleware.js");
+    console.log("Step 9: mfaMiddleware imported successfully", Object.keys(mfaMiddleware));
     
-    console.log("=== ALL IMPORTS SUCCESSFUL ===");
+    console.log("Step 10: Testing rate-limit-service import");
+    const rateLimitService = await import("../../lib/rate-limit-service.js");
+    console.log("Step 11: rateLimitService imported successfully", typeof rateLimitService.default);
     
-    return res.status(200).json({
+    console.log("Step 12: Testing if default export is callable");
+    if (rateLimitService.default && typeof rateLimitService.default.recordFailedAttempt === 'function') {
+      console.log("Step 13: recordFailedAttempt method exists");
+    } else {
+      console.log("Step 13: ERROR - recordFailedAttempt method missing", Object.keys(rateLimitService.default || {}));
+    }
+    
+    res.status(200).json({ 
       success: true,
       message: "All imports successful",
-      rateLimitService: typeof rateLimitModule.default,
-      authService: typeof authModule.default,
-      database: typeof dbModule.getDatabaseClient,
-      environment: {
-        adminSecret: !!process.env.ADMIN_SECRET,
-        adminPassword: !!process.env.ADMIN_PASSWORD,
-        testAdminPassword: !!process.env.TEST_ADMIN_PASSWORD
-      }
+      rateLimitServiceMethods: rateLimitService.default ? Object.getOwnPropertyNames(rateLimitService.default) : "no default export"
     });
     
   } catch (error) {
-    console.error("=== IMPORT ERROR ===");
-    console.error("Error details:", error.message);
-    console.error("Error stack:", error.stack);
-    
-    return res.status(500).json({
+    console.error("Import test failed:", error);
+    res.status(500).json({ 
       error: error.message,
       stack: error.stack,
-      type: error.constructor.name
+      step: "Failed during import test"
     });
   }
 }
