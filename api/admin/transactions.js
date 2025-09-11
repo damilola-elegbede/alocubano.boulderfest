@@ -2,7 +2,7 @@ import authService from '../../lib/auth-service.js';
 import csrfService from '../../lib/csrf-service.js';
 import { getDatabaseClient } from '../../lib/database.js';
 import { getValidationService } from '../../lib/validation-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers.js';
+import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 
 async function handler(req, res) {
   let db;

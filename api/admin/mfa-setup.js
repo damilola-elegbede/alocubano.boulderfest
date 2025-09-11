@@ -4,7 +4,7 @@ import QRCode from 'qrcode';
 import bcrypt from 'bcryptjs';
 import authService from '../../lib/auth-service.js';
 import { getDatabaseClient } from '../../lib/database.js';
-import { withSecurityHeaders } from '../../lib/security-headers.js';
+import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { getMfaRateLimitService } from '../../lib/mfa-rate-limit-service.js';
 import { verifyMfaCode } from '../../lib/mfa-middleware.js';
 import {

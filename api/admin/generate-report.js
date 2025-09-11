@@ -1,6 +1,6 @@
 import analyticsService from '../../lib/analytics-service.js';
 import authService from '../../lib/auth-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers.js';
+import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { getDatabaseClient } from '../../lib/database.js';
 
 /**

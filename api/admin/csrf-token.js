@@ -1,6 +1,6 @@
 import authService from '../../lib/auth-service.js';
 import csrfService from '../../lib/csrf-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers.js';
+import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 
 async function csrfTokenHandler(req, res) {
   if (req.method !== 'GET') {
