@@ -76,11 +76,11 @@ async function testAuthService() {
     console.log("✅ Auth service loaded successfully");
 
     // Test token creation
-    const token = authService.createSessionToken("test-admin");
+    const token = await authService.createSessionToken("test-admin");
     console.log("✅ Session token created");
 
     // Test token verification
-    const verified = authService.verifySessionToken(token);
+    const verified = await authService.verifySessionToken(token);
     if (verified.valid) {
       console.log("✅ Token verification working");
       console.log(`   Admin ID: ${verified.admin.id}`);
@@ -88,7 +88,7 @@ async function testAuthService() {
     }
 
     // Test cookie creation
-    const cookie = authService.createSessionCookie(token);
+    const cookie = await authService.createSessionCookie(token);
     if (cookie.includes("admin_session")) {
       console.log("✅ Session cookie created");
     }

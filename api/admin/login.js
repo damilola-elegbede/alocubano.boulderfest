@@ -1,7 +1,7 @@
 import authService from '../../lib/auth-service.js';
 import { getDatabaseClient } from '../../lib/database.js';
 import { getRateLimitService } from '../../lib/rate-limit-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers.js';
+import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import {
   verifyMfaCode,
   markSessionMfaVerified
@@ -193,12 +193,32 @@ function verifyUsername(username) {
 }
 
 async function loginHandler(req, res) {
+  console.log("[Login] Request received:", {
+    method: req.method,
+    hasBody: !!req.body,
+    bodyKeys: req.body ? Object.keys(req.body) : [],
+    headers: {
+      contentType: req.headers['content-type'],
+      userAgent: req.headers['user-agent']?.substring(0, 50)
+    }
+  });
+
   if (req.method === 'POST') {
     const { username, password, mfaCode, step } = req.body || {};
     const clientIP = getClientIP(req);
 
+    console.log("[Login] POST data:", {
+      hasUsername: !!username,
+      hasPassword: !!password,
+      passwordLength: password?.length,
+      hasMfaCode: !!mfaCode,
+      step: step,
+      clientIP: clientIP?.substring(0, 15)
+    });
+
     // Enhanced IP validation
     if (!clientIP || clientIP === 'unknown') {
+      console.error("[Login] Failed: Unable to identify client IP");
       return res.status(400).json({ error: 'Unable to identify client' });
     }
 
@@ -273,11 +293,18 @@ async function loginHandler(req, res) {
         return await handlePasswordStep(req, res, username, password, clientIP);
       }
     } catch (error) {
-      console.error('Login process failed:', {
-        error: error.message,
-        clientIP: clientIP.substring(0, 15) + '...', // Truncate IP for privacy
+      console.error('[Login] Login process failed:', {
+        errorMessage: error.message,
+        errorStack: error.stack,
+        errorName: error.name,
+        clientIP: clientIP?.substring(0, 15) + '...', // Truncate IP for privacy
         timestamp: new Date().toISOString(),
-        userAgent: getSafeUserAgent(req, 100) // Use safe user agent extraction
+        userAgent: getSafeUserAgent(req, 100), // Use safe user agent extraction
+        environment: {
+          NODE_ENV: process.env.NODE_ENV,
+          VERCEL_ENV: process.env.VERCEL_ENV,
+          CI: process.env.CI
+        }
       });
 
       // Try to record the failed attempt even if other errors occurred
@@ -285,15 +312,21 @@ async function loginHandler(req, res) {
         const rateLimitService = getRateLimitService();
         await rateLimitService.recordFailedAttempt(clientIP);
       } catch (rateLimitError) {
-        console.error('Failed to record rate limit attempt:', rateLimitError);
+        console.error('[Login] Failed to record rate limit attempt:', rateLimitError.message);
       }
 
       // In CI/test environments, return 401 for authentication failures to match test expectations
       if (process.env.CI || process.env.NODE_ENV === 'test') {
+        console.log('[Login] Returning 401 for test environment');
         return res.status(401).json({ error: 'Authentication failed' });
       }
 
-      res.status(500).json({ error: 'Internal server error' });
+      console.log('[Login] Returning 500 error to client');
+      // Return a more informative error message for configuration issues
+      if (error.message && error.message.includes('ADMIN_SECRET')) {
+        return res.status(500).json({ error: 'Authentication service configuration error. Please ensure ADMIN_SECRET is configured.' });
+      }
+      res.status(500).json({ error: 'A server error occurred. Please try again later.' });
     }
   } else if (req.method === 'DELETE') {
     // Logout - enhanced with session cleanup
@@ -325,14 +358,26 @@ async function loginHandler(req, res) {
  * Handle username and password verification step (Step 1) with enhanced security
  */
 async function handlePasswordStep(req, res, username, password, clientIP) {
+  console.log('[Login] Starting password verification step');
+  
   // Additional username validation
   if (!username || typeof username !== 'string' || username.length > 50) {
+    console.log('[Login] Invalid username format');
     return res.status(400).json({ error: 'Invalid username format' });
   }
 
   // Additional password validation
   if (!password || typeof password !== 'string' || password.length > 200) {
+    console.log('[Login] Invalid password format');
     return res.status(400).json({ error: 'Invalid password format' });
+  }
+
+  try {
+    // Initialize auth service first to ensure it's ready
+    await authService.ensureInitialized();
+  } catch (error) {
+    console.error('[Login] Auth service initialization failed:', error.message);
+    return res.status(500).json({ error: 'Authentication service unavailable. Please check server configuration.' });
   }
 
   const rateLimitService = getRateLimitService();
@@ -345,16 +390,31 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
     process.env.VERCEL_ENV === 'preview' ||
     req.headers['user-agent']?.includes('Playwright');
 
+  console.log('[Login] Environment check:', {
+    isE2ETest,
+    E2E_TEST_MODE: process.env.E2E_TEST_MODE,
+    CI: process.env.CI,
+    VERCEL_ENV: process.env.VERCEL_ENV,
+    userAgent: req.headers['user-agent']?.substring(0, 50)
+  });
+
   // Verify username and password with timing attack protection
   const startTime = Date.now();
+  console.log('[Login] Verifying username...');
   const isUsernameValid = verifyUsername(username);
+  console.log('[Login] Username valid:', isUsernameValid);
+  
+  console.log('[Login] Verifying password...');
   const isPasswordValid = await authService.verifyPassword(password);
+  console.log('[Login] Password valid:', isPasswordValid);
+  
   const isValid = isUsernameValid && isPasswordValid;
   const verificationTime = Date.now() - startTime;
+  console.log('[Login] Verification complete:', { isValid, timeMs: verificationTime });
 
   // Log authentication failure in test environments
   if (isE2ETest && !isValid) {
-    console.warn('Admin authentication failed in test environment');
+    console.warn('[Login] Admin authentication failed in test environment');
   }
 
   // Add consistent delay to prevent timing attacks (minimum 200ms)
@@ -385,31 +445,47 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
   // Clear login attempts on password success
   await rateLimitService.clearAttempts(clientIP);
 
-  // Check if MFA is enabled
+  // Check if MFA is enabled and required
   const adminId = 'admin'; // Default admin ID
-  const mfaStatus = await getMfaStatus(adminId);
+  const mfaRequired = authService.isMFARequired();
+  const mfaStatus = mfaRequired ? await getMfaStatus(adminId) : { isEnabled: false };
 
-  if (!mfaStatus.isEnabled) {
+  if (!mfaRequired || !mfaStatus.isEnabled) {
     // No MFA required - complete login
     return await completeLogin(req, res, adminId, clientIP, false);
   }
 
   // MFA is required - create temporary session and request MFA
-  const tempToken = authService.createSessionToken(adminId);
+  const tempToken = await authService.createSessionToken(adminId);
 
   // Store temporary session (not MFA verified yet)
   try {
-    await db.execute({
-      sql: `INSERT INTO admin_sessions 
-            (session_token, ip_address, user_agent, mfa_verified, requires_mfa_setup, expires_at) 
-            VALUES (?, ?, ?, FALSE, FALSE, ?)`,
+    const updateResult = await db.execute({
+      sql: `UPDATE admin_sessions 
+            SET ip_address = ?, user_agent = ?, mfa_verified = FALSE, requires_mfa_setup = FALSE, expires_at = ?, last_accessed_at = CURRENT_TIMESTAMP
+            WHERE session_token = ?`,
       args: [
-        tempToken,
         clientIP,
         getSafeUserAgent(req), // Use safe user agent extraction
-        new Date(Date.now() + authService.sessionDuration).toISOString()
+        new Date(Date.now() + authService.sessionDuration).toISOString(),
+        tempToken
       ]
     });
+
+    // Check if UPDATE affected any rows, if not, INSERT the session
+    if (updateResult.meta?.changes === 0) {
+      await db.execute({
+        sql: `INSERT INTO admin_sessions 
+              (session_token, ip_address, user_agent, mfa_verified, requires_mfa_setup, expires_at) 
+              VALUES (?, ?, ?, FALSE, FALSE, ?)`,
+        args: [
+          tempToken,
+          clientIP,
+          getSafeUserAgent(req), // Use safe user agent extraction
+          new Date(Date.now() + authService.sessionDuration).toISOString()
+        ]
+      });
+    }
   } catch (error) {
     console.error('Failed to create temporary session:', error);
   }
@@ -445,7 +521,7 @@ async function handleMfaStep(req, res, mfaCode, clientIP) {
   }
 
   // Verify temp session
-  const session = authService.verifySessionToken(tempToken);
+  const session = await authService.verifySessionToken(tempToken);
   if (!session.valid) {
     return res
       .status(401)
@@ -499,8 +575,8 @@ async function completeLogin(
   const db = await getDatabaseClient();
 
   // Use existing token or create new one
-  const token = existingToken || authService.createSessionToken(adminId);
-  const cookie = authService.createSessionCookie(token);
+  const token = existingToken || await authService.createSessionToken(adminId);
+  const cookie = await authService.createSessionCookie(token);
 
   // Update or create session record
   if (existingToken) {
@@ -538,7 +614,7 @@ async function completeLogin(
         session_token, action, ip_address, user_agent, request_details, success
       ) VALUES (?, ?, ?, ?, ?, ?)`,
       args: [
-        token,
+        token.substring(0, 8) + "...",
         mfaUsed ? 'login_with_mfa' : 'login',
         clientIP,
         getSafeUserAgent(req), // Use safe user agent extraction

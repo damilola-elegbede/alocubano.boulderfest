@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Cart Functionality', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/tickets.html');
+    await page.goto('/pages/tickets.html');
     // Wait for page to fully load including network idle for preview deployments
     await page.waitForLoadState('domcontentloaded');
     await page.waitForLoadState('networkidle', { timeout: 30000 });

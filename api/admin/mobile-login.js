@@ -1,6 +1,6 @@
 import { getMobileAuthService } from '../../lib/mobile-auth-service.js';
 import { getCsrfService } from '../../lib/csrf-service.js';
-import { applySecurityHeaders } from '../../lib/security-headers.js';
+import { addSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { getRateLimitService } from '../../lib/rate-limit-service.js';
 
 /**
@@ -9,7 +9,7 @@ import { getRateLimitService } from '../../lib/rate-limit-service.js';
  */
 export default async function handler(req, res) {
   // Apply security headers
-  applySecurityHeaders(res);
+  addSecurityHeaders(res);
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();

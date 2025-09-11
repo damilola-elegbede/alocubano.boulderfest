@@ -1,6 +1,6 @@
 import authService from '../../lib/auth-service.js';
 import csrfService from '../../lib/csrf-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers.js';
+import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 
 async function csrfTokenHandler(req, res) {
   if (req.method !== 'GET') {
@@ -17,7 +17,7 @@ async function csrfTokenHandler(req, res) {
     }
 
     // Verify session
-    const session = authService.verifySessionToken(token);
+    const session = await authService.verifySessionToken(token);
 
     if (!session.valid) {
       return res.status(401).json({ error: 'Invalid or expired session' });
