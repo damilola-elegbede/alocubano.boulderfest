@@ -387,16 +387,13 @@
     </div>
 
     <script>
-      // Check if already authenticated using verify-session endpoint
+      // Check if already authenticated
       async function checkExistingAuth() {
         try {
-          const response = await fetch("/api/admin/verify-session");
+          const response = await fetch("/api/admin/dashboard");
           if (response.ok) {
-            const data = await response.json();
-            if (data.valid) {
-              // Already authenticated, redirect to admin portal
-              window.location.href = "/admin";
-            }
+            // Already authenticated, redirect to admin portal
+            window.location.href = "/admin";
           }
         } catch (error) {
           // Not authenticated, stay on login page

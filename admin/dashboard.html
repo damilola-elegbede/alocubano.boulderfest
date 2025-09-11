@@ -174,45 +174,24 @@
         }
       }
 
-      // ✅ SIMPLIFIED AUTH CHECK - Use verify-session endpoint
+      // ✅ SIMPLIFIED AUTH CHECK - Replace existing checkAuth function
       async function checkAuth() {
         try {
-          // First verify the session
-          const verifyResponse = await fetch("/api/admin/verify-session", {
+          const response = await fetch("/api/admin/dashboard", {
             headers: { "Cache-Control": "no-cache" },
             signal: AbortSignal.timeout(3000) // 3-second timeout, no retries
           });
           
-          if (!verifyResponse.ok) {
+          if (!response.ok) {
             // Immediate redirect on auth failure
             document.body.setAttribute("data-auth-status", "unauthenticated");
             window.location.replace("/admin/login");
             return false;
           }
           
-          const sessionData = await verifyResponse.json();
-          if (!sessionData.valid) {
-            // Session invalid, redirect to login
-            document.body.setAttribute("data-auth-status", "unauthenticated");
-            window.location.replace("/admin/login");
-            return false;
-          }
-          
-          // Session is valid, now get dashboard data
-          const dashboardResponse = await fetch("/api/admin/dashboard", {
-            headers: { "Cache-Control": "no-cache" },
-            signal: AbortSignal.timeout(3000)
-          });
-          
-          if (!dashboardResponse.ok) {
-            console.error("Failed to load dashboard data");
-            document.body.setAttribute("data-auth-status", "error");
-            return false;
-          }
-          
           // Success - set authenticated status and return data
           document.body.setAttribute("data-auth-status", "authenticated");
-          const data = await dashboardResponse.json();
+          const data = await response.json();
           console.log("Dashboard data loaded successfully");
           return data;
         } catch (error) {
