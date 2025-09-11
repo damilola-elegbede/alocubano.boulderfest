@@ -16,7 +16,18 @@ import { skipTestIfSecretsUnavailable, warnIfOptionalSecretsUnavailable } from '
 const testConstants = getTestDataConstants();
 
 test.describe('Admin Authentication', () => {
-  // Validate secrets before running tests
+  // Enhanced environment setup for E2E tests
+  test.beforeAll(async () => {
+    // Ensure basic environment variables are set
+    if (!process.env.NODE_ENV) {
+      process.env.NODE_ENV = 'test';
+    }
+    if (!process.env.E2E_TEST_MODE) {
+      process.env.E2E_TEST_MODE = 'true';
+    }
+  });
+  
+  // Validate secrets before running tests with improved handling
   const shouldSkip = skipTestIfSecretsUnavailable(['admin', 'security'], 'admin-auth.test.js');
   
   if (shouldSkip) {

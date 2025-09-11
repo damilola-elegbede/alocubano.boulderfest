@@ -14,6 +14,7 @@
     "test": "NODE_OPTIONS='--max-old-space-size=6144' vitest run --config tests/vitest.config.js",
     "test:integration": "NODE_OPTIONS='--max-old-space-size=4096' vitest run --config tests/config/vitest.integration.config.js",
     "test:e2e": "NODE_OPTIONS='--max-old-space-size=3072' playwright test --config tests/config/playwright/playwright-e2e-preview.config.js",
+    "test:e2e:local": "NODE_OPTIONS='--max-old-space-size=3072' playwright test --config tests/config/playwright/playwright-e2e-local.config.js",
     "test:watch": "NODE_OPTIONS='--max-old-space-size=6144' vitest --config tests/vitest.config.js",
     "test:coverage": "NODE_OPTIONS='--max-old-space-size=6144' vitest run --coverage --config tests/vitest.config.js",
     "lint": "npm run lint:js && npm run lint:html && npm run lint:markdown",

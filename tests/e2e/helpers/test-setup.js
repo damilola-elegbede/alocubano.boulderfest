@@ -78,7 +78,19 @@ export function setupTest(options = {}) {
  */
 export function skipTestIfSecretsUnavailable(testTypes, testFile) {
   try {
-    const setup = setupTest({ testTypes, requireSecrets: true, testFile });
+    // Enhanced environment variable loading for E2E tests
+    if (!process.env.NODE_ENV) {
+      process.env.NODE_ENV = 'test';
+    }
+    if (!process.env.E2E_TEST_MODE) {
+      process.env.E2E_TEST_MODE = 'true';
+    }
+    
+    // Check for test environment file and load if needed
+    // Note: For E2E tests against preview deployments, local environment files are not needed
+    // Environment variables come from GitHub secrets and Vercel deployment configuration
+    
+    const setup = setupTest({ testTypes, requireSecrets: false, testFile }); // Changed to false for graceful degradation
     
     if (!setup.canRunTests) {
       console.log(`⏭️ Skipping tests in ${testFile} due to missing required secrets`);

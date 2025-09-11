@@ -50,8 +50,8 @@ test.describe('Newsletter Subscription - Real API Test', () => {
   });
 
   test('should load contact page with newsletter form', async ({ page }) => {
-    // Navigate to contact page
-    await page.goto('/contact.html');
+    // Navigate to contact page (using Vercel rewrite)
+    await page.goto('/contact');
     
     // Wait for page to load with extended timeout for preview deployments
     await page.waitForLoadState('domcontentloaded');
@@ -68,7 +68,7 @@ test.describe('Newsletter Subscription - Real API Test', () => {
   });
   
   test('should validate email and consent requirements', async ({ page }) => {
-    await page.goto('/contact.html');
+    await page.goto('/contact');
     
     // Wait for form to load with extended timeout for preview deployments
     await page.waitForLoadState('domcontentloaded');
@@ -101,7 +101,7 @@ test.describe('Newsletter Subscription - Real API Test', () => {
   });
 
   test('should handle successful subscription with real API', async ({ page }) => {
-    await page.goto('/contact.html');
+    await page.goto('/contact');
     
     // Wait for form to load with extended timeout for preview deployments
     await page.waitForLoadState('domcontentloaded');
