@@ -10,7 +10,7 @@ import { verifyMfaCode } from '../../lib/mfa-middleware.js';
 import {
   encryptSecret,
   decryptSecret
-} from '../../lib/security/encryption-utils.js';
+} from '../../lib/encryption-utils.js';
 
 /**
  * MFA Setup and Management Endpoint

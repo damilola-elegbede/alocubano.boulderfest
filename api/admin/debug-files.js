@@ -23,12 +23,12 @@ export default async function handler(req, res) {
 
   // Check various paths
   const pathsToCheck = [
-    '/var/task/lib/security/encryption-utils.js',
+    '/var/task/lib/encryption-utils.js',
     '/var/task/lib/mfa-middleware.js',
     '/var/task/lib/auth-service.js',
-    path.resolve(__dirname, '../../lib/security/encryption-utils.js'),
+    path.resolve(__dirname, '../../lib/encryption-utils.js'),
     path.resolve(__dirname, '../../lib/mfa-middleware.js'),
-    './lib/security/encryption-utils.js',
+    './lib/encryption-utils.js',
     './lib/mfa-middleware.js'
   ];
 
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
 
   // Try to actually import the module
   try {
-    const module = await import('../../lib/security/encryption-utils.js');
+    const module = await import('../../lib/encryption-utils.js');
     results.importSuccess = true;
     results.exportedFunctions = Object.keys(module);
   } catch (error) {
