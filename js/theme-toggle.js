@@ -362,7 +362,11 @@ function updateToggleState(preference) {
         
         performance.mark(PERF_MARKS.UPDATE_END);
         if (performance.measure) {
-            performance.measure('toggle-update', PERF_MARKS.UPDATE_START, PERF_MARKS.UPDATE_END);
+            try {
+                performance.measure('toggle-update', PERF_MARKS.UPDATE_START, PERF_MARKS.UPDATE_END);
+            } catch (e) {
+                // Start mark doesn't exist, skip measurement
+            }
         }
     });
 }
@@ -407,7 +411,11 @@ function handleThemeClick(event) {
         
         performance.mark(PERF_MARKS.TOGGLE_END);
         if (performance.measure) {
-            performance.measure('theme-toggle', PERF_MARKS.TOGGLE_START, PERF_MARKS.TOGGLE_END);
+            try {
+                performance.measure('theme-toggle', PERF_MARKS.TOGGLE_START, PERF_MARKS.TOGGLE_END);
+            } catch (e) {
+                // Start mark doesn't exist, skip measurement
+            }
         }
     }, 16); // One frame delay for 60fps
 }

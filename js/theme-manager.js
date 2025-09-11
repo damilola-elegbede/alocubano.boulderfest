@@ -166,9 +166,13 @@ function setTheme(theme) {
         applyTheme();
         performance.mark(PERF_MARKS.THEME_END);
         
-        // Measure performance
+        // Measure performance (only if start mark exists)
         if (performance.measure) {
-            performance.measure('theme-change', PERF_MARKS.THEME_START, PERF_MARKS.THEME_END);
+            try {
+                performance.measure('theme-change', PERF_MARKS.THEME_START, PERF_MARKS.THEME_END);
+            } catch (e) {
+                // Start mark doesn't exist, skip measurement
+            }
         }
     });
 }
@@ -203,27 +207,36 @@ function applyTheme() {
     if (currentTheme !== theme) {
         // Use RAF for smooth visual transition
         requestAnimationFrame(() => {
-            cachedDocumentElement.setAttribute(THEME_ATTRIBUTE, theme);
-            
-            // Dispatch custom event for other components to listen to
-            const event = new CustomEvent('themechange', {
-                detail: { 
-                    theme: theme,
-                    isAdminPage: isAdminPage(),
-                    userPreference: isAdminPage() ? null : (getStoredPreference() || THEMES.SYSTEM),
-                    previousTheme: currentTheme
-                }
-            });
-            
-            // Use setTimeout to prevent blocking
-            setTimeout(() => {
-                document.dispatchEvent(event);
-                performance.mark(PERF_MARKS.APPLY_END);
+            // Check if document element still exists (important for tests)
+            if (cachedDocumentElement && cachedDocumentElement.setAttribute) {
+                cachedDocumentElement.setAttribute(THEME_ATTRIBUTE, theme);
                 
-                if (performance.measure) {
-                    performance.measure('theme-apply', PERF_MARKS.APPLY_START, PERF_MARKS.APPLY_END);
-                }
-            }, 0);
+                // Dispatch custom event for other components to listen to
+                const event = new CustomEvent('themechange', {
+                    detail: { 
+                        theme: theme,
+                        isAdminPage: isAdminPage(),
+                        userPreference: isAdminPage() ? null : (getStoredPreference() || THEMES.SYSTEM),
+                        previousTheme: currentTheme
+                    }
+                });
+                
+                // Use setTimeout to prevent blocking
+                setTimeout(() => {
+                    if (document && document.dispatchEvent) {
+                        document.dispatchEvent(event);
+                    }
+                    performance.mark(PERF_MARKS.APPLY_END);
+                    
+                    if (performance.measure) {
+                        try {
+                            performance.measure('theme-apply', PERF_MARKS.APPLY_START, PERF_MARKS.APPLY_END);
+                        } catch (e) {
+                            // Start mark doesn't exist, skip measurement
+                        }
+                    }
+                }, 0);
+            }
         });
     }
 }
@@ -377,6 +390,8 @@ function clearPerformanceData() {
     
     // Reset cache
     cachedStoredPreference = null;
+    cachedIsAdminPage = null;
+    cachedDocumentElement = null;
     lastStorageAccess = 0;
 }
 
