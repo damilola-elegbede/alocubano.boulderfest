@@ -5,15 +5,49 @@
  */
 
 import { getRateLimitService } from '../../lib/rate-limit-service.js';
+import { 
+  isFeatureEnabled, 
+  isIpWhitelisted, 
+  getEnvironmentType,
+  getSecurityHeaders 
+} from '../../lib/utils/environment-detector.js';
 
 export default async function handler(req, res) {
-  // Only allow in test environments
-  if (process.env.E2E_TEST_MODE !== 'true' && 
-      process.env.CI !== 'true' && 
-      process.env.VERCEL_ENV !== 'preview' &&
-      process.env.NODE_ENV !== 'test') {
+  // Apply security headers
+  const securityHeaders = getSecurityHeaders();
+  Object.entries(securityHeaders).forEach(([key, value]) => {
+    res.setHeader(key, value);
+  });
+
+  // SECURITY: Check if clear-rate-limits feature is enabled
+  if (!isFeatureEnabled('clear-rate-limits')) {
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
+                    req.connection?.remoteAddress;
+    
+    // Log security violation
+    console.error('[SECURITY] Attempted access to clear-rate-limits in non-test environment', {
+      environmentType: getEnvironmentType(),
+      clientIp,
+      userAgent: req.headers['user-agent']
+    });
+    
     return res.status(403).json({ 
-      error: 'This endpoint is only available in test environments' 
+      error: 'Forbidden' 
+    });
+  }
+  
+  // Additional IP whitelist check
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
+                  req.connection?.remoteAddress;
+  
+  if (!isIpWhitelisted(clientIp)) {
+    console.error('[SECURITY] Blocked clear-rate-limits from non-whitelisted IP', {
+      clientIp,
+      environmentType: getEnvironmentType()
+    });
+    
+    return res.status(403).json({ 
+      error: 'Forbidden' 
     });
   }
 
