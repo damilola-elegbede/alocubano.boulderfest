@@ -49,6 +49,8 @@
     <link rel="stylesheet" href="/css/floating-cart.css" />
     <link rel="stylesheet" href="/css/checkout-loading.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
+    <!-- Theme styles -->
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
 
     <style>
       /* Success Page Specific Styles */
@@ -361,6 +363,9 @@
               </li>
             </ul>
           </nav>
+          <div class="header-right">
+            <div id="theme-toggle-container"></div>
+          </div>
         </div>
       </div>
     </header>
@@ -686,5 +691,17 @@
     <script src="/js/typography.js"></script>
 
     <!-- Cart system not needed on success page - cart is cleared after payment -->
+    
+    <!-- Theme Management -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      import themeManager from '/js/theme-manager.js';
+      
+      // Initialize theme system
+      document.addEventListener('DOMContentLoaded', () => {
+        themeManager.initializeTheme();
+        initializeThemeToggle('#theme-toggle-container');
+      });
+    </script>
   </body>
 </html>

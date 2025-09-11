@@ -1,0 +1,545 @@
+/* A Lo Cubano Boulder Fest - Theme Toggle Component
+   Elegant three-button segmented control for theme switching
+   Compatible with Cuban salsa festival aesthetic */
+
+/* =================================================================
+   THEME TOGGLE DESIGN SYSTEM
+   ================================================================= */
+
+:root {
+  /* Theme Toggle Specific Variables */
+  --theme-toggle-width: 140px;
+  --theme-toggle-height: 44px;
+  --theme-toggle-padding: 3px;
+  --theme-toggle-border-radius: var(--radius-lg);
+  --theme-toggle-backdrop-blur: 16px;
+  --theme-toggle-shadow: var(--shadow-md);
+  --theme-toggle-shadow-active: var(--shadow-lg);
+  --theme-toggle-transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  
+  /* Icon sizing */
+  --theme-toggle-icon-size: 20px;
+  --theme-toggle-button-size: 38px;
+  
+  /* Colors and opacity for elegance */
+  --theme-toggle-bg: rgba(255, 255, 255, 0.85);
+  --theme-toggle-bg-active: var(--color-primary);
+  --theme-toggle-border: rgba(0, 0, 0, 0.1);
+  --theme-toggle-text: var(--color-text-secondary);
+  --theme-toggle-text-active: var(--color-white);
+  
+  /* Positioning */
+  --theme-toggle-top: var(--space-lg);
+  --theme-toggle-right: var(--space-xl);
+  --theme-toggle-z-index: calc(var(--z-fixed) + 10);
+  
+  /* Warm Cuban-inspired glow */
+  --theme-toggle-glow: 0 0 20px rgba(91, 107, 181, 0.3);
+  --theme-toggle-glow-active: 0 0 25px rgba(91, 107, 181, 0.4);
+}
+
+/* Dark mode theme toggle overrides */
+[data-theme="dark"] {
+  --theme-toggle-bg: rgba(17, 17, 17, 0.9);
+  --theme-toggle-border: rgba(255, 255, 255, 0.15);
+  --theme-toggle-text: var(--color-gray-300);
+  --theme-toggle-glow: 0 0 20px rgba(204, 41, 54, 0.2);
+  --theme-toggle-glow-active: 0 0 25px rgba(204, 41, 54, 0.3);
+}
+
+/* System theme support */
+@media (prefers-color-scheme: dark) {
+  [data-theme="auto"] {
+    --theme-toggle-bg: rgba(17, 17, 17, 0.9);
+    --theme-toggle-border: rgba(255, 255, 255, 0.15);
+    --theme-toggle-text: var(--color-gray-300);
+    --theme-toggle-glow: 0 0 20px rgba(204, 41, 54, 0.2);
+    --theme-toggle-glow-active: 0 0 25px rgba(204, 41, 54, 0.3);
+  }
+}
+
+/* =================================================================
+   THEME TOGGLE CONTAINER
+   ================================================================= */
+
+.theme-toggle {
+  position: fixed;
+  top: var(--theme-toggle-top);
+  right: var(--theme-toggle-right);
+  z-index: var(--theme-toggle-z-index);
+  
+  /* Elegant segmented control */
+  display: inline-flex;
+  width: var(--theme-toggle-width);
+  height: var(--theme-toggle-height);
+  padding: var(--theme-toggle-padding);
+  
+  /* Beautiful background with Cuban warmth */
+  background: var(--theme-toggle-bg);
+  border: 1px solid var(--theme-toggle-border);
+  border-radius: var(--theme-toggle-border-radius);
+  
+  /* Glass morphism effect */
+  backdrop-filter: blur(var(--theme-toggle-backdrop-blur));
+  -webkit-backdrop-filter: blur(var(--theme-toggle-backdrop-blur));
+  
+  /* Elegant shadow */
+  box-shadow: var(--theme-toggle-shadow);
+  
+  /* Smooth transitions */
+  transition: var(--theme-toggle-transition);
+  
+  /* Accessibility */
+  overflow: hidden;
+  user-select: none;
+  
+  /* Subtle warmth inspired by Cuban sunshine */
+  box-shadow: var(--theme-toggle-shadow), var(--theme-toggle-glow);
+}
+
+.theme-toggle:hover {
+  box-shadow: var(--theme-toggle-shadow-active), var(--theme-toggle-glow-active);
+  transform: translateY(-1px);
+}
+
+/* =================================================================
+   THEME TOGGLE BUTTONS
+   ================================================================= */
+
+.theme-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* Sizing for perfect touch targets */
+  min-width: var(--theme-toggle-button-size);
+  height: var(--theme-toggle-button-size);
+  
+  /* Clean button reset */
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--theme-toggle-border-radius) - 2px);
+  
+  /* Typography */
+  color: var(--theme-toggle-text);
+  font-family: var(--font-sans);
+  
+  /* Smooth interactions */
+  cursor: pointer;
+  transition: var(--theme-toggle-transition);
+  
+  /* Touch optimization */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  
+  /* Icon container properties */
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-option:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.theme-option:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-primary);
+  transform: scale(1.05);
+}
+
+[data-theme="dark"] .theme-option:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-secondary);
+}
+
+/* =================================================================
+   ACTIVE STATE STYLING
+   ================================================================= */
+
+.theme-option.active {
+  background: var(--theme-toggle-bg-active);
+  color: var(--theme-toggle-text-active);
+  transform: scale(1.02);
+  
+  /* Elegant elevation */
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.15),
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  
+  /* Subtle Cuban-inspired glow for active state */
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.15),
+    0 0 15px rgba(91, 107, 181, 0.3);
+}
+
+[data-theme="dark"] .theme-option.active {
+  background: var(--color-secondary);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    0 0 15px rgba(204, 41, 54, 0.3);
+}
+
+/* =================================================================
+   SVG ICONS - EMBEDDED FOR PERFORMANCE
+   ================================================================= */
+
+.theme-option svg {
+  width: var(--theme-toggle-icon-size);
+  height: var(--theme-toggle-icon-size);
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 0;
+  transition: var(--theme-toggle-transition);
+}
+
+/* System Theme Icon (Monitor/Computer) */
+.theme-option[data-theme="system"] svg {
+  /* Custom monitor icon - clean and recognizable */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Crect x='2' y='3' width='20' height='14' rx='2' ry='2'/%3E%3Cline x1='8' y1='21' x2='16' y2='21'/%3E%3Cline x1='12' y1='17' x2='12' y2='21'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Light Theme Icon (Sun) */
+.theme-option[data-theme="light"] svg {
+  /* Custom sun icon with rays */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cline x1='12' y1='1' x2='12' y2='3'/%3E%3Cline x1='12' y1='21' x2='12' y2='23'/%3E%3Cline x1='4.22' y1='4.22' x2='5.64' y2='5.64'/%3E%3Cline x1='18.36' y1='18.36' x2='19.78' y2='19.78'/%3E%3Cline x1='1' y1='12' x2='3' y2='12'/%3E%3Cline x1='21' y1='12' x2='23' y2='12'/%3E%3Cline x1='4.22' y1='19.78' x2='5.64' y2='18.36'/%3E%3Cline x1='18.36' y1='5.64' x2='19.78' y2='4.22'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Dark Theme Icon (Moon Crescent) */
+.theme-option[data-theme="dark"] svg {
+  /* Custom moon icon */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Alternative approach using pseudo-elements for better control */
+.theme-option::before {
+  content: '';
+  width: var(--theme-toggle-icon-size);
+  height: var(--theme-toggle-icon-size);
+  display: block;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  filter: none;
+  transition: var(--theme-toggle-transition);
+}
+
+/* System icon - monitor/computer */
+.theme-option[data-theme="system"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='1.5'%3E%3Crect x='2' y='3' width='20' height='14' rx='2' ry='2'/%3E%3Cline x1='8' y1='21' x2='16' y2='21'/%3E%3Cline x1='12' y1='17' x2='12' y2='21'/%3E%3C/svg%3E");
+}
+
+/* Light icon - sun */
+.theme-option[data-theme="light"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='1.5'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cline x1='12' y1='1' x2='12' y2='3'/%3E%3Cline x1='12' y1='21' x2='12' y2='23'/%3E%3Cline x1='4.22' y1='4.22' x2='5.64' y2='5.64'/%3E%3Cline x1='18.36' y1='18.36' x2='19.78' y2='19.78'/%3E%3Cline x1='1' y1='12' x2='3' y2='12'/%3E%3Cline x1='21' y1='12' x2='23' y2='12'/%3E%3Cline x1='4.22' y1='19.78' x2='5.64' y2='18.36'/%3E%3Cline x1='18.36' y1='5.64' x2='19.78' y2='4.22'/%3E%3C/svg%3E");
+}
+
+/* Dark icon - moon */
+.theme-option[data-theme="dark"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='1.5'%3E%3Cpath d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/%3E%3C/svg%3E");
+}
+
+/* Active state icon colors */
+.theme-option.active[data-theme="system"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5'%3E%3Crect x='2' y='3' width='20' height='14' rx='2' ry='2'/%3E%3Cline x1='8' y1='21' x2='16' y2='21'/%3E%3Cline x1='12' y1='17' x2='12' y2='21'/%3E%3C/svg%3E");
+}
+
+.theme-option.active[data-theme="light"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cline x1='12' y1='1' x2='12' y2='3'/%3E%3Cline x1='12' y1='21' x2='12' y2='23'/%3E%3Cline x1='4.22' y1='4.22' x2='5.64' y2='5.64'/%3E%3Cline x1='18.36' y1='18.36' x2='19.78' y2='19.78'/%3E%3Cline x1='1' y1='12' x2='3' y2='12'/%3E%3Cline x1='21' y1='12' x2='23' y2='12'/%3E%3Cline x1='4.22' y1='19.78' x2='5.64' y2='18.36'/%3E%3Cline x1='18.36' y1='5.64' x2='19.78' y2='4.22'/%3E%3C/svg%3E");
+}
+
+.theme-option.active[data-theme="dark"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5'%3E%3Cpath d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/%3E%3C/svg%3E");
+}
+
+/* Hover state icon brightness */
+.theme-option:hover:not(.active)::before {
+  filter: brightness(1.2);
+  transform: scale(1.1);
+}
+
+/* Hide any child SVG elements since we're using pseudo-elements */
+.theme-option svg {
+  display: none;
+}
+
+/* =================================================================
+   MOBILE RESPONSIVE DESIGN
+   ================================================================= */
+
+@media (max-width: 768px) {
+  .theme-toggle {
+    /* Adjust positioning for mobile */
+    top: var(--space-md);
+    right: var(--space-lg);
+    
+    /* Maintain same size for touch targets */
+    width: var(--theme-toggle-width);
+    height: var(--theme-toggle-height);
+    
+    /* Ensure it doesn't interfere with mobile menu */
+    z-index: calc(var(--z-fixed) + 5);
+  }
+  
+  /* Ensure buttons maintain 44px minimum touch target */
+  .theme-option {
+    min-width: var(--theme-toggle-button-size);
+    min-height: var(--theme-toggle-button-size);
+  }
+}
+
+@media (max-width: 480px) {
+  .theme-toggle {
+    /* Stack vertically on very small screens if needed */
+    right: var(--space-md);
+    
+    /* Slightly reduce size on small screens */
+    width: calc(var(--theme-toggle-width) - 20px);
+    height: var(--theme-toggle-height);
+  }
+  
+  .theme-option::before {
+    /* Slightly smaller icons on mobile */
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* =================================================================
+   HIGH CONTRAST MODE SUPPORT
+   ================================================================= */
+
+@media (prefers-contrast: high) {
+  .theme-toggle {
+    background: var(--color-surface);
+    border: 2px solid var(--color-text-primary);
+    box-shadow: none;
+  }
+  
+  .theme-option {
+    color: var(--color-text-primary);
+    border: 1px solid transparent;
+  }
+  
+  .theme-option.active {
+    background: var(--color-text-primary);
+    color: var(--color-background);
+    border: 1px solid var(--color-text-primary);
+  }
+  
+  .theme-option:focus {
+    border: 2px solid var(--color-primary);
+    outline: none;
+  }
+}
+
+/* =================================================================
+   REDUCED MOTION ACCESSIBILITY
+   ================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle,
+  .theme-option,
+  .theme-option::before {
+    transition: none;
+    animation: none;
+  }
+  
+  .theme-toggle:hover {
+    transform: none;
+  }
+  
+  .theme-option:hover:not(.active) {
+    transform: none;
+  }
+  
+  .theme-option.active {
+    transform: none;
+  }
+}
+
+/* =================================================================
+   INTEGRATION WITH NAVIGATION HEADER
+   ================================================================= */
+
+/* Ensure theme toggle doesn't interfere with navigation */
+@media (min-width: 769px) {
+  /* Adjust header grid to accommodate theme toggle */
+  .typographic .header .grid {
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: var(--space-lg);
+  }
+  
+  /* Add a specific area for theme toggle in header if needed */
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+  }
+}
+
+/* =================================================================
+   ANIMATION FOR THEME TRANSITIONS
+   ================================================================= */
+
+/* Subtle animation when theme changes */
+@keyframes themeTransition {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Apply animation to the entire toggle when theme changes */
+.theme-toggle.theme-changing {
+  animation: themeTransition 0.3s ease-out;
+}
+
+/* =================================================================
+   PERFORMANCE OPTIMIZATIONS
+   ================================================================= */
+
+/* GPU acceleration for smooth animations - Applied conditionally */
+.theme-toggle {
+  transform: translateZ(0); /* Force GPU layer */
+  /* will-change applied only during interactions */
+}
+
+.theme-option {
+  transform: translateZ(0); /* Force GPU layer */
+  /* will-change applied only during hover/active states */
+}
+
+.theme-option::before {
+  transform: translateZ(0); /* Force GPU layer */
+}
+
+/* Apply will-change only during interactions for better performance */
+.theme-toggle:hover {
+  will-change: transform;
+}
+
+.theme-option:hover,
+.theme-option:active,
+.theme-option:focus {
+  will-change: transform, background-color, color;
+}
+
+.theme-option::before:hover {
+  will-change: transform, filter;
+}
+
+/* Cleanup will-change after interactions to free GPU memory */
+.theme-toggle:not(:hover) {
+  will-change: auto;
+}
+
+.theme-option:not(:hover):not(:active):not(:focus) {
+  will-change: auto;
+}
+
+/* CSS Containment for better performance */
+.theme-toggle {
+  contain: layout style;
+}
+
+.theme-option {
+  contain: layout;
+}
+
+/* =================================================================
+   SCREEN READER ACCESSIBILITY
+   ================================================================= */
+
+/* Hidden labels for screen readers */
+.theme-option .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focus visible improvements */
+.theme-option:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(91, 107, 181, 0.3);
+}
+
+/* =================================================================
+   CUBAN FESTIVAL THEMING TOUCHES
+   ================================================================= */
+
+/* Add subtle warmth and festival spirit */
+.theme-toggle {
+  /* Subtle warm gradient border for festival warmth */
+  background: linear-gradient(135deg, 
+    var(--theme-toggle-bg) 0%, 
+    var(--theme-toggle-bg) 100%);
+}
+
+/* Add festive glow on active state */
+.theme-option.active {
+  position: relative;
+  overflow: visible;
+}
+
+.theme-option.active::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  border-radius: calc(var(--theme-toggle-border-radius) + 1px);
+  z-index: -1;
+  opacity: 0.3;
+  filter: blur(4px);
+  animation: festivalGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes festivalGlow {
+  0% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0.4;
+    transform: scale(1.02);
+  }
+}
+
+/* Disable glow animation for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .theme-option.active::after {
+    animation: none;
+    opacity: 0.3;
+    transform: scale(1);
+  }
+}

@@ -299,6 +299,124 @@
 }
 
 /* ==========================================================================
+   MOBILE-ONLY DARK MODE OPTIMIZATIONS
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* Enhanced header contrast for mobile dark mode */
+  [data-theme="dark"] .header {
+    background: var(--color-surface-overlay);
+    backdrop-filter: blur(20px);
+    border-bottom-color: var(--color-border);
+  }
+
+  /* Mobile navigation dark mode improvements */
+  [data-theme="dark"] .nav-list {
+    background: var(--color-surface);
+    opacity: 0.98; /* Better readability than 0.85 */
+  }
+
+  /* Form inputs dark mode mobile optimization */
+  [data-theme="dark"] .purchase-section input[type="text"],
+  [data-theme="dark"] .purchase-section input[type="email"],
+  [data-theme="dark"] .purchase-section input[type="tel"],
+  [data-theme="dark"] .purchase-section input[type="number"] {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+    color: var(--color-text-primary);
+  }
+
+  [data-theme="dark"] .purchase-section input:focus {
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 3px var(--color-info-light);
+  }
+
+  /* Mobile button dark mode optimization */
+  [data-theme="dark"] .form-button-type {
+    background: var(--color-text-primary);
+    color: var(--color-text-inverse);
+    border-color: var(--color-text-primary);
+  }
+
+  [data-theme="dark"] .form-button-type:hover {
+    background: var(--color-secondary);
+    border-color: var(--color-secondary);
+  }
+
+  /* Mobile card components dark mode */
+  [data-theme="dark"] .purchase-section {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+  }
+
+  /* Gallery mobile dark mode optimizations */
+  [data-theme="dark"] .gallery-item-type {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+  }
+
+  [data-theme="dark"] .gallery-item-type:hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Mobile hero dark mode improvements */
+  [data-theme="dark"] .hero-typographic {
+    background: var(--color-background);
+  }
+
+  /* Touch feedback dark mode adjustments */
+  [data-theme="dark"] .menu-toggle:active,
+  [data-theme="dark"] .form-button-type:active,
+  [data-theme="dark"] .nav-link:active {
+    background: var(--color-surface-elevated);
+  }
+
+  [data-theme="dark"] .gallery-item-type:active {
+    background: var(--color-surface-elevated);
+  }
+
+  /* Mobile accessibility - better contrast for focus states */
+  [data-theme="dark"] .nav-link:focus,
+  [data-theme="dark"] .form-button-type:focus,
+  [data-theme="dark"] input:focus {
+    outline-color: var(--color-blue);
+    box-shadow: 0 0 0 4px var(--color-info-light);
+  }
+
+  /* Mobile pricing dark mode */
+  [data-theme="dark"] .pricing-grid {
+    background: var(--color-background);
+  }
+
+  [data-theme="dark"] .day-passes,
+  [data-theme="dark"] .individual-items {
+    background: var(--color-surface);
+  }
+}
+
+/* Extra small screens dark mode */
+@media (max-width: 480px) {
+  [data-theme="dark"] .container {
+    background: var(--color-background);
+  }
+
+  [data-theme="dark"] .purchase-section {
+    background: var(--color-surface);
+    box-shadow: 0 2px 10px var(--shadow-color-light);
+  }
+
+  /* Mobile typography dark mode refinements */
+  [data-theme="dark"] .hero-title-massive {
+    color: var(--color-text-primary);
+    text-shadow: none; /* Remove any light mode text shadows */
+  }
+
+  [data-theme="dark"] .text-display {
+    color: var(--color-text-primary);
+  }
+}
+
+/* ==========================================================================
    MOBILE-ONLY DEBUG HELPERS (Remove in production)
    ========================================================================== */
 

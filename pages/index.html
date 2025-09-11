@@ -41,6 +41,8 @@
     />
 
     <link rel="stylesheet" href="/css/base.css" />
+    <!-- Theme styles -->
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
     <style>
       body {
         min-height: 100vh;
@@ -79,6 +81,18 @@
     <script>
       // Immediate redirect to home page
       window.location.href = "/home";
+    </script>
+    
+    <!-- Theme Management -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      import themeManager from '/js/theme-manager.js';
+      
+      // Initialize theme system
+      document.addEventListener('DOMContentLoaded', () => {
+        themeManager.initializeTheme();
+        // Note: index is just a loading page, so we handle theme without toggle UI
+      });
     </script>
   </body>
 </html>

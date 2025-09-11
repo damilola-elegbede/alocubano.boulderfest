@@ -1,199 +1,259 @@
 /* A Lo Cubano Boulder Fest - Base Design System */
 
+/**
+ * CSS Custom Properties (Variables) Organization
+ * 
+ * This file establishes the complete design system for the festival website
+ * using CSS custom properties for consistent theming and easy maintenance.
+ * 
+ * Variable Categories:
+ * 1. Brand Colors - Core festival palette from logo design
+ * 2. Gray Scale - Neutral colors for text and interface elements
+ * 3. Semantic Colors - Context-aware color assignments for light mode
+ * 4. Typography - Font families, sizes, spacing, and weights
+ * 5. Layout & Spacing - Consistent spacing scale and layout primitives
+ * 6. Interactive Elements - Border radius, transitions, shadows, z-index
+ * 
+ * Theme System:
+ * - Light mode: Default values defined in :root
+ * - Dark mode: Overrides in [data-theme="dark"] selector
+ * - System preference: Media query fallback in [data-theme="auto"]
+ * 
+ * Performance Considerations:
+ * - Consolidated alpha values to reduce recomputation
+ * - Optimized transitions for smooth theme switching
+ * - Efficient variable cascade for inheritance
+ */
+
 :root {
-  /* Brand Colors from Logo */
+  /* Brand Colors from Logo
+   * These are the core colors extracted from the festival logo design
+   * and should remain consistent across all branding materials */
   --color-black: #000000;
   --color-white: #ffffff;
-  --color-blue: #5b6bb5;
-  --color-red: #cc2936;
+  --color-blue: #5b6bb5;    /* Primary brand blue */
+  --color-red: #cc2936;     /* Accent red from Cuban flag inspiration */
 
-  /* Gray Scale */
-  --color-gray-900: #111111;
-  --color-gray-800: #333333;
-  --color-gray-700: #555555;
-  --color-gray-600: #666666;
-  --color-gray-500: #888888;
-  --color-gray-400: #999999;
-  --color-gray-300: #bbbbbb;
-  --color-gray-200: #dddddd;
-  --color-gray-100: #f5f5f5;
+  /* Gray Scale
+   * Comprehensive neutral palette for text hierarchy and interface elements
+   * Provides consistent contrast ratios for accessibility compliance */
+  --color-gray-900: #111111;  /* Darkest - used for dark mode backgrounds */
+  --color-gray-800: #333333;  /* Dark text and surfaces */
+  --color-gray-700: #555555;  /* Secondary text in light mode */
+  --color-gray-600: #666666;  /* Borders and dividers */
+  --color-gray-500: #888888;  /* Muted text and placeholders */
+  --color-gray-400: #999999;  /* Subtle text and disabled states */
+  --color-gray-300: #bbbbbb;  /* Light borders */
+  --color-gray-200: #dddddd;  /* Very light borders and backgrounds */
+  --color-gray-100: #f5f5f5;  /* Light background surfaces */
 
-  /* Semantic Colors - Light Mode (Default) */
-  /* Background Colors */
-  --color-background: var(--color-white);
-  --color-background-secondary: var(--color-gray-100);
-  --color-background-tertiary: var(--color-gray-200);
-  --color-surface: var(--color-white);
-  --color-surface-elevated: var(--color-white);
-  --color-surface-overlay: rgba(255, 255, 255, 0.95);
+  /* Semantic Colors - Light Mode (Default)
+   * Context-aware color assignments that adapt to theme changes
+   * Use these instead of direct color values for automatic theme support */
+  
+  /* Background Colors - Hierarchical surface system */
+  --color-background: var(--color-white);           /* Page background */
+  --color-background-secondary: var(--color-gray-100);  /* Secondary areas */
+  --color-background-tertiary: var(--color-gray-200);   /* Tertiary sections */
+  --color-surface: var(--color-white);             /* Card/component surfaces */
+  --color-surface-elevated: var(--color-white);    /* Modal/dropdown surfaces */
+  --color-surface-overlay: rgba(255, 255, 255, 0.95);  /* Overlay backgrounds */
 
-  /* Text Colors */
-  --color-text-primary: var(--color-black);
-  --color-text-secondary: var(--color-gray-700);
-  --color-text-tertiary: var(--color-gray-500);
-  --color-text-muted: var(--color-gray-400);
-  --color-text-inverse: var(--color-white);
+  /* Text Colors - Clear hierarchy for readability */
+  --color-text-primary: var(--color-black);        /* Main content text */
+  --color-text-secondary: var(--color-gray-700);   /* Secondary information */
+  --color-text-tertiary: var(--color-gray-500);    /* Subtle supporting text */
+  --color-text-muted: var(--color-gray-400);       /* Disabled/placeholder text */
+  --color-text-inverse: var(--color-white);        /* Text on dark backgrounds */
 
-  /* Border Colors */
-  --color-border: var(--color-gray-200);
-  --color-border-light: var(--color-gray-100);
-  --color-border-medium: var(--color-gray-300);
-  --color-border-strong: var(--color-gray-400);
+  /* Border Colors - Consistent border treatment */
+  --color-border: var(--color-gray-200);           /* Default borders */
+  --color-border-light: var(--color-gray-100);     /* Subtle borders */
+  --color-border-medium: var(--color-gray-300);    /* Medium emphasis borders */
+  --color-border-strong: var(--color-gray-400);    /* Strong emphasis borders */
 
-  /* Interactive Colors */
-  --color-primary: var(--color-blue);
-  --color-primary-hover: #4a5ca3;
-  --color-primary-active: #3d4d91;
-  --color-secondary: var(--color-red);
-  --color-secondary-hover: #b8242f;
-  --color-secondary-active: #a41e28;
+  /* Interactive Colors - Brand-aligned actions and states */
+  --color-primary: var(--color-blue);              /* Primary actions (CTA buttons) */
+  --color-primary-hover: #4a5ca3;                  /* Primary hover state */
+  --color-primary-active: #3d4d91;                 /* Primary active state */
+  --color-secondary: var(--color-red);             /* Secondary actions */
+  --color-secondary-hover: #b8242f;                /* Secondary hover state */
+  --color-secondary-active: #a41e28;               /* Secondary active state */
 
-  /* State Colors */
-  --color-success: #22c55e;
-  --color-success-light: #dcfce7;
-  --color-warning: #f59e0b;
-  --color-warning-light: #fef3c7;
-  --color-error: var(--color-red);
-  --color-error-light: #fef2f2;
-  --color-info: var(--color-blue);
-  --color-info-light: #eff6ff;
+  /* State Colors - Standard feedback colors for UI states */
+  --color-success: #22c55e;                        /* Success states and confirmations */
+  --color-success-light: #dcfce7;                  /* Success background tints */
+  --color-warning: #f59e0b;                        /* Warning and caution states */
+  --color-warning-light: #fef3c7;                  /* Warning background tints */
+  --color-error: var(--color-red);                 /* Error states (reuses brand red) */
+  --color-error-light: #fef2f2;                    /* Error background tints */
+  --color-info: var(--color-blue);                 /* Informational states */
+  --color-info-light: #eff6ff;                     /* Info background tints */
 
-  /* Typography Scale */
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
-  --font-size-base: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.25rem;
-  --font-size-2xl: 1.5rem;
-  --font-size-3xl: 1.875rem;
-  --font-size-4xl: 2.25rem;
-  --font-size-5xl: 3rem;
-  --font-size-6xl: 3.75rem;
-  --font-size-7xl: 4.5rem;
-  --font-size-8xl: 6rem;
-  --font-size-9xl: 8rem;
+  /* Typography Scale
+   * Consistent type sizing based on a modular scale for visual harmony */
+  --font-size-xs: 0.75rem;     /* 12px - Small labels, captions */
+  --font-size-sm: 0.875rem;    /* 14px - Secondary text, form labels */
+  --font-size-base: 1rem;      /* 16px - Body text baseline */
+  --font-size-lg: 1.125rem;    /* 18px - Large body text */
+  --font-size-xl: 1.25rem;     /* 20px - Small headings */
+  --font-size-2xl: 1.5rem;     /* 24px - Medium headings */
+  --font-size-3xl: 1.875rem;   /* 30px - Large headings */
+  --font-size-4xl: 2.25rem;    /* 36px - XL headings */
+  --font-size-5xl: 3rem;       /* 48px - Display text */
+  --font-size-6xl: 3.75rem;    /* 60px - Large display */
+  --font-size-7xl: 4.5rem;     /* 72px - Hero text */
+  --font-size-8xl: 6rem;       /* 96px - Feature displays */
+  --font-size-9xl: 8rem;       /* 128px - Maximum impact */
 
-  /* Font Families */
+  /* Font Families
+   * Carefully chosen typefaces for brand personality and readability */
   --font-sans:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
-  --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
+    Arial, sans-serif;                              /* System sans-serif stack */
+  --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;  /* Serif stack */
   --font-mono:
     "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New",
-    monospace;
-  --font-display: "Bebas Neue", var(--font-sans);
-  --font-accent: "Playfair Display", var(--font-serif);
-  --font-code: var(--font-mono);
+    monospace;                                      /* Monospace stack */
+  --font-display: "Bebas Neue", var(--font-sans);  /* Display/heading font */
+  --font-accent: "Playfair Display", var(--font-serif);  /* Elegant accent font */
+  --font-code: var(--font-mono);                   /* Code and technical text */
 
-  /* Line Heights */
-  --line-height-none: 1;
-  --line-height-tight: 1.25;
-  --line-height-snug: 1.375;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.625;
-  --line-height-loose: 2;
+  /* Line Heights - Vertical rhythm for text readability */
+  --line-height-none: 1;       /* Tight spacing for headings */
+  --line-height-tight: 1.25;   /* Compact text blocks */
+  --line-height-snug: 1.375;   /* Comfortable reading */
+  --line-height-normal: 1.5;   /* Standard body text */
+  --line-height-relaxed: 1.625; /* Loose, airy text */
+  --line-height-loose: 2;      /* Very open spacing */
 
-  /* Letter Spacing */
-  --letter-spacing-tighter: -0.05em;
-  --letter-spacing-tight: -0.025em;
-  --letter-spacing-normal: 0;
-  --letter-spacing-wide: 0.025em;
-  --letter-spacing-wider: 0.05em;
-  --letter-spacing-widest: 0.1em;
+  /* Letter Spacing - Fine-tuning character spacing */
+  --letter-spacing-tighter: -0.05em;  /* Condensed headings */
+  --letter-spacing-tight: -0.025em;   /* Slightly tight */
+  --letter-spacing-normal: 0;         /* Default spacing */
+  --letter-spacing-wide: 0.025em;     /* Slightly expanded */
+  --letter-spacing-wider: 0.05em;     /* Expanded for emphasis */
+  --letter-spacing-widest: 0.1em;     /* Maximum expansion */
 
-  /* Spacing Scale */
-  --space-xs: 0.25rem;
-  --space-sm: 0.5rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2rem;
-  --space-2xl: 3rem;
-  --space-3xl: 4rem;
-  --space-4xl: 6rem;
-  --space-5xl: 8rem;
+  /* Spacing Scale
+   * Consistent spatial rhythm throughout the interface */
+  --space-xs: 0.25rem;    /* 4px - Minimal spacing */
+  --space-sm: 0.5rem;     /* 8px - Small gaps */
+  --space-md: 1rem;       /* 16px - Base spacing unit */
+  --space-lg: 1.5rem;     /* 24px - Medium sections */
+  --space-xl: 2rem;       /* 32px - Large sections */
+  --space-2xl: 3rem;      /* 48px - Extra large gaps */
+  --space-3xl: 4rem;      /* 64px - Section dividers */
+  --space-4xl: 6rem;      /* 96px - Page sections */
+  --space-5xl: 8rem;      /* 128px - Major layout areas */
 
-  /* Border Radius */
-  --radius-none: 0;
-  --radius-sm: 0.125rem;
-  --radius-md: 0.25rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 1rem;
-  --radius-full: 9999px;
+  /* Border Radius - Consistent corner treatment */
+  --radius-none: 0;           /* Sharp corners */
+  --radius-sm: 0.125rem;      /* 2px - Subtle rounding */
+  --radius-md: 0.25rem;       /* 4px - Standard rounding */
+  --radius-lg: 0.5rem;        /* 8px - Friendly rounding */
+  --radius-xl: 1rem;          /* 16px - Pronounced rounding */
+  --radius-full: 9999px;      /* Pill/circular shapes */
 
-  /* Transitions */
-  --transition-fast: 150ms ease;
-  --transition-base: 250ms ease;
-  --transition-slow: 350ms ease;
+  /* Transitions - Smooth, consistent animations */
+  --transition-fast: 150ms ease;     /* Quick interactions */
+  --transition-base: 250ms ease;     /* Standard transitions */
+  --transition-slow: 350ms ease;     /* Deliberate animations */
 
-  /* Shadow Colors - Theme Aware */
-  --shadow-color: rgba(0, 0, 0, 0.1);
-  --shadow-color-light: rgba(0, 0, 0, 0.05);
-  --shadow-color-strong: rgba(0, 0, 0, 0.15);
+  /* Shadow Colors - Theme Aware
+   * Shadow colors that adapt to light/dark themes for proper depth perception */
+  --shadow-color: rgba(0, 0, 0, 0.1);        /* Standard shadows */
+  --shadow-color-light: rgba(0, 0, 0, 0.05); /* Subtle shadows */
+  --shadow-color-strong: rgba(0, 0, 0, 0.15); /* Emphasized shadows */
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 var(--shadow-color-light);
-  --shadow-md: 0 4px 6px -1px var(--shadow-color);
-  --shadow-lg: 0 10px 15px -3px var(--shadow-color);
-  --shadow-xl: 0 20px 25px -5px var(--shadow-color);
+  /* Shadows - Elevation system for depth hierarchy */
+  --shadow-sm: 0 1px 2px 0 var(--shadow-color-light);    /* Minimal elevation */
+  --shadow-md: 0 4px 6px -1px var(--shadow-color);       /* Standard cards */
+  --shadow-lg: 0 10px 15px -3px var(--shadow-color);     /* Elevated panels */
+  --shadow-xl: 0 20px 25px -5px var(--shadow-color);     /* Floating elements */
 
-  /* Z-index Scale */
-  --z-base: 0;
-  --z-dropdown: 1000;
-  --z-sticky: 1020;
-  --z-fixed: 1030;
-  --z-modal-backdrop: 1040;
-  --z-modal: 1050;
-  --z-popover: 1060;
-  --z-tooltip: 1070;
+  /* Z-index Scale - Layering system for stacking context */
+  --z-base: 0;              /* Default layer */
+  --z-dropdown: 1000;       /* Dropdown menus */
+  --z-sticky: 1020;         /* Sticky headers */
+  --z-fixed: 1030;          /* Fixed positioning */
+  --z-modal-backdrop: 1040; /* Modal backgrounds */
+  --z-modal: 1050;          /* Modal content */
+  --z-popover: 1060;        /* Popovers and tooltips */
+  --z-tooltip: 1070;        /* Highest UI elements */
 }
 
-/* Dark Mode Theme Overrides */
+/* Dark Mode Theme Overrides - Performance Optimized
+ * 
+ * Dark theme implementation that overrides semantic color variables
+ * while maintaining the same design system structure. Optimized for
+ * performance with consolidated alpha values and efficient cascading.
+ * 
+ * Applied when [data-theme="dark"] attribute is present on <html> element.
+ */
 [data-theme="dark"] {
-  /* Background Colors */
-  --color-background: var(--color-gray-900);
-  --color-background-secondary: var(--color-gray-800);
-  --color-background-tertiary: var(--color-gray-700);
-  --color-surface: var(--color-gray-800);
-  --color-surface-elevated: var(--color-gray-700);
-  --color-surface-overlay: rgba(17, 17, 17, 0.95);
+  /* Background Colors - Consolidated for efficiency
+   * Inverted hierarchy using darker grays for comfortable viewing */
+  --color-background: var(--color-gray-900);           /* Dark page background */
+  --color-background-secondary: var(--color-gray-800); /* Secondary dark areas */
+  --color-background-tertiary: var(--color-gray-700);  /* Tertiary sections */
+  --color-surface: var(--color-gray-800);              /* Card surfaces */
+  --color-surface-elevated: var(--color-gray-700);     /* Elevated surfaces */
+  --color-surface-overlay: rgba(17, 17, 17, 0.95);     /* Dark overlays */
 
-  /* Text Colors */
-  --color-text-primary: var(--color-white);
-  --color-text-secondary: var(--color-gray-300);
-  --color-text-tertiary: var(--color-gray-400);
-  --color-text-muted: var(--color-gray-400);
-  --color-text-inverse: var(--color-black);
+  /* Text Colors - Optimized hierarchy
+   * High contrast for readability on dark backgrounds */
+  --color-text-primary: var(--color-white);            /* Primary text */
+  --color-text-secondary: var(--color-gray-300);       /* Secondary text */
+  --color-text-tertiary: var(--color-gray-400);        /* Subtle text */
+  --color-text-muted: var(--color-gray-400);           /* Muted/disabled text */
+  --color-text-inverse: var(--color-black);            /* Text on light backgrounds */
 
-  /* Border Colors */
-  --color-border: var(--color-gray-600);
-  --color-border-light: var(--color-gray-700);
-  --color-border-medium: var(--color-gray-600);
-  --color-border-strong: var(--color-gray-500);
+  /* Border Colors - Simplified cascade
+   * Lighter borders for visibility on dark surfaces */
+  --color-border: var(--color-gray-600);               /* Standard borders */
+  --color-border-light: var(--color-gray-700);         /* Subtle borders */
+  --color-border-medium: var(--color-gray-600);        /* Medium borders */
+  --color-border-strong: var(--color-gray-500);        /* Strong borders */
 
-  /* Interactive Colors - Keep brand colors but adjust for contrast */
-  --color-primary-hover: #6c7bc7;
-  --color-primary-active: #7d8bd9;
-  --color-secondary-hover: #d63444;
-  --color-secondary-active: #e13f52;
+  /* Interactive Colors - Optimized for performance
+   * Slightly brighter variants for better visibility on dark backgrounds */
+  --color-primary-hover: #6c7bc7;                      /* Brighter primary hover */
+  --color-primary-active: #7d8bd9;                     /* Brighter primary active */
+  --color-secondary-hover: #d63444;                    /* Brighter secondary hover */
+  --color-secondary-active: #e13f52;                   /* Brighter secondary active */
 
-  /* State Colors - Adjusted for dark backgrounds */
-  --color-success: #34d399;
-  --color-success-light: rgba(52, 211, 153, 0.1);
-  --color-warning: #fbbf24;
-  --color-warning-light: rgba(251, 191, 36, 0.1);
-  --color-error-light: rgba(204, 41, 54, 0.1);
-  --color-info-light: rgba(91, 107, 181, 0.1);
+  /* State Colors - Consolidated alpha values
+   * Adjusted for dark theme visibility with consistent alpha transparency */
+  --color-success: #34d399;                            /* Brighter success green */
+  --color-success-light: rgba(52, 211, 153, 0.1);     /* Success background */
+  --color-warning: #fbbf24;                            /* Brighter warning amber */
+  --color-warning-light: rgba(251, 191, 36, 0.1);     /* Warning background */
+  --color-error-light: rgba(204, 41, 54, 0.1);        /* Error background */
+  --color-info-light: rgba(91, 107, 181, 0.1);        /* Info background */
 
-  /* Shadow Colors - Darker shadows for dark mode */
-  --shadow-color: rgba(0, 0, 0, 0.3);
-  --shadow-color-light: rgba(0, 0, 0, 0.2);
-  --shadow-color-strong: rgba(0, 0, 0, 0.4);
+  /* Shadow Colors - Optimized performance
+   * Deeper shadows for proper depth perception on dark backgrounds */
+  --shadow-color: rgba(0, 0, 0, 0.3);                 /* Stronger base shadows */
+  --shadow-color-light: rgba(0, 0, 0, 0.2);           /* Subtle dark shadows */
+  --shadow-color-strong: rgba(0, 0, 0, 0.4);          /* Emphasized shadows */
+  
+  /* Animation performance optimization
+   * Consolidated transition property for theme switching */
+  --transition-theme: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
 }
 
-/* System Preference Dark Mode - Only applies when explicitly opted-in */
+/* System Preference Dark Mode - Only applies when explicitly opted-in
+ * 
+ * Fallback implementation for users who have set theme preference to "auto/system"
+ * and have dark mode enabled at the OS level. Uses same color overrides as explicit
+ * dark theme to maintain consistency.
+ * 
+ * Applied when [data-theme="auto"] is present AND user has OS dark mode enabled.
+ */
 @media (prefers-color-scheme: dark) {
   [data-theme="auto"] {
-    /* Background Colors */
+    /* Background Colors - Identical to explicit dark theme */
     --color-background: var(--color-gray-900);
     --color-background-secondary: var(--color-gray-800);
     --color-background-tertiary: var(--color-gray-700);
@@ -201,14 +261,14 @@
     --color-surface-elevated: var(--color-gray-700);
     --color-surface-overlay: rgba(17, 17, 17, 0.95);
 
-    /* Text Colors */
+    /* Text Colors - Maintains same hierarchy as explicit dark theme */
     --color-text-primary: var(--color-white);
     --color-text-secondary: var(--color-gray-300);
     --color-text-tertiary: var(--color-gray-400);
     --color-text-muted: var(--color-gray-400);
     --color-text-inverse: var(--color-black);
 
-    /* Border Colors */
+    /* Border Colors - Consistent with explicit dark theme */
     --color-border: var(--color-gray-600);
     --color-border-light: var(--color-gray-700);
     --color-border-medium: var(--color-gray-600);
@@ -235,51 +295,70 @@
   }
 }
 
-/* Reset & Base Styles */
+/* Reset & Base Styles
+ * 
+ * Modern CSS reset and baseline styles that provide a consistent
+ * foundation across all browsers while maintaining accessibility.
+ */
+
+/* Universal Box Sizing
+ * Ensures consistent box model behavior across all elements */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
 
+/* Reset default margins and padding
+ * Provides clean slate for consistent spacing control */
 * {
   margin: 0;
   padding: 0;
 }
 
+/* Document-level optimizations
+ * Smooth scrolling, font rendering, and base font size */
 html {
-  font-size: 16px;
-  scroll-behavior: smooth;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-size: 16px;                    /* Base font size for rem calculations */
+  scroll-behavior: smooth;            /* Smooth anchor link scrolling */
+  -webkit-font-smoothing: antialiased;     /* Improved font rendering on WebKit */
+  -moz-osx-font-smoothing: grayscale;      /* Improved font rendering on Firefox */
 }
 
+/* Body baseline styles
+ * Establishes typography and color foundation */
 body {
-  font-family: var(--font-sans);
-  font-size: var(--font-size-base);
-  line-height: 1.5;
-  color: var(--color-text-primary);
-  background-color: var(--color-background);
-  min-height: 100vh;
+  font-family: var(--font-sans);             /* Default sans-serif font stack */
+  font-size: var(--font-size-base);          /* 16px base font size */
+  line-height: 1.5;                          /* Comfortable reading line height */
+  color: var(--color-text-primary);          /* Theme-aware text color */
+  background-color: var(--color-background); /* Theme-aware background */
+  min-height: 100vh;                         /* Full viewport height minimum */
 }
 
+/* Media element optimization
+ * Responsive images and media with sensible defaults */
 img,
 picture,
 video,
 canvas,
 svg {
-  display: block;
-  max-width: 100%;
-  height: auto;
+  display: block;                     /* Eliminates unwanted inline spacing */
+  max-width: 100%;                    /* Responsive scaling */
+  height: auto;                       /* Maintains aspect ratio */
 }
 
+/* Form element inheritance
+ * Ensures form controls inherit typography settings */
 input,
 button,
 textarea,
 select {
-  font: inherit;
+  font: inherit;                      /* Inherit font properties from parent */
 }
 
+/* Text element optimization
+ * Prevents text overflow and improves word wrapping */
 p,
 h1,
 h2,
@@ -287,93 +366,117 @@ h3,
 h4,
 h5,
 h6 {
-  overflow-wrap: break-word;
+  overflow-wrap: break-word;          /* Intelligent word breaking */
 }
 
+/* Link reset
+ * Clean baseline for custom link styling */
 a {
-  color: inherit;
-  text-decoration: none;
+  color: inherit;                     /* Inherit text color by default */
+  text-decoration: none;              /* Remove default underline */
 }
 
+/* Button reset
+ * Clean baseline for custom button styling */
 button {
-  cursor: pointer;
-  background: none;
+  cursor: pointer;                    /* Pointer cursor for interactivity */
+  background: none;                   /* Remove default button styling */
   border: none;
   padding: 0;
-  font: inherit;
-  color: inherit;
+  font: inherit;                      /* Inherit typography */
+  color: inherit;                     /* Inherit text color */
 }
 
-/* Utility Classes */
+/* Utility Classes
+ * 
+ * Common layout and accessibility utilities used throughout the site.
+ * These provide consistent spacing, layout, and accessibility patterns.
+ */
+
+/* Container System
+ * Responsive container with consistent padding and max-width */
 .container {
-  width: 100%;
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 0 var(--space-md);
+  width: 100%;                        /* Full width by default */
+  max-width: 1440px;                  /* Maximum content width */
+  margin: 0 auto;                     /* Center horizontally */
+  padding: 0 var(--space-md);         /* Base horizontal padding */
 }
 
+/* Responsive container padding
+ * Progressively larger padding for larger screens */
 @media (min-width: 480px) {
   .container {
-    padding: 0 var(--space-lg);
+    padding: 0 var(--space-lg);       /* Increased padding on small tablets */
   }
 }
 
 @media (min-width: 768px) {
   .container {
-    padding: 0 var(--space-xl);
+    padding: 0 var(--space-xl);       /* Increased padding on tablets */
   }
 }
 
 @media (min-width: 1024px) {
   .container {
-    padding: 0 var(--space-2xl);
+    padding: 0 var(--space-2xl);      /* Maximum padding on desktop */
   }
 }
 
+/* Screen Reader Only Content
+ * Visually hides content while keeping it accessible to screen readers */
 .visually-hidden {
-  position: absolute;
-  width: 1px;
+  position: absolute;                 /* Remove from document flow */
+  width: 1px;                         /* Minimal dimensions */
   height: 1px;
   padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
+  margin: -1px;                       /* Negative margin to fully hide */
+  overflow: hidden;                   /* Prevent visual overflow */
+  clip: rect(0, 0, 0, 0);            /* Legacy clipping */
+  white-space: nowrap;                /* Prevent text wrapping */
+  border-width: 0;                    /* Remove any borders */
 }
 
-/* Loading Animation */
+/* Loading Animation
+ * Subtle pulse animation for loading states */
 @keyframes pulse {
   0%,
   100% {
-    opacity: 1;
+    opacity: 1;                       /* Full opacity at start and end */
   }
   50% {
-    opacity: 0.5;
+    opacity: 0.5;                     /* Reduced opacity at midpoint */
   }
 }
 
 .loading {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;  /* Smooth pulse animation */
 }
 
-/* Focus Styles */
+/* Focus Styles
+ * 
+ * Consistent, accessible focus indicators that respect user preferences
+ * and provide clear visual feedback for keyboard navigation.
+ */
+
+/* Base focus style - applied to all focusable elements */
 :focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: 2px solid var(--color-primary);  /* Theme-aware focus ring */
+  outline-offset: 2px;                      /* Spacing from element */
 }
 
+/* Remove focus outline for mouse users (accessibility maintained) */
 :focus:not(:focus-visible) {
-  outline: none;
+  outline: none;                            /* Hidden for mouse interactions */
 }
 
+/* Enhanced focus for keyboard users */
 :focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-primary);  /* Visible for keyboard navigation */
   outline-offset: 2px;
 }
 
-/* Skip Links */
+/* Skip Links
+ * Accessibility enhancement for keyboard navigation */
 .skip-link:focus {
-  top: 0;
+  top: 0;                                   /* Bring skip link into view when focused */
 }
-

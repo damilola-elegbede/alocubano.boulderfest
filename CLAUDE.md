@@ -94,6 +94,7 @@ npm run verify-structure        # Verify project structure (via build)
 - **Virtual gallery** with Google Drive integration and lazy loading
 - **Floating cart** with intelligent page-specific visibility rules
 - **Mobile-first** with slide-in navigation and 44px touch targets
+- **Hybrid theme system** with user-controlled themes on main site and fixed dark theme on admin pages
 
 ### Backend (Vercel Serverless)
 
@@ -103,6 +104,25 @@ npm run verify-structure        # Verify project structure (via build)
 - **Payments** via Stripe Checkout with webhook handling
 - **Wallet passes** for Apple/Google with JWT authentication
 - **Admin panel** with bcrypt auth and JWT sessions
+
+### Theme System
+
+**Hybrid Architecture:**
+- **Admin pages**: Always dark theme (non-configurable)
+- **Main site**: User-controlled themes (System/Light/Dark)
+- **Performance optimized**: Cached DOM queries, debounced operations
+- **FOUC prevention**: Synchronous theme application on page load
+
+**Key Components:**
+- `js/theme-manager.js`: Core theme management and detection
+- `js/theme-toggle.js`: Three-state toggle component with accessibility
+- `css/base.css`: CSS variable system with dark mode overrides
+
+**Usage Guidelines:**
+- Use semantic CSS variables (`--color-text-primary`) over direct colors
+- Test components in both light and dark themes
+- Include theme-manager.js early to prevent FOUC
+- Theme toggle only appears on main site pages (hidden on admin)
 
 ### Streamlined Testing Strategy
 
@@ -171,6 +191,20 @@ export default async function handler(req, res) {
   const result = await client.execute("SELECT * FROM table");
   res.json(result.rows);
 }
+```
+
+### Theme Integration Pattern
+
+```javascript
+// Include theme manager early in page lifecycle
+import '/js/theme-manager.js';
+
+// Initialize theme toggle for main site pages
+import ThemeToggle from '/js/theme-toggle.js';
+const toggle = ThemeToggle.initialize('#theme-toggle-container');
+
+// Use CSS variables for theme-aware styling
+// .component { color: var(--color-text-primary); }
 ```
 
 ## Environment Variables
@@ -361,6 +395,11 @@ window.galleryDebugAPI.clearCache();
 // Cart debugging
 console.log("Cart:", JSON.parse(localStorage.getItem("cart") || "[]"));
 document.querySelector(".floating-cart").style.display = "block"; // Force show
+
+// Theme debugging
+import { getPerformanceMetrics, getCurrentTheme } from '/js/theme-manager.js';
+console.log("Current theme:", getCurrentTheme());
+console.log("Theme performance:", getPerformanceMetrics());
 ```
 
 ## Project Structure
@@ -378,7 +417,13 @@ document.querySelector(".floating-cart").style.display = "block"; // Force show
 ├── lib/                # Shared services (async singletons)
 ├── pages/              # HTML pages
 ├── js/                 # Frontend JavaScript
+│   ├── theme-manager.js    # Core theme management system
+│   └── theme-toggle.js     # Theme toggle component
 ├── css/                # Stylesheets
+│   └── base.css           # CSS variable system with theme support
+├── docs/               # Documentation
+│   ├── THEME_SYSTEM.md    # Complete theme system documentation
+│   └── api/               # API documentation
 ├── tests/
 │   ├── unit/           # Unit test files
 │   ├── integration/    # Integration test structure
@@ -466,5 +511,6 @@ npm run db:shell                # SQLite shell access
 - [Installation Guide](INSTALLATION.md)
 - [Security Policy](SECURITY.md)
 - [Changelog](CHANGELOG.md)
+- [Theme System Guide](docs/THEME_SYSTEM.md)
 - [Async Initialization Guide](/docs/ASYNC_INITIALIZATION_GUIDE.md)
 - [API Documentation](/docs/api/README.md)

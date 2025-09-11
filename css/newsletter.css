@@ -26,7 +26,7 @@
 }
 
 .newsletter-input-wrapper:focus-within {
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 0 3px var(--shadow-color-light);
   transform: translateY(-2px);
 }
 
@@ -47,7 +47,7 @@
 }
 
 .newsletter-input::placeholder {
-  color: var(--color-gray-400);
+  color: var(--color-text-muted);
   opacity: 1;
 }
 
@@ -68,9 +68,9 @@
 }
 
 .newsletter-submit:disabled {
-  background: var(--color-gray-300);
-  border-left-color: var(--color-gray-300);
-  color: var(--color-gray-500);
+  background: var(--color-border-medium);
+  border-left-color: var(--color-border-medium);
+  color: var(--color-text-tertiary);
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -88,10 +88,10 @@
 }
 
 .newsletter-submit:disabled:hover {
-  background: var(--color-gray-300) !important;
+  background: var(--color-border-medium) !important;
   transform: none !important;
-  border-left-color: var(--color-gray-300) !important;
-  color: var(--color-gray-500) !important;
+  border-left-color: var(--color-border-medium) !important;
+  color: var(--color-text-tertiary) !important;
 }
 
 .newsletter-submit:hover::before {
@@ -105,16 +105,16 @@
 
 .newsletter-consent .checkbox-label {
   font-size: var(--font-size-sm);
-  color: var(--color-gray-600);
+  color: var(--color-text-secondary);
 }
 
 /* Error States */
 .newsletter-input[aria-invalid="true"] {
-  color: var(--color-red);
+  color: var(--color-error);
 }
 
 .newsletter-input-wrapper.error {
-  border-color: var(--color-red);
+  border-color: var(--color-error);
 }
 
 .error-message:not(:empty) {
@@ -131,12 +131,12 @@
   gap: var(--space-sm);
   margin-top: var(--space-md);
   padding: var(--space-sm) var(--space-md);
-  background: var(--color-gray-100);
-  border: 1px solid var(--color-gray-300);
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border-medium);
   border-radius: var(--radius-md);
   font-family: var(--font-sans);
   font-size: var(--font-size-sm);
-  color: var(--color-gray-700);
+  color: var(--color-text-secondary);
 }
 
 .newsletter-success[aria-hidden="false"] {
@@ -150,7 +150,7 @@
   justify-content: center;
   width: 24px;
   height: 24px;
-  background: var(--color-blue);
+  background: var(--color-primary);
   color: var(--color-white);
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
@@ -220,7 +220,7 @@
   }
 
   .newsletter-submit:disabled {
-    border-top-color: var(--color-gray-300);
+    border-top-color: var(--color-border-medium);
   }
 
   .newsletter-input {
@@ -264,5 +264,91 @@
   .newsletter-submit[aria-busy="true"]::after {
     transition: none;
     animation: none;
+  }
+}
+
+/* ==========================================================================
+   DARK MODE ENHANCEMENTS
+   ========================================================================== */
+
+/* Newsletter component dark mode support */
+[data-theme="dark"] .contact-newsletter {
+  background: var(--color-surface);
+  border-left-color: var(--color-blue);
+}
+
+[data-theme="dark"] .newsletter-input-wrapper {
+  border-color: var(--color-border-medium);
+  background: var(--color-surface);
+}
+
+[data-theme="dark"] .newsletter-input-wrapper:focus-within {
+  box-shadow: 0 0 0 3px var(--shadow-color-light);
+  border-color: var(--color-blue);
+}
+
+[data-theme="dark"] .newsletter-input {
+  color: var(--color-text-primary);
+  background: transparent;
+}
+
+[data-theme="dark"] .newsletter-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .newsletter-submit {
+  background: var(--color-blue);
+  border-left-color: var(--color-blue);
+  color: var(--color-text-inverse);
+}
+
+[data-theme="dark"] .newsletter-submit:disabled {
+  background: var(--color-border-medium);
+  border-left-color: var(--color-border-medium);
+  color: var(--color-text-tertiary);
+}
+
+/* Enhanced error state visibility in dark mode */
+[data-theme="dark"] .newsletter-input[aria-invalid="true"] {
+  color: var(--color-error);
+}
+
+[data-theme="dark"] .newsletter-input-wrapper.error {
+  border-color: var(--color-error);
+  background: var(--color-error-light);
+}
+
+/* Success state visibility in dark mode */
+[data-theme="dark"] .newsletter-success {
+  background: var(--color-success-light);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .newsletter-success .success-icon {
+  background: var(--color-success);
+  color: var(--color-white);
+}
+
+/* Consent checkbox styling in dark mode */
+[data-theme="dark"] .newsletter-consent .checkbox-label {
+  color: var(--color-text-secondary);
+}
+
+/* Loading spinner visibility in dark mode */
+[data-theme="dark"] .newsletter-submit[aria-busy="true"]::after {
+  border-color: var(--color-text-inverse);
+  border-right-color: transparent;
+}
+
+/* Mobile responsive dark mode adjustments */
+@media (max-width: 768px) {
+  [data-theme="dark"] .newsletter-submit {
+    border-top-color: var(--color-blue);
+    border-left: none;
+  }
+  
+  [data-theme="dark"] .newsletter-submit:disabled {
+    border-top-color: var(--color-border-medium);
   }
 }
