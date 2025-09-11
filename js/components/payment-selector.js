@@ -336,7 +336,7 @@ class PaymentSelector {
         } catch (error) {
             // eslint-disable-next-line no-console
             console.error('Payment processing error:', {
-                method: method,
+                method,
                 error: error.message,
                 stack: error.stack
             });

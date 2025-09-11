@@ -386,7 +386,7 @@
           const data = await response.json();
 
           if (data.status === "healthy") {
-            const tableCount = data.tests.tables.data ? Object.keys(data.tests.tables.data).length : 0;
+            const tableCount = data.tests?.tables?.data ? Object.keys(data.tests?.tables?.data).length : 0;
             alert(
               `Database Healthy!\n\nStatus: ${data.status}\nDuration: ${data.duration}\nTables: ${tableCount}\nTests Passed: ${data.summary.passed}/${data.summary.totalTests}`,
             );

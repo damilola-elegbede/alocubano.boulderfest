@@ -138,7 +138,7 @@ if (existsSync(workflowDir)) {
       const configRefs = content.match(/--config=([^\s]+)/g) || [];
       const missingConfigs = configRefs.filter(ref => {
         const configFile = ref.replace('--config=', '');
-        return !existsConfigs.includes(configFile);
+        return !existingConfigs.includes(configFile);
       });
       
       if (missingConfigs.length === 0) {

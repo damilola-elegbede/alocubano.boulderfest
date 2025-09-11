@@ -53,7 +53,7 @@ async function main() {
     
     // Determine validation options
     const validationOptions = {
-      adminTests: adminTests || allTests || true, // Default to true for basic validation
+      adminTests: adminTests || allTests, // Default to true for basic validation
       ciMode: E2E_CONFIG.CI,
       emailTests: serviceTests || allTests || E2E_CONFIG.ADVANCED_SCENARIOS,
       paymentTests: serviceTests || allTests || E2E_CONFIG.ADVANCED_SCENARIOS,
