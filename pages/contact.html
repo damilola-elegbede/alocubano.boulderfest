@@ -200,6 +200,8 @@
                 src="/images/logo.png"
                 alt="A Lo Cubano Boulder Fest Logo"
                 class="site-logo"
+                data-light-src="/images/logo.png"
+                data-dark-src="/images/logo-dark.png"
               />
               <div class="logo-text">
                 <span class="logo-main">A LO CUBANO</span>
@@ -291,9 +293,6 @@
               </li>
             </ul>
           </nav>
-          <div class="header-right">
-            <div id="theme-toggle-container"></div>
-          </div>
         </div>
       </div>
     </header>
@@ -603,6 +602,7 @@
             </svg>
           </a>
         </div>
+        <div id="theme-toggle-container" class="footer-theme-toggle"></div>
       </div>
     </footer>
 
@@ -626,5 +626,6 @@
         initializeThemeToggle('#theme-toggle-container');
       });
     </script>
+    <script src="/js/logo-switcher.js"></script>
   </body>
 </html>

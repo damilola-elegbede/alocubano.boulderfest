@@ -192,6 +192,7 @@ async function warmCriticalCache() {
     "/js/main.js",
     "/js/navigation.js",
     "/images/logo.png",
+    "/images/logo-dark.png",
     "/images/hero-default.jpg",
   ];
 

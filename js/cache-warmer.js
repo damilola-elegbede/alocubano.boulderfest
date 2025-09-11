@@ -111,7 +111,7 @@ class AdvancedCacheWarmer {
             critical: {
                 styles: ['/css/base.css', '/css/components.css', '/css/typography.css'],
                 scripts: ['/js/main.js', '/js/navigation.js'],
-                images: ['/images/logo.png', '/images/favicons/favicon-32x32.png']
+                images: ['/images/logo.png', '/images/logo-dark.png', '/images/favicons/favicon-32x32.png']
             },
             essential: {
                 styles: ['/css/navigation.css', '/css/forms.css'],

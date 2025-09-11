@@ -543,3 +543,48 @@
     transform: scale(1);
   }
 }
+
+/* =================================================================
+   FOOTER THEME TOGGLE POSITIONING
+   ================================================================= */
+
+/* Footer-specific positioning for theme toggle */
+.footer-theme-toggle .theme-toggle {
+  /* Override fixed positioning for footer placement */
+  position: relative;
+  top: auto;
+  right: auto;
+  
+  /* No margin needed - positioning handled by container */
+  margin: 0;
+  display: flex;
+  
+  /* Adjust z-index for footer context */
+  z-index: var(--z-base);
+}
+
+/* Position theme toggle in bottom-right of footer */
+.footer-theme-toggle {
+  position: absolute;
+  bottom: var(--space-lg);
+  right: var(--space-lg);
+}
+
+/* Mobile adjustments for footer theme toggle */
+@media (max-width: 768px) {
+  .footer-theme-toggle {
+    bottom: var(--space-md);
+    right: var(--space-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-theme-toggle {
+    bottom: var(--space-sm);
+    right: var(--space-sm);
+  }
+  
+  .footer-theme-toggle .theme-toggle {
+    width: calc(var(--theme-toggle-width) - 10px);
+  }
+}

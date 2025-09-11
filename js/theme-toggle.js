@@ -56,28 +56,22 @@ const PERF_MARKS = {
 const ICONS = {
     [THEME_OPTIONS.SYSTEM]: `
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <rect x="2" y="3" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.2" fill="none"/>
-            <rect x="6" y="11" width="4" height="1" rx="0.5" fill="currentColor"/>
-            <rect x="5" y="12" width="6" height="1" rx="0.5" fill="currentColor"/>
-            <circle cx="8" cy="7" r="1.5" fill="currentColor"/>
+            <rect x="2" y="3" width="12" height="8" rx="0.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <path d="M5 13h6M7 11v2M9 11v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="6" cy="6" r="0.5" fill="currentColor"/>
+            <circle cx="8" cy="6" r="0.5" fill="currentColor"/>
+            <circle cx="10" cy="6" r="0.5" fill="currentColor"/>
         </svg>
     `,
     [THEME_OPTIONS.LIGHT]: `
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.2" fill="none"/>
-            <line x1="8" y1="1" x2="8" y2="2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="8" y1="13.5" x2="8" y2="15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="15" y1="8" x2="13.5" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="2.5" y1="8" x2="1" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="12.95" y1="3.05" x2="11.89" y2="4.11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="4.11" y1="11.89" x2="3.05" y2="12.95" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="12.95" y1="12.95" x2="11.89" y2="11.89" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="4.11" y1="4.11" x2="3.05" y2="3.05" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="8" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <path d="M8 1v2M8 13v2M15 8h-2M3 8H1M12.5 3.5L11 5M5 11l-1.5 1.5M12.5 12.5L11 11M5 5L3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
     `,
     [THEME_OPTIONS.DARK]: `
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M6.5 1.5c0 4.42 3.58 8 8 8-.46 0-.9-.04-1.34-.1A6.98 6.98 0 0 1 6.5 1.5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="currentColor"/>
+            <path d="M6 2.5A6.5 6.5 0 1 0 13.5 10c-1 .5-2.2.8-3.4.8-3.6 0-6.6-2.9-6.6-6.5 0-1.2.3-2.4.8-3.4A6.4 6.4 0 0 1 6 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
         </svg>
     `
 };
