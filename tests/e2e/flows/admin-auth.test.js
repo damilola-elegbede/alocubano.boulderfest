@@ -72,6 +72,13 @@ test.describe('Admin Authentication', () => {
   }
 
   test.beforeEach(async ({ page }) => {
+    // Clear rate limits in test environment to prevent test interference
+    try {
+      await page.request.post('/api/admin/clear-rate-limits');
+    } catch (error) {
+      // Ignore errors - endpoint might not exist in older deployments
+    }
+    
     // First validate that admin login route is accessible and serves the correct page
     await validateAdminRoute(page, '/admin/login', 'Admin Access');
     
