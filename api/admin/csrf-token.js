@@ -17,7 +17,7 @@ async function csrfTokenHandler(req, res) {
     }
 
     // Verify session
-    const session = authService.verifySessionToken(token);
+    const session = await authService.verifySessionToken(token);
 
     if (!session.valid) {
       return res.status(401).json({ error: 'Invalid or expired session' });

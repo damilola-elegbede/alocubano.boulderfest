@@ -400,17 +400,32 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
 
   // Store temporary session (not MFA verified yet)
   try {
-    await db.execute({
-      sql: `INSERT INTO admin_sessions 
-            (session_token, ip_address, user_agent, mfa_verified, requires_mfa_setup, expires_at) 
-            VALUES (?, ?, ?, FALSE, FALSE, ?)`,
+    const updateResult = await db.execute({
+      sql: `UPDATE admin_sessions 
+            SET ip_address = ?, user_agent = ?, mfa_verified = FALSE, requires_mfa_setup = FALSE, expires_at = ?, last_accessed_at = CURRENT_TIMESTAMP
+            WHERE session_token = ?`,
       args: [
-        tempToken,
         clientIP,
         getSafeUserAgent(req), // Use safe user agent extraction
-        new Date(Date.now() + authService.sessionDuration).toISOString()
+        new Date(Date.now() + authService.sessionDuration).toISOString(),
+        tempToken
       ]
     });
+
+    // Check if UPDATE affected any rows, if not, INSERT the session
+    if (updateResult.meta?.changes === 0) {
+      await db.execute({
+        sql: `INSERT INTO admin_sessions 
+              (session_token, ip_address, user_agent, mfa_verified, requires_mfa_setup, expires_at) 
+              VALUES (?, ?, ?, FALSE, FALSE, ?)`,
+        args: [
+          tempToken,
+          clientIP,
+          getSafeUserAgent(req), // Use safe user agent extraction
+          new Date(Date.now() + authService.sessionDuration).toISOString()
+        ]
+      });
+    }
   } catch (error) {
     console.error('Failed to create temporary session:', error);
   }
@@ -446,7 +461,7 @@ async function handleMfaStep(req, res, mfaCode, clientIP) {
   }
 
   // Verify temp session
-  const session = authService.verifySessionToken(tempToken);
+  const session = await authService.verifySessionToken(tempToken);
   if (!session.valid) {
     return res
       .status(401)
@@ -539,7 +554,7 @@ async function completeLogin(
         session_token, action, ip_address, user_agent, request_details, success
       ) VALUES (?, ?, ?, ?, ?, ?)`,
       args: [
-        token,
+        token.substring(0, 8) + "...",
         mfaUsed ? 'login_with_mfa' : 'login',
         clientIP,
         getSafeUserAgent(req), // Use safe user agent extraction

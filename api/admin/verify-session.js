@@ -7,8 +7,17 @@ import authService from "../../lib/auth-service.js";
  * Checks if the current session is valid without requiring full authentication
  */
 export default async function handler(req, res) {
-  // Set CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  // Set Cache-Control headers to prevent caching of sensitive auth data
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  
+  // Set CORS headers - echo origin instead of "*" when credentials needed
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  }
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
@@ -19,23 +28,24 @@ export default async function handler(req, res) {
 
   // Only allow GET and POST
   if (req.method !== "GET" && req.method !== "POST") {
+    res.setHeader("Allow", "GET, POST, OPTIONS");
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
+    // Ensure auth service is initialized to get session duration
+    await authService.ensureInitialized();
+    
     // Verify session from request
     const session = await authService.verifySessionFromRequest(req);
 
     if (session.valid) {
-      // Calculate remaining session time
+      // Calculate remaining session time using service session duration
       const now = Date.now();
       const loginTime = session.admin.loginTime;
-      const sessionDuration = parseInt(
-        process.env.ADMIN_SESSION_DURATION || "3600000"
-      );
+      const sessionDuration = authService.sessionDuration;
       const elapsed = now - loginTime;
-      const remaining = Math.max(0, sessionDuration - elapsed);
-      
+      const remaining = Math.max(0, sessionDuration - elapsed);      
       return res.status(200).json({
         valid: true,
         admin: {

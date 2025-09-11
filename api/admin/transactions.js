@@ -91,7 +91,7 @@ async function handler(req, res) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const session = authService.verifySessionToken(sessionToken);
+      const session = await authService.verifySessionToken(sessionToken);
       if (!session.valid) {
         return res.status(401).json({ error: 'Invalid session' });
       }

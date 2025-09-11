@@ -326,8 +326,8 @@ describe("Auth Service - Lazy Initialization Pattern", () => {
 
       await authService.ensureInitialized();
 
-      // parseInt("invalid-number") returns NaN, which should be handled
-      expect(authService.sessionDuration).toBeNaN();
+      // With robust parsing, invalid values default to 3600000
+      expect(authService.sessionDuration).toBe(3600000);
       expect(authService.initialized).toBe(true); // Still initializes
     });
   });

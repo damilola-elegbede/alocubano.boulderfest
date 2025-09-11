@@ -6,7 +6,7 @@ const SERVICE_NAME = 'registration-api';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    res.setHeader("Allow", "GET, OPTIONS");    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   // Simplified health check response matching test expectations

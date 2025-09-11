@@ -205,7 +205,7 @@ async function handleVerifyBackupCode(req, res) {
     await logRecoveryAttempt(adminId, 'backup_code', true, req);
 
     // Generate temporary recovery session
-    const recoveryToken = generateRecoveryToken(adminId);
+    const recoveryToken = await generateRecoveryToken(adminId);
 
     res.status(200).json({
       success: true,
@@ -344,7 +344,7 @@ async function handleGenerateRecoveryToken(req, res) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const recoveryToken = generateRecoveryToken(adminId);
+    const recoveryToken = await generateRecoveryToken(adminId);
 
     // Log recovery token generation
     await logRecoveryAttempt(adminId, 'recovery_token_generated', true, req);
@@ -374,7 +374,7 @@ async function handleUseRecoveryToken(req, res) {
 
   try {
     // Verify recovery token
-    const tokenData = verifyRecoveryToken(recoveryToken);
+    const tokenData = await verifyRecoveryToken(recoveryToken);
 
     if (!tokenData.valid) {
       return res
@@ -404,7 +404,7 @@ async function handleUseRecoveryToken(req, res) {
 /**
  * Generate recovery token
  */
-function generateRecoveryToken(adminId) {
+async function generateRecoveryToken(adminId) {
   const payload = {
     adminId,
     type: 'recovery',
@@ -412,15 +412,15 @@ function generateRecoveryToken(adminId) {
     iat: Math.floor(Date.now() / 1000)
   };
 
-  return authService.createSessionToken(payload);
+  return await authService.createSessionToken(payload);
 }
 
 /**
  * Verify recovery token
  */
-function verifyRecoveryToken(token) {
+async function verifyRecoveryToken(token) {
   try {
-    const decoded = authService.verifySessionToken(token);
+    const decoded = await authService.verifySessionToken(token);
 
     if (!decoded.valid || decoded.admin.type !== 'recovery') {
       return { valid: false };
