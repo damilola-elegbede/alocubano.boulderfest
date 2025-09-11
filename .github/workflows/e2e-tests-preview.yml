@@ -590,7 +590,8 @@ jobs:
           if [ -n "$TEST_PATTERN" ] && [ "$TEST_PATTERN" != "" ]; then
             # Fixed: Use --grep instead of --testNamePattern for Playwright pattern matching
             echo "🎯 Applying test pattern filter: $TEST_PATTERN"
-            TEST_COMMAND="npm run test:e2e -- --project $PROJECT_NAME --grep '$TEST_PATTERN'"
+            # Use double quotes to properly handle the pattern with pipes
+            TEST_COMMAND="npm run test:e2e -- --project $PROJECT_NAME --grep \"$TEST_PATTERN\""
             echo "📁 Test pattern: $TEST_PATTERN"
           else
             echo "🎯 Running all E2E tests (no pattern filter)"
@@ -600,8 +601,8 @@ jobs:
           echo "🌐 Target URL: ${{ env.PREVIEW_URL }}"
           echo "🦊 Browser Project: $PROJECT_NAME"
           
-          # Run tests with better error handling
-          if ! eval $TEST_COMMAND; then
+          # Run tests with better error handling - use bash -c for proper quoting
+          if ! bash -c "$TEST_COMMAND"; then
             echo "❌ E2E tests failed for ${{ matrix.browser }}"
             echo "📊 Collecting debug information..."
             
