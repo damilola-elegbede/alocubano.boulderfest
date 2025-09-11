@@ -385,17 +385,18 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
   // Clear login attempts on password success
   await rateLimitService.clearAttempts(clientIP);
 
-  // Check if MFA is enabled
+  // Check if MFA is enabled and required
   const adminId = 'admin'; // Default admin ID
-  const mfaStatus = await getMfaStatus(adminId);
+  const mfaRequired = authService.isMFARequired();
+  const mfaStatus = mfaRequired ? await getMfaStatus(adminId) : { isEnabled: false };
 
-  if (!mfaStatus.isEnabled) {
+  if (!mfaRequired || !mfaStatus.isEnabled) {
     // No MFA required - complete login
     return await completeLogin(req, res, adminId, clientIP, false);
   }
 
   // MFA is required - create temporary session and request MFA
-  const tempToken = authService.createSessionToken(adminId);
+  const tempToken = await authService.createSessionToken(adminId);
 
   // Store temporary session (not MFA verified yet)
   try {
@@ -499,8 +500,8 @@ async function completeLogin(
   const db = await getDatabaseClient();
 
   // Use existing token or create new one
-  const token = existingToken || authService.createSessionToken(adminId);
-  const cookie = authService.createSessionCookie(token);
+  const token = existingToken || await authService.createSessionToken(adminId);
+  const cookie = await authService.createSessionCookie(token);
 
   // Update or create session record
   if (existingToken) {
