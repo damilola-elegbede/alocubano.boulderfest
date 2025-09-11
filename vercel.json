@@ -187,27 +187,35 @@
     },
     {
       "source": "/admin/login",
-      "destination": "/admin/login.html"
+      "destination": "/pages/admin/login.html"
     },
     {
       "source": "/admin/dashboard",
-      "destination": "/admin/dashboard.html"
+      "destination": "/pages/admin/dashboard.html"
     },
     {
       "source": "/admin/checkin",
-      "destination": "/admin/checkin.html"
+      "destination": "/pages/admin/checkin.html"
     },
     {
       "source": "/admin/analytics",
-      "destination": "/admin/analytics.html"
+      "destination": "/pages/admin/analytics.html"
     },
     {
       "source": "/admin/mfa-settings",
-      "destination": "/admin/mfa-settings.html"
+      "destination": "/pages/admin/mfa-settings.html"
+    },
+    {
+      "source": "/admin/registrations",
+      "destination": "/pages/admin/registrations.html"
+    },
+    {
+      "source": "/admin/tickets",
+      "destination": "/pages/admin/tickets.html"
     },
     {
       "source": "/admin",
-      "destination": "/admin/index.html"
+      "destination": "/pages/admin/index.html"
     },
     {
       "source": "/manifest.json",

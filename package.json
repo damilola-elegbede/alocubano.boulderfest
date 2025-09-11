@@ -8,7 +8,7 @@
     "node": "22.x"
   },
   "scripts": {
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' node scripts/build-admin-files.js && node -e \"if(process.env.VERCEL === '1') { console.log('🚀 Vercel build complete - admin files prepared'); } else { console.log('🔧 Local build - running verification'); require('child_process').execSync('npm run verify-structure', {stdio:'inherit'}); }\" && echo 'Build process completed'",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' node -e \"if(process.env.VERCEL === '1') { console.log('🚀 Vercel build complete'); } else { console.log('🔧 Local build - running verification'); require('child_process').execSync('npm run verify-structure', {stdio:'inherit'}); }\" && echo 'Build process completed'",
     "start": "node scripts/start-with-ngrok.js",
     "dev": "npm run start",
     "test": "NODE_OPTIONS='--max-old-space-size=6144' vitest run --config tests/vitest.config.js",
@@ -26,8 +26,7 @@
     "health": "node scripts/test-health-endpoint.js",
     "preview": "vercel --target preview",
     "db:shell": "sqlite3 data/development.db",
-    "verify-structure": "node scripts/verify-structure.js",
-    "build:admin": "node scripts/build-admin-files.js"
+    "verify-structure": "node scripts/verify-structure.js"
   },
   "dependencies": {
     "@libsql/client": "^0.15.14",
