@@ -322,7 +322,11 @@ async function loginHandler(req, res) {
       }
 
       console.log('[Login] Returning 500 error to client');
-      res.status(500).json({ error: 'Internal server error' });
+      // Return a more informative error message for configuration issues
+      if (error.message && error.message.includes('ADMIN_SECRET')) {
+        return res.status(500).json({ error: 'Authentication service configuration error. Please ensure ADMIN_SECRET is configured.' });
+      }
+      res.status(500).json({ error: 'A server error occurred. Please try again later.' });
     }
   } else if (req.method === 'DELETE') {
     // Logout - enhanced with session cleanup
@@ -366,6 +370,14 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
   if (!password || typeof password !== 'string' || password.length > 200) {
     console.log('[Login] Invalid password format');
     return res.status(400).json({ error: 'Invalid password format' });
+  }
+
+  try {
+    // Initialize auth service first to ensure it's ready
+    await authService.ensureInitialized();
+  } catch (error) {
+    console.error('[Login] Auth service initialization failed:', error.message);
+    return res.status(500).json({ error: 'Authentication service unavailable. Please check server configuration.' });
   }
 
   const rateLimitService = getRateLimitService();

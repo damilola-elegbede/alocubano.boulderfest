@@ -1,29 +1,20 @@
 /**
- * Unit tests for the Secret Validator system
+ * E2E tests for the Secret Validator system
  * 
  * Tests the comprehensive secret detection and validation functionality
  * for E2E test environment setup.
- * 
- * NOTE: These tests run in UNIT mode with mocked secrets to avoid
- * requiring production environment variables during unit testing.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from '@playwright/test';
 import { 
   validateSecrets, 
   generateSecretReport, 
   validateSecretsOrFail,
   setGracefulDegradationFlags,
   initializeSecretValidation 
-} from '../../e2e/helpers/secret-validator.js';
+} from '../helpers/secret-validator.js';
 
-// Check if we're in unit test mode
-const isUnitTestMode = process.env.UNIT_ONLY_MODE === 'true';
-
-// Skip these tests entirely if we're not in a proper E2E environment
-const testCondition = isUnitTestMode ? describe.skip : describe;
-
-testCondition('Secret Validator', () => {
+describe('Secret Validator', () => {
   let originalEnv;
   
   beforeEach(() => {
@@ -175,7 +166,7 @@ testCondition('Secret Validator', () => {
     it('should succeed when all required secrets are present', () => {
       // Set all required secrets
       process.env.TURSO_DATABASE_URL = 'libsql://test-database.turso.io';
-      process.env.TURSO_AUTH_TOKEN = 'eyJhbGciOiJFUk5vUmtaV-test-token-with-sufficient-length';
+      process.env.TURSO_AUTH_TOKEN = 'eyJhbGciOiJFUE5vUmtaV-test-token-with-sufficient-length';
       process.env.ADMIN_PASSWORD = '$2b$10$test.bcrypt.hash.with.sufficient.length';
       process.env.ADMIN_SECRET = 'this-is-a-test-secret-with-sufficient-length';
       process.env.TEST_ADMIN_PASSWORD = 'test-admin-password';
@@ -312,75 +303,5 @@ testCondition('Secret Validator', () => {
         expect(results.optional.STRIPE_PUBLISHABLE_KEY.valid).toBe(valid);
       });
     });
-  });
-});
-
-// Unit-safe tests that don't require production secrets
-describe('Secret Validator - Unit Mode', () => {
-  let originalEnv;
-  
-  beforeEach(() => {
-    // Save original environment
-    originalEnv = { ...process.env };
-    
-    // Clear all test environment variables
-    Object.keys(process.env).forEach(key => {
-      if (key.includes('TURSO') || key.includes('ADMIN') || key.includes('BREVO') || 
-          key.includes('STRIPE') || key.includes('GOOGLE') || key.includes('APPLE') || 
-          key.includes('WALLET') || key.includes('VERCEL') || key.includes('GITHUB') ||
-          key.includes('INTERNAL') || key.includes('TEST_ADMIN')) {
-        delete process.env[key];
-      }
-    });
-    
-    // Set unit test mode flag
-    process.env.UNIT_ONLY_MODE = 'true';
-  });
-  
-  afterEach(() => {
-    // Restore original environment
-    process.env = originalEnv;
-  });
-
-  it('should detect unit test mode correctly', () => {
-    expect(process.env.UNIT_ONLY_MODE).toBe('true');
-  });
-
-  it('should handle validation gracefully in unit mode', () => {
-    // Test basic validation functionality without requiring production secrets
-    const results = validateSecrets();
-    
-    // In unit mode, these should not throw errors but provide results
-    expect(results).toBeDefined();
-    expect(results.summary).toBeDefined();
-    expect(typeof results.summary.allRequiredPresent).toBe('boolean');
-  });
-
-  it('should generate reports without production secrets', () => {
-    const results = validateSecrets();
-    const report = generateSecretReport(results);
-    
-    // Should generate a report even without production secrets
-    expect(report).toContain('SECRET VALIDATION REPORT');
-    expect(typeof report).toBe('string');
-    expect(report.length).toBeGreaterThan(0);
-  });
-
-  it('should handle graceful degradation flags', () => {
-    const results = validateSecrets();
-    const flags = setGracefulDegradationFlags(results);
-    
-    // Should return flags object even without secrets
-    expect(flags).toBeDefined();
-    expect(typeof flags).toBe('object');
-  });
-
-  it('should handle initialization without throwing in unit mode', () => {
-    // Should not throw errors in unit test mode even without secrets
-    expect(() => {
-      const result = initializeSecretValidation();
-      expect(result).toBeDefined();
-      expect(typeof result.success).toBe('boolean');
-    }).not.toThrow();
   });
 });
