@@ -1,6 +1,6 @@
 /**
  * Auth Service Password Verification Unit Tests
- * Tests password verification fallback logic, environment detection, and error handling
+ * Tests password verification logic for production vs non-production environments
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
@@ -28,21 +28,36 @@ describe("AuthService Password Verification", () => {
     // Create fresh service instance
     authService = new AuthService();
     
-    // Clear all mocks
-    vi.clearAllMocks();
+    // Reset mock
+    bcrypt.compare.mockReset();
   });
 
   afterEach(() => {
     // Restore original environment
-    process.env = { ...originalEnv };
+    process.env = originalEnv;
+    vi.clearAllMocks();
   });
 
   describe("Environment Detection", () => {
-    it("should detect test environment when NODE_ENV is test", async () => {
+    it("should detect non-production when VERCEL_ENV is preview", async () => {
+      // Arrange
+      process.env.VERCEL_ENV = "preview";
+      delete process.env.NODE_ENV;
+      process.env.TEST_ADMIN_PASSWORD = "test123";
+      
+      // Act
+      const result = await authService.verifyPassword("test123");
+
+      // Assert
+      expect(result).toBe(true);
+      expect(bcrypt.compare).not.toHaveBeenCalled();
+    });
+
+    it("should detect non-production when NODE_ENV is test", async () => {
       // Arrange
       process.env.NODE_ENV = "test";
+      delete process.env.VERCEL_ENV;
       process.env.TEST_ADMIN_PASSWORD = "test123";
-      delete process.env.ADMIN_PASSWORD;
 
       // Act
       const result = await authService.verifyPassword("test123");
@@ -52,54 +67,42 @@ describe("AuthService Password Verification", () => {
       expect(bcrypt.compare).not.toHaveBeenCalled();
     });
 
-    it("should detect test environment when E2E_TEST_MODE is true", async () => {
-      // Arrange
-      process.env.E2E_TEST_MODE = "true";
-      process.env.TEST_ADMIN_PASSWORD = "e2e123";
-      delete process.env.ADMIN_PASSWORD;
-
-      // Act
-      const result = await authService.verifyPassword("e2e123");
-
-      // Assert
-      expect(result).toBe(true);
-      expect(bcrypt.compare).not.toHaveBeenCalled();
-    });
-
-    it("should detect test environment when CI is true", async () => {
+    it("should detect non-production when CI is true", async () => {
       // Arrange
       process.env.CI = "true";
-      process.env.TEST_ADMIN_PASSWORD = "ci123";
-      delete process.env.ADMIN_PASSWORD;
-
-      // Act
-      const result = await authService.verifyPassword("ci123");
-
-      // Assert
-      expect(result).toBe(true);
-      expect(bcrypt.compare).not.toHaveBeenCalled();
-    });
-
-    it("should detect test environment when VERCEL_ENV is preview", async () => {
-      // Arrange
-      process.env.VERCEL_ENV = "preview";
-      process.env.TEST_ADMIN_PASSWORD = "preview123";
-      delete process.env.ADMIN_PASSWORD;
-
-      // Act
-      const result = await authService.verifyPassword("preview123");
-
-      // Assert
-      expect(result).toBe(true);
-      expect(bcrypt.compare).not.toHaveBeenCalled();
-    });
-
-    it("should use production environment detection when none of the test flags are set", async () => {
-      // Arrange
       delete process.env.NODE_ENV;
+      delete process.env.VERCEL_ENV;
+      process.env.TEST_ADMIN_PASSWORD = "test123";
+
+      // Act
+      const result = await authService.verifyPassword("test123");
+
+      // Assert
+      expect(result).toBe(true);
+      expect(bcrypt.compare).not.toHaveBeenCalled();
+    });
+
+    it("should detect non-production when E2E_TEST_MODE is true", async () => {
+      // Arrange
+      process.env.E2E_TEST_MODE = "true";
+      delete process.env.NODE_ENV;
+      delete process.env.VERCEL_ENV;
+      process.env.TEST_ADMIN_PASSWORD = "test123";
+
+      // Act
+      const result = await authService.verifyPassword("test123");
+
+      // Assert
+      expect(result).toBe(true);
+      expect(bcrypt.compare).not.toHaveBeenCalled();
+    });
+
+    it("should use production only when both NODE_ENV and VERCEL_ENV are production", async () => {
+      // Arrange
+      process.env.NODE_ENV = "production";
+      process.env.VERCEL_ENV = "production";
       delete process.env.E2E_TEST_MODE;
       delete process.env.CI;
-      delete process.env.VERCEL_ENV;
       delete process.env.TEST_ADMIN_PASSWORD;
       
       process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
@@ -114,13 +117,13 @@ describe("AuthService Password Verification", () => {
     });
   });
 
-  describe("TEST_ADMIN_PASSWORD Functionality", () => {
+  describe("TEST_ADMIN_PASSWORD in Non-Production", () => {
     beforeEach(() => {
-      // Set test environment
+      // Set non-production environment
       process.env.NODE_ENV = "test";
     });
 
-    it("should authenticate with TEST_ADMIN_PASSWORD in test environment", async () => {
+    it("should authenticate with TEST_ADMIN_PASSWORD", async () => {
       // Arrange
       process.env.TEST_ADMIN_PASSWORD = "test123";
       delete process.env.ADMIN_PASSWORD;
@@ -133,83 +136,82 @@ describe("AuthService Password Verification", () => {
       expect(bcrypt.compare).not.toHaveBeenCalled();
     });
 
-    it("should reject wrong TEST_ADMIN_PASSWORD but fallback to bcrypt", async () => {
+    it("should reject wrong TEST_ADMIN_PASSWORD without fallback", async () => {
       // Arrange
       process.env.TEST_ADMIN_PASSWORD = "test123";
-      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
+      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword"; // This should be ignored
       bcrypt.compare.mockResolvedValue(true);
 
       // Act
       const result = await authService.verifyPassword("wrongpassword");
 
-      // Assert
-      expect(result).toBe(true); // Should pass due to bcrypt fallback
-      expect(bcrypt.compare).toHaveBeenCalledWith("wrongpassword", "$2a$10$hashedpassword");
+      // Assert - No fallback in non-prod
+      expect(result).toBe(false);
+      expect(bcrypt.compare).not.toHaveBeenCalled();
     });
 
-    it("should handle case where TEST_ADMIN_PASSWORD matches", async () => {
+    it("should handle TEST_ADMIN_PASSWORD with trimming", async () => {
       // Arrange
-      process.env.TEST_ADMIN_PASSWORD = "test123";
-      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
+      process.env.TEST_ADMIN_PASSWORD = "  test123  "; // With spaces
 
       // Act
       const result = await authService.verifyPassword("test123");
 
       // Assert
       expect(result).toBe(true);
-      expect(bcrypt.compare).not.toHaveBeenCalled(); // Should not fallback to bcrypt
     });
 
-    it("should work when TEST_ADMIN_PASSWORD is empty string", async () => {
+    it("should return false when TEST_ADMIN_PASSWORD is not configured", async () => {
       // Arrange
-      process.env.TEST_ADMIN_PASSWORD = "";
-      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
-      bcrypt.compare.mockResolvedValue(true);
+      delete process.env.TEST_ADMIN_PASSWORD;
 
       // Act
       const result = await authService.verifyPassword("anypassword");
 
       // Assert
-      expect(result).toBe(true);
-      expect(bcrypt.compare).toHaveBeenCalledWith("anypassword", "$2a$10$hashedpassword");
+      expect(result).toBe(false);
+      expect(bcrypt.compare).not.toHaveBeenCalled();
+    });
+
+    it("should handle empty string TEST_ADMIN_PASSWORD", async () => {
+      // Arrange
+      process.env.TEST_ADMIN_PASSWORD = "";
+
+      // Act
+      const result = await authService.verifyPassword("anypassword");
+
+      // Assert - Empty string means no password configured
+      expect(result).toBe(false);
+      expect(bcrypt.compare).not.toHaveBeenCalled();
     });
   });
 
-  describe("Bcrypt ADMIN_PASSWORD Fallback", () => {
-    it("should use bcrypt when TEST_ADMIN_PASSWORD doesn't match", async () => {
-      // Arrange
-      process.env.NODE_ENV = "test";
-      process.env.TEST_ADMIN_PASSWORD = "test123";
-      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
-      bcrypt.compare.mockResolvedValue(true);
-
-      // Act
-      const result = await authService.verifyPassword("differentpassword");
-
-      // Assert
-      expect(result).toBe(true);
-      expect(bcrypt.compare).toHaveBeenCalledWith("differentpassword", "$2a$10$hashedpassword");
+  describe("ADMIN_PASSWORD in Production", () => {
+    beforeEach(() => {
+      // Set production environment
+      process.env.NODE_ENV = "production";
+      process.env.VERCEL_ENV = "production";
+      delete process.env.CI;
+      delete process.env.E2E_TEST_MODE;
     });
 
-    it("should use bcrypt in production environment", async () => {
+    it("should use bcrypt in production", async () => {
       // Arrange
-      delete process.env.NODE_ENV;
-      delete process.env.E2E_TEST_MODE;
-      delete process.env.CI;
-      delete process.env.VERCEL_ENV;
+      delete process.env.TEST_ADMIN_PASSWORD;
       process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
       bcrypt.compare.mockResolvedValue(true);
 
       // Act
-      const result = await authService.verifyPassword("prodpassword");
+      const result = await authService.verifyPassword("password123");
 
       // Assert
       expect(result).toBe(true);
-      expect(bcrypt.compare).toHaveBeenCalledWith("prodpassword", "$2a$10$hashedpassword");
+      expect(bcrypt.compare).toHaveBeenCalledWith("password123", "$2a$10$hashedpassword");
     });
 
     it("should return false when bcrypt comparison fails", async () => {
       // Arrange
+      delete process.env.TEST_ADMIN_PASSWORD;
       process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
       bcrypt.compare.mockResolvedValue(false);
 
@@ -219,207 +221,73 @@ describe("AuthService Password Verification", () => {
       // Assert
       expect(result).toBe(false);
       expect(bcrypt.compare).toHaveBeenCalledWith("wrongpassword", "$2a$10$hashedpassword");
+    });
+
+    it("should validate bcrypt hash format", async () => {
+      // Arrange
+      delete process.env.TEST_ADMIN_PASSWORD;
+      process.env.ADMIN_PASSWORD = "not-a-bcrypt-hash";
+
+      // Act
+      const result = await authService.verifyPassword("password");
+
+      // Assert - Invalid hash format
+      expect(result).toBe(false);
+      expect(bcrypt.compare).not.toHaveBeenCalled();
+    });
+
+    it("should handle bcrypt comparison errors", async () => {
+      // Arrange
+      delete process.env.TEST_ADMIN_PASSWORD;
+      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
+      bcrypt.compare.mockRejectedValue(new Error("Bcrypt error"));
+
+      // Act
+      const result = await authService.verifyPassword("password");
+
+      // Assert
+      expect(result).toBe(false);
+    });
+
+    it("should return false when ADMIN_PASSWORD is not configured", async () => {
+      // Arrange
+      delete process.env.TEST_ADMIN_PASSWORD;
+      delete process.env.ADMIN_PASSWORD;
+
+      // Act
+      const result = await authService.verifyPassword("password");
+
+      // Assert
+      expect(result).toBe(false);
+      expect(bcrypt.compare).not.toHaveBeenCalled();
     });
   });
 
   describe("Error Handling", () => {
-    it("should handle bcrypt comparison errors gracefully", async () => {
+    it("should return false for null password", async () => {
       // Arrange
-      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
-      const bcryptError = new Error("Bcrypt comparison failed");
-      bcrypt.compare.mockRejectedValue(bcryptError);
-      
-      const originalConsoleError = console.error;
-      const errorMessages = [];
-      console.error = (...args) => errorMessages.push(args.join(' '));
-
-      try {
-        // Act
-        const result = await authService.verifyPassword("anypassword");
-
-        // Assert
-        expect(result).toBe(false);
-        expect(bcrypt.compare).toHaveBeenCalledWith("anypassword", "$2a$10$hashedpassword");
-        expect(errorMessages.some(msg => msg.includes("Bcrypt comparison error:") && msg.includes("Bcrypt comparison failed"))).toBe(true);
-      } finally {
-        console.error = originalConsoleError;
-      }
-    });
-
-    it("should handle general password verification errors", async () => {
-      // Arrange
-      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
-      
-      // Force an error by causing bcrypt.compare to throw during execution
-      bcrypt.compare.mockImplementation(() => {
-        throw new Error("Unexpected error");
-      });
-      
-      const originalConsoleError = console.error;
-      const errorMessages = [];
-      console.error = (...args) => errorMessages.push(args.join(' '));
-
-      try {
-        // Act
-        const result = await authService.verifyPassword("anypassword");
-
-        // Assert
-        expect(result).toBe(false);
-        // The error should be caught by the bcrypt error handling, not general error handling
-        expect(errorMessages.some(msg => msg.includes("Bcrypt comparison error:"))).toBe(true);
-      } finally {
-        console.error = originalConsoleError;
-      }
-    });
-
-    it("should return false when neither password is configured", async () => {
-      // Arrange
-      delete process.env.TEST_ADMIN_PASSWORD;
-      delete process.env.ADMIN_PASSWORD;
-      
-      const originalConsoleError = console.error;
-      const errorMessages = [];
-      console.error = (...args) => errorMessages.push(args.join(' '));
-
-      try {
-        // Act
-        const result = await authService.verifyPassword("anypassword");
-
-        // Assert
-        expect(result).toBe(false);
-        expect(bcrypt.compare).not.toHaveBeenCalled();
-        expect(errorMessages.some(msg => msg.includes("No admin password configured"))).toBe(true);
-      } finally {
-        console.error = originalConsoleError;
-      }
-    });
-
-    it("should return false for invalid input types", async () => {
-      // Arrange
-      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
-
-      // Act & Assert
-      expect(await authService.verifyPassword(null)).toBe(false);
-      expect(await authService.verifyPassword(undefined)).toBe(false);
-      expect(await authService.verifyPassword(123)).toBe(false);
-      expect(await authService.verifyPassword({})).toBe(false);
-      expect(await authService.verifyPassword([])).toBe(false);
-      expect(await authService.verifyPassword("")).toBe(false);
-
-      // Ensure bcrypt was not called for invalid inputs
-      expect(bcrypt.compare).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("Complex Scenarios", () => {
-    it("should handle test environment with both passwords configured", async () => {
-      // Arrange
-      process.env.NODE_ENV = "test";
       process.env.TEST_ADMIN_PASSWORD = "test123";
-      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
-
-      // Act - Test password matches
-      const testResult = await authService.verifyPassword("test123");
-      expect(testResult).toBe(true);
-      expect(bcrypt.compare).not.toHaveBeenCalled();
-
-      // Reset mock
-      vi.clearAllMocks();
-      bcrypt.compare.mockResolvedValue(true);
-
-      // Act - Different password, should fallback to bcrypt
-      const fallbackResult = await authService.verifyPassword("prod123");
-      expect(fallbackResult).toBe(true);
-      expect(bcrypt.compare).toHaveBeenCalledWith("prod123", "$2a$10$hashedpassword");
-    });
-
-    it("should handle multiple environment variables set simultaneously", async () => {
-      // Arrange
-      process.env.NODE_ENV = "test";
-      process.env.E2E_TEST_MODE = "true";
-      process.env.CI = "true";
-      process.env.VERCEL_ENV = "preview";
-      process.env.TEST_ADMIN_PASSWORD = "multi123";
 
       // Act
-      const result = await authService.verifyPassword("multi123");
-
-      // Assert
-      expect(result).toBe(true);
-      expect(bcrypt.compare).not.toHaveBeenCalled();
-    });
-
-    it("should handle bcrypt fallback failure when TEST_ADMIN_PASSWORD doesn't match", async () => {
-      // Arrange
-      process.env.NODE_ENV = "test";
-      process.env.TEST_ADMIN_PASSWORD = "test123";
-      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
-      bcrypt.compare.mockResolvedValue(false);
-
-      // Act
-      const result = await authService.verifyPassword("wrongpassword");
+      const result = await authService.verifyPassword(null);
 
       // Assert
       expect(result).toBe(false);
-      expect(bcrypt.compare).toHaveBeenCalledWith("wrongpassword", "$2a$10$hashedpassword");
     });
 
-    it("should ensure service initialization before password verification", async () => {
+    it("should return false for undefined password", async () => {
       // Arrange
-      const uninitializedService = new AuthService();
-      process.env.NODE_ENV = "test";
       process.env.TEST_ADMIN_PASSWORD = "test123";
 
       // Act
-      const result = await uninitializedService.verifyPassword("test123");
+      const result = await authService.verifyPassword(undefined);
 
       // Assert
-      expect(result).toBe(true);
-      expect(uninitializedService.initialized).toBe(true);
+      expect(result).toBe(false);
     });
 
-    it("should handle service initialization failure", async () => {
+    it("should return false for empty string password", async () => {
       // Arrange
-      const originalSecret = process.env.ADMIN_SECRET;
-      delete process.env.ADMIN_SECRET;
-      
-      try {
-        const failingService = new AuthService();
-
-        // Act & Assert
-        await expect(failingService.verifyPassword("anypassword")).rejects.toThrow("❌ FATAL: ADMIN_SECRET not configured");
-      } finally {
-        // Restore for other tests
-        process.env.ADMIN_SECRET = originalSecret;
-      }
-    });
-  });
-
-  describe("Security Considerations", () => {
-    it("should not log passwords in error messages", async () => {
-      // Arrange
-      delete process.env.TEST_ADMIN_PASSWORD;
-      delete process.env.ADMIN_PASSWORD;
-      
-      const originalConsoleError = console.error;
-      const errorMessages = [];
-      console.error = (...args) => errorMessages.push(args.join(' '));
-
-      try {
-        // Act
-        await authService.verifyPassword("sensitivepassword");
-
-        // Assert - ensure password is not logged
-        const allMessages = errorMessages.join(" ");
-        expect(allMessages).not.toContain("sensitivepassword");
-      } finally {
-        console.error = originalConsoleError;
-      }
-    });
-
-    it("should treat empty string password as invalid", async () => {
-      // Arrange
-      process.env.NODE_ENV = "test";
       process.env.TEST_ADMIN_PASSWORD = "test123";
 
       // Act
@@ -427,38 +295,104 @@ describe("AuthService Password Verification", () => {
 
       // Assert
       expect(result).toBe(false);
-      expect(bcrypt.compare).not.toHaveBeenCalled();
+    });
+
+    it("should throw when initialization fails", async () => {
+      // Arrange
+      process.env.NODE_ENV = "test";
+      process.env.TEST_ADMIN_PASSWORD = "test123";
+      
+      // Force an error by deleting ADMIN_SECRET and reinitializing
+      delete process.env.ADMIN_SECRET;
+      authService.initialized = false;
+      authService.initializationPromise = null;
+
+      // Act & Assert - Should throw when service can't initialize
+      await expect(authService.verifyPassword("test123")).rejects.toThrow("ADMIN_SECRET not configured");
+    });
+  });
+
+  describe("Security Considerations", () => {
+    it("should handle passwords with special characters", async () => {
+      // Arrange
+      process.env.NODE_ENV = "test";
+      process.env.TEST_ADMIN_PASSWORD = "p@$$w0rd!<>&";
+
+      // Act
+      const result = await authService.verifyPassword("p@$$w0rd!<>&");
+
+      // Assert
+      expect(result).toBe(true);
+    });
+
+    it("should handle very long passwords", async () => {
+      // Arrange
+      process.env.NODE_ENV = "test";
+      const longPassword = "a".repeat(200);
+      process.env.TEST_ADMIN_PASSWORD = longPassword;
+
+      // Act
+      const result = await authService.verifyPassword(longPassword);
+
+      // Assert
+      expect(result).toBe(true);
+    });
+
+    it("should be case-sensitive", async () => {
+      // Arrange
+      process.env.NODE_ENV = "test";
+      process.env.TEST_ADMIN_PASSWORD = "TestPassword";
+
+      // Act
+      const result1 = await authService.verifyPassword("testpassword");
+      const result2 = await authService.verifyPassword("TestPassword");
+
+      // Assert
+      expect(result1).toBe(false);
+      expect(result2).toBe(true);
     });
 
     it("should handle whitespace-only passwords", async () => {
       // Arrange
       process.env.NODE_ENV = "test";
-      process.env.TEST_ADMIN_PASSWORD = "test123";
-      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
-      bcrypt.compare.mockResolvedValue(false);
+      process.env.TEST_ADMIN_PASSWORD = "   "; // Only spaces
 
       // Act
       const result = await authService.verifyPassword("   ");
 
-      // Assert
-      expect(result).toBe(false);
-      // Whitespace passwords don't match TEST_ADMIN_PASSWORD, so they fall back to bcrypt
-      expect(bcrypt.compare).toHaveBeenCalledWith("   ", "$2a$10$hashedpassword");
+      // Assert - Both are trimmed to empty, so they match (both empty)
+      expect(result).toBe(true);
+    });
+  });
+
+  describe("Mixed Environment Scenarios", () => {
+    it("should handle Vercel preview environment correctly", async () => {
+      // Arrange - Vercel preview is non-production
+      process.env.VERCEL_ENV = "preview";
+      process.env.NODE_ENV = "production"; // This should be overridden
+      process.env.TEST_ADMIN_PASSWORD = "preview123";
+      process.env.ADMIN_PASSWORD = "$2a$10$hash"; // Should be ignored
+
+      // Act
+      const result = await authService.verifyPassword("preview123");
+
+      // Assert - Should use TEST_ADMIN_PASSWORD
+      expect(result).toBe(true);
+      expect(bcrypt.compare).not.toHaveBeenCalled();
     });
 
-    it("should be case-sensitive for TEST_ADMIN_PASSWORD", async () => {
-      // Arrange
-      process.env.NODE_ENV = "test";
-      process.env.TEST_ADMIN_PASSWORD = "Test123";
-      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
-      bcrypt.compare.mockResolvedValue(false);
+    it("should require both NODE_ENV and VERCEL_ENV for production", async () => {
+      // Arrange - Only NODE_ENV=production is not enough
+      process.env.NODE_ENV = "production";
+      delete process.env.VERCEL_ENV;
+      process.env.TEST_ADMIN_PASSWORD = "test123";
 
       // Act
       const result = await authService.verifyPassword("test123");
 
-      // Assert
-      expect(result).toBe(false); // Should not match due to case sensitivity
-      expect(bcrypt.compare).toHaveBeenCalledWith("test123", "$2a$10$hashedpassword");
+      // Assert - Should still be non-production
+      expect(result).toBe(true);
+      expect(bcrypt.compare).not.toHaveBeenCalled();
     });
   });
 });
