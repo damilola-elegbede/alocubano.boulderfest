@@ -193,12 +193,32 @@ function verifyUsername(username) {
 }
 
 async function loginHandler(req, res) {
+  console.log("[Login] Request received:", {
+    method: req.method,
+    hasBody: !!req.body,
+    bodyKeys: req.body ? Object.keys(req.body) : [],
+    headers: {
+      contentType: req.headers['content-type'],
+      userAgent: req.headers['user-agent']?.substring(0, 50)
+    }
+  });
+
   if (req.method === 'POST') {
     const { username, password, mfaCode, step } = req.body || {};
     const clientIP = getClientIP(req);
 
+    console.log("[Login] POST data:", {
+      hasUsername: !!username,
+      hasPassword: !!password,
+      passwordLength: password?.length,
+      hasMfaCode: !!mfaCode,
+      step: step,
+      clientIP: clientIP?.substring(0, 15)
+    });
+
     // Enhanced IP validation
     if (!clientIP || clientIP === 'unknown') {
+      console.error("[Login] Failed: Unable to identify client IP");
       return res.status(400).json({ error: 'Unable to identify client' });
     }
 
@@ -273,11 +293,18 @@ async function loginHandler(req, res) {
         return await handlePasswordStep(req, res, username, password, clientIP);
       }
     } catch (error) {
-      console.error('Login process failed:', {
-        error: error.message,
-        clientIP: clientIP.substring(0, 15) + '...', // Truncate IP for privacy
+      console.error('[Login] Login process failed:', {
+        errorMessage: error.message,
+        errorStack: error.stack,
+        errorName: error.name,
+        clientIP: clientIP?.substring(0, 15) + '...', // Truncate IP for privacy
         timestamp: new Date().toISOString(),
-        userAgent: getSafeUserAgent(req, 100) // Use safe user agent extraction
+        userAgent: getSafeUserAgent(req, 100), // Use safe user agent extraction
+        environment: {
+          NODE_ENV: process.env.NODE_ENV,
+          VERCEL_ENV: process.env.VERCEL_ENV,
+          CI: process.env.CI
+        }
       });
 
       // Try to record the failed attempt even if other errors occurred
@@ -285,14 +312,16 @@ async function loginHandler(req, res) {
         const rateLimitService = getRateLimitService();
         await rateLimitService.recordFailedAttempt(clientIP);
       } catch (rateLimitError) {
-        console.error('Failed to record rate limit attempt:', rateLimitError);
+        console.error('[Login] Failed to record rate limit attempt:', rateLimitError.message);
       }
 
       // In CI/test environments, return 401 for authentication failures to match test expectations
       if (process.env.CI || process.env.NODE_ENV === 'test') {
+        console.log('[Login] Returning 401 for test environment');
         return res.status(401).json({ error: 'Authentication failed' });
       }
 
+      console.log('[Login] Returning 500 error to client');
       res.status(500).json({ error: 'Internal server error' });
     }
   } else if (req.method === 'DELETE') {
@@ -325,13 +354,17 @@ async function loginHandler(req, res) {
  * Handle username and password verification step (Step 1) with enhanced security
  */
 async function handlePasswordStep(req, res, username, password, clientIP) {
+  console.log('[Login] Starting password verification step');
+  
   // Additional username validation
   if (!username || typeof username !== 'string' || username.length > 50) {
+    console.log('[Login] Invalid username format');
     return res.status(400).json({ error: 'Invalid username format' });
   }
 
   // Additional password validation
   if (!password || typeof password !== 'string' || password.length > 200) {
+    console.log('[Login] Invalid password format');
     return res.status(400).json({ error: 'Invalid password format' });
   }
 
@@ -345,16 +378,31 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
     process.env.VERCEL_ENV === 'preview' ||
     req.headers['user-agent']?.includes('Playwright');
 
+  console.log('[Login] Environment check:', {
+    isE2ETest,
+    E2E_TEST_MODE: process.env.E2E_TEST_MODE,
+    CI: process.env.CI,
+    VERCEL_ENV: process.env.VERCEL_ENV,
+    userAgent: req.headers['user-agent']?.substring(0, 50)
+  });
+
   // Verify username and password with timing attack protection
   const startTime = Date.now();
+  console.log('[Login] Verifying username...');
   const isUsernameValid = verifyUsername(username);
+  console.log('[Login] Username valid:', isUsernameValid);
+  
+  console.log('[Login] Verifying password...');
   const isPasswordValid = await authService.verifyPassword(password);
+  console.log('[Login] Password valid:', isPasswordValid);
+  
   const isValid = isUsernameValid && isPasswordValid;
   const verificationTime = Date.now() - startTime;
+  console.log('[Login] Verification complete:', { isValid, timeMs: verificationTime });
 
   // Log authentication failure in test environments
   if (isE2ETest && !isValid) {
-    console.warn('Admin authentication failed in test environment');
+    console.warn('[Login] Admin authentication failed in test environment');
   }
 
   // Add consistent delay to prevent timing attacks (minimum 200ms)
