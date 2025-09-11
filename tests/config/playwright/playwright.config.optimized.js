@@ -7,8 +7,8 @@ export default defineConfig({
   "expect": {
     "timeout": 5000
   },
-  "globalSetup": "./tests/e2e/global-setup.js",
-  "globalTeardown": "./tests/e2e/global-teardown.js",
+  "globalSetup": "../../e2e/global-setup.js",
+  "globalTeardown": "../../e2e/global-teardown.js",
   "outputDir": ".tmp/playwright-results",
   "reporter": [
     [

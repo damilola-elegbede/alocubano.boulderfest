@@ -1,16 +1,10 @@
-import { verifyAdminToken } from "../../lib/auth/admin-auth.js";
+import authService from "../../lib/auth-service.js";
 import AuditLogger from "../../lib/security/audit-logger.js";
+import { withSecurityHeaders } from "../../lib/security-headers.js";
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   try {
-    // Verify admin authentication
-    const adminVerification = await verifyAdminToken(req);
-    if (!adminVerification.authorized) {
-      return res.status(403).json({
-        error: "Unauthorized access",
-        message: "Administrative access required",
-      });
-    }
+    // Admin authentication is handled by authService.requireAuth wrapper
 
     // Validate request method
     if (req.method !== "GET") {
@@ -53,6 +47,9 @@ export default async function handler(req, res) {
     });
   }
 }
+
+// Wrap with auth middleware
+export default withSecurityHeaders(authService.requireAuth(handler));
 
 // Verify admin access and export for serverless function
 export const config = {

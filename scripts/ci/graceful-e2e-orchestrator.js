@@ -23,7 +23,7 @@ class GracefulE2EOrchestrator {
       retryDelayMs: 10000,
       testTimeout: 600000, // 10 minutes
       healthCheckTimeout: 30000,
-      playwrightConfig: 'playwright-e2e-vercel-main.config.js',
+      playwrightConfig: 'tests/config/playwright/playwright-e2e-vercel-main.config.js',
       browsers: process.env.ALL_BROWSERS === 'false' ? ['chromium'] : ['chromium', 'firefox'],
       productionFallbackUrl: 'https://alocubano-boulderfest.vercel.app'
     };

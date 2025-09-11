@@ -390,7 +390,7 @@
       // Check if already authenticated
       async function checkExistingAuth() {
         try {
-          const response = await fetch("/api/admin/dashboard");
+          const response = await fetch("/api/admin/verify-session");
           if (response.ok) {
             // Already authenticated, redirect to admin portal
             window.location.href = "/admin";

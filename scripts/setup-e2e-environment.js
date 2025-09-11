@@ -28,7 +28,7 @@ async function setupE2EEnvironment() {
     }
 
     // Check if Playwright browsers are installed
-    const playwrightConfig = await import("../playwright.config.js");
+    const playwrightConfig = await import("../tests/config/playwright/playwright.config.js");
     console.log("✅ Playwright configuration loaded");
 
     // Validate test directory structure

@@ -41,7 +41,7 @@ console.log(`  Database: Production/Preview environment database`);
 console.log(`  Timeout Strategy: ${process.env.CI ? 'CI-optimized (extended)' : 'Local (faster)'}`);
 
 export default defineConfig({
-  testDir: './tests/e2e/flows',
+  testDir: '../../e2e/flows',
   testMatch: '**/*.test.js',
   testIgnore: [
     '**/node_modules/**',
@@ -202,6 +202,6 @@ export default defineConfig({
   // - Safari mobile: +75% longer than base (most demanding)
   
   // Global setup/teardown for preview environment
-  globalSetup: './tests/e2e/global-setup-preview.js',
-  globalTeardown: './tests/e2e/global-teardown-preview.js',
+  globalSetup: '../../e2e/global-setup-preview.js',
+  globalTeardown: '../../e2e/global-teardown-preview.js',
 });

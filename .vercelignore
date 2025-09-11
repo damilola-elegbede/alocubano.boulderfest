@@ -21,6 +21,7 @@ test-results/
 vitest.config.js
 playwright.config.js
 playwright-*.config.js
+tests/config/playwright/*.config.js
 
 # Development and build artifacts
 dist/

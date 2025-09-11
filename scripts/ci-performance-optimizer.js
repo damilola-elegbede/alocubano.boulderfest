@@ -503,7 +503,7 @@ class CIPerformanceOptimizer {
     console.log(`\n⏱️  Optimization completed in ${executionTime}s`);
     console.log(`\n🚀 To apply optimizations:`);
     console.log(`   cp vitest.config.optimized.js vitest.config.js`);
-    console.log(`   cp playwright.config.optimized.js playwright.config.js`);
+    console.log(`   cp playwright.config.optimized.js tests/config/playwright/playwright.config.js`);
     console.log(`   cp .npmrc.optimized .npmrc`);
     console.log(`\n📈 Expected Performance Improvements:`);
     console.log(`   • Test execution: 25-40% faster`);

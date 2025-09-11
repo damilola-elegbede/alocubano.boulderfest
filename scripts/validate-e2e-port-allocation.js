@@ -318,11 +318,11 @@ async function validatePlaywrightConfig(results) {
   console.log('🔍 Validating Playwright configuration...');
   
   try {
-    const configPath = path.join(projectRoot, 'playwright-e2e-vercel-main.config.js');
+    const configPath = path.join(projectRoot, 'tests/config/playwright/playwright-e2e-vercel-main.config.js');
     const configExists = await fs.access(configPath).then(() => true).catch(() => false);
     
     if (!configExists) {
-      results.addResult('Playwright config exists', false, 'playwright-e2e-vercel-main.config.js not found');
+      results.addResult('Playwright config exists', false, 'tests/config/playwright/playwright-e2e-vercel-main.config.js not found');
       return;
     }
 

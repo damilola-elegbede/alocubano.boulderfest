@@ -323,7 +323,7 @@ if (useWebServer) {
 }
 
 export default defineConfig({
-  testDir: './tests/e2e/flows',
+  testDir: '../../e2e/flows',
   
   // Execution configuration
   fullyParallel: isPreviewMode, // Preview can run parallel, local/CI run sequentially for database safety
@@ -345,8 +345,8 @@ export default defineConfig({
       ],
   
   // Global setup/teardown
-  globalSetup: isPreviewMode ? './tests/e2e/global-setup-preview.js' : './tests/e2e/global-setup-ci.js',
-  globalTeardown: isPreviewMode ? './tests/e2e/global-teardown-preview.js' : './tests/e2e/global-teardown.js',
+  globalSetup: isPreviewMode ? '../../e2e/global-setup-preview.js' : '../../e2e/global-setup-ci.js',
+  globalTeardown: isPreviewMode ? '../../e2e/global-teardown-preview.js' : '../../e2e/global-teardown.js',
   
   // Test timeout
   timeout: timeouts.test,

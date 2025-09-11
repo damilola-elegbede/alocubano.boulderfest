@@ -207,7 +207,8 @@ jobs:
           TEST_PATTERN=""
           case "$TEST_SUITE" in
             "standard")
-              TEST_PATTERN="basic-navigation|cart-functionality|newsletter-simple|admin-auth|gallery-basic|registration-flow"
+              # Use test descriptions that match the actual test.describe() calls
+              TEST_PATTERN="Basic Navigation|Cart Functionality|Newsletter|Admin|Gallery Basic|Registration"
               ;;
             "advanced")
               TEST_PATTERN="" # Run all tests - no filter
@@ -223,7 +224,8 @@ jobs:
               ;;
             *)
               echo "⚠️ Unknown test suite: $TEST_SUITE, defaulting to standard"
-              TEST_PATTERN="basic-navigation|cart-functionality|newsletter-simple|admin-auth|gallery-basic|registration-flow"
+              # Use test descriptions that match the actual test.describe() calls
+              TEST_PATTERN="Basic Navigation|Cart Functionality|Newsletter|Admin|Gallery Basic|Registration"
               ;;
           esac
           

@@ -282,12 +282,12 @@
                     <div class="stat-number">${stats.vip_tickets || 0}</div>
                 </div>
                 <!-- Wallet Statistics -->
-                <div class="admin-stat-card" style="border-left: 3px solid var(--color-text-primary);">
+                <div class="admin-stat-card">
                     <h3 class="stat-label">Apple Wallet</h3>
                     <div class="stat-number">${stats.apple_wallet_users || 0}</div>
                     <div class="stat-label admin-mt-sm">${stats.total_tickets ? Math.round((stats.apple_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
                 </div>
-                <div class="admin-stat-card" style="border-left: 3px solid var(--color-blue);">
+                <div class="admin-stat-card">
                     <h3 class="stat-label">Google Wallet</h3>
                     <div class="stat-number">${stats.google_wallet_users || 0}</div>
                     <div class="stat-label admin-mt-sm">${stats.total_tickets ? Math.round((stats.google_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
@@ -610,12 +610,21 @@
         btn.textContent = "Syncing...";
 
         try {
+          // Get fresh CSRF token for state-changing operation
+          const headers = { "Content-Type": "application/json" };
+          try {
+            const csrfResponse = await fetch("/api/admin/csrf-token");
+            if (csrfResponse.ok) {
+              const csrfData = await csrfResponse.json();
+              headers["X-CSRF-Token"] = csrfData.csrfToken || csrfData.token;
+            }
+          } catch (error) {
+            console.warn("Could not fetch CSRF token:", error);
+          }
+
           const response = await fetch("/api/sheets/sync", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-CSRF-Token": window.csrfToken,
-            },
+            headers: headers,
           });
 
           const data = await response.json();

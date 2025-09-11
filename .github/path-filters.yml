@@ -86,6 +86,7 @@ tests:
   - '**/*.test.js'
   - '**/*.spec.js'
   - 'playwright*.config.js'
+  - 'tests/config/playwright/*.config.js'
   - 'vitest.config.js'
   - 'tests/vitest.config.js'
 
@@ -99,12 +100,14 @@ tests-unit:
 tests-e2e:
   - 'tests/e2e/**'
   - 'playwright*.config.js'
+  - 'tests/config/playwright/*.config.js'
   - 'scripts/e2e-with-ngrok.js'
   - 'scripts/validate-e2e-setup.js'
   - 'scripts/vercel-dev-wrapper.js'
 
 tests-config:
   - 'playwright*.config.js'
+  - 'tests/config/playwright/*.config.js'
   - 'vitest.config.js'
   - 'tests/vitest.config.js'
   - 'jest.config.js'
@@ -440,6 +443,7 @@ e2e-triggers:
   - 'pages/**'
   - 'tests/e2e/**'
   - 'playwright*.config.js'
+  - 'tests/config/playwright/*.config.js'
   - 'scripts/e2e*'
   - 'scripts/vercel-dev-wrapper.js'
   - '.github/workflows/e2e-tests-optimized.yml'

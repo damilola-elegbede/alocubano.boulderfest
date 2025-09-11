@@ -1,4 +1,4 @@
-import authService from '../../lib/auth-service.js';
+import { getAuthService } from '../../lib/auth-service.js';
 import { getDatabaseClient } from '../../lib/database.js';
 import ticketService from '../../lib/ticket-service.js';
 import { getValidationService } from '../../lib/validation-service.js';
@@ -255,6 +255,20 @@ async function handler(req, res) {
 
 export default withSecurityHeaders(
   csrfService.validateCSRF(
-    authService.requireAuth(handler)
+    async (req, res) => {
+      try {
+        const authService = getAuthService();
+        return await authService.requireAuth(handler)(req, res);
+      } catch (error) {
+        console.error('Registrations auth middleware error:', error);
+        if (error.message && error.message.includes('❌ FATAL:')) {
+          return res.status(503).json({ 
+            error: 'Service temporarily unavailable',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+          });
+        }
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+    }
   )
 );

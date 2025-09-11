@@ -321,15 +321,23 @@
       // Check authentication on load
       async function checkAuth() {
         try {
-          const response = await fetch("/api/admin/dashboard");
+          const response = await fetch("/api/admin/verify-session");
           if (!response.ok) {
-            window.location.href = "/admin/login";
-            return false;
+            if (response.status === 401 || response.status === 403) {
+              // Only redirect to login for authentication failures
+              window.location.href = "/admin/login";
+              return false;
+            } else {
+              // For other errors (500, 503), show error but stay on page
+              console.error("Session check failed with status:", response.status);
+              alert("Error verifying session. Please refresh the page.");
+              return false;
+            }
           }
           return true;
         } catch (error) {
           console.error("Auth check failed:", error);
-          window.location.href = "/admin/login";
+          alert("Network error. Please check your connection and refresh.");
           return false;
         }
       }
@@ -345,7 +353,9 @@
             const csrfResponse = await fetch("/api/admin/csrf-token");
             if (csrfResponse.ok) {
               const csrfData = await csrfResponse.json();
-              headers["X-CSRF-Token"] = csrfData.token;
+              if (csrfData?.token) {
+                headers["X-CSRF-Token"] = csrfData.token;
+              }
             }
           } catch (error) {
             console.warn("Could not fetch CSRF token:", error);
@@ -385,10 +395,16 @@
           const response = await fetch("/api/test-db");
           const data = await response.json();
 
-          if (data.success) {
+          if (data?.status === "healthy") {
+            const tableCount = data?.tests?.tables?.data ? Object.keys(data.tests.tables.data).length : 0;
             alert(
-              `Database Healthy!\n\nStatus: ${data.status}\nLatency: ${data.latency}ms\nTables: ${data.tests.tables.count}`,
+              `Database Healthy!\n\nStatus: ${data.status}\nDuration: ${data?.duration ?? 'N/A'}\nTables: ${tableCount}\nTests Passed: ${data?.summary?.passed ?? 0}/${data?.summary?.totalTests ?? 0}`,
             );
+          } else if (data?.status === "degraded") {
+            alert(
+              `Database Partially Healthy\n\nStatus: ${data.status}\nTests Passed: ${data?.summary?.passed ?? 0}/${data?.summary?.totalTests ?? 0}\n\nCheck console for details.`,
+            );
+            console.error("Database test results:", data);
           } else {
             alert("Database issues detected. Check console for details.");
             console.error("Database test:", data);
@@ -412,8 +428,10 @@
             const csrfResponse = await fetch("/api/admin/csrf-token");
             if (csrfResponse.ok) {
               const csrfData = await csrfResponse.json();
-              headers["X-CSRF-Token"] = csrfData.token;
-              csrfToken = csrfData.token;
+              if (csrfData?.token) {
+                headers["X-CSRF-Token"] = csrfData.token;
+                csrfToken = csrfData.token;
+              }
             }
           } catch (error) {
             console.warn("Could not fetch CSRF token:", error);
@@ -431,10 +449,10 @@
           const data = await response.json();
           if (response.ok) {
             alert(
-              `Mobile auth successful!\n\nToken: ${data.token.substring(0, 20)}...`,
+              `Mobile auth successful!\n\nToken: ${data?.token?.substring(0, 20) ?? 'N/A'}...`,
             );
           } else {
-            alert(`Mobile auth failed: ${data.error}`);
+            alert(`Mobile auth failed: ${data?.error ?? 'Unknown error'}`);
           }
         } catch (error) {
           alert("Mobile auth test failed");
@@ -448,7 +466,7 @@
           const response = await fetch("/api/admin/csrf-token");
           const data = await response.json();
           alert(
-            `CSRF Token Info:\n\nToken: ${data.csrfToken.substring(0, 20)}...\nExpires: ${new Date(Date.now() + 3600000).toLocaleString()}`,
+            `CSRF Token Info:\n\nToken: ${data?.csrfToken?.substring(0, 20) ?? 'N/A'}...\nExpires: ${new Date(Date.now() + 3600000).toLocaleString()}`,
           );
         } catch (error) {
           alert("Failed to fetch CSRF token");
