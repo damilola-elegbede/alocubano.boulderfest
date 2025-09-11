@@ -1,48 +1,128 @@
-// Simple import test to diagnose the exact failure point
-export default async function handler(req, res) {
+import { getAuthService } from '../../lib/auth-service.js';
+import { withSecurityHeaders } from '../../lib/security-headers.js';
+
+/**
+ * Secure debug endpoint for testing import functionality
+ * SECURITY: Requires admin authentication and development environment
+ */
+async function debugImportsHandler(req, res) {
+  // SECURITY: Only allow in development environment
+  if (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'production') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+
+  // SECURITY: Only allow GET method
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    console.log("Step 1: Starting import test");
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] Debug imports: Starting import test`);
     
-    // Test individual imports
-    console.log("Step 2: Testing authService import");
-    const authService = await import("../../lib/auth-service.js");
-    console.log("Step 3: authService imported successfully", typeof authService.default);
-    
-    console.log("Step 4: Testing database import");
-    const { getDatabaseClient } = await import("../../lib/database.js");
-    console.log("Step 5: getDatabaseClient imported successfully", typeof getDatabaseClient);
-    
-    console.log("Step 6: Testing security headers import");
-    const { withSecurityHeaders } = await import("../../lib/security-headers.js");
-    console.log("Step 7: withSecurityHeaders imported successfully", typeof withSecurityHeaders);
-    
-    console.log("Step 8: Testing mfa middleware import");
-    const mfaMiddleware = await import("../../lib/mfa-middleware.js");
-    console.log("Step 9: mfaMiddleware imported successfully", Object.keys(mfaMiddleware));
-    
-    console.log("Step 10: Testing rate-limit-service import");
-    const rateLimitService = await import("../../lib/rate-limit-service.js");
-    console.log("Step 11: rateLimitService imported successfully", typeof rateLimitService.default);
-    
-    console.log("Step 12: Testing if default export is callable");
-    if (rateLimitService.default && typeof rateLimitService.default.recordFailedAttempt === 'function') {
-      console.log("Step 13: recordFailedAttempt method exists");
-    } else {
-      console.log("Step 13: ERROR - recordFailedAttempt method missing", Object.keys(rateLimitService.default || {}));
+    const results = {
+      timestamp,
+      environment: {
+        NODE_ENV: process.env.NODE_ENV,
+        VERCEL_ENV: process.env.VERCEL_ENV,
+        isProduction: process.env.NODE_ENV === 'production'
+      },
+      tests: []
+    };
+
+    // Test individual imports with error handling
+    const importTests = [
+      { name: 'authService', path: '../../lib/auth-service.js' },
+      { name: 'database', path: '../../lib/database.js' },
+      { name: 'securityHeaders', path: '../../lib/security-headers.js' },
+      { name: 'mfaMiddleware', path: '../../lib/mfa-middleware.js' },
+      { name: 'rateLimitService', path: '../../lib/rate-limit-service.js' }
+    ];
+
+    for (const test of importTests) {
+      try {
+        const module = await import(test.path);
+        results.tests.push({
+          name: test.name,
+          status: 'success',
+          hasDefault: typeof module.default !== 'undefined',
+          exportedKeys: Object.keys(module).filter(key => key !== 'default')
+        });
+        console.log(`[${timestamp}] Debug imports: ${test.name} imported successfully`);
+      } catch (error) {
+        results.tests.push({
+          name: test.name,
+          status: 'failed',
+          error: process.env.NODE_ENV === 'development' ? error.message : 'Import failed'
+        });
+        console.error(`[${timestamp}] Debug imports: ${test.name} failed:`, 
+          process.env.NODE_ENV === 'development' ? error.message : 'Import failed');
+      }
     }
+
+    // Test rate limit service functionality if imported successfully
+    const rateLimitTest = results.tests.find(t => t.name === 'rateLimitService');
+    if (rateLimitTest && rateLimitTest.status === 'success') {
+      try {
+        const { getRateLimitService } = await import("../../lib/rate-limit-service.js");
+        const service = getRateLimitService();
+        results.rateLimitService = {
+          available: true,
+          hasRecordMethod: typeof service.recordFailedAttempt === 'function',
+          methods: Object.getOwnPropertyNames(service).filter(name => typeof service[name] === 'function')
+        };
+      } catch (error) {
+        results.rateLimitService = {
+          available: false,
+          error: process.env.NODE_ENV === 'development' ? error.message : 'Service test failed'
+        };
+      }
+    }
+
+    console.log(`[${timestamp}] Debug imports: Test completed successfully`);
     
-    res.status(200).json({ 
+    res.status(200).json({
       success: true,
-      message: "All imports successful",
-      rateLimitServiceMethods: rateLimitService.default ? Object.getOwnPropertyNames(rateLimitService.default) : "no default export"
+      message: "Import diagnostics completed",
+      data: results
     });
     
   } catch (error) {
-    console.error("Import test failed:", error);
-    res.status(500).json({ 
-      error: error.message,
-      stack: error.stack,
-      step: "Failed during import test"
-    });
+    const timestamp = new Date().toISOString();
+    console.error(`[${timestamp}] Debug imports: Test failed:`, error);
+    
+    // SECURITY: Don't expose stack traces in production
+    const errorResponse = {
+      success: false,
+      error: "Import diagnostic test failed",
+      timestamp
+    };
+
+    if (process.env.NODE_ENV === 'development') {
+      errorResponse.details = error.message;
+    }
+
+    res.status(500).json(errorResponse);
   }
 }
+
+// SECURITY: Wrap with auth middleware and security headers
+export default withSecurityHeaders(async (req, res) => {
+  try {
+    const authService = getAuthService();
+    return await authService.requireAuth(debugImportsHandler)(req, res);
+  } catch (error) {
+    console.error('Debug imports auth middleware error:', error);
+    
+    // SECURITY: Don't expose service errors in production
+    if (process.env.NODE_ENV === 'development') {
+      return res.status(503).json({ 
+        error: 'Service temporarily unavailable',
+        details: error.message
+      });
+    }
+    
+    return res.status(404).json({ error: 'Not found' });
+  }
+});
