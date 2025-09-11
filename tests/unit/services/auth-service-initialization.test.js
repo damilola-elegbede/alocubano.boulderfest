@@ -5,7 +5,7 @@
  * Ensures proper lazy initialization, promise caching, and error handling
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { AuthService } from "../../../lib/auth-service.js";
 
 describe("Auth Service - Lazy Initialization Pattern", () => {
