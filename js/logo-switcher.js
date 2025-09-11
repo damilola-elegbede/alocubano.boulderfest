@@ -91,8 +91,10 @@
      * @param {string} newSrc - New source URL
      */
     function switchLogo(logo, newSrc) {
-        // Skip if already using this source
-        if (logo.src === newSrc || logo.src.endsWith(newSrc)) {
+        // Normalize URLs for comparison
+        const currentUrl = new URL(logo.src, window.location.origin).pathname;
+        const newUrl = new URL(newSrc, window.location.origin).pathname;
+        if (currentUrl === newUrl) {
             return;
         }
 

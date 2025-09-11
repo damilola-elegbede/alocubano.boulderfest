@@ -483,11 +483,11 @@ function setupSystemThemeListener() {
         }
     };
 
-    mediaQuery.addListener(handleSystemThemeChange);
-    
-    // Also listen for modern browsers
+    // Use modern addEventListener with fallback for older browsers
     if (mediaQuery.addEventListener) {
         mediaQuery.addEventListener('change', handleSystemThemeChange);
+    } else if (mediaQuery.addListener) {
+        mediaQuery.addListener(handleSystemThemeChange);
     }
 }
 

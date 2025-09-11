@@ -445,7 +445,7 @@
   will-change: transform, background-color, color;
 }
 
-.theme-option::before:hover {
+.theme-option:hover::before {
   will-change: transform, filter;
 }
 

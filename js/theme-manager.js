@@ -161,20 +161,12 @@ function setTheme(theme) {
         lastStorageAccess = performance.now();
     }
     
-    // Apply immediately using RAF for smooth transition
-    requestAnimationFrame(() => {
-        applyTheme();
-        performance.mark(PERF_MARKS.THEME_END);
-        
-        // Measure performance (only if start mark exists)
-        if (performance.measure) {
-            try {
-                performance.measure('theme-change', PERF_MARKS.THEME_START, PERF_MARKS.THEME_END);
-            } catch (e) {
-                // Start mark doesn't exist, skip measurement
-            }
-        }
-    });
+    // Apply immediately; applyTheme handles its own RAF for DOM work
+    applyTheme();
+    performance.mark(PERF_MARKS.THEME_END);
+    if (performance.measure) {
+        performance.measure('theme-change', PERF_MARKS.THEME_START, PERF_MARKS.THEME_END);
+    }
 }
 
 /**

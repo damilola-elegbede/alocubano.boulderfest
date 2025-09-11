@@ -200,8 +200,8 @@ export default async function handler(req, res) {
 import '/js/theme-manager.js';
 
 // Initialize theme toggle for main site pages
-import ThemeToggle from '/js/theme-toggle.js';
-const toggle = ThemeToggle.initialize('#theme-toggle-container');
+import { initializeThemeToggle } from '/js/theme-toggle.js';
+const toggle = initializeThemeToggle('#theme-toggle-container');
 
 // Use CSS variables for theme-aware styling
 // .component { color: var(--color-text-primary); }
