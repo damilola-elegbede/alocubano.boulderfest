@@ -119,8 +119,8 @@ describe('AuthService Environment Variable Handling', () => {
 
       await authService.ensureInitialized();
 
-      // parseInt('invalid_number') returns NaN, which should be handled
-      expect(authService.sessionDuration).toBeNaN();
+      // parseInt('invalid_number') returns NaN, now defaults to 3600000 for robustness
+      expect(authService.sessionDuration).toBe(3600000);
     });
 
     it('should use empty string as fallback when ADMIN_SESSION_DURATION is undefined', async () => {
@@ -253,7 +253,7 @@ describe('AuthService Environment Variable Handling', () => {
 
       expect(authService.initialized).toBe(true);
       expect(authService.sessionSecret).toBe('edge_case_32_characters_exactly!');
-      expect(authService.sessionDuration).toBe(0);
+      expect(authService.sessionDuration).toBe(3600000); // Zero duration defaults to 1 hour for security
     });
   });
 
