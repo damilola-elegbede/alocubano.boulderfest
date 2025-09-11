@@ -1,7 +1,7 @@
 import authService from '../../lib/auth-service.js';
 import { getDatabaseClient } from '../../lib/database.js';
 import { getRateLimitService } from '../../lib/rate-limit-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers.js';
+import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import {
   verifyMfaCode,
   markSessionMfaVerified
