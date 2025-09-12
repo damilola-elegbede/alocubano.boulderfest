@@ -143,43 +143,27 @@
   outline-offset: 2px;
 }
 
-.theme-option:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--color-primary);
-  transform: scale(1.05);
+.theme-option:hover {
+  /* Very subtle hover effect */
+  opacity: 0.8;
 }
 
-[data-theme="dark"] .theme-option:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--color-secondary);
+[data-theme="dark"] .theme-option:hover {
+  /* Very subtle hover effect */
+  opacity: 0.8;
 }
 
 /* =================================================================
    ACTIVE STATE STYLING
    ================================================================= */
 
+/* Active state removed - no visual distinction for selected option */
 .theme-option.active {
-  background: var(--theme-toggle-bg-active);
-  color: var(--theme-toggle-text-active);
-  transform: scale(1.02);
-  
-  /* Elegant elevation */
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.15),
-    0 1px 3px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  
-  /* Subtle Cuban-inspired glow for active state */
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.15),
-    0 0 15px rgba(91, 107, 181, 0.3);
+  /* No special styling */
 }
 
 [data-theme="dark"] .theme-option.active {
-  background: var(--color-secondary);
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.3),
-    0 0 15px rgba(204, 41, 54, 0.3);
+  /* No special styling */
 }
 
 /* =================================================================
@@ -251,22 +235,12 @@
 }
 
 /* Active state icon colors */
-.theme-option.active[data-theme="system"]::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5'%3E%3Crect x='2' y='3' width='20' height='14' rx='2' ry='2'/%3E%3Cline x1='8' y1='21' x2='16' y2='21'/%3E%3Cline x1='12' y1='17' x2='12' y2='21'/%3E%3C/svg%3E");
-}
-
-.theme-option.active[data-theme="light"]::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cline x1='12' y1='1' x2='12' y2='3'/%3E%3Cline x1='12' y1='21' x2='12' y2='23'/%3E%3Cline x1='4.22' y1='4.22' x2='5.64' y2='5.64'/%3E%3Cline x1='18.36' y1='18.36' x2='19.78' y2='19.78'/%3E%3Cline x1='1' y1='12' x2='3' y2='12'/%3E%3Cline x1='21' y1='12' x2='23' y2='12'/%3E%3Cline x1='4.22' y1='19.78' x2='5.64' y2='18.36'/%3E%3Cline x1='18.36' y1='5.64' x2='19.78' y2='4.22'/%3E%3C/svg%3E");
-}
-
-.theme-option.active[data-theme="dark"]::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5'%3E%3Cpath d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/%3E%3C/svg%3E");
-}
+/* Active state icon colors removed - icons remain the same color */
 
 /* Hover state icon brightness */
-.theme-option:hover:not(.active)::before {
-  filter: brightness(1.2);
-  transform: scale(1.1);
+.theme-option:hover::before {
+  /* Subtle brightness on hover */
+  filter: brightness(1.1);
 }
 
 /* Hide any child SVG elements since we're using pseudo-elements */
@@ -332,11 +306,7 @@
     border: 1px solid transparent;
   }
   
-  .theme-option.active {
-    background: var(--color-text-primary);
-    color: var(--color-background);
-    border: 1px solid var(--color-text-primary);
-  }
+  /* Active state removed for high contrast mode */
   
   .theme-option:focus {
     border: 2px solid var(--color-primary);
@@ -360,13 +330,11 @@
     transform: none;
   }
   
-  .theme-option:hover:not(.active) {
+  .theme-option:hover {
     transform: none;
   }
   
-  .theme-option.active {
-    transform: none;
-  }
+  /* Active state removed */
 }
 
 /* =================================================================
@@ -503,46 +471,9 @@
     var(--theme-toggle-bg) 100%);
 }
 
-/* Add festive glow on active state */
-.theme-option.active {
-  position: relative;
-  overflow: visible;
-}
+/* Festive glow active state removed */
 
-.theme-option.active::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-  border-radius: calc(var(--theme-toggle-border-radius) + 1px);
-  z-index: -1;
-  opacity: 0.3;
-  filter: blur(4px);
-  animation: festivalGlow 2s ease-in-out infinite alternate;
-}
-
-@keyframes festivalGlow {
-  0% {
-    opacity: 0.2;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0.4;
-    transform: scale(1.02);
-  }
-}
-
-/* Disable glow animation for reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .theme-option.active::after {
-    animation: none;
-    opacity: 0.3;
-    transform: scale(1);
-  }
-}
+/* Festive glow removed for cleaner appearance */
 
 /* =================================================================
    FOOTER THEME TOGGLE POSITIONING
@@ -607,22 +538,14 @@
 }
 
 /* Enhanced button hover states for footer context */
-.footer-theme-toggle .theme-option:hover:not(.active) {
-  /* Subtle background for hover feedback */
-  background: rgba(255, 255, 255, 0.15);
-  transform: scale(1.1);
+.footer-theme-toggle .theme-option:hover {
+  /* Very subtle hover feedback */
+  opacity: 0.7;
 }
 
 /* Dark theme footer hover adjustments */
-[data-theme="dark"] .footer-theme-toggle .theme-option:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* Active button in footer context */
-.footer-theme-toggle .theme-option.active {
-  /* Keep the active state visible but subtle */
-  background: var(--theme-toggle-bg-active);
-  color: var(--theme-toggle-text-active);
+[data-theme="dark"] .footer-theme-toggle .theme-option:hover {
+  opacity: 0.7;
 }
 
 /* Focus states for accessibility in footer */
@@ -648,9 +571,9 @@
 }
 
 /* Hover state for footer icons */
-.footer-theme-toggle .theme-option:hover:not(.active)::before {
-  filter: brightness(1.5);
-  transform: scale(1.15);
+.footer-theme-toggle .theme-option:hover::before {
+  /* Subtle brightness increase */
+  filter: brightness(1.2);
 }
 
 /* Make footer toggle completely seamless */
@@ -668,7 +591,4 @@
   padding: var(--space-xs);
 }
 
-.footer-theme-toggle .theme-option.active::before {
-  /* Active icon should be brighter */
-  filter: brightness(1.8);
-}
+/* Active state brightness removed */

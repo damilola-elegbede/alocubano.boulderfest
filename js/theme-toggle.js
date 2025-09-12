@@ -512,7 +512,7 @@ function initializeThemeToggle(container) {
     }
 
     // Add styles
-    addToggleStyles();
+    // Style injection removed - styles now handled by theme-toggle.css
     
     // Create container if not provided
     let toggleContainer;
