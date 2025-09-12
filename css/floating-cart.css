@@ -42,17 +42,17 @@
 /* Floating Button */
 .floating-cart-button {
   position: fixed;
-  top: 20px; /* Positioned in header area */
-  right: 120px; /* Positioned to the left of "CONTACT" */
-  width: 44px; /* Slightly smaller to fit in header */
-  height: 44px;
-  border-radius: 22px;
+  top: 80px; /* Just below header */
+  right: 20px; /* Right side of page */
+  width: 56px; /* Back to standard size */
+  height: 56px;
+  border-radius: 28px;
   background: var(--cart-bg);
   color: var(--cart-text);
   border: 2px solid var(--cart-border);
   box-shadow: var(--shadow-lg);
   cursor: pointer;
-  z-index: 10000; /* Higher z-index to appear above header */
+  z-index: 999; /* Below cart panel */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -83,13 +83,13 @@
   position: absolute;
   top: -4px;
   right: -4px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
   background: var(--cart-primary);
   color: var(--cart-bg);
   border-radius: var(--radius-full);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   font-family: var(--font-code);
   display: flex;
@@ -968,4 +968,17 @@
 [data-theme="dark"] .remove-donation:hover {
   color: var(--color-white);
   background: rgba(255, 0, 0, 0.1);
+}
+
+/* Remove borders on cart items in dark mode */
+[data-theme="dark"] .cart-item {
+  border-bottom: none;
+}
+
+[data-theme="dark"] .cart-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .cart-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
