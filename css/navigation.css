@@ -18,6 +18,17 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+/* Dark mode header - pure black background */
+[data-theme="dark"] .typographic .header {
+  background: linear-gradient(
+    to bottom,
+    var(--color-black) 0%,
+    var(--color-black) 90%,
+    transparent 100%
+  );
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .typographic .container {
   max-width: 1440px;
   margin: 0 auto;
@@ -1207,6 +1218,12 @@ main,
   z-index: 999;
   backdrop-filter: blur(10px);
   box-shadow: var(--shadow-sm);
+}
+
+/* Dark mode event subnav - pure black background */
+[data-theme="dark"] .event-subnav {
+  background: var(--color-black);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Event Navigation List */

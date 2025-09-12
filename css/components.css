@@ -2445,10 +2445,20 @@
   letter-spacing: 0.05em;
 }
 
+/* Dark mode ticket category headers */
+[data-theme="dark"] .ticket-category h3 {
+  color: var(--color-gray-100);
+}
+
 .category-description {
   color: var(--color-gray-600);
   margin-bottom: var(--space-lg);
   font-size: var(--font-size-base);
+}
+
+/* Dark mode category descriptions */
+[data-theme="dark"] .category-description {
+  color: var(--color-gray-300);
 }
 
 .ticket-options {
