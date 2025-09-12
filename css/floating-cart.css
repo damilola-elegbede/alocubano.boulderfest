@@ -42,27 +42,29 @@
 /* Floating Button */
 .floating-cart-button {
   position: fixed;
-  top: 80px; /* Just below header */
-  right: 20px; /* Right side of page */
-  width: 56px; /* Back to standard size */
-  height: 56px;
-  border-radius: 28px;
+  top: 450px; /* Positioned well below hero image (400px min height) */
+  right: 30px; /* Slightly more padding from edge */
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
   background: var(--cart-bg);
   color: var(--cart-text);
-  border: 2px solid var(--cart-border);
-  box-shadow: var(--shadow-lg);
-  cursor: pointer;
+  border: 3px solid var(--cart-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  cursor: move; /* Draggable cursor */
   z-index: 999; /* Below cart panel */
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform var(--transition-fast);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  user-select: none; /* Prevent text selection while dragging */
 }
 
 .floating-cart-button:hover {
-  transform: scale(1.05);
-  box-shadow: var(--shadow-xl);
-  border-color: var(--cart-secondary);
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  border-color: var(--cart-primary);
+  background: var(--color-white);
 }
 
 .floating-cart-button:active {
@@ -81,21 +83,22 @@
 /* Cart Badge */
 .cart-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
+  top: -6px;
+  right: -6px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
   background: var(--cart-primary);
-  color: var(--cart-bg);
+  color: var(--color-white);
+  border: 2px solid var(--color-white);
   border-radius: var(--radius-full);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-weight: 700;
   font-family: var(--font-code);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .cart-badge.pulse {
@@ -454,11 +457,12 @@
   }
 
   .floating-cart-button {
-    bottom: 80px; /* Account for mobile nav */
-    right: 16px;
-    width: 52px;
-    height: 52px;
-    border-radius: 26px;
+    top: auto;
+    bottom: 100px; /* Account for mobile nav and better visibility */
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
   }
 
   .cart-header {
@@ -490,11 +494,12 @@
 
 @media (max-width: 480px) {
   .floating-cart-button {
-    bottom: 70px;
-    right: 12px;
-    width: 48px;
-    height: 48px;
-    border-radius: 24px;
+    top: auto;
+    bottom: 90px;
+    right: 16px;
+    width: 52px;
+    height: 52px;
+    border-radius: 26px;
   }
 
   .cart-header h3 {
