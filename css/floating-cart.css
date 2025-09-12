@@ -42,17 +42,17 @@
 /* Floating Button */
 .floating-cart-button {
   position: fixed;
-  top: 80px; /* Changed from bottom to top, positioned below header */
-  right: 20px;
-  width: 56px;
-  height: 56px;
-  border-radius: 28px;
+  top: 20px; /* Positioned in header area */
+  right: 120px; /* Positioned to the left of "CONTACT" */
+  width: 44px; /* Slightly smaller to fit in header */
+  height: 44px;
+  border-radius: 22px;
   background: var(--cart-bg);
   color: var(--cart-text);
   border: 2px solid var(--cart-border);
   box-shadow: var(--shadow-lg);
   cursor: pointer;
-  z-index: 999;
+  z-index: 10000; /* Higher z-index to appear above header */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -83,13 +83,13 @@
   position: absolute;
   top: -4px;
   right: -4px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
   background: var(--cart-primary);
   color: var(--cart-bg);
   border-radius: var(--radius-full);
-  font-size: var(--font-size-xs);
+  font-size: 11px;
   font-weight: 700;
   font-family: var(--font-code);
   display: flex;
