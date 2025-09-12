@@ -2431,6 +2431,11 @@
   text-align: center;
 }
 
+/* Dark mode override for Select Your Tickets */
+[data-theme="dark"] .ticket-selection h2 {
+  color: var(--color-white);
+}
+
 /* Ticket Categories */
 .ticket-category {
   margin-bottom: var(--space-3xl);
@@ -2943,7 +2948,8 @@
 /* Site Logo Responsive */
 .site-logo {
   height: clamp(60px, 8vw, 78px);
-  width: auto;
+  width: clamp(60px, 8vw, 78px); /* Fixed width matching height for consistent sizing */
+  object-fit: contain; /* Ensures logo fits within dimensions without distortion */
 }
 
 /* ==========================================================================

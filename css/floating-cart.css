@@ -42,7 +42,7 @@
 /* Floating Button */
 .floating-cart-button {
   position: fixed;
-  bottom: 20px;
+  top: 80px; /* Changed from bottom to top, positioned below header */
   right: 20px;
   width: 56px;
   height: 56px;
@@ -910,4 +910,62 @@
   to {
     opacity: 1;
   }
+}
+
+/* ============================================
+   Dark Mode Overrides
+   ============================================ */
+
+/* Cart Header - Fix dark mode text */
+[data-theme="dark"] .cart-header h3 {
+  color: var(--color-white) !important;
+}
+
+/* Cart item text */
+[data-theme="dark"] .cart-item-info h4 {
+  color: var(--color-white);
+}
+
+[data-theme="dark"] .cart-item-info p {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Cart totals and checkout button */
+[data-theme="dark"] .cart-total-label,
+[data-theme="dark"] .cart-total-amount {
+  color: var(--color-white);
+}
+
+/* Close button */
+[data-theme="dark"] .cart-close {
+  color: var(--color-white);
+}
+
+[data-theme="dark"] .cart-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Quantity controls */
+[data-theme="dark"] .qty-adjust {
+  color: var(--color-white);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .qty-adjust:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .qty-value {
+  color: var(--color-white);
+}
+
+/* Remove button */
+[data-theme="dark"] .remove-donation {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="dark"] .remove-donation:hover {
+  color: var(--color-white);
+  background: rgba(255, 0, 0, 0.1);
 }

@@ -191,7 +191,9 @@ function applyThemeToggle(preference) {
 function createToggleHTML() {
     return `
         <div class="theme-toggle" role="radiogroup" aria-label="Theme selection">
-            ${Object.entries(THEME_OPTIONS).map(([key, value]) => `
+            ${Object.entries(THEME_OPTIONS)
+                .filter(([key, value]) => value !== 'system') // Exclude system option
+                .map(([key, value]) => `
                 <button 
                     type="button"
                     class="theme-toggle__option"

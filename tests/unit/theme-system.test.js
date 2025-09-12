@@ -502,9 +502,9 @@ describe('Theme System Comprehensive Tests', () => {
         expect(result.element.id).toBe('theme-toggle');
         expect(result.element.querySelector('.theme-toggle')).toBeTruthy();
         
-        // Should have three buttons
+        // Should have two buttons (system option removed)
         const buttons = result.element.querySelectorAll('.theme-toggle__option');
-        expect(buttons).toHaveLength(3);
+        expect(buttons).toHaveLength(2);
         
         // If we want to test it in DOM, we need to add it manually
         document.body.appendChild(result.element);
@@ -523,7 +523,9 @@ describe('Theme System Comprehensive Tests', () => {
         expect(document.getElementById('theme-toggle')).toBeNull();
       });
 
-      it('should add CSS styles to document head', () => {
+      // Style injection has been removed - styles now handled by theme-toggle.css
+      it.skip('should add CSS styles to document head', () => {
+        // Skipped: Style injection removed in favor of external CSS
         window.location.pathname = '/tickets';
         
         initializeThemeToggle();
@@ -533,7 +535,8 @@ describe('Theme System Comprehensive Tests', () => {
         expect(styleElement.textContent).toContain('.theme-toggle');
       });
 
-      it('should not add styles twice', () => {
+      it.skip('should not add styles twice', () => {
+        // Skipped: Style injection removed in favor of external CSS
         window.location.pathname = '/tickets';
         
         initializeThemeToggle();
@@ -571,22 +574,20 @@ describe('Theme System Comprehensive Tests', () => {
         document.body.appendChild(result.element);
         
         const container = result.element;
-        const systemButton = container.querySelector('[data-theme="system"]');
+        // System button removed - only light and dark buttons exist
         const lightButton = container.querySelector('[data-theme="light"]');
         const darkButton = container.querySelector('[data-theme="dark"]');
         
         // Verify buttons exist with correct initial structure
-        expect(systemButton).toBeTruthy();
         expect(lightButton).toBeTruthy();
         expect(darkButton).toBeTruthy();
         
         // All buttons start with aria-checked="false" due to current implementation limitation
         // where updateToggleState doesn't work during initialization (element not in DOM yet)
-        expect(systemButton.getAttribute('aria-checked')).toBe('false');
         expect(lightButton.getAttribute('aria-checked')).toBe('false');
         expect(darkButton.getAttribute('aria-checked')).toBe('false');
         
-        // However, the result object correctly reports the system preference
+        // The result object reports the current preference (defaults to system/light)
         expect(result.preference).toBe(THEMES.SYSTEM);
       });
 
@@ -657,11 +658,10 @@ describe('Theme System Comprehensive Tests', () => {
         const result = initializeThemeToggle();
         const container = result.element;
         
-        const systemButton = container.querySelector('[data-theme="system"]');
+        // System button removed - only light and dark buttons
         const lightButton = container.querySelector('[data-theme="light"]');
         const darkButton = container.querySelector('[data-theme="dark"]');
 
-        expect(systemButton.getAttribute('title')).toBe('System theme');
         expect(lightButton.getAttribute('title')).toBe('Light theme');
         expect(darkButton.getAttribute('title')).toBe('Dark theme');
       });
@@ -674,14 +674,12 @@ describe('Theme System Comprehensive Tests', () => {
         const result = initializeThemeToggle();
         document.body.appendChild(result.element); // Add to DOM
         
-        // Should have styles and toggle
-        expect(document.getElementById('theme-toggle-styles')).toBeTruthy();
+        // Should have toggle (styles now in external CSS, not injected)
         expect(document.getElementById('theme-toggle')).toBeTruthy();
 
         destroyThemeToggle();
 
         // Should be cleaned up
-        expect(document.getElementById('theme-toggle-styles')).toBeNull();
         expect(document.getElementById('theme-toggle')).toBeNull();
       });
     });
