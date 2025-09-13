@@ -5,6 +5,7 @@
 import { getStripePaymentHandler } from './lib/stripe-integration.js';
 import { getPaymentSelector } from './components/payment-selector.js';
 import { setSafeHTML, escapeHtml } from './utils/dom-sanitizer.js';
+import { createCartSection, createTicketItemElement, createDonationItemElement } from './floating-cart.js';
 
 export function initializeHeaderCart(cartManager) {
     // Check if header cart button exists
@@ -138,82 +139,66 @@ export function initializeHeaderCart(cartManager) {
         }
     };
 
-    // Render cart items
+    // Render cart items using the proper functions from floating-cart.js
     const renderCartItems = (tickets, donations, container, cartManager) => {
-        // Get ticket values and use the ticket type as ID
-        const ticketItems = Object.values(tickets);
-        let html = '';
+        // Clear container first
+        container.innerHTML = '';
 
-        if (ticketItems.length > 0) {
-            html += `
-                <div class="cart-category">
-                    <h4 class="cart-category-header tickets">Tickets</h4>
-                    ${ticketItems.map(ticket => `
-                        <div class="cart-item" data-ticket-type="${escapeHtml(ticket.ticketType)}">
-                            <div class="cart-item-info">
-                                <h4>${escapeHtml(ticket.name)}</h4>
-                                <p class="cart-item-price">$${ticket.price.toFixed(2)} each</p>
-                            </div>
-                            <div class="cart-item-actions">
-                                <button class="qty-adjust qty-decrease" data-ticket-type="${escapeHtml(ticket.ticketType)}" ${ticket.quantity <= 1 ? 'disabled' : ''}>-</button>
-                                <span class="qty-display">${ticket.quantity}</span>
-                                <button class="qty-adjust qty-increase" data-ticket-type="${escapeHtml(ticket.ticketType)}">+</button>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
+        // Render tickets category
+        const ticketValues = Object.values(tickets);
+        if (ticketValues.length > 0) {
+            const ticketsSection = createCartSection('A Lo Cubano 2026 Tickets', 'tickets');
+
+            ticketValues.forEach((ticket) => {
+                const itemElement = createTicketItemElement(ticket);
+                ticketsSection.appendChild(itemElement);
+            });
+
+            container.appendChild(ticketsSection);
         }
 
-        if (donations.length > 0) {
-            html += `
-                <div class="cart-category">
-                    <h4 class="cart-category-header">Donations</h4>
-                    ${donations.map(donation => `
-                        <div class="cart-item donation-item" data-donation-id="${escapeHtml(donation.id)}">
-                            <div class="cart-item-info">
-                                <h4>Donation</h4>
-                                <p class="cart-item-price">$${donation.amount.toFixed(2)}</p>
-                            </div>
-                            <button class="remove-donation" data-donation-id="${escapeHtml(donation.id)}">×</button>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
+        // Render donations category
+        if (donations && donations.length > 0) {
+            const donationsSection = createCartSection('Donations', 'donations');
+
+            donations.forEach((donation) => {
+                const itemElement = createDonationItemElement(donation);
+                donationsSection.appendChild(itemElement);
+            });
+
+            container.appendChild(donationsSection);
         }
 
-        setSafeHTML(container, html);
-
-        // Attach quantity adjustment handlers for tickets
-        container.querySelectorAll('.qty-decrease').forEach(btn => {
-            btn.addEventListener('click', async() => {
-                const ticketType = btn.dataset.ticketType;
-                const ticket = tickets[ticketType];
-                if (ticket && ticket.quantity > 1) {
-                    await cartManager.updateTicketQuantity(ticketType, ticket.quantity - 1);
+        // Attach event handlers using event delegation on the container
+        container.addEventListener('click', async(e) => {
+            const target = e.target;
+            
+            // Handle ticket quantity adjustments
+            if (target.classList.contains('qty-adjust')) {
+                const action = target.dataset.action;
+                const ticketItem = target.closest('.cart-item');
+                const ticketType = ticketItem?.dataset.ticketType;
+                
+                if (ticketType && tickets[ticketType]) {
+                    const ticket = tickets[ticketType];
+                    if (action === 'decrease' && ticket.quantity > 1) {
+                        await cartManager.updateTicketQuantity(ticketType, ticket.quantity - 1);
+                        updateCartDisplay();
+                    } else if (action === 'increase') {
+                        await cartManager.updateTicketQuantity(ticketType, ticket.quantity + 1);
+                        updateCartDisplay();
+                    }
+                }
+            }
+            
+            // Handle donation removal
+            if (target.classList.contains('remove-donation')) {
+                const donationId = target.dataset.donationId;
+                if (donationId) {
+                    await cartManager.removeDonation(donationId);
                     updateCartDisplay();
                 }
-            });
-        });
-
-        container.querySelectorAll('.qty-increase').forEach(btn => {
-            btn.addEventListener('click', async() => {
-                const ticketType = btn.dataset.ticketType;
-                const ticket = tickets[ticketType];
-                if (ticket) {
-                    await cartManager.updateTicketQuantity(ticketType, ticket.quantity + 1);
-                    updateCartDisplay();
-                }
-            });
-        });
-
-        // Attach donation removal handlers
-        container.querySelectorAll('.remove-donation').forEach(btn => {
-            btn.addEventListener('click', async() => {
-                const donationId = btn.dataset.donationId;
-                await cartManager.removeDonation(donationId);
-                updateCartDisplay();
-            });
+            }
         });
     };
 

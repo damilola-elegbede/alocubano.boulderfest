@@ -760,7 +760,7 @@ function renderCartItemsOptimized(container, tickets, donations) {
 }
 
 // Create a cart section element
-function createCartSection(title, className) {
+export function createCartSection(title, className) {
     const section = document.createElement('div');
     section.className = 'cart-category';
 
@@ -773,7 +773,7 @@ function createCartSection(title, className) {
 }
 
 // Create a ticket item element
-function createTicketItemElement(ticket) {
+export function createTicketItemElement(ticket) {
     const itemTotal = ticket.price * ticket.quantity;
 
     const item = document.createElement('div');
@@ -826,7 +826,7 @@ function createTicketItemElement(ticket) {
 }
 
 // Create a donation item element
-function createDonationItemElement(donation) {
+export function createDonationItemElement(donation) {
     const item = document.createElement('div');
     item.className = 'cart-item';
     item.dataset.donationId = donation.id;
