@@ -293,11 +293,11 @@ jobs:
       (needs.detect-changes.outputs.deployable == 'true' || github.event_name == 'workflow_dispatch')
     environment:
       name: ${{ inputs.environment || 'production' }}
-      url: ${{ steps.deployment.outputs.url }}
+      url: ${{ steps.deployment.outputs.deployment-url }}
     outputs:
-      deployment_url: ${{ steps.deployment.outputs.url }}
-      deployment_id: ${{ steps.deployment.outputs.id }}
-      deploy_status: ${{ steps.deployment.outputs.status }}
+      deployment_url: ${{ steps.deployment.outputs.deployment-url }}
+      deployment_id: ${{ steps.deployment.outputs.deployment-id }}
+      deploy_status: ${{ steps.deployment.outputs.ready }}
     steps:
       - uses: actions/checkout@v4
 
@@ -311,7 +311,7 @@ jobs:
 
       - name: 🎯 Deployment Status
         run: |
-          url="${{ steps.deployment.outputs.url }}"
+          url="${{ steps.deployment.outputs.deployment-url }}"
           if [ -n "$url" ]; then
             echo "✅ Deployment successful: $url"
             echo "## 🚀 Deployment Complete" >> $GITHUB_STEP_SUMMARY
