@@ -1,587 +1,204 @@
-/* A Lo Cubano Boulder Fest - Theme Toggle Component
-   Elegant three-button segmented control for theme switching
-   Compatible with Cuban salsa festival aesthetic */
+/**
+ * Theme Toggle Component Styles
+ * Provides styling for the three-state theme toggle (System/Light/Dark)
+ */
 
-/* =================================================================
-   THEME TOGGLE DESIGN SYSTEM
-   ================================================================= */
-
-:root {
-  /* Theme Toggle Specific Variables */
-  --theme-toggle-width: 140px;
-  --theme-toggle-height: 44px;
-  --theme-toggle-padding: 3px;
-  --theme-toggle-border-radius: var(--radius-lg);
-  --theme-toggle-backdrop-blur: 16px;
-  --theme-toggle-shadow: var(--shadow-md);
-  --theme-toggle-shadow-active: var(--shadow-lg);
-  --theme-toggle-transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  
-  /* Icon sizing */
-  --theme-toggle-icon-size: 20px;
-  --theme-toggle-button-size: 38px;
-  
-  /* Colors and opacity for elegance */
-  --theme-toggle-bg: rgba(255, 255, 255, 0.85);
-  --theme-toggle-bg-active: var(--color-primary);
-  --theme-toggle-border: rgba(0, 0, 0, 0.1);
-  --theme-toggle-text: var(--color-text-secondary);
-  --theme-toggle-text-active: var(--color-white);
-  
-  /* Positioning */
-  --theme-toggle-top: var(--space-lg);
-  --theme-toggle-right: var(--space-xl);
-  --theme-toggle-z-index: calc(var(--z-fixed) + 10);
-  
-  /* Warm Cuban-inspired glow */
-  --theme-toggle-glow: 0 0 20px rgba(91, 107, 181, 0.3);
-  --theme-toggle-glow-active: 0 0 25px rgba(91, 107, 181, 0.4);
+/* Container positioning */
+.theme-toggle-container {
+    position: relative;
+    margin-top: var(--space-md, 1rem);
 }
 
-/* Dark mode theme toggle overrides */
-[data-theme="dark"] {
-  --theme-toggle-bg: rgba(17, 17, 17, 0.9);
-  --theme-toggle-border: rgba(255, 255, 255, 0.15);
-  --theme-toggle-text: var(--color-gray-300);
-  --theme-toggle-glow: 0 0 20px rgba(204, 41, 54, 0.2);
-  --theme-toggle-glow-active: 0 0 25px rgba(204, 41, 54, 0.3);
-}
-
-/* System theme support */
-@media (prefers-color-scheme: dark) {
-  [data-theme="auto"] {
-    --theme-toggle-bg: rgba(17, 17, 17, 0.9);
-    --theme-toggle-border: rgba(255, 255, 255, 0.15);
-    --theme-toggle-text: var(--color-gray-300);
-    --theme-toggle-glow: 0 0 20px rgba(204, 41, 54, 0.2);
-    --theme-toggle-glow-active: 0 0 25px rgba(204, 41, 54, 0.3);
-  }
-}
-
-/* =================================================================
-   THEME TOGGLE CONTAINER
-   ================================================================= */
-
+/* Toggle button base styles */
 .theme-toggle {
-  position: fixed;
-  top: var(--theme-toggle-top);
-  right: var(--theme-toggle-right);
-  z-index: var(--theme-toggle-z-index);
-  
-  /* Elegant segmented control */
-  display: inline-flex;
-  width: var(--theme-toggle-width);
-  height: var(--theme-toggle-height);
-  padding: var(--theme-toggle-padding);
-  
-  /* Beautiful background with Cuban warmth and subtle gradient */
-  background: linear-gradient(135deg,
-    var(--theme-toggle-bg) 0%,
-    var(--theme-toggle-bg) 100%);
-  border: 1px solid var(--theme-toggle-border);
-  border-radius: var(--theme-toggle-border-radius);
-  
-  /* Glass morphism effect */
-  backdrop-filter: blur(var(--theme-toggle-backdrop-blur));
-  -webkit-backdrop-filter: blur(var(--theme-toggle-backdrop-blur));
-  
-  /* Elegant shadow with subtle Cuban warmth */
-  box-shadow: var(--theme-toggle-shadow), var(--theme-toggle-glow);
-
-  /* Smooth transitions */
-  transition: var(--theme-toggle-transition);
-
-  /* Accessibility */
-  overflow: hidden;
-  user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs, 0.5rem);
+    padding: var(--space-sm, 0.75rem) var(--space-md, 1rem);
+    border: 1px solid var(--color-gray-300, #d1d5db);
+    border-radius: 6px;
+    background-color: var(--color-white, #ffffff);
+    color: var(--color-gray-700, #374151);
+    font-family: var(--font-mono, 'Space Mono', monospace);
+    font-size: var(--font-size-xs, 0.75rem);
+    font-weight: 500;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all var(--transition-base, 0.15s ease);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
+/* Hover and focus states */
 .theme-toggle:hover {
-  box-shadow: var(--theme-toggle-shadow-active), var(--theme-toggle-glow-active);
-  transform: translateY(-1px);
+    border-color: var(--color-gray-400, #9ca3af);
+    background-color: var(--color-gray-50, #f9fafb);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-/* =================================================================
-   THEME TOGGLE BUTTONS
-   ================================================================= */
-
-.theme-option {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  /* Sizing for perfect touch targets */
-  min-width: var(--theme-toggle-button-size);
-  height: var(--theme-toggle-button-size);
-  
-  /* Clean button reset */
-  background: transparent;
-  border: none;
-  border-radius: calc(var(--theme-toggle-border-radius) - 2px);
-  
-  /* Typography */
-  color: var(--theme-toggle-text);
-  font-family: var(--font-sans);
-  
-  /* Smooth interactions */
-  cursor: pointer;
-  transition: var(--theme-toggle-transition);
-  
-  /* Touch optimization */
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  
-  /* Icon container properties */
-  position: relative;
-  overflow: hidden;
-}
-
-.theme-option:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.theme-option:hover {
-  /* Very subtle hover effect */
-  opacity: 0.8;
-}
-
-[data-theme="dark"] .theme-option:hover {
-  /* Very subtle hover effect */
-  opacity: 0.8;
-}
-
-/* =================================================================
-   ACTIVE STATE STYLING
-   ================================================================= */
-
-/* Active state removed - no visual distinction for selected option */
-.theme-option.active {
-  /* No special styling */
-}
-
-[data-theme="dark"] .theme-option.active {
-  /* No special styling */
-}
-
-/* =================================================================
-   SVG ICONS - EMBEDDED FOR PERFORMANCE
-   ================================================================= */
-
-.theme-option svg {
-  width: var(--theme-toggle-icon-size);
-  height: var(--theme-toggle-icon-size);
-  fill: currentColor;
-  stroke: currentColor;
-  stroke-width: 0;
-  transition: var(--theme-toggle-transition);
-}
-
-/* System Theme Icon (Monitor/Computer) */
-.theme-option[data-theme="system"] svg {
-  /* Custom monitor icon - clean and recognizable */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Crect x='2' y='3' width='20' height='14' rx='2' ry='2'/%3E%3Cline x1='8' y1='21' x2='16' y2='21'/%3E%3Cline x1='12' y1='17' x2='12' y2='21'/%3E%3C/svg%3E");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-
-/* Light Theme Icon (Sun) */
-.theme-option[data-theme="light"] svg {
-  /* Custom sun icon with rays */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cline x1='12' y1='1' x2='12' y2='3'/%3E%3Cline x1='12' y1='21' x2='12' y2='23'/%3E%3Cline x1='4.22' y1='4.22' x2='5.64' y2='5.64'/%3E%3Cline x1='18.36' y1='18.36' x2='19.78' y2='19.78'/%3E%3Cline x1='1' y1='12' x2='3' y2='12'/%3E%3Cline x1='21' y1='12' x2='23' y2='12'/%3E%3Cline x1='4.22' y1='19.78' x2='5.64' y2='18.36'/%3E%3Cline x1='18.36' y1='5.64' x2='19.78' y2='4.22'/%3E%3C/svg%3E");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-
-/* Dark Theme Icon (Moon Crescent) */
-.theme-option[data-theme="dark"] svg {
-  /* Custom moon icon */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/%3E%3C/svg%3E");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-
-/* Alternative approach using pseudo-elements for better control */
-.theme-option::before {
-  content: '';
-  width: var(--theme-toggle-icon-size);
-  height: var(--theme-toggle-icon-size);
-  display: block;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  filter: none;
-  transition: var(--theme-toggle-transition);
-}
-
-/* System icon - monitor/computer */
-.theme-option[data-theme="system"]::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='1.5'%3E%3Crect x='2' y='3' width='20' height='14' rx='2' ry='2'/%3E%3Cline x1='8' y1='21' x2='16' y2='21'/%3E%3Cline x1='12' y1='17' x2='12' y2='21'/%3E%3C/svg%3E");
-}
-
-/* Light icon - sun */
-.theme-option[data-theme="light"]::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='1.5'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cline x1='12' y1='1' x2='12' y2='3'/%3E%3Cline x1='12' y1='21' x2='12' y2='23'/%3E%3Cline x1='4.22' y1='4.22' x2='5.64' y2='5.64'/%3E%3Cline x1='18.36' y1='18.36' x2='19.78' y2='19.78'/%3E%3Cline x1='1' y1='12' x2='3' y2='12'/%3E%3Cline x1='21' y1='12' x2='23' y2='12'/%3E%3Cline x1='4.22' y1='19.78' x2='5.64' y2='18.36'/%3E%3Cline x1='18.36' y1='5.64' x2='19.78' y2='4.22'/%3E%3C/svg%3E");
-}
-
-/* Dark icon - moon */
-.theme-option[data-theme="dark"]::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='1.5'%3E%3Cpath d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/%3E%3C/svg%3E");
-}
-
-/* Active state icon colors */
-/* Active state icon colors removed - icons remain the same color */
-
-/* Hover state icon brightness */
-.theme-option:hover::before {
-  /* Subtle brightness on hover */
-  filter: brightness(1.1);
-}
-
-/* Hide any child SVG elements since we're using pseudo-elements */
-.theme-option svg {
-  display: none;
-}
-
-/* =================================================================
-   MOBILE RESPONSIVE DESIGN
-   ================================================================= */
-
-@media (max-width: 768px) {
-  .theme-toggle {
-    /* Adjust positioning for mobile */
-    top: var(--space-md);
-    right: var(--space-lg);
-    
-    /* Maintain same size for touch targets */
-    width: var(--theme-toggle-width);
-    height: var(--theme-toggle-height);
-    
-    /* Ensure it doesn't interfere with mobile menu */
-    z-index: calc(var(--z-fixed) + 5);
-  }
-  
-  /* Ensure buttons maintain 44px minimum touch target */
-  .theme-option {
-    min-width: var(--theme-toggle-button-size);
-    min-height: var(--theme-toggle-button-size);
-  }
-}
-
-@media (max-width: 480px) {
-  .theme-toggle {
-    /* Stack vertically on very small screens if needed */
-    right: var(--space-md);
-    
-    /* Slightly reduce size on small screens */
-    width: calc(var(--theme-toggle-width) - 20px);
-    height: var(--theme-toggle-height);
-  }
-  
-  .theme-option::before {
-    /* Slightly smaller icons on mobile */
-    width: 18px;
-    height: 18px;
-  }
-}
-
-/* =================================================================
-   HIGH CONTRAST MODE SUPPORT
-   ================================================================= */
-
-@media (prefers-contrast: high) {
-  .theme-toggle {
-    background: var(--color-surface);
-    border: 2px solid var(--color-text-primary);
-    box-shadow: none;
-  }
-  
-  .theme-option {
-    color: var(--color-text-primary);
-    border: 1px solid transparent;
-  }
-  
-  /* Active state removed for high contrast mode */
-  
-  .theme-option:focus {
-    border: 2px solid var(--color-primary);
+.theme-toggle:focus {
     outline: none;
-  }
+    border-color: var(--color-blue, #3b82f6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* =================================================================
-   REDUCED MOTION ACCESSIBILITY
-   ================================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-  .theme-toggle,
-  .theme-option,
-  .theme-option::before {
-    transition: none;
-    animation: none;
-  }
-  
-  .theme-toggle:hover {
-    transform: none;
-  }
-  
-  .theme-option:hover {
-    transform: none;
-  }
-  
-  /* Active state removed */
+.theme-toggle:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-/* =================================================================
-   INTEGRATION WITH NAVIGATION HEADER
-   ================================================================= */
-
-/* Ensure theme toggle doesn't interfere with navigation */
-@media (min-width: 769px) {
-  /* Adjust header grid to accommodate theme toggle */
-  .typographic .header .grid {
-    grid-template-columns: auto 1fr auto auto;
+/* Icon styles */
+.theme-toggle-icon {
+    display: inline-flex;
     align-items: center;
-    gap: var(--space-lg);
-  }
-  
-  /* Add a specific area for theme toggle in header if needed */
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: var(--space-lg);
-  }
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
 }
 
-/* =================================================================
-   ANIMATION FOR THEME TRANSITIONS
-   ================================================================= */
-
-/* Subtle animation when theme changes */
-@keyframes themeTransition {
-  0% {
-    opacity: 0.8;
-    transform: scale(0.95);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.05);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+.theme-toggle-icon svg {
+    width: 100%;
+    height: 100%;
+    transition: transform var(--transition-base, 0.15s ease);
 }
 
-/* Apply animation to the entire toggle when theme changes */
-.theme-toggle.theme-changing {
-  animation: themeTransition 0.3s ease-out;
+/* Text styles */
+.theme-toggle-text {
+    font-size: inherit;
+    font-weight: inherit;
+    white-space: nowrap;
 }
 
-/* =================================================================
-   PERFORMANCE OPTIMIZATIONS
-   ================================================================= */
-
-/* GPU acceleration for smooth animations - Applied conditionally */
-.theme-toggle {
-  transform: translateZ(0); /* Force GPU layer */
-  /* will-change applied only during interactions */
+/* Theme-specific button variations */
+.theme-toggle.theme-system {
+    border-color: var(--color-purple-300, #d8b4fe);
+    background-color: var(--color-purple-50, #faf5ff);
+    color: var(--color-purple-700, #7c3aed);
 }
 
-.theme-option {
-  transform: translateZ(0); /* Force GPU layer */
-  /* will-change applied only during hover/active states */
+.theme-toggle.theme-system:hover {
+    border-color: var(--color-purple-400, #c084fc);
+    background-color: var(--color-purple-100, #e9d5ff);
 }
 
-.theme-option::before {
-  transform: translateZ(0); /* Force GPU layer */
+.theme-toggle.theme-light {
+    border-color: var(--color-yellow-300, #fcd34d);
+    background-color: var(--color-yellow-50, #fffbeb);
+    color: var(--color-yellow-700, #b45309);
 }
 
-/* Apply will-change only during interactions for better performance */
-.theme-toggle:hover {
-  will-change: transform;
+.theme-toggle.theme-light:hover {
+    border-color: var(--color-yellow-400, #f59e0b);
+    background-color: var(--color-yellow-100, #fef3c7);
 }
 
-.theme-option:hover,
-.theme-option:active,
-.theme-option:focus {
-  will-change: transform, background-color, color;
+.theme-toggle.theme-dark {
+    border-color: var(--color-gray-600, #4b5563);
+    background-color: var(--color-gray-800, #1f2937);
+    color: var(--color-gray-200, #e5e7eb);
 }
 
-.theme-option:hover::before {
-  will-change: transform, filter;
+.theme-toggle.theme-dark:hover {
+    border-color: var(--color-gray-500, #6b7280);
+    background-color: var(--color-gray-700, #374151);
 }
 
-/* Cleanup will-change after interactions to free GPU memory */
-.theme-toggle:not(:hover) {
-  will-change: auto;
+.theme-toggle.theme-dark:focus {
+    border-color: var(--color-blue-400, #60a5fa);
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
 }
 
-.theme-option:not(:hover):not(:active):not(:focus) {
-  will-change: auto;
+/* Animation for theme switches */
+.theme-toggle-icon svg {
+    transform-origin: center;
 }
 
-/* CSS Containment for better performance */
-.theme-toggle {
-  contain: layout style;
+.theme-toggle:active .theme-toggle-icon svg {
+    transform: rotate(180deg) scale(0.9);
 }
 
-.theme-option {
-  contain: layout;
+/* Dark theme overrides */
+[data-theme="dark"] .theme-toggle {
+    border-color: var(--color-gray-600, #4b5563);
+    background-color: var(--color-gray-800, #1f2937);
+    color: var(--color-gray-200, #e5e7eb);
 }
 
-/* =================================================================
-   SCREEN READER ACCESSIBILITY
-   ================================================================= */
-
-/* Hidden labels for screen readers */
-.theme-option .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+[data-theme="dark"] .theme-toggle:hover {
+    border-color: var(--color-gray-500, #6b7280);
+    background-color: var(--color-gray-700, #374151);
 }
 
-/* Focus visible improvements */
-.theme-option:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(91, 107, 181, 0.3);
+[data-theme="dark"] .theme-toggle:focus {
+    border-color: var(--color-blue-400, #60a5fa);
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
 }
 
-/* =================================================================
-   CUBAN FESTIVAL THEMING TOUCHES
-   ================================================================= */
-
-/* Subtle warmth and festival spirit are integrated into main .theme-toggle rule above */
-
-/* Festive glow active state removed */
-
-/* Festive glow removed for cleaner appearance */
-
-/* =================================================================
-   FOOTER THEME TOGGLE POSITIONING
-   ================================================================= */
-
-/* Footer-specific positioning for theme toggle */
-.footer-theme-toggle .theme-toggle {
-  /* Override fixed positioning for footer placement */
-  position: relative;
-  top: auto;
-  right: auto;
-  
-  /* No margin needed - positioning handled by container */
-  margin: 0;
-  display: flex;
-  
-  /* Seamless integration - remove container styling */
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  
-  /* Adjust z-index for footer context */
-  z-index: var(--z-base);
-}
-
-/* Position theme toggle in bottom-right of footer */
-.footer-theme-toggle {
-  position: absolute;
-  bottom: var(--space-lg);
-  right: var(--space-lg);
-}
-
-/* Mobile adjustments for footer theme toggle */
+/* Mobile responsiveness */
 @media (max-width: 768px) {
-  .footer-theme-toggle {
-    bottom: var(--space-md);
-    right: var(--space-md);
-  }
+    .theme-toggle {
+        padding: var(--space-xs, 0.5rem) var(--space-sm, 0.75rem);
+        font-size: var(--font-size-2xs, 0.625rem);
+        gap: var(--space-2xs, 0.25rem);
+    }
+
+    .theme-toggle-icon {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* Ensure adequate touch target size */
+    .theme-toggle {
+        min-height: 44px;
+        min-width: 44px;
+        justify-content: center;
+    }
 }
 
-@media (max-width: 480px) {
-  .footer-theme-toggle {
-    bottom: var(--space-sm);
-    right: var(--space-sm);
-  }
-  
-  .footer-theme-toggle .theme-toggle {
-    width: calc(var(--theme-toggle-width) - 10px);
-  }
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .theme-toggle,
+    .theme-toggle-icon svg {
+        transition: none;
+    }
+
+    .theme-toggle:active .theme-toggle-icon svg {
+        transform: none;
+    }
 }
 
-/* =================================================================
-   FOOTER THEME TOGGLE HOVER STATES
-   ================================================================= */
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .theme-toggle {
+        border-width: 2px;
+        font-weight: 600;
+    }
 
-/* Remove container hover effects for seamless integration */
-.footer-theme-toggle .theme-toggle:hover {
-  transform: none;
-  box-shadow: none;
+    .theme-toggle:focus {
+        outline: 2px solid currentColor;
+        outline-offset: 2px;
+    }
 }
 
-/* Enhanced button hover states for footer context */
-.footer-theme-toggle .theme-option:hover {
-  /* Very subtle hover feedback */
-  opacity: 0.7;
+/* Footer positioning when used in footer */
+.footer-typographic .theme-toggle-container {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--space-lg, 1.5rem);
+    padding-top: var(--space-md, 1rem);
+    border-top: 1px solid var(--color-gray-200, #e5e7eb);
 }
 
-/* Dark theme footer hover adjustments */
-[data-theme="dark"] .footer-theme-toggle .theme-option:hover {
-  opacity: 0.7;
+[data-theme="dark"] .footer-typographic .theme-toggle-container {
+    border-top-color: var(--color-gray-700, #374151);
 }
 
-/* Focus states for accessibility in footer */
-.footer-theme-toggle .theme-option:focus {
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
+/* Hide on admin pages (defensive CSS) */
+body[data-admin="true"] .theme-toggle,
+.admin-page .theme-toggle {
+    display: none;
 }
-
-/* Enhanced icon visibility for footer context - just show sun and moon icons */
-.footer-theme-toggle .theme-option[data-theme="system"] {
-  /* Hide system icon in footer */
-  display: none;
-}
-
-.footer-theme-toggle .theme-option[data-theme="light"]::before {
-  /* Sun icon with good visibility */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cline x1='12' y1='1' x2='12' y2='3'/%3E%3Cline x1='12' y1='21' x2='12' y2='23'/%3E%3Cline x1='4.22' y1='4.22' x2='5.64' y2='5.64'/%3E%3Cline x1='18.36' y1='18.36' x2='19.78' y2='19.78'/%3E%3Cline x1='1' y1='12' x2='3' y2='12'/%3E%3Cline x1='21' y1='12' x2='23' y2='12'/%3E%3Cline x1='4.22' y1='19.78' x2='5.64' y2='18.36'/%3E%3Cline x1='18.36' y1='5.64' x2='19.78' y2='4.22'/%3E%3C/svg%3E");
-}
-
-.footer-theme-toggle .theme-option[data-theme="dark"]::before {
-  /* Moon icon with good visibility */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='2'%3E%3Cpath d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/%3E%3C/svg%3E");
-}
-
-/* Hover state for footer icons */
-.footer-theme-toggle .theme-option:hover::before {
-  /* Subtle brightness increase */
-  filter: brightness(1.2);
-}
-
-/* Make footer toggle completely seamless */
-.footer-theme-toggle .theme-toggle {
-  /* Remove all padding for minimal footprint */
-  padding: 0;
-  width: auto;
-  gap: var(--space-md);
-}
-
-.footer-theme-toggle .theme-option {
-  /* Make buttons completely transparent */
-  background: transparent !important;
-  border: none !important;
-  padding: var(--space-xs);
-}
-
-/* Active state brightness removed */

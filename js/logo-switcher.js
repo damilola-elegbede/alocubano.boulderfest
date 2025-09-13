@@ -1,222 +1,128 @@
 /**
- * Logo Switcher Module
- * Dynamically switches between light and dark logos based on theme
- * 
- * Features:
- * - Listens to theme change events from theme-manager.js
- * - Automatically detects and updates all logo images
- * - Supports data attributes for custom logo sources
- * - Handles initial page load theme detection
- * - Provides smooth transitions between logos
- * - Fallback support if dark logo is missing
+ * Logo Switcher
+ * Automatically switches logo images based on theme changes
+ * Works with images that have data-logo-light and data-logo-dark attributes
  */
 
-(function() {
-    'use strict';
+/**
+ * Updates a single logo image based on the current theme
+ * @param {HTMLImageElement} img - The logo image element
+ * @param {string} theme - Current theme ('light' or 'dark')
+ */
+function updateLogoImage(img, theme) {
+    if (!img || !img.tagName || img.tagName.toLowerCase() !== 'img') {
+        return;
+    }
 
-    // Configuration
-    const DEFAULT_LIGHT_LOGO = '/images/logo.png';
-    const DEFAULT_DARK_LOGO = '/images/logo-transparent.png';
-    const LOGO_SELECTOR = '.site-logo';
-    const TRANSITION_DURATION = 200; // ms
+    const lightSrc = img.getAttribute('data-logo-light');
+    const darkSrc = img.getAttribute('data-logo-dark');
 
-    // Cache for performance
-    let cachedLogos = null;
-    let currentTheme = null;
-    let darkLogoAvailable = true;
+    if (!lightSrc || !darkSrc) {
+        // No theme-specific sources defined, skip this image
+        return;
+    }
 
-    /**
-     * Get all logo images on the page
-     * @returns {NodeList} Collection of logo elements
-     */
-    function getLogos() {
-        if (!cachedLogos) {
-            cachedLogos = document.querySelectorAll(LOGO_SELECTOR);
+    const targetSrc = theme === 'dark' ? darkSrc : lightSrc;
+
+    // Only update if the source is different to avoid unnecessary requests
+    if (img.src !== targetSrc && !img.src.endsWith(targetSrc)) {
+        img.src = targetSrc;
+
+        // Update alt text if available
+        const baseAlt = img.getAttribute('data-alt-base') || img.alt;
+        if (baseAlt) {
+            const themeText = theme === 'dark' ? ' (Dark)' : '';
+            img.alt = baseAlt + themeText;
         }
-        return cachedLogos;
     }
+}
 
-    /**
-     * Clear cached logo references (useful for dynamic content)
-     */
-    function clearLogoCache() {
-        cachedLogos = null;
+/**
+ * Updates all logo images on the page
+ * @param {string} theme - Current theme ('light' or 'dark')
+ */
+function updateAllLogos(theme) {
+    // Find all images with theme-specific logo data attributes
+    const logoImages = document.querySelectorAll('img[data-logo-light][data-logo-dark]');
+
+    logoImages.forEach(img => {
+        updateLogoImage(img, theme);
+    });
+}
+
+/**
+ * Handles theme change events
+ * @param {CustomEvent} event - Theme change event from theme-manager
+ */
+function handleThemeChange(event) {
+    if (event && event.detail && event.detail.theme) {
+        updateAllLogos(event.detail.theme);
     }
+}
 
-    /**
-     * Check if dark logo exists (one-time check)
-     * @returns {Promise<boolean>} Whether dark logo is available
-     */
-    async function checkDarkLogoAvailability() {
-        if (!darkLogoAvailable) return false;
-        
+/**
+ * Initializes the logo switcher
+ * Sets up event listeners and performs initial logo update
+ */
+function initializeLogoSwitcher() {
+    // Listen for theme changes
+    document.addEventListener('themechange', handleThemeChange);
+
+    // Get initial theme from document attribute or default to light
+    const initialTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    updateAllLogos(initialTheme);
+
+    // Also check for theme manager's current theme if available
+    if (typeof getCurrentTheme === 'function') {
         try {
-            const response = await fetch(DEFAULT_DARK_LOGO, { method: 'HEAD' });
-            darkLogoAvailable = response.ok;
-            return darkLogoAvailable;
+            const currentTheme = getCurrentTheme();
+            updateAllLogos(currentTheme);
         } catch (error) {
-            console.warn('Dark logo not available:', error);
-            darkLogoAvailable = false;
-            return false;
+            console.warn('Could not get current theme from theme manager:', error.message);
         }
     }
+}
 
-    /**
-     * Get the appropriate logo source for the current theme
-     * @param {HTMLImageElement} logo - Logo element
-     * @param {string} theme - Current theme ('light' or 'dark')
-     * @returns {string} Logo source URL
-     */
-    function getLogoSource(logo, theme) {
-        if (theme === 'dark' && darkLogoAvailable) {
-            // Check for custom dark logo
-            const customDarkSrc = logo.dataset.darkSrc;
-            if (customDarkSrc) return customDarkSrc;
-            
-            // Use default dark logo
-            return DEFAULT_DARK_LOGO;
-        } else {
-            // Check for custom light logo
-            const customLightSrc = logo.dataset.lightSrc;
-            if (customLightSrc) return customLightSrc;
-            
-            // Use default light logo or current src
-            return logo.dataset.originalSrc || DEFAULT_LIGHT_LOGO;
-        }
-    }
+/**
+ * Manual logo update function for external use
+ * @param {string} theme - Theme to switch to ('light' or 'dark')
+ */
+function switchLogos(theme) {
+    updateAllLogos(theme);
+}
 
-    /**
-     * Switch logo with smooth transition
-     * @param {HTMLImageElement} logo - Logo element to update
-     * @param {string} newSrc - New source URL
-     */
-    function switchLogo(logo, newSrc) {
-        // Normalize URLs for comparison
-        const currentUrl = new URL(logo.src, window.location.origin).pathname;
-        const newUrl = new URL(newSrc, window.location.origin).pathname;
-        if (currentUrl === newUrl) {
-            return;
-        }
-
-        // Store original source if not already stored
-        if (!logo.dataset.originalSrc && !logo.src.includes('logo-dark')) {
-            logo.dataset.originalSrc = logo.src;
-        }
-
-        // Preload new image
-        const tempImg = new Image();
-        tempImg.onload = function() {
-            // Apply transition
-            logo.style.transition = `opacity ${TRANSITION_DURATION}ms ease-in-out`;
-            logo.style.opacity = '0';
-            
-            setTimeout(() => {
-                logo.src = newSrc;
-                logo.style.opacity = '1';
-                
-                // Clean up transition after completion
-                setTimeout(() => {
-                    logo.style.transition = '';
-                }, TRANSITION_DURATION);
-            }, TRANSITION_DURATION / 2);
-        };
-        
-        // Start loading
-        tempImg.src = newSrc;
-    }
-
-    /**
-     * Update all logos based on current theme
-     * @param {string} theme - Theme to apply ('light' or 'dark')
-     */
-    function updateLogos(theme) {
-        const logos = getLogos();
-        
-        if (logos.length === 0) {
-            return;
-        }
-
-        currentTheme = theme;
-        
-        logos.forEach(logo => {
-            const newSrc = getLogoSource(logo, theme);
-            switchLogo(logo, newSrc);
-        });
-    }
-
-    /**
-     * Get current theme from document
-     * @returns {string} Current theme ('light' or 'dark')
-     */
-    function getCurrentTheme() {
-        const theme = document.documentElement.getAttribute('data-theme');
-        return theme || 'light';
-    }
-
-    /**
-     * Initialize logo switcher
-     */
-    async function initialize() {
-        // Check dark logo availability once
-        await checkDarkLogoAvailability();
-        
-        // Set initial logos based on current theme
-        const initialTheme = getCurrentTheme();
-        updateLogos(initialTheme);
-        
-        // Listen for theme changes
-        document.addEventListener('themechange', (event) => {
-            const newTheme = event.detail.theme;
-            if (newTheme !== currentTheme) {
-                updateLogos(newTheme);
-            }
-        });
-        
-        // Listen for DOM changes (for dynamically added logos)
-        const observer = new MutationObserver((mutations) => {
-            let logosAdded = false;
-            
-            mutations.forEach(mutation => {
-                mutation.addedNodes.forEach(node => {
-                    if (node.nodeType === 1) { // Element node
-                        if (node.matches && node.matches(LOGO_SELECTOR)) {
-                            logosAdded = true;
-                        } else if (node.querySelector && node.querySelector(LOGO_SELECTOR)) {
-                            logosAdded = true;
-                        }
-                    }
-                });
-            });
-            
-            if (logosAdded) {
-                clearLogoCache();
-                updateLogos(currentTheme);
-            }
-        });
-        
-        // Start observing
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-    }
-
-    // Initialize when DOM is ready
+/**
+ * Auto-initialize when DOM is ready
+ */
+function autoInitialize() {
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initialize);
+        document.addEventListener('DOMContentLoaded', initializeLogoSwitcher);
     } else {
-        // DOM already loaded
-        initialize();
+        initializeLogoSwitcher();
     }
+}
 
-    // Export for debugging
-    if (typeof window !== 'undefined') {
-        window.logoSwitcher = {
-            updateLogos,
-            getCurrentTheme,
-            getLogos,
-            clearLogoCache,
-            checkDarkLogoAvailability
-        };
-    }
-})();
+// Initialize immediately if DOM is ready, otherwise wait
+if (typeof document !== 'undefined') {
+    autoInitialize();
+}
+
+// Export for module usage
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        initializeLogoSwitcher,
+        switchLogos,
+        updateAllLogos,
+        updateLogoImage
+    };
+}
+
+// Global API for non-module usage
+if (typeof window !== 'undefined') {
+    window.LogoSwitcher = {
+        initializeLogoSwitcher,
+        switchLogos,
+        updateAllLogos,
+        updateLogoImage
+    };
+}
