@@ -55,13 +55,13 @@
   position: absolute;
   top: 2px;
   right: 2px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  min-width: 8px;
+  height: 8px;
+  padding: 0 2px;
   background: var(--color-red);
   color: var(--color-white);
   border-radius: var(--radius-full);
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 700;
   font-family: var(--font-code);
   display: flex;
@@ -103,10 +103,10 @@
   .nav-cart-badge {
     top: -2px;
     right: -2px;
-    min-width: 16px;
-    height: 16px;
-    font-size: 10px;
-    padding: 0 4px;
+    min-width: 10px;
+    height: 10px;
+    font-size: 9px;
+    padding: 0 3px;
   }
 }
 
