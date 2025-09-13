@@ -122,6 +122,11 @@ export function initializeFloatingCart(cartManager) {
     // Set up event listeners
     setupEventListeners(elements, cartManager);
 
+    // Listen for header cart events
+    document.addEventListener('header-cart:open-requested', () => {
+        handleCartToggle(elements, true, cartManager);
+    });
+
     // Initial render
     if (cartManager && typeof cartManager.getState === 'function') {
         updateCartUI(elements, cartManager.getState());
@@ -143,6 +148,18 @@ export function initializeFloatingCart(cartManager) {
     cartManager.addEventListener('cart:initialized', (event) => {
         updateCartUI(elements, event.detail);
     });
+
+    // Expose global API for header cart communication
+    if (typeof window !== 'undefined') {
+        window.floatingCartAPI = {
+            open: () => handleCartToggle(elements, true, cartManager),
+            close: () => handleCartToggle(elements, false, cartManager),
+            toggle: () => {
+                const isOpen = elements.panel.classList.contains('open');
+                handleCartToggle(elements, !isOpen, cartManager);
+            }
+        };
+    }
 }
 
 function createCartHTML() {
