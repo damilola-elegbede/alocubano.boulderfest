@@ -4,6 +4,7 @@
  */
 import { getCartManager } from './lib/cart-manager.js';
 import { initializeHeaderCart } from './header-cart.js';
+import { initializeFloatingCart } from './floating-cart.js';
 
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
@@ -40,11 +41,18 @@ async function initializeGlobalCart() {
             console.log('✅ Cart Manager initialized');
         }
 
-        // Initialize header cart UI
+        // Initialize header cart UI (navigation button only)
         initializeHeaderCart(cartManager);
 
         if (isE2ETest) {
             console.log('✅ Header Cart UI initialized');
+        }
+
+        // Initialize floating cart UI (main cart functionality)
+        initializeFloatingCart(cartManager);
+
+        if (isE2ETest) {
+            console.log('✅ Floating Cart UI initialized');
         }
 
         // Set up page-specific integrations
