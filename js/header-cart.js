@@ -204,10 +204,8 @@ export function initializeHeaderCart(cartManager) {
 
     // Clear cart handler
     elements.clearButton?.addEventListener('click', async() => {
-        if (confirm('Are you sure you want to clear your cart?')) {
-            await cartManager.clear();
-            updateCartDisplay();
-        }
+        await cartManager.clear();
+        updateCartDisplay();
     });
 
     // Checkout handler
