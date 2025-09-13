@@ -120,6 +120,9 @@ jobs:
           NODE_ENV: ${{ env.NODE_ENV }}
           CI: ${{ env.CI }}
           DATABASE_URL: ${{ env.DATABASE_URL }}
+          # Test environment variables for auth service - from GitHub secrets
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           # Pass timeout configurations to Vitest
           VITEST_TEST_TIMEOUT: ${{ env.VITEST_TEST_TIMEOUT }}
           VITEST_HOOK_TIMEOUT: ${{ env.VITEST_HOOK_TIMEOUT }}

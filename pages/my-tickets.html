@@ -7,7 +7,11 @@
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/floating-cart.css" />
+    <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/forms.css" />
+    <!-- Theme styles -->
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
     <style>
       .ticket-lookup {
         max-width: 600px;
@@ -837,6 +841,18 @@
           day: "numeric",
         });
       }
+    </script>
+    
+    <!-- Theme Management -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      import themeManager from '/js/theme-manager.js';
+      
+      // Initialize theme system
+      document.addEventListener('DOMContentLoaded', () => {
+        themeManager.initializeTheme();
+        // Note: my-tickets doesn't have standard header, so we handle theme without toggle UI
+      });
     </script>
   </body>
 </html>

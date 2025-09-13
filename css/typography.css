@@ -544,6 +544,7 @@ body {
 
 /* Footer Typography */
 .footer-typographic {
+  position: relative;
   padding: var(--space-lg) 0 var(--space-md);
   text-align: center;
   border-top: 1px solid var(--color-border);
@@ -964,20 +965,271 @@ body {
   }
 }
 
+/* ==========================================================================
+   DARK MODE TYPOGRAPHY OVERRIDES
+   ========================================================================== */
+
+[data-theme="dark"] {
+  /* Typography-specific dark mode variables */
+  --text-composition-bg: var(--color-background);
+  --text-block-mono-bg: var(--color-background-secondary);
+  --text-block-mono-border: var(--color-blue);
+  --gallery-item-type-bg: var(--color-surface);
+  --gallery-item-type-border: var(--color-border);
+  --gallery-item-type-number: var(--color-background-secondary);
+  --form-input-type-border: var(--color-border-medium);
+  --hr-typographic-bg: var(--color-background);
+  --text-circular-fill: var(--color-text-primary);
+}
+
+/* Text Composition Components */
+[data-theme="dark"] .text-block-mono {
+  background: var(--text-block-mono-bg);
+  border-left-color: var(--text-block-mono-border);
+}
+
+/* Gallery Typography */
+[data-theme="dark"] .gallery-item-type {
+  background: var(--gallery-item-type-bg);
+  border-color: var(--gallery-item-type-border);
+}
+
+[data-theme="dark"] .gallery-item-type::before {
+  color: var(--gallery-item-type-number);
+}
+
+[data-theme="dark"] .gallery-item-type:hover {
+  box-shadow: var(--shadow-xl);
+}
+
+/* Form Elements Typography */
+[data-theme="dark"] .form-input-type,
+[data-theme="dark"] .form-textarea-type {
+  border-bottom-color: var(--form-input-type-border);
+  color: var(--color-text-primary);
+  background: transparent;
+}
+
+[data-theme="dark"] .form-input-type:focus,
+[data-theme="dark"] .form-textarea-type:focus {
+  border-bottom-color: var(--color-blue);
+}
+
+[data-theme="dark"] .form-input-type:focus + .form-label-type {
+  color: var(--color-blue);
+}
+
+[data-theme="dark"] .volunteer-form-typographic {
+  background: var(--color-surface);
+  border-color: var(--color-text-primary);
+}
+
+/* Button Typography */
+[data-theme="dark"] .form-button-type {
+  background: var(--color-text-primary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .form-button-type::before {
+  background: var(--color-secondary);
+}
+
+[data-theme="dark"] .form-button-type:hover {
+  color: var(--color-white);
+  border-color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .volunteer-submit {
+  background: var(--color-text-primary);
+  color: var(--color-text-inverse);
+}
+
+[data-theme="dark"] .volunteer-submit:hover {
+  background: var(--color-secondary);
+}
+
+/* Text Effects */
+[data-theme="dark"] .text-mask {
+  background: linear-gradient(45deg, var(--color-blue), var(--color-red));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
+[data-theme="dark"] .text-glitch::before {
+  color: var(--color-blue);
+}
+
+[data-theme="dark"] .text-glitch::after {
+  color: var(--color-red);
+}
+
+/* Typographic HR Dividers */
+[data-theme="dark"] .hr-typographic::before {
+  background: var(--hr-typographic-bg);
+  color: var(--color-blue);
+}
+
+[data-theme="dark"] .hr-typographic.style-text::before {
+  color: var(--color-red);
+}
+
+[data-theme="dark"] .hr-typographic.style-minimal::before {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .hr-typographic.style-display::before {
+  color: var(--color-blue);
+}
+
+[data-theme="dark"] .hr-typographic.style-glitch::before {
+  color: var(--color-red);
+}
+
+/* Circular Text */
+[data-theme="dark"] .text-circular text {
+  fill: var(--text-circular-fill);
+}
+
+/* Footer Typography */
+[data-theme="dark"] .footer-typographic {
+  border-top-color: var(--color-border);
+}
+
+[data-theme="dark"] .footer-credits {
+  color: var(--color-text-tertiary);
+}
+
+[data-theme="dark"] .footer-credits a {
+  color: inherit;
+}
+
+[data-theme="dark"] .footer-credits a:hover {
+  color: var(--color-blue);
+}
+
+[data-theme="dark"] .social-link-type {
+  color: var(--color-text-tertiary);
+}
+
+[data-theme="dark"] .social-link-type:hover {
+  color: var(--color-primary);
+}
+
+/* Typography Effects Classes */
+[data-theme="dark"] .text-gradient {
+  background: linear-gradient(45deg, var(--color-blue), var(--color-red));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
+[data-theme="dark"] .text-outline {
+  color: transparent;
+  -webkit-text-stroke: 2px var(--color-text-primary);
+  text-stroke: 2px var(--color-text-primary);
+}
+
+[data-theme="dark"] .text-glitch-bg {
+  background: var(--color-text-primary);
+}
+
+[data-theme="dark"] .text-glitch-bg::before {
+  background: linear-gradient(45deg, var(--color-blue), var(--color-red));
+}
+
+[data-theme="dark"] .text-gradient-bg {
+  background: linear-gradient(45deg, var(--color-blue), var(--color-red));
+  border-color: transparent;
+}
+
+[data-theme="dark"] .text-gradient-bg:hover {
+  background: linear-gradient(45deg, var(--color-red), var(--color-blue));
+}
+
+/* Card Components Typography */
+[data-theme="dark"] .pricing-card-type,
+[data-theme="dark"] .addon-card-type,
+[data-theme="dark"] .tier-card-type,
+[data-theme="dark"] .stat-card-type,
+[data-theme="dark"] .contact-card-type,
+[data-theme="dark"] .policy-block-type {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .pricing-card-type:hover,
+[data-theme="dark"] .addon-card-type:hover,
+[data-theme="dark"] .tier-card-type:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-blue);
+}
+
+[data-theme="dark"] .pricing-card-type.featured {
+  border-color: var(--color-blue);
+  box-shadow: var(--shadow-md);
+}
+
+[data-theme="dark"] .pricing-card-type.vip {
+  border-color: var(--color-red);
+  background: linear-gradient(
+    135deg,
+    var(--color-surface) 0%,
+    var(--color-background-secondary) 100%
+  );
+}
+
+/* Option Components */
+[data-theme="dark"] .ticket-option-type,
+[data-theme="dark"] .addon-checkbox-type {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+[data-theme="dark"] .ticket-option-type:hover,
+[data-theme="dark"] .addon-checkbox-type:hover {
+  background-color: var(--color-background-secondary);
+  border-color: var(--color-blue);
+}
+
+/* Checkbox Components */
+[data-theme="dark"] .checkbox-type {
+  color: var(--color-text-primary);
+}
+
+/* Mobile Typography Adjustments */
+@media (max-width: 480px) {
+  [data-theme="dark"] .text-outline {
+    -webkit-text-stroke: 1px var(--color-text-primary);
+    text-stroke: 1px var(--color-text-primary);
+  }
+}
+
 /* High Contrast Mode Support */
 @media (prefers-contrast: high) {
-  .text-mask {
+  [data-theme="dark"] .text-mask {
     background: none;
     -webkit-text-fill-color: currentColor;
     text-fill-color: currentColor;
   }
 
-  .form-input-type {
+  [data-theme="dark"] .form-input-type {
     border-bottom-width: 3px;
   }
 
-  .gallery-item-type {
+  [data-theme="dark"] .gallery-item-type {
     border-width: 2px;
     border-color: var(--color-text-primary);
+  }
+  
+  [data-theme="dark"] .text-gradient,
+  [data-theme="dark"] .text-gradient-bg {
+    background: none;
+    -webkit-text-fill-color: currentColor;
+    text-fill-color: currentColor;
+    background-color: var(--color-text-primary);
   }
 }

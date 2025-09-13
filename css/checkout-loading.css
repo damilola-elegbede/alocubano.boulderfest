@@ -336,3 +336,113 @@
     width: 90%;
   }
 }
+
+/* ==========================================================================
+   DARK MODE ENHANCEMENTS
+   ========================================================================== */
+
+/* Checkout loading overlay dark mode */
+[data-theme="dark"] .checkout-loading {
+  background-color: var(--color-surface-overlay);
+}
+
+[data-theme="dark"] .checkout-spinner {
+  border-color: var(--color-border-medium);
+  border-top-color: var(--color-blue);
+}
+
+[data-theme="dark"] .checkout-loading-text {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .checkout-loading-subtext {
+  color: var(--color-text-secondary);
+}
+
+/* Error states dark mode */
+[data-theme="dark"] .checkout-error {
+  background: var(--color-error-light);
+  border-color: var(--color-error);
+}
+
+[data-theme="dark"] .checkout-error-title {
+  color: var(--color-error);
+}
+
+[data-theme="dark"] .checkout-error-message {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .checkout-error-btn {
+  border-color: var(--color-error);
+  background: transparent;
+  color: var(--color-error);
+}
+
+[data-theme="dark"] .checkout-error-btn:hover {
+  background: var(--color-error);
+  color: var(--color-white);
+}
+
+/* Button loading states dark mode */
+[data-theme="dark"] .btn-loading::after {
+  border-color: var(--color-text-inverse);
+  border-top-color: transparent;
+}
+
+[data-theme="dark"] .btn-loading.btn-dark::after {
+  border-color: var(--color-text-primary);
+  border-top-color: transparent;
+}
+
+/* Toast notifications dark mode */
+[data-theme="dark"] .checkout-toast {
+  background: var(--color-surface);
+  border-color: var(--color-border-medium);
+  box-shadow: 0 4px 16px var(--shadow-color-strong);
+}
+
+[data-theme="dark"] .checkout-toast.error {
+  border-color: var(--color-error);
+  background: var(--color-error-light);
+}
+
+[data-theme="dark"] .checkout-toast.success {
+  border-color: var(--color-success);
+  background: var(--color-success-light);
+}
+
+[data-theme="dark"] .checkout-toast-message {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .checkout-toast-close {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .checkout-toast-close:hover {
+  color: var(--color-text-primary);
+}
+
+/* Progress indicator dark mode */
+[data-theme="dark"] .checkout-progress-bar {
+  background: var(--color-background-tertiary);
+}
+
+[data-theme="dark"] .checkout-progress-fill {
+  background: var(--color-blue);
+}
+
+/* Enhanced visibility for loading states */
+[data-theme="dark"] .checkout-loading-content {
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: var(--space-3xl);
+  box-shadow: 0 8px 32px var(--shadow-color-strong);
+}
+
+/* Focus styles for dark mode */
+[data-theme="dark"] .checkout-error-btn:focus,
+[data-theme="dark"] .checkout-toast-close:focus {
+  outline-color: var(--color-blue);
+}

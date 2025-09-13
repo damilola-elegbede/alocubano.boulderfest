@@ -112,7 +112,10 @@
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/typography.css" />
     <link rel="stylesheet" href="/css/floating-cart.css" />
+    <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
+    <!-- Theme styles -->
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
   </head>
   <body class="typographic">
     <!-- Skip Links for Accessibility -->
@@ -158,6 +161,8 @@
                 src="/images/logo.png"
                 alt="A Lo Cubano Boulder Fest Logo"
                 class="site-logo"
+                data-light-src="/images/logo.png"
+                data-dark-src="/images/logo-dark.png"
               />
               <div class="logo-text">
                 <span class="logo-main">A LO CUBANO</span>
@@ -247,6 +252,14 @@
                   >Contact</a
                 >
               </li>
+              <li class="nav-cart-item">
+                <button class="nav-cart-button" aria-label="View cart" data-testid="view-cart">
+                  <svg class="nav-cart-icon" viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03L21.7 4H5.21l-.94-2H1zm16 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                  </svg>
+                  <span class="nav-cart-badge" style="display: none;" data-testid="cart-counter">0</span>
+                </button>
+              </li>
             </ul>
           </nav>
         </div>
@@ -268,7 +281,7 @@
       </section>
 
       <!-- Typographic Festival Info -->
-      <section class="section-typographic" style="padding: var(--space-1xl) 0">
+      <section class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
           <div class="text-composition">
             <div class="text-block-large">
@@ -292,7 +305,7 @@
       </section>
 
       <!-- What To Expect Typography -->
-      <section class="section-typographic" style="padding: var(--space-1xl) 0">
+      <section class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
           <h2 class="text-mask">WHAT TO EXPECT</h2>
           <div class="expectations">
@@ -326,7 +339,7 @@
       </section>
 
       <!-- Genre Typography Section -->
-      <section class="section-typographic" style="padding: var(--space-1xl) 0">
+      <section class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
           <h2 class="text-glitch" data-text="GENRES">GENRES</h2>
           <div class="gallery-typographic">
@@ -365,7 +378,7 @@
       <!-- Typography-driven Call to Action -->
       <section
         class="section-typographic"
-        style="padding: var(--space-1xl) 0; padding-bottom: 50px"
+        style="padding: var(--space-xl) 0; padding-bottom: 50px"
       >
         <div class="container">
           <div class="text-composition">
@@ -448,6 +461,7 @@
             </svg>
           </a>
         </div>
+        <div id="theme-toggle-container" class="footer-theme-toggle"></div>
       </div>
     </footer>
     <script src="/js/navigation.js"></script>
@@ -459,5 +473,21 @@
 
     <!-- Global Cart System -->
     <script type="module" src="/js/global-cart.js"></script>
+    
+    <!-- Draggable Floating Cart -->
+    <script src="/js/floating-cart-draggable.js"></script>
+    
+    <!-- Theme Management -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      import themeManager from '/js/theme-manager.js';
+      
+      // Initialize theme system
+      document.addEventListener('DOMContentLoaded', () => {
+        themeManager.initializeTheme();
+        initializeThemeToggle('#theme-toggle-container');
+      });
+    </script>
+    <script src="/js/logo-switcher.js"></script>
   </body>
 </html>

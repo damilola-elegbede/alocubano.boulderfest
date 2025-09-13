@@ -47,6 +47,7 @@ const STATIC_RESOURCES = [
     '/js/components/lightbox.js',
     '/js/components/lazy-loading.js',
     '/images/logo.png',
+    '/images/logo-dark.png',
     '/images/favicons/favicon-32x32.png',
     '/pages/home.html',
     '/pages/gallery.html'

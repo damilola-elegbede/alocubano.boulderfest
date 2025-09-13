@@ -29,8 +29,8 @@
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid var(--color-gray-200);
-  border-top: 3px solid var(--color-red);
+  border: 3px solid var(--color-border);
+  border-top: 3px solid var(--color-secondary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: var(--space-md);
@@ -48,7 +48,7 @@
 .loading-text {
   font-family: var(--font-code);
   font-size: var(--font-size-sm);
-  color: var(--color-gray-600);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
@@ -72,14 +72,14 @@
 .error-message {
   font-family: var(--font-sans);
   font-size: var(--font-size-base);
-  color: var(--color-red);
+  color: var(--color-error);
   text-align: center;
   margin-bottom: var(--space-lg);
 }
 
 .error-retry {
   padding: var(--space-sm) var(--space-lg);
-  background: var(--color-red);
+  background: var(--color-error);
   color: var(--color-white);
   border: none;
   border-radius: 4px;
@@ -93,7 +93,7 @@
 }
 
 .error-retry:hover {
-  background: #b91c1c;
+  background: var(--color-secondary-hover);
   transform: translateY(-1px);
 }
 
@@ -101,9 +101,9 @@
   position: relative;
   width: 100%;
   min-height: 400px;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: var(--color-white);
+  background: var(--color-surface);
   overflow: hidden;
 }
 
@@ -127,16 +127,16 @@
   position: relative;
   width: 100%;
   height: 100%;
-  background: var(--color-gray-50);
+  background: var(--color-background-secondary);
   border-radius: 6px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   transition: all var(--transition-base);
 }
 
 .virtual-item-content:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
 }
 
 .virtual-item-image {
@@ -144,7 +144,7 @@
   height: 200px;
   object-fit: cover;
   object-position: center;
-  background: var(--color-gray-100);
+  background: var(--color-background-secondary);
   transition: opacity var(--transition-base);
 }
 
@@ -169,7 +169,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  background: linear-gradient(transparent, var(--shadow-color-strong));
   color: var(--color-white);
   padding: var(--space-md);
   font-family: var(--font-sans);
@@ -189,7 +189,7 @@
   position: absolute;
   top: var(--space-sm);
   left: var(--space-sm);
-  background: var(--color-red);
+  background: var(--color-secondary);
   color: var(--color-white);
   padding: var(--space-xs) var(--space-sm);
   font-family: var(--font-code);
@@ -285,11 +285,74 @@
 
 /* Focus styles for keyboard navigation */
 .virtual-item-content:focus {
-  outline: 2px solid var(--color-blue);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
 .virtual-item-content:focus-visible {
-  outline: 2px solid var(--color-blue);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+/* ==========================================================================
+   DARK MODE ENHANCEMENTS
+   ========================================================================== */
+
+/* Dark mode support for virtual gallery components */
+[data-theme="dark"] .virtual-scroll-container {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .virtual-item-content {
+  background: var(--color-background-secondary);
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+[data-theme="dark"] .virtual-item-content:hover {
+  box-shadow: 0 4px 16px var(--shadow-color-strong);
+}
+
+[data-theme="dark"] .virtual-item-image {
+  background: var(--color-background-tertiary);
+}
+
+/* Enhanced caption visibility in dark mode */
+[data-theme="dark"] .virtual-item-caption {
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+  color: var(--color-white);
+}
+
+/* Category tag visibility in dark mode */
+[data-theme="dark"] .virtual-item-category {
+  background: var(--color-secondary);
+  color: var(--color-white);
+}
+
+/* Loading and error states in dark mode */
+[data-theme="dark"] .loading-spinner {
+  border-color: var(--color-border);
+  border-top-color: var(--color-secondary);
+}
+
+[data-theme="dark"] .loading-text {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .error-message {
+  color: var(--color-error);
+}
+
+[data-theme="dark"] .error-retry {
+  background: var(--color-error);
+  color: var(--color-white);
+}
+
+[data-theme="dark"] .error-retry:hover {
+  background: var(--color-secondary-hover);
+}
+
+/* Enhanced error state icon visibility */
+[data-theme="dark"] .virtual-item-image.error {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z'/%3E%3Ccircle cx='12' cy='13' r='3'/%3E%3C/svg%3E");
 }

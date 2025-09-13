@@ -3,7 +3,7 @@
  * Sets up cart system on all pages
  */
 import { getCartManager } from './lib/cart-manager.js';
-import { initializeFloatingCart } from './floating-cart.js';
+import { initializeHeaderCart } from './header-cart.js';
 
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
@@ -40,11 +40,11 @@ async function initializeGlobalCart() {
             console.log('✅ Cart Manager initialized');
         }
 
-        // Initialize floating cart UI
-        initializeFloatingCart(cartManager);
+        // Initialize header cart UI
+        initializeHeaderCart(cartManager);
 
         if (isE2ETest) {
-            console.log('✅ Floating Cart UI initialized');
+            console.log('✅ Header Cart UI initialized');
         }
 
         // Set up page-specific integrations

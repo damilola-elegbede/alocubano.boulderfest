@@ -23,6 +23,12 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/floating-cart.css" />
+    <link rel="stylesheet" href="/css/header-cart.css" />
+    <!-- Theme styles -->
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
     <style>
       body {
         min-height: 100vh;
@@ -416,6 +422,18 @@
         "URL Parameters:",
         Object.fromEntries(new URLSearchParams(window.location.search)),
       );
+    </script>
+    
+    <!-- Theme Management -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      import themeManager from '/js/theme-manager.js';
+      
+      // Initialize theme system
+      document.addEventListener('DOMContentLoaded', () => {
+        themeManager.initializeTheme();
+        // Note: checkout-cancel doesn't have standard header, so we handle theme without toggle UI
+      });
     </script>
   </body>
 </html>

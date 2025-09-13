@@ -1220,9 +1220,456 @@
   }
 }
 
-/* Dark mode support - Using theme-aware variables instead */
-@media (prefers-color-scheme: dark) {
-  /* These styles are now handled by CSS custom properties in base.css */
+/* ==========================================================================
+   DARK MODE COMPONENT OVERRIDES
+   ========================================================================== */
+
+/* Dark mode support for components */
+[data-theme="dark"] {
+  /* Loading Overlays */
+  --hero-loading-overlay-bg: rgba(17, 17, 17, 0.8);
+  
+  /* Lazy Loading Components */
+  --lazy-placeholder-bg: var(--color-gray-700);
+  --loading-spinner-color: var(--color-gray-300);
+  
+  /* Gallery Components */
+  --gallery-year-banner-bg: var(--color-gray-800);
+  --gallery-stats-bg: var(--color-gray-800);
+  
+  /* Button Components - Enhanced contrast */
+  --btn-primary-bg: var(--color-blue);
+  --btn-primary-hover-bg: var(--color-primary-hover);
+  --btn-secondary-border: var(--color-gray-400);
+  --btn-accent-bg: var(--color-red);
+  
+  /* Card Components - Better contrast */
+  --card-bg: var(--color-surface);
+  --card-border: var(--color-border);
+  --card-hover-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  
+  /* Lightbox - Proper dark background */
+  --lightbox-bg: rgba(0, 0, 0, 0.95);
+  --lightbox-caption-bg: rgba(0, 0, 0, 0.9);
+  
+  /* Festival Year Cards - Enhanced visibility */
+  --festival-card-bg: var(--color-surface);
+  --festival-card-border: var(--color-border);
+  --festival-card-hover-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  
+  /* Multi-Year Gallery */
+  --year-button-bg: transparent;
+  --year-button-border: var(--color-border-medium);
+  --year-button-active-bg: var(--color-blue);
+  --year-stats-bg: var(--color-surface);
+  --loading-indicator-bg: var(--color-surface-overlay);
+  --error-display-bg: var(--color-surface);
+  --error-display-border: var(--color-red);
+}
+
+/* Hero Loading Overlay */
+[data-theme="dark"] .hero-loading-overlay {
+  background: var(--hero-loading-overlay-bg);
+}
+
+/* Lazy Loading Components */
+[data-theme="dark"] .lazy-placeholder {
+  background: var(--lazy-placeholder-bg);
+}
+
+[data-theme="dark"] .lazy-placeholder .loading-spinner {
+  color: var(--loading-spinner-color);
+}
+
+/* Gallery Year Banner */
+[data-theme="dark"] .gallery-year-banner {
+  background: var(--gallery-year-banner-bg);
+  border-bottom-color: var(--color-border);
+}
+
+/* Gallery Stats */
+[data-theme="dark"] .gallery-stats {
+  background: var(--gallery-stats-bg);
+}
+
+/* Button Components */
+[data-theme="dark"] .btn-primary {
+  background-color: var(--btn-primary-bg);
+  border-color: var(--btn-primary-bg);
+}
+
+[data-theme="dark"] .btn-primary:hover {
+  background-color: var(--btn-primary-hover-bg);
+  color: var(--color-text-inverse);
+  border-color: var(--btn-primary-hover-bg);
+}
+
+[data-theme="dark"] .btn-secondary {
+  border-color: var(--btn-secondary-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+  background-color: var(--color-text-primary);
+  color: var(--color-text-inverse);
+}
+
+[data-theme="dark"] .btn-accent {
+  background-color: var(--btn-accent-bg);
+  border-color: var(--btn-accent-bg);
+}
+
+[data-theme="dark"] .btn-accent:hover {
+  background-color: transparent;
+  color: var(--btn-accent-bg);
+  border-color: var(--btn-accent-bg);
+}
+
+/* Card Components */
+[data-theme="dark"] .card {
+  background-color: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+[data-theme="dark"] .card:hover {
+  box-shadow: var(--card-hover-shadow);
+}
+
+/* Lightbox - Enhanced dark mode support */
+[data-theme="dark"] .lightbox {
+  background-color: var(--lightbox-bg);
+}
+
+[data-theme="dark"] .lightbox-caption {
+  background: var(--lightbox-caption-bg);
+  color: var(--color-text-inverse);
+}
+
+[data-theme="dark"] .lightbox-title {
+  color: var(--color-text-inverse);
+}
+
+[data-theme="dark"] .lightbox-counter {
+  color: var(--color-text-inverse);
+  opacity: 0.8;
+}
+
+/* Enhanced lightbox navigation visibility in dark mode */
+[data-theme="dark"] .lightbox-close,
+[data-theme="dark"] .lightbox-prev,
+[data-theme="dark"] .lightbox-next {
+  color: var(--color-text-inverse);
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  backdrop-filter: blur(4px);
+}
+
+[data-theme="dark"] .lightbox-close:hover,
+[data-theme="dark"] .lightbox-prev:hover,
+[data-theme="dark"] .lightbox-next:hover {
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 1;
+}
+
+/* Video player controls visibility in dark mode */
+[data-theme="dark"] video {
+  background: var(--color-background-tertiary);
+}
+
+/* Enhanced media container visibility */
+[data-theme="dark"] .lightbox-media-container {
+  background: transparent;
+}
+
+/* Gallery image overlays and metadata in dark mode */
+[data-theme="dark"] .gallery-item-media::after {
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+}
+
+/* Loading placeholder visibility in dark mode */
+[data-theme="dark"] .lazy-placeholder {
+  background: var(--lazy-placeholder-bg);
+  color: var(--loading-spinner-color);
+}
+
+/* Gallery completion message visibility in dark mode */
+[data-theme="dark"] #gallery-completion-message .completion-message {
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+/* Virtual gallery scroll indicators in dark mode */
+[data-theme="dark"] .virtual-gallery::-webkit-scrollbar {
+  width: 8px;
+  background: var(--color-background-tertiary);
+}
+
+[data-theme="dark"] .virtual-gallery::-webkit-scrollbar-thumb {
+  background: var(--color-border-medium);
+  border-radius: 4px;
+}
+
+[data-theme="dark"] .virtual-gallery::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-strong);
+}
+
+/* Image loading transitions in dark mode */
+[data-theme="dark"] .lazy-image {
+  background: var(--color-background-tertiary);
+}
+
+[data-theme="dark"] .gallery-item.loaded .lazy-image {
+  background: transparent;
+}
+
+/* Loading progress indicators in dark mode */
+[data-theme="dark"] .loading-progress-bar {
+  background: var(--color-background-tertiary);
+}
+
+[data-theme="dark"] .loading-progress-fill {
+  background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+}
+
+/* Festival Year Cards */
+[data-theme="dark"] .festival-year-card {
+  background: var(--festival-card-bg);
+  border-color: var(--festival-card-border);
+}
+
+[data-theme="dark"] .festival-year-card:hover {
+  box-shadow: var(--festival-card-hover-shadow);
+  border-color: var(--color-blue);
+}
+
+[data-theme="dark"] .festival-year-card.coming-soon {
+  border-color: var(--color-border);
+  opacity: 0.6;
+}
+
+[data-theme="dark"] .festival-year-card.coming-soon:hover {
+  border-color: var(--color-border);
+}
+
+/* Multi-Year Gallery */
+[data-theme="dark"] .year-button {
+  background: var(--year-button-bg);
+  border-color: var(--year-button-border);
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .year-button:hover {
+  border-color: var(--color-blue);
+  color: var(--color-blue);
+  box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+[data-theme="dark"] .year-button.active {
+  background: var(--year-button-active-bg);
+  border-color: var(--color-blue);
+  color: var(--color-text-inverse);
+  box-shadow: 0 6px 20px var(--shadow-color-strong);
+}
+
+[data-theme="dark"] .year-statistics {
+  background: var(--year-stats-bg);
+}
+
+[data-theme="dark"] .loading-indicator {
+  background: var(--loading-indicator-bg);
+  box-shadow: 0 10px 40px var(--shadow-color);
+}
+
+[data-theme="dark"] .error-display {
+  background: var(--error-display-bg);
+  border-color: var(--error-display-border);
+  box-shadow: 0 10px 40px var(--shadow-color);
+}
+
+/* Skeleton Loading */
+[data-theme="dark"] .skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-background-secondary) 25%,
+    var(--color-background-tertiary) 50%,
+    var(--color-background-secondary) 75%
+  );
+}
+
+/* Ticket Selection Components */
+[data-theme="dark"] .ticket-card {
+  background: var(--color-surface);
+}
+
+[data-theme="dark"] .ticket-card:hover {
+  box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+[data-theme="dark"] .ticket-card.selected {
+  background: var(--color-info-light);
+}
+
+[data-theme="dark"] .ticket-card.unavailable,
+[data-theme="dark"] .ticket-card.disabled {
+  background: var(--color-background-tertiary);
+  opacity: 0.5;
+}
+
+/* Quantity Selector */
+[data-theme="dark"] .qty-btn {
+  background: var(--color-surface);
+  border-color: var(--color-border-medium);
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .qty-btn:hover {
+  border-color: var(--color-blue);
+  color: var(--color-blue);
+  background: var(--color-info-light);
+}
+
+/* Add to Cart Buttons */
+[data-theme="dark"] .add-to-cart-btn {
+  background: var(--color-blue);
+  color: var(--color-text-inverse);
+}
+
+[data-theme="dark"] .add-to-cart-btn:hover {
+  background: var(--color-primary-hover);
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+[data-theme="dark"] .add-to-cart-btn:disabled {
+  background: var(--color-text-muted);
+  color: var(--color-text-tertiary);
+}
+
+/* Donation Selection Interface */
+[data-theme="dark"] .donation-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .donation-card:hover {
+  border-color: var(--color-blue);
+  box-shadow: 0 8px 25px var(--shadow-color-strong);
+}
+
+[data-theme="dark"] .donation-card.selected {
+  border-color: var(--color-blue);
+  background: var(--color-blue);
+  color: var(--color-text-inverse);
+  box-shadow: 0 8px 25px var(--shadow-color-strong);
+}
+
+[data-theme="dark"] .custom-amount-input {
+  color: inherit;
+  background: transparent;
+}
+
+[data-theme="dark"] .custom-amount-input::placeholder {
+  color: inherit;
+  opacity: 0.6;
+}
+
+[data-theme="dark"] .donation-card.selected .custom-amount-input {
+  color: var(--color-text-inverse);
+}
+
+[data-theme="dark"] .donation-card.selected .custom-amount-input::placeholder {
+  color: var(--color-text-inverse);
+  opacity: 0.8;
+}
+
+/* Confetti Colors - Adjust for dark theme */
+[data-theme="dark"] .confetti-piece {
+  filter: brightness(1.2) contrast(1.1);
+}
+
+/* TBA Notices */
+[data-theme="dark"] .tba-notice {
+  background-color: rgba(91, 107, 181, 0.15);
+  color: var(--color-blue);
+}
+
+/* Contact Page Components */
+[data-theme="dark"] .contact-item {
+  background: var(--color-background-secondary);
+  border-left-color: var(--color-blue);
+}
+
+[data-theme="dark"] .contact-item:hover {
+  box-shadow: 0 8px 25px var(--shadow-color-light);
+}
+
+[data-theme="dark"] .contact-link {
+  background: var(--color-surface);
+  border-color: var(--color-blue);
+  color: var(--color-blue);
+}
+
+[data-theme="dark"] .contact-link:hover {
+  background: var(--color-blue);
+  color: var(--color-text-inverse);
+}
+
+[data-theme="dark"] .location-info,
+[data-theme="dark"] .response-info {
+  background: var(--color-surface);
+  box-shadow: 0 2px 10px var(--shadow-color-light);
+}
+
+/* Social Icons - Adjust filters for dark theme */
+[data-theme="dark"] .social-icon {
+  filter: brightness(0) saturate(100%) invert(45%) sepia(93%) saturate(558%)
+    hue-rotate(202deg) brightness(93%) contrast(86%);
+}
+
+[data-theme="dark"] .contact-link:hover .social-icon {
+  filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(7500%)
+    hue-rotate(109deg) brightness(107%) contrast(107%);
+}
+
+/* Phase 1: New Layout Components - Dark Mode */
+[data-theme="dark"] .expectations__item {
+  background: var(--color-surface);
+  border-color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .volunteer-benefits__card {
+  background: var(--color-surface);
+}
+
+[data-theme="dark"] .volunteer-benefits__card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+/* Print optimizations for dark mode */
+@media print {
+  [data-theme="dark"] * {
+    background: white !important;
+    color: black !important;
+    border-color: black !important;
+    box-shadow: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  [data-theme="dark"] .card,
+  [data-theme="dark"] .donation-card {
+    border-width: 2px;
+    border-color: var(--color-text-primary);
+  }
+
+  [data-theme="dark"] .ticket-card {
+    border: none;
+  }
+  
+  [data-theme="dark"] .btn {
+    border-width: 2px;
+  }
 }
 
 /* Reduced motion support */
@@ -1671,7 +2118,7 @@
 /* Ticket Cards */
 .ticket-card {
   padding: var(--space-lg);
-  border: 2px solid var(--color-border);
+  border: none;
   border-radius: 8px;
   background: var(--color-surface);
   transition: all 0.3s ease;
@@ -1680,13 +2127,11 @@
 }
 
 .ticket-card:hover {
-  border-color: var(--color-blue);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 .ticket-card.selected {
-  border-color: var(--color-blue);
   background: var(--color-info-light);
 }
 
@@ -1701,7 +2146,6 @@
 .ticket-card.unavailable:hover {
   transform: none;
   box-shadow: none;
-  border-color: var(--color-border);
 }
 
 /* Ticket Card Content */
@@ -1984,6 +2428,11 @@
   text-align: center;
 }
 
+/* Dark mode override for Select Your Tickets */
+[data-theme="dark"] .ticket-selection h2 {
+  color: var(--color-white);
+}
+
 /* Ticket Categories */
 .ticket-category {
   margin-bottom: var(--space-3xl);
@@ -1998,10 +2447,20 @@
   letter-spacing: 0.05em;
 }
 
+/* Dark mode ticket category headers */
+[data-theme="dark"] .ticket-category h3 {
+  color: var(--color-gray-100);
+}
+
 .category-description {
   color: var(--color-gray-600);
   margin-bottom: var(--space-lg);
   font-size: var(--font-size-base);
+}
+
+/* Dark mode category descriptions */
+[data-theme="dark"] .category-description {
+  color: var(--color-gray-300);
 }
 
 .ticket-options {
@@ -2013,7 +2472,7 @@
 /* Ticket Card Styling - Smaller Box Style */
 .ticket-card {
   background: var(--color-surface);
-  border: 2px solid var(--color-border);
+  border: none;
   border-radius: 12px;
   padding: var(--space-lg);
   text-align: center;
@@ -2029,11 +2488,9 @@
 .ticket-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px var(--shadow-color-strong);
-  border-color: var(--color-blue);
 }
 
 .ticket-card.selected {
-  border-color: var(--color-blue);
   box-shadow: 0 0 0 3px var(--color-info-light);
   background: var(--color-info-light);
 }
@@ -2088,7 +2545,6 @@
 .ticket-card.disabled:hover {
   transform: none;
   box-shadow: 0 4px 15px var(--shadow-color-light);
-  border-color: var(--color-border-medium);
 }
 
 .ticket-card.unavailable .qty-btn,
@@ -2486,7 +2942,8 @@
 /* Site Logo Responsive */
 .site-logo {
   height: clamp(60px, 8vw, 78px);
-  width: auto;
+  width: clamp(60px, 8vw, 78px); /* Fixed width matching height for consistent sizing */
+  object-fit: contain; /* Ensures logo fits within dimensions without distortion */
 }
 
 /* ==========================================================================
