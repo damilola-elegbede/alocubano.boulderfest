@@ -5,7 +5,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  margin-left: var(--space-md);
+  margin-left: 0;
 }
 
 /* Cart button in header */
@@ -13,7 +13,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: var(--space-sm);
+  padding: var(--space-sm) 0 var(--space-sm) var(--space-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -92,7 +92,7 @@
   }
   
   .nav-cart-button {
-    padding: var(--space-xs);
+    padding: var(--space-xs) 0 var(--space-xs) var(--space-xs);
   }
   
   .nav-cart-icon {
@@ -113,16 +113,16 @@
 /* Tablet specific adjustments */
 @media (min-width: 769px) and (max-width: 1024px) {
   .nav-cart-item {
-    margin-left: var(--space-sm);
+    margin-left: 0;
   }
 }
 
 /* Desktop adjustments for alignment */
 @media (min-width: 1025px) {
   .nav-cart-item {
-    margin-left: var(--space-lg);
+    margin-left: 0;
   }
-  
+
   /* Ensure cart icon aligns with nav text */
   .nav-cart-button {
     height: 100%;
@@ -131,52 +131,6 @@
   }
 }
 
-/* Cart panel styles (keep existing sliding panel) */
-.floating-cart-panel {
-  position: fixed;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 100%;
-  max-width: 400px;
-  background: rgba(255, 255, 255, 0.7);
-  z-index: 1000;
-  transform: translateX(100%);
-  transition: transform var(--transition-base);
-  display: flex;
-  flex-direction: column;
-  backdrop-filter: blur(10px);
-}
-
-.floating-cart-panel.open {
-  transform: translateX(0);
-}
-
-/* Backdrop for cart panel */
-.cart-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 998;
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity var(--transition-base),
-    visibility var(--transition-base);
-}
-
-.cart-backdrop.active {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* Remove floating button container */
-.floating-cart-container {
-  display: none !important;
-}
 
 /* Animation */
 @keyframes pulse {
