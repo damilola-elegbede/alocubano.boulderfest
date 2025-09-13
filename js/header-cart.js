@@ -74,17 +74,26 @@ export function initializeHeaderCart(cartManager) {
     });
 
     // Update cart display
-    const updateCartDisplay = () => {
-        if (!cartManager) return;
+    const updateCartDisplay = (cartState) => {
+        // If no cart state passed, get from cart manager (for backward compatibility)
+        if (!cartState && cartManager) {
+            cartState = cartManager.getState();
+        }
 
-        const items = cartManager.getItems();
-        const total = cartManager.getTotal();
-        const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+        if (!cartState) {
+            return;
+        }
+
+        const { tickets = {}, donations = [], totals = {}, isEmpty } = cartState;
+        // Calculate item counts
+        const ticketCount = Object.values(tickets).reduce((sum, ticket) => sum + (ticket.quantity || 0), 0);
+        const donationCount = donations.length;
+        const totalItems = ticketCount + donationCount;
 
         // Update header badge
         if (elements.headerBadge) {
-            if (itemCount > 0) {
-                elements.headerBadge.textContent = itemCount;
+            if (totalItems > 0) {
+                elements.headerBadge.textContent = totalItems;
                 elements.headerBadge.style.display = 'flex';
                 elements.headerBadge.classList.add('pulse');
                 setTimeout(() => elements.headerBadge.classList.remove('pulse'), 300);
@@ -94,48 +103,61 @@ export function initializeHeaderCart(cartManager) {
         }
 
         // Update cart panel content
-        if (items.length === 0) {
-            if (elements.itemsContainer) elements.itemsContainer.style.display = 'none';
-            if (elements.emptyMessage) elements.emptyMessage.style.display = 'block';
-            if (elements.checkoutButton) elements.checkoutButton.disabled = true;
-            if (elements.clearButton) elements.clearButton.style.display = 'none';
+        if (isEmpty || totalItems === 0) {
+            if (elements.itemsContainer) {
+                elements.itemsContainer.style.display = 'none';
+            }
+            if (elements.emptyMessage) {
+                elements.emptyMessage.style.display = 'block';
+            }
+            if (elements.checkoutButton) {
+                elements.checkoutButton.disabled = true;
+            }
+            if (elements.clearButton) {
+                elements.clearButton.style.display = 'none';
+            }
         } else {
-            if (elements.emptyMessage) elements.emptyMessage.style.display = 'none';
+            if (elements.emptyMessage) {
+                elements.emptyMessage.style.display = 'none';
+            }
             if (elements.itemsContainer) {
                 elements.itemsContainer.style.display = 'block';
-                renderCartItems(items, elements.itemsContainer, cartManager);
+                renderCartItems(tickets, donations, elements.itemsContainer, cartManager);
             }
-            if (elements.checkoutButton) elements.checkoutButton.disabled = false;
-            if (elements.clearButton) elements.clearButton.style.display = 'block';
+            if (elements.checkoutButton) {
+                elements.checkoutButton.disabled = false;
+            }
+            if (elements.clearButton) {
+                elements.clearButton.style.display = 'block';
+            }
         }
 
         // Update total
         if (elements.totalElement) {
-            elements.totalElement.textContent = `$${total.toFixed(2)}`;
+            elements.totalElement.textContent = `$${(totals.total || 0).toFixed(2)}`;
         }
     };
 
     // Render cart items
-    const renderCartItems = (items, container, cartManager) => {
-        const ticketItems = items.filter(item => item.type === 'ticket');
-        const donationItems = items.filter(item => item.type === 'donation');
-
+    const renderCartItems = (tickets, donations, container, cartManager) => {
+        // Get ticket values and use the ticket type as ID
+        const ticketItems = Object.values(tickets);
         let html = '';
 
         if (ticketItems.length > 0) {
             html += `
                 <div class="cart-category">
                     <h4 class="cart-category-header tickets">Tickets</h4>
-                    ${ticketItems.map(item => `
-                        <div class="cart-item" data-item-id="${escapeHtml(item.id)}">
+                    ${ticketItems.map(ticket => `
+                        <div class="cart-item" data-ticket-type="${escapeHtml(ticket.ticketType)}">
                             <div class="cart-item-info">
-                                <h4>${escapeHtml(item.name)}</h4>
-                                <p class="cart-item-price">$${item.price.toFixed(2)} each</p>
+                                <h4>${escapeHtml(ticket.name)}</h4>
+                                <p class="cart-item-price">$${ticket.price.toFixed(2)} each</p>
                             </div>
                             <div class="cart-item-actions">
-                                <button class="qty-adjust qty-decrease" data-item-id="${escapeHtml(item.id)}" ${item.quantity <= 1 ? 'disabled' : ''}>-</button>
-                                <span class="qty-display">${item.quantity}</span>
-                                <button class="qty-adjust qty-increase" data-item-id="${escapeHtml(item.id)}">+</button>
+                                <button class="qty-adjust qty-decrease" data-ticket-type="${escapeHtml(ticket.ticketType)}" ${ticket.quantity <= 1 ? 'disabled' : ''}>-</button>
+                                <span class="qty-display">${ticket.quantity}</span>
+                                <button class="qty-adjust qty-increase" data-ticket-type="${escapeHtml(ticket.ticketType)}">+</button>
                             </div>
                         </div>
                     `).join('')}
@@ -143,17 +165,17 @@ export function initializeHeaderCart(cartManager) {
             `;
         }
 
-        if (donationItems.length > 0) {
+        if (donations.length > 0) {
             html += `
                 <div class="cart-category">
                     <h4 class="cart-category-header">Donations</h4>
-                    ${donationItems.map(item => `
-                        <div class="cart-item donation-item" data-item-id="${escapeHtml(item.id)}">
+                    ${donations.map(donation => `
+                        <div class="cart-item donation-item" data-donation-id="${escapeHtml(donation.id)}">
                             <div class="cart-item-info">
                                 <h4>Donation</h4>
-                                <p class="cart-item-price">$${item.price.toFixed(2)}</p>
+                                <p class="cart-item-price">$${donation.amount.toFixed(2)}</p>
                             </div>
-                            <button class="remove-donation" data-item-id="${escapeHtml(item.id)}">×</button>
+                            <button class="remove-donation" data-donation-id="${escapeHtml(donation.id)}">×</button>
                         </div>
                     `).join('')}
                 </div>
@@ -162,54 +184,60 @@ export function initializeHeaderCart(cartManager) {
 
         setSafeHTML(container, html);
 
-        // Attach quantity adjustment handlers
+        // Attach quantity adjustment handlers for tickets
         container.querySelectorAll('.qty-decrease').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const itemId = btn.dataset.itemId;
-                const item = cartManager.getItem(itemId);
-                if (item && item.quantity > 1) {
-                    cartManager.updateQuantity(itemId, item.quantity - 1);
+            btn.addEventListener('click', async() => {
+                const ticketType = btn.dataset.ticketType;
+                const ticket = tickets[ticketType];
+                if (ticket && ticket.quantity > 1) {
+                    await cartManager.updateTicketQuantity(ticketType, ticket.quantity - 1);
                     updateCartDisplay();
                 }
             });
         });
 
         container.querySelectorAll('.qty-increase').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const itemId = btn.dataset.itemId;
-                const item = cartManager.getItem(itemId);
-                if (item) {
-                    cartManager.updateQuantity(itemId, item.quantity + 1);
+            btn.addEventListener('click', async() => {
+                const ticketType = btn.dataset.ticketType;
+                const ticket = tickets[ticketType];
+                if (ticket) {
+                    await cartManager.updateTicketQuantity(ticketType, ticket.quantity + 1);
                     updateCartDisplay();
                 }
             });
         });
 
+        // Attach donation removal handlers
         container.querySelectorAll('.remove-donation').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const itemId = btn.dataset.itemId;
-                cartManager.removeItem(itemId);
+            btn.addEventListener('click', async() => {
+                const donationId = btn.dataset.donationId;
+                await cartManager.removeDonation(donationId);
                 updateCartDisplay();
             });
         });
     };
 
     // Clear cart handler
-    elements.clearButton?.addEventListener('click', () => {
+    elements.clearButton?.addEventListener('click', async() => {
         if (confirm('Are you sure you want to clear your cart?')) {
-            cartManager.clearCart();
+            await cartManager.clear();
             updateCartDisplay();
         }
     });
 
     // Checkout handler
-    elements.checkoutButton?.addEventListener('click', async () => {
-        const items = cartManager.getItems();
-        if (items.length === 0) return;
+    elements.checkoutButton?.addEventListener('click', async() => {
+        const state = cartManager.getState();
+        const items = [...Object.values(state.tickets), ...state.donations];
+        if (items.length === 0) {
+            return;
+        }
 
         // Show email collection modal
         const emailModal = await showEmailCollectionModal();
-        if (!emailModal) return;
+        if (!emailModal) {
+            return;
+        }
 
         const { email, firstName, lastName } = emailModal;
 
@@ -226,9 +254,15 @@ export function initializeHeaderCart(cartManager) {
         }
     });
 
-    // Subscribe to cart changes
-    if (cartManager && typeof cartManager.subscribe === 'function') {
-        cartManager.subscribe(updateCartDisplay);
+    // Listen for cart updates
+    if (cartManager) {
+        cartManager.addEventListener('cart:updated', (event) => {
+            updateCartDisplay(event.detail);
+        });
+
+        cartManager.addEventListener('cart:initialized', (event) => {
+            updateCartDisplay(event.detail);
+        });
     }
 
     // Initial update
