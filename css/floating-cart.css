@@ -961,7 +961,7 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
-[data-theme="dark"] .qty-value {
+[data-theme="dark"] .qty-display {
   color: var(--color-white);
 }
 

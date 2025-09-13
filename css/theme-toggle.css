@@ -74,8 +74,10 @@
   height: var(--theme-toggle-height);
   padding: var(--theme-toggle-padding);
   
-  /* Beautiful background with Cuban warmth */
-  background: var(--theme-toggle-bg);
+  /* Beautiful background with Cuban warmth and subtle gradient */
+  background: linear-gradient(135deg,
+    var(--theme-toggle-bg) 0%,
+    var(--theme-toggle-bg) 100%);
   border: 1px solid var(--theme-toggle-border);
   border-radius: var(--theme-toggle-border-radius);
   
@@ -83,18 +85,15 @@
   backdrop-filter: blur(var(--theme-toggle-backdrop-blur));
   -webkit-backdrop-filter: blur(var(--theme-toggle-backdrop-blur));
   
-  /* Elegant shadow */
-  box-shadow: var(--theme-toggle-shadow);
-  
+  /* Elegant shadow with subtle Cuban warmth */
+  box-shadow: var(--theme-toggle-shadow), var(--theme-toggle-glow);
+
   /* Smooth transitions */
   transition: var(--theme-toggle-transition);
-  
+
   /* Accessibility */
   overflow: hidden;
   user-select: none;
-  
-  /* Subtle warmth inspired by Cuban sunshine */
-  box-shadow: var(--theme-toggle-shadow), var(--theme-toggle-glow);
 }
 
 .theme-toggle:hover {
@@ -463,13 +462,7 @@
    CUBAN FESTIVAL THEMING TOUCHES
    ================================================================= */
 
-/* Add subtle warmth and festival spirit */
-.theme-toggle {
-  /* Subtle warm gradient border for festival warmth */
-  background: linear-gradient(135deg, 
-    var(--theme-toggle-bg) 0%, 
-    var(--theme-toggle-bg) 100%);
-}
+/* Subtle warmth and festival spirit are integrated into main .theme-toggle rule above */
 
 /* Festive glow active state removed */
 
