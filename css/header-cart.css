@@ -3,9 +3,10 @@
 /* Cart item in navigation */
 .nav-cart-item {
   position: relative;
-  display: flex;
-  align-items: center;
+  display: inline-flex;
+  align-items: baseline;
   margin-left: 0;
+  vertical-align: baseline;
 }
 
 /* Cart button in header */
@@ -13,12 +14,14 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: var(--space-sm) 0 var(--space-sm) var(--space-sm);
-  display: flex;
+  padding: 0 0 0 var(--space-sm);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   position: relative;
   transition: transform var(--transition-fast);
+  vertical-align: baseline;
+  line-height: 1;
 }
 
 .nav-cart-button:hover {
@@ -33,8 +36,8 @@
 
 /* Cart icon */
 .nav-cart-icon {
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   fill: currentColor;
   color: var(--color-text-primary);
   transition: color var(--transition-fast);
@@ -53,15 +56,15 @@
 /* Cart badge in header */
 .nav-cart-badge {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  min-width: 8px;
-  height: 8px;
-  padding: 0 2px;
+  top: -3px;
+  right: -3px;
+  min-width: 11px;
+  height: 11px;
+  padding: 0 3px;
   background: var(--color-red);
   color: var(--color-white);
   border-radius: var(--radius-full);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   font-family: var(--font-code);
   display: flex;
@@ -96,17 +99,17 @@
   }
   
   .nav-cart-icon {
-    width: 24px;
-    height: 24px;
+    width: 34px;
+    height: 34px;
   }
-  
+
   .nav-cart-badge {
-    top: -2px;
-    right: -2px;
-    min-width: 10px;
-    height: 10px;
-    font-size: 9px;
-    padding: 0 3px;
+    top: -3px;
+    right: -3px;
+    min-width: 14px;
+    height: 14px;
+    font-size: 10px;
+    padding: 0 4px;
   }
 }
 
@@ -123,11 +126,11 @@
     margin-left: 0;
   }
 
-  /* Ensure cart icon aligns with nav text */
+  /* Ensure cart icon aligns with nav text baseline */
   .nav-cart-button {
-    height: 100%;
-    display: flex;
-    align-items: center;
+    display: inline-flex;
+    align-items: baseline;
+    vertical-align: baseline;
   }
 }
 
