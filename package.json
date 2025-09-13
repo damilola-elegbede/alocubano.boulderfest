@@ -63,6 +63,7 @@
     "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.34.0",
     "express": "^5.1.0",
+    "glob": "^11.0.3",
     "globals": "^15.15.0",
     "htmlhint": "^1.6.3",
     "http-server": "^14.1.1",

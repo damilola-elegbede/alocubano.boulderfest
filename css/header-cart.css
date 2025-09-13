@@ -139,7 +139,7 @@
   bottom: 0;
   width: 100%;
   max-width: 400px;
-  background: var(--color-surface-overlay);
+  background: rgba(255, 255, 255, 0.7);
   z-index: 1000;
   transform: translateX(100%);
   transition: transform var(--transition-base);

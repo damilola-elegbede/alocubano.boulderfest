@@ -204,7 +204,6 @@ function createToggleHTML() {
                     title="${key.charAt(0) + key.slice(1).toLowerCase()} theme"
                 >
                     ${ICONS[value]}
-                    <span class="theme-toggle__label sr-only">${key}</span>
                 </button>
             `).join('')}
         </div>
@@ -280,17 +279,6 @@ function addToggleStyles() {
             color: white;
         }
 
-        .theme-toggle__label {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
-        }
 
         /* Dark theme styles */
         [data-theme="dark"] .theme-toggle {
