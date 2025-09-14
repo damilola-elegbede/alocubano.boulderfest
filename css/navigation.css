@@ -1207,10 +1207,10 @@ main,
    EVENT SUB NAVIGATION STYLES
    ================================================================= */
 
-/* Event Sub Navigation Container */
+/* Event Sub Navigation Container - Theme Aware */
 .event-subnav {
-  background: #111111; /* Consistent off-black background for all themes */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
   padding: var(--space-md) 0;
   margin-bottom: var(--space-xl);
   position: sticky;
@@ -1220,10 +1220,11 @@ main,
   box-shadow: var(--shadow-sm);
 }
 
-/* Dark mode event subnav - same off-black background */
+/* Dark mode event subnav - enhanced styling */
 [data-theme="dark"] .event-subnav {
-  background: #111111;
+  background: var(--color-surface);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 /* Event Navigation List */
@@ -1237,27 +1238,27 @@ main,
   align-items: center;
 }
 
-/* Event Navigation Links - Match main nav styling */
+/* Event Navigation Links - Theme Aware Styling */
 .event-nav-link {
   position: relative;
   font-family: var(--font-code);
   font-size: var(--font-size-sm);
   letter-spacing: var(--letter-spacing-wider);
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7); /* Light text for dark background */
+  color: var(--color-text-secondary);
   text-decoration: none;
   transition: all var(--transition-base);
   padding: var(--space-xs) 0;
   font-weight: 500;
 }
 
-/* Typographic slide-down text replacement for event nav links */
+/* Typographic slide-down text replacement for event nav links - Theme Aware */
 .typographic .event-nav-link::before {
   content: attr(data-text);
   position: absolute;
   top: 0;
   left: 0;
-  color: rgba(255, 255, 255, 1); /* White text for hover on dark background */
+  color: var(--color-text-primary);
   font-weight: 700;
   transform: translateY(-100%);
   opacity: 0;
