@@ -329,44 +329,22 @@
       // SECURITY: Enhanced authentication check with proper timeout and session validation
       async function checkAuth() {
         try {
-          // SECURITY: Use AbortController for timeout control
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 3000);
-          
-          const response = await fetch("/api/admin/dashboard", {
-            headers: { 
-              "Cache-Control": "no-cache",
-              "X-Requested-With": "XMLHttpRequest" // CSRF protection
-            },
-            signal: controller.signal,
-            credentials: 'include' // Ensure session cookies are sent
+          const response = await fetch("/api/admin/verify-session", {
+            credentials: "include" // CRITICAL: Include cookies for production
           });
-          
-          clearTimeout(timeoutId);
-          
-          // SECURITY: Redirect to login on any auth failure
           if (!response.ok) {
-            console.warn('MFA settings auth failed:', response.status);
-            this.cleanupSession(); // Clean up any stale session data
-            window.location.replace("/admin/login");
+            window.location.href = "/admin/login";
             return false;
           }
-          
-          // SECURITY: Verify response contains expected admin data
           const data = await response.json();
-          if (!data || typeof data !== 'object') {
-            console.warn('Invalid MFA auth response');
-            this.cleanupSession();
-            window.location.replace("/admin/login");
+          if (!data.valid) {
+            window.location.href = "/admin/login";
             return false;
           }
-          
           return true;
         } catch (error) {
-          // SECURITY: Log for monitoring but clean up and redirect
-          console.warn('MFA auth check failed:', error.name);
-          this.cleanupSession();
-          window.location.replace("/admin/login");
+          console.error("Auth check failed:", error);
+          window.location.href = "/admin/login";
           return false;
         }
       }
@@ -387,7 +365,9 @@
       // Load MFA status
       async function loadMfaStatus() {
         try {
-          const response = await fetch("/api/admin/mfa-setup");
+          const response = await fetch("/api/admin/mfa-setup", {
+            credentials: "include"
+          });
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
@@ -523,6 +503,7 @@
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ deviceName: "Admin Authenticator" }),
+              credentials: "include"
             },
           );
 
@@ -644,6 +625,7 @@
                 token: code,
                 deviceName: "Admin Authenticator",
               }),
+              credentials: "include"
             },
           );
 
@@ -718,6 +700,7 @@
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
+              credentials: "include"
             },
           );
 
@@ -751,6 +734,7 @@
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ confirmationCode }),
+            credentials: "include"
           });
 
           const result = await response.json();
@@ -836,6 +820,7 @@ Instructions:
         try {
           await fetch("/api/admin/login", {
             method: "DELETE",
+            credentials: "include"
           });
         } finally {
           // Clear client storage
