@@ -39,73 +39,9 @@
   visibility: visible;
 }
 
-/* Floating Button */
-.floating-cart-button {
-  position: fixed;
-  top: 450px; /* Positioned well below hero image (400px min height) */
-  right: 30px; /* Slightly more padding from edge */
-  width: 60px;
-  height: 60px;
-  border-radius: 30px;
-  background: var(--cart-bg);
-  color: var(--cart-text);
-  border: 3px solid var(--cart-primary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  cursor: move; /* Draggable cursor */
-  z-index: 999; /* Below cart panel */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-  user-select: none; /* Prevent text selection while dragging */
-}
+/* Cart Badge - Now used in header only */
 
-.floating-cart-button:hover {
-  transform: scale(1.08);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-  border-color: var(--cart-primary);
-  background: var(--color-white);
-}
-
-.floating-cart-button:active {
-  transform: scale(0.95);
-}
-
-.floating-cart-button:focus {
-  outline: 2px solid var(--cart-secondary);
-  outline-offset: 2px;
-}
-
-.cart-icon {
-  fill: currentColor;
-}
-
-/* Cart Badge */
-.cart-badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 6px;
-  background: var(--cart-primary);
-  color: var(--color-white);
-  border: 2px solid var(--color-white);
-  border-radius: var(--radius-full);
-  font-size: 12px;
-  font-weight: 700;
-  font-family: var(--font-code);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.cart-badge.pulse {
-  animation: pulse 0.3s ease-out;
-}
-
-/* Cart Panel */
+/* Cart Panel - Now animates from header area */
 .floating-cart-panel {
   position: fixed;
   right: 0;
@@ -115,7 +51,7 @@
   max-width: 400px;
   background: rgba(255, 255, 255, 0.7);
   z-index: 1000;
-  transform: translateX(100%);
+  transform: translateY(-100%);
   transition: transform var(--cart-transition);
   display: flex;
   flex-direction: column;
@@ -123,7 +59,7 @@
 }
 
 .floating-cart-panel.open {
-  transform: translateX(0);
+  transform: translateY(0);
 }
 
 /* Cart Header */
@@ -456,14 +392,7 @@
     width: 100vw;
   }
 
-  .floating-cart-button {
-    top: auto;
-    bottom: 100px; /* Account for mobile nav and better visibility */
-    right: 20px;
-    width: 56px;
-    height: 56px;
-    border-radius: 28px;
-  }
+  /* Button styles removed - header cart only */
 
   .cart-header {
     padding: 16px 20px;
@@ -491,23 +420,11 @@
     font-size: 16px;
   }
 
-  .cart-badge {
-    min-width: 22px;
-    height: 22px;
-    padding: 0 5px;
-    font-size: 11px;
-  }
+  /* Badge styles removed - header cart only */
 }
 
 @media (max-width: 480px) {
-  .floating-cart-button {
-    top: auto;
-    bottom: 90px;
-    right: 16px;
-    width: 52px;
-    height: 52px;
-    border-radius: 26px;
-  }
+  /* Button styles removed - header cart only */
 
   .cart-header h3 {
     font-size: 18px;
@@ -530,12 +447,7 @@
     font-size: 15px;
   }
 
-  .cart-badge {
-    min-width: 21px;
-    height: 21px;
-    padding: 0 5px;
-    font-size: 10px;
-  }
+  /* Badge styles removed - header cart only */
 }
 
 /* High contrast mode support */
@@ -545,9 +457,7 @@
     --cart-shadow: var(--shadow-color-strong);
   }
 
-  .floating-cart-button {
-    border: 2px solid var(--color-black);
-  }
+  /* Button styles removed - header cart only */
 
   .qty-adjust {
     border: 2px solid var(--cart-border);
@@ -560,13 +470,7 @@
     --cart-transition: 0.1s ease-out;
   }
 
-  .floating-cart-button {
-    transition: none;
-  }
-
-  .cart-badge.pulse {
-    animation: none;
-  }
+  /* Button and badge animations removed - header cart only */
 
   .qty-adjust,
   .cart-close,

@@ -28,19 +28,22 @@ test.describe('Mobile Navigation - Essential UX', () => {
     console.log('✅ Mobile navigation working');
   });
 
-  test('should maintain mobile cart functionality', async ({ page }) => {
+  test('should maintain mobile header cart functionality', async ({ page }) => {
     await page.goto('/pages/tickets.html');
-    
-    // Verify floating cart is responsive on mobile
-    const floatingCart = page.locator('.floating-cart');
-    
-    // Cart should be visible but not intrusive on mobile
-    if (await floatingCart.isVisible()) {
-      const cartBounds = await floatingCart.boundingBox();
+
+    // Verify header cart is accessible on mobile
+    const headerCart = page.locator('.nav-cart-button');
+
+    // Header cart should be visible and accessible on mobile
+    if (await headerCart.isVisible()) {
+      const cartBounds = await headerCart.boundingBox();
       expect(cartBounds.width).toBeLessThan(375); // Within mobile viewport
+
+      // Touch target should be adequately sized for mobile
+      expect(cartBounds.height).toBeGreaterThanOrEqual(44); // Minimum touch target
     }
-    
-    console.log('✅ Mobile cart display working');
+
+    console.log('✅ Mobile header cart display working');
   });
 
   test('should handle touch interactions properly', async ({ page }) => {

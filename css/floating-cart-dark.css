@@ -5,11 +5,9 @@
 
 /* Dark mode floating cart styles */
 [data-theme="dark"] {
-  /* Floating Cart Variables */
+  /* Floating Cart Variables - Button variables removed */
   --floating-cart-bg: var(--color-surface);
   --floating-cart-border: var(--color-border);
-  --floating-cart-button-bg: var(--color-blue);
-  --floating-cart-button-shadow: 0 4px 20px rgba(91, 107, 181, 0.4);
   --floating-cart-panel-bg: var(--color-surface);
   --floating-cart-panel-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   --floating-cart-backdrop: rgba(0, 0, 0, 0.8);
@@ -17,8 +15,6 @@
   --floating-cart-item-border: var(--color-border);
   --floating-cart-header-border: var(--color-border);
   --floating-cart-footer-border: var(--color-border);
-  --floating-cart-badge-bg: var(--color-red);
-  --floating-cart-button-hover: var(--color-primary-hover);
   --floating-cart-clear-button-bg: var(--color-surface-elevated);
   --floating-cart-clear-button-hover: var(--color-error-light);
 }
@@ -28,48 +24,7 @@
   /* Container is positioned fixed, no background needed */
 }
 
-/* Floating Cart Button */
-[data-theme="dark"] .floating-cart-button {
-  background: var(--floating-cart-button-bg);
-  color: var(--color-text-inverse);
-  box-shadow: var(--floating-cart-button-shadow);
-  border: 2px solid var(--floating-cart-button-bg);
-}
-
-[data-theme="dark"] .floating-cart-button:hover {
-  background: var(--floating-cart-button-hover);
-  border-color: var(--floating-cart-button-hover);
-  box-shadow: 0 6px 25px rgba(91, 107, 181, 0.5);
-}
-
-[data-theme="dark"] .floating-cart-button:focus {
-  outline: 3px solid var(--color-blue);
-  outline-offset: 2px;
-}
-
-/* Cart Icon */
-[data-theme="dark"] .cart-icon {
-  fill: var(--color-text-inverse);
-}
-
-/* Cart Badge */
-[data-theme="dark"] .cart-badge {
-  background: var(--floating-cart-badge-bg);
-  color: var(--color-text-inverse);
-  border: 2px solid var(--color-surface);
-  box-shadow: 0 2px 8px rgba(204, 41, 54, 0.3);
-}
-
-/* Cart Badge Pulse Animation */
-[data-theme="dark"] .cart-badge.pulse {
-  animation: cartBadgePulseDark 0.3s ease-in-out;
-}
-
-@keyframes cartBadgePulseDark {
-  0% { transform: scale(1); box-shadow: 0 2px 8px rgba(204, 41, 54, 0.3); }
-  50% { transform: scale(1.2); box-shadow: 0 4px 15px rgba(204, 41, 54, 0.6); }
-  100% { transform: scale(1); box-shadow: 0 2px 8px rgba(204, 41, 54, 0.3); }
-}
+/* Button and badge styles removed - header cart only */
 
 /* Cart Backdrop */
 [data-theme="dark"] .cart-backdrop {
@@ -387,9 +342,7 @@
     background: var(--color-surface-elevated);
   }
 
-  [data-theme="dark"] .floating-cart-button {
-    box-shadow: 0 4px 20px rgba(91, 107, 181, 0.5);
-  }
+  /* Button styles removed - header cart only */
 
   [data-theme="dark"] .confirmation-modal {
     margin: var(--space-md);
@@ -399,7 +352,6 @@
 
 /* High Contrast Mode Support */
 @media (prefers-contrast: high) {
-  [data-theme="dark"] .floating-cart-button,
   [data-theme="dark"] .cart-checkout-btn,
   [data-theme="dark"] .cart-clear-btn {
     border-width: 2px;
@@ -417,11 +369,8 @@
 
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
-  [data-theme="dark"] .cart-badge.pulse {
-    animation: none;
-  }
+  /* Badge and button animations removed - header cart only */
 
-  [data-theme="dark"] .floating-cart-button:hover,
   [data-theme="dark"] .cart-checkout-btn:hover,
   [data-theme="dark"] .cart-item:hover {
     transform: none;

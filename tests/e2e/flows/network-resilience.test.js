@@ -50,8 +50,8 @@ test.describe('Network Resilience', () => {
     const addToCartBtn = page.locator('button:has-text("Add to Cart")').first();
     await addToCartBtn.click();
     
-    // Verify cart has item
-    await expect(page.locator('.cart-count, .floating-cart .count')).toContainText('1');
+    // Verify header cart badge shows item
+    await expect(page.locator('.nav-cart-badge')).toContainText('1');
     
     // Simulate network interruption
     await context.setOffline(true);
@@ -64,8 +64,8 @@ test.describe('Network Resilience', () => {
     await context.setOffline(false);
     await page.waitForTimeout(1000);
     
-    // Verify cart state is preserved or properly synced
-    const cartCount = await page.locator('.cart-count, .floating-cart .count').textContent();
+    // Verify header cart badge state is preserved or properly synced
+    const cartCount = await page.locator('.nav-cart-badge').textContent();
     expect(parseInt(cartCount)).toBeGreaterThanOrEqual(1);
   });
 
