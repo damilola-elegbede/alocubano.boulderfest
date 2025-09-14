@@ -159,7 +159,7 @@
     <link rel="stylesheet" href="/css/typography.css" />
     <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/floating-cart.css" />
-    <link rel="stylesheet" href="/css/theme-toggle.css" />    <link rel="stylesheet" href="/css/header-cart.css" />
+    <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
   </head>
   <body class="typographic">
@@ -1042,21 +1042,8 @@
             </svg>
           </a>
         </div>
-        <div id="theme-toggle-container" class="footer-theme-toggle"></div>
       </div>
     </footer>
-
-    <!-- Theme Management -->
-    <script type="module">
-      import { initializeThemeToggle } from '/js/theme-toggle.js';
-      import themeManager from '/js/theme-manager.js';
-
-      // Initialize theme
-      document.addEventListener('DOMContentLoaded', () => {
-        themeManager.initializeTheme();
-        initializeThemeToggle('#theme-toggle-container');
-      });
-    </script>
     <script src="/js/navigation.js"></script>
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>

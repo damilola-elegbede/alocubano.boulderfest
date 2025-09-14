@@ -16,7 +16,7 @@
 
     // Configuration
     const DEFAULT_LIGHT_LOGO = '/images/logo.png';
-    const DEFAULT_DARK_LOGO = '/images/logo-transparent.png';
+    const DEFAULT_DARK_LOGO = '/images/logo-dark.png';
     const LOGO_SELECTOR = '.site-logo';
     const TRANSITION_DURATION = 200; // ms
 
