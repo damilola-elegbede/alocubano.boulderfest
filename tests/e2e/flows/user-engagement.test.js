@@ -50,10 +50,16 @@ test.describe('User Engagement Metrics', () => {
         await page.waitForTimeout(1000);
       }
       
-      // Should track ticket selection interactions
-      const cart = page.locator('.floating-cart, .cart-widget');
-      if (await cart.count() > 0) {
-        await expect(cart).toBeVisible();
+      // Should track ticket selection interactions via header cart
+      const headerCart = page.locator('.nav-cart-button');
+      if (await headerCart.count() > 0) {
+        await expect(headerCart).toBeVisible();
+
+        // Check if cart badge updated
+        const cartBadge = page.locator('.nav-cart-badge');
+        if (await cartBadge.count() > 0) {
+          await expect(cartBadge).toBeVisible();
+        }
       }
     }
   });
@@ -115,10 +121,10 @@ test.describe('User Engagement Metrics', () => {
       // Return to tickets page
       await page.goto('/pages/tickets.html');
       
-      // Cart should still be persistent
-      const cart = page.locator('.floating-cart, .cart-count');
-      if (await cart.count() > 0) {
-        await expect(cart.first()).toBeVisible();
+      // Header cart badge should still be persistent
+      const headerCartBadge = page.locator('.nav-cart-badge');
+      if (await headerCartBadge.count() > 0) {
+        await expect(headerCartBadge.first()).toBeVisible();
       }
     }
   });

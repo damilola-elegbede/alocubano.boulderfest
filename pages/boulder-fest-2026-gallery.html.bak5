@@ -1036,21 +1036,8 @@
             </svg>
           </a>
         </div>
-        <div id="theme-toggle-container" class="footer-theme-toggle"></div>
       </div>
     </footer>
-
-    <!-- Theme Management -->
-    <script type="module">
-      import { initializeThemeToggle } from '/js/theme-toggle.js';
-      import themeManager from '/js/theme-manager.js';
-
-      // Initialize theme
-      document.addEventListener('DOMContentLoaded', () => {
-        themeManager.initializeTheme();
-        initializeThemeToggle('#theme-toggle-container');
-      });
-    </script>
 
     <script>
       // Countdown Timer Implementation
@@ -1131,6 +1118,7 @@
     <script src="/js/gallery-hero.js"></script>
     <script type="module" src="/js/global-cart.js"></script>
     
+    <!-- Draggable Floating Cart -->
       <script src="/js/logo-switcher.js"></script>
 </body>
 </html>

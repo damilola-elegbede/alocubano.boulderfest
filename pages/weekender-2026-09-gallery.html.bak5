@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Boulder Fest 2025 Artists - A Lo Cubano Boulder Fest</title>
+    <title>Gallery - A Lo Cubano Weekender September 2026</title>
     <meta
       name="description"
-      content="Meet the incredible Cuban salsa instructors and artists performing at A Lo Cubano Boulder Fest 2025. Learn from authentic masters of Cuban dance, music, and cultural traditions."
+      content="Experience the intimate atmosphere of A Lo Cubano Weekender through our gallery. See the focused learning environment, close-knit community, and intensive workshop format that makes weekenders special."
     />
     <!-- Favicons -->
     <link
@@ -44,14 +44,14 @@
       // Inline critical path optimization - Event hero images with responsive variants
       (function () {
         // Check if optimized variants exist for event heroes
-        const heroPath = "/images/hero/boulder-fest-2025-hero.jpg";
+        const heroPath = "/images/hero/weekender-2026-09-hero.jpg";
         const isEventHero = true;
 
         if (isEventHero) {
           // Preload optimized variants for event heroes (WebP first, then JPEG fallback)
           const isMobile = window.innerWidth <= 768;
           const variant = isMobile ? "mobile" : "desktop";
-          const baseName = "boulder-fest-2025-hero";
+          const baseName = "weekender-2026-09-hero";
 
           // Preload WebP variant
           const webpPreload = document.createElement("link");
@@ -107,65 +107,44 @@
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
-    <!-- Structured Data for SEO -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "DanceEvent",
-        "name": "A Lo Cubano Boulder Fest 2025",
-        "description": "Cuban salsa festival featuring authentic masters teaching Orishas, Rumba, Timba Suelta, Casino, Cubaton, and more.",
-        "startDate": "2025-05-15",
-        "endDate": "2025-05-17",
-        "eventStatus": "https://schema.org/EventScheduled",
-        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
-        "location": {
-          "@type": "Place",
-          "name": "Avalon Ballroom",
-          "address": {
-            "@type": "PostalAddress",
-            "streetAddress": "6185 Arapahoe Rd",
-            "addressLocality": "Boulder",
-            "addressRegion": "CO",
-            "postalCode": "80302",
-            "addressCountry": "US"
-          }
-        },
-        "organizer": {
-          "@type": "Organization",
-          "name": "A Lo Cubano Boulder Fest",
-          "email": "alocubanoboulderfest@gmail.com",
-          "url": "https://alocubanoboulderfest.com"
-        },
-        "performer": [
-          { "@type": "Person", "name": "Laroye" },
-          { "@type": "Person", "name": "Malena" },
-          { "@type": "Person", "name": "Adriel" },
-          { "@type": "Person", "name": "Emarlos" },
-          { "@type": "Person", "name": "Courtney" },
-          { "@type": "Person", "name": "Giselle Soto" },
-          { "@type": "Person", "name": "Nathan Hook" }
-        ],
-        "offers": {
-          "@type": "Offer",
-          "availability": "https://schema.org/InStock",
-          "price": "100",
-          "priceCurrency": "USD",
-          "url": "https://alocubanoboulderfest.com/boulder-fest-2025-tickets"
-        }
-      }
-    </script>
-
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
 
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/typography.css" />
-    <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/floating-cart.css" />
     <link rel="stylesheet" href="/css/theme-toggle.css" />
+    <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
+
+    <!-- Weekender-specific color theme -->
+    <style>
+      .weekender-highlight {
+        border-left: 4px solid var(--color-red);
+        padding-left: var(--space-md);
+      }
+
+      .weekender-gallery-card {
+        background: rgba(204, 41, 54, 0.05);
+        border: 2px solid var(--color-gray-300);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        transition: var(--transition-base);
+      }
+
+      .weekender-gallery-card:hover {
+        border-color: var(--color-red);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .coming-soon-weekender {
+        background: rgba(204, 41, 54, 0.1);
+        border: 2px dashed var(--color-red);
+      }
+    </style>
   </head>
   <body class="typographic">
     <header class="header">
@@ -183,7 +162,7 @@
               <div class="logo-text">
                 <span class="logo-main">A LO CUBANO</span>
                 <span class="logo-separator">|</span>
-                <span class="logo-sub">Boulder Fest</span>
+                <span class="logo-sub">Weekender</span>
               </div>
             </a>
           </div>
@@ -288,8 +267,8 @@
         <div class="hero-image-container">
           <img
             id="hero-splash-image"
-            src="/images/hero/boulder-fest-2025-hero.jpg"
-            alt="Featured Cuban salsa instructors and artists performing at A Lo Cubano Boulder Fest 2025, showcasing authentic dance techniques"
+            src="/images/hero/weekender-2026-09-hero.jpg"
+            alt="Intimate weekender gallery moments showcasing focused learning, close connections, and intensive dance workshops"
             class="hero-splash-img"
             style="object-position: top center !important"
           />
@@ -299,11 +278,14 @@
       <!-- Event Sub Navigation -->
       <section class="event-subnav">
         <div class="container">
-          <nav class="event-nav" aria-label="Boulder Fest 2025 Navigation">
+          <nav
+            class="event-nav"
+            aria-label="September 2026 Weekender Navigation"
+          >
             <ul class="event-nav-list">
               <li>
                 <a
-                  href="/boulder-fest-2025"
+                  href="/weekender-2026-09"
                   class="event-nav-link"
                   data-text="Overview"
                   >Overview</a
@@ -311,7 +293,7 @@
               </li>
               <li>
                 <a
-                  href="/2025-artists"
+                  href="/2026-sept-artists"
                   class="event-nav-link"
                   data-text="Artists"
                   >Artists</a
@@ -319,7 +301,7 @@
               </li>
               <li>
                 <a
-                  href="/2025-schedule"
+                  href="/2026-sept-schedule"
                   class="event-nav-link"
                   data-text="Schedule"
                   >Schedule</a
@@ -327,7 +309,7 @@
               </li>
               <li>
                 <a
-                  href="/2025-gallery"
+                  href="/2026-sept-gallery"
                   class="event-nav-link"
                   data-text="Gallery"
                   >Gallery</a
@@ -338,16 +320,101 @@
         </div>
       </section>
 
-      <!-- 2025 Artists Grid Typography -->
+      <!-- Weekender Gallery Introduction -->
       <section class="section-typographic">
         <div class="container">
-          <h1 class="text-mask">2025 Festival</h1>
+          <h1 class="text-mask">Weekender Gallery</h1>
+          <div
+            class="weekender-highlight"
+            style="margin-bottom: var(--space-xl)"
+          >
+            <h2
+              class="text-gradient weekender"
+              style="
+                font-size: var(--font-size-3xl);
+                margin-bottom: var(--space-md);
+              "
+            >
+              INTIMATE MOMENTS
+            </h2>
+            <p
+              class="font-serif"
+              style="
+                font-size: var(--font-size-lg);
+                color: var(--color-gray-700);
+                margin-bottom: var(--space-md);
+              "
+            >
+              Experience the magic of our weekend intensives through photos that
+              capture the deep connections, focused learning, and joyful
+              community that define A Lo Cubano Weekenders.
+            </p>
+            <div class="text-block-mono" style="font-size: var(--font-size-sm)">
+              // Small group dynamics<br />
+              // Personal instructor attention<br />
+              // Intensive learning environments<br />
+              // Community connections formed
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Weekender Gallery Section -->
+      <section class="section-typographic">
+        <div class="container">
+          <h2
+            class="text-mask"
+            style="text-align: center; margin-bottom: var(--space-2xl)"
+          >
+            WEEKENDER MEMORIES
+          </h2>
+
+          <!-- September 2026 Weekender -->
+          <div
+            class="festival-years-grid"
+            style="margin-bottom: var(--space-2xl)"
+          >
+            <div
+              class="weekender-gallery-card coming-soon-weekender"
+              data-year="2026-09"
+            >
+              <div class="year-card-content">
+                <span
+                  class="year-number font-display weekender-accent"
+                  style="font-size: var(--font-size-4xl)"
+                  >SEP 2026</span
+                >
+                <span
+                  class="year-subtitle font-serif"
+                  style="color: var(--color-gray-700)"
+                  >First Weekender</span
+                >
+                <span class="year-highlight font-mono weekender-accent-alt"
+                  >COMING SOON</span
+                >
+                <p
+                  class="font-serif"
+                  style="
+                    margin-top: var(--space-md);
+                    color: var(--color-gray-600);
+                  "
+                >
+                  Our inaugural weekender intensive - creating intimate memories
+                  with 50 dedicated dancers
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- What Makes Weekender Special -->
           <div class="gallery-typographic">
             <article class="gallery-item-type" data-number="01">
-              <h3 class="gallery-type-title font-display">LAROYE</h3>
-              <p class="gallery-type-meta">ORISHAS • RUMBA • LADIES STYLING</p>
+              <h3 class="gallery-type-title font-display weekender-accent">
+                SMALL GROUP<br />DYNAMICS
+              </h3>
+              <p class="gallery-type-meta">MAXIMUM 12 DANCERS PER WORKSHOP</p>
               <p class="gallery-type-description font-serif">
-                "Master of Afro-Cuban traditions"
+                "Every dancer receives personal attention"
               </p>
               <div
                 class="text-block-mono"
@@ -356,40 +423,20 @@
                   font-size: var(--font-size-xs);
                 "
               >
-                // Deep roots in Cuban culture<br />
-                // Teaching Orishas dance<br />
-                // Rumba fundamentals<br />
-                // Empowering ladies' movement
-              </div>
-              <div style="margin-top: var(--space-lg)">
-                <span
-                  class="text-split font-mono"
-                  style="
-                    font-size: var(--font-size-xs);
-                    color: var(--color-blue);
-                  "
-                  >CULTURAL AMBASSADOR</span
-                ><br />
-                <span
-                  class="text-split font-mono"
-                  style="
-                    font-size: var(--font-size-xs);
-                    color: var(--color-red);
-                  "
-                  >TRADITION KEEPER</span
-                >
+                // Individual feedback from instructors<br />
+                // Close-knit learning environment<br />
+                // Personal connections with fellow dancers<br />
+                // Intimate performance opportunities
               </div>
             </article>
 
             <article class="gallery-item-type" data-number="02">
-              <h3 class="gallery-type-title font-display">
-                MALENA<br />& ADRIEL
+              <h3 class="gallery-type-title font-display weekender-accent">
+                INTENSIVE<br />WORKSHOPS
               </h3>
-              <p class="gallery-type-meta">
-                TIMBA SUELTA • CASINO INTERMEDIATE
-              </p>
+              <p class="gallery-type-meta">90-MINUTE FOCUSED SESSIONS</p>
               <p class="gallery-type-description font-serif">
-                "Dynamic duo of Cuban dance"
+                "Deep dive into technique and culture"
               </p>
               <div
                 class="text-block-mono"
@@ -398,38 +445,20 @@
                   font-size: var(--font-size-xs);
                 "
               >
-                // Partner perfection<br />
-                // Masters of Timba Suelta<br />
-                // Casino intermediate specialists<br />
-                // Energy and precision combined
-              </div>
-              <div style="margin-top: var(--space-lg)">
-                <span
-                  class="text-split font-mono"
-                  style="
-                    font-size: var(--font-size-xs);
-                    color: var(--color-blue);
-                  "
-                  >INTERNATIONAL INSTRUCTORS</span
-                ><br />
-                <span
-                  class="text-split font-mono"
-                  style="
-                    font-size: var(--font-size-xs);
-                    color: var(--color-red);
-                  "
-                  >FESTIVAL FAVORITES</span
-                >
+                // Extended learning sessions<br />
+                // Cultural context and history<br />
+                // Technique refinement focus<br />
+                // Integration and practice time
               </div>
             </article>
 
             <article class="gallery-item-type" data-number="03">
-              <h3 class="gallery-type-title font-display">
-                EMARLOS<br />& COURTNEY
+              <h3 class="gallery-type-title font-display weekender-accent">
+                COMMUNITY<br />BONDING
               </h3>
-              <p class="gallery-type-meta">SON CUBANO • CASINO INTERMEDIATE</p>
+              <p class="gallery-type-meta">SHARED MEALS & SOCIAL TIME</p>
               <p class="gallery-type-description font-serif">
-                "Bridging traditional and modern"
+                "Connections that last beyond the weekend"
               </p>
               <div
                 class="text-block-mono"
@@ -438,134 +467,123 @@
                   font-size: var(--font-size-xs);
                 "
               >
-                // Son Cubano specialists<br />
-                // Casino intermediate focus<br />
-                // Teaching with passion<br />
-                // Connection through movement
-              </div>
-              <div style="margin-top: var(--space-lg)">
-                <span
-                  class="text-split font-mono"
-                  style="
-                    font-size: var(--font-size-xs);
-                    color: var(--color-blue);
-                  "
-                  >DANCE EDUCATORS</span
-                ><br />
-                <span
-                  class="text-split font-mono"
-                  style="
-                    font-size: var(--font-size-xs);
-                    color: var(--color-red);
-                  "
-                  >COMMUNITY BUILDERS</span
-                >
-              </div>
-            </article>
-
-            <article class="gallery-item-type" data-number="04">
-              <h3 class="gallery-type-title font-display">GISELLE<br />SOTO</h3>
-              <p class="gallery-type-meta">CUBATON • LADIES STYLING</p>
-              <p class="gallery-type-description font-serif">
-                "Queen of Cuban urban movement"
-              </p>
-              <div
-                class="text-block-mono"
-                style="
-                  margin-top: var(--space-md);
-                  font-size: var(--font-size-xs);
-                "
-              >
-                // Cubaton specialist<br />
-                // Ladies styling expert<br />
-                // Modern Cuban movement<br />
-                // Confidence through dance
-              </div>
-              <div style="margin-top: var(--space-lg)">
-                <span
-                  class="text-split font-mono"
-                  style="
-                    font-size: var(--font-size-xs);
-                    color: var(--color-blue);
-                  "
-                  >URBAN DANCE INNOVATOR</span
-                ><br />
-                <span
-                  class="text-split font-mono"
-                  style="
-                    font-size: var(--font-size-xs);
-                    color: var(--color-red);
-                  "
-                  >EMPOWERMENT COACH</span
-                >
-              </div>
-            </article>
-
-            <article class="gallery-item-type" data-number="05">
-              <h3 class="gallery-type-title font-display">NATHAN<br />HOOK</h3>
-              <p class="gallery-type-meta">RUEDA INTERMEDIATE/ADVANCED</p>
-              <p class="gallery-type-description font-serif">
-                "Master of the wheel"
-              </p>
-              <div
-                class="text-block-mono"
-                style="
-                  margin-top: var(--space-md);
-                  font-size: var(--font-size-xs);
-                "
-              >
-                // Rueda de Casino expert<br />
-                // Intermediate to advanced levels<br />
-                // Complex formations<br />
-                // Group dynamics specialist
-              </div>
-              <div style="margin-top: var(--space-lg)">
-                <span
-                  class="text-split font-mono"
-                  style="
-                    font-size: var(--font-size-xs);
-                    color: var(--color-blue);
-                  "
-                  >RUEDA CHAMPION</span
-                ><br />
-                <span
-                  class="text-split font-mono"
-                  style="
-                    font-size: var(--font-size-xs);
-                    color: var(--color-red);
-                  "
-                  >TECHNICAL MASTER</span
-                >
+                // Welcome reception moments<br />
+                // Shared Cuban-inspired meals<br />
+                // Intimate social dancing<br />
+                // Closing circle connections
               </div>
             </article>
           </div>
         </div>
       </section>
 
-      <!-- DJ Typography -->
+      <!-- Gallery Philosophy -->
       <section class="section-typographic">
         <div class="container">
-          <h3 class="text-gradient">AMAZING DJ'S</h3>
-          <div class="gallery-typographic">
-            <div class="gallery-item-type" data-number="DJ">
-              <h3 class="gallery-type-title text-glitch" data-text="DJ BYRON">
-                DJ BYRON
-              </h3>
-              <p class="gallery-type-description">The authentic sound master</p>
-            </div>
-            <div class="gallery-item-type" data-number="DJ">
-              <h3 class="gallery-type-title text-glitch" data-text="DJ TITO">
-                DJ TITO
-              </h3>
-              <p class="gallery-type-description">The energy conductor</p>
-            </div>
-            <div class="gallery-item-type" data-number="DJ">
-              <h3 class="gallery-type-title text-glitch" data-text="DJ DIVA">
-                DJ DIVA
-              </h3>
-              <p class="gallery-type-description">The crowd igniter</p>
+          <h3 class="text-gradient weekender">CAPTURING THE EXPERIENCE</h3>
+          <div
+            class="weekender-highlight"
+            style="margin-bottom: var(--space-xl)"
+          >
+            <p
+              class="font-serif"
+              style="
+                font-size: var(--font-size-lg);
+                color: var(--color-gray-700);
+                margin-bottom: var(--space-md);
+              "
+            >
+              Our weekender galleries focus on the intimate moments that make
+              these events special - the concentrated learning, the personal
+              breakthroughs, the connections formed in small groups, and the joy
+              of deep cultural immersion.
+            </p>
+            <div class="text-block-mono" style="font-size: var(--font-size-sm)">
+              // Respectful documentation of learning moments<br />
+              // Candid captures of community connections<br />
+              // Cultural celebration and heritage<br />
+              // Personal growth and achievement
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- Past Weekenders Preview -->
+      <section class="section-typographic">
+        <div class="container">
+          <h3 class="text-gradient weekender">FUTURE WEEKENDERS</h3>
+          <div class="gallery-typographic">
+            <div class="gallery-item-type" data-number="?">
+              <h3 class="gallery-type-title font-display weekender-accent-alt">
+                SPRING 2027
+              </h3>
+              <p class="gallery-type-description font-serif">
+                Planning our second weekender intensive
+              </p>
+            </div>
+            <div class="gallery-item-type" data-number="?">
+              <h3 class="gallery-type-title font-display weekender-accent-alt">
+                FALL 2027
+              </h3>
+              <p class="gallery-type-description font-serif">
+                Advanced weekender for returning participants
+              </p>
+            </div>
+            <div class="gallery-item-type" data-number="?">
+              <h3 class="gallery-type-title font-display weekender-accent-alt">
+                REGIONAL SERIES
+              </h3>
+              <p class="gallery-type-description font-serif">
+                Exploring weekenders in different locations
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Call to Action -->
+      <section class="section-typographic">
+        <div class="container" style="text-align: center">
+          <h2
+            class="text-display weekender-accent"
+            style="margin-bottom: var(--space-lg)"
+          >
+            BE PART OF THE STORY
+          </h2>
+          <p
+            class="font-serif"
+            style="
+              font-size: var(--font-size-lg);
+              margin-bottom: var(--space-md);
+              color: var(--color-gray-700);
+            "
+          >
+            Join our inaugural weekender and help us create the first chapter
+          </p>
+          <p
+            class="font-serif"
+            style="
+              font-size: var(--font-size-base);
+              margin-bottom: var(--space-2xl);
+              color: var(--color-gray-600);
+            "
+          >
+            Limited to 50 participants for maximum intimacy and connection
+          </p>
+          <a
+            href="/weekender-2026-09-tickets"
+            class="form-button-type"
+            style="
+              display: inline-block;
+              background: linear-gradient(
+                135deg,
+                var(--weekender-orange),
+                var(--weekender-teal)
+              );
+              border: none;
+            "
+            >SECURE YOUR SPOT</a
+          >
         </div>
       </section>
     </main>
@@ -573,9 +591,9 @@
     <footer class="footer-typographic">
       <div class="container">
         <p class="footer-credits">
-          MAY 15-17, 2025 •
+          SEPTEMBER 2026 WEEKENDER •
           <a
-            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
+            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Weekender Inquiry"
             style="color: inherit; text-decoration: underline"
             >alocubanoboulderfest@gmail.com</a
           >
@@ -628,22 +646,8 @@
             </svg>
           </a>
         </div>
-        <div id="theme-toggle-container" class="footer-theme-toggle"></div>
       </div>
     </footer>
-
-    <!-- Theme Management -->
-    <script type="module">
-      import { initializeThemeToggle } from '/js/theme-toggle.js';
-      import themeManager from '/js/theme-manager.js';
-
-      // Initialize theme
-      document.addEventListener('DOMContentLoaded', () => {
-        themeManager.initializeTheme();
-        initializeThemeToggle('#theme-toggle-container');
-      });
-    </script>
-
     <script src="/js/navigation.js"></script>
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
@@ -652,6 +656,7 @@
     <script src="/js/gallery-hero.js"></script>
     <script type="module" src="/js/global-cart.js"></script>
     
+    <!-- Draggable Floating Cart -->
       <script src="/js/logo-switcher.js"></script>
 </body>
 </html>

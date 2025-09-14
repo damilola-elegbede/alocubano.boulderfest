@@ -45,12 +45,10 @@ export function initializeFloatingCart(cartManager) {
         }
     }
 
-    // Get DOM references
+    // Get DOM references (removed button and badge)
     const elements = {
         container: document.querySelector('.floating-cart-container'),
-        button: document.querySelector('.floating-cart-button'),
         panel: document.querySelector('.floating-cart-panel'),
-        badge: document.querySelector('.cart-badge'),
         itemsContainer: document.querySelector('.cart-items'),
         totalElement: document.querySelector('.cart-total-amount'),
         emptyMessage: document.querySelector('.cart-empty-message'),
@@ -60,43 +58,24 @@ export function initializeFloatingCart(cartManager) {
         clearButton: document.querySelector('.cart-clear-btn')
     };
 
-    // E2E CRITICAL FIX: Ensure cart has dimensions for Playwright visibility
+    // E2E CRITICAL FIX: Ensure cart panel has dimensions for testing (removed button-specific code)
     if (window.navigator.userAgent.includes('Playwright') || window.location.search.includes('e2e')) {
-        console.log('🔧 E2E Fix: Forcing cart dimensions and visibility');
+        console.log('🔧 E2E Fix: Ensuring cart panel is accessible for testing');
 
-        // Force minimum dimensions on container and button with proper positioning
+        // Force minimum dimensions on container for proper testing
         if (elements.container) {
-            elements.container.style.cssText = 'display: block !important; position: fixed !important; bottom: 20px !important; right: 20px !important; min-width: 60px !important; min-height: 60px !important; height: auto !important; visibility: visible !important; opacity: 1 !important; z-index: 999999 !important;';
+            elements.container.style.cssText = 'display: block !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; visibility: visible !important; pointer-events: auto !important; z-index: 999999 !important;';
         }
 
-        if (elements.button) {
-            elements.button.style.cssText = 'display: flex !important; align-items: center !important; justify-content: center !important; width: 56px !important; height: 56px !important; visibility: visible !important; opacity: 1 !important; position: relative !important; background: var(--color-blue, #007bff) !important; border: none !important; border-radius: 50% !important; box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important; cursor: pointer !important;';
-
-            // Ensure button has visible content
-            const icon = elements.button.querySelector('.cart-icon');
-            if (icon) {
-                icon.style.cssText = 'fill: white !important; width: 24px !important; height: 24px !important;';
-            } else {
-                elements.button.innerHTML = '🛒';
-                elements.button.style.fontSize = '24px !important';
-                elements.button.style.color = 'white !important';
-            }
-        }
-
-        // Force cart badge visibility if it exists
-        if (elements.badge) {
-            elements.badge.style.cssText = 'display: flex !important; position: absolute !important; top: -8px !important; right: -8px !important; background: #ff4444 !important; color: white !important; border-radius: 50% !important; min-width: 20px !important; height: 20px !important; font-size: 12px !important; font-weight: bold !important; align-items: center !important; justify-content: center !important;';
-        }
-
-        // Trigger immediate visibility update for tickets page
+        // Trigger immediate setup for E2E tests
         const currentPath = window.location.pathname;
         if (currentPath.includes('tickets')) {
-            console.log('✅ E2E Fix: Cart forced visible on tickets page with proper dimensions');
+            console.log('✅ E2E Fix: Cart panel prepared for testing on tickets page');
 
             // Add extra debugging info
             setTimeout(() => {
                 const rect = elements.container.getBoundingClientRect();
-                console.log('🔍 E2E Cart Dimensions:', {
+                console.log('🔍 E2E Cart Container Dimensions:', {
                     width: rect.width,
                     height: rect.height,
                     top: rect.top,
@@ -167,16 +146,8 @@ function createCartHTML() {
         <div class="floating-cart-container">
             <!-- Backdrop -->
             <div class="cart-backdrop"></div>
-            
-            <!-- Floating Button -->
-            <button class="floating-cart-button" aria-label="View cart" data-testid="view-cart">
-                <svg class="cart-icon" viewBox="0 0 24 24" width="24" height="24">
-                    <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03L21.7 4H5.21l-.94-2H1zm16 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
-                </svg>
-                <span class="cart-badge" style="display: none;" data-testid="cart-counter">0</span>
-            </button>
-            
-            <!-- Cart Panel -->
+
+            <!-- Cart Panel (slides from header area) -->
             <div class="floating-cart-panel">
                 <div class="cart-header">
                     <h3>Your Cart</h3>
@@ -186,16 +157,16 @@ function createCartHTML() {
                         </svg>
                     </button>
                 </div>
-                
+
                 <div class="cart-content">
                     <div class="cart-empty-message">
                         <p>Your cart is empty</p>
                         <p>Add tickets or make a donation to get started</p>
                     </div>
-                    
+
                     <div class="cart-items"></div>
                 </div>
-                
+
                 <div class="cart-footer">
                     <div class="cart-total">
                         <span>Total:</span>
@@ -224,11 +195,6 @@ function setupEventListeners(elements, cartManager) {
 }
 
 function setupBasicEventListeners(elements, cartManager) {
-    // Toggle cart panel
-    elements.button.addEventListener('click', () => {
-        handleCartToggle(elements, true, cartManager);
-    });
-
     // Close cart panel
     elements.closeButton.addEventListener('click', () => {
         handleCartToggle(elements, false, cartManager);
@@ -505,44 +471,7 @@ async function handleCheckoutClick(cartManager) {
     }
 }
 
-function determineCartVisibility(hasItems) {
-    const currentPath = window.location.pathname;
-
-    // Define page behavior configuration
-    const pageConfig = {
-        // Pages that always show cart (main shopping pages) - support both .html and clean URLs
-        alwaysShow: ['/tickets', '/tickets.html', '/pages/tickets.html', '/donations', '/donations.html', '/pages/donations.html'],
-        // Pages that never show cart (error pages, redirect pages)
-        neverShow: ['/404', '/404.html', '/index.html', '/pages/404.html']
-    };
-
-    // Debug logging for E2E tests
-    const isE2ETest = typeof window !== 'undefined' &&
-        (window.navigator.userAgent.includes('Playwright') || window.location.search.includes('e2e'));
-
-    if (isE2ETest) {
-        console.log('🛒 Cart Visibility Debug:', {
-            currentPath,
-            hasItems,
-            alwaysShowPages: pageConfig.alwaysShow,
-            shouldAlwaysShow: pageConfig.alwaysShow.some((path) => currentPath.includes(path)),
-            shouldNeverShow: pageConfig.neverShow.some((path) => currentPath.includes(path))
-        });
-    }
-
-    // Check if current page should never show cart
-    if (pageConfig.neverShow.some((path) => currentPath.includes(path))) {
-        return false;
-    }
-
-    // Check if current page should always show cart
-    if (pageConfig.alwaysShow.some((path) => currentPath.includes(path))) {
-        return true;
-    }
-
-    // For other pages (about, artists, schedule, gallery), show cart only when it has items
-    return hasItems;
-}
+// determineCartVisibility function removed - no longer needed without floating button
 function toggleCartPanel(elements, isOpen, cartManager) {
     if (isOpen) {
         elements.panel.classList.add('open');
@@ -563,8 +492,7 @@ function toggleCartPanel(elements, isOpen, cartManager) {
         elements.backdrop.classList.remove('active');
         document.body.style.overflow = '';
 
-        // Return focus to button
-        elements.button.focus();
+        // No button to return focus to - panel slides back up to header area
     }
 }
 
@@ -600,25 +528,7 @@ function performCartUIUpdate(elements, cartState) {
     // Batch DOM updates using document fragment
     const updates = [];
 
-    // Update badge
-    if (totals.itemCount > 0 || totals.donationCount > 0) {
-        updates.push(() => {
-            elements.badge.textContent = totalItems || '•';
-            elements.badge.style.display = 'flex';
-
-            // Add pulse animation for updates (optimized)
-            if (!elements.badge.classList.contains('pulse')) {
-                elements.badge.classList.add('pulse');
-                setTimeout(() => {
-                    elements.badge.classList.remove('pulse');
-                }, 300);
-            }
-        });
-    } else {
-        updates.push(() => {
-            elements.badge.style.display = 'none';
-        });
-    }
+    // Badge update logic removed - no cart button badge needed
 
     // Update content visibility
     if (isEmpty) {
@@ -649,78 +559,23 @@ function performCartUIUpdate(elements, cartState) {
         elements.totalElement.textContent = `$${totals.total.toFixed(2)}`;
     });
 
-    // Show/hide floating button based on cart contents and page
-    const hasItems = totals.itemCount > 0 || totals.donationCount > 0;
-    const shouldShowCart = determineCartVisibility(hasItems);
+    // Container is always available for panel functionality - no visibility logic needed
+    const isE2ETest = window.navigator.userAgent.includes('Playwright');
 
     updates.push(() => {
-        const isE2ETest = window.navigator.userAgent.includes('Playwright');
+        // Container stays available for panel sliding
+        elements.container.style.display = 'block';
+        elements.container.setAttribute('data-cart-state', 'panel-available');
+        elements.container.setAttribute('data-cart-items', totalItems.toString());
 
-        if (shouldShowCart) {
-            elements.container.style.display = 'block';
-            elements.button.style.opacity = '1';
-            elements.button.style.pointerEvents = 'auto';
-            elements.button.style.visibility = 'visible'; // Explicit visibility for E2E
-
-            // E2E FIX: Force dimensions and positioning for visibility detection
-            if (isE2ETest) {
-                elements.container.style.position = 'fixed';
-                elements.container.style.bottom = '20px';
-                elements.container.style.right = '20px';
-                elements.container.style.width = 'auto';
-                elements.container.style.height = 'auto';
-                elements.container.style.minHeight = '60px';
-                elements.container.style.zIndex = '999999';
-            }
-
-            // Add test-ready state attribute for E2E tests
-            elements.container.setAttribute('data-cart-state', 'visible');
-            elements.button.setAttribute('data-cart-items', totalItems.toString());
-
-            // E2E DEBUGGING: Log visibility decisions
-            if (isE2ETest) {
-                console.log('✅ Cart should be visible:', {
-                    shouldShowCart,
-                    hasItems,
-                    totalItems,
-                    currentPath: window.location.pathname,
-                    containerDisplay: elements.container.style.display,
-                    buttonOpacity: elements.button.style.opacity,
-                    containerRect: elements.container.getBoundingClientRect()
-                });
-            }
-        } else {
-            // E2E FIX: For tickets page, still show cart even when "empty" for testing
-            if (isE2ETest && window.location.pathname.includes('tickets')) {
-                console.log('🔧 E2E Override: Keeping cart visible on tickets page for testing');
-                elements.container.style.display = 'block';
-                elements.container.style.position = 'fixed';
-                elements.container.style.bottom = '20px';
-                elements.container.style.right = '20px';
-                elements.container.style.width = 'auto';
-                elements.container.style.height = 'auto';
-                elements.container.style.minHeight = '60px';
-                elements.container.style.zIndex = '999999';
-                elements.button.style.opacity = '1';
-                elements.button.style.pointerEvents = 'auto';
-                elements.button.style.visibility = 'visible';
-                elements.container.setAttribute('data-cart-state', 'visible-test');
-            } else {
-                elements.container.style.display = 'none';
-                elements.container.setAttribute('data-cart-state', 'hidden');
-            }
-            elements.button.setAttribute('data-cart-items', totalItems.toString());
-
-            // E2E DEBUGGING: Log why cart is hidden
-            if (isE2ETest) {
-                console.log('❌ Cart should be hidden (but may be overridden for tickets page):', {
-                    shouldShowCart,
-                    hasItems,
-                    totalItems,
-                    currentPath: window.location.pathname,
-                    isTicketsPage: window.location.pathname.includes('tickets')
-                });
-            }
+        // E2E DEBUGGING: Log cart state
+        if (isE2ETest) {
+            console.log('✅ Cart panel available:', {
+                totalItems,
+                currentPath: window.location.pathname,
+                containerDisplay: elements.container.style.display,
+                containerRect: elements.container.getBoundingClientRect()
+            });
         }
     });
 

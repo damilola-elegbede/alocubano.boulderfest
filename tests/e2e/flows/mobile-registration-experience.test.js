@@ -66,23 +66,35 @@ test.describe('Mobile Registration Experience', () => {
     }
   });
 
-  test('should handle mobile cart interactions', async ({ page }) => {
+  test('should handle mobile header cart interactions', async ({ page }) => {
     await page.goto('/pages/tickets.html');
-    
+
     // Add item to cart
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      
-      // Mobile cart should be accessible
-      const cart = page.locator('.floating-cart, .cart-widget');
-      await expect(cart).toBeVisible();
-      
-      // Cart should not obstruct content on mobile
-      const cartBox = await cart.boundingBox();
-      if (cartBox) {
-        // Cart should be positioned appropriately for mobile
-        expect(cartBox.width).toBeLessThanOrEqual(375);
+
+      // Header cart button should be accessible on mobile
+      const headerCart = page.locator('.nav-cart-button');
+      await expect(headerCart).toBeVisible();
+
+      // Header cart badge should update
+      const cartBadge = page.locator('.nav-cart-badge');
+      if (await cartBadge.count() > 0) {
+        await expect(cartBadge).toBeVisible();
+      }
+
+      // Click header cart to open panel
+      await headerCart.click();
+
+      // Cart panel should slide out appropriately for mobile
+      const cartPanel = page.locator('.cart-panel, .cart-sidebar');
+      if (await cartPanel.count() > 0) {
+        const panelBox = await cartPanel.boundingBox();
+        if (panelBox) {
+          // Panel should fit mobile screen
+          expect(panelBox.width).toBeLessThanOrEqual(375);
+        }
       }
     }
   });

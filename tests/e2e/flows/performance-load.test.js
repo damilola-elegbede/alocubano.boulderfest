@@ -176,9 +176,9 @@ test.describe('Performance Under Load', () => {
       }
     }
     
-    // Verify cart updates
-    const cartButton = page.locator('.floating-cart, .cart-icon');
-    await expect(cartButton).toBeVisible({ timeout: 3000 });
+    // Verify header cart updates
+    const headerCartButton = page.locator('.nav-cart-button');
+    await expect(headerCartButton).toBeVisible({ timeout: 3000 });
     
     const totalTime = Date.now() - startTime;
     expect(totalTime).toBeLessThan(5000); // 5 second budget for cart operations

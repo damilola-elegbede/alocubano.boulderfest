@@ -77,20 +77,19 @@ test.describe('Ticket Purchase - Essential Flow', () => {
       { timeout: 8000 }
     );
     
-    // Check that the header cart button appears after adding items
-    const headerCartButton = page.locator('.nav-cart-button');
-    await expect(headerCartButton).toBeVisible({ timeout: 5000 });
-
-    // Verify the header cart badge shows item count
-    const cartBadge = page.locator('.nav-cart-badge');
+    // Check that the floating cart appears after adding items
+    const floatingCartButton = page.locator('.nav-cart-button, [data-testid="view-cart"]');
+    await expect(floatingCartButton).toBeVisible({ timeout: 5000 });
+    
+    // Verify the cart badge shows item count
+    const cartBadge = page.locator('.cart-badge');
     await expect(cartBadge).toBeVisible({ timeout: 5000 });
-
-    // Click header cart to open panel
-    await headerCartButton.click();
-
-    // Cart panel should slide out
-    const cartPanel = page.locator('.cart-panel, .cart-sidebar');
-    await expect(cartPanel).toHaveClass(/open|active/, { timeout: 5000 });
+    
+    // Open cart panel to verify it works
+    await floatingCartButton.click();
+    
+    const cartPanel = page.locator('.floating-cart-panel');
+    await expect(cartPanel).toHaveClass(/open/, { timeout: 5000 });
     
     console.log('✅ Successfully added ticket to cart and opened cart panel');
   });

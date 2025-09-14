@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gallery - Boulder Fest 2026 - A Lo Cubano</title>
+    <title>Schedule - Boulder Fest 2026 - A Lo Cubano</title>
     <meta
       name="description"
-      content="Coming Soon! Boulder Fest 2026 (May 15-17) photo gallery. Experience the energy, passion, and culture of authentic Cuban salsa through stunning photography."
+      content="Coming Soon! Full 3-day schedule for Boulder Fest 2026 (May 15-17). Workshop times, social dance events, and performance schedules at Avalon Ballroom in Boulder, Colorado."
     />
     <!-- Favicons -->
     <link
@@ -61,15 +61,27 @@
           webpPreload.type = "image/webp";
           document.head.appendChild(webpPreload);
 
-          // Preload AVIF variant for supported browsers
-          if (typeof window !== "undefined" && "OffscreenCanvas" in window) {
-            const avifPreload = document.createElement("link");
-            avifPreload.rel = "preload";
-            avifPreload.as = "image";
-            avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
-            avifPreload.type = "image/avif";
-            document.head.appendChild(avifPreload);
+          // Preload AVIF variant with proper detection
+          function supportsAVIF() {
+            return new Promise((resolve) => {
+              const img = new Image();
+              img.onload = () => resolve(true);
+              img.onerror = () => resolve(false);
+              img.src =
+                "data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAADybWV0YQAAAAAAAAAoaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAGxpYmF2aWYAAAAADnBpdG0AAAAAAAEAAAAeaWxvYwAAAABEAAABAAEAAAABAAABGgAAAB0AAAAoaWluZgAAAAAAAQAAABppbmZlAgAAAAABAABhdjAxQ29sb3IAAAAAamlwcnAAAABLaXBjbwAAABRpc3BlAAAAAAAAAAIAAAACAAAAEHBpeGkAAAAAAwgICAAAAAxhdjFDgQ0MAAAAABNjb2xybmNseAACAAIAAYAAAAAXaXBtYQAAAAAAAAABAAEEAQKDBAAAACVtZGF0EgAKCBgABogQEAwgMg8f8D///8WfhwB8+ErK42A=";
+            });
           }
+
+          supportsAVIF().then((supported) => {
+            if (supported) {
+              const avifPreload = document.createElement("link");
+              avifPreload.rel = "preload";
+              avifPreload.as = "image";
+              avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
+              avifPreload.type = "image/avif";
+              document.head.appendChild(avifPreload);
+            }
+          });
 
           // Fallback JPEG preload
           const jpegPreload = document.createElement("link");
@@ -93,15 +105,11 @@
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
-    <!-- Theme Management - Early inclusion to prevent FOUC -->
-    <script type="module" src="/js/theme-manager.js"></script>
-
-    <link rel="stylesheet" href="/css/base.css" />
+        <!-- Theme Management - Early inclusion to prevent FOUC -->    <script type="module" src="/js/theme-manager.js"></script>    <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/typography.css" />
     <link rel="stylesheet" href="/css/floating-cart.css" />
-    <link rel="stylesheet" href="/css/theme-toggle.css" />
-    <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/theme-toggle.css" />    <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
   </head>
@@ -227,7 +235,7 @@
           <img
             id="hero-splash-image"
             src="/images/hero/boulder-fest-2026-hero.jpg"
-            alt="Boulder Fest 2026 - Coming Soon! Capturing the spirit and passion of Cuban salsa culture"
+            alt="Boulder Fest 2026 - Coming Soon! Workshop sessions and dance classes schedule"
             class="hero-splash-img"
             style="object-position: top center !important"
           />
@@ -281,7 +289,7 @@
         <div class="container">
           <h1 class="text-mask">Boulder Fest 2026</h1>
           <h2 class="text-gradient" style="margin-bottom: var(--space-lg)">
-            GALLERY
+            SCHEDULE
           </h2>
 
           <!-- Countdown Timer -->
@@ -385,7 +393,7 @@
                 class="text-block-large"
                 style="margin-bottom: var(--space-md)"
               >
-                MEMORIES IN THE MAKING
+                SCHEDULE COMING SOON
               </h3>
               <p
                 class="font-serif"
@@ -396,32 +404,26 @@
                   line-height: 1.6;
                 "
               >
-                Get ready to create unforgettable moments! Boulder Fest 2026
-                will be captured by our professional photographers, preserving
-                the energy, passion, and authentic Cuban culture for years to
-                come.
+                We're carefully crafting an incredible 3-day schedule packed
+                with workshops, social dancing, and cultural experiences. Get
+                ready for the most comprehensive Cuban salsa experience in
+                Colorado.
               </p>
             </div>
 
-            <!-- Photo Categories Preview -->
-            <div
-              class="photo-categories"
-              style="margin-bottom: var(--space-xl)"
-            >
-              <h3 class="font-display" style="margin-bottom: var(--space-lg)">
-                WHAT WE'LL CAPTURE
-              </h3>
+            <!-- Event Overview -->
+            <div class="event-overview" style="margin-bottom: var(--space-xl)">
               <div
-                class="categories-grid"
+                class="overview-grid"
                 style="
                   display: grid;
-                  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
                   gap: var(--space-lg);
                   margin: var(--space-xl) 0;
                 "
               >
                 <div
-                  class="category-item"
+                  class="overview-item"
                   style="
                     background: var(--color-gray-100);
                     padding: var(--space-lg);
@@ -430,17 +432,55 @@
                   "
                 >
                   <div
-                    class="category-icon font-display"
+                    class="overview-icon font-display"
                     style="
-                      font-size: var(--font-size-2xl);
+                      font-size: var(--font-size-3xl);
                       color: var(--color-blue);
                       margin-bottom: var(--space-sm);
                     "
                   >
-                    📸
+                    3
                   </div>
                   <div
-                    class="category-title font-mono"
+                    class="overview-title font-mono"
+                    style="
+                      font-size: var(--font-size-sm);
+                      margin-bottom: var(--space-xs);
+                    "
+                  >
+                    DAYS
+                  </div>
+                  <div
+                    class="overview-subtitle font-serif"
+                    style="
+                      font-size: var(--font-size-xs);
+                      color: var(--color-gray-600);
+                    "
+                  >
+                    May 15-17, 2026
+                  </div>
+                </div>
+                <div
+                  class="overview-item"
+                  style="
+                    background: var(--color-gray-100);
+                    padding: var(--space-lg);
+                    border-radius: 8px;
+                    text-align: center;
+                  "
+                >
+                  <div
+                    class="overview-icon font-display"
+                    style="
+                      font-size: var(--font-size-3xl);
+                      color: var(--color-red);
+                      margin-bottom: var(--space-sm);
+                    "
+                  >
+                    15+
+                  </div>
+                  <div
+                    class="overview-title font-mono"
                     style="
                       font-size: var(--font-size-sm);
                       margin-bottom: var(--space-xs);
@@ -449,17 +489,17 @@
                     WORKSHOPS
                   </div>
                   <div
-                    class="category-subtitle font-serif"
+                    class="overview-subtitle font-serif"
                     style="
                       font-size: var(--font-size-xs);
                       color: var(--color-gray-600);
                     "
                   >
-                    Learning in action
+                    All skill levels
                   </div>
                 </div>
                 <div
-                  class="category-item"
+                  class="overview-item"
                   style="
                     background: var(--color-gray-100);
                     padding: var(--space-lg);
@@ -468,116 +508,40 @@
                   "
                 >
                   <div
-                    class="category-icon font-display"
+                    class="overview-icon font-display"
                     style="
-                      font-size: var(--font-size-2xl);
-                      color: var(--color-red);
-                      margin-bottom: var(--space-sm);
-                    "
-                  >
-                    💃
-                  </div>
-                  <div
-                    class="category-title font-mono"
-                    style="
-                      font-size: var(--font-size-sm);
-                      margin-bottom: var(--space-xs);
-                    "
-                  >
-                    SOCIAL DANCING
-                  </div>
-                  <div
-                    class="category-subtitle font-serif"
-                    style="
-                      font-size: var(--font-size-xs);
-                      color: var(--color-gray-600);
-                    "
-                  >
-                    Pure joy & connection
-                  </div>
-                </div>
-                <div
-                  class="category-item"
-                  style="
-                    background: var(--color-gray-100);
-                    padding: var(--space-lg);
-                    border-radius: 8px;
-                    text-align: center;
-                  "
-                >
-                  <div
-                    class="category-icon font-display"
-                    style="
-                      font-size: var(--font-size-2xl);
+                      font-size: var(--font-size-3xl);
                       color: var(--color-blue);
                       margin-bottom: var(--space-sm);
                     "
                   >
-                    🎭
+                    2
                   </div>
                   <div
-                    class="category-title font-mono"
+                    class="overview-title font-mono"
                     style="
                       font-size: var(--font-size-sm);
                       margin-bottom: var(--space-xs);
                     "
                   >
-                    CULTURAL MOMENTS
+                    SOCIAL NIGHTS
                   </div>
                   <div
-                    class="category-subtitle font-serif"
+                    class="overview-subtitle font-serif"
                     style="
                       font-size: var(--font-size-xs);
                       color: var(--color-gray-600);
                     "
                   >
-                    Authentic expressions
-                  </div>
-                </div>
-                <div
-                  class="category-item"
-                  style="
-                    background: var(--color-gray-100);
-                    padding: var(--space-lg);
-                    border-radius: 8px;
-                    text-align: center;
-                  "
-                >
-                  <div
-                    class="category-icon font-display"
-                    style="
-                      font-size: var(--font-size-2xl);
-                      color: var(--color-red);
-                      margin-bottom: var(--space-sm);
-                    "
-                  >
-                    👥
-                  </div>
-                  <div
-                    class="category-title font-mono"
-                    style="
-                      font-size: var(--font-size-sm);
-                      margin-bottom: var(--space-xs);
-                    "
-                  >
-                    COMMUNITY
-                  </div>
-                  <div
-                    class="category-subtitle font-serif"
-                    style="
-                      font-size: var(--font-size-xs);
-                      color: var(--color-gray-600);
-                    "
-                  >
-                    Friendships & connections
+                    Friday & Saturday
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Photo Sharing Promise -->
+            <!-- Venue Information -->
             <div
-              class="photo-promise"
+              class="venue-info"
               style="
                 background: var(--color-gray-50);
                 padding: var(--space-xl);
@@ -586,70 +550,31 @@
               "
             >
               <h3 class="text-gradient" style="margin-bottom: var(--space-md)">
-                OUR PROMISE TO YOU
+                VENUE
               </h3>
-              <div
-                class="promise-grid"
-                style="
-                  display: grid;
-                  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                  gap: var(--space-lg);
-                  text-align: left;
-                "
-              >
-                <div class="promise-item">
-                  <h4
-                    class="font-mono"
-                    style="
-                      color: var(--color-blue);
-                      margin-bottom: var(--space-sm);
-                    "
-                  >
-                    FREE ACCESS
-                  </h4>
-                  <p
-                    class="font-serif"
-                    style="font-size: var(--font-size-sm); line-height: 1.6"
-                  >
-                    All photos will be available for free download - no
-                    paywalls, no watermarks
-                  </p>
-                </div>
-                <div class="promise-item">
-                  <h4
-                    class="font-mono"
-                    style="
-                      color: var(--color-red);
-                      margin-bottom: var(--space-sm);
-                    "
-                  >
-                    HIGH QUALITY
-                  </h4>
-                  <p
-                    class="font-serif"
-                    style="font-size: var(--font-size-sm); line-height: 1.6"
-                  >
-                    Professional photography with multiple formats for social
-                    media and prints
-                  </p>
-                </div>
-                <div class="promise-item">
-                  <h4
-                    class="font-mono"
-                    style="
-                      color: var(--color-blue);
-                      margin-bottom: var(--space-sm);
-                    "
-                  >
-                    QUICK DELIVERY
-                  </h4>
-                  <p
-                    class="font-serif"
-                    style="font-size: var(--font-size-sm); line-height: 1.6"
-                  >
-                    Photos processed and available within 48 hours of each day
-                  </p>
-                </div>
+              <div class="venue-details" style="text-align: center">
+                <p
+                  class="font-display"
+                  style="
+                    font-size: var(--font-size-xl);
+                    margin-bottom: var(--space-sm);
+                  "
+                >
+                  AVALON BALLROOM
+                </p>
+                <p class="font-serif" style="margin-bottom: var(--space-sm)">
+                  6185 Arapahoe Rd, Boulder, CO 80302
+                </p>
+                <p
+                  class="font-mono"
+                  style="
+                    font-size: var(--font-size-sm);
+                    color: var(--color-gray-600);
+                  "
+                >
+                  Professional dance floors • Climate controlled • Full sound
+                  system
+                </p>
               </div>
             </div>
           </div>
@@ -666,7 +591,7 @@
             "
           >
             <h3 class="text-gradient" style="margin-bottom: var(--space-md)">
-              GET PHOTO UPDATES
+              GET SCHEDULE UPDATES
             </h3>
             <p
               class="font-serif"
@@ -677,9 +602,8 @@
                 margin-right: auto;
               "
             >
-              Be notified as soon as Boulder Fest 2026 photos are live! We'll
-              send you direct links to download your favorites in high
-              resolution.
+              Be the first to see our detailed schedule and secure your spot in
+              your favorite workshops. Early birds get priority scheduling!
             </p>
             <form
               class="notification-form"
@@ -721,8 +645,8 @@
                   margin-top: var(--space-sm);
                 "
               >
-                Photo release notifications • High-res download links • Album
-                updates
+                Priority workshop registration • Schedule updates • Special
+                offers
               </p>
             </form>
           </div>
@@ -731,248 +655,124 @@
 
       <hr class="hr-typographic style-minimal" />
 
-      <!-- Previous Years Gallery -->
+      <!-- Boulder Fest 2025 Reference -->
       <section class="section-typographic">
         <div class="container">
-          <h2 class="text-mask">Previous Years</h2>
+          <h2 class="text-mask">Boulder Fest 2025</h2>
           <p
             class="font-serif"
             style="margin-bottom: var(--space-lg); max-width: 700px"
           >
-            Experience the magic through our lens! Here's a taste of what
-            Boulder Fest photography captures - the authentic moments, genuine
-            emotions, and vibrant culture that make our festival special.
+            Boulder Fest 2025 featured a packed 3-day schedule with workshops
+            covering everything from Orishas and Rumba to Timba Suelta and
+            Casino, plus amazing social dances every night.
           </p>
 
-          <!-- Gallery Stats -->
-          <div
-            class="gallery-stats"
-            style="
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-              gap: var(--space-lg);
-              margin: var(--space-xl) 0;
-              text-align: center;
-            "
-          >
-            <div class="stat-item">
-              <div
-                class="stat-number font-display"
-                style="
-                  font-size: var(--font-size-3xl);
-                  color: var(--color-blue);
-                "
-              >
-                2,500+
-              </div>
-              <div
-                class="stat-label font-mono"
-                style="font-size: var(--font-size-sm)"
-              >
-                PHOTOS (2025)
-              </div>
-            </div>
-            <div class="stat-item">
-              <div
-                class="stat-number font-display"
-                style="font-size: var(--font-size-3xl); color: var(--color-red)"
-              >
-                48
-              </div>
-              <div
-                class="stat-label font-mono"
-                style="font-size: var(--font-size-sm)"
-              >
-                HOURS COVERAGE
-              </div>
-            </div>
-            <div class="stat-item">
-              <div
-                class="stat-number font-display"
-                style="
-                  font-size: var(--font-size-3xl);
-                  color: var(--color-blue);
-                "
-              >
-                15,000+
-              </div>
-              <div
-                class="stat-label font-mono"
-                style="font-size: var(--font-size-sm)"
-              >
-                DOWNLOADS
-              </div>
-            </div>
-            <div class="stat-item">
-              <div
-                class="stat-number font-display"
-                style="font-size: var(--font-size-3xl); color: var(--color-red)"
-              >
-                3
-              </div>
-              <div
-                class="stat-label font-mono"
-                style="font-size: var(--font-size-sm)"
-              >
-                PHOTOGRAPHERS
-              </div>
-            </div>
-          </div>
-
-          <!-- Gallery Links -->
-          <div
-            class="gallery-links"
-            style="
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-              gap: var(--space-lg);
-              margin-top: var(--space-xl);
-            "
-          >
-            <div
-              class="gallery-link-item"
-              style="
-                border: 1px solid var(--color-gray-200);
-                padding: var(--space-lg);
-                border-radius: 8px;
-                text-align: center;
-              "
-            >
-              <h4 class="font-display" style="margin-bottom: var(--space-sm)">
-                Boulder Fest 2025
-              </h4>
-              <p
-                class="font-serif"
-                style="
-                  font-size: var(--font-size-sm);
-                  margin-bottom: var(--space-md);
-                  color: var(--color-gray-600);
-                "
-              >
-                2,500+ photos from our most successful festival yet
-              </p>
-              <a
-                href="/gallery-2025"
-                class="text-block-mono"
-                style="color: var(--color-blue); text-decoration: underline"
-              >
-                → VIEW 2025 GALLERY
-              </a>
-            </div>
-
-            <div
-              class="gallery-link-item"
-              style="
-                border: 1px solid var(--color-gray-200);
-                padding: var(--space-lg);
-                border-radius: 8px;
-                text-align: center;
-              "
-            >
-              <h4 class="font-display" style="margin-bottom: var(--space-sm)">
-                All Years Gallery
-              </h4>
-              <p
-                class="font-serif"
-                style="
-                  font-size: var(--font-size-sm);
-                  margin-bottom: var(--space-md);
-                  color: var(--color-gray-600);
-                "
-              >
-                Browse through our complete photo archive
-              </p>
-              <a
-                href="/gallery"
-                class="text-block-mono"
-                style="color: var(--color-blue); text-decoration: underline"
-              >
-                → VIEW ALL GALLERIES
-              </a>
-            </div>
-          </div>
-
-          <!-- Photographer Credits -->
-          <div
-            class="photographer-credits"
-            style="
-              background: var(--color-gray-50);
-              padding: var(--space-xl);
-              border-radius: 12px;
-              margin-top: var(--space-xl);
-              text-align: center;
-            "
-          >
-            <h3 class="text-gradient" style="margin-bottom: var(--space-md)">
-              CAPTURED BY PROFESSIONALS
+          <!-- Sample Schedule Preview -->
+          <div class="schedule-preview" style="margin-top: var(--space-xl)">
+            <h3 class="font-display" style="margin-bottom: var(--space-lg)">
+              WHAT TO EXPECT IN 2026
             </h3>
-            <p
-              class="font-serif"
-              style="
-                margin-bottom: var(--space-lg);
-                max-width: 600px;
-                margin-left: auto;
-                margin-right: auto;
-              "
-            >
-              Our team of experienced event photographers specializes in dance
-              photography, ensuring every spin, dip, and smile is perfectly
-              captured.
-            </p>
+
             <div
-              class="photo-quality-notes"
+              class="schedule-categories"
               style="
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: var(--space-md);
-                margin-top: var(--space-lg);
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: var(--space-lg);
               "
             >
-              <div class="quality-item">
-                <div
+              <div
+                class="category-item"
+                style="
+                  border: 1px solid var(--color-gray-200);
+                  padding: var(--space-lg);
+                  border-radius: 8px;
+                "
+              >
+                <h4
                   class="font-mono"
                   style="
-                    font-size: var(--font-size-sm);
                     color: var(--color-blue);
+                    margin-bottom: var(--space-sm);
                   "
                 >
-                  4K RESOLUTION
-                </div>
+                  FRIDAY WORKSHOPS
+                </h4>
+                <ul
+                  class="font-serif"
+                  style="line-height: 1.6; font-size: var(--font-size-sm)"
+                >
+                  <li>Afro-Cuban foundations</li>
+                  <li>Timba techniques</li>
+                  <li>Cultural context sessions</li>
+                </ul>
               </div>
-              <div class="quality-item">
-                <div
+
+              <div
+                class="category-item"
+                style="
+                  border: 1px solid var(--color-gray-200);
+                  padding: var(--space-lg);
+                  border-radius: 8px;
+                "
+              >
+                <h4
                   class="font-mono"
                   style="
-                    font-size: var(--font-size-sm);
                     color: var(--color-red);
+                    margin-bottom: var(--space-sm);
                   "
                 >
-                  MULTIPLE FORMATS
-                </div>
+                  SATURDAY WORKSHOPS
+                </h4>
+                <ul
+                  class="font-serif"
+                  style="line-height: 1.6; font-size: var(--font-size-sm)"
+                >
+                  <li>Advanced partner work</li>
+                  <li>Ladies & Men's styling</li>
+                  <li>Rueda formations</li>
+                </ul>
               </div>
-              <div class="quality-item">
-                <div
+
+              <div
+                class="category-item"
+                style="
+                  border: 1px solid var(--color-gray-200);
+                  padding: var(--space-lg);
+                  border-radius: 8px;
+                "
+              >
+                <h4
                   class="font-mono"
                   style="
-                    font-size: var(--font-size-sm);
                     color: var(--color-blue);
+                    margin-bottom: var(--space-sm);
                   "
                 >
-                  FAST EDITING
-                </div>
-              </div>
-              <div class="quality-item">
-                <div
-                  class="font-mono"
-                  style="
-                    font-size: var(--font-size-sm);
-                    color: var(--color-red);
-                  "
+                  SUNDAY SESSIONS
+                </h4>
+                <ul
+                  class="font-serif"
+                  style="line-height: 1.6; font-size: var(--font-size-sm)"
                 >
-                  FREE DOWNLOADS
-                </div>
+                  <li>Integration workshops</li>
+                  <li>Q&A with masters</li>
+                  <li>Community building</li>
+                </ul>
               </div>
             </div>
+          </div>
+
+          <div style="text-align: center; margin-top: var(--space-xl)">
+            <a
+              href="/schedule"
+              class="text-block-mono"
+              style="color: var(--color-blue); text-decoration: underline"
+            >
+              → View Boulder Fest 2025 Full Schedule
+            </a>
           </div>
         </div>
       </section>
@@ -983,7 +783,7 @@
         <p class="footer-credits">
           MAY 15-17, 2026 •
           <a
-            href="mailto:alocubanoboulderfest@gmail.com?subject=Boulder Fest 2026 Gallery Inquiry"
+            href="mailto:alocubanoboulderfest@gmail.com?subject=Boulder Fest 2026 Schedule Inquiry"
             style="color: inherit; text-decoration: underline"
             >alocubanoboulderfest@gmail.com</a
           >
@@ -1036,21 +836,8 @@
             </svg>
           </a>
         </div>
-        <div id="theme-toggle-container" class="footer-theme-toggle"></div>
       </div>
     </footer>
-
-    <!-- Theme Management -->
-    <script type="module">
-      import { initializeThemeToggle } from '/js/theme-toggle.js';
-      import themeManager from '/js/theme-manager.js';
-
-      // Initialize theme
-      document.addEventListener('DOMContentLoaded', () => {
-        themeManager.initializeTheme();
-        initializeThemeToggle('#theme-toggle-container');
-      });
-    </script>
 
     <script>
       // Countdown Timer Implementation
@@ -1096,7 +883,7 @@
       updateCountdown();
       setInterval(updateCountdown, 1000);
 
-      // Photo Notification Form Handler
+      // Schedule Notification Form Handler
       document
         .querySelector(".notification-form")
         .addEventListener("submit", function (e) {
@@ -1108,7 +895,7 @@
             // For now, show success message (in production, this would connect to an email service)
             const button = this.querySelector("button");
             const originalText = button.textContent;
-            button.textContent = "SIGNED UP!";
+            button.textContent = "SUBSCRIBED!";
             button.style.background = "var(--color-green, #10B981)";
 
             setTimeout(() => {
@@ -1118,7 +905,7 @@
             }, 3000);
 
             // TODO: Integrate with email service (Mailchimp, ConvertKit, etc.)
-            console.log("Photo notification signup:", email);
+            console.log("Schedule notification signup:", email);
           }
         });
     </script>
@@ -1131,6 +918,7 @@
     <script src="/js/gallery-hero.js"></script>
     <script type="module" src="/js/global-cart.js"></script>
     
+    <!-- Draggable Floating Cart -->
       <script src="/js/logo-switcher.js"></script>
 </body>
 </html>

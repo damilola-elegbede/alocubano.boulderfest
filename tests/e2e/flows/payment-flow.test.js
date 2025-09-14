@@ -43,16 +43,16 @@ test.describe('Payment Processing Flow', () => {
       return cartManager && !cartManager.getState().isEmpty;
     }, { timeout: 5000 });
     
-    // Wait for cart badge to appear
-    await expect(page.locator('[data-testid="cart-counter"]')).toBeVisible({ timeout: 5000 });
+    // Wait for header cart badge to appear
+    await expect(page.locator('.nav-cart-badge')).toBeVisible({ timeout: 5000 });
     
-    // Click the floating cart button to open cart panel
-    const viewCartButton = page.locator('[data-testid="view-cart"]');
-    await expect(viewCartButton).toBeVisible();
-    await viewCartButton.click();
-    
-    // Wait for cart panel to open
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+    // Click the header cart button to open cart panel
+    const headerCartButton = page.locator('.nav-cart-button');
+    await expect(headerCartButton).toBeVisible();
+    await headerCartButton.click();
+
+    // Wait for cart panel to slide out
+    await expect(page.locator('.cart-panel.open, .cart-sidebar.active')).toBeVisible({ timeout: 5000 });
     
     // Click checkout button in the cart panel
     const checkoutButton = page.locator('[data-testid="checkout-button"]');
@@ -106,13 +106,13 @@ test.describe('Payment Processing Flow', () => {
       return cartManager && !cartManager.getState().isEmpty;
     }, { timeout: 5000 });
     
-    // Open cart panel
-    const viewCartButton = page.locator('[data-testid="view-cart"]');
-    await expect(viewCartButton).toBeVisible();
-    await viewCartButton.click();
-    
-    // Wait for cart panel and click checkout
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+    // Open cart panel via header cart button
+    const headerCartButton = page.locator('.nav-cart-button');
+    await expect(headerCartButton).toBeVisible();
+    await headerCartButton.click();
+
+    // Wait for cart panel to slide out
+    await expect(page.locator('.cart-panel.open, .cart-sidebar.active')).toBeVisible({ timeout: 5000 });
     const checkoutButton = page.locator('[data-testid="checkout-button"]');
     await expect(checkoutButton).toBeEnabled();
     await checkoutButton.click();
@@ -154,13 +154,13 @@ test.describe('Payment Processing Flow', () => {
       return cartManager && !cartManager.getState().isEmpty;
     }, { timeout: 5000 });
     
-    // Open cart panel
-    const viewCartButton = page.locator('[data-testid="view-cart"]');
-    await expect(viewCartButton).toBeVisible();
-    await viewCartButton.click();
-    
-    // Wait for cart panel and click checkout
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+    // Open cart panel via header cart button
+    const headerCartButton = page.locator('.nav-cart-button');
+    await expect(headerCartButton).toBeVisible();
+    await headerCartButton.click();
+
+    // Wait for cart panel to slide out
+    await expect(page.locator('.cart-panel.open, .cart-sidebar.active')).toBeVisible({ timeout: 5000 });
     const checkoutButton = page.locator('[data-testid="checkout-button"]');
     await expect(checkoutButton).toBeEnabled();
     await checkoutButton.click();
@@ -208,13 +208,13 @@ test.describe('Payment Processing Flow', () => {
       return cartManager && !cartManager.getState().isEmpty;
     }, { timeout: 5000 });
     
-    // Open cart panel
-    const viewCartButton = page.locator('[data-testid="view-cart"]');
-    await expect(viewCartButton).toBeVisible();
-    await viewCartButton.click();
-    
-    // Wait for cart panel and click checkout
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+    // Open cart panel via header cart button
+    const headerCartButton = page.locator('.nav-cart-button');
+    await expect(headerCartButton).toBeVisible();
+    await headerCartButton.click();
+
+    // Wait for cart panel to slide out
+    await expect(page.locator('.cart-panel.open, .cart-sidebar.active')).toBeVisible({ timeout: 5000 });
     const checkoutButton = page.locator('[data-testid="checkout-button"]');
     await expect(checkoutButton).toBeEnabled();
     await checkoutButton.click();
@@ -308,13 +308,13 @@ test.describe('Payment Processing Flow', () => {
       return cartManager && !cartManager.getState().isEmpty;
     }, { timeout: 5000 });
     
-    // Open cart panel
-    const viewCartButton = page.locator('[data-testid="view-cart"]');
-    await expect(viewCartButton).toBeVisible();
-    await viewCartButton.click();
-    
-    // Wait for cart panel and click checkout
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+    // Open cart panel via header cart button
+    const headerCartButton = page.locator('.nav-cart-button');
+    await expect(headerCartButton).toBeVisible();
+    await headerCartButton.click();
+
+    // Wait for cart panel to slide out
+    await expect(page.locator('.cart-panel.open, .cart-sidebar.active')).toBeVisible({ timeout: 5000 });
     const checkoutButton = page.locator('[data-testid="checkout-button"]');
     await expect(checkoutButton).toBeEnabled();
     await checkoutButton.click();
@@ -352,13 +352,13 @@ test.describe('Payment Processing Flow', () => {
       return cartManager && !cartManager.getState().isEmpty;
     }, { timeout: 5000 });
     
-    // Open cart panel
-    const viewCartButton = page.locator('[data-testid="view-cart"]');
-    await expect(viewCartButton).toBeVisible();
-    await viewCartButton.click();
-    
-    // Wait for cart panel and click checkout
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+    // Open cart panel via header cart button
+    const headerCartButton = page.locator('.nav-cart-button');
+    await expect(headerCartButton).toBeVisible();
+    await headerCartButton.click();
+
+    // Wait for cart panel to slide out
+    await expect(page.locator('.cart-panel.open, .cart-sidebar.active')).toBeVisible({ timeout: 5000 });
     const checkoutButton = page.locator('[data-testid="checkout-button"]');
     await expect(checkoutButton).toBeEnabled();
     await checkoutButton.click();
@@ -406,13 +406,13 @@ test.describe('Payment Processing Flow', () => {
       return cartManager && !cartManager.getState().isEmpty;
     }, { timeout: 5000 });
     
-    // Open cart panel
-    const viewCartButton = page.locator('[data-testid="view-cart"]');
-    await expect(viewCartButton).toBeVisible();
-    await viewCartButton.click();
-    
-    // Wait for cart panel and click checkout
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+    // Open cart panel via header cart button
+    const headerCartButton = page.locator('.nav-cart-button');
+    await expect(headerCartButton).toBeVisible();
+    await headerCartButton.click();
+
+    // Wait for cart panel to slide out
+    await expect(page.locator('.cart-panel.open, .cart-sidebar.active')).toBeVisible({ timeout: 5000 });
     const checkoutButton = page.locator('[data-testid="checkout-button"]');
     await expect(checkoutButton).toBeEnabled();
     await checkoutButton.click();
@@ -541,8 +541,8 @@ test.describe('Payment Processing Flow', () => {
       return cartManager && !cartManager.getState().isEmpty;
     }, { timeout: 5000 });
     
-    // Verify cart badge appears
-    await expect(page.locator('[data-testid="cart-counter"]')).toBeVisible({ timeout: 5000 });
+    // Verify header cart badge appears
+    await expect(page.locator('.nav-cart-badge')).toBeVisible({ timeout: 5000 });
     
     // Navigate away and back to test persistence
     await page.goto('/pages/about.html');
@@ -565,20 +565,20 @@ test.describe('Payment Processing Flow', () => {
       return window.globalCartManager && typeof window.globalCartManager.getState === 'function';
     }, { timeout: 5000 });
     
-    // Cart should still show items
-    const cartBadge = page.locator('[data-testid="cart-counter"]');
+    // Header cart badge should still show items
+    const cartBadge = page.locator('.nav-cart-badge');
     await expect(cartBadge).toBeVisible({ timeout: 5000 });
-    
+
     const count = await cartBadge.textContent();
     expect(parseInt(count) || 0).toBeGreaterThan(0);
-    
-    // Open cart panel to verify contents
-    const viewCartButton = page.locator('[data-testid="view-cart"]');
-    await expect(viewCartButton).toBeVisible();
-    await viewCartButton.click();
-    
-    // Wait for cart panel to open and verify contents
-    await expect(page.locator('.floating-cart-panel.open')).toBeVisible({ timeout: 5000 });
+
+    // Open cart panel via header cart button to verify contents
+    const headerCartButton = page.locator('.nav-cart-button');
+    await expect(headerCartButton).toBeVisible();
+    await headerCartButton.click();
+
+    // Wait for cart panel to slide out and verify contents
+    await expect(page.locator('.cart-panel.open, .cart-sidebar.active')).toBeVisible({ timeout: 5000 });
     
     // Verify cart contains the ticket (it's "2026 Early Bird Full Pass", not just "weekend")
     const cartContent = await page.locator('.cart-items').textContent();

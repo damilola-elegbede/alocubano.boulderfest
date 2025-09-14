@@ -107,11 +107,15 @@
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
+    <!-- Theme Management - Early inclusion to prevent FOUC -->
+    <script type="module" src="/js/theme-manager.js"></script>
+
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/typography.css" />
     <link rel="stylesheet" href="/css/floating-cart.css" />
     <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
 
@@ -577,8 +581,22 @@
             </svg>
           </a>
         </div>
+        <div id="theme-toggle-container" class="footer-theme-toggle"></div>
       </div>
     </footer>
+
+    <!-- Theme Management -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      import themeManager from '/js/theme-manager.js';
+
+      // Initialize theme
+      document.addEventListener('DOMContentLoaded', () => {
+        themeManager.initializeTheme();
+        initializeThemeToggle('#theme-toggle-container');
+      });
+    </script>
+
     <script src="/js/navigation.js"></script>
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
@@ -587,8 +605,6 @@
     <script src="/js/gallery-hero.js"></script>
     <script type="module" src="/js/global-cart.js"></script>
     
-    <!-- Draggable Floating Cart -->
-    <script src="/js/floating-cart-draggable.js"></script>
       <script src="/js/logo-switcher.js"></script>
 </body>
 </html>
