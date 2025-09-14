@@ -1922,16 +1922,6 @@
     animation: none;
   }
 
-  @keyframes pulse-success,
-  @keyframes pulse-error,
-  @keyframes pulse-loading,
-  @keyframes shimmer {
-    from, to {
-      transform: none;
-      background-position: 0 0;
-      box-shadow: none;
-    }
-  }
 }
 
 /* Mobile Navigation */

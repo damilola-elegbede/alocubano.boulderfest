@@ -461,6 +461,7 @@
             `/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`,
             {
               method: "PUT",
+              credentials: "include", // CRITICAL: Include cookies for production
               headers: headers,
               body: JSON.stringify({ action: "checkin" }),
             },
@@ -491,6 +492,7 @@
             `/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`,
             {
               method: "PUT",
+              credentials: "include", // CRITICAL: Include cookies for production
               headers: headers,
               body: JSON.stringify({ action: "undo_checkin" }),
             },

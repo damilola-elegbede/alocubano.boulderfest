@@ -979,10 +979,27 @@
         buttonElement.querySelector('span:last-child').textContent = 'Testing...';
 
         try {
+          const headers = method === 'POST' ? { 'Content-Type': 'application/json' } : {};
+
+          // Add CSRF token for state-changing operations
+          if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+            try {
+              const csrfResponse = await fetch('/api/admin/csrf-token', {
+                credentials: 'include'
+              });
+              if (csrfResponse.ok) {
+                const csrfData = await csrfResponse.json();
+                headers['X-CSRF-Token'] = csrfData.csrfToken || csrfData.token;
+              }
+            } catch (error) {
+              console.warn('Could not fetch CSRF token:', error);
+            }
+          }
+
           const response = await fetch(endpoint, {
             method: method,
             credentials: 'include',
-            headers: method === 'POST' ? { 'Content-Type': 'application/json' } : {}
+            headers: headers
           });
 
           if (response.ok) {

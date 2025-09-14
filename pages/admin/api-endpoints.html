@@ -1756,8 +1756,24 @@
         if (!confirm("Are you sure you want to logout?")) return;
 
         try {
+          const headers = {};
+          // Add CSRF token if available - fetch it dynamically for security
+          try {
+            const csrfResponse = await fetch("/api/admin/csrf-token", {
+              credentials: "include"
+            });
+            if (csrfResponse.ok) {
+              const csrfData = await csrfResponse.json();
+              headers["X-CSRF-Token"] = csrfData.token;
+            }
+          } catch (error) {
+            console.warn("Could not fetch CSRF token for logout:", error);
+          }
+
           await fetch("/api/admin/login", {
             method: "DELETE",
+            headers: headers,
+            credentials: "include"
           });
         } finally {
           localStorage.removeItem('adminToken');

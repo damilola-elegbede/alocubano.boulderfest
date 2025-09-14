@@ -691,7 +691,7 @@ window.switchTabEnhanced = function(tabName) {
   const response = currentModal.response;
 
   switch (tabName) {
-    case 'formatted':
+    case 'formatted': {
       const formattedData = typeof response.data === 'object'
         ? JSONFormatter.format(response.data)
         : response.data;
@@ -704,17 +704,19 @@ window.switchTabEnhanced = function(tabName) {
         <pre>${formattedData}</pre>
       `;
       break;
+    }
 
     case 'raw':
       content.innerHTML = `<pre>${typeof response.data === 'object' ? JSON.stringify(response.data) : response.data}</pre>`;
       break;
 
-    case 'headers':
+    case 'headers': {
       const headersFormatted = Object.entries(response.headers)
         .map(([key, value]) => `<span class="json-key">${key}</span>: <span class="json-string">${value}</span>`)
         .join('\n');
       content.innerHTML = `<pre>${headersFormatted}</pre>`;
       break;
+    }
   }
 };
 
