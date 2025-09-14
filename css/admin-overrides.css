@@ -1512,13 +1512,18 @@
   font-size: var(--font-size-xs);
 }
 
+/* Fixed: Removed incomplete ::before rule that was causing TEST TEST duplication */
+.test-btn {
+  background: var(--color-info);
+  color: var(--color-text-inverse);
+  border: 1px solid var(--color-info);
+  transition: all var(--transition-base);
+}
+
 .test-btn:hover {
   background: var(--color-success);
   border-color: var(--color-success);
-}
-
-.test-btn::before {
-  background: var(--color-success);
+  transform: translateY(-1px);
 }
 
 /* Endpoint Details */
@@ -1565,6 +1570,140 @@
   color: var(--color-text-secondary);
   overflow-x: auto;
   margin: 0;
+}
+
+/* Enhanced API Response Display Styles */
+.response-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  padding: var(--space-lg);
+  background: var(--color-background-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.response-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.response-summary-item strong {
+  font-family: var(--font-display);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.response-data {
+  background: var(--color-background-secondary);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+  overflow-x: auto;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.response-data pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* JSON Syntax Highlighting */
+.json-key {
+  color: var(--color-blue);
+  font-weight: 600;
+}
+
+.json-string {
+  color: var(--color-success);
+}
+
+.json-number {
+  color: var(--color-warning);
+}
+
+.json-boolean {
+  color: var(--color-info);
+  font-weight: 600;
+}
+
+.json-null {
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
+
+.json-bracket {
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+.json-colon {
+  color: var(--color-text-secondary);
+  margin: 0 var(--space-xs);
+}
+
+/* Response Time Indicators */
+.response-time.fast {
+  color: var(--color-success);
+  font-weight: 700;
+}
+
+.response-time.medium {
+  color: var(--color-warning);
+  font-weight: 700;
+}
+
+.response-time.slow {
+  color: var(--color-error);
+  font-weight: 700;
+}
+
+/* Headers Display */
+.headers-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.header-item {
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-sm);
+  background: var(--color-background-tertiary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
+}
+
+.header-key {
+  color: var(--color-blue);
+  font-weight: 600;
+  min-width: 150px;
+}
+
+.header-value {
+  color: var(--color-text-secondary);
+  word-break: break-all;
+}
+
+/* Error Message Display */
+.error-message {
+  background: rgba(204, 41, 54, 0.1);
+  border: 2px solid var(--color-error);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  color: var(--color-error);
+  font-family: var(--font-code);
+  font-size: var(--font-size-sm);
 }
 
 /* Feature Lists and Tags */
@@ -2502,13 +2641,13 @@
 }
 
 /* ==========================================================================
-   ADMIN LOADING INDICATORS  
+   ADMIN LOADING INDICATORS
    ========================================================================== */
 
 .admin-skeleton {
-  background: linear-gradient(90deg, 
-    var(--color-background-secondary) 25%, 
-    var(--color-background-tertiary) 50%, 
+  background: linear-gradient(90deg,
+    var(--color-background-secondary) 25%,
+    var(--color-background-tertiary) 50%,
     var(--color-background-secondary) 75%);
   background-size: 200% 100%;
   animation: skeleton-pulse 2s infinite;

@@ -182,6 +182,390 @@
           grid-template-columns: 1fr;
         }
       }
+
+      /* API Response Modal Styles */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(4px);
+      }
+
+      .modal-overlay.show {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .modal {
+        background: var(--color-background-primary);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        width: 90%;
+        max-width: 900px;
+        max-height: 90%;
+        overflow: hidden;
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      }
+
+      .modal-overlay.show .modal {
+        transform: scale(1);
+      }
+
+      .modal::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-info), var(--color-error));
+      }
+
+      .modal-header {
+        padding: var(--space-xl);
+        border-bottom: 2px solid var(--color-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--color-background-secondary);
+      }
+
+      .modal-title {
+        font-family: var(--font-display);
+        font-size: var(--font-size-xl);
+        font-weight: 900;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        margin: 0;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: var(--font-size-2xl);
+        color: var(--color-text-tertiary);
+        cursor: pointer;
+        padding: var(--space-sm);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-base);
+        line-height: 1;
+      }
+
+      .modal-close:hover {
+        background: var(--color-error);
+        color: var(--color-text-inverse);
+      }
+
+      .modal-tabs {
+        display: flex;
+        background: var(--color-background-secondary);
+        border-bottom: 2px solid var(--color-border);
+      }
+
+      .modal-tab {
+        flex: 1;
+        padding: var(--space-md) var(--space-lg);
+        background: none;
+        border: none;
+        font-family: var(--font-display);
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        transition: all var(--transition-base);
+        border-right: 1px solid var(--color-border);
+        text-transform: uppercase;
+        font-size: var(--font-size-sm);
+        letter-spacing: var(--letter-spacing-wide);
+      }
+
+      .modal-tab:last-child {
+        border-right: none;
+      }
+
+      .modal-tab.active {
+        background: var(--color-info);
+        color: var(--color-text-inverse);
+      }
+
+      .modal-tab:hover:not(.active) {
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+      }
+
+      .modal-content {
+        padding: var(--space-xl);
+        max-height: 60vh;
+        overflow-y: auto;
+      }
+
+      .response-actions {
+        display: flex;
+        gap: var(--space-md);
+        align-items: center;
+        margin-bottom: var(--space-lg);
+        padding-bottom: var(--space-md);
+        border-bottom: 1px solid var(--color-border);
+      }
+
+      .response-btn {
+        background: var(--color-info);
+        color: var(--color-text-inverse);
+        border: 1px solid var(--color-info);
+        padding: var(--space-sm) var(--space-md);
+        border-radius: var(--radius-md);
+        font-family: var(--font-display);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--transition-base);
+        font-size: var(--font-size-sm);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+      }
+
+      .response-btn:hover {
+        background: var(--color-info-hover);
+        transform: translateY(-1px);
+      }
+
+      .response-timing {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        font-weight: 500;
+      }
+
+      .response-content {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-sm);
+        line-height: var(--line-height-relaxed);
+        background: var(--color-background-secondary);
+        padding: var(--space-lg);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--color-border);
+        max-height: 50vh;
+        overflow-y: auto;
+        white-space: pre-wrap;
+      }
+
+      /* JSON Syntax Highlighting */
+      .json-key {
+        color: var(--color-info);
+        font-weight: 600;
+      }
+
+      .json-string {
+        color: var(--color-success);
+      }
+
+      .json-number {
+        color: var(--color-warning);
+      }
+
+      .json-boolean {
+        color: var(--color-error);
+        font-weight: 600;
+      }
+
+      .json-null {
+        color: var(--color-text-tertiary);
+        font-style: italic;
+      }
+
+      /* History Panel Styles */
+      .history-panel {
+        position: fixed;
+        top: 0;
+        right: -400px;
+        width: 400px;
+        height: 100%;
+        background: var(--color-background-primary);
+        border-left: 2px solid var(--color-border);
+        z-index: 999;
+        transition: right 0.3s ease;
+        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .history-panel.show {
+        right: 0;
+      }
+
+      .history-header {
+        padding: var(--space-xl);
+        border-bottom: 2px solid var(--color-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--color-background-secondary);
+      }
+
+      .history-header h3 {
+        font-family: var(--font-display);
+        font-size: var(--font-size-lg);
+        font-weight: 800;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        margin: 0;
+      }
+
+      .history-toggle {
+        background: none;
+        border: none;
+        font-size: var(--font-size-xl);
+        color: var(--color-text-tertiary);
+        cursor: pointer;
+        padding: var(--space-xs);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-base);
+      }
+
+      .history-toggle:hover {
+        background: var(--color-error);
+        color: var(--color-text-inverse);
+      }
+
+      .history-content {
+        padding: var(--space-lg);
+        height: calc(100% - 80px);
+        overflow-y: auto;
+      }
+
+      .history-entry {
+        background: var(--color-background-secondary);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: var(--space-md);
+        margin-bottom: var(--space-md);
+        cursor: pointer;
+        transition: all var(--transition-base);
+      }
+
+      .history-entry:hover {
+        background: var(--color-surface);
+        border-color: var(--color-info);
+        transform: translateY(-1px);
+      }
+
+      .history-entry-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-sm);
+      }
+
+      .history-entry-method {
+        font-family: var(--font-mono);
+        font-weight: 600;
+        font-size: var(--font-size-xs);
+        padding: 2px 6px;
+        border-radius: var(--radius-sm);
+        text-transform: uppercase;
+      }
+
+      .history-entry-path {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        font-weight: 500;
+      }
+
+      .history-entry-time {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+      }
+
+      .history-entry-status {
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: var(--radius-sm);
+      }
+
+      .status-success {
+        background: var(--color-success-light);
+        color: var(--color-success);
+      }
+
+      .status-error {
+        background: var(--color-error-light);
+        color: var(--color-error);
+      }
+
+      /* History FAB */
+      .history-fab {
+        position: fixed;
+        bottom: var(--space-xl);
+        right: var(--space-xl);
+        width: 56px;
+        height: 56px;
+        background: var(--color-info);
+        color: var(--color-text-inverse);
+        border: none;
+        border-radius: 50%;
+        font-size: var(--font-size-lg);
+        cursor: pointer;
+        transition: all var(--transition-base);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 998;
+      }
+
+      .history-fab:hover {
+        background: var(--color-info-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+      }
+
+      /* Enhanced Mobile Responsive for Modal */
+      @media (max-width: 768px) {
+        .modal {
+          width: 95%;
+          max-height: 95%;
+        }
+
+        .modal-header,
+        .modal-content {
+          padding: var(--space-lg);
+        }
+
+        .modal-tabs {
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+        }
+
+        .modal-tab {
+          scroll-snap-align: start;
+          min-width: 120px;
+        }
+
+        .response-content {
+          font-size: var(--font-size-xs);
+          max-height: 40vh;
+        }
+
+        .history-panel {
+          width: 100%;
+          right: -100%;
+        }
+
+        .history-fab {
+          bottom: var(--space-lg);
+          right: var(--space-lg);
+        }
+      }
     </style>
 
     <!-- Theme Manager -->
@@ -968,7 +1352,99 @@
         });
       });
 
-      // Test endpoint function
+      // Response History Manager
+      class ResponseHistoryManager {
+        constructor(maxHistory = 10) {
+          this.maxHistory = maxHistory;
+          this.loadHistory();
+        }
+
+        loadHistory() {
+          try {
+            this.history = JSON.parse(localStorage.getItem('adminApiTestHistory') || '[]');
+          } catch (error) {
+            console.warn('Failed to load response history:', error);
+            this.history = [];
+          }
+        }
+
+        addResponse(endpoint, method, responseData, requestData = {}) {
+          const entry = {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            endpoint,
+            method,
+            response: responseData,
+            request: requestData,
+            starred: false
+          };
+
+          this.history.unshift(entry);
+          if (this.history.length > this.maxHistory) {
+            this.history = this.history.slice(0, this.maxHistory);
+          }
+
+          this.saveHistory();
+          this.updateHistoryPanel();
+          return entry;
+        }
+
+        saveHistory() {
+          try {
+            localStorage.setItem('adminApiTestHistory', JSON.stringify(this.history));
+          } catch (error) {
+            console.warn('Failed to save response history:', error);
+          }
+        }
+
+        updateHistoryPanel() {
+          const historyContent = document.getElementById('historyContent');
+          if (!historyContent) return;
+
+          if (this.history.length === 0) {
+            historyContent.innerHTML = '<p style="text-align: center; color: var(--color-text-tertiary); margin-top: var(--space-xl);">No API tests yet</p>';
+            return;
+          }
+
+          historyContent.innerHTML = this.history.map(entry => `
+            <div class="history-entry" onclick="showResponseFromHistory('${entry.id}')">
+              <div class="history-entry-header">
+                <div>
+                  <span class="history-entry-method method-${entry.method.toLowerCase()}">${entry.method}</span>
+                  <span class="history-entry-path">${entry.endpoint}</span>
+                </div>
+                <div>
+                  <span class="history-entry-status status-${entry.response.status >= 200 && entry.response.status < 300 ? 'success' : 'error'}">
+                    ${entry.response.status}
+                  </span>
+                </div>
+              </div>
+              <div class="history-entry-time">
+                ${new Date(entry.timestamp).toLocaleString()}
+                ${entry.response.timing ? ` • ${entry.response.timing}ms` : ''}
+              </div>
+            </div>
+          `).join('');
+        }
+
+        getEntry(id) {
+          return this.history.find(entry => entry.id === parseInt(id));
+        }
+
+        clearHistory() {
+          this.history = [];
+          this.saveHistory();
+          this.updateHistoryPanel();
+        }
+      }
+
+      // Initialize response history manager
+      const responseHistory = new ResponseHistoryManager();
+
+      // Current modal data
+      let currentModalData = null;
+
+      // Enhanced test endpoint function with modal response viewer
       async function testEndpoint(endpoint, method, buttonElement) {
         const endpointItem = buttonElement.closest('.endpoint-item');
         const statusIndicator = endpointItem.querySelector('.status-indicator');
@@ -977,6 +1453,10 @@
         statusIndicator.className = 'status-indicator status-loading';
         buttonElement.disabled = true;
         buttonElement.querySelector('span:last-child').textContent = 'Testing...';
+
+        const startTime = performance.now();
+        let responseData = null;
+        let requestData = {};
 
         try {
           const headers = method === 'POST' ? { 'Content-Type': 'application/json' } : {};
@@ -996,31 +1476,107 @@
             }
           }
 
+          // Store request data for history
+          requestData = {
+            method,
+            headers: { ...headers },
+            credentials: 'include'
+          };
+
           const response = await fetch(endpoint, {
             method: method,
             credentials: 'include',
             headers: headers
           });
 
+          const endTime = performance.now();
+          const timing = Math.round(endTime - startTime);
+
+          // Get response headers
+          const responseHeaders = {};
+          response.headers.forEach((value, key) => {
+            responseHeaders[key] = value;
+          });
+
+          // Get response body
+          let responseBody = null;
+          let bodyText = '';
+          try {
+            bodyText = await response.text();
+            if (bodyText) {
+              // Try to parse as JSON
+              try {
+                responseBody = JSON.parse(bodyText);
+              } catch {
+                responseBody = bodyText;
+              }
+            }
+          } catch (error) {
+            console.warn('Failed to read response body:', error);
+          }
+
+          responseData = {
+            status: response.status,
+            statusText: response.statusText,
+            headers: responseHeaders,
+            body: responseBody,
+            bodyText: bodyText,
+            timing: timing,
+            ok: response.ok
+          };
+
           if (response.ok) {
             statusIndicator.className = 'status-indicator status-success';
-            statusIndicator.setAttribute('title', 'Test successful');
+            statusIndicator.setAttribute('title', `Test successful • ${timing}ms`);
 
             // Show success feedback
-            showEndpointFeedback(endpointItem, 'success', `${method} ${endpoint} - Success (${response.status})`);
+            showEndpointFeedback(endpointItem, 'success', `${method} ${endpoint} - Success (${response.status}) • ${timing}ms`);
+
+            // Show response modal
+            showResponseModal(endpoint, method, responseData, requestData);
+
           } else {
             statusIndicator.className = 'status-indicator status-error';
-            statusIndicator.setAttribute('title', 'Test failed');
+            statusIndicator.setAttribute('title', `Test failed • ${timing}ms`);
 
             // Show error feedback
-            showEndpointFeedback(endpointItem, 'error', `${method} ${endpoint} - Error (${response.status})`);
+            showEndpointFeedback(endpointItem, 'error', `${method} ${endpoint} - Error (${response.status}) • ${timing}ms`);
+
+            // Show response modal even for errors
+            showResponseModal(endpoint, method, responseData, requestData);
           }
+
+          // Add to history
+          responseHistory.addResponse(endpoint, method, responseData, requestData);
+
         } catch (error) {
+          const endTime = performance.now();
+          const timing = Math.round(endTime - startTime);
+
           statusIndicator.className = 'status-indicator status-error';
-          statusIndicator.setAttribute('title', 'Test failed');
+          statusIndicator.setAttribute('title', `Network error • ${timing}ms`);
 
           // Show error feedback
-          showEndpointFeedback(endpointItem, 'error', `${method} ${endpoint} - Network Error`);
+          showEndpointFeedback(endpointItem, 'error', `${method} ${endpoint} - Network Error • ${timing}ms`);
+
+          // Create error response data
+          responseData = {
+            status: 0,
+            statusText: 'Network Error',
+            headers: {},
+            body: error.message,
+            bodyText: error.message,
+            timing: timing,
+            ok: false,
+            error: true
+          };
+
+          // Show response modal for network errors
+          showResponseModal(endpoint, method, responseData, requestData);
+
+          // Add to history
+          responseHistory.addResponse(endpoint, method, responseData, requestData);
+
         } finally {
           buttonElement.disabled = false;
           buttonElement.querySelector('span:last-child').textContent = 'Test';
@@ -1523,11 +2079,316 @@ Full API docs: /docs/api/README.md
         }
       }
 
+      // Modal management functions
+      function showResponseModal(endpoint, method, responseData, requestData) {
+        const modal = document.getElementById('responseModal');
+        const title = document.getElementById('modalTitle');
+        const timing = document.getElementById('responseTiming');
+
+        title.textContent = `${method} ${endpoint}`;
+        timing.textContent = `${responseData.timing}ms • Status: ${responseData.status}`;
+
+        currentModalData = {
+          endpoint,
+          method,
+          response: responseData,
+          request: requestData
+        };
+
+        // Set initial tab content
+        switchResponseTab('formatted');
+
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        // Close modal on escape key
+        document.addEventListener('keydown', handleModalKeyboard);
+      }
+
+      function switchResponseTab(tabName) {
+        if (!currentModalData) return;
+
+        const tabs = document.querySelectorAll('.modal-tab');
+        const content = document.getElementById('responseContent');
+
+        // Update active tab
+        tabs.forEach(tab => tab.classList.remove('active'));
+        document.querySelector(`[onclick="switchResponseTab('${tabName}')"]`).classList.add('active');
+
+        // Update content based on tab
+        switch (tabName) {
+          case 'formatted':
+            content.innerHTML = formatJsonContent(currentModalData.response.body);
+            break;
+          case 'raw':
+            content.textContent = currentModalData.response.bodyText || 'No response body';
+            break;
+          case 'headers':
+            content.innerHTML = formatHeaders(currentModalData.response.headers);
+            break;
+          case 'request':
+            content.innerHTML = formatRequestData(currentModalData.request);
+            break;
+        }
+      }
+
+      function formatJsonContent(data) {
+        if (typeof data === 'object' && data !== null) {
+          return syntaxHighlightJson(JSON.stringify(data, null, 2));
+        } else {
+          return escapeHtml(String(data));
+        }
+      }
+
+      function syntaxHighlightJson(json) {
+        json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+          let cls = 'json-number';
+          if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+              cls = 'json-key';
+            } else {
+              cls = 'json-string';
+            }
+          } else if (/true|false/.test(match)) {
+            cls = 'json-boolean';
+          } else if (/null/.test(match)) {
+            cls = 'json-null';
+          }
+          return '<span class="' + cls + '">' + match + '</span>';
+        });
+      }
+
+      function formatHeaders(headers) {
+        if (!headers || Object.keys(headers).length === 0) {
+          return '<p style="color: var(--color-text-tertiary);">No headers</p>';
+        }
+
+        return Object.entries(headers)
+          .map(([key, value]) => `<div><strong class="json-key">${escapeHtml(key)}:</strong> <span class="json-string">${escapeHtml(value)}</span></div>`)
+          .join('');
+      }
+
+      function formatRequestData(request) {
+        const sections = [];
+
+        sections.push(`<div><strong class="json-key">Method:</strong> <span class="json-string">${request.method}</span></div>`);
+        sections.push(`<div><strong class="json-key">Credentials:</strong> <span class="json-string">${request.credentials}</span></div>`);
+
+        if (request.headers && Object.keys(request.headers).length > 0) {
+          sections.push('<br><strong class="json-key">Headers:</strong>');
+          Object.entries(request.headers).forEach(([key, value]) => {
+            sections.push(`<div style="margin-left: var(--space-md);"><strong>${escapeHtml(key)}:</strong> ${escapeHtml(value)}</div>`);
+          });
+        }
+
+        return sections.join('');
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function closeResponseModal() {
+        const modal = document.getElementById('responseModal');
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+        currentModalData = null;
+        document.removeEventListener('keydown', handleModalKeyboard);
+      }
+
+      function copyResponse() {
+        if (!currentModalData) return;
+
+        const activeTab = document.querySelector('.modal-tab.active').textContent.toLowerCase();
+        let textToCopy = '';
+
+        switch (activeTab) {
+          case 'formatted':
+            textToCopy = JSON.stringify(currentModalData.response.body, null, 2);
+            break;
+          case 'raw':
+            textToCopy = currentModalData.response.bodyText || '';
+            break;
+          case 'headers':
+            textToCopy = Object.entries(currentModalData.response.headers)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join('\n');
+            break;
+          case 'request':
+            textToCopy = JSON.stringify(currentModalData.request, null, 2);
+            break;
+        }
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          showToast('success', 'Copied!', `${activeTab} data copied to clipboard`);
+        }).catch(() => {
+          showToast('error', 'Copy Failed', 'Unable to copy to clipboard');
+        });
+      }
+
+      function downloadResponse() {
+        if (!currentModalData) return;
+
+        const activeTab = document.querySelector('.modal-tab.active').textContent.toLowerCase();
+        const { endpoint, method, response } = currentModalData;
+
+        let content = '';
+        let filename = '';
+        let mimeType = 'text/plain';
+
+        switch (activeTab) {
+          case 'formatted':
+            content = JSON.stringify(response.body, null, 2);
+            filename = `${method}_${endpoint.replace(/[^a-zA-Z0-9]/g, '_')}_response.json`;
+            mimeType = 'application/json';
+            break;
+          case 'raw':
+            content = response.bodyText || '';
+            filename = `${method}_${endpoint.replace(/[^a-zA-Z0-9]/g, '_')}_raw.txt`;
+            break;
+          case 'headers':
+            content = Object.entries(response.headers)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join('\n');
+            filename = `${method}_${endpoint.replace(/[^a-zA-Z0-9]/g, '_')}_headers.txt`;
+            break;
+          case 'request':
+            content = JSON.stringify(currentModalData.request, null, 2);
+            filename = `${method}_${endpoint.replace(/[^a-zA-Z0-9]/g, '_')}_request.json`;
+            mimeType = 'application/json';
+            break;
+        }
+
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast('success', 'Downloaded!', `${filename} downloaded successfully`);
+      }
+
+      function showResponseFromHistory(id) {
+        const entry = responseHistory.getEntry(id);
+        if (entry) {
+          showResponseModal(entry.endpoint, entry.method, entry.response, entry.request);
+        }
+      }
+
+      function toggleHistoryPanel() {
+        const panel = document.getElementById('historyPanel');
+        panel.classList.toggle('show');
+
+        if (panel.classList.contains('show')) {
+          responseHistory.updateHistoryPanel();
+        }
+      }
+
+      function handleModalKeyboard(event) {
+        if (event.key === 'Escape') {
+          closeResponseModal();
+        }
+      }
+
+      function showToast(type, title, message) {
+        // Simple toast implementation
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+        toast.style.cssText = `
+          position: fixed;
+          top: var(--space-lg);
+          right: var(--space-lg);
+          background: var(--color-${type === 'success' ? 'success' : 'error'});
+          color: var(--color-text-inverse);
+          padding: var(--space-md);
+          border-radius: var(--radius-md);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          z-index: 1001;
+          font-family: var(--font-display);
+          font-weight: 600;
+          animation: slideInRight 0.3s ease;
+        `;
+        toast.innerHTML = `<strong>${title}</strong><br>${message}`;
+
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.animation = 'slideOutRight 0.3s ease';
+          setTimeout(() => {
+            if (toast.parentNode) {
+              document.body.removeChild(toast);
+            }
+          }, 300);
+        }, 3000);
+      }
+
+      // Click outside modal to close
+      document.addEventListener('click', (event) => {
+        const modal = document.getElementById('responseModal');
+        if (event.target === modal && modal.classList.contains('show')) {
+          closeResponseModal();
+        }
+      });
+
       // Initialize endpoint manager
       const endpointManager = new EndpointManager();
+
+      // Initialize history panel
+      responseHistory.updateHistoryPanel();
 
       // Initialize
       checkAuth();
     </script>
+
+    <!-- Response Modal -->
+    <div class="modal-overlay" id="responseModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 class="modal-title" id="modalTitle">API Response</h2>
+          <button class="modal-close" onclick="closeResponseModal()">&times;</button>
+        </div>
+        <div class="modal-tabs">
+          <button class="modal-tab active" onclick="switchResponseTab('formatted')">Formatted</button>
+          <button class="modal-tab" onclick="switchResponseTab('raw')">Raw</button>
+          <button class="modal-tab" onclick="switchResponseTab('headers')">Headers</button>
+          <button class="modal-tab" onclick="switchResponseTab('request')">Request</button>
+        </div>
+        <div class="modal-content">
+          <div class="response-actions">
+            <button class="response-btn" onclick="copyResponse()">📋 Copy</button>
+            <button class="response-btn" onclick="downloadResponse()">⬇️ Download</button>
+            <span class="response-timing" id="responseTiming"></span>
+          </div>
+          <div class="response-content" id="responseContent">
+            <!-- Response content will be dynamically inserted here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Response History Panel -->
+    <div class="history-panel" id="historyPanel">
+      <div class="history-header">
+        <h3>Response History</h3>
+        <button class="history-toggle" onclick="toggleHistoryPanel()">✕</button>
+      </div>
+      <div class="history-content" id="historyContent">
+        <!-- History entries will be dynamically inserted here -->
+      </div>
+    </div>
+
+    <!-- History Toggle Button -->
+    <button class="history-fab" onclick="toggleHistoryPanel()" title="Show Response History">
+      📚
+    </button>
+
   </body>
 </html>
