@@ -860,7 +860,9 @@
           // Get CSRF token for admin operations (only if admin authenticated)
           let headers = { "Content-Type": "application/json" };
           try {
-            const csrfResponse = await fetch("/api/admin/csrf-token");
+            const csrfResponse = await fetch("/api/admin/csrf-token", {
+              credentials: "include"
+            });
             if (csrfResponse.ok) {
               const csrfData = await csrfResponse.json();
               headers["X-CSRF-Token"] = csrfData.token;
@@ -881,6 +883,7 @@
               qr_access_method: isWalletToken ? "wallet" : "qr_code",
               event_id: selectedEventId,
             }),
+            credentials: "include"
           });
 
           const data = await response.json();
@@ -1039,6 +1042,9 @@
           
           const response = await fetch(
             `/api/tickets?ticket_id=${encodeURIComponent(ticketId)}${eventParam}`,
+            {
+              credentials: "include"
+            }
           );
           const data = await response.json();
 
@@ -1068,7 +1074,9 @@
           const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
           const eventParam = selectedEventId ? `?eventId=${selectedEventId}` : '';
           
-          const response = await fetch(`/api/admin/dashboard${eventParam}`);
+          const response = await fetch(`/api/admin/dashboard${eventParam}`, {
+            credentials: "include"
+          });
           const data = await response.json();
 
           if (data.stats) {
@@ -1110,15 +1118,21 @@
       // Check authentication (mobile sessions last 72 hours)
       async function checkAuth() {
         try {
-          // First check if we have a mobile session
-          const response = await fetch("/api/admin/dashboard");
+          const response = await fetch("/api/admin/verify-session", {
+            credentials: "include" // CRITICAL: Include cookies for production
+          });
           if (!response.ok) {
-            // Show mobile login screen instead of redirecting
+            showMobileLogin();
+            return false;
+          }
+          const data = await response.json();
+          if (!data.valid) {
             showMobileLogin();
             return false;
           }
           return true;
         } catch (error) {
+          console.error("Auth check failed:", error);
           showMobileLogin();
           return false;
         }
@@ -1204,7 +1218,9 @@
 
         try {
           // Get CSRF token first
-          const csrfResponse = await fetch("/api/admin/csrf-token");
+          const csrfResponse = await fetch("/api/admin/csrf-token", {
+            credentials: "include"
+          });
           const csrfData = await csrfResponse.json();
 
           // Attempt login with mobile endpoint
@@ -1218,6 +1234,7 @@
               password: password,
               csrfToken: csrfData.token,
             }),
+            credentials: "include"
           });
 
           const data = await response.json();
@@ -1290,6 +1307,7 @@
         try {
           await fetch("/api/admin/login", {
             method: "DELETE",
+            credentials: "include"
           });
         } finally {
           // Clear client storage

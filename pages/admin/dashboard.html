@@ -161,7 +161,9 @@
       // Fetch CSRF token
       async function fetchCSRFToken() {
         try {
-          const response = await fetch("/api/admin/csrf-token");
+          const response = await fetch("/api/admin/csrf-token", {
+            credentials: "include" // Include cookies for production
+          });
           if (response.ok) {
             const data = await response.json();
             csrfToken = data.csrfToken;
@@ -174,26 +176,34 @@
         }
       }
 
-      // ✅ SIMPLIFIED AUTH CHECK - Replace existing checkAuth function
+      // ✅ PROPER AUTH CHECK - Use verify-session endpoint with credentials
       async function checkAuth() {
         try {
-          const response = await fetch("/api/admin/dashboard", {
+          const response = await fetch("/api/admin/verify-session", {
+            credentials: "include", // CRITICAL: Include cookies for production
             headers: { "Cache-Control": "no-cache" },
             signal: AbortSignal.timeout(3000) // 3-second timeout, no retries
           });
-          
+
           if (!response.ok) {
             // Immediate redirect on auth failure
             document.body.setAttribute("data-auth-status", "unauthenticated");
             window.location.replace("/admin/login");
             return false;
           }
-          
-          // Success - set authenticated status and return data
-          document.body.setAttribute("data-auth-status", "authenticated");
+
+          // Success - verify the session is valid
           const data = await response.json();
-          console.log("Dashboard data loaded successfully");
-          return data;
+          if (!data.valid) {
+            document.body.setAttribute("data-auth-status", "unauthenticated");
+            window.location.replace("/admin/login");
+            return false;
+          }
+
+          // Session is valid
+          document.body.setAttribute("data-auth-status", "authenticated");
+          console.log("Session verified successfully");
+          return true;
         } catch (error) {
           // Immediate redirect on any error (timeout, network, etc.)
           console.error("Auth check failed:", error);
@@ -211,29 +221,30 @@
         }
 
         try {
-          // Perform authentication check
-          const authResult = await checkAuth();
-          
+          // Perform authentication check first
+          const isAuthenticated = await checkAuth();
+
           // If auth failed, checkAuth will redirect, so this won't execute
-          if (authResult === false) {
+          if (!isAuthenticated) {
             return;
           }
 
-          // checkAuth now returns dashboard data on success, but we need to check for eventId
-          let data = authResult;
-          
-          // If we have a specific event ID, fetch data with that parameter
+          // Now fetch the actual dashboard data with credentials
+          const url = new URL("/api/admin/dashboard", window.location.origin);
           if (eventId && eventId !== 'all') {
-            const url = new URL("/api/admin/dashboard", window.location.origin);
             url.searchParams.set('eventId', eventId);
-            
-            const response = await fetch(url.toString());
-            if (!response.ok) {
-              const errorData = await response.json();
-              throw new Error(errorData.error);
-            }
-            data = await response.json();
           }
+
+          const response = await fetch(url.toString(), {
+            credentials: "include" // CRITICAL: Include cookies for production
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to load dashboard');
+          }
+
+          const data = await response.json();
 
           // Fetch CSRF token after successful auth check
           await fetchCSRFToken();
@@ -322,7 +333,9 @@
         });
 
         try {
-          const response = await fetch(`/api/admin/registrations?${params}`);
+          const response = await fetch(`/api/admin/registrations?${params}`, {
+            credentials: "include" // Include cookies for production
+          });
           const data = await response.json();
 
           if (!response.ok) throw new Error(data.error);
@@ -507,7 +520,9 @@
         });
 
         try {
-          const response = await fetch(`/api/admin/registrations?${params}`);
+          const response = await fetch(`/api/admin/registrations?${params}`, {
+            credentials: "include" // Include cookies for production
+          });
           const data = await response.json();
 
           if (!response.ok) throw new Error(data.error);
@@ -589,6 +604,7 @@
           }
 
           await fetch("/api/admin/login", {
+            credentials: "include", // Include cookies for production
             method: "DELETE",
             headers: headers,
           });
@@ -611,6 +627,7 @@
 
         try {
           const response = await fetch("/api/sheets/sync", {
+            credentials: "include", // Include cookies for production
             method: "POST",
             headers: {
               "Content-Type": "application/json",

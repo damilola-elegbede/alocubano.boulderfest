@@ -147,7 +147,9 @@
       // Fetch CSRF token
       async function fetchCSRFToken() {
         try {
-          const response = await fetch("/api/admin/csrf-token");
+          const response = await fetch("/api/admin/csrf-token", {
+            credentials: "include"
+          });
           if (response.ok) {
             const data = await response.json();
             csrfToken = data.csrfToken;
@@ -162,41 +164,23 @@
 
       // Check authentication on load
       async function checkAuth() {
-        // Add auth check status indicator immediately
-        document.body.setAttribute('data-auth-status', 'checking');
-        
         try {
-          // Try to use existing session - use a faster endpoint for auth check
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
-          
-          const response = await fetch("/api/admin/dashboard", {
-            signal: controller.signal,
-            headers: {
-              'Cache-Control': 'no-cache'
-            }
+          const response = await fetch("/api/admin/verify-session", {
+            credentials: "include" // CRITICAL: Include cookies for production
           });
-          
-          clearTimeout(timeoutId);
-
           if (!response.ok) {
-            // Not authenticated, redirect to login immediately
-            document.body.setAttribute('data-auth-status', 'unauthenticated');
-            // Use replace to prevent back button issues
-            window.location.replace("/admin/login");
+            window.location.href = "/admin/login";
             return false;
           }
-
-          // Fetch CSRF token after successful auth check
-          await fetchCSRFToken();
-          document.body.setAttribute('data-auth-status', 'authenticated');
-
+          const data = await response.json();
+          if (!data.valid) {
+            window.location.href = "/admin/login";
+            return false;
+          }
           return true;
         } catch (error) {
           console.error("Auth check failed:", error);
-          document.body.setAttribute('data-auth-status', 'failed');
-          // Use replace to prevent back button issues
-          window.location.replace("/admin/login");
+          window.location.href = "/admin/login";
           return false;
         }
       }
@@ -226,7 +210,9 @@
         });
 
         try {
-          const response = await fetch(`/api/admin/registrations?${params}`);
+          const response = await fetch(`/api/admin/registrations?${params}`, {
+            credentials: "include"
+          });
           const data = await response.json();
 
           if (!response.ok) throw new Error(data.error);
@@ -353,6 +339,7 @@
               method: "PUT",
               headers: headers,
               body: JSON.stringify({ action: "checkin" }),
+              credentials: "include"
             },
           );
 
@@ -384,6 +371,7 @@
               method: "PUT",
               headers: headers,
               body: JSON.stringify({ action: "undo_checkin" }),
+              credentials: "include"
             },
           );
 
@@ -415,7 +403,9 @@
         });
 
         try {
-          const response = await fetch(`/api/admin/registrations?${params}`);
+          const response = await fetch(`/api/admin/registrations?${params}`, {
+            credentials: "include"
+          });
           const data = await response.json();
 
           if (!response.ok) throw new Error(data.error);
@@ -499,6 +489,7 @@
           await fetch("/api/admin/login", {
             method: "DELETE",
             headers: headers,
+            credentials: "include"
           });
         } finally {
           // Clear client storage

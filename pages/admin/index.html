@@ -318,11 +318,18 @@
     </div>
 
     <script>
-      // Check authentication on load
+      // Check authentication on load using verify-session endpoint
       async function checkAuth() {
         try {
-          const response = await fetch("/api/admin/dashboard");
+          const response = await fetch("/api/admin/verify-session", {
+            credentials: "include" // CRITICAL: Include cookies for production
+          });
           if (!response.ok) {
+            window.location.href = "/admin/login";
+            return false;
+          }
+          const data = await response.json();
+          if (!data.valid) {
             window.location.href = "/admin/login";
             return false;
           }
@@ -342,7 +349,9 @@
           // Get CSRF token for state-changing operation
           const headers = { "Content-Type": "application/json" };
           try {
-            const csrfResponse = await fetch("/api/admin/csrf-token");
+            const csrfResponse = await fetch("/api/admin/csrf-token", {
+              credentials: "include" // Include cookies for production
+            });
             if (csrfResponse.ok) {
               const csrfData = await csrfResponse.json();
               headers["X-CSRF-Token"] = csrfData.token;
@@ -354,6 +363,7 @@
           const response = await fetch("/api/sheets/sync", {
             method: "POST",
             headers: headers,
+            credentials: "include" // Include cookies for production
           });
 
           if (response.ok) {
@@ -409,7 +419,9 @@
           const headers = { "Content-Type": "application/json" };
           let csrfToken = null;
           try {
-            const csrfResponse = await fetch("/api/admin/csrf-token");
+            const csrfResponse = await fetch("/api/admin/csrf-token", {
+              credentials: "include" // Include cookies for production
+            });
             if (csrfResponse.ok) {
               const csrfData = await csrfResponse.json();
               headers["X-CSRF-Token"] = csrfData.token;
@@ -445,7 +457,9 @@
       // View CSRF token
       async function viewCSRFToken() {
         try {
-          const response = await fetch("/api/admin/csrf-token");
+          const response = await fetch("/api/admin/csrf-token", {
+            credentials: "include" // Include cookies for production
+          });
           const data = await response.json();
           alert(
             `CSRF Token Info:\n\nToken: ${data.csrfToken.substring(0, 20)}...\nExpires: ${new Date(Date.now() + 3600000).toLocaleString()}`,
