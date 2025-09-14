@@ -1,0 +1,1770 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API Endpoints - Admin Portal - A Lo Cubano Boulder Fest</title>
+
+    <!-- Main Site CSS System -->
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/admin-overrides.css" />
+    <link rel="stylesheet" href="/css/admin-api-endpoints.css" />
+
+    <style>
+      /* Admin Portal Specific Styles */
+      body {
+        background: linear-gradient(
+          135deg,
+          var(--color-blue) 0%,
+          var(--color-red) 100%
+        );
+        min-height: 100vh;
+        padding: var(--space-lg);
+      }
+
+      /* Enhanced Search and Filter Controls */
+      .controls-section {
+        background: var(--color-surface);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-xl);
+        margin-bottom: var(--space-xl);
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .controls-section::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+      }
+
+      .controls-grid {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: var(--space-lg);
+        align-items: end;
+        margin-bottom: var(--space-lg);
+      }
+
+      .search-wrapper {
+        position: relative;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: var(--space-sm) var(--space-md) var(--space-sm) var(--space-3xl);
+        font-family: var(--font-sans);
+        font-size: var(--font-size-base);
+        color: var(--color-text-primary);
+        background: var(--color-background-secondary);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-base);
+        min-height: 44px;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: var(--color-blue);
+        box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.1);
+      }
+
+      .search-icon {
+        position: absolute;
+        left: var(--space-md);
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-lg);
+      }
+
+      .filter-select {
+        padding: var(--space-sm) var(--space-lg);
+        font-family: var(--font-sans);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        background: var(--color-surface);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-base);
+        min-height: 44px;
+        min-width: 140px;
+        cursor: pointer;
+      }
+
+      .filter-select:focus {
+        outline: none;
+        border-color: var(--color-blue);
+        box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.1);
+      }
+
+      .filter-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-sm);
+      }
+
+      .filter-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-xs) var(--space-sm);
+        background: var(--color-blue);
+        color: var(--color-text-inverse);
+        border-radius: var(--radius-full);
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        transition: all var(--transition-base);
+      }
+
+      .filter-tag:hover {
+        background: var(--color-red);
+        transform: translateY(-1px);
+      }
+
+      .filter-tag .remove-filter {
+        background: none;
+        border: none;
+        color: currentColor;
+        cursor: pointer;
+        font-size: var(--font-size-sm);
+        padding: 0;
+        margin-left: var(--space-xs);
+      }
+
+      .clear-filters-btn {
+        background: transparent;
+        color: var(--color-text-tertiary);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: var(--space-xs) var(--space-sm);
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        cursor: pointer;
+        transition: all var(--transition-base);
+      }
+
+      .clear-filters-btn:hover {
+        color: var(--color-red);
+        border-color: var(--color-red);
+      }
+
+      /* Enhanced Endpoint Cards */
+      .endpoints-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: var(--space-lg);
+        margin-top: var(--space-xl);
+      }
+
+      .endpoint-card {
+        background: var(--color-surface);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        position: relative;
+        overflow: hidden;
+        transition: all var(--transition-base);
+        cursor: pointer;
+        box-shadow: var(--shadow-md);
+      }
+
+      .endpoint-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+        transition: all var(--transition-base);
+      }
+
+      .endpoint-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-xl);
+        border-color: var(--color-blue);
+      }
+
+      .endpoint-card:hover::before {
+        height: 6px;
+        background: linear-gradient(90deg, var(--color-red), var(--color-blue));
+      }
+
+      .endpoint-card.loading {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+
+      .endpoint-card.loading::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        margin: -10px 0 0 -10px;
+        border: 2px solid var(--color-blue);
+        border-top: 2px solid transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      .endpoint-card.success {
+        border-color: var(--color-success);
+      }
+
+      .endpoint-card.success::before {
+        background: var(--color-success);
+      }
+
+      .endpoint-card.error {
+        border-color: var(--color-error);
+      }
+
+      .endpoint-card.error::before {
+        background: var(--color-error);
+      }
+
+      .endpoint-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--space-md);
+      }
+
+      .endpoint-method-path {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        flex: 1;
+      }
+
+      .endpoint-method {
+        background: var(--color-success);
+        color: var(--color-text-inverse);
+        padding: var(--space-xs) var(--space-sm);
+        border-radius: var(--radius-sm);
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        font-weight: 700;
+        min-width: 60px;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+      }
+
+      .endpoint-method.post { background: var(--color-blue); }
+      .endpoint-method.put { background: var(--color-warning); }
+      .endpoint-method.delete { background: var(--color-error); }
+      .endpoint-method.patch { background: var(--color-info); }
+
+      .endpoint-path {
+        font-family: var(--font-code);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        font-weight: 600;
+        word-break: break-all;
+      }
+
+      .endpoint-actions {
+        display: flex;
+        gap: var(--space-xs);
+      }
+
+      .endpoint-btn {
+        padding: var(--space-xs) var(--space-sm);
+        border: none;
+        border-radius: var(--radius-sm);
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        font-weight: 700;
+        cursor: pointer;
+        transition: all var(--transition-base);
+        min-height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .endpoint-btn.test {
+        background: var(--color-blue);
+        color: var(--color-text-inverse);
+      }
+
+      .endpoint-btn.test:hover {
+        background: var(--color-primary-hover);
+        transform: translateY(-1px);
+      }
+
+      .endpoint-btn.help {
+        background: var(--color-background-secondary);
+        color: var(--color-text-secondary);
+        border: 1px solid var(--color-border);
+      }
+
+      .endpoint-btn.help:hover {
+        background: var(--color-info);
+        color: var(--color-text-inverse);
+        border-color: var(--color-info);
+      }
+
+      .endpoint-description {
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+        margin-bottom: var(--space-md);
+        line-height: var(--line-height-relaxed);
+      }
+
+      .endpoint-category {
+        display: inline-block;
+        background: var(--color-background-secondary);
+        color: var(--color-text-tertiary);
+        padding: var(--space-xs) var(--space-sm);
+        border-radius: var(--radius-full);
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        margin-bottom: var(--space-sm);
+      }
+
+      .endpoint-status {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: var(--space-sm);
+        padding-top: var(--space-sm);
+        border-top: 1px solid var(--color-border);
+      }
+
+      .endpoint-status-text {
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+      }
+
+      .endpoint-response-time {
+        font-family: var(--font-code);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+      }
+
+      /* Modal Styles */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all var(--transition-base);
+        backdrop-filter: blur(4px);
+      }
+
+      .modal-overlay.show {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .modal {
+        background: var(--color-surface);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        width: 90%;
+        max-width: 800px;
+        max-height: 90%;
+        box-shadow: var(--shadow-2xl);
+        position: relative;
+        overflow: hidden;
+        transform: scale(0.9);
+        transition: transform var(--transition-base);
+      }
+
+      .modal-overlay.show .modal {
+        transform: scale(1);
+      }
+
+      .modal::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+      }
+
+      .modal-header {
+        padding: var(--space-xl);
+        border-bottom: 2px solid var(--color-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .modal-title {
+        font-family: var(--font-display);
+        font-size: var(--font-size-xl);
+        font-weight: 900;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        margin: 0;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: var(--font-size-2xl);
+        color: var(--color-text-tertiary);
+        cursor: pointer;
+        padding: var(--space-sm);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-base);
+      }
+
+      .modal-close:hover {
+        background: var(--color-error);
+        color: var(--color-text-inverse);
+      }
+
+      .modal-tabs {
+        display: flex;
+        background: var(--color-background-secondary);
+        border-bottom: 2px solid var(--color-border);
+      }
+
+      .modal-tab {
+        flex: 1;
+        padding: var(--space-md) var(--space-lg);
+        background: none;
+        border: none;
+        font-family: var(--font-display);
+        font-size: var(--font-size-sm);
+        font-weight: 700;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        cursor: pointer;
+        transition: all var(--transition-base);
+        border-right: 1px solid var(--color-border);
+      }
+
+      .modal-tab:last-child {
+        border-right: none;
+      }
+
+      .modal-tab.active {
+        background: var(--color-blue);
+        color: var(--color-text-inverse);
+      }
+
+      .modal-tab:hover:not(.active) {
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+      }
+
+      .modal-content {
+        padding: var(--space-xl);
+        max-height: 60vh;
+        overflow-y: auto;
+      }
+
+      .response-content {
+        background: var(--color-background-secondary);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: var(--space-lg);
+        font-family: var(--font-code);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        white-space: pre-wrap;
+        overflow-x: auto;
+        position: relative;
+      }
+
+      .response-actions {
+        display: flex;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-lg);
+      }
+
+      .response-btn {
+        padding: var(--space-sm) var(--space-lg);
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-md);
+        font-family: var(--font-display);
+        font-size: var(--font-size-xs);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        cursor: pointer;
+        transition: all var(--transition-base);
+      }
+
+      .response-btn:hover {
+        background: var(--color-blue);
+        color: var(--color-text-inverse);
+        border-color: var(--color-blue);
+        transform: translateY(-1px);
+      }
+
+      /* Toast Notification System */
+      .toast-container {
+        position: fixed;
+        top: var(--space-xl);
+        right: var(--space-xl);
+        z-index: 2000;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+      }
+
+      .toast {
+        background: var(--color-surface);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        box-shadow: var(--shadow-xl);
+        max-width: 400px;
+        position: relative;
+        overflow: hidden;
+        transform: translateX(120%);
+        transition: transform var(--transition-base);
+      }
+
+      .toast.show {
+        transform: translateX(0);
+      }
+
+      .toast::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--color-blue);
+      }
+
+      .toast.success::before { background: var(--color-success); }
+      .toast.error::before { background: var(--color-error); }
+      .toast.warning::before { background: var(--color-warning); }
+      .toast.info::before { background: var(--color-info); }
+
+      .toast-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-sm);
+      }
+
+      .toast-title {
+        font-family: var(--font-display);
+        font-size: var(--font-size-sm);
+        font-weight: 700;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        margin: 0;
+      }
+
+      .toast-close {
+        background: none;
+        border: none;
+        color: var(--color-text-tertiary);
+        cursor: pointer;
+        font-size: var(--font-size-lg);
+        padding: 0;
+      }
+
+      .toast-close:hover {
+        color: var(--color-text-primary);
+      }
+
+      .toast-message {
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+        line-height: var(--line-height-relaxed);
+      }
+
+      .toast-progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 3px;
+        background: var(--color-blue);
+        transition: width linear;
+      }
+
+      .toast.success .toast-progress { background: var(--color-success); }
+      .toast.error .toast-progress { background: var(--color-error); }
+      .toast.warning .toast-progress { background: var(--color-warning); }
+      .toast.info .toast-progress { background: var(--color-info); }
+
+      /* Help System */
+      .help-tooltip {
+        position: absolute;
+        background: var(--color-surface);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: var(--space-md);
+        box-shadow: var(--shadow-lg);
+        z-index: 1500;
+        max-width: 300px;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all var(--transition-base);
+      }
+
+      .help-tooltip.show {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .help-tooltip::before {
+        content: "";
+        position: absolute;
+        bottom: -6px;
+        left: 20px;
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: 6px solid var(--color-border);
+      }
+
+      .help-tooltip::after {
+        content: "";
+        position: absolute;
+        bottom: -4px;
+        left: 21px;
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 5px solid var(--color-surface);
+      }
+
+      /* Loading States */
+      .endpoints-loading {
+        text-align: center;
+        padding: var(--space-4xl);
+        color: var(--color-text-secondary);
+      }
+
+      .loading-spinner {
+        display: inline-block;
+        width: 40px;
+        height: 40px;
+        border: 4px solid var(--color-border);
+        border-top: 4px solid var(--color-blue);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: var(--space-lg);
+      }
+
+      .no-results {
+        text-align: center;
+        padding: var(--space-4xl);
+        color: var(--color-text-tertiary);
+      }
+
+      .no-results-icon {
+        font-size: var(--font-size-4xl);
+        margin-bottom: var(--space-lg);
+        opacity: 0.5;
+      }
+
+      /* Animations */
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .fade-in {
+        animation: fadeIn 0.3s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Mobile Responsiveness */
+      @media (max-width: 768px) {
+        body {
+          padding: var(--space-md);
+        }
+
+        .controls-grid {
+          grid-template-columns: 1fr;
+          gap: var(--space-md);
+        }
+
+        .endpoints-container {
+          grid-template-columns: 1fr;
+        }
+
+        .endpoint-card {
+          padding: var(--space-md);
+        }
+
+        .endpoint-method-path {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: var(--space-sm);
+        }
+
+        .modal {
+          width: 95%;
+          max-height: 95%;
+        }
+
+        .modal-header,
+        .modal-content {
+          padding: var(--space-lg);
+        }
+
+        .toast-container {
+          top: var(--space-md);
+          right: var(--space-md);
+          left: var(--space-md);
+        }
+
+        .toast {
+          max-width: none;
+        }
+      }
+
+      /* Accessibility */
+      @media (prefers-reduced-motion: reduce) {
+        .endpoint-card,
+        .modal,
+        .toast,
+        .help-tooltip {
+          transform: none;
+          animation: none;
+          transition: none;
+        }
+
+        .loading-spinner {
+          animation: none;
+        }
+      }
+
+      @media (prefers-contrast: high) {
+        .endpoint-card,
+        .modal,
+        .toast {
+          border-width: 3px;
+        }
+      }
+    </style>
+
+    <!-- Theme Manager -->
+    <script type="module" src="/js/theme-manager.js"></script>
+    <!-- Enhanced API Endpoints JavaScript -->
+    <script type="module" src="/js/admin-api-endpoints.js"></script>
+  </head>
+  <body class="admin-container">
+    <!-- Unified Admin Header -->
+    <header class="admin-header">
+      <div class="admin-header-content">
+        <div>
+          <h1 class="admin-header-title">API Endpoints</h1>
+          <p class="admin-header-subtitle">Interactive API Testing & Documentation Portal</p>
+        </div>
+        <div class="admin-header-actions">
+          <div class="admin-status-indicator">
+            <span class="admin-status-dot"></span>
+            <span id="status">API Ready</span>
+          </div>
+          <button class="admin-btn admin-btn-primary" onclick="refreshEndpoints()">
+            <span>Refresh</span>
+          </button>
+          <button class="admin-btn admin-btn-secondary" onclick="logout()">
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Unified Admin Navigation -->
+    <nav class="admin-navigation">
+      <ul class="admin-nav-list">
+        <li class="admin-nav-item">
+          <a href="/admin" class="admin-nav-link">
+            <span>Portal</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/dashboard" class="admin-nav-link">
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/tickets" class="admin-nav-link">
+            <span>Tickets</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/analytics" class="admin-nav-link">
+            <span>Analytics</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/checkin" class="admin-nav-link">
+            <span>Check-in Scanner</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/api-endpoints" class="admin-nav-link active">
+            <span>API Endpoints</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Search and Filter Controls -->
+    <div class="controls-section">
+      <div class="controls-grid">
+        <div class="search-wrapper">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            id="searchInput"
+            class="search-input"
+            placeholder="Search endpoints by name, path, or description..."
+            autocomplete="off"
+          />
+        </div>
+        <select id="methodFilter" class="filter-select">
+          <option value="">All Methods</option>
+          <option value="GET">GET</option>
+          <option value="POST">POST</option>
+          <option value="PUT">PUT</option>
+          <option value="DELETE">DELETE</option>
+          <option value="PATCH">PATCH</option>
+        </select>
+        <select id="categoryFilter" class="filter-select">
+          <option value="">All Categories</option>
+          <option value="Admin">Admin</option>
+          <option value="Sheets">Sheets</option>
+          <option value="Tickets">Tickets</option>
+          <option value="Health">Health</option>
+          <option value="Gallery">Gallery</option>
+          <option value="Email">Email</option>
+          <option value="Payments">Payments</option>
+          <option value="Registration">Registration</option>
+        </select>
+      </div>
+      <div class="filter-tags" id="filterTags">
+        <!-- Active filters will be inserted here -->
+      </div>
+    </div>
+
+    <!-- Endpoints Container -->
+    <div class="endpoints-container" id="endpointsContainer">
+      <!-- Endpoints will be dynamically inserted here -->
+    </div>
+
+    <!-- Response Modal -->
+    <div class="modal-overlay" id="responseModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 class="modal-title" id="modalTitle">API Response</h2>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-tabs">
+          <button class="modal-tab active" onclick="switchTab('formatted')">Formatted</button>
+          <button class="modal-tab" onclick="switchTab('raw')">Raw</button>
+          <button class="modal-tab" onclick="switchTab('headers')">Headers</button>
+        </div>
+        <div class="modal-content">
+          <div class="response-actions">
+            <button class="response-btn" onclick="copyResponse()">Copy</button>
+            <button class="response-btn" onclick="downloadResponse()">Download</button>
+          </div>
+          <div class="response-content" id="responseContent">
+            <!-- Response content will be inserted here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer">
+      <!-- Toasts will be dynamically inserted here -->
+    </div>
+
+    <!-- Help Tooltip -->
+    <div class="help-tooltip" id="helpTooltip">
+      <!-- Help content will be inserted here -->
+    </div>
+
+    <script>
+      // API Endpoints Configuration
+      const API_ENDPOINTS = [
+        {
+          method: 'GET',
+          path: '/api/admin/dashboard',
+          category: 'Admin',
+          description: 'Retrieve admin dashboard data including registrations and analytics overview',
+          requiresAuth: true
+        },
+        {
+          method: 'POST',
+          path: '/api/admin/login',
+          category: 'Admin',
+          description: 'Authenticate admin user with password and establish session',
+          requiresAuth: false
+        },
+        {
+          method: 'POST',
+          path: '/api/admin/mobile-login',
+          category: 'Admin',
+          description: 'Mobile-optimized admin authentication with enhanced security',
+          requiresAuth: false
+        },
+        {
+          method: 'GET',
+          path: '/api/admin/registrations',
+          category: 'Admin',
+          description: 'Fetch all ticket registrations with filtering and pagination support',
+          requiresAuth: true
+        },
+        {
+          method: 'GET',
+          path: '/api/admin/transactions',
+          category: 'Admin',
+          description: 'Retrieve payment transaction history and analytics',
+          requiresAuth: true
+        },
+        {
+          method: 'GET',
+          path: '/api/admin/analytics',
+          category: 'Admin',
+          description: 'Get comprehensive analytics data for charts and insights',
+          requiresAuth: true
+        },
+        {
+          method: 'GET',
+          path: '/api/admin/events',
+          category: 'Admin',
+          description: 'Retrieve available events for multi-event management',
+          requiresAuth: true
+        },
+        {
+          method: 'GET',
+          path: '/api/admin/generate-report',
+          category: 'Admin',
+          description: 'Generate and download comprehensive admin reports in CSV or JSON',
+          requiresAuth: true
+        },
+        {
+          method: 'GET',
+          path: '/api/admin/csrf-token',
+          category: 'Admin',
+          description: 'Get CSRF token for state-changing operations',
+          requiresAuth: true
+        },
+        {
+          method: 'POST',
+          path: '/api/sheets/sync',
+          category: 'Sheets',
+          description: 'Synchronize registration data to Google Sheets',
+          requiresAuth: true
+        },
+        {
+          method: 'GET',
+          path: '/api/sheets/scheduled-sync',
+          category: 'Sheets',
+          description: 'Check status of scheduled Google Sheets synchronization',
+          requiresAuth: true
+        },
+        {
+          method: 'POST',
+          path: '/api/tickets/validate',
+          category: 'Tickets',
+          description: 'Validate QR code and check-in attendee at event',
+          requiresAuth: true
+        },
+        {
+          method: 'GET',
+          path: '/api/tickets/[ticketId]',
+          category: 'Tickets',
+          description: 'Retrieve specific ticket details by ID',
+          requiresAuth: false
+        },
+        {
+          method: 'POST',
+          path: '/api/tickets/register',
+          category: 'Registration',
+          description: 'Register attendee information for purchased ticket',
+          requiresAuth: false
+        },
+        {
+          method: 'GET',
+          path: '/api/registration/[token]',
+          category: 'Registration',
+          description: 'Get registration status for all tickets associated with token',
+          requiresAuth: false
+        },
+        {
+          method: 'POST',
+          path: '/api/registration/batch',
+          category: 'Registration',
+          description: 'Register multiple tickets in a single batch operation',
+          requiresAuth: false
+        },
+        {
+          method: 'GET',
+          path: '/api/registration/health',
+          category: 'Registration',
+          description: 'Check health status of registration system',
+          requiresAuth: false
+        },
+        {
+          method: 'GET',
+          path: '/api/gallery',
+          category: 'Gallery',
+          description: 'Retrieve Google Drive photos and videos with caching',
+          requiresAuth: false
+        },
+        {
+          method: 'GET',
+          path: '/api/gallery/years',
+          category: 'Gallery',
+          description: 'Get available years for gallery content filtering',
+          requiresAuth: false
+        },
+        {
+          method: 'GET',
+          path: '/api/featured-photos',
+          category: 'Gallery',
+          description: 'Retrieve curated featured photos for homepage',
+          requiresAuth: false
+        },
+        {
+          method: 'POST',
+          path: '/api/email/subscribe',
+          category: 'Email',
+          description: 'Subscribe email to newsletter list via Brevo integration',
+          requiresAuth: false
+        },
+        {
+          method: 'GET',
+          path: '/api/email/unsubscribe',
+          category: 'Email',
+          description: 'Unsubscribe from newsletter using secure token',
+          requiresAuth: false
+        },
+        {
+          method: 'POST',
+          path: '/api/email/brevo-webhook',
+          category: 'Email',
+          description: 'Process Brevo webhook events for email tracking',
+          requiresAuth: false
+        },
+        {
+          method: 'POST',
+          path: '/api/payments/create-checkout-session',
+          category: 'Payments',
+          description: 'Create Stripe checkout session for ticket purchase',
+          requiresAuth: false
+        },
+        {
+          method: 'POST',
+          path: '/api/payments/stripe-webhook',
+          category: 'Payments',
+          description: 'Handle Stripe webhook events for payment processing',
+          requiresAuth: false
+        },
+        {
+          method: 'GET',
+          path: '/api/payments/checkout-success',
+          category: 'Payments',
+          description: 'Process successful payment and generate tickets',
+          requiresAuth: false
+        },
+        {
+          method: 'GET',
+          path: '/api/test-db',
+          category: 'Health',
+          description: 'Test database connectivity and performance',
+          requiresAuth: false
+        },
+        {
+          method: 'GET',
+          path: '/api/health/check',
+          category: 'Health',
+          description: 'Comprehensive application health check',
+          requiresAuth: false
+        },
+        {
+          method: 'GET',
+          path: '/api/health/database',
+          category: 'Health',
+          description: 'Database-specific health monitoring',
+          requiresAuth: false
+        }
+      ];
+
+      // Global state
+      let filteredEndpoints = [...API_ENDPOINTS];
+      let currentModal = null;
+      let activeToasts = [];
+
+      // Initialize the application
+      document.addEventListener('DOMContentLoaded', () => {
+        checkAuth();
+        renderEndpoints();
+        setupEventListeners();
+        showToast('success', 'API Endpoints Loaded', `${API_ENDPOINTS.length} endpoints ready for testing`);
+      });
+
+      // Authentication check
+      async function checkAuth() {
+        try {
+          const response = await fetch("/api/admin/verify-session", {
+            credentials: "include"
+          });
+          if (!response.ok) {
+            window.location.href = "/admin/login";
+            return false;
+          }
+          const data = await response.json();
+          if (!data.valid) {
+            window.location.href = "/admin/login";
+            return false;
+          }
+          return true;
+        } catch (error) {
+          console.error("Auth check failed:", error);
+          window.location.href = "/admin/login";
+          return false;
+        }
+      }
+
+      // Setup event listeners
+      function setupEventListeners() {
+        const searchInput = document.getElementById('searchInput');
+        const methodFilter = document.getElementById('methodFilter');
+        const categoryFilter = document.getElementById('categoryFilter');
+
+        searchInput.addEventListener('input', debounce(handleSearch, 300));
+        methodFilter.addEventListener('change', handleFilter);
+        categoryFilter.addEventListener('change', handleFilter);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', handleKeyboard);
+
+        // Modal click outside to close
+        document.getElementById('responseModal').addEventListener('click', (e) => {
+          if (e.target.classList.contains('modal-overlay')) {
+            closeModal();
+          }
+        });
+      }
+
+      // Debounce utility
+      function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+          const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+          };
+          clearTimeout(timeout);
+          timeout = setTimeout(later, wait);
+        };
+      }
+
+      // Handle search
+      function handleSearch(event) {
+        const searchTerm = event.target.value.toLowerCase();
+        applyFilters();
+      }
+
+      // Handle filters
+      function handleFilter() {
+        applyFilters();
+        updateFilterTags();
+      }
+
+      // Apply filters
+      function applyFilters() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const methodFilter = document.getElementById('methodFilter').value;
+        const categoryFilter = document.getElementById('categoryFilter').value;
+
+        filteredEndpoints = API_ENDPOINTS.filter(endpoint => {
+          const matchesSearch = !searchTerm ||
+            endpoint.path.toLowerCase().includes(searchTerm) ||
+            endpoint.description.toLowerCase().includes(searchTerm) ||
+            endpoint.category.toLowerCase().includes(searchTerm);
+
+          const matchesMethod = !methodFilter || endpoint.method === methodFilter;
+          const matchesCategory = !categoryFilter || endpoint.category === categoryFilter;
+
+          return matchesSearch && matchesMethod && matchesCategory;
+        });
+
+        renderEndpoints();
+      }
+
+      // Update filter tags
+      function updateFilterTags() {
+        const tagsContainer = document.getElementById('filterTags');
+        const methodFilter = document.getElementById('methodFilter').value;
+        const categoryFilter = document.getElementById('categoryFilter').value;
+        const searchTerm = document.getElementById('searchInput').value;
+
+        let tags = [];
+
+        if (searchTerm) {
+          tags.push({ type: 'search', label: `Search: "${searchTerm}"`, value: searchTerm });
+        }
+        if (methodFilter) {
+          tags.push({ type: 'method', label: `Method: ${methodFilter}`, value: methodFilter });
+        }
+        if (categoryFilter) {
+          tags.push({ type: 'category', label: `Category: ${categoryFilter}`, value: categoryFilter });
+        }
+
+        if (tags.length === 0) {
+          tagsContainer.innerHTML = '';
+          return;
+        }
+
+        const tagsHTML = tags.map(tag => `
+          <div class="filter-tag">
+            <span>${tag.label}</span>
+            <button class="remove-filter" onclick="removeFilter('${tag.type}', '${tag.value}')">&times;</button>
+          </div>
+        `).join('');
+
+        tagsContainer.innerHTML = tagsHTML + `
+          <button class="clear-filters-btn" onclick="clearAllFilters()">Clear All</button>
+        `;
+      }
+
+      // Remove filter
+      function removeFilter(type, value) {
+        if (type === 'search') {
+          document.getElementById('searchInput').value = '';
+        } else if (type === 'method') {
+          document.getElementById('methodFilter').value = '';
+        } else if (type === 'category') {
+          document.getElementById('categoryFilter').value = '';
+        }
+        applyFilters();
+        updateFilterTags();
+      }
+
+      // Clear all filters
+      function clearAllFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('methodFilter').value = '';
+        document.getElementById('categoryFilter').value = '';
+        applyFilters();
+        updateFilterTags();
+        showToast('info', 'Filters Cleared', 'All filters have been reset');
+      }
+
+      // Render endpoints
+      function renderEndpoints() {
+        const container = document.getElementById('endpointsContainer');
+
+        if (filteredEndpoints.length === 0) {
+          container.innerHTML = `
+            <div class="no-results">
+              <div class="no-results-icon">🔍</div>
+              <h3>No endpoints found</h3>
+              <p>Try adjusting your search criteria or filters</p>
+            </div>
+          `;
+          return;
+        }
+
+        const endpointsHTML = filteredEndpoints.map(endpoint => `
+          <div class="endpoint-card fade-in" data-endpoint="${endpoint.path}">
+            <div class="endpoint-category">${endpoint.category}</div>
+            <div class="endpoint-header">
+              <div class="endpoint-method-path">
+                <span class="endpoint-method ${endpoint.method.toLowerCase()}">${endpoint.method}</span>
+                <code class="endpoint-path">${endpoint.path}</code>
+              </div>
+              <div class="endpoint-actions">
+                <button class="endpoint-btn test" onclick="testEndpoint('${endpoint.path}', '${endpoint.method}')"
+                        ${endpoint.requiresAuth ? 'data-requires-auth="true"' : ''}>
+                  Test
+                </button>
+                <button class="endpoint-btn help" onclick="showHelp(event, '${endpoint.path}')">?</button>
+              </div>
+            </div>
+            <div class="endpoint-description">${endpoint.description}</div>
+            <div class="endpoint-status">
+              <span class="endpoint-status-text">Ready</span>
+              <span class="endpoint-response-time" id="time-${endpoint.path.replace(/[^a-zA-Z0-9]/g, '_')}">-</span>
+            </div>
+          </div>
+        `).join('');
+
+        container.innerHTML = endpointsHTML;
+      }
+
+      // Test endpoint
+      async function testEndpoint(path, method) {
+        const card = document.querySelector(`[data-endpoint="${path}"]`);
+        const timeElement = document.getElementById(`time-${path.replace(/[^a-zA-Z0-9]/g, '_')}`);
+
+        card.classList.add('loading');
+        const startTime = performance.now();
+
+        try {
+          let requestOptions = {
+            method: method,
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          };
+
+          // Add CSRF token for state-changing operations
+          if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+            try {
+              const csrfResponse = await fetch('/api/admin/csrf-token', {
+                credentials: 'include'
+              });
+              if (csrfResponse.ok) {
+                const csrfData = await csrfResponse.json();
+                requestOptions.headers['X-CSRF-Token'] = csrfData.token;
+              }
+            } catch (error) {
+              console.warn('Could not fetch CSRF token:', error);
+            }
+          }
+
+          const response = await fetch(path, requestOptions);
+          const endTime = performance.now();
+          const responseTime = Math.round(endTime - startTime);
+
+          timeElement.textContent = `${responseTime}ms`;
+
+          let responseData;
+          const contentType = response.headers.get('content-type');
+
+          if (contentType && contentType.includes('application/json')) {
+            responseData = await response.json();
+          } else {
+            responseData = await response.text();
+          }
+
+          card.classList.remove('loading');
+
+          if (response.ok) {
+            card.classList.add('success');
+            setTimeout(() => card.classList.remove('success'), 2000);
+            showToast('success', 'Request Successful', `${method} ${path} completed in ${responseTime}ms`);
+          } else {
+            card.classList.add('error');
+            setTimeout(() => card.classList.remove('error'), 2000);
+            showToast('error', 'Request Failed', `${method} ${path} returned ${response.status}`);
+          }
+
+          showResponseModal(path, method, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries()),
+            data: responseData,
+            responseTime: responseTime
+          });
+
+        } catch (error) {
+          const endTime = performance.now();
+          const responseTime = Math.round(endTime - startTime);
+
+          card.classList.remove('loading');
+          card.classList.add('error');
+          setTimeout(() => card.classList.remove('error'), 2000);
+
+          timeElement.textContent = `${responseTime}ms`;
+          showToast('error', 'Request Failed', `Network error: ${error.message}`);
+
+          console.error('Endpoint test failed:', error);
+        }
+      }
+
+      // Show response modal
+      function showResponseModal(path, method, response) {
+        const modal = document.getElementById('responseModal');
+        const title = document.getElementById('modalTitle');
+        const content = document.getElementById('responseContent');
+
+        title.textContent = `${method} ${path}`;
+
+        currentModal = {
+          path: path,
+          method: method,
+          response: response,
+          activeTab: 'formatted'
+        };
+
+        // Set initial tab content
+        switchTab('formatted');
+
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+      }
+
+      // Switch modal tab with enhanced formatting
+      function switchTab(tabName) {
+        const tabs = document.querySelectorAll('.modal-tab');
+        const content = document.getElementById('responseContent');
+
+        tabs.forEach(tab => tab.classList.remove('active'));
+        event?.target?.classList.add('active') || document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+
+        if (!currentModal) return;
+
+        currentModal.activeTab = tabName;
+        const response = currentModal.response;
+
+        try {
+          switch (tabName) {
+            case 'formatted':
+              const statusClass = response.status >= 200 && response.status < 300 ? 'success' : 'error';
+              const formattedData = typeof response.data === 'object'
+                ? formatJSON(response.data)
+                : escapeHtml(String(response.data));
+
+              content.innerHTML = `
+                <div class="response-summary">
+                  <div class="response-summary-item">
+                    <strong>Status:</strong>
+                    <span class="status-badge ${statusClass}">${response.status} ${response.statusText}</span>
+                  </div>
+                  <div class="response-summary-item">
+                    <strong>Response Time:</strong>
+                    <span class="response-time ${response.responseTime > 1000 ? 'slow' : response.responseTime > 500 ? 'medium' : 'fast'}">${response.responseTime}ms</span>
+                  </div>
+                  <div class="response-summary-item">
+                    <strong>Content Type:</strong>
+                    <span class="content-type">${response.headers['content-type'] || 'Unknown'}</span>
+                  </div>
+                </div>
+                <div class="response-data">
+                  <pre>${formattedData}</pre>
+                </div>
+              `;
+              break;
+
+            case 'raw':
+              const rawData = typeof response.data === 'object'
+                ? JSON.stringify(response.data)
+                : String(response.data);
+              content.innerHTML = `<pre>${escapeHtml(rawData)}</pre>`;
+              break;
+
+            case 'headers':
+              const headersHTML = Object.entries(response.headers)
+                .map(([key, value]) => `<div class="header-item"><span class="header-key">${escapeHtml(key)}:</span> <span class="header-value">${escapeHtml(value)}</span></div>`)
+                .join('');
+              content.innerHTML = `<div class="headers-list">${headersHTML}</div>`;
+              break;
+          }
+        } catch (error) {
+          content.innerHTML = `<div class="error-message">Error displaying content: ${escapeHtml(error.message)}</div>`;
+        }
+      }
+
+      // Enhanced JSON formatter with syntax highlighting
+      function formatJSON(obj, indent = 0) {
+        if (typeof obj !== 'object' || obj === null) {
+          return formatValue(obj);
+        }
+
+        const spaces = '  '.repeat(indent);
+        const innerSpaces = '  '.repeat(indent + 1);
+
+        if (Array.isArray(obj)) {
+          if (obj.length === 0) return '<span class="json-bracket">[]</span>';
+
+          const items = obj.map(item => innerSpaces + formatJSON(item, indent + 1));
+          return '<span class="json-bracket">[</span>\n' + items.join(',\n') + '\n' + spaces + '<span class="json-bracket">]</span>';
+        }
+
+        const keys = Object.keys(obj);
+        if (keys.length === 0) return '<span class="json-bracket">{}</span>';
+
+        const pairs = keys.map(key => {
+          const value = formatJSON(obj[key], indent + 1);
+          return `${innerSpaces}<span class="json-key">"${escapeHtml(key)}"</span><span class="json-colon">:</span> ${value}`;
+        });
+
+        return '<span class="json-bracket">{</span>\n' + pairs.join(',\n') + '\n' + spaces + '<span class="json-bracket">}</span>';
+      }
+
+      function formatValue(value) {
+        if (value === null) {
+          return '<span class="json-null">null</span>';
+        }
+
+        if (typeof value === 'string') {
+          return `<span class="json-string">"${escapeHtml(value)}"</span>`;
+        }
+
+        if (typeof value === 'number') {
+          return `<span class="json-number">${value}</span>`;
+        }
+
+        if (typeof value === 'boolean') {
+          return `<span class="json-boolean">${value}</span>`;
+        }
+
+        return escapeHtml(String(value));
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Close modal
+      function closeModal() {
+        const modal = document.getElementById('responseModal');
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+        currentModal = null;
+      }
+
+      // Copy response
+      function copyResponse() {
+        if (!currentModal) return;
+
+        let textToCopy = '';
+        const response = currentModal.response;
+
+        switch (currentModal.activeTab) {
+          case 'formatted':
+            textToCopy = `Status: ${response.status} ${response.statusText}\nResponse Time: ${response.responseTime}ms\n\n${typeof response.data === 'object' ? JSON.stringify(response.data, null, 2) : response.data}`;
+            break;
+          case 'raw':
+            textToCopy = typeof response.data === 'object' ? JSON.stringify(response.data) : response.data;
+            break;
+          case 'headers':
+            textToCopy = JSON.stringify(response.headers, null, 2);
+            break;
+        }
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          showToast('success', 'Copied!', 'Response content copied to clipboard');
+        }).catch(err => {
+          showToast('error', 'Copy Failed', 'Could not copy to clipboard');
+        });
+      }
+
+      // Download response
+      function downloadResponse() {
+        if (!currentModal) return;
+
+        const response = currentModal.response;
+        const fileName = `${currentModal.method}_${currentModal.path.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.json`;
+
+        const dataToDownload = {
+          endpoint: `${currentModal.method} ${currentModal.path}`,
+          timestamp: new Date().toISOString(),
+          status: response.status,
+          statusText: response.statusText,
+          responseTime: response.responseTime,
+          headers: response.headers,
+          data: response.data
+        };
+
+        const blob = new Blob([JSON.stringify(dataToDownload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast('success', 'Downloaded!', `Response saved as ${fileName}`);
+      }
+
+      // Show help tooltip
+      function showHelp(event, path) {
+        event.stopPropagation();
+        const endpoint = API_ENDPOINTS.find(e => e.path === path);
+        if (!endpoint) return;
+
+        const tooltip = document.getElementById('helpTooltip');
+        const rect = event.target.getBoundingClientRect();
+
+        tooltip.innerHTML = `
+          <h4 style="margin: 0 0 var(--space-sm) 0; color: var(--color-text-primary);">${endpoint.method} ${endpoint.path}</h4>
+          <p style="margin: 0 0 var(--space-sm) 0;">${endpoint.description}</p>
+          <div style="font-size: var(--font-size-xs); color: var(--color-text-tertiary);">
+            <strong>Category:</strong> ${endpoint.category}<br>
+            <strong>Auth Required:</strong> ${endpoint.requiresAuth ? 'Yes' : 'No'}
+          </div>
+        `;
+
+        tooltip.style.left = `${rect.left}px`;
+        tooltip.style.top = `${rect.bottom + 10}px`;
+        tooltip.classList.add('show');
+
+        // Hide after 5 seconds or on click outside
+        setTimeout(() => hideHelp(), 5000);
+        document.addEventListener('click', hideHelp, { once: true });
+      }
+
+      // Hide help tooltip
+      function hideHelp() {
+        const tooltip = document.getElementById('helpTooltip');
+        tooltip.classList.remove('show');
+      }
+
+      // Toast notification system
+      function showToast(type, title, message, duration = 5000) {
+        const toastContainer = document.getElementById('toastContainer');
+        const toastId = 'toast_' + Date.now();
+
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.id = toastId;
+        toast.innerHTML = `
+          <div class="toast-header">
+            <h4 class="toast-title">${title}</h4>
+            <button class="toast-close" onclick="closeToast('${toastId}')">&times;</button>
+          </div>
+          <div class="toast-message">${message}</div>
+          <div class="toast-progress" style="width: 100%;"></div>
+        `;
+
+        toastContainer.appendChild(toast);
+
+        // Show toast
+        requestAnimationFrame(() => {
+          toast.classList.add('show');
+        });
+
+        // Start progress animation
+        const progress = toast.querySelector('.toast-progress');
+        progress.style.transition = `width ${duration}ms linear`;
+        requestAnimationFrame(() => {
+          progress.style.width = '0%';
+        });
+
+        // Auto dismiss
+        const timeoutId = setTimeout(() => {
+          closeToast(toastId);
+        }, duration);
+
+        activeToasts.push({ id: toastId, timeoutId: timeoutId });
+      }
+
+      // Close toast
+      function closeToast(toastId) {
+        const toast = document.getElementById(toastId);
+        if (!toast) return;
+
+        toast.classList.remove('show');
+
+        setTimeout(() => {
+          toast.remove();
+        }, 300);
+
+        // Clean up timeout
+        const toastIndex = activeToasts.findIndex(t => t.id === toastId);
+        if (toastIndex > -1) {
+          clearTimeout(activeToasts[toastIndex].timeoutId);
+          activeToasts.splice(toastIndex, 1);
+        }
+      }
+
+      // Keyboard shortcuts
+      function handleKeyboard(event) {
+        // Ctrl/Cmd + K to focus search
+        if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+          event.preventDefault();
+          document.getElementById('searchInput').focus();
+        }
+
+        // Escape to close modal or clear search
+        if (event.key === 'Escape') {
+          if (document.getElementById('responseModal').classList.contains('show')) {
+            closeModal();
+          } else if (document.getElementById('searchInput').value) {
+            document.getElementById('searchInput').value = '';
+            applyFilters();
+            updateFilterTags();
+          }
+        }
+      }
+
+      // Refresh endpoints
+      function refreshEndpoints() {
+        showToast('info', 'Refreshing...', 'Reloading endpoint data');
+
+        // Simulate refresh delay
+        setTimeout(() => {
+          renderEndpoints();
+          showToast('success', 'Refreshed!', `${filteredEndpoints.length} endpoints updated`);
+        }, 1000);
+      }
+
+      // Logout function
+      async function logout() {
+        if (!confirm("Are you sure you want to logout?")) return;
+
+        try {
+          await fetch("/api/admin/login", {
+            method: "DELETE",
+          });
+        } finally {
+          localStorage.removeItem('adminToken');
+          sessionStorage.clear();
+          window.location.href = '/admin/login';
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,789 @@
+/* A Lo Cubano Boulder Fest - Interactive API Endpoints Enhancement CSS */
+/* Advanced styling for the API endpoints system with Cuban-inspired design elements */
+
+/* ==========================================================================
+   ENDPOINT CARD ENHANCEMENTS
+   ========================================================================== */
+
+/* Enhanced endpoint status indicators */
+.endpoint-card .endpoint-status-indicator {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+  animation: statusPulse 2s infinite;
+}
+
+.endpoint-card.loading .endpoint-status-indicator {
+  background: var(--color-warning);
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+  animation: loadingPulse 1s infinite;
+}
+
+.endpoint-card.error .endpoint-status-indicator {
+  background: var(--color-error);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+  animation: errorPulse 0.5s infinite;
+}
+
+/* Status pulse animations */
+@keyframes statusPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes loadingPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes errorPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.15);
+  }
+}
+
+/* Enhanced method badges with gradients */
+.endpoint-method.get {
+  background: linear-gradient(135deg, var(--color-success), #16a34a);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}
+
+.endpoint-method.post {
+  background: linear-gradient(135deg, var(--color-blue), var(--color-primary-hover));
+  box-shadow: 0 2px 8px rgba(91, 107, 181, 0.3);
+}
+
+.endpoint-method.put {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.endpoint-method.delete {
+  background: linear-gradient(135deg, var(--color-error), #b91c1c);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.endpoint-method.patch {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+/* Category badges with Cuban flag colors */
+.endpoint-category.admin {
+  background: linear-gradient(135deg, var(--color-blue), var(--color-red));
+  color: var(--color-text-inverse);
+}
+
+.endpoint-category.sheets {
+  background: linear-gradient(135deg, #059669, #047857);
+  color: var(--color-text-inverse);
+}
+
+.endpoint-category.tickets {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: var(--color-text-inverse);
+}
+
+.endpoint-category.health {
+  background: linear-gradient(135deg, var(--color-success), #16a34a);
+  color: var(--color-text-inverse);
+}
+
+.endpoint-category.gallery {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: var(--color-text-inverse);
+}
+
+.endpoint-category.email {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: var(--color-text-inverse);
+}
+
+.endpoint-category.payments {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: var(--color-text-inverse);
+}
+
+.endpoint-category.registration {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: var(--color-text-inverse);
+}
+
+/* ==========================================================================
+   ADVANCED MODAL ENHANCEMENTS
+   ========================================================================== */
+
+/* Enhanced modal tabs with Cuban flag inspiration */
+.modal-tab {
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-tab::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--color-blue), var(--color-red));
+  transition: left var(--transition-base);
+  z-index: 0;
+}
+
+.modal-tab:hover:not(.active)::before {
+  left: 0;
+}
+
+.modal-tab.active::before {
+  left: 0;
+  opacity: 1;
+}
+
+.modal-tab span {
+  position: relative;
+  z-index: 1;
+}
+
+/* Enhanced response content styling */
+.response-content {
+  position: relative;
+}
+
+.response-content::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+/* Enhanced JSON syntax highlighting for formatted responses */
+.response-content .json-key {
+  color: var(--color-blue);
+  font-weight: 600;
+}
+
+.response-content .json-string {
+  color: var(--color-success);
+}
+
+.response-content .json-number {
+  color: var(--color-warning);
+}
+
+.response-content .json-boolean {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.response-content .json-null {
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
+
+.response-content .json-bracket {
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+.response-content .json-colon {
+  color: var(--color-text-secondary);
+}
+
+/* Response summary styling */
+.response-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+  border: 2px solid var(--color-border);
+}
+
+.response-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.response-summary-item strong {
+  font-family: var(--font-code);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.response-summary .status-badge {
+  display: inline-block;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  font-family: var(--font-code);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.response-summary .status-badge.success {
+  background: var(--color-success);
+  color: var(--color-text-inverse);
+}
+
+.response-summary .status-badge.error {
+  background: var(--color-error);
+  color: var(--color-text-inverse);
+}
+
+.response-summary .response-time {
+  font-family: var(--font-code);
+  font-weight: 600;
+}
+
+.response-summary .response-time.fast {
+  color: var(--color-success);
+}
+
+.response-summary .response-time.medium {
+  color: var(--color-warning);
+}
+
+.response-summary .response-time.slow {
+  color: var(--color-error);
+}
+
+.response-summary .content-type {
+  font-family: var(--font-code);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Headers list styling */
+.headers-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.header-item {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  display: flex;
+  gap: var(--space-md);
+}
+
+.header-key {
+  font-family: var(--font-code);
+  font-weight: 600;
+  color: var(--color-blue);
+  min-width: 150px;
+}
+
+.header-value {
+  font-family: var(--font-code);
+  color: var(--color-text-secondary);
+  word-break: break-all;
+  flex: 1;
+}
+
+/* Error message styling */
+.error-message {
+  padding: var(--space-lg);
+  background: var(--color-error);
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-family: var(--font-code);
+}
+
+/* Enhanced response action buttons */
+.response-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.response-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--color-blue), var(--color-red));
+  transition: left var(--transition-base);
+  z-index: 0;
+}
+
+.response-btn:hover::before {
+  left: 0;
+}
+
+.response-btn span {
+  position: relative;
+  z-index: 1;
+}
+
+/* ==========================================================================
+   SEARCH AND FILTER ENHANCEMENTS
+   ========================================================================== */
+
+/* Enhanced search input with Cuban flag accent */
+.search-input {
+  position: relative;
+}
+
+.search-input:focus {
+  box-shadow:
+    0 0 0 3px rgba(91, 107, 181, 0.1),
+    0 0 0 1px var(--color-blue),
+    inset 0 1px 0 rgba(204, 41, 54, 0.1);
+}
+
+/* Filter select enhancements */
+.filter-select {
+  position: relative;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--color-text-tertiary) 50%),
+    linear-gradient(-45deg, transparent 50%, var(--color-text-tertiary) 50%);
+  background-position:
+    calc(100% - 15px) calc(1em + 2px),
+    calc(100% - 10px) calc(1em + 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.filter-select:focus {
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--color-blue) 50%),
+    linear-gradient(-45deg, transparent 50%, var(--color-blue) 50%);
+}
+
+/* Enhanced filter tags */
+.filter-tag {
+  position: relative;
+  overflow: hidden;
+}
+
+.filter-tag::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--color-red), var(--color-blue));
+  transition: left var(--transition-base);
+  z-index: 0;
+}
+
+.filter-tag:hover::before {
+  left: 0;
+}
+
+.filter-tag span,
+.filter-tag button {
+  position: relative;
+  z-index: 1;
+}
+
+/* ==========================================================================
+   TOAST NOTIFICATION ENHANCEMENTS
+   ========================================================================== */
+
+/* Enhanced toast with Cuban flag border */
+.toast {
+  position: relative;
+}
+
+.toast::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--color-blue), var(--color-red));
+}
+
+/* Toast type-specific enhancements */
+.toast.success {
+  border-left-color: var(--color-success);
+  box-shadow:
+    var(--shadow-xl),
+    -4px 0 0 var(--color-success);
+}
+
+.toast.error {
+  border-left-color: var(--color-error);
+  box-shadow:
+    var(--shadow-xl),
+    -4px 0 0 var(--color-error);
+}
+
+.toast.warning {
+  border-left-color: var(--color-warning);
+  box-shadow:
+    var(--shadow-xl),
+    -4px 0 0 var(--color-warning);
+}
+
+.toast.info {
+  border-left-color: var(--color-info);
+  box-shadow:
+    var(--shadow-xl),
+    -4px 0 0 var(--color-info);
+}
+
+/* Toast progress bar enhancements */
+.toast-progress {
+  background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+}
+
+/* ==========================================================================
+   HELP TOOLTIP ENHANCEMENTS
+   ========================================================================== */
+
+/* Enhanced tooltip with Cuban design elements */
+.help-tooltip {
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-background-secondary) 100%);
+  border: 2px solid var(--color-border);
+  position: relative;
+}
+
+.help-tooltip::before {
+  border-top-color: var(--color-border);
+}
+
+.help-tooltip::after {
+  border-top-color: var(--color-surface);
+}
+
+/* Tooltip header enhancement */
+.help-tooltip h4 {
+  position: relative;
+  padding-bottom: var(--space-sm);
+}
+
+.help-tooltip h4::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+  border-radius: 1px;
+}
+
+/* ==========================================================================
+   LOADING AND ANIMATION ENHANCEMENTS
+   ========================================================================== */
+
+/* Enhanced loading spinner with Cuban colors */
+.loading-spinner {
+  border-color: var(--color-border);
+  border-top-color: var(--color-blue);
+  border-right-color: var(--color-red);
+}
+
+/* Staggered fade-in animation for endpoint cards */
+.endpoints-container .endpoint-card:nth-child(1) { animation-delay: 0.1s; }
+.endpoints-container .endpoint-card:nth-child(2) { animation-delay: 0.2s; }
+.endpoints-container .endpoint-card:nth-child(3) { animation-delay: 0.3s; }
+.endpoints-container .endpoint-card:nth-child(4) { animation-delay: 0.4s; }
+.endpoints-container .endpoint-card:nth-child(5) { animation-delay: 0.5s; }
+.endpoints-container .endpoint-card:nth-child(6) { animation-delay: 0.6s; }
+
+/* Enhanced no-results animation */
+.no-results {
+  animation: slideInFromBottom 0.5s ease-out;
+}
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   RESPONSIVE ENHANCEMENTS
+   ========================================================================== */
+
+/* Enhanced mobile responsiveness */
+@media (max-width: 768px) {
+  .endpoint-card {
+    transition: all var(--transition-base);
+  }
+
+  .endpoint-card:active {
+    transform: scale(0.98);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Mobile-optimized toast positioning */
+  .toast-container {
+    padding: 0 var(--space-sm);
+  }
+
+  .toast {
+    margin-bottom: var(--space-sm);
+    border-radius: var(--radius-md);
+  }
+
+  /* Mobile-optimized modal */
+  .modal {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    margin-top: auto;
+  }
+
+  .modal-content {
+    max-height: 50vh;
+  }
+}
+
+/* Enhanced tablet responsiveness */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .endpoints-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .controls-grid {
+    grid-template-columns: 1fr auto;
+    gap: var(--space-md);
+  }
+
+  .filter-tags {
+    grid-column: 1 / -1;
+    margin-top: var(--space-md);
+  }
+}
+
+/* ==========================================================================
+   ACCESSIBILITY ENHANCEMENTS
+   ========================================================================== */
+
+/* Enhanced focus states for better accessibility */
+.endpoint-btn:focus,
+.response-btn:focus,
+.modal-tab:focus {
+  outline: 3px solid var(--color-blue);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(91, 107, 181, 0.1);
+}
+
+/* High contrast mode enhancements */
+@media (prefers-contrast: high) {
+  .endpoint-card,
+  .modal,
+  .toast,
+  .help-tooltip {
+    border-width: 3px;
+    box-shadow: none;
+  }
+
+  .endpoint-method,
+  .endpoint-category,
+  .filter-tag {
+    font-weight: 900;
+    border: 2px solid currentColor;
+  }
+
+  .toast::before,
+  .toast::after,
+  .modal::before,
+  .help-tooltip h4::after {
+    display: none;
+  }
+}
+
+/* Reduced motion enhancements */
+@media (prefers-reduced-motion: reduce) {
+  .endpoint-card,
+  .modal,
+  .toast,
+  .help-tooltip,
+  .filter-tag,
+  .response-btn,
+  .modal-tab {
+    transition: none;
+    animation: none;
+  }
+
+  .endpoint-card::before,
+  .modal-tab::before,
+  .filter-tag::before,
+  .response-btn::before {
+    transition: none;
+  }
+
+  .endpoint-status-indicator {
+    animation: none;
+  }
+
+  .loading-spinner {
+    animation: none;
+    border-color: var(--color-blue);
+  }
+
+  .endpoints-container .endpoint-card {
+    animation-delay: 0s;
+  }
+}
+
+/* ==========================================================================
+   PRINT STYLES
+   ========================================================================== */
+
+@media print {
+  .modal-overlay,
+  .toast-container,
+  .help-tooltip {
+    display: none !important;
+  }
+
+  .endpoint-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+
+  .endpoint-card::before {
+    display: none;
+  }
+
+  .controls-section {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   DARK MODE SPECIFIC ENHANCEMENTS
+   ========================================================================== */
+
+[data-theme="dark"] .response-content {
+  background: var(--color-background-primary);
+  border-color: var(--color-border-medium);
+}
+
+[data-theme="dark"] .search-input,
+[data-theme="dark"] .filter-select {
+  background: var(--color-background-primary);
+  border-color: var(--color-border-medium);
+}
+
+[data-theme="dark"] .help-tooltip {
+  background: var(--color-background-primary);
+  border-color: var(--color-border-medium);
+  box-shadow: var(--shadow-2xl);
+}
+
+[data-theme="dark"] .toast {
+  background: var(--color-background-primary);
+  border-color: var(--color-border-medium);
+}
+
+/* ==========================================================================
+   PERFORMANCE OPTIMIZATIONS
+   ========================================================================== */
+
+/* GPU acceleration for smooth animations */
+.endpoint-card,
+.modal,
+.toast,
+.help-tooltip {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Optimized gradients using transform instead of changing background */
+.endpoint-method,
+.endpoint-category,
+.filter-tag,
+.response-btn,
+.modal-tab {
+  will-change: transform, opacity;
+}
+
+/* ==========================================================================
+   UTILITY CLASSES FOR ADVANCED FEATURES
+   ========================================================================== */
+
+/* Cuban flag color utilities */
+.cuban-gradient {
+  background: linear-gradient(135deg, var(--color-blue), var(--color-red));
+}
+
+.cuban-gradient-reverse {
+  background: linear-gradient(135deg, var(--color-red), var(--color-blue));
+}
+
+.cuban-border-accent {
+  position: relative;
+}
+
+.cuban-border-accent::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+}
+
+/* Status indicator utilities */
+.status-online { color: var(--color-success); }
+.status-loading { color: var(--color-warning); }
+.status-error { color: var(--color-error); }
+.status-info { color: var(--color-info); }
+
+/* Interactive feedback utilities */
+.hover-lift {
+  transition: transform var(--transition-base);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.active-press {
+  transition: transform var(--transition-fast);
+}
+
+.active-press:active {
+  transform: scale(0.98);
+}
