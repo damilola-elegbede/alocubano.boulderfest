@@ -6,17 +6,22 @@
 /* Dark mode floating cart styles */
 [data-theme="dark"] {
   /* Floating Cart Variables - Button variables removed */
-  --floating-cart-bg: var(--color-gray-900);
+  --floating-cart-bg: #000000;
   --floating-cart-border: var(--color-border);
-  --floating-cart-panel-bg: var(--color-gray-900);
+  --floating-cart-panel-bg: #000000;
   --floating-cart-panel-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   --floating-cart-backdrop: rgba(0, 0, 0, 0.8);
-  --floating-cart-item-bg: var(--color-gray-800);
+  --floating-cart-item-bg: var(--color-gray-900);
   --floating-cart-item-border: var(--color-border);
   --floating-cart-header-border: var(--color-border);
   --floating-cart-footer-border: var(--color-border);
   --floating-cart-clear-button-bg: var(--color-surface-elevated);
   --floating-cart-clear-button-hover: var(--color-error-light);
+
+  /* Override base cart variables for dark mode */
+  --cart-bg: #000000;
+  --cart-text: var(--color-white);
+  --cart-text-secondary: var(--color-gray-300);
 }
 
 /* Floating Cart Container */
@@ -45,7 +50,7 @@
 /* Cart Header */
 [data-theme="dark"] .cart-header {
   border-bottom: 1px solid var(--floating-cart-header-border);
-  background: var(--color-gray-900);
+  background: #000000;
 }
 
 [data-theme="dark"] .cart-header h3 {
@@ -182,7 +187,7 @@
 /* Cart Footer */
 [data-theme="dark"] .cart-footer {
   border-top: 1px solid var(--floating-cart-footer-border);
-  background: var(--color-gray-900);
+  background: #000000;
 }
 
 /* Cart Total */
@@ -334,12 +339,12 @@
 /* Mobile Responsive Dark Mode */
 @media (max-width: 768px) {
   [data-theme="dark"] .floating-cart-panel {
-    background: var(--color-gray-900);
+    background: #000000;
     border-color: var(--color-border);
   }
 
   [data-theme="dark"] .cart-item {
-    background: var(--color-gray-800);
+    background: var(--color-gray-900);
   }
 
   /* Button styles removed - header cart only */
