@@ -6,9 +6,9 @@
 /* Dark mode floating cart styles */
 [data-theme="dark"] {
   /* Floating Cart Variables - Button variables removed */
-  --floating-cart-bg: #000000;
+  --floating-cart-bg: rgba(0, 0, 0, 0.95);
   --floating-cart-border: var(--color-border);
-  --floating-cart-panel-bg: #000000;
+  --floating-cart-panel-bg: rgba(0, 0, 0, 0.95);
   --floating-cart-panel-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   --floating-cart-backdrop: rgba(0, 0, 0, 0.8);
   --floating-cart-item-bg: var(--color-gray-900);
@@ -19,7 +19,7 @@
   --floating-cart-clear-button-hover: var(--color-error-light);
 
   /* Override base cart variables for dark mode */
-  --cart-bg: #000000;
+  --cart-bg: rgba(0, 0, 0, 0.95);
   --cart-text: var(--color-white);
   --cart-text-secondary: var(--color-gray-300);
 }
@@ -50,7 +50,7 @@
 /* Cart Header */
 [data-theme="dark"] .cart-header {
   border-bottom: 1px solid var(--floating-cart-header-border);
-  background: #000000;
+  background: rgba(0, 0, 0, 0.95);
 }
 
 [data-theme="dark"] .cart-header h3 {
@@ -187,7 +187,7 @@
 /* Cart Footer */
 [data-theme="dark"] .cart-footer {
   border-top: 1px solid var(--floating-cart-footer-border);
-  background: #000000;
+  background: rgba(0, 0, 0, 0.95);
 }
 
 /* Cart Total */
@@ -339,7 +339,7 @@
 /* Mobile Responsive Dark Mode */
 @media (max-width: 768px) {
   [data-theme="dark"] .floating-cart-panel {
-    background: #000000;
+    background: rgba(0, 0, 0, 0.95);
     border-color: var(--color-border);
   }
 
