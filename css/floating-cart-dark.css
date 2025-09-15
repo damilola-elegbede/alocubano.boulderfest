@@ -6,22 +6,33 @@
 /* Dark mode floating cart styles */
 [data-theme="dark"] {
   /* Floating Cart Variables - Button variables removed */
-  --floating-cart-bg: var(--color-surface);
-  --floating-cart-border: var(--color-border);
-  --floating-cart-panel-bg: var(--color-surface);
-  --floating-cart-panel-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  --floating-cart-backdrop: rgba(0, 0, 0, 0.8);
-  --floating-cart-item-bg: var(--color-background-secondary);
+  --floating-cart-bg: var(--color-cart-dark-bg);
+  --floating-cart-border: rgba(255, 255, 255, 0.1);
+  --floating-cart-panel-bg: var(--color-cart-dark-bg);
+  --floating-cart-panel-shadow: 0 20px 60px var(--shadow-color-dark);
+  --floating-cart-backdrop: var(--color-overlay-dark);
+  --floating-cart-item-bg: var(--color-gray-800);
   --floating-cart-item-border: var(--color-border);
-  --floating-cart-header-border: var(--color-border);
-  --floating-cart-footer-border: var(--color-border);
+  --floating-cart-header-border: rgba(255, 255, 255, 0.1);
+  --floating-cart-footer-border: rgba(255, 255, 255, 0.1);
   --floating-cart-clear-button-bg: var(--color-surface-elevated);
   --floating-cart-clear-button-hover: var(--color-error-light);
+
+  /* Override base cart variables for dark mode - ensure consistency */
+  --cart-bg: var(--color-cart-dark-bg);
+  --cart-border: rgba(255, 255, 255, 0.1);
+  --cart-text: var(--color-white);
+  --cart-text-secondary: var(--color-gray-300);
+  --cart-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
 /* Floating Cart Container */
 [data-theme="dark"] .floating-cart-container {
-  /* Container is positioned fixed, no background needed */
+  /* Override any media query rules with higher specificity */
+  --cart-bg: var(--color-cart-dark-bg);
+  --cart-border: rgba(255, 255, 255, 0.1) !important;
+  --cart-text: var(--color-white) !important;
+  --cart-text-secondary: var(--color-gray-300) !important;
 }
 
 /* Button and badge styles removed - header cart only */
@@ -37,15 +48,17 @@
 
 /* Cart Panel */
 [data-theme="dark"] .floating-cart-panel {
-  background: var(--floating-cart-panel-bg);
-  border: 1px solid var(--floating-cart-border);
+  background: var(--color-cart-dark-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: var(--floating-cart-panel-shadow);
 }
 
 /* Cart Header */
 [data-theme="dark"] .cart-header {
-  border-bottom: 1px solid var(--floating-cart-header-border);
-  background: var(--color-surface);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
 }
 
 [data-theme="dark"] .cart-header h3 {
@@ -78,7 +91,7 @@
 
 /* Cart Content */
 [data-theme="dark"] .cart-content {
-  background: var(--floating-cart-panel-bg);
+  background: transparent;
 }
 
 /* Empty Message */
@@ -93,7 +106,7 @@
 
 /* Cart Items */
 [data-theme="dark"] .cart-items {
-  background: var(--floating-cart-panel-bg);
+  background: transparent;
 }
 
 /* Cart Category Headers */
@@ -110,17 +123,14 @@
   color: var(--color-red);
 }
 
-/* Cart Item */
+/* Cart Item - Match light mode (no background, no hover) */
 [data-theme="dark"] .cart-item {
-  background: var(--floating-cart-item-bg);
-  border: 1px solid var(--floating-cart-item-border);
-  border-radius: 6px;
+  /* No background - matches light mode */
+  border-bottom: 1px solid var(--floating-cart-item-border);
 }
 
-[data-theme="dark"] .cart-item:hover {
-  background: var(--color-surface-elevated);
-  border-color: var(--color-blue);
-  box-shadow: 0 2px 8px var(--shadow-color-light);
+[data-theme="dark"] .cart-item:last-child {
+  border-bottom: none;
 }
 
 /* Cart Item Info */
@@ -181,8 +191,8 @@
 
 /* Cart Footer */
 [data-theme="dark"] .cart-footer {
-  border-top: 1px solid var(--floating-cart-footer-border);
-  background: var(--color-surface);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
 }
 
 /* Cart Total */
@@ -206,7 +216,7 @@
 [data-theme="dark"] .cart-checkout-btn:hover:not(:disabled) {
   background: var(--color-primary-hover);
   border-color: var(--color-primary-hover);
-  box-shadow: 0 4px 12px rgba(91, 107, 181, 0.3);
+  box-shadow: var(--shadow-accent-blue);
 }
 
 [data-theme="dark"] .cart-checkout-btn:disabled {
@@ -245,13 +255,13 @@
 [data-theme="dark"] .cart-clear-message {
   background: var(--color-blue);
   color: var(--color-text-inverse);
-  box-shadow: 0 4px 12px rgba(91, 107, 181, 0.3);
+  box-shadow: var(--shadow-accent-blue);
 }
 
 [data-theme="dark"] .cart-error-message {
   background: var(--color-red);
   color: var(--color-text-inverse);
-  box-shadow: 0 4px 12px rgba(204, 41, 54, 0.3);
+  box-shadow: var(--shadow-accent-red);
 }
 
 /* Confirmation Modal */
@@ -263,7 +273,7 @@
   background: var(--color-surface);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-elevated-lg);
 }
 
 [data-theme="dark"] .confirmation-modal h3 {
@@ -306,7 +316,7 @@
   border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: var(--space-2xl);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-elevated-lg);
 }
 
 [data-theme="dark"] .checkout-loading-spinner {
@@ -324,7 +334,7 @@
   border: 2px solid var(--color-red);
   border-radius: 12px;
   padding: var(--space-2xl);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-elevated-lg);
 }
 
 [data-theme="dark"] .checkout-error-icon {
@@ -334,13 +344,13 @@
 /* Mobile Responsive Dark Mode */
 @media (max-width: 768px) {
   [data-theme="dark"] .floating-cart-panel {
-    background: var(--color-surface);
-    border-color: var(--color-border);
+    background: var(--color-cart-dark-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--floating-cart-header-border);
   }
 
-  [data-theme="dark"] .cart-item {
-    background: var(--color-surface-elevated);
-  }
+  /* Cart item - no background to match light mode */
 
   /* Button styles removed - header cart only */
 
@@ -357,10 +367,7 @@
     border-width: 2px;
   }
 
-  [data-theme="dark"] .cart-item {
-    border-width: 2px;
-    border-color: var(--color-text-primary);
-  }
+  /* Cart item borders removed for cleaner look */
 
   [data-theme="dark"] .qty-adjust {
     border-width: 2px;
@@ -371,8 +378,7 @@
 @media (prefers-reduced-motion: reduce) {
   /* Badge and button animations removed - header cart only */
 
-  [data-theme="dark"] .cart-checkout-btn:hover,
-  [data-theme="dark"] .cart-item:hover {
+  [data-theme="dark"] .cart-checkout-btn:hover {
     transform: none;
   }
 }

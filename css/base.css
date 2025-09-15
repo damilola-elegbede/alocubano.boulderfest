@@ -220,6 +220,9 @@
   --z-modal: 1050;          /* Modal content */
   --z-popover: 1060;        /* Popovers and tooltips */
   --z-tooltip: 1070;        /* Highest UI elements */
+
+  /* Cart-specific colors */
+  --color-cart-dark-bg: rgba(0, 0, 0, 0.85); /* Translucent dark cart background */
 }
 
 /* Dark Mode Theme Overrides - Performance Optimized
@@ -236,7 +239,7 @@
   --color-background: var(--color-gray-900);           /* Dark page background */
   --color-background-secondary: var(--color-gray-800); /* Secondary dark areas */
   --color-background-tertiary: var(--color-gray-700);  /* Tertiary sections */
-  --color-surface: var(--color-gray-800);              /* Card surfaces */
+  --color-surface: var(--color-gray-900);              /* Card surfaces */
   --color-surface-elevated: var(--color-gray-700);     /* Elevated surfaces */
   --color-surface-overlay: rgba(17, 17, 17, 0.95);     /* Dark overlays */
 
@@ -277,6 +280,13 @@
   --color-success-dark: var(--color-success-700);
   --color-warning-600: #d97706;
   --color-warning-700: #b45309;
+
+  /* Shadow Colors - Semantic shadow tokens */
+  --shadow-color-dark: rgba(0, 0, 0, 0.5);
+  --color-overlay-dark: rgba(0, 0, 0, 0.8);
+  --shadow-accent-blue: 0 4px 12px rgba(91, 107, 181, 0.3);
+  --shadow-accent-red: 0 4px 12px rgba(204, 41, 54, 0.3);
+  --shadow-elevated-lg: 0 20px 60px rgba(0, 0, 0, 0.6);
   --color-warning-dark: var(--color-warning-700);
   --color-error-600: #dc2626;
   --color-error-700: #b91c1c;

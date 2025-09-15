@@ -8,7 +8,7 @@
 .floating-cart-container {
   --cart-primary: var(--color-red);
   --cart-secondary: var(--color-blue);
-  --cart-bg: var(--color-white);
+  --cart-bg: rgba(255, 255, 255, 0.85);
   --cart-border: var(--color-gray-200);
   --cart-shadow: rgba(0, 0, 0, 0.1);
   --cart-text: var(--color-gray-900);
@@ -37,6 +37,8 @@
 .cart-backdrop.active {
   opacity: 1;
   visibility: visible;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 /* Cart Badge - Now used in header only */
@@ -49,7 +51,7 @@
   bottom: 0;
   width: 100%;
   max-width: 400px;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--cart-bg);
   z-index: 1000;
   transform: translateY(-100%);
   transition: transform var(--cart-transition);
@@ -498,20 +500,8 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .floating-cart-container {
-    --cart-bg: var(--color-surface);
-    --cart-border: var(--color-border);
-    --cart-text: var(--color-text-primary);
-    --cart-text-secondary: var(--color-text-secondary);
-    --cart-shadow: var(--shadow-color-strong);
-  }
-
-  .qty-adjust {
-    background: var(--cart-bg);
-    color: var(--cart-text);
-  }
+/* Dark mode support - removed in favor of explicit dark mode CSS file */
+/* @media (prefers-color-scheme: dark) rules have been moved to floating-cart-dark.css */
 
   .qty-adjust:hover {
     background: var(--color-background-tertiary);
