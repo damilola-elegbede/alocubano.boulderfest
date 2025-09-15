@@ -11,7 +11,7 @@
   --floating-cart-panel-bg: var(--color-cart-dark-bg);
   --floating-cart-panel-shadow: 0 20px 60px var(--shadow-color-dark);
   --floating-cart-backdrop: var(--color-overlay-dark);
-  --floating-cart-item-bg: var(--color-gray-900);
+  --floating-cart-item-bg: var(--color-gray-800);
   --floating-cart-item-border: var(--color-border);
   --floating-cart-header-border: rgba(255, 255, 255, 0.1);
   --floating-cart-footer-border: rgba(255, 255, 255, 0.1);
@@ -19,7 +19,7 @@
   --floating-cart-clear-button-hover: var(--color-error-light);
 
   /* Override base cart variables for dark mode - ensure consistency */
-  --cart-bg: var(--color-cart-dark-bg) !important;
+  --cart-bg: var(--color-cart-dark-bg);
   --cart-border: rgba(255, 255, 255, 0.1);
   --cart-text: var(--color-white);
   --cart-text-secondary: var(--color-gray-300);
@@ -29,7 +29,7 @@
 /* Floating Cart Container */
 [data-theme="dark"] .floating-cart-container {
   /* Override any media query rules with higher specificity */
-  --cart-bg: var(--color-cart-dark-bg) !important;
+  --cart-bg: var(--color-cart-dark-bg);
   --cart-border: rgba(255, 255, 255, 0.1) !important;
   --cart-text: var(--color-white) !important;
   --cart-text-secondary: var(--color-gray-300) !important;
@@ -216,7 +216,7 @@
 [data-theme="dark"] .cart-checkout-btn:hover:not(:disabled) {
   background: var(--color-primary-hover);
   border-color: var(--color-primary-hover);
-  box-shadow: 0 4px 12px rgba(91, 107, 181, 0.3);
+  box-shadow: var(--shadow-accent-blue);
 }
 
 [data-theme="dark"] .cart-checkout-btn:disabled {
@@ -255,13 +255,13 @@
 [data-theme="dark"] .cart-clear-message {
   background: var(--color-blue);
   color: var(--color-text-inverse);
-  box-shadow: 0 4px 12px rgba(91, 107, 181, 0.3);
+  box-shadow: var(--shadow-accent-blue);
 }
 
 [data-theme="dark"] .cart-error-message {
   background: var(--color-red);
   color: var(--color-text-inverse);
-  box-shadow: 0 4px 12px rgba(204, 41, 54, 0.3);
+  box-shadow: var(--shadow-accent-red);
 }
 
 /* Confirmation Modal */
@@ -273,7 +273,7 @@
   background: var(--color-surface);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-elevated-lg);
 }
 
 [data-theme="dark"] .confirmation-modal h3 {
@@ -316,7 +316,7 @@
   border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: var(--space-2xl);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-elevated-lg);
 }
 
 [data-theme="dark"] .checkout-loading-spinner {
@@ -334,7 +334,7 @@
   border: 2px solid var(--color-red);
   border-radius: 12px;
   padding: var(--space-2xl);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-elevated-lg);
 }
 
 [data-theme="dark"] .checkout-error-icon {
@@ -347,7 +347,7 @@
     background: var(--color-cart-dark-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--floating-cart-header-border);
   }
 
   /* Cart item - no background to match light mode */

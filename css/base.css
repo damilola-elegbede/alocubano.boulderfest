@@ -284,6 +284,9 @@
   /* Shadow Colors - Semantic shadow tokens */
   --shadow-color-dark: rgba(0, 0, 0, 0.5);
   --color-overlay-dark: rgba(0, 0, 0, 0.8);
+  --shadow-accent-blue: 0 4px 12px rgba(91, 107, 181, 0.3);
+  --shadow-accent-red: 0 4px 12px rgba(204, 41, 54, 0.3);
+  --shadow-elevated-lg: 0 20px 60px rgba(0, 0, 0, 0.6);
   --color-warning-dark: var(--color-warning-700);
   --color-error-600: #dc2626;
   --color-error-700: #b91c1c;
