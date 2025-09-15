@@ -8,7 +8,7 @@
 .floating-cart-container {
   --cart-primary: var(--color-red);
   --cart-secondary: var(--color-blue);
-  --cart-bg: var(--color-white);
+  --cart-bg: var(--color-surface);
   --cart-border: var(--color-gray-200);
   --cart-shadow: rgba(0, 0, 0, 0.1);
   --cart-text: var(--color-gray-900);

@@ -236,7 +236,7 @@
   --color-background: var(--color-gray-900);           /* Dark page background */
   --color-background-secondary: var(--color-gray-800); /* Secondary dark areas */
   --color-background-tertiary: var(--color-gray-700);  /* Tertiary sections */
-  --color-surface: var(--color-gray-800);              /* Card surfaces */
+  --color-surface: var(--color-gray-900);              /* Card surfaces */
   --color-surface-elevated: var(--color-gray-700);     /* Elevated surfaces */
   --color-surface-overlay: rgba(17, 17, 17, 0.95);     /* Dark overlays */
 
