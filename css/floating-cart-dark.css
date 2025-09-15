@@ -6,12 +6,12 @@
 /* Dark mode floating cart styles */
 [data-theme="dark"] {
   /* Floating Cart Variables - Button variables removed */
-  --floating-cart-bg: var(--color-surface);
+  --floating-cart-bg: var(--color-gray-900);
   --floating-cart-border: var(--color-border);
-  --floating-cart-panel-bg: var(--color-surface);
+  --floating-cart-panel-bg: var(--color-gray-900);
   --floating-cart-panel-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   --floating-cart-backdrop: rgba(0, 0, 0, 0.8);
-  --floating-cart-item-bg: var(--color-background-secondary);
+  --floating-cart-item-bg: var(--color-gray-800);
   --floating-cart-item-border: var(--color-border);
   --floating-cart-header-border: var(--color-border);
   --floating-cart-footer-border: var(--color-border);
@@ -45,7 +45,7 @@
 /* Cart Header */
 [data-theme="dark"] .cart-header {
   border-bottom: 1px solid var(--floating-cart-header-border);
-  background: var(--color-surface);
+  background: var(--color-gray-900);
 }
 
 [data-theme="dark"] .cart-header h3 {
@@ -182,7 +182,7 @@
 /* Cart Footer */
 [data-theme="dark"] .cart-footer {
   border-top: 1px solid var(--floating-cart-footer-border);
-  background: var(--color-surface);
+  background: var(--color-gray-900);
 }
 
 /* Cart Total */
@@ -334,12 +334,12 @@
 /* Mobile Responsive Dark Mode */
 @media (max-width: 768px) {
   [data-theme="dark"] .floating-cart-panel {
-    background: var(--color-surface);
+    background: var(--color-gray-900);
     border-color: var(--color-border);
   }
 
   [data-theme="dark"] .cart-item {
-    background: var(--color-surface-elevated);
+    background: var(--color-gray-800);
   }
 
   /* Button styles removed - header cart only */
