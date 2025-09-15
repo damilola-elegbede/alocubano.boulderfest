@@ -8,7 +8,7 @@
 .floating-cart-container {
   --cart-primary: var(--color-red);
   --cart-secondary: var(--color-blue);
-  --cart-bg: var(--color-surface);
+  --cart-bg: rgba(255, 255, 255, 0.85);
   --cart-border: var(--color-gray-200);
   --cart-shadow: rgba(0, 0, 0, 0.1);
   --cart-text: var(--color-gray-900);
@@ -37,6 +37,8 @@
 .cart-backdrop.active {
   opacity: 1;
   visibility: visible;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 /* Cart Badge - Now used in header only */
