@@ -220,6 +220,9 @@
   --z-modal: 1050;          /* Modal content */
   --z-popover: 1060;        /* Popovers and tooltips */
   --z-tooltip: 1070;        /* Highest UI elements */
+
+  /* Cart-specific colors */
+  --color-cart-dark-bg: rgba(0, 0, 0, 0.85); /* Translucent dark cart background */
 }
 
 /* Dark Mode Theme Overrides - Performance Optimized
@@ -281,7 +284,6 @@
   /* Shadow Colors - Semantic shadow tokens */
   --shadow-color-dark: rgba(0, 0, 0, 0.5);
   --color-overlay-dark: rgba(0, 0, 0, 0.8);
-  --color-cart-dark-bg: rgba(0, 0, 0, 0.85);
   --color-warning-dark: var(--color-warning-700);
   --color-error-600: #dc2626;
   --color-error-700: #b91c1c;
